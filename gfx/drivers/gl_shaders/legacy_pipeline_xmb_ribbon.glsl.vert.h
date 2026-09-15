@@ -35,16 +35,17 @@ static const char *stock_vertex_xmb_ribbon_legacy = GLSL_STANDARD_DERIVATIVES(
 
      v.y = xmb_noise2(v2)/8.0;
 
-     v3.x = v3.x + time/5.0;
-     v3.x = v3.x / 4.0;
+     v3.x -= time/5.0;
+     v3.x /= 4.0;
 
-     v3.z = v3.z + time/10.0;
-     v3.y = v3.y + time/100.0;
+     v3.z -= time/10.0;
+     v3.y -= time/100.0;
 
-     v.z = v.z + noise(v3*7.0)/15.0;
-     v.y = v.y + noise(v3*7.0)/15.0 + cos(v.x*2.0-time/2.0)/5.0 - 0.3;
+     v.z -= noise(v3*7.0)/15.0;
+     v.y -= noise(v3*7.0)/15.0 + cos(v.x*2.0-time/2.0)/5.0 - 0.3;
+     v.y = -v.y;
 
-     gl_Position = vec4(v, 1.0);
-     fragVertexEc = gl_Position.xyz;
+     fragVertexEc = v;
+     gl_Position = vec4(v.xy, 0.0, 1.0);
    }
 );

@@ -14,6 +14,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <string.h>
 #include <file/file_path.h>
@@ -40,14 +41,21 @@ static uint32_t abs_min_freq = 1, abs_max_freq = ~0U;
 static bool readparse_uint32(const char *path, uint32_t *value)
 {
    char *tmpbuf;
+   char *endp;
+   unsigned long v;
    if (!filestream_read_file(path, (void**)&tmpbuf, NULL))
       return false;
    string_remove_all_chars(tmpbuf, '\n');
-   if (sscanf(tmpbuf, "%" PRIu32, value) != 1)
+   /* strtoul skips leading whitespace and stops at the first
+    * non-digit, matching the sscanf("%" PRIu32) semantics
+    * without its per-call strlen()/malloc() cost. */
+   v = strtoul(tmpbuf, &endp, 10);
+   if (endp == tmpbuf)
    {
       free(tmpbuf);
       return false;
    }
+   *value = (uint32_t)v;
    free(tmpbuf);
    return true;
 }
@@ -115,9 +123,20 @@ cpu_scaling_driver_t **get_cpu_scaling_drivers(bool can_update)
          if (!fname)
             continue;
 
-         /* Ensure this is a policy and get its ID */
-         if (sscanf(fname, "/policy%" PRIu32, &polid) != 1)
-            continue;
+         /* Ensure this is a policy and get its ID
+          * (filename pattern: "/policyN"). */
+         {
+            static const char prefix[] = "/policy";
+            char *endp;
+            unsigned long v;
+            if (!string_starts_with_size(fname, prefix,
+                  STRLEN_CONST(prefix)))
+               continue;
+            v = strtoul(fname + STRLEN_CONST(prefix), &endp, 10);
+            if (endp == fname + STRLEN_CONST(prefix))
+               continue;
+            polid = (uint32_t)v;
+         }
 
          drv = calloc(1, sizeof(cpu_scaling_driver_t));
          drv->policy_id = polid;

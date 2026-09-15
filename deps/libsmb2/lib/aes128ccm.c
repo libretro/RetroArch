@@ -19,9 +19,7 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
 
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
@@ -53,7 +51,7 @@ static void aes_ccm_generate_b0(unsigned char *nonce, size_t nlen,
         memcpy(&buf[1], nonce, nlen);
 }
 
-static inline void bxory(unsigned char *b, unsigned char *y, size_t num)
+static void bxory(unsigned char *b, unsigned char *y, size_t num)
 {
         int i;
 

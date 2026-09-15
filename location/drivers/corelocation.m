@@ -17,6 +17,9 @@
 #include "../../location_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 @interface CoreLocationManager : NSObject <CLLocationManagerDelegate>
 @property (strong, nonatomic) CLLocationManager *locationManager;
 @property (assign) double latitude;
@@ -55,7 +58,16 @@
         status = [CLLocationManager authorizationStatus];
 
     if (status == kCLAuthorizationStatusNotDetermined)
-        [_locationManager requestWhenInUseAuthorization];
+    {
+        if (@available(macOS 10.15, *))
+            [_locationManager requestWhenInUseAuthorization];
+#if TARGET_OS_OSX
+        else
+            /* Pre-10.15 macOS has no explicit when-in-use request API; starting
+             * location updates raises the authorization prompt implicitly. */
+            [_locationManager startUpdatingLocation];
+#endif
+    }
     else
         [self locationManager:_locationManager didChangeAuthorizationStatus:status];
 }

@@ -239,6 +239,18 @@ static void dispmanx_surface_setup(struct dispmanx_video *_dispvars,
 
    surface = *sp;
 
+   /* NULL-check the outer calloc: the next dozen lines of
+    * surface->... field writes would NULL-deref on OOM.  This
+    * function is void-returning, so callers can't see an error
+    * code - they have to notice *sp == NULL themselves.  None of
+    * the three current callers (lines 367, 464, 518) do that,
+    * but letting the function no-op on OOM is still strictly
+    * better than a segfault, and a subsequent
+    * dispmanx_surface_update_async(..., *sp) would also no-op
+    * on a NULL surface. */
+   if (!surface)
+      return;
+
    /* Setup surface parameters */
    surface->numpages = numpages;
    /* We receive the pitch for what we consider "useful info",
@@ -254,6 +266,18 @@ static void dispmanx_surface_setup(struct dispmanx_video *_dispvars,
    /* Allocate memory for all the pages in each surface
     * and initialize variables inside each page's struct. */
    surface->pages = calloc(surface->numpages, sizeof(struct dispmanx_page));
+
+   /* NULL-check the pages calloc as well.  The for-loop below
+    * indexes into surface->pages unconditionally.  On OOM undo
+    * the outer surface allocation so the caller gets a NULL
+    * pointer back consistent with the initial-alloc failure
+    * above. */
+   if (!surface->pages)
+   {
+      free(surface);
+      *sp = NULL;
+      return;
+   }
 
    for (i = 0; i < surface->numpages; i++)
    {
@@ -586,7 +610,7 @@ static const video_poke_interface_t dispmanx_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
@@ -644,6 +668,8 @@ video_driver_t video_dispmanx = {
 #endif
    dispmanx_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

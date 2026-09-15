@@ -283,7 +283,7 @@ const gfx_ctx_driver_t gfx_ctx_uwp = {
    NULL, /* get video output size */
    NULL, /* get video output prev */
    NULL, /* get video output next */
-   win32_get_metrics,
+   NULL, /* metrics - handled by display server */
    NULL,
    NULL, /* update title */
    win32_check_window,

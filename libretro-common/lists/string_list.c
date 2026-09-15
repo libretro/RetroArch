@@ -20,14 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <lists/string_list.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include <string/stdstring.h>
 
 static bool string_list_deinitialize_internal(struct string_list *list)
 {
@@ -43,8 +42,6 @@ static bool string_list_deinitialize_internal(struct string_list *list)
             free(list->elems[i].data);
          if (list->elems[i].userdata)
             free(list->elems[i].userdata);
-         list->elems[i].data     = NULL;
-         list->elems[i].userdata = NULL;
       }
 
       free(list->elems);
@@ -57,15 +54,32 @@ static bool string_list_deinitialize_internal(struct string_list *list)
 
 bool string_list_capacity(struct string_list *list, size_t cap)
 {
-   struct string_list_elem *new_data = (struct string_list_elem*)
+   struct string_list_elem *new_data;
+
+   /* Public API, so hold it to its contract.  A cap below size would
+    * realloc the array out from under the live elements while size
+    * still counted them, and the next walk or free ran off the end;
+    * a cap of zero is a realloc(p, 0), which on glibc frees p and
+    * returns NULL - reported here as failure with elems dangling. */
+   if (!list || cap < list->size || cap == 0)
+      return false;
+
+   /* Guard the byte-count multiplication: a huge cap would wrap and
+    * realloc a buffer far smaller than the caller expects. */
+   if (cap > SIZE_MAX / sizeof(*new_data))
+      return false;
+
+   new_data = (struct string_list_elem*)
       realloc(list->elems, cap * sizeof(*new_data));
 
    if (!new_data)
       return false;
 
-   if (cap > list->cap)
-      memset(&new_data[list->cap], 0, sizeof(*new_data) * (cap - list->cap));
-
+   /* Slots in [size, cap) are never read: string_list_free() only walks
+    * [0, size), and the append paths fully initialise a slot when it
+    * becomes live.  So there is no need to zero the whole new half on
+    * every doubling, which for large lists was a memset over hundreds of
+    * thousands of elements to add one entry. */
    list->elems = new_data;
    list->cap   = cap;
    return true;
@@ -87,53 +101,55 @@ bool string_list_deinitialize(struct string_list *list)
       return false;
    if (!string_list_deinitialize_internal(list))
       return false;
-   list->elems              = NULL;
-   list->size               = 0;
-   list->cap                = 0;
+   list->elems = NULL;
+   list->size  = 0;
+   list->cap   = 0;
    return true;
 }
 
 struct string_list *string_list_new(void)
 {
-   struct string_list_elem *
-      elems                 = NULL;
+   struct string_list_elem *elems = NULL;
    struct string_list *list = (struct string_list*)
       malloc(sizeof(*list));
    if (!list)
       return NULL;
 
-   list->cap                = 0;
-   list->size               = 0;
-   list->elems              = NULL;
+   list->cap  = 0;
+   list->size = 0;
+   list->elems = NULL;
 
-   if (!(elems = (struct string_list_elem*)
-      calloc(32, sizeof(*elems))))
+   elems = (struct string_list_elem*)
+      calloc(32, sizeof(*elems));
+   if (!elems)
    {
-      string_list_free(list);
+      free(list);
       return NULL;
    }
 
-   list->elems              = elems;
-   list->cap                = 32;
+   list->elems = elems;
+   list->cap   = 32;
 
    return list;
 }
 
 bool string_list_initialize(struct string_list *list)
 {
-   struct string_list_elem *
-      elems                 = NULL;
+   struct string_list_elem *elems = NULL;
    if (!list)
       return false;
-   if (!(elems = (struct string_list_elem*)
-      calloc(32, sizeof(*elems))))
+
+   elems = (struct string_list_elem*)
+      calloc(32, sizeof(*elems));
+   if (!elems)
    {
       string_list_deinitialize(list);
       return false;
    }
-   list->elems              = elems;
-   list->size               = 0;
-   list->cap                = 32;
+
+   list->elems = elems;
+   list->size  = 0;
+   list->cap   = 32;
    return true;
 }
 
@@ -142,23 +158,59 @@ bool string_list_append(struct string_list *list, const char *elem,
 {
    char *data_dup = NULL;
 
-   /* Note: If 'list' is incorrectly initialised
-    * (i.e. if struct is zero initialised and
-    * string_list_initialize() is not called on
-    * it) capacity will be zero. This will cause
-    * a segfault. Handle this case by forcing the new
-    * capacity to a fixed size of 32 */
-   if (      list->size >= list->cap
-         && !string_list_capacity(list,
+   if (list->size >= list->cap)
+   {
+      if (list->cap > SIZE_MAX / 2)
+         return false;
+      if (!string_list_capacity(list,
                (list->cap > 0) ? (list->cap * 2) : 32))
+         return false;
+   }
+
+   data_dup = strdup(elem);
+   if (!data_dup)
       return false;
 
-   if (!(data_dup = strdup(elem)))
+   list->elems[list->size].data     = data_dup;
+   list->elems[list->size].attr     = attr;
+   /* Slot is not pre-zeroed (see string_list_capacity); userdata must
+    * be NULL so string_list_free() does not free garbage. */
+   list->elems[list->size].userdata = NULL;
+   list->size++;
+
+   return true;
+}
+
+bool string_list_append_n(struct string_list *list, const char *elem,
+      size_t len, union string_list_elem_attr attr)
+{
+   char *data_dup = NULL;
+
+   if (list->size >= list->cap)
+   {
+      if (list->cap > SIZE_MAX / 2)
+         return false;
+      if (!string_list_capacity(list,
+               (list->cap > 0) ? (list->cap * 2) : 32))
+         return false;
+   }
+
+   /* len + 1 wraps to 0 at SIZE_MAX; the memcpy below would then run
+    * len bytes into a zero-byte allocation.  Not reachable from a real
+    * string, but this is a public entry point taking any size_t. */
+   if (len == SIZE_MAX)
       return false;
+   data_dup = (char*)malloc(len + 1);
+   if (!data_dup)
+      return false;
+   memcpy(data_dup, elem, len);
+   data_dup[len] = '\0';
 
-   list->elems[list->size].data = data_dup;
-   list->elems[list->size].attr = attr;
-
+   list->elems[list->size].data     = data_dup;
+   list->elems[list->size].attr     = attr;
+   /* Slot is not pre-zeroed (see string_list_capacity); userdata must
+    * be NULL so string_list_free() does not free garbage. */
+   list->elems[list->size].userdata = NULL;
    list->size++;
    return true;
 }
@@ -178,11 +230,35 @@ void string_list_join_concat(char *s, size_t len,
    if (_len < len)
    {
       size_t i;
+      size_t dlen = strlen(delim);
+
       for (i = 0; i < list->size; i++)
       {
+         /* strlcpy() reports the length it was handed rather than the
+          * length it wrote, so an append that truncates would carry
+          * _len past len and leave every later len - _len wrapping to
+          * a very large size_t with s + _len already past the end.
+          * Fill what is left and stop instead. */
+         size_t elen = strlen(list->elems[i].data);
+
+         if (_len + elen >= len)
+         {
+            strlcpy(s + _len, list->elems[i].data, len - _len);
+            break;
+         }
+
          _len += strlcpy(s + _len, list->elems[i].data, len - _len);
+
          if ((i + 1) < list->size)
+         {
+            if (_len + dlen >= len)
+            {
+               strlcpy(s + _len, delim, len - _len);
+               break;
+            }
+
             _len += strlcpy(s + _len, delim, len - _len);
+         }
       }
    }
 }
@@ -190,93 +266,180 @@ void string_list_join_concat(char *s, size_t len,
 void string_list_join_concat_special(char *s, size_t len,
       const struct string_list *list, const char *delim)
 {
-   size_t i;
    size_t _len = strlen(s);
-   for (i = 0; i < list->size; i++)
+
+   /* As in string_list_join_concat() above: @s already being full
+    * leaves nothing to add, and an append is made only once it is
+    * known to fit. */
+   if (_len < len)
    {
-      _len += strlcpy(s + _len, list->elems[i].data, len - _len);
-      if ((i + 1) < list->size)
-         _len += strlcpy(s + _len, delim, len - _len);
+      size_t i;
+      size_t dlen = strlen(delim);
+
+      for (i = 0; i < list->size; i++)
+      {
+         size_t elen = strlen(list->elems[i].data);
+
+         if (_len + elen >= len)
+         {
+            strlcpy(s + _len, list->elems[i].data, len - _len);
+            break;
+         }
+
+         _len += strlcpy(s + _len, list->elems[i].data, len - _len);
+
+         if ((i + 1) < list->size)
+         {
+            if (_len + dlen >= len)
+            {
+               strlcpy(s + _len, delim, len - _len);
+               break;
+            }
+
+            _len += strlcpy(s + _len, delim, len - _len);
+         }
+      }
    }
+}
+
+/**
+ * Count delimited tokens in @str without modifying it.
+ * Treats any character in @delim as a separator (same as strtok).
+ * Returns the number of non-empty tokens.
+ */
+static size_t string_count_tokens(const char *str, const char *delim)
+{
+   size_t count   = 0;
+   bool   in_tok  = false;
+   const char *p  = str;
+
+   for (; *p != '\0'; p++)
+   {
+      if (strchr(delim, (unsigned char)*p))
+         in_tok = false;
+      else if (!in_tok)
+      {
+         in_tok = true;
+         count++;
+      }
+   }
+
+   return count;
 }
 
 struct string_list *string_split(const char *str, const char *delim)
 {
-   char *save      = NULL;
-   char *copy      = NULL;
-   const char *tmp = NULL;
+   const char *p = str;
    struct string_list *list = string_list_new();
-
    if (!list)
       return NULL;
 
-   if (!(copy = strdup(str)))
-      goto error;
-
-   tmp = strtok_r(copy, delim, &save);
-   while (tmp)
+   while (*p)
    {
       union string_list_elem_attr attr;
+      const char *tok;
+
+      while (*p && strchr(delim, *p))
+         p++;
+      if (!*p)
+         break;
+
+      tok = p;
+      while (*p && !strchr(delim, *p))
+         p++;
 
       attr.i = 0;
-
-      if (!string_list_append(list, tmp, attr))
+      if (!string_list_append_n(list, tok, p - tok, attr))
          goto error;
-
-      tmp = strtok_r(NULL, delim, &save);
    }
 
-   free(copy);
    return list;
 
 error:
    string_list_free(list);
-   free(copy);
    return NULL;
 }
 
 bool string_split_noalloc(struct string_list *list,
       const char *str, const char *delim)
 {
-   char *save      = NULL;
-   char *copy      = NULL;
-   const char *tmp = NULL;
+   size_t _len;
+   const char *end;
+   const char *p   = str;
 
-   if (!list)
+   if (!list || !str || !delim || !*delim)
       return false;
 
-   if (!(copy = strdup(str)))
-      return false;
-
-   tmp             = strtok_r(copy, delim, &save);
-   while (tmp)
+   /* Compute delimiter length once. */
    {
-      union string_list_elem_attr attr;
-
-      attr.i = 0;
-
-      if (!string_list_append(list, tmp, attr))
-      {
-         free(copy);
-         return false;
-      }
-
-      tmp = strtok_r(NULL, delim, &save);
+      const char *d = delim;
+      while (*d)
+         d++;
+      _len = d - delim;
    }
 
-   free(copy);
+   /* Pre-size to avoid repeated reallocs. */
+   {
+      size_t __len = string_count_tokens(str, delim);
+      if (__len > list->cap)
+      {
+         if (!string_list_capacity(list, __len))
+            return false;
+      }
+   }
+
+   while (*p)
+   {
+      union string_list_elem_attr attr;
+      size_t __len;
+
+      attr.i = 0;
+      end    = strstr(p, delim);
+
+      if (end)
+      {
+         __len = end - p;
+         if (__len > 0)
+         {
+            if (!string_list_append_n(list, p, __len, attr))
+               return false;
+         }
+         p = end + _len;
+      }
+      else
+      {
+         const char *s = p;
+         while (*s)
+            s++;
+         __len = s - p;
+         if (__len > 0)
+         {
+            if (!string_list_append_n(list, p, __len, attr))
+               return false;
+         }
+         break;
+      }
+   }
+
    return true;
 }
 
 int string_list_find_elem(const struct string_list *list, const char *elem)
 {
-   if (list)
+   if (list && elem)
    {
       size_t i;
       for (i = 0; i < list->size; i++)
       {
-         if (string_is_equal_noncase(list->elems[i].data, elem))
-            return (int)(i + 1);
+         const unsigned char *p1 = (const unsigned char*)list->elems[i].data;
+         const unsigned char *p2 = (const unsigned char*)elem;
+         while ((*p1 | 32) == (*p2 | 32) || (*p1 == *p2))
+         {
+            if (*p1 == '\0')
+               return (int)(i + 1);
+            p1++;
+            p2++;
+         }
       }
    }
    return 0;
@@ -289,13 +452,30 @@ bool string_list_find_elem_prefix(const struct string_list *list,
    {
       size_t i;
       char prefixed[255];
-      size_t _len  = strlcpy(prefixed, prefix, sizeof(prefixed));
+      size_t _len = strlcpy(prefixed, prefix, sizeof(prefixed));
       strlcpy(prefixed + _len, elem, sizeof(prefixed) - _len);
       for (i = 0; i < list->size; i++)
       {
-         if (     string_is_equal_noncase(list->elems[i].data, elem)
-               || string_is_equal_noncase(list->elems[i].data, prefixed))
-            return true;
+         const char *data = list->elems[i].data;
+         const char *a    = data;
+         const char *b    = elem;
+         while (tolower((unsigned char)*a) == tolower((unsigned char)*b))
+         {
+            if (*a == '\0')
+               return true;
+            a++;
+            b++;
+         }
+
+         a = data;
+         b = prefixed;
+         while (tolower((unsigned char)*a) == tolower((unsigned char)*b))
+         {
+            if (*a == '\0')
+               return true;
+            a++;
+            b++;
+         }
       }
    }
    return false;
@@ -311,38 +491,60 @@ struct string_list *string_list_clone(const struct string_list *src)
    if (!dest)
       return NULL;
 
-   dest->elems               = NULL;
-   dest->size                = src->size;
-   if (src->cap < dest->size)
-      dest->cap              = dest->size;
-   else
-      dest->cap              = src->cap;
+   dest->elems = NULL;
+   dest->size  = src->size;
+   dest->cap   = (src->cap < dest->size) ? dest->size : src->cap;
 
-   if (!(elems = (struct string_list_elem*)
-      calloc(dest->cap, sizeof(struct string_list_elem))))
+   elems = (struct string_list_elem*)
+      calloc(dest->cap, sizeof(struct string_list_elem));
+   if (!elems)
    {
       free(dest);
       return NULL;
    }
 
-   dest->elems               = elems;
+   dest->elems = elems;
 
    for (i = 0; i < src->size; i++)
    {
-      const char *_src    = src->elems[i].data;
-      size_t      len     = _src ? strlen(_src) : 0;
+      const char *_src = src->elems[i].data;
+      size_t      slen = _src ? strlen(_src) : 0;
 
       dest->elems[i].data = NULL;
       dest->elems[i].attr = src->elems[i].attr;
 
-      if (len != 0)
+      if (slen != 0)
       {
-         char *ret        = (char*)malloc(len + 1);
-         if (ret)
+         char *ret = (char*)malloc(slen + 1);
+         /* Pre-patch: on malloc failure 'dest->elems[i].data'
+          * silently stayed NULL and the loop moved on.  That left
+          * the caller holding a dest with dest->size set to
+          * src->size but some .data pointers NULL - a trap for
+          * every consumer that assumes .data is non-NULL.
+          * string_list_find_elem (line 349), string_list_
+          * join_concat (line 200), and others all dereference
+          * .data unconditionally.  Single empty-string inputs
+          * are represented by slen == 0 and never hit this
+          * branch, so NULL here always means OOM, not 'empty
+          * element was intended'.
+          *
+          * Tear down the partially-cloned destination and
+          * return NULL.  Callers of string_list_clone already
+          * handle NULL returns (clone-failure is an OOM signal)
+          * - NULL is both safer and more informative than a
+          * silently-corrupted list. */
+         if (!ret)
          {
-            strcpy(ret, _src);
-            dest->elems[i].data = ret;
+            size_t j;
+            for (j = 0; j < i; j++)
+               if (dest->elems[j].data)
+                  free(dest->elems[j].data);
+            free(dest->elems);
+            free(dest);
+            return NULL;
          }
+         memcpy(ret, _src, slen + 1);  /* memcpy > strcpy: no NUL scan */
+         dest->elems[i].data = ret;
       }
    }
 

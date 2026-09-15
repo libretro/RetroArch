@@ -114,9 +114,8 @@ static bool linuxraw_joypad_init_pad(const char *path,
 
 static const char *linuxraw_joypad_name(unsigned pad)
 {
-   if (pad >= MAX_USERS || string_is_empty(linuxraw_pads[pad].ident))
+   if (pad >= MAX_USERS)
       return NULL;
-
    return linuxraw_pads[pad].ident;
 }
 
@@ -198,11 +197,11 @@ retry:
                else if (event->mask & (IN_CREATE | IN_ATTRIB))
                {
                   char path[256];
-                  size_t _len = strlcpy(path, "/dev/input/", sizeof(path));
+                  size_t _len = strlcpy_lit(path, "/dev/input/", sizeof(path));
                   strlcpy(path + _len, event->name, sizeof(path) - _len);
                   RARCH_DBG("[LinuxRaw] Reconnecting \"%s\".\n",path);
 
-                  if (     string_is_empty(linuxraw_pads[idx].ident)
+                  if (     (!linuxraw_pads[idx].ident || !*linuxraw_pads[idx].ident)
                         && linuxraw_joypad_init_pad(path, &linuxraw_pads[idx]))
                   {
                      input_autoconfigure_connect(
@@ -234,7 +233,7 @@ static void *linuxraw_joypad_init(void *data)
       return NULL;
 
    linuxraw_epoll = fd;
-   _len           = strlcpy(path, "/dev/input/js", sizeof(path));
+   _len           = strlcpy_lit(path, "/dev/input/js", sizeof(path));
 
    for (i = 0; i < MAX_USERS; i++)
    {

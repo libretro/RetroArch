@@ -21,6 +21,7 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/sysmacros.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -42,6 +43,7 @@
 #include <string/stdstring.h>
 
 #include "../font_driver.h"
+#include "../../verbosity.h"
 
 #include "../../configuration.h"
 #include "../../driver.h"
@@ -85,7 +87,7 @@ typedef struct omapfb_data
 
 static const char *omapfb_get_fb_device(void)
 {
-   static char fbname[12] = {0};
+   static char fbname[24] = {0};
    settings_t   *settings = config_get_ptr();
    const int        fbidx = settings->uints.video_monitor_index;
 
@@ -99,7 +101,7 @@ static const char *omapfb_get_fb_device(void)
 
 static omapfb_page_t *omapfb_get_page(omapfb_data_t *pdata)
 {
-   unsigned i;
+   int i;
    omapfb_page_t *page = NULL;
 
    for (i = 0; i < pdata->num_pages; ++i)
@@ -370,7 +372,15 @@ static int omapfb_backup_state(omapfb_data_t *pdata)
    if (!pdata->saved_state->mem || mem == MAP_FAILED)
    {
       RARCH_ERR("[Omap] Backup layer (mem backup) failed.\n");
-      munmap(mem, pdata->saved_state->mi.size);
+      /* Only munmap if mmap actually succeeded.  munmap(MAP_FAILED, ...)
+       * is undefined per POSIX - MAP_FAILED is (void*)-1 and any
+       * implementation-specific behaviour it triggers is no guarantee
+       * against a future libc flagging it as an error or crashing.
+       * The malloc failure path separately leaves saved_state->mem
+       * as NULL; it gets cleaned up by omapfb_free() via the caller's
+       * fail_omapfb goto. */
+      if (mem != MAP_FAILED)
+         munmap(mem, pdata->saved_state->mi.size);
       return -1;
    }
    memcpy(pdata->saved_state->mem, mem, pdata->saved_state->mi.size);
@@ -803,7 +813,7 @@ static void omap_free(void *data)
    free(vid);
 }
 
-static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned font_size)
+static void omap_init_font(omap_video_t *vid)
 {
    int r, g, b;
    settings_t *settings   = config_get_ptr();
@@ -818,7 +828,7 @@ static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned fo
       return;
 
    if (!(font_renderer_create_default(&vid->font_driver, &vid->font,
-               *path_font ? path_font : NULL, video_font_size)))
+               *path_font ? path_font : NULL, video_font_size, FONT_ATLAS_FORMAT_A8)))
    {
       RARCH_ERR("[Omap] Font init failed.\n");
       return;
@@ -855,6 +865,7 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
    {
       int base_x, base_y;
       int glyph_width, glyph_height;
+      int max_width, max_height;
       const uint8_t *src = NULL;
       const struct font_glyph *glyph =
          vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
@@ -864,9 +875,8 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 
       base_x               = msg_base_x + glyph->draw_offset_x;
       base_y               = msg_base_y + glyph->draw_offset_y;
-
-      const int max_width  = vid->width - base_x;
-      const int max_height = vid->height - base_y;
+      max_width            = vid->width - base_x;
+      max_height           = vid->height - base_y;
 
       glyph_width          = glyph->width;
       glyph_height         = glyph->height;
@@ -947,7 +957,7 @@ static void *omap_init(const video_info_t *video,
    if (input && input_data)
       *input = NULL;
 
-   omap_init_font(vid, settings->paths.path_font, settings->video.font_size);
+   omap_init_font(vid);
 
    vid->menu.frame = calloc(vid->width * vid->height, vid->bytes_per_pixel);
    if (!vid->menu.frame)
@@ -1105,7 +1115,7 @@ static const video_poke_interface_t omap_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
@@ -1139,6 +1149,8 @@ video_driver_t video_omap = {
 #endif
    omap_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
    NULL  /* gfx_widgets_enabled */
 #endif

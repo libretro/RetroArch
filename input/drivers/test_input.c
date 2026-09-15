@@ -24,6 +24,9 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
+
+#include <compat/strl.h>
 
 #include "../input_driver.h"
 #include "../input_keymaps.h"
@@ -43,7 +46,9 @@
 #define INPUT_TEST_COMMAND_SET_SENSOR_LUX    16
 
 /* TODO/FIXME - static globals */
-static uint16_t test_key_state[DEFAULT_MAX_PADS+1][RETROK_LAST];
+/* Allocated with the step array when the test driver starts; see
+ * the note there. Indexed as [DEFAULT_MAX_PADS+1][RETROK_LAST]. */
+static uint16_t (*test_key_state)[RETROK_LAST];
 
 typedef struct
 {
@@ -70,7 +75,10 @@ typedef struct
    bool handled;
 } input_test_step_t;
 
-static input_test_step_t input_test_steps[MAX_TEST_STEPS];
+/* Allocated when the test driver or core actually starts; a static
+ * array here is load-resident forever on platforms without demand
+ * paging, for a feature almost no session activates. */
+static input_test_step_t *input_test_steps;
 
 static unsigned current_test_step     = 0;
 static unsigned last_test_step        = MAX_TEST_STEPS + 1;
@@ -107,7 +115,7 @@ static bool KTifJSONObjectEndHandler(void* context)
    input_test_steps[current_test_step].param_num = pCtx->param_num;
    input_test_steps[current_test_step].handled   = false;
 
-   if (!string_is_empty(pCtx->param_str))
+   if (pCtx->param_str && *pCtx->param_str)
       strlcpy(
             input_test_steps[current_test_step].param_str, pCtx->param_str,
             sizeof(input_test_steps[current_test_step].param_str));
@@ -148,7 +156,7 @@ static bool KTifJSONNumberHandler(void* context, const char *pValue, size_t len)
 {
    KTifJSONContext *pCtx = (KTifJSONContext*)context;
 
-   if (pCtx->current_entry_uint_val && len && !string_is_empty(pValue))
+   if (pCtx->current_entry_uint_val && len && pValue && *pValue)
       *pCtx->current_entry_uint_val = string_to_unsigned(pValue);
    /* ignore unknown members */
 
@@ -161,7 +169,7 @@ static bool KTifJSONStringHandler(void* context, const char *pValue, size_t len)
 {
    KTifJSONContext *pCtx = (KTifJSONContext*)context;
 
-   if (pCtx->current_entry_str_val && len && !string_is_empty(pValue))
+   if (pCtx->current_entry_str_val && len && pValue && *pValue)
    {
       if (*pCtx->current_entry_str_val)
          free(*pCtx->current_entry_str_val);
@@ -181,33 +189,35 @@ static bool input_test_file_read(const char* file_path)
 {
    bool success            = false;
    KTifJSONContext context = {0};
-   RFILE *file             = NULL;
+   uint8_t *file_buf       = NULL;
+   int64_t file_len        = 0;
    rjson_t* parser;
 
    /* Sanity check */
-   if (    string_is_empty(file_path)
-       || !path_is_valid(file_path)
-      )
+   if (!file_path || !*file_path)
    {
       RARCH_DBG("[Test input] No test input file supplied.\n");
       return false;
    }
 
-   /* Attempt to open test input file */
-   file = filestream_open(
-         file_path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
+   /* Read the whole file in one operation: it is tiny and always
+    * parsed in full, so a single open/size/read/close beats a
+    * pre-open stat plus the chunked callback path (which itself
+    * sizes the stream with an extra fstat).  The stat below runs
+    * only to classify a failure. */
+   if (!filestream_read_file(file_path,
+         (void**)&file_buf, &file_len))
    {
-      RARCH_ERR("[Test input] Failed to open test input file: \"%s\".\n",
-            file_path);
+      if (!path_is_valid(file_path))
+         RARCH_DBG("[Test input] No test input file supplied.\n");
+      else
+         RARCH_ERR("[Test input] Failed to open test input file: \"%s\".\n",
+               file_path);
       return false;
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   if (!(parser = rjson_open_buffer(file_buf, (size_t)file_len)))
    {
       RARCH_ERR("[Test input] Failed to create JSON parser.\n");
       goto end;
@@ -252,8 +262,8 @@ end:
    if (context.param_str)
       free(context.param_str);
 
-   /* Close log file */
-   filestream_close(file);
+   /* Release file contents */
+   free(file_buf);
 
    if (last_test_step >= MAX_TEST_STEPS)
    {
@@ -287,6 +297,8 @@ static void test_keyboard_free(void)
 {
    unsigned i, j;
 
+   if (!test_key_state)
+      return;
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
       for (j = 0; j < RETROK_LAST; j++)
          test_key_state[i][j] = 0;
@@ -319,10 +331,10 @@ static int16_t test_input_state(
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
-                     if (binds[port][i].valid)
+                     if (RETRO_KEYBIND_VALID(&binds[port][i]))
                      {
-                        if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
-                              && test_key_state[DEFAULT_MAX_PADS][binds[port][id].key])
+                        if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
+                              && test_key_state[DEFAULT_MAX_PADS][RETRO_KEYBIND_KEY(&binds[port][id])])
                            ret |= (1 << i);
                      }
                   }
@@ -332,10 +344,10 @@ static int16_t test_input_state(
 
             if (id < RARCH_BIND_LIST_END)
             {
-               if (binds[port][id].valid)
+               if (RETRO_KEYBIND_VALID(&binds[port][id]))
                {
-                  if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
-                        && test_key_state[DEFAULT_MAX_PADS][binds[port][id].key]
+                  if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
+                        && test_key_state[DEFAULT_MAX_PADS][RETRO_KEYBIND_KEY(&binds[port][id])]
                         && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                      )
                      return 1;
@@ -357,11 +369,26 @@ static int16_t test_input_state(
 static void test_input_free_input(void *data)
 {
    test_keyboard_free();
+   if (input_test_steps)
+      free(input_test_steps);
+   input_test_steps = NULL;
+   if (test_key_state)
+      free(test_key_state);
+   test_key_state = NULL;
 }
 
 static void* test_input_init(const char *joypad_driver)
 {
    settings_t *settings = config_get_ptr();
+
+   if (!input_test_steps)
+      input_test_steps = (input_test_step_t*)
+            calloc(MAX_TEST_STEPS, sizeof(*input_test_steps));
+   if (!test_key_state)
+      test_key_state = (uint16_t(*)[RETROK_LAST])
+            calloc(DEFAULT_MAX_PADS + 1, sizeof(*test_key_state));
+   if (!input_test_steps || !test_key_state)
+      return NULL;
 
    RARCH_DBG("[Test input] Start.\n");
 

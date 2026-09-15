@@ -52,6 +52,9 @@ extern cloud_sync_driver_t cloud_sync_webdav;
 #ifdef HAVE_SSL
 extern cloud_sync_driver_t cloud_sync_google_drive;
 #endif
+#ifdef HAVE_S3
+extern cloud_sync_driver_t cloud_sync_s3;
+#endif
 #ifdef HAVE_ICLOUD
 extern cloud_sync_driver_t cloud_sync_icloud;
 #endif

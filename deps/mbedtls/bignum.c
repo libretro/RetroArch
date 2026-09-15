@@ -1103,6 +1103,14 @@ void mpi_mul_hlp( size_t i, mbedtls_mpi_uint *s, mbedtls_mpi_uint *d, mbedtls_mp
 {
     mbedtls_mpi_uint c = 0, t = 0;
 
+    /* t is an asm operand of the x86 MULADDC_STOP variants and is
+     * touched by nothing on the paths whose macros do not name it -
+     * arm64 and the generic C fallback among them - so those warn
+     * about it. It cannot be deleted without breaking the ones that
+     * do use it, and the declaration has to stay where every variant
+     * can see it. */
+    (void)t;
+
 #if defined(MULADDC_HUIT)
     for( ; i >= 8; i -= 8 )
     {

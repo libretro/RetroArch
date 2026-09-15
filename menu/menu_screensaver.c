@@ -15,11 +15,14 @@
  */
 
 #include <stdlib.h>
+#include <time.h>
 #include <boolean.h>
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <retro_inline.h>
+
+#include <compat/strl.h>
 
 #include "../verbosity.h"
 
@@ -39,7 +42,8 @@
 
 /* Determines whether current platform has
  * Unicode character support */
-#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || (defined(HAVE_STB_FONT) && (defined(VITA) || defined(WIIU) || defined(ANDROID) || (defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _MSC_VER >= 1400) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER)) || defined(HAVE_LIBNX) || defined(__linux__) || defined (HAVE_EMSCRIPTEN) || defined(__APPLE__) || defined(HAVE_ODROIDGO2) || defined(__PS3__)))
+/* stb_truetype is always built, so a font renderer is always present */
+#if 1
 #define MENU_SS_UNICODE_ENABLED true
 #else
 #define MENU_SS_UNICODE_ENABLED false
@@ -159,6 +163,41 @@ static const char * const menu_ss_vortex_symbols[] = {
    "\xE2\x97\x86"  /* Black Diamond, U+25C6 */
 };
 
+/***********************/
+/* Pseudo-random numbers */
+/***********************/
+
+/* The screensaver only needs cheap, visually-random numbers, called
+ * once per particle on init and again per particle every frame while
+ * animating. libc rand()/random() are ~10x slower than necessary here
+ * (function call + internal locking/state), random() is not portable
+ * (absent on MSVC), and we do not need their statistical quality.
+ *
+ * Use a small inline xorshift32 instead: deterministic, multiply-free
+ * (cheap on ARM), no libc call, and a single 32-bit word of state.
+ * Returns a value in [0, MENU_SS_RAND_MAX]. */
+#define MENU_SS_RAND_MAX 0xFFFFFFFFu
+
+static uint32_t menu_ss_rng_state = 0;
+
+static INLINE uint32_t menu_ss_rand(void)
+{
+   uint32_t x = menu_ss_rng_state;
+   /* Lazy seed. xorshift state must never be zero; mix in time() and
+    * fall back to the xorshift32 reference seed if that yields zero. */
+   if (!x)
+   {
+      x = (uint32_t)time(NULL) * 2654435761u;
+      if (!x)
+         x = 2463534242u;
+   }
+   x ^= x << 13;
+   x ^= x >> 17;
+   x ^= x << 5;
+   menu_ss_rng_state = x;
+   return x;
+}
+
 /******************/
 /* Initialisation */
 /******************/
@@ -231,8 +270,6 @@ void menu_screensaver_free(menu_screensaver_t *screensaver)
       font_driver_free(screensaver->font_data.font);
       video_coord_array_free(&screensaver->font_data.raster_block.carr);
       screensaver->font_data.font = NULL;
-
-      font_driver_bind_block(NULL, NULL);
    }
 
    /* Free particle array */
@@ -325,10 +362,10 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
                menu_ss_particle_t *particle = &screensaver->particles[i];
                float size_factor;
 
-               particle->x    = (float)(rand() % width);
-               particle->y    = (float)(rand() % height);
-               particle->a    = (float)(rand() % 64 - 16) * 0.1f;
-               particle->b    = (float)(rand() % 64 - 48) * 0.1f;
+               particle->x    = (float)(menu_ss_rand() % width);
+               particle->y    = (float)(menu_ss_rand() % height);
+               particle->a    = (float)(menu_ss_rand() % 64 - 16) * 0.1f;
+               particle->b    = (float)(menu_ss_rand() % 64 - 48) * 0.1f;
 
                /* Get particle size */
                size_factor    = (float)i / (float)MENU_SS_NUM_PARTICLES;
@@ -339,7 +376,7 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
                 * snowflake symbol */
                particle->symbol    = menu_ss_fallback_symbol;
                if (screensaver->unicode_enabled)
-                  particle->symbol = menu_ss_snow_symbols[(unsigned)(rand() % MENU_SS_NUM_SNOW_SYMBOLS)];
+                  particle->symbol = menu_ss_snow_symbols[(unsigned)(menu_ss_rand() % MENU_SS_NUM_SNOW_SYMBOLS)];
             }
          }
          break;
@@ -353,19 +390,19 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
                menu_ss_particle_t *particle = &screensaver->particles[i];
 
                /* x pos ('physical' space) */
-               particle->a = (float)(rand() % width);
+               particle->a = (float)(menu_ss_rand() % width);
                /* y pos ('physical' space) */
-               particle->b = (float)(rand() % height);
+               particle->b = (float)(menu_ss_rand() % height);
                /* depth */
                particle->c = max_depth;
                /* speed */
-               particle->d = 1.0f + ((float)(rand() % 20) * initial_speed_factor);
+               particle->d = 1.0f + ((float)(menu_ss_rand() % 20) * initial_speed_factor);
 
                /* If Unicode is supported, select a random
                 * star symbol */
                particle->symbol    = menu_ss_fallback_symbol;
                if (screensaver->unicode_enabled)
-                  particle->symbol = menu_ss_starfield_symbols[(unsigned)(rand() % MENU_SS_NUM_STARFIELD_SYMBOLS)];
+                  particle->symbol = menu_ss_starfield_symbols[(unsigned)(menu_ss_rand() % MENU_SS_NUM_STARFIELD_SYMBOLS)];
             }
          }
          break;
@@ -380,19 +417,19 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
                menu_ss_particle_t *particle = &screensaver->particles[i];
 
                /* radius */
-               particle->a = 1.0f + (((float)rand() / (float)RAND_MAX) * max_radius);
+               particle->a = 1.0f + (((float)menu_ss_rand() / (float)MENU_SS_RAND_MAX) * max_radius);
                /* theta */
-               particle->b = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
+               particle->b = ((float)menu_ss_rand() / (float)MENU_SS_RAND_MAX) * 2.0f * PI;
                /* radial speed */
-               particle->c = (float)((rand() % 100) + 1) * radial_speed_factor;
+               particle->c = (float)((menu_ss_rand() % 100) + 1) * radial_speed_factor;
                /* rotational speed */
-               particle->d = (((float)((rand() % 50) + 1) * 0.005f) + 0.1f) * (PI / 360.0f);
+               particle->d = (((float)((menu_ss_rand() % 50) + 1) * 0.005f) + 0.1f) * (PI / 360.0f);
 
                /* If Unicode is supported, select a random
                 * star symbol */
                particle->symbol    = menu_ss_fallback_symbol;
                if (screensaver->unicode_enabled)
-                  particle->symbol = menu_ss_vortex_symbols[(unsigned)(rand() % MENU_SS_NUM_VORTEX_SYMBOLS)];
+                  particle->symbol = menu_ss_vortex_symbols[(unsigned)(menu_ss_rand() % MENU_SS_NUM_VORTEX_SYMBOLS)];
             }
          }
          break;
@@ -425,10 +462,14 @@ static bool menu_screensaver_update_state(
    {
       menu_screensaver_set_dimensions(screensaver, width, height);
 
-      /* Free any existing font */
+      /* Retire any existing font. This runs from
+       * menu_screensaver_iterate(), before the video driver's frame
+       * function, and the font is rebuilt below, so releasing it
+       * outright can pull the atlas out from under a command list
+       * that still references it. */
       if (screensaver->font_data.font)
       {
-         font_driver_free(screensaver->font_data.font);
+         font_driver_free_deferred(screensaver->font_data.font);
          video_coord_array_free(&screensaver->font_data.raster_block.carr);
          screensaver->font_data.font = NULL;
       }
@@ -458,10 +499,11 @@ static bool menu_screensaver_update_state(
        &&  screensaver->font_enabled)
    {
       char font_file[PATH_MAX_LENGTH];
-#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || defined(HAVE_STB_FONT)
+/* stb_truetype is always built, so a font renderer is always present */
+#if 1
       char pkg_path[PATH_MAX_LENGTH];
       /* Get font file path */
-      if (!string_is_empty(dir_assets))
+      if (dir_assets && *dir_assets)
          fill_pathname_join_special(pkg_path, dir_assets, MENU_SS_PKG_DIR, sizeof(pkg_path));
       else
          strlcpy(pkg_path, MENU_SS_PKG_DIR, sizeof(pkg_path));
@@ -490,8 +532,9 @@ static bool menu_screensaver_update_state(
       /* If font was created successfully, fetch metadata */
       if (screensaver->font_data.font)
          screensaver->font_data.y_centre_offset =
-               (float)font_driver_get_line_centre_offset(
-                     screensaver->font_data.font, 1.0f);
+               roundf((screensaver->font_data.font->metrics.ascender
+                     - screensaver->font_data.font->metrics.descender)
+                     * 0.5f);
       /* In case of error, warn and disable
        * further attempts to create fonts */
       else
@@ -559,8 +602,8 @@ void menu_screensaver_iterate(
             float luminosity;
 
             /* Update particle 'speed' */
-            particle->a = particle->a + (float)(rand() % 16 - 9) * 0.01f;
-            particle->b = particle->b + (float)(rand() % 16 - 7) * 0.01f;
+            particle->a = particle->a + (float)(menu_ss_rand() % 16 - 9) * 0.01f;
+            particle->b = particle->b + (float)(menu_ss_rand() % 16 - 7) * 0.01f;
 
             if (particle->a < -0.4f)
                particle->a = -0.4f;
@@ -594,7 +637,7 @@ void menu_screensaver_iterate(
             }
 
             if (update_symbol && screensaver->unicode_enabled)
-               particle->symbol = menu_ss_snow_symbols[(unsigned)(rand() % MENU_SS_NUM_SNOW_SYMBOLS)];
+               particle->symbol = menu_ss_snow_symbols[(unsigned)(menu_ss_rand() % MENU_SS_NUM_SNOW_SYMBOLS)];
          }
          break;
       case MENU_SCREENSAVER_STARFIELD:
@@ -630,13 +673,13 @@ void menu_screensaver_iterate(
                    || (particle->c <= 0.0f))
                {
                   /* x pos ('physical' space) */
-                  particle->a = (float)(rand() % width);
+                  particle->a = (float)(menu_ss_rand() % width);
                   /* y pos ('physical' space) */
-                  particle->b = (float)(rand() % height);
+                  particle->b = (float)(menu_ss_rand() % height);
                   /* depth */
                   particle->c = max_depth;
                   /* speed */
-                  particle->d = 1.0f + ((float)(rand() % 20) * initial_speed_factor);
+                  particle->d = 1.0f + ((float)(menu_ss_rand() % 20) * initial_speed_factor);
 
                   /* Reset size */
                   particle->size = 1.0f;
@@ -644,7 +687,7 @@ void menu_screensaver_iterate(
                   /* If Unicode is supported, select a random
                    * star symbol */
                   if (screensaver->unicode_enabled)
-                     particle->symbol = menu_ss_starfield_symbols[(unsigned)(rand() % MENU_SS_NUM_STARFIELD_SYMBOLS)];
+                     particle->symbol = menu_ss_starfield_symbols[(unsigned)(menu_ss_rand() % MENU_SS_NUM_STARFIELD_SYMBOLS)];
                }
 
                /* Get particle location */
@@ -702,18 +745,18 @@ void menu_screensaver_iterate(
                    * > particle->a = max_radius;
                    * ...but it turns out that spawning new particles at random
                    * locations produces a more visually appealing result... */
-                  particle->a = 1.0f + (((float)rand() / (float)RAND_MAX) * max_radius);
+                  particle->a = 1.0f + (((float)menu_ss_rand() / (float)MENU_SS_RAND_MAX) * max_radius);
                   /* theta */
-                  particle->b = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
+                  particle->b = ((float)menu_ss_rand() / (float)MENU_SS_RAND_MAX) * 2.0f * PI;
                   /* radial speed */
-                  particle->c = (float)((rand() % 100) + 1) * radial_speed_factor;
+                  particle->c = (float)((menu_ss_rand() % 100) + 1) * radial_speed_factor;
                   /* rotational speed */
-                  particle->d = (((float)((rand() % 50) + 1) * 0.005f) + 0.1f) * (PI / 360.0f);
+                  particle->d = (((float)((menu_ss_rand() % 50) + 1) * 0.005f) + 0.1f) * (PI / 360.0f);
 
                   /* If Unicode is supported, select a random
                    * star symbol */
                   if (screensaver->unicode_enabled)
-                     particle->symbol = menu_ss_vortex_symbols[(unsigned)(rand() % MENU_SS_NUM_VORTEX_SYMBOLS)];
+                     particle->symbol = menu_ss_vortex_symbols[(unsigned)(menu_ss_rand() % MENU_SS_NUM_VORTEX_SYMBOLS)];
                }
 
                /* Get particle location */

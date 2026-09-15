@@ -30,6 +30,7 @@
 #endif
 
 #include "../common/wayland_common.h"
+#include "../gfx/video_driver.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../input/common/wayland_common.h"
 #include "../../input/input_driver.h"
@@ -54,7 +55,7 @@
 extern void gfx_ctx_wl_get_video_size_webos(void*, unsigned*, unsigned*);
 extern void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t*);
 extern void gfx_ctx_wl_update_title_webos(void*);
-extern bool gfx_ctx_wl_init_webos(const toplevel_listener_t*, gfx_ctx_wayland_data_t**);
+extern bool gfx_ctx_wl_init_webos(driver_configure_handler_t, gfx_ctx_wayland_data_t**);
 extern bool gfx_ctx_wl_set_video_mode_common_size_webos(gfx_ctx_wayland_data_t*, unsigned, unsigned, bool);
 extern bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t*, bool);
 extern bool gfx_ctx_wl_suppress_screensaver_webos(void*, bool);
@@ -72,16 +73,12 @@ extern void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t*, void (*)(void
 
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
-/* Shell surface callbacks. */
-static void xdg_toplevel_handle_configure(void *data,
-      struct xdg_toplevel *toplevel,
-      int32_t width, int32_t height, struct wl_array *states)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
-   xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
 #ifdef HAVE_EGL
+/* Invoked from the common shell-surface configure handlers after the
+ * shared configure processing; resizes (or lazily creates) the
+ * wl_egl_window to the new buffer dimensions. */
+static void gfx_ctx_wl_egl_configure(gfx_ctx_wayland_data_t *wl)
+{
    if (wl->win)
       wl_egl_window_resize(wl->win,
             wl->buffer_width,
@@ -91,10 +88,8 @@ static void xdg_toplevel_handle_configure(void *data,
       wl->win = wl_egl_window_create(wl->surface,
             wl->buffer_width,
             wl->buffer_height);
-#endif
-
-   wl->configured = false;
 }
+#endif
 
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
@@ -137,49 +132,6 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 
    return true;
 }
-
-#ifdef HAVE_LIBDECOR_H
-static void
-libdecor_frame_handle_configure(struct libdecor_frame *frame,
-      struct libdecor_configuration *configuration, void *data)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
-   libdecor_frame_handle_configure_common(frame, configuration, wl);
-
-#ifdef HAVE_EGL
-   if (wl->win)
-      wl_egl_window_resize(wl->win,
-            wl->buffer_width,
-            wl->buffer_height,
-            0, 0);
-   else
-      wl->win     = wl_egl_window_create(
-            wl->surface,
-            wl->buffer_width,
-            wl->buffer_height);
-#endif
-
-   wl->configured = false;
-}
-#endif
-
-static const toplevel_listener_t toplevel_listener = {
-#ifdef HAVE_LIBDECOR_H
-   .libdecor_frame_interface = {
-     libdecor_frame_handle_configure,
-     libdecor_frame_handle_close,
-     libdecor_frame_handle_commit,
-   },
-#endif
-   .xdg_toplevel_listener = {
-      xdg_toplevel_handle_configure,
-      xdg_toplevel_handle_close,
-   },
-};
-
-static const toplevel_listener_t xdg_toplevel_listener = {0};
 
 #ifdef HAVE_EGL
 #define WL_EGL_ATTRIBS_BASE \
@@ -279,12 +231,29 @@ static void *gfx_ctx_wl_init(void *data)
 {
    int i;
    gfx_ctx_wayland_data_t *wl = NULL;
-   if (!gfx_ctx_wl_init_common(&toplevel_listener, &wl))
+   if (!gfx_ctx_wl_init_common(
+#ifdef HAVE_EGL
+         gfx_ctx_wl_egl_configure,
+#else
+         NULL,
+#endif
+         &wl))
       goto error;
 #ifdef HAVE_EGL
    if (!gfx_ctx_wl_egl_init_context(wl))
       goto error;
 #endif
+   if (wl->tearing_control_manager)
+   {
+      settings_t *settings = config_get_ptr();
+      bool video_vsync     = settings->bools.video_vsync;
+      wl->tearing_control  = wp_tearing_control_manager_v1_get_tearing_control(
+         wl->tearing_control_manager, wl->surface);
+      wp_tearing_control_v1_set_presentation_hint(wl->tearing_control,
+                                                  video_vsync
+                                                  ? WP_TEARING_CONTROL_V1_PRESENTATION_HINT_VSYNC
+                                                  : WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC);
+   }
    return wl;
 error:
    gfx_ctx_wl_destroy_resources(wl);
@@ -387,6 +356,15 @@ static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
 #ifdef HAVE_EGL
    egl_set_swap_interval(&wl->egl, swap_interval);
 #endif
+   wl->swap_interval = swap_interval;
+
+   if (wl->tearing_control)
+   {
+      wp_tearing_control_v1_set_presentation_hint(wl->tearing_control,
+                                                  swap_interval == 0
+                                                  ? WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC
+                                                  : WP_TEARING_CONTROL_V1_PRESENTATION_HINT_VSYNC);
+   }
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,
@@ -526,6 +504,8 @@ static void wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t t
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    wl->swap_complete = true;
+   if (wl->frame_cb == cb)
+      wl->frame_cb   = NULL;
 
    /* Destroy this callback */
    wl_callback_destroy(cb);
@@ -538,21 +518,57 @@ static const struct wl_callback_listener wl_surface_frame_listener = {
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
-   struct wl_callback *cb;
+   struct wl_callback *cb         = NULL;
    gfx_ctx_wayland_data_t *wl     = (gfx_ctx_wayland_data_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
+   /* Only throttle to the compositor frame callback when actually
+    * vsync-pacing. A swap interval of 0 (fast-forward, or vsync
+    * disabled) means we explicitly do not want to wait for the
+    * display cadence; blocking on the frame callback here would gate
+    * unthrottled frames on vsync-rate callbacks and stall the core. */
+   /* Skip the frame-callback wait while the compositor reports the
+    * surface suspended (occluded, minimized, screen locked): hidden
+    * surfaces receive no frame callbacks, so waiting would burn the
+    * 50ms deadline every frame.  Compositors older than xdg_wm_base
+    * v6 never send the state; wl->suspended then stays false and
+    * behavior is unchanged. */
+   bool frame_throttle            = (max_swapchain_images <= 2)
+      && (wl->egl.interval != 0)
+      && !wl->suspended;
 
-   if (max_swapchain_images <= 2)
+   if (frame_throttle)
    {
       /* Set Wayland frame callback. */
       cb = wl_surface_frame(wl->surface);
       wl_callback_add_listener(cb, &wl_surface_frame_listener, wl);
+      wl->frame_cb = cb;
+   }
+
+   if (wl->present_clock)
+      wl_presentation_dispatch_pending(wl);
+
+   /* Skip presentation-time pacing and feedback while the surface is
+    * suspended: the compositor is not scanning out the surface, so
+    * there are no vblank events to track and requesting feedback for
+    * a frame that will not be displayed is wasteful.  Keep the event
+    * queue moving (dispatch above) so the resume configure is seen. */
+   if (!wl->suspended)
+   {
+      /* The EGL frame-callback throttle above already paces to the
+       * compositor's cadence.  Running presentation-time pacing on top
+       * of it double-throttles the frame, so only pace here when that
+       * throttle is not engaged (e.g. >2 max swapchain images). */
+      if (!frame_throttle)
+         wait_for_next_frame(wl);
+
+      if (wl->present_clock)
+         wl_request_presentation_feedback(wl);
    }
 
    egl_swap_buffers(&wl->egl);
 
-   if (max_swapchain_images <= 2)
+   if (frame_throttle)
    {
       /* Wait for the frame callback we set earlier. */
       struct pollfd pollfd = {.fd = wl->input.fd, .events = POLLIN};
@@ -566,6 +582,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
          {
             /* Deadline met. */
             wl_callback_destroy(cb);
+            wl->frame_cb = NULL;
             return;
          }
          uint64_t remaining_time = deadline - current_time;
@@ -582,6 +599,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
                /* Timeout met, or polling error. */
                wl_display_cancel_read(wl->input.dpy);
                wl_callback_destroy(cb);
+               wl->frame_cb = NULL;
                return;
             }
             wl_display_read_events(wl->input.dpy);
@@ -608,14 +626,14 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
    if (wl->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
-   if (string_is_equal(video_ident, "glcore") || string_is_equal(video_ident, "gl"))
+   if (string_is_equal(video_ident, "glcore"))
    {
-      if (string_is_equal(video_ident, "glcore"))
-      {
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-         BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
-      }
+   }
+   else if (string_is_equal(video_ident, "gl"))
+   {
 #ifdef HAVE_GLSL
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
@@ -651,6 +669,19 @@ static bool gfx_ctx_wl_destroy_surface(void *data)
 #endif
 }
 
+/* The compositor tells us when the surface is not being scanned out -
+ * occluded, minimised, screen locked - and the swap path above already
+ * skips the frame callback and the presentation feedback in that
+ * state, for the same reason. Reported here so the runloop can pace
+ * the loop rather than the swap spinning through it. Compositors older
+ * than xdg_wm_base v6 never send the state, wl->suspended stays false,
+ * and this is always true, as before. */
+static bool gfx_ctx_wl_presentable(void *data)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return wl && !wl->suspended;
+}
+
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
@@ -659,11 +690,11 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_set_swap_interval,
    gfx_ctx_wl_set_video_mode,
    gfx_ctx_wl_get_video_size_common,
-   gfx_ctx_wl_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   gfx_ctx_wl_get_metrics_common,
+   NULL, /* metrics - handled by display server */
    NULL,
    gfx_ctx_wl_update_title_common,
    gfx_ctx_wl_check_window,
@@ -688,5 +719,6 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL,
    NULL,
    gfx_ctx_wl_create_surface,
-   gfx_ctx_wl_destroy_surface
+   gfx_ctx_wl_destroy_surface,
+   gfx_ctx_wl_presentable
 };

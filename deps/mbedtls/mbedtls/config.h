@@ -36,6 +36,15 @@
 #endif
 #endif
 
+#ifdef VITA
+/* The Vita has no /dev/urandom and no BSD socket layer of its own:
+ * randomness is provided by platform_entropy_func() in
+ * net_socket_ssl_mbed.c, and net_sockets.c talks to sceNet through
+ * the mappings in libretro-common's net_compat.h. */
+#define MBEDTLS_NO_PLATFORM_ENTROPY
+#define MBEDTLS_NO_IPV6
+#endif
+
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_DEPRECATE)
 #define _CRT_SECURE_NO_DEPRECATE 1
 #endif
@@ -588,7 +597,7 @@
  *
  * Comment this macro to disable 1/n-1 record splitting.
  */
-#define MBEDTLS_SSL_CBC_RECORD_SPLITTING
+/* #define MBEDTLS_SSL_CBC_RECORD_SPLITTING */
 
 /**
  * \def MBEDTLS_SSL_RENEGOTIATION
@@ -624,7 +633,7 @@
  *
  * Comment this macro to disable support for TLS 1.0
  */
-#define MBEDTLS_SSL_PROTO_TLS1
+/* #define MBEDTLS_SSL_PROTO_TLS1 */
 
 /**
  * \def MBEDTLS_SSL_PROTO_TLS1_1
@@ -636,7 +645,7 @@
  *
  * Comment this macro to disable support for TLS 1.1 / DTLS 1.0
  */
-#define MBEDTLS_SSL_PROTO_TLS1_1
+/* #define MBEDTLS_SSL_PROTO_TLS1_1 */
 
 /**
  * \def MBEDTLS_SSL_PROTO_TLS1_2
@@ -1260,7 +1269,10 @@
  * This module is required for SSL/TLS and X.509.
  * PEM_PARSE uses MD5 for decrypting encrypted keys.
  */
-#define MBEDTLS_MD5_C
+#define MBEDTLS_SHA1_ALT
+#define MBEDTLS_SHA256_ALT
+
+/* #define MBEDTLS_MD5_C */
 
 /**
  * \def MBEDTLS_NET_C
@@ -1603,7 +1615,7 @@
  *
  * This module is used by the HAVEGE random number generator.
  */
-#ifndef _3DS
+#if !defined(_3DS) && !defined(VITA)
 #define MBEDTLS_TIMING_C
 #endif
 

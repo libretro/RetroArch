@@ -1,6 +1,6 @@
 #version 310 es
 
-layout(location = 0) in vec3 VertexCoord;
+layout(location = 0) in vec2 Position;
 
 layout(std140, set = 0, binding = 0) uniform UBO
 {
@@ -28,11 +28,12 @@ float noise(vec3 x)
 
 void main()
 {
-   vec3 v = vec3(VertexCoord.x, 0.0, VertexCoord.y);
+   vec3 v = vec3(Position.x, 0.0, Position.y);
    vec3 v2 = v;
    v2.x = v2.x + constants.time / 2.0;
    v2.z = v.z * 3.0;
    v.y = cos((v.x + v.z / 3.0 + constants.time) * 2.0) / 10.0 + noise(v2.xyz) / 4.0;
-   gl_Position = vec4(v, 1.0);
+   v.y = -v.y;
+   gl_Position = vec4(v.xy, 0.0, 1.0);
    gl_Position.y *= constants.yflip;
 }

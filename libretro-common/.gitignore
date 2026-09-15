@@ -4,3 +4,6 @@ glsm/
 *.so
 *.dylib
 *.exe
+
+# built sample binaries
+samples/**/config_file_test

@@ -1,0 +1,45 @@
+name: CI Compile Matrix [Codec Combinations]
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  compile-matrix: # every codec combination real builds select, not just this one
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Dependencies
+        timeout-minutes: 5
+        run: |
+          # The gl2 arms compile against the desktop GL and EGL headers,
+          # and the Dingux and RS90 video drivers against SDL 1.2's.
+          pkgs="build-essential libgl-dev libegl-dev libgles-dev libsdl1.2-dev"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Compile matrix
+        run: ./.github/workflows/scripts/compile-matrix.sh

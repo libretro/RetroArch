@@ -6,7 +6,6 @@ INTERNAL_LIBAVUTIL     = 0
 INTERNAL_LIBSWRESAMPLE = 0
 INTERNAL_LIBSWSCALE    = 0
 
-INTERNAL_LIBFLAC       = 0
 INTERNAL_LIBOGG        = 0
 INTERNAL_LIBLAME       = 0
 INTERNAL_LIBFAAC       = 0
@@ -15,7 +14,6 @@ INTERNAL_LIBTHEORA     = 0
 INTERNAL_LIBOPUS       = 0
 INTERNAL_LIBVORBIS     = 0
 INTERNAL_WEBP          = 0
-INTERNAL_ZLIB          = 0
 INTERNAL_WAVPACK       = 0
 INTERNAL_XVIDCORE      = 0
 INTERNAL_VPX           = 0
@@ -88,7 +86,6 @@ ifneq (,$(findstring unix,$(platform)))
 ifeq ($(OPENGL),1)
    GL_LIB := -lGL
 	HAVE_OPENGL = 1
-	HAVE_GL_FFT := 1
 endif
    HAVE_SSA := 1
 
@@ -109,8 +106,7 @@ else ifneq (,$(findstring osx,$(platform)))
 
 ifeq ($(OPENGL),1)
    GL_LIB := -framework OpenGL
-   HAVE_GL_FFT := 1
-	HAVE_OPENGL = 1
+   HAVE_OPENGL = 1
 endif
    OSXVER = `sw_vers -productVersion | cut -d. -f 2`
    OSX_LT_MAVERICKS = `(( $(OSXVER) <= 9)) && echo "YES"`
@@ -133,7 +129,6 @@ ifeq ($(OPENGL),1)
 	HAVE_OPENGL = 1
 	GLES = 1
    GL_LIB := -framework OpenGLES
-   HAVE_GL_FFT := 1
    CFLAGS += -DHAVE_OPENGLES -DHAVE_OPENGLES3
 endif
    HAVE_ARMV7=1
@@ -193,9 +188,8 @@ else
 ifeq ($(OPENGL),1)
    GL_LIB := -lopengl32
    CFLAGS += -DHAVE_OPENGL
-	HAVE_OPENGL = 1
-	HAVE_GL_FFT := 1
-	WIN32_PLATFORM := 1
+   HAVE_OPENGL = 1
+   WIN32_PLATFORM := 1
 endif
    LIBS += -L.
 endif

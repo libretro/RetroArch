@@ -29,6 +29,7 @@
 
 #define SDL_SUPPORTS_RUMBLE  SDL_VERSION_ATLEAST(2, 0, 9)
 #define SDL_SUPPORTS_SENSORS SDL_VERSION_ATLEAST(2, 0, 14)
+#define SDL_SUPPORTS_HIDAPI_WII SDL_VERSION_ATLEAST(2, 26, 0)
 
 typedef struct _sdl_joypad
 {
@@ -80,7 +81,14 @@ static uint8_t sdl_pad_get_hat(sdl_joypad_t *pad, unsigned hat)
 {
 #ifdef HAVE_SDL2
    if (pad->controller)
-      return sdl_pad_get_button(pad, hat);
+   {
+      /* Stock code called get_button(hat) here, which is wrong for a hat
+       * index. Read the real joystick hat so h0* autoconfigs work (webOS
+       * Switch Pro reports the D-pad as hat 0). */
+      if (hat != 0 || !pad->joypad || SDL_JoystickNumHats(pad->joypad) <= 0)
+         return 0;
+      return SDL_JoystickGetHat(pad->joypad, 0);
+   }
 #endif
    return SDL_JoystickGetHat(pad->joypad, hat);
 }
@@ -124,10 +132,22 @@ static void sdl_pad_connect(unsigned id)
    {
       RARCH_ERR("[SDL] Couldn't open joystick #%u: %s.\n", id, SDL_GetError());
 
+#ifdef HAVE_SDL2
+      /* SDL_GameControllerOpen() may have returned a valid controller
+       * even though the overall open failed (e.g. the backing joystick
+       * could not be retrieved). Close it here, otherwise the handle is
+       * leaked and pad->controller is left dangling - which matters when
+       * a misbehaving device triggers a rapid connect/disconnect storm. */
+      if (pad->controller)
+         SDL_GameControllerClose(pad->controller);
+      else
+#endif
       if (pad->joypad)
          SDL_JoystickClose(pad->joypad);
 
-      pad->joypad = NULL;
+      /* Reset the whole slot so no stale handles survive, mirroring
+       * sdl_pad_disconnect(). */
+      memset(pad, 0, sizeof(*pad));
 
       return;
    }
@@ -167,14 +187,14 @@ static void sdl_pad_connect(unsigned id)
        * So, we can claim to support all axes/buttons, and when we try to poll
        * an unbound ID, SDL simply returns the correct unpressed value.
        *
-       * Note that, in addition to 0 trackballs, we also have 0 hats. This is
-       * because the d-pad is in the button list, as the last 4 enum entries.
+       * Expose one hat so autoconfigs / remap that bind h0up/... work when
+       * the platform reports the D-pad as a joystick hat (webOS uhid).
        *
-       * -flibit
+       * -flibit (num_hats note updated for hat fallback)
        */
       pad->num_axes    = SDL_CONTROLLER_AXIS_MAX;
       pad->num_buttons = SDL_CONTROLLER_BUTTON_MAX;
-      pad->num_hats    = 0;
+      pad->num_hats    = 1;
       pad->num_balls   = 0;
 
       /* SDL Device supports Game Controller API. */
@@ -221,6 +241,18 @@ static void sdl_pad_connect(unsigned id)
       RARCH_LOG("[SDL] Falling back to joystick rumble.\n");
    }
 #endif
+#if SDL_SUPPORTS_SENSORS
+   if (pad->controller)
+   {
+      bool has_accel = SDL_GameControllerHasSensor(pad->controller, SDL_SENSOR_ACCEL);
+      bool has_gyro  = SDL_GameControllerHasSensor(pad->controller, SDL_SENSOR_GYRO);
+      if (has_accel || has_gyro)
+         RARCH_LOG("[SDL] Pad #%u: found sensors (accel=%s, gyro=%s).\n",
+               id,
+               has_accel ? "yes" : "no",
+               has_gyro  ? "yes" : "no");
+   }
+#endif
 #else
    pad->num_axes    = SDL_JoystickNumAxes(pad->joypad);
    pad->num_buttons = SDL_JoystickNumButtons(pad->joypad);
@@ -261,7 +293,7 @@ static void sdl_joypad_destroy(void)
 
 static void *sdl_joypad_init(void *data)
 {
-   size_t i;
+   unsigned i;
    unsigned num_sticks;
 #ifdef HAVE_SDL2
    uint32_t subsystem           = SDL_INIT_GAMECONTROLLER;
@@ -300,6 +332,10 @@ static void *sdl_joypad_init(void *data)
 #if SDL_SUPPORTS_RUMBLE
    /* enable extended hid reports to support ps4/ps5 rumble over bluetooth */
    SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
+#endif
+#if SDL_SUPPORTS_HIDAPI_WII
+   /* enable HIDAPI Wii driver for accelerometer/gyro support */
+   SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_WII, "1");
 #endif
 #endif
 

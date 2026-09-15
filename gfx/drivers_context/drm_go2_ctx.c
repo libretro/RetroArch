@@ -51,6 +51,10 @@
 #include "../common/egl_common.h"
 #endif
 
+#ifdef HAVE_OPENGL
+#include "../common/gl_common.h"
+#endif
+
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
@@ -367,9 +371,12 @@ static uint32_t gfx_ctx_go2_drm_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
    }
+   else
+   {
 #ifdef HAVE_GLSL
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
+   }
 
    return flags;
 }
@@ -397,7 +404,7 @@ const gfx_ctx_driver_t gfx_ctx_go2_drm = {
    gfx_ctx_go2_drm_swap_interval,
    gfx_ctx_go2_drm_set_video_mode,
    gfx_ctx_go2_drm_get_video_size,
-   drm_get_refresh_rate,
+   NULL, /* refresh_rate - handled by display server */
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

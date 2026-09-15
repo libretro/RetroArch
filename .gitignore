@@ -4,6 +4,8 @@
 *.exe
 *.bmpobj
 *.binobj
+*.shbin
+*.shbin.s
 *.so
 *.so.*
 *.dll
@@ -14,6 +16,10 @@
 *.swp
 *.cache
 *.gcda
+# clang --analyze drops a .plist report per translation unit into the
+# working directory. Anchored to the repository root so the tracked
+# Info.plist / ExportOptions.plist files under pkg/apple are unaffected.
+/*.plist
 *.lcbk
 *.gcno
 .tmp
@@ -65,6 +71,7 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 /Cg/
 /GL/
 /SDL/
+/SDL3/
 /ffmpeg/
 /freetype2/
 /ft2build.h
@@ -92,8 +99,8 @@ content_video_history.lpl
 saves
 screenshots
 autoconfig
-config
-database
+/config
+/database
 overlays
 playlists
 states
@@ -152,6 +159,8 @@ wiiu/wut/elf2rpl/elf2rpl
 /pkg/android/phoenix/.externalNativeBuild
 /pkg/android/phoenix/build
 /pkg/android/phoenix-legacy/.project
+/pkg/android/phoenix-jelly-bean/**/.gradle/
+/pkg/android/phoenix-jelly-bean/.cxx/
 
 # Cloned by libretro-fetch.sh
 /media/assets/
@@ -229,6 +238,8 @@ gfx/common/wayland/xdg-shell.c
 gfx/common/wayland/xdg-shell.h
 gfx/common/wayland/pointer-constraints-unstable-v1.c
 gfx/common/wayland/pointer-constraints-unstable-v1.h
+gfx/common/wayland/presentation-time.h
+gfx/common/wayland/presentation-time.c
 gfx/common/wayland/relative-pointer-unstable-v1.c
 gfx/common/wayland/relative-pointer-unstable-v1.h
 gfx/common/wayland/viewporter.c
@@ -243,6 +254,8 @@ gfx/common/wayland/single-pixel-buffer-v1.h
 gfx/common/wayland/single-pixel-buffer-v1.c
 gfx/common/wayland/xdg-toplevel-icon-v1.h
 gfx/common/wayland/xdg-toplevel-icon-v1.c
+gfx/common/wayland/xdg-toplevel-tag-v1.h
+gfx/common/wayland/xdg-toplevel-tag-v1.c
 gfx/common/wayland/webos-foreign.c
 gfx/common/wayland/webos-foreign.h
 gfx/common/wayland/webos-input-manager.c
@@ -251,9 +264,26 @@ gfx/common/wayland/webos-shell.c
 gfx/common/wayland/webos-shell.h
 gfx/common/wayland/webos-surface-group.c
 gfx/common/wayland/webos-surface-group.h
+gfx/common/wayland/tearing-control-v1.h
+gfx/common/wayland/tearing-control-v1.c
+
+# samples/: built harness executables and objects. Each directory's
+# test is <dir>_test; nothing built there is source.
+samples/**/*_test
+samples/audio/stretch/stretch_bench
+samples/**/*.o
+libretro-common/samples/**/*_test
+# Harness executables that are not named <dir>_test. This one had been
+# committed as a built binary, which made any make clean in that
+# directory show up as a deletion.
+samples/audio/embedded_alsa/abi_check
+samples/gfx/font_lifecycle/lifecycle
+samples/gfx/font_lifecycle/lifecycle-threaded
+samples/gfx/font_lifecycle/create
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip
+libretro-common/samples/audio/audio_mixer_loop/audio_mixer_loop_test
 
 # DINGUX
 *.opk
@@ -287,3 +317,4 @@ gfx/drivers/rsx_shaders/modern_opaque.fpo
 gfx/drivers/rsx_shaders/modern_opaque.vpo
 pkg/psl1ght/pkg/USRDIR/shaders_cg/
 !pkg/psl1ght/pkg/USRDIR/system/
+samples/audio/embedded_alsa/ealsa_abi.h

@@ -23,6 +23,8 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
+#include <compat/strl.h>
+
 #include "paths.h"
 #include "retroarch.h"
 #include "verbosity.h"
@@ -293,8 +295,7 @@ static size_t disk_control_get_index_set_msg(
       image_label[0] = '\0';
       disk_control_get_image_label(
             disk_control, index, image_label, sizeof(image_label));
-
-      has_label      = !string_is_empty(image_label);
+      has_label      = *image_label;
 
       /* Get message duration
        * > Default is 60
@@ -595,12 +596,12 @@ bool disk_control_append_image(
        || !disk_control->cb.get_eject_state)
       return false;
 
-   if (string_is_empty(image_path))
+   if (!image_path || !*image_path)
       return false;
 
    image_filename = path_basename(image_path);
 
-   if (string_is_empty(image_filename))
+   if (!image_filename || !*image_filename)
       return false;
 
    /* Get initial disk eject state */
@@ -699,7 +700,7 @@ bool disk_control_set_initial_index(
    if (!disk_control)
       return false;
 
-   if (string_is_empty(content_path))
+   if (!content_path || !*content_path)
       goto error;
 
    /* Check that 'initial index' functionality is enabled */
@@ -784,6 +785,20 @@ bool disk_control_verify_initial_index(
    disk_control->initial_num_images =
          disk_control->cb.get_num_images();
 
+   /* A core that reports no images has no disk state to
+    * restore. Cores are not required to confine the disk
+    * control interface to disk content - a computer core
+    * registers it once, in retro_set_environment(), long
+    * before it knows whether the content it is about to be
+    * handed is a disk image, a tape or a snapshot - so
+    * "interface present" does not imply "content has disks".
+    * There is nothing to verify here, and get_image_path() is
+    * required to fail for every index when there are no
+    * images, so going on would report a failed restore for
+    * every non-disk load. */
+   if (disk_control->initial_num_images < 1)
+      return true;
+
    /* Get current image index + path */
    image_index = disk_control->cb.get_image_index();
 
@@ -800,7 +815,7 @@ bool disk_control_verify_initial_index(
       if (   (image_index == disk_control->index_record.image_index)
           && (string_is_equal(image_path, disk_control->index_record.image_path)
           ||   ((disk_control->index_record.image_index == 0)
-          &&  string_is_empty(disk_control->index_record.image_path))))
+          &&  !*disk_control->index_record.image_path)))
          success = true;
    }
 
@@ -837,7 +852,7 @@ bool disk_control_verify_initial_index(
    /* If current disk is correct and recorded image
     * path is empty (i.e. first run), need to register
     * current image path */
-   else if (string_is_empty(disk_control->index_record.image_path))
+   else if (!*disk_control->index_record.image_path)
       disk_index_file_set(
             &disk_control->index_record, image_index, image_path);
 

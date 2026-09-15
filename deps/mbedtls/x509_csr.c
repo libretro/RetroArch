@@ -363,6 +363,9 @@ int mbedtls_x509_csr_info( char *buf, size_t size, const char *prefix,
     return( (int) ( size - n ) );
 }
 
+#undef BEFORE_COLON
+#undef BC
+
 /*
  * Initialize a CSR
  */

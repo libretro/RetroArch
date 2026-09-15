@@ -30,15 +30,21 @@
 #include <retro_timers.h>
 #include <rthreads/rthreads.h>
 
-/* We can assume that pthreads are available on Linux. */
-#include <pthread.h>
 #include <retro_dirent.h>
 #include <streams/file_stream.h>
 #include <string.h>
+#include <string/rstrtod.h>
 
 #define IIO_DEVICES_DIR "/sys/bus/iio/devices"
 #define IIO_ILLUMINANCE_SENSOR "in_illuminance_input"
 #define DEFAULT_POLL_RATE 5
+/* The rate comes from the core, through
+ * RETRO_ENVIRONMENT_SET_SENSOR_STATE, so it is whatever a core asks
+ * for. Above 1000 Hz the sleep between reads would round down to zero
+ * and the poll thread would read a sysfs file as fast as the CPU
+ * allows; the sensor cannot answer faster than that anyway, since each
+ * reading is an open/read/close of a file. */
+#define MAX_POLL_RATE     1000
 
 /* TODO/FIXME - static globals */
 static struct termios old_term, new_term;
@@ -157,9 +163,10 @@ bool linux_terminal_disable_input(void)
    return true;
 }
 
+#ifdef HAVE_THREADS
 static void linux_poll_illuminance_sensor(void *data)
 {
-   linux_illuminance_sensor_t *sensor = data;
+   linux_illuminance_sensor_t *sensor = (linux_illuminance_sensor_t*)data;
 
    if (!data)
       return;
@@ -170,18 +177,28 @@ static void linux_poll_illuminance_sensor(void *data)
         int millilux;
         unsigned poll_rate = sensor->poll_rate;
 
+        if (poll_rate == 0)
+           poll_rate = DEFAULT_POLL_RATE;
+        else if (poll_rate > MAX_POLL_RATE)
+           poll_rate = MAX_POLL_RATE;
+
         /* Don't allow cancellation inside the critical section,
          * as it opens up a file; we don't want to leak it! */
-        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+        sthread_set_cancel_enable(false);
         lux = linux_read_illuminance_sensor(sensor);
         millilux = (int)(lux * 1000.0);
-        retro_assert(poll_rate != 0);
-
         sensor->millilux = millilux;
-        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+        sthread_set_cancel_enable(true);
 
         /* Allow cancellation here so that the main thread doesn't block
-         * while waiting for this thread to wake up and exit. */
+         * while waiting for this thread to wake up and exit.
+         *
+         * errno is cleared first because it is only meaningful right
+         * after a call that failed: the sensor read above goes through
+         * open/read/close and leaves its own errno behind, so testing
+         * it after a sleep that succeeded would end the thread on a
+         * stale EINTR from something else entirely. */
+        errno = 0;
         retro_sleep(1000 / poll_rate);
         if (errno == EINTR)
         {
@@ -192,6 +209,7 @@ static void linux_poll_illuminance_sensor(void *data)
 
    RARCH_DBG("Illuminance sensor thread for %s exiting.\n", sensor->path);
 }
+#endif
 
 linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 {
@@ -208,6 +226,8 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 
    sensor->millilux  = 0;
    sensor->poll_rate = rate ? rate : DEFAULT_POLL_RATE;
+   if (sensor->poll_rate > MAX_POLL_RATE)
+      sensor->poll_rate = MAX_POLL_RATE;
    sensor->thread    = NULL; /* We'll spawn a thread later, once we find a sensor */
    sensor->done      = false;
 
@@ -233,7 +253,13 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
       if (lux >= 0)
       { /* If we found an illuminance sensor that works... */
          sensor->millilux = (int)(lux * 1000.0); /* Set the first reading */
+#ifdef HAVE_THREADS
          sensor->thread = sthread_create(linux_poll_illuminance_sensor, sensor);
+#else
+         /* No thread to poll on: the first reading above is all the
+          * sensor reports. */
+         sensor->thread = NULL;
+#endif
 
          if (!sensor->thread)
          {
@@ -261,12 +287,12 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
    if (!sensor)
       return;
 
+#ifdef HAVE_THREADS
    if (sensor->thread)
    {
-      pthread_t thread = (pthread_t)sthread_get_thread_id(sensor->thread);
       sensor->done = true;
 
-      if (pthread_cancel(thread) != 0)
+      if (!sthread_cancel(sensor->thread))
       {
          int err = errno;
          char errmesg[NAME_MAX_LENGTH];
@@ -278,6 +304,7 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
       sthread_join(sensor->thread);
       /* sthread_join will free the thread */
    }
+#endif
 
    free(sensor);
 }
@@ -302,6 +329,8 @@ void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor, unsig
 
    /* Set a default rate of 5 Hz if none is provided */
    rate = rate ? rate : DEFAULT_POLL_RATE;
+   if (rate > MAX_POLL_RATE)
+      rate = MAX_POLL_RATE;
 
    sensor->poll_rate = rate;
 }
@@ -337,7 +366,7 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    errno = 0;
 
    /* TODO: This may be locale-sensitive */
-   illuminance = strtod(buffer, NULL);
+   illuminance = rstrtod(buffer, NULL);
    err = errno;
    if (err != 0)
    {

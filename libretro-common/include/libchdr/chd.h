@@ -227,7 +227,7 @@ extern "C" {
 
 /* standard hard disk metadata */
 #define HARD_DISK_METADATA_TAG		CHD_MAKE_TAG('G','D','D','D')
-#define HARD_DISK_METADATA_FORMAT	"CYLS:%d,HEADS:%d,SECS:%d,BPS:%d"
+#define HARD_DISK_METADATA_FORMAT	"CYLS:%u,HEADS:%u,SECS:%u,BPS:%u"
 
 /* hard disk identify information */
 #define HARD_DISK_IDENT_METADATA_TAG CHD_MAKE_TAG('I','D','N','T')
@@ -403,6 +403,10 @@ CHD_EXPORT const chd_header *chd_get_header(chd_file *chd);
 
 /* read CHD header data from file into the pointed struct */
 CHD_EXPORT chd_error chd_read_header(const char *filename, chd_header *header);
+
+/* same, from an already-opened core_file; the file is not consumed
+ * (caller keeps ownership; file position is undefined afterwards) */
+CHD_EXPORT chd_error chd_read_header_core_file(core_file *file, chd_header *header);
 
 
 

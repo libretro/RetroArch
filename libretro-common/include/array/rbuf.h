@@ -58,6 +58,16 @@
  * -- To handle running out of memory:
  * bool ran_out_of_memory = !RBUF_TRYFIT(buf, 1000);
  * -- before RESIZE or PUSH. When out of memory, buf will stay unmodified.
+ *
+ * -- OOM behaviour of RBUF_PUSH / RBUF_RESIZE without explicit
+ *    RBUF_TRYFIT:
+ *    Both macros are safe against allocation failure.  If the
+ *    underlying realloc / malloc fails, buf is left at its
+ *    previous address (the old allocation remains valid and
+ *    unfreed - realloc contract) and len is NOT advanced.  PUSH
+ *    is a silent no-op on OOM; RESIZE leaves len unchanged.
+ *    Callers that need to detect OOM explicitly should use
+ *    RBUF_TRYFIT up-front as shown above.
  */
 
 #include <retro_math.h> /* for MAX */
@@ -72,9 +82,40 @@
 
 #define RBUF_FREE(b) ((b) ? (free(RBUF__HDR(b)), (b) = NULL) : 0)
 #define RBUF_FIT(b, n) ((size_t)(n) <= RBUF_CAP(b) ? 0 : (*(void**)(&(b)) = rbuf__grow((b), (n), sizeof(*(b)))))
-#define RBUF_PUSH(b, val) (RBUF_FIT((b), 1 + RBUF_LEN(b)), (b)[RBUF__HDR(b)->len++] = (val))
+/* RBUF_PUSH: safe against OOM.
+ *
+ * Pre-patch this was:
+ *   (RBUF_FIT((b), 1+LEN), (b)[HDR(b)->len++] = (val))
+ * which on OOM would (a) NULL-deref when b was NULL and grow's
+ * malloc failed, or (b) write past the end of the existing
+ * allocation and corrupt the header's len past cap when
+ * realloc failed on a non-NULL buf.
+ *
+ * The fix: re-check 'RBUF_CAP(b) >= 1 + RBUF_LEN(b)' after
+ * RBUF_FIT returns.  If cap didn't grow (meaning grow failed),
+ * the cap check is false and we skip the write + len bump
+ * entirely.  The old buffer (if any) remains valid - realloc
+ * contract guarantees the original allocation is intact on
+ * failure. */
+#define RBUF_PUSH(b, val) \
+   do { \
+      RBUF_FIT((b), 1 + RBUF_LEN(b)); \
+      if (RBUF_CAP(b) >= 1 + RBUF_LEN(b)) \
+         (b)[RBUF__HDR(b)->len++] = (val); \
+   } while (0)
 #define RBUF_POP(b) (b)[--RBUF__HDR(b)->len]
-#define RBUF_RESIZE(b, sz) (RBUF_FIT((b), (sz)), ((b) ? RBUF__HDR(b)->len = (sz) : 0))
+/* RBUF_RESIZE: safe against OOM.
+ *
+ * Pre-patch: (RBUF_FIT((b), sz), ((b) ? HDR(b)->len = sz : 0))
+ * would set len = sz even when grow failed and cap stayed below
+ * sz, leaving len > cap.  Subsequent iteration of 0..LEN would
+ * then read past the allocation.
+ *
+ * Fix: gate the len assignment on cap >= sz.  On OOM len stays
+ * at its pre-RESIZE value; buf remains valid. */
+#define RBUF_RESIZE(b, sz) \
+   (RBUF_FIT((b), (sz)), \
+    ((b) && RBUF_CAP(b) >= (size_t)(sz) ? RBUF__HDR(b)->len = (sz) : 0))
 #define RBUF_CLEAR(b) ((b) ? RBUF__HDR(b)->len = 0 : 0)
 #define RBUF_TRYFIT(b, n) (RBUF_FIT((b), (n)), (((b) && RBUF_CAP(b) >= (size_t)(n)) || !(n)))
 #define RBUF_REMOVE(b, idx) memmove((b) + (idx), (b) + (idx) + 1, (--RBUF__HDR(b)->len - (idx)) * sizeof(*(b)))

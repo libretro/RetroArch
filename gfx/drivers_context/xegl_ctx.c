@@ -17,6 +17,7 @@
 /* X/EGL context. Mostly used for testing GLES code paths. */
 
 #include <stdint.h>
+#include <compat/strcasestr.h>
 #include <stdlib.h>
 
 #include <string/stdstring.h>
@@ -326,7 +327,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          {
             RARCH_LOG("[X/EGL] Window manager is %s.\n", wm_name);
 
-            if (strcasestr(wm_name, "xfwm"))
+            if (compat_strcasestr(wm_name, "xfwm"))
             {
                RARCH_LOG("[X/EGL] Using override-redirect workaround.\n");
                swa.override_redirect = True;
@@ -398,6 +399,13 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
+   {
+      /* Give the window a fullscreen hint before it is shown.
+       * This helps GNOME + X11 enter fullscreen properly */
+      x11_set_net_wm_fullscreen_hint(g_x11_dpy, g_x11_win);
+   }
+
+   if (fullscreen)
       x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
@@ -438,6 +446,15 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
    }
 
    x11_event_queue_check(&event);
+
+   if (fullscreen)
+   {
+      /* Ask for fullscreen again after the window is visible. Some
+       * GNOME + X11 setups ignore the first request if it happens too
+       * early, which causes RetroArch to only maximise the window */
+      x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
+      XFlush(g_x11_dpy);
+   }
    x11_install_quit_atom();
 
 #ifdef HAVE_EGL
@@ -526,6 +543,17 @@ static void gfx_ctx_xegl_swap_buffers(void *data)
 #endif
 }
 
+static void gfx_ctx_xegl_release_current(void *data)
+{
+#ifdef HAVE_EGL
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+   if (xegl)
+      egl_release_current(&xegl->egl);
+#else
+   (void)data;
+#endif
+}
+
 static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 {
 #ifdef HAVE_EGL
@@ -546,6 +574,7 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 {
    switch (xegl_api)
    {
+      case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
@@ -553,7 +582,6 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 #else
          break;
 #endif
-      case GFX_CTX_OPENGL_API:
       case GFX_CTX_NONE:
       default:
          break;
@@ -572,9 +600,12 @@ static uint32_t gfx_ctx_xegl_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
    }
+   else
+   {
 #ifdef HAVE_GLSL
-   BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+      BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
+   }
 
    return flags;
 }
@@ -618,7 +649,7 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   x11_get_metrics,
+   NULL, /* get_metrics - handled by display server */
    NULL,
    x11_update_title,
    x11_check_window,
@@ -639,5 +670,8 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL,
    NULL,
    gfx_ctx_xegl_create_surface,
-   gfx_ctx_xegl_destroy_surface
+   gfx_ctx_xegl_destroy_surface,
+   x11_presentable,
+   NULL, /* last_present_time */
+   gfx_ctx_xegl_release_current
 };

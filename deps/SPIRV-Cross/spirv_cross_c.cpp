@@ -250,7 +250,11 @@ spvc_result spvc_context_parse_spirv(spvc_context context, const SpvId *spirv, s
 		}
 
 		pir->context = context;
-		Parser parser(spirv, word_count);
+		/* RetroArch-local: SpvId is hardcoded 'unsigned int' in spirv.h
+		 * while uint32_t is 'unsigned long' on some 32-bit toolchains
+		 * (devkitPPC newlib); same width, distinct C++ types, so the
+		 * implicit conversion is ill-formed there. */
+		Parser parser(reinterpret_cast<const uint32_t *>(spirv), word_count);
 		parser.parse();
 		pir->parsed = std::move(parser.get_parsed_ir());
 		*parsed_ir = pir.get();

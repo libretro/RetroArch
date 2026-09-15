@@ -261,10 +261,33 @@ static EM_BOOL rwebinput_keyboard_cb(int event_type,
 
    if (rwebinput->keyboard.count >= rwebinput->keyboard.max_size)
    {
-      size_t new_max = MAX(1, rwebinput->keyboard.max_size << 1);
-      rwebinput->keyboard.events = realloc(rwebinput->keyboard.events,
+      size_t new_max                   = MAX(1, rwebinput->keyboard.max_size << 1);
+      void  *tmp                       = realloc(rwebinput->keyboard.events,
          new_max * sizeof(rwebinput->keyboard.events[0]));
-      rwebinput->keyboard.max_size = new_max;
+      /* Two bugs in the pre-patch form.
+       *
+       * (1) 'events = realloc(events, ...)' is the classic realloc-
+       *     assign-self leak: on OOM realloc returns NULL but the
+       *     original buffer is still valid; the self-assign
+       *     overwrites the only pointer to it, leaking the whole
+       *     pending-event ring.
+       * (2) max_size was being updated unconditionally after the
+       *     realloc, before the return value was even inspected.
+       *     On OOM we then walked into the field writes below
+       *     which NULL-deref'd 'events' - but the recorded
+       *     max_size claimed the larger size, so any surviving
+       *     state said 'the buffer can hold 2N events' while
+       *     actually holding zero.
+       *
+       * On OOM drop this one event on the floor (the keyboard
+       * event ring is bounded and the loss of a single input
+       * event in a memory-starved system is survivable; we were
+       * going to crash previously).  Both max_size and events
+       * stay at their pre-realloc values. */
+      if (!tmp)
+         return EM_TRUE;
+      rwebinput->keyboard.events       = tmp;
+      rwebinput->keyboard.max_size     = new_max;
    }
 
    rwebinput->keyboard.events[rwebinput->keyboard.count].type = event_type;
@@ -291,7 +314,7 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
    if (rwebinput->pointerlock_active)
    {
       unsigned video_width, video_height;
-      video_driver_get_size(&video_width, &video_height);
+      video_driver_get_output_size(&video_width, &video_height);
 
       rwebinput->mouse.x += mouse_event->movementX;
       rwebinput->mouse.y += mouse_event->movementY;
@@ -597,7 +620,7 @@ static int16_t rwebinput_is_pressed(
       bool keyboard_mapping_blocked)
 {
    const struct retro_keybind *bind = &binds[id];
-   int key                          = bind->key;
+   int key                          = RETRO_KEYBIND_KEY(bind);
 
    if (     (key && key < RETROK_LAST)
          && rwebinput_key_pressed(rwebinput, key)
@@ -632,7 +655,7 @@ static int16_t rwebinput_input_state(
             int16_t ret = 0;
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (binds[port][i].valid)
+               if (RETRO_KEYBIND_VALID(&binds[port][i]))
                {
                   if (rwebinput_is_pressed(
                            rwebinput, binds[port], port, i,
@@ -646,7 +669,7 @@ static int16_t rwebinput_input_state(
 
          if (id < RARCH_BIND_LIST_END)
          {
-            if (binds[port][id].valid)
+            if (RETRO_KEYBIND_VALID(&binds[port][id]))
             {
                if (rwebinput_is_pressed(rwebinput,
                         binds[port],
@@ -669,10 +692,10 @@ static int16_t rwebinput_input_state(
 
             input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
-            id_minus_valid        = binds[port][id_minus].valid;
-            id_plus_valid         = binds[port][id_plus].valid;
-            id_minus_key          = binds[port][id_minus].key;
-            id_plus_key           = binds[port][id_plus].key;
+            id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
+            id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
+            id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
+            id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
 
             if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {

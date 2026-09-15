@@ -15,7 +15,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <compat/strl.h>
 #include <features/features_cpu.h>
+#include <string/stdstring.h>
 
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
@@ -130,7 +132,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 #endif
 
    {
-      static float pure_white[16] = {
+      float pure_white[16] = {
          1.00, 1.00, 1.00, 1.00,
          1.00, 1.00, 1.00, 1.00,
          1.00, 1.00, 1.00, 1.00,
@@ -218,8 +220,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                      MENU_WIDGETS_ICON_ACHIEVEMENT])
                {
                   gfx_display_ctx_driver_t* dispctx = p_disp->dispctx;
-                  if (dispctx && dispctx->blend_begin)
-                     dispctx->blend_begin(video_info->userdata);
+                  gfx_display_blend_begin(dispctx, video_info->userdata);
 
                   gfx_widgets_draw_icon(
                         video_info->userdata,
@@ -237,8 +238,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                         0.0f, /* sine(rad)  = sine(0) = 0.0f */
                         pure_white);
 
-                  if (dispctx && dispctx->blend_end)
-                     dispctx->blend_end(video_info->userdata);
+                  gfx_display_blend_end(dispctx, video_info->userdata);
                }
 
                /* see if real icon is available for next frame */
@@ -255,6 +255,9 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             else
             {
                /* achievement badge */
+               gfx_display_ctx_driver_t* dispctx = p_disp->dispctx;
+               gfx_display_blend_begin(dispctx, video_info->userdata);
+
                gfx_widgets_draw_icon(
                      video_info->userdata,
                      p_disp,
@@ -269,6 +272,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                      1.0f, /* cos(rad)   = cos(0)  = 1.0f */
                      0.0f, /* sine(rad)  = sine(0) = 0.0f */
                      pure_white);
+
+               gfx_display_blend_end(dispctx, video_info->userdata);
             }
          }
       }
@@ -308,8 +313,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                      MENU_WIDGETS_ICON_ACHIEVEMENT])
                {
                   gfx_display_ctx_driver_t* dispctx = p_disp->dispctx;
-                  if (dispctx && dispctx->blend_begin)
-                     dispctx->blend_begin(video_info->userdata);
+                  gfx_display_blend_begin(dispctx, video_info->userdata);
 
                   gfx_widgets_draw_icon(
                         video_info->userdata,
@@ -327,8 +331,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                         0.0f, /* sine(rad)  = sine(0) = 0.0f */
                         pure_white);
 
-                  if (dispctx && dispctx->blend_end)
-                     dispctx->blend_end(video_info->userdata);
+                  gfx_display_blend_end(dispctx, video_info->userdata);
                }
 
                /* see if real icon is available for next frame */
@@ -344,6 +347,9 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             else
             {
                /* achievement badge */
+               gfx_display_ctx_driver_t* dispctx = p_disp->dispctx;
+               gfx_display_blend_begin(dispctx, video_info->userdata);
+
                gfx_widgets_draw_icon(
                      video_info->userdata,
                      p_disp,
@@ -358,6 +364,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                      1.0f, /* cos(rad)   = cos(0)  = 1.0f */
                      0.0f, /* sine(rad)  = sine(0) = 0.0f */
                      pure_white);
+
+               gfx_display_blend_end(dispctx, video_info->userdata);
             }
 
             x += image_size + spacing;
@@ -375,7 +383,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
          const char *disconnected_text = state->disconnected ? "! RA !" : loading_buffer;
          const unsigned disconnect_widget_width = font_driver_get_message_width(
             state->dispwidget_ptr->gfx_widget_fonts.msg_queue.font,
-            disconnected_text, 0, 1) + CHEEVO_LBOARD_DISPLAY_PADDING * 2;
+            disconnected_text, strlen(disconnected_text), 1) + CHEEVO_LBOARD_DISPLAY_PADDING * 2;
          const unsigned disconnect_widget_height =
             p_dispwidget->gfx_widget_fonts.msg_queue.line_height + (CHEEVO_LBOARD_DISPLAY_PADDING - 1) * 2;
          x  = video_width - disconnect_widget_width - spacing;
@@ -416,7 +424,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 #endif
 }
 
-void gfx_widgets_clear_leaderboard_displays(void)
+static void gfx_widgets_clear_leaderboard_displays_state(void)
 {
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
 
@@ -431,7 +439,14 @@ void gfx_widgets_clear_leaderboard_displays(void)
 #endif
 }
 
-void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
+void gfx_widgets_clear_leaderboard_displays(void)
+{
+   gfx_widgets_state_lock();
+   gfx_widgets_clear_leaderboard_displays_state();
+   gfx_widgets_state_unlock();
+}
+
+static void gfx_widgets_set_leaderboard_display_state(unsigned id, const char* value)
 {
    unsigned i;
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
@@ -456,7 +471,9 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
             --state->tracker_count;
             if (i < state->tracker_count)
             {
-               memcpy(&state->tracker_info[i], &state->tracker_info[i + 1],
+               /* Multi-element downward shift - regions overlap,
+                * so memcpy is undefined here */
+               memmove(&state->tracker_info[i], &state->tracker_info[i + 1],
                      (state->tracker_count - i) * sizeof(state->tracker_info[i]));
             }
          }
@@ -473,7 +490,7 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
                buffer[0] = (char)(j + CHEEVO_LBOARD_FIRST_FIXED_CHAR);
                state->char_width[j] = (uint16_t)font_driver_get_message_width(
                      state->dispwidget_ptr->gfx_widget_fonts.regular.font,
-                     buffer, 0, 1);
+                     buffer, 1, 1);
                if (state->char_width[j] > state->fixed_char_width)
                   state->fixed_char_width = state->char_width[j];
             }
@@ -510,7 +527,14 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
 #endif
 }
 
-void gfx_widgets_clear_challenge_displays(void)
+void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
+{
+   gfx_widgets_state_lock();
+   gfx_widgets_set_leaderboard_display_state(id, value);
+   gfx_widgets_state_unlock();
+}
+
+static void gfx_widgets_clear_challenge_displays_state(void)
 {
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
 
@@ -525,7 +549,14 @@ void gfx_widgets_clear_challenge_displays(void)
 #endif
 }
 
-void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
+void gfx_widgets_clear_challenge_displays(void)
+{
+   gfx_widgets_state_lock();
+   gfx_widgets_clear_challenge_displays_state();
+   gfx_widgets_state_unlock();
+}
+
+static void gfx_widgets_set_challenge_display_state(unsigned id, const char* badge)
 {
    unsigned i;
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
@@ -557,7 +588,9 @@ void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
             --state->challenge_count;
             if (i < state->challenge_count)
             {
-               memcpy(&state->challenge_info[i], &state->challenge_info[i + 1],
+               /* Multi-element downward shift - regions overlap,
+                * so memcpy is undefined here */
+               memmove(&state->challenge_info[i], &state->challenge_info[i + 1],
                   (state->challenge_count - i) * sizeof(state->challenge_info[i]));
             }
 
@@ -592,7 +625,14 @@ void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
       video_driver_texture_unload(&old_badge_id);
 }
 
-void gfx_widget_set_achievement_progress(const char* badge, const char* progress)
+void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
+{
+   gfx_widgets_state_lock();
+   gfx_widgets_set_challenge_display_state(id, badge);
+   gfx_widgets_state_unlock();
+}
+
+static void gfx_widget_set_achievement_progress_state(const char* badge, const char* progress)
 {
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
    uintptr_t old_badge_id = state->progress_tracker.image;
@@ -615,23 +655,44 @@ void gfx_widget_set_achievement_progress(const char* badge, const char* progress
       snprintf(state->progress_tracker.display, sizeof(state->progress_tracker.display), "%s", progress);
       state->progress_tracker.width = (uint16_t)font_driver_get_message_width(
             state->dispwidget_ptr->gfx_widget_fonts.regular.font,
-            progress, 0, 1);
+            progress, strlen(progress), 1);
    }
 
    if (old_badge_id)
       video_driver_texture_unload(&old_badge_id);
 }
 
-void gfx_widget_set_cheevos_disconnect(bool value)
+void gfx_widget_set_achievement_progress(const char* badge, const char* progress)
+{
+   gfx_widgets_state_lock();
+   gfx_widget_set_achievement_progress_state(badge, progress);
+   gfx_widgets_state_unlock();
+}
+
+static void gfx_widget_set_cheevos_disconnect_state(bool value)
 {
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
    state->disconnected = value;
 }
 
-void gfx_widget_set_cheevos_set_loading(bool value)
+void gfx_widget_set_cheevos_disconnect(bool value)
+{
+   gfx_widgets_state_lock();
+   gfx_widget_set_cheevos_disconnect_state(value);
+   gfx_widgets_state_unlock();
+}
+
+static void gfx_widget_set_cheevos_set_loading_state(bool value)
 {
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
    state->loading = value ? 1 : 0;
+}
+
+void gfx_widget_set_cheevos_set_loading(bool value)
+{
+   gfx_widgets_state_lock();
+   gfx_widget_set_cheevos_set_loading_state(value);
+   gfx_widgets_state_unlock();
 }
 
 

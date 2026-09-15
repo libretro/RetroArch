@@ -23,21 +23,10 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
-
-#ifdef STDC_HEADERS
 #include <stddef.h>
-#endif
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -47,7 +36,9 @@
 #include <sys/stat.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -59,9 +50,9 @@
 #include "portable-endian.h"
 #include <stdio.h>
 
-#ifdef HAVE_TIME_H
+/* time() below needs this on every platform; the declaration used
+ * to arrive transitively through the old md5.h pulling netinet/in.h. */
 #include <time.h>
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -321,7 +312,7 @@ ntlm_decode_challenge_message(struct smb2_context *smb2, struct auth_data *auth_
                         unsigned char *buf, size_t len)
 {
         if (buf && len > 0) {
-                int alloc_len;
+                uint32_t alloc_len;
                 uint32_t inoff;
                 uint16_t inlen;
                 uint32_t outoff;

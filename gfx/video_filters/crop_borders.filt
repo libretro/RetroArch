@@ -1,0 +1,4 @@
+filter = crop_borders
+
+crop_borders_crop_x = 8.0
+crop_borders_crop_y = 8.0

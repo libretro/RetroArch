@@ -62,7 +62,11 @@ void steam_poll(void)
       {
          /* Reload core info and Steam Core DLC mappings */
          case MistCallback_DlcInstalled:
-            command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+            {
+               /* Forced: a core file changed on disk */
+               bool refresh = true;
+               command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
+            }
             steam_get_core_dlcs(&core_dlc_list, false);
             break;
          /* The Steam OSK is dismissed */
@@ -339,7 +343,8 @@ bool steam_open_osk(void)
 {
    bool                     shown = false;
    bool                   on_deck = false;
-   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned           output_size = VIDEO_DRIVER_OUTPUT_SIZE(
+         video_state_get_ptr());
 
    /* Only open the Steam OSK if running on a Steam Deck,
       as currently the Big Picture OSK seems to be semi-broken */
@@ -351,8 +356,8 @@ bool steam_open_osk(void)
       MistFloatingGamepadTextInputMode_SingleLine,
       0,
       0,
-      video_st->width,
-      video_st->height / 2,
+      VIDEO_DRIVER_OUTPUT_WIDTH(output_size),
+      VIDEO_DRIVER_OUTPUT_HEIGHT(output_size) / 2,
       &shown
    );
 
@@ -411,7 +416,7 @@ void steam_update_presence(enum presence presence, bool force)
                      path_get(RARCH_PATH_CONTENT),
                      &entry);
 
-               if (entry && !string_is_empty(entry->label))
+               if (entry && entry->label && *entry->label)
                   label = entry->label;
             }
 
@@ -446,82 +451,47 @@ void steam_update_presence(enum presence presence, bool force)
                   }
                   break;
                case STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM:
-                  _len               = strlcpy(content, label, sizeof(content));
-                  content[_len  ]    = ' ';
-                  content[_len+1]    = '(';
-                  content[_len+2]    = '\0';
+                  _len = 0;
+                  strlcpy_append(content, sizeof(content), &_len, label);
+                  strlcpy_append(content, sizeof(content), &_len, " (");
                   if (core_info)
                   {
-                     _len           += 2;
-                     _len           += strlcpy(content + _len, core_info->systemname,
-                           sizeof(content) - _len);
-                     content[_len  ] = ')';
-                     content[_len+1] = '\0';
+                     strlcpy_append(content, sizeof(content), &_len,
+                           core_info->systemname);
+                     strlcpy_append(content, sizeof(content), &_len, ")");
                   }
                   else
-                  {
-                     content[_len+2] = 'N';
-                     content[_len+3] = '/';
-                     content[_len+4] = 'A';
-                     content[_len+5] = ')';
-                     content[_len+6] = '\0';
-                  }
+                     strlcpy_append(content, sizeof(content), &_len, "N/A)");
                   break;
                case STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE:
-                  _len               = strlcpy(content, label, sizeof(content));
-                  content[_len  ]    = ' ';
-                  content[_len+1]    = '(';
-                  content[_len+2]    = '\0';
+                  _len = 0;
+                  strlcpy_append(content, sizeof(content), &_len, label);
+                  strlcpy_append(content, sizeof(content), &_len, " (");
                   if (core_info)
                   {
-                     _len           += 2;
-                     _len           += strlcpy(content + _len, core_info->core_name,
-                           sizeof(content) - _len);
-                     content[_len  ] = ')';
-                     content[_len+1] = '\0';
+                     strlcpy_append(content, sizeof(content), &_len,
+                           core_info->core_name);
+                     strlcpy_append(content, sizeof(content), &_len, ")");
                   }
                   else
-                  {
-                     content[_len+2] = 'N';
-                     content[_len+3] = '/';
-                     content[_len+4] = 'A';
-                     content[_len+5] = ')';
-                     content[_len+6] = '\0';
-                  }
+                     strlcpy_append(content, sizeof(content), &_len, "N/A)");
                   break;
                case STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE:
-                  _len               = strlcpy(content, label, sizeof(content));
-                  content[_len  ]    = ' ';
-                  content[_len+1]    = '(';
-                  content[_len+2]    = '\0';
+                  _len = 0;
+                  strlcpy_append(content, sizeof(content), &_len, label);
+                  strlcpy_append(content, sizeof(content), &_len, " (");
                   if (core_info)
                   {
-                     _len           += 2;
-                     _len           += strlcpy(content + _len, core_info->systemname,
-                           sizeof(content) - _len);
-                     content[_len  ] = ' ';
-                     content[_len+1] = '-';
-                     content[_len+2] = ' ';
-                     _len           += 3;
-                     _len           += strlcpy(content + _len, core_info->core_name,
-                           sizeof(content) - _len);
-                     content[_len  ] = ')';
-                     content[_len+1] = '\0';
+                     strlcpy_append(content, sizeof(content), &_len,
+                           core_info->systemname);
+                     strlcpy_append(content, sizeof(content), &_len, " - ");
+                     strlcpy_append(content, sizeof(content), &_len,
+                           core_info->core_name);
+                     strlcpy_append(content, sizeof(content), &_len, ")");
                   }
                   else
-                  {
-                     content[_len+2]  = 'N';
-                     content[_len+3]  = '/';
-                     content[_len+4]  = 'A';
-                     content[_len+5]  = ' ';
-                     content[_len+6]  = '-';
-                     content[_len+7]  = ' ';
-                     content[_len+8]  = 'N';
-                     content[_len+9]  = '/';
-                     content[_len+10] = 'A';
-                     content[_len+11] = ')';
-                     content[_len+12] = '\0';
-                  }
+                     strlcpy_append(content, sizeof(content), &_len,
+                           "N/A - N/A)");
                   break;
                case STEAM_RICH_PRESENCE_FORMAT_NONE:
                default:

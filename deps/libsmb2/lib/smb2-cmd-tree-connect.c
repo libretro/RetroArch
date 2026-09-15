@@ -180,7 +180,7 @@ smb2_cmd_tree_connect_reply_async(struct smb2_context *smb2,
                 tree_id = s_tree_id++;
         }
         smb2_connect_tree_id(smb2, tree_id);
-        pdu->header.sync.tree_id = smb2_tree_id(smb2);
+        pdu->header.u.sync.tree_id = smb2_tree_id(smb2);
 
         if (smb2_encode_tree_connect_reply(smb2, pdu, rep)) {
                 smb2_free_pdu(smb2, pdu);
@@ -220,7 +220,7 @@ smb2_process_tree_connect_fixed(struct smb2_context *smb2,
         }
         pdu->payload = rep;
 
-        smb2_connect_tree_id(smb2, smb2->hdr.sync.tree_id);
+        smb2_connect_tree_id(smb2, smb2->hdr.u.sync.tree_id);
 
         smb2_get_uint8(iov, 2, &rep->share_type);
         smb2_get_uint32(iov, 4, &rep->share_flags);

@@ -75,7 +75,7 @@ enum smb2_command {
         SMB2_SET_INFO        = 17,
         SMB2_OPLOCK_BREAK    = 18,
 
-        SMB1_NEGOTIATE       = 114,
+        SMB1_NEGOTIATE       = 114
 };
 
 /*
@@ -736,21 +736,12 @@ struct smb2_set_info_request {
  */
 #define SID_ID_AUTH_LEN 6
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning( disable : 4200 ) /* Silence c4200 warning. */
-#endif
-
 struct smb2_sid {
         uint8_t revision;
         uint8_t sub_auth_count;
         uint8_t id_auth[SID_ID_AUTH_LEN];
-        uint32_t sub_auth[0];
+        uint32_t sub_auth[1];
 };
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 /*
  * ACE
@@ -995,9 +986,7 @@ struct smb2_symlink_reparse_buffer {
 struct smb2_reparse_data_buffer {
         uint32_t reparse_tag;
         uint16_t reparse_data_length;
-        union {
-                struct smb2_symlink_reparse_buffer symlink;
-        };
+        struct smb2_symlink_reparse_buffer symlink;
 };
 
 struct smb2_ioctl_request {

@@ -16,6 +16,8 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
+#include <compat/strl.h>
+
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../../audio/audio_driver.h"
@@ -24,6 +26,7 @@
 #ifdef HAVE_CHEATS
 #include "../../cheat_manager.h"
 #endif
+#include "../../msg_hash_lbl_str.h"
 
 #ifndef BIND_ACTION_CANCEL
 #define BIND_ACTION_CANCEL(cbs, name) (cbs)->action_cancel = (name)
@@ -61,20 +64,18 @@ int action_cancel_pop_default(const char *path,
       if (menu_st->driver_ctx->navigation_set)
          menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
       /* Refresh menu */
-      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH 
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                       | MENU_ST_FLAG_PREVENT_POPULATE;
       return 0;
    }
 
-   if (!string_is_empty(menu_label))
+   if (menu_label && *menu_label)
    {
       if (
             string_is_equal(menu_label,
-               msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)
-               )
+               MENU_ENUM_LABEL_PLAYLISTS_TAB_STR)
          || string_is_equal(menu_label,
-               msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER)
-               )
+               MENU_ENUM_LABEL_MENU_WALLPAPER_STR)
          )
          filebrowser_clear_type();
    }
@@ -90,28 +91,50 @@ static int action_cancel_contentless_core(const char *path,
 {
    menu_state_get_ptr()->contentless_core_ptr = 0;
    menu_contentless_cores_flush_runtime();
-   return action_cancel_pop_default(path, label, type, idx) ;
+   return action_cancel_pop_default(path, label, type, idx);
+}
+
+static int action_cancel_state_slot_run(const char *path,
+      const char *label, unsigned type, size_t idx)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+      command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+
+   menu_st->driver_data->state_slot_run = 0;
+
+   menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+
+   return action_cancel_pop_default(path, label, type, idx);
 }
 
 #ifdef HAVE_CHEATS
 static int action_cancel_cheat_details(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-   cheat_manager_copy_working_to_idx(cheat_manager_state.working_cheat.idx) ;
-   return action_cancel_pop_default(path, label, type, idx) ;
+   cheat_manager_copy_working_to_idx(cheat_manager_state.working_cheat.idx);
+   return action_cancel_pop_default(path, label, type, idx);
 }
 #endif
 
 static int action_cancel_core_content(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   const char *menu_path               = NULL;
    const char *menu_label              = NULL;
+   menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
 
-   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
-   if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST)))
+   if (menu)
+      menu->core_content_dir[0] = '\0';
+
+   if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST_STR))
    {
-      menu_search_terms_t *menu_search_terms = 
+      menu_search_terms_t *menu_search_terms =
          menu_entries_search_get_terms();
 
       /* Check whether search terms have been set
@@ -125,23 +148,39 @@ static int action_cancel_core_content(const char *path,
          if (menu_st->driver_ctx->navigation_set)
             menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
          /* Refresh menu */
-         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH 
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                          | MENU_ST_FLAG_PREVENT_POPULATE;
          return 0;
       }
 
-      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
+      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
    }
-   else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST)))
-      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
-   else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS)))
-      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
-   else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST)))
-      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
-   else if (string_is_equal(menu_label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST)))
-      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
+   else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST_STR))
+      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
+   else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR))
+      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
+   else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST_STR))
+   {
+      /* Remember which directory is being left so that when the user
+       * goes back to the parent, it selects the core content directory
+       * the user was just in. */
+      if (menu && menu_path && *menu_path)
+         strlcpy(menu->core_content_dir, path_basename(menu_path),
+               sizeof(menu->core_content_dir));
+
+      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
+#ifdef HAVE_NETWORKING
+      /* Allow going back from sub-categories within the Content Downloader. */
+      action_ok_core_content_dirs_list(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR,
+            MENU_SETTING_ACTION, 0, 0);
+#endif
+   }
+   else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST_STR))
+      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
    else
-      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST), 0);
+      menu_entries_flush_stack(MENU_ENUM_LABEL_ADD_CONTENT_LIST_STR, 0);
 
    return 0;
 }
@@ -152,8 +191,8 @@ static int menu_cbs_init_bind_cancel_compare_label(menu_file_list_cbs_t *cbs,
    return -1;
 }
 
-static int menu_cbs_init_bind_cancel_compare_type(
-      menu_file_list_cbs_t *cbs, unsigned type)
+static int menu_cbs_init_bind_cancel_compare_type(menu_file_list_cbs_t *cbs,
+      const char *label, const char *menu_label, unsigned type)
 {
    switch (type)
    {
@@ -165,6 +204,9 @@ static int menu_cbs_init_bind_cancel_compare_type(
          return 0;
       case MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN:
          BIND_ACTION_CANCEL(cbs, action_cancel_contentless_core);
+         return 0;
+      case MENU_SETTING_ACTION_STATE_SLOT_RUN:
+         BIND_ACTION_CANCEL(cbs, action_cancel_state_slot_run);
          return 0;
       default:
          break;
@@ -210,7 +252,10 @@ static int menu_cbs_init_bind_cancel_compare_type(
 }
 
 int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx)
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len)
 {
    if (cbs)
    {
@@ -219,8 +264,8 @@ int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       if (menu_cbs_init_bind_cancel_compare_label(cbs, label) == 0)
          return 0;
 
-      if (menu_cbs_init_bind_cancel_compare_type(
-               cbs, type) == 0)
+      if (menu_cbs_init_bind_cancel_compare_type(cbs, label,
+            menu_label, type) == 0)
          return 0;
    }
 

@@ -191,7 +191,13 @@ static void ps2_joypad_poll(void)
       int ps2_port = i & 0x1;
 
       int state = padGetState(ps2_port, ps2_slot);
-      if (state != PAD_STATE_DISCONN || state != PAD_STATE_EXECCMD || state != PAD_STATE_ERROR)
+      /* Note: this must be '&&'. Chaining '!=' with '||' is always
+       * true, since no single value can equal all three constants
+       * at once, so the guard previously admitted every state
+       * including PAD_STATE_DISCONN. */
+      if (     state != PAD_STATE_DISCONN
+            && state != PAD_STATE_EXECCMD
+            && state != PAD_STATE_ERROR)
       {
          int ret = padRead(ps2_port, ps2_slot, &buttons); /* port, slot, buttons */
          if (ret != 0)
@@ -226,6 +232,22 @@ static void ps2_joypad_poll(void)
             }
 
          }
+         else
+            /* Read failed: drop the cached state rather than leaving
+             * the previous frame's buttons latched. */
+            pad_state[i] = 0;
+      }
+      else
+      {
+         /* Disconnected, executing a command, or in error - clear
+          * the cached state. ps2_joypad_query_pad() reports a pad
+          * as present based on pad_state[], so stale bits would
+          * also keep a removed pad looking connected. */
+         pad_state[i] = 0;
+         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = 0;
+         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = 0;
+         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = 0;
+         analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = 0;
       }
    }
 

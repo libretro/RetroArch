@@ -74,8 +74,6 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    frontend_xenon_get_arch,      /* get_arch       */
    NULL,                         /* get_powerstate */
    NULL,                         /* parse_drive_list */
-   NULL,                         /* get_total_mem */
-   NULL,                         /* get_free_mem  */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
@@ -84,14 +82,13 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    NULL,                         /* detach_console */
    NULL,                         /* get_lakka_version */
    NULL,                         /* set_screen_brightness */
-   NULL,                         /* watch_path_for_changes */
-   NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
    NULL,                         /* is_narrator_running */
    NULL,                         /* accessibility_speak */
    NULL,                         /* set_gamemode */
+   NULL, /* get_display_type */
    "xenon",                      /* ident */
    NULL                          /* get_video_driver */
 };

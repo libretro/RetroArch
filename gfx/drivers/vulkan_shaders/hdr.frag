@@ -15,7 +15,9 @@ const float kPi                    = 3.1415926536;
 const float kEuler                 = 2.718281828459;
 const float kMax                   = 1.0;
 
+
 const float kBeamWidth             = 0.5;
+
 
 const uint kChannelMask           = 3u;
 const uint kFirstChannelShift     = 2u;
@@ -167,12 +169,12 @@ vec4 To2020(const vec4 sdr_linear)
 
 vec3 HDR(const vec3 sdr_linear)
 {
-   return InverseTonemap(sdr_linear);
+   return InverseTonemap(sdr_linear, global.BrightnessNits, global.BrightnessNits);
 }
 
 vec4 HDR(const vec4 sdr_linear)
 {
-   vec3 hdr_linear = InverseTonemap(sdr_linear.rgb);
+   vec3 hdr_linear = InverseTonemap(sdr_linear.rgb, global.BrightnessNits, global.BrightnessNits);
    return vec4(hdr_linear, sdr_linear.a);
 }
 
@@ -184,7 +186,7 @@ vec3 LinearToSignal(const vec3 linear_colour)
 
 vec3 HDR10(const vec3 hdr_linear)
 {
-   vec3 pq_input  = hdr_linear * vec3(global.PaperWhiteNits / kMaxNitsFor2084);
+   vec3 pq_input  = hdr_linear * vec3(global.BrightnessNits / kMaxNitsFor2084);
          
    vec3 hdr10 = LinearToST2084(max(pq_input, vec3(0.0f)));
 
@@ -193,7 +195,7 @@ vec3 HDR10(const vec3 hdr_linear)
 
 vec4 HDR10(const vec4 hdr_linear)
 {
-   vec3 pq_input  = hdr_linear.rgb * vec3(global.PaperWhiteNits / kMaxNitsFor2084);
+   vec3 pq_input  = hdr_linear.rgb * vec3(global.BrightnessNits / kMaxNitsFor2084);
          
    vec3 hdr10 = LinearToST2084(max(pq_input, vec3(0.0f)));
 
@@ -249,18 +251,17 @@ vec3 ScanlineColour(const vec2 tex_coord,
 
    vec3 result = vec3(0.0);
 
+   float beam_width_adjustment      = (kBeamWidth / scanline_size);
+   float raw_distance               = abs(distance_to_line) - beam_width_adjustment;
+   float distance_adjusted          = max(0.0, raw_distance);
+   float effective_distance         = distance_adjusted * 2.0;
+
    for(int ch = 0; ch < 3; ch++)
    {
       float horiz_interp               = Bezier(narrowed_source_pixel_offset, BeamControlPoints(beam_attack, signal_0[ch] > signal_1[ch]));
       float signal_channel             = mix(signal_0[ch], signal_1[ch], horiz_interp);
 
       float signal_strength            = clamp(signal_channel, 0.0, 1.0);
-
-      float beam_width_adjustment      = (kBeamWidth / scanline_size);
-      float raw_distance               = abs(distance_to_line) - beam_width_adjustment;
-      float distance_adjusted          = max(0.0, raw_distance);
-
-      float effective_distance         = distance_adjusted * 2.0;
 
       float beam_width                 = mix(scanline_min, scanline_max, signal_strength);
 
@@ -390,7 +391,7 @@ void main()
    {
       /* scRGB mode: sRGB to linear for scRGB / HDR16 swapchain.
        * Scale by MaxNits / kscRGBWhiteNits because scRGB 1.0 = 80 nits.
-       * Using MaxNits (not PaperWhiteNits) so the SDR UI fills the
+       * Using MaxNits (not BrightnessNits) so the SDR UI fills the
        * display's native range, preserving tonal balance uniformly. */
       if((global.Scanlines > 0.0) && (global.OutputSize.y > 240.0 * 4.0))
       {
@@ -398,7 +399,7 @@ void main()
           * scRGB units: 1.0 = 80 nits. */
          vec3 linear = Scanlines(vTexCoord);
 
-         FragColor = vec4(linear * (global.PaperWhiteNits / kscRGBWhiteNits), 1.0);
+         FragColor = vec4(linear * (global.BrightnessNits / kscRGBWhiteNits), 1.0);
       }
       else
       {
@@ -410,7 +411,7 @@ void main()
 
          linear.rgb = linear.rgb * k2020to709;
 
-         linear.rgb *= global.MaxNits / kscRGBWhiteNits;
+         linear.rgb *= global.BrightnessNits / kscRGBWhiteNits;
          FragColor = linear;
       }
    }

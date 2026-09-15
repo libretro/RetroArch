@@ -195,7 +195,8 @@ static u32 __si_completetransfer()
 
 static u32 __si_transfer(s32 chan,void *out,u32 out_len,void *in,u32 in_len,SICallback cb)
 {
-	u32 level,cnt,i;
+	u32 cnt, i;
+	u32 level = 0;
 	sicomcsr csr;
 	_CPU_ISR_Disable(level);
 	if(sicntrl.chan!=-1) {
@@ -371,7 +372,8 @@ static void __si_interrupthandler(u32 irq,void *ctx)
 
 u32 SI_Sync()
 {
-	u32 level,ret;
+	u32 ret;
+	u32 level = 0;
 
 	while(_siReg[13]&SICOMCSR_TSTART);
 
@@ -399,7 +401,7 @@ u32 SI_IsChanBusy(s32 chan)
 
 void SI_SetXY(u16 line,u8 cnt)
 {
-	u32 level;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	sicntrl.poll = (sicntrl.poll&~0x3ffff00)|_SHIFTL(line,16,10)|_SHIFTL(cnt,8,8);
 	_siReg[12] = sicntrl.poll;
@@ -408,7 +410,8 @@ void SI_SetXY(u16 line,u8 cnt)
 
 void SI_EnablePolling(u32 poll)
 {
-	u32 level,mask;
+	u32 mask;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	poll >>= 24;
 	mask = (poll>>4)&0x0f;
@@ -424,7 +427,8 @@ void SI_EnablePolling(u32 poll)
 
 void SI_DisablePolling(u32 poll)
 {
-	u32 level,mask;
+	u32 mask;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	mask = (poll>>24)&0xf0;
 	sicntrl.poll &= ~mask;
@@ -434,7 +438,8 @@ void SI_DisablePolling(u32 poll)
 
 void SI_SetSamplingRate(u32 samplingrate)
 {
-	u32 div,level;
+	u32 div;
+	u32 level = 0;
 	struct _xy *xy = NULL;
 
 	if(samplingrate>11) samplingrate = 11;
@@ -457,7 +462,8 @@ void SI_RefreshSamplingRate()
 
 u32 SI_GetStatus(s32 chan)
 {
-	u32 level,sisr;
+	u32 sisr;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	sisr = (_siReg[14]>>((3-chan)<<3));
@@ -482,7 +488,8 @@ u32 SI_GetResponseRaw(s32 chan)
 
 u32 SI_GetResponse(s32 chan,void *buf)
 {
-	u32 level,valid;
+	u32 valid;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	SI_GetResponseRaw(chan);
 	valid = inputBufferValid[chan];
@@ -508,7 +515,7 @@ u32 SI_GetCommand(s32 chan)
 u32 SI_Transfer(s32 chan,void *out,u32 out_len,void *in,u32 in_len,SICallback cb,u32 us_delay)
 {
 	u32 ret = 0;
-	u32 level;
+	u32 level = 0;
 	s64 diff;
 	u64 now,fire;
 	struct timespec tb;
@@ -540,7 +547,8 @@ u32 SI_Transfer(s32 chan,void *out,u32 out_len,void *in,u32 in_len,SICallback cb
 
 u32 SI_GetType(s32 chan)
 {
-	u32 level,type;
+	u32 type;
+	u32 level = 0;
 	u64 now;
 	s64 diff;
 	_CPU_ISR_Disable(level);
@@ -570,7 +578,7 @@ u32 SI_GetType(s32 chan)
 
 u32 SI_GetTypeAsync(s32 chan,SICallback cb)
 {
-	u32 level;
+	u32 level = 0;
 	u32 type,i;
 	_CPU_ISR_Disable(level);
 	type = SI_GetType(chan);
@@ -598,7 +606,8 @@ void SI_TransferCommands()
 
 u32 SI_RegisterPollingHandler(RDSTHandler handler)
 {
-	u32 level,i;
+	u32 i;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 
@@ -625,7 +634,8 @@ u32 SI_RegisterPollingHandler(RDSTHandler handler)
 
 u32 SI_UnregisterPollingHandler(RDSTHandler handler)
 {
-	u32 level,i;
+	u32 i;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	for(i=0;i<4;i++) {
@@ -647,7 +657,8 @@ u32 SI_UnregisterPollingHandler(RDSTHandler handler)
 u32 SI_EnablePollingInterrupt(s32 enable)
 {
 	sicomcsr csr;
-	u32 level,ret,i;
+	u32 ret, i;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 

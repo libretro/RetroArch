@@ -29,6 +29,7 @@
 #include <boolean.h>
 
 #include <lists/string_list.h>
+#include <lists/dir_list.h>
 #include <formats/logiqx_dat.h>
 
 #include "playlist.h"
@@ -49,6 +50,7 @@ enum manual_content_scan_system_name_type
 {
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR = 0,
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO,
    MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE
 };
 
@@ -121,6 +123,10 @@ typedef struct
    bool filter_dat_content;
    bool overwrite_playlist;
    bool validate_entries;
+   bool omit_db_reference;
+   bool target_is_single_determined_playlist;
+   enum manual_content_scan_db_usage db_usage;
+   enum manual_content_scan_db_selection db_selection;
 } manual_content_scan_task_config_t;
 
 /*****************/
@@ -159,6 +165,10 @@ char *manual_content_scan_get_file_exts_custom_ptr(void);
 /* Returns size of the internal
  * 'file_exts_custom' string */
 size_t manual_content_scan_get_file_exts_custom_size(void);
+
+/* Returns custom extensions,
+ * falling back to core-supported extensions */
+const char *manual_content_scan_get_file_exts(void);
 
 /* Returns a pointer to the internal
  * 'dat_file_path' string */
@@ -312,12 +322,40 @@ bool manual_content_scan_get_task_config(
       const char *path_dir_playlist
       );
 
+/* Performs rudimentary validation of a Logiqx XML DAT
+ * file path: extension whitelist (.dat / .xml,
+ * case-insensitive), existence, size > 0, with the
+ * size optionally returned for free-memory checks.
+ * The parser itself (logiqx_dat.c) is path-agnostic
+ * and performs no validation or I/O; every consumer
+ * of a DAT path goes through this one predicate. */
+bool manual_content_scan_dat_path_is_valid(const char *path,
+      uint64_t *file_size);
+
 /* Creates a list of all valid content in the specified
  * content directory
  * > Returns NULL in the event of failure
  * > Returned string list must be free()'d */
 struct string_list *manual_content_scan_get_content_list(
       manual_content_scan_task_config_t *task_config);
+
+/* Resumable counterpart of
+ * manual_content_scan_get_content_list(): creates
+ * @*list and, when the content dir is a directory, a
+ * dir_list_iter_t in @*iter that fills it under the
+ * caller's budget via dir_list_iter_step().  The same
+ * extension / compressed-file policy is applied.  A
+ * content dir that is a plain file fills the list here
+ * and leaves *iter NULL.  When the walk completes the
+ * caller owes the list the same treatment the blocking
+ * getter applied: reject it when empty, then
+ * dir_list_sort(list, true).
+ * > Returns false (leaving *list / *iter NULL) if
+ *   config is invalid or the directory cannot be
+ *   opened */
+bool manual_content_scan_content_list_iter_new(
+      manual_content_scan_task_config_t *task_config,
+      struct string_list **list, dir_list_iter_t **iter);
 
 /* Adds specified content to playlist, if not already
  * present */

@@ -37,6 +37,7 @@
 #endif
 
 #include "version.h"
+#include <string/rstrtod.h>
 
 static struct retro_hw_render_callback hw_render;
 
@@ -203,7 +204,7 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
 	var.key = "test_samplerate";
 
 	if(CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-		sampling_rate = strtof(var.value, NULL);
+		sampling_rate = rstrtof(var.value, NULL);
 #endif
 	info->timing = (struct retro_system_timing) {
 		.fps = 60.0,

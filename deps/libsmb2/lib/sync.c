@@ -23,13 +23,8 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
 
 #include <errno.h>
 
@@ -41,15 +36,13 @@
 #include <poll.h>
 #endif
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
 #include "compat.h"
 
-#ifdef HAVE_TIME_H
+/* time() below needs this on every platform; the declaration used
+ * to arrive transitively through the old md5.h pulling netinet/in.h. */
 #include <time.h>
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -103,7 +96,7 @@ static void sync_connect_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 if (cb_data != &smb2->connect_cb_data) {
                         free(cb_data);
                 }
@@ -178,7 +171,7 @@ static void sync_opendir_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (status == SMB2_STATUS_SHUTDOWN) {
+        if ((uint32_t)status == SMB2_STATUS_SHUTDOWN) {
                 return;
         }
         if (status) {
@@ -275,10 +268,10 @@ static void sync_close_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (status == SMB2_STATUS_SHUTDOWN) {
+        if ((uint32_t)status == SMB2_STATUS_SHUTDOWN) {
                 return;
         }
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 free(cb_data);
                 return;
         }
@@ -324,7 +317,7 @@ static void sync_fsync_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 free(cb_data);
                 return;
         }
@@ -370,7 +363,7 @@ static void sync_generic_status_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 free(cb_data);
                 return;
         }
@@ -790,7 +783,7 @@ static void readlink_cb(struct smb2_context *smb2, int status,
         struct sync_cb_data *cb_data = private_data;
         struct sync_readlink_cb_data *rl_data = cb_data->ptr;
         
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 free(cb_data);
                 return;
         }
@@ -841,7 +834,7 @@ static void sync_echo_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 free(cb_data);
                 return;
         }
@@ -892,7 +885,7 @@ static void sync_notify_change_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 return;
         }
 

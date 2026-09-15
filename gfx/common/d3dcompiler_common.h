@@ -19,8 +19,8 @@
 #include <retro_inline.h>
 #include <boolean.h>
 
-#include <d3dcommon.h>
-#include <d3dcompiler.h>
+#include "../include/dxsdk/d3dcompiler.h"
+#include "../include/dxsdk/d3dcommon.h"
 
 typedef ID3DBlob*                D3DBlob;
 

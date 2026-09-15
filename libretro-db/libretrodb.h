@@ -57,7 +57,35 @@ int libretrodb_create_index(libretrodb_t *db, const char *name,
 int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
         const void *key, struct rmsgpack_dom_value *out);
 
+/* Reported once per record that carries the scanned field or the
+ * companion one: the field's binary value, the offset of the record,
+ * and the companion numeric value when present (NULL otherwise).
+ *
+ * A record that has only the companion is reported with @key NULL and
+ * @key_len zero, so a caller accumulating over the companion sees
+ * every record rather than only the ones it can key on.  A caller that
+ * only wants keyed records should check @key_len first, as the
+ * indexers here do.
+ *
+ * Returning non-zero stops the scan. */
+typedef int (*libretrodb_scan_cb)(void *ctx, const uint8_t *key,
+      size_t key_len, uint64_t offset, const uint64_t *aux);
+
+/* @aux_field may be NULL.  Naming one lets a caller collect a numeric
+ * field in the same pass rather than walking the database again for
+ * it, and makes the callback fire for records carrying only that
+ * field. */
+int libretrodb_scan_field(libretrodb_t *db, const char *field,
+      const char *aux_field, libretrodb_scan_cb cb, void *ctx);
+
+int libretrodb_read_at(libretrodb_t *db, uint64_t offset,
+      struct rmsgpack_dom_value *out);
+
 libretrodb_t *libretrodb_new(void);
+
+/* Scratch buffer used by libretrodb_query_compile() for error text.
+ * Owned by the db handle so that concurrent compiles do not share it. */
+char *libretrodb_query_err_buf(libretrodb_t *db, size_t *len);
 
 void libretrodb_free(libretrodb_t *db);
 

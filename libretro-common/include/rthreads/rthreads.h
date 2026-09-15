@@ -81,6 +81,49 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata);
 sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userdata, int thread_priority);
 
 /**
+ * Asks the operating system to schedule the calling thread ahead of
+ * ordinary threads - a time-critical class on Windows, the audio
+ * priority band on Android, real-time round-robin where the POSIX
+ * scheduler and the process's limits allow it. Best effort: where the
+ * request is refused or the platform has no such thing, the thread
+ * keeps its default priority and this returns false. Never fails the
+ * thread. Meant for a thread that feeds an audio device on a deadline.
+ *
+ * @return Whether the priority was changed.
+ */
+bool sthread_raise_current_priority(void);
+
+/**
+ * sthread_prefer_fast_cores:
+ *
+ * Pins the calling thread to the CPUs whose maximum clock is the
+ * highest in the system - the big cluster on an asymmetric part - so
+ * the scheduler cannot park it on a slow core. On a homogeneous
+ * machine, where the platform offers no affinity control, or where
+ * the fast cores are outside what this thread may already use, the
+ * thread is left where it is and this returns false. Never fails the
+ * thread. Meant for the emulation and audio threads.
+ *
+ * @return Whether the thread was pinned.
+ */
+bool sthread_prefer_fast_cores(void);
+
+/**
+ * Labels the calling thread for debuggers, crash dumps and system
+ * thread listings.
+ *
+ * Threads that are never labelled inherit the name of whichever thread
+ * created them, which on Android leaves several identically-named
+ * entries in an ANR report and an unnamed thread id in a tombstone.
+ *
+ * @param name Label to apply. Keep it under 16 bytes including the
+ * terminator: that is the kernel's limit on Linux and Android, and
+ * longer names are truncated to fit rather than rejected.
+ * @warn Does nothing on platforms with no thread-naming interface.
+ */
+void sthread_setname(const char *name);
+
+/**
  * Detaches the given thread.
  *
  * When a detached thread terminates,
@@ -254,6 +297,27 @@ void scond_signal(scond_t *cond);
 bool sthread_tls_create(sthread_tls_t *tls);
 
 /**
+ * Like sthread_tls_create(), but registers a destructor invoked with the
+ * thread-local value when a thread exits with a non-NULL value set for
+ * this key (POSIX pthread_key_create semantics). Used e.g. to release a
+ * per-thread resource such as a JNI attachment on thread teardown.
+ *
+ * The destructor is honoured on pthread backends; on Win32 the key is
+ * created without one (TlsAlloc has no destructor callback), so callers
+ * needing cleanup there must do it explicitly. Current users are POSIX.
+ *
+ * @param tls[in,out] Pointer to the key to initialize; must be cleaned up
+ * with sthread_tls_delete. Behavior is undefined if NULL.
+ * @param destructor Called with the thread-local value on thread exit;
+ * may be NULL for no destructor (equivalent to sthread_tls_create).
+ * @return true if the operation succeeded, false otherwise.
+ * @see sthread_tls_create
+ * @see sthread_tls_delete
+ */
+bool sthread_tls_create_with_dtor(sthread_tls_t *tls,
+      void (*destructor)(void *value));
+
+/**
  * Deletes a thread local storage key.
  *
  * The value must be cleaned up separately \em before calling this function,
@@ -302,6 +366,75 @@ uintptr_t sthread_get_thread_id(sthread_t *thread);
  * @see sthread_get_thread_id
  */
 uintptr_t sthread_get_current_thread_id(void);
+
+/**
+ * Returns whether the calling thread is the process's main/initial thread.
+ *
+ * Implemented where the platform exposes a native predicate (currently
+ * Apple/Darwin, via pthread_main_np()); returns false on backends that
+ * provide no such primitive. All present callers run on Apple. A fully
+ * portable implementation would compare sthread_get_current_thread_id()
+ * against a main-thread id captured at startup (cf. task_is_on_main_thread()
+ * in queues/task_queue.c).
+ *
+ * @return true if called from the main thread; false otherwise, or if the
+ * platform offers no way to tell.
+ */
+bool sthread_is_main_thread(void);
+
+/**
+ * Enable or defer cancellation of the CALLING thread (POSIX-style
+ * deferred cancellation). Bracket a critical section that must not be
+ * interrupted (e.g. one holding an open file or other resource) with
+ * sthread_set_cancel_enable(false) ... sthread_set_cancel_enable(true).
+ *
+ * A no-op on backends without thread cancellation (Win32, Android/Bionic,
+ * GEKKO, 3DS, PSP, Vita, WiiU, Switch, PS2); pair it with a cooperative "done" flag so shutdown does not
+ * rely on cancellation being available.
+ *
+ * @param enable true to allow cancellation, false to defer it.
+ */
+void sthread_set_cancel_enable(bool enable);
+
+/**
+ * Request cancellation of @thread. Intended to interrupt a thread blocked
+ * at a cancellation point (e.g. a sleep) so it can exit promptly; the
+ * caller should still set a cooperative stop flag and sthread_join().
+ *
+ * @param thread The thread to cancel.
+ * @return true if the request was issued; false on failure or where the
+ * backend provides no cancellation (Win32, Android/Bionic, GEKKO, 3DS, PSP, Vita, WiiU, Switch, PS2).
+ */
+bool sthread_cancel(sthread_t *thread);
+
+/**
+ * Temporarily raise the CALLING thread's scheduling priority to match a
+ * higher-priority thread that is synchronously waiting on it, mitigating a
+ * priority inversion across an slock/scond handoff. Unlike some OS-native
+ * locks, sthread's lock/condvar primitives do not propagate priority
+ * automatically, so a low-priority worker executing work a high-priority
+ * thread is blocked on will not be boosted on its own.
+ *
+ * Must be paired with sthread_priority_override_end(). Returns an opaque
+ * handle to pass to that call, or \c NULL when the platform provides no
+ * such mechanism (in which case _end() is a no-op). Scoped to the current
+ * thread; needs no handle to the waiting thread.
+ *
+ * @return An opaque override handle, or \c NULL if unsupported.
+ * @see sthread_priority_override_end
+ */
+void *sthread_priority_override_begin(void);
+
+/**
+ * End a priority override previously started on the calling thread with
+ * sthread_priority_override_begin(), restoring its prior scheduling
+ * priority.
+ *
+ * @param ovr Handle from sthread_priority_override_begin(); may be
+ * \c NULL, in which case this is a no-op.
+ * @see sthread_priority_override_begin
+ */
+void sthread_priority_override_end(void *ovr);
 
 RETRO_END_DECLS
 

@@ -31,6 +31,9 @@ const cloud_sync_driver_t *cloud_sync_drivers[] = {
 #ifdef HAVE_SSL
    &cloud_sync_google_drive,
 #endif
+#ifdef HAVE_S3
+   &cloud_sync_s3,
+#endif
 #ifdef HAVE_ICLOUD
    &cloud_sync_icloud,
 #endif

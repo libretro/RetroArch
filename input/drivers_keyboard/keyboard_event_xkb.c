@@ -72,7 +72,7 @@ int init_xkb(int fd, size_t len)
    {
       if (fd >= 0)
       {
-         char *map_str = (char*)mmap(NULL, len, PROT_READ, MAP_SHARED, fd, 0);
+         char *map_str = (char*)mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
          if (map_str == MAP_FAILED)
             goto error;
 

@@ -119,11 +119,11 @@ unsigned char* unbase64(const char* ascii, int len, int *flen)
    int cb                            = 0;
    int pad                           = 0;
 
-   if (len < 2) /* 2 accesses below would be OOB (Out Of Bounds). */
+   /* Valid base64 has length that is a non-zero multiple of 4.
+    * Shorter or misaligned inputs are malformed and have historically
+    * caused 1-byte heap overflows when pad > 0 (e.g. "AB="). */
+   if (len < 4 || (len & 3) != 0)
    {
-      /* catch empty string, return NULL as result. */
-      /* ERROR: You passed an invalid base64 string (too short). 
-       * You get NULL back. */
       *flen = 0;
       return 0;
    }

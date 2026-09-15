@@ -243,7 +243,6 @@ typedef struct
    void* font_data;
 } ctr_font_t;
 
-
 /* An annoyance...
  * Have to keep track of bottom screen enable state
  * externally, otherwise cannot detect current state
@@ -373,22 +372,6 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
    GPU_SetTexEnv(0, GPU_TEXTURE0, GPU_TEXTURE0, 0, 0, GPU_REPLACE, GPU_REPLACE, 0);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
-   gfx_display_ctr_draw,
-   NULL,                                     /* draw_pipeline          */
-   NULL,                                     /* blend_begin            */
-   NULL,                                     /* blend_end              */
-   NULL,                                     /* get_default_mvp        */
-   NULL,                                     /* get_default_vertices   */
-   NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_CTR,
-   GFX_VIDEO_DRIVER_CTR,
-   "ctr",
-   true,
-   NULL,
-   NULL
-};
-
 /*
  * FONT DRIVER
  */
@@ -411,7 +394,7 @@ static void* ctr_font_init(void* data, const char* font_path,
    font_size                      = 10;
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -489,11 +472,14 @@ static int ctr_font_get_message_width(void* data, const char* msg,
    int delta_x = 0;
    const struct font_glyph* glyph_q = NULL;
    ctr_font_t* font                 = (ctr_font_t*)data;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                    = font->font_driver->get_glyph;
+   void *font_data                  = font->font_data;
 
    if (!font)
       return 0;
 
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
+   glyph_q = get_glyph(font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -507,8 +493,7 @@ static int ctr_font_get_message_width(void* data, const char* msg,
 
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -520,36 +505,57 @@ static int ctr_font_get_message_width(void* data, const char* msg,
 
 static void ctr_font_render_line(
       ctr_video_t *ctr,
-      ctr_font_t* font, const char* msg, size_t msg_len,
-      float scale, const unsigned int color, float pos_x,
+      ctr_font_t* font,
+      const struct font_glyph* glyph_q,
+      const char* msg,
+      size_t msg_len,
+      float scale,
+      const unsigned int color,
+      float pos_x,
       float pos_y,
-      unsigned width, unsigned height, unsigned text_align)
+      unsigned width,
+      unsigned height,
+      unsigned text_align)
 {
    unsigned int i;
-   const struct font_glyph* glyph_q = NULL;
-   ctr_vertex_t* v  = NULL;
-   int delta_x      = 0;
-   int delta_y      = 0;
-   int x            = roundf(pos_x * width);
-   int y            = roundf((1.0f - pos_y) * height);
+   const char* msg_end = msg + msg_len;
+   ctr_vertex_t* v     = NULL;
+   int delta_x         = 0;
+   int delta_y         = 0;
+   int x               = roundf(pos_x * width);
+   int y               = roundf((1.0f - pos_y) * height);
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                       = font->font_driver->get_glyph;
+   void *font_data     = font->font_data;
 
-   switch (text_align)
+   /* For right/center alignment, compute width with a lightweight pass
+    * that only accumulates advance_x — avoids the redundant glyph lookups
+    * and atlas dirty checks that ctr_font_get_message_width would repeat. */
+   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
    {
-      case TEXT_ALIGN_RIGHT:
-         x += width - ctr_font_get_message_width(font, msg, msg_len, scale);
-         break;
+      int width_accum      = 0;
+      const char *scan     = msg;
+      const char *scan_end = msg_end;
+      while (scan < scan_end)
+      {
+         const struct font_glyph *glyph;
+         uint32_t code       = utf8_walk(&scan);
+         if (!(glyph = get_glyph(font_data, code)))
+            if (!(glyph = glyph_q))
+               continue;
+         width_accum += glyph->advance_x;
+      }
 
-      case TEXT_ALIGN_CENTER:
-         x += width / 2 -
-            ctr_font_get_message_width(font, msg, msg_len, scale) / 2;
-         break;
+      if (text_align == TEXT_ALIGN_RIGHT)
+         x -= (int)(width_accum * scale);
+      else
+         x -= (int)(width_accum * scale) / 2;
    }
 
    if ((ctr->vertex_cache.size - (ctr->vertex_cache.current - ctr->vertex_cache.buffer)) < msg_len)
       ctr->vertex_cache.current = ctr->vertex_cache.buffer;
 
    v       = ctr->vertex_cache.current;
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
 
    for (i = 0; i < msg_len; i++)
    {
@@ -563,8 +569,7 @@ static void ctr_font_render_line(
          i += skip - 1;
 
       /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
+      if (!(glyph = get_glyph(font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -661,30 +666,32 @@ static void ctr_font_render_message(
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                          = font->font_driver->get_glyph;
+   void *font_data                        = font->font_data;
+   const struct font_glyph* glyph_q       = get_glyph(font_data, '?');
    int lines                              = 0;
-   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+   font->font_driver->get_line_metrics(font_data, &line_metrics);
    line_height = (float)line_metrics->height * scale / (float)height;
-
    for (;;)
    {
-      const char* delim = strchr(msg, '\n');
-      size_t msg_len    = delim ? (size_t)(delim - msg) : strlen(msg);
+      const char *end = msg;
+      while (*end && *end != '\n')
+         end++;
 
-      /* Draw the line */
-      ctr_font_render_line(ctr, font, msg, msg_len,
+      ctr_font_render_line(ctr, font, glyph_q, msg, (size_t)(end - msg),
             scale, color, pos_x, pos_y - (float)lines * line_height,
             width, height, text_align);
-      if (!delim)
+      if (!*end)
          break;
-
-      msg += msg_len + 1;
+      msg = end + 1;
       lines++;
    }
 }
 
 static void ctr_font_render_msg(
       void *userdata,
-      void* data, const char* msg,
+      void* data, const char* msg, size_t msg_len,
       const struct font_params *params)
 {
    int drop_x, drop_y;
@@ -768,7 +775,7 @@ static const struct font_glyph* ctr_font_get_glyph(
 {
    ctr_font_t* font = (ctr_font_t*)data;
    if (font && font->font_driver)
-      return font->font_driver->get_glyph((void*)font->font_driver, code);
+      return font->font_driver->get_glyph((void*)font->font_data, code);
    return NULL;
 }
 
@@ -782,19 +789,6 @@ static bool ctr_font_get_line_metrics(void* data, struct font_line_metrics **met
    }
    return false;
 }
-
-font_renderer_t ctr_font =
-{
-   ctr_font_init,
-   ctr_font_free,
-   ctr_font_render_msg,
-   "ctr",
-   ctr_font_get_glyph,
-   NULL,                         /* bind_block */
-   NULL,                         /* flush_block */
-   ctr_font_get_message_width,
-   ctr_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -929,7 +923,7 @@ static const char *ctr_texture_path(unsigned id)
 
             _len = strlcpy(texture_path,
                   state_path, sizeof(texture_path));
-            strlcpy(texture_path       + _len,
+            strlcpy_lit(texture_path       + _len,
                   ".png",
                   sizeof(texture_path) - _len);
             return path_basename_nocompression(texture_path);
@@ -984,7 +978,7 @@ static bool ctr_update_state_date_from_file(void *data)
 
 error:
   ctr->state_data_exist = false;
-  strlcpy(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
+  strlcpy_lit(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
   return false;
 }
 
@@ -1248,7 +1242,7 @@ static void ctr_bottom_menu_control(void* data,
                   take_screenshot(NULL,
                         screenshot_full_path,
                         true,
-                        video_st->frame_cache_data && (video_st->frame_cache_data == RETRO_HW_FRAME_BUFFER_VALID),
+                        video_driver_cached_frame_is_hw_render(),
                         true,
                         true);
                }
@@ -1329,8 +1323,10 @@ static void ctr_bottom_menu_control(void* data,
 static void font_driver_render_msg_bottom(ctr_video_t *ctr,
       const char *msg, const void *_params)
 {
+   if (!msg)
+      return;
    ctr->render_font_bottom = true;
-   font_driver_render_msg(ctr, msg, _params, NULL);
+   font_driver_render_msg(ctr, msg, strlen(msg), _params, NULL);
    ctr->render_font_bottom = false;
 }
 
@@ -1374,7 +1370,7 @@ static void ctr_render_bottom_screen(void *data)
                   &params);
 
             _len = strlcpy(str_path, dir_assets, sizeof(str_path));
-            strlcpy(str_path       + _len,
+            strlcpy_lit(str_path       + _len,
                   "\n/bottom_menu.png",
                   sizeof(str_path) - _len);
 
@@ -1707,7 +1703,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->vp.height                  = CTR_TOP_FRAMEBUFFER_HEIGHT;
    ctr->vp.full_width              = CTR_TOP_FRAMEBUFFER_WIDTH;
    ctr->vp.full_height             = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   video_driver_set_size(ctr->vp.width, ctr->vp.height);
+   video_driver_set_output_size(ctr->vp.width, ctr->vp.height);
 
    ctr->drawbuffers.top.left       = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
    ctr->drawbuffers.top.right      = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);
@@ -1737,7 +1733,7 @@ static void* ctr_init(const video_info_t* video,
    ctr->idle_timestamp             = 0;
    ctr->state_slot                 = settings->ints.state_slot;
 
-   strlcpy(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
+   strlcpy_lit(ctr->state_date, "00/00/0000", sizeof(ctr->state_date));
 
    ctr->rgb32                      = video->rgb32;
    ctr->texture_width              = video->input_scale * RARCH_SCALE_BASE;
@@ -1870,10 +1866,6 @@ static void* ctr_init(const video_info_t* video,
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
    aptHook(&ctr->lcd_aptHook, ctr_lcd_aptHook, ctr);
 
-   font_driver_init_osd(ctr, video,
-         false,
-         video->is_threaded,
-         FONT_DRIVER_RENDER_CTR);
 
    ctr->msg_rendering_enabled     = true;
    ctr->menu_texture_frame_enable = false;
@@ -2281,7 +2273,7 @@ static bool ctr_frame(void* data, const void* frame,
    {
       if (osd_params)
       {
-         font_driver_render_msg(ctr, stat_text,
+         font_driver_render_msg(ctr, stat_text, video_info->stat_text_len,
                (const struct font_params*)osd_params, NULL);
       }
    }
@@ -2311,7 +2303,7 @@ static bool ctr_frame(void* data, const void* frame,
 #endif
 
    if (msg)
-      font_driver_render_msg(ctr, msg, NULL, NULL);
+      font_driver_render_msg(ctr, msg, strlen(msg), NULL, NULL);
 
    GPU_FinishDrawing();
    GPU_Finalize();
@@ -2946,13 +2938,13 @@ void ctr_overlay_interface(void *data, const video_overlay_interface_t **iface)
 }
 #endif
 
-static void ctr_set_osd_msg(void *data, const char *msg,
+static void ctr_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
    ctr_video_t* ctr = (ctr_video_t*)data;
 
    if (ctr && ctr->msg_rendering_enabled)
-      font_driver_render_msg(data, msg, params, font);
+      font_driver_render_msg(data, msg, msg_len, params, font);
 }
 
 static uint32_t ctr_get_flags(void *data)
@@ -2986,7 +2978,7 @@ static const video_poke_interface_t ctr_poke_interface = {
    NULL, /* get_current_shader */
    NULL, /* get_current_software_framebuffer */
    NULL, /* get_hw_render_interface */
-   NULL, /* set_hdr_max_nits */
+   NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
@@ -2994,7 +2986,7 @@ static const video_poke_interface_t ctr_poke_interface = {
 };
 
 static void ctr_get_poke_interface(void* data,
-                                   const video_poke_interface_t** iface)
+      const video_poke_interface_t** iface)
 {
    *iface = &ctr_poke_interface;
 }
@@ -3004,6 +2996,19 @@ static bool ctr_widgets_enabled(void *data) { return true; }
 #endif
 static bool ctr_set_shader(void* data,
       enum rarch_shader_type type, const char* path) { return false; }
+
+static font_renderer_t ctr_font =
+{
+   ctr_font_init,
+   ctr_font_free,
+   ctr_font_render_msg,
+   "ctr",
+   ctr_font_get_glyph,
+   NULL,                         /* bind_block */
+   NULL,                         /* flush_block */
+   ctr_font_get_message_width,
+   ctr_font_get_line_metrics
+};
 
 video_driver_t video_ctr =
 {
@@ -3027,7 +3032,29 @@ video_driver_t video_ctr =
 #endif
    ctr_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   NULL, /* shader_load_begin */
+   NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   ctr_widgets_enabled
+   ctr_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &ctr_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
+   gfx_display_ctr_draw,
+   NULL,                                     /* draw_pipeline          */
+   NULL,                                     /* blend_begin            */
+   NULL,                                     /* blend_end              */
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   &ctr_font,
+   GFX_VIDEO_DRIVER_CTR,
+   "ctr",
+   true,
+   false,
+   NULL,
+   NULL
 };

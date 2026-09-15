@@ -23,9 +23,7 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
 
 #ifdef __APPLE__
 void AES128_ECB_encrypt_apple(const uint8_t* input, const uint8_t* key, uint8_t *output);

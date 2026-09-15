@@ -81,7 +81,12 @@
 #include <time.h>
 #include <errno.h>
 
+#ifdef __MACH__
+#include <mach/mach_time.h> /* rsnd_get_time_usec() */
+#endif
+
 #include <compat/strl.h>
+#include <retro_endianness.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
@@ -168,27 +173,6 @@ static int rsnd_poll(struct pollfd *fd, int numfd, int timeout);
 
 static void rsnd_cb_thread(void *thread_data);
 static void rsnd_thread(void *thread_data);
-
-/* Determine whether we're running big- or little endian */
-static INLINE int rsnd_is_little_endian(void)
-{
-   uint16_t i = 1;
-   return *((uint8_t*)&i);
-}
-
-/* Simple functions for swapping bytes */
-static INLINE void rsnd_swap_endian_16(uint16_t *x)
-{
-   *x = (*x>>8) | (*x<<8);
-}
-
-static INLINE void rsnd_swap_endian_32(uint32_t *x)
-{
-   *x =  (*x >> 24)
-      | ((*x<<8) & 0x00FF0000)
-      | ((*x>>8) & 0x0000FF00)
-      |  (*x << 24);
-}
 
 static INLINE int rsnd_format_to_samplesize(uint16_t fmt)
 {
@@ -297,8 +281,14 @@ error:
 #define SET32(buf,offset,x) (*((uint32_t*)(buf+offset)) = x)
 #define SET16(buf,offset,x) (*((uint16_t*)(buf+offset)) = x)
 
-#define LSB16(x) if (!rsnd_is_little_endian()) { rsnd_swap_endian_16(&(x)); }
-#define LSB32(x) if (!rsnd_is_little_endian()) { rsnd_swap_endian_32(&(x)); }
+/* In-place byteswap to little-endian (no-op on little-endian hosts). */
+#if RETRO_IS_BIG_ENDIAN
+#define LSB16(x) ((x) = SWAP16(x))
+#define LSB32(x) ((x) = SWAP32(x))
+#else
+#define LSB16(x) ((void)0)
+#define LSB32(x) ((void)0)
+#endif
 
 #define HEADER_SIZE 44
 #define RATE 24
@@ -335,29 +325,17 @@ static int rsnd_send_header_info(rsound_t *rd)
    switch (temp_format)
    {
       case RSD_S16_NE:
-         if (rsnd_is_little_endian())
-            temp_format = RSD_S16_LE;
-         else
-            temp_format = RSD_S16_BE;
+         temp_format = RETRO_IS_LITTLE_ENDIAN ? RSD_S16_LE : RSD_S16_BE;
          break;
 
       case RSD_U16_NE:
-         if (rsnd_is_little_endian())
-            temp_format = RSD_U16_LE;
-         else
-            temp_format = RSD_U16_BE;
+         temp_format = RETRO_IS_LITTLE_ENDIAN ? RSD_U16_LE : RSD_U16_BE;
          break;
       case RSD_S32_NE:
-         if (rsnd_is_little_endian())
-            temp_format = RSD_S32_LE;
-         else
-            temp_format = RSD_S32_BE;
+         temp_format = RETRO_IS_LITTLE_ENDIAN ? RSD_S32_LE : RSD_S32_BE;
          break;
       case RSD_U32_NE:
-         if (rsnd_is_little_endian())
-            temp_format = RSD_U32_LE;
-         else
-            temp_format = RSD_U32_BE;
+         temp_format = RETRO_IS_LITTLE_ENDIAN ? RSD_U32_LE : RSD_U32_BE;
          break;
 
       default:
@@ -371,10 +349,10 @@ static int rsnd_send_header_info(rsound_t *rd)
 
    /* Here we embed in the rest of the WAV header for it to be somewhat valid */
 
-   strlcpy(header, "RIFF", sizeof(header));
+   strlcpy_lit(header, "RIFF", sizeof(header));
    SET32(header, 4, 0);
-   strlcpy(header+8, "WAVE", sizeof(header));
-   strlcpy(header+12, "fmt ", sizeof(header));
+   strlcpy_lit(header+8, "WAVE", sizeof(header));
+   strlcpy_lit(header+12, "fmt ", sizeof(header));
 
    temp32 = 16;
    LSB32(temp32);
@@ -420,7 +398,7 @@ static int rsnd_send_header_info(rsound_t *rd)
    LSB16(temp_bits);
    SET16(header, FRAMESIZE, temp_bits);
 
-   strlcpy(header + 36, "data", sizeof(header));
+   strlcpy_lit(header + 36, "data", sizeof(header));
 
    /* Do not care about cksize here (impossible to know beforehand).
     * It is used by the server for format. */
@@ -464,11 +442,10 @@ static int rsnd_get_backend_info(rsound_t *rd)
    /* Again, we can't be 100% certain that sizeof(backend_info_t)
     * is equal on every system */
 
-   if (rsnd_is_little_endian())
-   {
-      rsnd_swap_endian_32(&rsnd_header[LATENCY]);
-      rsnd_swap_endian_32(&rsnd_header[CHUNKSIZE]);
-   }
+#if RETRO_IS_LITTLE_ENDIAN
+   rsnd_header[LATENCY]   = SWAP32(rsnd_header[LATENCY]);
+   rsnd_header[CHUNKSIZE] = SWAP32(rsnd_header[CHUNKSIZE]);
+#endif
 
    rd->backend_info.latency    = rsnd_header[LATENCY];
    rd->backend_info.chunk_size = rsnd_header[CHUNKSIZE];
@@ -747,19 +724,34 @@ static int64_t rsnd_get_time_usec(void)
    return sysGetSystemTime();
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
-#elif defined(__MACH__) /* OSX doesn't have clock_gettime ... */
-   clock_serv_t cclock;
-   mach_timespec_t mts;
-   host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-   clock_get_time(cclock, &mts);
-   mach_port_deallocate(mach_task_self(), cclock);
-   return mts.tv_sec * INT64_C(1000000) + (mts.tv_nsec + 500) / 1000;
+#elif defined(__MACH__)
+   /* mach_absolute_time() is the Darwin equivalent of CLOCK_MONOTONIC used
+    * by the POSIX branch below: it needs no port at all, and it exists on
+    * every OS version RetroArch targets.
+    *
+    * The previous code called host_get_clock_service(mach_host_self(), ...)
+    * per call, which leaked a send right on the host port (mach_host_self()
+    * was never deallocated) and allocated then freed a port name in the task
+    * IPC space on every tick. It also read CALENDAR_CLOCK - wall time - even
+    * though the only consumer, rsnd_drain(), takes a delta against
+    * rd->start_time to estimate how much the server has consumed. A clock
+    * step from NTP or a user change corrupted that estimate; the monotonic
+    * clock used everywhere else does not have that failure mode. */
+   {
+      static mach_timebase_info_data_t tb;
+      if (!tb.denom)
+         mach_timebase_info(&tb);
+      /* Nanoseconds first, then to microseconds, so the numer/denom scaling
+       * does not lose resolution on timebases where numer != denom. */
+      return (int64_t)((mach_absolute_time() * tb.numer / tb.denom + 500)
+            / 1000);
+   }
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
    return emscripten_get_now() * 1000;
 #else
 #error "Your platform does not have a timer function implemented in rsnd_get_time_usec(). Cannot continue."
@@ -917,16 +909,29 @@ static size_t rsnd_get_ptr(rsound_t *rd)
 
 static int rsnd_send_identity_info(rsound_t *rd)
 {
-   char tmpbuf[RSD_PROTO_MAXSIZE];
-   char sendbuf[RSD_PROTO_MAXSIZE];
+   char    tmpbuf[RSD_PROTO_MAXSIZE];
+   char    sendbuf[RSD_PROTO_MAXSIZE];
+   size_t  tmp_len;
+   size_t  send_len;
+   int     n;
 
-   snprintf(tmpbuf, RSD_PROTO_MAXSIZE - 1, " IDENTITY %s", rd->identity);
+   /* snprintf returns the number of bytes that would have been
+    * written had the buffer been large enough; clamp to the
+    * actually-written length so it can be passed straight to
+    * send() without an extra strlen pass. */
+   n = snprintf(tmpbuf, RSD_PROTO_MAXSIZE - 1, " IDENTITY %s", rd->identity);
    tmpbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
-   snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%s", (int)strlen(tmpbuf), tmpbuf);
-   sendbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
+   tmp_len = (n < 0) ? 0
+           : ((size_t)n < RSD_PROTO_MAXSIZE - 1 ? (size_t)n : RSD_PROTO_MAXSIZE - 2);
 
-   if (     rsnd_send_chunk(rd->conn.ctl_socket, sendbuf, strlen(sendbuf), 0)
-         != (ssize_t)strlen(sendbuf))
+   n = snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%s",
+         (int)tmp_len, tmpbuf);
+   sendbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
+   send_len = (n < 0) ? 0
+            : ((size_t)n < RSD_PROTO_MAXSIZE - 1 ? (size_t)n : RSD_PROTO_MAXSIZE - 2);
+
+   if (rsnd_send_chunk(rd->conn.ctl_socket, sendbuf, send_len, 0)
+         != (ssize_t)send_len)
       return -1;
 
    return 0;
@@ -1030,9 +1035,10 @@ static int rsnd_update_server_info(rsound_t *rd)
    /* We read until we have the last (most recent) data in the network buffer. */
    for (;;)
    {
-      ssize_t rc;
-      char *tmpstr;
-      const char *substr;
+      ssize_t       rc;
+      char         *tmpstr;
+      const char   *substr;
+      long int      len;
       memset(temp, 0, sizeof(temp));
 
       /* We first receive the small header. We just use the larger buffer as it is disposable. */
@@ -1051,7 +1057,7 @@ static int rsnd_update_server_info(rsound_t *rd)
       substr += 3;
 
       /* The length of the argument message is stored in the small 8 byte header. */
-      long int len = strtol(substr, NULL, 0);
+      len = strtol(substr, NULL, 0);
 
       /* Receive the rest of the data. */
       if (rsnd_recv_chunk(rd->conn.ctl_socket, temp, len, 0) < len)
@@ -1115,9 +1121,20 @@ static int rsnd_update_server_info(rsound_t *rd)
 static void rsnd_thread(void * thread_data)
 {
    /* We share data between thread and callable functions */
-   int rc;
-   rsound_t *rd = thread_data;
-   char buffer[rd->backend_info.chunk_size];
+   int        rc;
+   rsound_t  *rd          = thread_data;
+   size_t     chunk_size  = rd->backend_info.chunk_size;
+   char      *buffer      = (char *)malloc(chunk_size);
+
+   if (!buffer)
+   {
+      /* Allocation failed at thread start — match the existing
+       * unrecoverable-error pattern below. */
+      rsnd_reset(rd);
+      scond_signal(rd->thread.cond);
+      sthread_detach(rd->thread.thread);
+      return;
+   }
 
    /* Plays back data as long as there is data in the buffer.
     * Else, sleep until it can.
@@ -1152,9 +1169,9 @@ static void rsnd_thread(void * thread_data)
 
          _TEST_CANCEL();
          slock_lock(rd->thread.mutex);
-         fifo_read(rd->fifo_buffer, buffer, sizeof(buffer));
+         fifo_read(rd->fifo_buffer, buffer, chunk_size);
          slock_unlock(rd->thread.mutex);
-         rc = rsnd_send_chunk(rd->conn.socket, buffer, sizeof(buffer), 1);
+         rc = rsnd_send_chunk(rd->conn.socket, buffer, chunk_size, 1);
 
          /* If this happens, we should make sure that subsequent
           * and current calls to rsd_write() will fail. */
@@ -1168,6 +1185,7 @@ static void rsnd_thread(void * thread_data)
 
             /* This thread will not be joined, so detach. */
             sthread_detach(rd->thread.thread);
+            free(buffer);
             return;
          }
 
@@ -1217,6 +1235,7 @@ static void rsnd_thread(void * thread_data)
       else /* Abort request, chap. */
       {
          scond_signal(rd->thread.cond);
+         free(buffer);
          return;
       }
 
@@ -1226,45 +1245,58 @@ static void rsnd_thread(void * thread_data)
 /* Callback thread */
 static void rsnd_cb_thread(void *thread_data)
 {
-   rsound_t *rd = thread_data;
-   size_t read_size = rd->backend_info.chunk_size;
+   rsound_t *rd          = thread_data;
+   size_t    chunk_size  = rd->backend_info.chunk_size;
+   size_t    read_size   = chunk_size;
+   uint8_t  *buffer;
+
    if (rd->cb_max_size != 0 && rd->cb_max_size < read_size)
       read_size = rd->cb_max_size;
 
-   uint8_t buffer[rd->backend_info.chunk_size];
+   if (!(buffer = (uint8_t *)malloc(chunk_size)))
+   {
+      /* Allocation failed at thread start — match the existing
+       * unrecoverable-error pattern below. */
+      rsnd_reset(rd);
+      sthread_detach(rd->thread.thread);
+      rd->error_callback(rd->cb_data);
+      return;
+   }
 
    while (rd->thread_active)
    {
-      size_t has_read = 0;
+      size_t  has_read = 0;
+      ssize_t sent;
 
-      while (has_read < rd->backend_info.chunk_size)
+      while (has_read < chunk_size)
       {
-         ssize_t ret;
-         size_t will_read = read_size < rd->backend_info.chunk_size - has_read
-            ? read_size : rd->backend_info.chunk_size - has_read;
+         ssize_t cb_ret;
+         size_t  will_read = read_size < chunk_size - has_read
+            ? read_size : chunk_size - has_read;
 
          rsd_callback_lock(rd);
-         ret = rd->audio_callback(buffer + has_read, will_read, rd->cb_data);
+         cb_ret = rd->audio_callback(buffer + has_read, will_read, rd->cb_data);
          rsd_callback_unlock(rd);
 
-         if (ret < 0)
+         if (cb_ret < 0)
          {
+            free(buffer);
             rsnd_reset(rd);
             sthread_detach(rd->thread.thread);
             rd->error_callback(rd->cb_data);
             return;
          }
 
-         has_read += ret;
+         has_read += cb_ret;
 
-         if (ret < (ssize_t)will_read)
+         if (cb_ret < (ssize_t)will_read)
          {
             if ((int)rsd_delay_ms(rd) < rd->max_latency / 2)
             {
                RSD_DEBUG("[RSound] Callback thread: Requested %d bytes, got %d.\n",
-                     (int)will_read, (int)ret);
-               memset(buffer + has_read, 0, will_read - ret);
-               has_read += will_read - ret;
+                     (int)will_read, (int)cb_ret);
+               memset(buffer + has_read, 0, will_read - cb_ret);
+               has_read += will_read - cb_ret;
             }
             else
             {
@@ -1279,9 +1311,10 @@ static void rsnd_cb_thread(void *thread_data)
          }
       }
 
-      ssize_t ret = rsnd_send_chunk(rd->conn.socket, buffer, rd->backend_info.chunk_size, 1);
-      if (ret != (ssize_t)rd->backend_info.chunk_size)
+      sent = rsnd_send_chunk(rd->conn.socket, buffer, chunk_size, 1);
+      if (sent != (ssize_t)chunk_size)
       {
+         free(buffer);
          rsnd_reset(rd);
          sthread_detach(rd->thread.thread);
          rd->error_callback(rd->cb_data);
@@ -1295,7 +1328,7 @@ static void rsnd_cb_thread(void *thread_data)
          rd->has_written = 1;
       }
 
-      rd->total_written += rd->backend_info.chunk_size;
+      rd->total_written += chunk_size;
 
       if (     (rd->conn_type & RSD_CONN_PROTO)
             && (rd->total_written > rd->channels * rd->rate * rd->samplesize))
@@ -1307,6 +1340,8 @@ static void rsnd_cb_thread(void *thread_data)
       if (rd->has_written)
          rsd_delay_wait(rd);
    }
+
+   free(buffer);
 }
 
 static int rsnd_reset(rsound_t *rd)
@@ -1413,15 +1448,26 @@ int rsd_exec(rsound_t *rsound)
 #endif
 
    /* Flush the buffer */
-   if (FIFO_READ_AVAIL(rsound->fifo_buffer) > 0)
    {
-      char buffer[FIFO_READ_AVAIL(rsound->fifo_buffer)];
-      fifo_read(rsound->fifo_buffer, buffer, sizeof(buffer));
-      if (rsnd_send_chunk(fd, buffer, sizeof(buffer), 1) != (ssize_t)sizeof(buffer))
+      size_t avail = FIFO_READ_AVAIL(rsound->fifo_buffer);
+      if (avail > 0)
       {
-         RSD_DEBUG("[RSound] Failed flushing buffer.\n");
-         net_socketclose(fd);
-         return -1;
+         char *buffer = (char *)malloc(avail);
+         if (!buffer)
+         {
+            RSD_DEBUG("[RSound] Failed allocating flush buffer.\n");
+            net_socketclose(fd);
+            return -1;
+         }
+         fifo_read(rsound->fifo_buffer, buffer, avail);
+         if (rsnd_send_chunk(fd, buffer, avail, 1) != (ssize_t)avail)
+         {
+            RSD_DEBUG("[RSound] Failed flushing buffer.\n");
+            free(buffer);
+            net_socketclose(fd);
+            return -1;
+         }
+         free(buffer);
       }
    }
 

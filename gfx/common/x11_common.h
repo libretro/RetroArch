@@ -30,6 +30,7 @@ extern unsigned g_x11_screen;
 
 void x11_show_mouse(void *data, bool state);
 void x11_set_net_wm_fullscreen(Display *dpy, Window win);
+void x11_set_net_wm_fullscreen_hint(Display *dpy, Window win);
 bool x11_suspend_screensaver(void *data, bool enable);
 
 void x11_move_window(Display *dpy, Window win,
@@ -38,8 +39,6 @@ void x11_move_window(Display *dpy, Window win,
 /* Set icon, class, default stuff. */
 void x11_set_window_attr(Display *dpy, Window win);
 
-bool x11_get_metrics(void *data,
-      enum display_metric_types type, float *value);
 
 #ifdef HAVE_XF86VM
 float x11_get_refresh_rate(void *data);
@@ -57,6 +56,9 @@ void x11_get_video_size(void *data, unsigned *width, unsigned *height);
 bool x11_has_focus(void *data);
 
 bool x11_has_focus_internal(void *data);
+
+/* False while the window is unmapped; see gfx_ctx_driver_t::presentable. */
+bool x11_presentable(void *data);
 
 bool x11_alive(void *data);
 

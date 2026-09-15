@@ -14,6 +14,8 @@
  *  You should have received a copy of the GNU General Public License along with RetroArch.
  *  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
@@ -116,12 +118,12 @@ static void gfx_widget_progress_message_fadeout(void *userdata)
    animation_entry.cb           = gfx_widget_progress_message_fadeout_cb;
    animation_entry.userdata     = state;
 
-   gfx_animation_push(&animation_entry);
+   gfx_animation_push_widget(&animation_entry);
 }
 
 /* Widget interface */
 
-void gfx_widget_set_progress_message(
+static void gfx_widget_set_progress_message_state(
       const char *message, unsigned duration,
       unsigned priority, int8_t progress)
 {
@@ -134,7 +136,7 @@ void gfx_widget_set_progress_message(
    uintptr_t timer_tag                        = (uintptr_t)&state->timer;
 
    /* Ensure we have a valid message string */
-   if (string_is_empty(message))
+   if (!message || !*message)
       return;
 
    /* If widget is currently active, ignore new
@@ -154,21 +156,30 @@ void gfx_widget_set_progress_message(
          1.0f);
 
    /* Kill any existing timer/animation */
-   gfx_animation_kill_by_tag(&timer_tag);
-   gfx_animation_kill_by_tag(&alpha_tag);
+   gfx_animation_kill_widget_by_tag(&timer_tag);
+   gfx_animation_kill_widget_by_tag(&alpha_tag);
 
    /* Start new message timer */
    timer.duration = duration;
    timer.cb       = gfx_widget_progress_message_fadeout;
    timer.userdata = state;
 
-   gfx_animation_timer_start(&state->timer, &timer);
+   gfx_animation_timer_start_widget(&state->timer, &timer);
 
    /* Set initial widget opacity */
    state->alpha  = 1.0f;
 
    /* Set 'active' flag */
    state->active = true;
+}
+
+void gfx_widget_set_progress_message(
+      const char *message, unsigned duration,
+      unsigned priority, int8_t progress)
+{
+   gfx_widgets_state_lock();
+   gfx_widget_set_progress_message_state(message, duration, priority, progress);
+   gfx_widgets_state_unlock();
 }
 
 /* Widget layout() */
@@ -324,8 +335,8 @@ static void gfx_widget_progress_message_free(void)
    uintptr_t timer_tag                        = (uintptr_t)&state->timer;
 
    /* Kill any existing timer / animation */
-   gfx_animation_kill_by_tag(&timer_tag);
-   gfx_animation_kill_by_tag(&alpha_tag);
+   gfx_animation_kill_widget_by_tag(&timer_tag);
+   gfx_animation_kill_widget_by_tag(&alpha_tag);
 
    /* Deactivate widget */
    state->alpha  = 0.0f;

@@ -119,7 +119,6 @@ static bool bsv_movie_init_record(
    time_t t                     = time(NULL);
    time_t time_lil              = swap_if_big64(t);
    uint32_t state_size          = 0;
-   uint32_t content_crc         = 0;
    uint32_t header[REPLAY_HEADER_LEN]  = {0};
    intfstream_t *file           = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_WRITE | RETRO_VFS_FILE_ACCESS_READ,
@@ -145,7 +144,7 @@ static bool bsv_movie_init_record(
 #endif
    handle->checkpoint_compression = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
    if (settings->bools.savestate_file_compression)
-#if defined(HAVE_ZSTD)
+#ifdef HAVE_RZSTD
       handle->checkpoint_compression = REPLAY_CHECKPOINT2_COMPRESSION_ZSTD;
 #elif defined(HAVE_ZLIB)
       handle->checkpoint_compression = REPLAY_CHECKPOINT2_COMPRESSION_ZLIB;
@@ -153,11 +152,19 @@ static bool bsv_movie_init_record(
       {}
 #endif
 
-   content_crc              = content_get_crc();
-
    header[REPLAY_HEADER_MAGIC_INDEX] = swap_if_big32(REPLAY_MAGIC);
    header[REPLAY_HEADER_VERSION_INDEX] = swap_if_big32(handle->version);
-   header[REPLAY_HEADER_CRC_INDEX] = swap_if_big32(content_crc);
+   /* Left at zero.  This field has only ever been written, never read:
+    * nothing checks a replay's stored CRC against the content it is
+    * being played back against, here or anywhere else.  Filling it in
+    * meant calling content_get_crc, which for a core using
+    * need_fullpath reads the entire disc image from disk - a full read
+    * to populate a header field no code consults.
+    *
+    * If replay playback is ever taught to verify its content, this is
+    * where the value goes back, and it should be taken from whatever
+    * the frontend already has rather than forcing a read. */
+   header[REPLAY_HEADER_CRC_INDEX] = 0;
 
    info_size                = core_serialize_size();
    state_size               = (unsigned)info_size;
@@ -313,6 +320,23 @@ static bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path)
    needed due to mixing sync and async during initialization. */
 typedef struct bsv_state moviectl_task_state_t;
 
+/* True from the push of a playback-start task until its main-thread
+ * callback has installed the replay handle.
+ *
+ * A flag rather than a task_queue_find() for the same reason the
+ * state-load equivalent is one: the unthreaded gather lifts every
+ * running task off the queue before invoking any handler, so a
+ * finder can report "nothing in flight" while the task is sitting in
+ * that pass, and the threaded gather has a narrower version of the
+ * same window between a worker finishing and its callback running.
+ * The flag transitions strictly on the main thread. */
+static bool movie_playback_start_pending = false;
+
+bool movie_playback_start_in_progress(void *data)
+{
+   return movie_playback_start_pending;
+}
+
 static void task_moviectl_playback_handler(retro_task_t *task)
 {
    uint8_t flg;
@@ -333,6 +357,7 @@ static void moviectl_start_playback_cb(retro_task_t *task,
 {
   struct bsv_state *state        = (struct bsv_state *)task_data;
   input_driver_state_t *input_st = input_state_get_ptr();
+  movie_playback_start_pending   = false;
   input_st->bsv_movie_state      = *state;
   bsv_movie_start_playback(input_st, state->movie_start_path);
   free(state);
@@ -415,7 +440,9 @@ bool movie_stop_record(input_driver_state_t *input_st)
    uint32s_index_print_count_data(movie->blocks);
 #endif
 #endif
-   frame_count = swap_if_big32(movie->frame_counter);
+   if (movie->frame_counter > UINT32_MAX)
+      RARCH_ERR("[Replay] Frame counter too big to fit in 32 bits\n");
+   frame_count = swap_if_big32((uint32_t)movie->frame_counter);
    intfstream_seek(movie->file, REPLAY_HEADER_FRAME_COUNT_INDEX*sizeof(uint32_t), SEEK_SET);
    intfstream_write(movie->file, &frame_count, sizeof(uint32_t));
    bsv_movie_deinit_full(input_st);
@@ -453,8 +480,13 @@ bool movie_start_playback(input_driver_state_t *input_st, char *path)
      task->callback                = moviectl_start_playback_cb;
      task->title                   = strdup(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
 
+     movie_playback_start_pending  = true;
+
      if (task_queue_push(task))
         return true;
+
+     /* Refused: no callback will run for this task. */
+     movie_playback_start_pending  = false;
   }
 
    if (state)

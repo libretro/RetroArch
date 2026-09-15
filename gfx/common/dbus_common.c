@@ -30,7 +30,6 @@ void dbus_ensure_connection(void)
 {
 #ifdef HAVE_DBUS
     DBusError err;
-    int ret;
 
     dbus_error_init(&err);
 

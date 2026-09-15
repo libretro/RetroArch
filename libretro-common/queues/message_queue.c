@@ -25,6 +25,16 @@
 
 #include <boolean.h>
 #include <queues/message_queue.h>
+
+struct queue_elem
+{
+   char *msg;                          /* both point into the node's own block */
+   char *title;
+   unsigned duration;
+   unsigned prio;
+   enum message_queue_icon icon;
+   enum message_queue_category category;
+};
 #include <compat/strl.h>
 #include <compat/posix_string.h>
 
@@ -32,14 +42,15 @@ bool msg_queue_initialize(msg_queue_t *queue, size_t len)
 {
    struct queue_elem **elems = NULL;
 
-   if (!queue)
+   /* The heap is len + 1 slots; SIZE_MAX would wrap that to nothing. */
+   if (!queue || len == (size_t)-1)
       return false;
 
    if (!(elems = (struct queue_elem**)
             calloc(len + 1, sizeof(struct queue_elem*))))
       return false;
 
-   queue->tmp_msg            = NULL;
+   queue->tmp                = NULL;
    queue->elems              = elems;
    queue->ptr                = 1;
    queue->size               = len + 1;
@@ -92,7 +103,7 @@ bool msg_queue_deinitialize(msg_queue_t *queue)
    msg_queue_clear(queue);
    free(queue->elems);
    queue->elems   = NULL;
-   queue->tmp_msg = NULL;
+   queue->tmp = NULL;
    queue->ptr     = 0;
    queue->size    = 0;
    return true;
@@ -105,28 +116,65 @@ bool msg_queue_deinitialize(msg_queue_t *queue)
  * @prio              : priority level of the message
  * @duration          : how many times the message can be pulled
  *                      before it vanishes (E.g. show a message for
- *                      3 seconds @ 60fps = 180 duration).
+ *                      3 seconds @ 60fps = 180 duration). Zero is
+ *                      taken as one.
  *
- * Push a new message onto the queue.
+ * Push a new message onto the queue. Silent when the queue is full
+ * or an allocation fails; msg_queue_try_push() says so instead.
  **/
-void msg_queue_push(msg_queue_t *queue, const char *msg,
+bool msg_queue_try_push(msg_queue_t *queue, const char *msg,
       unsigned prio, unsigned duration,
-      char *title,
+      const char *title,
       enum message_queue_icon icon, enum message_queue_category category)
 {
    size_t tmp_ptr = 0;
    struct queue_elem *new_elem = NULL;
 
    if (!queue || queue->ptr >= queue->size)
-      return;
+      return false;
 
-   if (!(new_elem = (struct queue_elem*)malloc(sizeof(struct queue_elem))))
-      return;
+   /* The node and its strings are one block - the node first, the
+    * strings after it - allocated before the heap is touched, so a
+    * failure leaves the queue as it was, and freed as one. The node's
+    * pointers point into the block; nothing frees them on their own. */
+   {
+      size_t msg_len   = msg   ? strlen(msg)   + 1 : 0;
+      size_t title_len = title ? strlen(title) + 1 : 0;
+      size_t block_len = sizeof(struct queue_elem);
+      char  *block;
+      /* The three parts are summed under check: a wrapped total would
+       * allocate less than the copies below write. */
+      if (msg_len > ((size_t)-1) - block_len)
+         return false;
+      block_len       += msg_len;
+      if (title_len > ((size_t)-1) - block_len)
+         return false;
+      block_len       += title_len;
+      if (!(block = (char*)malloc(block_len)))
+         return false;
+      new_elem        = (struct queue_elem*)block;
+      block          += sizeof(struct queue_elem);
+      new_elem->msg   = NULL;
+      new_elem->title = NULL;
+      if (msg)
+      {
+         new_elem->msg = block;
+         memcpy(block, msg, msg_len);
+         block += msg_len;
+      }
+      if (title)
+      {
+         new_elem->title = block;
+         memcpy(block, title, title_len);
+      }
+   }
 
-   new_elem->duration            = duration;
+   /* A duration is pulls: a message asked for none at all is shown
+    * once and gone, not kept until something replaces it. Nothing in
+    * the tree asks for zero; a core's message shorter than a frame
+    * rounds to it. */
+   new_elem->duration            = duration ? duration : 1;
    new_elem->prio                = prio;
-   new_elem->msg                 = msg   ? strdup(msg)   : NULL;
-   new_elem->title               = title ? strdup(title) : NULL;
    new_elem->icon                = icon;
    new_elem->category            = category;
 
@@ -147,6 +195,15 @@ void msg_queue_push(msg_queue_t *queue, const char *msg,
 
       tmp_ptr >>= 1;
    }
+   return true;
+}
+
+void msg_queue_push(msg_queue_t *queue, const char *msg,
+      unsigned prio, unsigned duration,
+      char *title,
+      enum message_queue_icon icon, enum message_queue_category category)
+{
+   msg_queue_try_push(queue, msg, prio, duration, title, icon, category);
 }
 
 /**
@@ -166,15 +223,44 @@ void msg_queue_clear(msg_queue_t *queue)
    {
       if (queue->elems[i])
       {
-         free(queue->elems[i]->msg);
-         free(queue->elems[i]->title);
          free(queue->elems[i]);
          queue->elems[i] = NULL;
       }
    }
    queue->ptr     = 1;
-   free(queue->tmp_msg);
-   queue->tmp_msg = NULL;
+   free(queue->tmp);
+   queue->tmp = NULL;
+}
+
+/* Takes the front out of the heap: the last node moves into the hole
+ * and sifts down on priority. The nodes are [1, ptr) with ptr the next
+ * free index, so a child is a node only below ptr; the vacated index
+ * is cleared. The caller owns the front it is handed. */
+static struct queue_elem *msg_queue_remove_front(msg_queue_t *queue)
+{
+   struct queue_elem *front = queue->elems[1];
+   size_t pos               = 1;
+
+   queue->ptr--;
+   queue->elems[1]          = queue->elems[queue->ptr];
+   queue->elems[queue->ptr] = NULL;
+
+   while ((pos << 1) < queue->ptr)
+   {
+      size_t child = pos << 1;
+      size_t right = child + 1;
+      struct queue_elem *tmp;
+      if (     right < queue->ptr
+            && queue->elems[right]->prio > queue->elems[child]->prio)
+         child = right;
+      if (queue->elems[pos]->prio >= queue->elems[child]->prio)
+         break;
+      tmp                 = queue->elems[pos];
+      queue->elems[pos]   = queue->elems[child];
+      queue->elems[child] = tmp;
+      pos                 = child;
+   }
+   return front;
 }
 
 /**
@@ -188,61 +274,24 @@ void msg_queue_clear(msg_queue_t *queue)
  **/
 const char *msg_queue_pull(msg_queue_t *queue)
 {
-   struct queue_elem *front  = NULL, *last = NULL;
-   size_t tmp_ptr = 1;
+   struct queue_elem *front  = NULL;
 
    /* Nothing in queue. */
    if (!queue || queue->ptr == 1)
       return NULL;
 
-   front = (struct queue_elem*)queue->elems[1];
+   front = queue->elems[1];
    front->duration--;
    if (front->duration > 0)
       return front->msg;
 
-   free(queue->tmp_msg);
-   queue->tmp_msg = front->msg;
-   front->msg = NULL;
+   /* The removed node is kept whole until the next pull or clear, so
+    * the message it returns stays valid that long. */
+   free(queue->tmp);
+   front      = msg_queue_remove_front(queue);
+   queue->tmp = front;
 
-   last  = (struct queue_elem*)queue->elems[--queue->ptr];
-   queue->elems[1] = last;
-   free(front->title);
-   free(front);
-
-   for (;;)
-   {
-      struct queue_elem *parent = NULL;
-      struct queue_elem *child  = NULL;
-      size_t switch_index       = tmp_ptr;
-      bool left                 = (tmp_ptr * 2 <= queue->ptr)
-         && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2]);
-      bool right                = (tmp_ptr * 2 + 1 <= queue->ptr)
-         && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2 + 1]);
-
-      if (!left && !right)
-         break;
-
-      if (left && !right)
-         switch_index <<= 1;
-      else if (right && !left)
-         switch_index += switch_index + 1;
-      else
-      {
-         if (queue->elems[tmp_ptr * 2]
-               >= queue->elems[tmp_ptr * 2 + 1])
-            switch_index <<= 1;
-         else
-            switch_index += switch_index + 1;
-      }
-
-      parent = (struct queue_elem*)queue->elems[tmp_ptr];
-      child  = (struct queue_elem*)queue->elems[switch_index];
-      queue->elems[tmp_ptr]      = child;
-      queue->elems[switch_index] = parent;
-      tmp_ptr                    = switch_index;
-   }
-
-   return queue->tmp_msg;
+   return front->msg;
 }
 
 /**
@@ -257,19 +306,13 @@ const char *msg_queue_pull(msg_queue_t *queue)
  **/
 bool msg_queue_extract(msg_queue_t *queue, msg_queue_entry_t *queue_entry)
 {
-   struct queue_elem *front  = NULL, *last = NULL;
-   size_t tmp_ptr = 1;
+   struct queue_elem *front  = NULL;
 
-   /* Ensure arguments are valid and queue is not
-    * empty */
    if (!queue || queue->ptr == 1 || !queue_entry)
       return false;
 
-   front = (struct queue_elem*)queue->elems[1];
-   last  = (struct queue_elem*)queue->elems[--queue->ptr];
-   queue->elems[1] = last;
+   front = msg_queue_remove_front(queue);
 
-   /* Copy element parameters */
    queue_entry->duration = front->duration;
    queue_entry->prio     = front->prio;
    queue_entry->icon     = front->icon;
@@ -283,43 +326,7 @@ bool msg_queue_extract(msg_queue_t *queue, msg_queue_entry_t *queue_entry)
    if (front->title)
       strlcpy(queue_entry->title, front->title, sizeof(queue_entry->title));
 
-   /* Delete element */
-   free(front->msg);
-   free(front->title);
    free(front);
-
-   for (;;)
-   {
-      struct queue_elem *parent = NULL;
-      struct queue_elem *child  = NULL;
-      size_t switch_index       = tmp_ptr;
-      bool left                 = (tmp_ptr * 2 <= queue->ptr)
-         && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2]);
-      bool right                = (tmp_ptr * 2 + 1 <= queue->ptr)
-         && (queue->elems[tmp_ptr] < queue->elems[tmp_ptr * 2 + 1]);
-
-      if (!left && !right)
-         break;
-
-      if (left && !right)
-         switch_index <<= 1;
-      else if (right && !left)
-         switch_index += switch_index + 1;
-      else
-      {
-         if (queue->elems[tmp_ptr * 2]
-               >= queue->elems[tmp_ptr * 2 + 1])
-            switch_index <<= 1;
-         else
-            switch_index += switch_index + 1;
-      }
-
-      parent = (struct queue_elem*)queue->elems[tmp_ptr];
-      child  = (struct queue_elem*)queue->elems[switch_index];
-      queue->elems[tmp_ptr]      = child;
-      queue->elems[switch_index] = parent;
-      tmp_ptr                    = switch_index;
-   }
 
    return true;
 }

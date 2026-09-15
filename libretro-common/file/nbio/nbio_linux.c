@@ -113,10 +113,32 @@ static void *nbio_linux_open(const char * filename, unsigned mode)
    }
 
    handle       = (struct nbio_linux_t*)malloc(sizeof(struct nbio_linux_t));
+   /* NULL-check the handle malloc: the next five lines dereferenced
+    * 'handle' unconditionally, so OOM segfaulted.  On failure we
+    * also have to unwind the fd we open()'d above and the aio
+    * context we io_setup()'d - both are resources that would be
+    * owned by the handle had it been allocated. */
+   if (!handle)
+   {
+      io_destroy(ctx);
+      close(fd);
+      return NULL;
+   }
    handle->fd   = fd;
    handle->ctx  = ctx;
    handle->len  = lseek(fd, 0, SEEK_END);
    handle->ptr  = malloc(handle->len);
+   /* Same pattern for the data buffer.  Subsequent begin_read /
+    * begin_write / iterate paths all assume handle->ptr is a valid
+    * buffer of handle->len bytes; passing a NULL through them
+    * would crash in the iocb setup.  Unwind everything we got. */
+   if (!handle->ptr)
+   {
+      free(handle);
+      io_destroy(ctx);
+      close(fd);
+      return NULL;
+   }
    handle->busy = false;
 
    return handle;
@@ -153,6 +175,7 @@ static bool nbio_linux_iterate(void *data)
 static void nbio_linux_resize(void *data, size_t len)
 {
    struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
+   void *new_ptr;
    if (!handle)
       return;
 
@@ -166,7 +189,21 @@ static void nbio_linux_resize(void *data, size_t len)
       abort(); /* this one returns void and I can't find any other way
                   for it to report failure */
 
-   handle->ptr = realloc(handle->ptr, len);
+   /* Attempt the realloc BEFORE committing the new length.  If it
+    * fails, the old pointer and its old size are still valid; the
+    * caller can retry or abandon.  Matches the sibling pattern in
+    * nbio_stdio_resize - the pre-patch form
+    *
+    *    handle->ptr = realloc(handle->ptr, len);
+    *    handle->len = len;
+    *
+    * set handle->ptr to NULL on OOM (leaking the old buffer) and
+    * then claimed the new length, so subsequent get_ptr()/read/write
+    * walked a NULL pointer assuming len bytes. */
+   if (!(new_ptr = realloc(handle->ptr, len)))
+      return;
+
+   handle->ptr = new_ptr;
    handle->len = len;
 }
 
@@ -208,6 +245,54 @@ static void nbio_linux_free(void *data)
    free(handle);
 }
 
+static int nbio_linux_get_fd(void *data)
+{
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
+   if (handle)
+      return handle->fd;
+   return -1;
+}
+
+static bool nbio_linux_get_progress(void *data,
+      size_t *completed, size_t *total)
+{
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
+   if (!handle)
+   {
+      if (completed) *completed = 0;
+      if (total)     *total     = 0;
+      return false;
+   }
+   /* Linux AIO is all-or-nothing: either busy (0 done) or complete */
+   if (completed) *completed = handle->busy ? 0 : handle->len;
+   if (total)     *total     = handle->len;
+   return handle->busy;
+}
+
+static void *nbio_linux_load_entire(void *data, size_t *len)
+{
+   struct nbio_linux_t* handle = (struct nbio_linux_t*)data;
+   if (!handle)
+      return NULL;
+
+   /* Submit the read if not already in flight */
+   if (!handle->busy)
+      nbio_begin_op(handle, IOCB_CMD_PREAD);
+
+   /* Blocking wait: min_nr=1 means the kernel won't return
+    * until the I/O is complete — one syscall, no poll loop. */
+   if (handle->busy)
+   {
+      struct io_event ev;
+      while (io_getevents(handle->ctx, 1, 1, &ev, NULL) != 1);
+      handle->busy = false;
+   }
+
+   if (len)
+      *len = handle->len;
+   return handle->ptr;
+}
+
 nbio_intf_t nbio_linux = {
    nbio_linux_open,
    nbio_linux_begin_read,
@@ -217,6 +302,10 @@ nbio_intf_t nbio_linux = {
    nbio_linux_get_ptr,
    nbio_linux_cancel,
    nbio_linux_free,
+   NULL, /* set_chunk_size - linux AIO submits entire read at once */
+   nbio_linux_get_fd,
+   nbio_linux_get_progress,
+   nbio_linux_load_entire,
    "nbio_linux",
 };
 #else
@@ -229,6 +318,10 @@ nbio_intf_t nbio_linux = {
    NULL,
    NULL,
    NULL,
+   NULL, /* set_chunk_size */
+   NULL, /* get_fd */
+   NULL, /* get_progress */
+   NULL, /* load_entire */
    "nbio_linux",
 };
 

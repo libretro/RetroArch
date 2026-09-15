@@ -405,7 +405,8 @@ static void __pad_enable(u32 chan)
 
 static void __pad_disable(u32 chan)
 {
-	u32 level,mask;
+	u32 mask;
+	u32 level = 0;
 	_CPU_ISR_Disable(level);
 	mask = PAD_ENABLEDMASK(chan);
 	SI_DisablePolling(mask);
@@ -433,7 +434,8 @@ static void __pad_samplinghandler(u32 irq,void *ctx)
 
 u32 __PADDisableRecalibration(s32 disable)
 {
-	u32 level,ret;
+	u32 ret;
+	u32 level = 0;
 	u8 *ram_recaldis = (u8*)0x800030e3;
 
 	_CPU_ISR_Disable(level);
@@ -478,7 +480,8 @@ u32 PAD_Init()
 u32 PAD_Read(PADStatus *status)
 {
 	u32 chan,mask,ret;
-	u32 level,sistatus,type;
+	u32 sistatus, type;
+	u32 level = 0;
 	u32 buf[2];
 	_CPU_ISR_Disable(level);
 	chan = 0;
@@ -546,7 +549,7 @@ u32 PAD_Read(PADStatus *status)
 
 u32 PAD_Reset(u32 mask)
 {
-	u32 level;
+	u32 level = 0;
 	u32 pend_bits,en_bits;
 
 	_CPU_ISR_Disable(level);
@@ -570,7 +573,7 @@ u32 PAD_Reset(u32 mask)
 
 u32 PAD_Recalibrate(u32 mask)
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 
@@ -602,7 +605,7 @@ void PAD_SetSpec(u32 spec)
 
 void PAD_ControlMotor(s32 chan,u32 cmd)
 {
-	u32 level;
+	u32 level = 0;
 	u32 mask,type;
 
 	_CPU_ISR_Disable(level);

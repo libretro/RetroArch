@@ -537,11 +537,43 @@ static void resampler_CC_free(void *re_)
    (void)re_;
 }
 
+#ifdef _MIPS_ARCH_ALLEGREX
+/* The stream's state lives in the VFPU: c720 is the accumulating
+ * output pair, c730 the fractional position. Zeroed as init zeroes
+ * them; the constants in c710 stand. */
+static void resampler_CC_reset(void *re_)
+{
+   (void)re_;
+   __asm__ (
+         ".set      push\n"
+         ".set      noreorder\n"
+         "vzero.q   c720                    \n"
+         "vzero.q   c730                    \n"
+         ".set      pop\n");
+}
+#else
+static void resampler_CC_reset(void *re_)
+{
+   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
+   int i;
+   if (!re)
+      return;
+   for (i = 0; i < 4; i++)
+   {
+      re->buffer[i].l = 0.0;
+      re->buffer[i].r = 0.0;
+   }
+   /* The starting distance init chose for the direction. */
+   re->distance = (re->process == resampler_CC_upsample) ? 2.0 : 0.0;
+}
+#endif
+
 retro_resampler_t CC_resampler = {
    resampler_CC_init,
    resampler_CC_process,
    resampler_CC_free,
    RESAMPLER_API_VERSION,
    "CC",
-   "cc"
+   "cc",
+   resampler_CC_reset
 };

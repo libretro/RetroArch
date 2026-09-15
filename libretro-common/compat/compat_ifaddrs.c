@@ -22,6 +22,11 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <sys/socket.h>
+#include <net/if.h>
+#include <linux/if.h>
+
+#include <compat/strl.h>
 #include <compat/ifaddrs.h>
 
 #include <string.h>
@@ -29,12 +34,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stddef.h>
 #include <errno.h>
 #include <unistd.h>
-#include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <netpacket/packet.h>
 #include <net/if_arp.h>
 #include <netinet/in.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
+
+#ifndef SIOCGIFFLAGS
+#include <linux/sockios.h>
+#endif
 
 typedef struct NetlinkList
 {
@@ -54,13 +63,31 @@ static int netlink_socket(void)
    memset(&l_addr, 0, sizeof(l_addr));
    l_addr.nl_family = AF_NETLINK;
 
-   if (bind(l_socket, (struct sockaddr *)&l_addr, sizeof(l_addr)) < 0)
-   {
-      close(l_socket);
-      return -1;
-   }
+   /* Binding is a privileged operation under the SELinux policy Android
+    * applies to applications, and it is not one this socket needs: the
+    * kernel assigns a port ID of its own when the first request goes
+    * out, and netlink_portid() reads back whichever one it picked. Ask
+    * for the binding where it is permitted and carry on where it is
+    * not. */
+   (void)bind(l_socket, (struct sockaddr *)&l_addr, sizeof(l_addr));
 
    return l_socket;
+}
+
+static pid_t netlink_portid(int p_socket)
+{
+   struct sockaddr_nl l_addr;
+   socklen_t l_len = sizeof(l_addr);
+
+   memset(&l_addr, 0, sizeof(l_addr));
+
+   /* The kernel stamps its replies with the port ID it assigned to
+    * this socket, which is only the process ID when nothing else in
+    * the process claimed that number first. */
+   if (getsockname(p_socket, (struct sockaddr*)&l_addr, &l_len) < 0)
+      return (pid_t)getpid();
+
+   return (pid_t)l_addr.nl_pid;
 }
 
 static int netlink_send(int p_socket, int p_request)
@@ -74,11 +101,11 @@ static int netlink_send(int p_socket, int p_request)
 
    memset(&l_data, 0, sizeof(l_data));
 
-   l_data.m_hdr.nlmsg_len = NLMSG_LENGTH(sizeof(struct rtgenmsg));
-   l_data.m_hdr.nlmsg_type = p_request;
-   l_data.m_hdr.nlmsg_flags = NLM_F_ROOT | NLM_F_MATCH | NLM_F_REQUEST;
-   l_data.m_hdr.nlmsg_pid = 0;
-   l_data.m_hdr.nlmsg_seq = p_socket;
+   l_data.m_hdr.nlmsg_len    = NLMSG_LENGTH(sizeof(struct rtgenmsg));
+   l_data.m_hdr.nlmsg_type   = p_request;
+   l_data.m_hdr.nlmsg_flags  = NLM_F_ROOT | NLM_F_MATCH | NLM_F_REQUEST;
+   l_data.m_hdr.nlmsg_pid    = 0;
+   l_data.m_hdr.nlmsg_seq    = p_socket;
    l_data.m_msg.rtgen_family = AF_UNSPEC;
 
    memset(&l_addr, 0, sizeof(l_addr));
@@ -89,8 +116,8 @@ static int netlink_send(int p_socket, int p_request)
 static int netlink_recv(int p_socket, void *p_buffer, size_t p_len)
 {
    struct msghdr l_msg;
-   struct iovec l_iov = { p_buffer, p_len };
    struct sockaddr_nl l_addr;
+   struct iovec l_iov = { p_buffer, p_len };
 
    for (;;)
    {
@@ -117,9 +144,10 @@ static int netlink_recv(int p_socket, void *p_buffer, size_t p_len)
          return -1;
       return l_result;
    }
+   return 0;
 }
 
-static struct nlmsghdr *getNetlinkResponse(int p_socket,
+static struct nlmsghdr *ifaddrs_get_netlink_response(int p_socket,
       int *p_size, int *p_done)
 {
    size_t l_size  = 4096;
@@ -145,15 +173,15 @@ static struct nlmsghdr *getNetlinkResponse(int p_socket,
 
       if (l_read >= 0)
       {
-         pid_t l_pid = getpid();
+         pid_t l_pid = netlink_portid(p_socket);
          struct nlmsghdr *l_hdr;
 
          for (l_hdr = (struct nlmsghdr *)l_buffer;
                NLMSG_OK(l_hdr, (unsigned int)l_read);
                l_hdr = (struct nlmsghdr *)NLMSG_NEXT(l_hdr, l_read))
          {
-            if (  (pid_t)l_hdr->nlmsg_pid != l_pid || 
-                  (int)l_hdr->nlmsg_seq   != p_socket)
+            if (   (pid_t)l_hdr->nlmsg_pid != l_pid
+                  || (int)l_hdr->nlmsg_seq != p_socket)
                continue;
 
             if (l_hdr->nlmsg_type == NLMSG_DONE)
@@ -175,7 +203,8 @@ static struct nlmsghdr *getNetlinkResponse(int p_socket,
    }
 }
 
-static NetlinkList *newListItem(struct nlmsghdr *p_data, unsigned int p_size)
+static NetlinkList *ifaddr_new_list_item(struct nlmsghdr *p_data,
+   unsigned int p_size)
 {
    NetlinkList *l_item = (NetlinkList*)malloc(sizeof(NetlinkList));
    if (!l_item)
@@ -187,7 +216,7 @@ static NetlinkList *newListItem(struct nlmsghdr *p_data, unsigned int p_size)
    return l_item;
 }
 
-static void freeResultList(NetlinkList *p_list)
+static void ifaddr_free_result_list(NetlinkList *p_list)
 {
    NetlinkList *l_cur;
 
@@ -200,7 +229,7 @@ static void freeResultList(NetlinkList *p_list)
    }
 }
 
-static NetlinkList *getResultList(int p_socket, int p_request)
+static NetlinkList *ifaddrs_get_resultlist(int p_socket, int p_request)
 {
    int l_size;
    NetlinkList *l_list = NULL;
@@ -213,11 +242,12 @@ static NetlinkList *getResultList(int p_socket, int p_request)
    while (!l_done)
    {
       NetlinkList *l_item    = NULL;
-      struct nlmsghdr *l_hdr = getNetlinkResponse(p_socket, &l_size, &l_done);
+      struct nlmsghdr *l_hdr = ifaddrs_get_netlink_response(
+      p_socket, &l_size, &l_done);
       if (!l_hdr)
          goto error;
 
-      l_item = newListItem(l_hdr, l_size);
+      l_item = ifaddr_new_list_item(l_hdr, l_size);
       if (!l_item)
          goto error;
 
@@ -231,16 +261,13 @@ static NetlinkList *getResultList(int p_socket, int p_request)
    return l_list;
 
 error:
-   freeResultList(l_list);
+   ifaddr_free_result_list(l_list);
    return NULL;
 }
 
-static size_t maxSize(size_t a, size_t b)
-{
-   return (a > b ? a : b);
-}
+static size_t ifaddrs_max_size(size_t a, size_t b) { return (a > b ? a : b); }
 
-static size_t calcAddrLen(sa_family_t p_family, int p_dataSize)
+static size_t ifaddrs_calc_addr_len(sa_family_t p_family, int p_dataSize)
 {
    switch(p_family)
    {
@@ -249,15 +276,16 @@ static size_t calcAddrLen(sa_family_t p_family, int p_dataSize)
       case AF_INET6:
          return sizeof(struct sockaddr_in6);
       case AF_PACKET:
-         return maxSize(sizeof(struct sockaddr_ll), offsetof(struct sockaddr_ll, sll_addr) + p_dataSize);
+         return ifaddrs_max_size(sizeof(struct sockaddr_ll), offsetof(struct sockaddr_ll, sll_addr) + p_dataSize);
       default:
          break;
    }
 
-   return maxSize(sizeof(struct sockaddr), offsetof(struct sockaddr, sa_data) + p_dataSize);
+   return ifaddrs_max_size(sizeof(struct sockaddr), offsetof(struct sockaddr, sa_data) + p_dataSize);
 }
 
-static void makeSockaddr(sa_family_t p_family, struct sockaddr *p_dest, void *p_data, size_t p_size)
+static void ifaddrs_make_sock_addr(sa_family_t p_family,
+   struct sockaddr *p_dest, void *p_data, size_t p_size)
 {
    switch(p_family)
    {
@@ -278,7 +306,8 @@ static void makeSockaddr(sa_family_t p_family, struct sockaddr *p_dest, void *p_
    p_dest->sa_family = p_family;
 }
 
-static void addToEnd(struct ifaddrs **p_resultList, struct ifaddrs *p_entry)
+static void ifaddrs_add_to_end(struct ifaddrs **p_resultList,
+   struct ifaddrs *p_entry)
 {
    if (!*p_resultList)
       *p_resultList = p_entry;
@@ -291,8 +320,10 @@ static void addToEnd(struct ifaddrs **p_resultList, struct ifaddrs *p_entry)
    }
 }
 
-static int interpretLink(struct nlmsghdr *p_hdr, struct ifaddrs **p_resultList)
+static int ifaddrs_interpret_link(struct nlmsghdr *p_hdr,
+   struct ifaddrs **p_resultList)
 {
+   char *l_index, *l_addr, *l_name, *l_data;
    struct ifaddrs *l_entry  = NULL;
    struct rtattr *l_rta     = NULL;
    struct ifinfomsg *l_info = (struct ifinfomsg *)NLMSG_DATA(p_hdr);
@@ -309,7 +340,7 @@ static int interpretLink(struct nlmsghdr *p_hdr, struct ifaddrs **p_resultList)
       {
          case IFLA_ADDRESS:
          case IFLA_BROADCAST:
-            l_addrSize += NLMSG_ALIGN(calcAddrLen(AF_PACKET, l_rtaDataSize));
+            l_addrSize += NLMSG_ALIGN(ifaddrs_calc_addr_len(AF_PACKET, l_rtaDataSize));
             break;
          case IFLA_IFNAME:
             l_nameSize += NLMSG_ALIGN(l_rtaSize + 1);
@@ -329,10 +360,10 @@ static int interpretLink(struct nlmsghdr *p_hdr, struct ifaddrs **p_resultList)
    memset(l_entry, 0, sizeof(struct ifaddrs));
    l_entry->ifa_name = "";
 
-   char *l_index = ((char *)l_entry) + sizeof(struct ifaddrs);
-   char *l_name = l_index + sizeof(int);
-   char *l_addr = l_name + l_nameSize;
-   char *l_data = l_addr + l_addrSize;
+   l_index = ((char *)l_entry) + sizeof(struct ifaddrs);
+   l_name  = l_index + sizeof(int);
+   l_addr  = l_name + l_nameSize;
+   l_data  = l_addr + l_addrSize;
 
    /* save the interface index so we can look 
     * it up when handling the addresses. */
@@ -353,19 +384,19 @@ static int interpretLink(struct nlmsghdr *p_hdr, struct ifaddrs **p_resultList)
          case IFLA_ADDRESS:
          case IFLA_BROADCAST:
             {
-               size_t l_addrLen = calcAddrLen(AF_PACKET, l_rtaDataSize);
-               makeSockaddr(AF_PACKET, (struct sockaddr *)l_addr, l_rtaData, l_rtaDataSize);
+               size_t l_addr_len = ifaddrs_calc_addr_len(AF_PACKET, l_rtaDataSize);
+               ifaddrs_make_sock_addr(AF_PACKET, (struct sockaddr *)l_addr, l_rtaData, l_rtaDataSize);
                ((struct sockaddr_ll *)l_addr)->sll_ifindex = l_info->ifi_index;
                ((struct sockaddr_ll *)l_addr)->sll_hatype = l_info->ifi_type;
                if (l_rta->rta_type == IFLA_ADDRESS)
                   l_entry->ifa_addr      = (struct sockaddr *)l_addr;
                else
                   l_entry->ifa_broadaddr = (struct sockaddr *)l_addr;
-               l_addr += NLMSG_ALIGN(l_addrLen);
-               break;
+               l_addr += NLMSG_ALIGN(l_addr_len);
             }
+            break;
          case IFLA_IFNAME:
-            strncpy(l_name, l_rtaData, l_rtaDataSize);
+            memcpy(l_name, l_rtaData, l_rtaDataSize);
             l_name[l_rtaDataSize] = '\0';
             l_entry->ifa_name = l_name;
             break;
@@ -378,11 +409,11 @@ static int interpretLink(struct nlmsghdr *p_hdr, struct ifaddrs **p_resultList)
       }
    }
 
-   addToEnd(p_resultList, l_entry);
+   ifaddrs_add_to_end(p_resultList, l_entry);
    return 0;
 }
 
-static struct ifaddrs *findInterface(int p_index,
+static struct ifaddrs *ifaddrs_find_interface(int p_index,
       struct ifaddrs **p_links, int p_numLinks)
 {
    int l_num             = 0;
@@ -403,16 +434,18 @@ static struct ifaddrs *findInterface(int p_index,
    return NULL;
 }
 
-static int interpretAddr(struct nlmsghdr *p_hdr,
+static int ifaddrs_interpret_addr(struct nlmsghdr *p_hdr,
       struct ifaddrs **p_resultList, int p_numLinks)
 {
+   char *l_name, *l_addr;
    struct rtattr *l_rta;
+   struct ifaddrs *l_entry;
    size_t l_rtaSize;
    size_t l_nameSize           = 0;
    size_t l_addrSize           = 0;
    int l_addedNetmask          = 0;
    struct ifaddrmsg *l_info    = (struct ifaddrmsg *)NLMSG_DATA(p_hdr);
-   struct ifaddrs *l_interface = findInterface(l_info->ifa_index, p_resultList, p_numLinks);
+   struct ifaddrs *l_interface = ifaddrs_find_interface(l_info->ifa_index, p_resultList, p_numLinks);
 
    if (l_info->ifa_family == AF_PACKET)
       return 0;
@@ -431,11 +464,11 @@ static int interpretAddr(struct nlmsghdr *p_hdr,
             if ((l_info->ifa_family == AF_INET || l_info->ifa_family == AF_INET6) && !l_addedNetmask)
             {
                /* make room for netmask */
-               l_addrSize += NLMSG_ALIGN(calcAddrLen(l_info->ifa_family, l_rtaDataSize));
+               l_addrSize += NLMSG_ALIGN(ifaddrs_calc_addr_len(l_info->ifa_family, l_rtaDataSize));
                l_addedNetmask = 1;
             }
          case IFA_BROADCAST:
-            l_addrSize += NLMSG_ALIGN(calcAddrLen(l_info->ifa_family, l_rtaDataSize));
+            l_addrSize += NLMSG_ALIGN(ifaddrs_calc_addr_len(l_info->ifa_family, l_rtaDataSize));
             break;
          case IFA_LABEL:
             l_nameSize += NLMSG_ALIGN(l_rtaSize + 1);
@@ -445,15 +478,19 @@ static int interpretAddr(struct nlmsghdr *p_hdr,
       }
    }
 
-   struct ifaddrs *l_entry = (struct ifaddrs*)malloc(sizeof(struct ifaddrs) + l_nameSize + l_addrSize);
+   /* An unlabelled address takes its name from the interface index. */
+   if (!l_interface)
+      l_nameSize += NLMSG_ALIGN(IF_NAMESIZE + 1);
+
+   l_entry = (struct ifaddrs*)malloc(sizeof(struct ifaddrs) + l_nameSize + l_addrSize);
    if (!l_entry)
       return -1;
 
    memset(l_entry, 0, sizeof(struct ifaddrs));
    l_entry->ifa_name = (l_interface ? l_interface->ifa_name : "");
 
-   char *l_name = ((char *)l_entry) + sizeof(struct ifaddrs);
-   char *l_addr = l_name + l_nameSize;
+   l_name = ((char *)l_entry) + sizeof(struct ifaddrs);
+   l_addr = l_name + l_nameSize;
 
    l_entry->ifa_flags = l_info->ifa_flags;
    if (l_interface)
@@ -463,7 +500,7 @@ static int interpretAddr(struct nlmsghdr *p_hdr,
    for (l_rta = IFA_RTA(l_info); RTA_OK(l_rta, l_rtaSize);
          l_rta = RTA_NEXT(l_rta, l_rtaSize))
    {
-      void *l_rtaData = RTA_DATA(l_rta);
+      void *l_rtaData      = RTA_DATA(l_rta);
       size_t l_rtaDataSize = RTA_PAYLOAD(l_rta);
       switch(l_rta->rta_type)
       {
@@ -471,22 +508,24 @@ static int interpretAddr(struct nlmsghdr *p_hdr,
          case IFA_BROADCAST:
          case IFA_LOCAL:
             {
-               size_t l_addrLen = calcAddrLen(l_info->ifa_family, l_rtaDataSize);
-               makeSockaddr(l_info->ifa_family, (struct sockaddr *)l_addr, l_rtaData, l_rtaDataSize);
+               size_t l_addrLen = ifaddrs_calc_addr_len(l_info->ifa_family, l_rtaDataSize);
+               ifaddrs_make_sock_addr(l_info->ifa_family, (struct sockaddr *)l_addr, l_rtaData, l_rtaDataSize);
                if (l_info->ifa_family == AF_INET6)
                {
-                  if (IN6_IS_ADDR_LINKLOCAL((struct in6_addr *)l_rtaData) || IN6_IS_ADDR_MC_LINKLOCAL((struct in6_addr *)l_rtaData))
+                  if (IN6_IS_ADDR_LINKLOCAL((struct in6_addr *)l_rtaData) 
+                   || IN6_IS_ADDR_MC_LINKLOCAL((struct in6_addr *)l_rtaData))
                      ((struct sockaddr_in6 *)l_addr)->sin6_scope_id = l_info->ifa_index;
                }
 
                if (l_rta->rta_type == IFA_ADDRESS)
                {
-                  /* apparently in a point-to-point network IFA_ADDRESS
-                   * contains the dest address and IFA_LOCAL contains the local address */
+                  /* Apparently in a point-to-point network IFA_ADDRESS
+                   * contains the dest address and IFA_LOCAL contains 
+                   * the local address */
                   if (l_entry->ifa_addr)
                      l_entry->ifa_dstaddr = (struct sockaddr *)l_addr;
                   else
-                     l_entry->ifa_addr = (struct sockaddr *)l_addr;
+                     l_entry->ifa_addr    = (struct sockaddr *)l_addr;
                }
                else if (l_rta->rta_type == IFA_LOCAL)
                {
@@ -500,8 +539,7 @@ static int interpretAddr(struct nlmsghdr *p_hdr,
                break;
             }
          case IFA_LABEL:
-            strncpy(l_name, l_rtaData, l_rtaDataSize);
-            l_name[l_rtaDataSize] = '\0';
+            strlcpy(l_name, l_rtaData, l_rtaDataSize + 1);
             l_entry->ifa_name = l_name;
             break;
          default:
@@ -509,9 +547,15 @@ static int interpretAddr(struct nlmsghdr *p_hdr,
       }
    }
 
-   if (l_entry->ifa_addr &&
-         (   l_entry->ifa_addr->sa_family == AF_INET
-          || l_entry->ifa_addr->sa_family == AF_INET6))
+   if (!l_interface && !*l_entry->ifa_name)
+   {
+      if (if_indextoname(l_info->ifa_index, l_name))
+         l_entry->ifa_name = l_name;
+   }
+
+   if (          l_entry->ifa_addr
+          && (   l_entry->ifa_addr->sa_family == AF_INET
+          ||     l_entry->ifa_addr->sa_family == AF_INET6))
    {
       unsigned i;
       char l_mask[16];
@@ -522,25 +566,25 @@ static int interpretAddr(struct nlmsghdr *p_hdr,
 
       l_mask[0] = '\0';
 
-      for (i=0; i<(l_prefix/8); ++i)
+      for (i = 0; i < (l_prefix/8); ++i)
          l_mask[i] = 0xff;
       if (l_prefix % 8)
          l_mask[i] = 0xff << (8 - (l_prefix % 8));
 
-      makeSockaddr(l_entry->ifa_addr->sa_family,
+      ifaddrs_make_sock_addr(l_entry->ifa_addr->sa_family,
             (struct sockaddr *)l_addr, l_mask, l_maxPrefix / 8);
       l_entry->ifa_netmask = (struct sockaddr *)l_addr;
    }
 
-   addToEnd(p_resultList, l_entry);
+   ifaddrs_add_to_end(p_resultList, l_entry);
    return 0;
 }
 
-static int interpretLinks(int p_socket, NetlinkList *p_netlinkList,
-      struct ifaddrs **p_resultList)
+static int ifaddrs_interpret_links(int p_socket,
+      NetlinkList *p_netlinkList, struct ifaddrs **p_resultList)
 {
    int l_numLinks = 0;
-   pid_t l_pid    = getpid();
+   pid_t l_pid    = netlink_portid(p_socket);
 
    for (; p_netlinkList; p_netlinkList = p_netlinkList->m_next)
    {
@@ -548,10 +592,10 @@ static int interpretLinks(int p_socket, NetlinkList *p_netlinkList,
       unsigned int l_nlsize  = p_netlinkList->m_size;
 
       for (l_hdr = p_netlinkList->m_data; NLMSG_OK(l_hdr, l_nlsize);
-            l_hdr = NLMSG_NEXT(l_hdr, l_nlsize))
+           l_hdr = NLMSG_NEXT(l_hdr, l_nlsize))
       {
-         if (  (pid_t)l_hdr->nlmsg_pid != l_pid || 
-               (int)l_hdr->nlmsg_seq   != p_socket)
+         if (     (pid_t)l_hdr->nlmsg_pid != l_pid 
+               ||   (int)l_hdr->nlmsg_seq != p_socket)
             continue;
 
          if (l_hdr->nlmsg_type == NLMSG_DONE)
@@ -559,7 +603,7 @@ static int interpretLinks(int p_socket, NetlinkList *p_netlinkList,
 
          if (l_hdr->nlmsg_type == RTM_NEWLINK)
          {
-            if (interpretLink(l_hdr, p_resultList) == -1)
+            if (ifaddrs_interpret_link(l_hdr, p_resultList) == -1)
                return -1;
             ++l_numLinks;
          }
@@ -568,10 +612,11 @@ static int interpretLinks(int p_socket, NetlinkList *p_netlinkList,
    return l_numLinks;
 }
 
-static int interpretAddrs(int p_socket, NetlinkList *p_netlinkList,
+static int ifaddrs_interpret_addrs(int p_socket,
+      NetlinkList *p_netlinkList,
       struct ifaddrs **p_resultList, int p_numLinks)
 {
-   pid_t l_pid = getpid();
+   pid_t l_pid = netlink_portid(p_socket);
    for (; p_netlinkList; p_netlinkList = p_netlinkList->m_next)
    {
       struct nlmsghdr *l_hdr = NULL;
@@ -589,7 +634,7 @@ static int interpretAddrs(int p_socket, NetlinkList *p_netlinkList,
 
          if (l_hdr->nlmsg_type == RTM_NEWADDR)
          {
-            if (interpretAddr(l_hdr, p_resultList, p_numLinks) == -1)
+            if (ifaddrs_interpret_addr(l_hdr, p_resultList, p_numLinks) == -1)
                return -1;
          }
       }
@@ -597,47 +642,80 @@ static int interpretAddrs(int p_socket, NetlinkList *p_netlinkList,
    return 0;
 }
 
+/* Interface flags normally arrive with the link messages; recover
+ * them one interface at a time when those are not available. */
+static void ifaddrs_interpret_flags(struct ifaddrs *p_list)
+{
+   struct ifaddrs *l_cur;
+   int l_socket = socket(AF_INET, SOCK_DGRAM, 0);
+
+   if (l_socket < 0)
+      return;
+
+   for (l_cur = p_list; l_cur; l_cur = l_cur->ifa_next)
+   {
+      struct ifreq l_req;
+
+      if (!l_cur->ifa_name || !*l_cur->ifa_name)
+         continue;
+
+      memset(&l_req, 0, sizeof(l_req));
+      strlcpy(l_req.ifr_name, l_cur->ifa_name, sizeof(l_req.ifr_name));
+
+      if (ioctl(l_socket, SIOCGIFFLAGS, &l_req) >= 0)
+         l_cur->ifa_flags = (unsigned int)(unsigned short)l_req.ifr_flags;
+   }
+
+   close(l_socket);
+}
+
 int getifaddrs(struct ifaddrs **ifap)
 {
-   NetlinkList *l_linkResults;
    NetlinkList *l_addrResults;
-   int l_numLinks;
-   int l_socket   = 0;
-   int l_result   = 0;
+   NetlinkList *l_linkResults;
+   int l_socket    = 0;
+   int l_numLinks  = 0;
+   int l_result    = 0;
+   int l_haveLinks = 0;
+
    if (!ifap)
       return -1;
 
    *ifap    = NULL;
-
    l_socket = netlink_socket();
 
    if (l_socket < 0)
       return -1;
 
-   l_linkResults = getResultList(l_socket, RTM_GETLINK);
-   if (!l_linkResults)
-   {
-      close(l_socket);
-      return -1;
-   }
+   /* Link messages are a privileged request under the SELinux policy
+    * Android applies to applications. Carry on without them; the
+    * addresses alone still describe every interface, and the name and
+    * flags each one is missing can be recovered afterwards. */
+   l_linkResults = ifaddrs_get_resultlist(l_socket, RTM_GETLINK);
+   l_haveLinks   = (l_linkResults != NULL);
 
-   l_addrResults = getResultList(l_socket, RTM_GETADDR);
+   l_addrResults = ifaddrs_get_resultlist(l_socket, RTM_GETADDR);
    if (!l_addrResults)
    {
+      ifaddr_free_result_list(l_linkResults);
       close(l_socket);
-      freeResultList(l_linkResults);
       return -1;
    }
 
-   l_numLinks = interpretLinks(l_socket, l_linkResults, ifap);
+   if (l_haveLinks)
+      l_numLinks = ifaddrs_interpret_links(l_socket, l_linkResults, ifap);
 
-   if (  l_numLinks == -1 || 
-         interpretAddrs(l_socket, l_addrResults, ifap, l_numLinks) == -1)
+   if (     l_numLinks == -1
+         || ifaddrs_interpret_addrs(l_socket, l_addrResults, ifap, l_numLinks) == -1)
       l_result = -1;
 
-   freeResultList(l_linkResults);
-   freeResultList(l_addrResults);
+   ifaddr_free_result_list(l_linkResults);
+   ifaddr_free_result_list(l_addrResults);
    close(l_socket);
+
+   if (!l_result && !l_haveLinks)
+      ifaddrs_interpret_flags(*ifap);
+
    return l_result;
 }
 

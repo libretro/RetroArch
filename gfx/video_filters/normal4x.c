@@ -110,34 +110,22 @@ static void normal4x_work_cb_xrgb8888(void *data, void *thread_data)
 
    for (y = 0; y < thr->height; ++y)
    {
-      uint32_t *out_ptr = output;
+      /* Expand each source pixel to 4x horizontally into the first
+       * output row, then copy that row to the other three. */
+      uint32_t *row0 = output;
       for (x = 0; x < thr->width; ++x)
       {
-         uint32_t *out_line_ptr = out_ptr;
-         uint32_t color         = *(input + x);
-         uint32_t row_color[4];
-
-         row_color[0] = color;
-         row_color[1] = color;
-         row_color[2] = color;
-         row_color[3] = color;
-
-         /* Row 1 */
-         memcpy(out_line_ptr, row_color, sizeof(row_color));
-         out_line_ptr += out_stride;
-
-         /* Row 2 */
-         memcpy(out_line_ptr, row_color, sizeof(row_color));
-         out_line_ptr += out_stride;
-
-         /* Row 3 */
-         memcpy(out_line_ptr, row_color, sizeof(row_color));
-         out_line_ptr += out_stride;
-
-         /* Row 4 */
-         memcpy(out_line_ptr, row_color, sizeof(row_color));
-
-         out_ptr += 4;
+         uint32_t color    = input[x];
+         row0[4 * x]       = color;
+         row0[4 * x + 1]   = color;
+         row0[4 * x + 2]   = color;
+         row0[4 * x + 3]   = color;
+      }
+      {
+         size_t row_bytes = (size_t)(thr->width << 2) * sizeof(uint32_t);
+         memcpy(output + out_stride,     row0, row_bytes);
+         memcpy(output + out_stride * 2, row0, row_bytes);
+         memcpy(output + out_stride * 3, row0, row_bytes);
       }
 
       input  += in_stride;
@@ -156,34 +144,25 @@ static void normal4x_work_cb_rgb565(void *data, void *thread_data)
 
    for (y = 0; y < thr->height; ++y)
    {
-      uint16_t *out_ptr = output;
+      /* Expand each source pixel to 4x horizontally into the first
+       * output row, then copy that row to the other three.  The
+       * horizontal expansion is a simple contiguous write that the
+       * compiler autovectorizes, and the three row copies are memcpy;
+       * this replaces the previous four interleaved per-pixel stores. */
+      uint16_t *row0 = output;
       for (x = 0; x < thr->width; ++x)
       {
-         uint16_t row_color[4];
-         uint16_t *out_line_ptr = out_ptr;
-         uint16_t color         = *(input + x);
-
-         row_color[0] = color;
-         row_color[1] = color;
-         row_color[2] = color;
-         row_color[3] = color;
-
-         /* Row 1 */
-         memcpy(out_line_ptr, row_color, sizeof(row_color));
-         out_line_ptr += out_stride;
-
-         /* Row 2 */
-         memcpy(out_line_ptr, row_color, sizeof(row_color));
-         out_line_ptr += out_stride;
-
-         /* Row 3 */
-         memcpy(out_line_ptr, row_color, sizeof(row_color));
-         out_line_ptr += out_stride;
-
-         /* Row 4 */
-         memcpy(out_line_ptr, row_color, sizeof(row_color));
-
-         out_ptr += 4;
+         uint16_t color    = input[x];
+         row0[4 * x]       = color;
+         row0[4 * x + 1]   = color;
+         row0[4 * x + 2]   = color;
+         row0[4 * x + 3]   = color;
+      }
+      {
+         size_t row_bytes = (size_t)(thr->width << 2) * sizeof(uint16_t);
+         memcpy(output + out_stride,     row0, row_bytes);
+         memcpy(output + out_stride * 2, row0, row_bytes);
+         memcpy(output + out_stride * 3, row0, row_bytes);
       }
 
       input  += in_stride;

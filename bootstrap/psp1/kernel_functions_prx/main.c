@@ -7,6 +7,9 @@
 PSP_MODULE_INFO("kernel_functions", PSP_MODULE_KERNEL, 0, 0);
 PSP_MAIN_THREAD_ATTR(0);
 
+extern int sceKernelLoadExecVSHEf2(const char *file,
+   struct SceKernelLoadExecVSHParam *param);
+
 void exitspawn_kernel(const char *fileName, SceSize args, void *argp)
 {
    int k1;
@@ -25,7 +28,10 @@ void exitspawn_kernel(const char *fileName, SceSize args, void *argp)
    game_param.unk5              = 0x10000;
 
    k1                           = pspSdkSetK1(0);
-   sceKernelLoadExecVSHMs2(fileName, &game_param);
+   if (!strncmp(fileName, "ef0:", 4))
+      sceKernelLoadExecVSHEf2(fileName, &game_param);
+   else
+      sceKernelLoadExecVSHMs2(fileName, &game_param);
    pspSdkSetK1(k1);
 }
 

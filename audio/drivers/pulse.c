@@ -22,6 +22,7 @@
 #include <pulse/pulseaudio.h>
 
 #include <boolean.h>
+#include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 
@@ -32,14 +33,72 @@ typedef struct
 {
    pa_threaded_mainloop *mainloop;
    pa_context *context;
+   uint32_t layout;   /* the frontend's mask the stream carries */
    pa_stream *stream;
    size_t buffer_size;
+   /* The server's request granularity; wait_writable() only needs
+    * this much room to make progress, since the write itself fills in
+    * the rest as it frees. */
+   size_t minreq;
+   struct string_list *devicelist;
    bool nonblock;
    bool success;
    bool is_paused;
    bool is_ready;
-   struct string_list *devicelist;
+   /* Set by the timeout event pulse_wait_ms() arms. */
+   bool timed_out;
+   /* Frames handed to the server since the stream opened, for the sink
+    * rate estimate; the device's own count is this less whatever is
+    * still queued. Written and read on the frontend's thread, under
+    * the mainloop lock where the writes happen. */
+   uint64_t frames_written;
+   unsigned rate;
+   /* What the server last said, from its own thread, for the reads the
+    * frontend makes every frame: the writable size, from the write
+    * callback's argument and after each write; the sink's own latency
+    * behind the stream, in frames, from the latency update. Read
+    * without the mainloop lock. Stale by at most one server period -
+    * the write callback fires at each - and stale on the full side,
+    * since only a callback raises the writable size and every write
+    * lowers it at once. */
+   retro_atomic_size_t writable_cached;
+   retro_atomic_size_t sink_frames_cached;
 } pa_t;
+
+/* Bounds on the waits below. A server that is answering signals in
+ * milliseconds; these are for one that is not - stopped consuming, or
+ * gone without the state callback having fired yet. */
+#define PULSE_CONNECT_WAIT_MS 3000
+#define PULSE_OP_WAIT_MS      1000
+#define PULSE_WRITE_WAIT_MS   1000
+
+static void pulse_timeout_cb(pa_mainloop_api *a, pa_time_event *e,
+      const struct timeval *tv, void *data)
+{
+   pa_t *pa = (pa_t*)data;
+   (void)a; (void)e; (void)tv;
+   pa->timed_out = true;
+   pa_threaded_mainloop_signal(pa->mainloop, 0);
+}
+
+/* libpulse offers no timed wait, so one is made from a one-shot time
+ * event on the mainloop that signals the waiter. Wakes on any signal,
+ * as pa_threaded_mainloop_wait() does - callers re-check what they
+ * were waiting for - or on the deadline, which returns false. Caller
+ * holds the mainloop lock. */
+static bool pulse_wait_ms(pa_t *pa, unsigned ms)
+{
+   pa_time_event *ev;
+
+   pa->timed_out = false;
+   ev = pa_context_rttime_new(pa->context,
+         pa_rtclock_now() + (pa_usec_t)ms * PA_USEC_PER_MSEC,
+         pulse_timeout_cb, pa);
+   pa_threaded_mainloop_wait(pa->mainloop);
+   if (ev)
+      pa_threaded_mainloop_get_api(pa->mainloop)->time_free(ev);
+   return !pa->timed_out;
+}
 
 static void pulse_free(void *data)
 {
@@ -106,8 +165,8 @@ static void pulse_context_state_cb(pa_context *c, void *data)
 static void pa_sinklist_cb(pa_context *c, const pa_sink_info *l, int eol, void *data)
 {
    union string_list_elem_attr attr;
-   attr.i = 0;
    pa_t *pa = (pa_t*)data;
+   attr.i = 0;
 
    if (!pa || !pa->devicelist)
       return;
@@ -145,12 +204,20 @@ static void pulse_stream_state_cb(pa_stream *s, void *data)
 static void pulse_stream_request_cb(pa_stream *s, size_t len, void *data)
 {
    pa_t *pa = (pa_t*)data;
+   retro_atomic_store_release_size(&pa->writable_cached, len);
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
 static void pulse_stream_latency_update_cb(pa_stream *s, void *data)
 {
    pa_t *pa = (pa_t*)data;
+   /* On the mainloop thread, the lock held: the timing info is
+    * current here. sink_usec is the part of the latency that is not
+    * the server's queue; NULL until timing data has arrived. */
+   const pa_timing_info *ti = pa_stream_get_timing_info(s);
+   if (ti && pa->rate)
+      retro_atomic_store_release_size(&pa->sink_frames_cached,
+            (size_t)((uint64_t)ti->sink_usec * pa->rate / 1000000));
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
@@ -172,24 +239,56 @@ static void pulse_buffer_attr_cb(pa_stream *s, void *data)
    pa_t *pa = (pa_t*)data;
    const pa_buffer_attr *server_attr = pa_stream_get_buffer_attr(s);
    if (server_attr)
+   {
       pa->buffer_size = server_attr->tlength;
+      pa->minreq      = server_attr->minreq;
+   }
 
 #if 0
    RARCH_LOG("[PulseAudio] Got new buffer size %u.\n", (unsigned)pa->buffer_size);
 #endif
 }
 
+/* A channel map of the layout's positions in the mask's ascending-bit
+ * order, which is the order the frames carry. A count never decides
+ * a position: the two six-channel layouts differ in the rear pair and
+ * each is given as itself. */
+static void pulse_channel_map(uint32_t layout, pa_channel_map *map)
+{
+   static const struct { uint32_t bit; pa_channel_position_t pos; } table[] = {
+      { AUDIO_SPEAKER_FRONT_LEFT,            PA_CHANNEL_POSITION_FRONT_LEFT            },
+      { AUDIO_SPEAKER_FRONT_RIGHT,           PA_CHANNEL_POSITION_FRONT_RIGHT           },
+      { AUDIO_SPEAKER_FRONT_CENTER,          PA_CHANNEL_POSITION_FRONT_CENTER          },
+      { AUDIO_SPEAKER_LOW_FREQUENCY,         PA_CHANNEL_POSITION_LFE                   },
+      { AUDIO_SPEAKER_BACK_LEFT,             PA_CHANNEL_POSITION_REAR_LEFT             },
+      { AUDIO_SPEAKER_BACK_RIGHT,            PA_CHANNEL_POSITION_REAR_RIGHT            },
+      { AUDIO_SPEAKER_FRONT_LEFT_OF_CENTER,  PA_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER  },
+      { AUDIO_SPEAKER_FRONT_RIGHT_OF_CENTER, PA_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER },
+      { AUDIO_SPEAKER_BACK_CENTER,           PA_CHANNEL_POSITION_REAR_CENTER           },
+      { AUDIO_SPEAKER_SIDE_LEFT,             PA_CHANNEL_POSITION_SIDE_LEFT             },
+      { AUDIO_SPEAKER_SIDE_RIGHT,            PA_CHANNEL_POSITION_SIDE_RIGHT            },
+   };
+   size_t i;
+   pa_channel_map_init(map);
+   for (i = 0; i < ARRAY_SIZE(table); i++)
+      if (layout & table[i].bit)
+         map->map[map->channels++] = table[i].pos;
+}
+
 static void *pulse_init(const char *device, unsigned rate,
-      unsigned latency, unsigned block_frames,
+      unsigned latency, 
       unsigned *new_rate)
 {
    pa_sample_spec spec;
+   pa_channel_map map;
    pa_buffer_attr        buffer_attr = {0};
    const pa_buffer_attr *server_attr = NULL;
    pa_t                          *pa = (pa_t*)calloc(1, sizeof(*pa));
 
    if (!pa)
       return NULL;
+   retro_atomic_size_init(&pa->writable_cached, 0);
+   retro_atomic_size_init(&pa->sink_frames_cached, 0);
 
    memset(&spec, 0, sizeof(spec));
 
@@ -213,21 +312,38 @@ static void *pulse_init(const char *device, unsigned rate,
    if (pa_threaded_mainloop_start(pa->mainloop) < 0)
       goto error;
 
-   pa_threaded_mainloop_wait(pa->mainloop);
-
-   if (pa_context_get_state(pa->context) != PA_CONTEXT_READY)
-      goto unlock_error;
+   /* The state callback signals on ready or failure; a server that
+    * accepts the connection and then says nothing is given up on. */
+   while (pa_context_get_state(pa->context) != PA_CONTEXT_READY)
+   {
+      pa_context_state_t st = pa_context_get_state(pa->context);
+      if (st == PA_CONTEXT_FAILED || st == PA_CONTEXT_TERMINATED)
+         goto unlock_error;
+      if (!pulse_wait_ms(pa, PULSE_CONNECT_WAIT_MS))
+      {
+         RARCH_ERR("[PulseAudio] Server did not become ready within %u ms.\n",
+               PULSE_CONNECT_WAIT_MS);
+         goto unlock_error;
+      }
+   }
 
    pa_context_get_sink_info_list(pa->context, pa_sinklist_cb, pa);
    /* Checking device against sink list would be tricky due to callback, so it is just set. */
    if (device)
      pa_context_set_default_sink(pa->context, device, NULL, NULL);
 
+   /* The layout the frontend asked for, as a channel map of its
+    * positions in the mask's order: the server routes each to the
+    * sink's channel of that position, or remixes where the sink
+    * lacks one, so what is asked is what is carried. */
+   pa->layout    = audio_driver_requested_layout();
    spec.format   = is_little_endian() ? PA_SAMPLE_FLOAT32LE : PA_SAMPLE_FLOAT32BE;
-   spec.channels = 2;
+   spec.channels = (uint8_t)audio_layout_channels(pa->layout);
    spec.rate     = rate;
+   pulse_channel_map(pa->layout, &map);
+   pa->rate      = rate;
 
-   pa->stream    = pa_stream_new(pa->context, "audio", &spec, NULL);
+   pa->stream    = pa_stream_new(pa->context, "audio", &spec, &map);
    if (!pa->stream)
       goto unlock_error;
 
@@ -248,22 +364,38 @@ static void *pulse_init(const char *device, unsigned rate,
             &buffer_attr, PA_STREAM_ADJUST_LATENCY, NULL, NULL) < 0)
       goto error;
 
-   pa_threaded_mainloop_wait(pa->mainloop);
-
-   if (pa_stream_get_state(pa->stream) != PA_STREAM_READY)
-      goto unlock_error;
+   while (pa_stream_get_state(pa->stream) != PA_STREAM_READY)
+   {
+      pa_stream_state_t st = pa_stream_get_state(pa->stream);
+      if (st == PA_STREAM_FAILED || st == PA_STREAM_TERMINATED)
+         goto unlock_error;
+      if (!pulse_wait_ms(pa, PULSE_CONNECT_WAIT_MS))
+      {
+         RARCH_ERR("[PulseAudio] Stream did not become ready within %u ms.\n",
+               PULSE_CONNECT_WAIT_MS);
+         goto unlock_error;
+      }
+   }
 
    server_attr = pa_stream_get_buffer_attr(pa->stream);
    if (server_attr)
    {
       pa->buffer_size = server_attr->tlength;
+      pa->minreq      = server_attr->minreq;
       RARCH_LOG("[PulseAudio] Requested %u bytes buffer, got %u.\n",
             (unsigned)buffer_attr.tlength,
             (unsigned)pa->buffer_size);
    }
    else
+   {
       pa->buffer_size = buffer_attr.tlength;
+      pa->minreq      = buffer_attr.tlength / 4;
+   }
 
+   /* Seeded here, under the lock; the write callback keeps it. */
+   retro_atomic_store_release_size(&pa->writable_cached,
+         pa_stream_writable_size(pa->stream));
+   retro_atomic_store_release_size(&pa->sink_frames_cached, 0);
    pa_threaded_mainloop_unlock(pa->mainloop);
    pa->is_ready = true;
 
@@ -279,6 +411,7 @@ error:
 static bool pulse_start(void *data, bool is_shutdown)
 {
    bool ret;
+   pa_operation *op;
    pa_t *pa = (pa_t*)data;
 
    if (!pa->is_ready)
@@ -288,8 +421,21 @@ static bool pulse_start(void *data, bool is_shutdown)
 
    pa->success = true; /* In case of spurious wakeup. Not critical. */
    pa_threaded_mainloop_lock(pa->mainloop);
-   pa_stream_cork(pa->stream, false, pulse_stream_success_cb, pa);
-   pa_threaded_mainloop_wait(pa->mainloop);
+   /* The operation object is ours to release once the callback has
+    * reported; it was never being released, one per start or stop. */
+   if ((op = pa_stream_cork(pa->stream, false, pulse_stream_success_cb, pa)))
+   {
+      /* Wake on the operation's callback, or on the bound: a corked
+       * stream raises no write callbacks, so nothing else would. */
+      while (pa_operation_get_state(op) == PA_OPERATION_RUNNING)
+         if (!pulse_wait_ms(pa, PULSE_OP_WAIT_MS))
+         {
+            pa_operation_cancel(op);
+            pa->success = false;
+            break;
+         }
+      pa_operation_unref(op);
+   }
    ret = pa->success;
    pa_threaded_mainloop_unlock(pa->mainloop);
    pa->is_paused = false;
@@ -321,9 +467,19 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
          buf     += writable;
          len     -= writable;
          _len    += writable;
+         /* Float32 at the layout's channels, fixed at stream setup. */
+         pa->frames_written += writable / (audio_layout_channels(pa->layout) * sizeof(float));
+         retro_atomic_store_release_size(&pa->writable_cached,
+               pa_stream_writable_size(pa->stream));
       }
       else if (!pa->nonblock)
-         pa_threaded_mainloop_wait(pa->mainloop);
+      {
+         /* Wakes on the next write callback. A server that has
+          * stopped consuming raises none; the bound ends the write
+          * with what went, rather than holding the thread on it. */
+         if (!pulse_wait_ms(pa, PULSE_WRITE_WAIT_MS) || !pa->is_ready)
+            break;
+      }
       else
          break;
    }
@@ -336,6 +492,7 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
 static bool pulse_stop(void *data)
 {
    bool ret;
+   pa_operation *op;
    pa_t *pa = (pa_t*)data;
 
    if (!pa->is_ready)
@@ -345,8 +502,19 @@ static bool pulse_stop(void *data)
 
    pa->success = true; /* In case of spurious wakeup. Not critical. */
    pa_threaded_mainloop_lock(pa->mainloop);
-   pa_stream_cork(pa->stream, true, pulse_stream_success_cb, pa);
-   pa_threaded_mainloop_wait(pa->mainloop);
+   /* The operation object is ours to release once the callback has
+    * reported; it was never being released, one per start or stop. */
+   if ((op = pa_stream_cork(pa->stream, true, pulse_stream_success_cb, pa)))
+   {
+      while (pa_operation_get_state(op) == PA_OPERATION_RUNNING)
+         if (!pulse_wait_ms(pa, PULSE_OP_WAIT_MS))
+         {
+            pa_operation_cancel(op);
+            pa->success = false;
+            break;
+         }
+      pa_operation_unref(op);
+   }
    ret = pa->success;
    pa_threaded_mainloop_unlock(pa->mainloop);
    pa->is_paused = true;
@@ -371,20 +539,27 @@ static void pulse_set_nonblock_state(void *data, bool state)
 
 static bool pulse_use_float(void *data) { return true; }
 
+static uint32_t pulse_layout(void *data)
+{
+   pa_t *pa = (pa_t*)data;
+   return pa ? pa->layout : AUDIO_LAYOUT_STEREO;
+}
+
+/* Read every frame by the frontend; served from what the server's
+ * thread last said, with no lock. See writable_cached. */
 static size_t pulse_write_avail(void *data)
 {
-   size_t _len;
    pa_t *pa = (pa_t*)data;
+   size_t sink;
 
    if (!pa->is_ready)
       return 0;
 
-   pa_threaded_mainloop_lock(pa->mainloop);
-   _len = pa_stream_writable_size(pa->stream);
-
    audio_driver_set_buffer_size(pa->buffer_size); /* Can change spuriously. */
-   pa_threaded_mainloop_unlock(pa->mainloop);
-   return _len;
+   sink = retro_atomic_load_acquire_size(&pa->sink_frames_cached);
+   if (sink)
+      audio_driver_set_device_latency(sink);
+   return retro_atomic_load_acquire_size(&pa->writable_cached);
 }
 
 static size_t pulse_buffer_size(void *data)
@@ -393,14 +568,194 @@ static size_t pulse_buffer_size(void *data)
    return pa->buffer_size;
 }
 
+/* Frames the device has taken since the stream opened.
+ *
+ * PulseAudio has no callback per period to count, so this is ALSA's
+ * shape rather than JACK's: everything handed to the server, less what
+ * has not been played yet. pa_stream_get_latency() reports that
+ * remainder in microseconds - the server's queue plus the sink's own,
+ * which is what should be subtracted - and it is only meaningful once
+ * timing data has arrived, so a stream that has not got any yet
+ * reports nothing rather than a count that would read as a stall.
+ *
+ * The negative case is real: on a monitor source or right after a
+ * flush the latency can come back negative, meaning the server is
+ * ahead of the write pointer. Subtracting it would inflate the count. */
+static size_t pulse_frames_consumed(void *data)
+{
+   pa_t     *pa = (pa_t*)data;
+   pa_usec_t lat_usec;
+   int       negative = 0;
+   uint64_t  queued;
+
+   if (!pa || !pa->is_ready || !pa->rate)
+      return 0;
+
+   pa_threaded_mainloop_lock(pa->mainloop);
+   if (pa_stream_get_latency(pa->stream, &lat_usec, &negative) < 0)
+   {
+      pa_threaded_mainloop_unlock(pa->mainloop);
+      return 0;
+   }
+   queued = negative ? 0
+         : (uint64_t)((double)lat_usec * (double)pa->rate / 1000000.0);
+   if (queued > pa->frames_written)
+      queued = pa->frames_written;
+   {
+      size_t out = (size_t)(pa->frames_written - queued);
+      pa_threaded_mainloop_unlock(pa->mainloop);
+      return out;
+   }
+}
+
+/* Sleep on the mainloop until at least len bytes are writable. The
+ * stream's write callback signals the mainloop as the server drains,
+ * so this wakes when room exists and never on a timer. */
+static size_t pulse_wait_writable(void *data, size_t len)
+{
+   size_t _len = 0;
+   pa_t *pa    = (pa_t*)data;
+
+   if (!pa->is_ready)
+      return 0;
+
+   /* Enough for the server's next request is enough: the write loops
+    * on writable space as the server frees it, and before the stream
+    * has started playing (prebuf) that partial write is the only way
+    * to get it full. */
+   if (pa->minreq && len > pa->minreq)
+      len = pa->minreq;
+
+   pa_threaded_mainloop_lock(pa->mainloop);
+   while (pa->is_ready)
+   {
+      _len = pa_stream_writable_size(pa->stream);
+      if (_len >= len)
+         break;
+      /* Wakes on the next write callback, i.e. when the server has
+       * consumed enough for more room to exist - or on the bound, which
+       * hands the pass back as no space coming from this call. */
+      if (!pulse_wait_ms(pa, PULSE_WRITE_WAIT_MS))
+      {
+         _len = 0;
+         break;
+      }
+   }
+   if (!pa->is_ready)
+      _len = 0;
+   audio_driver_set_buffer_size(pa->buffer_size);
+   pa_threaded_mainloop_unlock(pa->mainloop);
+   return _len;
+}
+
+/* Context-free enumeration: a short-lived plain mainloop, connect,
+ * list sinks, tear down. Used when there is no driver instance - init
+ * failed, or the menu asks before the driver is up - which is exactly
+ * when a user needs the list most. The threaded mainloop the driver
+ * runs on is not touched. */
+struct pulse_enum_state
+{
+   struct string_list *sl;
+   int done;      /* sink list callback saw EOL, or an error ended it */
+   int failed;
+};
+
+static void pulse_enum_sinklist_cb(pa_context *c,
+      const pa_sink_info *l, int eol, void *data)
+{
+   struct pulse_enum_state *st = (struct pulse_enum_state*)data;
+   union string_list_elem_attr attr;
+   attr.i = 0;
+   if (!st)
+      return;
+   if (eol > 0)
+   {
+      st->done = 1;
+      return;
+   }
+   if (eol < 0)
+   {
+      st->done   = 1;
+      st->failed = 1;
+      return;
+   }
+   if (l && l->name)
+      string_list_append(st->sl, l->name, attr);
+}
+
+static struct string_list *pulse_enumerate_sinks(void)
+{
+   struct pulse_enum_state st;
+   pa_mainloop *ml   = NULL;
+   pa_context  *ctx  = NULL;
+   pa_operation *op  = NULL;
+   int ret;
+
+   st.sl     = string_list_new();
+   st.done   = 0;
+   st.failed = 0;
+   if (!st.sl)
+      return NULL;
+
+   if (!(ml = pa_mainloop_new()))
+      goto error;
+   if (!(ctx = pa_context_new(pa_mainloop_get_api(ml), "RetroArch")))
+      goto error;
+   if (pa_context_connect(ctx, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
+      goto error;
+
+   /* Drive the loop until the context settles one way or the other. */
+   for (;;)
+   {
+      pa_context_state_t state = pa_context_get_state(ctx);
+      if (state == PA_CONTEXT_READY)
+         break;
+      if (!PA_CONTEXT_IS_GOOD(state))
+         goto error;
+      if (pa_mainloop_iterate(ml, 1, &ret) < 0)
+         goto error;
+   }
+
+   if (!(op = pa_context_get_sink_info_list(ctx, pulse_enum_sinklist_cb, &st)))
+      goto error;
+   while (!st.done)
+   {
+      if (pa_mainloop_iterate(ml, 1, &ret) < 0)
+         break;
+   }
+   pa_operation_unref(op);
+   op = NULL;
+   if (st.failed)
+      goto error;
+
+   pa_context_disconnect(ctx);
+   pa_context_unref(ctx);
+   pa_mainloop_free(ml);
+   return st.sl;
+
+error:
+   if (op)
+      pa_operation_unref(op);
+   if (ctx)
+   {
+      pa_context_disconnect(ctx);
+      pa_context_unref(ctx);
+   }
+   if (ml)
+      pa_mainloop_free(ml);
+   string_list_free(st.sl);
+   return NULL;
+}
+
 static void *pulse_device_list_new(void *data)
 {
    pa_t *pa = (pa_t*)data;
 
+   /* A live driver already holds the list it built at connect time. */
    if (pa && pa->devicelist)
       return string_list_clone(pa->devicelist);
 
-   return NULL;
+   return pulse_enumerate_sinks();
 }
 
 static void pulse_device_list_free(void *data, void *array_list_data)
@@ -427,5 +782,9 @@ audio_driver_t audio_pulse = {
    pulse_device_list_free,
    pulse_write_avail,
    pulse_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   pulse_wait_writable,
+   pulse_frames_consumed,
+   NULL, /* underruns */
+   pulse_layout
 };

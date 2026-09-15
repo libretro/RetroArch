@@ -25,6 +25,9 @@
 
 #include <retro_common_api.h>
 
+#include <stdint.h>
+#include <boolean.h>
+
 RETRO_BEGIN_DECLS
 
 typedef struct retro_dsp_filter retro_dsp_filter_t;
@@ -49,6 +52,36 @@ struct retro_dsp_data
 
 void retro_dsp_filter_process(retro_dsp_filter_t *dsp,
       struct retro_dsp_data *data);
+
+/**
+ * int16 counterpart of struct retro_dsp_data.
+ */
+struct retro_dsp_data_int16
+{
+   int16_t *input;
+   unsigned input_frames;
+
+   /* Set by retro_dsp_filter_process_int16(). */
+   int16_t *output;
+   unsigned output_frames;
+};
+
+/**
+ * retro_dsp_filter_supports_int16:
+ *
+ * Returns true only if there is at least one filter instance and every filter
+ * in the chain provides an int16 processing entry point (API version >= 2).
+ * When true, the whole chain can run integer-only via
+ * retro_dsp_filter_process_int16(); otherwise the float path must be used.
+ */
+bool retro_dsp_filter_supports_int16(retro_dsp_filter_t *dsp);
+
+/**
+ * Processes the chain entirely in int16. Only valid when
+ * retro_dsp_filter_supports_int16() returns true.
+ */
+void retro_dsp_filter_process_int16(retro_dsp_filter_t *dsp,
+      struct retro_dsp_data_int16 *data);
 
 RETRO_END_DECLS
 

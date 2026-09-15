@@ -50,7 +50,10 @@ struct irq_handler_s {
 	void *pCtx;
 };
 
-static u64 spuriousIrq = 0;
+/* spuriousIrq is incremented from IRQ context. A u64 ++ on PowerPC
+ * is two stores; outside readers could see a torn intermediate.
+ * u32 wraps in 2^32 spurious IRQs - we are not running that long. */
+static u32 spuriousIrq = 0;
 static u32 prevIrqMask = 0;
 static u32 currIrqMask = 0;
 static struct irq_handler_s g_IRQHandler[32];
@@ -164,35 +167,32 @@ void c_irqdispatcher(frame_context *ctx)
 			intmask |= IRQMASK(IRQ_EXI2_TC);
 		}
 	}
-	if(cause&0x00002000) {		//High Speed Port
-		intmask |= IRQMASK(IRQ_PI_HSP);
-	}
-	if(cause&0x00001000) {		//External Debugger
-		intmask |= IRQMASK(IRQ_PI_DEBUG);
-	}
-	if(cause&0x00000400) {		//Frame Ready (PE_FINISH)
-		intmask |= IRQMASK(IRQ_PI_PEFINISH);
-	}
-	if(cause&0x00000200) {		//Token Assertion (PE_TOKEN)
-		intmask |= IRQMASK(IRQ_PI_PETOKEN);
-	}
-	if(cause&0x00000100) {		//Video Interface
-		intmask |= IRQMASK(IRQ_PI_VI);
-	}
-	if(cause&0x00000008) {		//Serial
-		intmask |= IRQMASK(IRQ_PI_SI);
-	}
-	if(cause&0x00000004) {		//DVD
-		intmask |= IRQMASK(IRQ_PI_DI);
-	}
-	if(cause&0x00000002) {		//Reset Switch
-		intmask |= IRQMASK(IRQ_PI_RSW);
-	}
-	if(cause&0x00000800) {		//Command FIFO
-		intmask |= IRQMASK(IRQ_PI_CP);
-	}
-	if(cause&0x00000001) {		//GP Runtime Error
-		intmask |= IRQMASK(IRQ_PI_ERROR);
+	/* The PI cause register (cause &= ~0x10000 above) carries one
+	 * bit per direct interrupt source. Pre-patch fired a tall
+	 * if-cascade testing one bit at a time; fold into a tight loop
+	 * driven by a (cause-bit -> IRQ) lookup. The table covers PI
+	 * bits 0, 1, 2, 3, 8, 9, 10, 11, 12, 13 - the others (4..7) go
+	 * through sub-cause registers handled above. */
+	{
+		static const u8 _pi_irq[14] = {
+			IRQ_PI_ERROR,    /* bit 0  - 0x00000001 GP Runtime Error */
+			IRQ_PI_RSW,      /* bit 1  - 0x00000002 Reset Switch */
+			IRQ_PI_DI,       /* bit 2  - 0x00000004 DVD */
+			IRQ_PI_SI,       /* bit 3  - 0x00000008 Serial */
+			0, 0, 0, 0,      /* bits 4..7 - handled above (MEM/DSP/AI/EXI) */
+			IRQ_PI_VI,       /* bit 8  - 0x00000100 Video Interface */
+			IRQ_PI_PETOKEN,  /* bit 9  - 0x00000200 PE Token */
+			IRQ_PI_PEFINISH, /* bit 10 - 0x00000400 PE Finish */
+			IRQ_PI_CP,       /* bit 11 - 0x00000800 Command FIFO */
+			IRQ_PI_DEBUG,    /* bit 12 - 0x00001000 External Debugger */
+			IRQ_PI_HSP       /* bit 13 - 0x00002000 High-Speed Port */
+		};
+		u32 pi = cause & 0x0000370f; /* bits 0,1,2,3,8,9,10,11,12,13 */
+		while(pi) {
+			u32 b = 31 - cntlzw(pi);
+			intmask |= IRQMASK(_pi_irq[b]);
+			pi &= ~(1u<<b);
+		}
 	}
 #if defined(HW_RVL)
 	if(cause&0x00004000) {
@@ -375,9 +375,14 @@ void __irq_init()
 raw_irq_handler_t IRQ_Request(u32 nIrq,raw_irq_handler_t pHndl,void *pCtx)
 {
 	u32 level;
+	raw_irq_handler_t old;
+
+	/* g_IRQHandler has 32 slots; reject anything else before
+	 * indexing - pre-patch could corrupt adjacent BSS. */
+	if(nIrq>=32) return NULL;
 
 	_CPU_ISR_Disable(level);
-	raw_irq_handler_t old = g_IRQHandler[nIrq].pHndl;
+	old = g_IRQHandler[nIrq].pHndl;
 	g_IRQHandler[nIrq].pHndl = pHndl;
 	g_IRQHandler[nIrq].pCtx = pCtx;
 	_CPU_ISR_Restore(level);
@@ -389,6 +394,8 @@ raw_irq_handler_t IRQ_GetHandler(u32 nIrq)
 	u32 level;
 	raw_irq_handler_t ret;
 
+	if(nIrq>=32) return NULL;
+
 	_CPU_ISR_Disable(level);
 	ret = g_IRQHandler[nIrq].pHndl;
 	_CPU_ISR_Restore(level);
@@ -398,9 +405,12 @@ raw_irq_handler_t IRQ_GetHandler(u32 nIrq)
 raw_irq_handler_t IRQ_Free(u32 nIrq)
 {
 	u32 level;
+	raw_irq_handler_t old;
+
+	if(nIrq>=32) return NULL;
 
 	_CPU_ISR_Disable(level);
-	raw_irq_handler_t old = g_IRQHandler[nIrq].pHndl;
+	old = g_IRQHandler[nIrq].pHndl;
 	g_IRQHandler[nIrq].pHndl = NULL;
 	g_IRQHandler[nIrq].pCtx = NULL;
 	_CPU_ISR_Restore(level);

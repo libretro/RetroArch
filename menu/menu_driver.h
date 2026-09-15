@@ -41,7 +41,7 @@
 #include "menu_shader.h"
 #include "../gfx/gfx_animation.h"
 #include "../gfx/gfx_display.h"
-#include "../gfx/gfx_thumbnail_path.h"
+#include "../gfx/gfx_thumbnail.h"
 #include "../gfx/font_driver.h"
 #include "../performance_counters.h"
 
@@ -58,7 +58,7 @@ RETRO_BEGIN_DECLS
 
 #define SCROLL_INDEX_SIZE          (2 * (26 + 2) + 1)
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 /* This task reads a variable that is set asynchronously, so the first check might fail.
  * Check more often because it is cheap and to avoid a long period of missing power info. */
 #define POWERSTATE_CHECK_INTERVAL  1000000
@@ -67,7 +67,9 @@ RETRO_BEGIN_DECLS
 #endif
 
 #define DATETIME_CHECK_INTERVAL    1000000
-#define MENU_DRAW_ENTRY_DELAY      30
+/* Single-click playlist button hold: entry drawing stays
+ * suppressed for this long (us) after the click */
+#define MENU_DRAW_ENTRY_DELAY      500000
 
 #define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
 
@@ -320,6 +322,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_REMAP_FILE_FLUSH,
 
    MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN,
+   MENU_SETTING_ACTION_STATE_SLOT_RUN,
 
    MENU_SETTINGS_LAST
 };
@@ -405,6 +408,7 @@ typedef struct menu_ctx_driver
    void (*refresh_thumbnail_image)(void *data, size_t i);
    void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
+   bool (*osk_pointer_over_textbox)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
    int (*pointer_down)(void *data, unsigned x, unsigned y, unsigned ptr,
@@ -417,6 +421,12 @@ typedef struct menu_ctx_driver
    /* This will be invoked whenever a menu entry action
     * (menu_entry_action()) is performed */
    int (*entry_action)(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
+   /* Move the list itself by the given number of mouse wheel
+    * notches, negative towards the top, leaving the selection
+    * where it is. Drivers whose list position *is* the selection
+    * leave this NULL and keep getting MENU_ACTION_UP/DOWN.
+    * Returns false when the driver cannot scroll right now. */
+   bool (*wheel_scroll)(void *userdata, int notches);
 } menu_ctx_driver_t;
 
 typedef struct
@@ -438,6 +448,7 @@ typedef struct
       unsigned                unsigned_var;
    } scratchpad;
    unsigned rpl_entry_selection_ptr;
+   int16_t state_slot_run;
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    /* Used to cache the type and directory
@@ -474,6 +485,9 @@ typedef struct
    char db_playlist_file[PATH_MAX_LENGTH];
    char filebrowser_label[NAME_MAX_LENGTH];
    char detect_content_path[PATH_MAX_LENGTH];
+
+   /* The Content Downloader directory the user last stepped into. */
+   char core_content_dir[NAME_MAX_LENGTH];
 } menu_handle_t;
 
 struct menu_state
@@ -519,11 +533,11 @@ struct menu_state
    } scroll;
 
    /* unsigned alignment */
-   unsigned input_dialog_kb_type;
    unsigned input_dialog_kb_idx;
    unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
+   enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;
 #ifdef HAVE_RUNAHEAD
    unsigned int runahead_mode;
 #endif
@@ -546,12 +560,23 @@ struct menu_state
     * since RETRO_ENVIRONMENT_SHUTDOWN will cause
     * RARCH_PATH_CONTENT to be cleared */
    char pending_env_shutdown_content_path[PATH_MAX_LENGTH];
+   /* Path of a configuration file whose load has been deferred
+    * (see MENU_ST_FLAG_PENDING_CONFIG_REPLACE). The actual
+    * config_replace() is performed from runloop_check_state(),
+    * never from within menu iteration */
+   char pending_config_path[PATH_MAX_LENGTH];
 
 #ifdef HAVE_MENU
    char input_dialog_kb_label_setting[256];
    char input_dialog_kb_label[256];
 #endif
    unsigned char kb_key_state[RETROK_LAST];
+
+   /* The entry generic_menu_iterate() looks at once a frame. Here
+    * rather than on its stack: a menu_entry_t is 3872 bytes, which put
+    * that frame at 4312 where this tree allows four thousand. One is
+    * looked at a time, on the thread that iterates. */
+   menu_entry_t iterate_entry;
 };
 
 typedef struct menu_content_ctx_defer_info
@@ -762,6 +787,11 @@ void menu_update_runahead_mode(void);
 
 size_t menu_playlist_random_selection(
       size_t selection, bool is_explore_list);
+
+void menu_dialog_confirm_set(struct menu_state *menu_st,
+      unsigned msg, unsigned cmd);
+void menu_dialog_confirm_clear(struct menu_state *menu_st);
+void menu_dialog_confirm(struct menu_state *menu_st);
 
 extern const menu_ctx_driver_t *menu_ctx_drivers[];
 

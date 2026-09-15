@@ -42,6 +42,7 @@ RETRO_BEGIN_DECLS
  * @see retro_vfs_interface_info
  */
 #define DIRENT_REQUIRED_VFS_VERSION 3
+#define DIRENT_STAT_REQUIRED_VFS_VERSION 5
 
 /**
  * Installs a frontend-provided VFS interface for the dirent functions to use
@@ -152,6 +153,23 @@ const char *retro_dirent_get_name(struct RDIR *rdir);
  * @see retro_readdir
  */
 bool retro_dirent_is_dir(struct RDIR *rdir, const char *unused);
+
+/**
+ * Gets size, modification time and stat flags for the current dirent
+ * without opening it or building its path. Free on Windows (already in
+ * the find data), one fstatat on POSIX.
+ *
+ * Only valid after a \c retro_readdir that returned \c true and before
+ * the next \c retro_readdir or \c retro_closedir on the same handle.
+ *
+ * @param rdir The directory being enumerated.
+ * @param size If non-NULL, receives the entry size in bytes (0 for directories).
+ * @param mtime If non-NULL, receives seconds since 1970-01-01T00:00:00Z.
+ * @return A bitmask of \c RETRO_VFS_STAT flags for the entry,
+ * or 0 if unavailable (including frontends older than VFS API v5).
+ * @see retro_readdir
+ */
+int retro_dirent_stat(struct RDIR *rdir, int64_t *size, int64_t *mtime);
 
 /**
  * Closes an opened \c RDIR that was returned by \c retro_opendir.

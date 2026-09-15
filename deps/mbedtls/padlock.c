@@ -39,6 +39,7 @@
 
 #ifndef asm
 #define asm __asm
+#define MBEDTLS_ASM_IS_OURS
 #endif
 
 #if defined(MBEDTLS_HAVE_X86)
@@ -166,5 +167,11 @@ int mbedtls_padlock_xcryptcbc( mbedtls_aes_context *ctx,
 }
 
 #endif /* MBEDTLS_HAVE_X86 */
+
+/* Only take back what we defined; a system header may own it. */
+#ifdef MBEDTLS_ASM_IS_OURS
+#undef asm
+#undef MBEDTLS_ASM_IS_OURS
+#endif
 
 #endif /* MBEDTLS_PADLOCK_C */

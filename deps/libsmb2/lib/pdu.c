@@ -23,25 +23,14 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STDIO_H
 #include <stdio.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
-#ifdef HAVE_TIME_H
+/* time() below needs this on every platform; the declaration used
+ * to arrive transitively through the old md5.h pulling netinet/in.h. */
 #include <time.h>
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -64,23 +53,18 @@ smb2_pad_to_64bit(struct smb2_context *smb2, struct smb2_io_vectors *v)
         static uint8_t zero_bytes[7];
         int i, len = 0;
 
-        for (i = 0; i < v->niov; i++) {
+        for (i = 0; i < v->niov; i++)
                 len += (int)v->iov[i].len;
-        }
-        if ((len & 0x07) == 0) {
+        if ((len & 0x07) == 0)
                 return 0;
-        }
         if (smb2_add_iovector(smb2, v, 
                         &zero_bytes[0], 
                         8 - (len & 0x07), NULL)
-                        == NULL) {
+                        == NULL)
                 return -1;
-        }
-
         return 0;
 }
 
-#include <stdio.h>
 
 struct smb2_pdu *
 smb2_allocate_pdu(struct smb2_context *smb2, enum smb2_command command,
@@ -88,7 +72,7 @@ smb2_allocate_pdu(struct smb2_context *smb2, enum smb2_command command,
 {
 	struct smb2_pdu *pdu;
         struct smb2_header *hdr;
-        char magic[4] = {0xFE, 'S', 'M', 'B'};
+        uint8_t magic[4] = {0xFE, 'S', 'M', 'B'};
 
         pdu = calloc(1, sizeof(struct smb2_pdu));
         if (pdu == NULL) {
@@ -108,7 +92,7 @@ smb2_allocate_pdu(struct smb2_context *smb2, enum smb2_command command,
         hdr->struct_size = SMB2_HEADER_SIZE;
         hdr->command = command;
         hdr->flags = 0;
-        hdr->sync.process_id = 0xFEFF;
+        hdr->u.sync.process_id = 0xFEFF;
 
         if (smb2->dialect == SMB2_VERSION_0202) {
                 hdr->credit_charge = 0;
@@ -133,14 +117,14 @@ smb2_allocate_pdu(struct smb2_context *smb2, enum smb2_command command,
         case SMB2_LOGOFF:
         case SMB2_ECHO:
         /* case SMB2_CANCEL: */
-                hdr->sync.tree_id = 0;
+                hdr->u.sync.tree_id = 0;
                 break;
         case SMB2_TREE_CONNECT:
                 /* [MS-SMB2] 2.2.1.2 */
-                hdr->sync.tree_id = 0;
+                hdr->u.sync.tree_id = 0;
                 break;
         default:
-                hdr->sync.tree_id = smb2_tree_id(smb2);
+                hdr->u.sync.tree_id = smb2_tree_id(smb2);
                 break;
         }
 
@@ -248,7 +232,7 @@ smb2_set_tree_id_for_pdu(struct smb2_context *smb2, struct smb2_pdu *pdu, uint32
                 case SMB2_TREE_CONNECT:
                         break;
                 default:
-                        pdu->header.sync.tree_id = tree_id;
+                        pdu->header.u.sync.tree_id = tree_id;
                 }
                 return 0;
         }
@@ -478,15 +462,15 @@ smb2_encode_header(struct smb2_context *smb2, struct smb2_iovec *iov,
         smb2_set_uint64(iov, 24, hdr->message_id);
 
         if (hdr->flags & SMB2_FLAGS_ASYNC_COMMAND) {
-                smb2_set_uint64(iov, 32, hdr->async.async_id);
+                smb2_set_uint64(iov, 32, hdr->u.async.async_id);
         } else {
                 /*
                 printf(">>>>>>>>>> %p %s %d treeid=%08x    %08X\n", smb2,
                                 (hdr->flags & SMB2_FLAGS_SERVER_TO_REDIR) ? "rep" : "cmd",
-                                hdr->command, hdr->sync.tree_id, smb2_tree_id(smb2));
+                                hdr->command, hdr->u.sync.tree_id, smb2_tree_id(smb2));
                 */
-                smb2_set_uint32(iov, 32, hdr->sync.process_id);
-                smb2_set_uint32(iov, 36, hdr->sync.tree_id);
+                smb2_set_uint32(iov, 32, hdr->u.sync.process_id);
+                smb2_set_uint32(iov, 36, hdr->u.sync.tree_id);
         }
 
         smb2_set_uint64(iov, 40, hdr->session_id);
@@ -497,8 +481,8 @@ int
 smb2_decode_header(struct smb2_context *smb2, struct smb2_iovec *iov,
                    struct smb2_header *hdr)
 {
-        static char smb1sign[4] = {0xFF, 'S', 'M', 'B'};
-        static char smb2sign[4] = {0xFE, 'S', 'M', 'B'};
+        static uint8_t smb1sign[4] = {0xFF, 'S', 'M', 'B'};
+        static uint8_t smb2sign[4] = {0xFE, 'S', 'M', 'B'};
 
         if (iov->len < SMB2_HEADER_SIZE) {
                 smb2_set_error(smb2, "io vector for header is too small");
@@ -531,14 +515,14 @@ smb2_decode_header(struct smb2_context *smb2, struct smb2_iovec *iov,
         smb2_get_uint64(iov, 24, &hdr->message_id);
 
         if (hdr->flags & SMB2_FLAGS_ASYNC_COMMAND) {
-                smb2_get_uint64(iov, 32, &hdr->async.async_id);
+                smb2_get_uint64(iov, 32, &hdr->u.async.async_id);
         } else {
-                smb2_get_uint32(iov, 32, &hdr->sync.process_id);
-                smb2_get_uint32(iov, 36, &hdr->sync.tree_id);
+                smb2_get_uint32(iov, 32, &hdr->u.sync.process_id);
+                smb2_get_uint32(iov, 36, &hdr->u.sync.tree_id);
                 /*
                 printf("<<<<<<<<<<< %p %s %d treeid=%08x  %08X\n", smb2,
                                 (hdr->flags & SMB2_FLAGS_SERVER_TO_REDIR) ? "rep" : "cmd",
-                                hdr->command, hdr->sync.tree_id, smb2_tree_id(smb2));
+                                hdr->command, hdr->u.sync.tree_id, smb2_tree_id(smb2));
                 */
                 /* for requests, set the context tree id to the header value
                 */
@@ -554,7 +538,7 @@ smb2_decode_header(struct smb2_context *smb2, struct smb2_iovec *iov,
                                 break;
                         default:
                                 /* TODO - care about not having this already connected */
-                                smb2_select_tree_id(smb2, hdr->sync.tree_id);
+                                smb2_select_tree_id(smb2, hdr->u.sync.tree_id);
                                 break;
                         }
                 }
@@ -599,7 +583,7 @@ smb2_correlate_reply(struct smb2_context *smb2, struct smb2_pdu *pdu)
                 } else {
                         /* sending an unsolicited break */
                         pdu->header.message_id = 0xffffffffffffffffULL;
-                        pdu->header.sync.tree_id = 0;
+                        pdu->header.u.sync.tree_id = 0;
                         pdu->header.session_id = 0;
                 }
         }  else {
@@ -628,7 +612,7 @@ smb2_correlate_reply(struct smb2_context *smb2, struct smb2_pdu *pdu)
                  */
                 pdu->header.message_id = req_pdu->header.message_id;
                 if (pdu->header.command != SMB2_TREE_CONNECT) {
-                        pdu->header.sync.tree_id = req_pdu->header.sync.tree_id;
+                        pdu->header.u.sync.tree_id = req_pdu->header.u.sync.tree_id;
                 }
 
                 /* remove the request from the waitqueue when we get its reply
@@ -641,8 +625,8 @@ smb2_correlate_reply(struct smb2_context *smb2, struct smb2_pdu *pdu)
                          * request as async as well so when the real reply gets here
                          * we will know to set the async-id and flag
                          */
-                        pdu->header.async.async_id = ++smb2->async_id;
-                        req_pdu->header.async.async_id = pdu->header.async.async_id;
+                        pdu->header.u.async.async_id = ++smb2->async_id;
+                        req_pdu->header.u.async.async_id = pdu->header.u.async.async_id;
                         req_pdu->header.flags |= SMB2_FLAGS_ASYNC_COMMAND;
                } else {
                        /* if this is the real-reply to an async operation, also
@@ -650,7 +634,7 @@ smb2_correlate_reply(struct smb2_context *smb2, struct smb2_pdu *pdu)
                         */
                        if (req_pdu->header.flags & SMB2_FLAGS_ASYNC_COMMAND) {
                                pdu->header.flags |= SMB2_FLAGS_ASYNC_COMMAND;
-                               pdu->header.async.async_id = req_pdu->header.async.async_id;
+                               pdu->header.u.async.async_id = req_pdu->header.u.async.async_id;
                        }
                        SMB2_LIST_REMOVE(&smb2->waitqueue, req_pdu);
                        smb2_free_pdu(smb2, req_pdu);

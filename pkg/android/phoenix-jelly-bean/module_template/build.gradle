@@ -1,0 +1,47 @@
+apply plugin: 'com.android.dynamic-feature'
+
+android {
+  compileSdkVersion 29
+  defaultConfig {
+    minSdkVersion 21
+    targetSdkVersion 29
+  }
+
+  flavorDimensions "variant"
+
+  productFlavors {
+    normal {
+      dimension "variant"
+    }
+    aarch64 {
+      dimension "variant"
+      ndk {
+        abiFilters 'arm64-v8a', 'x86_64'
+      }
+    }
+    ra32 {
+      dimension "variant"
+      ndk {
+        abiFilters 'armeabi-v7a', 'x86'
+      }
+    }
+    playStoreNormal {
+      dimension "variant"
+    }
+    playStorePlus {
+      minSdkVersion 26
+      dimension "variant"
+    }
+  }
+
+  sourceSets {
+    main {
+      manifest.srcFile 'AndroidManifest.xml'
+      jniLibs.srcDirs = ['libs']
+    }
+  }
+}
+
+dependencies {
+  implementation rootProject
+}

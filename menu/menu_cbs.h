@@ -105,6 +105,7 @@ enum
    ACTION_OK_DL_INPUT_SETTINGS_LIST,
    ACTION_OK_DL_INPUT_TURBO_FIRE_SETTINGS_LIST,
    ACTION_OK_DL_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST,
+   ACTION_OK_DL_INPUT_SENSOR_SETTINGS_LIST,
    ACTION_OK_DL_REMAPPINGS_PORT_LIST,
    ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST,
    ACTION_OK_DL_DRIVER_SETTINGS_LIST,
@@ -149,6 +150,7 @@ enum
    ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST,
    ACTION_OK_DL_ACCOUNTS_TWITCH_LIST,
    ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST,
+   ACTION_OK_DL_ACCOUNTS_KICK_LIST,
    ACTION_OK_DL_USER_BINDS_LIST,
    ACTION_OK_DL_CONTENT_LIST,
    ACTION_OK_DL_REMAP_FILE,
@@ -181,7 +183,6 @@ enum
    ACTION_OK_DL_BROWSE_URL_LIST,
    ACTION_OK_DL_CORE_CONTENT_LIST,
    ACTION_OK_DL_CORE_CONTENT_DIRS_LIST,
-   ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST,
    ACTION_OK_DL_CORE_SYSTEM_FILES_LIST,
    ACTION_OK_DL_DEFERRED_LOAD_DISC_LIST,
    ACTION_OK_DL_DEFERRED_DUMP_DISC_LIST,
@@ -217,7 +218,7 @@ enum
    ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
    ACTION_OK_DL_CHEEVOS_APPEARANCE_SETTINGS_LIST,
    ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST,
-   ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST,
+   ACTION_OK_DL_ACHIEVEMENTS_SUBMENU_LIST,
    ACTION_OK_DL_UPDATER_SETTINGS_LIST,
    ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST,
    ACTION_OK_DL_WIFI_SETTINGS_LIST,
@@ -275,6 +276,22 @@ int generic_action_cheat_toggle(size_t idx, unsigned type, const char *label,
 int action_ok_path_use_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 
+/**
+ * @brief Open a Content Downloader category list
+ *
+ * Fetches the remote 'cores/.index-dirs' index and pushes the list of
+ * content sub-folders to the menu.
+ *
+ * @param path Path of the originating menu entry (unused for this list)
+ * @param label Label of the originating menu entry (unused for this list)
+ * @param type Type of the originating menu entry
+ * @param idx Index of the originating menu entry
+ * @param entry_idx Entry index of the originating menu entry
+ * @return 0 on success
+ */
+int action_ok_core_content_dirs_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
 void input_keyboard_mapping_bits(unsigned mode, unsigned key);
 
 unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsigned port);
@@ -300,6 +317,15 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
 int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
+/* The sublabel a menu entry with this enum would show, for a caller
+ * that has no file list: the desktop companions use it for tooltips
+ * on settings widgets. Resolves table-driven sublabels (which the bound
+ * callback can only read back through a list) and function-driven
+ * ones that do not need the list. Returns the length written, 0 when
+ * the entry has none. */
+size_t menu_cbs_sublabel_for_enum(enum msg_hash_enums enum_idx,
+      unsigned type, size_t size, char *s, size_t len);
+
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, size_t lbl_len,
       unsigned type, size_t idx);
@@ -311,7 +337,10 @@ int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
-      const char *path, const char *label, unsigned type, size_t idx);
+      const char *path,
+      const char *label, size_t lbl_len,
+      unsigned type, size_t idx,
+      const char *menu_label, size_t menu_lbl_len);
 
 int menu_cbs_init_bind_ok(menu_file_list_cbs_t *cbs,
       const char *path,

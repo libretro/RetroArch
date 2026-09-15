@@ -70,9 +70,7 @@
 struct smb2nse {
         smb2_command_cb cb;
         void *cb_data;
-        union {
-                struct srvsvc_NetrShareEnum_req se_req;
-        };
+        struct srvsvc_NetrShareEnum_req se_req;
 };
 
 static void
@@ -169,14 +167,14 @@ smb2_share_enum_async(struct smb2_context *smb2,
         case SHARE_INFO_0:
                 nse->se_req.ses.Level = level;
                 nse->se_req.ses.ShareInfo.Level = level;
-                nse->se_req.ses.ShareInfo.Level0.EntriesRead = 0;
-                nse->se_req.ses.ShareInfo.Level0.Buffer = NULL;
+                nse->se_req.ses.ShareInfo.u.Level0.EntriesRead = 0;
+                nse->se_req.ses.ShareInfo.u.Level0.Buffer = NULL;
                 break;
         case SHARE_INFO_1:
                 nse->se_req.ses.Level = level;
                 nse->se_req.ses.ShareInfo.Level = level;
-                nse->se_req.ses.ShareInfo.Level1.EntriesRead = 0;
-                nse->se_req.ses.ShareInfo.Level1.Buffer = NULL;
+                nse->se_req.ses.ShareInfo.u.Level1.EntriesRead = 0;
+                nse->se_req.ses.ShareInfo.u.Level1.Buffer = NULL;
                 break;
         }
         nse->se_req.PreferedMaximumLength = 0xffffffff;

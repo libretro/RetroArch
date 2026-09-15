@@ -291,6 +291,13 @@ static int ps3_init_spurs(ps3_input_t *ps3)
 
    ps3->threads = (sys_spu_thread_t *)malloc(sizeof(sys_spu_thread_t) * nthread);
 
+   /* NULL-check: spursGetSpuThreadId writes into ps3->threads.
+    * Return -1 to match the pattern of the malloc-failure branch
+    * in ps3_init_gem below.  ps3_end_spurs (the cleanup path)
+    * free()s ps3->threads via free(NULL) which is a no-op. */
+   if (!ps3->threads)
+      return -1;
+
    if ((ret = spursGetSpuThreadId(ps3->spurs, ps3->threads, &nthread)))
       return ret;
 
@@ -800,10 +807,10 @@ static int16_t ps3_input_state(
 
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (binds[port][i].valid)
+                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
                   {
                      if (ps3_keyboard_port_input_pressed(
-                              ps3, binds[port][i].key))
+                              ps3, RETRO_KEYBIND_KEY(&binds[port][i])))
                         ret |= (1 << i);
                   }
                }
@@ -811,10 +818,10 @@ static int16_t ps3_input_state(
                return ret;
             }
 
-            if (binds[port][id].valid)
+            if (RETRO_KEYBIND_VALID(&binds[port][id]))
             {
                if (ps3_keyboard_port_input_pressed(
-                        ps3, binds[port][id].key))
+                        ps3, RETRO_KEYBIND_KEY(&binds[port][id])))
                   return 1;
             }
 	    break;

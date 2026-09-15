@@ -16,6 +16,7 @@
 #include "../../../libretro-common/include/lists/dir_list.h"
 #include "../../../libretro-common/include/file/file_path.h"
 #include "../../../libretro-common/include/string/stdstring.h"
+#include <compat/strl.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -61,10 +62,11 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
         const char *path = str_list.elems[i].data;
         const char *playlist_file = path_basename(path);
 
-        if (string_is_empty(playlist_file))
+        if (!playlist_file || !*playlist_file)
             continue;
 
-        // Only include .lpl files (same logic as menu_displaylist_parse_playlists)
+        /* Only include .lpl files (same logic as 
+         * menu_displaylist_parse_playlists) */
         if (!string_is_equal_noncase(path_get_extension(playlist_file), "lpl"))
             continue;
 
@@ -119,7 +121,7 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
         config.fuzzy_archive_match = false;
         config.autofix_paths = false;
         strlcpy(config.path, playlist_path, sizeof(config.path));
-        strlcpy(config.base_content_directory, "", sizeof(config.base_content_directory));
+        strlcpy_lit(config.base_content_directory, "", sizeof(config.base_content_directory));
 
         playlist_t *playlist = playlist_init(&config);
         if (!playlist)
@@ -147,7 +149,7 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
 
     // Check if RetroArch is properly initialized
     runloop_state_t *runloop_st = runloop_state_get_ptr();
-    if (!runloop_st || !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED)) {
+    if (!runloop_st || !runloop_is_inited()) {
         RARCH_LOG("RetroArch not fully initialized, cannot access playlists\n");
         return games;
     }
@@ -162,23 +164,32 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
     [self enumerateAllPlaylistEntries:^(const struct playlist_entry *entry, playlist_t *playlist, NSString *playlistName, uint32_t index) {
         RetroArchPlaylistGame *game = [[RetroArchPlaylistGame alloc] init];
 
-        // Create a unique ID from path and playlist
+        /* Create a unique ID from path and playlist */
         game.gameId = [NSString stringWithFormat:@"%@:%@", playlistName, @(index)];
         game.title = [NSString stringWithUTF8String:entry->label];
         game.fullPath = [NSString stringWithUTF8String:entry->path];
 
-        // Extract filename from path
+        /* System/playlist display name (strip trailing ".lpl") */
+        if ([playlistName.pathExtension.lowercaseString isEqualToString:@"lpl"])
+            game.system = playlistName.stringByDeletingPathExtension;
+        else
+            game.system = playlistName;
+
+        /* Extract filename from path */
         const char *filename = path_basename(entry->path);
         game.filename = [NSString stringWithUTF8String:filename];
+       
+        const char *a = playlist_get_default_core_path(playlist);
+        const char *b = playlist_get_default_core_name(playlist);
 
-        if (!string_is_empty(entry->core_path) && !string_is_equal(entry->core_path, FILE_PATH_DETECT))
+        if (entry->core_path && *entry->core_path && !string_is_equal(entry->core_path, FILE_PATH_DETECT))
             game.corePath = [NSString stringWithUTF8String:entry->core_path];
-        else if (!string_is_empty(playlist_get_default_core_path(playlist)))
-            game.corePath = [NSString stringWithUTF8String:playlist_get_default_core_path(playlist)];
-        if (!string_is_empty(entry->core_name) && !string_is_equal(entry->core_name, FILE_PATH_DETECT))
+        else if (a && *a)
+            game.corePath = [NSString stringWithUTF8String:a];
+        if (entry->core_name && *entry->core_name && !string_is_equal(entry->core_name, FILE_PATH_DETECT))
             game.coreName = [NSString stringWithUTF8String:entry->core_name];
-        else if (!string_is_empty(playlist_get_default_core_name(playlist)))
-            game.coreName = [NSString stringWithUTF8String:playlist_get_default_core_name(playlist)];
+        else if (b && *b)
+            game.coreName = [NSString stringWithUTF8String:b];
 
         [games addObject:game];
     }];
@@ -191,7 +202,7 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
 {
     // Check if RetroArch is properly initialized
     runloop_state_t *runloop_st = runloop_state_get_ptr();
-    if (!runloop_st || !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED)) {
+    if (!runloop_st || !runloop_is_inited()) {
         RARCH_LOG("RetroArch not fully initialized, cannot find games\n");
         return nil;
     }
@@ -205,6 +216,59 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
     }
 
     return nil;
+}
+
++ (nullable NSData *)exportAllGamesAsJSONData
+{
+    NSArray<RetroArchPlaylistGame *> *allGames = [self getAllGames];
+    NSMutableArray<NSDictionary *> *serialized =
+        [[NSMutableArray alloc] initWithCapacity:allGames.count];
+
+    for (RetroArchPlaylistGame *game in allGames) {
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+
+        // "titleId" is the same <filename> used in the retroarch://game/<filename> launch scheme
+        dict[@"titleId"]   = game.filename ?: @"";
+        dict[@"titleName"] = game.title ?: @"";
+        dict[@"filename"]  = game.filename ?: @"";
+        dict[@"gameId"]    = game.gameId ?: @"";
+        dict[@"developer"] = @"";
+        dict[@"version"]   = @"";
+        if (game.system)
+            dict[@"system"] = game.system;
+        if (game.coreName)
+            dict[@"coreName"] = game.coreName;
+
+        [serialized addObject:dict];
+    }
+
+    NSError *error = nil;
+    NSData *json = [NSJSONSerialization dataWithJSONObject:serialized
+                                                  options:0
+                                                    error:&error];
+    if (!json) {
+        RARCH_WARN("Failed to serialize game library: %s\n",
+                   [[error localizedDescription] UTF8String]);
+        return nil;
+    }
+
+    return json;
+}
+
++ (nullable NSString *)exportAllGamesAsBase64URLString
+{
+    NSData *json = [self exportAllGamesAsJSONData];
+    if (!json)
+        return nil;
+
+    /* URL-safe base64 (base64url) without padding, matching the encoding other
+     * front-ends use for their library callbacks. */
+    NSString *encoded = [json base64EncodedStringWithOptions:0];
+    encoded = [encoded stringByReplacingOccurrencesOfString:@"+" withString:@"-"];
+    encoded = [encoded stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+    encoded = [encoded stringByReplacingOccurrencesOfString:@"=" withString:@""];
+
+    return encoded;
 }
 
 // Private helper method to extract games from a playlist

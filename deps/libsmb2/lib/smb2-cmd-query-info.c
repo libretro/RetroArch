@@ -439,10 +439,12 @@ int smb2_process_query_info_variable(struct smb2_context *smb2,
 {
         struct smb2_query_info_reply *rep = pdu->payload;
         struct smb2_iovec *iov = &smb2->in.iov[smb2->in.niov - 1];
-        struct smb2_iovec vec = {&iov->buf[IOV_OFFSET_QUERY],
-                                 iov->len - IOV_OFFSET_QUERY,
-                                 NULL};
+        struct smb2_iovec vec;
         void *ptr = NULL;
+
+        vec.buf  = &iov->buf[IOV_OFFSET_QUERY];
+        vec.len  = iov->len - IOV_OFFSET_QUERY;
+        vec.free = NULL;
 
         switch (pdu->info_type) {
         case SMB2_0_INFO_FILE:
@@ -744,9 +746,12 @@ smb2_process_query_info_request_variable(struct smb2_context *smb2,
 {
         struct smb2_query_info_request *req = pdu->payload;
         struct smb2_iovec *iov = &smb2->in.iov[smb2->in.niov - 1];
-        struct smb2_iovec vec = {&iov->buf[IOVREQ_OFFSET_QUERY],
-                                 iov->len - IOVREQ_OFFSET_QUERY,
-                                 NULL};
+        struct smb2_iovec vec;
+
+        vec.buf  = &iov->buf[IOVREQ_OFFSET_QUERY];
+        vec.len  = iov->len - IOVREQ_OFFSET_QUERY;
+        vec.free = NULL;
+
         req->input = (uint8_t *)vec.buf;
         return 0;
 }

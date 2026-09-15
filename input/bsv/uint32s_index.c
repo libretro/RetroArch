@@ -235,7 +235,7 @@ void uint32s_index_commit(uint32s_index_t *index)
    for (i = prev.first_index; i < limit; i++)
    {
       struct uint32s_bucket *bucket;
-      if (index->counts[i] >= threshold)
+      if (index->counts[i] >= threshold || index->objects[i] == NULL)
          continue;
       free(index->objects[i]);
       index->objects[i] = NULL;
@@ -282,22 +282,23 @@ void uint32s_index_pop(uint32s_index_t *index)
 {
    uint32_t idx  = RBUF_LEN(index->objects)-1;
    uint32_t hash = index->hashes[idx];
-   struct uint32s_bucket *bucket = RHMAP_PTR(index->index, hash);
-   uint32_t old_len = bucket->len;
-   if (old_len == 0) {
-      RARCH_ERR("[STATESTREAM] trying to pop from empty bucket\n");
-      return;
+   if (index->objects[idx] != NULL) {
+      struct uint32s_bucket *bucket = RHMAP_PTR(index->index, hash);
+      uint32_t old_len = bucket->len;
+      if (old_len == 0)
+         RARCH_ERR("[STATESTREAM] Trying to remove from empty bucket, this should never happen");
+      if (!uint32s_bucket_remove(bucket, idx))
+         RARCH_WARN("[STATESTREAM] Failed to remove idx from bucket");
+      if (old_len == 1) {
+         uint32s_bucket_free(bucket);
+         if (!RHMAP_DEL(index->index, hash))
+            RARCH_ERR("[STATESTREAM] Trying to remove absent hash %x\n",hash);
+      }
    }
+   /* else: already garbage collected, just adjust counts */
    RBUF_RESIZE(index->objects, idx);
    RBUF_RESIZE(index->counts, idx);
    RBUF_RESIZE(index->hashes, idx);
-   uint32s_bucket_remove(bucket, idx);
-   if (old_len - 1 == 0)
-   {
-      uint32s_bucket_free(bucket);
-      if (!RHMAP_DEL(index->index, hash))
-         RARCH_ERR("[STATESTREAM] Trying to remove absent hash %x\n",hash);
-   }
 }
 
 /* goes backwards from end of additions */

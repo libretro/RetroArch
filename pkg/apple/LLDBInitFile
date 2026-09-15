@@ -1,1 +1,2 @@
 breakpoint set --func-regex "^(NS|UI)ApplicationMain$" --command "process handle --pass true --stop false SIGBUS" --auto-continue true
+command script import -c lldb_jit_bless.py

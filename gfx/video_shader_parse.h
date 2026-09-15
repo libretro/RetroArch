@@ -105,9 +105,10 @@ enum gfx_wrap_type
 
 enum gfx_fbo_scale_flags
 {
-   FBO_SCALE_FLAG_FP_FBO   = (1 << 0),
-   FBO_SCALE_FLAG_SRGB_FBO = (1 << 1),
-   FBO_SCALE_FLAG_VALID    = (1 << 2)
+   FBO_SCALE_FLAG_FP_FBO    = (1 << 0),
+   FBO_SCALE_FLAG_SRGB_FBO  = (1 << 1),
+   FBO_SCALE_FLAG_VALID     = (1 << 2),
+   FBO_SCALE_FLAG_RGB10_FBO = (1 << 3)
 };
 
 struct gfx_fbo_scale
@@ -137,6 +138,7 @@ struct rarch_dir_shader_list
 {
    struct string_list *shader_list;
    char *directory;
+   char *failed_apply_loaded_path;
    size_t selection;
    bool shader_loaded;
    bool remember_last_preset_dir;
@@ -199,6 +201,15 @@ struct video_shader
     * with the #reference directive, then this will be different
     * than the path */
    char loaded_preset_path[PATH_MAX_LENGTH];
+
+   /* Identifies the pass sources 'parameters' was resolved from: one
+    * entry per pass that has a source, in pass order. Appended rather
+    * than placed by alignment, so that it leaves every offset ahead of
+    * it where it was. */
+   int64_t  param_src_mtime[GFX_MAX_SHADERS];
+   int64_t  param_src_size[GFX_MAX_SHADERS];
+   uint32_t param_src_hash[GFX_MAX_SHADERS];
+   unsigned param_src_count;
 };
 
 /**
@@ -208,6 +219,11 @@ struct video_shader
  *
  * Resolves all shader parameters belonging to shaders
  * from the #pragma parameter lines in the shader for each pass.
+ *
+ * The sources are walked when the set of pass sources, or any of the
+ * files behind it, differs from the one the parameters currently held
+ * came from. Otherwise those parameters stand, reset to their initial
+ * values as a walk would leave them.
  **/
 void video_shader_resolve_parameters(struct video_shader *shader);
 
@@ -283,6 +299,17 @@ bool video_shader_combine_preset_and_apply(
       bool prepend,
       bool message);
 
+/**
+ * video_shader_get_display_name:
+ * @preset_path          : Path to a shader preset
+ * @shader_dir           : Video shaders directory
+ *
+ * Returns: path of @preset_path relative to @shader_dir if it lies
+ * inside it, otherwise its file name, or NULL if @preset_path is empty.
+ **/
+const char *video_shader_get_display_name(const char *preset_path,
+      const char *shader_dir);
+
 bool video_shader_apply_shader(
       settings_t *settings,
       enum rarch_shader_type type,
@@ -291,6 +318,57 @@ bool video_shader_apply_shader(
 const char *video_shader_get_preset_extension(enum rarch_shader_type type);
 
 void video_shader_toggle(settings_t *settings, bool write);
+
+/**
+ * video_shader_source_read:
+ * @ident  : what names the source - a path, as presets carry them
+ * @buf    : receives the bytes, NUL terminated, for the caller to free
+ * @len    : receives their length, not counting the terminator
+ *
+ * Hands a shader driver the bytes it is to compile. The drivers under
+ * gfx/drivers_shader ask for a source by name and are given it; where
+ * those bytes live, and how the name resolves, is decided here and not
+ * by them. The caller owns what comes back, as it did when it read the
+ * file itself.
+ *
+ * Returns: true if the source was found and read.
+ **/
+bool video_shader_source_read(const char *ident, char **buf, int64_t *len);
+
+/**
+ * video_shader_source_resolve:
+ * @parent : what named the source doing the referring, or NULL
+ * @name   : the reference, as it was written in the source
+ * @s      : receives what to ask for with video_shader_source_read()
+ * @len    : size of @s
+ *
+ * Turns a reference inside one source into a name for another. A
+ * shader driver hands back what it read out of an #include line and
+ * gets a name it can ask for; how that resolves - relative to the
+ * referring file, or otherwise - is decided here.
+ *
+ * Returns: true when the reference resolved.
+ **/
+bool video_shader_source_resolve(const char *parent, const char *name,
+      char *s, size_t len);
+
+/**
+ * video_shader_source_ident_name:
+ * @ident : a name video_shader_source_read() would take
+ *
+ * The short name of a source, for the #line directives a preprocessor
+ * writes into what it hands the compiler. Points into @ident.
+ **/
+const char *video_shader_source_ident_name(const char *ident);
+
+/**
+ * video_shader_source_ident_is_slang:
+ * @ident : a name video_shader_source_read() would take
+ *
+ * Whether a source is a slang one, which a preprocessor checks the
+ * #version line of.
+ **/
+bool video_shader_source_ident_is_slang(const char *ident);
 
 RETRO_END_DECLS
 

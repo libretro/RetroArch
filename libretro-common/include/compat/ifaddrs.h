@@ -26,6 +26,12 @@
 #ifndef	_IFADDRS_H_
 #define	_IFADDRS_H_
 
+/* <net/if.h> may declare a 'struct ifaddr' of its own whose accessor
+ * macros are spelled the same as the member names below. Retire them
+ * here so this header can be included in either order. */
+#undef	ifa_broadaddr
+#undef	ifa_dstaddr
+
 struct ifaddrs
 {
    struct ifaddrs  *ifa_next;

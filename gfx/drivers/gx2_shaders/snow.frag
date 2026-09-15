@@ -46,8 +46,10 @@ float snow(vec2 pos, float time, float scale)
 {
    // add wobble
    pos.x += cos(pos.y * 1.2 + time * 3.14159 * 2.0 + 1.0 / scale) / (8.0 / scale) * 4.0;
-   // add gravity
-   pos += time * scale * vec2(-0.5, 1.0) * 4.0;
+   // add gravity — use fract to keep position offsets small and prevent
+   // precision loss in the random_dots grid lookup over long sessions
+   vec2 scroll = time * scale * vec2(-0.5, 1.0) * 4.0;
+   pos += fract(scroll / 0.05) * 0.05;
    return random_dots(pos / scale) * (scale * 0.5 + 0.5);
 }
 

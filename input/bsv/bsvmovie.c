@@ -38,9 +38,7 @@
 #include <zlib.h>
 #endif
 
-#ifdef HAVE_ZSTD
-#include <zstd.h>
-#endif
+#include <encodings/rzstd.h>
 
 #define BSV_IFRAME_START_TOKEN 0x00
 /* after START:
@@ -600,7 +598,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
             break;
          }
 #endif
-#ifdef HAVE_ZSTD
+#ifdef HAVE_RZSTD
       case REPLAY_CHECKPOINT2_COMPRESSION_ZSTD:
          {
             size_t uncompressed_size_big;
@@ -611,9 +609,9 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
                calling the function that takes the compressed frames as
                an input?  */
             encoded_data          = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
-            uncompressed_size_big = ZSTD_decompress(encoded_data, encoded_size,
-                  compressed_data, compressed_encoded_size);
-            if (ZSTD_isError(uncompressed_size_big))
+            if (rzstd_decode(encoded_data, encoded_size,
+                     compressed_data, compressed_encoded_size,
+                     &uncompressed_size_big) != RZSTD_PROCESS_END)
                {
                   ret = false;
                   goto exit;
@@ -732,14 +730,15 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
          break;
       }
 #endif
-#ifdef HAVE_ZSTD
+#ifdef HAVE_RZSTD
       case REPLAY_CHECKPOINT2_COMPRESSION_ZSTD:
       {
-         size_t compressed_encoded_size_zstd = ZSTD_compressBound(encoded_size);
+         size_t compressed_encoded_size_zstd = rzstd_compress_bound(encoded_size);
          compressed_encoded_data = (uint8_t*)calloc(compressed_encoded_size_zstd, sizeof(uint8_t));
          owns_compressed_encoded = true;
-         compressed_encoded_size_zstd = ZSTD_compress(compressed_encoded_data, compressed_encoded_size_zstd, encoded_data, encoded_size, 3);
-         if (ZSTD_isError(compressed_encoded_size_zstd))
+         if (rzstd_encode(compressed_encoded_data, compressed_encoded_size_zstd,
+                  encoded_data, encoded_size, 3,
+                  &compressed_encoded_size_zstd) != RZSTD_PROCESS_END)
          {
             ret = -1;
             goto exit;
@@ -822,6 +821,25 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
    if (intfstream_read(handle->file, &(handle->key_event_count), 1) == 1)
    {
       int i;
+      /* key_events is a fixed-size bsv_key_data_t[128] (input_driver.h
+       * line ~259); key_event_count is uint8_t and read straight from
+       * the .bsv file with no inherent bound (max 255).  Pre-this-patch
+       * a malformed replay file could supply 129..255 here and the
+       * intfstream_read into &handle->key_events[i] would OOB-write up
+       * to (255-128)*12 = 1524 bytes past the end of the array, into
+       * adjacent fields of bsv_movie_t (input_event_count,
+       * input_events[]) and beyond.  Reject as malformed -- a
+       * legitimate writer cannot produce more than 128 key events per
+       * frame because it shares the same backing array. */
+      if (handle->key_event_count > ARRAY_SIZE(handle->key_events))
+      {
+         RARCH_ERR("[Replay] key_event_count %u exceeds storage capacity %u; rejecting malformed replay\n",
+               (unsigned)handle->key_event_count,
+               (unsigned)ARRAY_SIZE(handle->key_events));
+         if (end_movie)
+            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+         return false;
+      }
       for (i = 0; i < handle->key_event_count; i++)
       {
          if (intfstream_read(handle->file, &(handle->key_events[i]),
@@ -849,6 +867,27 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
       {
          int i;
          handle->input_event_count = swap_if_big16(handle->input_event_count);
+         /* Same shape as the key_event_count check above: input_events
+          * is bsv_input_data_t[512] (input_driver.h line ~260) but
+          * input_event_count is uint16_t read straight from the .bsv
+          * (max 65535).  Pre-this-patch a malformed replay file with
+          * a count of 65535 would have driven the loop below into
+          * (65535-512)*8 = 520184 bytes of OOB heap-write past
+          * input_events[], corrupting the rest of the bsv_movie_t
+          * struct (rewind state, statestream pointers, save buffers)
+          * and far beyond.  bsv_movie_t is heap-allocated via calloc
+          * in tasks/task_movie.c::bsv_movie_init_internal so this is
+          * a heap-buffer-overflow with attacker-chosen 8-byte values
+          * at attacker-chosen offsets up to ~500KB. */
+         if (handle->input_event_count > ARRAY_SIZE(handle->input_events))
+         {
+            RARCH_ERR("[Replay] input_event_count %u exceeds storage capacity %u; rejecting malformed replay\n",
+                  (unsigned)handle->input_event_count,
+                  (unsigned)ARRAY_SIZE(handle->input_events));
+            if (end_movie)
+               input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+            return false;
+         }
          for (i = 0; i < handle->input_event_count; i++)
          {
             if (intfstream_read(handle->file, &(handle->input_events[i]),
@@ -995,6 +1034,7 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
       size_t last_pos        = handle->frame_pos[(MAX(handle->frame_counter,2)-2) & handle->frame_mask];
       size_t cur_pos         = intfstream_tell(handle->file);
       uint32_t back_distance = swap_if_big32((uint32_t)(cur_pos-last_pos));
+      intfstream_seek(handle->file, 0, SEEK_CUR);
       /* write backref */
       intfstream_write(handle->file, &back_distance, sizeof(uint32_t));
       /* write key events, frame is over */
@@ -1133,6 +1173,7 @@ bool replay_get_serialized_data(void* buffer)
       buf                     = ((uint8_t *)buffer) + sizeof(uint32_t);
       intfstream_rewind(handle->file);
       read_amt                = intfstream_read(handle->file, buf, file_end);
+      intfstream_seek(handle->file, file_end, SEEK_SET);
       if (handle->frame_counter > UINT32_MAX) {
          RARCH_ERR("[Replay] Frame counter too big to fit in 32 bits\n");
          return false;
@@ -1313,6 +1354,7 @@ bool replay_check_same_timeline(bsv_movie_t *movie,
    free(buf1);
    free(buf2);
    intfstream_close(check_stream);
+   free(check_stream);
    intfstream_seek(movie->file, movie_pos, SEEK_SET);
    return ret;
 }
@@ -1525,9 +1567,15 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
    size_t superblock_size      = movie->superblocks->object_size;
    size_t superblock_byte_size = superblock_size*block_byte_size;
    size_t superblock_count     = state_size / superblock_byte_size + (state_size % superblock_byte_size != 0);
-   uint32_t *superblock_buf    = (uint32_t*)calloc(superblock_size, sizeof(uint32_t));
-   uint8_t *padded_block       = NULL;
-   intfstream_t *out_stream    = intfstream_open_writable_memory(output,
+   /* The superblock index list and the zero-padded tail block share one
+    * zeroed allocation per call; the padded block sits behind the list
+    * on a 64-byte boundary and is only touched by the final partial
+    * superblock, if there is one. */
+   size_t superblock_buf_bytes = ((superblock_size * sizeof(uint32_t)) + 63) & ~(size_t)63;
+   uint32_t *superblock_buf    = (uint32_t*)calloc(1, superblock_buf_bytes + block_byte_size);
+   uint8_t *padded_block       = (uint8_t*)superblock_buf + superblock_buf_bytes;
+   bool padded_block_used      = false;
+   intfstream_t *out_stream    = intfstream_open_memory(output,
          RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE,
          output_capacity);
    bool can_compare_saves = movie->cur_save_valid && movie->last_save
@@ -1573,11 +1621,10 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
          }
          else if (block_start + block_byte_size > state_size)
          {
-            if (!padded_block)
-               padded_block = (uint8_t*)calloc(block_byte_size, sizeof(uint8_t));
-            else
+            if (padded_block_used)
                memset(padded_block + (state_size-block_start),
                      0, block_byte_size-(state_size-block_start));
+            padded_block_used = true;
             memcpy(padded_block, state+block_start, state_size - block_start);
             found_block = uint32s_index_insert(movie->blocks,
                   (uint32_t*)padded_block,
@@ -1599,7 +1646,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
             rmsgpack_write_int(out_stream, BSV_IFRAME_NEW_BLOCK_TOKEN);
             rmsgpack_write_int(out_stream, found_block.index);
             /* Cast is fine, a single block can't be super big */
-            rmsgpack_write_bin(out_stream, state+block_start, (uint32_t)block_byte_size);
+            rmsgpack_write_bin(out_stream, (uint8_t*)uint32s_index_get(movie->blocks, found_block.index), block_byte_size);
          }
          else
             reused_blocks++;
@@ -1630,8 +1677,6 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
    for (i = 0; i < superblock_count; i++)
        rmsgpack_write_int(out_stream, movie->superblock_seq[i]);
    free(superblock_buf);
-   if (padded_block)
-     free(padded_block);
    movie->cur_save_valid = true;
    total_checkpoints++;
    total_encode_micros += cpu_features_get_time_usec() - start;
@@ -1641,6 +1686,7 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
    RARCH_DBG("[STATESTREAM] Encode stats at checkpoint %d: %d blocks (%d reused, %d skipped [%d checks], %d distinct [%d hashes])\n", total_checkpoints, total_blocks, reused_blocks, skipped_blocks, memcmps, uint32s_index_count(movie->blocks), hashes);
    RARCH_DBG("[STATESTREAM] %d superblocks (%d reused, %d distinct); unencoded size (KB) %d, encoded size (KB) %d; net time (secs) %f\n", total_superblocks, reused_superblocks, uint32s_index_count(movie->superblocks), total_kbs_input, total_kbs_written, ((float)total_encode_micros) / (float)1000000.0);
    intfstream_close(out_stream);
+   free(out_stream);
    return encoded_size;
 }
 
@@ -1658,6 +1704,17 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
    size_t superblock_byte_size = movie->superblocks->object_size*block_byte_size;
    intfstream_t *read_mem      = intfstream_open_memory(encoded,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, encoded_size);
+   /* NULL-check reader_state: rmsgpack_dom_reader_state_new can
+    * now return NULL on OOM.  Bailing to 'exit' hits the
+    * rmsgpack_dom_reader_state_free call at the cleanup label
+    * (which now tolerates NULL) and returns false; the user-
+    * visible outcome is 'STATESTREAM decode failed' which
+    * matches the existing error paths for a malformed frame. */
+   if (!reader_state)
+   {
+      RARCH_ERR("[STATESTREAM] failed to allocate reader state\n");
+      goto exit;
+   }
    if (state_size > movie->last_save_size && movie->superblock_seq)
    {
       free(movie->superblock_seq);
@@ -1832,6 +1889,7 @@ exit:
    /* uint32s_index_commit(movie->superblocks); */
    rmsgpack_dom_reader_state_free(reader_state);
    intfstream_close(read_mem);
+   free(read_mem);
    if (!ret)
    {
       RARCH_ERR("[STATESTREAM] made it to end without superblock seq\n");

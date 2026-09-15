@@ -29,7 +29,39 @@
 #include <AppKit/AppKit.h>
 #endif
 
+/* The CGDisplayModeRef family (CGDisplayCopyDisplayMode,
+ * CGDisplayCopyAllDisplayModes, CGDisplayModeGetRefreshRate, ...)
+ * arrived in 10.6 Snow Leopard.  The 10.5 Leopard SDK only offers
+ * the older CGDisplayCurrentMode + CFDictionaryRef path.  Sites that
+ * use either API (cocoa_common.m's cocoa_get_refresh_rate and
+ * dispserv_apple.m's resolution-switching code) branch on this
+ * macro.  Defined here so every translation unit sees the same
+ * answer. */
+#if TARGET_OS_OSX && defined(MAC_OS_X_VERSION_10_6) && \
+    (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
+     MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6)
+#define RARCH_HAS_CGDISPLAYMODE_API 1
+#endif
+
+/* RetroArchPlaylistManager.m/.h uses Obj-C nullability macros
+ * (NS_ASSUME_NONNULL_BEGIN/END, nullable, _Nonnull) and
+ * lightweight generics (NSArray<...>) - all Xcode 7+ (2015)
+ * features requiring SDK 10.11 / iOS 9.0 or newer.  Synthesize
+ * HAVE_RETROARCH_PLAYLIST_MANAGER here for build systems that
+ * don't pass it in (e.g. the RetroArch_PPC.xcodeproj, non-qb
+ * builds).  qb/config.libs.sh sets the flag directly for make
+ * builds and takes priority if already defined. */
+#ifndef HAVE_RETROARCH_PLAYLIST_MANAGER
+#if defined(HAVE_COCOATOUCH) || \
+    (defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED >= 101100)
+#define HAVE_RETROARCH_PLAYLIST_MANAGER 1
+#endif
+#endif
+
 #include "../../../retroarch.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 #define RAScreen UIScreen
@@ -81,12 +113,12 @@ void get_ios_version(int *major, int *minor);
 @interface CocoaView : NSView
 
 + (CocoaView*)get;
-#if !defined(HAVE_COCOA) && !defined(HAVE_COCOA_METAL)
-- (void)display;
-#endif
+/* Sets the title of the window this view is in; the target of a
+ * performSelectorOnMainThread: from ui_window_cocoa_set_title(). */
+- (void)setWindowTitle:(NSString *)title;
 
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
-@property(nonatomic,readwrite) CADisplayLink *displayLink API_AVAILABLE(macos(14.0));
+@property(nonatomic,readwrite,retain) CADisplayLink *displayLink API_AVAILABLE(macos(14.0));
 #endif
 
 @end
@@ -100,20 +132,18 @@ void get_ios_version(int *major, int *minor);
 #if defined(__clang__)
 /* ARC is only available for Clang */
 #if __has_feature(objc_arc)
-#define RELEASE(x)   x = nil
+#define RELEASE(x)   do { x = nil; } while (0)
 #define BRIDGE       __bridge
 #define UNSAFE_UNRETAINED __unsafe_unretained
 #else
-#define RELEASE(x)   [x release]; \
-   x = nil
+#define RELEASE(x)   do { [x release]; x = nil; } while (0)
 #define BRIDGE
 #define UNSAFE_UNRETAINED
 #endif
 #else
 /* On compilers other than Clang (e.g. GCC), assume ARC 
    is going to be unavailable */
-#define RELEASE(x)   [x release]; \
-   x = nil
+#define RELEASE(x)   do { [x release]; x = nil; } while (0)
 #define BRIDGE
 #define UNSAFE_UNRETAINED
 #endif
@@ -128,7 +158,9 @@ void cocoa_show_mouse(void *data, bool state);
 
 void *cocoa_screen_get_chosen(void);
 
+#ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
 bool cocoa_launch_game_by_filename(NSString *filename);
+#endif
 
 #ifdef HAVE_COCOATOUCH
 float cocoa_screen_get_native_scale(void);
@@ -140,4 +172,25 @@ bool cocoa_get_metrics(
       void *data, enum display_metric_types type,
       float *value);
 
+/* Shared display-info helpers.
+ *
+ * Three vtables call these via thin wrappers, because different
+ * call sites reach them through different paths:
+ *   - video_driver_get_refresh_rate / _get_video_output_size go
+ *     through dispserv first, poke second.
+ *   - video_context_driver_get_refresh_rate (used by vulkan.c's
+ *     vulkan_get_refresh_rate) goes straight to the gfx_ctx_driver_t
+ *     vtable, bypassing dispserv.
+ *   - video_thread_wrapper.c's thread_get_video_output_size calls
+ *     poke->get_video_output_size directly, bypassing dispserv.
+ *
+ * Each vtable therefore keeps a registered function; the bodies all
+ * funnel here so there is only one implementation per platform. */
+float cocoa_get_refresh_rate(void);
+
+void  cocoa_get_video_output_size(unsigned *width, unsigned *height,
+      char *desc, size_t desc_len);
+
 #endif
+
+void cocoa_file_load_with_detect_core(const char *filename);

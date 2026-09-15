@@ -15,29 +15,16 @@
 
 #include <stdint.h>
 
-#include <LzmaEnc.h>
-#include <LzmaDec.h>
+#include <7z/r7z_lzma.h>
 
 #include <libchdr/libchdr_zlib.h>
-
-/* codec-private data for the LZMA codec */
-#define MAX_LZMA_ALLOCS 64
-
-typedef struct _lzma_allocator lzma_allocator;
-struct _lzma_allocator
-{
-	void *(*Alloc)(void *p, size_t size);
- 	void (*Free)(void *p, void *address); /* address can be 0 */
-	void (*FreeSz)(void *p, void *address, size_t size); /* address can be 0 */
-	uint32_t*	allocptr[MAX_LZMA_ALLOCS];
-	uint32_t*	allocptr2[MAX_LZMA_ALLOCS];
-};
 
 typedef struct _lzma_codec_data lzma_codec_data;
 struct _lzma_codec_data
 {
-	CLzmaDec		decoder;
-	lzma_allocator	allocator;
+	/* r7z_lzma decodes into the caller's buffer, so there is no
+	 * dictionary to allocate and no allocator to thread through. */
+	rlzma_dec_t	decoder;
 };
 
 /* codec-private data for the CDLZ codec */

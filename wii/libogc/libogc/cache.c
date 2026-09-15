@@ -42,7 +42,7 @@ extern void L2Enable();
 
 void LCEnable()
 {
-	u32 level;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
 	__LCEnable();
@@ -53,7 +53,9 @@ u32 LCLoadData(void *dstAddr,void *srcAddr,u32 nCount)
 {
 	u32 cnt,blocks;
 
-	if((s32)nCount<=0) return 0;
+	/* Pre-patch cast nCount to s32 and rejected anything with the
+	 * top bit set. nCount is unsigned; treat only zero as no-op. */
+	if(!nCount) return 0;
 
 	cnt = (nCount+31)>>5;
 	blocks = (cnt+127)>>7;
@@ -75,7 +77,7 @@ u32 LCStoreData(void *dstAddr,void *srcAddr,u32 nCount)
 {
 	u32 cnt,blocks;
 
-	if((s32)nCount<=0) return 0;
+	if(!nCount) return 0;
 
 	cnt = (nCount+31)>>5;
 	blocks = (cnt+127)>>7;
@@ -115,33 +117,34 @@ void LCFlushQueue()
 
 void LCAlloc(void *addr,u32 bytes)
 {
-	u32 level;
+	u32 level = 0;
 	u32 cnt = bytes>>5;
-	u32 hid2 = mfspr(920);
-	if(!(hid2&0x10000000)) {
-		_CPU_ISR_Disable(level);
+	/* Pre-patch read hid2 outside the ISR-disable, leaving a window
+	 * where another path could enable LC between the read and the
+	 * disable - causing a redundant __LCEnable. Lock first, then
+	 * recheck under the lock. */
+	_CPU_ISR_Disable(level);
+	if(!(mfspr(920)&0x10000000))
 		__LCEnable();
-		_CPU_ISR_Restore(level);
-	}
+	_CPU_ISR_Restore(level);
 	LCAllocTags(TRUE,addr,cnt);
 }
 
 void LCAllocNoInvalidate(void *addr,u32 bytes)
 {
-	u32 level;
+	u32 level = 0;
 	u32 cnt = bytes>>5;
-	u32 hid2 = mfspr(920);
-	if(!(hid2&0x10000000)) {
-		_CPU_ISR_Disable(level);
+	_CPU_ISR_Disable(level);
+	if(!(mfspr(920)&0x10000000))
 		__LCEnable();
-		_CPU_ISR_Restore(level);
-	}
+	_CPU_ISR_Restore(level);
 	LCAllocTags(FALSE,addr,cnt);
 }
 #ifdef HW_RVL
 void L2Enhance()
 {
-	u32 level, hid4;
+	u32 hid4;
+	u32 level = 0;
 	u32 *stub = (u32*)0x80001800;
 	_CPU_ISR_Disable(level);
 	hid4 = mfspr(HID4);

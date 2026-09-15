@@ -51,6 +51,10 @@ typedef struct
    uint32_t last_width;
    uint32_t last_height;
    bool keep_aspect;
+   /* What the last frame said integer scaling should be:
+    * set_aspect_ratio() runs on the video thread under the threaded
+    * wrapper, and reading the setting there races the menu writing it. */
+   bool frame_scale_integer;
    bool should_resize;
    bool need_clear;
    bool is_threaded;

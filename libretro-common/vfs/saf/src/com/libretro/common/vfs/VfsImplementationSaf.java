@@ -33,6 +33,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
 
 public final class VfsImplementationSaf
 {
@@ -73,6 +74,20 @@ public final class VfsImplementationSaf
       }
    }
 
+   private static boolean isDocument(Uri treeUri) {
+      final List<String> segments = treeUri.getPathSegments();
+      return (
+         (
+            segments.size() >= 2
+               && segments.get(0).equals("document")
+         ) || (
+            segments.size() >= 4
+               && segments.get(0).equals("tree")
+               && segments.get(2).equals("document")
+         )
+      );
+   }
+
    /**
     * Open a Storage Access Framework file, returning its file descriptor if successful or -1 if not.
     * The file is not guaranteed to be seeked to any particular position, so it may be a good idea to seek it immediately after opening.
@@ -92,7 +107,11 @@ public final class VfsImplementationSaf
       while (true)
       {
          final Uri treeUri = Uri.parse(tree);
-         final Uri fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
+         if (isDocument(treeUri) && !path.equals("/"))
+            return -1;
+         final Uri fileUri = isDocument(treeUri)
+            ? treeUri
+            : DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
          final String mode;
          if (!write)
             mode = "r";
@@ -116,7 +135,7 @@ public final class VfsImplementationSaf
          }
          catch (FileNotFoundException | IllegalArgumentException e)
          {
-            if (createdFile || !write || !truncate)
+            if (createdFile || !write || !truncate || isDocument(treeUri))
                return -1;
             createdFile = true;
             final String parentPath = getPathParent(path);
@@ -147,8 +166,11 @@ public final class VfsImplementationSaf
          return false;
       final Uri treeUri = Uri.parse(tree);
       path = normalizePath(path);
-      path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
-      final Uri fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path);
+      if (isDocument(treeUri) && !path.equals("/"))
+         return false;
+      final Uri fileUri = isDocument(treeUri)
+         ? treeUri
+         : DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
       try
       {
          DocumentsContract.deleteDocument(content, fileUri);
@@ -188,8 +210,11 @@ public final class VfsImplementationSaf
             return;
          final Uri treeUri = Uri.parse(tree);
          path = normalizePath(path);
-         path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
-         final Uri fileUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path);
+         if (isDocument(treeUri) && !path.equals("/"))
+            return;
+         final Uri fileUri = isDocument(treeUri)
+            ? treeUri
+            : DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
          final Cursor cursor;
          try
          {
@@ -253,8 +278,9 @@ public final class VfsImplementationSaf
          return -1;
       final Uri treeUri = Uri.parse(tree);
       path = normalizePath(path);
-      path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
-      final Uri directoryUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path);
+      if (isDocument(treeUri))
+         return -1;
+      final Uri directoryUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
       Cursor cursor = null;
       try
       {
@@ -301,6 +327,7 @@ public final class VfsImplementationSaf
       private Cursor cursor = null;
       private String direntName = null;
       private boolean direntIsDirectory = false;
+      private boolean[] batchIsDir = new boolean[0];
 
       /**
        * Open a Storage Access Framework directory to list its contents.
@@ -314,6 +341,8 @@ public final class VfsImplementationSaf
             return;
          final Uri treeUri = Uri.parse(tree);
          path = normalizePath(path);
+         if (isDocument(treeUri))
+            return;
          path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
          prefixLength = path.length();
          final Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, path);
@@ -367,6 +396,54 @@ public final class VfsImplementationSaf
             close();
             return false;
          }
+      }
+
+      /**
+       * Drain up to max children into arrays, so the native side can walk a
+       * whole batch without a JNI round trip per entry. Returns the names;
+       * getBatchIsDirectory() returns the parallel directory flags for the
+       * same batch. A zero-length result means the directory is exhausted.
+       *
+       * readdir()/getDirentName()/getDirentIsDirectory() remain for callers
+       * that step one entry at a time.
+       */
+      public String[] readdirBatch(int max)
+      {
+         int n = 0;
+         String[] names;
+
+         if (max <= 0)
+            max = 1;
+
+         names        = new String[max];
+         batchIsDir   = new boolean[max];
+
+         while (n < max && readdir())
+         {
+            names[n]      = direntName;
+            batchIsDir[n] = direntIsDirectory;
+            ++n;
+         }
+
+         if (n < max)
+         {
+            String[] shrunkNames  = new String[n];
+            boolean[] shrunkFlags = new boolean[n];
+            System.arraycopy(names, 0, shrunkNames, 0, n);
+            System.arraycopy(batchIsDir, 0, shrunkFlags, 0, n);
+            names      = shrunkNames;
+            batchIsDir = shrunkFlags;
+         }
+
+         return names;
+      }
+
+      /**
+       * Directory flags for the batch returned by the last readdirBatch().
+       */
+      public boolean[] getBatchIsDirectory()
+      {
+         return batchIsDir;
       }
 
       /**

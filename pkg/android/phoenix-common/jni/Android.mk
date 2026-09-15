@@ -19,7 +19,23 @@ DEFINES     :=
 LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
 DEPS_DIR          := $(RARCH_DIR)/deps
 
-GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+RA_ROOT := $(abspath $(LOCAL_PATH)/$(RARCH_DIR))
+
+# Ask git whether RA_ROOT is itself the repository root. An empty prefix
+# means it is; a non-empty one means we resolved an enclosing repository
+# and must not use its HEAD. Comparing paths is unreliable here because
+# make and git may disagree on path syntax.
+ifeq ($(GIT_VERSION),)
+GIT_PROBE := $(strip $(shell git -C "$(RA_ROOT)" rev-parse --show-prefix 2>/dev/null && echo GIT_OK))
+ifeq ($(GIT_PROBE),GIT_OK)
+   GIT_VERSION := $(shell git -C "$(RA_ROOT)" rev-parse --short HEAD 2>/dev/null)
+else
+ifneq ($(GIT_PROBE),)
+   $(warning RetroArch: $(RA_ROOT) is not a git toplevel, omitting git version)
+endif
+endif
+endif
+
 ifneq ($(GIT_VERSION),)
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
 endif
@@ -88,7 +104,7 @@ endif
 
 DEFINES += -DRARCH_MOBILE \
 	   -DHAVE_GRIFFIN \
-	   -DHAVE_STB_VORBIS \
+	   -DHAVE_RVORBIS \
 	   -DHAVE_LANGEXTRA \
 	   -DANDROID \
 	   -DHAVE_DYNAMIC \
@@ -108,22 +124,24 @@ DEFINES += -DRARCH_MOBILE \
 	   -DHAVE_REWIND \
 	   -DHAVE_CHEATS \
 	   -DHAVE_BSV_MOVIE \
-	   -DHAVE_ZLIB \
-	   -DHAVE_NO_BUILTINZLIB \
-	   -DHAVE_ZSTD \
+	   -DHAVE_RZSTD \
 	   -DZSTD_DISABLE_ASM \
 	   -DHAVE_CHEEVOS_RVZ \
 	   -DHAVE_RPNG \
+	   -DHAVE_RWEBP \
+	   -DHAVE_RDDS \
 	   -DHAVE_RJPEG \
 	   -DHAVE_RBMP \
 	   -DHAVE_RTGA \
 	   -DINLINE=inline \
 	   -DHAVE_THREADS \
+	   -DHAVE_THREAD_STORAGE \
 	   -D__LIBRETRO__ \
 	   -DHAVE_RSOUND \
 	   -DHAVE_NETWORKGAMEPAD \
 	   -DHAVE_NETWORKING \
 	   -DHAVE_NETWORK_CMD \
+	   -DHAVE_COMMAND \
 	   -DHAVE_CLOUDSYNC \
 	   -DHAVE_IFINFO \
 	   -DHAVE_NETPLAYDISCOVERY \
@@ -144,9 +162,8 @@ DEFINES += -DRARCH_MOBILE \
 	   -DHAVE_CC_RESAMPLER \
 	   -DHAVE_KEYMAPPER \
 	   -DHAVE_NETWORKGAMEPAD \
-	   -DHAVE_FLAC \
-	   -DHAVE_DR_FLAC \
-	   -DHAVE_DR_MP3 \
+	   -DHAVE_RFLAC \
+	   -DHAVE_RMP3 \
 	   -DHAVE_CHD \
 	   -DWANT_SUBCODE \
 	   -DWANT_RAW_DATA_SECTOR \
@@ -174,7 +191,7 @@ DEFINES += -DHAVE_VULKAN \
 	   -D__STDC_LIMIT_MACROS
 endif
 DEFINES += -DHAVE_7ZIP \
-	   -D_7ZIP_ST \
+	   \
 	   -DHAVE_SL
 
 ifeq ($(HAVE_CHEEVOS),1)
@@ -190,10 +207,6 @@ ifeq ($(HAVE_BUILTINSMBCLIENT),1)
    DEFINES += -DHAVE_SMBCLIENT
 endif
 
-DEFINES += -DFLAC_PACKAGE_VERSION="\"retroarch\"" \
-	   -DHAVE_LROUND \
-	   -DFLAC__HAS_OGG=0
-
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
 LOCAL_CPPFLAGS := -fexceptions -fpermissive -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
 
@@ -204,15 +217,11 @@ LOCAL_LDLIBS	 := -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS) -ldl
 LOCAL_C_INCLUDES := \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/7zip \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/zstd/lib
+		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb
 
 INCLUDE_DIRS     := \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/zstd/lib/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
+		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
 
 ifeq ($(HAVE_CHEEVOS),1)
 INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
@@ -232,22 +241,36 @@ ifeq ($(HAVE_VULKAN),1)
 INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
 
 LOCAL_C_INCLUDES += $(INCFLAGS)
+# slang_process.c is C and amalgamated into griffin.c; it includes
+# <spirv_cross_c.h>, so the SPIRV-Cross directory must be on the C
+# include path, not just LOCAL_CPPFLAGS.  LOCAL_C_INCLUDES applies to
+# both C and C++ compiles under ndk-build.
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/$(DEPS_DIR)/SPIRV-Cross
 LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/glslang/Public \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/SPIRV \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/SPIRV-Cross
+		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/SPIRV
 
 LOCAL_CFLAGS    += -Wno-sign-compare -Wno-unused-variable -Wno-parentheses
 LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_glslang.cpp
 endif
 
-LOCAL_LDLIBS += -lOpenSLES -lz
+LOCAL_LDLIBS += -lOpenSLES
 
 ifneq ($(SANITIZER),)
    LOCAL_CFLAGS   += -g -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
    LOCAL_CPPFLAGS += -g -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
    LOCAL_LDFLAGS  += -fsanitize=$(SANITIZER)
+endif
+
+ifneq ($(PLAY_STORE_BUILD),1)
+   ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
+      LOCAL_LDFLAGS += -Wl,-z,max-page-size=4096
+   endif
+
+   ifeq ($(TARGET_ARCH_ABI),x86_64)
+      LOCAL_LDFLAGS += -Wl,-z,max-page-size=4096
+   endif
 endif
 
 include $(BUILD_SHARED_LIBRARY)

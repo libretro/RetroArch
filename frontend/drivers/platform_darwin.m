@@ -24,11 +24,13 @@
 #include <sys/utsname.h>
 
 #include <mach/mach.h>
-#include <dispatch/dispatch.h>
+#include <dlfcn.h>
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
 #import <AVFoundation/AVFoundation.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -39,13 +41,13 @@
 #include <objc/message.h>
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 #include <Carbon/Carbon.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>
 
 #include <sys/sysctl.h>
-#elif defined(IOS)
+#elif TARGET_OS_IPHONE
 #include <UIKit/UIDevice.h>
 #include <sys/sysctl.h>
 #endif
@@ -80,6 +82,10 @@
 #include "../../msg_hash.h"
 #include "../../ui/ui_companion_driver.h"
 #include "../../paths.h"
+#include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 typedef enum
 {
@@ -121,28 +127,11 @@ typedef enum
    CFAllDomainsMask     = 0x0ffff  /* All domains: all of the above and future items */
 } CFDomainMask;
 
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
+#if TARGET_OS_OSX
 static int speak_pid                            = 0;
 #endif
 
 static char darwin_cpu_model_name[64] = {0};
-
-/* Directory watching implementation using GCD dispatch sources */
-typedef struct darwin_watch_entry
-{
-   int fd;                    /* File descriptor opened with O_EVTONLY */
-   dispatch_source_t source;  /* GCD dispatch source for monitoring */
-   char *path;                /* Watched file path */
-} darwin_watch_entry_t;
-
-typedef struct darwin_watch_data
-{
-   dispatch_queue_t queue;       /* Dispatch queue for event handlers */
-   darwin_watch_entry_t *watches; /* Array of watch entries */
-   size_t watch_count;           /* Number of active watches */
-   volatile int32_t has_changes; /* Atomic flag indicating changes occurred */
-   int flags;                    /* Event flags to monitor */
-} darwin_watch_data_t;
 
 static void CFSearchPathForDirectoriesInDomains(
       char *s, size_t len)
@@ -178,11 +167,11 @@ void CFTemporaryDirectory(char *s, size_t len)
    CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
 }
 
-#if defined(IOS)
+#if TARGET_OS_IPHONE
 void get_ios_version(int *major, int *minor);
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 
 #define PMGMT_STRMATCH(a,b) (CFStringCompare(a, b, 0) == kCFCompareEqualTo)
 #define PMGMT_GETVAL(k,v)   CFDictionaryGetValueIfPresent(dict, CFSTR(k), (const void **) v)
@@ -295,11 +284,11 @@ static void darwin_check_power_source(
 
 static void frontend_darwin_get_name(char *s, size_t len)
 {
-#if defined(IOS)
+#if TARGET_OS_IPHONE
    struct utsname buffer;
    if (uname(&buffer) == 0)
       strlcpy(s, buffer.machine, len);
-#elif defined(OSX)
+#elif TARGET_OS_OSX
    size_t _len = 0;
    sysctlbyname("hw.model", NULL, &_len, NULL, 0);
     if (_len)
@@ -310,45 +299,73 @@ static void frontend_darwin_get_name(char *s, size_t len)
 static size_t frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
    size_t _len;
-#if defined(IOS)
+#if TARGET_OS_IPHONE
    get_ios_version(major, minor);
 #if TARGET_OS_TV
-   _len = strlcpy(s, "tvOS", len);
+   _len = strlcpy_lit(s, "tvOS", len);
 #else
-   _len = strlcpy(s, "iOS", len);
+   _len = strlcpy_lit(s, "iOS", len);
 #endif
-#elif defined(OSX)
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 /* MAC_OS_X_VERSION_10_13 */
-   NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
-   *major = (int)version.majorVersion;
-   *minor = (int)version.minorVersion;
-#else
-   /* MacOS 10.9 includes the [NSProcessInfo operatingSystemVersion] function, but it's not in the 10.9 SDK. So, call it via NSInvocation */
-   /* Credit: OpenJDK (https://github.com/openjdk/jdk/commit/d4c7db50) */
-   if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
+#elif TARGET_OS_OSX
+   /* The OS version cannot change while the process runs, so it is
+    * read once and kept; get_os() is called from the menu's system
+    * information list, which is rebuilt every time it is opened. */
+   static int cached_major = 0, cached_minor = 0;
+
+   if (!cached_major)
    {
-      typedef struct
+      NSProcessInfo *pi = [NSProcessInfo processInfo];
+      /* -operatingSystemVersion is 10.10. It returns a struct of three
+       * NSIntegers, which is returned in memory on x86_64 and in
+       * registers on arm64 - objc_msgSend against objc_msgSend_stret -
+       * so it is sent through NSInvocation, which gets that right on
+       * both without this file having to. Once per process, so the
+       * invocation costs nothing that matters.
+       * Credit for the shape: OpenJDK (openjdk/jdk d4c7db50). */
+      if ([pi respondsToSelector:@selector(operatingSystemVersion)])
       {
-         NSInteger majorVersion;
-         NSInteger minorVersion;
-         NSInteger patchVersion;
-      } NSMyOSVersion;
-      NSMyOSVersion version;
-      NSMethodSignature *sig = [[NSProcessInfo processInfo] methodSignatureForSelector:@selector(operatingSystemVersion)];
-      NSInvocation *invoke = [NSInvocation invocationWithMethodSignature:sig];
-      invoke.selector = @selector(operatingSystemVersion);
-      [invoke invokeWithTarget:[NSProcessInfo processInfo]];
-      [invoke getReturnValue:&version];
-      *major = (int)version.majorVersion;
-      *minor = (int)version.minorVersion;
+         typedef struct
+         {
+            NSInteger majorVersion;
+            NSInteger minorVersion;
+            NSInteger patchVersion;
+         } darwin_os_version_t;
+         darwin_os_version_t version = {0, 0, 0};
+         NSMethodSignature *sig      = [pi methodSignatureForSelector:
+               @selector(operatingSystemVersion)];
+         NSInvocation *invoke        = [NSInvocation invocationWithMethodSignature:sig];
+         invoke.selector             = @selector(operatingSystemVersion);
+         [invoke invokeWithTarget:pi];
+         [invoke getReturnValue:&version];
+         cached_major = (int)version.majorVersion;
+         cached_minor = (int)version.minorVersion;
+      }
+      else
+      {
+         /* Before 10.10 there is Gestalt, which is deprecated since
+          * 10.8 and gone from the newest SDKs' headers, so it is
+          * resolved rather than called - the selectors are the
+          * four-character codes 'sys1' and 'sys2'. A system old enough
+          * to need this has it. */
+         typedef int16_t (*darwin_gestalt_t)(uint32_t, int32_t*);
+         darwin_gestalt_t gestalt = (darwin_gestalt_t)dlsym(RTLD_DEFAULT, "Gestalt");
+         int32_t gmajor = 0, gminor = 0;
+         if (gestalt)
+         {
+            gestalt(0x73797331 /* 'sys1' */, &gmajor);
+            gestalt(0x73797332 /* 'sys2' */, &gminor);
+         }
+         cached_major = (int)gmajor;
+         cached_minor = (int)gminor;
+      }
+      /* Never zero again, or the probe repeats every call. */
+      if (!cached_major)
+         cached_major = -1;
    }
-   else
-   {
-      Gestalt(gestaltSystemVersionMinor, (SInt32*)minor);
-      Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
-   }
-#endif
-   _len = strlcpy(s, "OSX", len);
+
+   *major = (cached_major > 0) ? cached_major : 0;
+   *minor = cached_minor;
+   _len = strlcpy_lit(s, "OSX", len);
 #endif
    return _len;
 }
@@ -375,7 +392,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    CFRelease(bundle_url);
    path_resolve_realpath(bundle_path_buf, sizeof(bundle_path_buf), true);
 
-#if defined(OSX)
+#if TARGET_OS_OSX
    fill_pathname_application_data(application_data, sizeof(application_data));
 
    BOOL portable; /* steam || RAPortableInstall || portable.txt */
@@ -429,23 +446,45 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
 #if defined(HAVE_UPDATE_CORES) || defined(HAVE_STEAM)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], application_data, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#elif defined(OSX) && defined(HAVE_APPLE_STORE)
+#elif TARGET_OS_OSX && defined(HAVE_APPLE_STORE)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Contents/Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#elif defined(IOS) && defined(HAVE_FRAMEWORKS)
+#elif TARGET_OS_IPHONE && defined(HAVE_FRAMEWORKS)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #else
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #endif
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE], application_data, "database/rdb", sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS], application_data, "downloads", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_ASSETS]));
-   NSURL *url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
+   /* -[NSBundle URLForResource:withExtension:subdirectory:] is 10.6+
+    * (NS_AVAILABLE(10_6, 4_0)).  On 10.5 Leopard the selector doesn't
+    * exist and the runtime throws "unrecognized selector".  Guard
+    * with respondsToSelector: and fall through to the existing
+    * fill_pathname_join fallback on older systems, which simply
+    * won't do bundle-shipped filter auto-discovery. */
+   NSURL *url = nil;
+   SEL url_for_resource_sel = @selector(URLForResource:withExtension:subdirectory:);
+   if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
+      url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
    if (url)
-       strlcpy(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
+       /* URLForResource: with a nil name returns a URL pointing at
+        * the first matching .dsp file.  What we want is the directory
+        * it lives in, so strip the last path component.
+        *
+        * The previous code used [[url baseURL] fileSystemRepresentation],
+        * which was wrong on two counts: -baseURL returns nil for URLs
+        * constructed absolutely (which is what URLForResource: returns),
+        * so the result was a NULL source pointer into strlcpy; and on
+        * pre-10.9 SDKs NSURL doesn't declare -fileSystemRepresentation,
+        * so GCC resolved the selector against NSString's version with
+        * an incompatible-receiver warning. */
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], [[[url path] stringByDeletingLastPathComponent] UTF8String], sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
-   url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
+   url = nil;
+   if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
+      url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
    if (url)
-       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[url baseURL] fileSystemRepresentation],  sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
+       strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[[url path] stringByDeletingLastPathComponent] UTF8String], sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], application_data, "filters/video", sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], application_data, "info", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
@@ -500,7 +539,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
       int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
-#if defined(OSX)
+#if TARGET_OS_OSX
    CFIndex i, total;
    CFArrayRef list;
    bool have_ac, have_battery, charging;
@@ -576,7 +615,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
    return ret;
 }
 
-#ifndef OSX
+#if !TARGET_OS_OSX
 #ifndef CPU_ARCH_ABI64
 #define CPU_ARCH_ABI64          0x01000000
 #endif
@@ -588,7 +627,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
 
 static enum frontend_architecture frontend_darwin_get_arch(void)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
     struct utsname buffer;
 
     if (uname(&buffer) != 0)
@@ -667,40 +706,6 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
    return ret;
 }
 
-static uint64_t frontend_darwin_get_total_mem(void)
-{
-#if defined(OSX)
-    uint64_t size;
-    int mib[2]     = { CTL_HW, HW_MEMSIZE };
-    u_int namelen  = ARRAY_SIZE(mib);
-    size_t _len    = sizeof(size);
-    if (sysctl(mib, namelen, &size, &_len, NULL, 0) >= 0)
-       return size;
-#elif defined(IOS)
-    task_vm_info_data_t vm_info;
-    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vm_info, &count) == KERN_SUCCESS)
-       return vm_info.phys_footprint + vm_info.limit_bytes_remaining;
-#endif
-    return 0;
-}
-
-static uint64_t frontend_darwin_get_free_mem(void)
-{
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
-   task_vm_info_data_t vm_info;
-   mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-   if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vm_info, &count) == KERN_SUCCESS)
-        return frontend_darwin_get_total_mem() - vm_info.phys_footprint;
-#elif defined(IOS)
-    task_vm_info_data_t vm_info;
-    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vm_info, &count) == KERN_SUCCESS)
-        return vm_info.limit_bytes_remaining;
-#endif
-    return 0;
-}
-
 static const char* frontend_darwin_get_cpu_model_name(void)
 {
    cpu_features_get_model_name(darwin_cpu_model_name,
@@ -711,16 +716,31 @@ static const char* frontend_darwin_get_cpu_model_name(void)
 static enum retro_language frontend_darwin_get_user_language(void)
 {
    char s[128];
-   CFArrayRef langs = CFLocaleCopyPreferredLanguages();
-   CFStringRef langCode = CFArrayGetValueAtIndex(langs, 0);
+   CFArrayRef langs;
+   CFStringRef langCode;
+   /* CFLocaleCopyPreferredLanguages is 10.5; looked up at run time so
+    * one binary builds against, and runs on, 10.4 as well. */
+   CFArrayRef (*copy_langs)(void) = (CFArrayRef (*)(void))
+      dlsym(RTLD_DEFAULT, "CFLocaleCopyPreferredLanguages");
+   if (!copy_langs)
+      return RETRO_LANGUAGE_ENGLISH;
+   langs = copy_langs();
+   if (!langs || CFArrayGetCount(langs) < 1)
+   {
+      if (langs)
+         CFRelease(langs);
+      return RETRO_LANGUAGE_ENGLISH;
+   }
+   langCode = CFArrayGetValueAtIndex(langs, 0);
    CFStringGetCString(langCode, s, sizeof(s), kCFStringEncodingUTF8);
+   CFRelease(langs);
    /* iOS and OS X only support the language ID syntax consisting
     * of a language designator and optional region or script designator. */
    string_replace_all_chars(s, '-', '_');
    return retroarch_get_language_from_iso(s);
 }
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 static char* accessibility_mac_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -853,161 +873,13 @@ static bool accessibility_speak_macos(int speed,
 
 #endif
 
-static void frontend_darwin_watch_path_for_changes(
-      struct string_list *list, int flags,
-      path_change_data_t **change_data)
-{
-   darwin_watch_data_t *watch_data = NULL;
-
-   /* Cleanup mode - free existing watch data */
-   if (!list)
-   {
-      if (!change_data || !*change_data)
-         return;
-
-      watch_data = (darwin_watch_data_t*)((*change_data)->data);
-      if (watch_data)
-      {
-         size_t i;
-         /* Cancel and release all dispatch sources, close file descriptors */
-         for (i = 0; i < watch_data->watch_count; i++)
-         {
-            if (watch_data->watches[i].source)
-            {
-               dispatch_source_cancel(watch_data->watches[i].source);
-#if !__has_feature(objc_arc)
-               dispatch_release(watch_data->watches[i].source);
-#endif
-            }
-            if (watch_data->watches[i].fd >= 0)
-               close(watch_data->watches[i].fd);
-            if (watch_data->watches[i].path)
-               free(watch_data->watches[i].path);
-         }
-#if !__has_feature(objc_arc)
-         if (watch_data->queue)
-            dispatch_release(watch_data->queue);
-#endif
-         if (watch_data->watches)
-            free(watch_data->watches);
-         free(watch_data);
-      }
-      free(*change_data);
-      *change_data = NULL;
-      return;
-   }
-
-   /* Setup mode - create new watch data */
-   watch_data = (darwin_watch_data_t*)calloc(1, sizeof(*watch_data));
-   if (!watch_data)
-      return;
-
-   watch_data->queue = dispatch_get_global_queue(
-         DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-   watch_data->watch_count = list->size;
-   watch_data->watches = (darwin_watch_entry_t*)calloc(
-         list->size, sizeof(darwin_watch_entry_t));
-   watch_data->flags = flags;
-   watch_data->has_changes = 0;
-
-   if (!watch_data->watches)
-   {
-      free(watch_data);
-      return;
-   }
-
-   /* Convert generic flags to GCD dispatch VNODE flags */
-   {
-      unsigned long vnode_flags = 0;
-      size_t i;
-
-      if (flags & PATH_CHANGE_TYPE_MODIFIED)
-         vnode_flags |= DISPATCH_VNODE_WRITE;
-      if (flags & PATH_CHANGE_TYPE_WRITE_FILE_CLOSED)
-         vnode_flags |= DISPATCH_VNODE_ATTRIB; /* mtime changes on close */
-      if (flags & PATH_CHANGE_TYPE_FILE_MOVED)
-         vnode_flags |= DISPATCH_VNODE_RENAME;
-      if (flags & PATH_CHANGE_TYPE_FILE_DELETED)
-         vnode_flags |= DISPATCH_VNODE_DELETE;
-
-      /* Set up watch for each file in the list */
-      for (i = 0; i < list->size; i++)
-      {
-         const char *path = list->elems[i].data;
-         int fd           = open(path, O_EVTONLY);
-
-         watch_data->watches[i].fd     = fd;
-         watch_data->watches[i].source = NULL;
-         watch_data->watches[i].path   = NULL;
-
-         if (fd >= 0)
-         {
-            dispatch_source_t source;
-
-            watch_data->watches[i].path = strdup(path);
-
-            /* Create dispatch source for monitoring file events */
-            source = dispatch_source_create(
-                  DISPATCH_SOURCE_TYPE_VNODE,
-                  fd,
-                  vnode_flags,
-                  watch_data->queue);
-
-            if (source)
-            {
-               /* Set up event handler - sets atomic flag when changes occur */
-               dispatch_source_set_event_handler(source, ^{
-                  OSAtomicCompareAndSwap32(0, 1, &watch_data->has_changes);
-               });
-
-               /* Set up cancellation handler to prevent fd leak */
-               dispatch_source_set_cancel_handler(source, ^{
-                  /* File descriptor is closed in cleanup function */
-               });
-
-               watch_data->watches[i].source = source;
-               dispatch_resume(source);
-            }
-            else
-            {
-               /* Failed to create dispatch source, close fd */
-               close(fd);
-               watch_data->watches[i].fd = -1;
-            }
-         }
-      }
-   }
-
-   /* Allocate and return change_data structure */
-   *change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t));
-   if (*change_data)
-      (*change_data)->data = watch_data;
-   else
-   {
-      /* Failed to allocate change_data, cleanup */
-      frontend_darwin_watch_path_for_changes(NULL, 0, &(path_change_data_t*){watch_data});
-   }
-}
-
-static bool frontend_darwin_check_for_path_changes(
-      path_change_data_t *change_data)
-{
-   darwin_watch_data_t *watch_data = NULL;
-
-   if (!change_data || !change_data->data)
-      return false;
-
-   watch_data = (darwin_watch_data_t*)(change_data->data);
-
-   /* Atomically read and clear the flag */
-   return OSAtomicCompareAndSwap32(1, 0, &watch_data->has_changes);
-}
-
 static bool frontend_darwin_is_narrator_running(void)
 {
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (@available(macOS 10.14, iOS 7, tvOS 9, *))
       return true;
-#if OSX
+#endif
+#if TARGET_OS_OSX
    return is_narrator_running_macos();
 #else
    return false;
@@ -1022,6 +894,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
    else if (speed > 10)
       speed               = 10;
 
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (@available(macOS 10.14, iOS 7, tvOS 9, *))
    {
       static dispatch_once_t once;
@@ -1046,8 +919,9 @@ static bool frontend_darwin_accessibility_speak(int speed,
       [synth speakUtterance:utterance];
       return true;
    }
+#endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
    return accessibility_speak_macos(speed, speak_text, priority);
 #else
    return false;
@@ -1061,6 +935,11 @@ static void frontend_darwin_content_loaded(void)
       [RetroArchAppShortcuts contentLoaded];
    }
 #endif
+}
+
+static enum rarch_display_type frontend_darwin_get_display_type(void)
+{
+   return RARCH_DISPLAY_OSX;
 }
 
 frontend_ctx_driver_t frontend_ctx_darwin = {
@@ -1078,8 +957,6 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_arch,        /* get_architecture     */
    frontend_darwin_get_powerstate,  /* get_powerstate       */
    frontend_darwin_parse_drive_list,/* parse_drive_list     */
-   frontend_darwin_get_total_mem,   /* get_total_mem        */
-   frontend_darwin_get_free_mem,    /* get_free_mem         */
    NULL,                            /* install_signal_handler */
    NULL,                            /* get_sighandler_state */
    NULL,                            /* set_sighandler_state */
@@ -1088,14 +965,13 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* detach_console */
    NULL,                            /* get_lakka_version */
    NULL,                            /* set_screen_brightness */
-   frontend_darwin_watch_path_for_changes, /* watch_path_for_changes */
-   frontend_darwin_check_for_path_changes, /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
    frontend_darwin_get_user_language, /* get_user_language   */
    frontend_darwin_is_narrator_running, /* is_narrator_running */
    frontend_darwin_accessibility_speak, /* accessibility_speak */
    NULL,                            /* set_gamemode        */
+   frontend_darwin_get_display_type,
    "darwin",                        /* ident               */
    NULL                             /* get_video_driver    */
 };

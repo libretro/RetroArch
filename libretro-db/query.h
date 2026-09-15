@@ -34,9 +34,21 @@ typedef struct libretrodb_query libretrodb_query_t;
 
 void libretrodb_query_inc_ref(libretrodb_query_t *q);
 
+/* Reset @q's min()/max() accumulator.  Called when a cursor walk
+ * begins; see the comment on struct query_ctx in query.c. */
+void libretrodb_query_reset_accumulator(libretrodb_query_t *q);
+
 void libretrodb_query_dec_ref(libretrodb_query_t *q);
 
 int libretrodb_query_filter(libretrodb_query_t *q, struct rmsgpack_dom_value *v);
+
+int libretrodb_query_get_filter_fields(libretrodb_query_t *q,
+      const char **field_names, uint32_t *field_lens,
+      unsigned max_fields);
+
+int libretrodb_query_eval_field(libretrodb_query_t *q,
+      const char *field_name, uint32_t field_len,
+      struct rmsgpack_dom_value *value);
 
 RETRO_END_DECLS
 

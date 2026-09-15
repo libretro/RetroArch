@@ -92,7 +92,19 @@ parse_input() # Parse stuff :V
 	CONFIG_OPTS=''
 	config_opts='./configure'
 
-	while read -r VAR _; do
+	while read -r VAR _ || [ -n "$VAR" ]; do
+		# Skip blank lines and comment-only lines.  Only HAVE_* or
+		# bare-name=VALUE assignments are meaningful here; anything
+		# else (like "# comment") would produce a broken eval such
+		# as 'USER_#=auto'.
+		#
+		# The `|| [ -n "$VAR" ]` lets us process the final line even
+		# when config.params.sh has no trailing newline; otherwise
+		# `read` returns non-zero at EOF and the loop body is skipped,
+		# silently dropping whichever option happens to be last.
+		case "$VAR" in
+			''|'#'*) continue ;;
+		esac
 		TMPVAR="${VAR%=*}"
 		NEWVAR="${TMPVAR##HAVE_}"
 		OPTS="${OPTS} $NEWVAR"

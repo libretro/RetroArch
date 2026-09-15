@@ -84,6 +84,9 @@ enum event_command
    CMD_EVENT_QUIT,
    /* Reinitialize all drivers. */
    CMD_EVENT_REINIT_FROM_TOGGLE,
+   /* Re-evaluate the on-screen notification (gfx_widgets) system to
+    * match current settings, without a full driver reinit. */
+   CMD_EVENT_OSD_NOTIFICATION_TOGGLE,
    /* Reinitialize all drivers. */
    CMD_EVENT_REINIT,
    /* Toggles cheevos hardcore mode. */
@@ -109,10 +112,14 @@ enum event_command
    CMD_EVENT_VOLUME_DOWN,
    CMD_EVENT_MIXER_VOLUME_UP,
    CMD_EVENT_MIXER_VOLUME_DOWN,
+   /* Toggles Video Filter*/
+   CMD_VIDEO_FILTER_TOGGLE,
    /* Toggles FPS counter. */
    CMD_EVENT_FPS_TOGGLE,
    /* Toggles statistics display. */
    CMD_EVENT_STATISTICS_TOGGLE,
+   /* Initializes video filter. */
+   CMD_EVENT_VIDEO_FILTER_INIT,
    /* Initializes overlay. */
    CMD_EVENT_OVERLAY_INIT,
    /* Frees or caches overlay. */
@@ -198,6 +205,8 @@ enum event_command
    CMD_EVENT_SHADER_TOGGLE,
    /* Apply cheats. */
    CMD_EVENT_CHEATS_APPLY,
+   /* The codec compressed saves are written with, from the setting. */
+   CMD_EVENT_SAVE_COMPRESSION_CODEC_APPLY,
    /* Cheat hotkeys. */
    CMD_EVENT_CHEAT_TOGGLE,
    CMD_EVENT_CHEAT_INDEX_PLUS,
@@ -354,7 +363,7 @@ command_t* command_stdin_new(void);
 #ifdef HAVE_LAKKA
 command_t* command_uds_new(void);
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 command_t* command_emscripten_new(void);
 #endif
 
@@ -431,6 +440,7 @@ bool command_get_status(command_t *cmd, const char* arg);
 bool command_get_config_param(command_t *cmd, const char* arg);
 bool command_show_osd_msg(command_t *cmd, const char* arg);
 bool command_load_state_slot(command_t *cmd, const char* arg);
+bool command_save_state_slot(command_t* cmd, const char* arg);
 bool command_play_replay_slot(command_t *cmd, const char* arg);
 bool command_seek_replay(command_t *cmd, const char *arg);
 bool command_save_savefiles(command_t *cmd, const char* arg);
@@ -442,6 +452,13 @@ bool command_write_ram(command_t *cmd, const char *arg);
 bool command_read_memory(command_t *cmd, const char *arg);
 bool command_write_memory(command_t *cmd, const char *arg);
 bool command_load_core(command_t *cmd, const char* arg);
+bool command_start_core(command_t *cmd, const char* arg);
+bool command_load_content(command_t *cmd, const char* arg);
+bool command_close_content(command_t *cmd, const char* arg);
+bool command_unload_core(command_t *cmd, const char* arg);
+bool command_video_reinit(command_t *cmd, const char* arg);
+bool command_audio_reinit(command_t *cmd, const char* arg);
+bool command_drivers_reinit(command_t *cmd, const char* arg);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -461,6 +478,7 @@ static const struct cmd_action_map action_map[] = {
    { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
 
    { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"},
+   { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>"},
    { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},
    { "SEEK_REPLAY",command_seek_replay, "<frame number>"},
 
@@ -468,12 +486,18 @@ static const struct cmd_action_map action_map[] = {
    { "LOAD_FILES", command_load_savefiles, "No argument"},
 
    { "LOAD_CORE", command_load_core, "<core path>"},
+   { "START_CORE", command_start_core, "No argument"},
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>"},
+   { "CLOSE_CONTENT", command_close_content, "No argument"},
+   { "UNLOAD_CORE", command_unload_core, "No argument"},
+   { "VIDEO_REINIT", command_video_reinit, "No argument"},
+   { "AUDIO_REINIT", command_audio_reinit, "No argument"},
+   { "DRIVERS_REINIT", command_drivers_reinit, "No argument"},
 };
 
 static const struct cmd_map map[] = {
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "QUIT",                   RARCH_QUIT_KEY },
-   { "CLOSE_CONTENT",          RARCH_CLOSE_CONTENT_KEY },
    { "RESET",                  RARCH_RESET },
 
    { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },
@@ -528,6 +552,7 @@ static const struct cmd_map map[] = {
    { "VRR_RUNLOOP_TOGGLE",     RARCH_VRR_RUNLOOP_TOGGLE },
    { "RUNAHEAD_TOGGLE",        RARCH_RUNAHEAD_TOGGLE },
    { "PREEMPT_TOGGLE",         RARCH_PREEMPT_TOGGLE },
+   { "VIDEO_FILTER_TOGGLE",    RARCH_VIDEO_FILTER_TOGGLE },
    { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
    { "STATISTICS_TOGGLE",      RARCH_STATISTICS_TOGGLE },
    { "AI_SERVICE",             RARCH_AI_SERVICE },

@@ -8,7 +8,8 @@
 
 u32 __lwp_heap_init(heap_cntrl *theheap,void *start_addr,u32 size,u32 pg_size)
 {
-	u32 dsize,level;
+	u32 dsize;
+	u32 level = 0;
 	heap_block *block;
 
 	if(!__lwp_heap_pgsize_valid(pg_size) || size<HEAP_MIN_SIZE) return 0;
@@ -41,11 +42,13 @@ void* __lwp_heap_allocate(heap_cntrl *theheap,u32 size)
 {
 	u32 excess;
 	u32 dsize;
+	u32 walk;
 	heap_block *block;
 	heap_block *next_block;
 	heap_block *tmp_block;
 	void *ptr;
-	u32 offset,level;
+	u32 offset;
+	u32 level = 0;
 
 	if(size>=(-1-HEAP_BLOCK_USED_OVERHEAD)) return NULL;
 
@@ -58,12 +61,18 @@ void* __lwp_heap_allocate(heap_cntrl *theheap,u32 size)
 
 	if(dsize<sizeof(heap_block)) dsize = sizeof(heap_block);
 
+	/* First-fit walk under disabled interrupts. On a heavily-fragmented
+	 * heap the free list can be long; flash ISR re-enable every 32 steps
+	 * so pending interrupts get a chance to run between buckets. */
+	walk = 0;
 	for(block=theheap->first;;block=block->next) {
 		if(block==__lwp_heap_tail(theheap)) {
 			_CPU_ISR_Restore(level);
 			return NULL;
 		}
 		if(block->front_flag>=dsize) break;
+		if((++walk & 31)==0)
+			_CPU_ISR_Flash(level);
 	}
 
 	if((block->front_flag-dsize)>(theheap->pg_size+HEAP_BLOCK_USED_OVERHEAD)) {
@@ -101,9 +110,19 @@ BOOL __lwp_heap_free(heap_cntrl *theheap,void *ptr)
 	heap_block *new_next;
 	heap_block *prev_block;
 	heap_block *tmp_block;
-	u32 dsize,level;
+	u32 dsize;
+	u32 level = 0;
 
 	_CPU_ISR_Disable(level);
+
+	/* __lwp_heap_usrblockat() dereferences *(ptr-1) to read the
+	 * stored offset. If ptr is not from this heap that read goes
+	 * to arbitrary memory. Reject obviously-out-of-range pointers
+	 * before the deref. */
+	if((u32)ptr<=(u32)theheap->start || (u32)ptr>=(u32)theheap->final) {
+		_CPU_ISR_Restore(level);
+		return FALSE;
+	}
 
 	block = __lwp_heap_usrblockat(ptr);
 	if(!__lwp_heap_blockin(theheap,block) || __lwp_heap_blockfree(block)) {
@@ -160,6 +179,8 @@ BOOL __lwp_heap_free(heap_cntrl *theheap,void *ptr)
 u32 __lwp_heap_getinfo(heap_cntrl *theheap,heap_iblock *theinfo)
 {
 	u32 not_done = 1;
+	u32 level = 0;
+	u32 result = 0;
 	heap_block *theblock = NULL;
 	heap_block *nextblock = NULL;
 
@@ -170,8 +191,16 @@ u32 __lwp_heap_getinfo(heap_cntrl *theheap,heap_iblock *theinfo)
 
 	if(!__sys_state_up(__sys_state_get())) return 1;
 
+	/* Walk under ISR-disable. Concurrent __lwp_heap_allocate/_free
+	 * mutate front_flag/back_flag in pairs, so without the lock the
+	 * structural check below would fire transiently on a healthy heap. */
+	_CPU_ISR_Disable(level);
+
 	theblock = theheap->start;
-	if(theblock->back_flag!=HEAP_DUMMY_FLAG) return 2;
+	if(theblock->back_flag!=HEAP_DUMMY_FLAG) {
+		result = 2;
+		goto out;
+	}
 
 	while(not_done) {
 		if(__lwp_heap_blockfree(theblock)) {
@@ -184,7 +213,10 @@ u32 __lwp_heap_getinfo(heap_cntrl *theheap,heap_iblock *theinfo)
 
 		if(theblock->front_flag!=HEAP_DUMMY_FLAG) {
 			nextblock = __lwp_heap_nextblock(theblock);
-			if(theblock->front_flag!=nextblock->back_flag) return 2;
+			if(theblock->front_flag!=nextblock->back_flag) {
+				result = 2;
+				goto out;
+			}
 		}
 
 		if(theblock->front_flag==HEAP_DUMMY_FLAG)
@@ -192,5 +224,8 @@ u32 __lwp_heap_getinfo(heap_cntrl *theheap,heap_iblock *theinfo)
 		else
 			theblock = nextblock;
 	}
-	return 0;
+
+out:
+	_CPU_ISR_Restore(level);
+	return result;
 }

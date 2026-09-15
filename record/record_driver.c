@@ -24,6 +24,10 @@
 #include "../configuration.h"
 #include "../list_special.h"
 #include "../gfx/video_driver.h"
+#include "../audio/audio_driver.h"
+#ifdef HAVE_THREADS
+#include "../gfx/video_thread_wrapper.h"
+#endif
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../runloop.h"
@@ -31,8 +35,10 @@
 #include "../defaults.h"
 
 #include "record_driver.h"
+#include "../audio/audio_upmix.h"
 #include "drivers/record_ffmpeg.h"
 #include "drivers/record_wav.h"
+#include "drivers/record_avfoundation.h"
 
 static recording_state_t recording_state = {0};
 
@@ -46,6 +52,9 @@ static const record_driver_t record_null = {
 };
 
 const record_driver_t *record_drivers[] = {
+#ifdef HAVE_AVF
+   &record_avfoundation,
+#endif
 #ifdef HAVE_FFMPEG
    &record_ffmpeg,
 #endif
@@ -132,6 +141,12 @@ bool recording_deinit(void)
    bool history_list_enable        = config_get_ptr()->bools.history_list_enable;
 #endif
 
+#ifdef HAVE_THREADS
+   /* The GPU recorder reads from the frames the video thread presents;
+    * let any in-flight one finish before its readback target goes. */
+   video_thread_wait_idle();
+#endif
+
    if (     !recording_st->data
 		   || !recording_st->driver)
       return false;
@@ -150,7 +165,7 @@ bool recording_deinit(void)
    /* Push recording to video history playlist */
 #ifdef HAVE_FFMPEG
    if (     history_list_enable
-         && !string_is_empty(recording_st->path))
+         && *recording_st->path)
    {
       struct playlist_entry entry = {0};
 
@@ -193,6 +208,12 @@ bool recording_init(void)
    recording_state_t *recording_st      = &recording_state;
    bool recording_enable                = recording_st->enable;
 
+#ifdef HAVE_THREADS
+   /* No frame may be mid-present while the recorder binds to the
+    * driver's readback path. No-op without the wrapper. */
+   video_thread_wait_idle();
+#endif
+
    if (!recording_enable)
       return false;
 
@@ -217,7 +238,7 @@ bool recording_init(void)
          (float)av_info->timing.fps,
          (float)av_info->timing.sample_rate);
 
-   if (!string_is_empty(recording_st->path))
+   if (*recording_st->path)
       strlcpy(output, recording_st->path, sizeof(output));
    else
    {
@@ -226,12 +247,12 @@ bool recording_init(void)
       unsigned video_stream_port    = settings->uints.video_stream_port;
       if (recording_st->streaming_enable)
       {
-         if (!string_is_empty(stream_url))
+         if (stream_url && *stream_url)
             strlcpy(output, stream_url, sizeof(output));
          else
          {
             /* Fallback, stream locally to 127.0.0.1 */
-            size_t _len = strlcpy(output, "udp://127.0.0.1:", sizeof(output));
+            size_t _len = strlcpy_lit(output, "udp://127.0.0.1:", sizeof(output));
             snprintf(output + _len, sizeof(output) - _len, "%u",
                   video_stream_port);
          }
@@ -242,38 +263,33 @@ bool recording_init(void)
          if (!path_is_directory(recording_st->output_dir))
             path_mkdir(recording_st->output_dir);
          /* Fallback to core name if started without content */
-         if (string_is_empty(game_name))
-            game_name          = runloop_st->system.info.library_name;
+         if (!game_name || !*game_name)
+            game_name = runloop_st->system.info.library_name;
 
-         if (video_record_quality < RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST)
          {
-            fill_str_dated_filename(buf, game_name,
-                     "mkv", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
-         }
-         else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
-               && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
-         {
-            fill_str_dated_filename(buf, game_name,
-                     "webm", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
-         }
-         else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
-               && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
-         {
-            fill_str_dated_filename(buf, game_name,
-                     "gif", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
-         }
-         else
-         {
-            fill_str_dated_filename(buf, game_name,
-                     "png", sizeof(buf));
-            fill_pathname_join_special(output, recording_st->output_dir, buf, sizeof(output));
+            const char *ext = "mkv";
+#ifdef HAVE_AVF
+            if (string_is_equal(settings->arrays.record_driver,
+                     "avfoundation"))
+               ext = "mov";
+            else
+#endif
+            if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST
+                  && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_GIF)
+               ext = "webm";
+            else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_GIF
+                  && video_record_quality < RECORD_CONFIG_TYPE_RECORDING_APNG)
+               ext = "gif";
+            else if (video_record_quality >= RECORD_CONFIG_TYPE_RECORDING_APNG)
+               ext = "png";
+
+            fill_str_dated_filename(buf, game_name, ext, sizeof(buf));
+            fill_pathname_join_special(output,
+                  recording_st->output_dir, buf, sizeof(output));
          }
 
          /* Cache path for playlist saving */
-         if (!string_is_empty(output))
+         if (*output)
             strlcpy(recording_st->path, output, sizeof(recording_st->path));
       }
    }
@@ -289,17 +305,38 @@ bool recording_init(void)
    params.out_height                = av_info->geometry.base_height;
    params.fb_width                  = av_info->geometry.max_width;
    params.fb_height                 = av_info->geometry.max_height;
+   /* A core delivering a wider layout than stereo through the
+    * multi-channel batch entry is recorded in it, where the container
+    * has a default layout for the count - quad, 5.1 with the pair at
+    * the back, 7.1 - which are the layouts in the order the recorder
+    * takes them. Anything else, stereo. */
    params.channels                  = 2;
+   recording_st->layout              = AUDIO_LAYOUT_STEREO;
+   {
+      uint32_t core_layout = audio_state_get_ptr()->core_layout;
+      if (     core_layout == AUDIO_LAYOUT_QUAD
+            || core_layout == AUDIO_LAYOUT_5POINT1
+            || core_layout == AUDIO_LAYOUT_7POINT1)
+      {
+         params.channels   = audio_layout_channels(core_layout);
+         recording_st->layout = core_layout;
+      }
+   }
+   recording_st->channels            = params.channels;
    params.filename                  = output;
    params.fps                       = av_info->timing.fps;
    params.samplerate                = av_info->timing.sample_rate;
+   /* XRGB2101010 source frames are down-converted to XRGB8888 before the
+    * recording path sees them (see video_driver_frame), so they record as
+    * ARGB8888 just like a native XRGB8888 core. */
    params.pix_fmt                   =
-      (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+      (   video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
+       || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010)
       ? FFEMU_PIX_ARGB8888
       : FFEMU_PIX_RGB565;
    params.config                    = NULL;
 
-   if (!string_is_empty(recording_st->config))
+   if (*recording_st->config)
       params.config                 = recording_st->config;
    else
    {
@@ -345,8 +382,8 @@ bool recording_init(void)
       params.fb_height                    = next_pow2(vp.height);
 
       if (video_force_aspect &&
-            (video_st->aspect_ratio > 0.0f))
-         params.aspect_ratio              = video_st->aspect_ratio;
+            (VIDEO_DRIVER_ASPECT_RATIO(video_st) > 0.0f))
+         params.aspect_ratio              = VIDEO_DRIVER_ASPECT_RATIO(video_st);
       else
          params.aspect_ratio              = (float)vp.width / vp.height;
 
@@ -370,8 +407,8 @@ bool recording_init(void)
       }
 
       if (video_force_aspect &&
-            (video_st->aspect_ratio > 0.0f))
-         params.aspect_ratio = video_st->aspect_ratio;
+            (VIDEO_DRIVER_ASPECT_RATIO(video_st) > 0.0f))
+         params.aspect_ratio = VIDEO_DRIVER_ASPECT_RATIO(video_st);
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
@@ -421,14 +458,26 @@ void recording_driver_update_streaming_url(void)
    const char     *youtube_url   = "rtmp://a.rtmp.youtube.com/live2/";
    const char     *twitch_url    = "rtmp://live.twitch.tv/app/";
    const char     *facebook_url  = "rtmps://live-api-s.facebook.com:443/rtmp/";
+   const char     *kick_url      = "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app/";
 
    if (!settings)
       return;
 
    switch (settings->uints.streaming_mode)
    {
+      case STREAMING_MODE_KICK:
+         if (*settings->arrays.kick_stream_key)
+         {
+            size_t _len = strlcpy(settings->paths.path_stream_url,
+                  kick_url,
+                  sizeof(settings->paths.path_stream_url));
+            strlcpy(settings->paths.path_stream_url       + _len,
+                  settings->arrays.kick_stream_key,
+                  sizeof(settings->paths.path_stream_url) - _len);
+         }
+         break;
       case STREAMING_MODE_TWITCH:
-         if (!string_is_empty(settings->arrays.twitch_stream_key))
+         if (*settings->arrays.twitch_stream_key)
          {
             size_t _len = strlcpy(settings->paths.path_stream_url,
                   twitch_url,
@@ -439,7 +488,7 @@ void recording_driver_update_streaming_url(void)
          }
          break;
       case STREAMING_MODE_YOUTUBE:
-         if (!string_is_empty(settings->arrays.youtube_stream_key))
+         if (*settings->arrays.youtube_stream_key)
          {
             size_t _len = strlcpy(settings->paths.path_stream_url,
                   youtube_url,
@@ -452,7 +501,7 @@ void recording_driver_update_streaming_url(void)
       case STREAMING_MODE_LOCAL:
          {
             /* TODO: figure out default interface and bind to that instead */
-            size_t _len = strlcpy(settings->paths.path_stream_url, "udp://127.0.0.1:",
+            size_t _len = strlcpy_lit(settings->paths.path_stream_url, "udp://127.0.0.1:",
                   sizeof(settings->paths.path_stream_url));
             snprintf(settings->paths.path_stream_url      + _len,
                   sizeof(settings->paths.path_stream_url) - _len,
@@ -460,7 +509,7 @@ void recording_driver_update_streaming_url(void)
          }
          break;
       case STREAMING_MODE_FACEBOOK:
-         if (!string_is_empty(settings->arrays.facebook_stream_key))
+         if (*settings->arrays.facebook_stream_key)
          {
             size_t _len = strlcpy(settings->paths.path_stream_url,
                   facebook_url,

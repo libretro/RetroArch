@@ -16,6 +16,7 @@ enum streaming_mode
    STREAMING_MODE_TWITCH = 0,
    STREAMING_MODE_YOUTUBE,
    STREAMING_MODE_FACEBOOK,
+   STREAMING_MODE_KICK,
    STREAMING_MODE_LOCAL,
    STREAMING_MODE_CUSTOM
 };
@@ -121,6 +122,11 @@ struct recording
 
    unsigned width;
    unsigned height;
+   /* The speaker layout the recorder was opened with (an AUDIO_LAYOUT_
+    * mask): stereo, or the core's own wider layout when it had one at
+    * the start of the recording. Every push is brought to it. */
+   uint32_t layout;
+   unsigned channels;
 
    char path[PATH_MAX_LENGTH];
    char config[PATH_MAX_LENGTH];

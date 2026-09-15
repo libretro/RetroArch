@@ -35,6 +35,16 @@
 #define NETPLAY_HOST_STR_LEN     32
 #define NETPLAY_HOST_LONGSTR_LEN 256
 
+/* Upper bound on the LAN discovery result list.
+ *
+ * Discovery responses are unsolicited UDP datagrams (and unsolicited
+ * mDNS records); nothing ties one to a query we sent, and nothing stops
+ * a single peer from answering forever.  Without a ceiling the list is
+ * a remotely driven allocation - roughly 700 bytes per entry - that the
+ * user has no way to stop.  No plausible LAN has more netplay hosts
+ * than this, and the menu is unusable long before it. */
+#define NETPLAY_MAX_DISCOVERED_HOSTS 256
+
 #define NETPLAY_MITM_SERVERS 5
 
 #define NETPLAY_CHAT_MAX_MESSAGES   5

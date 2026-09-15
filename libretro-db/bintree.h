@@ -47,6 +47,10 @@ typedef struct bintree
 
 bintree_t *bintree_new(bintree_cmp_func cmp, void *ctx);
 
+/* Returns 0 on success, -1 if an equal value is already present,
+ * -2 if the tree could not be grown.  The tree stores @value by
+ * pointer and never frees it; releasing the values is the caller's
+ * job, and bintree_iterate() is the way to reach them all. */
 int bintree_insert(bintree_t *t, struct bintree_node *root, void *value);
 
 int bintree_iterate(struct bintree_node *n, bintree_iter_cb cb, void *ctx);

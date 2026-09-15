@@ -11,6 +11,7 @@
 #endif
 
 #include <retro_assert.h>
+#include <verbosity.h>
 #include <compat/strl.h>
 
 #include "../deps/game_ai_lib/GameAI.h"
@@ -73,61 +74,61 @@ void game_ai_init(void)
    if (!create_game_ai)
    {
 #ifdef _WIN32
-      BOOL fFreeResult, fRunTimeLinkSuccess = FALSE;
-
       g_lib_handle = LoadLibrary(TEXT("game_ai.dll"));
-      retro_assert(hinstLib);
-
-      char full_module_path[MAX_PATH];
-      DWORD dwLen = GetModuleFileNameA(g_lib_handle, static_cast<char*>(&full_module_path), MAX_PATH);
-
-      if (hinstLib)
+      if (!g_lib_handle)
       {
-         create_game_ai = (create_game_ai_t) GetProcAddress(hinstLib, "create_game_ai");
-         retro_assert(create_game_ai);
-
-         destroy_game_ai = (destroy_game_ai_t) GetProcAddress(hinstLib, "destroy_game_ai");
-         retro_assert(destroy_game_ai);
-
-         game_ai_lib_init = (game_ai_lib_init_t) GetProcAddress(hinstLib, "game_ai_lib_init");
-         retro_assert(game_ai_lib_init);
-
-         game_ai_lib_think = (game_ai_lib_think_t) GetProcAddress(hinstLib, "game_ai_lib_think");
-         retro_assert(game_ai_lib_think);
-
-         game_ai_lib_set_show_debug = (game_ai_lib_set_show_debug_t) GetProcAddress(hinstLib, "game_ai_lib_set_show_debug");
-         retro_assert(game_ai_lib_set_show_debug);
-
-         game_ai_lib_set_debug_log = (game_ai_lib_set_debug_log_t) GetProcAddress(hinstLib, "game_ai_lib_set_debug_log");
-         retro_assert(game_ai_lib_set_debug_log);
+         RARCH_WARN("[GameAI] Could not load game_ai.dll; Game AI disabled.\n");
+         return;
       }
+
+      create_game_ai             = (create_game_ai_t) GetProcAddress(g_lib_handle, "create_game_ai");
+      destroy_game_ai            = (destroy_game_ai_t) GetProcAddress(g_lib_handle, "destroy_game_ai");
+      game_ai_lib_init           = (game_ai_lib_init_t) GetProcAddress(g_lib_handle, "game_ai_lib_init");
+      game_ai_lib_think          = (game_ai_lib_think_t) GetProcAddress(g_lib_handle, "game_ai_lib_think");
+      game_ai_lib_set_show_debug = (game_ai_lib_set_show_debug_t) GetProcAddress(g_lib_handle, "game_ai_lib_set_show_debug");
+      game_ai_lib_set_debug_log  = (game_ai_lib_set_debug_log_t) GetProcAddress(g_lib_handle, "game_ai_lib_set_debug_log");
 #else
       g_lib_handle = dlopen("./libgame_ai.so", RTLD_NOW);
-      retro_assert(g_lib_handle);
-
-      if (g_lib_handle)
+      if (!g_lib_handle)
       {
-         dlinfo(g_lib_handle, RTLD_DI_ORIGIN, (void *) &game_ai_lib_path);
-
-         create_game_ai = (create_game_ai_t)(dlsym(g_lib_handle, "create_game_ai"));
-         retro_assert(create_game_ai);
-
-         destroy_game_ai = (destroy_game_ai_t)(dlsym(g_lib_handle, "destroy_game_ai"));
-         retro_assert(destroy_game_ai);
-
-         game_ai_lib_init = (game_ai_lib_init_t)(dlsym(g_lib_handle, "game_ai_lib_init"));
-         retro_assert(game_ai_lib_init);
-
-         game_ai_lib_think = (game_ai_lib_think_t)(dlsym(g_lib_handle, "game_ai_lib_think"));
-         retro_assert(game_ai_lib_think);
-
-         game_ai_lib_set_show_debug = (game_ai_lib_set_show_debug_t)(dlsym(g_lib_handle, "game_ai_lib_set_show_debug"));
-         retro_assert(game_ai_lib_set_show_debug);
-
-         game_ai_lib_set_debug_log  = (game_ai_lib_set_debug_log_t)(dlsym(g_lib_handle, "game_ai_lib_set_debug_log"));
-         retro_assert(game_ai_lib_set_debug_log);
+         RARCH_WARN("[GameAI] Could not load libgame_ai.so; Game AI disabled.\n");
+         return;
       }
+
+      dlinfo(g_lib_handle, RTLD_DI_ORIGIN, (void *) &game_ai_lib_path);
+
+      create_game_ai             = (create_game_ai_t)(dlsym(g_lib_handle, "create_game_ai"));
+      destroy_game_ai            = (destroy_game_ai_t)(dlsym(g_lib_handle, "destroy_game_ai"));
+      game_ai_lib_init           = (game_ai_lib_init_t)(dlsym(g_lib_handle, "game_ai_lib_init"));
+      game_ai_lib_think          = (game_ai_lib_think_t)(dlsym(g_lib_handle, "game_ai_lib_think"));
+      game_ai_lib_set_show_debug = (game_ai_lib_set_show_debug_t)(dlsym(g_lib_handle, "game_ai_lib_set_show_debug"));
+      game_ai_lib_set_debug_log  = (game_ai_lib_set_debug_log_t)(dlsym(g_lib_handle, "game_ai_lib_set_debug_log"));
 #endif
+
+      /* If the library is present but does not export the full
+       * interface, disable Game AI rather than risk calling a NULL
+       * function pointer later. */
+      if (   !create_game_ai
+          || !destroy_game_ai
+          || !game_ai_lib_init
+          || !game_ai_lib_think
+          || !game_ai_lib_set_show_debug
+          || !game_ai_lib_set_debug_log)
+      {
+         RARCH_WARN("[GameAI] game_ai library is missing required symbols; Game AI disabled.\n");
+         create_game_ai             = NULL;
+         destroy_game_ai            = NULL;
+         game_ai_lib_init           = NULL;
+         game_ai_lib_think          = NULL;
+         game_ai_lib_set_show_debug = NULL;
+         game_ai_lib_set_debug_log  = NULL;
+#ifdef _WIN32
+         FreeLibrary(g_lib_handle);
+#else
+         dlclose(g_lib_handle);
+#endif
+         g_lib_handle = NULL;
+      }
    }
 }
 
@@ -150,7 +151,7 @@ void game_ai_shutdown(void)
 
 void game_ai_load(const char * name, void * ram_ptr, int ram_size, retro_log_printf_t log)
 {
-   strcpy((char *) &g_game_name[0], name);
+   strlcpy(g_game_name, name, sizeof(g_game_name));
 
    g_ram_ptr  = ram_ptr;
    g_ram_size = ram_size;
@@ -178,10 +179,20 @@ void game_ai_think(bool override_p1, bool override_p2, bool show_debug,
 
       if (ga)
       {
-         char data_path[1024] = {0};
-         strcpy(&data_path[0], (char *)game_ai_lib_path);
-         strcat(&data_path[0], "/data/");
-         strcat(&data_path[0], (char *)g_game_name);
+         char   data_path[1024];
+         size_t _len;
+         size_t sz = sizeof(data_path);
+
+         /* Build path safely with proper length checking.  Tracking
+          * the running length explicitly avoids the strlcat-then-
+          * strlen scan-from-start cost on each append. */
+         _len  = strlcpy(data_path, game_ai_lib_path, sz);
+         if (_len < sz)
+            _len += strlcpy_lit(data_path + _len, "/data/",       sz - _len);
+         if (_len < sz)
+            _len += strlcpy(data_path + _len, g_game_name,    sz - _len);
+         if (_len >= sz - 1)
+            return; /* Path too long, abort safely */
 
          game_ai_lib_init(ga, (void *) g_ram_ptr, g_ram_size);
          game_ai_lib_set_debug_log(ga, game_ai_debug_log);

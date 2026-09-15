@@ -32,6 +32,7 @@
 
 #if defined(HAVE_BUILTINMBEDTLS)
 #include "../../deps/mbedtls/mbedtls/config.h"
+#include "../../deps/mbedtls/mbedtls/version.h"
 #include "../../deps/mbedtls/mbedtls/certs.h"
 #include "../../deps/mbedtls/mbedtls/debug.h"
 #include "../../deps/mbedtls/mbedtls/platform.h"
@@ -51,8 +52,29 @@
 #include <mbedtls/platform.h>
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/ssl.h>
+#if MBEDTLS_VERSION_MAJOR >= 4
+#include <psa/crypto.h>
+#else
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
+#endif
+#endif
+
+/* Mbed TLS 4.x moved the crypto code out into TF-PSA-Crypto and dropped
+ * the legacy entropy/CTR_DRBG interfaces from the public API - the
+ * headers now live under mbedtls/private/ and the RNG callback
+ * parameters were removed from every function that took them.  All
+ * randomness comes from the PSA subsystem instead, which just needs a
+ * one-time psa_crypto_init(). */
+#if !defined(HAVE_BUILTINMBEDTLS) && defined(MBEDTLS_VERSION_MAJOR) \
+ && MBEDTLS_VERSION_MAJOR >= 4
+#define SSL_MBED_LEGACY_RNG 0
+#else
+#define SSL_MBED_LEGACY_RNG 1
+#endif
+
+#if defined(VITA)
+#include <psp2/kernel/rng.h>
 #endif
 
 /* Not part of the mbedtls upstream source */
@@ -64,13 +86,18 @@ struct ssl_state
 {
    mbedtls_net_context net_ctx;
    mbedtls_ssl_context ctx;
+#if SSL_MBED_LEGACY_RNG
    mbedtls_entropy_context entropy;
    mbedtls_ctr_drbg_context ctr_drbg;
+#endif
    mbedtls_ssl_config conf;
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    mbedtls_x509_crt ca;
 #endif
   const char *domain;
+  /* Last mbedtls return code that made init/connect fail; 0 when the
+   * failure was not the library's. */
+  int last_err;
 };
 
 static void ssl_debug(void *ctx, int level,
@@ -81,19 +108,50 @@ static void ssl_debug(void *ctx, int level,
    fflush((FILE*)ctx);
 }
 
-#ifdef _3DS
-int ctr_entropy_func(void *data, unsigned char *s, size_t len)
+#if defined(_3DS) && SSL_MBED_LEGACY_RNG
+static int platform_entropy_func(void *data, unsigned char *s, size_t len)
 {
    (void)data;
    PS_GenerateRandomBytes(s, len);
+   return 0;
+}
+#elif defined(VITA) && SSL_MBED_LEGACY_RNG
+/* The Vita has no platform entropy source mbedtls can poll (see
+ * MBEDTLS_NO_PLATFORM_ENTROPY in deps/mbedtls/mbedtls/config.h), so
+ * seed CTR_DRBG straight from the kernel RNG.  A single
+ * sceKernelGetRandomNumber() call is limited to 64 bytes. */
+static int platform_entropy_func(void *data, unsigned char *s, size_t len)
+{
+   size_t off = 0;
+   (void)data;
+
+   while (off < len)
+   {
+      SceSize chunk = (SceSize)((len - off) > 64 ? 64 : (len - off));
+
+      if (sceKernelGetRandomNumber(s + off, chunk) < 0)
+         return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;
+
+      off += chunk;
+   }
+
    return 0;
 }
 #endif
 
 void* ssl_socket_init(int fd, const char *domain)
 {
+#if SSL_MBED_LEGACY_RNG
    static const char *pers = "libretro";
+#endif
    struct ssl_state *state = (struct ssl_state*)calloc(1, sizeof(*state));
+
+   /* NULL-check before 'state->domain = domain' on the next line
+    * dereferences state.  Sibling bug in net_socket_ssl_bear.c's
+    * ssl_socket_init was fixed in the previous commit; applying
+    * the same fix here. */
+   if (!state)
+      return NULL;
 
    state->domain           = domain;
 
@@ -107,19 +165,27 @@ void* ssl_socket_init(int fd, const char *domain)
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    mbedtls_x509_crt_init(&state->ca);
 #endif
+#if SSL_MBED_LEGACY_RNG
    mbedtls_ctr_drbg_init(&state->ctr_drbg);
    mbedtls_entropy_init(&state->entropy);
+#endif
 
    state->net_ctx.fd = fd;
 
+#if SSL_MBED_LEGACY_RNG
    if (mbedtls_ctr_drbg_seed(&state->ctr_drbg,
-#ifdef _3DS
-      ctr_entropy_func,
+#if defined(_3DS) || defined(VITA)
+      platform_entropy_func,
 #else
       mbedtls_entropy_func,
 #endif
       &state->entropy, (const unsigned char*)pers, strlen(pers)) != 0)
       goto error;
+#else
+   /* Idempotent - safe to call once per socket. */
+   if (psa_crypto_init() != PSA_SUCCESS)
+      goto error;
+#endif
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    if (mbedtls_x509_crt_parse(&state->ca, (const unsigned char*)cacert_pem, sizeof(cacert_pem) / sizeof(cacert_pem[0])) < 0)
@@ -129,8 +195,39 @@ void* ssl_socket_init(int fd, const char *domain)
    return state;
 
 error:
+   /* Pair each non-trivial _init call above (lines 112-118) with
+    * its matching _free.  Pre-patch only free(state) was called,
+    * leaking the five mbedtls sub-context heap allocations that
+    * the _init / _free functions internally manage (entropy
+    * pool buffers, DRBG state buffers, SSL context buffers,
+    * config buffers, X509 chain).
+    *
+    * Mirrors the normal-teardown path in ssl_socket_free below
+    * (lines 355-361) in reverse of init order.  mbedtls_net_free
+    * is intentionally not called for net_ctx (line 111):
+    *   - init sets state->net_ctx.fd from the caller's fd
+    *     parameter at line 120, and the caller still owns that
+    *     fd on this error exit.
+    *   - ssl_socket_free similarly never calls mbedtls_net_free;
+    *     it just socket_close's the fd via ssl_socket_close at
+    *     line 345.
+    *
+    * The if (state) guard is redundant - the state calloc is
+    * NULL-checked at line 102 so we can't reach this label with
+    * state == NULL - but leave it to keep the diff minimal. */
    if (state)
+   {
+#if SSL_MBED_LEGACY_RNG
+      mbedtls_entropy_free(&state->entropy);
+      mbedtls_ctr_drbg_free(&state->ctr_drbg);
+#endif
+#if defined(MBEDTLS_X509_CRT_PARSE_C)
+      mbedtls_x509_crt_free(&state->ca);
+#endif
+      mbedtls_ssl_config_free(&state->conf);
+      mbedtls_ssl_free(&state->ctx);
       free(state);
+   }
    return NULL;
 }
 
@@ -154,23 +251,45 @@ int ssl_socket_connect(void *state_data,
          return -1;
    }
 
-   if (mbedtls_ssl_config_defaults(&state->conf,
+   state->last_err = 0;
+
+   if ((ret = mbedtls_ssl_config_defaults(&state->conf,
                MBEDTLS_SSL_IS_CLIENT,
                MBEDTLS_SSL_TRANSPORT_STREAM,
-               MBEDTLS_SSL_PRESET_DEFAULT) != 0)
+               MBEDTLS_SSL_PRESET_DEFAULT)) != 0)
+   {
+      state->last_err = ret;
       return -1;
+   }
 
    mbedtls_ssl_conf_authmode(&state->conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
+#if MBEDTLS_VERSION_MAJOR < 3
+   /* The 2.x default preset floors the client at TLS 1.0 whichever
+    * protocol versions are compiled in, so name the floor that matches
+    * the build.  3.0 dropped TLS 1.0 and 1.1 outright and floors its own
+    * default preset at 1.2, and 4.0 removed this call along with the
+    * rest of the deprecated surface, so neither needs the override. */
+   mbedtls_ssl_conf_min_version(&state->conf,
+         MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
+#endif
    mbedtls_ssl_conf_ca_chain(&state->conf, &state->ca, NULL);
+#if SSL_MBED_LEGACY_RNG
    mbedtls_ssl_conf_rng(&state->conf, mbedtls_ctr_drbg_random, &state->ctr_drbg);
+#endif
    mbedtls_ssl_conf_dbg(&state->conf, ssl_debug, stderr);
 
-   if (mbedtls_ssl_setup(&state->ctx, &state->conf) != 0)
+   if ((ret = mbedtls_ssl_setup(&state->ctx, &state->conf)) != 0)
+   {
+      state->last_err = ret;
       return -1;
+   }
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
-   if (mbedtls_ssl_set_hostname(&state->ctx, state->domain) != 0)
+   if ((ret = mbedtls_ssl_set_hostname(&state->ctx, state->domain)) != 0)
+   {
+      state->last_err = ret;
       return -1;
+   }
 #endif
 
    mbedtls_ssl_set_bio(&state->ctx, &state->net_ctx, mbedtls_net_send, mbedtls_net_recv, NULL);
@@ -178,7 +297,10 @@ int ssl_socket_connect(void *state_data,
    while ((ret = mbedtls_ssl_handshake(&state->ctx)) != 0)
    {
       if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE)
+      {
+         state->last_err = ret;
          return -1;
+      }
    }
 
    if ((flags = mbedtls_ssl_get_verify_result(&state->ctx)) != 0)
@@ -188,6 +310,12 @@ int ssl_socket_connect(void *state_data,
    }
 
    return state->net_ctx.fd;
+}
+
+int ssl_socket_last_error(void *state_data)
+{
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   return state ? state->last_err : 0;
 }
 
 ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
@@ -347,8 +475,10 @@ void ssl_socket_free(void *state_data)
 
    mbedtls_ssl_free(&state->ctx);
    mbedtls_ssl_config_free(&state->conf);
+#if SSL_MBED_LEGACY_RNG
    mbedtls_ctr_drbg_free(&state->ctr_drbg);
    mbedtls_entropy_free(&state->entropy);
+#endif
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    mbedtls_x509_crt_free(&state->ca);
 #endif

@@ -56,11 +56,11 @@ static int action_bind_label_playlist_collection_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   if (!string_is_empty(path))
+   if (path && *path)
    {
       const char *playlist_file = path_basename_nocompression(path);
 
-      if (!string_is_empty(playlist_file))
+      if (playlist_file && *playlist_file)
       {
          if (string_is_equal_noncase(path_get_extension(playlist_file),
                   "lpl"))
@@ -108,48 +108,44 @@ int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
 
    BIND_ACTION_LABEL(cbs, action_bind_label_generic);
 
-   if (cbs->enum_idx != MSG_UNKNOWN)
+   if (cbs->enum_idx == MSG_UNKNOWN)
+      return 0;
+
+   switch (cbs->enum_idx)
    {
-      switch (cbs->enum_idx)
-      {
-         case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
-         case MENU_ENUM_LABEL_GOTO_FAVORITES:
-         case MENU_ENUM_LABEL_GOTO_IMAGES:
-         case MENU_ENUM_LABEL_GOTO_MUSIC:
-         case MENU_ENUM_LABEL_GOTO_VIDEO:
-         case MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY:
-            BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
-            break;
-         case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS:
-            BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
-            break;
-         case MENU_ENUM_LABEL_CONTENT_SETTINGS:
-            BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
-            break;
-         case MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY:
+      case MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY:
+      case MENU_ENUM_LABEL_GOTO_FAVORITES:
+      case MENU_ENUM_LABEL_GOTO_IMAGES:
+      case MENU_ENUM_LABEL_GOTO_MUSIC:
+      case MENU_ENUM_LABEL_GOTO_VIDEO:
+      case MENU_ENUM_LABEL_PLAYLIST_COLLECTION_ENTRY:
+      case MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS:
+      case MENU_ENUM_LABEL_CONTENT_SETTINGS:
+         BIND_ACTION_LABEL(cbs, action_bind_label_playlist_collection_entry);
+         break;
+      case MENU_ENUM_LABEL_CHEAT_BROWSE_MEMORY:
 #ifdef HAVE_CHEATS
-            BIND_ACTION_LABEL(cbs, action_bind_label_cheat_browse_address);
+         BIND_ACTION_LABEL(cbs, action_bind_label_cheat_browse_address);
 #endif
-            break;
-         case MSG_INTERNAL_STORAGE:
-            BIND_ACTION_LABEL(cbs, action_bind_label_internal_memory);
-            break;
-         case MSG_REMOVABLE_STORAGE:
-            BIND_ACTION_LABEL(cbs, action_bind_label_removable_storage);
-            break;
-         case MSG_APPLICATION_DIR:
-            BIND_ACTION_LABEL(cbs, action_bind_label_application_dir);
-            break;
-         case MSG_EXTERNAL_APPLICATION_DIR:
-            BIND_ACTION_LABEL(cbs, action_bind_label_external_application_dir);
-            break;
-         case MENU_ENUM_LABEL_RDB_ENTRY_DETAIL:
-            BIND_ACTION_LABEL(cbs, action_bind_label_rdb_entry_detail);
-            break;
-         default:
-            break;
-      }
+         break;
+      case MSG_INTERNAL_STORAGE:
+         BIND_ACTION_LABEL(cbs, action_bind_label_internal_memory);
+         break;
+      case MSG_REMOVABLE_STORAGE:
+         BIND_ACTION_LABEL(cbs, action_bind_label_removable_storage);
+         break;
+      case MSG_APPLICATION_DIR:
+         BIND_ACTION_LABEL(cbs, action_bind_label_application_dir);
+         break;
+      case MSG_EXTERNAL_APPLICATION_DIR:
+         BIND_ACTION_LABEL(cbs, action_bind_label_external_application_dir);
+         break;
+      case MENU_ENUM_LABEL_RDB_ENTRY_DETAIL:
+         BIND_ACTION_LABEL(cbs, action_bind_label_rdb_entry_detail);
+         break;
+      default:
+         break;
    }
 
-   return -1;
+   return 0;
 }

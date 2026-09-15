@@ -252,6 +252,10 @@ static void ps4_joypad_poll(void)
       if (!~buttons.connected)
       {
          ds_joypad_states[player].connected = false;
+         /* ps4_joypad_button() reads pad_state[] without checking
+          * the connected flag, so it must be cleared here or the
+          * buttons held at disconnect stay readable indefinitely. */
+         pad_state[i] = 0;
          continue;
       }
 
@@ -281,6 +285,10 @@ static void ps4_joypad_poll(void)
          analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16(buttons.rx);
          analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16(buttons.ry);
       }
+      else
+         /* Read failed: drop the cached buttons rather than
+          * leaving the previous frame's state latched. */
+         pad_state[i] = 0;
       for (j = 0; j < 2; j++)
          for (k = 0; k < 2; k++)
             if (analog_state[i][j][k] == -0x8000)

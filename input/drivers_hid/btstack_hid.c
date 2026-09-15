@@ -681,7 +681,7 @@ struct btpad_queue_command
 
 struct btstack_hid_adapter
 {
-   uint32_t slot;
+   int32_t slot;
 
    enum btpad_state state;
 
@@ -1260,7 +1260,7 @@ static bool btstack_try_load(void)
    }
 #endif
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    run_loop_init_ptr(RUN_LOOP_COCOA);
 #else
    run_loop_init_ptr(RUN_LOOP_POSIX);

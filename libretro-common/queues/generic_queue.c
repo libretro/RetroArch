@@ -76,7 +76,21 @@ void generic_queue_push(generic_queue_t *queue, void *value)
 {
    struct generic_queue_item_t *new_item;
 
-   new_item = (struct generic_queue_item_t *)calloc(1, sizeof(struct generic_queue_item_t));
+   /* NULL-check queue: the sibling generic_queue_shift does this
+    * too, but _push was missing it.  new_item->previous = queue->
+    * last_item on a NULL queue would segfault. */
+   if (!queue)
+      return;
+
+   /* NULL-check calloc: the subsequent new_item->value / ->previous
+    * / ->next assignments would all segfault on OOM.  The function
+    * returns void, so we can't signal failure to the caller; a
+    * silent no-op on OOM is the only option.  length stays
+    * unchanged, which keeps the length/first_item/last_item
+    * invariant consistent. */
+   if (!(new_item = (struct generic_queue_item_t *)calloc(1, sizeof(struct generic_queue_item_t))))
+      return;
+
    new_item->value = value;
    new_item->previous = queue->last_item;
    new_item->next = NULL;
@@ -134,7 +148,14 @@ void generic_queue_shift(generic_queue_t *queue, void *value)
    if (!queue)
       return;
 
-   new_item = (struct generic_queue_item_t *)calloc(1, sizeof(struct generic_queue_item_t));
+   /* NULL-check calloc: the subsequent field writes would all
+    * segfault on OOM.  Same silent-no-op-on-OOM approach as
+    * generic_queue_push.  length and the first_item/last_item
+    * invariant stay consistent because we return before touching
+    * either. */
+   if (!(new_item = (struct generic_queue_item_t *)calloc(1, sizeof(struct generic_queue_item_t))))
+      return;
+
    new_item->value = value;
    new_item->previous = NULL;
    new_item->next = queue->first_item;
@@ -214,7 +235,13 @@ generic_queue_iterator_t *generic_queue_iterator(generic_queue_t *queue, bool fo
    {
       generic_queue_iterator_t *iterator;
 
-      iterator = (generic_queue_iterator_t *)malloc(sizeof(generic_queue_iterator_t));
+      /* NULL-check malloc: the three field writes below would
+       * segfault on OOM.  The function already returns NULL for
+       * the empty-queue / NULL-queue case below, so returning
+       * NULL on OOM is consistent with the existing contract. */
+      if (!(iterator = (generic_queue_iterator_t *)malloc(sizeof(generic_queue_iterator_t))))
+         return NULL;
+
       iterator->queue = queue;
       iterator->item = forward ? queue->first_item : queue->last_item;
       iterator->forward = forward;

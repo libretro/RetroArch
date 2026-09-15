@@ -68,6 +68,7 @@ const libretroCores = {
 	"tamalibretro": "Bandai - Tamagotchi P1 (TamaLIBretro)",
 	"tgbdual": "Nintendo - Game Boy / Color (TGB Dual)",
 	"theodore": "Thomson - MO/TO (Theodore)",
+	"tia": "Atari - 2600 (Tia)",
 	"tic80": "TIC-80",
 	"tyrquake": "Quake (TyrQuake)",
 	"uw8": "MicroW8",

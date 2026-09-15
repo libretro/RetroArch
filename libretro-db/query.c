@@ -25,6 +25,7 @@
 #else
 #include <unistd.h>
 #endif
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -57,7 +58,41 @@ enum argument_type
 
 struct argument;
 
+/* Per-query evaluation state.
+ *
+ * query_func_min()/query_func_max() report "smaller/larger than
+ * everything seen so far", so they need somewhere to keep the running
+ * extreme across the rows of a walk.  That used to be a single
+ * file-scope 'intermediate_res', which two queries evaluated
+ * concurrently would corrupt for each other:
+ *
+ *   WARNING: ThreadSanitizer: data race
+ *     Write of size 8 by thread T2:
+ *       #1 query_func_min  query.c:310
+ *     Location is global 'intermediate_res' of size 24
+ *
+ * Give every compiled query its own, and pass it to the evaluation
+ * functions rather than reaching for a global. */
+struct query_ctx
+{
+   struct rmsgpack_dom_value intermediate_res;
+   /* Whether intermediate_res holds a value yet.  min() and max() used
+    * zero for that, which is indistinguishable from a stored zero: a
+    * record with size 0 read as "nothing accumulated", the running
+    * extreme was discarded, and the walk started again from the next
+    * record.  The reported extreme was then taken over the tail of the
+    * database rather than all of it.
+    *
+    * Live in the databases shipped today: Mobile - J2ME carries one
+    * zero-size record two thirds of the way in, so max(size) came back
+    * as 25639896 against a true 27853509, and the two largest entries
+    * sat outside the range the scanner filters on - they could not be
+    * matched at all. */
+   int                       have_res;
+};
+
 typedef struct rmsgpack_dom_value (*rarch_query_func)(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv);
 
@@ -81,6 +116,7 @@ struct argument
 struct query
 {
    struct invocation root; /* ptr alignment */
+   struct query_ctx ctx;
    unsigned ref_count;
 };
 
@@ -90,7 +126,15 @@ struct registered_func
    rarch_query_func func;
 };
 
-struct rmsgpack_dom_value intermediate_res;
+void libretrodb_query_reset_accumulator(libretrodb_query_t *q)
+{
+   struct query *rq = (struct query *)q;
+   if (!rq)
+      return;
+   rq->ctx.intermediate_res.val.int_  = 0;
+   rq->ctx.intermediate_res.val.uint_ = 0;
+   rq->ctx.have_res                   = 0;
+}
 
 /* Forward declarations */
 static struct buffer query_parse_method_call(char *s, size_t len,
@@ -100,6 +144,7 @@ static struct buffer query_parse_table(char *s, size_t len, struct buffer buff,
 
 /* Errors */
 static struct rmsgpack_dom_value query_func_is_true(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv)
 {
@@ -115,6 +160,7 @@ static struct rmsgpack_dom_value query_func_is_true(
 }
 
 static struct rmsgpack_dom_value func_equals(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -143,6 +189,7 @@ static struct rmsgpack_dom_value func_equals(
 }
 
 static struct rmsgpack_dom_value query_func_operator_or(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -155,10 +202,10 @@ static struct rmsgpack_dom_value query_func_operator_or(
    for (i = 0; i < argc; i++)
    {
       if (argv[i].type == AT_VALUE)
-         res = func_equals(input, 1, &argv[i]);
+         res = func_equals(ctx, input, 1, &argv[i]);
       else
-         res = query_func_is_true(
-                  argv[i].a.invocation.func(input,
+         res = query_func_is_true(ctx,
+                  argv[i].a.invocation.func(ctx, input,
                   argv[i].a.invocation.argc,
                   argv[i].a.invocation.argv
                   ), 0, NULL);
@@ -171,6 +218,7 @@ static struct rmsgpack_dom_value query_func_operator_or(
 }
 
 static struct rmsgpack_dom_value query_func_operator_and(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -183,10 +231,10 @@ static struct rmsgpack_dom_value query_func_operator_and(
    for (i = 0; i < argc; i++)
    {
       if (argv[i].type == AT_VALUE)
-         res = func_equals(input, 1, &argv[i]);
+         res = func_equals(ctx, input, 1, &argv[i]);
       else
-         res = query_func_is_true(
-               argv[i].a.invocation.func(input,
+         res = query_func_is_true(ctx,
+               argv[i].a.invocation.func(ctx, input,
                   argv[i].a.invocation.argc,
                   argv[i].a.invocation.argv
                   ),
@@ -199,6 +247,7 @@ static struct rmsgpack_dom_value query_func_operator_and(
 }
 
 static struct rmsgpack_dom_value query_func_between(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -236,6 +285,7 @@ static struct rmsgpack_dom_value query_func_between(
 }
 
 static struct rmsgpack_dom_value query_func_glob(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -260,6 +310,7 @@ static struct rmsgpack_dom_value query_func_glob(
  * - in practice, last entry will contain the actual min/max value.           *
  * Empty result means there is no such field. */
 static struct rmsgpack_dom_value query_func_min(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -271,20 +322,22 @@ static struct rmsgpack_dom_value query_func_min(
    switch (input.type)
    {
       case RDT_INT:
-         res.val.bool_ = (
-               (input.val.int_ == 0)
-               || (input.val.int_ < intermediate_res.val.int_)
-               || (intermediate_res.val.int_ == 0));
-         if (res.val.bool_ || intermediate_res.val.int_ == 0)
-            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+         res.val.bool_ = (!ctx->have_res
+               || (input.val.int_ < ctx->intermediate_res.val.int_));
+         if (res.val.bool_)
+         {
+            memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
+            ctx->have_res = 1;
+         }
          break;
       case RDT_UINT:
-         res.val.bool_ = (
-               (input.val.uint_ == 0)
-               || (input.val.uint_ < intermediate_res.val.uint_)
-               || (intermediate_res.val.uint_ == 0));
-         if (res.val.bool_ || intermediate_res.val.uint_ == 0)
-            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+         res.val.bool_ = (!ctx->have_res
+               || (input.val.uint_ < ctx->intermediate_res.val.uint_));
+         if (res.val.bool_)
+         {
+            memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
+            ctx->have_res = 1;
+         }
          break;
       default:
          break;
@@ -294,6 +347,7 @@ static struct rmsgpack_dom_value query_func_min(
 }
 
 static struct rmsgpack_dom_value query_func_max(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -305,20 +359,22 @@ static struct rmsgpack_dom_value query_func_max(
    switch (input.type)
    {
       case RDT_INT:
-         res.val.bool_ = (
-               (input.val.int_ == 0)
-               || (input.val.int_ > intermediate_res.val.int_)
-               || (intermediate_res.val.int_ == 0));
-         if (res.val.bool_ || intermediate_res.val.int_ == 0)
-            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+         res.val.bool_ = (!ctx->have_res
+               || (input.val.int_ > ctx->intermediate_res.val.int_));
+         if (res.val.bool_)
+         {
+            memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
+            ctx->have_res = 1;
+         }
          break;
       case RDT_UINT:
-         res.val.bool_ = (
-               (input.val.uint_ == 0)
-               || (input.val.uint_ > intermediate_res.val.uint_)
-               || (intermediate_res.val.uint_ == 0));
-         if (res.val.bool_ || intermediate_res.val.uint_ == 0)
-            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+         res.val.bool_ = (!ctx->have_res
+               || (input.val.uint_ > ctx->intermediate_res.val.uint_));
+         if (res.val.bool_)
+         {
+            memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
+            ctx->have_res = 1;
+         }
          break;
       default:
          break;
@@ -339,17 +395,33 @@ struct registered_func registered_functions[100] = {
 };
 
 static void query_raise_unknown_function(
-      char *s, size_t _len,
+      char *s, size_t len,
       ssize_t where, const char *name,
-      ssize_t len, const char **err)
+      ssize_t name_len, const char **err)
 {
-   int __len = snprintf(s, _len,
+   size_t off = snprintf(s, len,
          "%" PRIu64 "::Unknown function '",
-         (uint64_t)where
-         );
-   if (len < ((ssize_t)_len - __len - 3))
-      strncpy(s + __len, name, len);
-   strcpy(s + __len + len, "'");
+         (uint64_t)where);
+
+   if (off < len)
+   {
+      size_t remaining = len - off;
+      size_t copy_len  = (size_t)name_len < remaining ? (size_t)name_len : remaining - 1;
+      /* See query_parse_table(): 'name' is a slice of the query, not
+       * a C string, so it cannot be handed to strlcpy(). */
+      memcpy(s + off, name, copy_len);
+      off += copy_len;
+      s[off] = '\0';
+   }
+
+   if (off + 2 <= len)
+   {
+      s[off]     = '\'';
+      s[off + 1] = '\0';
+   }
+   else if (len > 0)
+      s[len - 1] = '\0';
+
    *err = s;
 }
 
@@ -375,10 +447,47 @@ static struct buffer query_parse_integer(
       struct rmsgpack_dom_value *value,
       const char **err)
 {
+   int64_t result  = 0;
+   int sign        = 1;
+   bool has_digit  = false;
+   bool overflowed = false;
+   size_t idx      = buff.offset;
+
    value->type = RDT_INT;
-   if (sscanf(buff.data + buff.offset,
-            STRING_REP_INT64,
-            (int64_t*)&value->val.int_) == 0)
+
+   if (idx < buff.len && buff.data[idx] == '-')
+   {
+      sign = -1;
+      idx++;
+   }
+   else if (idx < buff.len && buff.data[idx] == '+')
+      idx++;
+
+   while (idx < buff.len && ISDIGIT((int)buff.data[idx]))
+   {
+      int digit = buff.data[idx] - '0';
+      has_digit = true;
+      /* Signed overflow is undefined, and the digit count here comes
+       * from the query, so bound the accumulation rather than letting
+       * it wrap. */
+      if (   result > (INT64_MAX - digit) / 10
+          || overflowed)
+         overflowed = true;
+      else
+         result     = result * 10 + digit;
+      idx++;
+   }
+
+   if (overflowed)
+   {
+      snprintf(s, len,
+            "%" PRIu64 "::Number out of range",
+            (uint64_t)buff.offset);
+      *err = s;
+      return buff;
+   }
+
+   if (!has_digit)
    {
       snprintf(s, len,
             "%" PRIu64 "::Expected number",
@@ -387,8 +496,8 @@ static struct buffer query_parse_integer(
    }
    else
    {
-      while (ISDIGIT((int)buff.data[buff.offset]))
-         buff.offset++;
+      value->val.int_ = result * sign;
+      buff.offset      = idx;
    }
 
    return buff;
@@ -493,7 +602,11 @@ static struct buffer query_parse_string(
 
       count                  = value->val.string.len + 1;
       if (is_binstr)
-	      count         /= 2;
+         count               /= 2;
+      /* b"" sizes this to zero, and calloc(0) may return NULL, which
+       * the check below would report as an allocation failure. */
+      if (count == 0)
+         count               = 1;
       value->val.string.buff = (char*)calloc(count, sizeof(char));
 
       if (!value->val.string.buff)
@@ -565,7 +678,8 @@ static struct buffer query_parse_value(char *s, size_t len,
          || query_peek(buff, "\"", STRLEN_CONST("\""))
          || query_peek(buff, "'",  STRLEN_CONST("'")))
       buff = query_parse_string(s, len, buff, value, err);
-   else if (ISDIGIT((int)buff.data[buff.offset]))
+   else if (   (size_t)buff.offset < buff.len
+            && ISDIGIT((int)buff.data[buff.offset]))
       buff = query_parse_integer(s, len, buff, value, err);
    return buff;
 }
@@ -658,7 +772,8 @@ static struct buffer query_parse_argument(
    buff = query_chomp(buff);
 
    if (
-         ISALPHA((int)buff.data[buff.offset])
+         (size_t)buff.offset < buff.len
+         && ISALPHA((int)buff.data[buff.offset])
          && !(
                query_peek(buff, "nil",   STRLEN_CONST("nil"))
             || query_peek(buff, "true",  STRLEN_CONST("true"))
@@ -689,6 +804,7 @@ static struct buffer query_parse_argument(
 }
 
 static struct rmsgpack_dom_value query_func_all_map(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv)
 {
@@ -723,10 +839,11 @@ static struct rmsgpack_dom_value query_func_all_map(
             value = &nil_value;
          arg      = argv[i + 1];
          if (arg.type == AT_VALUE)
-            res   = func_equals(*value, 1, &arg);
+            res   = func_equals(ctx, *value, 1, &arg);
          else
          {
-            res   = query_func_is_true(arg.a.invocation.func(
+            res   = query_func_is_true(ctx, arg.a.invocation.func(
+                  ctx,
                      *value,
                      arg.a.invocation.argc,
                      arg.a.invocation.argv
@@ -750,76 +867,68 @@ static struct buffer query_parse_table(
    unsigned argi = 0;
    struct argument args[QUERY_MAX_ARGS];
    const char *ident_name = NULL;
-
    buff = query_chomp(buff);
    buff = query_expect_char(s, len, buff, '{', err);
-
    if (*err)
       return buff;
-
    buff = query_chomp(buff);
-
    while (!query_peek(buff, "}", STRLEN_CONST("}")))
    {
       if (argi >= QUERY_MAX_ARGS)
       {
-         strlcpy(s, "Too many arguments in function call.", len);
+         strlcpy_lit(s, "Too many arguments in function call.", len);
          *err = s;
          goto clean;
       }
-
       if (ISALPHA((int)buff.data[buff.offset]))
       {
          buff = query_get_ident(s, len,
                buff, &ident_name, &_len, err);
-
          if (!*err)
          {
             args[argi].a.value.type            = RDT_STRING;
             args[argi].a.value.val.string.len  = (uint32_t)_len;
             args[argi].a.value.val.string.buff = (char*)calloc(
                   _len + 1, sizeof(char));
-
             if (!args[argi].a.value.val.string.buff)
+            {
+               strlcpy_lit(s, "OOM", len);
+               *err = s;
                goto clean;
-
-            strncpy(
-                  args[argi].a.value.val.string.buff,
+            }
+            /* strlcpy() would strlen() the source to compute its
+             * return value, and ident_name points into the query
+             * buffer, which is a (pointer, length) slice with no
+             * terminator of its own.  Copy exactly the identifier. */
+            memcpy(args[argi].a.value.val.string.buff,
                   ident_name, _len);
+            args[argi].a.value.val.string.buff[_len] = '\0';
          }
       }
       else
          buff = query_parse_string(s, len,
                buff, &args[argi].a.value, err);
-
       if (*err)
          goto clean;
-
       args[argi].type = AT_VALUE;
       buff            = query_chomp(buff);
       argi++;
       buff            = query_expect_char(s, len, buff, ':', err);
-
       if (*err)
          goto clean;
-
       buff = query_chomp(buff);
-
       if (argi >= QUERY_MAX_ARGS)
       {
-         strlcpy(s, "Too many arguments in function call.", len);
+         strlcpy_lit(s, "Too many arguments in function call.", len);
          *err = s;
          goto clean;
       }
-
       buff = query_parse_argument(s, len, buff, &args[argi], err);
-
       if (*err)
          goto clean;
       argi++;
       buff = query_chomp(buff);
       buff = query_expect_char(s, len, buff, ',', err);
-
       if (*err)
       {
          *err = NULL;
@@ -827,32 +936,22 @@ static struct buffer query_parse_table(
       }
       buff = query_chomp(buff);
    }
-
    buff = query_expect_char(s, len, buff, '}', err);
-
    if (*err)
       goto clean;
-
    invocation->func = query_func_all_map;
    invocation->argc = argi;
    invocation->argv = (struct argument*)
       malloc(sizeof(struct argument) * argi);
-
    if (!invocation->argv)
    {
-      s[0] = 'O';
-      s[1] = 'O';
-      s[2] = 'M';
-      s[3] = '\0';
+      strlcpy_lit(s, "Out of memory.", len);
       *err = s;
       goto clean;
    }
-
    memcpy(invocation->argv, args,
          sizeof(struct argument) * argi);
-
    return buff;
-
 clean:
    for (i = 0; i < argi; i++)
       query_argument_free(&args[i]);
@@ -903,7 +1002,7 @@ static struct buffer query_parse_method_call(
    {
       if (argi >= QUERY_MAX_ARGS)
       {
-         strlcpy(s, "Too many arguments in function call.", len);
+         strlcpy_lit(s, "Too many arguments in function call.", len);
          *err = s;
          goto clean;
       }
@@ -933,7 +1032,11 @@ static struct buffer query_parse_method_call(
    invocation->argv = (argi > 0) ? (struct argument*)
       malloc(sizeof(struct argument) * argi) : NULL;
 
-   if (!invocation->argv)
+   /* Gate the OOM branch on 'argi > 0 && !argv' - before this
+    * change a valid zero-arg function call ('foo()') was being
+    * erroneously treated as OOM because argv is legitimately
+    * NULL when argi==0. */
+   if (argi > 0 && !invocation->argv)
    {
       s[0] = 'O';
       s[1] = 'O';
@@ -942,8 +1045,9 @@ static struct buffer query_parse_method_call(
       *err = s;
       goto clean;
    }
-   memcpy(invocation->argv, args,
-         sizeof(struct argument) * argi);
+   if (invocation->argv)
+      memcpy(invocation->argv, args,
+            sizeof(struct argument) * argi);
 
    return buff;
 
@@ -975,18 +1079,27 @@ void *libretrodb_query_compile(libretrodb_t *db,
       const char *query, size_t len, const char **err_string)
 {
    struct buffer buff;
-   /* TODO/FIXME - static local variable */
-   static char tmp_err_buff [MAX_ERROR_LEN] = {0};
+   /* Error text is formatted into storage owned by the db handle.
+    * This used to be a function-scope static, so the pointer returned
+    * through err_string was shared process-wide and two concurrent
+    * compiles clobbered each other's message - the second racy global
+    * in this file:
+    *
+    *   WARNING: ThreadSanitizer: data race
+    *     Location is global 'tmp_err_buff.0' of size 256
+    *
+    * When there is no db handle to borrow from, report a fixed
+    * message rather than writing anywhere. */
+   size_t err_buff_len = 0;
+   char *tmp_err_buff  = libretrodb_query_err_buf(db, &err_buff_len);
    struct query *q     = (struct query*)malloc(sizeof(*q));
-   size_t err_buff_len = sizeof(tmp_err_buff);
-
-   intermediate_res.val.int_  = 0;
-   intermediate_res.val.uint_ = 0;
 
    if (!q)
       return NULL;
 
    q->ref_count        = 1;
+   q->ctx.intermediate_res.val.int_  = 0;
+   q->ctx.intermediate_res.val.uint_ = 0;
    q->root.argc        = 0;
    q->root.func        = NULL;
    q->root.argv        = NULL;
@@ -995,6 +1108,16 @@ void *libretrodb_query_compile(libretrodb_t *db,
    buff.len            = len;
    buff.offset         = 0;
    *err_string         = NULL;
+
+   /* Every in-tree caller compiles against an open handle, and the
+    * parse helpers below format diagnostics straight into this
+    * buffer.  Fail cleanly rather than teaching ten snprintf() sites
+    * to tolerate a NULL destination. */
+   if (!tmp_err_buff)
+   {
+      *err_string      = "No database handle";
+      goto error;
+   }
 
    buff                  = query_chomp(buff);
 
@@ -1005,7 +1128,8 @@ void *libretrodb_query_compile(libretrodb_t *db,
       if (*err_string)
          goto error;
    }
-   else if (ISALPHA((int)buff.data[buff.offset]))
+   else if (   (size_t)buff.offset < buff.len
+            && ISALPHA((int)buff.data[buff.offset]))
       buff = query_parse_method_call(tmp_err_buff,
             err_buff_len,
             buff, &q->root, err_string);
@@ -1019,11 +1143,16 @@ void *libretrodb_query_compile(libretrodb_t *db,
 
    if (!q->root.func)
    {
-      snprintf(tmp_err_buff, err_buff_len,
-            "%" PRIu64 "::Unexpected EOF",
-            (uint64_t)buff.offset
-            );
-      *err_string = tmp_err_buff;
+      if (tmp_err_buff)
+      {
+         snprintf(tmp_err_buff, err_buff_len,
+               "%" PRIu64 "::Unexpected EOF",
+               (uint64_t)buff.offset
+               );
+         *err_string = tmp_err_buff;
+      }
+      else
+         *err_string = "Unexpected EOF";
       goto error;
    }
 
@@ -1045,7 +1174,137 @@ void libretrodb_query_inc_ref(libretrodb_query_t *q)
 int libretrodb_query_filter(libretrodb_query_t *q,
       struct rmsgpack_dom_value *v)
 {
-   struct invocation inv         = ((struct query *)q)->root;
-   struct rmsgpack_dom_value res = inv.func(*v, inv.argc, inv.argv);
+   struct query *rq              = (struct query *)q;
+   struct invocation inv         = rq->root;
+   struct rmsgpack_dom_value res = inv.func(&rq->ctx, *v, inv.argc, inv.argv);
    return (res.type == RDT_BOOL && res.val.bool_);
+}
+
+/**
+ * libretrodb_query_get_filter_fields:
+ *
+ * Extract the field names that a compiled table query filters on.
+ * For a query like {crc:or(b"..."), releaseyear:1995}, this returns
+ * pointers to "crc" and "releaseyear".
+ *
+ * Only works for table queries (root.func == query_func_all_map)
+ * where argv[even] entries are AT_VALUE / RDT_STRING field names.
+ *
+ * @q            : Compiled query handle.
+ * @field_names  : Output array of string pointers (not copied — valid
+ *                 for the lifetime of the query).
+ * @field_lens   : Output array of string lengths.
+ * @max_fields   : Capacity of output arrays.
+ *
+ * Returns: number of fields extracted, or 0 if the query structure
+ *          is not a table query or has no extractable field names.
+ */
+int libretrodb_query_get_filter_fields(libretrodb_query_t *q,
+      const char **field_names, uint32_t *field_lens,
+      unsigned max_fields)
+{
+   unsigned i;
+   unsigned count    = 0;
+   struct query *rq  = (struct query *)q;
+
+   if (!rq || !rq->root.func || !rq->root.argv)
+      return 0;
+
+   /* Table queries use query_func_all_map and store field names
+    * at even argv indices: argv[0]="crc", argv[1]=matcher,
+    * argv[2]="year", argv[3]=matcher, etc. */
+   if (rq->root.func != query_func_all_map)
+      return 0;
+
+   for (i = 0; i < rq->root.argc; i += 2)
+   {
+      struct argument *arg = &rq->root.argv[i];
+      if (  arg->type        == AT_VALUE
+         && arg->a.value.type == RDT_STRING
+         && arg->a.value.val.string.buff)
+      {
+         if (count < max_fields)
+         {
+            field_names[count] = arg->a.value.val.string.buff;
+            field_lens[count]  = arg->a.value.val.string.len;
+         }
+         count++;
+      }
+   }
+
+   return count;
+}
+
+/**
+ * libretrodb_query_eval_field:
+ *
+ * Evaluate a single field's query condition inline. For a table query
+ * like {crc:or(b"..."), year:1995}, this finds the condition matching
+ * @field_name and evaluates its matcher against @value.
+ *
+ * @q           : Compiled query handle.
+ * @field_name  : The map key name to evaluate (e.g. "crc").
+ * @field_len   : Length of field_name.
+ * @value       : The parsed DOM value for this field, or NULL to
+ *                just check if the field is in the query.
+ *
+ * Returns:  1 if the condition passes (or field exists when value is NULL),
+ *           0 if the condition fails (mismatch),
+ *          -1 if this field is not in the query (irrelevant).
+ */
+int libretrodb_query_eval_field(libretrodb_query_t *q,
+      const char *field_name, uint32_t field_len,
+      struct rmsgpack_dom_value *value)
+{
+   unsigned i;
+   struct query *rq = (struct query *)q;
+
+   if (!rq || !rq->root.func || !rq->root.argv)
+      return -1;
+
+   if (rq->root.func != query_func_all_map)
+      return -1;
+
+   /* Walk argv pairs: argv[i] = field name, argv[i+1] = matcher */
+   for (i = 0; i + 1 < rq->root.argc; i += 2)
+   {
+      struct argument *key_arg = &rq->root.argv[i];
+      struct argument *val_arg = &rq->root.argv[i + 1];
+
+      if (  key_arg->type              != AT_VALUE
+         || key_arg->a.value.type      != RDT_STRING
+         || key_arg->a.value.val.string.len != field_len)
+         continue;
+
+      if (memcmp(key_arg->a.value.val.string.buff, field_name, field_len) != 0)
+         continue;
+
+      /* Found the matching condition */
+
+      /* If value is NULL, caller just wants to know if this
+       * field is in the query (existence check) */
+      if (!value)
+         return 1;
+
+      /* Evaluate the matcher against the value */
+      if (val_arg->type == AT_VALUE)
+      {
+         struct rmsgpack_dom_value res = func_equals(&rq->ctx, *value, 1, val_arg);
+         return res.val.bool_ ? 1 : 0;
+      }
+      else
+      {
+         struct rmsgpack_dom_value res = query_func_is_true(&rq->ctx,
+               val_arg->a.invocation.func(
+                  &rq->ctx,
+                  *value,
+                  val_arg->a.invocation.argc,
+                  val_arg->a.invocation.argv),
+               0, NULL);
+         return res.val.bool_ ? 1 : 0;
+      }
+   }
+
+   /* Field not in query — irrelevant */
+   return -1;
 }

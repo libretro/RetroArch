@@ -34,6 +34,8 @@ int detect_ps2_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
 int detect_psp_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
+int detect_pbp_game(intfstream_t *fd, char *s, size_t len,
+      const char *filename);
 size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
       const char *filename);
 int detect_scd_game(intfstream_t *fd, char *s, size_t len,
@@ -62,6 +64,8 @@ bool intfstream_file_get_serial(const char *name,
 int task_database_cue_get_serial(const char *name, char *s, size_t len,
       uint64_t *filesize);
 int task_database_gdi_get_serial(const char *name, char *s, size_t len,
+      uint64_t *filesize);
+int task_database_pbp_get_serial(const char *name, char *s, size_t len,
       uint64_t *filesize);
 bool is_chd_file_cdi(const char *path);
 int task_database_chd_get_serial(const char *name, char *serial, size_t len,

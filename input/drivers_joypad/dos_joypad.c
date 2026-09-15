@@ -33,29 +33,12 @@ static const char *dos_joypad_name(unsigned pad)
    return "DOS Controller";
 }
 
-static void dos_joypad_autodetect_add(unsigned autoconf_pad)
-{
-   input_autoconfigure_connect(
-         dos_joypad_name(autoconf_pad),
-         NULL, NULL,
-         dos_joypad.ident,
-         autoconf_pad,
-         0,
-         0
-         );
-}
-
 /* Joypad functions are no-op now, it all falls back to keyboard. 
  * Actual joystick/gamepad input may be added later. */
-static void *dos_joypad_init(void *data)
-{
-}
+static void *dos_joypad_init(void *data) { return (void*)-1; }
 
 static int32_t dos_joypad_button_state(
-      uint16_t *buf, uint16_t joykey)
-{
-   return 0;
-}
+      uint16_t *buf, uint16_t joykey) { return 0; }
 
 static int32_t dos_joypad_button(unsigned port_num, uint16_t joykey)
 {

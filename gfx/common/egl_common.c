@@ -18,8 +18,7 @@
 #endif
 
 #include <stdlib.h>
-
-#include <string/stdstring.h>
+#include <string.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -373,6 +372,13 @@ void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable)
          enable ? egl->hw_ctx : egl->ctx);
 }
 
+void egl_release_current(egl_ctx_data_t *egl)
+{
+   if (!egl || egl->dpy == EGL_NO_DISPLAY)
+      return;
+   _egl_make_current(egl->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+}
+
 void egl_swap_buffers(void *data)
 {
    egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
@@ -426,15 +432,21 @@ static bool check_egl_version(int min_major_version, int min_minor_version)
 
    if (str)
    {
-      int major, minor;
-      if (sscanf(str, "%d.%d", &major, &minor) == 2)
+      char *endptr;
+      int major = (int)strtol(str, &endptr, 10);
+      if (endptr != str && *endptr == '.')
       {
-         if (major >= min_major_version)
+         const char *minor_str = endptr + 1;
+         int minor = (int)strtol(minor_str, &endptr, 10);
+         if (endptr != minor_str)
          {
-            if (major > min_major_version)
-               return true;
-            else if (minor >= min_minor_version)
-               return true;
+            if (major >= min_major_version)
+            {
+               if (major > min_major_version)
+                  return true;
+               else if (minor >= min_minor_version)
+                  return true;
+            }
          }
       }
    }
@@ -496,7 +508,7 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 #endif /* defined(EGL_VERSION_1_5) */
 
 #if defined(EGL_EXT_platform_base)
-      if (check_egl_client_extension("EGL_EXT_platform_base", STRLEN_CONST("EGL_EXT_platform_base")))
+      if (check_egl_client_extension("EGL_EXT_platform_base", (sizeof("EGL_EXT_platform_base")-1)))
       {
          PFNEGLGETPLATFORMDISPLAYEXTPROC ptr_eglGetPlatformDisplayEXT;
 
@@ -576,6 +588,7 @@ bool egl_init_context_common(
             configs, *count, &matched) || !matched)
    {
       RARCH_ERR("[EGL] No EGL configs with appropriate attributes.\n");
+      free(configs);
       return false;
    }
 

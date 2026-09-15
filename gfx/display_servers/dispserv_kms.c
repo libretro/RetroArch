@@ -16,9 +16,9 @@
  */
 
 #include <math.h>
+#include <string.h>
 
 #include <compat/strl.h>
-#include <string/stdstring.h>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -30,9 +30,13 @@
 
 #include "../video_display_server.h"
 #include "../../retroarch.h"
+/* CMD_EVENT_REINIT / command_event(); previously reached only
+ * transitively, and only under some configurations. */
+#include "../../command.h"
 #include "../video_crt_switch.h" /* Needed to set aspect for low resolution in Linux */
 #include "../common/drm_common.h"
 #include "../../verbosity.h"
+#include "edid_sysfs.h"
 
 typedef struct
 {
@@ -119,14 +123,12 @@ static void *kms_display_server_get_resolution_list(
 {
    unsigned i                        = 0;
    unsigned j                        = 0;
-   unsigned count                    = 0;
    unsigned curr_width               = 0;
    unsigned curr_height              = 0;
    unsigned curr_bpp                 = 0;
    bool curr_interlaced              = false;
    bool curr_dblscan                 = false;
    float curr_refreshrate            = 0;
-   unsigned curr_orientation         = 0;
    struct video_display_config *conf = NULL;
 
 
@@ -138,6 +140,17 @@ static void *kms_display_server_get_resolution_list(
       curr_bpp         = 32;
       curr_interlaced  = (g_drm_mode->flags & DRM_MODE_FLAG_INTERLACE) ? true : false;
       curr_dblscan     = (g_drm_mode->flags & DRM_MODE_FLAG_DBLSCAN)   ? true : false;
+   }
+
+   /* g_drm_connector is NULLed by drm_free(), which runs on every
+    * context teardown -- a resolution change, a fullscreen toggle, a
+    * driver reinit.  The display server outlives that, so the menu can
+    * ask for the resolution list with no connector to describe.
+    * g_drm_mode is already tested for exactly this a few lines up. */
+   if (!g_drm_connector || g_drm_connector->count_modes <= 0)
+   {
+      *len = 0;
+      return NULL;
    }
 
    *len = g_drm_connector->count_modes;
@@ -168,8 +181,11 @@ static void *kms_display_server_get_resolution_list(
       j++;
    }
 
+   /* j, not count: count was declared zero and never assigned, so
+    * this sorted nothing at all and the resolution list came back in
+    * whatever order the connector reported it. */
    qsort(
-         conf, count,
+         conf, j,
          sizeof(video_display_config_t),
          (int (*)(const void *, const void *))
                resolution_list_qsort_func);
@@ -218,9 +234,157 @@ static bool kms_display_server_set_window_opacity(void *data, unsigned opacity)
 static uint32_t kms_display_server_get_flags(void *data)
 {
    uint32_t             flags   = 0;
-   BIT32_SET(flags, DISPSERV_CTX_CRT_SWITCHRES);
+   BIT32_SET(flags, DISPSERV_CTX_MODELINE);
 
    return flags;
+}
+
+/* Modeline application on KMS: the engine generates freely (no OS
+ * mode list to score against) and set hands the timing to the DRM
+ * context through the CRT consumer's drmModeModeInfo mirror, then
+ * asks the video driver for a mode set. No driver REINIT. */
+static int kms_display_server_modeline_list_outputs(void *data,
+      video_output_info_t *out, int max)
+{
+   if (!g_drm_connector || !g_drm_mode || max < 1)
+      return 0;
+   memset(out, 0, sizeof(*out));
+   out->id      = (int)g_drm_connector->connector_id;
+   out->width   = g_drm_mode->hdisplay;
+   out->height  = g_drm_mode->vdisplay;
+   out->primary = true;
+   snprintf(out->name, sizeof(out->name), "connector-%u",
+         g_drm_connector->connector_id);
+   return 1;
+}
+
+static bool kms_display_server_modeline_open(void *data,
+      const video_modeline_disp_t *ds)
+{
+   return true;
+}
+
+static void kms_display_server_modeline_close(void *data) { }
+
+static unsigned kms_display_server_modeline_caps(void *data)
+{
+   return MODELINE_CAPS_ADD;
+}
+
+static int kms_display_server_modeline_enum(void *data,
+      video_modeline_t *modes, int max)
+{
+   return 0;
+}
+
+static bool kms_display_server_modeline_add(void *data,
+      video_modeline_t *mode)
+{
+   mode->type |= MODELINE_TIMING_DRMKMS;
+   return true;
+}
+
+static bool kms_display_server_modeline_set(void *data,
+      video_modeline_t *mode)
+{
+#ifdef HAVE_MODELINE
+   video_driver_state_t *video_st = video_state_get_ptr();
+   videocrt_switch_t *p_switch    = &video_st->crt_switch_st;
+
+   p_switch->clock       = (uint32_t)(mode->pclock / 1000);
+   p_switch->hdisplay    = mode->width;
+   p_switch->hsync_start = mode->hbegin;
+   p_switch->hsync_end   = mode->hend;
+   p_switch->htotal      = mode->htotal;
+   p_switch->vdisplay    = mode->height;
+   p_switch->vsync_start = mode->vbegin;
+   p_switch->vsync_end   = mode->vend;
+   p_switch->vtotal      = mode->vtotal;
+   p_switch->vrefresh    = mode->refresh;
+   p_switch->hskew       = 0;
+   p_switch->vscan       = 0;
+   p_switch->interlace   = mode->interlace;
+   p_switch->doublescan  = mode->doublescan;
+   p_switch->hsync       = mode->hsync;
+   p_switch->vsync       = mode->vsync;
+
+   return video_driver_set_video_mode(mode->width, mode->height, true);
+#else
+   return false;
+#endif
+}
+
+static bool kms_display_server_modeline_flush(void *data)
+{
+   return true;
+}
+
+/* The EDID property blob of the connector the context is driving.
+ * When the context is not up (g_drm_connector is NULL between a
+ * teardown and the reinit, or the menu is on another driver) the
+ * kernel's sysfs copy of the first enabled connector stands in. */
+static int kms_display_server_get_edid(void *data, uint8_t *out, size_t max)
+{
+   int n = -1;
+   if (!out || max < 128)
+      return -1;
+   if (g_drm_fd >= 0 && g_drm_connector)
+   {
+      drmModeObjectPropertiesPtr props = drmModeObjectGetProperties(
+            g_drm_fd, g_drm_connector->connector_id,
+            DRM_MODE_OBJECT_CONNECTOR);
+      if (props)
+      {
+         uint32_t i;
+         for (i = 0; i < props->count_props && n < 0; i++)
+         {
+            drmModePropertyPtr prop = drmModeGetProperty(g_drm_fd,
+                  props->props[i]);
+            if (!prop)
+               continue;
+            if ((prop->flags & DRM_MODE_PROP_BLOB)
+                  && !strcmp(prop->name, "EDID"))
+            {
+               drmModePropertyBlobPtr blob = drmModeGetPropertyBlob(
+                     g_drm_fd, (uint32_t)props->prop_values[i]);
+               if (blob && blob->data && blob->length >= 128)
+               {
+                  size_t len = blob->length;
+                  if (len > max)
+                     len = max;
+                  len -= len % 128;
+                  memcpy(out, blob->data, len);
+                  n = (int)len;
+               }
+               if (blob)
+                  drmModeFreePropertyBlob(blob);
+            }
+            drmModeFreeProperty(prop);
+         }
+         drmModeFreeObjectProperties(props);
+      }
+   }
+   if (n < 0)
+      n = edid_sysfs_read(NULL, out, max);
+   return n;
+}
+
+static float kms_display_server_get_refresh_rate(void *data)
+{
+   if (g_drm_mode)
+      return drm_calc_refresh_rate(g_drm_mode);
+   return 0.0f;
+}
+
+static void kms_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *s, size_t len)
+{
+   if (!g_drm_mode)
+      return;
+   if (width)
+      *width  = g_drm_mode->hdisplay;
+   if (height)
+      *height = g_drm_mode->vdisplay;
 }
 
 const video_display_server_t dispserv_kms = {
@@ -234,6 +398,24 @@ const video_display_server_t dispserv_kms = {
    NULL, /* get output options */
    NULL, /* kms_display_server_set_screen_orientation */
    NULL, /* kms_display_server_get_screen_orientation */
+   kms_display_server_get_refresh_rate,
+   kms_display_server_get_video_output_size,
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
+   NULL, /* get_metrics */
    kms_display_server_get_flags,
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
+   kms_display_server_modeline_list_outputs,
+   kms_display_server_modeline_open,
+   kms_display_server_modeline_close,
+   kms_display_server_modeline_caps,
+   kms_display_server_modeline_enum,
+   kms_display_server_modeline_add,
+   kms_display_server_modeline_add, /* update: same no-op */
+   kms_display_server_modeline_add, /* delete: same no-op */
+   kms_display_server_modeline_set,
+   kms_display_server_modeline_flush,
+   kms_display_server_get_edid,
    "kms"
 };

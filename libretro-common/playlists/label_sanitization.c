@@ -20,11 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <playlists/label_sanitization.h>
+#include <string.h>
+
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
-#include <string/stdstring.h>
-#include <string.h>
+#include <playlists/label_sanitization.h>
 
 #define DISC_STRINGS_LENGTH   5
 #define REGION_STRINGS_LENGTH 20
@@ -138,22 +138,12 @@ static bool left_exclusion(char *left,
       const char **strings, const size_t strings_count)
 {
    unsigned i;
-   char exclusion_string[32];
-   char comparison_string[32];
-
-   strlcpy(exclusion_string, left, sizeof(exclusion_string));
-   string_to_upper(exclusion_string);
-
    for (i = 0; i < (unsigned)strings_count; i++)
    {
-      strlcpy(comparison_string, strings[i], sizeof(comparison_string));
-      string_to_upper(comparison_string);
-
-      if (string_starts_with(exclusion_string,
-               comparison_string))
+      if (left && strings[i]
+            && !strncasecmp(left, strings[i], strlen(strings[i])))
          return true;
    }
-
    return false;
 }
 

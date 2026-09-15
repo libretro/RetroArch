@@ -125,26 +125,37 @@ static PFNGLXCREATECONTEXTATTRIBSARBPROC glx_create_context_attribs;
 
 static int GLXExtensionSupported(Display *dpy, const char *ext)
 {
-   const char *ext_string        = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
-   const char *client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
-   const char *pos               = strstr(ext_string, ext);
-   size_t pos_ext_len            = strlen(ext);
+   size_t _len;
+   const char *ext_string;
+   const char *client_extensions;
+   const char *pos;
 
-   if (      pos
-         && (pos == ext_string       || pos[-1] == ' ')
-         && (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
-      )
-      return 1;
+   if (!ext || *ext == '\0')
+      return 0;
 
-   pos                           = strstr(client_extensions, ext);
-   pos_ext_len                   = strlen(ext);
+   _len              = strlen(ext);
+   ext_string        = glXQueryExtensionsString(dpy, DefaultScreen(dpy));
+   client_extensions = glXGetClientString(dpy, GLX_EXTENSIONS);
 
-   if (
-             pos
-         && (pos == ext_string       || pos[-1] == ' ')
-         && (pos[pos_ext_len] == ' ' || pos[pos_ext_len] == '\0')
-      )
-      return 1;
+   if (ext_string)
+   {
+      pos = strstr(ext_string, ext);
+      if (      pos
+            && (pos       == ext_string || pos[-1]   == ' ')
+            && (pos[_len] == ' '        || pos[_len] == '\0')
+         )
+         return 1;
+   }
+
+   if (client_extensions)
+   {
+      pos = strstr(client_extensions, ext);
+      if (      pos
+            && (pos       == client_extensions || pos[-1]   == ' ')
+            && (pos[_len] == ' '               || pos[_len] == '\0')
+         )
+         return 1;
+   }
 
    return 0;
 }
@@ -250,6 +261,37 @@ static void gfx_ctx_x_destroy(void *data)
 
    free(data);
 }
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+/* GLX_OML_sync_control: UST is the time of the last vertical retrace,
+ * in microseconds on CLOCK_MONOTONIC under Mesa, which is the clock
+ * cpu_features_get_time_usec() reads here. Resolved on first use. */
+typedef Bool (*glx_get_sync_values_oml_t)(Display*, GLXDrawable,
+      int64_t*, int64_t*, int64_t*);
+static glx_get_sync_values_oml_t g_pglGetSyncValuesOML;
+static bool g_pglGetSyncValuesOML_resolved;
+
+static retro_time_t gfx_ctx_x_last_present_time(void *data)
+{
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+   int64_t ust = 0, msc = 0, sbc = 0;
+
+   if (!x || !g_x11_dpy || !x->glx_win)
+      return 0;
+   if (!g_pglGetSyncValuesOML_resolved)
+   {
+      g_pglGetSyncValuesOML_resolved = true;
+      if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control"))
+         g_pglGetSyncValuesOML = (glx_get_sync_values_oml_t)
+            glXGetProcAddress((const GLubyte*)"glXGetSyncValuesOML");
+   }
+   if (!g_pglGetSyncValuesOML)
+      return 0;
+   if (!g_pglGetSyncValuesOML(g_x11_dpy, x->glx_win, &ust, &msc, &sbc))
+      return 0;
+   return (retro_time_t)ust;
+}
+#endif
 
 static void gfx_ctx_x_swap_interval(void *data, int interval)
 {
@@ -525,7 +567,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          if (wm_name)
          {
             RARCH_LOG("[GLX] Window manager is %s.\n", wm_name);
-            if (strcasestr(wm_name, "xfwm"))
+            if (compat_strcasestr(wm_name, "xfwm"))
             {
                RARCH_LOG("[GLX] Using override-redirect workaround.\n");
                swa.override_redirect = True;
@@ -623,6 +665,13 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    x11_update_title(NULL);
 
    if (fullscreen)
+   {
+      /* Give the window a fullscreen hint before it is shown.
+       * This helps GNOME + X11 enter fullscreen properly */
+      x11_set_net_wm_fullscreen_hint(g_x11_dpy, g_x11_win);
+   }
+
+   if (fullscreen)
       x11_show_mouse(data, false);
 
 #ifdef HAVE_XF86VM
@@ -661,6 +710,15 @@ static bool gfx_ctx_x_set_video_mode(void *data,
    }
 
    x11_event_queue_check(&event);
+
+   if (fullscreen)
+   {
+      /* Ask for fullscreen again after the window is visible. Some
+       * GNOME + X11 setups ignore the first request if it happens too
+       * early, which causes RetroArch to only maximise the window */
+      x11_set_net_wm_fullscreen(g_x11_dpy, g_x11_win);
+      XFlush(g_x11_dpy);
+   }
 
    switch (x_api)
    {
@@ -848,7 +906,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          }
          else
          {
-            video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
+            video_driver_cache_context_ack_set();
             RARCH_LOG("[GLX] Using cached GL context.\n");
          }
 
@@ -1031,6 +1089,25 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
    return false;
 }
 
+static void gfx_ctx_x_release_current(void *data)
+{
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+   if (!x)
+      return;
+   switch (x_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+         if (g_x11_dpy)
+            glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
 static void gfx_ctx_x_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
@@ -1076,14 +1153,14 @@ static uint32_t gfx_ctx_x_get_flags(void *data)
             BIT32_SET(flags, GFX_CTX_FLAGS_MULTISAMPLING);
 
          if (string_is_equal(video_driver_get_ident(), "gl1")) { }
+         else if (string_is_equal(video_driver_get_ident(), "glcore"))
+         {
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+            BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
+#endif
+         }
          else
          {
-            if (string_is_equal(video_driver_get_ident(), "glcore"))
-            {
-#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-               BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#endif
-            }
 #ifdef HAVE_CG
             if (!(x->core_hw_context_enable || x->core_es))
                BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_CG);
@@ -1163,7 +1240,7 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   x11_get_metrics,
+   NULL, /* get_metrics - handled by display server */
    NULL,
    x11_update_title,
    x11_check_window,
@@ -1185,5 +1262,12 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    NULL,
    gfx_ctx_x_make_current,
    NULL, /* create_surface */
-   NULL  /* destroy_surface */
+   NULL, /* destroy_surface */
+   x11_presentable,
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+   gfx_ctx_x_last_present_time,
+#else
+   NULL,
+#endif
+   gfx_ctx_x_release_current
 };
