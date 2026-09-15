@@ -1344,7 +1344,7 @@ static void pending_lifecycle_case(bool floating)
       memset(st->output_samples_buf, 0, 64 * 6 * sizeof(float));
       {
          ssize_t written = audio_driver_write_frames(st, st->current_audio,
-               st->output_samples_buf, 64, floating);
+               st->output_samples_buf, 64, floating, false);
          CHECK(written == 0, "pending lifecycle setup write");
          audio_driver_retain_output(st, st->output_samples_buf, 64, written);
       }

@@ -2411,9 +2411,39 @@ static void audio_driver_extra_merge_s16(audio_driver_state_t *audio_st,
    }
 }
 
+/* A non-blocking write the ring cannot take is cut short. The discard
+ * path means to lose that; the pitch-preserving stream is continuous, and
+ * its first output after a press meets the ring the 1x blocking writes
+ * left full. Wait for the room instead: the ring frees it within a period. */
+static ssize_t audio_driver_dev_write(audio_driver_state_t *audio_st,
+      const audio_driver_t *audio, const void *buf, size_t bytes,
+      bool wait_room)
+{
+   ssize_t w = audio->write(audio_st->context_audio_data, buf, bytes);
+   if (     wait_room
+         && w >= 0 && (size_t)w < bytes
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
+         && !audio_st->pipe_threaded
+         && audio_st->inline_transport
+         && !audio_st->inline_transport->bypassed
+         && !audio_st->transport_lpf_only
+         && audio->set_nonblock_state)
+   {
+      ssize_t rest;
+      audio->set_nonblock_state(audio_st->context_audio_data, false);
+      rest = audio->write(audio_st->context_audio_data,
+            (const uint8_t*)buf + w, bytes - (size_t)w);
+      audio->set_nonblock_state(audio_st->context_audio_data,
+            (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK) != 0);
+      if (rest > 0)
+         w += rest;
+   }
+   return w;
+}
+
 static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
       const audio_driver_t *audio, const void *stereo, size_t frames,
-      bool stereo_is_float)
+      bool stereo_is_float, bool wait_room)
 {
    bool   dev_float = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT) != 0;
    size_t sample    = dev_float ? sizeof(float) : sizeof(int16_t);
@@ -2450,16 +2480,16 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
       }
       audio_binaural_process(&audio_st->binaural, audio_st->upmix_buf, audio_st->virt_buf, frames);
       if (dev_float)
-         return audio->write(audio_st->context_audio_data, audio_st->upmix_buf,
-               frames * 2 * sizeof(float));
+         return audio_driver_dev_write(audio_st, audio, audio_st->upmix_buf,
+               frames * 2 * sizeof(float), wait_room);
       convert_float_to_s16(audio_st->upmix_i16, audio_st->upmix_buf, frames * 2);
-      return audio->write(audio_st->context_audio_data, audio_st->upmix_i16,
-            frames * 2 * sizeof(int16_t));
+      return audio_driver_dev_write(audio_st, audio, audio_st->upmix_i16,
+            frames * 2 * sizeof(int16_t), wait_room);
    }
 
    if (audio_st->out_channels <= 2 || !audio_st->upmix_buf)
-      return audio->write(audio_st->context_audio_data, stereo,
-            frames * 2 * sample);
+      return audio_driver_dev_write(audio_st, audio, stereo,
+            frames * 2 * sample, wait_room);
 
    if (frames > audio_st->upmix_frames)
       frames = audio_st->upmix_frames;
@@ -2483,8 +2513,8 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
          }
          audio_st->extra.out_frames = 0;
       }
-      return audio->write(audio_st->context_audio_data, audio_st->upmix_i16,
-            frames * audio_st->out_channels * sizeof(int16_t));
+      return audio_driver_dev_write(audio_st, audio, audio_st->upmix_i16,
+            frames * audio_st->out_channels * sizeof(int16_t), wait_room);
    }
    if (!stereo_is_float)
    {
@@ -2513,13 +2543,13 @@ static ssize_t audio_driver_write_frames(audio_driver_state_t *audio_st,
       audio_st->extra.out_frames = 0;
    }
    if (dev_float)
-      return audio->write(audio_st->context_audio_data, audio_st->upmix_buf,
-            frames * audio_st->out_channels * sizeof(float));
+      return audio_driver_dev_write(audio_st, audio, audio_st->upmix_buf,
+            frames * audio_st->out_channels * sizeof(float), wait_room);
    /* a float mix into an int16 device: the one narrowing it needs */
    convert_float_to_s16(audio_st->upmix_i16, audio_st->upmix_buf,
          frames * audio_st->out_channels);
-   return audio->write(audio_st->context_audio_data, audio_st->upmix_i16,
-         frames * audio_st->out_channels * sizeof(int16_t));
+   return audio_driver_dev_write(audio_st, audio, audio_st->upmix_i16,
+         frames * audio_st->out_channels * sizeof(int16_t), wait_room);
 }
 
 /* The three software flush exits pass persistent stereo output scratch.
@@ -3119,7 +3149,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
             {
                ssize_t w = audio_driver_write_frames(audio_st, audio,
-                     audio_st->output_samples_buf, out_frames, true);
+                     audio_st->output_samples_buf, out_frames, true, true);
                audio_driver_retain_output(audio_st, audio_st->output_samples_buf, out_frames, w);
                audio_st->sink_offered_raw += out_frames;
                if (!audio_st->pipe_threaded)
@@ -3205,7 +3235,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
             {
                ssize_t w = audio_driver_write_frames(audio_st, audio,
-                     audio_st->output_samples_int16, out_frames, false);
+                     audio_st->output_samples_int16, out_frames, false, true);
                audio_driver_retain_output(audio_st, audio_st->output_samples_int16, out_frames, w);
                audio_st->sink_offered_raw += out_frames;
                if (!audio_st->pipe_threaded)
@@ -3582,7 +3612,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          size_t  fb = audio_driver_dev_frame_bytes(audio_st);
          ssize_t w  = audio_driver_write_frames(audio_st, audio, output_data,
                output_frames,
-               (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT) != 0);
+               (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT) != 0, true);
          audio_driver_retain_output(audio_st, output_data, output_frames, w);
          audio_st->sink_offered_raw += (uint64_t)output_frames;
          if (!audio_st->pipe_threaded)
@@ -4640,14 +4670,14 @@ static void audio_driver_write_float(audio_driver_state_t *audio_st,
    if (frames < 1)
       return;
    if (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-      audio_driver_write_frames(audio_st, audio, data, frames, true);
+      audio_driver_write_frames(audio_st, audio, data, frames, true, false);
    else
    {
       int16_t buf[AUDIO_PAUSE_TAIL_FRAMES * 2];
       if (frames > AUDIO_PAUSE_TAIL_FRAMES)
          frames = AUDIO_PAUSE_TAIL_FRAMES;
       convert_float_to_s16(buf, data, frames * 2);
-      audio_driver_write_frames(audio_st, audio, buf, frames, false);
+      audio_driver_write_frames(audio_st, audio, buf, frames, false, false);
    }
 }
 
