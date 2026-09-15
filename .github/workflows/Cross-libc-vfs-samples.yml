@@ -79,7 +79,7 @@ jobs:
             asan_opts: detect_leaks=0
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Build and run
         shell: bash
@@ -133,7 +133,7 @@ jobs:
         shell: msys2 {0}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: msys2/setup-msys2@v2
         with:

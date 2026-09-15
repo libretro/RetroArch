@@ -47,7 +47,7 @@ jobs:
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
             $pkgs
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: Configure
         run: ./configure
       - name: Build

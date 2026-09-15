@@ -63,7 +63,7 @@ jobs:
             $pkgs
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Restore ccache
         uses: actions/cache@v4

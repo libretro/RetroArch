@@ -67,7 +67,7 @@ jobs:
             $pkgs
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Configure
         # Same trimmed surface as the ASan job, for the same reason:
