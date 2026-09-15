@@ -4907,6 +4907,20 @@ void audio_driver_pause_fade(bool paused)
    audio_driver_state_unlock();
 }
 
+bool audio_driver_jump_fade_begin(void)
+{
+   if (audio_driver_core_silenced())
+      return false;
+   audio_driver_pause_fade(true);
+   return true;
+}
+
+void audio_driver_jump_fade_end(bool ramped)
+{
+   if (ramped)
+      audio_driver_pause_fade(false);
+}
+
 /* Arms the resume ramp owed since the last resume. Under the state lock,
  * on the flush that carries the core's first audio. */
 static void audio_driver_arm_resume(audio_driver_state_t *audio_st)

@@ -44,6 +44,7 @@
 #include "../core_info.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
+#include "../audio/audio_driver.h"
 #include "../gfx/video_driver.h"
 #include "../msg_hash.h"
 #include "../runloop.h"
@@ -211,6 +212,7 @@ bool content_undo_load_state(void)
    unsigned i;
    bool ret                  = false;
    bool captured             = false;
+   bool ramped               = false;
    unsigned num_blocks       = 0;
    void *restore_data        = NULL;
    size_t restore_size       = 0;
@@ -298,11 +300,17 @@ bool content_undo_load_state(void)
    undo_load_buf.size     = 0;
    undo_load_buf.capacity = 0;
 
+   /* An undo jumps the game's state exactly as a load does. See
+    * audio_driver_jump_fade_begin(). */
+   ramped                 = audio_driver_jump_fade_begin();
+
    /* Swap the current state with the backup state. This way, we can undo
    what we're undoing */
    captured               = content_save_state("RAM", false);
 
    ret = content_deserialize_state(restore_data, restore_size);
+
+   audio_driver_jump_fade_end(ramped);
 
    if (captured)
    {
@@ -1418,10 +1426,20 @@ static void content_load_state_cb(retro_task_t *task,
       }
    }
 
-   /* Backup the current state so we can undo this load */
-   content_save_state("RAM", false);
+   /* A state load is a discontinuity in the game's own audio, and the work
+    * below blocks this thread long enough for the device to run dry. End the
+    * stream on the pause tail first and bring it back on the resume ramp, so
+    * both land in silence. See audio_driver_jump_fade_begin(). */
+   {
+      bool ramped = audio_driver_jump_fade_begin();
 
-   ret = content_deserialize_state(buf, _len);
+      /* Backup the current state so we can undo this load */
+      content_save_state("RAM", false);
+
+      ret = content_deserialize_state(buf, _len);
+
+      audio_driver_jump_fade_end(ramped);
+   }
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
@@ -2096,6 +2114,7 @@ bool content_undo_save_disabled(void)
 bool content_load_state_from_ram(void)
 {
    bool ret        = false;
+   bool ramped     = false;
 
    if (!core_info_current_supports_savestate())
    {
@@ -2112,10 +2131,17 @@ bool content_load_state_from_ram(void)
          (unsigned)ram_buf.state_buf.size,
          msg_hash_to_str(MSG_BYTES));
 
+   /* Same discontinuity as a load from disk, so the same bracket. See
+    * audio_driver_jump_fade_begin(). */
+   ramped = audio_driver_jump_fade_begin();
+
    /* Backup the current state so we can undo this load */
    content_save_state("RAM", false);
 
    ret = content_deserialize_state(ram_buf.state_buf.data, ram_buf.state_buf.size);
+
+   audio_driver_jump_fade_end(ramped);
+
    if (!ret)
    {
       RARCH_ERR("[State] %s.\n",
