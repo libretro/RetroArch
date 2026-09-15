@@ -247,6 +247,10 @@ ifeq ($(HAVE_NETWORK_CMD), 1)
    CFLAGS += -DHAVE_NETWORK_CMD
 endif
 
+ifeq ($(HAVE_THREADS), 1)
+   CFLAGS += -DHAVE_THREADS
+endif
+
 ifeq ($(HAVE_DYNAMIC), 1)
    CFLAGS += -DHAVE_DYNAMIC
 endif
