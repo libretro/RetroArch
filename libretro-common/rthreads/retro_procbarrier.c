@@ -105,7 +105,14 @@
 /* State                                                               */
 /* ------------------------------------------------------------------ */
 
-static retro_atomic_int_t s_tier;    /* enum retro_procbarrier_tier */
+/* s_tier holds one more state than the public enum: RESOLVED_NONE, for
+ * "probed, and this platform has nothing". The public NONE is what a
+ * caller sees in both that case and before init, but the two must not
+ * be confused internally, or an unsupported platform re-runs the whole
+ * probe -- sigaction, mmap, a /proc walk -- on every call. */
+#define PB_RESOLVED_NONE  (-1)
+
+static retro_atomic_int_t s_tier;    /* PB_RESOLVED_NONE or a public tier */
 static int                s_signum;
 
 #if defined(PB_WINDOWS)
@@ -147,7 +154,7 @@ static unsigned pb_num_cpus(void)
     * defines the constant and has no sysconf, and the link fails. */
    long n = sysconf(_SC_NPROCESSORS_ONLN);
    return (n > 0) ? (unsigned)n : 1u;
-#elif defined(PSP) || defined(VITA_UP) || defined(PS2) || defined(GEKKO) \
+#elif defined(PSP) || defined(PS2) || defined(GEKKO) \
    || defined(DJGPP) || defined(__DJGPP__)
    /* Single-core consoles: nothing to fence against. Naming them here
     * is what lets the barrier be free there rather than NONE. */
@@ -468,9 +475,13 @@ enum retro_procbarrier_tier retro_procbarrier_init(int signum)
 {
    enum retro_procbarrier_tier t;
 
-   t = (enum retro_procbarrier_tier)retro_atomic_load_acquire_int(&s_tier);
-   if (t != RETRO_PROCBARRIER_NONE)
-      return t;
+   {
+      int cur = retro_atomic_load_acquire_int(&s_tier);
+      if (cur == PB_RESOLVED_NONE)
+         return RETRO_PROCBARRIER_NONE;
+      if (cur != RETRO_PROCBARRIER_NONE)
+         return (enum retro_procbarrier_tier)cur;
+   }
 
    s_signum = signum ? signum : pb_default_signum();
 
@@ -547,16 +558,18 @@ enum retro_procbarrier_tier retro_procbarrier_init(int signum)
    t = RETRO_PROCBARRIER_NONE;
 
 done:
-   /* NONE is also "not initialised", so a failed resolution is retried
-    * on the next call rather than cached. */
-   if (t != RETRO_PROCBARRIER_NONE)
-      retro_atomic_store_release_int(&s_tier, (int)t);
+   /* Cache the outcome either way. A platform with nothing is recorded
+    * as such so the probe runs once, not once per call. */
+   retro_atomic_store_release_int(&s_tier,
+         t == RETRO_PROCBARRIER_NONE ? PB_RESOLVED_NONE : (int)t);
    return t;
 }
 
 enum retro_procbarrier_tier retro_procbarrier_tier(void)
 {
-   return (enum retro_procbarrier_tier)retro_atomic_load_acquire_int(&s_tier);
+   int cur = retro_atomic_load_acquire_int(&s_tier);
+   return cur == PB_RESOLVED_NONE ? RETRO_PROCBARRIER_NONE
+                                  : (enum retro_procbarrier_tier)cur;
 }
 
 const char *retro_procbarrier_tier_name(enum retro_procbarrier_tier tier)
@@ -576,9 +589,14 @@ int retro_procbarrier(void)
 {
    enum retro_procbarrier_tier t;
 
-   t = (enum retro_procbarrier_tier)retro_atomic_load_acquire_int(&s_tier);
-   if (t == RETRO_PROCBARRIER_NONE)
-      t = retro_procbarrier_init(0);
+   {
+      int cur = retro_atomic_load_acquire_int(&s_tier);
+      if (cur == PB_RESOLVED_NONE)
+         return 0;                       /* probed already; nothing here */
+      t = (cur == RETRO_PROCBARRIER_NONE)
+            ? retro_procbarrier_init(0)  /* first use without init */
+            : (enum retro_procbarrier_tier)cur;
+   }
 
    switch (t)
    {

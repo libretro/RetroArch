@@ -190,14 +190,14 @@ vfs-samples:
 
 # --- concurrency sample regression tests ------------------------------
 #
-# retro_atomic.h, retro_spsc.c, retro_eventcount.c and tpool.c have no
-# unit test under test/, and in the standalone libretro-common tree
-# nothing else compiles them at all -- a break in any of them surfaces
-# only once RetroArch is built.  Each sample's own Makefile owns its
-# build; this runs them.
+# retro_atomic.h, retro_spsc.c, retro_eventcount.c, retro_procbarrier.c
+# and tpool.c have no unit test under test/, and in the standalone
+# libretro-common tree nothing else compiles them at all -- a break in
+# any of them surfaces only once RetroArch is built.  Each sample's own
+# Makefile owns its build; this runs them.
 #
 # Spelled out rather than looped because they do not share an
-# interface: two carry a check target and two are run directly.
+# interface: three carry a check target and two are run directly.
 #
 # Two passes.  The second is not redundant: the ordering these rest on
 # is supplied for free by x86 TSO, so a weakened or deleted barrier
@@ -237,6 +237,12 @@ threads-samples:
 	$(MAKE) -C samples/rthreads/retro_eventcount_test clean
 	$(MAKE) -C samples/rthreads/retro_eventcount_test check SANITIZER=$(CONCURRENCY_SAN)
 	$(MAKE) -C samples/rthreads/retro_eventcount_test clean
+	# forces each tier the platform has in turn, so membarrier, the page
+	# flip and the signal tier all run on one machine; the fence check
+	# is only load-bearing on SMP and the test says so
+	$(MAKE) -C samples/rthreads/retro_procbarrier_test clean
+	$(MAKE) -C samples/rthreads/retro_procbarrier_test check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/rthreads/retro_procbarrier_test clean
 	# same, and the only place the queue and the eventcount are
 	# exercised against each other
 	$(MAKE) -C samples/queues/retro_waitable_spsc_test clean
