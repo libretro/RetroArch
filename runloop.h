@@ -27,6 +27,7 @@
 #include <libretro.h>
 #include <dynamic/dylib.h>
 #include <queues/message_queue.h>
+#include <queues/mpsc_stack.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -253,11 +254,12 @@ struct runloop
    struct retro_subsystem_info subsystem_data[SUBSYSTEM_MAX_SUBSYSTEMS];
    struct retro_callbacks retro_ctx;                     /* ptr alignment */
    msg_queue_t msg_queue;                                /* ptr alignment */
-   /* Messages pushed off the main thread wait here, under the message
-    * queue lock, until the main thread's iterate drains them: the push
-    * itself renders widgets and reads settings, which are the main
-    * thread's. */
-   void *msg_queue_deferred;                             /* ptr alignment */
+   /* Messages pushed off the main thread wait here until the main
+    * thread's iterate drains them: the push itself renders widgets and
+    * reads settings, which are the main thread's. A lock-free stack -
+    * a worker's push never touches the message queue lock, and the
+    * per-iterate emptiness probe is an acquire load. */
+   mpsc_stack_t msg_queue_deferred;                      /* ptr alignment */
    retro_input_poll_t input_poll_callback_original;      /* ptr alignment */
    retro_input_state_t input_state_callback_original;    /* ptr alignment */
 #ifdef HAVE_RUNAHEAD

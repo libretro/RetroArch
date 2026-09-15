@@ -273,6 +273,7 @@ samples/**/*_test
 samples/audio/stretch/stretch_bench
 samples/**/*.o
 libretro-common/samples/**/*_test
+!libretro-common/samples/**/*_test/
 # Harness executables that are not named <dir>_test. This one had been
 # committed as a built binary, which made any make clean in that
 # directory show up as a deletion.

@@ -6025,7 +6025,7 @@ void core_options_flush(void)
 
 struct runloop_deferred_msg
 {
-   struct runloop_deferred_msg *next;
+   mpsc_stack_node_t link; /* first: the stack's, from push to drain */
    char *msg;
    char *title;
    size_t len;
@@ -6068,11 +6068,7 @@ void runloop_msg_queue_push(
       node->icon     = icon;
       node->category = category;
       node->flush    = flush;
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_check_st);
-      node->next     = (struct runloop_deferred_msg *)
-            runloop_check_st->msg_queue_deferred;
-      runloop_check_st->msg_queue_deferred = node;
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_check_st);
+      mpsc_stack_push(&runloop_check_st->msg_queue_deferred, &node->link);
       return;
    }
 #endif
@@ -8701,17 +8697,17 @@ void runloop_msg_queue_deinit(void)
 {
 #ifdef HAVE_THREADS
    {
-      runloop_state_t *st = &runloop_state;
-      struct runloop_deferred_msg *node =
-            (struct runloop_deferred_msg *)st->msg_queue_deferred;
-      st->msg_queue_deferred = NULL;
-      while (node)
+      runloop_state_t *st    = &runloop_state;
+      mpsc_stack_node_t *link =
+            mpsc_stack_drain(&st->msg_queue_deferred);
+      while (link)
       {
-         struct runloop_deferred_msg *next = node->next;
+         struct runloop_deferred_msg *node =
+               (struct runloop_deferred_msg *)link;
+         link = link->next;
          free(node->msg);
          free(node->title);
          free(node);
-         node = next;
       }
    }
 #endif
@@ -8732,37 +8728,27 @@ void runloop_msg_queue_deinit(void)
 void runloop_msg_queue_drain_deferred(void)
 {
 #ifdef HAVE_THREADS
-   runloop_state_t *runloop_st        = &runloop_state;
-   struct runloop_deferred_msg *node  = NULL;
-   struct runloop_deferred_msg *chain = NULL;
+   runloop_state_t *runloop_st = &runloop_state;
+   mpsc_stack_node_t *link     = NULL;
 
-   if (!runloop_st->msg_queue_deferred)
+   if (mpsc_stack_empty(&runloop_st->msg_queue_deferred))
       return;
 
-   RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
-   node = (struct runloop_deferred_msg *)runloop_st->msg_queue_deferred;
-   runloop_st->msg_queue_deferred = NULL;
-   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
-
-   /* The list stacks newest-first; replay oldest-first. */
-   while (node)
+   /* The stack chains newest-first; replay oldest-first. */
+   link = mpsc_stack_reverse(
+         mpsc_stack_drain(&runloop_st->msg_queue_deferred));
+   while (link)
    {
-      struct runloop_deferred_msg *next = node->next;
-      node->next = chain;
-      chain      = node;
-      node       = next;
-   }
-   while (chain)
-   {
-      struct runloop_deferred_msg *next = chain->next;
-      if (chain->msg)
-         runloop_msg_queue_push(chain->msg, chain->len, chain->prio,
-               chain->duration, chain->flush, chain->title,
-               chain->icon, chain->category);
-      free(chain->msg);
-      free(chain->title);
-      free(chain);
-      chain = next;
+      struct runloop_deferred_msg *node =
+            (struct runloop_deferred_msg *)link;
+      link = link->next;
+      if (node->msg)
+         runloop_msg_queue_push(node->msg, node->len, node->prio,
+               node->duration, node->flush, node->title,
+               node->icon, node->category);
+      free(node->msg);
+      free(node->title);
+      free(node);
    }
 #endif
 }
@@ -8774,6 +8760,7 @@ void runloop_msg_queue_init(void)
    runloop_msg_queue_deinit();
    msg_queue_initialize(&runloop_st->msg_queue, 8);
 #ifdef HAVE_THREADS
+   mpsc_stack_init(&runloop_st->msg_queue_deferred);
    runloop_st->msg_queue_main_id = sthread_get_current_thread_id();
 #endif
 
