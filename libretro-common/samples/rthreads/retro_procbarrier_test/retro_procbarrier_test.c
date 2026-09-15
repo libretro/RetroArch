@@ -79,7 +79,17 @@ static void producer(void *arg)
    (void)arg;
    while (!retro_atomic_load_relaxed_int(&g_stop))
    {
-      int s = retro_atomic_load_relaxed_int(&g_seq);
+      int s;
+      /* Paced. An unpaced producer on its own core moves seq every few
+       * nanoseconds, so the consumer never finds it unchanged and never
+       * parks -- the withdraw path gets 5000 rounds and the park path
+       * none. A short spin between publishes is what makes the park
+       * happen on real SMP, where it is the path under test. */
+      {
+         volatile int spin = 400;
+         while (spin--) ;
+      }
+      s = retro_atomic_load_relaxed_int(&g_seq);
       /* Plain release store, plain relaxed load: no locked instruction.
        * This is the whole point of the asymmetric design. The sequence
        * wraps through the unsigned domain: it publishes many millions of
@@ -116,12 +126,22 @@ static int consumer_round(int last_seen, int *seen_out)
        * producer already claimed the park it will post; take it. */
       if (retro_atomic_fetch_add_int(&g_parked, -1) != 1)
       {
+         /* The producer claimed the park and will post. Bounded: no wait
+          * in this test may hang, since a hang is a timeout kill with
+          * the output lost, and this is the one that would. */
+         int got;
          retro_atomic_fetch_add_int(&g_parked, 1);
          slock_lock(g_lock);
-         while (!g_posted)
-            scond_wait(g_cond, g_lock);
+         if (!g_posted)
+            scond_wait_timeout(g_cond, g_lock, 2000000);
+         got = g_posted;
          g_posted = 0;
          slock_unlock(g_lock);
+         if (!got)
+         {
+            *seen_out = s;
+            return 0;   /* a claimed park whose post never came */
+         }
       }
       *seen_out = s;
       return 1;
@@ -235,9 +255,15 @@ static int check_fences(void)
       if (!consumer_round(last, &seen))
       {
          lost++;
-         if (lost <= 3)
-            printf("  lost wake at round %d (seq %d)\n", r, last);
+         printf("  lost wake at round %d (seq %d)\n", r, last);
          seen = retro_atomic_load_acquire_int(&g_seq);
+         /* Each lost wake is a two-second timeout. Three is a result;
+          * five thousand is a harness kill with the result lost. */
+         if (lost >= 3)
+         {
+            printf("  stopping after %d lost wakes\n", lost);
+            break;
+         }
       }
       last = seen;
    }
@@ -254,6 +280,9 @@ static int check_fences(void)
 int main(void)
 {
    int ok = 1;
+   /* Unbuffered: a run the harness kills on timeout must still show
+    * which phase it was in and what it had found. */
+   setvbuf(stdout, NULL, _IONBF, 0);
    printf("retro_procbarrier\n");
 #if defined(_WIN32)
    { SYSTEM_INFO si; GetSystemInfo(&si);

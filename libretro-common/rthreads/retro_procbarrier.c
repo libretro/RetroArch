@@ -204,6 +204,12 @@ static int pb_membarrier_try(void)
    if (syscall(__NR_membarrier,
             PB_MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0, 0) != 0)
       return 0;
+   /* Registration succeeding is not the same as the barrier working: a
+    * sandbox can permit the query and the registration and still refuse
+    * the expedited call. Issue one now and believe its return value. A
+    * tier that would silently fence nothing is worse than no tier. */
+   if (syscall(__NR_membarrier, PB_MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0, 0) != 0)
+      return 0;
    return 1;
 #endif
 }
