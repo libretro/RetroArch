@@ -630,6 +630,7 @@ typedef struct materialui_handle
    /* Keeps track of the last time tabs were switched
     * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
    retro_time_t last_tab_switch_time;  /* uint64_t alignment */
+   retro_time_t draw_entry_hold_until;
 
    playlist_t *playlist;            /* ptr alignment */
 
@@ -698,7 +699,6 @@ typedef struct materialui_handle
 
    unsigned ticker_x_offset;
    unsigned ticker_str_width;
-   unsigned draw_entry_delay;
 
    /* Touch feedback animation parameters */
    unsigned touch_feedback_selection;
@@ -8579,11 +8579,12 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    mui->font_data.hint.raster_block.carr.coords.vertices = 0;
 
    /* Single-click playlist button hold delay */
-   if (mui->transition_alpha_lock && mui->draw_entry_delay)
+   if (     mui->transition_alpha_lock
+         && mui->draw_entry_hold_until
+         && menu_driver_get_current_time() >= mui->draw_entry_hold_until)
    {
-      mui->draw_entry_delay--;
-      if (!mui->draw_entry_delay)
-         materialui_animation_list_alpha(mui, true);
+      mui->draw_entry_hold_until = 0;
+      materialui_animation_list_alpha(mui, true);
    }
 
    /* Update theme colours, if required */
@@ -11344,7 +11345,8 @@ static enum menu_action materialui_parse_menu_entry_action(
 #endif
             }
             mui->transition_alpha_lock = true;
-            mui->draw_entry_delay = MENU_DRAW_ENTRY_DELAY;
+            mui->draw_entry_hold_until = menu_driver_get_current_time()
+                  + MENU_DRAW_ENTRY_DELAY;
          }
          break;
       case MENU_ACTION_CANCEL:

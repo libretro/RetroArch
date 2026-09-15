@@ -361,6 +361,7 @@ typedef struct xmb_handle
    /* Keeps track of the last time tabs were switched
     * via a MENU_ACTION_LEFT/MENU_ACTION_RIGHT event */
    retro_time_t last_tab_switch_time; /* uint64_t alignment */
+   retro_time_t draw_entry_hold_until;
 
    char *box_message;
    char *bg_file_path;
@@ -450,7 +451,6 @@ typedef struct xmb_handle
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
    unsigned ticker_limit;
-   unsigned draw_entry_delay;
 
    float fullscreen_thumbnail_alpha;
    float x;
@@ -7038,7 +7038,8 @@ static enum menu_action xmb_parse_menu_entry_action(
 #endif
             }
             xmb->alpha_list = 0.0f;
-            xmb->draw_entry_delay = MENU_DRAW_ENTRY_DELAY;
+            xmb->draw_entry_hold_until = menu_driver_get_current_time()
+                  + MENU_DRAW_ENTRY_DELAY;
          }
          break;
       case MENU_ACTION_CANCEL:
@@ -9375,11 +9376,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    xmb->raster_block2.carr.coords.vertices = 0;
 
    /* Single-click playlist button hold delay */
-   if (xmb->alpha_list == 0.0f && xmb->draw_entry_delay)
+   if (     xmb->alpha_list == 0.0f
+         && xmb->draw_entry_hold_until
+         && menu_driver_get_current_time() >= xmb->draw_entry_hold_until)
    {
-      xmb->draw_entry_delay--;
-      if (!xmb->draw_entry_delay)
-         xmb_animation_list_alpha(xmb, true);
+      xmb->draw_entry_hold_until = 0;
+      xmb_animation_list_alpha(xmb, true);
    }
 
    /* Blank dummy core output */
