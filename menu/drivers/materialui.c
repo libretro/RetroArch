@@ -152,7 +152,7 @@
 
 /* Thumbnail stream delay when performing standard
  * menu navigation */
-#define MUI_THUMBNAIL_STREAM_DELAY_DEFAULT (16.66667f * 3)
+#define MUI_THUMBNAIL_STREAM_DELAY_DEFAULT (50.0f) /* ms */
 /* Thumbnail stream delay when performing 'fast'
  * navigation by dragging the scrollbar
  * > Must increase stream delay, otherwise it's

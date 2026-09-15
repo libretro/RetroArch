@@ -74,7 +74,7 @@
 #include "../tasks/tasks_internal.h"
 #include <compat/strl.h>
 
-#define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  16.66667f * 3
+#define DEFAULT_GFX_THUMBNAIL_STREAM_DELAY  (50.0f) /* ms */
 #define DEFAULT_GFX_THUMBNAIL_FADE_DURATION 166.66667f
 
 /* The thumbnail .status field is atomically-typed (see the

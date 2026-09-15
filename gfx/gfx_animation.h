@@ -26,15 +26,21 @@
 #include "font_driver.h"
 
 #define TICKER_SPACER_DEFAULT "  |  "
+
+/* Stepped (non-smooth) ticker: one character step per
+ * TICKER_SPEED us of real time (divided by the user's
+ * ticker speed setting) */
 #define TICKER_SPEED          333333
 
-/* Pixel ticker nominally increases by one after each
- * TICKER_PIXEL_PERIOD ms (actual increase depends upon
- * ticker speed setting and display resolution)
- *
- * Formula is: (1.0f / 60.0f) * 1000.0f
- * */
-#define TICKER_PIXEL_PERIOD (16.666666666666668f)
+/* Smooth ticker baseline speed, in px/s of real time
+ * (scaled by the ticker speed setting and, for the
+ * horizontal ticker, the menu driver's resolution
+ * callback). The increment each frame is
+ * delta_time / TICKER_PIXEL_PERIOD, accumulated with
+ * fractional carry, so the speed is the same at every
+ * refresh rate */
+#define TICKER_PIXEL_SPEED  (60.0f)
+#define TICKER_PIXEL_PERIOD (1000.0f / TICKER_PIXEL_SPEED)
 
 #define ANIM_IS_ACTIVE(_p) (((_p)->flags & (GFX_ANIM_FLAG_IS_ACTIVE)) || ((_p)->flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE))
 
