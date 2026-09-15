@@ -1153,8 +1153,10 @@
 #define DEFAULT_VIDEO_SHADER_WATCH_FILES false
 
 /* Initialise file browser with last used directory
- * when selecting shader presets/passes via the menu */
-#define DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR false
+ * when selecting shader presets/passes via the menu,
+ * and step the next/prev shader hotkeys from the
+ * loaded preset instead of the shader directory root */
+#define DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR true
 
 /* OSD-messages. */
 #define DEFAULT_FONT_ENABLE true

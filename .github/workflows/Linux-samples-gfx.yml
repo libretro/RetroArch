@@ -260,6 +260,42 @@ jobs:
           timeout 60 ./slang_texture_index_bounds_test
           echo "[pass] slang_texture_index_bounds_test"
 
+      - name: Build and run shader_dir_cycle_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/shader_dir_cycle
+        run: |
+          set -eu
+          # Which folder the Next/Previous Shader hotkeys cycle, over a
+          # shader tree built on disk, with gfx/video_shader_parse.c
+          # compiled for real and only the frontend stubbed.
+          #
+          # The folder is chosen from the loaded preset, and the cases
+          # that decide it are all shapes the menu itself writes:
+          # retroarch.slangp and the core auto preset are simple
+          # presets (#reference), so they stand in for what they point
+          # at, while a preset the user loaded as itself anchors where
+          # it sits however it is written - "Save Preset As" emits a
+          # #reference too, and following those would cycle a preset's
+          # source folder instead of the folder it was saved into.
+          #
+          # Two orderings are what this pins.  Following a reference
+          # one hop further than the wrapper puts the cycling in a
+          # folder the user never loaded from; and re-deriving the
+          # anchor from a preset the hotkey itself just applied walks
+          # back to whatever that preset references, so an entry that
+          # is a simple preset traps the cycling on the pair forever.
+          # The setting is also toggled mid-run: the list is built
+          # under one value and must be dropped when it changes, or
+          # turning it on never leaves the root it was cycling.
+          make clean all SANITIZER=address,undefined
+          test -x shader_dir_cycle_test
+          # The tree is built under a scratch dir, never in the repo.
+          T=$(mktemp -d)
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 60 ./shader_dir_cycle_test "$T"
+          rm -rf "${T:?}"
+          echo "[pass] shader_dir_cycle_test"
+
       - name: Build and run vulkan_mailbox_init_leak_test (ASan + LSan)
         shell: bash
         working-directory: samples/gfx/vulkan_mailbox_init_leak
