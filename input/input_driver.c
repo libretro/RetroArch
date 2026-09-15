@@ -3087,13 +3087,17 @@ static void input_overlay_set_analog_desc_delta(
       case OVERLAY_TYPE_ANALOG_R2:
          if (desc->analog_axis == OVERLAY_ANALOG_AXIS_HORIZONTAL)
          {
-            desc->delta_x = clamp_float(analog_x, 0.0f, 1.0f) * desc->range_x;
+            if (desc->analog_flags & OVERLAY_ANALOG_FLAG_INVERT)
+               analog_x = -analog_x;
+            desc->delta_x = clamp_float(analog_x, -1.0f, 1.0f) * desc->range_x;
             desc->delta_y = 0.0f;
          }
          else
          {
+            if (desc->analog_flags & OVERLAY_ANALOG_FLAG_INVERT)
+               analog_y = -analog_y;
             desc->delta_x = 0.0f;
-            desc->delta_y = clamp_float(analog_y, 0.0f, 1.0f) * desc->range_y;
+            desc->delta_y = clamp_float(analog_y, -1.0f, 1.0f) * desc->range_y;
          }
          break;
       case OVERLAY_TYPE_ANALOG_LEFT:
