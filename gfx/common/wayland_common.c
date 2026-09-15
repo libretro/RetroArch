@@ -1379,12 +1379,16 @@ static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl)
       {
          int ret = wl->libdecor_dispatch(wl->libdecor_context, remaining);
          if (ret < 0 && ret != -EINTR)
+         {
+            RARCH_ERR("[Wayland] libdecor failed to dispatch.\n");
             break;
+         }
       }
       else
 #endif
       {
          struct pollfd fd;
+         int ret;
 
          flush_wayland_fd(&wl->input);
          if (wl->fullscreen)
@@ -1393,7 +1397,13 @@ static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl)
          fd.fd      = wl->input.fd;
          fd.events  = POLLIN;
          fd.revents = 0;
-         if (poll(&fd, 1, remaining) < 0 && errno != EINTR)
+         ret        = poll(&fd, 1, remaining);
+         if (ret < 0)
+         {
+            if (errno != EINTR)
+               break;
+         }
+         else if (ret > 0 && (fd.revents & (POLLERR | POLLHUP | POLLNVAL)))
             break;
       }
 
@@ -1402,6 +1412,9 @@ static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl)
               (now.tv_sec  - start.tv_sec)  * 1000
             + (now.tv_nsec - start.tv_nsec) / 1000000);
    }
+
+   if (!wl->fullscreen)
+      RARCH_WARN("[Wayland] No fullscreen configure received; continuing.\n");
 }
 
 bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
