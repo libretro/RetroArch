@@ -258,6 +258,31 @@ check_gates "gates: menu only"      "$UIDEFS -DHAVE_MENU"                    $UI
 check_gates "gates: widgets only"   "$UIDEFS -DHAVE_GFX_WIDGETS"             $UITU
 check_gates "gates: neither"        "$UIDEFS"                                $UITU
 
+# The optional subsystems switch independently of the menu and of each
+# other, and the units that call into them are built either way. Each
+# lane drops one subsystem from a fully featured build; the last drops
+# all of them, which is what a minimal frontend compiles as.
+ALLGATES="-DHAVE_MENU -DHAVE_GFX_WIDGETS -DHAVE_OVERLAY -DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH -DHAVE_NETWORKING -DHAVE_RUNAHEAD -DHAVE_DYNAMIC -DHAVE_DYLIB"
+FETU="retroarch.c runloop.c command.c gfx/video_driver.c input/input_driver.c configuration.c tasks/task_content.c"
+without() { echo "$ALLGATES" | sed "s/$1//g"; }
+check_gates "gates: every subsystem" "$UIDEFS $ALLGATES"                            $FETU
+check_gates "gates: no overlay"      "$UIDEFS $(without -DHAVE_OVERLAY)"            $FETU
+check_gates "gates: no cheevos"      "$UIDEFS $(without '-DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH')" $FETU
+check_gates "gates: no networking"   "$UIDEFS $(without -DHAVE_NETWORKING)"         $FETU
+check_gates "gates: no run-ahead"    "$UIDEFS $(without -DHAVE_RUNAHEAD)"           $FETU
+check_gates "gates: no subsystems"   "$UIDEFS"                                      $FETU
+
+# A subsystem's own unit is built only when its gate is on, so each is
+# checked with that gate on and the user interface off: the achievement
+# and netplay widgets, and the menu entries either drives, are the edges
+# where a declaration goes missing.
+check_gates "gates: netplay, no UI" \
+   "$UIDEFS -DHAVE_NETWORKING" network/netplay/netplay_frontend.c
+check_gates "gates: cheevos, no UI" \
+   "$UIDEFS -DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH" cheevos/cheevos.c
+check_gates "gates: run-ahead, no UI" \
+   "$UIDEFS -DHAVE_RUNAHEAD -DHAVE_DYNAMIC -DHAVE_DYLIB" runahead.c
+
 # The builtin DSP filters are compiled only by console builds, through
 # griffin, and no other job compiles them as C. Each is checked on its
 # own, as the consoles build it, in the C89 lane: once with the C99 math
