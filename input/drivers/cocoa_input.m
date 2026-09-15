@@ -871,8 +871,16 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
 static void cocoa_sensor_rotate_xy(float *x, float *y)
 {
    float rawX = *x, rawY = *y;
-   UIInterfaceOrientation orient =
-         [[UIApplication sharedApplication] statusBarOrientation];
+   UIInterfaceOrientation orient;
+   if (@available(iOS 16.0, *)) {
+      UIWindow *window = [[UIApplication sharedApplication] delegate].window;
+      if (!window) {
+         return;
+      }
+      orient = window.windowScene.effectiveGeometry.interfaceOrientation;
+   } else {
+      orient = [[UIApplication sharedApplication] statusBarOrientation];
+   }
    switch (orient)
    {
       case UIInterfaceOrientationLandscapeLeft:

@@ -707,7 +707,12 @@ void rarch_stop_draw_observer(void)
          return;
 
       UIEdgeInsets inset   = window.safeAreaInsets;
-      UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+      UIInterfaceOrientation orientation;
+      if (@available(iOS 16.0, *)) {
+         orientation = window.windowScene.effectiveGeometry.interfaceOrientation;
+      } else {
+         orientation = [[UIApplication sharedApplication] statusBarOrientation];
+      }
 
       switch (orientation)
       {
