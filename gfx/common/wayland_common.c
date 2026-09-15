@@ -1363,6 +1363,47 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
    return true;
 }
 
+#define FULLSCREEN_CONFIGURE_TIMEOUT_MS 500
+
+static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl)
+{
+   struct timespec start, now;
+   int remaining = FULLSCREEN_CONFIGURE_TIMEOUT_MS;
+
+   clock_gettime(CLOCK_MONOTONIC, &start);
+
+   while (!wl->fullscreen && remaining > 0)
+   {
+#ifdef HAVE_LIBDECOR_H
+      if (wl->libdecor)
+      {
+         int ret = wl->libdecor_dispatch(wl->libdecor_context, remaining);
+         if (ret < 0 && ret != -EINTR)
+            break;
+      }
+      else
+#endif
+      {
+         struct pollfd fd;
+
+         flush_wayland_fd(&wl->input);
+         if (wl->fullscreen)
+            break;
+
+         fd.fd      = wl->input.fd;
+         fd.events  = POLLIN;
+         fd.revents = 0;
+         if (poll(&fd, 1, remaining) < 0 && errno != EINTR)
+            break;
+      }
+
+      clock_gettime(CLOCK_MONOTONIC, &now);
+      remaining = FULLSCREEN_CONFIGURE_TIMEOUT_MS - (int)(
+              (now.tv_sec  - start.tv_sec)  * 1000
+            + (now.tv_nsec - start.tv_nsec) / 1000000);
+   }
+}
+
 bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
       bool fullscreen)
 {
@@ -1414,6 +1455,10 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
       {
          xdg_toplevel_set_fullscreen(wl->xdg_toplevel, output);
       }
+
+      /* Map only once fullscreen, or window managers such as tiling
+       * scripts place the window as a normal one first. */
+      gfx_ctx_wl_wait_for_fullscreen(wl);
    }
 
    flush_wayland_fd(&wl->input);
