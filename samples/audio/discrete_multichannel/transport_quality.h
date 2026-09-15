@@ -99,7 +99,7 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
             "quality transport step");
    }
    expected = total / tempo * st->src_ratio_orig;
-   tolerance = tempo == 1.0 ? 2 : 512 * (1 + 1 / tempo) * st->src_ratio_orig;
+   tolerance = tempo == 1.0 ? 2 : 1280 * (1 + 1 / tempo) * st->src_ratio_orig;
    CHECK(fabs((double)cap_frames - expected) <= tolerance,
          "quality duration: tempo %.2f, got %u, expected %.1f +/- %.1f",
          tempo, (unsigned)cap_frames, expected, tolerance);

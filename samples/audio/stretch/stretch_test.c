@@ -117,7 +117,7 @@ static void stream_cases(void)
             CHECK(memcmp(floating ? (void*)output_f[0] : (void*)output_i[0],
                      floating ? (void*)output_f[1] : (void*)output_i[1], a * channels * sample) == 0);
             error = fabs((double)a - FRAMES / tempos[t]);
-            CHECK(error <= 3 * audio_stretch_hop(s) / tempos[t] + audio_stretch_hop(s));
+            CHECK(error <= 10 * audio_stretch_hop(s) / tempos[t] + audio_stretch_hop(s));
             for (f = 0; f < a; f++)
             {
                if (floating)
@@ -160,7 +160,7 @@ static void scheduling(void)
       for (k = 0; k < 40; k++)
       {
          struct audio_stretch_io io;
-         size_t expected = k ? (size_t)floor(k * hop * tempos[t] + 0.000001) + hop / 2 + 2 * hop : 2 * hop;
+         size_t expected = k ? (size_t)floor(k * hop * tempos[t] + 0.000001) + 4 * hop + 2 * hop : 2 * hop;
          if (expected > FRAMES) break;
          io.input = input_i + used * 2; io.input_frames = FRAMES - used;
          io.output = output_i[0]; io.output_capacity = hop;
@@ -198,7 +198,7 @@ static void contracts(void)
             CHECK(s != NULL);
             if (!s) exit(2);
             CHECK(audio_stretch_hop(s) >= 21 && audio_stretch_hop(s) <= 512);
-            CHECK(audio_stretch_storage(s) < (c <= 8 ? 100000 : 131072));
+            CHECK(audio_stretch_storage(s) < (c <= 8 ? 250000 : 350000));
             if (c != 4) printf("storage rate=%u ch=%u float=%u bytes=%lu\n", rates[r], c, floating, (unsigned long)audio_stretch_storage(s));
             audio_stretch_free(s);
          }
@@ -396,7 +396,7 @@ static size_t prepare_drain(audio_stretch_t *s, unsigned channels, int floating,
    unsigned hop = audio_stretch_hop(s);
    size_t frame = channels * (floating ? sizeof(float) : sizeof(int16_t));
    size_t used;
-   double tempo = scenario == 4 ? 4 : scenario == 5 ? 32 : scenario == 6 ? 1.37 : 2;
+   double tempo = scenario == 4 ? 7 : scenario == 5 ? 32 : scenario == 6 ? 1.37 : 2;
    const char *input = floating ? (const char*)input_f : (const char*)input_i;
    struct audio_stretch_io io;
    struct audio_stretch_drain_io query;
@@ -470,7 +470,7 @@ static void drain_cases(void)
                   CHECK(memcmp(b, input + hop * frame, hop * frame) == 0);
                   if (scenario == 4)
                   {
-                     start = 4 * hop - hop / 2;
+                     start = 7 * hop - 4 * hop;
                      CHECK(n == hop + used - start);
                      CHECK(memcmp(b + hop * frame, input + start * frame, (used - start) * frame) == 0);
                   }

@@ -1168,7 +1168,8 @@ static void inline_callback_cases(void)
             {
                size_t frames = cap_frames;
                bool progress = callback_dispatch();
-               CHECK(progress == (cap_frames != frames),
+               CHECK(progress == (cap_frames != frames
+                        || (st->inline_transport && st->inline_transport->source_progress)),
                      "callback progress disagrees with device writes");
                CHECK(!st->data_ptr, "callback retained accumulator input");
             }

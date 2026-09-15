@@ -228,7 +228,7 @@ audio_stretch_t *audio_stretch_new(unsigned rate, unsigned channels,
          || channels > AUDIO_STRETCH_MAX_CHANNELS
          || !search_channels || (search_channels >> channels)) return NULL;
    hop = (rate + 187) / 375;
-   radius = hop / 2;
+   radius = hop * 4;
    capacity = 2 * hop + 2 * radius;
    sample = is_float ? sizeof(float) : sizeof(int16_t);
    native_bytes = (capacity + 2 * hop) * channels * sample;
