@@ -34,6 +34,7 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
       st->resampler_int16_process = sinc_resampler_int16_process;
       st->resampler_int16_free = sinc_resampler_int16_free;
       st->resampler_int16_reset = sinc_resampler_int16_reset;
+      snap_pause(false);
       CHECK(st->resampler_data_int16 != NULL, "quality native SRC");
    }
    settings->bools.audio_time_stretch = !lpf_only;
@@ -86,9 +87,7 @@ static void transport_quality_case(bool floating, bool wide, bool hq,
          submitted += n;
          audio_driver_frame_end();
       }
-      retro_atomic_store_release_int(&st->runloop_snapshot, (tempo < 1.0
-            ? AUDIO_SNAP_SLOWMOTION : tempo > 1.0 ? AUDIO_SNAP_FASTMOTION : 0)
-            | AUDIO_SNAP_SYNC | AUDIO_SNAP_FF_SPEEDUP);
+      audio_driver_publish_runloop();
       /* Wide publication updates the achieved-speed estimator. Keep the
        * ordinary SRC's consumer-side multiplier deterministic as well. */
       retro_atomic_store_release_int(&st->pipe_ff_mult_q16, (int)(65536.0 / tempo));

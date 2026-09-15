@@ -63,6 +63,14 @@ static audio_pipeline_stretch_t *transport_test_new(unsigned rate,
 #define audio_pipeline_stretch_new transport_test_new
 #define realloc canonical_test_realloc
 #include "../../../audio/audio_driver.c"
+
+/* Pause and resume as the runloop would: the flags drive the publish,
+ * so the snapshot keeps carrying the setting bits the fixture set. */
+static void snap_pause(bool paused)
+{
+   runloop_state_get_ptr()->flags = paused ? RUNLOOP_FLAG_PAUSED : 0;
+   audio_driver_publish_runloop();
+}
 #undef realloc
 #undef memalign_alloc
 #undef memalign_free
@@ -187,6 +195,7 @@ static bool up(bool core_float, uint32_t layout, bool float_dev)
    config_get_ptr()->uints.audio_output_sample_rate = 48000;
    st->out_rate               = 48000;
    config_get_ptr()->bools.audio_fastpath_s16 = false;
+   snap_pause(false);
    if (float_dev)
       AUDIO_FLAGS_SET(st, AUDIO_FLAG_USE_FLOAT);
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED | AUDIO_FLAG_NONBLOCK);
@@ -1183,18 +1192,19 @@ static void layout_epoch_pressure_case(bool floating)
    audio_driver_pipeline_consume(st);
    CHECK(!st->pipe_priming && retro_spsc_read_avail(&st->pipe_ring) < held,
          "full metadata deadlocked startup priming");
-   retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_PAUSED);
+   snap_pause(true);
    for (i = 0; i < AUDIO_PIPELINE_LAYOUT_CAPACITY && retro_spsc_read_avail(&st->pipe_ring); i++)
       audio_driver_pipeline_consume(st);
    CHECK(!retro_spsc_read_avail(&st->pipe_ring), "pause did not drain epoch audio");
    /* Underrun discard crosses all outstanding boundaries and releases space. */
-   retro_atomic_store_release_int(&st->runloop_snapshot, 0);
+   snap_pause(false);
    audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, false, 11);
    st->pipe_layout = AUDIO_LAYOUT_5POINT1;
    audio_driver_submit_width(st, 1.0f, &input, 11, floating, false, false, 11);
    scripted_threaded.underruns = epoch_underrun;
    st->buffer_size = 0;
    config_get_ptr()->bools.audio_sync = false;
+   snap_pause(false);
    cap_frames = 0;
    audio_driver_pipeline_consume(st);
    CHECK(!retro_spsc_read_avail(&st->pipe_ring) && !cap_frames,
@@ -1202,6 +1212,7 @@ static void layout_epoch_pressure_case(bool floating)
    CHECK(st->pipe_layouts.current_layout == AUDIO_LAYOUT_5POINT1,
          "discard did not retire layout boundaries");
    config_get_ptr()->bools.audio_sync = sync;
+   snap_pause(false);
 }
 
 static unsigned short_calls;
@@ -1338,12 +1349,13 @@ static void pending_lifecycle_case(bool floating)
       CHECK(st->pipe_pending_bytes > 0, "pending lifecycle setup ownership");
       short_zero = false;
       if (scenario == 0)
-         retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_PAUSED);
+         snap_pause(true);
       else if (scenario == 1)
          short_fail = true;
       else if (scenario == 2)
       {
          config_get_ptr()->bools.audio_sync = false;
+         snap_pause(false);
          scripted_threaded.underruns = epoch_underrun;
       }
       else
@@ -1445,6 +1457,7 @@ static void resampler_discontinuity_case(unsigned backend, bool floating,
          CHECK(st->resampler_data_int16 != NULL, "reset native backend");
       }
       config_get_ptr()->bools.audio_sync = true;
+      snap_pause(false);
       if (dirty)
       {
          for (f = 0; f < 128 * 6; f++)
@@ -1462,10 +1475,11 @@ static void resampler_discontinuity_case(unsigned backend, bool floating,
             if (scenario == 0)
             {
                config_get_ptr()->bools.audio_sync = false;
+               snap_pause(false);
                st->buffer_size = 0;
                scripted_threaded.underruns = epoch_underrun;
             }
-            else retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_PAUSED);
+            else snap_pause(true);
             audio_driver_pipeline_consume(st);
             CHECK(!retro_spsc_read_avail(&st->pipe_ring), "reset did not discard source");
          }
@@ -1473,7 +1487,7 @@ static void resampler_discontinuity_case(unsigned backend, bool floating,
          {
             st->pipe_pending = (const uint8_t*)st->output_samples_buf;
             st->pipe_pending_bytes = 6 * sizeof(float);
-            retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_PAUSED);
+            snap_pause(true);
             audio_driver_pipeline_consume(st);
             CHECK(!st->pipe_pending_bytes, "reset retained pending output");
          }
@@ -1483,7 +1497,7 @@ static void resampler_discontinuity_case(unsigned backend, bool floating,
          for (i = 0; i < 4; i++) CHECK(extras[i] == st->extra.res[i], "reset replaced extra lane");
          scripted_threaded.underruns = NULL;
          config_get_ptr()->bools.audio_sync = true;
-         retro_atomic_store_release_int(&st->runloop_snapshot, 0);
+         snap_pause(false);
          AUDIO_FLAGS_SET(st, AUDIO_FLAG_STARTED);
       }
       cap_frames = 0;
@@ -1563,6 +1577,7 @@ static size_t native_render_case(bool floating, bool wide, bool hq, bool filter)
          st->resampler_int16_process = sinc_resampler_int16_process;
          st->resampler_int16_free = sinc_resampler_int16_free;
          st->resampler_int16_reset = sinc_resampler_int16_reset;
+         snap_pause(false);
          CHECK(st->resampler_data_int16 != NULL, "native renderer integer SRC");
       }
       if (fragmented)
@@ -1631,13 +1646,13 @@ static size_t native_render_case(bool floating, bool wide, bool hq, bool filter)
                      && events == retro_atomic_load_relaxed_size(&st->pipe_layouts.tail)
                      && !st->pipe_transport_serial && !cap_frames, "failed device wait advanced transport");
                short_no_room = false;
-               retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_PAUSED);
+               snap_pause(true);
                CHECK(!audio_driver_pipeline_transport_step(stage, &st->pipe_transport_serial, 71, 37,
                         false, &complete), "paused transport must defer to lifecycle owner");
                CHECK(tail == retro_atomic_load_relaxed_size(&st->pipe_ring.tail)
                      && events == retro_atomic_load_relaxed_size(&st->pipe_layouts.tail),
                      "paused transport advanced source/control");
-               retro_atomic_store_release_int(&st->runloop_snapshot, 0);
+               snap_pause(false);
                CHECK(audio_driver_pipeline_transport_step(stage, &st->pipe_transport_serial, 71, 0,
                         false, &complete), "transport zero budget");
                CHECK(tail == retro_atomic_load_relaxed_size(&st->pipe_ring.tail),
@@ -1646,15 +1661,9 @@ static size_t native_render_case(bool floating, bool wide, bool hq, bool filter)
             if (pending) short_zero = false;
             config_get_ptr()->bools.audio_fastforward_speedup = true;
             config_get_ptr()->floats.slowmotion_ratio = 3.0f;
-            {
-               float ratio = 3.0f;
-               int   bits;
-               memcpy(&bits, &ratio, sizeof(bits));
-               retro_atomic_store_release_int(&st->runloop_slowmotion_bits, bits);
-            }
-            retro_atomic_store_release_int(&st->runloop_snapshot,
-                  AUDIO_SNAP_SLOWMOTION | AUDIO_SNAP_FASTMOTION
-                  | AUDIO_SNAP_SYNC | AUDIO_SNAP_FF_SPEEDUP);
+            runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION
+                  | RUNLOOP_FLAG_FASTMOTION;
+            audio_driver_publish_runloop();
             retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 3 * 65536);
             if (fragmented == 2 && used != 2048)
                CHECK(audio_driver_callback(), "scheduled native transport callback");
@@ -1732,7 +1741,7 @@ static size_t native_render_case(bool floating, bool wide, bool hq, bool filter)
    short_zero = false;
    config_get_ptr()->bools.audio_fastforward_speedup = old_speedup;
    config_get_ptr()->floats.slowmotion_ratio = old_slowmotion;
-   retro_atomic_store_release_int(&st->runloop_snapshot, 0);
+   snap_pause(false);
    free(reference);
    return reference_frames;
 }
@@ -2048,19 +2057,20 @@ static void transport_scheduler_cases(void)
          CHECK(audio_driver_callback() && st->pipe_pending_bytes,
                "scheduler did not retain short device output");
          retro_atomic_store_release_int(&st->pipe_stalled, 1);
-         retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_PAUSED);
+         snap_pause(true);
          cap_frames = 0;
          CHECK(audio_driver_callback() && !st->pipe_pending_bytes
                && !retro_spsc_read_avail(&st->pipe_ring) && !cap_frames,
                "scheduler pause replayed output or retained source");
          CHECK(retro_atomic_load_acquire_int(&st->pipe_stalled),
                "paused discard incorrectly reported device progress");
-         retro_atomic_store_release_int(&st->runloop_snapshot, 0);
+         snap_pause(false);
          CHECK(retro_spsc_write_frames(&st->pipe_ring, &input, 34, st->pipe_frame_bytes) == 34,
                "scheduler late source");
          scripted_threaded.underruns = epoch_underrun;
          st->pipe_underruns_seen = 0;
          config_get_ptr()->bools.audio_sync = false;
+         snap_pause(false);
          short_zero = false;
          CHECK(audio_driver_callback() && st->pipe_underruns_seen == 1
                && !retro_spsc_read_avail(&st->pipe_ring) && !cap_frames,
@@ -2072,6 +2082,7 @@ static void transport_scheduler_cases(void)
          audio_driver_deinit_internal(true);
       }
    config_get_ptr()->bools.audio_sync = sync;
+   snap_pause(false);
    printf("native transport scheduler: 4 cases, %u failures\n", failures - before);
 }
 
@@ -2447,6 +2458,7 @@ static void inline_transport_cases(void)
             st->resampler_int16_free = sinc_resampler_int16_free;
             st->resampler_int16_reset = sinc_resampler_int16_reset;
          }
+         snap_pause(false);
          settings->bools.audio_time_stretch = false;
          settings->bools.audio_time_stretch_lowpass = false;
          CHECK(audio_driver_transport_configure(settings) && !st->inline_transport,

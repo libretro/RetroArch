@@ -1100,7 +1100,8 @@ enum audio_runloop_snapshot_bits
     * thread: Audio Sync, and Fast-Forward Frameskip's audio speedup. */
    AUDIO_SNAP_SYNC        = (1 << 6),
    AUDIO_SNAP_FF_SPEEDUP  = (1 << 7),
-   AUDIO_SNAP_SINK_EST    = (1 << 8)
+   AUDIO_SNAP_SINK_EST    = (1 << 8),
+   AUDIO_SNAP_FASTPATH_S16 = (1 << 9)
 };
 
 /**

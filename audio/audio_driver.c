@@ -2117,7 +2117,8 @@ static size_t audio_driver_ff_discard_bound(audio_driver_state_t *audio_st,
 static bool audio_driver_mixer_use_s16(bool is_float)
 {
    return    (audio_driver_st.resampler_data_int16 != NULL)
-          &&  config_get_ptr()->bools.audio_fastpath_s16
+          && (retro_atomic_load_acquire_int(
+                &audio_driver_st.runloop_snapshot) & AUDIO_SNAP_FASTPATH_S16)
           && !is_float
 #ifdef HAVE_DSP_FILTER
           && (!audio_driver_st.dsp
@@ -4279,6 +4280,8 @@ void audio_driver_publish_runloop(void)
       v |= AUDIO_SNAP_FF_SPEEDUP;
    if (settings->bools.audio_sink_rate_estimation)
       v |= AUDIO_SNAP_SINK_EST;
+   if (settings->bools.audio_fastpath_s16)
+      v |= AUDIO_SNAP_FASTPATH_S16;
    ratio = settings->floats.slowmotion_ratio;
    memcpy(&ratio_bits, &ratio, sizeof(ratio_bits));
    retro_atomic_store_release_int(

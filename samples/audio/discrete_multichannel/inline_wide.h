@@ -49,8 +49,7 @@ static void raw_speed_cases(void)
          audio_speed_lpf_set(&lpf, true, audio_speed_lpf_cutoff(44100, 131072));
          audio_speed_lpf_process(&lpf, expected, 257);
          audio_driver_submit(st, 1.0f, input, 514, false, false, true);
-         retro_atomic_store_release_int(&st->runloop_snapshot,
-               AUDIO_SNAP_FASTMOTION | AUDIO_SNAP_FF_SPEEDUP);
+         audio_driver_publish_runloop();
          CHECK(audio_driver_pipeline_transport_step(st->pipe_transport,
                &st->pipe_transport_serial, 257, 257, false, &complete), "raw filter-only step");
       }
@@ -124,10 +123,12 @@ static void independent_lpf_cases(void)
                st->resampler_int16_free = sinc_resampler_int16_free;
                st->resampler_int16_reset = sinc_resampler_int16_reset;
             }
+            snap_pause(false);
             settings->bools.audio_time_stretch = false;
             settings->bools.audio_time_stretch_lowpass = mode != 0;
             settings->floats.slowmotion_ratio = durations[speed];
             runloop_state_get_ptr()->flags = RUNLOOP_FLAG_SLOWMOTION;
+            audio_driver_publish_runloop();
             CHECK(audio_driver_transport_configure(settings), "LPF-only configure");
             saved = st->inline_transport;
             CHECK((saved != NULL) == (mode != 0), "LPF-only preparation policy");
@@ -226,6 +227,7 @@ static void rewind_state_cases(void)
          st->resampler_int16_free = sinc_resampler_int16_free;
          st->resampler_int16_reset = sinc_resampler_int16_reset;
       }
+      snap_pause(false);
       st->core_multi = native;
       settings->bools.audio_time_stretch = true;
       settings->floats.slowmotion_ratio = 2;
@@ -603,6 +605,7 @@ static void rewind_frame_cases(void)
             st->resampler_int16_free = sinc_resampler_int16_free;
             st->resampler_int16_reset = sinc_resampler_int16_reset;
          }
+         snap_pause(false);
          settings->bools.audio_time_stretch = true;
          settings->bools.audio_time_stretch_lowpass = false;
          settings->floats.slowmotion_ratio = 2;
@@ -777,6 +780,7 @@ static void inline_wide_cases(void)
                   st->resampler_int16_free = sinc_resampler_int16_free;
                   st->resampler_int16_reset = sinc_resampler_int16_reset;
                }
+               snap_pause(false);
                settings->bools.audio_time_stretch = true;
                settings->bools.audio_time_stretch_lowpass = false;
                settings->bools.audio_fastforward_speedup = false;
@@ -895,6 +899,7 @@ static void inline_format_cases(void)
             st->resampler_int16_process = sinc_resampler_int16_process;
             st->resampler_int16_free = sinc_resampler_int16_free;
             st->resampler_int16_reset = sinc_resampler_int16_reset;
+            snap_pause(false);
             audio_driver_set_core_multi(wide);
             CHECK(!st->inline_transport, "negotiation enabled an unconfigured stage");
             settings->bools.audio_time_stretch = true;
@@ -1089,6 +1094,7 @@ static void inline_callback_cases(void)
             st->resampler_int16_free = sinc_resampler_int16_free;
             st->resampler_int16_reset = sinc_resampler_int16_reset;
          }
+         snap_pause(false);
          settings->bools.audio_time_stretch = true;
          settings->bools.audio_time_stretch_lowpass = true;
          settings->floats.slowmotion_ratio = 2;
@@ -1278,6 +1284,7 @@ static void callback_buffering_case(void)
          st->resampler_int16_free = sinc_resampler_int16_free;
          st->resampler_int16_reset = sinc_resampler_int16_reset;
       }
+      snap_pause(false);
       settings->bools.audio_time_stretch = true;
       settings->bools.audio_time_stretch_lowpass = false;
       /* Exercise supported 32x tempo without wall-clock estimation. */
