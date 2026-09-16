@@ -3049,9 +3049,13 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
          setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", use_mab ? "1" : "0", 1);
       }
       /* Try Vulkan loader first (enables validation layers if installed).
-       * Falls back to MoltenVK directly if loader not available. */
+       * Falls back to MoltenVK directly if loader not available. The
+       * loads are attempted in order without an availability check: a
+       * dylib_load that cannot succeed on an older OS fails and falls
+       * through exactly as the check would have, and a plain C file
+       * has no business carrying clang's availability runtime. */
       vulkan_library = dylib_load("libvulkan.dylib");
-      if (!vulkan_library && __builtin_available(macOS 10.15, iOS 13, tvOS 12, *))
+      if (!vulkan_library)
          vulkan_library = dylib_load("MoltenVK");
       if (!vulkan_library)
          vulkan_library = dylib_load("MoltenVK-v1.2.7.framework");
