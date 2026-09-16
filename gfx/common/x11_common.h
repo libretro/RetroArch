@@ -82,4 +82,11 @@ char *x11_get_wm_name(Display *dpy);
 
 bool x11_has_net_wm_fullscreen(Display *dpy);
 
+/* Block up to @ms milliseconds for readiness of the X connection
+ * socket - user input's transport when this display is live. A plain
+ * poll() on the fd, no Xlib call, so it is safe against a threaded
+ * video context using the same Display. Returns false when there is
+ * no display to wait on, and the caller sleeps instead. */
+bool x11_idle_wait_ms(unsigned ms);
+
 #endif

@@ -6331,6 +6331,38 @@ bool runloop_is_inited(void)
    return retro_atomic_load_acquire_int(&runloop_inited) != 0;
 }
 
+/* The pause / unfocused wait. A fixed ten-millisecond sleep answered
+ * the pause key five milliseconds late on average and woke the
+ * process a hundred times a second for nothing; what it was waiting
+ * for is user input, so where the platform has a waitable source of
+ * it, block there instead, with the same ten milliseconds as the
+ * bound rather than the schedule.
+ *
+ * Windows: the calling thread's own message queue, which is where
+ * every input path here begins; the wait removes nothing, so the
+ * normal poll consumes as before. X11: readiness of the connection
+ * socket - a plain poll() on the fd, no Xlib call, so it is safe
+ * against a threaded video context using the same Display; events a
+ * dispatcher already drained were someone's to act on. Wayland's fd
+ * needs the prepare-read protocol to be watched safely, so it keeps
+ * the sleep rather than gaining a deadlock; so does everything else
+ * without a source. */
+static void runloop_idle_wait(void)
+{
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   MsgWaitForMultipleObjectsEx(0, NULL, 10, QS_ALLINPUT,
+         MWMO_INPUTAVAILABLE);
+#elif defined(HAVE_X11)
+   /* In x11_common.c: Xlib's headers do not belong in this file,
+    * so the one declaration is repeated here. */
+   extern bool x11_idle_wait_ms(unsigned ms);
+   if (!x11_idle_wait_ms(10))
+      retro_sleep(10);
+#else
+   retro_sleep(10);
+#endif
+}
+
 static enum runloop_state_enum runloop_check_state(
       input_driver_state_t *input_st,
       audio_driver_state_t *audio_st,
@@ -8397,7 +8429,7 @@ int runloop_iterate(void)
           * response to it. Unfocused-but-foreground still sleeps. */
          if (!(runloop_st->flags & RUNLOOP_FLAG_IDLE))
 #endif
-            retro_sleep(10);
+            runloop_idle_wait();
 #endif
          return 1;
       case RUNLOOP_STATE_PAUSE:
