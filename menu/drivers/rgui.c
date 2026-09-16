@@ -5719,10 +5719,11 @@ static bool rgui_set_aspect_ratio(
       unsigned aspect_ratio_lock);
 #endif
 
-/* Forward: rgui_render()'s pending-aspect pump runs before the
- * definition. */
+/* Forward: rgui_render()'s pending-aspect pump and its
+ * framebuffer-resize flush both run before the definitions. */
 static void rgui_apply_video_config(
       const rgui_video_settings_t *video_settings);
+static void rgui_flush_video_config(rgui_t *rgui);
 
 /* Fetches current thumbnail label.
  * Returns true if label is valid. */
@@ -6944,11 +6945,15 @@ static bool rgui_set_aspect_ratio(
 #else
    unsigned max_frame_buf_width = RGUI_MAX_FB_WIDTH;
 #endif
+#if !defined(GEKKO) && !defined(DINGUX)
    struct video_viewport vp;
+#endif
+
 #if defined(DINGUX)
-   unsigned aspect_ratio        = RGUI_DINGUX_ASPECT_RATIO;
-   unsigned aspect_ratio_lock   = RGUI_ASPECT_RATIO_LOCK_NONE;
-#else
+   /* Dingux devices run a fixed aspect regardless of configuration:
+    * override the caller-supplied values. */
+   aspect_ratio      = RGUI_DINGUX_ASPECT_RATIO;
+   aspect_ratio_lock = RGUI_ASPECT_RATIO_LOCK_NONE;
 #endif
 
    rgui_buffers_free(rgui);
