@@ -23,7 +23,8 @@
 
 #include <retro_atomic.h>
 #include <retro_math.h>
-#include <rthreads/rthreads.h>
+#include <retro_timers.h>
+#include <features/features_cpu.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -45,6 +46,7 @@
 #define SLEngineItf_CreateAudioPlayer(a, ...) ((*(a))->CreateAudioPlayer(a, __VA_ARGS__))
 
 #define SLPlayItf_SetPlayState(a, ...) ((*(a))->SetPlayState(a, __VA_ARGS__))
+#define SLPlayItf_GetPlayState(a, ...) ((*(a))->GetPlayState(a, __VA_ARGS__))
 
 typedef struct sl
 {
@@ -59,8 +61,6 @@ typedef struct sl
    SLAndroidSimpleBufferQueueItf buffer_queue;
    SLPlayItf player;
 
-   slock_t *lock;
-   scond_t *cond;
    unsigned buf_size;
    unsigned buf_count;
    unsigned buffer_index;
@@ -86,6 +86,13 @@ typedef struct sl
    bool is_paused;
 } sl_t;
 
+/* Fully lock-free: two atomic counters and nothing else. The writer
+ * side polls the block counter at millisecond grain instead of
+ * waiting on a condition, so this callback takes no lock and makes
+ * no syscall on libwilhelm's AudioTrack thread - and the driver owns
+ * no mutex any thread could ever touch after free (#19561's poisoned
+ * mutex is libwilhelm's own; see sl_free). A millisecond of wake
+ * latency is noise against a block period of tens of milliseconds. */
 static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
 {
    sl_t *sl = (sl_t*)ctx;
@@ -93,7 +100,6 @@ static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
    /* A block the device has played: device time, whatever the writer
     * managed to supply. */
    retro_atomic_fetch_add_size(&sl->consumed, sl->frames_per_block);
-   scond_signal(sl->cond);
 }
 
 /* Frames the device has taken since the player started. Counting the
@@ -119,8 +125,35 @@ static void sl_free(void *data)
    if (!sl)
       return;
 
+   /* Teardown ordering hardened for #19561: libwilhelm's AudioTrack
+    * thread crashing in pthread_mutex_lock on 0x55-poisoned memory,
+    * every frame of the stack inside libwilhelm - its own object
+    * mutex, freed by our Destroy while its callback thread was still
+    * in flight.  The spec makes Destroy synchronize with callbacks,
+    * but Android's implementation has raced that when torn down from
+    * PLAYING with buffers still queued.  So: stop, clear the queue,
+    * and confirm the STOPPED transition (bounded - GetPlayState is
+    * cheap and the transition is normally immediate) before any
+    * Destroy, so the AudioTrack thread has nothing left to run when
+    * the objects go. */
    if (sl->player)
+   {
       SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_STOPPED);
+      if (sl->buffer_queue)
+         (*sl->buffer_queue)->Clear(sl->buffer_queue);
+      {
+         retro_time_t deadline = cpu_features_get_time_usec() + 50000;
+         SLuint32 state        = SL_PLAYSTATE_PLAYING;
+         while (cpu_features_get_time_usec() < deadline)
+         {
+            if (   SLPlayItf_GetPlayState(sl->player, &state)
+                     != SL_RESULT_SUCCESS
+                || state == SL_PLAYSTATE_STOPPED)
+               break;
+            retro_sleep(1);
+         }
+      }
+   }
 
    if (sl->buffer_queue_object)
       SLObjectItf_Destroy(sl->buffer_queue_object);
@@ -130,11 +163,6 @@ static void sl_free(void *data)
 
    if (sl->engine_object)
       SLObjectItf_Destroy(sl->engine_object);
-
-   if (sl->lock)
-      slock_free(sl->lock);
-   if (sl->cond)
-      scond_free(sl->cond);
 
    free(sl->buffer);
    free(sl->buffer_chunk);
@@ -284,8 +312,6 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_ANDROIDSIMPLEBUFFERQUEUE,
             &sl->buffer_queue));
 
-   sl->cond               = scond_new();
-   sl->lock               = slock_new();
 
    (*sl->buffer_queue)->RegisterCallback(sl->buffer_queue, opensl_callback, sl);
 
@@ -358,33 +384,34 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
       }
       else
       {
-         bool signalled = true;
-         slock_lock(sl->lock);
-         /* Bounded.  opensl_callback is the only thing in this file
-          * that ever signals sl->cond, and it does not hold sl->lock
-          * while doing so - the predicate is buffered_blocks, updated
-          * with an atomic fetch_sub - so a signal raised between the
-          * test above and this wait reaches no waiter.  While the
-          * device keeps consuming blocks the next callback covers
-          * that.  If it has stopped consuming - device loss, a player
-          * error - there is no next callback, no shutdown or error
-          * signal anywhere in this driver, and the one `return -1`
-          * below sits past the wait where a blocked thread can never
-          * reach it.  An untimed wait here parked the thread the core
-          * runs on for good. */
+         /* Bounded poll on the atomic block counter - the driver's
+          * only throttle, and deliberately not a condition wait: the
+          * predicate is already an atomic the callback updates, so a
+          * mutex here guarded nothing but the wait itself, and a
+          * millisecond of poll grain is noise against a block period
+          * of tens of milliseconds.  The bound exists because if the
+          * device stops consuming - device loss, a player error -
+          * there is no callback coming, no shutdown or error signal
+          * anywhere in this driver, and an unbounded wait parked the
+          * thread the core runs on for good. */
+         bool stalled = false;
+         retro_time_t deadline = cpu_features_get_time_usec()
+               + OPENSL_STALL_TIMEOUT_US;
          while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
                == (int)sl->buf_count)
          {
-            if (!(signalled = scond_wait_timeout(sl->cond, sl->lock,
-                        OPENSL_STALL_TIMEOUT_US)))
+            if (cpu_features_get_time_usec() >= deadline)
+            {
+               stalled = true;
                break;
+            }
+            retro_sleep(1);
          }
-         slock_unlock(sl->lock);
 
          /* Report what was enqueued so far, exactly as the nonblock
           * path above does when the queue is full.  Any partial block
           * stays in sl->buffer_ptr for the next call. */
-         if (!signalled)
+         if (stalled)
             break;
       }
 
@@ -446,14 +473,19 @@ static size_t sl_wait_writable(void *data, size_t len)
                + (sl->buf_size - sl->buffer_ptr));
       if (avail >= len)
          return avail;
-      slock_lock(sl->lock);
-      if (retro_atomic_load_acquire_int(&sl->buffered_blocks) == buffered
-            && !scond_wait_timeout(sl->cond, sl->lock, OPENSL_STALL_TIMEOUT_US))
+      /* Same bounded poll as sl_write's throttle: wait for the block
+       * counter to move, give up as stalled after the same timeout. */
       {
-         slock_unlock(sl->lock);
-         return 0;
+         retro_time_t deadline = cpu_features_get_time_usec()
+               + OPENSL_STALL_TIMEOUT_US;
+         while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+               == buffered)
+         {
+            if (cpu_features_get_time_usec() >= deadline)
+               return 0;
+            retro_sleep(1);
+         }
       }
-      slock_unlock(sl->lock);
    }
 }
 

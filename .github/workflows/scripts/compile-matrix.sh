@@ -226,6 +226,11 @@ check_nothreads() {
 # own framebuffer dimensions, aspect handling and pixel converters;
 # a syntax pass keeps refactors honest for both. GEKKO needs one
 # tiny libogc stub header (tools/platform_stubs/gekko).
+# The Android OpenSL driver compiles nowhere else; a stub SLES header
+# set (tools/platform_stubs/android) keeps its lock-free write path
+# and hardened teardown under a syntax gate.
+check "android: opensl" "-DANDROID -DHAVE_OPENSL -Itools/platform_stubs/android -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/opensl.c
+
 check "gekko: rgui"  "-DGEKKO -DHAVE_MENU -DHAVE_RGUI -Itools/platform_stubs/gekko" menu/drivers/rgui.c
 check "dingux: rgui" "-DDINGUX -DHAVE_MENU -DHAVE_RGUI" menu/drivers/rgui.c
 
