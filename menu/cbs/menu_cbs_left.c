@@ -82,14 +82,22 @@ static int shader_action_parameter_left_internal(unsigned type, const char *labe
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param_prev = &shader_info.data->parameters[type - offset];
    param_menu = shader ? &shader->parameters [type - offset] : NULL;
 
-   if (!param_prev || !param_menu)
+   if (!shader_info.data || !param_menu)
       return -1;
-   ret = generic_shader_action_parameter_left(param_prev, type, label, wraparound);
 
-   param_menu->current = param_prev->current;
+   /* See menu_cbs_right.c: step a local copy, submit through the
+    * owning-thread setter. */
+   {
+      struct video_shader_parameter param_copy =
+         shader_info.data->parameters[type - offset];
+      ret = generic_shader_action_parameter_left(&param_copy, type,
+            label, wraparound);
+      video_shader_driver_set_parameter(shader_info.data,
+            type - offset, param_copy.current);
+      param_menu->current = param_copy.current;
+   }
 
    shader->flags      |= SHDR_FLAG_MODIFIED;
 

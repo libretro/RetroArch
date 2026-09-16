@@ -1905,6 +1905,14 @@ void video_context_driver_free(void);
 
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader);
 
+/* Writes one runtime parameter of the driver's live shader on the
+ * thread that owns it: a blocking round trip under the threaded
+ * wrapper, a direct store otherwise. The only field of the live
+ * shader that mutates outside set_shader's blocking window is
+ * parameters[i].current, and this is its one sanctioned writer. */
+void video_shader_driver_set_parameter(struct video_shader *live_shader,
+      unsigned index, float value);
+
 float video_driver_get_refresh_rate(void);
 
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);

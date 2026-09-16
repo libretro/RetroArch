@@ -283,10 +283,12 @@ static int action_start_shader_action_parameter_generic(
    if (!shader_info.data)
       return 0;
 
+   /* Reset to initial via the owning-thread setter; initial and the
+    * range are stable outside set_shader's blocking window. */
    param          = &shader_info.data->parameters
       [parameter];
-   param->current = param->initial;
-   param->current = MIN(MAX(param->minimum, param->current), param->maximum);
+   video_shader_driver_set_parameter(shader_info.data, parameter,
+         MIN(MAX(param->minimum, param->initial), param->maximum));
 
    return menu_shader_manager_clear_parameter(menu_shader_get(), parameter);
 }

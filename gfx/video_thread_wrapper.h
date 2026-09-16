@@ -648,6 +648,14 @@ bool video_thread_font_init(
       custom_font_command_method_t func,
       bool is_threaded);
 
+/* Blocking run-on-video-thread: func(data) executes on the video
+ * thread while the caller waits, or directly when the wrapper is
+ * not active. The mechanism behind video_thread_texture_handle,
+ * exported for any main-thread code that must touch video-thread-
+ * owned state. */
+uintptr_t video_thread_run_blocking(custom_command_method_t func,
+      void *data);
+
 uintptr_t video_thread_texture_handle(void *data,
       custom_command_method_t func);
 

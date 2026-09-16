@@ -5129,6 +5129,53 @@ bool video_driver_has_windowed(void)
 }
 #endif
 
+#if defined(HAVE_THREADS)
+struct video_shader_param_write
+{
+   struct video_shader *shader;
+   unsigned index;
+   float value;
+};
+
+static uintptr_t video_shader_param_write_fn(void *data)
+{
+   struct video_shader_param_write *w =
+      (struct video_shader_param_write*)data;
+   w->shader->parameters[w->index].current = w->value;
+   return 1;
+}
+#endif
+
+void video_shader_driver_set_parameter(struct video_shader *live_shader,
+      unsigned index, float value)
+{
+   if (!live_shader || index >= live_shader->num_parameters)
+      return;
+
+#if defined(HAVE_THREADS)
+   /* The live shader belongs to the video thread under the threaded
+    * wrapper: its frame path reads parameters[i].current for uniform
+    * upload every frame. Menu code used to write through the pointer
+    * from the main thread - a single-writer aligned-float race that
+    * never tears in practice but crosses ownership. The write now
+    * runs on the owning thread as a blocking round trip; everything
+    * else in the parameter struct (name, range, count) mutates only
+    * inside set_shader's own blocking window and stays readable
+    * directly. */
+   if (video_driver_thread_wrapper_active())
+   {
+      struct video_shader_param_write w;
+      w.shader = live_shader;
+      w.index  = index;
+      w.value  = value;
+      video_thread_run_blocking(video_shader_param_write_fn, &w);
+      return;
+   }
+#endif
+
+   live_shader->parameters[index].current = value;
+}
+
 bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
 {
    video_driver_state_t *video_st     = &video_driver_st;

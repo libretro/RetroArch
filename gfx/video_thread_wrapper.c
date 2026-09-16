@@ -3545,7 +3545,14 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
    return pkt.data.font_init.return_value;
 }
 
-uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
+/* Runs func(data) on the video thread as a blocking round trip -
+ * the caller is parked until the reply, so borrowed pointers in
+ * data stay valid for the whole call and func executes inside the
+ * same safe window every wrapper command gets. Falls back to
+ * calling func directly when the wrapper is not active, when the
+ * worker has already handled CMD_FREE, or when this is already the
+ * video thread. */
+uintptr_t video_thread_run_blocking(custom_command_method_t func, void *data)
 {
    thread_packet_t pkt;
    /* The capture is set while the wrapper is active and cleared at
@@ -3584,6 +3591,11 @@ uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
    video_thread_user_release(thr);
 
    return pkt.data.custom_command.return_value;
+}
+
+uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
+{
+   return video_thread_run_blocking(func, data);
 }
 
 /* Waits until the video thread has finished processing any

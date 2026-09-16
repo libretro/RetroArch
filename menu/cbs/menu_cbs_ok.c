@@ -7757,15 +7757,20 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param_prev    = &shader_info.data->parameters[entry_idx - offset];
    if (shader)
       param_menu = &shader->parameters [entry_idx - offset];
 
-   if (!param_prev || !param_menu)
+   if (!shader_info.data || !param_menu)
       return -1;
 
-   param_prev->current  = val;
-   param_menu->current  = param_prev->current;
+   /* Clamp against the live parameter's stable range, then submit
+    * through the owning-thread setter (see menu_cbs_right.c). */
+   param_prev           = &shader_info.data->parameters[entry_idx - offset];
+   val                  = MIN(MAX(param_prev->minimum, val),
+         param_prev->maximum);
+   video_shader_driver_set_parameter(shader_info.data,
+         entry_idx - offset, val);
+   param_menu->current  = val;
 
    shader->flags       |= SHDR_FLAG_MODIFIED;
 
