@@ -2064,7 +2064,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (sys_info)
             sys_info->rotation = rotation;
 
-         if (!video_driver_set_rotation(rotation))
+         /* Compose with the user's configured rotation, as the menu
+          * path and retroarch_get_rotation() do - passing the core's
+          * raw value dropped the config offset until the user next
+          * touched the rotation setting, and left the driver's
+          * stored rotation out of step with retroarch_get_rotation. */
+         if (!video_driver_set_rotation(
+                  (rotation + settings->uints.video_rotation) % 4))
             return false;
 
          break;

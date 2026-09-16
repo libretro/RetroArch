@@ -207,6 +207,7 @@ typedef struct gl3
    unsigned out_vp_width;
    unsigned out_vp_height;
    unsigned rotation;
+   unsigned rotation_raw;
    unsigned textures_index;
    unsigned scratch_vbo_index;
    unsigned fence_count;
@@ -3267,6 +3268,10 @@ static void *gl3_init(const video_info_t *video,
       gl->flags |= GL3_FLAG_HW_RING_EXPECTED;
 #endif
 
+   /* Seed the raw rotation latch inside the same blocking window;
+    * set_rotation keeps it current from here on. */
+   gl->rotation_raw = retroarch_get_rotation();
+
    video_context_driver_set(ctx_driver);
 
    gl->ctx_driver = ctx_driver;
@@ -3948,6 +3953,11 @@ static void gl3_set_rotation(void *data, unsigned rotation)
    if (!gl)
       return;
 
+   /* Raw 0-3 value alongside the transformed degrees: the frame
+    * path feeds it to the filter chain, and reading it here -
+    * written only inside blocking wrapper commands - replaces a
+    * per-frame retroarch_get_rotation() from the video thread. */
+   gl->rotation_raw = rotation;
    if (video_driver_is_hw_context() && (gl->flags & GL3_FLAG_HW_RENDER_BOTTOM_LEFT))
       gl->rotation = 90 * rotation;
    else
@@ -5077,7 +5087,7 @@ static bool gl3_frame(void *data, const void *frame,
       gl3_filter_chain_set_original_fps(filter_chain, video_driver_get_original_fps());
 
       {
-         uint32_t rot          = retroarch_get_rotation();
+         uint32_t rot          = gl->rotation_raw;
          float core_aspect     = video_driver_get_core_aspect();
          float core_aspect_rot = core_aspect;
 

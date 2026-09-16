@@ -302,6 +302,7 @@ typedef struct vk
    unsigned out_vp_width;
    unsigned out_vp_height;
    unsigned rotation;
+   unsigned rotation_raw;
    unsigned num_swapchain_images;
    unsigned last_valid_index;
 
@@ -5815,6 +5816,10 @@ static void *vulkan_init(const video_info_t *video,
 
    if (!(vk = (vk_t*)calloc(1, sizeof(*vk))))
       return NULL;
+
+   /* Seed the raw rotation latch inside the blocking CMD_INIT;
+    * set_rotation keeps it current from here on. */
+   vk->rotation_raw = retroarch_get_rotation();
    ctx_driver                         = vulkan_get_context(vk, settings);
    if (!ctx_driver)
    {
@@ -6648,6 +6653,9 @@ static void vulkan_set_rotation(void *data, unsigned rotation)
    if (!vk)
       return;
 
+   /* Raw 0-3 alongside the transformed degrees; see the gl3
+    * spelling of this comment. */
+   vk->rotation_raw = rotation;
    vk->rotation = 270 * rotation;
    vulkan_set_projection(vk, &ortho, true);
 }
@@ -7987,7 +7995,7 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)filter_chain, video_driver_get_original_fps());
 
    {
-      uint32_t rot          = retroarch_get_rotation();
+      uint32_t rot          = vk->rotation_raw;
       float core_aspect     = video_driver_get_core_aspect();
       float core_aspect_rot = core_aspect;
 
