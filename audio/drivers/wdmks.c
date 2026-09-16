@@ -1919,31 +1919,37 @@ static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
    deadline = cpu_features_get_time_usec() + period_usec;
 
    /* How the deadline is waited out depends on what asking the device
-    * where it is actually costs, and the two are not close.
+    * where it is actually costs, and the two are not close - but
+    * neither case yields in a loop any more. SwitchToThread with
+    * nothing else runnable returns immediately, which turned a
+    * six-millisecond wait into thousands of no-op scheduler calls,
+    * and a backgrounded process kept a core warm doing nothing. Both
+    * cases now sleep in the kernel.
     *
-    * With a mapped position register it is a volatile word: polling it
-    * on every yield is free, and finding the room early is worth
-    * having, so the loop asks each time.
+    * With a mapped position register - a volatile word, free to read
+    * - the deadline is walked in millisecond slices, the register
+    * re-read after each, so room found early is still taken early:
+    * the resolution moves from a yield to a millisecond, which is
+    * noise against a period floored at half of one.
     *
     * Without one, every ask is a DeviceIoControl - a kernel
-    * transition - and a yield that returns at once because nothing
-    * else wants the processor turns a six-millisecond wait into
-    * thousands of them. There the deadline is what is waited out, and
-    * the device is asked once at the end. That is what the deadline
-    * is for: it was computed from the cursor and the rate precisely
-    * so that it does not need checking on the way. */
+    * transition - so the deadline is slept out whole and the device
+    * is asked once at the end, exactly as before: the deadline was
+    * computed from the cursor and the rate precisely so that it does
+    * not need checking on the way. */
    if (w->rt_pos)
    {
-      do
-      {
-         SwitchToThread();
-      } while (cpu_features_get_time_usec() < deadline
-            && !wdmks_rt_free(w));
+      while (cpu_features_get_time_usec() < deadline
+            && !wdmks_rt_free(w))
+         Sleep(1);
       return;
    }
 
-   while (cpu_features_get_time_usec() < deadline)
-      SwitchToThread();
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      if (deadline > now)
+         Sleep((DWORD)((deadline - now + 999) / 1000));
+   }
 }
 
 /* The event the driver signals as it passes each notification point.
