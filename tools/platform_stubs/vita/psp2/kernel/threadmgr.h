@@ -2,4 +2,5 @@
 #ifndef STUB_PSP2_K_threadmgr
 #define STUB_PSP2_K_threadmgr
 typedef int SceUID;
+int sceKernelDelayThread(unsigned int delay);
 #endif

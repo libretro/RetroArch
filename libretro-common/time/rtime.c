@@ -478,6 +478,13 @@ struct tm *rtime_localtime(const time_t *timep, struct tm *result)
  * this, with a measured margin).
  */
 #include <features/features_cpu.h>
+/* Where retro_sleep_us lives for every platform that is not this
+ * file: a macro over the OS call on the consoles and emscripten, an
+ * inline nanosleep otherwise. The generic loop below is only correct
+ * with this in view - without it the two platforms that define the
+ * function in this file compiled and every statically linked one
+ * did not. */
+#include <retro_timers.h>
 
 #if (defined(__linux__) || defined(ANDROID)) && !defined(__MACH__)
 /* The exact tool: cpu_features_get_time_usec() here is

@@ -240,6 +240,26 @@ check "audio: openal" "-Itools/platform_stubs/openal -DHAVE_AL -DHAVE_THREADS -W
 check "psp: psp_audio" "-Itools/platform_stubs/psp -DPSP -DHAVE_THREADS -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/psp_audio.c
 check "vita: psp_audio" "-Itools/platform_stubs/vita -DVITA -DHAVE_THREADS -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/psp_audio.c
 
+# rtime.c on every statically linked platform: retro_sleep_until_us's
+# generic loop calls retro_sleep_us, a per-platform macro from
+# retro_timers.h everywhere but Windows and Darwin, which define it in
+# rtime.c itself and so prove nothing about the rest. Each lane
+# compiles the whole TU under one platform's defines against hermetic
+# stubs of the SDK headers retro_timers.h pulls. The host compiler
+# predefines __linux__ and friends, and a lane that kept them took the
+# Linux branch of every #if ladder - so console lanes shed them.
+RTIME_TU=libretro-common/time/rtime.c
+HOSTOFF="-U__linux__ -U__gnu_linux__ -Ulinux -U__unix__ -U__unix -Uunix"
+check "rtime: 3ds"        "$HOSTOFF -Itools/platform_stubs/ctr -D_3DS -D__3DS__ -DARM11 -DRARCH_CONSOLE" $RTIME_TU
+check "rtime: gekko"      "$HOSTOFF -Itools/platform_stubs/gekko -DGEKKO -DHW_RVL -DRARCH_CONSOLE" $RTIME_TU
+check "rtime: wiiu"       "$HOSTOFF -Itools/platform_stubs/wiiu -DWIIU -DRARCH_CONSOLE" $RTIME_TU
+check "rtime: psp"        "$HOSTOFF -Itools/platform_stubs/psp -DPSP -DRARCH_CONSOLE" $RTIME_TU
+check "rtime: vita"       "$HOSTOFF -Itools/platform_stubs/vita -DVITA -DRARCH_CONSOLE" $RTIME_TU
+check "rtime: ps3"        "$HOSTOFF -Itools/platform_stubs/ps3 -D__PS3__ -DRARCH_CONSOLE" $RTIME_TU
+check "rtime: psl1ght"    "$HOSTOFF -D__PS3__ -D__PSL1GHT__ -DRARCH_CONSOLE" $RTIME_TU
+check "rtime: emscripten" "$HOSTOFF -D__EMSCRIPTEN__ -DEMSCRIPTEN" $RTIME_TU
+
+
 check "android: opensl" "-DANDROID -DHAVE_OPENSL -Itools/platform_stubs/android -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/opensl.c
 
 check "gekko: rgui"  "-DGEKKO -DHAVE_MENU -DHAVE_RGUI -Itools/platform_stubs/gekko" menu/drivers/rgui.c
