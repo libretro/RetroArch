@@ -60,6 +60,7 @@
 
 #include <boolean.h>
 #include <features/features_cpu.h>
+#include <retro_timers.h>
 #include <retro_miscellaneous.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
@@ -1881,18 +1882,13 @@ static void wdmks_rt_report_latency(wdmks_t *w)
  * device saying it has moved on, which is both the earliest and the
  * cheapest this can be woken.
  *
- * Where it gives none, this yields rather than sleeps. Sleep(1) is not
- * one millisecond unless something has raised the timer resolution -
- * it is the scheduler's tick, about fifteen - and at an 8 ms loop that
- * is a wait longer than the whole buffer, which is a hole in the
- * stream rather than a pause before one. Another thread that is ready
- * runs; if none is, the yield returns at once and the deadline below
- * is what stops this spinning.
- *
- * The deadline is measured with this project's clock rather than
- * counted in iterations, so it means the same length of time whatever
- * an iteration costs - the same reasoning as the ASIO teardown wait,
- * and the same clock. */
+ * Where it gives none, the wait is the high-resolution waitable
+ * timer (retro_sleep_us): millisecond slices against the mapped
+ * register when there is one, the whole computed interval in a
+ * single wait when there is not. Sleep and SwitchToThread are both
+ * gone from here - the one was a 15.6 ms tick, the other a busy
+ * core.
+ */
 static size_t wdmks_rt_free(wdmks_t *w);
 static bool   wdmks_rt_play_offset(wdmks_t *w, ULONG *offset);
 static DWORD  wdmks_watchdog_ms(const wdmks_t *w, size_t bytes);
@@ -1987,18 +1983,33 @@ static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
     * is asked once at the end, exactly as before: the deadline was
     * computed from the cursor and the rate precisely so that it does
     * not need checking on the way. */
+   /* retro_sleep_us on desktop Windows is the high-resolution
+    * waitable timer in rtime.c, per thread - the object these waits
+    * want. Sleep(1) was not a millisecond: it was the global timer
+    * period, ~15.6 ms by default, longer than a whole 8 ms loop, the
+    * very hole the old yield-spin existed to avoid. */
    if (w->rt_pos)
    {
-      while (cpu_features_get_time_usec() < deadline
-            && !wdmks_rt_free(w))
-         Sleep(1);
-      return;
+      /* Wake when the cursor has moved or a millisecond has passed,
+       * whichever is sooner, against the real clock. */
+      for (;;)
+      {
+         retro_time_t now = cpu_features_get_time_usec();
+         retro_time_t remain;
+         if (now >= deadline || wdmks_rt_free(w))
+            return;
+         remain = deadline - now;
+         retro_sleep_us(remain < 1000 ? (unsigned)remain : 1000);
+      }
    }
 
    {
+      /* No register: one wait, the whole computed interval, not a
+       * tick-rounded one - the deadline exists so nothing is asked
+       * on the way. */
       retro_time_t now = cpu_features_get_time_usec();
       if (deadline > now)
-         Sleep((DWORD)((deadline - now + 999) / 1000));
+         retro_sleep_us((unsigned)(deadline - now));
    }
 }
 
@@ -2334,13 +2345,28 @@ static void wdmks_rt_refill_thread(void *data)
 {
    wdmks_t *w = (wdmks_t*)data;
 
+   /* Sampling cadence for a pin that refused a notification event:
+    * half the loop's duration, so the register is read at least
+    * twice per wrap, floored where wdmks_rt_wait_room floors its
+    * own interval. The high-resolution timer keeps it honest -
+    * Sleep(1) was a 15.6 ms tick, longer than a typical loop.
+    * Bounded residual on join: at most one slice. */
+   retro_time_t slice_usec = 1000;
+   if (w->frame_bytes && w->rate)
+   {
+      slice_usec = (retro_time_t)(w->rt_size / w->frame_bytes)
+            * 1000000 / w->rate / 2;
+      if (slice_usec < 500)
+         slice_usec = 500;
+   }
+
    while (retro_atomic_load_acquire_int(&w->rt_run))
    {
       if (w->rt_event)
          WaitForSingleObject(w->rt_event,
                wdmks_watchdog_ms(w, w->rt_size));
       else
-         Sleep(1);
+         retro_sleep_us((unsigned)slice_usec);
       if (!retro_atomic_load_acquire_int(&w->rt_run))
          break;
       wdmks_rt_pump_once(w);
