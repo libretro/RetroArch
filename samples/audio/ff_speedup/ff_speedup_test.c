@@ -14,9 +14,9 @@
  *    the consumer takes the figure from pipe_ff_mult_q16; nothing the
  *    consumer does can move it. Splitting a frame into publishes must not
  *    change the estimate, and source dropped by a full ring still counts.
- *  - The first sample of a fast-forward returns 1.0 and seeds the
- *    average at the 1.0x interval, and releasing fast-forward arms
- *    that seed again. The idle time between two fast-forwards is not a
+ *  - The first sample of a fast-forward seeds the average at the
+ *    configured ratio, and releasing fast-forward arms that seed again.
+ *    The first inline flush plays at 1.0. The idle time between two fast-forwards is not a
  *    flush interval and must not enter the average: read as one, it
  *    pins the multiplier at AUDIO_MAX_RATIO and the audio plays back
  *    sixteen times too slow.
@@ -38,6 +38,11 @@ static retro_time_t fake_time_usec(void) { return fake_now; }
 #define cpu_features_get_time_usec fake_time_usec
 
 #include "../../../audio/audio_driver.c"
+
+/* windows.h, reached through the driver, defines near as nothing. */
+#ifdef near
+#undef near
+#endif
 
 static int failures;
 
@@ -127,11 +132,58 @@ static void test_inline_seeds_at_ratio(void)
    fake_now += ONE_X / 3;
    m = audio_driver_fastforward_ratio_mult(&audio_driver_st, FRAMES);
    CHECK(near(m, 1.0 / 3.0), "and a core at that speed holds it from the first interval");
+   fresh();
+   audio_driver_publish_runloop();
+   m = audio_driver_ff_mult(&audio_driver_st, FRAMES);
+   CHECK(m == 1.0, "the first inline flush of a hold spans a 1.0x frame and plays as one");
+   fake_now += ONE_X / 3;
+   m = audio_driver_ff_mult(&audio_driver_st, FRAMES);
+   CHECK(near(m, 1.0 / 3.0), "and the next plays at the seeded ratio");
    config_get_ptr()->floats.fastforward_ratio = 0.0f;
    fresh();
    audio_driver_publish_runloop();
    m = audio_driver_fastforward_ratio_mult(&audio_driver_st, FRAMES);
    CHECK(near(m, 1.0), "an uncapped ratio still starts at 1.0");
+}
+
+/* The threaded producer's first frame end publishes the configured
+ * ratio: the consumer applies it to what the ring already holds, and
+ * 1.0 there would drop the transport out of its tempo mid-engage. */
+static void test_threaded_seed_publishes_ratio(void)
+{
+   int16_t block[FRAMES * 2];
+   settings_t *settings = config_get_ptr();
+
+   fresh();
+   memset(block, 0, sizeof(block));
+   settings->bools.audio_fastforward_speedup = true;
+   settings->floats.fastforward_ratio        = 3.0f;
+   audio_driver_publish_runloop();
+   audio_driver_st.pipe_threaded    = true;
+   audio_driver_st.pipe_frame_bytes = 2 * sizeof(int16_t);
+   audio_driver_st.pipe_pass_frames = FRAMES;
+   AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_PIPELINE_THREADED);
+   if (!retro_spsc_init(&audio_driver_st.pipe_ring, 4096))
+   {
+      CHECK(false, "ring allocated");
+      return;
+   }
+   retro_eventcount_init(&audio_driver_st.pipe_space);
+   retro_eventcount_init(&audio_driver_st.pipe_data);
+   retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
+
+   audio_driver_submit(&audio_driver_st, 1.0f, block, FRAMES * 2, false, false, true, true);
+   audio_driver_frame_end();
+   CHECK(near((double)retro_atomic_load_acquire_int(
+               &audio_driver_st.pipe_ff_mult_q16) / 65536.0, 1.0 / 3.0),
+         "the threaded first frame end publishes the configured ratio");
+
+   settings->bools.audio_fastforward_speedup = false;
+   settings->floats.fastforward_ratio        = 0.0f;
+   audio_driver_publish_runloop();
+   retro_spsc_free(&audio_driver_st.pipe_ring);
+   retro_eventcount_free(&audio_driver_st.pipe_space);
+   retro_eventcount_free(&audio_driver_st.pipe_data);
 }
 
 
@@ -520,6 +572,187 @@ static void test_fragmented_frame_cadence(void)
    }
 }
 
+/* --- the producer at a full ring in fast-forward -------------------- */
+
+static void test_producer_holds_at_a_full_ring(void)
+{
+   int16_t block[FRAMES * 2];
+   static int16_t stage_out[FRAMES * 8];
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings     = config_get_ptr();
+   size_t cap, fill, tail;
+   double trim, m;
+   int i;
+
+   fresh();
+   memset(block, 0, sizeof(block));
+   settings->bools.audio_fastforward_speedup = true;
+   settings->bools.audio_sync                = true;
+   settings->floats.fastforward_ratio        = 3.0f;
+   runloop_state_get_ptr()->flags           |= RUNLOOP_FLAG_FASTMOTION;
+   audio_driver_publish_runloop();
+   st->pipe_threaded    = true;
+   st->pipe_channels    = 2;
+   st->pipe_frame_bytes = 2 * sizeof(int16_t);
+   st->pipe_pass_frames = FRAMES;
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_STARTED);
+   if (!retro_spsc_init(&st->pipe_ring, 4096)) abort();
+   if (!retro_eventcount_init(&st->pipe_space)
+         || !retro_eventcount_init(&st->pipe_data)) abort();
+   audio_pipeline_layout_init(&st->pipe_layouts, AUDIO_LAYOUT_STEREO);
+   retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 65536);
+   /* Nobody drains the ring here: a found stall ends the wait at once. */
+   retro_atomic_store_release_int(&st->pipe_stalled, 1);
+
+   /* The first frame of a hold publishes the seed before its frame end. */
+   audio_driver_submit(st, 1.0f, block, FRAMES * 2, false, false, true, true);
+   CHECK(retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) == (int)(65536.0 / 3.0),
+         "the first fast-forward publish seeds the multiplier at the ratio");
+
+   /* Waiting needs audio sync, a following transport and a limiter. */
+   CHECK(audio_driver_pipe_ff_waits(st), "a limited hold with audio sync waits at a full ring");
+   settings->floats.fastforward_ratio = 0.0f;
+   audio_driver_publish_runloop();
+   CHECK(!audio_driver_pipe_ff_waits(st), "an unlimited hold drops instead");
+   settings->floats.fastforward_ratio = 3.0f;
+   settings->bools.audio_sync         = false;
+   audio_driver_publish_runloop();
+   CHECK(!audio_driver_pipe_ff_waits(st), "and so does one without audio sync");
+   settings->bools.audio_sync         = true;
+   audio_driver_publish_runloop();
+
+   /* The published figure carries the ring-fill trim, so the consumer's
+    * pull and the ratio its pass is sized at are one number. */
+   audio_driver_frame_end();
+   cap  = st->pipe_ring.capacity;
+   fill = retro_spsc_read_avail(&st->pipe_ring);
+   trim = 1.0 + 0.5 * ((double)fill - cap * 0.5) / cap;
+   if (trim > 1.08) trim = 1.08;
+   m    = retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) / 65536.0;
+   CHECK(fill > cap / 2 && fabs(m * trim * 3.0 - 1.0) < 0.005,
+         "a filling ring trims the published multiplier down");
+   CHECK(audio_driver_ff_mult(st, FRAMES) == m, "and the consumer takes it untouched");
+   fake_now += ONE_X / 3;
+   audio_driver_submit(st, 1.0f, block, FRAMES * 2, false, false, true, true);
+   retro_spsc_skip(&st->pipe_ring, retro_spsc_read_avail(&st->pipe_ring));
+   audio_driver_frame_end();
+   m    = retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) / 65536.0;
+   CHECK(fabs(m * 0.92 * 3.0 - 1.0) < 0.005, "an empty ring trims it up, within the bound");
+   settings->bools.audio_sync = false;
+   audio_driver_publish_runloop();
+   for (i = 0; i < 2; i++)
+   {
+      fake_now += ONE_X / 3;
+      audio_driver_submit(st, 1.0f, block, FRAMES * 2, false, false, true, true);
+   }
+   audio_driver_frame_end();
+   m    = retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) / 65536.0;
+   CHECK(retro_spsc_write_avail(&st->pipe_ring) < FRAMES * st->pipe_frame_bytes
+         && fabs(m * 3.0 - 1.0) < 0.005, "without audio sync a full ring is not trimmed for");
+   settings->bools.audio_sync = true;
+   audio_driver_publish_runloop();
+
+   /* The runloop's engage lands on what the ring holds; the release, and
+    * any request made directly, stay behind it. */
+   st->pipe_transport = audio_pipeline_stretch_new(48000, 2, false, 3,
+         &st->pipe_ring, &st->pipe_layouts, stage_out, FRAMES * 4);
+   if (!st->pipe_transport) abort();
+   retro_spsc_skip(&st->pipe_ring, retro_spsc_read_avail(&st->pipe_ring));
+   retro_spsc_write(&st->pipe_ring, block, FRAMES * st->pipe_frame_bytes);
+   CHECK(audio_driver_pipeline_transport_request(3 * 65536, true, false, 0)
+         && st->pipe_layouts.events[0].position
+         == retro_atomic_load_relaxed_size(&st->pipe_ring.head),
+         "a direct request lands behind the ring's source");
+   audio_pipeline_layout_init(&st->pipe_layouts, AUDIO_LAYOUT_STEREO);
+   tail = retro_atomic_load_relaxed_size(&st->pipe_ring.tail);
+   CHECK(audio_driver_pipeline_transport_publish(3 * 65536, true, false, 0, true),
+         "the engage tempo is published");
+   CHECK(st->pipe_layouts.events[0].position == tail,
+         "and lands at the consumer's position, ahead of the ring's source");
+   CHECK(audio_driver_pipeline_transport_request(65536, false, false, 0),
+         "the release is requested");
+   CHECK(st->pipe_layouts.events[1].position
+         == retro_atomic_load_relaxed_size(&st->pipe_ring.head),
+         "and lands behind the source the hold produced");
+   audio_pipeline_stretch_free(st->pipe_transport);
+   st->pipe_transport = NULL;
+
+   settings->floats.fastforward_ratio = 0.0f;
+   runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_FASTMOTION;
+   audio_driver_publish_runloop();
+   retro_spsc_free(&st->pipe_ring);
+   retro_eventcount_free(&st->pipe_space);
+   retro_eventcount_free(&st->pipe_data);
+}
+
+/* A core measured slow, then running at 3x into a ring nobody drains:
+ * the estimate has to follow it there. Unlimited, the producer never
+ * waits and the figure is untrimmed; limited, it is trimmed for a full
+ * ring. */
+static void test_full_ring_follows_the_core(void)
+{
+   static const float ratios[2] = { 0.0f, 3.0f };
+   int16_t block[FRAMES * 2];
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings     = config_get_ptr();
+   unsigned r;
+   int i;
+
+   memset(block, 0, sizeof(block));
+   for (r = 0; r < 2; r++)
+   {
+      double m;
+      fresh();
+      settings->bools.audio_fastforward_speedup = true;
+      settings->bools.audio_sync                = true;
+      settings->floats.fastforward_ratio        = ratios[r];
+      runloop_state_get_ptr()->flags           |= RUNLOOP_FLAG_FASTMOTION;
+      audio_driver_publish_runloop();
+      st->pipe_threaded    = true;
+      st->pipe_channels    = 2;
+      st->pipe_frame_bytes = 2 * sizeof(int16_t);
+      st->pipe_pass_frames = FRAMES;
+      AUDIO_FLAGS_SET(st, AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_STARTED);
+      if (!retro_spsc_init(&st->pipe_ring, 4096)) abort();
+      if (!retro_eventcount_init(&st->pipe_space)
+            || !retro_eventcount_init(&st->pipe_data)) abort();
+      audio_pipeline_layout_init(&st->pipe_layouts, AUDIO_LAYOUT_STEREO);
+      retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 65536);
+      retro_atomic_store_release_int(&st->pipe_stalled, 1);
+
+      for (i = 0; i < 64; i++)
+      {
+         retro_spsc_skip(&st->pipe_ring, retro_spsc_read_avail(&st->pipe_ring));
+         fake_now += ONE_X * 2 / 3;
+         audio_driver_submit(st, 1.0f, block, FRAMES * 2, false, false, true, true);
+         audio_driver_frame_end();
+      }
+      for (i = 0; i < 256; i++)
+      {
+         fake_now += ONE_X / 3;
+         audio_driver_submit(st, 1.0f, block, FRAMES * 2, false, false, true, true);
+         audio_driver_frame_end();
+      }
+      m = retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) / 65536.0;
+      if (r)
+         CHECK(near(m, 1.0 / 3.0 / (1.0 + AUDIO_PIPE_FF_TRIM_MAX)),
+               "a limited hold follows a faster core through a full ring, trimmed");
+      else
+         CHECK(near(m, 1.0 / 3.0),
+               "an unlimited hold follows a faster core through a full ring, untrimmed");
+      CHECK(audio_driver_ff_mult(st, FRAMES) * 65536.0
+            == (double)retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) ,
+            "the consumer takes the published figure as it is");
+
+      settings->floats.fastforward_ratio = 0.0f;
+      runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_FASTMOTION;
+      audio_driver_publish_runloop();
+      retro_spsc_free(&st->pipe_ring);
+      retro_eventcount_free(&st->pipe_space);
+      retro_eventcount_free(&st->pipe_data);
+   }
+}
+
 static unsigned silent_callbacks;
 static void silent_callback(void) { silent_callbacks++; }
 
@@ -693,6 +926,7 @@ int main(void)
    test_inline_measures_speed();
    test_inline_uneven_batches();
    test_inline_seeds_at_ratio();
+   test_threaded_seed_publishes_ratio();
    test_pause_tail_continues_the_waveform();
    test_pause_tail_fits_the_room_left();
    test_resume_ramp_waits_for_core_audio();
@@ -701,6 +935,8 @@ int main(void)
    test_threaded_consumer_takes_producer_figure();
    test_producer_publishes_at_its_cadence();
    test_fragmented_frame_cadence();
+   test_producer_holds_at_a_full_ring();
+   test_full_ring_follows_the_core();
    test_stop_excludes_idle_gap();
    test_inline_silent_boundaries();
    test_callback_optin();
