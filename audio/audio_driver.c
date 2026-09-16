@@ -4670,6 +4670,20 @@ static void audio_driver_pipeline_signal(audio_driver_state_t *audio_st)
  * mixer from another thread outside an initialised audio driver would
  * find no lock and no diagnostic, so anything that widens who touches
  * that state has to widen this lifetime with it.
+ *
+ * This lock is the deliberate remainder of the subsystem's threading
+ * design, not a candidate for the atomics treatment the rest of the
+ * audio state received. Everything cheap to publish already crosses
+ * without it - runloop_snapshot, the AUDIO_FLAGS word, the SPSC pipe
+ * ring, the eventcount wakeups - and what it still serializes is the
+ * part atomics cannot: the driver's own write() and control calls
+ * against device reinit, the resampler and DSP instances against
+ * their replacement, the mixer's voice table against task-thread
+ * play() calls, and a nesting contract the mixer_lock sample pins.
+ * The per-batch cost is one uncontended acquire around work that is
+ * microseconds of resampling and device I/O; the batch budget holds
+ * with room. Shrinking a section here is welcome; removing the lock
+ * means re-answering every one of those ownership questions at once.
  **/
 void audio_driver_state_lock(void)
 {
