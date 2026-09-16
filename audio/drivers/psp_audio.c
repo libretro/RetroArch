@@ -23,6 +23,8 @@
 #include <string.h>
 
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#include <retro_atomic.h>
 
 #if defined(VITA)
 #include <psp2/kernel/processmgr.h>
@@ -46,19 +48,29 @@ typedef struct psp_audio
    uint32_t* zeroBuffer;
 
    sthread_t *worker_thread;
-   slock_t *fifo_lock;
-   scond_t *cond;
-   slock_t *cond_lock;
+   /* The writer's park; the worker notifies after every period it
+    * frees. Gated: the steady state, writer ahead and never waiting,
+    * costs the worker nothing per period, where the old
+    * signal-every-iteration took cond_lock each time. */
+   retro_eventcount_t park;
 
    SceUID thread;
 
    int port;
    int rate;
 
-   volatile uint16_t read_pos;
-   volatile uint16_t write_pos;
+   /* The ring's index pair, the SPSC discipline by hand because the
+    * worker consumes in place - psp->buffer + read_pos goes straight
+    * into the output syscall, and a retro_spsc would add a bounce
+    * copy per period. Producer publishes write_pos with release
+    * after the samples land; consumer publishes read_pos with
+    * release after the syscall returns; each side reads the other's
+    * index with acquire and its own relaxed. fifo_lock guarded
+    * nothing else, and is gone. */
+   retro_atomic_int_t read_pos;
+   retro_atomic_int_t write_pos;
 
-   volatile bool running;
+   retro_atomic_int_t running;
    bool nonblock;
 } psp_audio_t;
 
@@ -92,28 +104,31 @@ static void psp_audio_mainloop(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
 
-   while (psp->running)
+   while (retro_atomic_load_acquire_int(&psp->running))
    {
       bool cond           = false;
-      uint16_t read_pos   = psp->read_pos;
-      uint16_t read_pos_2 = psp->read_pos;
+      uint16_t read_pos   = (uint16_t)
+            retro_atomic_load_relaxed_int(&psp->read_pos);
+#if defined(VITA) || defined(ORBIS)
+      uint16_t read_pos_2 = read_pos;
+#endif
+      uint16_t write_pos  = (uint16_t)
+            retro_atomic_load_acquire_int(&psp->write_pos);
 
-      slock_lock(psp->fifo_lock);
-
-      cond                = ((uint16_t)(psp->write_pos - read_pos) & AUDIO_BUFFER_SIZE_MASK)
+      cond                = ((uint16_t)(write_pos - read_pos) & AUDIO_BUFFER_SIZE_MASK)
             < (AUDIO_OUT_COUNT * 2);
 
       if (!cond)
       {
          read_pos      += AUDIO_OUT_COUNT;
          read_pos      &= AUDIO_BUFFER_SIZE_MASK;
-         psp->read_pos  = read_pos;
+         /* Release: the period is free for the writer only after
+          * this store; the syscall below reads the old window, which
+          * the writer cannot touch until it sees the new index. */
+         retro_atomic_store_release_int(&psp->read_pos, read_pos);
       }
 
-      slock_unlock(psp->fifo_lock);
-      slock_lock(psp->cond_lock);
-      scond_signal(psp->cond);
-      slock_unlock(psp->cond_lock);
+      retro_eventcount_notify(&psp->park);
 
 #if defined(VITA) || defined(ORBIS)
       sceAudioOutOutput(psp->port,
@@ -156,16 +171,20 @@ static void *psp_audio_init(const char *device,
    psp->zeroBuffer    = (uint32_t*)malloc(AUDIO_OUT_COUNT   * sizeof(uint32_t));
    memset(psp->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
 
-   psp->read_pos      = 0;
-   psp->write_pos     = 0;
+   retro_atomic_int_init(&psp->read_pos, 0);
+   retro_atomic_int_init(&psp->write_pos, 0);
    psp->port          = port;
 
-   psp->fifo_lock     = slock_new();
-   psp->cond_lock     = slock_new();
-   psp->cond          = scond_new();
+   if (!retro_eventcount_init(&psp->park))
+   {
+      free(psp->buffer);
+      free(psp->zeroBuffer);
+      free(psp);
+      return NULL;
+   }
 
    psp->nonblock      = false;
-   psp->running       = true;
+   retro_atomic_int_init(&psp->running, 1);
    psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
 
    return psp;
@@ -177,21 +196,15 @@ static void psp_audio_free(void *data)
    if (!psp)
       return;
 
-   if (psp->running)
+   if (retro_atomic_load_acquire_int(&psp->running))
    {
       if (psp->worker_thread)
       {
-         psp->running = false;
+         retro_atomic_store_release_int(&psp->running, 0);
          sthread_join(psp->worker_thread);
       }
-
-      if (psp->cond)
-         scond_free(psp->cond);
-      if (psp->fifo_lock)
-         slock_free(psp->fifo_lock);
-      if (psp->cond_lock)
-         slock_free(psp->cond_lock);
    }
+   retro_eventcount_free(&psp->park);
    free(psp->buffer);
    psp->worker_thread = NULL;
    free(psp->zeroBuffer);
@@ -211,10 +224,11 @@ static void psp_audio_free(void *data)
 static ssize_t psp_audio_write(void *data, const void *s, size_t len)
 {
    psp_audio_t* psp      = (psp_audio_t*)data;
-   uint16_t write_pos    = psp->write_pos;
+   uint16_t write_pos    = (uint16_t)
+         retro_atomic_load_relaxed_int(&psp->write_pos);
    uint16_t sample_count = len / sizeof(uint32_t);
 
-   if (!psp->running)
+   if (!retro_atomic_load_acquire_int(&psp->running))
       return -1;
 
    /* The ring is counted in uint32_t frames (write_pos, read_pos,
@@ -227,34 +241,43 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
     * frames here too. */
    if (psp->nonblock)
    {
-      if (AUDIO_BUFFER_SIZE - ((uint16_t)
-               (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < sample_count)
+      if (AUDIO_BUFFER_SIZE - ((uint16_t)(write_pos - (uint16_t)
+               retro_atomic_load_acquire_int(&psp->read_pos))
+               & AUDIO_BUFFER_SIZE_MASK) < sample_count)
          return 0;
    }
 
-   slock_lock(psp->cond_lock);
    {
-      /* The audio thread signals every period it consumes. One that has
-       * stopped consuming - the device suspended, the thread gone -
-       * signals nothing; the wait is bounded and the write then returns
-       * having written nothing rather than holding the caller. */
+      /* The audio thread notifies every period it consumes. One that
+       * has stopped consuming - the device suspended, the thread gone
+       * - notifies nothing; each wait is bounded, the loop is
+       * lap-bounded, and the write then returns having written
+       * nothing rather than holding the caller. Room and liveness
+       * are re-checked inside the eventcount's window, so a period
+       * freed between the check and the park costs nothing. */
       int laps = PSP_AUDIO_WAIT_LAPS;
-      while (AUDIO_BUFFER_SIZE - ((uint16_t)
-         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < sample_count)
+      while (AUDIO_BUFFER_SIZE - ((uint16_t)(write_pos - (uint16_t)
+         retro_atomic_load_acquire_int(&psp->read_pos))
+         & AUDIO_BUFFER_SIZE_MASK) < sample_count)
       {
-         if (     !scond_wait_timeout(psp->cond, psp->cond_lock,
-                     PSP_AUDIO_WAIT_US)
-               || --laps < 0
-               || !psp->running)
-         {
-            slock_unlock(psp->cond_lock);
+         int key;
+         if (--laps < 0 || !retro_atomic_load_acquire_int(&psp->running))
             return 0;
+         key = retro_eventcount_prepare_wait(&psp->park);
+         if (   (AUDIO_BUFFER_SIZE - ((uint16_t)(write_pos - (uint16_t)
+                  retro_atomic_load_acquire_int(&psp->read_pos))
+                  & AUDIO_BUFFER_SIZE_MASK) >= sample_count)
+             || !retro_atomic_load_acquire_int(&psp->running))
+         {
+            retro_eventcount_cancel_wait(&psp->park);
+            continue;
          }
+         if (!retro_eventcount_commit_wait_timeout(&psp->park, key,
+                  PSP_AUDIO_WAIT_US))
+            continue;
       }
    }
-   slock_unlock(psp->cond_lock);
 
-   slock_lock(psp->fifo_lock);
    if ((write_pos + sample_count) > AUDIO_BUFFER_SIZE)
    {
       memcpy(psp->buffer + write_pos, s,
@@ -268,9 +291,9 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
 
    write_pos      += sample_count;
    write_pos      &= AUDIO_BUFFER_SIZE_MASK;
-   psp->write_pos  = write_pos;
-
-   slock_unlock(psp->fifo_lock);
+   /* Release: the samples land before the index that publishes
+    * them. */
+   retro_atomic_store_release_int(&psp->write_pos, write_pos);
    return len;
 }
 
@@ -279,7 +302,7 @@ static bool psp_audio_alive(void *data)
    psp_audio_t* psp = (psp_audio_t*)data;
    if (!psp)
       return false;
-   return psp->running;
+   return retro_atomic_load_acquire_int(&psp->running) != 0;
 }
 
 static bool psp_audio_stop(void *data)
@@ -291,7 +314,10 @@ static bool psp_audio_stop(void *data)
 #else
    if (psp)
    {
-      psp->running = false;
+      retro_atomic_store_release_int(&psp->running, 0);
+      /* A writer parked on the ring must see the flag drop; the
+       * worker may already be gone and notify nothing further. */
+      retro_eventcount_notify(&psp->park);
 
       if (psp->worker_thread)
       {
@@ -307,11 +333,11 @@ static bool psp_audio_start(void *data, bool is_shutdown)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
 
-   if (psp && !psp->running)
+   if (psp && !retro_atomic_load_acquire_int(&psp->running))
    {
       if (!psp->worker_thread)
       {
-         psp->running       = true;
+         retro_atomic_store_release_int(&psp->running, 1);
          psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
       }
    }
@@ -331,12 +357,12 @@ static size_t psp_write_avail(void *data)
    size_t _len;
    psp_audio_t* psp = (psp_audio_t*)data;
 
-   if (!psp||!psp->running)
+   if (!psp || !retro_atomic_load_acquire_int(&psp->running))
       return 0;
-   slock_lock(psp->fifo_lock);
-   _len = AUDIO_BUFFER_SIZE - ((uint16_t)
-         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
-   slock_unlock(psp->fifo_lock);
+   _len = AUDIO_BUFFER_SIZE - ((uint16_t)((uint16_t)
+         retro_atomic_load_relaxed_int(&psp->write_pos) - (uint16_t)
+         retro_atomic_load_acquire_int(&psp->read_pos))
+         & AUDIO_BUFFER_SIZE_MASK);
    return _len * sizeof(uint32_t);
 }
 
@@ -356,30 +382,36 @@ static size_t psp_wait_writable(void *data, size_t len)
    if (want > AUDIO_BUFFER_SIZE / 2)
       want = AUDIO_BUFFER_SIZE / 2;
 
-   slock_lock(psp->cond_lock);
    for (;;)
    {
-      if (!psp->running)
-      {
-         slock_unlock(psp->cond_lock);
+      int key;
+      if (!retro_atomic_load_acquire_int(&psp->running))
          return 0;
-      }
-      avail = AUDIO_BUFFER_SIZE - ((uint16_t)
-            (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
+      avail = AUDIO_BUFFER_SIZE - ((uint16_t)((uint16_t)
+            retro_atomic_load_relaxed_int(&psp->write_pos) - (uint16_t)
+            retro_atomic_load_acquire_int(&psp->read_pos))
+            & AUDIO_BUFFER_SIZE_MASK);
       if (avail >= want)
          break;
       /* Bounded per wait and overall: a thread that has stopped
        * consuming hands the pass back as no space coming from this
-       * call. */
-      if (     !scond_wait_timeout(psp->cond, psp->cond_lock,
-                  PSP_AUDIO_WAIT_US)
-            || --laps < 0)
-      {
-         slock_unlock(psp->cond_lock);
+       * call. The room is re-checked inside the window. */
+      if (--laps < 0)
          return 0;
+      key = retro_eventcount_prepare_wait(&psp->park);
+      if ((AUDIO_BUFFER_SIZE - ((uint16_t)((uint16_t)
+               retro_atomic_load_relaxed_int(&psp->write_pos) - (uint16_t)
+               retro_atomic_load_acquire_int(&psp->read_pos))
+               & AUDIO_BUFFER_SIZE_MASK)) >= want
+            || !retro_atomic_load_acquire_int(&psp->running))
+      {
+         retro_eventcount_cancel_wait(&psp->park);
+         continue;
       }
+      if (!retro_eventcount_commit_wait_timeout(&psp->park, key,
+               PSP_AUDIO_WAIT_US))
+         continue;
    }
-   slock_unlock(psp->cond_lock);
    return avail * sizeof(uint32_t);
 }
 
