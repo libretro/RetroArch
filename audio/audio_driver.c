@@ -1134,7 +1134,8 @@ static void audio_driver_mixer_deinit(void)
 {
    unsigned i;
 
-   AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_MIXER_ACTIVE);
+   AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_MIXER_ACTIVE
+                                      | AUDIO_FLAG_MIXER_INITED);
 
    for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
    {
@@ -4530,6 +4531,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 
 #ifdef HAVE_AUDIOMIXER
    audio_mixer_init(settings->uints.audio_output_sample_rate);
+   AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_MIXER_INITED);
 #endif
 
    if (!audio_driver_transport_configure(settings))
@@ -7374,6 +7376,19 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
     * outcome: each failure return releases it. */
    if (params->out_slot)
       *params->out_slot = -1;
+   /* Outside the mixer's init..done window - a mixer load task
+    * retiring after audio teardown at shutdown, or any stream pushed
+    * during a session whose audio driver failed to initialize -
+    * claiming a voice would write into a subsystem whose voice locks
+    * audio_mixer_done() already freed. Refuse; ownership is released
+    * as on every other failure path. */
+   if (!(AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED))
+   {
+      if (params->buf_owner)
+         params->buf_owner_free(params->buf_owner);
+      audio_driver_state_unlock();
+      return false;
+   }
    if (params->stream_type == AUDIO_STREAM_TYPE_NONE)
    {
       if (params->buf_owner)
