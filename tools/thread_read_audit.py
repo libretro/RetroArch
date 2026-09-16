@@ -201,10 +201,11 @@ def load_allow(path):
     return allow, boundaries
 
 
-def run(binary, root, allow_path, list_unaudited=False):
+def run(binary, root, allow_path, list_unaudited=False,
+        objdump="objdump"):
     entries = source_entries(root)
     try:
-        out = subprocess.run(["objdump", "-d", binary],
+        out = subprocess.run([objdump, "-d", binary],
                              capture_output=True, text=True, check=True)
     except (OSError, subprocess.CalledProcessError) as e:
         print("objdump failed: %s" % e, file=sys.stderr)
@@ -305,6 +306,9 @@ def main():
     ap.add_argument("--binary")
     ap.add_argument("--root", default=".")
     ap.add_argument("--allow", default="tools/thread_read_allow.list")
+    ap.add_argument("--objdump", default="objdump",
+        help="objdump to use; e.g. x86_64-w64-mingw32-objdump for a "
+             "PE binary from the mingw cross build")
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--frame-context", action="store_true",
         help="accepted for compatibility; frame-context entries are "
@@ -319,7 +323,7 @@ def main():
     if not args.binary:
         ap.error("--binary is required (or --selftest)")
     sys.exit(run(args.binary, args.root, args.allow,
-                 args.list_unaudited))
+                 args.list_unaudited, objdump=args.objdump))
 
 
 if __name__ == "__main__":
