@@ -261,7 +261,7 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
        * if the background thread hits an error path that
        * doesn't set ACQUIRED. */
       if (!scond_wait_timeout(mailbox->cond, mailbox->lock,
-                VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS / 1000000))
+                VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS / 1000))
       {
          /* Timed out - the background thread may be stuck.
           * Return VK_TIMEOUT to let the caller handle it. */
@@ -352,7 +352,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
                || mailbox->result == VK_NOT_READY)
       {
          /* No image available this round.
-          * Check DEAD flag without clearing request,
+          * Check DEAD flag, re-arm the request the loop cleared,
           * then loop back to try again. */
          slock_lock(mailbox->lock);
          if (mailbox->flags & VK_MAILBOX_FLAG_DEAD)
@@ -360,6 +360,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
             slock_unlock(mailbox->lock);
             break;
          }
+         mailbox->flags |= VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
          slock_unlock(mailbox->lock);
       }
       else
