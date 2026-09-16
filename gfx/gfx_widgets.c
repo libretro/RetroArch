@@ -327,8 +327,8 @@ static void gfx_widgets_msg_queue_push_state(
    disp_widget_msg_t    *msg_widget = NULL;
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
-   /* The outer FIFO_WRITE_AVAIL fast-path check that used to wrap
-    * this function body has been removed: reading the FIFO cursors
+   /* No FIFO_WRITE_AVAIL fast-path check wraps this function body,
+    * deliberately: reading the FIFO cursors
     * outside msg_queue_lock is a data race against the producer
     * lock-protected fifo_write below (TSan-detectable; benign on
     * x86 TSO but real on weak-memory hardware).  The locked
@@ -725,8 +725,8 @@ static void gfx_widgets_msg_queue_free(
     * once per frame) until it notices. The widget, meanwhile, gets an
     * expiration timer the moment the flag is observed and is gone
     * TASK_FINISHED_DURATION later. Skipping the unlink for those two
-    * left task->frontend_userdata pointing into freed memory for the
-    * entire remaining lifetime of the task. */
+    * leaves task->frontend_userdata pointing into freed memory for
+    * the entire remaining lifetime of the task. */
    if (msg->task_ptr && !(msg->flags & DISPWIDG_FLAG_TASK_FINISHED))
       msg->task_ptr->frontend_userdata = NULL;
 

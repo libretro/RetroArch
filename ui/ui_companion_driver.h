@@ -177,9 +177,10 @@ typedef struct
     * live value arrives (init and toggle both receive it from their
     * callers' settings read). Read with relaxed loads from the log
     * sink, the message push and the refresh notification, which run
-    * on whatever thread logs or finishes a task - a config_get_ptr
-    * there was a worker-thread singleton read on every Windows log
-    * line. Staleness across a toggle costs at most one line. */
+    * on whatever thread logs or finishes a task, and so must not
+    * touch the live settings (on Windows every log line passes
+    * through here). Staleness across a toggle costs at most one
+    * line. */
    retro_atomic_int_t desktop_menu_enable;
    uint8_t flags;
 } uico_driver_state_t;

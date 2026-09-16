@@ -2335,11 +2335,12 @@ static void cw_info_toggle(ui_companion_win32_wimp_t *w)
  * thread (video_thread_wait_reply), so the two deadlocked: seen as a
  * hang on F5 with threaded video + Vulkan. PostMessage never blocks. */
 #define CW_WM_LOG_LINE    (WM_APP + 0x0510)
-/* Same shape for the status bar. runloop_msg_queue_push() itself now
- * runs its body on the main thread only - off-main callers ride the
- * runloop deferral - but PostMessage stays: it is what makes this
- * safe from the wndproc's own reentry, and history (a SendMessage
- * deadlock against video_thread_wait_reply) says never block here. */
+/* Same shape for the status bar. runloop_msg_queue_push() runs its
+ * body on the main thread only - off-main callers ride the runloop
+ * deferral - and PostMessage is still required: it is what makes
+ * this safe from the wndproc's own reentry, and this thread must
+ * never block toward the window (a SendMessage here can deadlock
+ * against video_thread_wait_reply). */
 #define CW_WM_STATUS_TEXT (WM_APP + 0x0511)
 
 /* Run loop thread only: put one line into the edit. */

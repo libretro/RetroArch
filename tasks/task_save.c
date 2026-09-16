@@ -62,11 +62,11 @@
   fits inside one frame even on the worst storage we support.
 
   This is the size of one read/write call, NOT the amount of work
-  a tick may do.  It used to be both, which capped the save/load
-  task at SAVE_STATE_CHUNK * tick_rate == ~6MB/s no matter what
-  the device could actually do: measured on NVMe, one 100KB
+  a tick may do.  Tying the two together caps the save/load task
+  at SAVE_STATE_CHUNK * tick_rate == ~6MB/s no matter what the
+  device can actually do: measured on NVMe, one 100KB
   intfstream_write costs ~62us out of a 16667us frame, so 99.6%
-  of every frame's budget was spent idle and a 16MB state took
+  of every frame's budget sits idle and a 16MB state takes
   164 ticks (2.7s at 60Hz) to write.  The tick budget below is
   what bounds a tick now; the quantum only bounds how long the
   handler can overshoot that budget, which is why it stays sized
@@ -297,11 +297,12 @@ bool content_undo_load_state(void)
    }
 
    /* The state about to be restored lives in undo_load_buf, and the
-    * capture below overwrites undo_load_buf - hence the copy this
-    * used to make.  Detaching the allocation does the same job for
-    * nothing: after the detach undo_load_buf owns no buffer, so the
-    * capture serializes into the spare and swaps that in, and neither
-    * one can touch the bytes being restored. */
+    * capture below overwrites undo_load_buf - so the bytes being
+    * restored must be kept out of its reach.  Detaching the
+    * allocation does that for free: after the detach undo_load_buf
+    * owns no buffer, so the capture serializes into the spare and
+    * swaps that in, and neither one can touch the bytes being
+    * restored. */
    restore_data           = undo_load_buf.data;
    restore_size           = undo_load_buf.size;
    restore_cap            = undo_load_buf.capacity;
@@ -431,8 +432,7 @@ static void task_save_handler_finished(retro_task_t *task,
    task_data = (save_task_state_t*)calloc(1, sizeof(*task_data));
    /* NULL-check: the memcpy below NULL-derefs on OOM.  The
     * completion callbacks save_state_cb / undo_save_state_cb
-    * used to assume task_data is non-NULL - both have been made
-    * NULL-tolerant to match this code path.  On OOM we leave
+    * are NULL-tolerant to match this code path.  On OOM we leave
     * task_data unset (NULL); task_set_data is skipped and the
     * completion callback receives NULL for its task_data
     * parameter. */
@@ -810,19 +810,18 @@ static void task_save_handler(retro_task_t *task)
                state->data = NULL;
             }
             else
-               /* Only here is size necessarily filled: the sizing
-                * call above succeeded. Assigning in the other arms
-                * read it uninitialized as far as the compiler could
-                * prove, and it warned. */
+               /* size is filled exactly when the sizing call above
+                * succeeded; the other arms leave it at its initial
+                * zero rather than reading it. */
                state->size = (ssize_t)size.total_size;
          }
       }
 
-      /* A failed serialize used to leave data NULL and size 0, and
-       * every test below then read as success: remaining was 0, so
-       * written == remaining, and written == size, so the handler
-       * reported a COMPLETED save of a zero-byte file.  The user got
-       * a 'state saved' notification and an empty slot. */
+      /* A failed serialize must be failed here: with data NULL and
+       * size 0, every test below reads as success - remaining is 0,
+       * so written == remaining and written == size - and the
+       * handler reports a COMPLETED save of a zero-byte file, giving
+       * the user a 'state saved' notification and an empty slot. */
       if (!state->data || state->size <= 0)
       {
          RARCH_ERR("[State] save task could not serialize core state "
@@ -847,13 +846,13 @@ static void task_save_handler(retro_task_t *task)
 
       if (!state->file)
       {
-         /* This used to be a bare return.  The task was neither
-          * errored nor finished, so the queue re-entered it on the
-          * next tick and it retried the open forever - and because
-          * save tasks are TASK_TYPE_BLOCKING, that one task wedged
-          * every other blocking task for the rest of the session.
-          * An open that failed once (read-only medium, bad path,
-          * no space) is not going to succeed on retry; fail it. */
+         /* This must fail the task, not bare-return: a task neither
+          * errored nor finished is re-entered on the next tick and
+          * retries the open forever - and because save tasks are
+          * TASK_TYPE_BLOCKING, that one task wedges every other
+          * blocking task for the rest of the session.  An open that
+          * failed once (read-only medium, bad path, no space) is not
+          * going to succeed on retry; fail it. */
          RARCH_ERR("[State] save task could not open \"%s\" for writing "
                "(slot %d). The auto-index slot was already advanced, so "
                "this leaves an advanced slot with no save file.\n",
@@ -1057,10 +1056,9 @@ static void task_load_handler_finished(retro_task_t *task,
 
    if (!(task_data = (load_task_data_t*)calloc(1, sizeof(*task_data))))
    {
-      /* Pre-existing leak: old code early-returned without
-       * freeing state.  On OOM set a task error (so the user
-       * sees 'load state failed' rather than silent failure),
-       * free state properly, and return.  The completion
+      /* On OOM: set a task error (so the user sees 'load state
+       * failed' rather than silent failure), free state - an early
+       * return without the free leaks it - and return.  The completion
        * callbacks handle NULL task_data via their own NULL-
        * checks. */
       if (!task_get_error(task))
@@ -1093,22 +1091,21 @@ static void task_load_handler(retro_task_t *task)
 
    /* Ensure the core is ready for loading states (Dolphin CLI).
     *
-    * This used to spin here (while (...) retro_sleep(1)).  Two
-    * problems with that.  When the task queue is not threaded the
-    * handler runs on the same thread that advances frame_count, so
-    * the condition it waits on can never become true and the spin is
-    * an unconditional hang; it only ever went unnoticed because
-    * frame_count is already past 2 by the time a user loads a state
-    * interactively, and CLI autoload is the one path that reaches
-    * here early.  When it IS threaded, this is an unsynchronised read
-    * of a counter the video thread writes - a data race, and TSan
-    * reports it.
+    * A spin here (while (...) retro_sleep(1)) cannot work.  When
+    * the task queue is not threaded the handler runs on the same
+    * thread that advances frame_count, so the condition it would
+    * wait on can never become true and the spin is an unconditional
+    * hang - masked interactively only because frame_count is already
+    * past 2 by the time a user loads a state, and CLI autoload is
+    * the one path that reaches here early.  When it IS threaded, a
+    * spin is a hot unsynchronised read of a counter the video thread
+    * writes - a data race, and TSan reports it.
     *
     * Yielding does both jobs: the task stays queued and is re-entered
     * on the next tick, by which time the runloop has advanced the
-    * counter.  The read is still unsynchronised, but it is now a
-    * single benign poll of a monotonic counter rather than a spin,
-    * and no progress depends on this thread observing it promptly. */
+    * counter.  The read stays unsynchronised, but as a single benign
+    * poll of a monotonic counter per tick, with no progress depending
+    * on this thread observing it promptly. */
    if (video_st->frame_count < 2)
       return;
 

@@ -52,11 +52,11 @@
    the worst storage we support.
 
    This is the size of one read/write call, NOT the amount of work a
-   tick may do.  It used to be both, and it used to be 4096 bytes,
-   which capped a backup or restore at CORE_BACKUP_CHUNK_SIZE *
+   tick may do.  Tying the two together at 4096 bytes caps a backup
+   or restore at CORE_BACKUP_CHUNK_SIZE *
    tick_rate == ~245KB/s regardless of the device: measured here, a
-   4MB core took 1029 ticks at 4076 bytes each, i.e. 17.2s at 60Hz to
-   copy a file the same machine moves in well under a second.  Cores
+   4MB core takes 1029 ticks at 4076 bytes each, i.e. 17.2s at 60Hz
+   to copy a file the same machine moves in well under a second.  Cores
    in the tens of megabytes are ordinary (mame, dolphin, ppsspp) and
    an automatic backup runs on every core update, so this was the
    common path rather than a corner.
@@ -201,9 +201,9 @@ static void free_core_backup_handle(core_backup_handle_t *backup_handle)
 /* Forward declarations, required for task_core_backup_finder() */
 static void task_core_backup_handler(retro_task_t *task);
 
-/* The backup task's callback: the main thread, at retrieval - where
- * menu flags are written. The handler used to OR these in from the
- * worker, a read-modify-write racing every other writer. */
+/* The backup task's callback: the main thread, at retrieval. Menu
+ * flags are a plain read-modify-write, so every writer must be
+ * here, racing nothing - never in the handler on the worker. */
 static void cb_task_core_backup(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
@@ -684,8 +684,8 @@ static void task_core_backup_handler(retro_task_t *task)
    return;
 
 task_finished:
-   /* Menu refresh moves to the task's callback: the main thread,
-    * where menu flags are written. */
+   /* Menu refresh happens in the task's callback: the main
+    * thread, where menu flags are written. */
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 

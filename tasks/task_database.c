@@ -165,11 +165,12 @@ enum db_state_flags_enum
    DB_STATE_FLAG_HAS_SIZE                 = (1 << 2),
    DB_STATE_FLAG_MATCHED                  = (1 << 3),
    /* Set once the size range for a database has been queried,
-    * whatever the answer was.  The probe used to key off
-    * "min_sizes[i] == 0", which is also what an unqueried slot holds
-    * and what a database whose smallest record is zero-sized
-    * legitimately produces - so such a database was re-queried for
-    * every content file, at two full walks a time. */
+    * whatever the answer was.  A separate flag, because
+    * "min_sizes[i] == 0" cannot carry it: zero is what an unqueried
+    * slot holds AND what a database whose smallest record is
+    * zero-sized legitimately produces, and keying the probe off it
+    * re-queries such a database for every content file, at two full
+    * walks a time. */
    DB_STATE_FLAG_SIZE_CHECKED             = (1 << 4)
 };
 
@@ -233,10 +234,10 @@ typedef struct database_state_handle
    uint64_t archive_size;
    char archive_name[512]; /* TODO/FIXME - check size */
    char serial[4096];      /* TODO/FIXME - check size */
-   /* One entry per database in 'list'.  These used to be
-    * [MAX_DATABASE_COUNT] arrays indexed by list_index, which is
-    * bounded only by list->size - the number of .rdb files in the
-    * database directory.  Nothing clamped it, so a database
+   /* One entry per database in 'list', allocated to list->size:
+    * list_index is bounded only by list->size - the number of .rdb
+    * files in the database directory - so a fixed
+    * [MAX_DATABASE_COUNT] array would need a clamp, and a database
     * directory with more than MAX_DATABASE_COUNT entries wrote past
     * all three arrays, and the shuffle in
     * database_info_list_iterate_found_match() memmove()d past them
@@ -343,10 +344,9 @@ typedef struct manual_scan_handle
    database_state_handle_t state;
    uint8_t flags;
 #endif
-   /* The caller's completion callback, run after the task's own.
-    * task_push_dbscan takes one and used to drop it, so a caller that
-    * wanted to know when a scan finished never found out - see
-    * cb_task_manual_content_scan. */
+   /* The caller's completion callback, run after the task's own -
+    * this is how a task_push_dbscan caller learns the scan finished;
+    * see cb_task_manual_content_scan. */
    retro_task_callback_t user_cb;
 } manual_scan_handle_t;
 
@@ -612,10 +612,10 @@ static void remove_disc_indicators(char *title, size_t len)
    size_t prefix_len = 0;
    /* Tape and floppy releases usually do not follow the naming
     * convention, so their prefixes skip the leading space - which
-    * makes them six characters rather than seven.  The old code
-    * skipped a hard-coded seven for all of them, so for "(Tape 1)"
-    * the indicator was taken to start at the ')' and came out empty:
-    * is_valid_disc_indicator() rejected it and no tape or side
+    * makes them six characters rather than seven.  The skip must
+    * match the prefix: a hard-coded seven lands "(Tape 1)" on the
+    * ')' so the indicator comes out empty,
+    * is_valid_disc_indicator() rejects it, and no tape or side
     * indicator was ever stripped.  Carry each prefix's own length. */
    static const struct
    {
@@ -1122,9 +1122,9 @@ static enum scan_verdict database_info_list_iterate_found_match(
     * no database name there is no meaningful playlist filename to
     * build, so treat it like the OOM case and skip this entry.
     *
-    * db_info_entry likewise: the matched entry used to be taken as
-    * &info->list[entry_index] unconditionally, which reads info and
-    * indexes list on nothing but the caller's word.  Every caller
+    * db_info_entry likewise: taking the matched entry as
+    * &info->list[entry_index] unconditionally reads info and indexes
+    * list on nothing but the caller's word.  Every caller
     * does test both - each of the four reaches this function from
     * inside an "info && entry_index < info->count" - so this is the
     * invariant being stated where it is relied on rather than a
@@ -1548,8 +1548,9 @@ static enum scan_verdict task_database_iterate_crc_lookup(
       query[0] = '\0';
 
       /* Answer from this database's crc index when we can.  Building
-       * it costs one walk - about what a single probe used to cost -
-       * and every later content file is then a binary search instead
+       * it costs one walk - about the price of a single unindexed
+       * probe - and every later content file is then a binary search
+       * instead
        * of another walk.  The index is only a faster route to the
        * same records: it reports them in file order with the same
        * fields extracted, so the matching below is unchanged.
@@ -1609,10 +1610,10 @@ static enum scan_verdict task_database_iterate_crc_lookup(
          return database_info_list_iterate_next(db_state);
    }
 
-   /* Same shape as the serial lookup below: entry_index was used to
-    * index the list without checking it against count, so a query
-    * that matched nothing (count == 0, list either empty or NULL)
-    * still had list[0] dereferenced. */
+   /* Same shape as the serial lookup below: entry_index must be
+    * checked against count before indexing the list, or a query that
+    * matched nothing (count == 0, list either empty or NULL) has
+    * list[0] dereferenced anyway. */
    if (db_state->info && db_state->entry_index < db_state->info->count)
    {
       database_info_t *db_info_entry =
@@ -2116,8 +2117,8 @@ static bool manual_scan_end_flush_tick(
          /* Check before use: the playlist_set_scan_* calls below are
           * not all NULL-guarded (playlist_set_scan_search_recursively,
           * playlist_set_sort_mode, playlist_qsort, playlist_write_file
-          * and several others dereference unconditionally).  The test
-          * used to sit after all of them. */
+          * and several others dereference unconditionally), so this
+          * test must come before all of them. */
          if (!manual_scan->flush_playlist)
          {
             RARCH_ERR("[Scanner] Failed to open playlist: \"%s\".\n", result->db_name);
@@ -2476,10 +2477,10 @@ static void cb_task_manual_content_scan(
       return;
 #endif
 
-   /* Moved out of the handler: this runs at retrieval on the main
-    * thread, where the companion belongs. The handler's call ran on
-    * the worker and read the settings through
-    * ui_companion_driver_notify_refresh. */
+   /* At retrieval, on the main thread, where the companion
+    * belongs: ui_companion_driver_notify_refresh reads companion
+    * state that main-thread code owns, so the handler must not
+    * call it from the worker. */
    ui_companion_driver_notify_refresh();
 
    if (!(manual_scan = (manual_scan_handle_t*)task->state))
@@ -2524,9 +2525,9 @@ end:
    /* The caller's callback, if it gave one.  Read before the handle is
     * released below.
     *
-    * This used to sit inside the HAVE_MENU block along with the menu
-    * refresh, so a build without menu support ran the scan and then
-    * dropped the callback: a caller waiting on it waited forever.
+    * Outside the HAVE_MENU block deliberately: inside it, a build
+    * without menu support runs the scan and then drops the callback,
+    * and a caller waiting on it waits forever.
     * The in-tree callers only supply one under HAVE_MENU themselves,
     * which is why nothing noticed, but the parameter is not
     * documented as menu-only and the sample in samples/tasks/database

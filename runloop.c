@@ -1974,12 +1974,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                         strlcpy(runloop_st->core_status_msg.str, msg->msg,
                               sizeof(runloop_st->core_status_msg.str));
 
-                        /* Stored so the guard above actually bites:
-                         * a status holds its priority for its
-                         * lifetime, and lower-priority updates -
-                         * clears included - bounce until it expires
-                         * or a same-or-higher write lands. Every
-                         * clear path zeroes this again. */
+                        /* Stored so the guard above bites: a status
+                         * holds its priority for its lifetime, and
+                         * lower-priority updates - clears included -
+                         * bounce until it expires or a same-or-higher
+                         * write lands. Every clear path zeroes this
+                         * again. */
                         runloop_st->core_status_msg.priority = msg->priority;
                         runloop_st->core_status_msg.duration = (float)msg->duration;
                         runloop_st->core_status_msg.set      = true;
@@ -3587,8 +3587,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
           *
           * video_driver_get_refresh_rate() answers a different
           * question: what the display reports it is capable of.  On a
-          * fixed-mode desktop display the two coincide, which is why
-          * asking the display used to be harmless.  They diverge on an
+          * fixed-mode desktop display the two coincide, so asking
+          * the display happens to give the right answer.  They
+          * diverge on an
           * adaptive panel: an iOS ProMotion device reports 120 Hz from
           * [UIScreen maximumFramesPerSecond] while the CADisplayLink -
           * and therefore the runloop - is deliberately being driven at
@@ -4943,11 +4944,11 @@ static bool event_init_content(
    {
       configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
       /* The record task defers itself until any state load has been
-       * applied (task_moviectl_record_handler).  That guard used to
-       * be unreliable on the unthreaded scheduler - it asked a queue
-       * finder, and the unthreaded gather lifts every running task
-       * off the queue before invoking any handler, so a sibling load
-       * task was invisible to it and recording started first.  The
+       * applied (task_moviectl_record_handler).  That guard must not
+       * ask a queue finder: the unthreaded gather lifts every
+       * running task off the queue before invoking any handler, so a
+       * sibling load task is invisible to a finder and recording
+       * starts first.  The
        * guard now reads a main-thread flag instead, so no
        * whole-queue wait is needed here to force the ordering. */
       movie_start_record(input_st, input_st->bsv_movie_state.movie_start_path);

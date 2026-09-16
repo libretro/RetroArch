@@ -1985,8 +1985,8 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       video_driver_free_internal();
 #ifdef HAVE_THREADS
 #ifndef RETRO_ATOMIC_HAS_PTR
-      /* The volatile-backend title fallback's lock; every other
-       * backend has no display lock left to free. */
+      /* The volatile-backend title fallback's lock - the only
+       * backend on which a display lock exists at all. */
       slock_free(video_st->display_lock);
       video_st->display_lock      = NULL;
 #endif
@@ -3275,8 +3275,8 @@ bool is_accessibility_enabled(bool accessibility_enable, bool accessibility_enab
 /* Everything closing content does once nothing is left running in
  * the core.
  *
- * Split out of CMD_EVENT_CORE_DEINIT unchanged, and still called
- * from exactly where it used to run.  It is separated because it has
+ * The tail half of CMD_EVENT_CORE_DEINIT, called from exactly
+ * where that body runs.  It is separated because it has
  * to become resumable: the wait above it is the freeze this work is
  * about, and removing that wait means this half runs later, from the
  * frame loop, once the tasks have finished.  Extracting it on its
@@ -4383,10 +4383,10 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
          break;
-      /* Plain stop and start. These used to be gated on the menu's
-       * pause and menu-sound settings because the menu toggle issued
-       * them; it no longer does, and the gate also disabled them for
-       * the callers that mean it, such as the 3DS sleep and wake hooks. */
+      /* Plain stop and start, deliberately ungated: a gate on the
+       * menu's pause and menu-sound settings would also disable
+       * them for the callers that mean it, such as the 3DS sleep
+       * and wake hooks (the menu toggle does not issue them). */
       case CMD_EVENT_AUDIO_STOP:
          if (!audio_driver_stop())
             return false;
@@ -9025,11 +9025,11 @@ void retroarch_init_task_queue(void)
 
    task_queue_deinit();
 #ifdef HAVE_NETWORKING
-   /* Before task_queue_init(), which is what spawns the task thread.
-    * net_http's DNS cache and connection pool locks used to be
-    * created lazily on first use, so the first two concurrent
-    * transfers of the process could each create one and then lock
-    * different objects. */
+   /* Before task_queue_init(), which is what spawns the task
+    * thread: net_http's DNS cache and connection pool locks must
+    * exist before any two transfers can race - created lazily on
+    * first use, the first two concurrent transfers of the process
+    * can each create one and then lock different objects. */
    net_http_init();
 #endif
    task_queue_init(threaded_enable, runloop_task_msg_queue_push);

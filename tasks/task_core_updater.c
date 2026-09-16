@@ -222,9 +222,9 @@ typedef struct play_feature_delivery_switch_cores_handle
 
 /* Sliced CRC32 of a core file.
  *
- * This used to be a blocking intfstream_get_crc() over the whole
- * file, called from inside a task handler tick.  The cost of that
- * tick is therefore a function of core size and nothing else --
+ * Sliced, because a blocking intfstream_get_crc() over the whole
+ * file inside a task handler tick makes the cost of that tick a
+ * function of core size and nothing else --
  * unbounded from the frontend's point of view.  Measured cold on
  * NVMe: 43ms for a 40MB core, 112ms for a 260MB one, i.e. 3 to 7
  * dropped frames per core.  RetroArch's SD-card and spinning-disk
@@ -480,8 +480,8 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                task_set_title(task, strdup(msg_hash_to_str(MSG_CORE_LIST_FAILED)));
             }
 
-            /* Menu refresh moves to the task's callback: the main
-             * thread, where menu flags are written. */
+            /* Menu refresh happens in the task's callback: the
+             * main thread, where menu flags are written. */
          }
          /* fall-through */
       default:
@@ -542,9 +542,9 @@ static void cb_task_core_updater_get_list(
          (update_installed_cores_handle_t*)user_data;
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
-   /* The main thread, at task retrieval: where menu flags are
-    * written. The handler used to clear these from the worker - a
-    * read-modify-write racing every other writer of the flags. */
+   /* The main thread, at task retrieval: menu flags are a plain
+    * read-modify-write, so every writer must be here, racing
+    * nothing. */
    {
       core_updater_list_handle_t *list_handle =
             (core_updater_list_handle_t*)task->state;
@@ -1011,9 +1011,9 @@ static void task_core_updater_download_handler(retro_task_t *task)
             transf->user_data = (void*)download_handle;
 
             /* The body is streamed straight to transf->path as it
-             * arrives, so everything that used to gate the write in
-             * cb_http_task_core_updater_download() has to happen
-             * before the transfer starts rather than after it. */
+             * arrives, so every check that gates the write has to
+             * happen before the transfer starts rather than after
+             * it. */
             strlcpy(output_dir, transf->path, sizeof(output_dir));
             path_basedir_wrapper(output_dir);
 
@@ -1044,9 +1044,9 @@ static void task_core_updater_download_handler(retro_task_t *task)
             }
 #endif
 
-            /* Title that task_push_http_transfer_file() used to build
-             * internally; task_push_http_download_file() takes it as
-             * an argument instead. */
+            /* The transfer title, which
+             * task_push_http_download_file() takes as an
+             * argument. */
             _tlen = 0;
             http_title[0] = '\0';
             strlcpy_append(http_title, sizeof(http_title), &_tlen,

@@ -358,9 +358,9 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
     * is cleared on every video reinit (core start/stop), so a value
     * sampled in that window can disagree with the driver's actual upload
     * format and yield R/B-swapped images.  Re-sample it here, once, at
-    * decode start (after any reinit has settled) - not in the per-chunk
-    * decode loop, where the old code took the display lock on every iteration
-    * (that lock is gone; the flags it guarded are atomic now). */
+    * decode start (after any reinit has settled) - not in the
+    * per-chunk decode loop, where even the one atomic read per
+    * iteration would buy nothing: the value cannot change mid-decode. */
    image->ti.supports_rgba = (video_driver_get_disp_flags()
          & VIDEO_FLAG_USE_RGBA) ? true : false;
 
@@ -1225,11 +1225,12 @@ static void cb_task_icon_load(retro_task_t *task,
    if (!img || img->width < 1 || img->height < 1 || !img->pixels)
       goto end;
 
-   /* Under threaded video this used to be a blocking round trip to
-    * the video thread per icon - up to one present each, on the main
-    * thread, dozens of times at startup. The upload now goes to the
-    * video thread's queue and the handle comes back through
-    * icon_load_done() at a later frame; img and tag are theirs now. */
+   /* Under threaded video the upload goes to the video thread's
+    * queue and the handle comes back through icon_load_done() at a
+    * later frame - never a blocking round trip to the video thread
+    * per icon, which costs up to one present each, on the main
+    * thread, dozens of times at startup; img and tag are theirs
+    * now. */
    if (video_driver_texture_load_async(img, gfx_display_texture_filter(),
             icon_load_done, tag, icon_image_release))
       return;

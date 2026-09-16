@@ -205,8 +205,8 @@ typedef struct gl1
    unsigned char *menu_video_buf;
    size_t menu_frame_cap;
    /* Staging for the CPU BGRA->RGBA swizzle in gl1_draw_tex when the
-    * GL lacks GL_EXT_bgra, kept across frames and grown on demand; it
-    * used to be malloc'd and freed on every upload. */
+    * GL lacks GL_EXT_bgra, kept across frames and grown on demand
+    * rather than malloc'd and freed per upload. */
    uint8_t *swizzle_buf;
    size_t   swizzle_cap;
 #ifdef VITA

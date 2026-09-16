@@ -1146,10 +1146,10 @@ typedef struct
     * been torn down and the thread joined. */
    bool thread_wrapper_active;
 #if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_PTR)
-   /* Only the backend without pointer atomics still has a lock here,
-    * and only for the window-title fallback protocol: the flags and
-    * the overlay viewport it used to guard are atomic now, and on
-    * every other backend the title rides the mailbox. */
+   /* Only the backend without pointer atomics has a lock here, and
+    * only for the window-title fallback protocol; on every other
+    * backend the title rides the mailbox, and everything else on
+    * this struct that crosses threads is atomic. */
    slock_t *display_lock;
 #endif
    slock_t *context_lock;
@@ -1183,7 +1183,7 @@ typedef struct
    /* VIDEO_FLAG_* bits. Atomic: read with relaxed loads anywhere,
     * modified only through video_driver_modify_disp_flags(), whose
     * combined clear-then-set is one CAS step where the backend has
-    * one. The display lock this used to ride is gone. */
+    * one. No lock is involved on any path. */
    retro_atomic_int_t flags;
    /* Display state only the main thread writes and reads - the
     * VIDEO_FLAG_WIDGETS_* bits and VIDEO_FLAG_ACTIVE, several of them
