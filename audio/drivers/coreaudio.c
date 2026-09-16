@@ -1973,6 +1973,7 @@ static void coreaudio_listen_default_output(coreaudio_t *dev, bool on)
  * ===================================================================== */
 #include <retro_spsc.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <string.h>
 #include "../microphone_driver.h"
 #if TARGET_OS_IPHONE
@@ -1994,8 +1995,15 @@ typedef struct coreaudio_mic
    retro_spsc_t ring;
    size_t ring_size;
    bool ring_init;
-   slock_t *lock;
-   scond_t *cond;
+   /* The reader's park, notified by the capture callback after each
+    * slice it writes (and on the ones it cannot: a full ring still
+    * moves the epoch, so a parked reader re-checks). An eventcount,
+    * as in sdl_audio's mic: the callback's notify is an atomic bump
+    * and a load with no reader parked - no lock ever on the capture
+    * thread - and the reader's timed waits re-check the ring inside
+    * the prepare/commit window, so a slice landing between the check
+    * and the park costs nothing rather than one timeout. */
+   retro_eventcount_t park;
    AudioStreamBasicDescription format;
    retro_atomic_int_t running;
    retro_atomic_int_t initialized;
@@ -2087,15 +2095,13 @@ static OSStatus coreaudio_mic_input_cb(void *ref,
          got = bytes;
       /* Lock-free: the ring is SPSC and this thread is its only
        * producer.  Room is measured against ring_size, not the
-       * rounded-up physical capacity.  Signalled without the lock,
-       * as before; the reader's waits are timed so a signal raised
-       * between its check and its wait costs at most one timeout. */
+       * rounded-up physical capacity. */
       size_t room   = retro_spsc_write_avail(&mic->ring);
       size_t excess = mic->ring.capacity - mic->ring_size;
       room          = room > excess ? room - excess : 0;
       if (room >= got)
          retro_spsc_write(&mic->ring, list.mBuffers[0].mData, got);
-      scond_signal(mic->cond);
+      retro_eventcount_notify(&mic->park);
    }
    /* Always noErr: an error return can stop the callbacks for good. */
    return noErr;
@@ -2319,9 +2325,11 @@ static size_t coreaudio_mic_wait_readable(void *driver_context,
    avail = retro_spsc_read_avail(&mic->ring);
    if (avail < len)
    {
-      slock_lock(mic->lock);
-      scond_wait_timeout(mic->cond, mic->lock, 10000);
-      slock_unlock(mic->lock);
+      int key = retro_eventcount_prepare_wait(&mic->park);
+      if (retro_spsc_read_avail(&mic->ring) != avail)
+         retro_eventcount_cancel_wait(&mic->park);
+      else
+         retro_eventcount_commit_wait_timeout(&mic->park, key, 10000);
       avail = retro_spsc_read_avail(&mic->ring);
    }
    return avail;
@@ -2350,10 +2358,13 @@ static int coreaudio_mic_read(void *driver_context, void *mic_context,
    n     = avail < len ? avail : len;
    if (!n && !mic->nonblock)
    {
-      /* Blocking: one slice's worth of wait for the callback, timed. */
-      slock_lock(mic->lock);
-      scond_wait_timeout(mic->cond, mic->lock, 10000);
-      slock_unlock(mic->lock);
+      /* Blocking: one slice's worth of wait for the callback, timed,
+       * with the ring re-checked inside the window. */
+      int key = retro_eventcount_prepare_wait(&mic->park);
+      if (retro_spsc_read_avail(&mic->ring))
+         retro_eventcount_cancel_wait(&mic->park);
+      else
+         retro_eventcount_commit_wait_timeout(&mic->park, key, 10000);
       avail = retro_spsc_read_avail(&mic->ring);
       n     = avail < len ? avail : len;
    }
@@ -2461,11 +2472,9 @@ static void *coreaudio_mic_open(void *driver_context, const char *device,
 
    retro_atomic_int_init(&mic->running, 0);
    retro_atomic_int_init(&mic->initialized, 0);
-   mic->lock        = slock_new();
-   mic->cond        = scond_new();
    mic->sample_rate = rate;
    mic->nonblock    = drv->nonblock;
-   if (!mic->lock || !mic->cond)
+   if (!retro_eventcount_init(&mic->park))
       goto error;
 
 #if TARGET_OS_IPHONE
@@ -2622,10 +2631,7 @@ static void coreaudio_mic_close(void *driver_context, void *mic_context)
       free(mic->cb_buf);
    if (mic->ring_init)
       retro_spsc_free(&mic->ring);
-   if (mic->lock)
-      slock_free(mic->lock);
-   if (mic->cond)
-      scond_free(mic->cond);
+   retro_eventcount_free(&mic->park);
    if (drv && drv->mic == mic)
       drv->mic = NULL;
    free(mic);
