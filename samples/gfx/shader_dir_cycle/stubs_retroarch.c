@@ -228,3 +228,19 @@ bool menu_shader_manager_set_preset(
    (void)apply;
    return true;
 }
+
+bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
+{
+   if (shader)
+      shader->data = NULL;
+   return false;
+}
+
+bool menu_shader_manager_set_preset_from_live(
+      struct video_shader *menu_shader,
+      const struct video_shader *live)
+{
+   (void)menu_shader;
+   (void)live;
+   return true;
+}
