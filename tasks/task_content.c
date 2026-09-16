@@ -1204,7 +1204,10 @@ static bool content_file_extract_from_archive(
       char **err_string)
 {
    const char *tmp_path_ptr = NULL;
+   size_t _len;
+   unsigned i;
    char tmp_path[PATH_MAX_LENGTH];
+   char tmp_dir[DIR_MAX_LENGTH];
 
    tmp_path[0]  = '\0';
 
@@ -1212,19 +1215,52 @@ static bool content_file_extract_from_archive(
    RARCH_LOG("[Content] Core requires uncompressed content - "
          "extracting archive to temporary directory...\n");
 
+   /* The member is written under a directory of our own rather than
+    * straight into the cache or content directory.  Extraction keeps
+    * the member's own basename - savefile and savestate paths are
+    * derived from it, so a uniquified file name would silently move
+    * a user's saves - and a name that is already taken beside the
+    * archive would otherwise be overwritten here and deleted again
+    * on teardown, taking an unrelated file with it.  A directory of
+    * our own makes the collision impossible instead of detecting it.
+    *
+    * The cache directory is the parent when one is configured;
+    * otherwise the archive's own directory is, which is the only
+    * location known to exist and be writable at this point. */
+   if (content_ctx->directory_cache && *content_ctx->directory_cache)
+   {
+      strlcpy(tmp_dir, content_ctx->directory_cache, sizeof(tmp_dir));
+      fill_pathname_slash(tmp_dir, sizeof(tmp_dir));
+   }
+   else
+      fill_pathname_basedir(tmp_dir, *content_path, sizeof(tmp_dir));
+
+   _len = strlen(tmp_dir);
+
+   /* First name not already on disk wins.  A stale directory from a
+    * previous run - a crash between extraction and teardown - is
+    * therefore stepped over rather than reused, so its contents can
+    * never be mistaken for this load's content. */
+   for (i = 0; i < 1024; i++)
+   {
+      snprintf(tmp_dir + _len, sizeof(tmp_dir) - _len,
+            ".extract-%u", i);
+      if (!path_is_valid(tmp_dir))
+         break;
+   }
+
+   if (i == 1024 || !path_mkdir(tmp_dir))
+      goto error;
+
    /* Attempt to extract file  */
    if (!file_archive_extract_file(
-         *content_path, valid_exts,
-         (!content_ctx->directory_cache || !*content_ctx->directory_cache) ?
-               NULL : content_ctx->directory_cache,
+         *content_path, valid_exts, tmp_dir,
          tmp_path, sizeof(tmp_path)))
    {
-      char msg[PATH_MAX_LENGTH];
-      snprintf(msg, sizeof(msg), "%s: \"%s\".\n",
-            msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
-            *content_path);
-      *err_string = strdup(msg);
-      return false;
+      /* Only ever removes the directory created just above, and it
+       * is empty on this path, so nothing else can be caught by it. */
+      filestream_delete(tmp_dir);
+      goto error;
    }
 
    /* Add path of extracted file to temporary content
@@ -1234,6 +1270,10 @@ static bool content_file_extract_from_archive(
          p_content->content_list, tmp_path)))
       return false;
 
+   /* The directory follows its own file in the list, so teardown
+    * empties it before removing it. */
+   content_file_list_append_temporary(p_content->content_list, tmp_dir);
+
    /* Update content path pointer */
    *content_path = tmp_path_ptr;
 
@@ -1242,6 +1282,16 @@ static bool content_file_extract_from_archive(
          tmp_path);
 
    return true;
+
+error:
+   /* tmp_path is spent on this path - whatever the extraction left in
+    * it is unused - so it carries the message rather than a second
+    * buffer of its size sitting in the frame for the error case. */
+   snprintf(tmp_path, sizeof(tmp_path), "%s: \"%s\".\n",
+         msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
+         *content_path);
+   *err_string = strdup(tmp_path);
+   return false;
 }
 #endif
 
@@ -1483,7 +1533,6 @@ static bool content_file_load(
                uwp_set_acl(wcontent_path, L"S-1-15-2-1");
                if (!is_path_accessible_using_standard_io(content_path))
                {
-                  wchar_t wnew_path[MAX_PATH];
                   /* Fallback to a file copy into an accessible directory */
                   char new_basedir[DIR_MAX_LENGTH];
                   char new_path[PATH_MAX_LENGTH];
@@ -1507,7 +1556,7 @@ static bool content_file_load(
                         "but cache directory was not set or found. "
                         "Setting cache directory to root of writable app directory...\n");
                      _len = strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
-                     strlcpy(new_basedir + _len,
+                     strlcpy_lit(new_basedir + _len,
                            "VFSCACHE\\",
                            sizeof(new_basedir) - _len);
                      basedir_attribs = GetFileAttributes(new_basedir);
@@ -1521,11 +1570,11 @@ static bool content_file_load(
                   fill_pathname_join_special(new_path, new_basedir,
                      path_basename(content_path), sizeof(new_path));
 
-                  mbstowcs(wnew_path, new_path, MAX_PATH);
-                  /* TODO: This may fail on very large files...
-                   * but copying large files is not a good idea anyway
-                   * (This disclaimer is out dated but I don't want to remove it)*/
-                  if (!CopyFileFromAppW(wcontent_path, wnew_path, false))
+                  /* filestream_copy() reaches CopyFileFromAppW through
+                   * the UWP VFS backend, so this is the same kernel
+                   * copy without the local UTF-16 conversion, and the
+                   * destination directory is created for us. */
+                  if (filestream_copy(content_path, new_path) != 0)
                   {
                      char msg[PATH_MAX_LENGTH];
                      /* TODO/FIXME - localize */
@@ -2150,7 +2199,7 @@ static void task_push_to_history_list(
             entry.subsystem_ident = (char*)path_get(RARCH_PATH_SUBSYSTEM);
             entry.subsystem_name  = (char*)subsystem_name;
             entry.subsystem_roms  = (struct string_list*)path_get_subsystem_list();
-            entry.entry_slot      = runloop_st->entry_state_slot;
+            PLAYLIST_SET_ENTRY_SLOT(&entry, runloop_st->entry_state_slot);
 
             command_playlist_push_write(playlist_hist, &entry);
 #if TARGET_OS_TV
@@ -2246,7 +2295,7 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
                   {
                      label         = pl_entry->label;
                      crc32         = pl_entry->crc32;
-                     ss_entry_slot = pl_entry->entry_slot;
+                     ss_entry_slot = PLAYLIST_ENTRY_SLOT(pl_entry);
                   }
 
                   playlist_get_db_name(playlist_curr,
@@ -2274,7 +2323,7 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
       new_entry.core_name  = (char*)core_name;
       new_entry.crc32      = (char*)crc32;
       new_entry.db_name    = (char*)db_name;
-      new_entry.entry_slot = ss_entry_slot;
+      PLAYLIST_SET_ENTRY_SLOT(&new_entry, ss_entry_slot);
 
       /* TODO/FIXME: Subsystems are not properly supported
        * on static platforms, so exclude the following:

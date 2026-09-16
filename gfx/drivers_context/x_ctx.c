@@ -192,7 +192,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
                gl_finish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
-               video_st_flags = video_st->flags;
+               video_st_flags = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
                if (!(video_st_flags & VIDEO_FLAG_CACHE_CONTEXT))
                {
                   if (x->hw_ctx)
@@ -261,6 +261,37 @@ static void gfx_ctx_x_destroy(void *data)
 
    free(data);
 }
+
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+/* GLX_OML_sync_control: UST is the time of the last vertical retrace,
+ * in microseconds on CLOCK_MONOTONIC under Mesa, which is the clock
+ * cpu_features_get_time_usec() reads here. Resolved on first use. */
+typedef Bool (*glx_get_sync_values_oml_t)(Display*, GLXDrawable,
+      int64_t*, int64_t*, int64_t*);
+static glx_get_sync_values_oml_t g_pglGetSyncValuesOML;
+static bool g_pglGetSyncValuesOML_resolved;
+
+static retro_time_t gfx_ctx_x_last_present_time(void *data)
+{
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+   int64_t ust = 0, msc = 0, sbc = 0;
+
+   if (!x || !g_x11_dpy || !x->glx_win)
+      return 0;
+   if (!g_pglGetSyncValuesOML_resolved)
+   {
+      g_pglGetSyncValuesOML_resolved = true;
+      if (GLXExtensionSupported(g_x11_dpy, "GLX_OML_sync_control"))
+         g_pglGetSyncValuesOML = (glx_get_sync_values_oml_t)
+            glXGetProcAddress((const GLubyte*)"glXGetSyncValuesOML");
+   }
+   if (!g_pglGetSyncValuesOML)
+      return 0;
+   if (!g_pglGetSyncValuesOML(g_x11_dpy, x->glx_win, &ust, &msc, &sbc))
+      return 0;
+   return (retro_time_t)ust;
+}
+#endif
 
 static void gfx_ctx_x_swap_interval(void *data, int interval)
 {
@@ -1058,6 +1089,25 @@ static bool gfx_ctx_x_bind_api(void *data, enum gfx_ctx_api api,
    return false;
 }
 
+static void gfx_ctx_x_release_current(void *data)
+{
+   gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
+   if (!x)
+      return;
+   switch (x_api)
+   {
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+         if (g_x11_dpy)
+            glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
 static void gfx_ctx_x_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
@@ -1212,5 +1262,12 @@ const gfx_ctx_driver_t gfx_ctx_x = {
    NULL,
    gfx_ctx_x_make_current,
    NULL, /* create_surface */
-   NULL  /* destroy_surface */
+   NULL, /* destroy_surface */
+   x11_presentable,
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
+   gfx_ctx_x_last_present_time,
+#else
+   NULL,
+#endif
+   gfx_ctx_x_release_current
 };

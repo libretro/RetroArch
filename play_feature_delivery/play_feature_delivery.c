@@ -29,6 +29,7 @@
 #include "../frontend/drivers/platform_unix.h"
 
 #include "play_feature_delivery.h"
+#include <compat/strl.h>
 
 /***************************/
 /* Globals (do not fix...) */
@@ -347,7 +348,7 @@ struct string_list *play_feature_delivery_available_cores(void)
          char core_file[256];
          /* Generate core file name */
          size_t _len = strlcpy(core_file, core_name, sizeof(core_file));
-         strlcpy(core_file       + _len,
+         strlcpy_lit(core_file       + _len,
                "_libretro_android.so",
                sizeof(core_file) - _len);
          /* Add entry to list */

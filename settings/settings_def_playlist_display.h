@@ -31,6 +31,11 @@ S_UINT_EX(playlist_show_inline_core_name, PLAYLIST_SHOW_INLINE_CORE_NAME,
       "Show Associated Cores in Playlists",
       "Specify when to tag playlist entries with the currently associated core (if any). This setting is ignored when playlist sublabels are enabled.")
 #endif
+S_BOOL(playlist_show_entry_idx, PLAYLIST_SHOW_ENTRY_IDX,
+      "playlist_show_entry_idx",
+      DEFAULT_PLAYLIST_SHOW_ENTRY_IDX, SD_FLAG_NONE, 0, 0,
+      "Show Playlist Entry Index",
+      "Show entry numbers when viewing playlists. Display format is dependent upon the currently selected menu driver.")
 S_BOOL(playlist_fuzzy_archive_match, PLAYLIST_FUZZY_ARCHIVE_MATCH,
       "playlist_fuzzy_archive_match",
       DEFAULT_PLAYLIST_FUZZY_ARCHIVE_MATCH, SD_FLAG_NONE, 0, 0,

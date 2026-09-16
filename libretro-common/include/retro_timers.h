@@ -44,7 +44,9 @@
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #elif defined(_WIN32) && defined(_XBOX)
 #include <Xtl.h>
@@ -86,7 +88,7 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #define retro_sleep(msec) (sceKernelDelayThread(1000 * (msec)))
 #elif defined(_3DS)
 #define retro_sleep(msec) (svcSleepThread(1000000 * (s64)(msec)))
-#elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#elif defined(__WINRT__) || (defined(WINAPI_FAMILY) && defined(WINAPI_FAMILY_PHONE_APP) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #define retro_sleep(msec) (SleepEx((msec), FALSE))
 #elif defined(_WIN32) && !defined(_XBOX)
 /* Desktop Windows.
@@ -110,6 +112,9 @@ void retro_sleep(unsigned msec);
 #endif
 #elif defined(_WIN32)
 #define retro_sleep(msec) (Sleep((msec)))
+#elif defined(__APPLE__) && defined(__MACH__)
+/* Darwin: the same Mach-clock deadline retro_sleep_us() takes. */
+#define retro_sleep(msec) (retro_sleep_us(1000 * (msec)))
 #elif defined(XENON)
 #define retro_sleep(msec) (udelay(1000 * (msec)))
 #elif !defined(__PSL1GHT__) && defined(__PS3__)
@@ -151,12 +156,14 @@ static INLINE void retro_sleep(unsigned msec)
 #define retro_sleep_us(usec) (sceKernelDelayThread((usec)))
 #elif defined(_3DS)
 #define retro_sleep_us(usec) (svcSleepThread(1000 * (s64)(usec)))
-#elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#elif defined(__WINRT__) || (defined(WINAPI_FAMILY) && defined(WINAPI_FAMILY_PHONE_APP) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #define retro_sleep_us(usec) (SleepEx(((usec) + 500) / 1000, FALSE))
-#elif defined(_WIN32) && !defined(_XBOX)
-/* Desktop Windows: see the note on retro_sleep() above. Implemented in
- * libretro-common/time/rtime.c, where it is the primitive that
- * retro_sleep() itself is expressed in terms of. */
+#elif (defined(_WIN32) && !defined(_XBOX)) || (defined(__APPLE__) && defined(__MACH__))
+/* Desktop Windows: see the note on retro_sleep() above. Darwin: an
+ * absolute deadline on the Mach clock through mach_wait_until(), not a
+ * relative nanosleep(). Both implemented in libretro-common/time/rtime.c,
+ * where on Windows it is the primitive that retro_sleep() itself is
+ * expressed in terms of. */
 #ifdef __cplusplus
 extern "C" {
 #endif

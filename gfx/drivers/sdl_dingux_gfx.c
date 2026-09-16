@@ -79,6 +79,15 @@ typedef struct sdl_dingux_video
    bool was_in_menu;
    bool quitting;
    bool mode_valid;
+   /* What the last frame said the IPU filter should be: set_filtering()
+    * runs on the video thread under the threaded wrapper, and reading
+    * the setting there races the menu writing it. */
+   unsigned frame_ipu_filter_type;
+   /* What the last frame said these should be: apply_state_changes()
+    * is run by the video thread from thread_update_driver_state(), and
+    * reading the settings there races the menu writing them. */
+   bool frame_ipu_keep_aspect;
+   bool frame_integer_scaling;
 } sdl_dingux_video_t;
 
 static void sdl_dingux_init_font_color(sdl_dingux_video_t *vid)
@@ -752,6 +761,15 @@ static bool sdl_dingux_gfx_frame(void *data, const void *frame,
    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
 #ifdef HAVE_MENU
    bool menu_is_alive      = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+
+   /* Travels with the frame, for set_filtering() to read rather than
+    * the setting the menu writes */
+   if (vid)
+   {
+      vid->frame_ipu_filter_type = video_info->dingux_ipu_filter_type;
+      vid->frame_ipu_keep_aspect = video_info->dingux_ipu_keep_aspect;
+      vid->frame_integer_scaling = video_info->scale_integer;
+   }
 #endif
 
    /* Return early if:
@@ -1000,12 +1018,13 @@ static float sdl_dingux_get_refresh_rate(void *data)
 static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    sdl_dingux_video_t *vid                     = (sdl_dingux_video_t*)data;
-   settings_t *settings                        = config_get_ptr();
-   enum dingux_ipu_filter_type ipu_filter_type = (settings) ?
-         (enum dingux_ipu_filter_type)settings->uints.video_dingux_ipu_filter_type :
+   /* What the last frame carried, not what the setting says now: this
+    * runs on the video thread under the threaded wrapper. */
+   enum dingux_ipu_filter_type ipu_filter_type = (vid) ?
+         (enum dingux_ipu_filter_type)vid->frame_ipu_filter_type :
          DINGUX_IPU_FILTER_BICUBIC;
 
-   if (!vid || !settings)
+   if (!vid)
       return;
 
    /* Update IPU filter setting, if required */
@@ -1019,11 +1038,12 @@ static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bo
 static void sdl_dingux_apply_state_changes(void *data)
 {
    sdl_dingux_video_t *vid  = (sdl_dingux_video_t*)data;
-   settings_t *settings     = config_get_ptr();
-   bool ipu_keep_aspect     = (settings) ? settings->bools.video_dingux_ipu_keep_aspect : true;
-   bool ipu_integer_scaling = (settings) ? settings->bools.video_scale_integer : false;
+   /* What the last frame carried, not what the settings say now: the
+    * video thread runs this from thread_update_driver_state(). */
+   bool ipu_keep_aspect     = (vid) ? vid->frame_ipu_keep_aspect : true;
+   bool ipu_integer_scaling = (vid) ? vid->frame_integer_scaling : false;
 
-   if (!vid || !settings)
+   if (!vid)
       return;
 
    /* Update IPU scaling mode, if required */

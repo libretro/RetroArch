@@ -94,24 +94,34 @@ static void adapter_thread(void *data)
       int report_number;
       int size = 0;
 
+      /* Take one queued command out under the lock, then send it
+       * with the lock released: the transfer can block for up to its
+       * second of timeout, and holding the lock across it stalled
+       * every send_control() call - rumble, LEDs - from the frontend
+       * for that long.  The length word and its payload are written
+       * together under the lock, so once the length is there the
+       * payload is too; the old check compared the remaining bytes
+       * against sizeof(len) instead of len, which happened to pass. */
+      _len = 0;
       slock_lock(adapter->send_control_lock);
       if (FIFO_READ_AVAIL(adapter->send_control_buffer)
             >= sizeof(_len))
       {
          fifo_read(adapter->send_control_buffer,
                &_len, sizeof(_len));
-
-         if (FIFO_READ_AVAIL(adapter->send_control_buffer)
-               >= sizeof(_len))
-         {
+         if (     _len <= sizeof(send_command_buf)
+               && FIFO_READ_AVAIL(adapter->send_control_buffer) >= _len)
             fifo_read(adapter->send_control_buffer,
                   send_command_buf, _len);
-            libusb_interrupt_transfer(adapter->handle,
-                  adapter->endpoint_out, send_command_buf,
-                  _len, &tmp, 1000);
-         }
+         else
+            _len = 0;
       }
       slock_unlock(adapter->send_control_lock);
+
+      if (_len)
+         libusb_interrupt_transfer(adapter->handle,
+               adapter->endpoint_out, send_command_buf,
+               _len, &tmp, 1000);
 
       libusb_interrupt_transfer(adapter->handle,
             adapter->endpoint_in, &adapter->data[0],
@@ -360,47 +370,64 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
 error:
    if (adapter->thread)
+   {
+      adapter->quitting = true;
       sthread_join(adapter->thread);
+   }
+   if (adapter->handle)
+   {
+      /* Claimed only as the last step before the thread; releasing
+       * an unclaimed interface is a harmless error return. */
+      libusb_release_interface(adapter->handle, adapter->interface_number);
+      libusb_close(adapter->handle);
+   }
    if (adapter->send_control_lock)
       slock_free(adapter->send_control_lock);
    if (adapter->send_control_buffer)
       fifo_free(adapter->send_control_buffer);
-   if (adapter)
-      free(adapter);
+   free(adapter);
    return -1;
 }
 
 static int remove_adapter(void *data, struct libusb_device *dev)
 {
-   struct libusb_adapter  *adapter = (struct libusb_adapter*)&adapters;
+   struct libusb_adapter     *prev = &adapters;
    struct libusb_hid          *hid = (struct libusb_hid*)data;
 
-   while (!adapter->next)
-      return -1;
-
-   if (adapter->next->device == dev)
+   /* Walk the whole list: the device that left is whichever one it
+    * is, not necessarily the last one plugged in.  This used to look
+    * at the head only, so unplugging any pad but the most recent was
+    * ignored - its thread went on issuing transfers to a device that
+    * was gone, its slot stayed connected, its handle leaked. */
+   for (; prev->next; prev = prev->next)
    {
-      struct libusb_adapter *new_next = NULL;
-      const char                *name = (const char*)adapter->next->name;
+      struct libusb_adapter *adapter = prev->next;
 
-      input_autoconfigure_disconnect(adapter->slot, name);
+      if (adapter->device != dev)
+         continue;
 
-      adapter->next->quitting = true;
-      sthread_join(adapter->next->thread);
+      /* Everything below is the removed adapter's own.  It used to
+       * read slot, send_control_lock and send_control_buffer from
+       * the list's sentinel head instead - slot 0, NULL, NULL - so
+       * it disconnected and deinitialised slot 0 whatever pad had
+       * left, freed nothing, and left the real slot connected. */
+      input_autoconfigure_disconnect(adapter->slot,
+            (const char*)adapter->name);
 
-      pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
+      adapter->quitting = true;
+      sthread_join(adapter->thread);
+
+      if (hid && hid->slots && adapter->slot >= 0)
+         pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
 
       slock_free(adapter->send_control_lock);
       fifo_free(adapter->send_control_buffer);
 
-      libusb_release_interface(adapter->next->handle,
-            adapter->next->interface_number);
-      libusb_close(adapter->next->handle);
+      libusb_release_interface(adapter->handle, adapter->interface_number);
+      libusb_close(adapter->handle);
 
-      new_next = adapter->next->next;
-      free(adapter->next);
-      adapter->next = new_next;
-
+      prev->next = adapter->next;
+      free(adapter);
       return 0;
    }
 
@@ -540,15 +567,26 @@ static void libusb_hid_free(const void *data)
 {
    libusb_hid_t *hid = (libusb_hid_t*)data;
 
-   while (adapters.next)
-      if (remove_adapter(hid, adapters.next->device) == -1)
-         RARCH_ERR("[libusb] Could not remove device %p.\n",
-               adapters.next->device);
-
+   /* The poll thread runs the hotplug callbacks, which add to and
+    * remove from the adapter list; stop it first so the list is this
+    * thread's alone while it is torn down.  (It used to be joined
+    * after, with the callbacks racing the loop below.) */
    if (hid->poll_thread)
    {
       hid->quit = 1;
       sthread_join(hid->poll_thread);
+   }
+
+   while (adapters.next)
+   {
+      if (remove_adapter(hid, adapters.next->device) == -1)
+      {
+         /* Cannot happen - the head is on the list - but the old
+          * loop would have spun here forever if it did. */
+         RARCH_ERR("[libusb] Could not remove device %p.\n",
+               adapters.next->device);
+         break;
+      }
    }
 
    if (hid->slots)
@@ -567,8 +605,15 @@ static void poll_thread(void *data)
 
    while (!hid->quit)
    {
-      struct timeval timeout = {0};
-      libusb_handle_events_timeout_completed(NULL,
+      /* Block in libusb for up to 100 ms per lap.  The timeout used
+       * to be zero, so this thread returned immediately every call
+       * and spun a core for as long as the driver was loaded.  The
+       * completed flag is hid->quit, which libusb checks when it
+       * wakes, so shutdown is not held for the whole timeout. */
+      struct timeval timeout;
+      timeout.tv_sec  = 0;
+      timeout.tv_usec = 100000;
+      libusb_handle_events_timeout_completed(hid->ctx,
             &timeout, &hid->quit);
    }
 }
@@ -610,22 +655,13 @@ static void *libusb_hid_init(void)
    if (!hid->slots)
       goto error;
 
-   count = libusb_get_device_list(hid->ctx, &devices);
-
-   for (i = 0; i < count; i++)
-   {
-      struct libusb_device_descriptor desc;
-      libusb_get_device_descriptor(devices[i], &desc);
-
-      if (desc.idVendor > 0 && desc.idProduct > 0)
-         add_adapter(hid, devices[i]);
-   }
-
-   if (count > 0)
-      libusb_free_device_list(devices, 1);
-
    if (hid->can_hotplug)
    {
+      /* LIBUSB_HOTPLUG_ENUMERATE below delivers an ARRIVED for every
+       * device already attached, during registration, so the initial
+       * scan is the hotplug path's.  Enumerating here as well, as this
+       * used to, added every pad twice: the second add_adapter()
+       * opened a second handle and failed claiming the interface. */
       ret = libusb_hotplug_register_callback(
             hid->ctx,
             (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
@@ -647,6 +683,25 @@ static void *libusb_hid_init(void)
          RARCH_WARN("[libusb] Failed to create a hotplug callback.\n");
          hid->can_hotplug = 0;
       }
+   }
+
+   if (!hid->can_hotplug)
+   {
+      /* No hotplug: one scan at start is all the devices there will
+       * ever be. */
+      count = libusb_get_device_list(hid->ctx, &devices);
+
+      for (i = 0; i < count; i++)
+      {
+         struct libusb_device_descriptor desc;
+         libusb_get_device_descriptor(devices[i], &desc);
+
+         if (desc.idVendor > 0 && desc.idProduct > 0)
+            add_adapter(hid, devices[i]);
+      }
+
+      if (count > 0)
+         libusb_free_device_list(devices, 1);
    }
 
    hid->poll_thread = sthread_create(poll_thread, hid);

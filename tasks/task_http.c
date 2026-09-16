@@ -13,7 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <net/net_http.h>
 #include <string/stdstring.h>
@@ -21,11 +23,18 @@
 #include <file/file_path.h>
 #include <net/net_compat.h>
 #include <streams/file_stream.h>
-#include <retro_timers.h>
 #include <retro_miscellaneous.h>
 
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
+
+/* How long a threaded transfer will wait on its socket before coming
+ * back to check whether the task was cancelled. The task queue runs
+ * handlers one at a time, so this is also how long every other queued
+ * task can be held up behind a transfer with nothing to do - which is
+ * why it stays at the millisecond the old fixed sleep cost, rather
+ * than being raised to save wakeups. */
+#define HTTP_TRANSFER_WAIT_MS 1
 
 enum http_status_enum
 {
@@ -71,6 +80,29 @@ struct http_handle
 };
 
 typedef struct http_handle http_handle_t;
+
+/* "Download failed." plus, when the transport never got as far as a
+ * status, the stage that failed and the library's code for it, so a
+ * log line reads "ssl_connect_failed (-0x7780)" instead of "HTTP -1". */
+static char *task_http_failure_string(struct http_t *handle)
+{
+   char buf[128];
+   int code                 = 0;
+   const char *stage        = handle ? net_http_failure(handle, &code) : NULL;
+   size_t _len              = strlcpy_lit(buf, "Download failed", sizeof(buf));
+
+   if (stage)
+   {
+      _len += strlcpy_lit(buf + _len, ": ", sizeof(buf) - _len);
+      _len += strlcpy(buf + _len, stage, sizeof(buf) - _len);
+      if (code < 0)
+         _len += snprintf(buf + _len, sizeof(buf) - _len, " (-0x%04x)", -code);
+      else if (code > 0)
+         _len += snprintf(buf + _len, sizeof(buf) - _len, " (%d)", code);
+   }
+   strlcpy_lit(buf + _len, ".", sizeof(buf) - _len);
+   return strdup(buf);
+}
 
 /* Sink callback: append the run of decoded body bytes to the output
  * file.  Returning false aborts the transfer, which is how a full
@@ -171,9 +203,14 @@ static int task_http_iterate_transfer(retro_task_t *task)
    http_handle_t *http  = (http_handle_t*)task->state;
    size_t pos  = 0, tot = 0;
 
-   /* FIXME: This wouldn't be needed if we could wait for a timeout */
+   /* Driven from a task thread there is nothing to pace this loop, so
+    * it used to sleep a millisecond a pass whether or not the peer had
+    * answered - paid in full even when the bytes were already there.
+    * Waiting on the socket instead costs the same millisecond when
+    * nothing arrives and returns the moment something does. The
+    * unthreaded queue is paced by the frame and waits for nothing. */
    if (task_queue_is_threaded())
-      retro_sleep(1);
+      net_http_wait(http->handle, HTTP_TRANSFER_WAIT_MS);
 
    if (!net_http_update(http->handle, &pos, &tot))
    {
@@ -235,8 +272,7 @@ task_finished:
              && ((flg & RETRO_TASK_FLG_CANCELLED) == 0);
       task_http_sink_close(http, ok);
       if (!ok && !task_get_error(task))
-         task_set_error(task, strldup("Download failed.",
-               sizeof("Download failed.")));
+         task_set_error(task, task_http_failure_string(http->handle));
    }
 
    if (http->handle)
@@ -290,8 +326,7 @@ task_finished:
              * failed DNS lookup satisfied, so an unreachable host
              * looked like a successfully downloaded empty core list. */
             if (net_http_error(http->handle))
-               task_set_error(task, strldup("Download failed.",
-                  sizeof("Download failed.")));
+               task_set_error(task, task_http_failure_string(http->handle));
          }
       }
       net_http_delete(http->handle);
@@ -546,7 +581,7 @@ void* task_push_webdav_put(const char *url,
    if (!(conn = net_http_connection_new(url, "PUT", NULL)))
       return NULL;
 
-   _len = strlcpy(expect, "Expect: 100-continue\r\n", sizeof(expect));
+   _len = strlcpy_lit(expect, "Expect: 100-continue\r\n", sizeof(expect));
    if (headers)
    {
       strlcpy(expect + _len, headers, sizeof(expect) - _len);
@@ -591,9 +626,9 @@ void *task_push_webdav_move(const char *url,
    if (!(conn = net_http_connection_new(url, "MOVE", NULL)))
       return NULL;
 
-   _len  = strlcpy(dest_header, "Destination: ", sizeof(dest_header));
+   _len  = strlcpy_lit(dest_header, "Destination: ", sizeof(dest_header));
    _len += strlcpy(dest_header + _len, dest,   sizeof(dest_header) - _len);
-   _len += strlcpy(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
+   _len += strlcpy_lit(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
 
    if (headers)
       strlcpy(dest_header + _len, headers, sizeof(dest_header) - _len);

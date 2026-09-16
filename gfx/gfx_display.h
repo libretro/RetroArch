@@ -27,6 +27,7 @@
 #include <retro_common_api.h>
 #include <formats/image.h>
 #include <gfx/math/matrix_4x4.h>
+#include <retro_atomic.h>
 
 #include "../retroarch.h"
 #include "../gfx/font_driver.h"
@@ -134,6 +135,12 @@ typedef struct gfx_display_ctx_driver
    enum gfx_display_driver_type type;
    const char *ident;
    bool handles_transform;
+   /* Whether a draw may carry more geometry than one quad's four
+    * vertices. A driver that walks coords->vertices can take a strip
+    * of them in one call; one that reads a fixed four - because it
+    * ends in a blit rather than a rasteriser - must be handed a quad
+    * at a time. */
+   bool handles_vertex_strip;
    /* Enables and disables scissoring */
    void (*scissor_begin)(void *data, unsigned video_width,
          unsigned video_height,
@@ -160,7 +167,6 @@ struct gfx_display_ctx_draw
    float y;
    float rotation;
    float scale_factor;
-   bool pipeline_active;
 };
 
 typedef struct gfx_display_ctx_coord_draw
@@ -181,6 +187,36 @@ typedef struct gfx_display_ctx_powerstate
    bool charging;
 } gfx_display_ctx_powerstate_t;
 
+/* Why a gathered batch of quads had to go out. */
+enum gfx_display_flush_reason
+{
+   GFX_DISPLAY_FLUSH_TEXT = 0, /* text drawn */
+   GFX_DISPLAY_FLUSH_TEXTURE,  /* quad with another texture or frame */
+   GFX_DISPLAY_FLUSH_BLEND,    /* blend group begun or ended */
+   GFX_DISPLAY_FLUSH_SCISSOR,  /* scissor begun or ended */
+   GFX_DISPLAY_FLUSH_DRAW,     /* a draw that does not gather */
+   GFX_DISPLAY_FLUSH_CAPACITY, /* batch full */
+   GFX_DISPLAY_FLUSH_EXPLICIT, /* gfx_display_flush_batch() from outside */
+   GFX_DISPLAY_FLUSH_LAST
+};
+
+enum gfx_display_stat
+{
+   GFX_DISPLAY_STAT_QUADS = 0,   /* quads gathered */
+   GFX_DISPLAY_STAT_BATCHES,     /* strips sent out */
+   GFX_DISPLAY_STAT_BATCH_MAX,   /* quads in the largest strip */
+   GFX_DISPLAY_STAT_TEXT_CALLS,  /* strings handed to the font driver */
+   GFX_DISPLAY_STAT_TEXT_BYTES,  /* bytes of text in them */
+   GFX_DISPLAY_STAT_FONT_DRAWS,  /* draws the font renderers issued */
+   GFX_DISPLAY_STAT_FLUSH,       /* one per enum gfx_display_flush_reason */
+   GFX_DISPLAY_STAT_LAST = GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_LAST
+};
+
+typedef struct gfx_display_stats
+{
+   unsigned v[GFX_DISPLAY_STAT_LAST];
+} gfx_display_stats_t;
+
 struct gfx_display
 {
    gfx_display_ctx_driver_t *dispctx;
@@ -196,7 +232,46 @@ struct gfx_display
 
    enum menu_driver_id_type menu_driver_id;
 
+   /* Quads waiting to go out as one strip. A quad drawn while the
+    * batch holds quads of the same texture joins it; anything else
+    * sends what is held first, so what is drawn stays in the order it
+    * was asked for. Allocated when the first quad is gathered. */
+   /* One allocation, carved into the three the coords want: they are
+    * filled together and read together, so they are kept together. */
+   float    *batch_mem;
+   float    *batch_vertex;
+   float    *batch_tex;
+   float    *batch_color;
+   unsigned  batch_quads;
+   uintptr_t batch_texture;
+   /* The first quad's own rectangle. A batch that never grew past it
+    * goes out the way it would have without gathering: a driver that
+    * ends in a blit rounds a rectangle and a strip differently, and
+    * one quad is not worth a difference. */
+   int       batch_first_x;
+   int       batch_first_y;
+   unsigned  batch_first_w;
+   unsigned  batch_first_h;
+   void     *batch_userdata;
+   unsigned  batch_video_width;
+   unsigned  batch_video_height;
+   /* Whether a caller has blending on right now. A quad drawn on its
+    * own turns blending on and off around itself; one gathered while
+    * a caller has it on must leave it on, or the caller's group ends
+    * with the batch instead of with the group. Mirrors the driver
+    * rather than counting, so a path that returns between a begin and
+    * its end leaves this no worse than the driver itself. */
+   bool      blend_on;
+
    uint8_t flags;
+
+   /* What the batch did during the menu frame being drawn, counted
+    * where it happens on the drawing thread and published as a whole
+    * by gfx_display_stats_latch() once the frame is over. The
+    * statistics overlay reads the published copy from the main
+    * thread, so that copy is atomic and the live one is not. */
+   gfx_display_stats_t stats;
+   retro_atomic_int_t  stats_pub[GFX_DISPLAY_STAT_LAST];
 };
 
 void gfx_display_free(void);
@@ -263,6 +338,31 @@ void gfx_display_draw_bg(
       void *userdata,
       bool add_opacity, float opacity_override);
 
+/* Sends any quads gathered by gfx_display_draw_quad() that have not
+ * gone out yet. Anything that draws without going through this file -
+ * text, above all - calls this first, or it lands underneath quads
+ * that were asked for before it. */
+void gfx_display_flush_batch(gfx_display_t *p_disp);
+
+/* Publishes the counts of the menu frame just drawn and starts the
+ * next; called by the drawing thread once the menu frame is over. */
+void gfx_display_stats_latch(gfx_display_t *p_disp);
+
+/* The counts of the last published menu frame, safe from any thread. */
+void gfx_display_stats_get(gfx_display_stats_t *out);
+
+/* Blending, counted, so that what is gathered knows whether it is
+ * inside a group that has already turned blending on. Every caller
+ * goes through these rather than the driver's own. */
+void gfx_display_blend_begin(gfx_display_ctx_driver_t *dispctx,
+      void *userdata);
+void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx,
+      void *userdata);
+
+void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
+      gfx_display_ctx_draw_t *draw, void *userdata,
+      unsigned video_width, unsigned video_height);
+
 void gfx_display_draw_quad(
       gfx_display_t *p_disp,
       void *data,
@@ -305,6 +405,9 @@ bool gfx_display_reset_textures_list(
  * but aliases under heavy minification.  Controlled by the
  * 'menu_texture_mipmapping' setting. */
 enum texture_filter_type gfx_display_texture_filter(void);
+/* The latched variant, for texture loads issued off the main
+ * thread; see gfx_display.c. */
+enum texture_filter_type gfx_display_texture_filter_latched(void);
 
 bool gfx_display_reset_icon_texture(
       const char *texture_path,

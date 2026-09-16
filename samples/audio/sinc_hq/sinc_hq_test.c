@@ -1,0 +1,403 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <time.h>
+#include <audio/sinc_resampler.h>
+#include <audio/sinc_resampler_int16.h>
+
+#if defined(__AVX__)
+#define TEST_SIMD RESAMPLER_SIMD_AVX
+#else
+#define TEST_SIMD RESAMPLER_SIMD_SSE
+#endif
+
+#define INPUT 2048
+#define CAP (INPUT * 9 + 64)
+static float input[INPUT * 2], a[CAP * 2], b[CAP * 2];
+static int16_t input_i[INPUT * 2], ai[CAP * 2], bi[CAP * 2];
+static unsigned failures;
+#define CHECK(x) do { if (!(x)) { printf("FAIL line %d: %s\n", __LINE__, #x); failures++; } } while (0)
+#ifdef SINC_TRACK_ALLOCATIONS
+static unsigned long allocator_calls;
+static unsigned long table_allocations;
+void *__real_malloc(size_t);
+void *__real_calloc(size_t, size_t);
+void *__real_realloc(void *, size_t);
+void __real_free(void *);
+void *__real_memalign_alloc(size_t, size_t);
+void __real_memalign_free(void *);
+void *__wrap_malloc(size_t n)
+{
+   allocator_calls++;
+   return __real_malloc(n);
+}
+void *__wrap_calloc(size_t n, size_t size)
+{
+   allocator_calls++;
+   return __real_calloc(n, size);
+}
+void *__wrap_realloc(void *p, size_t n)
+{
+   allocator_calls++;
+   return __real_realloc(p, n);
+}
+void __wrap_free(void *p)
+{
+   allocator_calls++;
+   __real_free(p);
+}
+void *__wrap_memalign_alloc(size_t alignment, size_t n)
+{
+   allocator_calls++;
+   table_allocations++;
+   return __real_memalign_alloc(alignment, n);
+}
+void __wrap_memalign_free(void *p)
+{
+   allocator_calls++;
+   __real_memalign_free(p);
+}
+#else
+#define allocator_calls 0ul
+#define table_allocations 0ul
+#endif
+
+#ifdef SINC_REFERENCE
+extern retro_resampler_t reference_sinc;
+extern void *reference_i_init(double, enum sinc_int16_quality);
+extern void reference_i_process(void *, struct resampler_data_int16 *);
+extern void reference_i_free(void *);
+#else
+#define reference_sinc sinc_resampler
+#define reference_i_init sinc_resampler_int16_init
+#define reference_i_process sinc_resampler_int16_process
+#define reference_i_free sinc_resampler_int16_free
+#endif
+
+#ifdef SINC_REFERENCE_HQ
+extern void *reference_i_init_hq(double, enum sinc_int16_quality, int);
+#endif
+
+static size_t run(void *state, const retro_resampler_t *driver,
+      float *out, double ratio, unsigned chunk)
+{
+   size_t pos = 0, n = 0;
+   unsigned long calls_before = allocator_calls;
+   while (pos < INPUT)
+   {
+      struct resampler_data d;
+      d.input_frames = INPUT - pos < chunk ? INPUT - pos : chunk;
+      d.data_in = input + pos * 2;
+      d.data_out = out + n * 2;
+      d.ratio = ratio;
+      d.output_frames = 0;
+      driver->process(state, &d);
+      pos += d.input_frames;
+      n += d.output_frames;
+   }
+   CHECK(allocator_calls == calls_before);
+   CHECK(n < CAP);
+   return n;
+}
+
+static size_t run_i(void *state, int16_t *out, double ratio, unsigned chunk,
+      void (*process)(void *, struct resampler_data_int16 *))
+{
+   size_t pos = 0, n = 0;
+   unsigned long calls_before = allocator_calls;
+   while (pos < INPUT)
+   {
+      struct resampler_data_int16 d;
+      d.input_frames = INPUT - pos < chunk ? INPUT - pos : chunk;
+      d.data_in = input_i + pos * 2;
+      d.data_out = out + n * 2;
+      d.ratio = ratio;
+      d.output_frames = 0;
+      process(state, &d);
+      pos += d.input_frames;
+      n += d.output_frames;
+   }
+   CHECK(allocator_calls == calls_before);
+   CHECK(n < CAP);
+   return n;
+}
+
+static void bypass(double ratio, enum resampler_quality quality, int hq)
+{
+   enum sinc_int16_quality iq = quality == RESAMPLER_QUALITY_DONTCARE ? SINC_INT16_QUALITY_NORMAL
+      : (enum sinc_int16_quality)(quality - 1);
+   void *old = reference_sinc.init(NULL, ratio, quality, 0);
+   void *now = sinc_resampler_init_hq(ratio, quality, 0, hq);
+   void *old_i = reference_i_init(ratio, iq);
+   void *now_i = sinc_resampler_int16_init_hq(ratio, iq, hq);
+   size_t na, nb;
+   CHECK(old && now && old_i && now_i);
+   if (!old || !now || !old_i || !now_i) exit(2);
+   na = run(old, &reference_sinc, a, ratio, 127);
+   nb = run(now, &sinc_resampler, b, ratio, 127);
+   CHECK(na == nb && memcmp(a, b, na * 2 * sizeof(float)) == 0);
+   na = run_i(old_i, ai, ratio, 127, reference_i_process);
+   nb = run_i(now_i, bi, ratio, 127, sinc_resampler_int16_process);
+   CHECK(na == nb && memcmp(ai, bi, na * 2 * sizeof(int16_t)) == 0);
+   reference_sinc.free(old); sinc_resampler.free(now);
+   reference_i_free(old_i); sinc_resampler_int16_free(now_i);
+}
+
+static void reset_integer(double ratio, enum sinc_int16_quality quality, int hq)
+{
+   void *dirty = sinc_resampler_int16_init_hq(ratio, quality, hq);
+   void *fresh = sinc_resampler_int16_init_hq(ratio, quality, hq);
+   size_t na, nb;
+   unsigned pass;
+   unsigned long calls_before;
+   CHECK(dirty && fresh);
+   if (!dirty || !fresh) exit(2);
+   run_i(dirty, ai, ratio * 0.9995, 1, sinc_resampler_int16_process);
+   run_i(dirty, ai, ratio * 1.0005, 127, sinc_resampler_int16_process);
+   calls_before = allocator_calls;
+   sinc_resampler_int16_reset(NULL);
+   sinc_resampler_int16_reset(dirty);
+   sinc_resampler_int16_reset(dirty);
+   CHECK(allocator_calls == calls_before);
+   for (pass = 0; pass < 3; pass++)
+   {
+      double live = pass == 0 ? ratio : ratio * 1.0005;
+      na = run_i(dirty, ai, live, 127, sinc_resampler_int16_process);
+      nb = run_i(fresh, bi, live, INPUT, sinc_resampler_int16_process);
+      CHECK(na == nb && memcmp(ai, bi, na * 2 * sizeof(int16_t)) == 0);
+   }
+   sinc_resampler_int16_free(dirty);
+   sinc_resampler_int16_free(fresh);
+}
+
+static void invalid_nominal_ratios(void)
+{
+   const uint64_t invalid[] = {
+      UINT64_C(0), UINT64_C(0x8000000000000000),
+      UINT64_C(0xbff0000000000000), UINT64_C(0x7ff0000000000000),
+      UINT64_C(0xfff0000000000000), UINT64_C(0x7ff8000000000001),
+      UINT64_C(0x7ff0000000000001), UINT64_C(1),
+      UINT64_C(0x0010000000000000), UINT64_C(0x7fefffffffffffff)
+   };
+   unsigned i, q, h;
+   for (q = RESAMPLER_QUALITY_DONTCARE; q <= RESAMPLER_QUALITY_HIGHEST; q++)
+      for (h = 0; h < 2; h++)
+         for (i = 0; i < sizeof(invalid) / sizeof(invalid[0]) + 2; i++)
+         {
+            double ratio;
+            void *f, *integer;
+            unsigned long tables_before = table_allocations;
+            enum sinc_int16_quality iq = q == RESAMPLER_QUALITY_DONTCARE
+               ? SINC_INT16_QUALITY_NORMAL : (enum sinc_int16_quality)(q - 1);
+            if (i < sizeof(invalid) / sizeof(invalid[0]))
+               memcpy(&ratio, &invalid[i], sizeof(ratio));
+            else
+               ratio = i == sizeof(invalid) / sizeof(invalid[0])
+                  ? 16777217.0 : 1.0 / 2048.0;
+            f = sinc_resampler_init_hq(ratio, (enum resampler_quality)q, TEST_SIMD, h);
+            integer = sinc_resampler_int16_init_hq(ratio, iq, h);
+            CHECK(!f && !integer);
+            CHECK(table_allocations == tables_before);
+            sinc_resampler.free(f);
+            sinc_resampler_int16_free(integer);
+         }
+}
+
+static void nominal_clock_boundaries(void)
+{
+   unsigned q, h;
+   for (q = RESAMPLER_QUALITY_DONTCARE; q <= RESAMPLER_QUALITY_HIGHEST; q++)
+      for (h = 0; h < 2; h++)
+      {
+         double upper = !h && (q == RESAMPLER_QUALITY_LOWEST || q == RESAMPLER_QUALITY_LOWER)
+            ? 4194304.0 : 16777216.0;
+         double lower = (q == RESAMPLER_QUALITY_LOWEST || q == RESAMPLER_QUALITY_LOWER
+               ? 4194304.0 : 16777216.0) / UINT32_MAX;
+         enum sinc_int16_quality iq = q == RESAMPLER_QUALITY_DONTCARE
+            ? SINC_INT16_QUALITY_NORMAL : (enum sinc_int16_quality)(q - 1);
+         void *f = sinc_resampler_init_hq(upper, (enum resampler_quality)q, TEST_SIMD, h);
+         void *integer = sinc_resampler_int16_init_hq(upper, iq, h);
+         unsigned long tables_before;
+         CHECK(f && integer);
+         sinc_resampler.free(f);
+         sinc_resampler_int16_free(integer);
+         tables_before = table_allocations;
+         f = sinc_resampler_init_hq(upper + 1, (enum resampler_quality)q, TEST_SIMD, h);
+         integer = sinc_resampler_int16_init_hq(upper + 1, iq, h);
+         CHECK(!f && !integer);
+         sinc_resampler.free(f);
+         sinc_resampler_int16_free(integer);
+         /* The step fits in uint32_t, but adding residual phase would wrap. */
+         f = sinc_resampler_init_hq(lower, (enum resampler_quality)q, TEST_SIMD, h);
+         integer = sinc_resampler_int16_init_hq(lower, iq, h);
+         CHECK(!f && !integer);
+         CHECK(table_allocations == tables_before);
+         sinc_resampler.free(f);
+         sinc_resampler_int16_free(integer);
+      }
+}
+
+static void simd_phases(double ratio, enum resampler_quality quality)
+{
+   void *scalar = sinc_resampler_init_hq(ratio, quality, 0, 0);
+   void *simd = sinc_resampler_init_hq(ratio, quality, TEST_SIMD, 0);
+   unsigned step;
+   CHECK(scalar && simd);
+   if (!scalar || !simd) exit(2);
+   for (step = 0; step < 5; step++)
+   {
+      double live = ratio * (step == 1 ? 0.9995 : (step == 2 ? 1.0005 : 1.0));
+      size_t na = run(scalar, &sinc_resampler, a, live, INPUT);
+      size_t nb = run(simd, &sinc_resampler, b, live, 127);
+      size_t j;
+      CHECK(na == nb);
+      for (j = 0; j < na * 2; j++) CHECK(fabs(a[j] - b[j]) < 2e-6);
+   }
+   sinc_resampler.free(scalar);
+   sinc_resampler.free(simd);
+}
+
+static void active(double ratio)
+{
+   void *c = sinc_resampler_init_hq(ratio, RESAMPLER_QUALITY_NORMAL, 0, 1);
+   void *simd = sinc_resampler_init_hq(ratio, RESAMPLER_QUALITY_NORMAL,
+         TEST_SIMD, 1);
+   void *integer = sinc_resampler_int16_init_hq(ratio, SINC_INT16_QUALITY_NORMAL, 1);
+#ifdef SINC_REFERENCE_HQ
+   void *baseline_i = reference_i_init_hq(ratio, SINC_INT16_QUALITY_NORMAL, 1);
+#endif
+   size_t na, nb, ni, j;
+   unsigned step;
+   double max_error = 0.0;
+   CHECK(c && simd && integer);
+   if (!c || !simd || !integer) exit(2);
+   for (step = 0; step < 5; step++)
+   {
+      double live_ratio = ratio * (step == 1 ? 0.9995 : (step == 2 ? 1.0005 : 1.0));
+      na = run(c, &sinc_resampler, a, live_ratio, INPUT);
+      nb = run(simd, &sinc_resampler, b, live_ratio, 127);
+      ni = run_i(integer, ai, live_ratio, 127, sinc_resampler_int16_process);
+      CHECK(na == nb && na == ni);
+#ifdef SINC_REFERENCE_HQ
+      CHECK(baseline_i != NULL);
+      if (!baseline_i) exit(2);
+      nb = run_i(baseline_i, bi, live_ratio, 127, reference_i_process);
+      CHECK(ni == nb && memcmp(ai, bi, ni * 2 * sizeof(int16_t)) == 0);
+#endif
+      for (j = 0; j < na * 2; j++)
+      {
+         double error = fabs(a[j] - b[j]);
+         if (error > max_error) max_error = error;
+         CHECK(a[j] == a[j] && fabs(a[j]) < 2.0);
+         CHECK(fabs((double)ai[j] - a[j] * 32768.0) < 1.1);
+      }
+   }
+   CHECK(max_error < 2e-6);
+   {
+      unsigned long calls_before = allocator_calls;
+      sinc_resampler.reset(c);
+      sinc_resampler.reset(simd);
+      CHECK(allocator_calls == calls_before);
+   }
+   na = run(c, &sinc_resampler, a, ratio, INPUT);
+   nb = run(simd, &sinc_resampler, b, ratio, 1);
+   CHECK(na == nb);
+   for (j = 0; j < na * 2; j++) CHECK(fabs(a[j] - b[j]) < 2e-6);
+   printf("HQ ratio %.6f: scalar/SIMD max error %.9g\n", ratio, max_error);
+   sinc_resampler.free(c); sinc_resampler.free(simd);
+   sinc_resampler_int16_free(integer);
+#ifdef SINC_REFERENCE_HQ
+   reference_i_free(baseline_i);
+#endif
+}
+
+static void impulse(const char *prefix)
+{
+   unsigned hq;
+   memset(input, 0, sizeof(input));
+   input[0] = input[1] = 1.0f;
+   for (hq = 0; hq < 2; hq++)
+   {
+      char path[1024];
+      FILE *file;
+      size_t n;
+      void *r = sinc_resampler_init_hq(4.0, RESAMPLER_QUALITY_HIGHEST, 0, hq);
+      if (!r) exit(2);
+      n = run(r, &sinc_resampler, a, 4.0, INPUT);
+      sprintf(path, "%s-%s.f32", prefix, hq ? "hq" : "highest");
+      file = fopen(path, "wb");
+      if (!file) exit(2);
+      CHECK(fwrite(a, sizeof(float) * 2, n, file) == n);
+      fclose(file);
+      sinc_resampler.free(r);
+   }
+}
+
+static void benchmark(void)
+{
+   unsigned hq, lane, repeat, j;
+   for (hq = 0; hq < 2; hq++)
+      for (lane = 0; lane < 2; lane++)
+      {
+         double times[5];
+         for (repeat = 0; repeat < 5; repeat++)
+         {
+            clock_t begin;
+            void *state = lane ? sinc_resampler_int16_init_hq(4,
+                  SINC_INT16_QUALITY_HIGHEST, hq)
+               : sinc_resampler_init_hq(4, RESAMPLER_QUALITY_HIGHEST,
+                     RESAMPLER_SIMD_SSE, hq);
+            if (!state) exit(2);
+            begin = clock();
+            for (j = 0; j < 256; j++)
+            {
+               if (lane) run_i(state, ai, 4, INPUT, sinc_resampler_int16_process);
+               else run(state, &sinc_resampler, a, 4, INPUT);
+            }
+            times[repeat] = (double)(clock() - begin) / CLOCKS_PER_SEC;
+            if (lane) sinc_resampler_int16_free(state);
+            else sinc_resampler.free(state);
+         }
+         printf("BENCH %s %s, 10.923 seconds audio: %.3f %.3f %.3f %.3f %.3f seconds\n",
+               hq ? "HQ" : "Highest", lane ? "int16" : "SSE",
+               times[0], times[1], times[2], times[3], times[4]);
+      }
+}
+
+int main(int argc, char **argv)
+{
+   const double ratios[] = {0.5, 1.0, 1.5, 1.9999, 2.0, 4.0, 8.0, 384000.0/44100.0};
+   unsigned r, q, j;
+   uint32_t noise = 1;
+   for (j = 0; j < INPUT * 2; j++)
+   {
+      noise = noise * 1664525u + 1013904223u;
+      input_i[j] = (int16_t)((int)(noise >> 18) - 8192);
+      input[j] = input_i[j] / 32768.0f;
+   }
+   invalid_nominal_ratios();
+   nominal_clock_boundaries();
+   for (r = 0; r < sizeof(ratios)/sizeof(ratios[0]); r++)
+   {
+      for (q = RESAMPLER_QUALITY_DONTCARE; q <= RESAMPLER_QUALITY_HIGHEST; q++)
+      {
+         enum sinc_int16_quality iq = q == RESAMPLER_QUALITY_DONTCARE
+            ? SINC_INT16_QUALITY_NORMAL : (enum sinc_int16_quality)(q - 1);
+         reset_integer(ratios[r], iq, 0);
+         reset_integer(ratios[r], iq, 1);
+         bypass(ratios[r], (enum resampler_quality)q, 0);
+         simd_phases(ratios[r], (enum resampler_quality)q);
+         if (ratios[r] < 2.0) bypass(ratios[r], (enum resampler_quality)q, 1);
+      }
+      if (ratios[r] >= 2.0) active(ratios[r]);
+   }
+#ifdef SINC_TRACK_ALLOCATIONS
+   CHECK(allocator_calls > 0);
+   printf("Allocator guard enabled: initialization/free hooks verified\n");
+#endif
+   if (argc == 2 && strcmp(argv[1], "--bench") == 0) benchmark();
+   else if (argc == 2 && strlen(argv[1]) < 990) impulse(argv[1]);
+   printf("Sinc HQ: %u failures\n", failures);
+   return failures ? 1 : 0;
+}

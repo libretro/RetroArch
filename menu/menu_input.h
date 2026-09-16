@@ -65,7 +65,13 @@ RETRO_BEGIN_DECLS
  * pointer down event is detected */
 #define MENU_INPUT_Y_ACCEL_RESET_DELAY 50000         /* 50 ms */
 
+/* Kinetic scroll deceleration: y_accel is multiplied by
+ * MENU_INPUT_Y_ACCEL_DECAY_FACTOR once per elapsed
+ * MENU_INPUT_Y_ACCEL_DECAY_PERIOD us of real time, with
+ * the remainder carried between frames, so flick travel
+ * distance is the same at every refresh rate */
 #define MENU_INPUT_Y_ACCEL_DECAY_FACTOR 0.96f
+#define MENU_INPUT_Y_ACCEL_DECAY_PERIOD 16667        /* us */
 
 /* Pointer is considered stationary if dx/dy remain
  * below (display DPI) * MENU_INPUT_DPI_THRESHOLD_DRAG */
@@ -239,12 +245,21 @@ typedef struct key_desc
    char desc[32];
 } key_desc_t;
 
+/* Determines the type of input that's expected for the keyboard dialog. */
+enum menu_input_dialog_kb_text_type
+{
+   MENU_INPUT_DIALOG_KB_TYPE_TEXT = 0,
+   MENU_INPUT_DIALOG_KB_TYPE_PASSWORD, /**< Hides typed input. */
+   MENU_INPUT_DIALOG_KB_TYPE_NUMBER
+};
+
 typedef struct menu_input_ctx_line
 {
    const char *label;
    const char *label_setting;
    unsigned type;
    unsigned idx;
+   enum menu_input_dialog_kb_text_type text_type;
    input_keyboard_line_complete_t cb;
 } menu_input_ctx_line_t;
 
@@ -263,6 +278,10 @@ const char *menu_input_dialog_get_buffer(void);
 bool menu_input_dialog_start_search(void);
 
 bool menu_input_dialog_get_display_kb(void);
+
+/* Text type of the currently open keyboard dialog;
+ * MENU_INPUT_DIALOG_KB_TYPE_TEXT when no dialog is open. */
+enum menu_input_dialog_kb_text_type menu_input_dialog_get_kb_text_type(void);
 
 void menu_input_dialog_end(void);
 

@@ -88,6 +88,9 @@
 #endif
 #include "../../gfx/video_display_server.h"
 #include "../../manual_content_scan.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -99,7 +102,7 @@
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
 #endif
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #endif
 
@@ -180,7 +183,7 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
    return generic_action_ok(path, label, type, idx, entry_idx, _id, _flush); \
 }
 
-#define DEFAULT_ACTION_DIALOG_START(funcname, _label, _idx, _cb) \
+#define DEFAULT_ACTION_DIALOG_START_TYPE(funcname, _label, _idx, _cb, _text_type) \
 static int (funcname)(const char *path, const char *label_setting, unsigned type, size_t idx, size_t entry_idx) \
 { \
    menu_input_ctx_line_t line; \
@@ -188,11 +191,15 @@ static int (funcname)(const char *path, const char *label_setting, unsigned type
    line.label_setting = label_setting; \
    line.type          = type; \
    line.idx           = (_idx); \
+   line.text_type     = (_text_type); \
    line.cb            = _cb; \
    if (!menu_input_dialog_start(&line)) \
       return -1; \
    return 0; \
 }
+
+#define DEFAULT_ACTION_DIALOG_START(funcname, _label, _idx, _cb) \
+   DEFAULT_ACTION_DIALOG_START_TYPE(funcname, _label, _idx, _cb, MENU_INPUT_DIALOG_KB_TYPE_TEXT)
 
 
 #define DEFAULT_ACTION_OK_START_BUILTIN_CORE(funcname, _id) \
@@ -329,8 +336,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST;
-      case ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST:
-         return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST;
+      case ACTION_OK_DL_ACHIEVEMENTS_SUBMENU_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_ACHIEVEMENTS_SUBMENU_LIST;
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST;
       case ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST:
@@ -1025,7 +1032,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
          if (menu)
          {
-#if IOS
+#if TARGET_OS_IPHONE
             fill_pathname_expand_special(tmp, menu->scratch2_buf, sizeof(tmp));
             menu_path    = tmp;
 #else
@@ -1573,7 +1580,7 @@ int generic_action_ok_displaylist_push(
 
          if (path && menu_path)
          {
-#if IOS
+#if TARGET_OS_IPHONE
             fill_pathname_expand_special(parent_dir, menu_path, sizeof(parent_dir));
             fill_pathname_join_special(tmp,
                   parent_dir, path, sizeof(tmp));
@@ -1589,7 +1596,7 @@ int generic_action_ok_displaylist_push(
          fill_pathname_parent_dir(parent_dir,
                parent_dir, sizeof(parent_dir));
 
-#if IOS
+#if TARGET_OS_IPHONE
          fill_pathname_abbreviate_special(tmp, parent_dir, sizeof(tmp));
          strlcpy(parent_dir, tmp, sizeof(parent_dir));
 #endif
@@ -1753,7 +1760,7 @@ int generic_action_ok_displaylist_push(
       }
          break;
       case ACTION_OK_DL_ACCOUNTS_LIST:
-      case ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST:
+      case ACTION_OK_DL_ACHIEVEMENTS_SUBMENU_LIST:
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_TURBO_FIRE_SETTINGS_LIST:
@@ -2029,12 +2036,32 @@ static int action_ok_dl_from_map(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t i;
-   /* The ok callback signature carries no enum_idx; the previous
-    * lookup keyed on 'type', but for these entries 'type' is the
-    * menu_settings_type (MENU_SETTING_ACTION), never the label enum,
-    * so every row missed and fell through to the archive/file browser.
-    * Key on the entry's canonical label instead, which is what the
-    * bind path matched on. */
+   /* The ok callback signature carries no enum_idx, so fetch the
+    * entry's cbs and key on the same cbs->enum_idx the bind path
+    * matched on. The entry's label string is not a usable key:
+    * saved Explore views are appended under
+    * MENU_ENUM_LABEL_GOTO_EXPLORE with the .lvw path in the label
+    * slot, so a string compare against the canonical label misses
+    * and falls through to the archive/file browser. */
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = menu_list
+         ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   menu_file_list_cbs_t *cbs  = selection_buf
+         ? (menu_file_list_cbs_t*)
+           file_list_get_actiondata_at_offset(selection_buf, idx) : NULL;
+
+   if (cbs && cbs->enum_idx != MSG_UNKNOWN)
+   {
+      for (i = 0; i < ARRAY_SIZE(ok_dl_map); i++)
+         if ((uint32_t)cbs->enum_idx == ok_dl_map[i].enum_idx)
+            return generic_action_ok_displaylist_push(path, NULL,
+                  label, type, idx, entry_idx,
+                  (unsigned)ok_dl_map[i].dl_id);
+   }
+
+   /* Entries reachable without a live selection buffer still
+    * resolve when their label is the canonical one. */
    for (i = 0; i < ARRAY_SIZE(ok_dl_map); i++)
       if (string_is_equal(label,
             msg_hash_to_str((enum msg_hash_enums)ok_dl_map[i].enum_idx)))
@@ -2146,7 +2173,7 @@ static int file_load_with_detect_core_wrapper(
 
    {
       menu_content_ctx_defer_info_t def_info;
-#if IOS
+#if TARGET_OS_IPHONE
       char tmp_path[PATH_MAX_LENGTH];
 #endif
       char menu_path_new[PATH_MAX_LENGTH];
@@ -2158,7 +2185,7 @@ static int file_load_with_detect_core_wrapper(
 
       menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
       if (menu_path)
       {
          fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
@@ -2176,7 +2203,7 @@ static int file_load_with_detect_core_wrapper(
             strlcpy(menu_path_new, menu->scratch_buf, sizeof(menu_path_new));
          else
          {
-#if IOS
+#if TARGET_OS_IPHONE
             fill_pathname_join_special(tmp_path,
                   menu->scratch2_buf, menu->scratch_buf, sizeof(tmp_path));
             fill_pathname_expand_special(menu_path_new, tmp_path, sizeof(menu_path_new));
@@ -2358,7 +2385,7 @@ static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, enum msg_hash_enums flush_id)
 {
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp_path[PATH_MAX_LENGTH];
 #endif
    char action_path[PATH_MAX_LENGTH];
@@ -2384,7 +2411,7 @@ static int generic_action_ok(const char *path,
    menu_entries_get_last_stack(&menu_path,
          &menu_label, NULL, &enum_idx, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
    menu_path = tmp_path;
 #endif
@@ -2530,7 +2557,7 @@ static int generic_action_ok(const char *path,
                if (input_remapping_load_file(conf, action_path))
                {
                   unsigned port;
-                  size_t _len = strlcpy(conf_key, "input_libretro_device_p", sizeof(conf_key));
+                  size_t _len = strlcpy_lit(conf_key, "input_libretro_device_p", sizeof(conf_key));
                   for (port = 0; port < MAX_USERS; port++)
                   {
                      unsigned current_device;
@@ -3060,6 +3087,52 @@ static int action_ok_playlist_entry_collection(const char *path,
             strlcpy(core_path, entry->core_path, sizeof(core_path));
             playlist_resolve_path(PLAYLIST_LOAD, true, core_path, sizeof(core_path));
          }
+
+         /* The entry names a core that is no longer installed, so
+          * the association it carries cannot load anything. The
+          * playlist's own default core takes over where one is set
+          * and present, and the entry is rebound to it the same way
+          * an entry that never had a core is - otherwise the whole
+          * playlist stays unloadable behind an association pointing
+          * at a core the user has removed. */
+         if (!path_is_valid(core_path))
+         {
+            core_info_t *default_core_info =
+               playlist_get_default_core_info(playlist);
+
+            if (     default_core_info
+                  && default_core_info->path
+                  && *default_core_info->path
+                  && path_is_valid(default_core_info->path))
+            {
+               size_t _len;
+               struct playlist_entry update_entry = {0};
+               char msg[NAME_MAX_LENGTH];
+
+               strlcpy(core_path, default_core_info->path, sizeof(core_path));
+               playlist_resolve_path(PLAYLIST_SAVE, true,
+                     core_path, sizeof(core_path));
+               update_entry.core_path = core_path;
+               update_entry.core_name = default_core_info->display_name;
+
+               command_playlist_update_write(
+                     playlist, selection_ptr, &update_entry);
+
+               /* Cache core path */
+               strlcpy(core_path, default_core_info->path, sizeof(core_path));
+
+               /* The core actually used differs from the one the
+                * entry asked for, and which core ran the content
+                * decides which save data and options it sees, so
+                * say so rather than switching silently. */
+               _len  = strlcpy(msg,
+                     msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
+               _len += strlcpy(msg + _len,
+                     default_core_info->display_name, sizeof(msg) - _len);
+               runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
+         }
       }
    }
 
@@ -3491,6 +3564,7 @@ static int action_ok_wifi(const char *path, const char *label_setting,
       line.label_setting = label_setting;
       line.type          = type;
       line.idx           = (unsigned)idx;
+      line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
       line.cb            = menu_input_wifi_cb;
       if (!menu_input_dialog_start(&line))
          return -1;
@@ -3868,9 +3942,11 @@ static int action_ok_video_filter_remove(const char *path,
       return -1;
    if (*settings->paths.path_softfilter_plugin)
    {
-      /* Unload video filter */
+      /* Unload video filter. The driver was set up for its output
+       * (pixel format and scale), so set it up again without it, as
+       * the reset does */
       settings->paths.path_softfilter_plugin[0] = '\0';
-      video_driver_filter_free();
+      command_event(CMD_EVENT_REINIT, NULL);
       /* Refresh menu */
       menu_st->flags         |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                              |  MENU_ST_FLAG_PREVENT_POPULATE;
@@ -3930,20 +4006,22 @@ static void menu_input_st_string_cb_cheat_file_save_as(
 }
 #endif
 
-DEFAULT_ACTION_DIALOG_START(action_ok_enable_settings,
+DEFAULT_ACTION_DIALOG_START_TYPE(action_ok_enable_settings,
    msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD),
    (unsigned)entry_idx,
-   menu_input_st_string_cb_enable_settings)
+   menu_input_st_string_cb_enable_settings,
+   MENU_INPUT_DIALOG_KB_TYPE_PASSWORD)
 #ifdef HAVE_CHEATS
 DEFAULT_ACTION_DIALOG_START(action_ok_cheat_file_save_as,
    msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME),
    (unsigned)idx,
    menu_input_st_string_cb_cheat_file_save_as)
 #endif
-DEFAULT_ACTION_DIALOG_START(action_ok_disable_kiosk_mode,
+DEFAULT_ACTION_DIALOG_START_TYPE(action_ok_disable_kiosk_mode,
    msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD),
    (unsigned)entry_idx,
-   menu_input_st_string_cb_disable_kiosk_mode)
+   menu_input_st_string_cb_disable_kiosk_mode,
+   MENU_INPUT_DIALOG_KB_TYPE_PASSWORD)
 static int action_ok_rename_entry(const char *path,
       const char *label_setting, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3955,6 +4033,7 @@ static int action_ok_rename_entry(const char *path,
    line.label_setting                 = label_setting;
    line.type                          = type;
    line.idx                           = (unsigned)entry_idx;
+   line.text_type                     = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                            = menu_input_st_string_cb_rename_entry;
 
    if (!menu_input_dialog_start(&line))
@@ -4241,7 +4320,6 @@ static int action_ok_remap_file_flush(const char *path,
    /* Log result */
    if (ret)
    {
-      /* TODO/FIXME - localize */
       RARCH_LOG(
             "[Remap] Saved input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
@@ -4251,7 +4329,6 @@ static int action_ok_remap_file_flush(const char *path,
    }
    else
    {
-      /* TODO/FIXME - localize */
       RARCH_LOG(
             "[Remap] Failed to save input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
@@ -4390,7 +4467,7 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_path_manual_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#if IOS
+#if TARGET_OS_IPHONE
    char dir_path[DIR_MAX_LENGTH];
 #endif
    char content_dir[DIR_MAX_LENGTH];
@@ -4403,7 +4480,7 @@ static int action_ok_path_manual_scan_directory(const char *path,
    {
       menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
       fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
       menu_path = dir_path;
 #endif
@@ -4521,7 +4598,7 @@ static int action_ok_set_switch_cpu_profile(const char *path,
       clkrstCloseSession(&session);
    }
    /* TODO/FIXME - localize */
-   _len  = strlcpy(command, "Current clock set to", sizeof(command));
+   _len  = strlcpy_lit(command, "Current clock set to", sizeof(command));
    _len += snprintf(command + _len, sizeof(command) - _len, "%i", profile_clock);
 
    runloop_msg_queue_push(command, _len, 1, 90, true, NULL,
@@ -4672,7 +4749,7 @@ int action_ok_core_option_dropdown_list(const char *path,
 push_dropdown_list:
    /* If this option is not a boolean toggle,
     * push drop-down list */
-   _len = strlcpy(option_path_str, "core_option_",
+   _len = strlcpy_lit(option_path_str, "core_option_",
          sizeof(option_path_str));
    snprintf(option_path_str      + _len,
          sizeof(option_path_str) - _len,
@@ -5153,6 +5230,9 @@ static int action_ok_halt_replay(const char *path,
    return 0;
 }
 
+#ifdef HAVE_CHEEVOS
+/* Both of these are bound by the achievement entries below, which are
+ * compiled only with achievements on. */
 static int action_ok_close_submenu(const char* path,
    const char* label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5166,6 +5246,7 @@ static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
    action_cancel_pop_default(path, label, type, idx);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
+#endif
 
 static int action_ok_undo_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5198,8 +5279,18 @@ static void cb_decompressed(retro_task_t *task,
       switch (enum_idx)
       {
          case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
-         case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
             generic_action_ok_command(CMD_EVENT_REINIT);
+            break;
+         case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
+            {
+               /* Controller profiles are read when a device connects,
+                * so the freshly extracted ones only have to be applied
+                * to the devices that are already connected. Ports with
+                * no device retained are skipped by the reconnect. */
+               unsigned i;
+               for (i = 0; i < MAX_INPUT_DEVICES; i++)
+                  input_autoconfigure_reconnect(i);
+            }
             break;
          case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
             {
@@ -5453,6 +5544,111 @@ static void cb_generic_dir_download(retro_task_t *task,
    }
 }
 
+/* Directory a transfer of this kind lands in, resolved from the
+ * current settings.  Shared by the push site, which streams the body
+ * straight into it, and the completion callback, which extracts from
+ * it.  'buf' backs the cases that have to build a path.  NULL for an
+ * unknown kind, or when a directory that has to be created cannot
+ * be. */
+static const char *download_dir_for_transfer(
+      enum msg_hash_enums enum_idx, settings_t *settings,
+      char *buf, size_t len)
+{
+   switch (enum_idx)
+   {
+      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
+         return settings->paths.directory_thumbnails;
+      case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
+         return settings->paths.directory_core_assets;
+      case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
+         return settings->paths.directory_system;
+      case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
+         return settings->paths.path_libretro_info;
+      case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
+         return settings->paths.directory_assets;
+      case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
+         return settings->paths.directory_autoconfig;
+      case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
+         return settings->paths.path_content_database;
+      case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
+         return settings->paths.directory_overlay;
+      case MENU_ENUM_LABEL_CB_UPDATE_CHEATS:
+         return settings->paths.path_cheat_database;
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         {
+            const char *dirname = NULL;
+
+            switch (enum_idx)
+            {
+               case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
+                  dirname = "shaders_cg";
+                  break;
+               case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
+                  dirname = "shaders_glsl";
+                  break;
+               default:
+                  dirname = "shaders_slang";
+                  break;
+            }
+
+            fill_pathname_join_special(buf,
+                  settings->paths.directory_video_shader, dirname, len);
+
+            if (     !path_is_directory(buf)
+                  && !path_mkdir(buf))
+               return NULL;
+
+            return buf;
+         }
+#else
+         return NULL;
+#endif
+      case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
+         return LAKKA_UPDATE_DIR;
+      case MENU_ENUM_LABEL_CB_DISCORD_AVATAR:
+         fill_pathname_application_special(buf, len,
+               APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
+         return buf;
+      default:
+         break;
+   }
+   return NULL;
+}
+
+/* The kinds of transfer whose destination is known at push time and
+ * whose body is streamed straight to it.  These are the bundles - a
+ * thumbnail pack, assets.zip, cheats.zip - that run to tens or
+ * hundreds of megabytes: holding one in memory until the transfer
+ * completes is a large contiguous allocation on top of everything the
+ * menu already has, which on a console is what fails or starves the
+ * GPU allocator.  The rest are small and keep the in-memory hand-off. */
+static bool download_streams_to_disk(enum msg_hash_enums enum_idx)
+{
+   switch (enum_idx)
+   {
+      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
+      case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
+      case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
+      case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
+      case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
+      case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
+      case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
+      case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
+      case MENU_ENUM_LABEL_CB_UPDATE_CHEATS:
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
+      case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+
 /* expects http_transfer_t*, file_transfer_t* */
 void cb_generic_download(retro_task_t *task,
       void *task_data,
@@ -5460,6 +5656,7 @@ void cb_generic_download(retro_task_t *task,
 {
    char output_path[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
+   char dir_buf[PATH_MAX_LENGTH];
 #if defined(HAVE_COMPRESSION)
    bool extract               = true;
 #endif
@@ -5468,37 +5665,41 @@ void cb_generic_download(retro_task_t *task,
    file_transfer_t *transf    = (file_transfer_t*)user_data;
    settings_t *settings       = config_get_ptr();
    http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   bool streamed              = transf && *transf->sink_path;
 
-   if (!data || !data->data || !transf)
+   if (!data || !transf)
+      goto finish;
+   /* Streamed bodies arrive on disk and data->data stays NULL by
+    * design; anything else has to have a body here. */
+   if (!streamed && !data->data)
       goto finish;
 
    output_path[0] = '\0';
 
-   /* we have to determine dir_path at the time of writing or else
-    * we'd run into races when the user changes the setting during an
-    * http transfer. */
+   if (streamed)
+   {
+      /* The push site removes the partial file unless the transfer
+       * finished cleanly, so an error means there is nothing on disk. */
+      if (err && *err)
+         goto finish;
+
+      if (data->status < 200 || data->status > 299)
+      {
+         err = "Download failed.";
+         goto finish;
+      }
+   }
+
+   /* The extraction parameters are read here, at completion, so a
+    * setting changed during the transfer is honoured for the extract. */
    switch (transf->enum_idx)
    {
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         dir_path = settings->paths.directory_thumbnails;
-         break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
-         dir_path = settings->paths.directory_core_assets;
 #if defined(HAVE_COMPRESSION)
          extract  = settings->bools.network_buildbot_auto_extract_archive;
 #endif
          break;
-      case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
-         dir_path = settings->paths.directory_system;
-         break;
-      case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
-         dir_path = settings->paths.path_libretro_info;
-         break;
-      case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
-         dir_path = settings->paths.directory_assets;
-         break;
       case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
-         dir_path = settings->paths.directory_autoconfig;
          /* Extract autoconf profiles only for available drivers */
          {
             const char *subdir_options = config_get_joypad_driver_options();
@@ -5509,105 +5710,73 @@ void cb_generic_download(retro_task_t *task,
             if (subdir_options && *subdir_options)
             {
                size_t __len = strlcpy(buf, subdir_options, sizeof(buf));
-               strlcpy(buf + __len, "|", sizeof(buf) - __len);
+               strlcpy_lit(buf + __len, "|", sizeof(buf) - __len);
                subdir = buf;
             }
          }
          break;
-      case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
-         dir_path = settings->paths.path_content_database;
-         break;
-      case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
-         dir_path = settings->paths.directory_overlay;
-         break;
-      case MENU_ENUM_LABEL_CB_UPDATE_CHEATS:
-         dir_path = settings->paths.path_cheat_database;
-         break;
-      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
-      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
-      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-         {
-            static char shaderdir[DIR_MAX_LENGTH] = {0};
-            const char *dirname                    = NULL;
-            const char *dir_video_shader           = settings->paths.directory_video_shader;
-
-            switch (transf->enum_idx)
-            {
-               case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
-                  dirname                                   = "shaders_cg";
-                  break;
-               case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
-                  dirname                                   = "shaders_glsl";
-                  break;
-               case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
-                  dirname                                   = "shaders_slang";
-                  break;
-               default:
-                  break;
-            }
-
-            fill_pathname_join_special(shaderdir, dir_video_shader,
-                  dirname, sizeof(shaderdir));
-
-            if (     !path_is_directory(shaderdir)
-                  && !path_mkdir(shaderdir))
-               goto finish;
-
-            dir_path = shaderdir;
-         }
-#endif
-         break;
-      case MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD:
-         dir_path = LAKKA_UPDATE_DIR;
-         break;
-      case MENU_ENUM_LABEL_CB_DISCORD_AVATAR:
-         fill_pathname_application_special(buf, sizeof(buf),
-               APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_DISCORD_AVATARS);
-         dir_path = buf;
-         break;
       default:
-         RARCH_WARN("[Download] Unknown transfer type '%s' bailing out.\n",
-               msg_hash_to_str(transf->enum_idx));
          break;
    }
 
-   if (dir_path && *dir_path)
-      fill_pathname_join_special(output_path, dir_path,
-            transf->path, sizeof(output_path));
-
-   /* Make sure the directory exists
-    * This function is horrible. It mutates the original path
-    * so after operating we'll have to set the path to the intended
-    * location again...
-    */
-   path_basedir_wrapper(output_path);
-
-   if (!path_mkdir(output_path))
+   if (streamed)
    {
-      err = msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY);
-      goto finish;
+      /* The archive is wherever it was streamed to; extract beside
+       * it, so a destination changed mid-transfer cannot split the
+       * archive from its contents. */
+      strlcpy(output_path, transf->sink_path, sizeof(output_path));
+      fill_pathname_basedir(dir_buf, output_path, sizeof(dir_buf));
+      dir_path = dir_buf;
    }
-
-   if (dir_path && *dir_path)
-      fill_pathname_join_special(output_path, dir_path,
-            transf->path, sizeof(output_path));
-
-#ifdef HAVE_COMPRESSION
-   if (path_is_compressed_file(output_path))
+   else
    {
-      if (task_check_decompress(output_path))
+      dir_path = download_dir_for_transfer(transf->enum_idx, settings,
+            dir_buf, sizeof(dir_buf));
+
+      if (!dir_path)
       {
-         err = msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS);
+         RARCH_WARN("[Download] No destination for transfer type '%s', bailing out.\n",
+               msg_hash_to_str(transf->enum_idx));
          goto finish;
       }
-   }
+
+      if (*dir_path)
+         fill_pathname_join_special(output_path, dir_path,
+               transf->path, sizeof(output_path));
+
+      /* Make sure the directory exists
+       * This function is horrible. It mutates the original path
+       * so after operating we'll have to set the path to the intended
+       * location again...
+       */
+      path_basedir_wrapper(output_path);
+
+      if (!path_mkdir(output_path))
+      {
+         err = msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY);
+         goto finish;
+      }
+
+      if (*dir_path)
+         fill_pathname_join_special(output_path, dir_path,
+               transf->path, sizeof(output_path));
+
+#ifdef HAVE_COMPRESSION
+      if (path_is_compressed_file(output_path))
+      {
+         if (task_check_decompress(output_path))
+         {
+            err = msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS);
+            goto finish;
+         }
+      }
 #endif
 
-   if (!filestream_write_file(output_path, data->data, data->len))
-   {
-      err = "Write failed.";
-      goto finish;
+      if (!filestream_write_file(output_path, data->data, data->len))
+      {
+         err = "Write failed.";
+         goto finish;
+      }
    }
 
 #if defined(HAVE_COMPRESSION)
@@ -5618,15 +5787,16 @@ void cb_generic_download(retro_task_t *task,
    {
       retro_task_t *decompress_task = NULL;
       void *frontend_userdata       = task->frontend_userdata;
-      char extract_dir[PATH_MAX_LENGTH];
       task->frontend_userdata       = NULL;
 
       /* Content from the Content Downloader is saved into a category
-       * sub-directory. Make sure to extract it to the same directory. */
-      if (transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD)
+       * sub-directory. Make sure to extract it to the same directory.
+       * (A streamed transfer already extracts beside the archive.) */
+      if (     !streamed
+            && transf->enum_idx == MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD)
       {
-         fill_pathname_basedir(extract_dir, output_path, sizeof(extract_dir));
-         dir_path = extract_dir;
+         fill_pathname_basedir(dir_buf, output_path, sizeof(dir_buf));
+         dir_path = dir_buf;
       }
 
       decompress_task = (retro_task_t*)task_push_decompress(
@@ -5818,6 +5988,51 @@ static int action_ok_download_generic(const char *path,
       net_http_urlencode_full(s3, s, sizeof(s3));
    else
       net_http_urlencode_full(s3, s2, sizeof(s3));
+
+   /* Bundles go straight to disk as they arrive.  The destination is
+    * resolved now rather than at completion; the extraction settings
+    * still are (see cb_generic_download). */
+   if (download_streams_to_disk(enum_idx))
+   {
+      const char *dir_path = download_dir_for_transfer(enum_idx,
+            settings, s, sizeof(s));
+
+      if (dir_path && *dir_path)
+      {
+         size_t _len;
+
+         fill_pathname_join_special(transf->sink_path, dir_path,
+               transf->path, sizeof(transf->sink_path));
+
+         /* The sink truncates its file when the task is pushed, so
+          * an archive still being extracted must not be the target. */
+#ifdef HAVE_COMPRESSION
+         if (     path_is_compressed_file(transf->sink_path)
+               && task_check_decompress(transf->sink_path))
+         {
+            free(transf);
+            return 0;
+         }
+#endif
+
+         strlcpy(s2, transf->sink_path, sizeof(s2));
+         path_basedir_wrapper(s2);
+
+         if (path_mkdir(s2))
+         {
+            _len = strlcpy(s2, msg_hash_to_str(MSG_DOWNLOADING), sizeof(s2));
+            _len += strlcpy(s2 + _len, ": ", sizeof(s2) - _len);
+            strlcpy(s2 + _len, transf->path, sizeof(s2) - _len);
+
+            if (task_push_http_download_file(s3, transf->sink_path,
+                     suppress_msg, s2, cb, transf))
+               return 0;
+         }
+
+         /* Could not stream; fall back to the in-memory transfer. */
+         transf->sink_path[0] = '\0';
+      }
+   }
 
    task_push_http_transfer_file(s3, suppress_msg,
          msg_hash_to_str(enum_idx), cb, transf);
@@ -6548,7 +6763,7 @@ static void action_input_add_entry_to_new_playlist(void *userdata, const char *l
 
    /* Create path for new file */
    _len = fill_pathname_join_special(path, settings->paths.directory_playlist, line, sizeof(path));
-   strlcpy(path + _len, ".lpl",  sizeof(path) - _len);
+   strlcpy_lit(path + _len, ".lpl",  sizeof(path) - _len);
    action_ok_add_entry_to_playlist(NULL, path, 0, 0, 0);
 }
 
@@ -6565,7 +6780,7 @@ static void action_input_add_entry_to_new_playlist_quickmenu(void *userdata, con
 
    /* Create path for new file */
    _len = fill_pathname_join_special(path, settings->paths.directory_playlist, line, sizeof(path));
-   strlcpy(path + _len, ".lpl",  sizeof(path) - _len);
+   strlcpy_lit(path + _len, ".lpl",  sizeof(path) - _len);
    action_ok_add_entry_to_playlist_quickmenu(NULL, path, 0, 0, 0);
 }
 
@@ -6577,6 +6792,7 @@ static int action_ok_add_entry_to_new_playlist(const char *path,
    line.label_setting         = NULL;
    line.type                  = 0;
    line.idx                   = 0;
+   line.text_type             = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                    = (string_is_equal(label, (char*)MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST_STR) ?
                                       action_input_add_entry_to_new_playlist :
                                       action_input_add_entry_to_new_playlist_quickmenu);
@@ -6862,7 +7078,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_steam_settings_list, ACTION_OK_DL_STEAM_
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_steam_list, ACTION_OK_DL_CORE_MANAGER_STEAM_LIST)
 #endif
 #ifdef HAVE_CHEEVOS
-DEFAULT_ACTION_OK_FUNC(action_ok_push_achievements_hardcore_pause_list, ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_push_achievements_submenu, ACTION_OK_DL_ACHIEVEMENTS_SUBMENU_LIST)
 #endif
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_information_list, ACTION_OK_DL_CORE_INFORMATION_LIST)
 #ifdef HAVE_MIST
@@ -6899,7 +7115,7 @@ static int action_ok_open_picker(const char *path,
 #if TARGET_OS_IOS
    ios_show_file_sheet();
    return 0;
-#elif defined(OSX) && defined(HAVE_APPLE_STORE)
+#elif TARGET_OS_OSX && defined(HAVE_APPLE_STORE)
    osx_show_file_sheet();
    return 0;
 #elif defined(ANDROID) && defined(HAVE_SAF)
@@ -7221,7 +7437,7 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
 {
    menu_entry_t entry;
    char current_value[PATH_MAX_LENGTH];
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp[PATH_MAX_LENGTH];
 #endif
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -7242,7 +7458,7 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
       menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
       strlcpy(current_value, entry.value, sizeof(current_value));
    }
-#if IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(tmp, current_value, sizeof(tmp));
    if (!path_is_directory(tmp))
       current_value[0] = '\0';
@@ -7541,15 +7757,20 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param_prev    = &shader_info.data->parameters[entry_idx - offset];
    if (shader)
       param_menu = &shader->parameters [entry_idx - offset];
 
-   if (!param_prev || !param_menu)
+   if (!shader_info.data || !param_menu)
       return -1;
 
-   param_prev->current  = val;
-   param_menu->current  = param_prev->current;
+   /* Clamp against the live parameter's stable range, then submit
+    * through the owning-thread setter (see menu_cbs_right.c). */
+   param_prev           = &shader_info.data->parameters[entry_idx - offset];
+   val                  = MIN(MAX(param_prev->minimum, val),
+         param_prev->maximum);
+   video_shader_driver_set_parameter(shader_info.data,
+         entry_idx - offset, val);
+   param_menu->current  = val;
 
    shader->flags       |= SHDR_FLAG_MODIFIED;
 
@@ -8265,7 +8486,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    menu_path           = menu->scratch2_buf;
    content_path        = menu->scratch_buf;
 
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp_path[PATH_MAX_LENGTH];
    fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
    menu_path = tmp_path;
@@ -9458,12 +9679,15 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CORE_DELETE,                         action_ok_core_delete},
          {MENU_ENUM_LABEL_CORE_CREATE_BACKUP,                  action_ok_core_create_backup},
          {MENU_ENUM_LABEL_DELETE_PLAYLIST,                     action_ok_delete_playlist},
+#ifdef HAVE_CHEEVOS
+         {MENU_ENUM_LABEL_CHEEVOS_MENU_SUBMENU,                action_ok_push_achievements_submenu},
          {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,              action_ok_push_default},
          {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,                   action_ok_cheevos_toggle_hardcore_mode},
          {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL,            action_ok_close_submenu},
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,                  action_ok_cheevos_toggle_hardcore_mode},
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL,           action_ok_close_submenu },
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,  action_ok_close_submenu },
+#endif
 #ifdef HAVE_MICROPHONE
          {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,                 action_ok_push_microphone_settings_list},
 #endif
@@ -9487,6 +9711,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,        action_ok_push_default},
          {MENU_ENUM_LABEL_DISC_INFORMATION,                    action_ok_push_default},
          {MENU_ENUM_LABEL_SYSTEM_INFORMATION,                  action_ok_push_default},
+         {MENU_ENUM_LABEL_DISPLAY_INFORMATION,                 action_ok_push_default},
+         {MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION,            action_ok_push_default},
          {MENU_ENUM_LABEL_NETWORK_INFORMATION,                 action_ok_push_default},
          {MENU_ENUM_LABEL_ACHIEVEMENT_LIST,                    action_ok_push_default},
          {MENU_ENUM_LABEL_DISK_OPTIONS,                        action_ok_push_default},

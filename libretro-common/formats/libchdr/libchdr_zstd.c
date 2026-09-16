@@ -49,11 +49,7 @@
 #include <libchdr/libchdr_zlib.h>
 #include <libchdr/libchdr_zstd.h>
 
-#ifdef HAVE_RZSTD
 #include <encodings/rzstd.h>
-#else
-#include <zstd.h>
-#endif
 
 #include <retro_inline.h>
 #include <streams/file_stream.h>
@@ -70,21 +66,10 @@
 
 chd_error zstd_codec_init(void* codec, uint32_t hunkbytes)
 {
-#ifdef HAVE_RZSTD
 	/* Nothing to construct: rzstd holds no state across calls. */
 	(void)codec;
 	(void)hunkbytes;
 	return CHDERR_NONE;
-#else
-	zstd_codec_data* zstd_codec = (zstd_codec_data*) codec;
-
-	zstd_codec->dstream = ZSTD_createDStream();
-	if (!zstd_codec->dstream) {
-		printf("NO DSTREAM CREATED!\n");
-		return CHDERR_DECOMPRESSION_ERROR;
-	}
-	return CHDERR_NONE;
-#endif
 }
 
 /*-------------------------------------------------
@@ -94,13 +79,7 @@ chd_error zstd_codec_init(void* codec, uint32_t hunkbytes)
 
 void zstd_codec_free(void* codec)
 {
-#ifdef HAVE_RZSTD
 	(void)codec;
-#else
-	zstd_codec_data* zstd_codec = (zstd_codec_data*) codec;
-
-	ZSTD_freeDStream(zstd_codec->dstream);
-#endif
 }
 
 /*-------------------------------------------------
@@ -110,7 +89,6 @@ void zstd_codec_free(void* codec)
  */
 chd_error zstd_codec_decompress(void* codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
-#ifdef HAVE_RZSTD
 	/* Every caller hands over one whole frame and already knows how
 	 * large it expands to, so this is a single call. complen is the
 	 * exact frame length in both callers - cdzs splits the blob on the
@@ -126,46 +104,6 @@ chd_error zstd_codec_decompress(void* codec, const uint8_t *src, uint32_t comple
 	if (wrote != destlen)
 		return CHDERR_DECOMPRESSION_ERROR;
 	return CHDERR_NONE;
-#else
-	ZSTD_inBuffer input;
-	ZSTD_outBuffer output;
-
-	/* initialize */
-	zstd_codec_data* zstd_codec = (zstd_codec_data*) codec;
-
-	/* reset decompressor */
-	size_t zstd_res = ZSTD_initDStream(zstd_codec->dstream);
-
-	input.src   = src;
-	input.size  = complen;
-	input.pos   = 0;
-
-	output.dst  = dest;
-	output.size = destlen;
-	output.pos  = 0;
-
-	if (ZSTD_isError(zstd_res)) 
-	{
-		printf("INITI DSTREAM FAILED!\n");
-		return CHDERR_DECOMPRESSION_ERROR;
-	}
-
-	while ((input.pos < input.size) && (output.pos < output.size))
-	{
-		zstd_res = ZSTD_decompressStream(zstd_codec->dstream, &output, &input);
-		if (ZSTD_isError(zstd_res))
-		{
-			printf("DECOMPRESSION ERROR IN LOOP\n");
-			return CHDERR_DECOMPRESSION_ERROR;
-		}
-	}
-	if (output.pos != output.size)
-	{
-		printf("OUTPUT DOESN'T MATCH!\n");
-		return CHDERR_DECOMPRESSION_ERROR;
-	}
-	return CHDERR_NONE;
-#endif
 }
 
 /* cdzs */

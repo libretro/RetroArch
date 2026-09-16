@@ -82,14 +82,25 @@ static int generic_shader_action_parameter_right_internal(unsigned type, const c
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param_prev = &shader_info.data->parameters[type - offset];
    param_menu = shader ? &shader->parameters [type - offset] : NULL;
 
-   if (!param_prev || !param_menu)
+   if (!shader_info.data || !param_menu)
       return -1;
-   ret = generic_shader_action_parameter_right(param_prev, type, label, wraparound);
 
-   param_menu->current = param_prev->current;
+   /* Step the value on a local copy, then submit it through the
+    * driver-level setter: the live shader's parameters are read by
+    * the video thread's frame path, and the setter writes on the
+    * owning thread. The copy's stable fields (range, step) only
+    * mutate inside set_shader's blocking window. */
+   {
+      struct video_shader_parameter param_copy =
+         shader_info.data->parameters[type - offset];
+      ret = generic_shader_action_parameter_right(&param_copy, type,
+            label, wraparound);
+      video_shader_driver_set_parameter(shader_info.data,
+            type - offset, param_copy.current);
+      param_menu->current = param_copy.current;
+   }
    shader->flags      |= SHDR_FLAG_MODIFIED;
 
    return ret;
@@ -383,11 +394,16 @@ static int action_right_shader_num_passes(unsigned type, const char *label,
       return -1;
 
    if (pass_count < GFX_MAX_SHADERS)
+   {
       shader->passes++;
+      /* Every pass's source is read to find its parameters, so it is
+       * done when the count moved and not when it could not - held at
+       * the limit, this was a read of each of them a keypress. */
+      video_shader_resolve_parameters(shader);
+   }
 
    menu_st->flags          |=  MENU_ST_FLAG_PREVENT_POPULATE
                             |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
-   video_shader_resolve_parameters(shader);
 
    shader->flags           |= SHDR_FLAG_MODIFIED;
 

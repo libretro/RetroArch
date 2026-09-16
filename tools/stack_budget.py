@@ -3,11 +3,8 @@
 console thread stack.
 
 The smallest thread stack in the tree is GEKKO's 8 KiB - STACKSIZE in
-rthreads/gx_pthread.h - with 32 KiB on 3DS (ctr_pthread.h) and 0x10000
-on Vita. (rthreads/psp_pthread.h names 8 KiB as well, but nothing
-includes it: rthreads.c takes gx_pthread.h under GEKKO and
-ctr_pthread.h under _3DS, and PSP falls through to plain pthreads. The
-floor is GEKKO's.) Nothing warns when a local buffer outgrows them:
+rthreads/rthreads.c - with 32 KiB on 3DS and PSP and 0x10000 on Vita.
+(The floor is GEKKO's.) Nothing warns when a local buffer outgrows them:
 it builds everywhere, and overflows only on a target most contributors
 cannot build, at whatever moment that code first runs on a task
 thread.
@@ -172,9 +169,18 @@ def stack_usage(path, workdir, cc='gcc'):
     # libchdr_chd.c's largest frame is 8320 bytes, with it 57504 - a
     # seven-fold difference in shipped code, under a define that wii,
     # ctr and every desktop build set.
-    cmd = [cc, '-O2', '-DPSP', '-DHAVE_COMPRESSION', '-DHAVE_7ZIP',
-           '-DHAVE_CHD', '-DHAVE_RPNG', '-DHAVE_RJPEG', '-DHAVE_RBMP',
-           '-DHAVE_RTGA', '-DHAVE_RWEBP', '-DHAVE_RDDS', '-DHAVE_RWAV',
+    defs = ['-DPSP', '-DHAVE_COMPRESSION', '-DHAVE_7ZIP',
+            '-DHAVE_CHD', '-DHAVE_RPNG', '-DHAVE_RJPEG', '-DHAVE_RBMP',
+            '-DHAVE_RTGA', '-DHAVE_RWEBP', '-DHAVE_RDDS', '-DHAVE_RWAV']
+    if path.replace(os.sep, '/').endswith('rthreads/rthreads.c'):
+        # Under -DPSP this TU is the native sceKernel backend and only
+        # the PSP SDK's compiler can see its headers; measure the
+        # portable pthread lane here and leave the native lanes to a
+        # cross pass.  It holds no path buffers, so the
+        # PATH_MAX_LENGTH shaping -DPSP exists for does not apply.
+        defs.remove('-DPSP')
+        defs.append('-DHAVE_THREADS')
+    cmd = [cc, '-O2'] + defs + [
            '-I' + INCLUDE, '-fstack-usage', '-c', path, '-o', obj]
     r = subprocess.run(cmd, cwd=workdir, capture_output=True)
     # The .su existing is not proof the compile succeeded: gcc creates

@@ -31,6 +31,147 @@
 
 #if defined(MBEDTLS_NET_C)
 
+#if defined(VITA)
+/* The Vita has no BSD socket layer: sceNet returns its error code as a
+ * negative return value rather than through errno, has no fcntl(), and
+ * has no getaddrinfo(), so the generic implementation below does not
+ * apply.  RetroArch only ever hands an already-connected socket to the
+ * TLS layer (see ssl_socket_init() in net_socket_ssl_mbed.c), so the
+ * listen/connect half of this module is deliberately absent here. */
+#include <stdlib.h>
+#include <string.h>
+
+#include <psp2/kernel/threadmgr.h>
+
+#include <net/net_compat.h>
+
+#include "mbedtls/net_sockets.h"
+
+void mbedtls_net_init(mbedtls_net_context *ctx)
+{
+   ctx->fd = -1;
+}
+
+void mbedtls_net_free(mbedtls_net_context *ctx)
+{
+   if (ctx->fd == -1)
+      return;
+
+   sceNetShutdown(ctx->fd, SCE_NET_SHUT_RDWR);
+   sceNetSocketClose(ctx->fd);
+
+   ctx->fd = -1;
+}
+
+int mbedtls_net_set_block(mbedtls_net_context *ctx)
+{
+   int i = 0;
+   return sceNetSetsockopt(ctx->fd, SCE_NET_SOL_SOCKET,
+         SCE_NET_SO_NBIO, &i, sizeof(i));
+}
+
+int mbedtls_net_set_nonblock(mbedtls_net_context *ctx)
+{
+   int i = 1;
+   return sceNetSetsockopt(ctx->fd, SCE_NET_SOL_SOCKET,
+         SCE_NET_SO_NBIO, &i, sizeof(i));
+}
+
+void mbedtls_net_usleep(unsigned long usec)
+{
+   sceKernelDelayThread(usec);
+}
+
+int mbedtls_net_recv(void *ctx, unsigned char *buf, size_t len)
+{
+   int ret;
+   int fd = ((mbedtls_net_context *)ctx)->fd;
+
+   if (fd < 0)
+      return MBEDTLS_ERR_NET_INVALID_CONTEXT;
+
+   ret = sceNetRecv(fd, buf, len, 0);
+
+   if (ret < 0)
+   {
+      if (isagain(ret))
+         return MBEDTLS_ERR_SSL_WANT_READ;
+      if (   ret == SCE_NET_ERROR_ECONNRESET
+          || ret == SCE_NET_ERROR_EPIPE)
+         return MBEDTLS_ERR_NET_CONN_RESET;
+      if (ret == SCE_NET_ERROR_EINTR)
+         return MBEDTLS_ERR_SSL_WANT_READ;
+      return MBEDTLS_ERR_NET_RECV_FAILED;
+   }
+
+   return ret;
+}
+
+int mbedtls_net_recv_timeout(void *ctx, unsigned char *buf,
+      size_t len, uint32_t timeout)
+{
+   SceNetEpollEvent ev;
+   int ret;
+   int epfd;
+   int fd = ((mbedtls_net_context *)ctx)->fd;
+
+   if (fd < 0)
+      return MBEDTLS_ERR_NET_INVALID_CONTEXT;
+
+   if ((epfd = sceNetEpollCreate("mbedtls_net", 0)) < 0)
+      return MBEDTLS_ERR_NET_RECV_FAILED;
+
+   memset(&ev, 0, sizeof(ev));
+   ev.events  = SCE_NET_EPOLLIN | SCE_NET_EPOLLHUP;
+   ev.data.fd = fd;
+
+   if (sceNetEpollControl(epfd, SCE_NET_EPOLL_CTL_ADD, fd, &ev) < 0)
+   {
+      sceNetEpollDestroy(epfd);
+      return MBEDTLS_ERR_NET_RECV_FAILED;
+   }
+
+   ret = sceNetEpollWait(epfd, &ev, 1,
+         timeout == 0 ? -1 : (int)(timeout * 1000));
+
+   sceNetEpollControl(epfd, SCE_NET_EPOLL_CTL_DEL, fd, NULL);
+   sceNetEpollDestroy(epfd);
+
+   if (ret == 0)
+      return MBEDTLS_ERR_SSL_TIMEOUT;
+   if (ret < 0)
+      return MBEDTLS_ERR_NET_RECV_FAILED;
+
+   return mbedtls_net_recv(ctx, buf, len);
+}
+
+int mbedtls_net_send(void *ctx, const unsigned char *buf, size_t len)
+{
+   int ret;
+   int fd = ((mbedtls_net_context *)ctx)->fd;
+
+   if (fd < 0)
+      return MBEDTLS_ERR_NET_INVALID_CONTEXT;
+
+   ret = sceNetSend(fd, buf, len, 0);
+
+   if (ret < 0)
+   {
+      if (isagain(ret))
+         return MBEDTLS_ERR_SSL_WANT_WRITE;
+      if (   ret == SCE_NET_ERROR_ECONNRESET
+          || ret == SCE_NET_ERROR_EPIPE)
+         return MBEDTLS_ERR_NET_CONN_RESET;
+      if (ret == SCE_NET_ERROR_EINTR)
+         return MBEDTLS_ERR_SSL_WANT_WRITE;
+      return MBEDTLS_ERR_NET_SEND_FAILED;
+   }
+
+   return ret;
+}
+
+#else
+
 #if !defined(unix) && !defined(__unix__) && !defined(__unix) && \
     !defined(__APPLE__) && !defined(_WIN32) && !defined(__HAIKU__)
 #error "This module only works on Unix and Windows, see MBEDTLS_NET_C in config.h"
@@ -629,5 +770,7 @@ void mbedtls_net_free( mbedtls_net_context *ctx )
 #undef write
 #undef close
 #endif
+
+#endif /* VITA */
 
 #endif /* MBEDTLS_NET_C */

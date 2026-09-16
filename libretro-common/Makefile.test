@@ -16,6 +16,16 @@ TEST_GENERIC_QUEUE_SRC = test/queues/test_generic_queue.c queues/generic_queue.c
 TEST_LINKED_LIST = test/lists/test_linked_list
 TEST_LINKED_LIST_SRC = test/lists/test_linked_list.c lists/linked_list.c
 
+TEST_STRL = test/compat/test_strl
+TEST_STRL_SRC = test/compat/test_strl.c compat/compat_strl.c
+
+TEST_MENU_STR = test/menu/test_menu_str
+TEST_MENU_STR_SRC = test/menu/test_menu_str.c ../menu/menu_str.c \
+		    string/stdstring.c encodings/encoding_utf.c compat/compat_strl.c
+
+TEST_MEMPOOL = test/memory/test_mempool
+TEST_MEMPOOL_SRC = test/memory/test_mempool.c memory/mempool.c
+
 TEST_FILE_LIST = test/lists/test_file_list
 TEST_FILE_LIST_SRC = test/lists/test_file_list.c lists/file_list.c \
 		     compat/compat_strcasestr.c
@@ -28,15 +38,15 @@ TEST_UTILS = test/utils/test_utils
 TEST_UTILS_SRC = test/utils/test_utils.c utils/md5.c encodings/encoding_crc32.c \
 		features/features_cpu.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
-		string/rstrtod.c vfs/vfs_implementation.c file/file_path.c \
+		string/rstrtod.c \
 		file/file_path_io.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
 TEST_HASH = test/hash/test_hash
 TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
-		string/rstrtod.c vfs/vfs_implementation.c file/file_path.c \
-		file/file_path_io.c \
+		string/rstrtod.c \
+		file/file_path_io.c features/features_cpu.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
 TEST_RWAV = test/formats/test_rwav
@@ -45,7 +55,7 @@ TEST_RWAV_SRC = test/formats/test_rwav.c formats/wav/rwav.c
 TEST_RJPEG = test/formats/test_rjpeg
 TEST_RJPEG_SRC = test/formats/test_rjpeg.c formats/jpeg/rjpeg.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
-		string/rstrtod.c vfs/vfs_implementation.c file/file_path.c \
+		string/rstrtod.c \
 		file/file_path_io.c features/features_cpu.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
@@ -58,7 +68,7 @@ TEST_RWEBM_AUDIO_SRC = test/formats/test_rwebm_audio.c \
 TEST_RPNG = test/formats/test_rpng
 TEST_RPNG_SRC = test/formats/test_rpng.c formats/png/rpng.c \
 		streams/trans_stream.c streams/trans_stream_deflate.c \
-		encodings/encoding_deflate.c \
+		encodings/encoding_deflate.c encodings/encoding_crc32.c \
 		features/features_cpu.c \
 		streams/trans_stream_pipe.c
 TEST_RPNG_LIBS = -lz
@@ -97,7 +107,7 @@ WIN32_AW_TEST     = samples/file/vfs/vfs_seek_contract_test.c
 WIN32_AW_TEST_SRC = compat/fopen_utf8.c compat/compat_strl.c \
 		    encodings/encoding_utf.c file/file_path.c \
 		    file/file_path_io.c streams/file_stream.c \
-		    file/file_path_io.c string/rstrtod.c \
+		    string/rstrtod.c \
 		    time/rtime.c vfs/vfs_implementation.c
 
 win32-configs:
@@ -178,9 +188,198 @@ vfs-samples:
 	cd samples/file/vfs && ./vfs_seek_contract_test
 	$(MAKE) -C samples/file/vfs clean
 
-.PHONY: win32-configs vfs-samples
+# --- concurrency sample regression tests ------------------------------
+#
+# retro_atomic.h, retro_spsc.c, retro_eventcount.c, retro_procbarrier.c
+# and tpool.c have no unit test under test/, and in the standalone
+# libretro-common tree nothing else compiles them at all -- a break in
+# any of them surfaces only once RetroArch is built.  Each sample's own
+# Makefile owns its build; this runs them.
+#
+# Spelled out rather than looped because they do not share an
+# interface: three carry a check target and two are run directly.
+#
+# Two passes.  The second is not redundant: the ordering these rest on
+# is supplied for free by x86 TSO, so a weakened or deleted barrier
+# still produces right answers here and shows up only as a race.
+#
+# retro_eventcount's wakeup handshake is a pair of sequentially
+# consistent operations on each side rather than a standalone fence,
+# so ThreadSanitizer does model it.  It does not model a standalone
+# atomic_thread_fence, which GCC warns about, so anything that grows
+# one again gets a clean thread run for its loads and stores and no
+# statement at all about the fence between them.
+CONCURRENCY_SAN ?= address,undefined
 
-all:
+threads-samples:
+	# retro_atomic_test reports a failure when no reader lands inside a
+	# write, which cannot happen on one processor, so it is skipped
+	# there rather than failing a machine that has nothing wrong with
+	# it.  Every other sample here runs anywhere.
+	@if [ "`getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2`" -gt 1 ]; then \
+	   $(MAKE) -C samples/atomic/retro_atomic_test clean && \
+	   $(MAKE) -C samples/atomic/retro_atomic_test SANITIZER=$(CONCURRENCY_SAN) && \
+	   $(MAKE) -C samples/atomic/retro_atomic_test check && \
+	   $(MAKE) -C samples/atomic/retro_atomic_test clean; \
+	 else \
+	   echo "skipping retro_atomic_test: its seqlock lane needs more than one processor"; \
+	 fi
+	$(MAKE) -C samples/queues/retro_spsc_test clean
+	$(MAKE) -C samples/queues/retro_spsc_test SANITIZER=$(CONCURRENCY_SAN)
+	cd samples/queues/retro_spsc_test && ./retro_spsc_test
+	$(MAKE) -C samples/queues/retro_spsc_test clean
+	$(MAKE) -C samples/rthreads/tpool_wait_test clean
+	$(MAKE) -C samples/rthreads/tpool_wait_test SANITIZER=$(CONCURRENCY_SAN)
+	cd samples/rthreads/tpool_wait_test && ./tpool_wait_test
+	$(MAKE) -C samples/rthreads/tpool_wait_test clean
+	# runs its own second pass against the condition-variable backend,
+	# which is what macOS, the BSDs and the console ports get
+	$(MAKE) -C samples/rthreads/retro_eventcount_test clean
+	$(MAKE) -C samples/rthreads/retro_eventcount_test check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/rthreads/retro_eventcount_test clean
+	# forces each tier the platform has in turn, so membarrier, the page
+	# flip and the signal tier all run on one machine; the fence check
+	# is only load-bearing on SMP and the test says so
+	$(MAKE) -C samples/rthreads/retro_procbarrier_test clean
+	$(MAKE) -C samples/rthreads/retro_procbarrier_test check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/rthreads/retro_procbarrier_test clean
+	# the eventcount built on the barrier, in both its modes, under each
+	# barrier tier the platform has
+	$(MAKE) -C samples/rthreads/retro_asym_eventcount_test clean
+	$(MAKE) -C samples/rthreads/retro_asym_eventcount_test check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/rthreads/retro_asym_eventcount_test clean
+	# same, and the only place the queue and the eventcount are
+	# exercised against each other
+	$(MAKE) -C samples/queues/retro_waitable_spsc_test clean
+	$(MAKE) -C samples/queues/retro_waitable_spsc_test check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/queues/retro_waitable_spsc_test clean
+
+threads-samples-tsan:
+	$(MAKE) -f Makefile.test threads-samples CONCURRENCY_SAN=thread
+
+.PHONY: win32-configs vfs-samples threads-samples threads-samples-tsan \
+	unit-tests all
+
+# The libcheck suites on their own: bounded work, and what CI's unit
+# test step runs.  The samples below are concurrency and I/O stress
+# with no fixed runtime - retro_spsc_test in particular is at the mercy
+# of how many processors it is given - so they are not folded in here.
+# --- console libc surface check ------------------------------------------
+#
+# The console ports build rthreads against newlib or a vendor libc that
+# lacks pieces of POSIX, and nothing on a Linux runner notices when a
+# rthreads source reaches for one: PSP's newlib defines
+# _SC_NPROCESSORS_ONLN but has no sysconf, and retro_procbarrier keyed on
+# the macro, compiled clean here, and broke the PSP link 30 minutes into
+# that lane.  This compiles each rthreads source with a console's platform
+# define and with the symbols that console lacks renamed to something
+# that cannot link, then asks the object file whether it still references
+# any of them.  Seconds on the Linux job, and it fails before the console
+# lanes start.
+#
+# The host's architecture macros stay defined: glibc's own headers need
+# them, so an x86 runner cannot pretend to be MIPS.  What that means is
+# the page-flip tier must be gated on the OS it needs, never on x86
+# alone -- which is the shape the fix took.  Only PLATFORM defines are
+# set; the real console headers are not
+# available here, so this catches "reaches for a libc symbol the port
+# lacks", not "uses a vendor header wrongly".  The console lanes remain
+# the authority on the latter.  PS2 is not in the list for that reason:
+# its define makes retro_atomic.h include <kernel.h>, which only the PS2
+# SDK has, so it cannot be compiled here at all and its lane is the only
+# check it gets.
+CONSOLE_LIBC_SOURCES   := rthreads/retro_procbarrier.c rthreads/retro_eventcount.c rthreads/retro_asym_eventcount.c
+# __PS3__ alone is how rthreads.c selects the PS3 backend; __PSL1GHT__ is
+# the SDK. The lane sets both, as Makefile.psl1ght does.  The PS4 entry
+# also sets __FreeBSD__: the Orbis clang defines it, since the PS4 is a
+# FreeBSD fork, and that is exactly what made retro_procbarrier reach for
+# FreeBSD 14.1's <sys/membarrier.h> on a console that has none.  A lane
+# that sets only ORBIS cannot see that, and did not.
+CONSOLE_LIBC_PLATFORMS := PSP GEKKO VITA WIIU _3DS __SWITCH__ ORBIS DJGPP __PS3__
+
+console-libc-check:
+	@printf '#define sysconf __forbid_sysconf\n#define mmap __forbid_mmap\n#define mprotect __forbid_mprotect\n#define mlock __forbid_mlock\n#define sigaction __forbid_sigaction\n#define opendir __forbid_opendir\n#define syscall __forbid_syscall\n' > /tmp/console_forbid.h
+	@# newlib's trap, reproduced: it defines the sysconf constants without
+	@# providing sysconf, so code that keys on the macro compiles and then
+	@# fails to link.  Define the constant here so that branch is taken and
+	@# the forbidden symbol shows up in nm rather than being skipped over.
+	@printf '#ifndef _SC_NPROCESSORS_ONLN\n#define _SC_NPROCESSORS_ONLN 84\n#endif\n#ifndef _SC_PAGESIZE\n#define _SC_PAGESIZE 8\n#endif\nlong __forbid_sysconf(int);\n' >> /tmp/console_forbid.h
+	@# The PS4 toolchain defines __FreeBSD__.  It cannot be set with -D on
+	@# a Linux runner -- glibc's own headers then look for FreeBSD's -- so
+	@# it is set after every libc header the rthreads sources use has been
+	@# pulled in.  Their include guards make the sources' own includes
+	@# no-ops, and only a header not in this list, one the console lacks,
+	@# still fails.  <sys/membarrier.h> is the one that broke the PS4.
+	@printf '#include <stdlib.h>\n#include <string.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <errno.h>\n#include <unistd.h>\n#include <signal.h>\n#include <pthread.h>\n#include <sys/mman.h>\n#include <sys/types.h>\n#include <sys/param.h>\n#include <sys/time.h>\n#include <time.h>\n#include <fcntl.h>\n#include <dirent.h>\n#include <sys/syscall.h>\n#define __FreeBSD__ 1\n' > /tmp/console_bsd.h
+	@fail=0; \
+	for plat in $(CONSOLE_LIBC_PLATFORMS); do \
+	   for src in $(CONSOLE_LIBC_SOURCES); do \
+	      obj=/tmp/console_libc_$$(basename $$src .c)_$$plat.o; \
+	      extra=""; \
+	      [ "$$plat" = "__PS3__" ] && extra="-D__PSL1GHT__"; \
+	      [ "$$plat" = "ORBIS" ]   && extra="-D__ORBIS__ -D__PS4__ -include /tmp/console_bsd.h"; \
+	      if ! $(CC) -std=c89 -pedantic -DHAVE_THREADS -D$$plat $$extra -U__linux__ -U__unix__ -U__unix \
+	            -include /tmp/console_forbid.h -Iinclude -c -o $$obj $$src 2>/tmp/console_libc.err; then \
+	         echo "console-libc-check: $$src does not compile with -D$$plat"; \
+	         head -5 /tmp/console_libc.err; fail=1; continue; \
+	      fi; \
+	      if nm -u $$obj | grep -q __forbid_; then \
+	         echo "console-libc-check: $$src under -D$$plat references a libc symbol that port lacks:"; \
+	         nm -u $$obj | grep __forbid_ | sed 's/^/   /'; fail=1; \
+	      fi; \
+	   done; \
+	done; \
+	rm -f /tmp/console_libc_*.o /tmp/console_forbid.h /tmp/console_bsd.h /tmp/console_libc.err; \
+	if [ $$fail -ne 0 ]; then exit 1; fi; \
+	echo "console-libc-check: $(CONSOLE_LIBC_SOURCES) reference nothing the console ports lack"
+
+# --- Darwin import floor check --------------------------------------------
+#
+# RetroArch's PowerPC build targets 10.4, and the MacOS-PPC-Cross lane
+# audits every import of the finished binary against the 10.4u SDK's
+# libraries.  That is thorough and it is also the last step of a
+# cross-build; retro_procbarrier's first Darwin tier reached for
+# pthread_from_mach_thread_np, a 10.6 symbol, and the lane said so an
+# hour after the push.
+#
+# This is the cheap version.  It strips each source's comments, pulls out
+# every function *called* -- an identifier followed by a parenthesis --
+# in the Darwin-only paths, and checks each name appears in the 10.4u
+# SDK's libSystem export strings.  Comments are stripped first because a
+# note explaining why a symbol is not used must not read as a use of it.  No cross-compiler: a Mach-O export table
+# keeps its names as plain strings, which is enough to answer "is this
+# symbol in 10.4".  The SDK tarball is fetched once and cached.
+#
+# It cannot compile the Darwin path -- the Mach headers are Apple's --
+# so it answers only whether the imports exist there, not whether the
+# code is right.  The PPC lane remains the authority on the build.
+DARWIN_FLOOR_SDK_URL := https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.4u.sdk.tar.xz
+DARWIN_FLOOR_LIB     := /tmp/MacOSX10.4u.sdk/usr/lib/libSystem.B.dylib
+DARWIN_FLOOR_SOURCES := rthreads/retro_procbarrier.c
+
+darwin-floor-check:
+	@if [ ! -f $(DARWIN_FLOOR_LIB) ]; then \
+	   ( cd /tmp && wget -q $(DARWIN_FLOOR_SDK_URL) && tar xJf MacOSX10.4u.sdk.tar.xz MacOSX10.4u.sdk/usr/lib/libSystem.B.dylib && rm -f MacOSX10.4u.sdk.tar.xz ) \
+	   || { echo "darwin-floor-check: could not fetch the 10.4u SDK; skipping"; exit 0; }; \
+	fi
+	@strings $(DARWIN_FLOOR_LIB) | grep '^_' | sort -u > /tmp/darwin_floor_exports.txt
+	@fail=0; \
+	for src in $(DARWIN_FLOOR_SOURCES); do \
+	   $(CC) -fpreprocessed -dD -E -P $$src 2>/dev/null \
+	     | sed -n '/#if defined(PB_DARWIN)/,/#endif/p' \
+	     | grep -oE '\b(task_threads|thread_[a-z_]+|mach_[a-z_]+|vm_[a-z_]+|pthread_[a-z_]+|sysconf|mmap|mprotect|mlock|sigaction)\(' \
+	     | tr -d '(' | sort -u > /tmp/darwin_floor_calls.txt; \
+	   while read -r fn; do \
+	      if ! grep -qx "_$$fn" /tmp/darwin_floor_exports.txt; then \
+	         echo "darwin-floor-check: $$src calls $$fn, which is not in the 10.4u SDK's libSystem"; fail=1; \
+	      fi; \
+	   done < /tmp/darwin_floor_calls.txt; \
+	done; \
+	rm -f /tmp/darwin_floor_calls.txt; \
+	if [ $$fail -ne 0 ]; then exit 1; fi; \
+	echo "darwin-floor-check: every Darwin-path call in $(DARWIN_FLOOR_SOURCES) exists in the 10.4u SDK"
+
+unit-tests:
 	# Build and execute tests in order, to avoid coverage file collision
 	# string
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_STDSTRING_SRC) $(LIBCHECK_LIBS) -o $(TEST_STDSTRING)
@@ -202,6 +401,18 @@ all:
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_FILE_LIST_SRC) $(LIBCHECK_LIBS) -o $(TEST_FILE_LIST)
 	$(TEST_FILE_LIST)
 	lcov -c -d . -o `dirname $(TEST_FILE_LIST)`/file_list_coverage.info
+	# strl
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_STRL_SRC) $(LIBCHECK_LIBS) -o $(TEST_STRL)
+	$(TEST_STRL)
+	lcov -c -d . -o `dirname $(TEST_STRL)`/coverage.info
+	# menu_str
+	$(CC) $(TEST_UNIT_CFLAGS) -I.. $(TEST_MENU_STR_SRC) $(LIBCHECK_LIBS) -o $(TEST_MENU_STR)
+	$(TEST_MENU_STR)
+	lcov -c -d . -o `dirname $(TEST_MENU_STR)`/coverage.info
+	# mempool
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_MEMPOOL_SRC) $(LIBCHECK_LIBS) -o $(TEST_MEMPOOL)
+	$(TEST_MEMPOOL)
+	lcov -c -d . -o `dirname $(TEST_MEMPOOL)`/coverage.info
 	# queue
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_GENERIC_QUEUE_SRC) $(LIBCHECK_LIBS) -o $(TEST_GENERIC_QUEUE)
 	$(TEST_GENERIC_QUEUE)
@@ -219,8 +430,13 @@ all:
 	# rwebm audio
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RWEBM_AUDIO_SRC) $(LIBCHECK_LIBS) -o $(TEST_RWEBM_AUDIO)
 	$(TEST_RWEBM_AUDIO)
+all: unit-tests console-libc-check darwin-floor-check
 	# vfs samples: file size, seek and EOF boundaries, mapped and not
 	$(MAKE) -f Makefile.test vfs-samples
+	# concurrency samples: nothing else here compiles retro_spsc.c,
+	# retro_eventcount.c or tpool.c
+	$(MAKE) -f Makefile.test threads-samples
+	$(MAKE) -f Makefile.test threads-samples-tsan
 	# the three Windows A/W configurations, two of which nothing else builds
 	$(MAKE) -f Makefile.test win32-configs
 	
@@ -229,6 +445,9 @@ all:
 	     -a test/string/coverage.info \
 	     -a test/lists/coverage.info \
 	     -a test/lists/file_list_coverage.info \
+	     -a test/memory/coverage.info \
+	     -a test/menu/coverage.info \
+	     -a test/compat/coverage.info \
 	     -a test/queues/coverage.info \
 	     -a test/formats/coverage.info
 	genhtml -o test/coverage/ test/coverage.info
@@ -236,7 +455,9 @@ all:
 clean:
 	rm -f *.gcda *.gcno
 	rm -f $(TEST_STDSTRING) $(TEST_UTILS) $(TEST_HASH) \
-	      $(TEST_LINKED_LIST) $(TEST_FILE_LIST) $(TEST_GENERIC_QUEUE) \
+	      $(TEST_LINKED_LIST) $(TEST_FILE_LIST) $(TEST_MEMPOOL) \
+	      $(TEST_MENU_STR) $(TEST_STRL) \
+	      $(TEST_GENERIC_QUEUE) \
 	      $(TEST_RPNG) $(TEST_RWAV) $(TEST_RJPEG) $(TEST_RWEBM_AUDIO)
 	rm -f test/*/*.gcda test/*/*.gcno test/*/coverage.info \
 	      test/lists/file_list_coverage.info test/coverage.info

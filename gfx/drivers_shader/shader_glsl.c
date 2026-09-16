@@ -19,8 +19,6 @@
 
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include <file/file_path.h>
-#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -33,6 +31,7 @@
 #endif
 
 #include "shader_glsl.h"
+#include "../video_shader_parse.h"
 #ifdef HAVE_REWIND
 #include "../../state_manager.h"
 #endif
@@ -103,6 +102,7 @@ struct shader_uniforms
    int final_vp_size;
 
    int frame_count;
+   int swap_count;
    int frame_direction;
    int frame_time_delta;
    float original_fps;
@@ -192,6 +192,11 @@ typedef struct glsl_shader_data
    struct cache_vbo vbo[GFX_MAX_SHADERS];
    struct shader_program_glsl_data prg[GFX_MAX_SHADERS];
    struct video_shader *shader;
+   /* Staging for set_coords on draws of more than four vertices (font
+    * runs, the menu ribbon), grown on demand and kept for the shader's
+    * lifetime; it was malloc'd and freed on every such draw. */
+   GLfloat *coord_scratch;
+   size_t   coord_scratch_cap;
 } glsl_shader_data_t;
 
 /* TODO/FIXME - static globals */
@@ -515,7 +520,7 @@ static bool gl_glsl_compile_program(
       if (!gl_glsl_compile_shader(
                glsl,
                program->vprg,
-               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n",
+               "#define VERTEX\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n#define _HAS_SWAPCOUNT_UNIFORM\n",
                program_info->vertex))
       {
          RARCH_ERR("[GLSL] Failed to compile vertex shader #%u.\n", idx);
@@ -530,7 +535,7 @@ static bool gl_glsl_compile_program(
       RARCH_LOG("[GLSL] Found GLSL fragment shader.\n");
       program->fprg = glCreateShader(GL_FRAGMENT_SHADER);
       if (!gl_glsl_compile_shader(glsl, program->fprg,
-               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n",
+               "#define FRAGMENT\n#define PARAMETER_UNIFORM\n#define _HAS_ORIGINALASPECT_UNIFORMS\n#define _HAS_FRAMETIME_UNIFORMS\n#define _HAS_SENSOR_UNIFORMS\n#define _HAS_SWAPCOUNT_UNIFORM\n",
                program_info->fragment))
       {
          RARCH_ERR("[GLSL] Failed to compile fragment shader #%u.\n", idx);
@@ -594,11 +599,14 @@ static void gl_glsl_strip_parameter_pragmas(char *source, const char *str)
 static bool gl_glsl_load_source_path(struct video_shader_pass *pass,
       const char *path)
 {
-   int64_t len    = 0;
-   int64_t nitems = pass ? filestream_read_file(path,
-         (void**)&pass->source.string.vertex, &len) : 0;
+   int64_t len = 0;
 
-   if (nitems <= 0 || len <= 0)
+   /* Asked for by name: this driver does not open it. What comes back
+    * is ours to free, as before. */
+   if (     !pass
+         || !video_shader_source_read(path,
+               &pass->source.string.vertex, &len)
+         || len <= 0)
       return false;
 
    gl_glsl_strip_parameter_pragmas(pass->source.string.vertex,
@@ -743,25 +751,25 @@ static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
 
    if (frame->texture < 0)
    {
-      strlcpy(uni + _len, "Texture", sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "Texture", sizeof(uni) - _len);
       frame->texture = gl_glsl_get_uniform(glsl, prog, uni);
    }
 
    if (frame->tex_coord < 0)
    {
-      strlcpy(uni + _len, "TexCoord", sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "TexCoord", sizeof(uni) - _len);
       frame->tex_coord = gl_glsl_get_attrib(glsl, prog, uni);
    }
 
    if (frame->input_size < 0)
    {
-      strlcpy(uni + _len, "InputSize",   sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "InputSize",   sizeof(uni) - _len);
       frame->input_size = gl_glsl_get_uniform(glsl, prog, uni);
    }
 
    if (frame->texture_size < 0)
    {
-      strlcpy(uni + _len, "TextureSize", sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "TextureSize", sizeof(uni) - _len);
       frame->texture_size = gl_glsl_get_uniform(glsl, prog, uni);
    }
 
@@ -794,6 +802,7 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    uni->final_vp_size    = gl_glsl_get_uniform(glsl, prog, "FinalViewportSize");
 
    uni->frame_count      = gl_glsl_get_uniform(glsl, prog, "FrameCount");
+   uni->swap_count       = gl_glsl_get_uniform(glsl, prog, "SwapCount");
    uni->frame_direction  = gl_glsl_get_uniform(glsl, prog, "FrameDirection");
    uni->frame_time_delta = gl_glsl_get_uniform(glsl, prog, "FrameTimeDelta");
    uni->original_fps         = gl_glsl_get_uniform(glsl, prog, "OriginalFPS");
@@ -808,7 +817,7 @@ static void gl_glsl_find_uniforms(glsl_shader_data_t *glsl,
    if (  uni->gyroscope >= 0
       || uni->accelerometer >= 0
       || uni->accelerometer_rest >= 0)
-      input_state_get_ptr()->shader_uses_sensors = true;
+      input_driver_set_shader_uses_sensors(true);
 
    for (i = 0; i < glsl->shader->luts; i++)
       uni->lut_texture[i] = glGetUniformLocation(prog, glsl->shader->lut[i].id);
@@ -919,8 +928,9 @@ static void gl_glsl_deinit(void *data)
       return;
 
    gl_glsl_destroy_resources(glsl);
-   input_state_get_ptr()->shader_uses_sensors = false;
+   input_driver_set_shader_uses_sensors(false);
 
+   free(glsl->coord_scratch);
    free(glsl);
 }
 
@@ -1431,6 +1441,11 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
       glUniform1i(uni->frame_count, frame_count);
    }
 
+   /* Not modulo'd: SwapCount counts what the display was shown, so a
+    * pass's frame_count_mod has nothing to say about it. */
+   if (uni->swap_count >= 0)
+      glUniform1i(uni->swap_count, (int)params->swap_counter);
+
    if (uni->frame_direction >= 0)
    {
 #ifdef HAVE_REWIND
@@ -1448,7 +1463,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
       glUniform1f(uni->original_fps, video_driver_get_original_fps());
 
   if (uni->rotation >= 0)
-      glUniform1i(uni->rotation, retroarch_get_rotation());
+      glUniform1i(uni->rotation, video_driver_get_rotation_snapshot());
 
   if (uni->core_aspect >= 0)
       glUniform1f(uni->core_aspect, video_driver_get_core_aspect());
@@ -1457,7 +1472,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
   {
      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
      float core_aspect_rot = video_driver_get_core_aspect();
-     uint32_t rot = retroarch_get_rotation();
+     uint32_t rot = video_driver_get_rotation_snapshot();
      if (rot == 1 || rot == 3)
         core_aspect_rot = 1/core_aspect_rot;
      glUniform1f(uni->core_aspect_rot, core_aspect_rot);
@@ -1647,19 +1662,17 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    /* Sensor uniforms — values are 0.0 if sensors disabled or not available */
    {
       const struct shader_uniforms *uni = &glsl->uniforms[glsl->active_idx];
-      /* Per-frame snapshot cached by input_driver_poll()
-       * on the main thread */
-      input_driver_state_t *input_st   = input_state_get_ptr();
+      /* One coherent seqlock'd snapshot of the values
+       * input_driver_poll() published on the main thread. */
+      float gyro[3], accel[3], rest[3];
+      input_driver_read_sensor_snapshot(gyro, accel, rest);
 
       if (uni->gyroscope >= 0)
-         glUniform3fv(uni->gyroscope, 1,
-               input_st->sensor_gyroscope_cache);
+         glUniform3fv(uni->gyroscope, 1, gyro);
       if (uni->accelerometer >= 0)
-         glUniform3fv(uni->accelerometer, 1,
-               input_st->sensor_accelerometer_cache);
+         glUniform3fv(uni->accelerometer, 1, accel);
       if (uni->accelerometer_rest >= 0)
-         glUniform3fv(uni->accelerometer_rest, 1,
-               input_st->sensor_accelerometer_rest);
+         glUniform3fv(uni->accelerometer_rest, 1, rest);
    }
 }
 
@@ -1735,10 +1748,15 @@ static bool gl_glsl_set_coords(void *shader_data,
 
       elems        *= coords->vertices * sizeof(GLfloat);
 
-      buffer        = (GLfloat*)malloc(elems);
-
-      if (!buffer)
-         return false;
+      if (elems > glsl->coord_scratch_cap)
+      {
+         GLfloat *grown = (GLfloat*)realloc(glsl->coord_scratch, elems);
+         if (!grown)
+            return false;
+         glsl->coord_scratch     = grown;
+         glsl->coord_scratch_cap = elems;
+      }
+      buffer        = glsl->coord_scratch;
    }
 
 #if defined(VITA)
@@ -1784,9 +1802,6 @@ static bool gl_glsl_set_coords(void *shader_data,
             &glsl->vbo[glsl->active_idx].len_primary,
             buffer, size,
             attribs, attribs_size);
-
-   if (buffer != short_buffer)
-      free(buffer);
 
    return true;
 }

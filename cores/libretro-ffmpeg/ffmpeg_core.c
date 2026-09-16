@@ -67,7 +67,8 @@ extern "C" {
 #include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
 #include <rthreads/tpool.h>
-#include <queues/fifo_queue.h>
+#include <retro_spsc.h>
+#include <retro_atomic.h>
 
 #include <libretro.h>
 #ifdef RARCH_INTERNAL
@@ -343,6 +344,34 @@ static bool video_buffer_wait_for_finished_slot(video_buffer_t *video_buffer)
    slock_unlock(video_buffer->lock);
 
    return true;
+}
+
+/* Waits up to timeout_us for a slot to open, and says whether one
+ * did. The open_cond a released slot signals has been there all
+ * along with nothing waiting on it: the decode thread asked
+ * video_buffer_has_open_slot() in a loop instead, taking and dropping
+ * the lock as fast as it could go, which is a core burned for as long
+ * as the buffer stays full - and full is the normal state whenever
+ * the decoder outruns the display, which is most of the time.
+ *
+ * Timed rather than indefinite because the caller has an escape to
+ * check: the main thread may go to sleep while this waits, and that
+ * is what the caller treats as a deadlock. */
+static bool video_buffer_wait_for_open_slot(video_buffer_t *video_buffer,
+      int64_t timeout_us)
+{
+   bool ret;
+
+   slock_lock(video_buffer->lock);
+
+   if (video_buffer->status[video_buffer->head] != KB_OPEN)
+      scond_wait_timeout(video_buffer->open_cond, video_buffer->lock,
+            timeout_us);
+   ret = video_buffer->status[video_buffer->head] == KB_OPEN;
+
+   slock_unlock(video_buffer->lock);
+
+   return ret;
 }
 
 static bool video_buffer_has_open_slot(video_buffer_t *video_buffer)
@@ -701,20 +730,39 @@ typedef struct ffmpeg_core_ctx
    double pts_bias;
 
    /* Threaded FIFOs */
-   volatile bool decode_thread_dead;
-   fifo_buffer_t *audio_decode_fifo;
+   /* Both threads' flags to each other.  Written under fifo_lock, but
+    * read in places without it - decode_thread's loop condition, the
+    * video path's deadlock check of main_sleeping - so they are
+    * atomics rather than the volatile bool / plain bool they were,
+    * which TSan flagged. */
+   retro_atomic_int_t decode_thread_dead;
+   /* Decoded audio, decode thread -> main thread: one producer, one
+    * consumer, so a lock-free retro_spsc ring.  fifo_lock no longer
+    * covers the read and the write themselves - only the handshake
+    * around them (the waits, decode_thread_dead, main_sleeping, the
+    * seek request and decode_last_audio_time).  The three places
+    * that empty it: the main thread's seek request skips what it
+    * holds from the consumer side, which is safe against a live
+    * producer; the decode thread's post-seek and deadlock clears
+    * reset it whole, which is only legal with the consumer quiesced,
+    * and it is - both run under fifo_lock while main_sleeping says
+    * the main thread is parked in scond_wait on that same lock. */
+   retro_spsc_t audio_decode_fifo;
+   bool audio_decode_fifo_init;
    scond_t *fifo_cond;
    scond_t *fifo_decode_cond;
    slock_t *fifo_lock;
    slock_t *decode_thread_lock;
    sthread_t *decode_thread_handle;
    double decode_last_audio_time;
-   bool main_sleeping;
+   retro_atomic_int_t main_sleeping;
 
    uint32_t *video_frame_temp_buffer;
 
    /* Seeking */
-   bool do_seek;
+   /* Atomic for the same reason as main_sleeping: decode_video reads
+    * it in its deadlock check without fifo_lock. */
+   retro_atomic_int_t do_seek;
    double seek_time;
    int seek_l2;
    int seek_r2;
@@ -789,7 +837,8 @@ static ffmpeg_core_ctx_t g_ctx;
 #endif
 #define AUDIO_FRAMES_STR           (g_ctx.audio_frames)
 #define PTS_BIAS_STR               (g_ctx.pts_bias)
-#define DECODE_THREAD_DEAD_STR     (g_ctx.decode_thread_dead)
+#define DECODE_THREAD_DEAD_STR     retro_atomic_load_acquire_int(&g_ctx.decode_thread_dead)
+#define DECODE_THREAD_DEAD_SET(v)  retro_atomic_store_release_int(&g_ctx.decode_thread_dead, (v))
 #define AUDIO_DECODE_FIFO_STR      (g_ctx.audio_decode_fifo)
 #define FIFO_COND_STR              (g_ctx.fifo_cond)
 #define FIFO_DECODE_COND_STR       (g_ctx.fifo_decode_cond)
@@ -797,9 +846,11 @@ static ffmpeg_core_ctx_t g_ctx;
 #define DECODE_THREAD_LOCK_STR     (g_ctx.decode_thread_lock)
 #define DECODE_THREAD_HANDLE_STR   (g_ctx.decode_thread_handle)
 #define DECODE_LAST_AUDIO_TIME_STR (g_ctx.decode_last_audio_time)
-#define MAIN_SLEEPING_STR          (g_ctx.main_sleeping)
+#define MAIN_SLEEPING_STR          retro_atomic_load_acquire_int(&g_ctx.main_sleeping)
+#define MAIN_SLEEPING_SET(v)       retro_atomic_store_release_int(&g_ctx.main_sleeping, (v))
 #define VIDEO_FRAME_TEMP_BUFFER_STR (g_ctx.video_frame_temp_buffer)
-#define DO_SEEK_STR                (g_ctx.do_seek)
+#define DO_SEEK_STR                retro_atomic_load_acquire_int(&g_ctx.do_seek)
+#define DO_SEEK_SET(v)             retro_atomic_store_release_int(&g_ctx.do_seek, (v))
 #define SEEK_TIME_STR              (g_ctx.seek_time)
 #define SEEK_L2_STR                (g_ctx.seek_l2)
 #define SEEK_R2_STR                (g_ctx.seek_r2)
@@ -1760,16 +1811,21 @@ void CORE_PREFIX(retro_init)(void)
 
 void CORE_PREFIX(retro_deinit)(void)
 {
-   if (VIDEO_BUFFER_STR)
-   {
-      video_buffer_destroy(VIDEO_BUFFER_STR);
-      VIDEO_BUFFER_STR = NULL;
-   }
-
+   /* The pool first: its workers write into the video buffer's slots
+    * and take its lock, so a pool that still exists is a pool that
+    * can still be inside the thing being freed. retro_unload_game()
+    * has waited for it, but the order here should not depend on
+    * that having happened. */
    if (TPOOL_STR)
    {
       tpool_destroy(TPOOL_STR);
       TPOOL_STR = NULL;
+   }
+
+   if (VIDEO_BUFFER_STR)
+   {
+      video_buffer_destroy(VIDEO_BUFFER_STR);
+      VIDEO_BUFFER_STR = NULL;
    }
 
    /* Zero the entire context so every member starts clean on the
@@ -1777,6 +1833,9 @@ void CORE_PREFIX(retro_deinit)(void)
     * because all resources have already been freed above and in
     * retro_unload_game(). */
    memset(&g_ctx, 0, sizeof(g_ctx));
+   retro_atomic_int_init(&g_ctx.decode_thread_dead, 0);
+   retro_atomic_int_init(&g_ctx.main_sleeping, 0);
+   retro_atomic_int_init(&g_ctx.do_seek, 0);
 }
 
 unsigned CORE_PREFIX(retro_api_version)(void)
@@ -2070,7 +2129,7 @@ static void seek_frame(int seek_frames)
    }
 
    slock_lock(FIFO_LOCK_STR);
-   DO_SEEK_STR        = true;
+   DO_SEEK_SET(1);
    SEEK_TIME_STR      = g_ctx.decoded_frame_cnt / MEDIA_STR.interpolate_fps;
 
    /* Convert seek time to a printable format */
@@ -2110,15 +2169,18 @@ static void seek_frame(int seek_frames)
    }
    AUDIO_FRAMES_STR = g_ctx.decoded_frame_cnt * MEDIA_STR.sample_rate / MEDIA_STR.interpolate_fps;
 
-   if (AUDIO_DECODE_FIFO_STR)
-      fifo_clear(AUDIO_DECODE_FIFO_STR);
+   /* Consumer side: skip what is buffered rather than reset the
+    * cursors, since the decode thread may be mid-write. */
+   if (g_ctx.audio_decode_fifo_init)
+      retro_spsc_skip(&AUDIO_DECODE_FIFO_STR,
+            retro_spsc_read_avail(&AUDIO_DECODE_FIFO_STR));
    scond_signal(FIFO_DECODE_COND_STR);
 
    while (!DECODE_THREAD_DEAD_STR && DO_SEEK_STR)
    {
-      MAIN_SLEEPING_STR = true;
+      MAIN_SLEEPING_SET(1);
       scond_wait(FIFO_COND_STR, FIFO_LOCK_STR);
-      MAIN_SLEEPING_STR = false;
+      MAIN_SLEEPING_SET(0);
    }
 
    slock_unlock(FIFO_LOCK_STR);
@@ -2145,7 +2207,12 @@ static int seek_adjust(int target)
 void CORE_PREFIX(retro_run)(void)
 {
    double min_pts;
-   int16_t audio_buffer[MEDIA_STR.sample_rate / 20];
+   /* A clip with no audio stream has a sample rate of zero, and a
+    * zero-length array is not an array: the declaration alone is
+    * undefined, before anything reads it. One element costs nothing
+    * and is never used, since to_read_frames comes out of the same
+    * rate and is zero too. */
+   int16_t audio_buffer[(MEDIA_STR.sample_rate / 20) + 1];
    bool left, right, up, down, l1, l2, r1, r2;
    int16_t ret                  = 0;
    size_t to_read_frames        = 0;
@@ -2326,16 +2393,17 @@ void CORE_PREFIX(retro_run)(void)
       to_read_bytes = to_read_frames * sizeof(int16_t) * 2;
 
       slock_lock(FIFO_LOCK_STR);
-      while (!DECODE_THREAD_DEAD_STR && FIFO_READ_AVAIL(AUDIO_DECODE_FIFO_STR) < to_read_bytes)
+      while (!DECODE_THREAD_DEAD_STR
+            && retro_spsc_read_avail(&AUDIO_DECODE_FIFO_STR) < to_read_bytes)
       {
-         MAIN_SLEEPING_STR = true;
+         MAIN_SLEEPING_SET(1);
          scond_signal(FIFO_DECODE_COND_STR);
          scond_wait(FIFO_COND_STR, FIFO_LOCK_STR);
-         MAIN_SLEEPING_STR = false;
+         MAIN_SLEEPING_SET(0);
       }
 
       reading_pts  = DECODE_LAST_AUDIO_TIME_STR -
-         (double)FIFO_READ_AVAIL(AUDIO_DECODE_FIFO_STR) / (MEDIA_STR.sample_rate * sizeof(int16_t) * 2);
+         (double)retro_spsc_read_avail(&AUDIO_DECODE_FIFO_STR) / (MEDIA_STR.sample_rate * sizeof(int16_t) * 2);
       expected_pts = (double)AUDIO_FRAMES_STR / MEDIA_STR.sample_rate;
       old_pts_bias = PTS_BIAS_STR;
       PTS_BIAS_STR     = reading_pts - expected_pts;
@@ -2348,7 +2416,13 @@ void CORE_PREFIX(retro_run)(void)
       }
 
       if (!DECODE_THREAD_DEAD_STR)
-         fifo_read(AUDIO_DECODE_FIFO_STR, audio_buffer, to_read_bytes);
+      {
+         /* The read itself needs no lock: SPSC, this is the consumer,
+          * and the bytes were counted under the lock above. */
+         slock_unlock(FIFO_LOCK_STR);
+         retro_spsc_read(&AUDIO_DECODE_FIFO_STR, audio_buffer, to_read_bytes);
+         slock_lock(FIFO_LOCK_STR);
+      }
       scond_signal(FIFO_DECODE_COND_STR);
 
       slock_unlock(FIFO_LOCK_STR);
@@ -2377,6 +2451,15 @@ void CORE_PREFIX(retro_run)(void)
          while (!DECODE_THREAD_DEAD_STR && min_pts > FRAMES_STR[1].pts)
          {
             int64_t pts = 0;
+
+            /* The decode thread creates the video buffer, so on the
+             * first passes after a load there may not be one yet -
+             * and a clip with no audio has nothing to pace the main
+             * thread, so it arrives here first and dereferenced NULL.
+             * No buffer is no frame ready, which is what the dupe
+             * below is for. */
+            if (!VIDEO_BUFFER_STR)
+               break;
 
             if (!DECODE_THREAD_DEAD_STR)
                video_buffer_wait_for_finished_slot(VIDEO_BUFFER_STR);
@@ -2489,6 +2572,15 @@ void CORE_PREFIX(retro_run)(void)
          while (!DECODE_THREAD_DEAD_STR && min_pts > FRAMES_STR[1].pts)
          {
             int64_t pts = 0;
+
+            /* The decode thread creates the video buffer, so on the
+             * first passes after a load there may not be one yet -
+             * and a clip with no audio has nothing to pace the main
+             * thread, so it arrives here first and dereferenced NULL.
+             * No buffer is no frame ready, which is what the dupe
+             * below is for. */
+            if (!VIDEO_BUFFER_STR)
+               break;
 
             if (!DECODE_THREAD_DEAD_STR)
                video_buffer_wait_for_finished_slot(VIDEO_BUFFER_STR);
@@ -3080,8 +3172,14 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
    int ret = 0;
    video_decoder_context_t *decoder_ctx = NULL;
 
-   /* Stop decoding thread until video_buffer is not full again */
-   while (!DECODE_THREAD_DEAD_STR && !video_buffer_has_open_slot(VIDEO_BUFFER_STR))
+   /* Stop decoding thread until video_buffer is not full again. The
+    * wait is on the condition a released slot signals, with a bound
+    * so the escape below is still reached: the main thread going to
+    * sleep with the buffer full is what this calls a deadlock, and
+    * nothing signals that. Five milliseconds is well inside a frame
+    * at any rate the core plays. */
+   while (!DECODE_THREAD_DEAD_STR
+         && !video_buffer_wait_for_open_slot(VIDEO_BUFFER_STR, 5000))
    {
       if (MAIN_SLEEPING_STR)
       {
@@ -3204,14 +3302,16 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
       slock_lock(FIFO_LOCK_STR);
 
       while (!DECODE_THREAD_DEAD_STR &&
-            FIFO_WRITE_AVAIL(AUDIO_DECODE_FIFO_STR) < required_buffer)
+            retro_spsc_write_avail(&AUDIO_DECODE_FIFO_STR) < required_buffer)
       {
          if (!MAIN_SLEEPING_STR)
             scond_wait(FIFO_DECODE_COND_STR, FIFO_LOCK_STR);
          else
          {
+            /* Main is parked in scond_wait on this lock, so it is not
+             * in a read: resetting the ring whole is legal here. */
             log_cb(RETRO_LOG_ERROR, "[FFMPEG] Thread: Audio deadlock detected.\n");
-            fifo_clear(AUDIO_DECODE_FIFO_STR);
+            retro_spsc_clear(&AUDIO_DECODE_FIFO_STR);
             break;
          }
       }
@@ -3220,7 +3320,13 @@ static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
             FCTX_STR->streams[AUDIO_STREAMS_STR[g_ctx.audio_stream_idx]]->time_base);
 
       if (!DECODE_THREAD_DEAD_STR)
-         fifo_write(AUDIO_DECODE_FIFO_STR, buffer, required_buffer);
+      {
+         /* The write itself needs no lock: SPSC, this is the producer,
+          * and the room was counted under the lock above. */
+         slock_unlock(FIFO_LOCK_STR);
+         retro_spsc_write(&AUDIO_DECODE_FIFO_STR, buffer, required_buffer);
+         slock_lock(FIFO_LOCK_STR);
+      }
 
       scond_signal(FIFO_COND_STR);
       slock_unlock(FIFO_LOCK_STR);
@@ -3310,13 +3416,16 @@ static void decode_thread(void *data)
    audio_packet_buffer = packet_buffer_create();
    video_packet_buffer = packet_buffer_create();
 
+   /* The video buffer and the scaling pool are made in
+    * retro_load_game(), before this thread exists: made here they
+    * were published to the main thread by a plain store it read
+    * without synchronisation, which TSan reports and which on a clip
+    * with no audio to pace the main thread was a NULL dereference on
+    * the first frame. Made before the thread starts, the thread's own
+    * creation orders them and there is nothing to publish. */
    if (VIDEO_STREAM_INDEX_STR >= 0)
-   {
-      frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32, MEDIA_STR.width, MEDIA_STR.height, 1);
-      VIDEO_BUFFER_STR = video_buffer_create(4, (int)frame_size, MEDIA_STR.width, MEDIA_STR.height);
-      TPOOL_STR = tpool_create(SW_SWS_THREADS_STR);
-      log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured worker threads: %d\n", SW_SWS_THREADS_STR);
-   }
+      frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32,
+            MEDIA_STR.width, MEDIA_STR.height, 1);
 
    while (!DECODE_THREAD_DEAD_STR)
    {
@@ -3348,15 +3457,18 @@ static void decode_thread(void *data)
          decode_thread_seek(seek_time_thread);
 
          slock_lock(FIFO_LOCK_STR);
-         DO_SEEK_STR          = false;
+         DO_SEEK_SET(0);
          eof              = false;
          SEEK_TIME_STR        = 0.0;
          next_video_end   = 0.0;
          next_audio_start = 0.0;
          last_audio_end   = 0.0;
 
-         if (AUDIO_DECODE_FIFO_STR)
-            fifo_clear(AUDIO_DECODE_FIFO_STR);
+         /* Main is parked in its seek wait on this lock (it set the
+          * request and waits for do_seek to clear), so it is not in a
+          * read: resetting the ring whole is legal here. */
+         if (g_ctx.audio_decode_fifo_init)
+            retro_spsc_clear(&AUDIO_DECODE_FIFO_STR);
 
          packet_buffer_clear(&audio_packet_buffer);
          packet_buffer_clear(&video_packet_buffer);
@@ -3509,7 +3621,7 @@ static void decode_thread(void *data)
    av_freep(&audio_buffer);
 
    slock_lock(FIFO_LOCK_STR);
-   DECODE_THREAD_DEAD_STR = true;
+   DECODE_THREAD_DEAD_SET(1);
    scond_signal(FIFO_COND_STR);
    slock_unlock(FIFO_LOCK_STR);
 }
@@ -3648,11 +3760,25 @@ void CORE_PREFIX(retro_unload_game)(void)
 
       tpool_wait(TPOOL_STR);
       video_buffer_clear(VIDEO_BUFFER_STR);
-      DECODE_THREAD_DEAD_STR = true;
+      DECODE_THREAD_DEAD_SET(1);
       scond_signal(FIFO_DECODE_COND_STR);
 
       slock_unlock(FIFO_LOCK_STR);
       sthread_join(DECODE_THREAD_HANDLE_STR);
+
+      /* The pool was waited on above, before the decode thread was
+       * told to stop - so the thread could, and did, queue more scale
+       * work between that wait and its exit. Nothing can queue to the
+       * pool now that the thread is joined, so this wait is the one
+       * that means no worker is inside the video buffer any more.
+       *
+       * Without it a worker is still in video_buffer_finish_slot,
+       * holding the buffer's lock, when retro_deinit frees that lock:
+       * a use-after-free on every unload, which TSan reports as a
+       * race on the mutex and a user meets as a crash on closing
+       * content. */
+      if (TPOOL_STR)
+         tpool_wait(TPOOL_STR);
    }
    DECODE_THREAD_HANDLE_STR = NULL;
 
@@ -3669,14 +3795,14 @@ void CORE_PREFIX(retro_unload_game)(void)
       slock_free(ASS_LOCK_STR);
 #endif
 
-   if (AUDIO_DECODE_FIFO_STR)
-      fifo_free(AUDIO_DECODE_FIFO_STR);
+   if (g_ctx.audio_decode_fifo_init)
+      retro_spsc_free(&AUDIO_DECODE_FIFO_STR);
+   g_ctx.audio_decode_fifo_init = false;
 
    FIFO_COND_STR = NULL;
    FIFO_DECODE_COND_STR = NULL;
    FIFO_LOCK_STR = NULL;
    DECODE_THREAD_LOCK_STR = NULL;
-   AUDIO_DECODE_FIFO_STR = NULL;
 #ifdef HAVE_SSA
    ASS_LOCK_STR = NULL;
 #endif
@@ -3846,7 +3972,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    if (AUDIO_STREAMS_NUM_STR > 0)
    {
       /* audio fifo is 2 seconds deep */
-      AUDIO_DECODE_FIFO_STR = fifo_new(
+      g_ctx.audio_decode_fifo_init = retro_spsc_init(&AUDIO_DECODE_FIFO_STR,
          MEDIA_STR.sample_rate * sizeof(int16_t) * 2 * 2
       );
    }
@@ -3859,8 +3985,21 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 #endif
 
    slock_lock(FIFO_LOCK_STR);
-   DECODE_THREAD_DEAD_STR = false;
+   DECODE_THREAD_DEAD_SET(0);
    slock_unlock(FIFO_LOCK_STR);
+
+   if (VIDEO_STREAM_INDEX_STR >= 0)
+   {
+      size_t vb_frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32,
+            MEDIA_STR.width, MEDIA_STR.height, 1);
+      VIDEO_BUFFER_STR = video_buffer_create(4, (int)vb_frame_size,
+            MEDIA_STR.width, MEDIA_STR.height);
+      TPOOL_STR        = tpool_create(SW_SWS_THREADS_STR);
+      if (!VIDEO_BUFFER_STR || !TPOOL_STR)
+         goto error;
+      log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured worker threads: %d\n",
+            SW_SWS_THREADS_STR);
+   }
 
    DECODE_THREAD_HANDLE_STR = sthread_create(decode_thread, NULL);
 

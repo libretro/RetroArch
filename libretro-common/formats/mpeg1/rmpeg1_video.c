@@ -183,6 +183,9 @@ struct rmpeg1_video
     * becomes bwd. That one-picture delay is the reordering B pictures
     * require -- they are transmitted after the reference they predict
     * forward from, and displayed before it. */
+   /* All nine planes are views into plane_arena, each starting on a
+    * 64-byte boundary. */
+   uint8_t  *plane_arena;
    uint8_t  *plane[3][3];     /* [slot][Y, Cb, Cr] */
    int       slot_cur, slot_fwd, slot_bwd;
    bool      have_fwd, have_bwd;
@@ -428,33 +431,26 @@ static bool alloc_planes(rmpeg1_video_t *v)
 
    {
       int k, j;
+      size_t yreg = (ysz + 63) & ~(size_t)63;
+      size_t creg = (csz + 63) & ~(size_t)63;
+      size_t cur  = 0;
 
-      for (k = 0; k < 3; k++)
-         for (j = 0; j < 3; j++)
-         {
-            free(v->plane[k][j]);
-            v->plane[k][j] = NULL;
-         }
+      free(v->plane_arena);
+      v->plane_arena = (uint8_t *)calloc(1, 3 * (yreg + 2 * creg));
+      if (!v->plane_arena)
+      {
+         for (k = 0; k < 3; k++)
+            for (j = 0; j < 3; j++)
+               v->plane[k][j] = NULL;
+         v->plane_bytes = 0;
+         return false;
+      }
 
       for (k = 0; k < 3; k++)
       {
-         v->plane[k][0] = (uint8_t *)calloc(1, ysz);
-         v->plane[k][1] = (uint8_t *)calloc(1, csz);
-         v->plane[k][2] = (uint8_t *)calloc(1, csz);
-
-         if (!v->plane[k][0] || !v->plane[k][1] || !v->plane[k][2])
-         {
-            int m, n;
-
-            for (m = 0; m < 3; m++)
-               for (n = 0; n < 3; n++)
-               {
-                  free(v->plane[m][n]);
-                  v->plane[m][n] = NULL;
-               }
-            v->plane_bytes = 0;
-            return false;
-         }
+         v->plane[k][0] = v->plane_arena + cur; cur += yreg;
+         v->plane[k][1] = v->plane_arena + cur; cur += creg;
+         v->plane[k][2] = v->plane_arena + cur; cur += creg;
       }
    }
 
@@ -1729,13 +1725,7 @@ void rmpeg1_video_free(rmpeg1_video_t *v)
    if (!v)
       return;
    free(v->buf);
-   {
-      int k, j;
-
-      for (k = 0; k < 3; k++)
-         for (j = 0; j < 3; j++)
-            free(v->plane[k][j]);
-   }
+   free(v->plane_arena);
    free(v);
 }
 

@@ -78,6 +78,12 @@ void nearest_resampler_int16_process(void *re_,
    data->output_frames = (size_t)((outp - outp_first) >> 1);
 }
 
+void nearest_resampler_int16_reset(void *re_)
+{
+   nearest_resampler_int16_t *re = (nearest_resampler_int16_t*)re_;
+   if (re) re->fraction = 0;
+}
+
 void nearest_resampler_int16_free(void *re_)
 {
    nearest_resampler_int16_t *re = (nearest_resampler_int16_t*)re_;

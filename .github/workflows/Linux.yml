@@ -2,6 +2,7 @@ name: CI Linux (i686)
 
 on:
   push:
+    branches: [master]
   pull_request:
   repository_dispatch:
     types: [run_build]
@@ -12,9 +13,14 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     container:
       image: reallibretroretroarch/libretro-build-i386-ubuntu:xenial-gcc9
       options: --user root
@@ -32,6 +38,13 @@ jobs:
           make -j$(getconf _NPROCESSORS_ONLN) clean
           make -j$(getconf _NPROCESSORS_ONLN) info all
 
-      - name: Get short SHA
-        id: slug
-        run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
+      - name: Stack frame sweep
+        run: |
+          set -eu
+          # Every stack frame in the graphics objects against the
+          # ceiling in CODING-GUIDELINES. It runs here rather than with
+          # the other checks because this is the job that builds the
+          # drivers: the menu harness turns OpenGL, Vulkan and the rest
+          # off for its own reasons, and the frames this sweep is for
+          # live in exactly those files.
+          .github/workflows/scripts/stack-frame-sweep.sh

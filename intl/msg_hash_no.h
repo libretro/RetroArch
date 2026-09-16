@@ -50,6 +50,7 @@ static const struct
    char s_29398124[21];
    char s_0615a7c8[11];
    char s_35a1323d[10];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[46];
 #endif
@@ -214,7 +215,9 @@ static const struct
    char s_15f24ff4[15];
    char s_ec7e8026[8];
    char s_5d29b870[17];
+   char s_6996339b[4];
    char s_4927597c[15];
+   char s_ddf679b9[7];
    char s_10342503[13];
    char s_d31f6d88[19];
    char s_f03e9c42[17];
@@ -1140,7 +1143,6 @@ static const struct
    char s_67d549fd[38];
    char s_3aaf6bf1[120];
    char s_7e96b5ce[45];
-   char s_3547866d[132];
    char s_8010a29e[116];
    char s_81120e85[116];
 #if defined (WIIU)
@@ -1306,6 +1308,7 @@ static const struct
    "Legg til spilleliste",
    "Bildemodus",
    "Talemodus",
+   "Alltid",
 #ifndef HAVE_DYNAMIC
    "Alltid start kjerne p\303\245nytt ved Kj\303\270r innhold",
 #endif
@@ -1470,7 +1473,9 @@ static const struct
    "Satt P\303\245 Pause",
    "Spiller",
    "Disk informasjon",
+   "Lyd",
    "L\303\270s ut platen",
+   "Utdata",
    "Nedlastinger",
    "Last ned en Kjerne",
    "Innholdnedlaster",
@@ -2435,8 +2440,6 @@ static const struct
    "Forsink auto-lasting av shader (i ms). Kan jobbe rundt grafiske glitcher n\303\245r du bruker pr"
    "ogramvare for \"skjermkopier\".",
    "Endre innstillinger for videosynkronisering.",
-   "Forbedrer ytelsen p\303\245 bekostning av latens og mer hakk i videoen. Bruk bare hvis full hast"
-   "ighet ikke kan oppn\303\245s p\303\245 noe annet vis.",
    "Tilpasset visningsregionsh\303\270yde som er brukt hvis st\303\270rrelsesforhold er satt til \"e"
    "gendefinert st\303\270rrelsesforhold\".",
    "Tilpasset visningsregionsbredde som er brukt hvis st\303\270rrelsesforhold er satt til \"egendef"
@@ -2579,7 +2582,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (28984u
+      (sizeof(msg_hash_no_blob) == (28870u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -2759,6 +2762,7 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -2923,7 +2927,9 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -3849,7 +3855,6 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
 #if defined (WIIU)

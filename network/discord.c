@@ -954,7 +954,7 @@ static rjson_t *discord_rpc_read(struct discord_rpc *rpc, char **json_buf_out)
          if (!rpc->is_open)
          {
             rpc->last_error_code = DISCORD_ERR_PIPE_CLOSED;
-            strlcpy(rpc->last_error_message, "Pipe closed",
+            strlcpy_lit(rpc->last_error_message, "Pipe closed",
                   sizeof(rpc->last_error_message));
             discord_rpc_close(rpc);
          }
@@ -966,7 +966,7 @@ static rjson_t *discord_rpc_read(struct discord_rpc *rpc, char **json_buf_out)
          if (read_frame.hdr.length > sizeof(read_frame.message) - 1)
          {
             rpc->last_error_code = DISCORD_ERR_READ_CORRUPT;
-            strlcpy(rpc->last_error_message, "Frame too large",
+            strlcpy_lit(rpc->last_error_message, "Frame too large",
                   sizeof(rpc->last_error_message));
             discord_rpc_close(rpc);
             return NULL;
@@ -975,7 +975,7 @@ static rjson_t *discord_rpc_read(struct discord_rpc *rpc, char **json_buf_out)
                   read_frame.hdr.length))
          {
             rpc->last_error_code = DISCORD_ERR_READ_CORRUPT;
-            strlcpy(rpc->last_error_message, "Partial data in frame",
+            strlcpy_lit(rpc->last_error_message, "Partial data in frame",
                   sizeof(rpc->last_error_message));
             discord_rpc_close(rpc);
             return NULL;
@@ -1053,7 +1053,7 @@ static rjson_t *discord_rpc_read(struct discord_rpc *rpc, char **json_buf_out)
          case DISCORD_OP_HANDSHAKE:
          default:
             rpc->last_error_code = DISCORD_ERR_READ_CORRUPT;
-            strlcpy(rpc->last_error_message, "Bad ipc frame",
+            strlcpy_lit(rpc->last_error_message, "Bad ipc frame",
                   sizeof(rpc->last_error_message));
             discord_rpc_close(rpc);
             return NULL;

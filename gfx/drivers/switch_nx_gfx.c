@@ -549,7 +549,6 @@ static void switch_update_viewport(switch_video_t *sw)
 
 static void switch_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
-    settings_t *settings = config_get_ptr();
     switch_video_t *sw   = (switch_video_t *)data;
 
     if (!sw)
@@ -566,7 +565,10 @@ static void switch_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
           break;
 
        case ASPECT_RATIO_CUSTOM:
-          if (settings->bools.video_scale_integer)
+          /* What the last frame carried, not what the setting says
+           * now: this runs on the video thread under the threaded
+           * wrapper, which is the default here. */
+          if (sw->frame_scale_integer)
           {
              video_driver_set_viewport_core();
              sw->o_size      = true;
@@ -593,6 +595,11 @@ static bool switch_frame(void *data, const void *frame,
    bool       ffwd_mode = video_info->input_driver_nonblock_state;
 #ifdef HAVE_MENU
    bool menu_is_alive   = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+
+   /* Travels with the frame, for set_aspect_ratio() to read rather
+    * than the setting the menu writes */
+   if (sw)
+      sw->frame_scale_integer = video_info->scale_integer;
 #endif
    struct font_params
       *osd_params       = (struct font_params *)&video_info->osd_stat_params;
@@ -1002,6 +1009,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_switch = {
    &switch_font,
    GFX_VIDEO_DRIVER_SWITCH,
    "switch",
+   false,
    false,
    NULL,                                         /* scissor_begin */
    NULL                                          /* scissor_end   */

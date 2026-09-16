@@ -46,6 +46,9 @@
 
 #if defined(ANDROID)
 #include "play_feature_delivery/play_feature_delivery.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 /*************************/
@@ -922,42 +925,6 @@ end:
 }
 #endif
 
-/* Move a completed temporary over its destination.
- *
- * POSIX rename() replaces atomically, which is the whole point;
- * Windows' rename() refuses when the destination exists, so fall back
- * to moving the original aside first and putting it back if the second
- * move fails - never leaving nothing behind.
- *
- * (playlist.c carries the same helper for the same reason.  A third
- * caller would justify hoisting one copy into libretro-common.) */
-static bool core_info_replace_file(const char *from, const char *to)
-{
-   char saved[PATH_MAX_LENGTH];
-   size_t _len;
-
-   if (filestream_rename(from, to) == 0)
-      return true;
-
-   _len = strlcpy(saved, to, sizeof(saved));
-   if (_len + STRLEN_CONST(".old") >= sizeof(saved))
-      return false;
-   strlcpy(saved + _len, ".old", sizeof(saved) - _len);
-
-   filestream_delete(saved);          /* a leftover from a previous run */
-   if (filestream_rename(to, saved) != 0)
-      return false;                   /* original untouched; give up   */
-
-   if (filestream_rename(from, to) == 0)
-   {
-      filestream_delete(saved);
-      return true;
-   }
-
-   filestream_rename(saved, to);      /* put the original back */
-   return false;
-}
-
 static bool core_info_cache_write(core_info_cache_list_t *list, const char *info_dir)
 {
    intfstream_t *file    = NULL;
@@ -994,7 +961,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
                file_path);
          return false;
       }
-      strlcpy(write_path + _len, ".tmp", sizeof(write_path) - _len);
+      strlcpy_lit(write_path + _len, ".tmp", sizeof(write_path) - _len);
    }
 
 #if defined(CORE_INFO_CACHE_COMPRESS)
@@ -1293,7 +1260,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    free(file);
    file    = NULL;
 
-   if (!core_info_replace_file(write_path, file_path))
+   if (filestream_rename(write_path, file_path) != 0)
    {
       filestream_delete(write_path);
       RARCH_ERR("[Core info] Failed to write core info cache file: \"%s\".\n",
@@ -1508,9 +1475,9 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
    _len = strlcpy(exts, core_exts, sizeof(exts));
 #if defined(HAVE_DYNAMIC)
    /* > 'standalone exempt' */
-   strlcpy(exts + _len, "|lck|lsae", sizeof(exts) - _len);
+   strlcpy_lit(exts + _len, "|lck|lsae", sizeof(exts) - _len);
 #else
-   strlcpy(exts + _len, "|lck",      sizeof(exts) - _len);
+   strlcpy_lit(exts + _len, "|lck",      sizeof(exts) - _len);
 #endif
 
    /* Fetch core directory listing */
@@ -1672,7 +1639,7 @@ static size_t core_info_get_file_id(const char *core_filename,
     * or platform-specific suffix */
    /* > Remove extension */
    _len = fill_pathname(s, core_filename, "", len);
-#if defined(IOS) || defined(OSX)
+#if TARGET_OS_IPHONE || TARGET_OS_OSX
    /* iOS framework names, to quote Apple:
     * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
     *
@@ -1722,7 +1689,7 @@ static void core_info_resolve_firmware(
 {
    unsigned i;
    size_t _len;
-   char prefix[12];
+   char prefix[24];
    unsigned firmware_count        = 0;
    core_info_firmware_t *firmware = NULL;
 
@@ -1735,7 +1702,7 @@ static void core_info_resolve_firmware(
    if (!firmware)
       return;
 
-   _len = strlcpy(prefix, "firmware", sizeof(prefix));
+   _len = strlcpy_lit(prefix, "firmware", sizeof(prefix));
 
    for (i = 0; i < firmware_count; i++)
    {
@@ -1745,16 +1712,16 @@ static void core_info_resolve_firmware(
 
       snprintf(prefix + _len, sizeof(prefix) - _len, "%u_", i);
       _len2 = strlcpy(key, prefix, sizeof(key));
-      strlcpy(key + _len2, "opt", sizeof(key) - _len2);
+      strlcpy_lit(key + _len2, "opt", sizeof(key) - _len2);
 
       if (config_get_bool(conf, key, &tmp_bool))
          firmware[i].optional = tmp_bool;
 
-      strlcpy(key + _len2, "path", sizeof(key) - _len2);
+      strlcpy_lit(key + _len2, "path", sizeof(key) - _len2);
 
       firmware[i].path = config_take_string(conf, key);
 
-      strlcpy(key + _len2, "desc", sizeof(key) - _len2);
+      strlcpy_lit(key + _len2, "desc", sizeof(key) - _len2);
 
       firmware[i].desc = config_take_string(conf, key);
    }

@@ -48,6 +48,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
+
+#include <compat/strl.h>
 #endif
 
 #define VENDOR_ID_AMD 0x1002
@@ -160,7 +162,18 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
          break;
    }
 
-   RARCH_LOG("[Vulkan] %s %s: %s.\n", severity, type, pCallbackData->pMessage);
+   switch (msg_severity)
+   {
+      case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+         RARCH_ERR("[Vulkan] %s %s: %s.\n", severity, type, pCallbackData->pMessage);
+         break;
+      case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+         RARCH_WARN("[Vulkan] %s %s: %s.\n", severity, type, pCallbackData->pMessage);
+         break;
+      default:
+         RARCH_LOG("[Vulkan] %s %s: %s.\n", severity, type, pCallbackData->pMessage);
+         break;
+   }
    return VK_FALSE;
 }
 #endif
@@ -695,7 +708,10 @@ static const char *vulkan_device_extensions[]  = {
 static const char *vulkan_optional_device_extensions[] = {
    "VK_KHR_sampler_mirror_clamp_to_edge",
    "VK_EXT_full_screen_exclusive",
-   "VK_KHR_portability_subset"
+   "VK_KHR_portability_subset",
+   /* Display timestamps for the presenter's repeat cadence; absent on
+    * most Windows drivers, present on Android and Mesa. */
+   "VK_GOOGLE_display_timing"
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Lets the app signal SMPTE-2086 mastering-display metadata to the
     * compositor via vkSetHdrMetadataEXT. Optional: if absent (common on
@@ -801,7 +817,10 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    if (!vulkan_context_init_gpu(vk))
       return false;
 
-   vkGetPhysicalDeviceFeatures(vk->context.gpu, &features);
+   /* pEnabledFeatures is an opt-in request list: enable individual
+    * features here only when a code path needs them. Blanket-enabling
+    * everything the GPU reports (notably robustBufferAccess) changes
+    * shader UBO read semantics on some drivers. */
 
    if (!cached_device_vk && iface && iface->create_device)
    {
@@ -968,11 +987,19 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
 
       vk->fse_supported = false;
-      for (unsigned i = 0; i < enabled_device_extension_count; i++)
+      for (i = 0; i < enabled_device_extension_count; i++)
       {
          if (!strcmp(enabled_device_extensions[i], "VK_EXT_full_screen_exclusive"))
          {
             vk->fse_supported = true;
+            break;
+         }
+      }
+      for (i = 0; i < enabled_device_extension_count; i++)
+      {
+         if (!strcmp(enabled_device_extensions[i], "VK_GOOGLE_display_timing"))
+         {
+            vk->display_timing_supported = true;
             break;
          }
       }
@@ -981,7 +1008,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       /* Note whether the extension was enabled; the actual entrypoint is
        * loaded below, after the device exists. */
       vk->set_hdr_metadata = NULL;
-      for (unsigned i = 0; i < enabled_device_extension_count; i++)
+      for (i = 0; i < enabled_device_extension_count; i++)
       {
          if (!strcmp(enabled_device_extensions[i], "VK_EXT_hdr_metadata"))
          {
@@ -1028,6 +1055,25 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       RARCH_ERR("[Vulkan] Failed to load device symbols.\n");
       return false;
    }
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   /* Resolve the explicit acquire/release now the device exists. Only
+    * used under VIDEO_FSE_FORCED; NULL otherwise and never called. */
+   vk->fse_acquire = NULL;
+   vk->fse_release = NULL;
+   if (vk->fse_supported)
+   {
+      vk->fse_acquire = vkGetDeviceProcAddr(vk->context.device,
+               "vkAcquireFullScreenExclusiveModeEXT");
+      vk->fse_release = vkGetDeviceProcAddr(vk->context.device,
+               "vkReleaseFullScreenExclusiveModeEXT");
+   }
+   vk->display_timing_query = NULL;
+   vk->present_id           = 0;
+   if (vk->display_timing_supported)
+      vk->display_timing_query = vkGetDeviceProcAddr(vk->context.device,
+               "vkGetPastPresentationTimingGOOGLE");
+#endif
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Now that the device exists, resolve vkSetHdrMetadataEXT if the
@@ -1472,6 +1518,14 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned i;
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   /* Exclusive mode is bound to the swapchain; release it first. */
+   if (vk->fse_acquired && vk->fse_release && vk->swapchain != VK_NULL_HANDLE)
+      ((PFN_vkReleaseFullScreenExclusiveModeEXT)vk->fse_release)(
+            vk->context.device, vk->swapchain);
+   vk->fse_acquired = false;
+#endif
+
    vulkan_emulated_mailbox_deinit(&vk->mailbox);
    if (vk->swapchain != VK_NULL_HANDLE)
    {
@@ -1801,7 +1855,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          break;
       case VULKAN_WSI_MVK_MACOS:
       case VULKAN_WSI_MVK_IOS:
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
          {
             VkMetalSurfaceCreateInfoEXT surf_info;
             PFN_vkCreateMetalSurfaceEXT create;
@@ -1947,7 +2001,12 @@ retry:
 #ifdef VULKAN_DEBUG
          RARCH_ERR("[Vulkan] Failed to create new swapchain.\n");
 #endif
-         retro_sleep(20);
+         /* No wait here. A window with no swapchain is paced by the
+          * runloop, which asks the context driver whether it has
+          * anything to present (gfx_ctx_driver_t::presentable) and
+          * waits a frame when it has not - one throttle, at the layer
+          * that knows what else is already holding the loop. A sleep
+          * in here would stack on top of it. */
          return;
       }
 
@@ -2038,6 +2097,11 @@ retry:
          /* Do nothing. */
          break;
       case VK_ERROR_OUT_OF_DATE_KHR:
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+      case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT:
+         /* Alt-tab or a mode switch under Forced negotiation. Same
+          * recovery as out-of-date: rebuild and re-acquire. */
+#endif
          /* Throw away the old swapchain and try again. */
          vulkan_destroy_swapchain(vk);
          /* Swapchain out of date, trying to create new one ... */
@@ -2107,19 +2171,36 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
+   /* Relaxed: ALLOWED is a hint and the driver may decline - and on
+    * NVIDIA it does, leaving the swapchain on DWM's independent-flip
+    * path with the setting silently inert (PresentMon reports
+    * "Hardware Composed: Independent Flip" in both windowed-fullscreen
+    * states). Forced: APPLICATION_CONTROLLED, followed by an explicit
+    * vkAcquireFullScreenExclusiveModeEXT once the swapchain exists. */
+   bool fse_forced                         =
+         !video_windowed_fullscreen
+      && settings->uints.video_fse_negotiation == VIDEO_FSE_FORCED;
    HMONITOR hmonitor;
-   VkSurfaceFullScreenExclusiveInfoEXT fse_info = {
-      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
-      NULL,
-      video_windowed_fullscreen
-         ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
-         : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
-   };
-   VkSurfaceFullScreenExclusiveWin32InfoEXT fse_win32_info = {
-      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
-      NULL,
-      NULL
-   };
+   /* Assigned rather than initialised: the exclusive mode depends on
+    * two settings read above, and C89 wants an initialiser it can
+    * compute at load time. */
+   VkSurfaceFullScreenExclusiveInfoEXT fse_info;
+   VkSurfaceFullScreenExclusiveWin32InfoEXT fse_win32_info;
+#endif
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   fse_info.sType                          =
+      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT;
+   fse_info.pNext                          = NULL;
+   fse_info.fullScreenExclusive            = video_windowed_fullscreen
+      ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
+      : (fse_forced
+            ? VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT
+            : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT);
+   fse_win32_info.sType                    =
+      VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT;
+   fse_win32_info.pNext                    = NULL;
+   fse_win32_info.hmonitor                 = NULL;
 #endif
 
    format.format                           = VK_FORMAT_UNDEFINED;
@@ -2149,15 +2230,86 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    else
       vk->flags     &= ~VK_DATA_FLAG_EMULATING_MAILBOX;
 
+   /* Resolve the present mode before deciding whether a new swapchain
+    * is needed at all.  A swap_interval change only matters to the
+    * swapchain through the present mode it resolves to; on a surface
+    * that offers FIFO alone every interval resolves to FIFO, and
+    * intervals above 1 are emulated by frame duplication in the video
+    * driver, never by the swapchain. */
+   vkGetPhysicalDeviceSurfacePresentModesKHR(
+         vk->context.gpu, vk->vk_surface,
+         &present_mode_count, NULL);
+   if (present_mode_count < 1 || present_mode_count > 16)
+   {
+      RARCH_ERR("[Vulkan] Bogus present modes found.\n");
+      return false;
+   }
+   vkGetPhysicalDeviceSurfacePresentModesKHR(
+         vk->context.gpu, vk->vk_surface,
+         &present_mode_count, present_modes);
+
+   for (i = 0; i < present_mode_count; i++)
+      vk->context.present_modes[i] = present_modes[i];
+
+   /* Settled here, for whoever asks the context for its flags */
+   {
+      int relaxed = 0;
+      for (i = 0; i < present_mode_count; i++)
+      {
+         if (present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
+         {
+            relaxed = 1;
+            break;
+         }
+      }
+      retro_atomic_store_release_int(
+            &vk->context.supports_adaptive_vsync, relaxed);
+   }
+
+   /* Prefer IMMEDIATE without vsync */
+   for (i = 0; i < present_mode_count; i++)
+   {
+      if (     !swap_interval
+            && !vsync
+            && present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
+      {
+         swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+         break;
+      }
+
+      if (     swap_interval < 0
+            && present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
+      {
+         swapchain_present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+         break;
+      }
+   }
+
+   /* If still in FIFO with no swap interval, try MAILBOX */
+   for (i = 0; i < present_mode_count; i++)
+   {
+      if (     !swap_interval
+            && swapchain_present_mode == VK_PRESENT_MODE_FIFO_KHR
+            && present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+      {
+         swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+         break;
+      }
+   }
+
    vk->flags        |= VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
 
    if (       (vk->swapchain != VK_NULL_HANDLE)
          && (!(vk->context.flags & VK_CTX_FLAG_INVALID_SWAPCHAIN))
          &&   (vk->context.swapchain_width  == width)
          &&   (vk->context.swapchain_height == height)
-         &&   (vk->context.swap_interval    == swap_interval))
+         &&   (   (vk->context.swap_interval          == swap_interval)
+               || (vk->context.swapchain_present_mode == swapchain_present_mode)))
    {
-      /* Do not bother creating a swapchain redundantly. */
+      /* Do not bother creating a swapchain redundantly.  The interval
+       * still takes effect: the driver reads it for frame duplication,
+       * and the mailbox emulation below is keyed off it. */
+      vk->context.swap_interval = swap_interval;
 #ifdef VULKAN_DEBUG
       RARCH_DBG("[Vulkan] Do not need to re-create swapchain.\n");
 #endif
@@ -2211,53 +2363,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    vulkan_emulated_mailbox_deinit(&vk->mailbox);
 
-   vkGetPhysicalDeviceSurfacePresentModesKHR(
-         vk->context.gpu, vk->vk_surface,
-         &present_mode_count, NULL);
-   if (present_mode_count < 1 || present_mode_count > 16)
-   {
-      RARCH_ERR("[Vulkan] Bogus present modes found.\n");
-      return false;
-   }
-   vkGetPhysicalDeviceSurfacePresentModesKHR(
-         vk->context.gpu, vk->vk_surface,
-         &present_mode_count, present_modes);
-
    vk->context.swap_interval = swap_interval;
-
-   for (i = 0; i < present_mode_count; i++)
-      vk->context.present_modes[i] = present_modes[i];
-
-   /* Prefer IMMEDIATE without vsync */
-   for (i = 0; i < present_mode_count; i++)
-   {
-      if (     !swap_interval
-            && !vsync
-            && present_modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
-      {
-         swapchain_present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-         break;
-      }
-
-      if (     swap_interval < 0
-            && present_modes[i] == VK_PRESENT_MODE_FIFO_RELAXED_KHR)
-      {
-         swapchain_present_mode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
-         break;
-      }
-   }
-
-   /* If still in FIFO with no swap interval, try MAILBOX */
-   for (i = 0; i < present_mode_count; i++)
-   {
-      if (     !swap_interval
-            && swapchain_present_mode == VK_PRESENT_MODE_FIFO_KHR
-            && present_modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
-      {
-         swapchain_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
-         break;
-      }
-   }
 
    /* Present mode logging */
    if (vk->swapchain == VK_NULL_HANDLE)
@@ -2414,20 +2520,20 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
           * drivers expose the extension without any HDR surface
           * formats. */
          {
-            uint32_t disp_flags = video_driver_get_disp_flags();
-            disp_flags &= ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
+            uint32_t hdr_flags = 0;
             for (i = 0; i < format_count; i++)
             {
                if (  vulkan_is_hdr10_format(formats[i].format)
                   && formats[i].colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
-                  disp_flags |= VIDEO_FLAG_HDR10_SUPPORT;
+                  hdr_flags |= VIDEO_FLAG_HDR10_SUPPORT;
                if (  formats[i].format     == VK_FORMAT_R16G16B16A16_SFLOAT
                   && formats[i].colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT)
-                  disp_flags |= VIDEO_FLAG_SCRGB_SUPPORT;
+                  hdr_flags |= VIDEO_FLAG_SCRGB_SUPPORT;
             }
-            if (disp_flags & (VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT))
-               disp_flags |= VIDEO_FLAG_HDR_SUPPORT;
-            video_driver_set_disp_flags(disp_flags);
+            if (hdr_flags & (VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT))
+               hdr_flags |= VIDEO_FLAG_HDR_SUPPORT;
+            video_driver_modify_disp_flags(hdr_flags,
+                  VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
          }
 
          /* Clamp the selected mode if the surface doesn't support it */
@@ -2673,6 +2779,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    info.oldSwapchain           = NULL;
    if (old_swapchain != VK_NULL_HANDLE)
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+   old_swapchain               = VK_NULL_HANDLE;
 #else
    info.oldSwapchain           = old_swapchain;
 #endif
@@ -2690,13 +2797,65 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    {
       VkResult res = vkCreateSwapchainKHR(vk->context.device,
                &info, NULL, &vk->swapchain);
+
+#ifndef __APPLE__
+      /* oldSwapchain is retired by the call whether or not the new one
+       * was created, so nothing is lost by dropping it and asking again
+       * without the handoff.  Some display WSIs (PowerVR on
+       * VK_KHR_display) refuse to build a replacement while the old
+       * swapchain still holds the plane, and succeed once it is gone. */
+      if (res != VK_SUCCESS && old_swapchain != VK_NULL_HANDLE)
+      {
+         RARCH_WARN("[Vulkan] Swapchain replacement failed (err = %d); "
+               "retrying without oldSwapchain.\n", (int)res);
+         vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+         old_swapchain     = VK_NULL_HANDLE;
+         info.oldSwapchain = VK_NULL_HANDLE;
+         vk->swapchain     = VK_NULL_HANDLE;
+         res               = vkCreateSwapchainKHR(vk->context.device,
+               &info, NULL, &vk->swapchain);
+      }
+#endif
+
       if (res != VK_SUCCESS)
       {
          RARCH_ERR("[Vulkan] Failed to create swapchain (err = %d).\n",
                (int)res);
+         /* Leave the context in the same "no swapchain yet" state the
+          * zero-extent path uses, so the acquire path retries the
+          * create on a later frame instead of presenting to a retired
+          * or undefined handle. */
+         if (old_swapchain != VK_NULL_HANDLE)
+            vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
+         vk->swapchain                    = VK_NULL_HANDLE;
+         vk->context.num_swapchain_images = 1;
+         memset(vk->context.swapchain_images, 0,
+               sizeof(vk->context.swapchain_images));
+         vk->context.flags               |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+         vk->context.flags               &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
          return false;
       }
    }
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   vk->fse_acquired = false;
+   if (fse_forced && vk->fse_supported && vk->fse_acquire)
+   {
+      VkResult res = ((PFN_vkAcquireFullScreenExclusiveModeEXT)
+            vk->fse_acquire)(vk->context.device, vk->swapchain);
+      if (res == VK_SUCCESS)
+      {
+         vk->fse_acquired = true;
+         RARCH_LOG("[Vulkan] Exclusive fullscreen acquired.\n");
+      }
+      else
+         /* Not fatal: the swapchain still works on the compositor
+          * path, which is where Relaxed would have left it anyway. */
+         RARCH_WARN("[Vulkan] Exclusive fullscreen requested but "
+               "vkAcquireFullScreenExclusiveModeEXT returned %d; "
+               "continuing without it.\n", (int)res);
+   }
+#endif
 
    /* See TODO/FIXME note above - part of the same rubber bandaid hack 'fix' */
 #ifndef __APPLE__
@@ -2706,6 +2865,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    vk->context.swapchain_width        = swapchain_size.width;
    vk->context.swapchain_height       = swapchain_size.height;
+   vk->context.swapchain_present_mode = swapchain_present_mode;
 #ifdef VULKAN_HDR_SWAPCHAIN
    vk->context.swapchain_colour_space = format.colorSpace;
 #endif /* VULKAN_HDR_SWAPCHAIN */
@@ -3082,7 +3242,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       vkDestroyDebugUtilsMessengerEXT(vk->context.instance, vk->context.debug_callback, NULL);
 #endif
 
-   video_st_flags              = video_st->flags;
+   video_st_flags              = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
 
    if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {
@@ -3143,9 +3303,35 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #endif
 }
 
+/* When the most recent present the driver has timed reached the display,
+ * in microseconds on the platform's monotonic clock - the clock
+ * cpu_features_get_time_usec() reads on the platforms that have this
+ * extension. 0 without the extension or before the first timed present. */
+retro_time_t vulkan_last_present_time(gfx_ctx_vulkan_data_t *vk)
+{
+   PFN_vkGetPastPresentationTimingGOOGLE query;
+   VkPastPresentationTimingGOOGLE timings[8];
+   uint32_t count = 8;
+   uint32_t i;
+   uint64_t latest = 0;
+
+   if (!vk || !vk->display_timing_supported || !vk->display_timing_query
+         || vk->swapchain == VK_NULL_HANDLE)
+      return 0;
+   query = (PFN_vkGetPastPresentationTimingGOOGLE)vk->display_timing_query;
+   if (query(vk->context.device, vk->swapchain, &count, timings) < 0)
+      return 0;
+   for (i = 0; i < count; i++)
+      if (timings[i].actualPresentTime > latest)
+         latest = timings[i].actualPresentTime;
+   return (retro_time_t)(latest / 1000);
+}
+
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 {
    VkPresentInfoKHR present;
+   VkPresentTimesInfoGOOGLE times;
+   VkPresentTimeGOOGLE ptime;
    VkResult result                 = VK_SUCCESS;
    VkResult err                    = VK_SUCCESS;
 
@@ -3157,6 +3343,18 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    present.pSwapchains             = &vk->swapchain;
    present.pImageIndices           = &index;
    present.pResults                = &result;
+
+   /* An ID per present, so the timing query below can name it. */
+   if (vk->display_timing_supported && vk->display_timing_query)
+   {
+      times.sType                = VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE;
+      times.pNext                = NULL;
+      times.swapchainCount       = 1;
+      times.pTimes               = &ptime;
+      ptime.presentID            = ++vk->present_id;
+      ptime.desiredPresentTime   = 0;
+      present.pNext              = &times;
+   }
 
    /* Better hope QueuePresent doesn't block D: */
 #ifdef HAVE_THREADS

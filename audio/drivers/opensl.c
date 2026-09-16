@@ -19,10 +19,15 @@
 #include <SLES/OpenSLES_Android.h>
 #endif
 
+#include <string.h>
+
 #include <retro_atomic.h>
-#include <rthreads/rthreads.h>
+#include <retro_math.h>
+#include <retro_timers.h>
+#include <rthreads/retro_eventcount.h>
 
 #include "../audio_driver.h"
+#include "../../verbosity.h"
 
 /* Upper bound on how long a blocking write will wait for the buffer
  * queue callback before giving up and reporting a short write.  Never
@@ -41,6 +46,7 @@
 #define SLEngineItf_CreateAudioPlayer(a, ...) ((*(a))->CreateAudioPlayer(a, __VA_ARGS__))
 
 #define SLPlayItf_SetPlayState(a, ...) ((*(a))->SetPlayState(a, __VA_ARGS__))
+#define SLPlayItf_GetPlayState(a, ...) ((*(a))->GetPlayState(a, __VA_ARGS__))
 
 typedef struct sl
 {
@@ -55,27 +61,67 @@ typedef struct sl
    SLAndroidSimpleBufferQueueItf buffer_queue;
    SLPlayItf player;
 
-   slock_t *lock;
-   scond_t *cond;
    unsigned buf_size;
    unsigned buf_count;
    unsigned buffer_index;
    unsigned buffer_ptr;
+   /* The player was created with a float PCM_EX format (Android, API
+    * level 21+); blocks then hold 32-bit float frames and the frontend
+    * skips its float-to-int16 pass. */
+   bool use_float;
    /* Blocks currently enqueued on the device.  Decremented by
     * opensl_callback on the OpenSL engine thread, incremented and
     * read by the writer thread.  Android is always weakly-ordered
     * ARM/AArch64, so the reads need acquire semantics to pair with
     * the acq_rel RMWs - the previous plain volatile reads had none. */
    retro_atomic_int_t buffered_blocks;
+   /* Writers park here when the queue is full or unmoved. */
+   retro_eventcount_t park;
+   /* Frames the device has finished with, for the sink rate estimate.
+    * The callback fires once per block the device has played, so it is
+    * the device's own clock ticking - the same thing the WASAPI pump
+    * and the ASIO callback count. Written only by the callback, read by
+    * the frontend through sl_frames_consumed(). */
+   retro_atomic_size_t consumed;
+   unsigned frames_per_block;
    bool nonblock;
    bool is_paused;
 } sl_t;
 
+/* Fully lock-free, no sleep, no clock: the writer parks on a
+ * retro_eventcount, which on this driver's one real platform is a
+ * futex - no lock at all, a relative timeout as the stall bound, so
+ * no deadline arithmetic and no wall clock in the hot path - and
+ * whose prepare/commit window removes the lost-wakeup race the old
+ * condition variable had to tolerate. The construct's other
+ * backends keep the file honest if it ever compiles elsewhere. The
+ * driver owns no mutex any thread could ever touch after free
+ * (#19561's poisoned mutex is libwilhelm's own; see sl_free), and
+ * the callback's notify makes no syscall unless a writer is
+ * actually parked - the eventcount gates that itself, with the
+ * seq_cst pairing a hand-rolled waiter flag gets subtly wrong. */
 static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
 {
    sl_t *sl = (sl_t*)ctx;
    retro_atomic_fetch_sub_int(&sl->buffered_blocks, 1);
-   scond_signal(sl->cond);
+   /* A block the device has played: device time, whatever the writer
+    * managed to supply. */
+   retro_atomic_fetch_add_size(&sl->consumed, sl->frames_per_block);
+   /* Wake a parked writer; with none parked this is one atomic
+    * bump and one load, no syscall. */
+   retro_eventcount_notify(&sl->park);
+}
+
+/* Frames the device has taken since the player started. Counting the
+ * blocks it has finished with counts device time; there is no queue to
+ * subtract, unlike ALSA, because a block is only handed back once it
+ * has been played. */
+static size_t sl_frames_consumed(void *data)
+{
+   sl_t *sl = (sl_t*)data;
+   if (!sl)
+      return 0;
+   return retro_atomic_load_acquire_size(&sl->consumed);
 }
 
 #define GOTO_IF_FAIL(x) do { \
@@ -89,8 +135,39 @@ static void sl_free(void *data)
    if (!sl)
       return;
 
+   /* Teardown ordering hardened for #19561: libwilhelm's AudioTrack
+    * thread crashing in pthread_mutex_lock on 0x55-poisoned memory,
+    * every frame of the stack inside libwilhelm - its own object
+    * mutex, freed by our Destroy while its callback thread was still
+    * in flight.  The spec makes Destroy synchronize with callbacks,
+    * but Android's implementation has raced that when torn down from
+    * PLAYING with buffers still queued.  So: stop, clear the queue,
+    * and confirm the STOPPED transition (bounded - GetPlayState is
+    * cheap and the transition is normally immediate) before any
+    * Destroy, so the AudioTrack thread has nothing left to run when
+    * the objects go. */
    if (sl->player)
+   {
       SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_STOPPED);
+      if (sl->buffer_queue)
+         (*sl->buffer_queue)->Clear(sl->buffer_queue);
+      {
+         /* A foreign API's state transition has nothing to park on,
+          * so this one confirmation loop polls - iteration-bounded,
+          * cold path, once per session.  Normally the very first
+          * read already says STOPPED. */
+         int i;
+         SLuint32 state = SL_PLAYSTATE_PLAYING;
+         for (i = 0; i < 50; i++)
+         {
+            if (   SLPlayItf_GetPlayState(sl->player, &state)
+                     != SL_RESULT_SUCCESS
+                || state == SL_PLAYSTATE_STOPPED)
+               break;
+            retro_sleep(1);
+         }
+      }
+   }
 
    if (sl->buffer_queue_object)
       SLObjectItf_Destroy(sl->buffer_queue_object);
@@ -101,22 +178,22 @@ static void sl_free(void *data)
    if (sl->engine_object)
       SLObjectItf_Destroy(sl->engine_object);
 
-   if (sl->lock)
-      slock_free(sl->lock);
-   if (sl->cond)
-      scond_free(sl->cond);
-
+   retro_eventcount_free(&sl->park);
    free(sl->buffer);
    free(sl->buffer_chunk);
    free(sl);
 }
 
 static void *sl_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
       unsigned *new_rate)
 {
    unsigned i;
+   unsigned frames_per_block;
+   unsigned frame_size                             = 2 * sizeof(int16_t);
    SLDataFormat_PCM fmt_pcm                        = {0};
+#if defined(ANDROID) && defined(__ANDROID_API__) && (__ANDROID_API__ >= 21)
+   SLAndroidDataFormat_PCM_EX fmt_pcm_ex           = {0};
+#endif
    SLDataSource audio_src                          = {0};
    SLDataSink audio_sink                           = {0};
    SLDataLocator_AndroidSimpleBufferQueue loc_bufq = {0};
@@ -133,6 +210,9 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    /* calloc zero-fill is not a portable initializer for an atomic -
     * initialize it explicitly before anything can touch it. */
    retro_atomic_int_init(&sl->buffered_blocks, 0);
+   retro_atomic_size_init(&sl->consumed, 0);
+   if (!retro_eventcount_init(&sl->park))
+      goto error;
 
    RARCH_LOG("[OpenSL] Requested audio latency: %u ms.\n", latency);
 
@@ -143,16 +223,94 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    GOTO_IF_FAIL(SLEngineItf_CreateOutputMix(sl->engine, &sl->output_mix, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->output_mix, SL_BOOLEAN_FALSE));
 
-   if (block_frames)
-      sl->buf_size  = block_frames * 4;
-   else
-      sl->buf_size  = next_pow2(32 * latency);
+   /* Sizes in frames first; the byte size follows the format chosen.
+    *
+    * The device's burst is a granularity, not a block size: a queue
+    * whose blocks are not a multiple of it leaves the fast mixer,
+    * which costs latency rather than saving it. So the block is the
+    * burst where the platform reports one, and the latency decides
+    * how many - the same shape every other driver has, where the
+    * frontend asks in milliseconds and the driver rounds it to what
+    * the device can do. Where nothing is reported, the block is
+    * derived from the latency as before. */
+   {
+      unsigned burst   = audio_driver_device_block_frames();
+      frames_per_block = burst ? burst : next_pow2(32 * latency) / 4;
+   }
+   if (frames_per_block < 2)
+      frames_per_block = 2;
 
-   sl->buf_count    = (latency * 4 * rate + 500) / 1000;
-   sl->buf_count    = (sl->buf_count + sl->buf_size / 2) / sl->buf_size;
+   sl->buf_count    = (latency * rate + 500) / 1000;
+   sl->buf_count    = (sl->buf_count + frames_per_block / 2) / frames_per_block;
 
+   /* Two at least: the block being filled is the block the device is
+    * playing, so a queue of one cannot be written to at all. This is
+    * the floor of the buffer-queue path - a latency below two bursts
+    * is not reachable, and the buffer_size() this driver reports says
+    * so rather than pretending otherwise. */
    if (sl->buf_count < 2)
       sl->buf_count = 2;
+
+   loc_bufq.locatorType   = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
+   loc_bufq.numBuffers    = sl->buf_count;
+
+   loc_outmix.locatorType = SL_DATALOCATOR_OUTPUTMIX;
+   loc_outmix.outputMix   = sl->output_mix;
+
+   audio_src.pLocator     = &loc_bufq;
+   audio_sink.pLocator    = &loc_outmix;
+
+#if defined(ANDROID) && defined(__ANDROID_API__) && (__ANDROID_API__ >= 21)
+   /* Float first. API level 21 added SLAndroidDataFormat_PCM_EX; a
+    * runtime that refuses it (older device, or a libOpenSLES built
+    * without it) fails player creation, and the 16-bit format below is
+    * tried in that case. */
+   fmt_pcm_ex.formatType     = SL_ANDROID_DATAFORMAT_PCM_EX;
+   fmt_pcm_ex.numChannels    = 2;
+   fmt_pcm_ex.sampleRate     = rate * 1000; /* milli-Hz */
+   fmt_pcm_ex.bitsPerSample  = 32;
+   fmt_pcm_ex.containerSize  = 32;
+   fmt_pcm_ex.channelMask    = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
+   fmt_pcm_ex.endianness     = SL_BYTEORDER_LITTLEENDIAN;
+   fmt_pcm_ex.representation = SL_ANDROID_PCM_REPRESENTATION_FLOAT;
+   audio_src.pFormat         = &fmt_pcm_ex;
+
+   res = SLEngineItf_CreateAudioPlayer(sl->engine, &sl->buffer_queue_object,
+         &audio_src, &audio_sink, 1, &id, &req);
+   if (res == SL_RESULT_SUCCESS)
+   {
+      sl->use_float = true;
+      frame_size    = 2 * sizeof(float);
+      RARCH_LOG("[OpenSL] Float output.\n");
+   }
+   else
+   {
+      sl->buffer_queue_object = NULL;
+      RARCH_LOG("[OpenSL] Float output refused (0x%x), using 16-bit.\n",
+            (unsigned)res);
+   }
+#endif
+
+   if (!sl->use_float)
+   {
+      fmt_pcm.formatType     = SL_DATAFORMAT_PCM;
+      fmt_pcm.numChannels    = 2;
+      fmt_pcm.samplesPerSec  = rate * 1000; /* Samplerate is in milli-Hz. */
+      fmt_pcm.bitsPerSample  = 16;
+      fmt_pcm.containerSize  = 16;
+      fmt_pcm.channelMask    = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
+      fmt_pcm.endianness     = SL_BYTEORDER_LITTLEENDIAN; /* Android only. */
+      audio_src.pFormat      = &fmt_pcm;
+
+      GOTO_IF_FAIL(SLEngineItf_CreateAudioPlayer(sl->engine, &sl->buffer_queue_object,
+               &audio_src, &audio_sink,
+               1, &id, &req));
+      frame_size             = 2 * sizeof(int16_t);
+   }
+   GOTO_IF_FAIL(SLObjectItf_Realize(sl->buffer_queue_object, SL_BOOLEAN_FALSE));
+
+   sl->buf_size          = frames_per_block * frame_size;
+   sl->frames_per_block  = frames_per_block;
 
    sl->buffer       = (uint8_t**)calloc(sizeof(uint8_t*), sl->buf_count);
    if (!sl->buffer)
@@ -168,35 +326,9 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    RARCH_LOG("[OpenSL] Setting audio latency: Block size = %u, Blocks = %u, Total = %u...\n",
          sl->buf_size, sl->buf_count, sl->buf_size * sl->buf_count);
 
-   fmt_pcm.formatType     = SL_DATAFORMAT_PCM;
-   fmt_pcm.numChannels    = 2;
-   fmt_pcm.samplesPerSec  = rate * 1000; /* Samplerate is in milli-Hz. */
-   fmt_pcm.bitsPerSample  = 16;
-   fmt_pcm.containerSize  = 16;
-   fmt_pcm.channelMask    = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
-   fmt_pcm.endianness     = SL_BYTEORDER_LITTLEENDIAN; /* Android only. */
-
-   audio_src.pLocator     = &loc_bufq;
-   audio_src.pFormat      = &fmt_pcm;
-
-   loc_bufq.locatorType   = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
-   loc_bufq.numBuffers    = sl->buf_count;
-
-   loc_outmix.locatorType = SL_DATALOCATOR_OUTPUTMIX;
-   loc_outmix.outputMix   = sl->output_mix;
-
-   audio_sink.pLocator    = &loc_outmix;
-
-   GOTO_IF_FAIL(SLEngineItf_CreateAudioPlayer(sl->engine, &sl->buffer_queue_object,
-            &audio_src, &audio_sink,
-            1, &id, &req));
-   GOTO_IF_FAIL(SLObjectItf_Realize(sl->buffer_queue_object, SL_BOOLEAN_FALSE));
-
    GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_ANDROIDSIMPLEBUFFERQUEUE,
             &sl->buffer_queue));
 
-   sl->cond               = scond_new();
-   sl->lock               = slock_new();
 
    (*sl->buffer_queue)->RegisterCallback(sl->buffer_queue, opensl_callback, sl);
 
@@ -269,33 +401,37 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
       }
       else
       {
-         bool signalled = true;
-         slock_lock(sl->lock);
-         /* Bounded.  opensl_callback is the only thing in this file
-          * that ever signals sl->cond, and it does not hold sl->lock
-          * while doing so - the predicate is buffered_blocks, updated
-          * with an atomic fetch_sub - so a signal raised between the
-          * test above and this wait reaches no waiter.  While the
-          * device keeps consuming blocks the next callback covers
-          * that.  If it has stopped consuming - device loss, a player
-          * error - there is no next callback, no shutdown or error
-          * signal anywhere in this driver, and the one `return -1`
-          * below sits past the wait where a blocked thread can never
-          * reach it.  An untimed wait here parked the thread the core
-          * runs on for good. */
+         /* The driver's only throttle: the eventcount's documented
+          * loop, predicate re-checked inside the prepare/commit
+          * window so a callback landing there cancels the park
+          * instead of being lost.  The timeout is the stall bound,
+          * needed because a dead device sends no callback, no
+          * shutdown or error signal exists anywhere in this driver,
+          * and an unbounded wait parked the thread the core runs on
+          * for good. */
+         bool stalled = false;
          while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
                == (int)sl->buf_count)
          {
-            if (!(signalled = scond_wait_timeout(sl->cond, sl->lock,
-                        OPENSL_STALL_TIMEOUT_US)))
+            int key = retro_eventcount_prepare_wait(&sl->park);
+            if (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+                  != (int)sl->buf_count)
+            {
+               retro_eventcount_cancel_wait(&sl->park);
                break;
+            }
+            if (!retro_eventcount_commit_wait_timeout(&sl->park, key,
+                     OPENSL_STALL_TIMEOUT_US))
+            {
+               stalled = true;
+               break;
+            }
          }
-         slock_unlock(sl->lock);
 
          /* Report what was enqueued so far, exactly as the nonblock
           * path above does when the queue is full.  Any partial block
           * stays in sl->buffer_ptr for the next call. */
-         if (!signalled)
+         if (stalled)
             break;
       }
 
@@ -313,19 +449,69 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
       if (sl->buffer_ptr >= sl->buf_size)
       {
          SLresult res     = (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[sl->buffer_index], sl->buf_size);
-         sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
-         retro_atomic_fetch_add_int(&sl->buffered_blocks, 1);
-         sl->buffer_ptr   = 0;
 
+         /* A block the device refused is not on the device: it is not
+          * counted, and the index stays on it. */
          if (res != SL_RESULT_SUCCESS)
          {
             RARCH_ERR("[OpenSL] Failed to write. Error: 0x%x.\n", (unsigned)res);
             return -1;
          }
+         sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
+         retro_atomic_fetch_add_int(&sl->buffered_blocks, 1);
+         sl->buffer_ptr   = 0;
       }
    }
 
    return _len;
+}
+
+/* Sleep on the condition the buffer-done callback signals until at
+ * least len bytes fit, capped at half the queue so the wait always
+ * ends. Returns the free space then, or 0 after the stall timeout. */
+static size_t sl_wait_writable(void *data, size_t len)
+{
+   sl_t *sl     = (sl_t*)data;
+   size_t total = (size_t)sl->buf_size * sl->buf_count;
+   size_t avail;
+
+   if (len > total / 2)
+      len = total / 2;
+
+   for (;;)
+   {
+      int buffered = retro_atomic_load_acquire_int(&sl->buffered_blocks);
+      /* Whole blocks not on the device, less the one being filled,
+       * plus what is left of that one. With every block enqueued there
+       * is no block to fill and the space is nil; said so, rather than
+       * left to the unsigned arithmetic that only came to zero because
+       * buffer_ptr is always zero in that state. */
+      if (buffered >= (int)sl->buf_count)
+         avail = 0;
+      else
+         avail = ((size_t)(sl->buf_count - buffered - 1) * sl->buf_size
+               + (sl->buf_size - sl->buffer_ptr));
+      if (avail >= len)
+         return avail;
+      /* Same parking as sl_write's throttle: block until the counter
+       * moves off the value just sampled, stalled after the same
+       * timeout, with the change-since-sample race closed by the
+       * prepare/commit window. */
+      while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+            == buffered)
+      {
+         int key = retro_eventcount_prepare_wait(&sl->park);
+         if (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+               != buffered)
+         {
+            retro_eventcount_cancel_wait(&sl->park);
+            break;
+         }
+         if (!retro_eventcount_commit_wait_timeout(&sl->park, key,
+                  OPENSL_STALL_TIMEOUT_US))
+            return 0;
+      }
+   }
 }
 
 static size_t sl_write_avail(void *data)
@@ -341,8 +527,14 @@ static size_t sl_buffer_size(void *data)
    return sl->buf_size * sl->buf_count;
 }
 
-/* TODO/FIXME - implement */
-static bool sl_use_float(void *data) { return false; }
+/* True when init managed to create the player with a float format
+ * (Android API level 21+); false on the 16-bit path every other build
+ * and runtime takes. */
+static bool sl_use_float(void *data)
+{
+   sl_t *sl = (sl_t*)data;
+   return sl->use_float;
+}
 
 audio_driver_t audio_opensl = {
    sl_init,
@@ -358,5 +550,7 @@ audio_driver_t audio_opensl = {
    NULL,
    sl_write_avail,
    sl_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   sl_wait_writable,
+   sl_frames_consumed
 };

@@ -86,6 +86,23 @@ WINGDIAPI_UWP BOOL APIENTRY wglShareLists(
 }
 #endif
 
+#else
+
+/* mingw-w64's wingdi.h declares every other wgl entry point this file
+ * uses - wglCreateContext, wglMakeCurrent, wglShareLists,
+ * wglGetProcAddress - but omits wglSwapBuffers. The Windows SDK does
+ * declare it, so this is a duplicate of an identical declaration
+ * there rather than a conflicting one. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+WINGDIAPI BOOL WINAPI wglSwapBuffers(HDC);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
@@ -402,11 +419,10 @@ void create_gl_context(HWND hwnd, bool *quit)
     * masked back out. On builds without a D3D driver the probe reports
     * false and the settings simply stay hidden, as before. */
    {
-      uint32_t disp_flags = video_driver_get_disp_flags();
-      disp_flags         &= ~(  VIDEO_FLAG_HDR_SUPPORT
-                              | VIDEO_FLAG_HDR10_SUPPORT
-                              | VIDEO_FLAG_SCRGB_SUPPORT);
-      video_driver_set_disp_flags(disp_flags);
+      video_driver_modify_disp_flags(0,
+              VIDEO_FLAG_HDR_SUPPORT
+            | VIDEO_FLAG_HDR10_SUPPORT
+            | VIDEO_FLAG_SCRGB_SUPPORT);
 
       /* The probe lives in win32_common's desktop-only region; UWP
        * configurations that define HAVE_OPENGL compile this function
@@ -416,10 +432,9 @@ void create_gl_context(HWND hwnd, bool *quit)
 #if !defined(__WINRT__)
       if (win32_display_hdr_active(win32_get_window()))
       {
-         disp_flags  = video_driver_get_disp_flags();
-         disp_flags |=  (VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
-         disp_flags &= ~VIDEO_FLAG_HDR10_SUPPORT;
-         video_driver_set_disp_flags(disp_flags);
+         video_driver_modify_disp_flags(
+               VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT,
+               VIDEO_FLAG_HDR10_SUPPORT);
          RARCH_LOG("[WGL] Display is in HDR mode; HDR settings available (scRGB).\n");
       }
 #endif
@@ -517,11 +532,9 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#ifdef __WINRT__
+         /* gdi32's SwapBuffers only locates and forwards to this, and
+          * re-resolves it on every call. See the commit message. */
          wglSwapBuffers(win32_hdc);
-#else
-         SwapBuffers(win32_hdc);
-#endif
          break;
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_EGL)
@@ -546,10 +559,10 @@ static void gfx_ctx_wgl_destroy(void *data)
    {
       case GFX_CTX_OPENGL_API:
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
-         video_driver_set_disp_flags(video_driver_get_disp_flags()
-               & ~(  VIDEO_FLAG_HDR_SUPPORT
-                   | VIDEO_FLAG_HDR10_SUPPORT
-                   | VIDEO_FLAG_SCRGB_SUPPORT));
+         video_driver_modify_disp_flags(0,
+                 VIDEO_FLAG_HDR_SUPPORT
+               | VIDEO_FLAG_HDR10_SUPPORT
+               | VIDEO_FLAG_SCRGB_SUPPORT);
          if (win32_hrc)
          {
             uint32_t video_st_flags;
@@ -557,7 +570,7 @@ static void gfx_ctx_wgl_destroy(void *data)
             gl_finish();
             wglMakeCurrent(NULL, NULL);
 
-            video_st_flags = video_st->flags;
+            video_st_flags = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
             if (!(video_st_flags & VIDEO_FLAG_CACHE_CONTEXT))
             {
                if (win32_hw_hrc)
@@ -768,6 +781,21 @@ static bool gfx_ctx_wgl_bind_api(void *data,
    return false;
 }
 
+static void gfx_ctx_wgl_release_current(void *data)
+{
+   (void)data;
+   switch (win32_api)
+   {
+      case GFX_CTX_OPENGL_API:
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+         wglMakeCurrent(NULL, NULL);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
 static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
 {
    switch (win32_api)
@@ -778,10 +806,15 @@ static void gfx_ctx_wgl_bind_hw_render(void *data, bool enable)
 
          if (win32_hdc)
          {
-            if (enable)
-               wglMakeCurrent(win32_hdc, win32_hw_hrc);
-            else
-               wglMakeCurrent(win32_hdc, win32_hrc);
+            /* A failed make-current leaves the calling thread with no
+             * context, and every GL call after it - the core's
+             * function lookups first - fails with nothing to say why.
+             * The usual cause is the context being current on another
+             * thread, which the threaded wrapper's ring must never let
+             * happen; if it does, this is the line that says so. */
+            if (!wglMakeCurrent(win32_hdc, enable ? win32_hw_hrc : win32_hrc))
+               RARCH_ERR("[WGL] wglMakeCurrent(%s context) failed: 0x%08lx.\n",
+                     enable ? "core" : "driver", (unsigned long)GetLastError());
          }
 #endif
          break;
@@ -921,6 +954,40 @@ uint8_t win32_get_flags(void) { return g_win32_flags; }
 void win32_setup_pixel_format(HDC hdc, bool supports_gl) { }
 #endif
 
+/* A minimised window has no client area to present to: SwapBuffers()
+ * returns at once rather than blocking to vblank, so with vsync as the
+ * only pacing the loop would spin. IsIconic() is the direct question
+ * and needs no state of our own.
+ *
+ * Not on WinRT: IsIconic is in neither the app nor the games API
+ * partition, so a UWP build fails to link it, and there is no HWND
+ * there to ask about either - win32_get_window() returns NULL. A UWP
+ * app's visibility arrives as CoreWindow events instead, which this
+ * context does not see; always presentable, as it was before. */
+static bool gfx_ctx_wgl_presentable(void *data)
+{
+   (void)data;
+#ifdef __WINRT__
+   return true;
+#else
+   return !IsIconic(win32_get_window());
+#endif
+}
+
+/* When the last vertical blank happened, from the compositor, on the QPC
+ * clock cpu_features_get_time_usec() keeps here. DWM reports it rather
+ * than estimating from a scanline, and composition is on for windowed
+ * and for the borderless-fullscreen path Windows gives GL, which is
+ * where this is wanted. A context that bypasses the compositor gets a
+ * timestamp that stops advancing; the presenter treats a report older
+ * than its own clock reading as absent and paces on the clock, so no
+ * check is needed here beyond what it already does. */
+static retro_time_t gfx_ctx_wgl_last_present_time(void *data)
+{
+   (void)data;
+   return win32_dwm_last_vblank_time();
+}
+
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_init,
    gfx_ctx_wgl_destroy,
@@ -954,5 +1021,8 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    NULL,
    NULL,
    gfx_ctx_wgl_create_surface,
-   gfx_ctx_wgl_destroy_surface
+   gfx_ctx_wgl_destroy_surface,
+   gfx_ctx_wgl_presentable,
+   gfx_ctx_wgl_last_present_time,
+   gfx_ctx_wgl_release_current
 };

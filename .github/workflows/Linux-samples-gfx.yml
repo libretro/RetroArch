@@ -15,17 +15,28 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   samples-gfx:
     name: Build and run samples/gfx
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The gfx_thumbnail_preview step alone is ~5 min: two sanitizer
+    # builds, the video harness under each, and the windowed-animation
+    # harness under ASan over ~70 MB of lossless frames.  20 was cut
+    # too close once the animation harness joined; the run was
+    # cancelled mid-TSan pass.
+    timeout-minutes: 30
 
     steps:
       - name: Install dependencies
         timeout-minutes: 5
         run: |
           pkgs="build-essential libx11-dev libxrandr-dev libdrm-dev"
+          pkgs="$pkgs xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev"
+          pkgs="$pkgs gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -41,7 +52,103 @@ jobs:
             $pkgs
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
+
+      - name: Video modeline engine goldens and C89 lane
+        shell: bash
+        run: |
+          set -eu
+          # The engine in gfx/modeline/ replaced the SwitchRes 2.2.1
+          # library; tools/modeline_gold.ref is the reference output of
+          # the same matrix run through that library. The scoring and
+          # timing arithmetic are compared bit-for-bit: any drift in
+          # modeline_create/compare/adjust, the presets or the list
+          # logic shows up here as a diff rather than as a CRT that
+          # loses sync in the field.
+          C89="-std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long"
+          C89="$C89 -Werror=declaration-after-statement -Wno-variadic-macros"
+          C89="$C89 -D_GNU_SOURCE"
+          INC="-Ilibretro-common/include -I. -Ideps"
+          # Binaries and outputs go to a scratch dir, never the tree.
+          T=$(mktemp -d)
+          gcc $C89 $INC tools/modeline_gold.c \
+             libretro-common/compat/compat_strl.c -lm -o "$T/modeline_gold"
+          "$T/modeline_gold" > "$T/modeline_gold.out"
+          diff -u tools/modeline_gold.ref "$T/modeline_gold.out"
+          echo "[pass] modeline goldens (C89)"
+          gcc -g -O1 -fsanitize=address,undefined -fno-sanitize-recover=all \
+             -std=gnu89 -D_GNU_SOURCE $INC tools/modeline_gold.c \
+             libretro-common/compat/compat_strl.c -lm -o "$T/modeline_gold_san"
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             "$T/modeline_gold_san" > "$T/modeline_gold_san.out"
+          diff -u tools/modeline_gold.ref "$T/modeline_gold_san.out"
+          echo "[pass] modeline goldens (ASan/UBSan)"
+          rm -rf "$T"
+          # The consumer and the X11 apply path are C89 too; the
+          # full C89_BUILD covers them only after a complete build.
+          DEF="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_MENU -DHAVE_MODELINE"
+          DEF="$DEF -DHAVE_X11 -DHAVE_XRANDR -DHAVE_CONFIGFILE -DHAVE_DYNAMIC"
+          for f in gfx/modeline/modeline_core.c \
+                   gfx/modeline/modeline_monitor.c \
+                   gfx/modeline/modeline_list.c \
+                   gfx/modeline/modeline_ini.c \
+                   gfx/video_crt_switch.c \
+                   gfx/display_servers/dispserv_x11.c; do
+             gcc $C89 $INC $DEF -c "$f" -o /dev/null
+          done
+          echo "[pass] modeline C89 syntax check"
+
+      - name: Atomic backend portability of the gfx sources
+        shell: bash
+        run: |
+          set -eu
+          # The gfx sources that use retro_atomic.h have to build on
+          # every backend, not just the one this host selects.  The
+          # extended operations (exchange, CAS, the pointer ops) are
+          # offered only where a backend can express them, so a caller
+          # that uses one without gating on it builds here and breaks
+          # on whichever console lands elsewhere; the counters have to
+          # stay warning-clean as statements, which an expression-form
+          # fetch_add is not.  Both have reached a console lane before
+          # this one, hence -Werror.
+          INC="-Ilibretro-common/include -I. -Ideps"
+          DEF="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_MENU -DHAVE_RGUI"
+          DEF="$DEF -DHAVE_CONFIGFILE -DHAVE_CHEATS -D_GNU_SOURCE"
+          DEF="$DEF -DRETRO_ATOMIC_SUPPRESS_WARNING"
+          # The PS2 backend needs ps2sdk's <kernel.h>; the sample under
+          # libretro-common/samples/atomic carries a stand-in for it.
+          PS2STUB="libretro-common/samples/atomic/retro_atomic_ps2_backend"
+          for backend in C11 GCC_NEW SYNC PS2 VOLATILE; do
+             EXTRA=""
+             if [ "$backend" = "PS2" ]; then EXTRA="-I$PS2STUB/ps2stub"; fi
+             for f in gfx/video_thread_wrapper.c \
+                      gfx/font_driver.c \
+                      gfx/gfx_thumbnail.c \
+                      libretro-common/queues/task_queue.c; do
+                gcc -std=gnu99 -O2 -Wall -Werror $INC $EXTRA $DEF \
+                   "-DRETRO_ATOMIC_FORCE_$backend" -c "$f" -o /dev/null
+             done
+             echo "[pass] RETRO_ATOMIC_FORCE_$backend"
+          done
+          echo "[pass] atomic backend portability"
 
       - name: Build and run vulkan_extension_count_test (ASan)
         shell: bash
@@ -383,6 +490,20 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 \
              ./gfx_widgets_sanitize_test
           echo "[pass] gfx_widgets_sanitize_test (TSan)"
+      - name: Build and run gfx_widgets_task_bar_stack_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_widgets_task_bar_stack
+        run: |
+          set -eu
+          make clean all SANITIZER=address,undefined
+          test -x gfx_widgets_task_bar_stack_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_widgets_task_bar_stack_test
+          echo "[pass] gfx_widgets_task_bar_stack_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+             ./gfx_widgets_task_bar_stack_test
+          echo "[pass] gfx_widgets_task_bar_stack_test (TSan)"
       - name: Build and run display_servers_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/display_servers
@@ -420,6 +541,100 @@ jobs:
           timeout 60 ./display_servers_test
           echo "[pass] display_servers_test"
 
+      - name: Live mode switching on an Xorg dummy server (X11 + SDL)
+        shell: bash
+        run: |
+          set -eu
+          # The stubbed display_servers_test proves the driver issues
+          # the right RandR calls; this proves a real X server accepts
+          # them.  Xorg's 'dummy' driver honours XRRCreateMode /
+          # XRRAddOutputMode / XRRSetCrtcConfig with arbitrary timings
+          # (Xvfb's RandR shim returns success and lists nothing, so it
+          # cannot stand in).  The X11 sample runs the modeline engine
+          # end to end - generate a 15 kHz timing, put it on the wire
+          # through dispserv_x11, read the crtc back and compare every
+          # field, switch again, restore - and the SDL sample switches
+          # a real SDL2 window among the listed modes through
+          # dispserv_sdl2 (and dispserv_sdl3 on an SDL3 build), for the
+          # modeline path and the menu picker.
+          # The Win32 build runs after them under Wine.
+          sudo Xorg :99 -config samples/gfx/display_servers_x11_live/xorg-dummy.conf \
+             -logfile /tmp/xorg-dummy.log -noreset -nolisten tcp -ac \
+             > /tmp/xorg-dummy.out 2>&1 &
+          XORG_PID=$!
+          for i in $(seq 1 30); do
+             DISPLAY=:99 xrandr >/dev/null 2>&1 && break
+             sleep 0.5
+          done
+          DISPLAY=:99 xrandr | head -3
+          export DISPLAY=:99
+          # SDL3's X11 backend makes a window fullscreen through the
+          # window manager and reverts the mode switch when none
+          # answers; a light one runs for the SDL samples.
+          openbox > /tmp/openbox.out 2>&1 &
+          sleep 1
+          (cd samples/gfx/display_servers_x11_live \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+                timeout 120 ./display_servers_x11_live_test)
+          echo "[pass] display_servers_x11_live_test"
+          (cd samples/gfx/display_servers_sdl2_live \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+                LSAN_OPTIONS=suppressions=lsan.supp \
+                timeout 120 ./display_servers_sdl2_live_test)
+          echo "[pass] display_servers_sdl2_live_test"
+          # The SDL3 server against an SDL3 built from a pinned release
+          # (the runner image ships no libsdl3-dev): video and events
+          # only, X11 backend.
+          SDL3_VER=3.2.20
+          if [ ! -f /opt/sdl3/lib/pkgconfig/sdl3.pc ]; then
+             curl -sL -o /tmp/sdl3.tar.gz \
+                "https://github.com/libsdl-org/SDL/releases/download/release-$SDL3_VER/SDL3-$SDL3_VER.tar.gz"
+             tar -C /tmp -xzf /tmp/sdl3.tar.gz
+             cmake -S "/tmp/SDL3-$SDL3_VER" -B /tmp/sdl3-build -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=ON -DSDL_STATIC=OFF \
+                -DSDL_TESTS=OFF -DSDL_EXAMPLES=OFF -DSDL_AUDIO=OFF -DSDL_CAMERA=OFF \
+                -DSDL_WAYLAND=OFF -DSDL_X11=ON -DSDL_OPENGL=OFF -DSDL_OPENGLES=OFF \
+                -DSDL_VULKAN=OFF -DSDL_RENDER=OFF -DCMAKE_INSTALL_PREFIX=/opt/sdl3 \
+                > /tmp/sdl3-cmake.log
+             ninja -C /tmp/sdl3-build > /tmp/sdl3-build.log
+             sudo ninja -C /tmp/sdl3-build install > /tmp/sdl3-install.log
+          fi
+          (cd samples/gfx/display_servers_sdl3_live \
+             && PKG_CONFIG_PATH=/opt/sdl3/lib/pkgconfig make clean all SANITIZER=address,undefined \
+             && LD_LIBRARY_PATH=/opt/sdl3/lib \
+                ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+                LSAN_OPTIONS=suppressions=lsan.supp \
+                timeout 120 ./display_servers_sdl3_live_test)
+          echo "[pass] display_servers_sdl3_live_test"
+          # The Win32 server, its vendor timing paths and the engine
+          # cross-built with mingw-w64 and run under Wine on the same
+          # display: Wine backs EnumDisplaySettingsExA and
+          # ChangeDisplaySettingsExA with the server's RandR modes, so
+          # the CDS listed-mode switch is real; ADL, ATI legacy and
+          # PowerStrip are linked and must decline.
+          (cd samples/gfx/display_servers_win32_live \
+             && make clean all \
+             && WINEDEBUG=-all timeout 300 wine ./display_servers_win32_live_test.exe)
+          echo "[pass] display_servers_win32_live_test (Wine)"
+          # The vendor timing paths against stand-ins: a mock
+          # atiadlxx.dll that re-plugs the monitor after a forced set,
+          # a scratch HKLM key for the ATI legacy registry layout, a
+          # TPShidden window answering PowerStrip's messages.
+          (cd samples/gfx/display_servers_win32_vendor \
+             && make clean all \
+             && WINEDEBUG=-all timeout 300 wine ./display_servers_win32_vendor_test.exe)
+          echo "[pass] display_servers_win32_vendor_test (Wine)"
+          # The server must be back on its desktop mode with nothing
+          # generated left behind.
+          xrandr | head -3
+          if xrandr | grep -q 'RA-'; then
+             echo "generated modes left on the server"; exit 1
+          fi
+          pkill openbox || true
+          sudo kill "$XORG_PID" || true
+
       - name: Build and run display_servers_kms_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/display_servers_kms
@@ -455,6 +670,26 @@ jobs:
           test -x display_servers_kms_test
           timeout 60 ./display_servers_kms_test
           echo "[pass] display_servers_kms_test"
+
+      - name: Build and run modeline_edid_parse_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/modeline_edid_parse
+        run: |
+          set -eu
+          # The EDID reader in gfx/modeline/modeline_edid.c, fed the
+          # block the writer produces (round trip), a hand-built EDID
+          # 1.4 with CTA-861 and DisplayID 2.0 extensions checked
+          # field by field, the defect cases (short, wrong header, bad
+          # checksums, a declared but missing extension, data block
+          # and section lengths running past their block), and a
+          # deterministic byte-noise sweep. The parser is handed
+          # whatever an OS reader returns, so every length and offset
+          # in the data is hostile; under ASan a read past the buffer
+          # is the failure this lane exists to catch.
+          make clean all SANITIZER=address,undefined
+          test -x modeline_edid_parse_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 60 ./modeline_edid_parse_test
 
       - name: Build and run gfx_thumbnail_anim_test (ASan + UBSan, TSan)
         shell: bash
@@ -510,6 +745,34 @@ jobs:
              ./gfx_thumbnail_anim_test
           echo "[pass] gfx_thumbnail_anim_test (TSan)"
 
+      - name: Build and run badge_cache_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/cheevos/badge_cache
+        run: |
+          set -eu
+          # rcheevos_get_badge_texture() used to read, decode and
+          # upload a badge inline on the calling thread, at the moment
+          # an achievement popped during gameplay. It now posts the
+          # decode to the image task and the upload to the video
+          # thread, and hands the handle to the first caller after it
+          # lands. The test links the real cheevos/cheevos_badge.c
+          # with the task and upload stubbed as steppable queues and
+          # checks: nothing synchronous on the first ask, one decode
+          # per badge, the upload posted only from the decode's
+          # completion, the handle handed out exactly once and owned
+          # by the taker, locked and unlocked as separate keys, a
+          # missing file requesting a download only when asked, a
+          # failed decode or upload forgotten rather than stuck, a
+          # reset unloading ready handles and orphaning in-flight
+          # ones (their late delivery unloaded, never handed out),
+          # off-main-thread calls with no side effects, and a refused
+          # async upload treated as a failure.
+          make clean all SANITIZER=address,undefined
+          test -x badge_cache_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 60 ./badge_cache_test
+          echo "[pass] badge_cache_test (ASan)"
+          make clean
+
       - name: Build and run gfx_thumbnail_preview_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/gfx_thumbnail_preview
@@ -557,6 +820,12 @@ jobs:
           # of these faults turned on.  The multi-gigabyte ones are
           # sparse: two 7.28 GB files cost ~400 KB of disk.
           #
+          # The windowed-animation harness below decodes its two
+          # lossless fixtures three times each; they are sized just past
+          # what the feeder may keep resident (~40 MB and ~30 MB), and
+          # mkfixtures.py reuses an existing set, so the second
+          # "make fixtures" (TSan pass) costs nothing.  ~55 s under
+          # ASan on one core.
           # Frame counts are set from measurement, not taste.  At 300
           # ASan / 200 TSan frames this step took ~5.6 min on one
           # core, against a job budget shared with a dozen others;
@@ -571,8 +840,30 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           UBSAN_OPTIONS=print_stacktrace=1 \
           AUDIO_BYTES_PER_TICK=65536 FRAMES=120 timeout 300 \
-             ./gfx_thumbnail_preview_test fixtures/*.mp4
+             ./gfx_thumbnail_preview_test fixtures/*.mp4 fixtures/anim_lossless.webp
           echo "[pass] gfx_thumbnail_preview_test (ASan)"
+          # The frame-indexed types (animated WEBP, APNG) through the
+          # same session, windowed: animated WEBP had no progressive
+          # open, so the session read the whole file into the
+          # reservation (for every still WEBP thumbnail too) and
+          # charged one window for it; APNG had the open but no byte
+          # cursor, so the feeder never moved past the 12 MB primed at
+          # open and a longer animation looped early forever.  Mapping
+          # residency is measured with mincore, so the bound holds
+          # under the sanitizers.  ASan+UBSan only: the harness is
+          # single-threaded (no TSan target), and the lossless decode
+          # of ~900 720p frames takes it past the job budget under
+          # TSan (>5 min) for no coverage.
+          test -x preview_anim_window_test
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+          # V1 in this run plays long_video.mp4 (60 s at 4 Mbit/s,
+          # 29 MB, generated by mkfixtures) end to end through the
+          # session and requires the resident bytes to stay inside
+          # the bitrate-sized window: measured 5.25 MiB peak against
+          # the 20 MiB the fixed 4+8+8 MiB constants held before.
+          UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./preview_anim_window_test fixtures
+          echo "[pass] preview_anim_window_test (ASan)"
           # The decode test is the missing half of the harness above:
           # the REAL mixer -> audio_transfer -> rmp4 -> raac chain over
           # a budget-fed window, at budgets small enough that the
@@ -598,8 +889,8 @@ jobs:
           # step cannot silently run against an empty glob.
           make clean all SANITIZER=thread
           make fixtures
-          TSAN_OPTIONS=halt_on_error=1 FRAMES=60 timeout 300 \
-             ./gfx_thumbnail_preview_test fixtures/*.mp4
+          TSAN_OPTIONS=halt_on_error=1:allocator_may_return_null=1 FRAMES=60 timeout 300 \
+             ./gfx_thumbnail_preview_test fixtures/*.mp4 fixtures/anim_lossless.webp
           echo "[pass] gfx_thumbnail_preview_test (TSan)"
           TSAN_OPTIONS=halt_on_error=1 timeout 600 bash -c '
              ./preview_audio_decode_test fixtures/trailing_large.mp4 1024 island

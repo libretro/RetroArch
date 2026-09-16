@@ -46,6 +46,21 @@
 #endif
 
 #include <net/net_ifinfo.h>
+#include <compat/strl.h>
+
+/* IFF_UP is 0x1 on every system that has interface flags at all -
+ * BSD, Linux and Darwin alike - but it is not always visible. Apple
+ * hides it with the rest of the BSD names when the strict POSIX
+ * namespace is in effect, and griffin is one translation unit, so
+ * whether it is in effect by the time this file is reached depends on
+ * what was included before it rather than on anything here.
+ *
+ * Rather than chase that ordering, the flag is defined when it is
+ * missing. Where the platform declares it, the platform's own
+ * definition stands and this does nothing. */
+#ifndef IFF_UP
+#define IFF_UP 0x1
+#endif
 
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
@@ -168,13 +183,13 @@ failure:
       return false;
    }
 
-   strlcpy(list->entries[0].name, "lo",        sizeof(list->entries[0].name));
-   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
+   strlcpy_lit(list->entries[0].name, "lo",        sizeof(list->entries[0].name));
+   strlcpy_lit(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
    list->size = 1;
 
    if (!sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info))
    {
-      strlcpy(list->entries[1].name, "wlan", sizeof(list->entries[1].name));
+      strlcpy_lit(list->entries[1].name, "wlan", sizeof(list->entries[1].name));
       strlcpy(list->entries[1].host, info.ip_address,
          sizeof(list->entries[1].host));
       list->size++;
@@ -189,8 +204,8 @@ failure:
       return false;
    }
 
-   strlcpy(list->entries[0].name, "lo", sizeof(list->entries[0].name));
-   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
+   strlcpy_lit(list->entries[0].name, "lo", sizeof(list->entries[0].name));
+   strlcpy_lit(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
    list->size = 1;
 
 #if defined(HAVE_LIBNX)

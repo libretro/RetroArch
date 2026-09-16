@@ -207,7 +207,6 @@ static const struct
    char s_9834febe[440];
    char s_93805cc8_0[500];
    char s_93805cc8_1[10];
-   char s_b495662b[134];
    char s_9953f4e2[236];
    char s_de76d2dc[24];
    char s_79e212bd[6];
@@ -258,6 +257,7 @@ static const struct
    char s_35a1323d[13];
    char s_f72667c9[10];
    char s_adce4374[13];
+   char s_5984f4f9[6];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[42];
 #endif
@@ -265,7 +265,6 @@ static const struct
    char s_d9a51d02[21];
    char s_12e77e8f[9];
    char s_98760b94[29];
-   char s_af6007a1[17];
    char s_da068369[8];
    char s_daead8a5[5];
    char s_48c208ee[16];
@@ -284,6 +283,7 @@ static const struct
    char s_c82d0aee[11];
    char s_e2062515[34];
    char s_ad791974[10];
+   char s_fcd64038[9];
    char s_b271ae95[21];
    char s_fb84857a[6];
    char s_3943c7ae[31];
@@ -303,6 +303,7 @@ static const struct
    char s_e5aeacf9[30];
    char s_24976a5b[29];
    char s_5209cc72[41];
+   char s_e2eedfe1[10];
    char s_9f1f3534[57];
    char s_e66b1cb9[40];
    char s_1bf49fce[38];
@@ -638,11 +639,15 @@ static const struct
    char s_15f24ff4[9];
    char s_ec7e8026[8];
    char s_5d29b870[16];
+   char s_6996339b[5];
    char s_08e9410c[20];
    char s_d95824aa[25];
    char s_639f529e[14];
    char s_4927597c[15];
    char s_77b74366[14];
+   char s_690efede[5];
+   char s_ab49119c[6];
+   char s_ddf679b9[6];
    char s_3b7e9d77[10];
    char s_10342503[12];
    char s_d31f6d88[15];
@@ -1576,7 +1581,6 @@ static const struct
    char s_74b77b4a[18];
    char s_7534cfc9[7];
    char s_36259b63[14];
-   char s_37368130[14];
    char s_d51f54a2[12];
    char s_b35f573c[6];
    char s_1cad7751[6];
@@ -2034,6 +2038,7 @@ static const struct
    char s_519cd5f8[21];
    char s_43ac80a0[14];
    char s_6959ce80[16];
+   char s_aa628249[9];
    char s_ebe994b4[13];
    char s_1c62c301[9];
    char s_a8bb35b6[9];
@@ -2784,8 +2789,6 @@ static const struct
    char s_d9153542[47];
    char s_8e48ec69[35];
    char s_cd43c108[88];
-   char s_cd46e260[116];
-   char s_cd482ffe[118];
    char s_49336383[44];
    char s_e92351d4[98];
    char s_8e22cdce[58];
@@ -3523,7 +3526,6 @@ static const struct
    char s_1eebf4f8[172];
    char s_2f2ca2b6[172];
    char s_2c9be635[135];
-   char s_05ec12e6[157];
    char s_b5a603de[61];
    char s_d9c2db25[59];
 #ifdef HAVE_ODROIDGO2
@@ -3566,7 +3568,6 @@ static const struct
    char s_d62ed5dc[349];
    char s_2e69508b[366];
    char s_7e96b5ce[39];
-   char s_3547866d[135];
    char s_c2314d30[210];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[183];
@@ -3684,6 +3685,7 @@ static const struct
    char s_ec5751c3[36];
    char s_af4b70f4[49];
    char s_d9afe3b5[44];
+   char s_70ecb843[12];
    char s_312fd783[55];
    char s_96df643a[100];
    char s_150b4ebe[95];
@@ -4552,8 +4554,6 @@ static const struct
    "era prokrasto a\305\255 sinkronigi al \304\235usta filmerofteco de enhavo. Lasi la VRR de sistem"
    "o estas bone, sed ne estas uzebla kun \304\211i ti",
    "u agordo.",
-   "Uzi pelilon de fadenigita video. Uzi \304\211i tio povas plibonigi rendimenton, eble kontra\305"
-   "\255 respondotempo kaj pli videa \"mikrobalbutado\".",
    "Sinkronigi la filmer-oftecon la\305\255 la enhavo. \304\210i tiu opcio egalas al devigi rapidon "
    "de \303\2271 dum ankora\305\255 permesante rapidpluigon. Ne estos deklini\304\235oj el la ofteco"
    " de aktualigo postulata de la kerno, nek dinamika rego de ofteco de sono.",
@@ -4606,6 +4606,7 @@ static const struct
    "Parolre\304\235imo",
    "Cellingvo",
    "AI-serva URL",
+   "\304\210iam",
 #ifndef HAVE_DYNAMIC
    "\304\210iam re\305\235argi kernon \304\211e rulante enhavon",
 #endif
@@ -4613,7 +4614,6 @@ static const struct
    "Aplika\304\265a piktogramo",
    "Hava\304\265oj",
    "Malfermi stirpanelon de ASIO",
-   "Baritaj filmeroj",
    "Aparato",
    "Sono",
    "Kroma\304\265o de DSP",
@@ -4632,6 +4632,7 @@ static const struct
    "Sonmiksilo",
    "Sonmiksila gajno de la\305\255teco (dB)",
    "Silentigi",
+   "Dukanala",
    "Ofteco de eligo (Hz)",
    "Eligo",
    "Dinamika regado de sona ofteco",
@@ -4651,6 +4652,7 @@ static const struct
    "Re\304\235imo ekskluzivo por WASAPI",
    "Glitpunkta formato de WASAPI",
    "Grando de la kunhavigita bufro de WASAPI",
+   "A\305\255tomata",
    "Konservdosieroj: intervalo de a\305\255tomate konservi SaveRAM",
    "\305\234argi transpasontaj dosieroj a\305\255tomate",
    "\305\234argi reasignajn dosierojn a\305\255tomate",
@@ -4986,11 +4988,15 @@ static const struct
    "Pa\305\255zita",
    "Ludante",
    "Diskaj informoj",
+   "Sono",
    "\305\234argi novan diskon",
    "Indekso de kuranta disko",
    "Rego de disko",
    "El\304\265eti diskon",
    "Enmeti diskon",
+   "Bone",
+   "Kruda",
+   "Eligo",
    "Defa\305\255lta",
    "El\305\235uta\304\265oj",
    "El\305\235uti kernon",
@@ -5924,7 +5930,6 @@ static const struct
    "&Mal\305\235argi kernon",
    "&Helpo",
    "Pri RetroArch",
-   "Kontribuintoj",
    "Dokumentado",
    "Vi\305\235i",
    "&Iloj",
@@ -6390,6 +6395,7 @@ static const struct
    "Operaciumo de fasado",
    "Versio de Git",
    "Versio de Lakka",
+   "Ludritmo",
    "Kurentofonto",
    "\305\234argita",
    "\305\234argata",
@@ -7275,10 +7281,6 @@ static const struct
    "Kapti bildon de la kuranta enhavo.",
    "Tenas la kurante elektitan ombrigilon \305\235altita a\305\255 mal\305\235altita dum klavon esta"
    "s tenata.",
-   "\305\234argas kaj aplikas la sekvan anta\305\255agordan dosieron deo mbrigilo en la radiko de la"
-   " dosierujo \"Videaj ombrigiloj\".",
-   "\305\234argas kaj aplikas la anta\305\255an anta\305\255agordan dosieron de ombrigilo en la radi"
-   "ko de la dosierujo \"Videaj ombrigiloj\".",
    "Inter\305\235altas la kurante elektita ombrigilo.",
    "Ebligas malrapidpluigo kiam tenate. Enhavo rulas je normala rapido kiam la klavo estas maltenata"
    ".",
@@ -8338,8 +8340,6 @@ static const struct
    "nioj (akiritaj de la plej supro de la ekrano). Povus enigi skaladajn artefaktojn.",
    "Kapti la bildon post filtriloj (sed ne ombrigiloj) estas aplikitaj. La videa\304\265o aspektos "
    "\304\235uste kiel tio, kion vi vidas en via ekrano.",
-   "Vertikala ofteco de aktualigo de via ekrano. Uzata por kalkuli \304\235ustan oftecon de a\305"
-   "\255dia enigo. \304\210i tio estos ignorata se \"Fadenigita video\" estas ebligita.",
    "La fidela pritaksita ofteco de aktualigo de la ekrano je Hz.",
    "La ofteco de aktualigo la\305\255 raportite de la ekrana pelilo.",
 #ifdef HAVE_ODROIDGO2
@@ -8414,8 +8414,6 @@ static const struct
    "iam rulante, ekzemple, enhavon de 30 fps en ekrano de 60 Hz, a\305\255 enhavon de 60 fps en ekra"
    "no de 120 Hz.",
    "\305\234an\304\235i agordojn pri videa sinkronigo.",
-   "Plibonigas rendimenton kontra\305\255 atendotempo kaj videa \"mikrobalbutado\". Uzu \304\235in n"
-   "ur se plena rapideco ne povas esti atingita alikaze.",
    "Provi plibonigi rendimenton uzante argumentajn bufrojn de Metal. Kelkaj kernoj povas bezoni \304"
    "\211i tion. \304\210i tio povas \"rompi\" kelkajn ombrigilojn, \304\211efe en kadukaj aparataroj"
    " a\305\255 malnovaj versioj de operaciumoj.",
@@ -8557,6 +8555,7 @@ static const struct
    "\304\210i tiu ludo havas neniujn akirojn.",
    "Luda \305\235argo de RetroAchievements malsukcesis: %s",
    "RetroAchievements: Ne povis identigi ludon.",
+   "Malfacilega",
    "Malfacilega re\304\235imo de akiroj \305\235an\304\235ita de gastiganto.",
    "Konservostato estis \305\235argita. Malfacilega re\304\235imo de akiroj estis malebligita por la"
    " kuranta sesio.",
@@ -9062,7 +9061,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172851u
+      (sizeof(msg_hash_eo_blob) == (172228u
 #ifdef ANDROID
        + 312u
 #endif
@@ -9659,7 +9658,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -9710,6 +9708,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -9717,7 +9716,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -9736,6 +9734,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -9755,6 +9754,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -10090,11 +10090,15 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -11028,7 +11032,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
@@ -11485,6 +11488,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -12235,8 +12239,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -12974,7 +12976,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -13017,7 +13018,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -13135,6 +13135,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
    (uint32_t)MSG_CHEEVOS_GAME_LOAD_FAILED,
    (uint32_t)MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE,
    (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
    (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,

@@ -33,6 +33,7 @@
 
 #include "vksym.h"
 
+#include <stddef.h>
 #include <boolean.h>
 #include <retro_inline.h>
 #include <retro_common_api.h>
@@ -117,7 +118,11 @@ enum vk_flags
     * should copy the HDR backbuffer (not the tone-mapped SDR one) into the
     * HDR readback staging buffer. Distinct from READBACK_PENDING so the two
     * never interfere. */
-   VK_FLAG_READBACK_HDR        = (1 << 18)
+   VK_FLAG_READBACK_HDR        = (1 << 18),
+   /* GPU recording is on: taken from the frame the frontend hands over,
+    * so this thread never reads the recording state the main thread
+    * writes (video_frame_info_t::gpu_recording). */
+   VK_FLAG_GPU_RECORDING       = (1 << 19)
 };
 
 enum vk_texture_type
@@ -153,7 +158,7 @@ enum vulkan_wsi_type
    VULKAN_WSI_DISPLAY,
    VULKAN_WSI_MVK_MACOS,
    VULKAN_WSI_MVK_IOS,
-   VULKAN_WSI_SDL3,
+   VULKAN_WSI_SDL3
 };
 
 enum vulkan_context_flags
@@ -167,7 +172,7 @@ enum vulkan_context_flags
    /* Whether HDR colorspaces are supported by the instance */
    VK_CTX_FLAG_HDR_SUPPORT                  = (1 << 5),
    /* scRGB mode: RGBA16F swapchain with extended linear sRGB colour space */
-   VK_CTX_FLAG_HDR_SCRGB                    = (1 << 6),
+   VK_CTX_FLAG_HDR_SCRGB                    = (1 << 6)
 };
 
 enum vulkan_emulated_mailbox_flags
@@ -214,6 +219,12 @@ typedef struct vulkan_context
    VkPhysicalDeviceMemoryProperties memory_properties;
 
    VkPresentModeKHR present_modes[16];
+   /* Whether the surface offers FIFO_RELAXED, which is what the
+    * context drivers answer GFX_CTX_FLAGS_ADAPTIVE_VSYNC from. Settled
+    * where the swapchain is created and read through an acquire: the
+    * array above is rewritten by the thread that draws, while the main
+    * thread is the one asking. */
+   retro_atomic_int_t supports_adaptive_vsync;
    VkImage swapchain_images[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFence swapchain_fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFormat swapchain_format;
@@ -237,6 +248,10 @@ typedef struct vulkan_context
    unsigned swapchain_width;
    unsigned swapchain_height;
    unsigned num_recycled_acquire_semaphores;
+   /* Present mode the current swapchain was created with; compared
+    * against the mode a new swap_interval resolves to so a request
+    * that would not change the swapchain does not recreate it. */
+   VkPresentModeKHR swapchain_present_mode;
 
    int8_t swap_interval;
    uint8_t flags;
@@ -267,6 +282,21 @@ typedef struct gfx_ctx_vulkan_data
    uint8_t flags;
    enum vulkan_wsi_type wsi_type;
    bool fse_supported;
+   /* Set once VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT has
+    * been acquired on the current swapchain, so it is released before
+    * that swapchain is destroyed. */
+   bool fse_acquired;
+   /* PFN_vkVoidFunction rather than the extension's own typedefs: this
+    * header is included by every Vulkan context and by shader_vulkan.c,
+    * most of which never see vulkan_win32.h. Cast at the call site. */
+   PFN_vkVoidFunction fse_acquire;
+   PFN_vkVoidFunction fse_release;
+   /* VK_GOOGLE_display_timing, when the device has it: each present
+    * carries a present ID and the driver reports when it actually
+    * reached the display, on the platform's monotonic clock. */
+   PFN_vkVoidFunction display_timing_query;
+   uint32_t present_id;
+   bool display_timing_supported;
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Loaded from VK_EXT_hdr_metadata when that optional device extension is
     * present; NULL otherwise. Used to signal SMPTE-2086 mastering-display
@@ -364,6 +394,16 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
 bool vulkan_surface_destroy(gfx_ctx_vulkan_data_t *vk);
 
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index);
+
+retro_time_t vulkan_last_present_time(gfx_ctx_vulkan_data_t *vk);
+
+/* The context driver hands the video driver &data->vk.context and keeps
+ * the swapchain beside it; every context embeds gfx_ctx_vulkan_data_t
+ * that way, so the owner is recoverable from the pointer the driver
+ * holds. Used by the driver for the timing query, which needs the
+ * swapchain handle. */
+#define VULKAN_CTX_DATA_FROM_CONTEXT(ctx) \
+   ((gfx_ctx_vulkan_data_t*)((char*)(ctx) - offsetof(gfx_ctx_vulkan_data_t, context)))
 
 void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk);
 

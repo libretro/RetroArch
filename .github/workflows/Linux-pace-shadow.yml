@@ -1,0 +1,91 @@
+name: CI Linux pace shadow [debug harness]
+
+# The pace decision - which sources hold the loop each iteration - is
+# one pure function, runloop_pace_decide() in runloop.h, that every
+# path of runloop_iterate() defers to. It began life shadowing the
+# paths' own scattered decisions with a debug assertion that the two
+# agreed; this job was created to run that assertion in CI, and it
+# never fired, which is what let the paths defer.
+#
+# What the job still does: builds with DEBUG=1 under ASan and UBSan,
+# so every retro_assert in the wrapper, the ring and the runloop is
+# live, and runs the threaded-video harness through it - threaded and
+# unthreaded, menu open and closed, display pacing on, the runtime
+# toggles - then the pacing sample, whose menu table pins the decision
+# row by row. The release harness job cannot see an assertion; this
+# one can.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  linux-pace-shadow:
+    name: Debug build, harness with assertions live
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure
+        # Non-Qt, as the harness requires (with Qt, main() lives in
+        # ui_qt.o). Menu enabled: the menu lanes are half the point.
+        run: |
+          ./configure \
+            --disable-qt \
+            --disable-discord \
+            --disable-cheevos \
+            --disable-networking \
+            --disable-ffmpeg
+
+      - name: Build with DEBUG=1 and -fsanitize=address,undefined
+        run: |
+          make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=address,undefined DEBUG=1
+
+      - name: Run the threaded-video harness with assertions live
+        shell: bash
+        run: |
+          set -eu
+          # SAN=address is the harness's default and links exactly the
+          # build above; CYCLES=2 runs each toggling lane twice.
+          SAN=address CYCLES=2 make -C samples/gfx/threaded_video check
+          make -C samples/gfx/threaded_video clean
+
+      - name: Run the pacing sample (the menu table)
+        shell: bash
+        run: |
+          set -eu
+          make -C samples/runloop/pacing check
+          make -C samples/runloop/pacing clean

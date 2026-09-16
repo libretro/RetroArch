@@ -93,6 +93,15 @@ rxml_document_t *rxml_load_document_string(const char *str);
  * bytes (e.g. a task that read the file itself) should care about. */
 rxml_document_t *rxml_load_document_owned(char *buf, size_t len);
 
+/* As rxml_load_document_owned, with parse options and the same
+ * failure-position reporting as rxml_load_document_string_opts.  This
+ * is the entry point to reach for when a caller wants
+ * RXML_OPT_STRICT_EOF without giving up the buffer handover: the
+ * option pair is otherwise only reachable through the incremental
+ * rxml_parse_* calls. */
+rxml_document_t *rxml_load_document_owned_opts(char *buf, size_t len,
+      unsigned opts, rxml_parse_error_t *err);
+
 /* Incremental variant of rxml_load_document_owned(): the same
  * ownership contract (@buf is heap, NUL-terminated at @len, and is
  * either given to the resulting document or freed on failure /

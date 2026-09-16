@@ -27,6 +27,8 @@
 #include <lists/dir_list.h>
 #include <retro_miscellaneous.h>
 
+#include <compat/strl.h>
+
 #include "msg_hash.h"
 #include "list_special.h"
 #include "core_info.h"
@@ -35,6 +37,7 @@
 #include "frontend/frontend_driver.h"
 
 #include "manual_content_scan.h"
+#include "retroarch.h"
 
 /* Holds all configuration parameters associated
  * with a manual content scan */
@@ -731,7 +734,7 @@ enum manual_content_scan_playlist_refresh_status
    fill_pathname(system_name, path_basename(playlist_path),
          "", sizeof(system_name));
 
-   if (database_name_lpl && database_name_lpl && *database_name_lpl)
+   if (database_name_lpl && *database_name_lpl)
       fill_pathname(database_name,database_name_lpl,"",sizeof(database_name));
    /* Cannot happen, but would constitute a
     * 'system name' error */
@@ -1594,6 +1597,14 @@ bool manual_content_scan_get_task_config(
    task_config->db_usage           = scan_settings.db_usage;
    task_config->db_selection       = scan_settings.db_selection;
 
+   /* Captured here, on the main thread, for the worker the scan's
+    * handler runs on. The CLI-scan flag is fixed at process start and
+    * the serial/CRC toggle is a settings read. */
+   task_config->cli_scan_output = retroarch_override_setting_is_set(
+         RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
+   task_config->scan_serial_and_crc =
+         config_get_ptr()->bools.scan_serial_and_crc;
+
    return true;
 }
 
@@ -1868,7 +1879,7 @@ void manual_content_scan_add_content_to_playlist(
       entry.core_name  = (char*)FILE_PATH_DETECT;
       entry.crc32      = (char*)"00000000|crc";
       entry.db_name    = task_config->database_name;
-      entry.entry_slot = 0;
+      PLAYLIST_SET_ENTRY_SLOT(&entry, 0);
 
       /* Add entry to playlist */
       playlist_push(playlist, &entry);

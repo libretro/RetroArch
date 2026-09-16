@@ -180,6 +180,9 @@ struct replay {
 	int sample_rate, interpolation, global_vol;
 	int seq_pos, break_pos, row, next_row, tick;
 	int speed, tempo, pl_count, pl_chan;
+	/* One block holding ramp_buf, channels, ghosts and the two filter
+	   scratch buffers; the pointers below are views into it. */
+	unsigned char *arena;
 	int *ramp_buf;
 	int *flt_buf;
 	float *flt_buf_f;
@@ -3306,35 +3309,51 @@ static void dispose_replay( struct replay *replay ) {
 		free( replay->play_count[ 0 ] );
 		free( replay->play_count );
 	}
-	free( replay->ramp_buf );
-	free( replay->flt_buf );
-	free( replay->flt_buf_f );
-	free( replay->channels );
-	free( replay->ghosts );
+	free( replay->arena );
 	free( replay );
 }
 
+/* Region spacing inside the replay arena, in bytes: every buffer starts
+   on a 64-byte boundary. */
+#define REPLAY_ARENA_NEXT( cur, bytes ) \
+	( ( ( ( cur ) + ( bytes ) + 63 ) / 64 ) * 64 )
+
 /* Allocate and initialize a replay with the specified sampling rate and interpolation. */
 static struct replay* new_replay( struct module *module, int sample_rate, int interpolation ) {
+	size_t o_chan, o_ghost, o_flt, o_flt_f, len;
 	struct replay *replay = calloc( 1, sizeof( struct replay ) );
 	if( replay ) {
 		replay->module = module;
 		replay->sample_rate = sample_rate;
 		replay->interpolation = interpolation;
-		replay->ramp_buf = calloc( 128, sizeof( int ) );
-		replay->channels = calloc( module->num_channels, sizeof( struct channel ) );
-		/* The background-voice pool for IT new-note actions. Optional:
-		   left NULL, capture bails and every action degrades to cut. */
-		replay->ghosts = calloc( RMT_NUM_GHOSTS, sizeof( struct channel ) );
+		/* The mixer walks the channel and ghost arrays and the ramp
+		   buffer every tick, so they come out of one zeroed block, each
+		   region on a 64-byte boundary: the volume ramp, the channels,
+		   the background-voice pool for IT new-note actions, and (for
+		   IT modules) the per-voice filter scratch sized for the slowest
+		   tempo the engine clamps to. */
+		o_chan = REPLAY_ARENA_NEXT( 0, 128 * sizeof( int ) );
+		o_ghost = REPLAY_ARENA_NEXT( o_chan,
+			( size_t ) module->num_channels * sizeof( struct channel ) );
+		o_flt = REPLAY_ARENA_NEXT( o_ghost,
+			RMT_NUM_GHOSTS * sizeof( struct channel ) );
+		o_flt_f = len = o_flt;
 		if( module->it_effects ) {
-			/* Scratch for the per-voice filter path, sized for the
-			   slowest tempo the engine clamps to; NULL degrades
-			   filtered voices to unfiltered. */
-			int flt_frames = ( calculate_tick_len( 32, sample_rate ) + 65 ) * 4;
-			replay->flt_buf = calloc( flt_frames, sizeof( int ) );
-			replay->flt_buf_f = calloc( flt_frames, sizeof( float ) );
+			size_t flt_frames = ( calculate_tick_len( 32, sample_rate ) + 65 ) * 4;
+			o_flt_f = REPLAY_ARENA_NEXT( o_flt, flt_frames * sizeof( int ) );
+			len = REPLAY_ARENA_NEXT( o_flt_f, flt_frames * sizeof( float ) );
 		}
-		if( replay->ramp_buf && replay->channels ) {
+		replay->arena = calloc( 1, len );
+		if( replay->arena ) {
+			replay->ramp_buf = ( int * ) replay->arena;
+			replay->channels = ( struct channel * ) ( replay->arena + o_chan );
+			replay->ghosts = ( struct channel * ) ( replay->arena + o_ghost );
+			if( module->it_effects ) {
+				replay->flt_buf = ( int * ) ( replay->arena + o_flt );
+				replay->flt_buf_f = ( float * ) ( replay->arena + o_flt_f );
+			}
+		}
+		if( replay->arena ) {
 			replay_set_sequence_pos( replay, 0 );
 		} else {
 			dispose_replay( replay );

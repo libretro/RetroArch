@@ -437,6 +437,11 @@ RXML_COLD static int rxml_ref_emit(struct rxml_parser *ps, const unsigned char *
 
    if (ch <= 0x7F)
       return rxml_acc_ch(ps, (unsigned char)ch);
+   /* The multi-byte forms below write ps->acc directly, so they carry
+    * the accumulator's invariant themselves: a deferred run has to be
+    * folded in before anything can land after it. */
+   if (ps->txt_direct && !rxml_acc_promote(ps))
+      return 0;
    if (!rxml_acc_reserve(ps, 4))
       return 0;
    if (ch <= 0x7FF)
@@ -1838,14 +1843,25 @@ rxml_document_t *rxml_load_document_string_opts(const char *str,
    return rxml_parse_owned(buf, len, opts, err);
 }
 
-rxml_document_t *rxml_load_document_owned(char *buf, size_t len)
+rxml_document_t *rxml_load_document_owned_opts(char *buf, size_t len,
+      unsigned opts, rxml_parse_error_t *err)
 {
+   if (err)
+   {
+      err->offset = 0;
+      err->line   = err->col = 0;
+   }
    if (!buf)
       return NULL;
    /* The contract mirrors the tail of rxml_load_document: the caller
     * hands over a NUL-terminated heap buffer and rxml_parse_owned
     * either gives it to the document or frees it on failure. */
-   return rxml_parse_owned(buf, len, 0, NULL);
+   return rxml_parse_owned(buf, len, opts, err);
+}
+
+rxml_document_t *rxml_load_document_owned(char *buf, size_t len)
+{
+   return rxml_load_document_owned_opts(buf, len, 0, NULL);
 }
 
 rxml_document_t *rxml_load_document_string(const char *str)

@@ -78,9 +78,9 @@ static void *x_input_init(const char *joypad_driver)
    x11_input_t *x11;
 #ifdef HAVE_XI2
    XIDeviceInfo *dev;
-   XIButtonClassInfo *classinfo;
    int i, j = 0;
-   int cnt;
+   int cnt  = 0;
+   int xi_opcode, xi_event, xi_error;
 #endif
 
    /* Currently active window is not an X11 window. Cannot use this driver. */
@@ -98,7 +98,13 @@ static void *x_input_init(const char *joypad_driver)
 #ifdef HAVE_XI2
    for (i = 0; i < MAX_MOUSE_IDX; i++)
       x11->mouse_dev_list[i] = -1;
-   x11->di = XIQueryDevice(x11->display, XIAllDevices, &cnt);
+   /* x11->di stays NULL on a server without XInput 2, and the
+    * driver reads the core pointer as a single mouse instead */
+   if (XQueryExtension(x11->display, "XInputExtension",
+            &xi_opcode, &xi_event, &xi_error))
+      x11->di = XIQueryDevice(x11->display, XIAllDevices, &cnt);
+   if (!x11->di)
+      RARCH_LOG("[X11] XInput 2 unavailable on this display, using the core pointer as one mouse.\n");
    for (i = 0; i < cnt && j < MAX_MOUSE_IDX; i++)
    {
       dev = &(x11->di[i]);
@@ -116,6 +122,30 @@ static void *x_input_init(const char *joypad_driver)
    return x11;
 }
 
+/* Core protocol pointer query: one mouse, reported in mouse slot 0.
+ * Buttons 4 and 5 are not in the mask; they arrive as button events
+ * and are read through x_mouse_state_wheel(). */
+static bool x_query_core_pointer(x11_input_t *x11, int *win_x, int *win_y)
+{
+   Window root_win;
+   Window child_win;
+   int root_x    = 0;
+   int root_y    = 0;
+   unsigned mask = 0;
+
+   if (!XQueryPointer(x11->display, x11->win,
+            &root_win, &child_win,
+            &root_x, &root_y,
+            win_x, win_y,
+            &mask))
+      return false;
+
+   x11->mouse_l[0] = (mask & Button1Mask) != 0;
+   x11->mouse_m[0] = (mask & Button2Mask) != 0;
+   x11->mouse_r[0] = (mask & Button3Mask) != 0;
+   return true;
+}
+
 static bool x_keyboard_pressed(x11_input_t *x11, unsigned key)
 {
    int keycode = rarch_keysym_lut[(enum retro_key)key];
@@ -126,7 +156,10 @@ static bool x_mouse_button_pressed(
       x11_input_t *x11, unsigned port, unsigned key)
 {
    unsigned mouse_port = port;
-#ifndef HAVE_XI2
+#ifdef HAVE_XI2
+   if (!x11->di)
+      mouse_port = 0;
+#else
    mouse_port = 0;
 #endif
 
@@ -140,12 +173,16 @@ static bool x_mouse_button_pressed(
          return x11->mouse_m[mouse_port];
       case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
 #ifdef HAVE_XI2
-         return x11->mouse_4[mouse_port];
+         if (x11->di)
+            return x11->mouse_4[mouse_port];
 #endif
+         /* fall through */
       case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
 #ifdef HAVE_XI2
-         return x11->mouse_5[mouse_port];
+         if (x11->di)
+            return x11->mouse_5[mouse_port];
 #endif
+         /* fall through */
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
@@ -171,13 +208,16 @@ static int16_t x_input_state(
 
    if (port < MAX_USERS)
    {
-      unsigned mouse_port = port;
-      
-#ifndef HAVE_XI2
-      mouse_port = 0;
-#endif
+      unsigned mouse_port  = port;
       x11_input_t *x11     = (x11_input_t*)data;
       settings_t *settings = config_get_ptr();
+
+#ifdef HAVE_XI2
+      if (!x11->di)
+         mouse_port = 0;
+#else
+      mouse_port = 0;
+#endif
 
       switch (device)
       {
@@ -191,7 +231,7 @@ static int16_t x_input_state(
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
-                     if (binds[port][i].valid)
+                     if (RETRO_KEYBIND_VALID(&binds[port][i]))
                      {
                         if (x_mouse_button_pressed(x11, port, binds[port][i].mbutton))
                            ret |= (1 << i);
@@ -203,10 +243,10 @@ static int16_t x_input_state(
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
-                     if (binds[port][i].valid)
+                     if (RETRO_KEYBIND_VALID(&binds[port][i]))
                      {
-                        if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
-                              && x_keyboard_pressed(x11, binds[port][i].key))
+                        if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
+                              && x_keyboard_pressed(x11, RETRO_KEYBIND_KEY(&binds[port][i])))
                            ret |= (1 << i);
                      }
                   }
@@ -217,10 +257,10 @@ static int16_t x_input_state(
 
             if (id < RARCH_BIND_LIST_END)
             {
-               if (binds[port][id].valid)
+               if (RETRO_KEYBIND_VALID(&binds[port][id]))
                {
-                  if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
-                        && x_keyboard_pressed(x11, binds[port][id].key)
+                  if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
+                        && x_keyboard_pressed(x11, RETRO_KEYBIND_KEY(&binds[port][id]))
                         && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                      )
                      return 1;
@@ -245,10 +285,10 @@ static int16_t x_input_state(
 
                input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
-               id_minus_valid        = binds[port][id_minus].valid;
-               id_plus_valid         = binds[port][id_plus].valid;
-               id_minus_key          = binds[port][id_minus].key;
-               id_plus_key           = binds[port][id_plus].key;
+               id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
+               id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
+               id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
+               id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
 
                if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
                {
@@ -395,7 +435,7 @@ static int16_t x_input_state(
                      const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                         ? bind_joyaxis : autobind_joyaxis;
 
-                     if (binds[port][new_id].valid)
+                     if (RETRO_KEYBIND_VALID(&binds[port][new_id]))
                      {
                         if ((uint16_t)joykey != NO_BTN && joypad->button(
                                  joyport, (uint16_t)joykey))
@@ -404,9 +444,9 @@ static int16_t x_input_state(
                               ((float)abs(joypad->axis(joyport, joyaxis))
                                / 0x8000) > axis_threshold)
                            return 1;
-                        else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
+                        else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
                               && !keyboard_mapping_blocked
-                              && x_keyboard_pressed(x11, binds[port][new_id].key)
+                              && x_keyboard_pressed(x11, RETRO_KEYBIND_KEY(&binds[port][new_id]))
                            )
                            return 1;
                         else if (x_mouse_button_pressed(x11, port, binds[port][new_id].mbutton))
@@ -434,7 +474,9 @@ static void x_input_free(void *data)
    if (x11)
    {
 #ifdef HAVE_XI2
-      XIFreeDeviceInfo(x11->di);
+      /* NULL when the server lacks XInput 2 */
+      if (x11->di)
+         XIFreeDeviceInfo(x11->di);
 #endif
 #ifdef __linux__
       linux_close_illuminance_sensor(x11->illuminance_sensor);
@@ -503,26 +545,27 @@ static float x_get_sensor_input(void *data, unsigned port, unsigned id)
 
 static void x_input_poll(void *data)
 {
-   Window root_win;
-   Window child_win;
    x11_input_t *x11         = (x11_input_t*)data;
    bool video_has_focus     = video_driver_has_focus();
 #ifdef HAVE_XI2
+   Window root_win;
+   Window child_win;
    double root_x            = 0;
    double root_y            = 0;
    double win_x             = 0;
    double win_y             = 0;
+   int core_x               = 0;
+   int core_y               = 0;
    XIButtonState buttons_return;
    XIModifierState modifiers_return;
    XIGroupState group_return;
-   settings_t *settings = config_get_ptr();
+   settings_t *settings     = config_get_ptr();
    unsigned mouse_dev_idx;
+   unsigned mouse_ports     = x11->di ? MAX_MOUSE_IDX : 1;
 #else
-   int root_x               = 0;
-   int root_y               = 0;
    int win_x                = 0;
    int win_y                = 0;
-   unsigned mask            = 0;
+   unsigned mouse_ports     = 1;
 #endif
    unsigned mouse_port;
 
@@ -562,46 +605,46 @@ static void x_input_poll(void *data)
       return;
    }
 
-   for(mouse_port = 0; mouse_port < MAX_MOUSE_IDX; mouse_port++)
+   for (mouse_port = 0; mouse_port < mouse_ports; mouse_port++)
    {
 #ifdef HAVE_XI2
-      mouse_dev_idx = settings->uints.input_mouse_index[mouse_port];
-      if (mouse_dev_idx >= MAX_INPUT_DEVICES || x11->mouse_dev_list[mouse_dev_idx] < 0)
-         return;
+      if (!x11->di)
+      {
+         if (!x_query_core_pointer(x11, &core_x, &core_y))
+            return;
+         win_x = core_x;
+         win_y = core_y;
+      }
+      else
+      {
+         mouse_dev_idx = settings->uints.input_mouse_index[mouse_port];
+         if (mouse_dev_idx >= MAX_INPUT_DEVICES || x11->mouse_dev_list[mouse_dev_idx] < 0)
+            return;
 
-      /* Process mouse */
-      if (!XIQueryPointer( x11->display,
-                     x11->mouse_dev_list[mouse_dev_idx],
-                     x11->win,
-                     &root_win, &child_win,
-                     &root_x, &root_y,
-                     &win_x, &win_y,
-                     &buttons_return,
-                     &modifiers_return,
-                     &group_return))
-         return;
-#else
-      if (!XQueryPointer(x11->display,
-            x11->win,
-            &root_win, &child_win,
-            &root_x, &root_y,
-            &win_x, &win_y,
-            &mask))
-         return;
-#endif
+         /* Process mouse */
+         if (!XIQueryPointer( x11->display,
+                        x11->mouse_dev_list[mouse_dev_idx],
+                        x11->win,
+                        &root_win, &child_win,
+                        &root_x, &root_y,
+                        &win_x, &win_y,
+                        &buttons_return,
+                        &modifiers_return,
+                        &group_return))
+            return;
 
-#ifdef HAVE_XI2
-      /* > Mouse buttons - fixed map (1,2,3,8,9) */
-      x11->mouse_l[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<1 : 0;
-      x11->mouse_m[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<2 : 0;
-      x11->mouse_r[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<3 : 0;
-      x11->mouse_4[mouse_port] = buttons_return.mask_len > 1 ? buttons_return.mask[1] & 1<<0 : 0;
-      x11->mouse_5[mouse_port] = buttons_return.mask_len > 1 ? buttons_return.mask[1] & 1<<1 : 0;
+         /* > Mouse buttons - fixed map (1,2,3,8,9) */
+         x11->mouse_l[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<1 : 0;
+         x11->mouse_m[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<2 : 0;
+         x11->mouse_r[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<3 : 0;
+         x11->mouse_4[mouse_port] = buttons_return.mask_len > 1 ? buttons_return.mask[1] & 1<<0 : 0;
+         x11->mouse_5[mouse_port] = buttons_return.mask_len > 1 ? buttons_return.mask[1] & 1<<1 : 0;
+         /* XIQueryPointer() allocates the button mask for the caller */
+         XFree(buttons_return.mask);
+      }
 #else
-      x11->mouse_l[mouse_port] = mask & Button1Mask;
-      x11->mouse_m[mouse_port] = mask & Button2Mask;
-      x11->mouse_r[mouse_port] = mask & Button3Mask;
-      /* Buttons 4 and 5 are not returned here, so they are handled elsewhere. */
+      if (!x_query_core_pointer(x11, &win_x, &win_y))
+         return;
 #endif
 
       /* > Mouse pointer */

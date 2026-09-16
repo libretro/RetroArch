@@ -50,13 +50,31 @@ typedef struct pipewire_core
 
    struct string_list *devicelist;
    bool nonblock;
+   /* Set from the core error callback, on the loop thread. The loop
+    * is stopped by its owner at teardown, never from that thread -
+    * stopping from inside it cannot join it and leaves it a zombie -
+    * so this is how the error reaches the waits and the owner. */
+   bool error;
 } pipewire_core_t;
 
 bool pipewire_core_init(pipewire_core_t **pw, const char *loop_name, const struct pw_registry_events *events);
 
 void pipewire_core_deinit(pipewire_core_t *pw);
 
-void pipewire_core_wait_resync(pipewire_core_t *pw);
+/* Granularity of every bounded wait on the thread loop, and the
+ * bounds themselves. A loop that is running answers in milliseconds;
+ * the bounds are for one that is not. */
+#define PIPEWIRE_LOOP_WAIT_STEP_MS 100
+#define PIPEWIRE_SYNC_WAIT_MS      3000
+#define PIPEWIRE_STREAM_WAIT_MS    1000
+
+/* Sleep on the loop until it is signalled or ms have passed. Caller
+ * holds the loop lock. Returns false on the deadline. */
+bool pipewire_loop_wait_ms(struct pw_thread_loop *loop, unsigned ms);
+
+/* Round-trips a sync to the daemon. Returns false when it did not
+ * answer within PIPEWIRE_SYNC_WAIT_MS. */
+bool pipewire_core_wait_resync(pipewire_core_t *pw);
 
 bool pipewire_stream_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active);
 

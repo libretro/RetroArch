@@ -244,21 +244,21 @@ static unsigned input_autoconfigure_get_config_file_affinity(
                   "_alt%d",i);
 
       /* Parse config file */
-      _len  = strlcpy(config_key, "input_vendor_id",
+      _len  = strlcpy_lit(config_key, "input_vendor_id",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_vid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_product_id",
+      _len  = strlcpy_lit(config_key, "input_product_id",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
                sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_pid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_device",
+      _len  = strlcpy_lit(config_key, "input_device",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
             sizeof(config_key) - _len);
@@ -266,7 +266,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
             && (entry->value))
          config_device = entry->value;
 
-      _len  = strlcpy(config_key, "input_phys",
+      _len  = strlcpy_lit(config_key, "input_phys",
                sizeof(config_key));
       _len += strlcpy(config_key + _len, config_key_postfix,
                sizeof(config_key) - _len);
@@ -309,7 +309,7 @@ static void input_autoconfigure_set_config_file(
    }
 
    /* Parse config file */
-   _len  = strlcpy(config_key, "input_device_display_name",
+   _len  = strlcpy_lit(config_key, "input_device_display_name",
             sizeof(config_key));
    /* Read device display name */
    if (alternative > 0)
@@ -359,40 +359,94 @@ static void input_autoconfigure_set_config_file(
  * so the scan's extension filter never sees it).  If the directory is
  * not writable the write fails silently and every connect simply
  * performs the full scan, exactly as before this mechanism existed.
- * Freshness is keyed on the directory's *.cfg count (the VFS layer
- * exposes no mtime): additions and removals are caught by the count,
- * a renamed or deleted winner by the failed open, an edited winner by
- * the re-score, and a profile hand-edited to match a previously
- * unmatched device by the no-candidate fallback.  The one blind spot
- * is an in-place edit that would promote a profile that was neither
- * the winner nor previously acceptable; deleting the index file (or
- * any add/remove in the directory) clears it. */
+ * Freshness is keyed on a fingerprint of the directory's *.cfg
+ * entries - their count, their total size and their newest
+ * modification time - taken from the directory walk itself, so it
+ * still costs no per-file opens.  Additions, removals and in-place
+ * edits all change it, which is what the count alone could not do:
+ * the count is blind to an edit, and re-scoring only the winner
+ * cannot see one either, because an entry that a stale index
+ * *understates* never becomes the winner to be re-scored.  That was
+ * a real mis-selection, not a wasted open - a device whose true
+ * profile had been edited to match would be configured from a rival
+ * whose own claim was honest and therefore verified (see
+ * https://github.com/libretro/RetroArch/issues/19540).
+ *
+ * A renamed or deleted winner is still caught by the failed open and
+ * an edited winner by the re-score; both stay as cheap second lines
+ * of defence.  Where the entry metadata is unavailable - a VFS
+ * without dirent stat, or a frontend older than VFS API v5 - no
+ * index is written and none is trusted, so those platforms simply
+ * scan in full as they did before this mechanism existed. */
 
 #define AUTOCONFIG_INDEX_NAME    ".autoconfig_index"
-#define AUTOCONFIG_INDEX_VERSION 1
+/* v1 indices are keyed on the *.cfg count alone and cannot be trusted
+ * (see above); bumping the version discards them on sight. */
+#define AUTOCONFIG_INDEX_VERSION 2
 
-/* Count the *.cfg entries in a directory: two getdents syscalls,
- * no per-file opens.  Must apply the same filter as the scan walk
- * so the count is comparable. */
-static int input_autoconfigure_index_dir_count(const char *dir)
+/* Fingerprint the *.cfg entries in a directory: the same two getdents
+ * syscalls the count took, plus one fstatat per entry (free on
+ * Windows, where the find data already carries both fields).  No
+ * per-file opens.  Must apply the same filter as the scan walk so the
+ * result is comparable.
+ *
+ * Returns the entry count, or -1 if the directory cannot be walked or
+ * any entry's metadata is unavailable - the caller treats -1 as "no
+ * usable fingerprint" and neither writes nor trusts an index. */
+static int input_autoconfigure_index_dir_fingerprint(const char *dir,
+      int64_t *total_size, int64_t *newest_mtime, int64_t *index_mtime)
 {
    struct RDIR *rdir;
-   int count = 0;
+   int     count  = 0;
+   int64_t sum    = 0;
+   int64_t newest = 0;
+   int64_t self   = 0;
 
    if (!(rdir = retro_opendir(dir)))
       return -1;
 
    while (retro_readdir(rdir))
    {
+      int64_t size           = 0;
+      int64_t mtime          = 0;
       const char *entry_name = retro_dirent_get_name(rdir);
-      if (     entry_name
-            && *entry_name
-            && string_is_equal_noncase(
-                  path_get_extension(entry_name), "cfg"))
-         count++;
+
+      if (!entry_name || !*entry_name)
+         continue;
+
+      /* The index lives in the directory it describes, so its own
+       * mtime comes out of this same walk at no extra cost. */
+      if (string_is_equal(entry_name, AUTOCONFIG_INDEX_NAME))
+      {
+         if (retro_dirent_stat(rdir, NULL, &mtime))
+            self = mtime;
+         continue;
+      }
+
+      if (!string_is_equal_noncase(
+               path_get_extension(entry_name), "cfg"))
+         continue;
+
+      if (!retro_dirent_stat(rdir, &size, &mtime))
+      {
+         retro_closedir(rdir);
+         return -1;
+      }
+
+      count++;
+      sum += size;
+      if (mtime > newest)
+         newest = mtime;
    }
 
    retro_closedir(rdir);
+
+   if (total_size)
+      *total_size = sum;
+   if (newest_mtime)
+      *newest_mtime = newest;
+   if (index_mtime)
+      *index_mtime = self;
    return count;
 }
 
@@ -452,21 +506,21 @@ static void input_autoconfigure_index_collect(
          snprintf(config_key_postfix, sizeof(config_key_postfix),
                   "_alt%d", i);
 
-      _len  = strlcpy(config_key, "input_vendor_id",
+      _len  = strlcpy_lit(config_key, "input_vendor_id",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_vid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_product_id",
+      _len  = strlcpy_lit(config_key, "input_product_id",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_pid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_device",
+      _len  = strlcpy_lit(config_key, "input_device",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
@@ -474,7 +528,7 @@ static void input_autoconfigure_index_collect(
             && (entry->value))
          config_device = entry->value;
 
-      _len  = strlcpy(config_key, "input_phys",
+      _len  = strlcpy_lit(config_key, "input_phys",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
@@ -531,9 +585,29 @@ static void input_autoconfigure_index_write(
    char index_path[PATH_MAX_LENGTH];
    char index_val[32];
    config_file_t *index_build = autoconfig_handle->index_build;
+   int64_t total_size         = 0;
+   int64_t newest_mtime       = 0;
+   int     dir_count;
 
    if (!index_build)
       return;
+
+   /* Fingerprint the directory as it stands now, after the walk that
+    * produced these tuples.  Taking it here rather than per file
+    * during the walk keeps the two sides symmetric: the reader
+    * recomputes it the same way, from the same filter, in one pass.
+    * A directory whose metadata cannot be read gets no index at all -
+    * an index that cannot be checked for staleness is worse than
+    * none, because the check is the only thing standing between a
+    * stale entry and a mis-selected profile. */
+   if ((dir_count = input_autoconfigure_index_dir_fingerprint(
+         dir, &total_size, &newest_mtime, NULL)) < 0)
+   {
+      config_file_free(index_build);
+      autoconfig_handle->index_build       = NULL;
+      autoconfig_handle->index_build_count = 0;
+      return;
+   }
 
    snprintf(index_val, sizeof(index_val), "%d",
          AUTOCONFIG_INDEX_VERSION);
@@ -541,11 +615,24 @@ static void input_autoconfigure_index_write(
    snprintf(index_val, sizeof(index_val), "%u",
          autoconfig_handle->index_build_count);
    config_set_string(index_build, "__file_count", index_val);
+   snprintf(index_val, sizeof(index_val), "%d", dir_count);
+   config_set_string(index_build, "__dir_count", index_val);
+   snprintf(index_val, sizeof(index_val), "%lld",
+         (long long)total_size);
+   config_set_string(index_build, "__total_size", index_val);
+   snprintf(index_val, sizeof(index_val), "%lld",
+         (long long)newest_mtime);
+   config_set_string(index_build, "__newest_mtime", index_val);
 
    fill_pathname_join_special(index_path, dir,
          AUTOCONFIG_INDEX_NAME, sizeof(index_path));
    index_build->flags |= CONF_FILE_FLG_MODIFIED;
-   config_file_write(index_build, index_path, false);
+   /* Not fatal - a missing index just means the next connect does
+    * the full directory scan - but silently rebuilding it on every
+    * boot is worth a line in the log. */
+   if (!config_file_write(index_build, index_path, false))
+      RARCH_WARN("[Autoconf] Failed to write controller profile index to \"%s\".\n",
+            index_path);
 
    config_file_free(index_build);
    autoconfig_handle->index_build       = NULL;
@@ -563,7 +650,11 @@ static config_file_t *input_autoconfigure_index_try(
    char index_path[PATH_MAX_LENGTH];
    config_file_t *index_conf = NULL;
    config_file_t *winner     = NULL;
+   struct config_entry_list *fp_entry;
+   int64_t total_size        = 0;
+   int64_t newest_mtime      = 0;
    int file_count            = 0;
+   int dir_count             = 0;
    int version               = 0;
    int best_file             = -1;
    unsigned best_affinity    = 0;
@@ -574,16 +665,72 @@ static config_file_t *input_autoconfigure_index_try(
    if (!(index_conf = config_file_new(index_path)))
       return NULL;
 
-   /* Header and freshness */
+   /* Header */
    if (     !config_get_int(index_conf, "__version", &version)
          || (version != AUTOCONFIG_INDEX_VERSION)
          || !config_get_int(index_conf, "__file_count", &file_count)
          || (file_count <= 0)
-         || (file_count !=
-               input_autoconfigure_index_dir_count(dir)))
+         || !config_get_int(index_conf, "__dir_count", &dir_count))
    {
       config_file_free(index_conf);
       return NULL;
+   }
+
+   /* Freshness: the directory must fingerprint exactly as it did when
+    * the index was written.  The count catches additions and removals,
+    * the total size and the newest modification time catch in-place
+    * edits - including an edit to a profile the index ranks low, which
+    * nothing downstream can catch, because only the winner is ever
+    * re-scored against its real contents. */
+   {
+      int64_t cur_total  = 0;
+      int64_t cur_newest = 0;
+      int64_t self_mtime = 0;
+      int     cur_count  = input_autoconfigure_index_dir_fingerprint(
+            dir, &cur_total, &cur_newest, &self_mtime);
+
+      if (     (cur_count < 0)
+            || (cur_count != dir_count)
+            || (file_count != dir_count))
+      {
+         config_file_free(index_conf);
+         return NULL;
+      }
+
+      /* Modification times are whole seconds, so a size-preserving
+       * edit made in the same second the index was written would
+       * fingerprint identically.  The index is written after the
+       * profiles it describes were read, so in a fresh directory
+       * every profile is strictly older than it; requiring that
+       * closes the sub-second window at the cost of one rescan for a
+       * directory whose profiles happen to share the index's second,
+       * which the rescan itself then resolves by rewriting the index
+       * with a later timestamp. */
+      if ((self_mtime <= 0) || (cur_newest >= self_mtime))
+      {
+         config_file_free(index_conf);
+         return NULL;
+      }
+
+      if (     !(fp_entry = config_get_entry(index_conf,
+                  "__total_size"))
+            || !fp_entry->value
+            || ((total_size = (int64_t)strtoll(fp_entry->value,
+                     NULL, 10)) != cur_total))
+      {
+         config_file_free(index_conf);
+         return NULL;
+      }
+
+      if (     !(fp_entry = config_get_entry(index_conf,
+                  "__newest_mtime"))
+            || !fp_entry->value
+            || ((newest_mtime = (int64_t)strtoll(fp_entry->value,
+                     NULL, 10)) != cur_newest))
+      {
+         config_file_free(index_conf);
+         return NULL;
+      }
    }
 
    /* Rank every recorded tuple with the real affinity function */
@@ -1233,6 +1380,12 @@ static void cb_input_autoconfigure_connect(
    else
       input_config_clear_device_joypad_driver(port);
 
+   /* > Physical location
+    * Retained so that a later reconnect can offer it to the profile
+    * scan again; drivers that report none clear it. */
+   input_config_set_device_phys(port,
+         autoconfig_handle->device_info.phys);
+
    /* > VID/PID */
    input_config_set_device_vid(port, autoconfig_handle->device_info.vid);
    input_config_set_device_pid(port, autoconfig_handle->device_info.pid);
@@ -1643,6 +1796,41 @@ bool input_autoconfigure_connect_ex(
    return true;
 }
 
+/**
+ * Re-runs autoconfiguration for a port that already holds a device,
+ * using the identity retained for it by the last connect.
+ *
+ * Profiles are consumed at connect time, so this is what makes a
+ * changed profile directory take effect on devices that are already
+ * present, without disturbing any driver.
+ *
+ * The display name is deliberately not carried over: the retained one
+ * may have come from the profile that is being replaced, and the
+ * hotplug path does not supply one either, so the newly matched
+ * profile gets to name the device.
+ *
+ * @param port Input port to reconfigure (0 .. MAX_INPUT_DEVICES-1).
+ *
+ * @return true if an autoconfigure task was queued, false otherwise.
+ * @see input_autoconfigure_connect()
+ */
+bool input_autoconfigure_reconnect(unsigned port)
+{
+   const char *name = input_config_get_device_name(port);
+
+   if (!name || !*name)
+      return false;
+
+   return input_autoconfigure_connect(
+         name,
+         NULL,
+         input_config_get_device_phys(port),
+         input_config_get_device_joypad_driver(port),
+         port,
+         input_config_get_device_vid(port),
+         input_config_get_device_pid(port));
+}
+
 /****************************/
 /* Autoconfigure Disconnect */
 /****************************/
@@ -1669,6 +1857,7 @@ static void cb_input_autoconfigure_disconnect(
    input_config_clear_device_display_name(port);
    input_config_clear_device_config_name(port);
    input_config_clear_device_joypad_driver(port);
+   input_config_set_device_phys(port, NULL);
    input_config_set_device_vid(port, 0);
    input_config_set_device_pid(port, 0);
    input_config_set_device_autoconfigured(port, false);

@@ -140,7 +140,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    struct config_file_userdata userdata;
    char key[64], name[64];
    name[0] = '\0';
-   strlcpy(key, "filter", sizeof(key));
+   strlcpy_lit(key, "filter", sizeof(key));
 
    if (!config_get_array(filt->conf, key, name, sizeof(name)))
    {
@@ -483,21 +483,19 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
    if (!filt)
       return;
 
-   free(filt->packets);
-   if (filt->impl && filt->impl_data)
-      filt->impl->destroy(filt->impl_data);
-
-#ifdef HAVE_DYLIB
-   for (i = 0; i < filt->num_plugs; i++)
-   {
-      if (filt->plugs[i].lib)
-         dylib_close(filt->plugs[i].lib);
-   }
-   free(filt->plugs);
-#endif
-
 #ifdef HAVE_THREADS
-   if (filt->threads > 1)
+   /* The pool goes down first: workers call into the plugin's work
+    * functions with impl_data and read the packet array, so both
+    * must outlive the last worker. The old order freed the packets,
+    * destroyed impl_data and closed the plugin dylibs before the
+    * join - workers are idle whenever free is reached today (process
+    * waits for every worker before returning, and create's error
+    * path frees before any packet is dispatched), so the order was
+    * latent rather than crashing, but it inverted the ownership it
+    * relies on. thread_data can be NULL with threads still counted
+    * when its allocation was what failed during create; that path
+    * walked the NULL array. */
+   if (filt->threads > 1 && filt->thread_data)
    {
       for (i = 0; i < filt->threads; i++)
       {
@@ -514,6 +512,22 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
       free(filt->thread_data);
    }
 #endif
+
+   free(filt->packets);
+   if (filt->impl && filt->impl_data)
+      filt->impl->destroy(filt->impl_data);
+
+#ifdef HAVE_DYLIB
+   for (i = 0; i < filt->num_plugs; i++)
+   {
+      if (filt->plugs[i].lib)
+         dylib_close(filt->plugs[i].lib);
+   }
+#endif
+   /* Allocated by append_softfilter_plugs in the builtin build too;
+    * freeing it only under HAVE_DYLIB leaked one plug table per
+    * filter lifecycle on static builds. */
+   free(filt->plugs);
 
    if (filt->conf)
       config_file_free(filt->conf);

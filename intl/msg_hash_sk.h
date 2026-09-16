@@ -204,7 +204,6 @@ static const struct
    char s_ae87ea53[264];
    char s_9834febe[433];
    char s_93805cc8[488];
-   char s_b495662b[125];
    char s_9953f4e2[260];
    char s_de76d2dc[21];
    char s_79e212bd[8];
@@ -255,6 +254,7 @@ static const struct
    char s_35a1323d[13];
    char s_f72667c9[16];
    char s_adce4374[15];
+   char s_5984f4f9[6];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[49];
 #endif
@@ -262,7 +262,6 @@ static const struct
    char s_d9a51d02[17];
    char s_12e77e8f[7];
    char s_98760b94[31];
-   char s_af6007a1[18];
    char s_da068369[11];
    char s_daead8a5[5];
    char s_48c208ee[20];
@@ -520,7 +519,7 @@ static const struct
 #ifdef HAVE_GAME_AI
    char s_8dc1bc3e[10];
 #endif
-   char s_881efe76[18];
+   char s_881efe76[20];
    char s_1e4264a1[7];
    char s_58072ab5[25];
    char s_babee9c1[11];
@@ -619,12 +618,15 @@ static const struct
    char s_bf21615a[7];
    char s_15f24ff4[13];
    char s_ec7e8026[7];
-   char s_5d29b870[18];
+   char s_5d29b870[20];
+   char s_6996339b[5];
    char s_08e9410c[22];
    char s_d95824aa[22];
    char s_639f529e[17];
    char s_4927597c[15];
    char s_77b74366[13];
+   char s_ab49119c[8];
+   char s_ddf679b9[8];
    char s_3b7e9d77[12];
    char s_10342503[12];
    char s_d31f6d88[16];
@@ -932,6 +934,9 @@ static const struct
    char s_d7c1d887[20];
    char s_8c49943c[21];
    char s_d2c6b214[27];
+#ifdef HAVE_SDL3
+   char s_ba511c01[33];
+#endif
 #ifdef ANDROID
    char s_dd65ea83[29];
 #endif
@@ -1533,7 +1538,6 @@ static const struct
    char s_74b77b4a[19];
    char s_7534cfc9[11];
    char s_36259b63[21];
-   char s_37368130[15];
    char s_d51f54a2[14];
    char s_b35f573c[11];
    char s_1cad7751[11];
@@ -1966,6 +1970,7 @@ static const struct
    char s_43ac80a0[11];
    char s_6959ce80[13];
    char s_886631ec[16];
+   char s_aa628249[7];
    char s_ebe994b4[14];
    char s_1c62c301[8];
    char s_a8bb35b6[11];
@@ -2031,7 +2036,7 @@ static const struct
    char s_6b80a1bc[35];
    char s_eb0d7f1d[25];
    char s_99a77122[22];
-   char s_51cbf8f0[34];
+   char s_51cbf8f0[35];
    char s_4a5b7672[23];
    char s_8fa79de5[27];
    char s_5eee10e5[34];
@@ -2685,8 +2690,6 @@ static const struct
    char s_d9153542[44];
    char s_8e48ec69[35];
    char s_cd43c108[80];
-   char s_cd46e260[92];
-   char s_cd482ffe[100];
    char s_49336383[39];
    char s_e92351d4[104];
    char s_8e22cdce[62];
@@ -3431,7 +3434,6 @@ static const struct
    char s_1eebf4f8[179];
    char s_2f2ca2b6[177];
    char s_2c9be635[121];
-   char s_05ec12e6[156];
    char s_b5a603de[51];
    char s_d9c2db25[53];
 #ifdef HAVE_ODROIDGO2
@@ -3474,7 +3476,6 @@ static const struct
    char s_d62ed5dc[347];
    char s_2e69508b[316];
    char s_7e96b5ce[40];
-   char s_3547866d[129];
    char s_c2314d30[190];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[162];
@@ -4531,9 +4532,6 @@ static const struct
    "\304\217. Nekombinujte so Swap Interval > 1, BFI, Frame Delay alebo Sync to Exact Content Framer"
    "ate. Syst\303\251mov\303\251 VRR m\303\264\305\276ete necha\305\245 zapnut\303\251, len nie toto"
    " nastavenie.",
-   "Pou\305\276i\305\245 vl\303\241knov\303\275 video ovl\303\241da\304\215. Pou\305\276itie m\303"
-   "\264\305\276e zlep\305\241i\305\245 v\303\275kon za mo\305\276n\303\272 cenu latencie a v\303"
-   "\244\304\215\305\241ieho video trhania.",
    "Synchronizova\305\245 s presnou frekvenciou obsahu. T\303\241to mo\305\276nos\305\245 je ekvival"
    "entom vyn\303\272tenia x1 r\303\275chlosti pri zachovan\303\255 mo\305\276nosti r\303\275chleho "
    "prev\303\255jania. \305\275iadna odch\303\275lka od obnovovacej frekvencie po\305\276adovanej co"
@@ -4587,6 +4585,7 @@ static const struct
    "Re\305\276im re\304\215i",
    "Cie\304\276ov\303\275 jazyk",
    "URL slu\305\276by AI",
+   "V\305\276dy",
 #ifndef HAVE_DYNAMIC
    "V\305\276dy znova na\304\215\303\255ta\305\245 core pri spusten\303\255 obsahu",
 #endif
@@ -4594,7 +4593,6 @@ static const struct
    "Ikona aplik\303\241cie",
    "Assety",
    "Otvori\305\245 ovl\303\241dac\303\255 panel ASIO",
-   "Blokova\305\245 sn\303\255mky",
    "Zariadenie",
    "Zvuk",
    "DPS z\303\241suvn\303\275 modul",
@@ -4853,7 +4851,7 @@ static const struct
 #ifdef HAVE_GAME_AI
    "Hern\303\251 AI",
 #endif
-   "Inform\303\241cie Jadra",
+   "Inform\303\241cie o jadre",
    "Autori",
    "Cache info s\303\272borov core",
    "Kateg\303\263rie",
@@ -4955,12 +4953,15 @@ static const struct
    "V menu",
    "Pozastaven\303\251",
    "Hranie",
-   "Inform\303\241cie disku",
+   "Inform\303\241cie o disku",
+   "Zvuk",
    "Na\304\215\303\255ta\305\245 nov\303\275 disk",
    "Aktu\303\241lny index disku",
    "Ovl\303\241danie disku",
    "Vysun\303\272\305\245 disk",
    "Vlo\305\276te disk",
+   "\304\214ist\303\251",
+   "V\303\275stup",
    "Predvolen\303\251",
    "S\305\245ahovanie",
    "Stiahnu\305\245 jadro",
@@ -5268,6 +5269,9 @@ static const struct
    "Priradenia RetroPad",
    "Intenzita vibr\303\241ci\303\255",
    "Ulo\305\276i\305\245 profil kontroleru",
+#ifdef HAVE_SDL3
+   "Pou\305\276i\305\245 syst\303\251mov\303\272 kl\303\241vesnicu",
+#endif
 #ifdef ANDROID
    "Vybra\305\245 fyzick\303\272 kl\303\241vesnicu",
 #endif
@@ -5873,7 +5877,6 @@ static const struct
    "Odna\304\215\303\255ta\305\245 jadro",
    "&N\303\241poveda",
    "O programe RetroArch",
-   "Prispievatelia",
    "Dokument\303\241cia",
    "Vy\304\215isti\305\245",
    "&N\303\241stroje",
@@ -6317,6 +6320,7 @@ static const struct
    "Verzia Git",
    "Verzia Lakka",
    "Verzia MoltenVK",
+   "Pokrok",
    "Zdroj Energie",
    "Nabit\303\251",
    "Nab\303\255janie",
@@ -6382,7 +6386,7 @@ static const struct
    "Aktualiz\303\241cia Profilov Ovl\303\241da\304\215ov",
    "Aktualiz\303\241cia Cg Shaders",
    "Aktualiz\303\241cia Cheatov",
-   "Aktualiz\303\241cia Info S\305\257borov Jadra",
+   "Aktualiz\303\241cia info s\303\272borov jadier",
    "Aktualiz\303\241cia Datab\303\241z",
    "Aktualiz\303\241cia GLSL Shaders",
    "Aktualiz\303\241cia Stiahnut\303\275ch Jadier",
@@ -7317,10 +7321,6 @@ static const struct
    "Zachyt\303\255 obraz aktu\303\241lneho obsahu.",
    "Dr\305\276\303\255 aktu\303\241lne vybran\303\275 shader zapnut\303\275/vypnut\303\275 po\304"
    "\215as stl\303\241\304\215ania kl\303\241vesy.",
-   "Na\304\215\303\255ta a aplikuje \304\217al\305\241\303\255 s\303\272bor predvo\304\276by shadero"
-   "v v koreni adres\303\241ra 'Video Shadery'.",
-   "Na\304\215\303\255ta a aplikuje predch\303\241dzaj\303\272ci s\303\272bor predvo\304\276by shade"
-   "rov v koreni adres\303\241ra 'Video Shadery'.",
    "Zapne/vypne aktu\303\241lne vybran\303\275 shader.",
    "Povol\303\255 spomalen\303\275 pohyb po\304\215as dr\305\276ania. Obsah be\305\276\303\255 norm"
    "\303\241lnou r\303\275chlos\305\245ou pri uvo\304\276nen\303\255 kl\303\241vesy.",
@@ -8636,9 +8636,6 @@ static const struct
    "). M\303\264\305\276e sp\303\264sobi\305\245 artefakty \305\241k\303\241lovania.",
    "Zachyt\303\255 obraz po aplik\303\241cii filtrov (ale nie shaderov). Video bude vyzera\305\245 t"
    "ak pekne ako to, \304\215o vid\303\255te na obrazovke.",
-   "Vertik\303\241lna obnovovacia frekvencia obrazovky. Pou\305\276ije sa na v\303\275po\304\215et v"
-   "hodn\303\251ho vzorkovania vstupu audia. Ignorovan\303\251, ak je povolen\303\251 'Vl\303\241kno"
-   "v\303\251 video'.",
    "Odhadovan\303\241 obnovovacia frekvencia obrazovky v Hz.",
    "Obnovovacia frekvencia hl\303\241sen\303\241 ovl\303\241da\304\215om obrazu.",
 #ifdef HAVE_ODROIDGO2
@@ -8733,9 +8730,6 @@ static const struct
    "\305\241ie tempo sn\303\255mok pri spusten\303\255 napr. 30 fps obsahu na 60 Hz displeji alebo 6"
    "0 fps obsahu na 120 Hz displeji.",
    "Zmena nastavenia synchroniz\303\241cie videa.",
-   "Zlep\305\241uje v\303\275kon za cenu oneskorenia a vy\305\241\305\241ieho zasek\303\241vania vid"
-   "ea. Pou\305\276\303\255vajte, iba ak nem\303\264\305\276ete z\303\255ska\305\245 pln\303\272 r"
-   "\303\275chlos\305\245.",
    "Pok\303\272si sa zlep\305\241i\305\245 v\303\275kon pou\305\276it\303\255m Metal argument buffer"
    "ov. Niektor\303\251 cores to m\303\264\305\276u vy\305\276adova\305\245. Toto m\303\264\305\276e"
    " pokazi\305\245 niektor\303\251 shadery, hlavne na starom hardv\303\251ri alebo OS verzi\303\241"
@@ -9424,7 +9418,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (179651u
+      (sizeof(msg_hash_sk_blob) == (179055u
 #ifdef ANDROID
        + 389u
 #endif
@@ -9482,6 +9476,9 @@ typedef char msg_hash_sk_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 55u
+#endif
+#ifdef HAVE_SDL3
+       + 33u
 #endif
 #ifdef ANDROID
        + 29u
@@ -10028,7 +10025,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -10079,6 +10075,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -10086,7 +10083,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -10444,11 +10440,14 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -10756,6 +10755,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -11357,7 +11359,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
@@ -11789,6 +11790,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -12506,8 +12508,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -13252,7 +13252,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -13295,7 +13294,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

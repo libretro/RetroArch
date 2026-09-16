@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <retro_math.h>
 #include <libretro_dspfilter.h>
 
 #define CHORUS_MAX_DELAY 4096
@@ -75,8 +76,11 @@ static void chorus_process(void *data, struct dspfilter_output *output,
       unsigned delay_int;
       float delay_frac, l_a, l_b, r_a, r_b;
       float chorus_l, chorus_r;
-      float in[2]             = { out[0], out[1] };
+      float in[2];
       float delay             = ch->delay + ch->depth * sin((2.0 * M_PI * ch->lfo_ptr++) / ch->lfo_period);
+
+      in[0] = out[0];
+      in[1] = out[1];
 
       delay                  *= ch->input_rate;
       if (ch->lfo_ptr >= ch->lfo_period)

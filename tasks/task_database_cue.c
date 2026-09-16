@@ -780,7 +780,7 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
    will not match redump.**/
 
    /** insert prefix **/
-   _len = strlcpy(pre_game_id, "DL-DOL-", sizeof(pre_game_id));
+   _len = strlcpy_lit(pre_game_id, "DL-DOL-", sizeof(pre_game_id));
    /** add raw serial **/
    strlcpy(pre_game_id + _len, raw_game_id, sizeof(pre_game_id) - _len);
 
@@ -794,32 +794,32 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
    switch (region_id)
    {
       case 'E':
-         _len += strlcpy(s + _len, "-USA", len - _len);
+         _len += strlcpy_lit(s + _len, "-USA", len - _len);
          break;
       case 'J':
-         _len += strlcpy(s + _len, "-JPN", len - _len);
+         _len += strlcpy_lit(s + _len, "-JPN", len - _len);
          break;
       case 'P': /** NYI: P can also be P-UKV, P-AUS **/
       case 'X': /** NYI: X can also be X-UKV, X-EUU **/
-         _len += strlcpy(s + _len, "-EUR", len - _len);
+         _len += strlcpy_lit(s + _len, "-EUR", len - _len);
          break;
       case 'Y':
-         _len += strlcpy(s + _len, "-FAH", len - _len);
+         _len += strlcpy_lit(s + _len, "-FAH", len - _len);
          break;
       case 'D':
-         _len += strlcpy(s + _len, "-NOE", len - _len);
+         _len += strlcpy_lit(s + _len, "-NOE", len - _len);
          break;
       case 'S':
-         _len += strlcpy(s + _len, "-ESP", len - _len);
+         _len += strlcpy_lit(s + _len, "-ESP", len - _len);
          break;
       case 'F':
-         _len += strlcpy(s + _len, "-FRA", len - _len);
+         _len += strlcpy_lit(s + _len, "-FRA", len - _len);
          break;
       case 'I':
-         _len += strlcpy(s + _len, "-ITA", len - _len);
+         _len += strlcpy_lit(s + _len, "-ITA", len - _len);
          break;
       case 'H':
-         _len += strlcpy(s + _len, "-HOL", len - _len);
+         _len += strlcpy_lit(s + _len, "-HOL", len - _len);
          break;
       default:
          return 0;
@@ -2144,7 +2144,6 @@ static bool intfstream_file_get_crc_and_size_fd(intfstream_t *fd,
       uint32_t *crc, uint64_t *size)
 {
    bool rv;
-   uint8_t *data = NULL;
 
    if (file_size < 0)
    {
@@ -2173,30 +2172,26 @@ static bool intfstream_file_get_crc_and_size_fd(intfstream_t *fd,
        * call, as the single full-span read used to. */
       uint32_t accumulator = 0;
       int64_t  remaining   = len;
-      size_t   buffer_len  = 256 * 1024;
 
       if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
          return false;
 
-      if (!(data = (uint8_t*)malloc(buffer_len)))
-         return false;
-
+      /* intfstream_crc_step() folds straight out of the VFS mapping
+       * when the file was opened FREQUENT_ACCESS (as
+       * intfstream_file_get_crc_and_size() does), and keeps one
+       * scratch buffer for the stream otherwise; either way no
+       * per-call allocation here.  A short step - end of file inside
+       * the span - fails the call, as a short read used to. */
       while (remaining > 0)
       {
-         int64_t want = (remaining < (int64_t)buffer_len)
-               ? remaining : (int64_t)buffer_len;
-
-         if (intfstream_read(fd, data, want) != want)
-         {
-            free(data);
+         int64_t got = intfstream_crc_step(fd, &accumulator,
+               (size_t)((remaining < (int64_t)(256 * 1024))
+                     ? remaining : (int64_t)(256 * 1024)));
+         if (got <= 0)
             return false;
-         }
-
-         accumulator = encoding_crc32(accumulator, data, (size_t)want);
-         remaining  -= want;
+         remaining -= got;
       }
 
-      free(data);
       *crc = accumulator;
       return true;
    }
@@ -2209,8 +2204,13 @@ bool intfstream_file_get_crc_and_size(const char *name,
       uint64_t offset, int64_t len, uint32_t *crc, uint64_t *size)
 {
    bool rv;
+   /* FREQUENT_ACCESS: the VFS maps the file where it can, and the
+    * CRC below is then computed in place from the mapping rather
+    * than read out through a buffer.  Where it cannot map (a URL
+    * scheme, a 32-bit host and a huge image) the hint is just a
+    * hint and the read path is what it was. */
    intfstream_t *fd = intfstream_open_file(name,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
 
    if (!fd)
       return false;

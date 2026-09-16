@@ -29,6 +29,21 @@
 #include "sha1.h"
 #include "debug.h"
 
+#ifdef TAI_CONTINUE
+#undef TAI_CONTINUE
+#endif
+
+#define TAI_CONTINUE(type, hook, ...) ({ \
+    struct _tai_hook_user *cur, *next; \
+    cur = (struct _tai_hook_user *)(hook); \
+    next = (struct _tai_hook_user *)cur->next; \
+    (next == NULL) ? \
+        ((type (*)(...))cur->old)(__VA_ARGS__) \
+        : \
+        ((type (*)(...))next->func)(__VA_ARGS__) \
+    ; \
+})
+
 static int swap_interval = 1;
 static void *displayBufferData[2];
 static unsigned int bufferDataIndex;
@@ -221,7 +236,7 @@ unsigned int pglMemoryAllocAlign_patch(int memoryType, int size, int unused, int
 {
 	if (systemMode && memoryType == 4 && isCreatingSurface) // ColorSurface/Framebuffer Allocation. We want to skip this and replace with SharedFb Framebuffer
 	{
-		memory[0] = displayBufferData[bufferDataIndex];
+		memory[0] = (int)displayBufferData[bufferDataIndex];
 		return 0;
 	}
 	if (msaaEnabled && memoryType == 5 && isCreatingSurface)

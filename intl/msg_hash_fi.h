@@ -172,13 +172,13 @@ static const struct
    char s_35a1323d[9];
    char s_f72667c9[11];
    char s_adce4374[24];
+   char s_5984f4f9[5];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[52];
 #endif
    char s_4e447c6c[38];
    char s_d9a51d02[19];
    char s_12e77e8f[10];
-   char s_af6007a1[14];
    char s_da068369[6];
    char s_daead8a5[7];
    char s_48c208ee[19];
@@ -210,6 +210,7 @@ static const struct
    char s_e5aeacf9[27];
    char s_24976a5b[18];
    char s_5209cc72[30];
+   char s_e2eedfe1[14];
    char s_e66b1cb9[38];
    char s_1bf49fce[51];
    char s_11e34db0[47];
@@ -509,11 +510,14 @@ static const struct
    char s_15f24ff4[12];
    char s_ec7e8026[6];
    char s_5d29b870[13];
+   char s_6996339b[7];
    char s_08e9410c[16];
    char s_d95824aa[21];
    char s_639f529e[15];
    char s_4927597c[21];
    char s_77b74366[21];
+   char s_ab49119c[11];
+   char s_ddf679b9[9];
    char s_3b7e9d77[7];
    char s_10342503[10];
    char s_d31f6d88[11];
@@ -1356,7 +1360,6 @@ static const struct
    char s_74b77b4a[14];
    char s_7534cfc9[6];
    char s_36259b63[22];
-   char s_37368130[10];
    char s_d51f54a2[14];
    char s_b35f573c[10];
    char s_1cad7751[11];
@@ -1760,6 +1763,8 @@ static const struct
    char s_519cd5f8[22];
    char s_43ac80a0[11];
    char s_6959ce80[13];
+   char s_886631ec[18];
+   char s_aa628249[10];
    char s_ebe994b4[12];
    char s_1c62c301[14];
    char s_a8bb35b6[9];
@@ -2082,6 +2087,7 @@ static const struct
    char s_f9dd6e61[12];
    char s_25e89959[7];
    char s_a7468d68[27];
+   char s_b1d6fea6[9];
    char s_aa0659db[22];
    char s_49757b91[22];
    char s_660eb9c4[22];
@@ -2359,8 +2365,6 @@ static const struct
    char s_16ee5cf4[35];
    char s_d9153542[51];
    char s_8e48ec69[39];
-   char s_cd46e260[97];
-   char s_cd482ffe[96];
    char s_e92351d4[125];
    char s_8e22cdce[53];
    char s_86477a78[55];
@@ -2922,7 +2926,6 @@ static const struct
    char s_977f8e82[113];
    char s_5b059407[141];
    char s_7e96b5ce[36];
-   char s_3547866d[130];
    char s_8010a29e[97];
    char s_81120e85[87];
    char s_47ae341f[86];
@@ -3654,13 +3657,13 @@ static const struct
    "Puhetila",
    "Kohdekieli",
    "Teko\303\244lypalvelun osoite",
+   "Aina",
 #ifndef HAVE_DYNAMIC
    "Lataa ydin aina uudelleen kun sis\303\244lt\303\266 suoritetaan",
 #endif
    "Android-yhteyden katkaisun kiertotapa",
    "Sovelluksen kuvake",
    "Resurssit",
-   "Est\303\244 kuvissa",
    "Laite",
    "\303\204\303\244ni",
    "DSP-liit\303\244nn\303\244inen",
@@ -3692,6 +3695,7 @@ static const struct
    "WASAPI-eksklusiivinen tila",
    "WASAPI-liukumuoto",
    "WASAPI-jaetun puskurin pituus",
+   "Automaattinen",
    "Lataa ohitustiedostot automaattisesti",
    "Lataa uudelleenm\303\244\303\244ritystiedostot automaattisesti",
    "Lataa varjostimen esiasetukset automaattisesti",
@@ -3992,11 +3996,14 @@ static const struct
    "Keskeytetty",
    "Pelaa",
    "Levyn tiedot",
+   "\303\204\303\244ni",
    "Lataa uusi levy",
    "Nykyinen levyindeksi",
    "Levyn hallinta",
    "Poista levy asemasta",
    "Sy\303\266t\303\244 levy asemaan",
+   "Tavallinen",
+   "Ulostulo",
    "Oletus",
    "Lataukset",
    "Lataa ydin",
@@ -4840,7 +4847,6 @@ static const struct
    "&Vapauta ydin",
    "&Ohje",
    "Tietoja RetroArchista",
-   "Avustajat",
    "Dokumentaatio",
    "Tyhjenn\303\244",
    "&Ty\303\266kalut",
@@ -5252,6 +5258,8 @@ static const struct
    "K\303\244ytt\303\266j\303\244rjestelm\303\244",
    "Git-versio",
    "Lakka-versio",
+   "MoltenVK:n versio",
+   "Tahdistus",
    "Virtal\303\244hde",
    "Akku t\303\244ynn\303\244",
    "Latautuu",
@@ -5576,6 +5584,7 @@ static const struct
    "Kuvaketeema",
    "Kyll\303\244",
    "YouTube-suoratoiston avain",
+   "HDR-tila",
    "Varjostimen esiasetus",
    "Varjostimen esiasetus",
    "Varjostimen esiasetus",
@@ -5971,10 +5980,6 @@ static const struct
    "Vaihtaa edell\303\244ajon p\303\244\303\244lle/pois.",
    "Tallenna tila t\303\244ll\303\244 hetkell\303\244 valittuun lohkoon.",
    "Ottaa kuvan nykyisest\303\244 sis\303\244ll\303\266st\303\244.",
-   "Lataa ja k\303\244yt\303\244 seuraavaa varjostimen esiasetetustiedostoa \"Videovarjostimet\"-kan"
-   "sion juuressa.",
-   "Lataa ja k\303\244yt\303\244 edellist\303\244 varjostimen esiasetustiedostoa \"Videovarjostimet"
-   "\"-kansion juuressa.",
    "Ottaa hidastuksen k\303\244ytt\303\266\303\266n, kun pidet\303\244\303\244n pohjassa. Sis\303"
    "\244lt\303\266 py\303\266rii normaalilla nopeudella, kun n\303\244pp\303\244in vapautetaan.",
    "Vaihtaa hidastuksen ja normaalin nopeuden v\303\244lill\303\244.",
@@ -6875,8 +6880,6 @@ static const struct
    "Antaa laitteistorender\303\266iville ytimille oman yksityisen kontekstinsa. N\303\244in v\303"
    "\244ltet\303\244\303\244n laitteiston tilamuutosten arvailu kuvien v\303\244liss\303\244.",
    "Muuta videon synkronointiasetuksia.",
-   "Parantaa suorituskyky\303\244 viiveen kustannuksella ja lis\303\244\303\244 videon nykimist\303"
-   "\244. K\303\244yt\303\244 vain, jos t\303\244ytt\303\244 nopeutta ei saada muuten.",
    "Mukautettu ikkunan korkeus mit\303\244 k\303\244ytet\303\244\303\244n, jos kuvasuhde on asetettu"
    " 'Mukautettu kuvasuhde'.",
    "Mukautettu ikkunan leveys mit\303\244 k\303\244ytet\303\244\303\244n, jos Kuvasuhde on 'Mukautet"
@@ -7456,7 +7459,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (124233u
+      (sizeof(msg_hash_fi_blob) == (123969u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -7919,13 +7922,13 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -7957,6 +7960,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -8256,11 +8260,14 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -9103,7 +9110,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
@@ -9506,6 +9512,8 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -9828,6 +9836,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
@@ -10105,8 +10114,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
@@ -10668,7 +10675,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,

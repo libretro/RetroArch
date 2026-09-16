@@ -754,11 +754,17 @@ static RSTRTOD_FLATTEN void rstrtod_parse(const char *s, size_t len, struct rstr
    int         exponent    = 0;
    int         truncated   = 0;
 
-   /* Only the fields an early return exposes need setting up front:
-    * valid gates everything, and the sign and the special tag are read
-    * on the inf/nan paths. The rest are always stored on the way out
-    * of the digit path, and the caller initialises *consumed. */
+   /* Every field a caller can reach is set here, once, before the
+    * scan: valid gates the rest, the sign and the special tag are
+    * read on the inf/nan paths, and the accumulators are written
+    * again on the way out of the digit path. Seeding them costs
+    * three stores outside the digit loop and lets a compiler that
+    * cannot follow the valid gate see the struct as fully defined
+    * rather than warn about it. The caller initialises *consumed. */
+   p->mantissa    = 0;
+   p->exponent    = 0;
    p->negative    = 0;
+   p->truncated   = 0;
    p->valid       = 0;
    p->special     = 0;
 

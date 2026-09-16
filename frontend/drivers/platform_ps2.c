@@ -64,7 +64,7 @@ static void create_path_names(void)
    if (!PATH_CHAR_IS_SLASH(user_path[_len - 1])) {
       _len += strlcpy(user_path + _len, PATH_DEFAULT_SLASH(), sizeof(user_path) - _len);
    }
-   strlcpy(user_path + _len, "retroarch", sizeof(user_path) - _len);
+   strlcpy_lit(user_path + _len, "retroarch", sizeof(user_path) - _len);
    fill_pathname_basedir(g_defaults.dirs[DEFAULT_DIR_PORT], cwd, sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
 
    /* Content in the same folder */
@@ -151,7 +151,7 @@ bool getMountInfo(char *path, char *mountPoint, char *partition, char *newCWD)
    /* Build partition string: "device:path" using strlcpy offsets */
    size_t len = strlcpy(partition, str_list->elems[0].data, 50);
    if (len < 50) {
-      len += strlcpy(partition + len, ":", 50 - len);
+      len += strlcpy_lit(partition + len, ":", 50 - len);
       if (len < 50)
          strlcpy(partition + len, str_list->elems[1].data, 50 - len);
    }
@@ -159,7 +159,7 @@ bool getMountInfo(char *path, char *mountPoint, char *partition, char *newCWD)
    /* Build mountPoint string: "mount:" using strlcpy offset */
    len = strlcpy(mountPoint, str_list->elems[2].data, 10);
    if (len < 10)
-      strlcpy(mountPoint + len, ":", 10 - len);
+      strlcpy_lit(mountPoint + len, ":", 10 - len);
 
    /* Build newCWD string using strlcpy offset */
    len = strlcpy(newCWD, mountPoint, FILENAME_MAX);
@@ -249,7 +249,7 @@ static void mount_partition(void)
    {
       /* We MUST put partition as empty to avoid wrong results
          with LoadELFFromFileWithPartition */
-      strlcpy(partition, "", sizeof(partition));
+      strlcpy_lit(partition, "", sizeof(partition));
    }
 }
 

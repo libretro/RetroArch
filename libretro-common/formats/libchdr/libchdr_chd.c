@@ -61,7 +61,7 @@
 #include <libchdr/lzma.h>
 #endif
 
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 #include <libchdr/libchdr_zstd.h>
 #endif
 
@@ -237,7 +237,7 @@ struct _chd_file
 	flac_codec_data			flac_codec_data;		/* flac codec data */
 	cdfl_codec_data			cdfl_codec_data;		/* cdfl codec data */
 #endif
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 	zstd_codec_data			zstd_codec_data;		/* zstd codec data */
 	cdzs_codec_data			cdzs_codec_data;		/* cdzs codec data */
 #endif
@@ -500,7 +500,7 @@ static const codec_interface codec_interfaces[] =
 		NULL
 	},
 #endif
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 	/* V5 zstd compression */
 	{
 		CHD_CODEC_ZSTD,
@@ -812,14 +812,27 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 	{
 		uint8_t *rawmap = header->rawmap + (hunknum * 12);
 		if (repcount > 0)
-			rawmap[0] = lastcomp, repcount--;
+		{
+			rawmap[0] = lastcomp;
+			repcount--;
+		}
 		else
 		{
 			uint8_t val = huffman_decode_one(decoder, bitbuf);
 			if (val == COMPRESSION_RLE_SMALL)
-				rawmap[0] = lastcomp, repcount = 2 + huffman_decode_one(decoder, bitbuf);
+			{
+				rawmap[0] = lastcomp;
+				repcount  = 2 + huffman_decode_one(decoder, bitbuf);
+			}
 			else if (val == COMPRESSION_RLE_LARGE)
-				rawmap[0] = lastcomp, repcount = 2 + 16 + (huffman_decode_one(decoder, bitbuf) << 4), repcount += huffman_decode_one(decoder, bitbuf);
+			{
+				rawmap[0] = lastcomp;
+				/* Two reads, high nibble first. They were comma-separated
+				 * assignments to the same variable, so the order mattered
+				 * and was not apparent. */
+				repcount  = 2 + 16 + (huffman_decode_one(decoder, bitbuf) << 4);
+				repcount += huffman_decode_one(decoder, bitbuf);
+			}
 			else
 				rawmap[0] = lastcomp = val;
 		}
@@ -1140,7 +1153,7 @@ CHD_EXPORT chd_error chd_open_core_file(core_file *file, int mode, chd_file *par
 						break;
 
 					case CHD_CODEC_ZSTD:
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 						codec = &newchd->zstd_codec_data;
 #endif
 						break;
@@ -1164,7 +1177,7 @@ CHD_EXPORT chd_error chd_open_core_file(core_file *file, int mode, chd_file *par
 						break;
 
 					case CHD_CODEC_CD_ZSTD:
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 						codec = &newchd->cdzs_codec_data;
 #endif
 						break;
@@ -1319,7 +1332,7 @@ CHD_EXPORT void chd_close(chd_file *chd)
 					break;
 
 				case CHD_CODEC_ZSTD:
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 					codec = &chd->zstd_codec_data;
 #endif
 					break;
@@ -1343,7 +1356,7 @@ CHD_EXPORT void chd_close(chd_file *chd)
 					break;
 
 				case CHD_CODEC_CD_ZSTD:
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 					codec = &chd->cdzs_codec_data;
 #endif
 					break;
@@ -1983,8 +1996,6 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 			/* compressed data */
 			case V34_MAP_ENTRY_TYPE_COMPRESSED:
             {
-               void *codec = NULL;
-
 				/* read it into the decompression buffer */
 				compressed_bytes = hunk_read_compressed(chd, entry->offset, entry->length);
 				if (compressed_bytes == NULL)
@@ -1993,6 +2004,10 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 					}
 
 #if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
+				/* Declared inside the guard that uses it: a build without
+				 * either define - the Apple ones among them - had it
+				 * sitting unused above. */
+				void *codec = NULL;
 				/* now decompress using the codec */
 				err = CHDERR_NONE;
 				codec = &chd->zlib_codec_data;
@@ -2110,7 +2125,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 						break;
 
 					case CHD_CODEC_ZSTD:
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 						codec = &chd->zstd_codec_data;
 #endif
 						break;
@@ -2134,7 +2149,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 						break;
 
 					case CHD_CODEC_CD_ZSTD:
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 						codec = &chd->cdzs_codec_data;
 #endif
 						break;

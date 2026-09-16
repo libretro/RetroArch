@@ -158,6 +158,16 @@ struct android_app
    unsigned cmd_seq;
    unsigned done_seq;
 
+   /* Set (under 'mutex') by the app thread as it leaves
+    * android_app_entry(). From then on nothing consumes the command
+    * pipe, so no acknowledgement can ever arrive: waiters treat the
+    * flag as a standing acknowledgement of everything instead of
+    * blocking the UI thread forever. A normal quit never sets it -
+    * frontend_android_shutdown() exits the process inside
+    * rarch_main() - so it marks early-failure returns and the
+    * framework-destroy unwind. */
+   int app_thread_exited;
+
    sthread_t *thread;
 
    struct android_poll_source cmdPollSource;

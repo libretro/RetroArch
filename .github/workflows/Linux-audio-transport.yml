@@ -1,0 +1,65 @@
+name: CI Linux native audio transport
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  native-transport:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: ['', 'address,undefined']
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the shipping frontend and real audio wrapper fixture
+        working-directory: samples/audio/pipeline_wakeups
+        run: make clean all SANITIZER='${{ matrix.sanitizer }}'
+      - name: Stereo tempo extremes and live controls
+        working-directory: samples/audio/pipeline_wakeups
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: make check-tempo check-live SANITIZER='${{ matrix.sanitizer }}'
+      - name: Native and mixed formats through 5.1 and 7.1
+        working-directory: samples/audio/pipeline_wakeups
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: make check-wide SANITIZER='${{ matrix.sanitizer }}'
+      - name: Live source layouts on a fixed device
+        working-directory: samples/audio/pipeline_wakeups
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: make check-layout SANITIZER='${{ matrix.sanitizer }}'
+      - name: Speed-linked low-pass control requests
+        working-directory: samples/audio/pipeline_wakeups
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: make check-speed-lpf SANITIZER='${{ matrix.sanitizer }}'
+      - name: Runloop speed-state requests
+        working-directory: samples/audio/pipeline_wakeups
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: make check-runloop SANITIZER='${{ matrix.sanitizer }}'
+      - name: Automatic producer controls and fallback
+        working-directory: samples/audio/pipeline_wakeups
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: make check-auto SANITIZER='${{ matrix.sanitizer }}'

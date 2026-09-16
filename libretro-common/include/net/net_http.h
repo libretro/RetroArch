@@ -119,6 +119,22 @@ int net_http_fd(struct http_t *state);
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total);
 
 /**
+ * net_http_wait:
+ *
+ * Waits until the transfer can make progress again, or until
+ * @timeout_ms elapses, for callers driving a transfer from their own
+ * thread rather than once per frame. Unlike net_http_fd(), which hands
+ * out the descriptor and leaves the caller to work out what to select
+ * for, this knows which way the transfer is waiting and knows when the
+ * last pass left bytes already buffered, in which case it returns at
+ * once.
+ *
+ * @return true if the transport is ready or no wait was needed,
+ * false if the timeout elapsed first.
+ **/
+bool net_http_wait(struct http_t *state, int timeout_ms);
+
+/**
  * net_http_status:
  *
  * Report HTTP status. 200, 404, or whatever.
@@ -135,6 +151,18 @@ int net_http_status(struct http_t *state);
  * Leaf function
  **/
 bool net_http_error(struct http_t *state);
+
+/**
+ * net_http_failure:
+ *
+ * Where a transfer that never produced a status failed: the transport
+ * stage, as a literal ("dns_lookup_failed", "ssl_connect_failed",
+ * ...), and through @code the library's own error for it when there
+ * is one - the TLS library's for the ssl stages, 0 otherwise.  NULL
+ * when the transport did not fail.  For turning "HTTP -1" into a
+ * message that says what went wrong.
+ **/
+const char *net_http_failure(struct http_t *state, int *code);
 
 /**
  * net_http_headers:

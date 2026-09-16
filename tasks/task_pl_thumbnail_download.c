@@ -68,6 +68,11 @@ typedef struct pl_thumb_handle
    gfx_thumbnail_path_data_t *thumbnail_path_data;
    retro_task_t *http_task;
 
+   /* Captured on the main thread when the per-entry task is pushed:
+    * its handler runs on the threaded task queue's worker and
+    * resolves thumbnail paths from this, never from live settings. */
+   gfx_thumbnail_dir_config_t thumb_dir_config;
+
    playlist_config_t playlist_config; /* size_t alignment */
 
    size_t list_size;
@@ -768,16 +773,16 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
          pl_thumb->flags &= ~PL_THUMB_FLAG_RIGHT_THUMB_EXISTS;
          pl_thumb->flags &= ~PL_THUMB_FLAG_LEFT_THUMB_EXISTS;
 
-         if (gfx_thumbnail_update_path(pl_thumb->thumbnail_path_data,
-                  GFX_THUMBNAIL_RIGHT))
+         if (gfx_thumbnail_update_path_cfg(pl_thumb->thumbnail_path_data,
+                  GFX_THUMBNAIL_RIGHT, &pl_thumb->thumb_dir_config))
          {
             if (     *pl_thumb->thumbnail_path_data->right_path
                   && path_is_valid(pl_thumb->thumbnail_path_data->right_path))
                pl_thumb->flags |= PL_THUMB_FLAG_RIGHT_THUMB_EXISTS;
          }
 
-         if (gfx_thumbnail_update_path(pl_thumb->thumbnail_path_data,
-                  GFX_THUMBNAIL_LEFT))
+         if (gfx_thumbnail_update_path_cfg(pl_thumb->thumbnail_path_data,
+                  GFX_THUMBNAIL_LEFT, &pl_thumb->thumb_dir_config))
          {
             if (     *pl_thumb->thumbnail_path_data->left_path
                   && path_is_valid(pl_thumb->thumbnail_path_data->left_path))
@@ -966,6 +971,7 @@ bool task_push_pl_entry_thumbnail_download(
    pl_thumb->type_idx            = 1;
    pl_thumb->name_flags          = next_flag;
    pl_thumb->status              = PL_THUMB_BEGIN;
+   gfx_thumbnail_dir_config_capture(&pl_thumb->thumb_dir_config);
 
    if (overwrite)
       pl_thumb->flags            = PL_THUMB_FLAG_OVERWRITE;

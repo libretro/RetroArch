@@ -21,8 +21,10 @@ name: CI Linux ASan + UBSan [No Menu]
 #      surfaced in step output for triage.
 #
 # The per-sample tests under .github/workflows/Linux-samples-gfx.yml,
-# Linux-samples-tasks.yml, and Linux-libretro-{db,common}-samples.yml
-# regression-test specific predicates that previously had bugs.  This
+# Linux-samples-tasks.yml, Linux-samples-audio.yml,
+# Linux-samples-network.yml, Linux-samples-settings.yml, and
+# Linux-libretro-{db,common}-samples.yml regression-test specific
+# predicates that previously had bugs.  This
 # job is complementary -- it covers everything those harnesses can't
 # reach because the code only runs from main(), and catches future
 # heap-corruption / UB regressions across the whole code base for
@@ -48,6 +50,10 @@ permissions:
 
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
   asan-ubsan:
@@ -84,7 +90,7 @@ jobs:
             $pkgs
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Configure (no menu, no discord/cheevos/networking, sdl2 on)
         # Trim the build surface for the first iteration so any

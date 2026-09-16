@@ -62,7 +62,6 @@ libogc_platform    := 1
 
 EXTERNAL_LIBOGC   ?= 0
 HAVE_OGG_OGC      ?= 0
-GX_PTHREAD_LEGACY ?= 1
 CC                 = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX                = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
 LD                 = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
@@ -90,10 +89,6 @@ else
    INCLUDE += -Iwii/libogc/include
 endif
 
-ifeq ($(GX_PTHREAD_LEGACY), 1)
-   CFLAGS   += -DGX_PTHREAD_LEGACY
-   CXXFLAGS += -DGX_PTHREAD_LEGACY
-endif
 
 MACHDEP := -DHW_RVL -mrvl
 
@@ -142,6 +137,7 @@ HAVE_RTGA                := 1
 HAVE_RMODTRACKER                := 1
 HAVE_OVERLAY             := 1
 HAVE_7ZIP                := 1
+HAVE_RZSTD               := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
 HAVE_XDELTA              := 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
@@ -249,6 +245,10 @@ endif
 
 ifeq ($(HAVE_NETWORK_CMD), 1)
    CFLAGS += -DHAVE_NETWORK_CMD
+endif
+
+ifeq ($(HAVE_THREADS), 1)
+   CFLAGS += -DHAVE_THREADS
 endif
 
 ifeq ($(HAVE_DYNAMIC), 1)

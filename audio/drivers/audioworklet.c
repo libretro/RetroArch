@@ -23,7 +23,7 @@
 #include <emscripten/atomic.h>
 #include "../../frontend/drivers/platform_emscripten.h"
 
-#include <queues/fifo_queue.h>
+#include <retro_spsc.h>
 #include <retro_timers.h>
 
 #include "../audio_driver.h"
@@ -39,7 +39,6 @@
 typedef struct audioworklet_data
 {
    uint8_t *worklet_stack;
-   uint32_t write_avail_bytes; /* atomic */
    size_t visible_buffer_size;
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
    size_t write_avail_diff;
@@ -48,10 +47,25 @@ typedef struct audioworklet_data
    emscripten_lock_t trywrite_lock;
    emscripten_condvar_t trywrite_cond;
 #endif
+   /* Lifetime only: taken by the worklet around its pull and by
+    * audioworklet_free() around tearing the ring down, so the worklet
+    * never reads a freed ring.  The writer no longer takes it: the
+    * ring below is SPSC, so the main thread (producer) and the worklet
+    * (consumer) do not need to exclude each other, and a worklet that
+    * failed to get the lock - and played a period of silence - was a
+    * real symptom on the old fifo. */
    emscripten_lock_t buffer_lock;
    EMSCRIPTEN_WEBAUDIO_T context;
    float *tmpbuf;
-   fifo_buffer_t *buffer;
+   /* Outgoing samples: main thread writes, the worklet pulls.
+    * retro_spsc rounds capacity up to a power of two; ring_size is the
+    * size asked for (visible buffer plus the external-block reserve)
+    * and the producer never fills past it, so room is what the fifo
+    * of that size reported.  A ring that failed to init has
+    * ring_init false and the driver does not come up. */
+   retro_spsc_t ring;
+   size_t ring_size;
+   bool ring_init;
    unsigned rate;
    unsigned latency;
    bool nonblock;
@@ -69,6 +83,17 @@ typedef struct audioworklet_data
 /* We only ever want to create 1 worklet, so we need to keep its data even if the driver is inactive. */
 static audioworklet_data_t *audioworklet_static_data = NULL;
 
+/* Room in the ring against the size asked for.  Producer-side query -
+ * write(), write_avail() and the external-block waits all run on the
+ * main thread - so it is exact for the caller: the worklet only ever
+ * frees space, never takes it. */
+static size_t audioworklet_room(const audioworklet_data_t *audioworklet)
+{
+   size_t room   = retro_spsc_write_avail(&audioworklet->ring);
+   size_t excess = audioworklet->ring.capacity - audioworklet->ring_size;
+   return room > excess ? room - excess : 0;
+}
+
 /* Note that we cannot allocate any heap in here. */
 static bool audioworklet_process_cb(int numInputs, const AudioSampleFrame *inputs,
    int numOutputs, AudioSampleFrame *outputs,
@@ -76,7 +101,6 @@ static bool audioworklet_process_cb(int numInputs, const AudioSampleFrame *input
    void *data)
 {
    audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
-   size_t avail;
    size_t max_read;
    unsigned writing_frames = 0;
    int i;
@@ -92,14 +116,10 @@ static bool audioworklet_process_cb(int numInputs, const AudioSampleFrame *input
          return true;
       }
 
-      avail = FIFO_READ_AVAIL(audioworklet->buffer);
-      max_read = MIN(avail, outputs[0].samplesPerChannel * 2 * sizeof(float));
-
-      if (max_read)
-      {
-         fifo_read(audioworklet->buffer, audioworklet->tmpbuf, max_read);
-         emscripten_atomic_add_u32(&audioworklet->write_avail_bytes, max_read);
-      }
+      /* The lock is only against free(); the producer never holds it,
+       * so this no longer waits on a write in progress. */
+      max_read = retro_spsc_read(&audioworklet->ring, audioworklet->tmpbuf,
+            outputs[0].samplesPerChannel * 2 * sizeof(float));
       emscripten_lock_release(&audioworklet->buffer_lock);
 #ifdef PROXY_TO_PTHREAD
       emscripten_condvar_signal(&audioworklet->trywrite_cond, 1);
@@ -199,8 +219,11 @@ static void audioworklet_alloc_buffer(void *data)
    audioworklet->write_avail_diff = (EXTERNAL_BLOCK_BUFFER_MS * audioworklet->rate * 2 * sizeof(float)) / 1000;
    buffer_size += audioworklet->write_avail_diff;
 #endif
-   audioworklet->buffer = fifo_new(buffer_size);
-   emscripten_atomic_store_u32(&audioworklet->write_avail_bytes, buffer_size);
+   audioworklet->ring_size = buffer_size;
+   audioworklet->ring_init = retro_spsc_init(&audioworklet->ring, buffer_size);
+   if (!audioworklet->ring_init)
+      RARCH_ERR("[AudioWorklet] Failed to allocate the %lu-byte buffer.\n",
+            (unsigned long)buffer_size);
    RARCH_LOG("[AudioWorklet] Buffer size: %lu bytes.\n", audioworklet->visible_buffer_size);
 }
 
@@ -227,8 +250,16 @@ static bool audioworklet_resume_ctx(void *data)
    return audioworklet->context_running;
 }
 
+/* Bounds. The write retries its wait this many times before dropping
+ * the rest; the busy-wait build spins at most this many resume attempts
+ * per retry; init waits this long for the worklet module. */
+#define AUDIOWORKLET_WAIT_LAPS       8
+#define AUDIOWORKLET_BUSYWAIT_SPINS  100000
+#define AUDIOWORKLET_INIT_WAIT_MS    30000
+#define AUDIOWORKLET_BLOCK_WAIT_MS   2000
+
 static void *audioworklet_init(const char *device, unsigned rate,
-   unsigned latency, unsigned block_frames, unsigned *new_rate)
+   unsigned latency,  unsigned *new_rate)
 {
    audioworklet_data_t *audioworklet;
    if (audioworklet_static_data)
@@ -244,6 +275,8 @@ static void *audioworklet_init(const char *device, unsigned rate,
       *new_rate             = audioworklet->rate;
       RARCH_LOG("[AudioWorklet] Device rate: %d Hz.\n", *new_rate);
       audioworklet_alloc_buffer(audioworklet);
+      if (!audioworklet->ring_init)
+         return NULL;
       audioworklet_resume_ctx(audioworklet);
       audioworklet->driver_running = true;
       return audioworklet;
@@ -263,6 +296,11 @@ static void *audioworklet_init(const char *device, unsigned rate,
    RARCH_LOG("[AudioWorklet] Device rate: %d Hz.\n", *new_rate);
    audioworklet->initing = true;
    audioworklet_alloc_buffer(audioworklet);
+   /* No ring, no driver: reported the way a worklet that failed to
+    * load is, so both the waiting and the external-block init paths
+    * below take their existing error exits. */
+   if (!audioworklet->ring_init)
+      audioworklet->init_error = true;
    emscripten_lock_init(&audioworklet->buffer_lock);
 #ifdef PROXY_TO_PTHREAD
    emscripten_lock_init(&audioworklet->trywrite_lock);
@@ -271,8 +309,24 @@ static void *audioworklet_init(const char *device, unsigned rate,
 
 #ifndef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
    /* TODO: can MIN_ASYNCIFY block here too? */
-   while (!audioworklet->init_done)
-      retro_sleep(1);
+   {
+      /* The worklet reports done or error once its module has loaded.
+       * Generous, since that is a fetch, but not unbounded: a module
+       * that never loads and never errors is an init failure, not a
+       * frontend that never starts. */
+      unsigned waited_ms = 0;
+      while (!audioworklet->init_done)
+      {
+         retro_sleep(1);
+         if (++waited_ms >= AUDIOWORKLET_INIT_WAIT_MS)
+         {
+            RARCH_ERR("[AudioWorklet] The worklet did not initialize within %u ms.\n",
+                  AUDIOWORKLET_INIT_WAIT_MS);
+            audioworklet->init_error = true;
+            break;
+         }
+      }
+   }
    audioworklet->initing = false;
    if (audioworklet->init_error)
    {
@@ -299,6 +353,7 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
    audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
    const float *samples = (const float*)s;
    size_t num_frames    = ss / 2 / sizeof(float);
+   int laps             = AUDIOWORKLET_WAIT_LAPS;
 
    /* too early! might happen with external blocking */
    if (!audioworklet->driver_running)
@@ -310,17 +365,8 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
 
    while (num_frames)
    {
-#ifdef PROXY_TO_PTHREAD
-      if (!emscripten_lock_wait_acquire(&audioworklet->buffer_lock, 2500000))
-#else
-      if (!emscripten_lock_busyspin_wait_acquire(&audioworklet->buffer_lock, 2.5))
-#endif
-      {
-         RARCH_WARN("[AudioWorklet] Main thread: could not acquire lock.\n");
-         break;
-      }
-
-      avail = FIFO_WRITE_AVAIL(audioworklet->buffer);
+      /* No lock: SPSC, and this thread is the producer. */
+      avail = audioworklet_room(audioworklet);
       max_write = avail;
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
       /* make sure we don't write into the blocking buffer for nonblock */
@@ -337,14 +383,11 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
       {
          to_write_bytes = to_write_frames * 2 * sizeof(float);
          avail      -= to_write_bytes;
-         fifo_write(audioworklet->buffer, samples, to_write_bytes);
-         emscripten_atomic_store_u32(&audioworklet->write_avail_bytes, (uint32_t)avail);
+         retro_spsc_write(&audioworklet->ring, samples, to_write_bytes);
          num_frames -= to_write_frames;
          samples    += (to_write_frames * 2);
          _len       += to_write_frames;
       }
-
-      emscripten_lock_release(&audioworklet->buffer_lock);
 
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
 #ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
@@ -361,13 +404,30 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
 #endif
       if (audioworklet->nonblock || !num_frames)
          break;
+      /* Bounded overall, whichever way the wait below is made: a
+       * context that will not run - suspended by the autoplay policy
+       * until the page is clicked, or by the browser for a background
+       * tab - frees nothing, and this returns what went rather than
+       * holding the thread. On the busy-wait build that thread is the
+       * page's, and holding it froze the tab. */
+      if (--laps < 0)
+      {
+         RARCH_WARN("[AudioWorklet] Dropping %lu frames: the context is not taking audio.\n",
+               (unsigned long)num_frames);
+         break;
+      }
 #if defined(PROXY_TO_PTHREAD)
       emscripten_condvar_wait(&audioworklet->trywrite_cond, &audioworklet->trywrite_lock, 3000000);
 #elif defined(EMSCRIPTEN_FULL_ASYNCIFY)
       retro_sleep(1);
 #else /* equivalent to defined(EMSCRIPTEN_AUDIO_BUSYWAIT) */
-      while (emscripten_atomic_load_u32(&audioworklet->write_avail_bytes) < 2 * sizeof(float))
-         audioworklet_resume_ctx(audioworklet);
+      {
+         /* The spin cannot sleep on this thread; it can at least end. */
+         unsigned spins = AUDIOWORKLET_BUSYWAIT_SPINS;
+         while (   audioworklet_room(audioworklet) < 2 * sizeof(float)
+                && spins--)
+            audioworklet_resume_ctx(audioworklet);
+      }
 #endif
       /* try resuming, on the off chance that the context was interrupted while blocking */
       audioworklet_resume_ctx(audioworklet);
@@ -389,10 +449,24 @@ bool audioworklet_external_block(void)
          return false;
 #endif
 
-      while (audioworklet->initing && !audioworklet->init_done)
 #ifdef EMSCRIPTEN_AUDIO_ASYNC_BLOCK
-         retro_sleep(1);
+      {
+         unsigned waited_ms = 0;
+         while (audioworklet->initing && !audioworklet->init_done)
+         {
+            retro_sleep(1);
+            if (++waited_ms >= AUDIOWORKLET_INIT_WAIT_MS)
+            {
+               RARCH_ERR("[AudioWorklet] The worklet did not initialize within %u ms.\n",
+                     AUDIOWORKLET_INIT_WAIT_MS);
+               audioworklet->init_error = true;
+               audioworklet->init_done  = true;
+               break;
+            }
+         }
+      }
 #else
+      while (audioworklet->initing && !audioworklet->init_done)
          return true;
 #endif
       if (audioworklet->init_done && !audioworklet->driver_running)
@@ -410,15 +484,26 @@ bool audioworklet_external_block(void)
       if (!audioworklet->driver_running)
          return false;
 
-      while (emscripten_atomic_load_u32(&audioworklet->write_avail_bytes) < audioworklet->write_avail_diff)
+#ifdef EMSCRIPTEN_AUDIO_ASYNC_BLOCK
+      {
+         /* Bounded: a context that will not run frees nothing, and the
+          * block ends with the audio dropped rather than never. */
+         unsigned waited_ms = 0;
+         while (audioworklet_room(audioworklet) < audioworklet->write_avail_diff)
+         {
+            audioworklet_resume_ctx(audioworklet);
+            retro_sleep(1);
+            if (++waited_ms >= AUDIOWORKLET_BLOCK_WAIT_MS)
+               break;
+         }
+      }
+#else
+      while (audioworklet_room(audioworklet) < audioworklet->write_avail_diff)
       {
          audioworklet_resume_ctx(audioworklet);
-#ifdef EMSCRIPTEN_AUDIO_ASYNC_BLOCK
-         retro_sleep(1);
-#else
          return true;
-#endif
       }
+#endif
 #endif
 
 #ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
@@ -491,7 +576,9 @@ static void audioworklet_free(void *data)
       return;
    }
    audioworklet->driver_running = false;
-   fifo_free(audioworklet->buffer);
+   if (audioworklet->ring_init)
+      retro_spsc_free(&audioworklet->ring);
+   audioworklet->ring_init = false;
    emscripten_lock_release(&audioworklet->buffer_lock);
    MAIN_THREAD_ASYNC_EM_ASM({
       emscriptenGetAudioObject($0).suspend();
@@ -502,13 +589,13 @@ static size_t audioworklet_write_avail(void *data)
 {
    audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
 
+   size_t avail = audioworklet_room(audioworklet);
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
-   size_t avail = emscripten_atomic_load_u32(&audioworklet->write_avail_bytes);
    if (avail > audioworklet->write_avail_diff)
       return avail - audioworklet->write_avail_diff;
    return 0;
 #else
-   return emscripten_atomic_load_u32(&audioworklet->write_avail_bytes);
+   return avail;
 #endif
 }
 

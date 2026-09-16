@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
@@ -953,6 +954,647 @@ static void test_config_file_per_config_io(void)
    printf("[SUCCESS] per-config io resolves includes without touching the default\n");
 }
 
+/* Regression: config_file_append_conf() into an EMPTY destination
+ * left conf->entries non-NULL with conf->tail still NULL.  The parser's insert path does "if (conf->entries)
+ * conf->tail->next = list", so the next load through the same conf
+ * dereferenced NULL; config_set_string() under
+ * CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES fell back to
+ * last = conf->entries and spliced onto the head, orphaning
+ * everything behind it.  The matrix below covers both destination
+ * shapes against both donor shapes, and then uses the result. */
+static config_file_t *cfg_from(const char *text)
+{
+   char *copy         = strdup(text);
+   config_file_t *cfg = config_file_new_from_string(copy, NULL);
+   free(copy);
+   if (!cfg)
+      abort();
+   return cfg;
+}
+
+static size_t cfg_count(config_file_t *cfg)
+{
+   const struct config_entry_list *e;
+   size_t n = 0;
+   for (e = cfg->entries; e; e = e->next)
+      if (e->key)
+         n++;
+   return n;
+}
+
+static void cfg_check_tail(config_file_t *cfg, const char *what)
+{
+   const struct config_entry_list *e;
+   const struct config_entry_list *last = NULL;
+   for (e = cfg->entries; e; e = e->next)
+      last = e;
+   if (cfg->tail != last)
+   {
+      printf("[FAILED] %s: conf->tail is not the last list node\n", what);
+      abort();
+   }
+   if (cfg->entries && !cfg->tail)
+   {
+      printf("[FAILED] %s: non-empty list with NULL tail\n", what);
+      abort();
+   }
+}
+
+static void test_config_file_append_conf_tail_matrix(void)
+{
+   static const char *shapes[2] = { "", "a = \"1\"\nb = \"2\"\n" };
+   size_t d, n;
+
+   for (d = 0; d < 2; d++)
+   {
+      for (n = 0; n < 2; n++)
+      {
+         config_file_t *dst = cfg_from(shapes[d]);
+         config_file_t *src = cfg_from(n ? "c = \"3\"\nd = \"4\"\n" : "");
+         size_t expect      = cfg_count(dst) + cfg_count(src);
+         char *out          = NULL;
+
+         if (!config_file_append_conf(dst, src))
+            abort();
+         cfg_check_tail(dst, "after append_conf");
+         if (cfg_count(dst) != expect)
+         {
+            printf("[FAILED] append_conf lost entries (%u != %u)\n",
+                  (unsigned)cfg_count(dst), (unsigned)expect);
+            abort();
+         }
+
+         /* The two operations that consumed the stale tail. */
+         config_set_string(dst, "appended", "yes");
+         cfg_check_tail(dst, "after set following append_conf");
+         if (cfg_count(dst) != expect + 1)
+         {
+            printf("[FAILED] set after append_conf orphaned the list\n");
+            abort();
+         }
+         if (!config_get_string(dst, "appended", &out) || !out)
+            abort();
+         free(out);
+         if (d || n)
+         {
+            const char *probe = d ? "a" : "c";
+            out = NULL;
+            if (!config_get_string(dst, probe, &out) || !out)
+            {
+               printf("[FAILED] key [%s] unreachable after append+set\n",
+                     probe);
+               abort();
+            }
+            free(out);
+         }
+         config_file_free(dst);
+      }
+   }
+   printf("[SUCCESS] append_conf keeps tail/last valid in all four shapes\n");
+}
+
+/* Regression: config_get_config_path() passed conf->path straight to
+ * strlcpy(), and a config built from a string has none. */
+static void test_config_get_config_path_pathless(void)
+{
+   config_file_t *cfg = cfg_from("foo = \"bar\"\n");
+   char buf[64];
+   size_t len;
+
+   memset(buf, 'x', sizeof(buf));
+   len = config_get_config_path(cfg, buf, sizeof(buf));
+   if (len != 0 || buf[0] != '\0')
+   {
+      printf("[FAILED] pathless config_get_config_path did not "
+            "produce an empty string\n");
+      abort();
+   }
+   config_file_free(cfg);
+   printf("[SUCCESS] config_get_config_path handles a pathless config\n");
+}
+
+/* Regression: config_take_string() leaves the entry keyed and
+ * valueless with value_len cleared, so the dump loop's
+ * "value_len ? value_len : strlen(value)" fallback measured NULL. */
+static void test_config_file_dump_after_take_string(void)
+{
+   config_file_t *cfg = cfg_from("kept = \"1\"\ntaken = \"2\"\n");
+   char *taken        = config_take_string(cfg, "taken");
+   FILE *sink         = tmpfile();
+
+   if (!taken || strcmp(taken, "2") != 0)
+      abort();
+   free(taken);
+   if (!sink)
+      abort();
+   if (!config_file_dump(cfg, sink, false))
+   {
+      printf("[FAILED] dump reported failure on a valid config\n");
+      abort();
+   }
+   if (!config_file_dump(cfg, sink, true))
+      abort();
+   fclose(sink);
+   config_file_free(cfg);
+   printf("[SUCCESS] dump survives an entry emptied by "
+         "config_take_string\n");
+}
+
+/* config_set_string() overwriting an existing value must leave the
+ * entry consistent: new bytes, matching cached length, and the
+ * borrowed flag cleared so the value is freed exactly once (checked
+ * by the sanitizers CI runs this under). */
+static void test_config_set_string_overwrite(void)
+{
+   config_file_t *cfg              = cfg_from("k = \"borrowed\"\n");
+   struct config_entry_list *entry;
+   char *out                       = NULL;
+
+   config_set_string(cfg, "k", "replacement");
+   if (!(entry = config_get_entry(cfg, "k")))
+      abort();
+   if (!entry->value || strcmp(entry->value, "replacement") != 0)
+      abort();
+   if (entry->value_len != strlen("replacement"))
+   {
+      printf("[FAILED] overwrite left a stale cached length\n");
+      abort();
+   }
+   /* Same value again: must be a no-op, not a free-and-redup. */
+   config_set_string(cfg, "k", "replacement");
+   if (!config_get_string(cfg, "k", &out) || !out
+         || strcmp(out, "replacement") != 0)
+      abort();
+   free(out);
+   config_file_free(cfg);
+   printf("[SUCCESS] config_set_string overwrite is consistent\n");
+}
+
+/* config_file_dump(sort=true) used to run a merge sort over the live
+ * entry list and assign the result back to conf->entries, so saving a
+ * config reordered it in memory.  The written order must be sorted;
+ * the in-memory order must be exactly what the caller had.  Duplicate
+ * keys are legal and the topmost wins on reload, so their relative
+ * order is meaning and must survive the sort. */
+static char *cfg_dump_to_string(config_file_t *cfg, bool sort)
+{
+   FILE *f    = tmpfile();
+   char *out;
+   long  size;
+
+   if (!f)
+      abort();
+   if (!config_file_dump(cfg, f, sort))
+      abort();
+   fflush(f);
+   if ((size = ftell(f)) < 0)
+      abort();
+   rewind(f);
+   if (!(out = (char*)malloc((size_t)size + 1)))
+      abort();
+   if (size && fread(out, 1, (size_t)size, f) != (size_t)size)
+      abort();
+   out[size] = '\0';
+   fclose(f);
+   return out;
+}
+
+static void test_config_file_dump_sort_is_side_effect_free(void)
+{
+   static const char *text = "zeta = \"1\"\nAlpha = \"2\"\n"
+                             "dup = \"first\"\nmid = \"3\"\ndup = \"second\"\n";
+   config_file_t *cfg      = cfg_from(text);
+   const struct config_entry_list *e;
+   char before[256];
+   char after[256];
+   char *dumped;
+   size_t used             = 0;
+
+   before[0] = '\0';
+   for (e = cfg->entries; e; e = e->next)
+      if (e->key)
+         used += (size_t)snprintf(before + used, sizeof(before) - used,
+               "%s,", e->key);
+
+   dumped = cfg_dump_to_string(cfg, true);
+
+   used      = 0;
+   after[0]  = '\0';
+   for (e = cfg->entries; e; e = e->next)
+      if (e->key)
+         used += (size_t)snprintf(after + used, sizeof(after) - used,
+               "%s,", e->key);
+
+   if (strcmp(before, after) != 0)
+   {
+      printf("[FAILED] dump(sort) reordered the live list: "
+            "[%s] -> [%s]\n", before, after);
+      abort();
+    }
+   cfg_check_tail(cfg, "after dump(sort)");
+
+   /* Sorted output, case-insensitive, duplicates in original order. */
+   if (strcmp(dumped,
+            "Alpha = \"2\"\ndup = \"first\"\ndup = \"second\"\n"
+            "mid = \"3\"\nzeta = \"1\"\n") != 0)
+   {
+      printf("[FAILED] unexpected sorted dump:\n%s", dumped);
+      abort();
+   }
+   free(dumped);
+
+   /* Unsorted dump must still follow list order. */
+   dumped = cfg_dump_to_string(cfg, false);
+   if (strcmp(dumped,
+            "zeta = \"1\"\nAlpha = \"2\"\ndup = \"first\"\n"
+            "mid = \"3\"\ndup = \"second\"\n") != 0)
+   {
+      printf("[FAILED] unexpected unsorted dump:\n%s", dumped);
+      abort();
+   }
+   free(dumped);
+   config_file_free(cfg);
+   printf("[SUCCESS] dump(sort) sorts stably without touching the "
+         "live list\n");
+}
+
+/* Characterisation, not endorsement: config_file.h says a setter
+ * "will not write to entry if the entry was obtained from an
+ * #include", and config_set_string() neither honours entry->readonly
+ * nor leaves it set.  This pins the behaviour that ships today so
+ * that changing it is a deliberate act with a visible diff here,
+ * rather than something that drifts.  If the header is what should
+ * win, this test is the one to invert. */
+static void test_config_set_string_on_readonly_entry(void)
+{
+   config_file_t *cfg = cfg_from("inc = \"original\"\n");
+   struct config_entry_list *entry;
+   char *dumped;
+
+   if (!(entry = config_get_entry(cfg, "inc")))
+      abort();
+   entry->readonly = true;   /* as config_file_add_child_list marks it */
+
+   config_set_string(cfg, "inc", "overwritten");
+
+   if (!entry->value || strcmp(entry->value, "overwritten") != 0)
+   {
+      printf("[FAILED] readonly-entry behaviour changed: value is "
+            "now [%s] - update this test deliberately\n",
+            entry->value ? entry->value : "(null)");
+      abort();
+   }
+   if (entry->readonly)
+   {
+      printf("[FAILED] readonly-entry behaviour changed: the flag "
+            "survived the set - update this test deliberately\n");
+      abort();
+   }
+   /* Consequence worth seeing: the entry is no longer readonly, so
+    * it is now serialised into files it was only included from. */
+   dumped = cfg_dump_to_string(cfg, false);
+   if (strcmp(dumped, "inc = \"overwritten\"\n") != 0)
+   {
+      printf("[FAILED] unexpected dump of a formerly readonly "
+            "entry:\n%s", dumped);
+      abort();
+   }
+   free(dumped);
+   config_file_free(cfg);
+   printf("[SUCCESS] setter-vs-#include semantics are pinned "
+         "(current behaviour: the setter wins)\n");
+}
+
+/* The sort fallback runs only when the pointer array cannot be
+ * allocated, so it would otherwise never execute under test.  It has
+ * to produce byte-identical output to the array merge - same order,
+ * same stability for duplicate keys - and it has to leave the list it
+ * reordered internally consistent, which the old in-place sort did
+ * not: it moved conf->entries and left conf->tail mid-list. */
+extern bool config_file_force_linked_sort;
+
+static void test_config_file_dump_sort_fallback(void)
+{
+   static const char *text = "zeta = \"1\"\nAlpha = \"2\"\n"
+                             "dup = \"first\"\nmid = \"3\"\ndup = \"second\"\n";
+   config_file_t *cfg      = cfg_from(text);
+   config_file_t *fb       = cfg_from(text);
+   char *via_array;
+   char *via_list;
+
+   via_array = cfg_dump_to_string(cfg, true);
+
+   config_file_force_linked_sort = true;
+   via_list = cfg_dump_to_string(fb, true);
+   config_file_force_linked_sort = false;
+
+   if (strcmp(via_array, via_list) != 0)
+   {
+      printf("[FAILED] sort fallback disagrees with the array merge:\n"
+            "--- array ---\n%s--- list ---\n%s", via_array, via_list);
+      abort();
+   }
+   /* The fallback is allowed to reorder the list - that is its cost -
+    * but not to leave it inconsistent. */
+   cfg_check_tail(fb, "after the fallback sort");
+   config_set_string(fb, "added", "x");
+   cfg_check_tail(fb, "after a set following the fallback sort");
+   {
+      const struct config_entry_list *e;
+      size_t n = 0;
+      for (e = fb->entries; e; e = e->next)
+         if (e->key)
+            n++;
+      if (n != 6)
+      {
+         printf("[FAILED] set after the fallback sort lost entries "
+               "(%u != 6)\n", (unsigned)n);
+         abort();
+      }
+   }
+   free(via_array);
+   free(via_list);
+   config_file_free(cfg);
+   config_file_free(fb);
+   printf("[SUCCESS] zero-allocation sort fallback matches the array "
+         "merge and leaves the list consistent\n");
+}
+
+/* conf->tail is the only tracker now, so the paths that extend the
+ * list all have to write it: parse, append, set, include merge and
+ * the sort fallback.  This exercises them in sequence through one
+ * config and checks the invariant after each, which is what the two
+ * drifting fields used to break.
+ *
+ * The GUARANTEED_NO_DUPLICATES leg is the cheat_manager.c shape:
+ * parse a file, flag it, then set into it.  With two trackers that
+ * dropped every parsed entry but the first. */
+static void test_config_tail_is_single_authority(void)
+{
+   const char *inc_path  = "/tmp/cfg_tail_inc.cfg";
+   const char *main_path = "/tmp/cfg_tail_main.cfg";
+   config_file_t *cfg;
+   config_file_t *donor;
+   const struct config_entry_list *e;
+   size_t n = 0;
+   FILE *f;
+
+   f = fopen(inc_path, "w");
+   fprintf(f, "inc_a = \"1\"\ninc_b = \"2\"\n");
+   fclose(f);
+   f = fopen(main_path, "w");
+   fprintf(f, "main_a = \"1\"\n#include \"cfg_tail_inc.cfg\"\nmain_b = \"2\"\n");
+   fclose(f);
+
+   if (!(cfg = config_file_new(main_path)))
+      abort();
+   cfg_check_tail(cfg, "after parse with an #include");
+
+   donor = cfg_from("donor_a = \"1\"\n");
+   if (!config_file_append_conf(cfg, donor))
+      abort();
+   cfg_check_tail(cfg, "after append_conf");
+
+   /* No-duplicates fast path: appends onto the tail with no lookup. */
+   cfg->flags |= CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES;
+   config_set_string(cfg, "fast_a", "1");
+   config_set_string(cfg, "fast_b", "2");
+   cfg_check_tail(cfg, "after two no-duplicate sets");
+   cfg->flags &= (uint8_t)~CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES;
+
+   config_set_string(cfg, "slow_a", "1");
+   cfg_check_tail(cfg, "after a lookup-path set");
+
+   for (e = cfg->entries; e; e = e->next)
+      if (e->key)
+         n++;
+   /* main_a, main_b, inc_a, inc_b, donor_a, fast_a, fast_b, slow_a */
+   if (n != 8)
+   {
+      printf("[FAILED] entries lost across the tail-writing paths "
+            "(%u != 8)\n", (unsigned)n);
+      abort();
+   }
+   if (     !config_get_entry(cfg, "inc_a")
+         || !config_get_entry(cfg, "donor_a")
+         || !config_get_entry(cfg, "fast_a")
+         || !config_get_entry(cfg, "slow_a"))
+   {
+      printf("[FAILED] an entry became unreachable\n");
+      abort();
+   }
+   config_file_free(cfg);
+   remove(inc_path);
+   remove(main_path);
+   printf("[SUCCESS] conf->tail stays authoritative across parse, "
+         "include, append and both set paths\n");
+}
+
+/* Includes are appended through conf->includes_tail rather than by
+ * walking the list.  Their order is user-visible - config_file_dump()
+ * writes the '#include' lines back in list order - so it has to
+ * survive. struct config_include_list is private to config_file.c,
+ * so the check goes through the serialised form, which is the part
+ * that actually matters anyway. */
+static void test_config_include_order_preserved(void)
+{
+   const char *paths[3] = { "/tmp/cfg_inc_1.cfg",
+                            "/tmp/cfg_inc_2.cfg",
+                            "/tmp/cfg_inc_3.cfg" };
+   const char *main_path = "/tmp/cfg_inc_main.cfg";
+   config_file_t *cfg;
+   char *dumped;
+   const char *p1;
+   const char *p2;
+   const char *p3;
+   FILE *f;
+   int i;
+
+   for (i = 0; i < 3; i++)
+   {
+      f = fopen(paths[i], "w");
+      fprintf(f, "k%d = \"%d\"\n", i, i);
+      fclose(f);
+   }
+   f = fopen(main_path, "w");
+   fprintf(f, "#include \"cfg_inc_1.cfg\"\n#include \"cfg_inc_2.cfg\"\n"
+              "#include \"cfg_inc_3.cfg\"\n");
+   fclose(f);
+
+   if (!(cfg = config_file_new(main_path)))
+      abort();
+   dumped = cfg_dump_to_string(cfg, false);
+
+   p1 = strstr(dumped, "#include \"cfg_inc_1.cfg\"");
+   p2 = strstr(dumped, "#include \"cfg_inc_2.cfg\"");
+   p3 = strstr(dumped, "#include \"cfg_inc_3.cfg\"");
+   if (!p1 || !p2 || !p3)
+   {
+      printf("[FAILED] an #include went missing from the dump:\n%s",
+            dumped);
+      abort();
+   }
+   if (!(p1 < p2 && p2 < p3))
+   {
+      printf("[FAILED] #include lines came back out of order:\n%s",
+            dumped);
+      abort();
+   }
+   free(dumped);
+   config_file_free(cfg);
+   for (i = 0; i < 3; i++)
+      remove(paths[i]);
+   remove(main_path);
+   printf("[SUCCESS] include order survives O(1) appending\n");
+}
+
+/* Setting a key a parsed config already holds must replace it, not
+ * append a second copy: the file is written with both, and the first
+ * of a duplicate pair is what wins on reload, so a duplicate-writing
+ * save silently keeps the old value and grows the file by a copy
+ * every time.  This is the cheat_manager.c save shape. */
+static void test_config_set_over_parsed_keys_round_trips(void)
+{
+   config_file_t *cfg = cfg_from("cheats = \"2\"\ncheat0_desc = \"A\"\n"
+                                 "cheat1_desc = \"B\"\n");
+   config_file_t *back;
+   const struct config_entry_list *e;
+   char *dumped;
+   size_t n = 0;
+
+   config_set_string(cfg, "cheats",      "3");
+   config_set_string(cfg, "cheat0_desc", "EDITED");
+   config_set_string(cfg, "cheat2_desc", "C");
+
+   dumped = cfg_dump_to_string(cfg, false);
+   back   = cfg_from(dumped);
+
+   for (e = back->entries; e; e = e->next)
+      if (e->key)
+         n++;
+   if (n != 4)
+   {
+      printf("[FAILED] round-trip carries %u entries, expected 4 - "
+            "duplicates were written:\n%s", (unsigned)n, dumped);
+      abort();
+   }
+   if (     strcmp(config_get_entry(back, "cheats")->value,      "3")
+         || strcmp(config_get_entry(back, "cheat0_desc")->value, "EDITED")
+         || strcmp(config_get_entry(back, "cheat1_desc")->value, "B")
+         || strcmp(config_get_entry(back, "cheat2_desc")->value, "C"))
+   {
+      printf("[FAILED] a value did not survive the round trip:\n%s",
+            dumped);
+      abort();
+   }
+   free(dumped);
+   config_file_free(cfg);
+   config_file_free(back);
+   printf("[SUCCESS] setting over parsed keys replaces rather than "
+         "duplicating\n");
+}
+
+/* The list is only ever appended to at conf->tail, so an inserting
+ * set no longer walks to find the end.  Quadratic insert behaviour
+ * would take this from milliseconds to minutes, so a generous wall
+ * clock bound is enough to catch a regression without being flaky. */
+static void test_config_set_insert_is_not_quadratic(void)
+{
+   const int n        = 40000;
+   config_file_t *cfg = config_file_new_alloc();
+   clock_t t0;
+   double elapsed;
+   int i;
+
+   if (!cfg)
+      abort();
+   t0 = clock();
+   for (i = 0; i < n; i++)
+   {
+      char key[32];
+      snprintf(key, sizeof(key), "cheat%d_value", i);
+      config_set_string(cfg, key, "1");
+   }
+   elapsed = (double)(clock() - t0) / CLOCKS_PER_SEC;
+   if (elapsed > 5.0)
+   {
+      printf("[FAILED] %d inserts took %.2fs - the insert path is "
+            "walking the list again\n", n, elapsed);
+      abort();
+   }
+   if (!config_get_entry(cfg, "cheat0_value")
+         || !config_get_entry(cfg, "cheat39999_value"))
+      abort();
+   config_file_free(cfg);
+   printf("[SUCCESS] %d inserts in %.2fs without the no-duplicates "
+         "flag\n", n, elapsed);
+}
+
+/* Setter-created entries are slab-allocated like parsed ones, so
+ * they must not be free()d individually at teardown and a failed
+ * insert must give its slot back.  Both are invisible in a plain
+ * run and immediate under the sanitizers this suite runs with, so
+ * this exercises the mix that would catch a mistake: pooled entries
+ * either side of a parsed one, entries whose values are later
+ * replaced and unset, and a config pilfered by append_conf. */
+static void test_config_setter_entries_are_pooled(void)
+{
+   config_file_t *cfg = cfg_from("parsed_a = \"1\"\nparsed_b = \"2\"\n");
+   config_file_t *donor;
+   struct config_entry_list *entry;
+   const struct config_entry_list *e;
+   size_t n = 0;
+   int i;
+
+   /* Enough to cross the pool's block growth more than once. */
+   for (i = 0; i < 200; i++)
+   {
+      char key[32];
+      snprintf(key, sizeof(key), "set_%d", i);
+      config_set_string(cfg, key, "v");
+   }
+   if (!(entry = config_get_entry(cfg, "set_0")))
+      abort();
+   if (!(entry->flags & CONF_ENTRY_FLG_POOLED))
+   {
+      printf("[FAILED] a setter-created entry is not pooled\n");
+      abort();
+   }
+   /* Replacing a value must not disturb the entry's pooled-ness -
+    * clearing it made teardown free() a pool-interior pointer. */
+   config_set_string(cfg, "set_0", "replaced");
+   if (!(entry->flags & CONF_ENTRY_FLG_POOLED))
+   {
+      printf("[FAILED] replacing a value cleared POOLED\n");
+      abort();
+   }
+   config_unset(cfg, "set_1");
+   config_set_string(cfg, "parsed_a", "overwritten");
+
+   donor = cfg_from("donor = \"1\"\n");
+   config_set_string(donor, "donor_set", "1");
+   if (!config_file_append_conf(cfg, donor))
+      abort();
+   cfg_check_tail(cfg, "after appending a config with pooled entries");
+
+   for (e = cfg->entries; e; e = e->next)
+      if (e->key)
+         n++;
+   /* 2 parsed + 200 set - 1 unset + 2 donor */
+   if (n != 203)
+   {
+      printf("[FAILED] entry count is %u, expected 203\n", (unsigned)n);
+      abort();
+   }
+   if (     strcmp(config_get_entry(cfg, "set_0")->value, "replaced")
+         || strcmp(config_get_entry(cfg, "parsed_a")->value, "overwritten")
+         || !config_get_entry(cfg, "donor_set"))
+      abort();
+   config_file_free(cfg);
+   printf("[SUCCESS] setter entries share the parser's pool and "
+         "survive replace, unset and append\n");
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -1005,4 +1647,16 @@ int main(void)
    test_config_take_string();
    test_config_entry_cached_lengths();
    test_config_file_per_config_io();
+   test_config_file_append_conf_tail_matrix();
+   test_config_get_config_path_pathless();
+   test_config_file_dump_after_take_string();
+   test_config_set_string_overwrite();
+   test_config_file_dump_sort_is_side_effect_free();
+   test_config_set_string_on_readonly_entry();
+   test_config_file_dump_sort_fallback();
+   test_config_tail_is_single_authority();
+   test_config_include_order_preserved();
+   test_config_set_over_parsed_keys_round_trips();
+   test_config_set_insert_is_not_quadratic();
+   test_config_setter_entries_are_pooled();
 }

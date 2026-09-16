@@ -194,7 +194,7 @@ bool database_info_crc_index_size_range(
  * wrong database degrades to the query path instead of answering with
  * another system's records.  Pass NULL to skip the check. */
 database_info_list_t *database_info_list_new_crc(
-      const database_info_crc_index_t *idx, const char *rdb_path,
+      database_info_crc_index_t *idx, const char *rdb_path,
       uint32_t crc, uint32_t archive_crc, unsigned fields);
 
 /* The same treatment for the serial lookup disc content uses.  A
@@ -213,7 +213,7 @@ size_t database_info_serial_index_count(
       const database_info_serial_index_t *idx);
 
 database_info_list_t *database_info_list_new_serial(
-      const database_info_serial_index_t *idx, const char *rdb_path,
+      database_info_serial_index_t *idx, const char *rdb_path,
       const char *serial, unsigned fields);
 
 database_info_list_t *database_info_list_new_filtered(const char *rdb_path,

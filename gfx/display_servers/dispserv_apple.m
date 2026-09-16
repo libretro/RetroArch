@@ -13,35 +13,45 @@
  */
 
 #import <TargetConditionals.h>
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
 #else
 #import <AppKit/AppKit.h>
 #endif
 #include <stddef.h>
+#include <string.h>
 #include "../verbosity.h"
 #include "../video_display_server.h"
+#include "../modeline/modeline_edid.h"
 #include "../video_driver.h"
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../configuration.h"
-/* For NSWindowStyleMaskTitled polyfill on pre-10.12 SDKs */
+/* RARCH_RELEASE, and the NSWindowStyleMask* polyfills the
+ * fullscreen check below still uses. */
 #include <defines/cocoa_defines.h>
 
-#ifdef OSX
+#if TARGET_OS_OSX
 #import <AppKit/AppKit.h>
-/* <CoreGraphics/CoreGraphics.h> is a 10.8+ umbrella header.
- * On earlier SDKs (including the 10.5 Leopard SDK used by Xcode 3.1
- * on PowerPC), the same types are reachable through the
- * ApplicationServices umbrella. */
+/* ApplicationServices on every SDK rather than <CoreGraphics/CoreGraphics.h>
+ * on some. The CoreGraphics umbrella is 10.8 and later; the
+ * ApplicationServices one re-exports the same types and has since
+ * 10.0, so one include reaches them everywhere and the SDK the build
+ * happens to use stops deciding. */
 #include <AvailabilityMacros.h>
-#if defined(MAC_OS_X_VERSION_10_8) && \
-    (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
-     MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_8)
-#import <CoreGraphics/CoreGraphics.h>
-#else
 #import <ApplicationServices/ApplicationServices.h>
-#endif
+/* IOKit's display registry, for the EDID: IODisplayCreateInfoDictionary
+ * has published the block under kIODisplayEDIDKey since 10.0 and IOKit
+ * is already linked for the power-source query. On Apple Silicon the
+ * IODisplayConnect services this walks do not exist (the display stack
+ * moved to DCP) and Apple published no replacement, so the walk finds
+ * nothing and the op reports -1 there. */
+#include <dlfcn.h>
+#include <math.h>
+#include <mach/mach_time.h>
+
+#include <IOKit/IOKitLib.h>
+#include <IOKit/graphics/IOGraphicsLib.h>
 /* RARCH_HAS_CGDISPLAYMODE_API is defined in cocoa_common.h.  The
  * CGDisplayModeRef family (CGDisplayCopyAllDisplayModes,
  * CGDisplayModeGetWidth, CGDisplaySetDisplayMode, ...) arrived in
@@ -51,7 +61,7 @@
  * pre-10.6 targets rather than port to both. */
 #endif
 
-#ifdef OSX
+#if TARGET_OS_OSX
 static bool apple_display_server_set_window_opacity(void *data, unsigned opacity)
 {
    settings_t *settings      = config_get_ptr();
@@ -63,63 +73,100 @@ static bool apple_display_server_set_window_opacity(void *data, unsigned opacity
    return true;
 }
 
-#ifdef RARCH_HAS_CGDISPLAYMODE_API
-/* Uses GCD (dispatch_once) and Obj-C blocks, both 10.6+. */
+/* The dock tile's progress bar.
+ *
+ * Built once, on first use. That used to be dispatch_once() with an
+ * Objective-C block, which put the function behind a 10.6 gate - and
+ * behind RARCH_HAS_CGDISPLAYMODE_API, a macro about the display-mode
+ * API that happened to also mean "10.6 SDK", so the feature was
+ * absent from builds for reasons unrelated to anything it does.
+ * Neither the once nor the block earned that. dispatch_once's fast
+ * path is an acquire load and a compare; a plain flag is a load and a
+ * compare, and the acquire is for publishing to another thread, which
+ * does not arise here: this runs from a task callback on the main
+ * thread, and every call below it is AppKit, which must be on the
+ * main thread anyway. The block is worse than the once, being a
+ * compiler feature rather than a runtime one - GCC 4.0, which is what
+ * Xcode 3.1 has, cannot parse it at all.
+ *
+ * NSDockTile is 10.5, so -dockTile is asked for rather than assumed,
+ * and the tile is held as id so no SDK needs to declare the class.
+ * On 10.4 the selector is absent, the function reports failure once
+ * and the frontend carries on without a dock progress bar, which is
+ * what it did on those systems when this was compiled out. */
 static bool apple_display_server_set_window_progress(void *data, int progress, bool finished)
 {
    static NSProgressIndicator *indicator;
-   static dispatch_once_t once;
-   dispatch_once(&once, ^{
-      NSDockTile *dockTile = [NSApp dockTile];
-      NSImageView *iv = [[NSImageView alloc] init];
-      [iv setImage:[[NSApplication sharedApplication] applicationIconImage]];
-      [dockTile setContentView:iv];
+   static bool tried;
 
-      indicator = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(0, 0, [dockTile size].width, 20)];
-      [indicator setIndeterminate:NO];
-      [indicator setMinValue:0];
-      [indicator setMaxValue:100];
-      [indicator setDoubleValue:0];
+   if (!tried)
+   {
+      tried = true;
 
-      // Create a custom view for the dock tile
-      [iv addSubview:indicator];
+      if ([NSApp respondsToSelector:@selector(dockTile)])
+      {
+         id dock_tile    = [NSApp performSelector:@selector(dockTile)];
+         NSImageView *iv = [[NSImageView alloc] init];
+         /* -[NSDockTile size] returns a struct, which performSelector:
+          * cannot carry, and the class is not declared on a 10.4 SDK so
+          * it cannot be sent directly either. KVC boxes NSSize, which
+          * gets it across without either. The tile has been 128x128
+          * since dock tiles existed, so a nil there is not worth
+          * failing over. */
+         NSValue *size_v = [dock_tile valueForKey:@"size"];
+         NSSize size     = size_v ? [size_v sizeValue] : NSMakeSize(128, 128);
 
-      /* This file is compiled under BOTH build systems:
-       *   - qb/top-level Makefile:  MRC (not in the per-file ARC
-       *     override list at Makefile:275 alongside metal.o /
-       *     mfi_joypad.o / coreaudio3.o).
-       *   - pkg/apple/<anyfile>.xcodeproj:  ARC, via griffin_objc.m which
-       *     #include's this file into a TU compiled with
-       *     CLANG_ENABLE_OBJC_ARC=YES (pkg/apple/BaseConfig.xcconfig:182).
-       *
-       * Under MRC, 'iv' is a local +1 from alloc+init.  setContentView:
-       * and addSubview: each retain their own reference, so those are
-       * legitimately owned; the +1 from alloc+init is ours to release
-       * before the local goes out of scope, or it leaks for the app's
-       * lifetime.  Under ARC, the compiler inserts the matching release
-       * at block scope exit automatically.
-       *
-       * RARCH_RELEASE handles both: MRC -> [(x) release], ARC -> ((void)0).
-       * Raw '[iv release]' is a compile error under ARC
-       * ('ARC forbids explicit message send of release') which the
-       * Xcode build would have flagged immediately.
-       *
-       * 'indicator' is intentionally kept +1 - it's a file-scope static
-       * initialised inside dispatch_once, and holding that +1 across
-       * the app lifetime is how we keep it referenced for the
-       * subsequent setDoubleValue / setHidden calls outside the
-       * block. */
-      RARCH_RELEASE(iv);
-   });
+         [iv setImage:[[NSApplication sharedApplication] applicationIconImage]];
+         [dock_tile performSelector:@selector(setContentView:) withObject:iv];
+
+         indicator = [[NSProgressIndicator alloc]
+               initWithFrame:NSMakeRect(0, 0, size.width, 20)];
+         [indicator setIndeterminate:NO];
+         [indicator setMinValue:0];
+         [indicator setMaxValue:100];
+         [indicator setDoubleValue:0];
+
+         [iv addSubview:indicator];
+
+         /* This file is compiled under BOTH build systems:
+          *   - qb/top-level Makefile:  MRC (not in the per-file ARC
+          *     override list at Makefile:275 alongside metal.o /
+          *     mfi_joypad.o).
+          *   - pkg/apple/<anyfile>.xcodeproj:  ARC, via griffin_objc.m which
+          *     #include's this file into a TU compiled with
+          *     CLANG_ENABLE_OBJC_ARC=YES (pkg/apple/BaseConfig.xcconfig:182).
+          *
+          * Under MRC, 'iv' is a local +1 from alloc+init.  setContentView:
+          * and addSubview: each retain their own reference, so those are
+          * legitimately owned; the +1 from alloc+init is ours to release
+          * before the local goes out of scope, or it leaks for the app's
+          * lifetime.  Under ARC, the compiler inserts the matching release
+          * at scope exit automatically.
+          *
+          * RARCH_RELEASE handles both: MRC -> [(x) release], ARC -> ((void)0).
+          * Raw '[iv release]' is a compile error under ARC
+          * ('ARC forbids explicit message send of release') which the
+          * Xcode build would have flagged immediately.
+          *
+          * 'indicator' is intentionally kept +1 - it is a file-scope
+          * static holding that +1 across the app lifetime, which is how
+          * it stays referenced for the setDoubleValue / setHidden calls
+          * below. */
+         RARCH_RELEASE(iv);
+      }
+   }
+
+   if (!indicator)
+      return false;
+
    if (finished)
       [indicator setDoubleValue:(double)-1];
    else
       [indicator setDoubleValue:(double)progress];
    [indicator setHidden:finished];
-   [[NSApp dockTile] display];
+   [[NSApp performSelector:@selector(dockTile)] performSelector:@selector(display)];
    return true;
 }
-#endif /* RARCH_HAS_CGDISPLAYMODE_API */
 
 static bool apple_display_server_set_window_decorations(void *data, bool on)
 {
@@ -127,6 +174,13 @@ static bool apple_display_server_set_window_decorations(void *data, bool on)
    bool windowed_full        = settings->bools.video_windowed_fullscreen;
    NSWindow *window          = [((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]) window];
    if (windowed_full)
+      return false;
+   /* -setStyleMask: is 10.6; before that a window's style is fixed at
+    * creation and there is nothing to toggle, so it is asked for rather
+    * than sent. The constant needs no such care: cocoa_defines.h maps
+    * NSWindowStyleMaskTitled to NSTitledWindowMask, its name before
+    * 10.12, and that one is 10.0. */
+   if (![window respondsToSelector:@selector(setStyleMask:)])
       return false;
    if (on)
       [window setStyleMask:([window styleMask] | NSWindowStyleMaskTitled)];
@@ -136,7 +190,7 @@ static bool apple_display_server_set_window_decorations(void *data, bool on)
 }
 #endif
 
-#if defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#if TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
 static bool apple_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
@@ -249,7 +303,7 @@ static bool apple_display_server_set_resolution(void *data,
       view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
    return true;
 }
-#elif defined(IOS)
+#elif TARGET_OS_IPHONE
 static bool apple_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
@@ -280,7 +334,7 @@ static void *apple_display_server_get_resolution_list(
    struct video_display_config *conf = NULL;
    double currentRate;
 
-#ifdef OSX
+#if TARGET_OS_OSX
 #ifdef RARCH_HAS_CGDISPLAYMODE_API
    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
@@ -553,7 +607,7 @@ static enum rotation apple_display_server_get_screen_orientation(void *data)
 
 typedef struct
 {
-#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
+#if TARGET_OS_OSX && defined(RARCH_HAS_CGDISPLAYMODE_API)
    CGDisplayModeRef original_mode;
    CGDirectDisplayID display_id;
 #endif
@@ -565,7 +619,7 @@ static void *apple_display_server_init(void)
    if (!apple)
       return NULL;
 
-#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
+#if TARGET_OS_OSX && defined(RARCH_HAS_CGDISPLAYMODE_API)
    /* Store original display mode for restoration */
    apple->display_id = CGMainDisplayID();
    if ((apple->original_mode = CGDisplayCopyDisplayMode(apple->display_id)))
@@ -584,7 +638,7 @@ static void *apple_display_server_init(void)
          && settings->floats.video_refresh_rate >= 10.0f
          && settings->floats.video_refresh_rate <= 250.0f)
       {
-#if defined(IOS)
+#if TARGET_OS_IPHONE
          float hz        = settings->floats.video_refresh_rate;
          CocoaView *view = [CocoaView get];
          if (view && view.displayLink)
@@ -598,7 +652,7 @@ static void *apple_display_server_init(void)
 #endif
                view.displayLink.preferredFramesPerSecond = hz;
          }
-#elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
          float hz        = settings->floats.video_refresh_rate;
          CocoaView *view = [CocoaView get];
          if (view)
@@ -623,7 +677,7 @@ static void apple_display_server_destroy(void *data)
    if (!apple)
       return;
 
-#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
+#if TARGET_OS_OSX && defined(RARCH_HAS_CGDISPLAYMODE_API)
    /* Restore original display mode */
    if (apple->original_mode)
    {
@@ -658,23 +712,711 @@ static void apple_display_server_get_video_output_size(void *data,
    cocoa_get_video_output_size(width, height, desc, desc_len);
 }
 
+#if TARGET_OS_OSX
+/* ---- Apple Silicon: the display coprocessor's copy ----
+ *
+ * On Apple Silicon the IODisplayConnect services the IOKit path below
+ * walks do not exist: the display stack moved to the DCP, a separate
+ * coprocessor with its own firmware that owns the link. What it does
+ * expose is one DCPAVServiceProxy per connected display, and IOKit
+ * carries two unpublished functions to get at it -
+ * IOAVServiceCreateWithService() to bind a proxy and
+ * IOAVServiceCopyEDID() to ask the DCP for the block it read over
+ * DDC. This is the route BetterDisplay and Lunar take; there is no
+ * public equivalent.
+ *
+ * Unpublished means the symbols can go away, so they are resolved at
+ * runtime rather than linked: a macOS that drops them leaves the
+ * pointers NULL and the menu says "not available" instead of the
+ * binary refusing to launch. Plain C throughout - no Objective-C is
+ * needed for any of it, only CoreFoundation and IOKit.
+ *
+ * The proxies are not labelled with a CoreGraphics display ID, so the
+ * one belonging to the display in use is found by reading each
+ * candidate's EDID and matching the identity bytes (manufacturer at
+ * 8-9, product at 10-11, serial at 12-15) against what CoreGraphics
+ * reports for that display. That is the same three-way match the
+ * IOKit path makes, done on the block itself. */
+typedef CFTypeRef IOAVServiceRef;
+typedef IOAVServiceRef (*apple_avservice_create_t)(CFAllocatorRef, io_service_t);
+typedef IOReturn (*apple_avservice_copy_edid_t)(IOAVServiceRef, CFDataRef*);
+
+/* The plane argument is declared io_name_t, a char[128], so it is
+ * handed an object of that width: a bare string literal is a ten-byte
+ * object in a parameter that is read as 128, which GCC reports as an
+ * overread. */
+static const io_name_t apple_service_plane = kIOServicePlane;
+
+/* The block a proxy reports, if it is a whole number of 128-byte
+ * blocks and at least one. Returns the length, or 0. */
+static size_t apple_dcp_service_edid(apple_avservice_copy_edid_t copy_edid,
+      IOAVServiceRef av, uint8_t *out, size_t max, IOReturn *rc)
+{
+   CFDataRef edid = NULL;
+   size_t len     = 0;
+   if ((*rc = copy_edid(av, &edid)) != kIOReturnSuccess || !edid)
+      return 0;
+   len = (size_t)CFDataGetLength(edid);
+   if (len > max)
+      len = max;
+   len -= len % 128;
+   if (len >= 128)
+      memcpy(out, CFDataGetBytePtr(edid), len);
+   else
+      len = 0;
+   CFRelease(edid);
+   return len;
+}
+
+static int apple_dcp_get_edid(uint32_t vendor, uint32_t product,
+      uint32_t serial, uint8_t *out, size_t max)
+{
+   static apple_avservice_create_t    create_service;
+   static apple_avservice_copy_edid_t copy_edid;
+   static bool resolved;
+   io_iterator_t it = 0;
+   io_service_t svc;
+   int n            = -1;
+   int candidates   = 0;
+   int only_len     = 0;
+   int proxies      = 0;
+   int externals    = 0;
+   IOReturn last_rc = kIOReturnSuccess;
+
+   if (!resolved)
+   {
+      resolved       = true;
+      create_service = (apple_avservice_create_t)
+         dlsym(RTLD_DEFAULT, "IOAVServiceCreateWithService");
+      copy_edid      = (apple_avservice_copy_edid_t)
+         dlsym(RTLD_DEFAULT, "IOAVServiceCopyEDID");
+      /* RTLD_DEFAULT only searches what is already loaded with global
+       * scope; open the framework by name when it comes up empty */
+      if (!create_service || !copy_edid)
+      {
+         void *iokit = dlopen(
+               "/System/Library/Frameworks/IOKit.framework/IOKit", RTLD_LAZY);
+         if (iokit)
+         {
+            if (!create_service)
+               create_service = (apple_avservice_create_t)
+                  dlsym(iokit, "IOAVServiceCreateWithService");
+            if (!copy_edid)
+               copy_edid = (apple_avservice_copy_edid_t)
+                  dlsym(iokit, "IOAVServiceCopyEDID");
+         }
+      }
+      if (!create_service || !copy_edid)
+         RARCH_LOG("[Video] IOAVService is not available on this macOS;"
+               " the display's EDID cannot be read through the DCP.\n");
+   }
+   if (!create_service || !copy_edid)
+      return -1;
+
+   if (IOServiceGetMatchingServices(0,
+            IOServiceMatching("DCPAVServiceProxy"), &it) != KERN_SUCCESS)
+      return -1;
+
+   while ((svc = IOIteratorNext(it)))
+   {
+      proxies++;
+      /* Location is External on a connected display and Embedded on
+       * the built-in panel, which has no EDID to read */
+      CFStringRef location = (CFStringRef)IORegistryEntrySearchCFProperty(
+            svc, apple_service_plane, CFSTR("Location"), kCFAllocatorDefault,
+            kIORegistryIterateRecursively);
+      bool external = location
+         && CFGetTypeID(location) == CFStringGetTypeID()
+         && CFStringCompare(location, CFSTR("External"), 0) == kCFCompareEqualTo;
+      if (location)
+         CFRelease(location);
+      if (external)
+      {
+         IOAVServiceRef av = create_service(kCFAllocatorDefault, svc);
+         externals++;
+         if (av)
+         {
+            size_t len = apple_dcp_service_edid(copy_edid, av, out, max,
+                  &last_rc);
+            if (len)
+            {
+               uint32_t v  = ((uint32_t)out[8] << 8) | out[9];
+               uint32_t p  = out[10] | ((uint32_t)out[11] << 8);
+               uint32_t sn = out[12] | ((uint32_t)out[13] << 8)
+                           | ((uint32_t)out[14] << 16)
+                           | ((uint32_t)out[15] << 24);
+               candidates++;
+               only_len = (int)len;
+               /* the serial only separates two identical monitors,
+                * and only when both sides report one */
+               if (v == vendor && p == product
+                     && (!serial || !sn || sn == serial))
+                  n = (int)len;
+            }
+            CFRelease(av);
+         }
+      }
+      IOObjectRelease(svc);
+      if (n > 0)
+         break;
+   }
+   IOObjectRelease(it);
+
+   /* No identity match, but exactly one external display answered and
+    * out still holds its block: that is the display in use. A second
+    * one makes the guess unsafe, so it is not made. */
+   if (n < 0 && candidates == 1)
+      n = only_len;
+   if (n < 0)
+      RARCH_LOG("[Video] DCP: %d service(s), %d external, %d with an EDID"
+            " (last IOAVServiceCopyEDID 0x%x). A built-in panel reports"
+            " none.\n", proxies, externals, candidates, (unsigned)last_rc);
+   return n;
+}
+
+/* ---- Apple Silicon: a block built from what the DCP publishes ----
+ *
+ * The internal panel has no EDID: it is driven over an internal bus
+ * with no DDC behind it, so IOAVServiceCopyEDID fails and nothing
+ * ever negotiated a block. The DCP still knows the facts a block
+ * would carry, and publishes them on its AppleCLCD2 node as ordinary
+ * registry properties - no private API:
+ *
+ *   TimingElements     an array, one entry per mode, each with
+ *                      Horizontal/VerticalAttributes giving Total,
+ *                      Active, FrontPorch, SyncWidth, SyncPolarity
+ *                      and PreciseSyncRate (16.16 fixed point, kHz
+ *                      horizontally and Hz vertically), plus
+ *                      IsInterlaced and IsPreferred
+ *   IOMFBDisplayRefresh  the refresh interval bounds in mach ticks
+ *   IOMFBMaxSrcPixels    the pipe's maximum pixel clock
+ *
+ * That is a detailed timing and a range-limits descriptor. With the
+ * identity and physical size from CoreGraphics it makes a base block,
+ * which modeline_edid_synthesize() assembles so the menu decodes it
+ * with the same parser as a real one. Nothing is written anywhere.
+ *
+ * Only for Apple Silicon: Intel and PowerPC Macs have a real EDID
+ * through IODisplayConnect and must keep showing that. */
+#if defined(__aarch64__) || defined(__arm64__)
+static bool apple_dcp_num(CFDictionaryRef d, const char *key, long *out)
+{
+   CFNumberRef n;
+   CFStringRef k;
+   bool ok = false;
+   if (!d)
+      return false;
+   if (!(k = CFStringCreateWithCString(kCFAllocatorDefault, key,
+               kCFStringEncodingUTF8)))
+      return false;
+   if ((n = (CFNumberRef)CFDictionaryGetValue(d, k))
+         && CFGetTypeID(n) == CFNumberGetTypeID())
+      ok = CFNumberGetValue(n, kCFNumberLongType, out) ? true : false;
+   CFRelease(k);
+   return ok;
+}
+
+static bool apple_dcp_bool(CFDictionaryRef d, const char *key)
+{
+   CFBooleanRef b;
+   CFStringRef k;
+   bool v = false;
+   if (!d)
+      return false;
+   if (!(k = CFStringCreateWithCString(kCFAllocatorDefault, key,
+               kCFStringEncodingUTF8)))
+      return false;
+   if ((b = (CFBooleanRef)CFDictionaryGetValue(d, k))
+         && CFGetTypeID(b) == CFBooleanGetTypeID())
+      v = CFBooleanGetValue(b) ? true : false;
+   CFRelease(k);
+   return v;
+}
+
+/* One TimingElements entry. The porches and the sync width are given;
+ * the pixel clock is the horizontal rate times the line length. */
+static bool apple_dcp_timing(CFDictionaryRef elem, video_edid_timing_t *t)
+{
+   CFDictionaryRef h = (CFDictionaryRef)CFDictionaryGetValue(elem,
+         CFSTR("HorizontalAttributes"));
+   CFDictionaryRef v = (CFDictionaryRef)CFDictionaryGetValue(elem,
+         CFSTR("VerticalAttributes"));
+   long htotal = 0, hactive = 0, hfront = 0, hsync = 0, hpol = 0, hrate = 0;
+   long vtotal = 0, vactive = 0, vfront = 0, vsync = 0, vpol = 0;
+
+   if (!h || !v || CFGetTypeID(h) != CFDictionaryGetTypeID()
+              || CFGetTypeID(v) != CFDictionaryGetTypeID())
+      return false;
+   if (   !apple_dcp_num(h, "Total", &htotal)
+       || !apple_dcp_num(h, "Active", &hactive)
+       || !apple_dcp_num(v, "Total", &vtotal)
+       || !apple_dcp_num(v, "Active", &vactive))
+      return false;
+   if (htotal <= hactive || vtotal <= vactive || hactive <= 0 || vactive <= 0)
+      return false;
+   apple_dcp_num(h, "FrontPorch", &hfront);
+   apple_dcp_num(h, "SyncWidth", &hsync);
+   apple_dcp_num(h, "SyncPolarity", &hpol);
+   apple_dcp_num(v, "FrontPorch", &vfront);
+   apple_dcp_num(v, "SyncWidth", &vsync);
+   apple_dcp_num(v, "SyncPolarity", &vpol);
+   if (!apple_dcp_num(h, "PreciseSyncRate", &hrate) || hrate <= 0)
+      apple_dcp_num(h, "SyncRate", &hrate);
+   if (hrate <= 0)
+      return false;
+
+   memset(t, 0, sizeof(*t));
+   t->src       = MODELINE_EDID_SRC_BASE;
+   t->hactive   = (unsigned)hactive;
+   t->hblank    = (unsigned)(htotal - hactive);
+   t->hfront    = (unsigned)hfront;
+   t->hsync     = (unsigned)hsync;
+   t->vactive   = (unsigned)vactive;
+   t->vblank    = (unsigned)(vtotal - vactive);
+   t->vfront    = (unsigned)vfront;
+   t->vsync     = (unsigned)vsync;
+   t->hsync_pos = hpol != 0;
+   t->vsync_pos = vpol != 0;
+   t->sync_type = 3;
+   t->interlace = apple_dcp_bool(elem, "IsInterlaced");
+   /* 16.16 fixed point in kHz, so the clock is rate * 1000 * htotal */
+   t->pclock    = (unsigned)((((uint64_t)hrate * 1000) * (uint64_t)htotal) >> 16);
+   return t->pclock != 0;
+}
+
+/* s15Fixed16 as a double */
+static double apple_icc_fixed(const uint8_t *p)
+{
+   int32_t v = (int32_t)(((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16)
+                       | ((uint32_t)p[2] << 8) | p[3]);
+   return (double)v / 65536.0;
+}
+
+/* One XYZType tag: signature, four reserved bytes, three s15Fixed16 */
+static bool apple_icc_xyz(const uint8_t *icc, size_t len, uint32_t off,
+      uint32_t size, double xyz[3])
+{
+   if (off + 20 > len || size < 20)
+      return false;
+   if (memcmp(icc + off, "XYZ ", 4))
+      return false;
+   xyz[0] = apple_icc_fixed(icc + off + 8);
+   xyz[1] = apple_icc_fixed(icc + off + 12);
+   xyz[2] = apple_icc_fixed(icc + off + 16);
+   return true;
+}
+
+static bool apple_icc_tag(const uint8_t *icc, size_t len, const char *sig,
+      uint32_t *off, uint32_t *size)
+{
+   uint32_t i, count;
+   if (len < 132)
+      return false;
+   count = ((uint32_t)icc[128] << 24) | ((uint32_t)icc[129] << 16)
+         | ((uint32_t)icc[130] << 8) | icc[131];
+   if (count > 256 || 132 + count * 12 > len)
+      return false;
+   for (i = 0; i < count; i++)
+   {
+      const uint8_t *e = icc + 132 + i * 12;
+      if (memcmp(e, sig, 4))
+         continue;
+      *off  = ((uint32_t)e[4] << 24) | ((uint32_t)e[5] << 16)
+            | ((uint32_t)e[6] << 8) | e[7];
+      *size = ((uint32_t)e[8] << 24) | ((uint32_t)e[9] << 16)
+            | ((uint32_t)e[10] << 8) | e[11];
+      return true;
+   }
+   return false;
+}
+
+/* The primaries and white point of the display's colour profile, in
+ * thousandths, as the EDID chromaticity bytes hold them.
+ *
+ * An ICC profile stores its colorants chromatically adapted to D50,
+ * with the adaptation it used in the 'chad' tag; reporting the D50
+ * numbers as the display's primaries would be wrong, so the
+ * adaptation is undone first. Without a 'chad' tag there is nothing
+ * to undo it with and nothing is reported. */
+static bool apple_display_chromaticity(CGDirectDisplayID display,
+      unsigned *out)
+{
+   CGColorSpaceRef cs = CGDisplayCopyColorSpace(display);
+   CFDataRef icc      = NULL;
+   const uint8_t *b;
+   size_t len;
+   uint32_t off, size;
+   double chad[9], inv[9], det;
+   double xyz[4][3];
+   bool ok = false;
+   int i;
+   static const char *tags[4] = { "rXYZ", "gXYZ", "bXYZ", "wtpt" };
+
+   if (!cs)
+      return false;
+   icc = CGColorSpaceCopyICCData(cs);
+   CGColorSpaceRelease(cs);
+   if (!icc)
+      return false;
+   b   = CFDataGetBytePtr(icc);
+   len = (size_t)CFDataGetLength(icc);
+
+   if (!apple_icc_tag(b, len, "chad", &off, &size) || size < 8 + 36
+         || off + 8 + 36 > len || memcmp(b + off, "sf32", 4))
+      goto done;
+   for (i = 0; i < 9; i++)
+      chad[i] = apple_icc_fixed(b + off + 8 + i * 4);
+   det = chad[0] * (chad[4] * chad[8] - chad[5] * chad[7])
+       - chad[1] * (chad[3] * chad[8] - chad[5] * chad[6])
+       + chad[2] * (chad[3] * chad[7] - chad[4] * chad[6]);
+   if (det > -1e-9 && det < 1e-9)
+      goto done;
+   inv[0] = (chad[4] * chad[8] - chad[5] * chad[7]) / det;
+   inv[1] = (chad[2] * chad[7] - chad[1] * chad[8]) / det;
+   inv[2] = (chad[1] * chad[5] - chad[2] * chad[4]) / det;
+   inv[3] = (chad[5] * chad[6] - chad[3] * chad[8]) / det;
+   inv[4] = (chad[0] * chad[8] - chad[2] * chad[6]) / det;
+   inv[5] = (chad[2] * chad[3] - chad[0] * chad[5]) / det;
+   inv[6] = (chad[3] * chad[7] - chad[4] * chad[6]) / det;
+   inv[7] = (chad[1] * chad[6] - chad[0] * chad[7]) / det;
+   inv[8] = (chad[0] * chad[4] - chad[1] * chad[3]) / det;
+
+   for (i = 0; i < 4; i++)
+   {
+      double v[3], n[3], sum;
+      if (!apple_icc_tag(b, len, tags[i], &off, &size)
+            || !apple_icc_xyz(b, len, off, size, v))
+         goto done;
+      n[0] = inv[0] * v[0] + inv[1] * v[1] + inv[2] * v[2];
+      n[1] = inv[3] * v[0] + inv[4] * v[1] + inv[5] * v[2];
+      n[2] = inv[6] * v[0] + inv[7] * v[1] + inv[8] * v[2];
+      sum  = n[0] + n[1] + n[2];
+      if (sum < 1e-9)
+         goto done;
+      xyz[i][0] = n[0] / sum;
+      xyz[i][1] = n[1] / sum;
+      ok = true;
+   }
+   if (ok)
+      for (i = 0; i < 4; i++)
+      {
+         out[i * 2]     = (unsigned)(xyz[i][0] * 1000.0 + 0.5);
+         out[i * 2 + 1] = (unsigned)(xyz[i][1] * 1000.0 + 0.5);
+      }
+done:
+   CFRelease(icc);
+   return ok;
+}
+
+static int apple_dcp_synthesize_edid(CGDirectDisplayID display,
+      uint8_t *out, size_t max)
+{
+   video_edid_synth_t in;
+   io_iterator_t it = 0;
+   io_service_t svc;
+   CGSize size_mm;
+   bool built_in    = CGDisplayIsBuiltin(display) ? true : false;
+   bool got         = false;
+
+   memset(&in, 0, sizeof(in));
+   if (IOServiceGetMatchingServices(0,
+            IOServiceMatching("AppleCLCD2"), &it) != KERN_SUCCESS)
+      return -1;
+
+   while (!got && (svc = IOIteratorNext(it)))
+   {
+      CFMutableDictionaryRef props = NULL;
+      if (IORegistryEntryCreateCFProperties(svc, &props,
+               kCFAllocatorDefault, kNilOptions) == KERN_SUCCESS && props)
+      {
+         /* One node per pipe; "external" marks the ones that are not
+          * the built-in panel, and only the active pipe describes a
+          * display that is actually lit */
+         bool external = apple_dcp_bool(props, "external");
+         if (external != built_in && apple_dcp_bool(props, "NormalModeActive"))
+         {
+            CFArrayRef timings = (CFArrayRef)CFDictionaryGetValue(props,
+                  CFSTR("TimingElements"));
+            CFDictionaryRef refresh = (CFDictionaryRef)CFDictionaryGetValue(
+                  props, CFSTR("IOMFBDisplayRefresh"));
+            CFDictionaryRef maxpix  = (CFDictionaryRef)CFDictionaryGetValue(
+                  props, CFSTR("IOMFBMaxSrcPixels"));
+            long nits = 0;
+
+            /* The peak luminance the backlight is capped at, 16.16
+             * fixed point, which is what HDR static metadata codes as
+             * 50 * 2^(v/32) cd/m2 */
+            if (apple_dcp_num(props, "BLNitsCap", &nits) && nits > 0)
+            {
+               double cd = (double)nits / 65536.0;
+               if (cd >= 50.0 && cd <= 10000.0)
+                  in.cta_hdr_max_lum =
+                     (uint8_t)(32.0 * (log(cd / 50.0) / log(2.0)) + 0.5);
+            }
+            CFIndex i, n = (timings && CFGetTypeID(timings) == CFArrayGetTypeID())
+               ? CFArrayGetCount(timings) : 0;
+
+            /* The preferred timing first, then one more if the block
+             * has a descriptor slot left for it */
+            for (i = 0; i < n && in.n_timings < 2; i++)
+            {
+               CFDictionaryRef elem = (CFDictionaryRef)
+                  CFArrayGetValueAtIndex(timings, i);
+               video_edid_timing_t t;
+               if (!elem || CFGetTypeID(elem) != CFDictionaryGetTypeID())
+                  continue;
+               if (!apple_dcp_timing(elem, &t))
+                  continue;
+               /* The colour modes the DCP lists for this timing: bit
+                * depth, whether anything but RGB 4:4:4 is offered, the
+                * colorimetry bits and the EOTFs. A panel with one SDR
+                * RGB mode reports exactly that. */
+               {
+                  CFArrayRef modes = (CFArrayRef)CFDictionaryGetValue(elem,
+                        CFSTR("ColorModes"));
+                  CFIndex m, mn = (modes
+                        && CFGetTypeID(modes) == CFArrayGetTypeID())
+                     ? CFArrayGetCount(modes) : 0;
+                  for (m = 0; m < mn; m++)
+                  {
+                     CFDictionaryRef cm = (CFDictionaryRef)
+                        CFArrayGetValueAtIndex(modes, m);
+                     long v = 0;
+                     if (!cm || CFGetTypeID(cm) != CFDictionaryGetTypeID())
+                        continue;
+                     if (apple_dcp_num(cm, "Depth", &v) && v >= 6 && v <= 16)
+                        in.bit_depth = (uint8_t)v;
+                     if (apple_dcp_num(cm, "PixelEncoding", &v))
+                     {
+                        if (v == 1)
+                           in.ycbcr444 = true;
+                        else if (v == 2)
+                           in.ycbcr422 = true;
+                     }
+                     if (apple_dcp_num(cm, "Colorimetry", &v) && v > 0)
+                     {
+                        in.cta_colorimetry |= (uint8_t)(v & 0xff);
+                        in.cta = true;
+                     }
+                     /* EOTF 0 is SDR, which is bit 0 of the HDR block */
+                     if (apple_dcp_num(cm, "EOTF", &v))
+                     {
+                        in.cta_hdr_eotf |= (uint8_t)(1u << (v & 3));
+                        in.cta = true;
+                     }
+                  }
+               }
+               if (apple_dcp_bool(elem, "IsPreferred") && in.n_timings)
+               {
+                  in.timing[1] = in.timing[0];
+                  in.timing[0] = t;
+               }
+               else
+                  in.timing[in.n_timings] = t;
+               in.n_timings++;
+            }
+
+            /* Refresh bounds: mach ticks per frame, so the shorter
+             * interval is the higher rate */
+            if (refresh && CFGetTypeID(refresh) == CFDictionaryGetTypeID())
+            {
+               long lo = 0, hi = 0;
+               mach_timebase_info_data_t tb;
+               if (mach_timebase_info(&tb) == KERN_SUCCESS && tb.denom
+                     && apple_dcp_num(refresh,
+                        "displayMinRefreshIntervalMachTime", &lo)
+                     && apple_dcp_num(refresh,
+                        "displayMaxRefreshIntervalMachTime", &hi)
+                     && lo > 0 && hi > 0)
+               {
+                  double lo_s = (double)lo * tb.numer / tb.denom / 1000000000.0;
+                  double hi_s = (double)hi * tb.numer / tb.denom / 1000000000.0;
+                  in.vfreq_max = (unsigned)(1.0 / lo_s + 0.5);
+                  in.vfreq_min = (unsigned)(1.0 / hi_s + 0.5);
+               }
+            }
+            if (maxpix && CFGetTypeID(maxpix) == CFDictionaryGetTypeID())
+            {
+               long clk = 0;
+               if (apple_dcp_num(maxpix, "PixelClock", &clk) && clk > 0)
+                  in.pclock_max = (unsigned)clk;
+            }
+            got = in.n_timings > 0;
+         }
+         CFRelease(props);
+      }
+      IOObjectRelease(svc);
+   }
+   IOObjectRelease(it);
+   if (!got)
+      return -1;
+
+   /* The horizontal band the timings themselves span, when the
+    * refresh bounds did not give one */
+   {
+      unsigned i;
+      for (i = 0; i < in.n_timings; i++)
+      {
+         const video_edid_timing_t *t = &in.timing[i];
+         unsigned htotal = t->hactive + t->hblank;
+         unsigned hfreq  = htotal ? t->pclock / htotal : 0;
+         if (!hfreq)
+            continue;
+         if (!in.hfreq_min || hfreq < in.hfreq_min)
+            in.hfreq_min = hfreq;
+         if (hfreq > in.hfreq_max)
+            in.hfreq_max = hfreq;
+      }
+      /* A variable-refresh panel reaches the same lines at its lowest
+       * rate, so the band runs down with the refresh range */
+      if (in.vfreq_min && in.vfreq_max && in.hfreq_min)
+         in.hfreq_min = (unsigned)((double)in.hfreq_min
+               * in.vfreq_min / in.vfreq_max);
+   }
+
+   in.vendor    = CGDisplayVendorNumber(display);
+   in.product   = CGDisplayModelNumber(display);
+   in.serial    = CGDisplaySerialNumber(display);
+   size_mm      = CGDisplayScreenSize(display);
+   in.width_mm  = (unsigned)(size_mm.width  + 0.5);
+   in.height_mm = (unsigned)(size_mm.height + 0.5);
+   if (!in.bit_depth)
+      in.bit_depth = 8;   /* the DCP's ColorModes usually say; 8 if not */
+   in.interface = 5;   /* DisplayPort, which is what the DCP drives */
+   {
+      unsigned c[8];
+      if (apple_display_chromaticity(display, c))
+      {
+         in.red_x   = c[0]; in.red_y   = c[1];
+         in.green_x = c[2]; in.green_y = c[3];
+         in.blue_x  = c[4]; in.blue_y  = c[5];
+         in.white_x = c[6]; in.white_y = c[7];
+      }
+   }
+   strlcpy(in.name, built_in ? "Built-in" : "DCP display", sizeof(in.name));
+   /* The unspecified-text descriptor says where the block came from,
+    * so the menu shows it and nobody mistakes it for a read block */
+   strlcpy(in.text, "DCP timings", sizeof(in.text));
+
+   return (int)modeline_edid_synthesize(&in, out, max);
+}
+#endif
+
+/* The EDID of the display the RetroArch window is on. CoreGraphics
+ * hands out the display's vendor, model and serial; the IODisplayConnect
+ * service carrying the same three under kDisplayVendorID /
+ * kDisplayProductID / kDisplaySerialNumber is that display, and its
+ * info dictionary holds the raw block. Matching on the identifiers
+ * rather than CGDisplayIOServicePort keeps this off an API that was
+ * deprecated in 10.9. */
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+static int apple_display_server_get_edid(void *data, uint8_t *out, size_t max)
+{
+   CGDirectDisplayID display = CGMainDisplayID();
+   uint32_t vendor, product, serial;
+   io_iterator_t it          = 0;
+   io_service_t svc;
+   int n                     = -1;
+   NSWindow *window          = [((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]) window];
+
+   if (!out || max < 128)
+      return -1;
+
+   if (window && [window screen])
+   {
+      NSNumber *num = [[[window screen] deviceDescription] objectForKey:@"NSScreenNumber"];
+      if (num)
+         display = (CGDirectDisplayID)[num unsignedIntValue];
+   }
+   vendor  = CGDisplayVendorNumber(display);
+   product = CGDisplayModelNumber(display);
+   serial  = CGDisplaySerialNumber(display);
+
+   /* port 0 is the default master port on every release, without
+    * naming kIOMasterPortDefault (renamed in 12). The walk failing is
+    * not the end of it: Apple Silicon has no IODisplayConnect at all,
+    * and the DCP below is the whole answer there. */
+   if (IOServiceGetMatchingServices(0, IOServiceMatching("IODisplayConnect"), &it)
+         != KERN_SUCCESS)
+      it = 0;
+
+   while (it && n < 0 && (svc = IOIteratorNext(it)))
+   {
+      CFDictionaryRef info = IODisplayCreateInfoDictionary(svc,
+            kIODisplayOnlyPreferredName);
+      if (info)
+      {
+         CFNumberRef cf_vendor  = (CFNumberRef)CFDictionaryGetValue(info, CFSTR(kDisplayVendorID));
+         CFNumberRef cf_product = (CFNumberRef)CFDictionaryGetValue(info, CFSTR(kDisplayProductID));
+         CFNumberRef cf_serial  = (CFNumberRef)CFDictionaryGetValue(info, CFSTR(kDisplaySerialNumber));
+         uint32_t v = 0, p = 0, sn = 0;
+         if (cf_vendor)
+            CFNumberGetValue(cf_vendor, kCFNumberSInt32Type, &v);
+         if (cf_product)
+            CFNumberGetValue(cf_product, kCFNumberSInt32Type, &p);
+         if (cf_serial)
+            CFNumberGetValue(cf_serial, kCFNumberSInt32Type, &sn);
+         /* the serial only separates two identical monitors, and only
+          * when both sides report one */
+         if (cf_vendor && cf_product && v == vendor && p == product
+               && (!serial || !sn || sn == serial))
+         {
+            CFDataRef edid = (CFDataRef)CFDictionaryGetValue(info, CFSTR(kIODisplayEDIDKey));
+            if (edid)
+            {
+               size_t len = (size_t)CFDataGetLength(edid);
+               if (len > max)
+                  len = max;
+               len -= len % 128;
+               if (len >= 128)
+               {
+                  memcpy(out, CFDataGetBytePtr(edid), len);
+                  n = (int)len;
+               }
+            }
+         }
+         CFRelease(info);
+      }
+      IOObjectRelease(svc);
+   }
+   if (it)
+      IOObjectRelease(it);
+
+   /* Apple Silicon has no IODisplayConnect; ask the DCP instead */
+   if (n < 0)
+      n = apple_dcp_get_edid(vendor, product, serial, out, max);
+#if defined(__aarch64__) || defined(__arm64__)
+   /* Still nothing: the panel has no EDID to read, but the DCP knows
+    * the timings a block would carry. Build one for display. */
+   if (n < 0)
+      n = apple_dcp_synthesize_edid(display, out, max);
+#endif
+   if (n < 0)
+      RARCH_LOG("[Video] No EDID for display 0x%x (vendor 0x%04x product 0x%04x).\n",
+            (unsigned)display, vendor, product);
+   return n;
+}
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+#endif
+
 const video_display_server_t dispserv_apple = {
    apple_display_server_init,
    apple_display_server_destroy,
-#ifdef OSX
+#if TARGET_OS_OSX
    apple_display_server_set_window_opacity,
-#ifdef RARCH_HAS_CGDISPLAYMODE_API
    apple_display_server_set_window_progress,
-#else
-   NULL, /* set_window_progress (needs 10.6+ GCD/blocks) */
-#endif
    apple_display_server_set_window_decorations,
 #else
    NULL, /* set_window_opacity */
    NULL, /* set_window_progress */
    NULL, /* set_window_decorations */
 #endif
-#if !defined(OSX) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#if !TARGET_OS_OSX || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
    apple_display_server_set_resolution,
 #else
    NULL,
@@ -694,5 +1436,22 @@ const video_display_server_t dispserv_apple = {
    NULL, /* get_video_output_next */
    cocoa_get_metrics,
    NULL, /* get_flags */
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
+   NULL, /* modeline_list_outputs */
+   NULL, /* modeline_open */
+   NULL, /* modeline_close */
+   NULL, /* modeline_caps */
+   NULL, /* modeline_enum */
+   NULL, /* modeline_add */
+   NULL, /* modeline_update */
+   NULL, /* modeline_delete */
+   NULL, /* modeline_set */
+   NULL, /* modeline_flush */
+#if TARGET_OS_OSX
+   apple_display_server_get_edid,
+#else
+   NULL, /* get_edid */
+#endif
    "apple"
 };

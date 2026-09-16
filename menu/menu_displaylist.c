@@ -18,6 +18,7 @@
 
 #include <memory/mem_stats.h>
 #include <stddef.h>
+#include <math.h>
 
 #include <compat/strl.h>
 #include <compat/strcasestr.h>
@@ -75,7 +76,7 @@
 #include "../play_feature_delivery/play_feature_delivery.h"
 #endif
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include "JITSupport.h"
 #endif
 
@@ -88,6 +89,9 @@
 #include "../midi_driver.h"
 #include "../record/record_driver.h"
 #include "../msg_hash_lbl_str.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #include "menu_cbs.h"
 #include "menu_driver.h"
 #include "menu_dirwalk.h"
@@ -119,6 +123,9 @@
 #include <file/file_watch.h>
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_display_server.h"
+#ifdef HAVE_MODELINE
+#include "../gfx/modeline/modeline_edid.h"
+#endif
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx/gfx_widgets.h"
 #endif
@@ -196,7 +203,7 @@ bool menu_displaylist_build_smb_root(char *s, size_t len)
    if (!settings->bools.smb_client_enable || !*server)
       return false;
 
-   _len = strlcpy(s, "smb://", len);
+   _len = strlcpy_lit(s, "smb://", len);
    if (_len >= len)
       return false;
    _len += strlcpy(s + _len, server, len - _len);
@@ -205,7 +212,7 @@ bool menu_displaylist_build_smb_root(char *s, size_t len)
 
    if (*share)
    {
-      _len += strlcpy(s + _len, "/", len - _len);
+      _len += strlcpy_lit(s + _len, "/", len - _len);
       if (_len >= len)
          return false;
       _len += strlcpy(s + _len, share, len - _len);
@@ -217,7 +224,7 @@ bool menu_displaylist_build_smb_root(char *s, size_t len)
    {
       if (subdir[0] != '/')
       {
-         _len += strlcpy(s + _len, "/", len - _len);
+         _len += strlcpy_lit(s + _len, "/", len - _len);
          if (_len >= len)
             return false;
       }
@@ -286,7 +293,7 @@ static int filebrowser_parse(
    bool path_is_compressed                      = path && *path
          && path_is_compressed_file(path);
    menu_search_terms_t *search_terms            = menu_entries_search_get_terms();
-#ifdef IOS
+#if TARGET_OS_IPHONE
    char full_path[PATH_MAX_LENGTH];
    fill_pathname_expand_special(full_path, path, sizeof(full_path));
 #else
@@ -334,7 +341,7 @@ static int filebrowser_parse(
          filter_ext = false;
 
       if (   !strcmp(label, "database_manager_list")
-#ifdef IOS
+#if TARGET_OS_IPHONE
             || !strcmp(label, "video_filter")
             || !strcmp(label, "audio_dsp_plugin")
 #endif
@@ -597,7 +604,7 @@ static int filebrowser_parse(
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0, NULL);
 
-#if defined(IOS) || (defined(OSX) && defined(HAVE_APPLE_STORE))
+#if TARGET_OS_IPHONE || (TARGET_OS_OSX && defined(HAVE_APPLE_STORE))
    {
       struct string_list *sandbox_list = string_list_new();
       dir_list_append(sandbox_list, "/private/var", NULL, true, false, false, false);
@@ -606,14 +613,14 @@ static int filebrowser_parse(
          char dir[DIR_MAX_LENGTH];
          size_t _len = fill_pathname_application_dir(dir, sizeof(dir));
          if (string_ends_with(full_path, "/") && !string_ends_with(dir, "/"))
-            strlcpy(dir + _len, "/", sizeof(dir) - _len);
+            strlcpy_lit(dir + _len, "/", sizeof(dir) - _len);
          if (string_is_equal(dir, full_path))
             allow_parent_directory = false;
          else
          {
             _len = fill_pathname_home_dir(dir, sizeof(dir));
             if (string_ends_with(full_path, "/") && !string_ends_with(dir, "/"))
-               strlcpy(dir + _len, "/", sizeof(dir) - _len);
+               strlcpy_lit(dir + _len, "/", sizeof(dir) - _len);
             if (string_is_equal(dir, full_path))
                allow_parent_directory = false;
          }
@@ -677,7 +684,7 @@ static int menu_displaylist_parse_core_info(
       settings_t *settings)
 {
    char tmp[NAME_MAX_LENGTH];
-#if IOS
+#if TARGET_OS_IPHONE
    char shortened_path[NAME_MAX_LENGTH] = {0};
 #endif
    unsigned i, count             = 0;
@@ -794,7 +801,7 @@ static int menu_displaylist_parse_core_info(
          _len        = strlcpy(tmp,
                msg_hash_to_str(info_list[i].msg),
                sizeof(tmp));
-         _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+         _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
          strlcpy(tmp + _len, info_list[i].name, sizeof(tmp) - _len);
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_CORE_INFO_ENTRY,
@@ -808,7 +815,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->categories_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -821,7 +828,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->authors_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -834,7 +841,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->permissions_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -847,7 +854,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->licenses_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -861,7 +868,7 @@ static int menu_displaylist_parse_core_info(
             msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->supported_extensions_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -874,7 +881,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->required_hw_api_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -910,7 +917,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       strlcpy(tmp + _len, savestate_support, sizeof(tmp) - _len);
    }
 
@@ -925,9 +932,9 @@ static int menu_displaylist_parse_core_info(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH),
             sizeof(tmp));
 
-      _len += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
 
-#if IOS
+#if TARGET_OS_IPHONE
       shortened_path[0] = '\0';
       fill_pathname_abbreviate_special(shortened_path,
             core_path, sizeof(shortened_path));
@@ -1004,7 +1011,7 @@ static int menu_displaylist_parse_core_info(
          /* Show the path that was checked */
          {
             int _snprintf_ret;
-#ifdef IOS
+#if TARGET_OS_IPHONE
             shortened_path[0] = '\0';
             fill_pathname_abbreviate_special(shortened_path,
                   firmware_info.directory.system,
@@ -1030,7 +1037,7 @@ static int menu_displaylist_parse_core_info(
                      MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                   count++;
 
-               __len = strlcpy(tmp, "- ", sizeof(tmp));
+               __len = strlcpy_lit(tmp, "- ", sizeof(tmp));
                strlcpy(tmp + __len, tmp_desc, sizeof(tmp) - __len);
                tmp_desc[0]  = '\0';
                tmp_desc_len = 0;
@@ -1052,7 +1059,7 @@ static int menu_displaylist_parse_core_info(
                }
                else
                {
-                  tmp_desc_len += strlcpy(tmp_desc + tmp_desc_len, "\n", sizeof(tmp_desc) - tmp_desc_len);
+                  tmp_desc_len += strlcpy_lit(tmp_desc + tmp_desc_len, "\n", sizeof(tmp_desc) - tmp_desc_len);
                   strlcpy(tmp_desc    + tmp_desc_len,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
                      sizeof(tmp_desc) - tmp_desc_len);
@@ -1108,7 +1115,7 @@ static int menu_displaylist_parse_core_info(
                if (pos)
                {
                   core_info_list_hide[j] = true;
-                  __len = strlcpy(tmp, "- ", sizeof(tmp));
+                  __len = strlcpy_lit(tmp, "- ", sizeof(tmp));
                   strlcpy(      tmp + __len,
                         core_info->note_list->elems[j].data + pos,
                         sizeof(tmp) - __len);
@@ -1166,7 +1173,7 @@ end:
       }
 #endif
 
-#if !defined(IOS) || !IOS /* should this be allowed on jailbroken iOS devices? */
+#if !TARGET_OS_IPHONE /* should this be allowed on jailbroken iOS devices? */
       if (core_path && *core_path)
       {
          /* Check whether core is currently locked */
@@ -1329,7 +1336,7 @@ static unsigned menu_displaylist_parse_core_backup_list(
             /* Append 'auto backup' tag to timestamp, if required */
             if (entry->backup_mode == CORE_BACKUP_MODE_AUTO)
             {
-               _len += strlcpy(timestamp + _len, " ", sizeof(timestamp) - _len);
+               _len += strlcpy_lit(timestamp + _len, " ", sizeof(timestamp) - _len);
                strlcpy(timestamp + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO),
                      sizeof(timestamp) - _len);
             }
@@ -1433,7 +1440,7 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
       }
    }
 
-#ifndef IOS
+#if !TARGET_OS_IPHONE
    /* Add 'sideload core' entry */
    if (!kiosk_mode_enable)
       if (menu_entries_append(list,
@@ -1444,8 +1451,11 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
          count++;
 #endif
 
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
    {
-      /* MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM requires 'settings' */
+      /* MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM requires 'settings',
+       * so the scope only exists where one of the entries below
+       * is built in. */
       settings_t *settings = config_get_ptr();
 #ifdef HAVE_IMAGEVIEWER
       if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -1460,6 +1470,7 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
          count++;
 #endif
    }
+#endif
 
    return count;
 }
@@ -1935,11 +1946,11 @@ static unsigned menu_displaylist_parse_supported_cores(
          char entry_alt_text[NAME_MAX_LENGTH];
          size_t _len = strlcpy(entry_alt_text, detect_core_str,
                sizeof(entry_alt_text));
-         _len       += strlcpy(entry_alt_text + _len, " (", sizeof(entry_alt_text) - _len);
+         _len       += strlcpy_lit(entry_alt_text + _len, " (", sizeof(entry_alt_text) - _len);
          _len       += strlcpy(entry_alt_text + _len,
                pending_core_name,
                sizeof(entry_alt_text)         - _len);
-         strlcpy(entry_alt_text + _len, ")", sizeof(entry_alt_text) - _len);
+         strlcpy_lit(entry_alt_text + _len, ")", sizeof(entry_alt_text) - _len);
 
          menu_entries_prepend(info->list, pending_core_path,
                msg_hash_to_str(current_core_enum_label),
@@ -2041,6 +2052,650 @@ static unsigned menu_displaylist_parse_supported_cores(
 const char *vulkan_get_moltenvk_version(void);
 #endif
 
+/* System Information > Display Information: the display in use as
+ * the display server sees it. Rebuilt on every entry, so back out and
+ * in to refresh. */
+static unsigned menu_displaylist_parse_display_info(file_list_t *list)
+{
+   char entry[NAME_MAX_LENGTH];
+   unsigned count = 0;
+   size_t _len;
+   unsigned w = 0, h = 0;
+   float hz;
+   video_output_info_t outputs[8];
+   int n_out, i;
+
+   /* Display Server */
+   _len  = strlcpy(entry,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_SERVER),
+         sizeof(entry));
+   _len += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
+   strlcpy(entry + _len, video_display_server_get_ident(), sizeof(entry) - _len);
+   if (menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL))
+      count++;
+
+   /* Outputs: name, size, placement */
+   n_out = video_display_server_list_outputs(outputs,
+         (int)(sizeof(outputs) / sizeof(outputs[0])));
+   for (i = 0; i < n_out; i++)
+   {
+      _len  = strlcpy(entry,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT),
+            sizeof(entry));
+      _len += snprintf(entry + _len, sizeof(entry) - _len, " %d: %s %ux%u @ %d,%d%s",
+            i + 1, outputs[i].name, outputs[i].width, outputs[i].height,
+            outputs[i].x, outputs[i].y, outputs[i].primary ? " *" : "");
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+   /* Resolution: the desktop mode of the display in use */
+   {
+      char mode[64];
+      mode[0] = '\0';
+      if (video_display_server_get_video_output_size(&w, &h, mode, sizeof(mode))
+            && w && h)
+      {
+         _len  = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION),
+               sizeof(entry));
+         _len += snprintf(entry + _len, sizeof(entry) - _len, ": %ux%u", w, h);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
+      }
+   }
+
+   /* Refresh Rate */
+   hz = video_display_server_get_refresh_rate();
+   if (hz > 0.0f)
+   {
+      _len  = strlcpy(entry,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE),
+            sizeof(entry));
+      snprintf(entry + _len, sizeof(entry) - _len, ": %.3f Hz", hz);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+   /* Display Width / Height (mm), DPI: the context's metrics */
+   {
+      gfx_ctx_metrics_t metrics;
+      float val = 0.0f;
+
+      metrics.value = &val;
+
+      metrics.type  = DISPLAY_METRIC_MM_WIDTH;
+      if (video_context_driver_get_metrics(&metrics))
+      {
+         _len = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
+               sizeof(entry));
+         snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
+      }
+
+      metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
+      if (video_context_driver_get_metrics(&metrics))
+      {
+         _len = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT),
+               sizeof(entry));
+         snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
+      }
+
+      metrics.type  = DISPLAY_METRIC_DPI;
+      if (video_context_driver_get_metrics(&metrics))
+      {
+         _len = strlcpy(entry,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI),
+               sizeof(entry));
+         snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+               0, 0, NULL))
+            count++;
+      }
+   }
+
+   /* Pacing: the same line as the statistics overlay, here because
+    * the overlay does not draw over the menu, and what paces the
+    * menu is exactly the question this answers. Read at build; the
+    * list rebuilds on entry, so back out and in again to refresh. */
+   {
+      char pbuf[64];
+      runloop_pace_string(pbuf, sizeof(pbuf));
+      _len  = strlcpy(entry,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING),
+            sizeof(entry));
+      _len +=  strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
+      strlcpy(entry + _len, pbuf, sizeof(entry) - _len);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+   /* Orientation */
+   if (video_display_server_can_set_screen_orientation())
+   {
+      enum msg_hash_enums name;
+      switch (video_display_server_get_screen_orientation())
+      {
+         case ORIENTATION_VERTICAL:
+            name = MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL;
+            break;
+         case ORIENTATION_FLIPPED:
+            name = MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED;
+            break;
+         case ORIENTATION_FLIPPED_ROTATED:
+            name = MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED;
+            break;
+         default:
+            name = MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL;
+            break;
+      }
+      _len  = strlcpy(entry,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION),
+            sizeof(entry));
+      _len += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
+      strlcpy(entry + _len, msg_hash_to_str(name), sizeof(entry) - _len);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+#ifdef HAVE_MODELINE
+   /* EDID submenu */
+   if (menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INFORMATION),
+         MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION_STR,
+         MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION,
+         MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+#endif
+
+   return count;
+}
+
+#ifdef HAVE_MODELINE
+/* One "Label: value" line */
+static bool menu_displaylist_edid_line(file_list_t *list,
+      enum msg_hash_enums label, const char *value)
+{
+   char entry[NAME_MAX_LENGTH];
+   size_t _len = strlcpy(entry, msg_hash_to_str(label), sizeof(entry));
+   _len       += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
+   strlcpy(entry + _len, value, sizeof(entry) - _len);
+   return menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL);
+}
+
+/* One "Label n: value" line */
+static bool menu_displaylist_edid_line_n(file_list_t *list,
+      enum msg_hash_enums label, unsigned n, const char *value)
+{
+   char entry[NAME_MAX_LENGTH];
+   size_t _len = strlcpy(entry, msg_hash_to_str(label), sizeof(entry));
+   _len       += snprintf(entry + _len, sizeof(entry) - _len, " %u: ", n);
+   strlcpy(entry + _len, value, sizeof(entry) - _len);
+   return menu_entries_append(list, entry, "",
+         MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+         0, 0, NULL);
+}
+
+/* Append ", item" or "item" to a comma list */
+static size_t menu_displaylist_edid_cat(char *s, size_t _len, size_t len,
+      const char *item)
+{
+   if (_len > 0)
+      _len += strlcpy_lit(s + _len, ", ", len - _len);
+   return _len + strlcpy(s + _len, item, len - _len);
+}
+
+/* System Information > Display Information > EDID: the block the
+ * display server read off the display in use, decoded field by field
+ * by the reader in gfx/modeline/modeline_edid.c, then the raw bytes. */
+static unsigned menu_displaylist_parse_display_edid(file_list_t *list)
+{
+   unsigned count = 0;
+   char value[512];
+   size_t _len;
+   int n, i;
+   uint8_t *raw;
+   video_edid_info_t *info;
+
+   raw = (uint8_t*)malloc(MODELINE_EDID_MAX_LEN + sizeof(video_edid_info_t));
+   if (!raw)
+      return 0;
+   info = (video_edid_info_t*)(raw + MODELINE_EDID_MAX_LEN);
+
+   n = video_display_server_get_edid(raw, MODELINE_EDID_MAX_LEN);
+   if (n < MODELINE_EDID_SIZE || !modeline_edid_parse(raw, (size_t)n, info))
+   {
+      /* Nothing to show, and two quite different reasons for it: the
+       * display server has no way to read one, or it has and the
+       * display in use carries none. Say what would. */
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
+         count++;
+      if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE), "",
+            MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+      free(raw);
+      return count;
+   }
+
+   /* Read: "3 blocks, 384 bytes" */
+   snprintf(value, sizeof(value), "%u x %u = %u", info->n_blocks,
+         (unsigned)MODELINE_EDID_SIZE, (unsigned)info->len);
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE, value))
+      count++;
+   if (info->truncated)
+      if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED), "",
+            MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+
+   /* Version */
+   snprintf(value, sizeof(value), "%u.%u", info->ver_major, info->ver_minor);
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION, value))
+      count++;
+
+   /* Identity */
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_MANUFACTURER,
+         info->manufacturer))
+      count++;
+   snprintf(value, sizeof(value), "0x%04X (%u)", info->product, info->product);
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PRODUCT, value))
+      count++;
+   if (info->serial_text[0])
+      snprintf(value, sizeof(value), "%s (%lu)", info->serial_text,
+            (unsigned long)info->serial);
+   else
+      snprintf(value, sizeof(value), "%lu", (unsigned long)info->serial);
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL, value))
+      count++;
+   if (info->year)
+   {
+      if (info->model_year)
+         snprintf(value, sizeof(value), "%u (model year)", info->year);
+      else if (info->week)
+         snprintf(value, sizeof(value), "%u, week %u", info->year, info->week);
+      else
+         snprintf(value, sizeof(value), "%u", info->year);
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DATE, value))
+         count++;
+   }
+   if (info->name[0])
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_NAME,
+            info->name))
+         count++;
+   if (info->text[0])
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TEXT,
+            info->text))
+         count++;
+
+   /* Video Input */
+   if (info->digital)
+   {
+      static const char *ifaces[] = {
+         "", "DVI", "HDMI-a", "HDMI-b", "MDDI", "DisplayPort"
+      };
+      _len = strlcpy_lit(value, "Digital", sizeof(value));
+      if (info->bit_depth)
+         _len += snprintf(value + _len, sizeof(value) - _len, ", %u bpc",
+               info->bit_depth);
+      if (info->interface > 0 && info->interface < 6)
+         _len += snprintf(value + _len, sizeof(value) - _len, ", %s",
+               ifaces[info->interface]);
+      if (info->dfp1x)
+         strlcpy_lit(value + _len, ", DFP 1.x", sizeof(value) - _len);
+   }
+   else
+   {
+      static const char *levels[] = {
+         "0.700/0.300 V", "0.714/0.286 V", "1.000/0.400 V", "0.700/0.000 V"
+      };
+      _len = snprintf(value, sizeof(value), "Analog, %s", levels[info->analog_level & 3]);
+      if (info->analog_sync & 0x10) _len += strlcpy_lit(value + _len, ", blank-to-black", sizeof(value) - _len);
+      if (info->analog_sync & 0x08) _len += strlcpy_lit(value + _len, ", separate sync", sizeof(value) - _len);
+      if (info->analog_sync & 0x04) _len += strlcpy_lit(value + _len, ", composite sync", sizeof(value) - _len);
+      if (info->analog_sync & 0x02) _len += strlcpy_lit(value + _len, ", sync on green", sizeof(value) - _len);
+      if (info->analog_sync & 0x01) strlcpy_lit(value + _len, ", serration", sizeof(value) - _len);
+   }
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INPUT, value))
+      count++;
+
+   /* Screen Size */
+   if (info->width_cm && info->height_cm)
+      snprintf(value, sizeof(value), "%u x %u cm", info->width_cm, info->height_cm);
+   else if (info->width_cm || info->height_cm)
+      /* 1.4: one byte zero means the other is an aspect ratio code */
+      snprintf(value, sizeof(value), "%s %.2f:1", "aspect",
+            info->width_cm ? (info->width_cm + 99) / 100.0
+                           : 100.0 / (info->height_cm + 99));
+   else
+      strlcpy(value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), sizeof(value));
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SCREEN_SIZE, value))
+      count++;
+
+   /* Gamma */
+   if (info->gamma_x100)
+   {
+      snprintf(value, sizeof(value), "%.2f", info->gamma_x100 / 100.0);
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMMA, value))
+         count++;
+   }
+
+   /* Features */
+   {
+      static const char *analog_types[] = {
+         "monochrome", "RGB color", "non-RGB color", "undefined"
+      };
+      static const char *digital_types[] = {
+         "RGB 4:4:4", "RGB 4:4:4 + YCrCb 4:4:4", "RGB 4:4:4 + YCrCb 4:2:2",
+         "RGB 4:4:4 + YCrCb 4:4:4 + 4:2:2"
+      };
+      unsigned f = info->features;
+      _len = 0;
+      value[0] = '\0';
+      if (f & 0x80) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "standby");
+      if (f & 0x40) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "suspend");
+      if (f & 0x20) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "active off");
+      _len = menu_displaylist_edid_cat(value, _len, sizeof(value),
+            info->digital ? digital_types[(f >> 3) & 3] : analog_types[(f >> 3) & 3]);
+      if (f & 0x04) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "sRGB");
+      if (f & 0x02) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "preferred timing");
+      if (f & 0x01) _len = menu_displaylist_edid_cat(value, _len, sizeof(value),
+            info->ver_minor >= 4 ? "continuous frequency" : "GTF");
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_FEATURES, value))
+         count++;
+   }
+
+   /* Chromaticity */
+   snprintf(value, sizeof(value),
+         "R %.3f %.3f, G %.3f %.3f, B %.3f %.3f, W %.3f %.3f",
+         info->red_x / 1000.0, info->red_y / 1000.0,
+         info->green_x / 1000.0, info->green_y / 1000.0,
+         info->blue_x / 1000.0, info->blue_y / 1000.0,
+         info->white_x / 1000.0, info->white_y / 1000.0);
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHROMATICITY, value))
+      count++;
+
+   /* What those primaries amount to */
+   if (modeline_edid_gamut_str(info, value, sizeof(value)))
+      if (menu_displaylist_edid_line(list,
+            MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMUT, value))
+         count++;
+
+   /* Range Limits */
+   if (info->has_range)
+   {
+      _len = snprintf(value, sizeof(value), "V %u-%u Hz, H %u-%u kHz",
+            info->vfreq_min, info->vfreq_max, info->hfreq_min, info->hfreq_max);
+      if (info->pclock_max)
+         _len += snprintf(value + _len, sizeof(value) - _len, ", max %u MHz",
+               info->pclock_max);
+      switch (info->range_type)
+      {
+         case 0x00: strlcpy_lit(value + _len, ", GTF", sizeof(value) - _len); break;
+         case 0x02: strlcpy_lit(value + _len, ", secondary GTF", sizeof(value) - _len); break;
+         case 0x04: strlcpy_lit(value + _len, ", CVT", sizeof(value) - _len); break;
+         default: break;
+      }
+      if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RANGE_LIMITS, value))
+         count++;
+   }
+
+   /* Established Timings, one line */
+   if (info->established)
+   {
+      _len = 0;
+      value[0] = '\0';
+      for (i = 0; i < 17; i++)
+         if (info->established & (1u << i))
+            _len = menu_displaylist_edid_cat(value, _len, sizeof(value),
+                  modeline_edid_established_name((unsigned)i));
+      if (menu_displaylist_edid_line(list,
+            MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_ESTABLISHED_TIMINGS, value))
+         count++;
+   }
+
+   /* Standard Timings, one line */
+   if (info->n_std)
+   {
+      _len = 0;
+      value[0] = '\0';
+      for (i = 0; i < (int)info->n_std; i++)
+      {
+         char one[32];
+         snprintf(one, sizeof(one), "%ux%u @ %u Hz", info->std[i].width,
+               info->std[i].height, info->std[i].refresh);
+         _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+      }
+      if (menu_displaylist_edid_line(list,
+            MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS, value))
+         count++;
+   }
+
+   /* Detailed Timings: summary and modeline, two lines each */
+   for (i = 0; i < (int)info->n_timings; i++)
+   {
+      const video_edid_timing_t *t = &info->timing[i];
+      _len = modeline_edid_timing_str(t, value, sizeof(value));
+      if (_len < sizeof(value) && t->hsize_mm && t->vsize_mm)
+         _len += snprintf(value + _len, sizeof(value) - _len, ", %u x %u mm",
+               t->hsize_mm, t->vsize_mm);
+      if (_len < sizeof(value) && t->preferred)
+         _len += snprintf(value + _len, sizeof(value) - _len, " (%s)",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PREFERRED));
+      if (_len < sizeof(value) && t->src != MODELINE_EDID_SRC_BASE)
+         snprintf(value + _len, sizeof(value) - _len, " [%s]",
+               t->src == MODELINE_EDID_SRC_CTA ? "CTA-861" : "DisplayID");
+      if (menu_displaylist_edid_line_n(list,
+            MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DETAILED_TIMING, (unsigned)i + 1, value))
+         count++;
+      modeline_edid_modeline_str(t, value, sizeof(value));
+      if (menu_entries_append(list, value, "",
+            MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+   /* Checksum of the base block */
+   if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM,
+         msg_hash_to_str(info->checksum_ok
+            ? MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK
+            : MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD)))
+      count++;
+
+   /* Extensions */
+   for (i = 0; i < (int)info->n_ext; i++)
+   {
+      const video_edid_ext_t *e = &info->ext[i];
+      int j;
+      if (e->tag == MODELINE_EDID_EXT_DISPLAYID)
+         snprintf(value, sizeof(value), "%s %u.%u, %s", modeline_edid_ext_name(e->tag),
+               e->revision >> 4, e->revision & 0x0f,
+               msg_hash_to_str(e->checksum_ok
+                  ? MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK
+                  : MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD));
+      else
+         snprintf(value, sizeof(value), "%s revision %u (0x%02X), %s",
+               modeline_edid_ext_name(e->tag), e->revision, e->tag,
+               msg_hash_to_str(e->checksum_ok
+                  ? MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK
+                  : MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD));
+      if (menu_displaylist_edid_line_n(list,
+            MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_EXTENSION, (unsigned)i + 1, value))
+         count++;
+
+      if (e->tag == MODELINE_EDID_EXT_CTA)
+      {
+         if (e->revision >= 2)
+         {
+            _len = 0;
+            value[0] = '\0';
+            if (e->underscan)   _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "underscan");
+            if (e->basic_audio) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "basic audio");
+            if (e->ycbcr444)    _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "YCbCr 4:4:4");
+            if (e->ycbcr422)    _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "YCbCr 4:2:2");
+            if (e->ycbcr420)    _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "YCbCr 4:2:0");
+            if (e->native_dtds)
+            {
+               char one[32];
+               snprintf(one, sizeof(one), "%u native", e->native_dtds);
+               _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+            }
+            if (_len && menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_FLAGS, value))
+               count++;
+         }
+         if (e->n_vics)
+         {
+            _len = 0;
+            value[0] = '\0';
+            for (j = 0; j < (int)e->n_vics; j++)
+            {
+               char one[32];
+               size_t l = modeline_edid_vic_str(e->vic[j] & 0x7f, one, sizeof(one));
+               if ((e->vic[j] & 0x80) && (e->vic[j] & 0x7f) <= 64 && l < sizeof(one))
+                  strlcpy_lit(one + l, "*", sizeof(one) - l);
+               _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+               if (_len >= sizeof(value) - 1)
+                  break;
+            }
+            if (menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_VIDEO, value))
+               count++;
+         }
+         if (e->n_audio)
+         {
+            snprintf(value, sizeof(value), "%u", e->n_audio);
+            if (menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_AUDIO, value))
+               count++;
+         }
+         if (e->hdmi)
+         {
+            _len = snprintf(value, sizeof(value), "%u.%u.%u.%u",
+                  e->hdmi_phys[0] >> 4, e->hdmi_phys[0] & 0x0f,
+                  e->hdmi_phys[1] >> 4, e->hdmi_phys[1] & 0x0f);
+            if (e->hdmi_max_tmds)
+               _len += snprintf(value + _len, sizeof(value) - _len,
+                     ", max TMDS %u MHz", e->hdmi_max_tmds);
+            if (e->hdmi_forum)
+               snprintf(value + _len, sizeof(value) - _len,
+                     ", HDMI 2.x max TMDS %u MHz", e->hf_max_tmds);
+            if (menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDMI, value))
+               count++;
+         }
+         if (e->hdr)
+         {
+            _len = 0;
+            value[0] = '\0';
+            if (e->hdr_eotf & 0x01) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "SDR");
+            if (e->hdr_eotf & 0x02) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "HDR");
+            if (e->hdr_eotf & 0x04) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "PQ");
+            if (e->hdr_eotf & 0x08) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "HLG");
+            if (e->hdr_max_lum)
+            {
+               /* CTA-861-G: 50 * 2^(code/32) cd/m2 */
+               char one[48];
+               snprintf(one, sizeof(one), "max %.0f cd/m2",
+                     50.0 * pow(2.0, e->hdr_max_lum / 32.0));
+               _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+            }
+            if (e->hdr_max_fal)
+            {
+               char one[48];
+               snprintf(one, sizeof(one), "max frame average %.0f cd/m2",
+                     50.0 * pow(2.0, e->hdr_max_fal / 32.0));
+               _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+            }
+            if (e->hdr_min_lum && e->hdr_max_lum)
+            {
+               char one[48];
+               double max_lum = 50.0 * pow(2.0, e->hdr_max_lum / 32.0);
+               snprintf(one, sizeof(one), "min %.4f cd/m2",
+                     max_lum * pow(e->hdr_min_lum / 255.0, 2.0) / 100.0);
+               _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
+            }
+            if (menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDR, value))
+               count++;
+         }
+         if (e->colorimetry)
+         {
+            unsigned c = e->colorimetry_flags;
+            _len = 0;
+            value[0] = '\0';
+            if (c & 0x01) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "xvYCC601");
+            if (c & 0x02) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "xvYCC709");
+            if (c & 0x04) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "sYCC601");
+            if (c & 0x08) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "opYCC601");
+            if (c & 0x10) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "opRGB");
+            if (c & 0x20) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "BT.2020 cYCC");
+            if (c & 0x40) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "BT.2020 YCC");
+            if (c & 0x80) _len = menu_displaylist_edid_cat(value, _len, sizeof(value), "BT.2020 RGB");
+            if (_len && menu_displaylist_edid_line(list,
+                  MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_COLORIMETRY, value))
+               count++;
+         }
+      }
+      else if (e->tag == MODELINE_EDID_EXT_DISPLAYID && e->n_sections)
+      {
+         _len = 0;
+         value[0] = '\0';
+         for (j = 0; j < (int)e->n_sections; j++)
+            _len = menu_displaylist_edid_cat(value, _len, sizeof(value),
+                  modeline_edid_did_section_name(e->revision, e->section[j]));
+         if (menu_displaylist_edid_line(list,
+               MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DID_SECTIONS, value))
+            count++;
+      }
+   }
+
+   /* Raw bytes, 16 per line, for pasting into edid-decode */
+   for (i = 0; i < n; i += 16)
+   {
+      int j;
+      _len = snprintf(value, sizeof(value), "%s %04X:",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW), (unsigned)i);
+      for (j = 0; j < 16 && i + j < n; j++)
+         _len += snprintf(value + _len, sizeof(value) - _len, " %02X", raw[i + j]);
+      if (menu_entries_append(list, value, "",
+            MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
+
+   free(raw);
+   return count;
+}
+#endif
+
 static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
    char entry[NAME_MAX_LENGTH];
@@ -2050,7 +2705,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    size_t _len = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION),
          sizeof(entry));
-   _len       += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+   _len       += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
    strlcpy(entry + _len, PACKAGE_VERSION, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2062,7 +2717,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len        = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION),
          sizeof(entry));
-   _len       += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+   _len       += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
    strlcpy(entry + _len, retroarch_git_version, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2077,7 +2732,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       _len        = strlcpy(entry,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION),
             sizeof(entry));
-      _len       += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+      _len       += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
       if (!moltenvk_version || !*moltenvk_version)
          strlcpy(entry + _len,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -2095,10 +2750,10 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len        = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE),
          sizeof(entry));
-   _len       += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+   _len       += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
    _len       += strlcpy(entry + _len, __DATE__, sizeof(entry) - _len);
 #ifdef DEBUG
-   _len       += strlcpy(entry + _len, " (DEBUG)", sizeof(entry) - _len);
+   _len       += strlcpy_lit(entry + _len, " (DEBUG)", sizeof(entry) - _len);
 #endif
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2110,6 +2765,14 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
          0, 0, NULL))
+      count++;
+
+   /* Display Information submenu */
+   if (menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION),
+         MENU_ENUM_LABEL_DISPLAY_INFORMATION_STR,
+         MENU_ENUM_LABEL_DISPLAY_INFORMATION,
+         MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 
 #ifdef ANDROID
@@ -2135,7 +2798,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       _len            = strlcpy(entry,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL),
             sizeof(entry));
-      _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+      _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
       if (!cpu_model || !*cpu_model)
          strlcpy(entry + _len,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -2152,7 +2815,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len            = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
          sizeof(entry));
-   _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+   _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
    retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, entry + _len, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2163,7 +2826,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len            = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE),
          sizeof(entry));
-   _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+   _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
    frontend_driver_get_cpu_architecture_str(entry + _len, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_CPU_ARCHITECTURE, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2184,7 +2847,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          count++;
    }
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    {
       const char *val_yes_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES);
       const char *val_no_str  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO);
@@ -2192,7 +2855,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       size_t _len     = strlcpy(entry,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE),
             sizeof(entry));
-      _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+      _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
       if (jit_available())
          strlcpy(entry + _len, val_yes_str, sizeof(entry) - _len);
       else
@@ -2214,7 +2877,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             size_t _len    = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER),
                   sizeof(entry));
-            _len          += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+            _len          += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
             Boolean result = CFStringGetCString(bundleIdentifier, entry + _len, sizeof(entry) - _len, kCFStringEncodingUTF8);
             if (result) {
                if (menu_entries_append(list, entry, "",
@@ -2293,7 +2956,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          _len            = strlcpy(entry,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER),
                sizeof(entry));
-         _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+         _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
          strlcpy(entry + _len, frontend->ident, sizeof(entry) - _len);
          if (menu_entries_append(list, entry, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2306,7 +2969,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION),
                   sizeof(entry));
-            _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+            _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
             frontend->get_lakka_version(entry + _len, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2320,7 +2983,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME),
                   sizeof(entry));
-            _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+            _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
             frontend->get_name(entry + _len, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2336,7 +2999,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
                   sizeof(entry));
-            _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+            _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
             _len           += frontend->get_os(entry + _len,
                   sizeof(entry) - _len, &major, &minor);
             snprintf(entry + _len,
@@ -2377,7 +3040,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             size_t _len  = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE),
                   sizeof(entry));
-            _len        += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+            _len        += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
             /* N/A */
             if (state == FRONTEND_POWERSTATE_NONE)
                strlcpy(entry + _len,
@@ -2417,7 +3080,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       _len  = strlcpy(entry,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER),
             sizeof(entry));
-      _len +=  strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+      _len +=  strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
       strlcpy(entry + _len,
             (ident_info.ident && *ident_info.ident)
             ? ident_info.ident
@@ -2427,55 +3090,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
             0, 0, NULL))
          count++;
-
-      {
-         gfx_ctx_metrics_t metrics;
-         float val = 0.0f;
-
-         metrics.value = &val;
-
-         /* Display Width (mm) */
-         metrics.type  = DISPLAY_METRIC_MM_WIDTH;
-         if (video_context_driver_get_metrics(&metrics))
-         {
-            _len = strlcpy(entry,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH),
-                  sizeof(entry));
-            snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
-            if (menu_entries_append(list, entry, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
-                  0, 0, NULL))
-               count++;
-         }
-
-         /* Display Height (mm) */
-         metrics.type  = DISPLAY_METRIC_MM_HEIGHT;
-         if (video_context_driver_get_metrics(&metrics))
-         {
-            _len = strlcpy(entry,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT),
-                  sizeof(entry));
-            snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
-            if (menu_entries_append(list, entry, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
-                  0, 0, NULL))
-               count++;
-         }
-
-         /* DPI */
-         metrics.type  = DISPLAY_METRIC_DPI;
-         if (video_context_driver_get_metrics(&metrics))
-         {
-            _len = strlcpy(entry,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI),
-                  sizeof(entry));
-            snprintf(entry + _len, sizeof(entry) - _len, ": %.2f", val);
-            if (menu_entries_append(list, entry, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
-                  0, 0, NULL))
-               count++;
-         }
-      }
    }
 #endif
 
@@ -2614,9 +3228,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_COREAUDIO
          {SUPPORTS_COREAUDIO, "CoreAudio"},
 #endif
-#ifdef HAVE_COREAUDIO3
-         {SUPPORTS_COREAUDIO3, "CoreAudio V3"},
-#endif
 #ifdef HAVE_JACK
          {SUPPORTS_JACK, "JACK"},
 #endif
@@ -2656,7 +3267,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_7ZIP
          {SUPPORTS_7ZIP, "7zip"},
 #endif
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
          {SUPPORTS_ZSTD, "Zstandard"},
 #endif
 #ifdef HAVE_FFMPEG
@@ -2700,7 +3311,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          size_t _len = strlcpy(entry,
                info_list[info_idx].msg,
                sizeof(entry));
-         _len += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+         _len += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
          _len += strlcpy(entry + _len,
                (info_list[info_idx].enabled) ? val_yes_str : val_no_str, sizeof(entry) - _len);
 
@@ -3020,7 +3631,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
          path_base, playlist_get_cached());
 
-   strlcpy(path_base + _len, ".lpl", sizeof(path_base) - _len);
+   strlcpy_lit(path_base + _len, ".lpl", sizeof(path_base) - _len);
 
    fill_pathname_join_special(menu->db_playlist_file,
          dir_playlist, path_base,
@@ -3121,7 +3732,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
          tmp_len  = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
                sizeof(tmp));
-         tmp_len += strlcpy(tmp + tmp_len, ": ", sizeof(tmp) - tmp_len);
+         tmp_len += strlcpy_lit(tmp + tmp_len, ": ", sizeof(tmp) - tmp_len);
          strlcpy(tmp + tmp_len, db_info_entry->name, sizeof(tmp) - tmp_len);
          menu_entries_append(info->list, tmp,
                MENU_ENUM_LABEL_RDB_ENTRY_NAME_STR,
@@ -3134,7 +3745,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
          tmp_len  = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION),
                sizeof(tmp));
-         tmp_len += strlcpy(tmp + tmp_len, ": ", sizeof(tmp) - tmp_len);
+         tmp_len += strlcpy_lit(tmp + tmp_len, ": ", sizeof(tmp) - tmp_len);
          strlcpy(tmp + tmp_len, db_info_entry->description,
                sizeof(tmp) - tmp_len);
          menu_entries_append(info->list, tmp,
@@ -4837,7 +5448,7 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
       }
 #endif
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
       /* For various reasons on iOS/tvOS, MoltenVK shows up
        * in the cores directory; exclude it here */
       if (string_starts_with(path, "MoltenVK"))
@@ -5426,7 +6037,7 @@ static unsigned menu_displaylist_parse_content_information(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       strlcpy(tmp + _len, core_name, sizeof(tmp) - _len);
 
       if (menu_entries_append(info_list, tmp,
@@ -5473,7 +6084,7 @@ static unsigned menu_displaylist_parse_content_information(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE),
             sizeof(tmp));
-      _len          += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len          += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       fill_pathname(tmp + _len, db_name, "", sizeof(tmp) - _len);
       if (menu_entries_append(info_list, tmp,
                MENU_ENUM_LABEL_CONTENT_INFO_DATABASE_STR,
@@ -5491,7 +6102,7 @@ static unsigned menu_displaylist_parse_content_information(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
             sizeof(tmp));
-      _len          += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len          += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       strlcpy(tmp + _len, *content_label
                   ? content_label
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -5506,7 +6117,7 @@ static unsigned menu_displaylist_parse_content_information(
       _len        = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       strlcpy(tmp + _len, *content_path
                   ? content_path
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -5677,6 +6288,9 @@ static int menu_displaylist_parse_audio_device_list(file_list_t *info_list,
    if (!setting)
       return 0;
 
+   /* Enumerate now rather than showing whatever init cached: devices
+    * come and go, and the cached list is empty when init failed. */
+   audio_driver_refresh_devices_list();
    if (!audio_driver_get_devices_list((void**)&ptr))
       return 0;
 
@@ -5822,6 +6436,9 @@ static int menu_displaylist_parse_microphone_device_list(
    if (!setting)
       return 0;
 
+   /* Rebuilt on each open, from the configured driver, as the audio
+    * device list is. */
+   microphone_driver_refresh_devices_list();
    if (!microphone_driver_get_devices_list((void**)&ptr))
       return 0;
 
@@ -5931,7 +6548,7 @@ static int menu_displaylist_parse_input_retropad_bind_list(
             &input_config_binds[0][retro_id];
 
       snprintf(id, sizeof(id), "%d", retro_id);
-      strlcpy(name, msg_hash_to_str(keyptr->enum_idx), sizeof(name));
+      strlcpy(name, msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr)), sizeof(name));
 
       if (!turbo_bind && i >= RARCH_FIRST_CUSTOM_BIND)
          continue;
@@ -6513,9 +7130,8 @@ static int menu_displaylist_parse_input_description_kbd_list(
          strlcpy(input_description, RARCH_NO_BIND, sizeof(input_description));
       else
       {
-         /* TODO/FIXME: Localize 'Keyboard' */
-         size_t _len = strlcpy(input_description, "Keyboard ", sizeof(input_description));
-         strlcpy(input_description + _len, key_label, sizeof(input_description) - _len);
+         snprintf(input_description, sizeof(input_description), /* Format string below */
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY), key_label);
       }
 
       /* Add menu entry */
@@ -6728,7 +7344,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_ENUM_LABEL_CORE_UPDATER_LIST,
                MENU_SETTING_ACTION, 0, 0, NULL);
 #endif
-#ifndef IOS
+#if !TARGET_OS_IPHONE
          menu_entries_append(info_list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST),
                MENU_ENUM_LABEL_SIDELOAD_CORE_LIST_STR,
@@ -7117,7 +7733,7 @@ static int menu_displaylist_parse_disc_info(file_list_t *info_list,
             ? sizeof(drive_string) - 1
             : (size_t)_ret;
 
-      _len += strlcpy(drive_string + _len, ": ",
+      _len += strlcpy_lit(drive_string + _len, ": ",
               sizeof(drive_string) - _len);
 
       if (_len < sizeof(drive_string))
@@ -7198,10 +7814,13 @@ static unsigned menu_displaylist_populate_subsystem(
                 * query_enum precedent. */
                size_t pos = 0;
                int    rv  = 0;
-               /* TODO/FIXME - Localize string */
-               rv |= strlcpy_append(s, sizeof(s), &pos, "Load");
-               rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-               rv |= strlcpy_append(s, sizeof(s), &pos, subsystem->desc);
+               {
+                  char head[256];
+                  snprintf(head, sizeof(head), /* Format string below */
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY),
+                        subsystem->desc);
+                  rv |= strlcpy_append(s, sizeof(s), &pos, head);
+               }
                rv |= strlcpy_append(s, sizeof(s), &pos, " ");
                rv |= strlcpy_append(s, sizeof(s), &pos, star_char);
 
@@ -7211,12 +7830,13 @@ static unsigned menu_displaylist_populate_subsystem(
                if (is_rgui && !menu_show_sublabels)
                {
                   rv |= strlcpy_append(s, sizeof(s), &pos, " [");
-                  /* TODO/FIXME - Localize */
-                  rv |= strlcpy_append(s, sizeof(s), &pos,
-                        "Current Content:");
-                  rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-                  rv |= strlcpy_append(s, sizeof(s), &pos,
-                        subsystem->roms[content_get_subsystem_rom_id()].desc);
+                  {
+                     char head[256];
+                     snprintf(head, sizeof(head), /* Format string below */
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
+                           subsystem->roms[content_get_subsystem_rom_id()].desc);
+                     rv |= strlcpy_append(s, sizeof(s), &pos, head);
+                  }
                   rv |= strlcpy_append(s, sizeof(s), &pos, "]");
                }
 #endif
@@ -7237,10 +7857,13 @@ static unsigned menu_displaylist_populate_subsystem(
                 * unbounded subsystem->desc surface. */
                size_t pos = 0;
                int    rv  = 0;
-               /* TODO/FIXME - Localize string */
-               rv |= strlcpy_append(s, sizeof(s), &pos, "Start");
-               rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-               rv |= strlcpy_append(s, sizeof(s), &pos, subsystem->desc);
+               {
+                  char head[256];
+                  snprintf(head, sizeof(head), /* Format string below */
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY),
+                        subsystem->desc);
+                  rv |= strlcpy_append(s, sizeof(s), &pos, head);
+               }
                rv |= strlcpy_append(s, sizeof(s), &pos, " ");
                rv |= strlcpy_append(s, sizeof(s), &pos, star_char);
 
@@ -7289,10 +7912,13 @@ static unsigned menu_displaylist_populate_subsystem(
             /* Same chain pattern as the two branches above. */
             size_t pos = 0;
             int    rv  = 0;
-            /* TODO/FIXME - Localize */
-            rv |= strlcpy_append(s, sizeof(s), &pos, "Load");
-            rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-            rv |= strlcpy_append(s, sizeof(s), &pos, subsystem->desc);
+            {
+               char head[256];
+               snprintf(head, sizeof(head), /* Format string below */
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY),
+                     subsystem->desc);
+               rv |= strlcpy_append(s, sizeof(s), &pos, head);
+            }
 
 #ifdef HAVE_RGUI
             /* If using RGUI with sublabels disabled, add the
@@ -7305,12 +7931,13 @@ static unsigned menu_displaylist_populate_subsystem(
                if (subsystem->num_roms > 0)
                {
                   rv |= strlcpy_append(s, sizeof(s), &pos, " [");
-                  /* TODO/FIXME - Localize */
-                  rv |= strlcpy_append(s, sizeof(s), &pos,
-                        "Current Content:");
-                  rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-                  rv |= strlcpy_append(s, sizeof(s), &pos,
-                        subsystem->roms[0].desc);
+                  {
+                     char head[256];
+                     snprintf(head, sizeof(head), /* Format string below */
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
+                           subsystem->roms[0].desc);
+                     rv |= strlcpy_append(s, sizeof(s), &pos, head);
+                  }
                   rv |= strlcpy_append(s, sizeof(s), &pos, "]");
                }
             }
@@ -7468,20 +8095,20 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       {
          if (!show_passworded)
             continue;
-         _len += strlcpy(s, "[", sizeof(s) - _len);
+         _len += strlcpy_lit(s, "[", sizeof(s) - _len);
          _len += strlcpy(s + _len, msg_room_pwd, sizeof(s) - _len);
-         _len += strlcpy(s + _len, "] ", sizeof(s) - _len);
+         _len += strlcpy_lit(s + _len, "] ", sizeof(s) - _len);
       }
 
       _len += strlcpy(s + _len, room_type, sizeof(s) - _len);
-      _len += strlcpy(s + _len, ": ", sizeof(s) - _len);
+      _len += strlcpy_lit(s + _len, ": ", sizeof(s) - _len);
       _len += strlcpy(s + _len, room->nickname, sizeof(s) - _len);
 
       if (!room->lan && *room->country)
       {
-         _len += strlcpy(s + _len, " (", sizeof(s) - _len);
+         _len += strlcpy_lit(s + _len, " (", sizeof(s) - _len);
          _len += strlcpy(s + _len, room->country, sizeof(s) - _len);
-         strlcpy(s + _len, ")", sizeof(s) - _len);
+         strlcpy_lit(s + _len, ")", sizeof(s) - _len);
       }
 
       if (menu_entries_append(list, s, cnc_netplay_room,
@@ -7544,6 +8171,8 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
        * list samples current memory use. Skipped, not built. */
       if (t == (unsigned)DISPLAYLIST_INFORMATION_LIST
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
             || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
             /* The core-content family reaches for the network and
              * blocks headless; nothing deterministic lives there. */
@@ -7580,6 +8209,8 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
        * list samples current memory use. Skipped, not built. */
       if (t == (unsigned)DISPLAYLIST_INFORMATION_LIST
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
             || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
             /* The core-content family reaches for the network and
              * blocks headless; nothing deterministic lives there. */
@@ -7617,6 +8248,8 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
       pid_t pid;
       if (t == (unsigned)DISPLAYLIST_INFORMATION_LIST
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
+            || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
             || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
             || (t >= (unsigned)DISPLAYLIST_CORE_CONTENT
                   && t <= (unsigned)DISPLAYLIST_CORE_SYSTEM_FILES))
@@ -8342,7 +8975,7 @@ unsigned menu_displaylist_build_list(
          {
 #ifdef HAVE_AUDIOMIXER
             char msg_lbl[128];
-            size_t _len = strlcpy(msg_lbl, "audio_mixer_stream_", sizeof(msg_lbl));
+            size_t _len = strlcpy_lit(msg_lbl, "audio_mixer_stream_", sizeof(msg_lbl));
 #if 1
             /* TODO - for developers -
              * turn this into #if 0 if you want to be able to see
@@ -8459,6 +9092,14 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_SYSTEM_INFO:
          count              = menu_displaylist_parse_system_info(list);
          break;
+      case DISPLAYLIST_DISPLAY_INFO:
+         count              = menu_displaylist_parse_display_info(list);
+         break;
+      case DISPLAYLIST_DISPLAY_EDID_INFO:
+#ifdef HAVE_MODELINE
+         count              = menu_displaylist_parse_display_edid(list);
+#endif
+         break;
       case DISPLAYLIST_EXPLORE:
          menu_entries_clear(list);
 #if defined(HAVE_LIBRETRODB)
@@ -8499,6 +9140,7 @@ unsigned menu_displaylist_build_list(
                   { MENU_ENUM_LABEL_AUDIO_DEVICE, PARSE_ONLY_STRING, false },
                   { MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE, PARSE_ONLY_UINT, false },
                   { MENU_ENUM_LABEL_AUDIO_LATENCY, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR, PARSE_ONLY_UINT, false },
                   { MENU_ENUM_LABEL_AUDIO_RESAMPLER_DRIVER, PARSE_ONLY_STRING_OPTIONS, false },
                };
                count += menu_displaylist_parse_settings_rows(list, settings,
@@ -8509,17 +9151,16 @@ unsigned menu_displaylist_build_list(
                {
                   static const menu_displaylist_settings_row_t dl_rows_3[] = {
                      { MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY, PARSE_ONLY_UINT, false },
+                     { MENU_ENUM_LABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING, PARSE_ONLY_BOOL, false },
                      { MENU_ENUM_LABEL_AUDIO_FASTPATH_S16, PARSE_ONLY_BOOL, false },
                      { MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION, PARSE_ONLY_UINT, false },
+                     { MENU_ENUM_LABEL_AUDIO_OUTPUT_LAYOUT,      PARSE_ONLY_UINT, false },
+                     { MENU_ENUM_LABEL_AUDIO_HEADPHONE_VIRTUAL_SURROUND, PARSE_ONLY_BOOL, false },
                   };
                   count += menu_displaylist_parse_settings_rows(list, settings,
                         dl_rows_3, (unsigned)ARRAY_SIZE(dl_rows_3));
                }
             }
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES,
-                     PARSE_ONLY_UINT, false) == 0)
-               count++;
 #ifdef HAVE_WASAPI
             if (string_is_equal(settings->arrays.audio_driver, "wasapi"))
             {
@@ -8534,9 +9175,18 @@ unsigned menu_displaylist_build_list(
             }
 #endif
 #ifdef HAVE_ASIO
-            if (  string_is_equal(settings->arrays.audio_driver, "asio")
-               && !string_is_empty(settings->arrays.audio_device))
+            /* Shown for the configured driver, as the WASAPI items are:
+             * the page rebuilds on a driver change without audio being
+             * reinitialised, so this is what tells the user ASIO is the
+             * driver they picked. The panel itself needs ASIO running,
+             * and says so if it is not. A device does not gate it - the
+             * driver opens its default device when none is set. */
+            if (string_is_equal(settings->arrays.audio_driver, "asio"))
             {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_AUDIO_ASIO_OUTPUT_CHANNEL,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_AUDIO_ASIO_CONTROL_PANEL,
                         PARSE_ACTION, false) == 0)
@@ -8571,6 +9221,11 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_UINT, false) == 0)
             count++;
 #ifdef HAVE_WASAPI
+         /* Shown for the configured driver, as the audio output page
+          * shows its WASAPI items: the rows are always in the settings
+          * table now, and this is what keeps them off the page for
+          * every other microphone driver. */
+         if (string_is_equal(settings->arrays.microphone_driver, "wasapi"))
          {
             static const menu_displaylist_settings_row_t dl_rows_5[] = {
                { MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE, PARSE_ONLY_BOOL, false },
@@ -8587,9 +9242,30 @@ unsigned menu_displaylist_build_list(
          {
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_AUDIO_SYNC,                      PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE,         PARSE_ONLY_BOOL,     true  },
+#ifdef HAVE_THREADS
+               {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH,              PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH_LOWPASS,      PARSE_ONLY_BOOL,     true  },
+#endif
+               {MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY,           PARSE_ONLY_BOOL,     true  },
+#ifdef HAVE_WASAPI
+               /* Which way the thread's priority is asked for, so it
+                * is only worth showing where one is being asked for at
+                * all: checked below against the setting above it. */
+               {MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS,              PARSE_ONLY_BOOL,     false },
+#endif
                {MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,           PARSE_ONLY_FLOAT,    true  },
                {MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,        PARSE_ONLY_FLOAT,    true  },
+               {MENU_ENUM_LABEL_AUDIO_SINK_RATE_ESTIMATION,      PARSE_ONLY_BOOL,     true  },
             };
+
+#ifdef HAVE_WASAPI
+            /* Which way the audio thread's priority is asked for, so
+             * it is shown only where one is being asked for at all. */
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+               if (build_list[i].enum_idx == MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS)
+                  build_list[i].checked = settings->bools.audio_thread_priority;
+#endif
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -8671,7 +9347,7 @@ unsigned menu_displaylist_build_list(
 
             if (video_display_server_get_flags(&flags))
             {
-               if (BIT32_GET(flags.flags, DISPSERV_CTX_CRT_SWITCHRES))
+               if (BIT32_GET(flags.flags, DISPSERV_CTX_MODELINE))
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
                            PARSE_ACTION, false) == 0)
@@ -8685,6 +9361,13 @@ unsigned menu_displaylist_build_list(
                            PARSE_ACTION, false) == 0)
                      count++;
             }
+
+            /* Only an SDL window can hand mode switching to SDL */
+            if (video_display_server_sdl_available())
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_SDL_DISPLAY_SERVER,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
 
             {
                static const menu_displaylist_settings_row_t dl_rows_7[] = {
@@ -8933,6 +9616,13 @@ unsigned menu_displaylist_build_list(
                 count++;
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                 MENU_ENUM_LABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+                PARSE_ONLY_BOOL, true) == 0)
+                count++;
+#endif
+
+#ifdef HAVE_SDL3
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                MENU_ENUM_LABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
                 PARSE_ONLY_BOOL, true) == 0)
                 count++;
 #endif
@@ -9816,7 +10506,7 @@ unsigned menu_displaylist_build_list(
                 *   not '0' */
                if (*image_label)
                {
-                  _len += strlcpy(current_image_str + _len,
+                  _len += strlcpy_lit(current_image_str + _len,
                         ": ",
                         sizeof(current_image_str)   - _len);
                   strlcpy(current_image_str         + _len,
@@ -10421,7 +11111,7 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_USER_INTERFACE_SETTINGS_LIST:
          {
             bool kiosk_mode_enable   = settings->bools.kiosk_mode_enable;
-#if defined(HAVE_QT) || defined(HAVE_COCOA)
+#ifdef HAVE_COMPANION_WIMP
             bool desktop_menu_enable = settings->bools.desktop_menu_enable;
 #endif
             bool menu_screensaver_supported = ((menu_st->flags & MENU_ST_FLAG_SCREENSAVER_SUPPORTED) > 0);
@@ -10457,17 +11147,33 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_ENABLE_KIOSK_MODE,                                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,                              PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,                          PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_THREAD_PREFER_FAST_CORES,                              PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,                              PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION,                            PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED,                      PARSE_ONLY_FLOAT,  false},
-#if !defined(OSX)
+#if !TARGET_OS_OSX
                {MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION,                             PARSE_ONLY_BOOL,   true},
 #endif
-#if defined(HAVE_QT) || defined(HAVE_COCOA)
+#ifdef HAVE_COMPANION_WIMP
                {MENU_ENUM_LABEL_UI_COMPANION_ENABLE,                                   PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT,                            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_UI_COMPANION_TOGGLE,                                   PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_DESKTOP_MENU_ENABLE,                                   PARSE_ONLY_BOOL,   true},
+               /* Presentation settings shared by every desktop companion. */
+               {MENU_ENUM_LABEL_DESKTOP_MENU_VIEW_TYPE,                                PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_THUMBNAIL_TYPE,                           PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_SUGGEST_LOADED_CORE_FIRST,                PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_SAVE_LAST_TAB,                            PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_SAVE_GEOMETRY,                            PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_SHOW_WELCOME_SCREEN,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_SCAN_FINISH_CONFIRM,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT,                    PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_THUMBNAIL_MAX_SIZE,                       PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_THUMBNAIL_QUALITY,                        PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_ICON_VIEW_ZOOM,                           PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT,             PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT,             PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_DESKTOP_MENU_THEME,                                    PARSE_ONLY_UINT,   true},
 #endif
 #ifdef _3DS
                {MENU_ENUM_LABEL_VIDEO_3DS_DISPLAY_MODE,                                PARSE_ONLY_UINT,   true},
@@ -10512,7 +11218,7 @@ unsigned menu_displaylist_build_list(
                         && (menu_screensaver_animation != MENU_SCREENSAVER_BLANK);
                      break;
 #endif
-#if defined(HAVE_QT) || defined(HAVE_COCOA)
+#ifdef HAVE_COMPANION_WIMP
                   case MENU_ENUM_LABEL_UI_COMPANION_TOGGLE:
                      build_list[i].checked = desktop_menu_enable;
                      break;
@@ -10557,16 +11263,16 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST:
          {
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
-    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) ||     \
-    defined(HAVE_SDL3)
+    (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) ||     \
+    defined(HAVE_SDL3) && !defined(WEBOS)
             bool window_custom_size_enable = settings->bools.video_window_save_positions;
 #else
             bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
 #endif
             static menu_displaylist_build_info_selective_t build_list[] = {
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
-    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) ||     \
-    defined(HAVE_SDL3)
+    (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) ||     \
+    defined(HAVE_SDL3) && !defined(WEBOS)
                {MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,      PARSE_ONLY_BOOL,  true },
 #else
                {MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE, PARSE_ONLY_BOOL,  true },
@@ -10618,6 +11324,7 @@ unsigned menu_displaylist_build_list(
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_VIDEO_FULLSCREEN,                  PARSE_ONLY_BOOL,     true  },
                {MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN,         PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_VIDEO_FSE_NEGOTIATION,             PARSE_ONLY_UINT,     true  },
                {MENU_ENUM_LABEL_VIDEO_FULLSCREEN_X,                PARSE_ONLY_UINT,     true  },
                {MENU_ENUM_LABEL_VIDEO_FULLSCREEN_Y,                PARSE_ONLY_UINT,     true  },
 #ifdef __WINRT__
@@ -10719,6 +11426,8 @@ unsigned menu_displaylist_build_list(
                      { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE, PARSE_ONLY_FLOAT, false },
                      { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED, PARSE_ONLY_FLOAT, false },
                      { MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_AUTO, PARSE_ONLY_FLOAT, false },
+                     /* Governs the estimate on the row above; lives beside it. */
+                     { MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY, PARSE_ONLY_BOOL, false },
                   };
                   count += menu_displaylist_parse_settings_rows(list, settings,
                         dl_rows_10, (unsigned)ARRAY_SIZE(dl_rows_10));
@@ -10769,6 +11478,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_HARD_SYNC,            PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_HARD_SYNC_FRAMES,     PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,  PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT, PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING, PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY,    PARSE_ONLY_INT,  false},
                {MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES, PARSE_ONLY_UINT, false},
 #ifdef HAVE_D3DKMT
@@ -10807,6 +11519,26 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS:
                      build_list[i].checked = video_vsync && frame_latency;
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY:
+                     /* Only where a repeat can happen at all: this is
+                      * what paces one. */
+                     build_list[i].checked = *video_driver_get_threaded()
+                        && !video_driver_is_hw_context()
+                        && config_get_ptr()->bools.video_threaded_present_repeat;
+                     break;
+                     build_list[i].checked = *video_driver_get_threaded();
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING:
+                     build_list[i].checked = *video_driver_get_threaded()
+                        && !video_driver_is_hw_context();
+                     break;
+                  case MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT:
+                     /* Only where threaded video is on and can be honoured:
+                      * a hardware-rendered core runs unthreaded whatever
+                      * the setting says. */
+                     build_list[i].checked = *video_driver_get_threaded()
+                        && !video_driver_is_hw_context();
                      break;
                   case MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY:
                      build_list[i].checked = video_vsync && frame_latency && video_wait_swap;
@@ -10978,6 +11710,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,                               PARSE_ONLY_INT },
                {MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,                           PARSE_ONLY_INT },
                {MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST,                            PARSE_ONLY_INT },
+#ifdef HAVE_MODELINE
+               {MENU_ENUM_LABEL_CRT_SWITCH_WRITE_EDID,                                 PARSE_ACTION   },
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -11072,7 +11807,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_HELP,                                        PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_SHOW_WIMP,                                             PARSE_ONLY_UINT, true  },
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
                {MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_RESTART_RETROARCH,                           PARSE_ONLY_BOOL, true  },
 #endif
@@ -11346,6 +12081,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,               PARSE_ONLY_BOOL, false },
 #endif
                {MENU_ENUM_LABEL_AUDIO_LATENCY,                         PARSE_ONLY_UINT, true },
+               {MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR,                   PARSE_ONLY_UINT, false },
 #ifdef HAVE_MICROPHONE
                {MENU_ENUM_LABEL_MICROPHONE_LATENCY,                    PARSE_ONLY_UINT, true },
 #endif
@@ -11580,6 +12316,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL,                     PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_FRAMECOUNT_SHOW,                         PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_STATISTICS_SHOW,                         PARSE_ONLY_BOOL,  false },
+               {MENU_ENUM_LABEL_STATISTICS_HIDE_IN_MENU,                 PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_MEMORY_SHOW,                             PARSE_ONLY_BOOL,  false },
                {MENU_ENUM_LABEL_MEMORY_UPDATE_INTERVAL,                  PARSE_ONLY_UINT,  false },
                {MENU_ENUM_LABEL_TIME_SHOW,                               PARSE_ONLY_UINT,  false },
@@ -11627,6 +12364,10 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_STATISTICS_SHOW:
                      build_list[i].checked = notifications_active && video_font_enable;
+                     break;
+                  case MENU_ENUM_LABEL_STATISTICS_HIDE_IN_MENU:
+                     build_list[i].checked = notifications_active && video_font_enable
+                        && settings->bools.video_statistics_show;
                      break;
 #ifdef HAVE_GFX_WIDGETS
 #ifdef HAVE_NETWORKING
@@ -11767,6 +12508,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_GPU_SCREENSHOT,               PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG,                PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_RUNTIME_LOG_AGGREGATE,      PARSE_ONLY_BOOL, true},
+#if defined(HAVE_COMPRESSION) && defined(HAVE_RZSTD)
+               {MENU_ENUM_LABEL_SAVE_COMPRESSION_CODEC,             PARSE_ONLY_UINT, true},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -12401,6 +13145,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_JOYPAD_DRIVER,         PARSE_ONLY_STRING_OPTIONS},
                {MENU_ENUM_LABEL_RECORD_DRIVER,         PARSE_ONLY_STRING_OPTIONS},
                {MENU_ENUM_LABEL_MIDI_DRIVER,           PARSE_ONLY_STRING_OPTIONS},
+#ifdef HAVE_COMPANION_WIMP
+               {MENU_ENUM_LABEL_UI_COMPANION_DRIVER,   PARSE_ONLY_STRING_OPTIONS},
+#endif
 #ifdef HAVE_BLUETOOTH
                {MENU_ENUM_LABEL_BLUETOOTH_DRIVER,      PARSE_ONLY_STRING_OPTIONS},
 #endif
@@ -13339,9 +14086,9 @@ static bool menu_displaylist_ctl_internal(
                            const struct retro_keybind *keyptr =
                                  &input_config_binds[port][retro_id];
                            _len         = strlcpy(desc_lbl,
-                                 msg_hash_to_str(keyptr->enum_idx),
+                                 msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr)),
                                  sizeof(desc_lbl));
-                           _len        += strlcpy(desc_lbl + _len, ", ", sizeof(desc_lbl) - _len);
+                           _len        += strlcpy_lit(desc_lbl + _len, ", ", sizeof(desc_lbl) - _len);
                            strlcpy(desc_lbl + _len, descriptor, sizeof(desc_lbl) - _len);
                            desc_len = strlcpy(descriptor, desc_lbl, sizeof(descriptor));
                         }
@@ -13353,7 +14100,7 @@ static bool menu_displaylist_ctl_internal(
                               && max_users > 1
                               && !settings->bools.menu_show_sublabels)
                         {
-                           desc_len += strlcpy(descriptor + desc_len, " [", sizeof(descriptor) - desc_len);
+                           desc_len += strlcpy_lit(descriptor + desc_len, " [", sizeof(descriptor) - desc_len);
                            snprintf(descriptor + desc_len, sizeof(descriptor) - desc_len," %s %u]",
                                  val_port, port + 1);
                         }
@@ -13433,198 +14180,92 @@ static bool menu_displaylist_ctl_internal(
 
                      if (media_detect_cd_info(file_path, 0, &cd_info))
                      {
-                        if (*cd_info.title)
+                        char entry[NAME_MAX_LENGTH];
+                        unsigned i;
+                        /* Format strings below */
+                        static const struct
                         {
-                           /* TODO/FIXME - localize */
-                           char title[NAME_MAX_LENGTH];
-                           size_t _len = strlcpy(title, "Title: ", sizeof(title));
-                           strlcpy(title + _len, cd_info.title, sizeof(title) - _len);
+                           enum msg_hash_enums label;
+                           size_t field;
+                        } text_fields[] = {
+                           { MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,        offsetof(media_detect_cd_info_t, title) },
+                           { MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,       offsetof(media_detect_cd_info_t, system) },
+                           { MENU_ENUM_LABEL_VALUE_DISC_INFO_SERIAL,       offsetof(media_detect_cd_info_t, serial) },
+                           { MENU_ENUM_LABEL_VALUE_DISC_INFO_VERSION,      offsetof(media_detect_cd_info_t, version) },
+                           { MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE, offsetof(media_detect_cd_info_t, release_date) }
+                        };
 
-                           if (menu_entries_append(info->list,
-                                    title,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
+                        for (i = 0; i < sizeof(text_fields) / sizeof(text_fields[0]); i++)
+                        {
+                           const char *v = (const char*)&cd_info + text_fields[i].field;
+                           if (!*v)
+                              continue;
+                           snprintf(entry, sizeof(entry),
+                                 msg_hash_to_str(text_fields[i].label), v);
+                           if (menu_entries_append(info->list, entry, "",
+                                    MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
                               count++;
                         }
 
-                        if (*cd_info.system)
-                        {
-                           char system[NAME_MAX_LENGTH];
-                           /* TODO/FIXME - Localize */
-                           size_t _len = strlcpy(system, "System: ", sizeof(system));
-                           strlcpy(system + _len, cd_info.system, sizeof(system) - _len);
+                        /* Genuine disc: the ATIP is what a pressed
+                         * disc lacks */
+                        snprintf(entry, sizeof(entry),
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_GENUINE),
+                              msg_hash_to_str(atip
+                                 ? MENU_ENUM_LABEL_VALUE_NO
+                                 : MENU_ENUM_LABEL_VALUE_YES));
+                        if (menu_entries_append(info->list, entry, "",
+                                 MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
+                           count++;
 
-                           if (menu_entries_append(info->list,
-                                    system,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
+                        snprintf(entry, sizeof(entry),
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACKS),
+                              toc->num_tracks);
+                        if (menu_entries_append(info->list, entry, "",
+                                 MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
+                           count++;
+
+                        for (i = 0; i < toc->num_tracks; i++)
+                        {
+                           char mode[32];
+                           unsigned char min   = 0;
+                           unsigned char sec   = 0;
+                           unsigned char frame = 0;
+
+                           snprintf(entry, sizeof(entry),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK), i + 1);
+                           if (menu_entries_append(info->list, entry, "",
+                                    MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
                               count++;
-                        }
 
-                        if (*cd_info.serial)
-                        {
-                           char serial[NAME_MAX_LENGTH];
-                           size_t _len = strlcpy(serial,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
-                                 sizeof(serial));
-                           _len += strlcpy(serial + _len, "#: ",          sizeof(serial) - _len);
-                           strlcpy(serial + _len, cd_info.serial, sizeof(serial) - _len);
-
-                           if (menu_entries_append(info->list,
-                                    serial,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
+                           if (toc->track[i].audio)
+                              strlcpy(mode,
+                                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO),
+                                    sizeof(mode));
+                           else
+                              snprintf(mode, sizeof(mode),
+                                    msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_DATA_MODE),
+                                    toc->track[i].mode % 10);
+                           snprintf(entry, sizeof(entry),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_MODE), mode);
+                           if (menu_entries_append(info->list, entry, "",
+                                    MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
                               count++;
-                        }
 
-                        if (*cd_info.version)
-                        {
-                           char version[NAME_MAX_LENGTH];
-                           /* TODO/FIXME - localize */
-                           size_t _len = strlcpy(version, "Version: ", sizeof(version));
-                           strlcpy(version + _len, cd_info.version, sizeof(version) - _len);
-
-                           if (menu_entries_append(info->list,
-                                    version,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
+                           snprintf(entry, sizeof(entry),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE),
+                                 toc->track[i].track_bytes / 1000.0 / 1000.0);
+                           if (menu_entries_append(info->list, entry, "",
+                                    MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
                               count++;
-                        }
 
-                        if (*cd_info.release_date)
-                        {
-                           char release_date[NAME_MAX_LENGTH];
-                           /* TODO/FIXME - Localize */
-                           size_t _len = strlcpy(release_date, "Release Date: ",
-                                 sizeof(release_date));
-                           strlcpy(release_date + _len, cd_info.release_date,
-                                 sizeof(release_date) - _len);
-
-                           if (menu_entries_append(info->list,
-                                    release_date,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
+                           cdrom_lba_to_msf(toc->track[i].track_size, &min, &sec, &frame);
+                           snprintf(entry, sizeof(entry),
+                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_LENGTH),
+                                 min, sec, frame);
+                           if (menu_entries_append(info->list, entry, "",
+                                    MSG_UNKNOWN, FILE_TYPE_NONE, 0, 0, NULL))
                               count++;
-                        }
-
-                        if (atip)
-                        {
-                           /* TODO/FIXME - Localize */
-                           const char *atip_string = "Genuine Disc: No";
-                           if (menu_entries_append(info->list,
-                                    atip_string,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
-                              count++;
-                        }
-                        else
-                        {
-                           /* TODO/FIXME - Localize */
-                           const char *atip_string = "Genuine Disc: Yes";
-                           if (menu_entries_append(info->list,
-                                    atip_string,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
-                              count++;
-                        }
-
-                        {
-                           /* TODO/FIXME - Localize */
-                           char tracks_str[32]      = {"Number of tracks: "};
-                           size_t strlen_tracks_str = STRLEN_CONST("Number of tracks: ");
-
-                           snprintf(tracks_str      + strlen_tracks_str,
-                                 sizeof(tracks_str) - strlen_tracks_str,
-                                 "%d", toc->num_tracks);
-
-                           if (menu_entries_append(info->list,
-                                    tracks_str,
-                                    "",
-                                    MSG_UNKNOWN,
-                                    FILE_TYPE_NONE, 0, 0, NULL))
-                              count++;
-                        }
-
-                        {
-                           unsigned i;
-
-                           for (i = 0; i < toc->num_tracks; i++)
-                           {
-                              char track_str[16]      = {"Track "};
-                              char mode_str[16]       = {" - Mode: "};
-                              char size_str[32]       = {" - Size: "};
-                              char length_str[32]     = {" - Length: "};
-                              size_t strlen_track_str = STRLEN_CONST("Track ");
-                              size_t strlen_mode_str  = STRLEN_CONST(" - Mode: ");
-                              size_t strlen_size_str  = STRLEN_CONST(" - Size: ");
-
-                              snprintf(track_str      + strlen_track_str,
-                                    sizeof(track_str) - strlen_track_str,
-                                    "%d:", i + 1);
-
-                              if (menu_entries_append(info->list,
-                                       track_str,
-                                       "",
-                                       MSG_UNKNOWN,
-                                       FILE_TYPE_NONE, 0, 0, NULL))
-                                 count++;
-
-                              /* TODO/FIXME - localize */
-                              if (toc->track[i].audio)
-                                 snprintf(mode_str      + strlen_mode_str,
-                                       sizeof(mode_str) - strlen_mode_str,
-                                       "Audio");
-                              else
-                                 snprintf(mode_str      + strlen_mode_str,
-                                       sizeof(mode_str) - strlen_mode_str,
-                                       "Mode %d", toc->track[i].mode%10);
-
-                              if (menu_entries_append(info->list,
-                                       mode_str,
-                                       "",
-                                       MSG_UNKNOWN,
-                                       FILE_TYPE_NONE, 0, 0, NULL))
-                                 count++;
-
-                              snprintf(size_str      + strlen_size_str,
-                                    sizeof(size_str) - strlen_size_str,
-                                    "%.1f MB",
-                                    toc->track[i].track_bytes / 1000.0 / 1000.0);
-
-                              if (menu_entries_append(info->list,
-                                       size_str,
-                                       "",
-                                       MSG_UNKNOWN,
-                                       FILE_TYPE_NONE, 0, 0, NULL))
-                                 count++;
-
-                              {
-                                 unsigned char min           = 0;
-                                 unsigned char sec           = 0;
-                                 unsigned char frame         = 0;
-                                 size_t strlen_length_str    = strlen(length_str);
-
-                                 cdrom_lba_to_msf(toc->track[i].track_size, &min, &sec, &frame);
-
-                                 snprintf(length_str      + strlen_length_str,
-                                       sizeof(length_str) - strlen_length_str,
-                                       "%02d:%02d.%02d", min, sec, frame);
-
-                                 if (menu_entries_append(info->list,
-                                          length_str,
-                                          "",
-                                          MSG_UNKNOWN,
-                                          FILE_TYPE_NONE, 0, 0, NULL))
-                                    count++;
-                              }
-                           }
                         }
                      }
                      else
@@ -13636,7 +14277,6 @@ static bool menu_displaylist_ctl_internal(
                else
                {
                   const char *_msg = msg_hash_to_str(MSG_NO_DISC_INSERTED);
-                  /* TODO/FIXME - localize */
                   RARCH_LOG("[CDROM] No media is inserted or drive is not ready.\n");
                   runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
                         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -13790,7 +14430,7 @@ static bool menu_displaylist_ctl_internal(
                      clkrstCloseSession(&session);
                   }
                   /* TODO/FIXME - localize */
-                  _len = strlcpy(text, "Current clock: ", sizeof(text));
+                  _len = strlcpy_lit(text, "Current clock: ", sizeof(text));
                   snprintf(text + _len, sizeof(text) - _len, "%i", currentClock);
                }
                if (menu_entries_append(info->list,
@@ -13803,10 +14443,10 @@ static bool menu_displaylist_ctl_internal(
                   char title[NAME_MAX_LENGTH];
                   size_t _len = strlcpy(title, SWITCH_CPU_PROFILES[i],
                         sizeof(title));
-                  _len += strlcpy(title + _len, " (",  sizeof(title) - _len);
+                  _len += strlcpy_lit(title + _len, " (",  sizeof(title) - _len);
                   _len += strlcpy(title + _len, SWITCH_CPU_SPEEDS[i],
                         sizeof(title) - _len);
-                  _len += strlcpy(title + _len,  ")",  sizeof(title) - _len);
+                  _len += strlcpy_lit(title + _len,  ")",  sizeof(title) - _len);
                   if (menu_entries_append(info->list, title, "", 0,
                            MENU_SET_SWITCH_CPU_PROFILE, 0, i, NULL))
                      count++;
@@ -13893,10 +14533,10 @@ static bool menu_displaylist_ctl_internal(
             {
                char lbl[128];
                unsigned id                 = info->type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN;
-               size_t _len                 = strlcpy(lbl, "mixer_stream_", sizeof(lbl));
+               size_t _len                 = strlcpy_lit(lbl, "mixer_stream_", sizeof(lbl));
                _len += snprintf(lbl + _len, sizeof(lbl) - _len, "%d", id);
 
-               strlcpy(lbl + _len, "_action_play", sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_play", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY),
                         lbl,
@@ -13904,7 +14544,7 @@ static bool menu_displaylist_ctl_internal(
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
-               strlcpy(lbl + _len, "_action_play_looped", sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_play_looped", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED),
                         lbl,
@@ -13912,7 +14552,7 @@ static bool menu_displaylist_ctl_internal(
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
-               strlcpy(lbl + _len, "_action_play_sequential",sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_play_sequential",sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL),
                         lbl,
@@ -13920,7 +14560,7 @@ static bool menu_displaylist_ctl_internal(
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
-               strlcpy(lbl + _len, "_action_stop", sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_stop", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP),
                         lbl,
@@ -13928,7 +14568,7 @@ static bool menu_displaylist_ctl_internal(
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
-               strlcpy(lbl + _len, "_action_remove", sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_remove", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE),
                         lbl,
@@ -13936,7 +14576,7 @@ static bool menu_displaylist_ctl_internal(
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
-               strlcpy(lbl + _len, "_action_volume", sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_volume", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME),
                         lbl,
@@ -14608,13 +15248,13 @@ static bool menu_displaylist_ctl_internal(
 #endif
             }
             break;
-         case DISPLAYLIST_ACHIEVEMENT_PAUSE_MENU:
+         case DISPLAYLIST_ACHIEVEMENT_SUBMENU_LIST:
 #ifdef HAVE_CHEEVOS
             menu_entries_clear(info->list);
-            rcheevos_menu_populate_hardcore_pause_submenu(info, settings->bools.cheevos_hardcore_mode_enable);
-#endif
+            rcheevos_menu_populate_submenu(info);
             info->flags    |= MD_FLAG_NEED_REFRESH
                | MD_FLAG_NEED_PUSH;
+#endif
             break;
          case DISPLAYLIST_ACHIEVEMENT_LIST:
 #ifdef HAVE_CHEEVOS
@@ -14979,7 +15619,7 @@ static bool menu_displaylist_ctl_internal(
                      char val[8];
 
                      if (i < 0)
-                        strlcpy(val, "Auto", sizeof(val));
+                        strlcpy_lit(val, "Auto", sizeof(val));
                      else
                         snprintf(val, sizeof(val), "%u", i);
 
@@ -15472,6 +16112,8 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_EXPLORE:
          case DISPLAYLIST_SCAN_DIRECTORY_LIST:
          case DISPLAYLIST_SYSTEM_INFO:
+         case DISPLAYLIST_DISPLAY_INFO:
+         case DISPLAYLIST_DISPLAY_EDID_INFO:
          case DISPLAYLIST_BLUETOOTH_SETTINGS_LIST:
          case DISPLAYLIST_WIFI_SETTINGS_LIST:
          case DISPLAYLIST_WIFI_NETWORKS_LIST:
@@ -16098,7 +16740,7 @@ static bool menu_displaylist_ctl_internal(
                      count++;
 #endif
 
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
                if (settings->bools.desktop_menu_enable)
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                         info->list,
@@ -16122,7 +16764,7 @@ static bool menu_displaylist_ctl_internal(
                      PARSE_ACTION, false) == 0)
                   count++;
 
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
                if (settings->bools.menu_show_restart_retroarch)
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                         info->list,
@@ -16246,18 +16888,18 @@ static bool menu_displaylist_ctl_internal(
                      {
                         info->type_default   = FILE_TYPE_SHADER_PRESET;
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-                           _len    += strlcpy(new_exts + _len, "cgp", sizeof(new_exts) - _len);
+                           _len    += strlcpy_lit(new_exts + _len, "cgp", sizeof(new_exts) - _len);
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                         {
                            if (_len > 0)
-                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                           _len    += strlcpy(new_exts + _len, "glslp", sizeof(new_exts) - _len);
+                              _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           _len    += strlcpy_lit(new_exts + _len, "glslp", sizeof(new_exts) - _len);
                         }
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                         {
                            if (_len > 0)
-                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                           strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
+                              _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           strlcpy_lit(new_exts + _len, "slangp", sizeof(new_exts) - _len);
                         }
                      }
                      break;
@@ -16266,18 +16908,18 @@ static bool menu_displaylist_ctl_internal(
                      {
                         info->type_default   = FILE_TYPE_SHADER;
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-                           _len    += strlcpy(new_exts + _len, "cg", sizeof(new_exts) - _len);
+                           _len    += strlcpy_lit(new_exts + _len, "cg", sizeof(new_exts) - _len);
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                         {
                            if (_len > 0)
-                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                           _len    += strlcpy(new_exts + _len, "glsl", sizeof(new_exts) - _len);
+                              _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           _len    += strlcpy_lit(new_exts + _len, "glsl", sizeof(new_exts) - _len);
                         }
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                         {
                            if (_len > 0)
-                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                           strlcpy(new_exts + _len, "slang", sizeof(new_exts) - _len);
+                              _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           strlcpy_lit(new_exts + _len, "slang", sizeof(new_exts) - _len);
                         }
                      }
                      break;
@@ -16310,18 +16952,18 @@ static bool menu_displaylist_ctl_internal(
                info->type_default = FILE_TYPE_SHADER_PRESET;
 
                if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-                  _len    += strlcpy(new_exts + _len, "cgp", sizeof(new_exts) - _len);
+                  _len    += strlcpy_lit(new_exts + _len, "cgp", sizeof(new_exts) - _len);
                if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                {
                   if (_len > 0)
-                     _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                  _len    += strlcpy(new_exts + _len, "glslp", sizeof(new_exts) - _len);
+                     _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                  _len    += strlcpy_lit(new_exts + _len, "glslp", sizeof(new_exts) - _len);
                }
                if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                {
                   if (_len > 0)
-                     _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                  strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
+                     _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                  strlcpy_lit(new_exts + _len, "slangp", sizeof(new_exts) - _len);
                }
                if (info->exts && *info->exts)
                   free(info->exts);
@@ -16341,35 +16983,35 @@ static bool menu_displaylist_ctl_internal(
                size_t _len          = 0;
                new_exts[0]          = '\0';
 #ifdef HAVE_RBMP
-               _len    += strlcpy(new_exts + _len, "bmp", sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "bmp", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RPNG
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "png", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "png", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RJPEG
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "jpeg", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "jpeg", sizeof(new_exts) - _len);
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "jpg", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "jpg", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RTGA
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               strlcpy(new_exts + _len, "tga", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               strlcpy_lit(new_exts + _len, "tga", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RWEBP
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",    sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "webp", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",    sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "webp", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RDDS
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "dds", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "dds", sizeof(new_exts) - _len);
 #endif
                if (info->exts && *info->exts)
                   free(info->exts);
@@ -16525,7 +17167,7 @@ static bool menu_displaylist_ctl_internal(
                      _len = frontend_driver_get_core_extension(ext_names, sizeof(ext_names));
                      if (_len > 0)
                      {
-                        _len += strlcpy(ext_names + _len, "|", sizeof(ext_names) - _len);
+                        _len += strlcpy_lit(ext_names + _len, "|", sizeof(ext_names) - _len);
                         strlcpy(ext_names + _len, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names) - _len);
                      }
                      else

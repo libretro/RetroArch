@@ -574,7 +574,7 @@ static bool screenshot_dump(
       {
          size_t _len             = strlcpy(state->filename,
                name_base, sizeof(state->filename));
-         strlcpy(state->filename       + _len,
+         strlcpy_lit(state->filename       + _len,
                ".png",
                sizeof(state->filename) - _len);
       }
@@ -634,7 +634,7 @@ static bool screenshot_dump(
             size_t _len = strlcpy(state->shotname,
                 path_basename_nocompression(name_base),
                  sizeof(state->shotname));
-            strlcpy(state->shotname       + _len,
+            strlcpy_lit(state->shotname       + _len,
                   ".png",
                   sizeof(state->shotname) - _len);
          }
@@ -730,6 +730,7 @@ static bool take_screenshot_viewport(
       unsigned pixel_format_type)
 {
    struct video_viewport vp;
+   unsigned output_size;
    video_driver_state_t *video_st = video_state_get_ptr();
    uint8_t *buffer                = NULL;
 
@@ -762,10 +763,11 @@ static bool take_screenshot_viewport(
                   video_st->data, hdr_buffer,
                   runloop_flags & RUNLOOP_FLAG_IDLE, &hdr))
          {
-            if (vp.width > video_st->width)
-               vp.width = video_st->width;
-            if (vp.height > video_st->height)
-               vp.height = video_st->height;
+            output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
+            if (vp.width > VIDEO_DRIVER_OUTPUT_WIDTH(output_size))
+               vp.width = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
+            if (vp.height > VIDEO_DRIVER_OUTPUT_HEIGHT(output_size))
+               vp.height = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
 
             /* 48-bit RGB, bottom-up (pitch = width*6, negated top-down
              * inside screenshot_dump_direct like the BGR24 path). */
@@ -789,10 +791,11 @@ static bool take_screenshot_viewport(
             video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE)))
    {
       /* Limit image to screen size */
-      if (vp.width > video_st->width)
-         vp.width = video_st->width;
-      if (vp.height > video_st->height)
-         vp.height = video_st->height;
+      output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
+      if (vp.width > VIDEO_DRIVER_OUTPUT_WIDTH(output_size))
+         vp.width = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
+      if (vp.height > VIDEO_DRIVER_OUTPUT_HEIGHT(output_size))
+         vp.height = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
 
       /* Data read from viewport is in bottom-up order, suitable for BMP. */
       if (screenshot_dump(screenshot_dir,

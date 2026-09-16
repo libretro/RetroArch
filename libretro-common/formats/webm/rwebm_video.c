@@ -668,6 +668,11 @@ size_t rwebm_video_stream_consumed(rwebm_video_stream_t *s)
    return s ? rwebm_tell(s->demux) : 0;
 }
 
+int64_t rwebm_video_stream_duration_ns(rwebm_video_stream_t *s)
+{
+   return (s && s->demux) ? rwebm_duration_ns(s->demux) : 0;
+}
+
 void rwebm_video_stream_complete_scan(rwebm_video_stream_t *s,
       const uint8_t *buf, size_t len)
 {

@@ -23,6 +23,7 @@
 #include <retro_common_api.h>
 #include <retro_assert.h>
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
@@ -44,6 +45,10 @@ extern "C" {
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
+/* The libavdevice input format the camera comes from. A build may name
+ * it already - a test harness points it at lavfi, which gives the
+ * whole pipeline a synthetic camera and needs no device. */
+#ifndef FFMPEG_CAMERA_DEFAULT_BACKEND
 #ifdef ANDROID
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "android_camera"
 #elif defined(__linux__)
@@ -56,6 +61,7 @@ extern "C" {
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "bktr"
 #else
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "lavfi"
+#endif
 #endif
 
 /* lavf 59 (FFmpeg 5.0) made the demuxer/codec discovery API const-correct:
@@ -97,7 +103,14 @@ typedef struct ffmpeg_camera
    uint8_t *target_buffers[2];
    size_t target_buffer_length;
    slock_t *target_buffer_lock;
-   volatile bool done;
+   /* The poll thread's loop condition: the main thread sets it in
+    * stop(), the thread reads it every turn, and nothing else is
+    * held on either side - target_buffer_lock covers the frame, not
+    * this. It was a volatile bool, which is not a synchronisation
+    * primitive: it stops the compiler caching the load and orders
+    * nothing, so the thread has no guarantee of seeing what the main
+    * thread wrote before it. */
+   retro_atomic_int_t done;
    uint8_t *active_buffer;
 } ffmpeg_camera_t;
 
@@ -350,6 +363,20 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
       goto error;
    }
 
+   /* A device the frontend named is the device, and enumeration is
+    * skipped: what the setting says is a source url for the backend
+    * in use, which is the only thing this driver could do with it.
+    * It used to be ignored outright - the argument was taken and
+    * never read, so a user who picked a camera got whichever one
+    * enumerated first. */
+   if (!string_is_empty(device))
+   {
+      strlcpy(ffmpeg->url, device, sizeof(ffmpeg->url));
+      RARCH_LOG("[FFMPEG] Using the device the frontend asked for: %s.\n",
+            ffmpeg->url);
+      goto have_device;
+   }
+
    num_sources = avdevice_list_input_sources(ffmpeg->input_format, NULL, ffmpeg->options, &device_list);
 
 #ifdef __APPLE__
@@ -389,6 +416,7 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
 
    ffmpeg_camera_get_source_url(ffmpeg, device_list->devices[0]);
 #endif
+have_device:
    RARCH_LOG("[FFMPEG] Using video input device: %s (%s, flags=0x%x).\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
 
    avdevice_free_list_devices(&device_list);
@@ -617,6 +645,14 @@ static void ffmpeg_camera_stop(void *data)
 {
    ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
 
+   /* The thread first. It is the other user of the decoder - it sends
+    * every packet it reads and receives every frame - and an
+    * AVCodecContext takes one user at a time, so the flush below
+    * cannot happen while the thread is still in there. This used to
+    * flush and then join. */
+   retro_atomic_store_release_int(&ffmpeg->done, 1);
+   sthread_join(ffmpeg->poll_thread); /* wait for the thread to finish, then free it */
+
    if (!ffmpeg->format_context)
    {
       RARCH_LOG("[FFMPEG] Camera %s is already stopped, no flush needed.\n", ffmpeg->url);
@@ -633,8 +669,6 @@ static void ffmpeg_camera_stop(void *data)
    }
 
    /* these functions are noops for NULL pointers */
-   ffmpeg->done = true;
-   sthread_join(ffmpeg->poll_thread); /* wait for the thread to finish, then free it */
    ffmpeg->poll_thread = NULL;
 
    slock_free(ffmpeg->target_buffer_lock);
@@ -669,7 +703,7 @@ static void ffmpeg_camera_poll_thread(void *data)
    if (!ffmpeg)
       return;
 
-   while (!ffmpeg->done)
+   while (!retro_atomic_load_acquire_int(&ffmpeg->done))
    {
       int ret = av_read_frame(ffmpeg->format_context, ffmpeg->packet);
       /* Read the raw data from the camera. If that fails... */

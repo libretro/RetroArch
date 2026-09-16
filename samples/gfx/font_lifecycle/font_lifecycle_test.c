@@ -91,6 +91,18 @@ int main(void)
    unsigned n;
    uint32_t g0, g1;
 
+   /* 0. Before the video-state capture is bound (production binds it
+    * in video_driver_init_internal, before any driver or wrapper
+    * exists), the OSD entry points must degrade exactly as the old
+    * getter path did before video init: no font, no work, no crash. */
+   CHECK(font_driver_get_message_width(NULL, "x", 1, 1.0f) == -1,
+         "unbound width query degrades to no-font -1");
+   font_driver_render_msg(NULL, "x", 1, NULL, NULL);
+   CHECK(!font_driver_reinit_osd(NULL, 0.0f),
+         "unbound reinit refuses gracefully");
+
+   font_driver_bind_video_state(video_state_get_ptr());
+
    /* 1. create/free balances the renderer state */
    a = mk("/tmp/san/font_a.ttf", 16.0f);
    CHECK(a != NULL, "create");

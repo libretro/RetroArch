@@ -17,6 +17,7 @@
 #include <Foundation/Foundation.h>
 #include <AVFoundation/AVFoundation.h>
 #include <libretro.h>
+#include <defines/cocoa_defines.h>
 /* For image scaling and color space DSP */
 #import <Accelerate/Accelerate.h>
 #if TARGET_OS_IOS
@@ -528,8 +529,15 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 }
 
 - (bool)setupCameraSession {
-    // Initialize capture session
-    self.session = [[AVCaptureSession alloc] init];
+    /* The property retains what it is handed, so the reference the
+     * allocation carries is released once it is stored - otherwise the
+     * session set up by a previous init is orphaned rather than torn
+     * down when this one replaces it. */
+    {
+        AVCaptureSession *sess = [[AVCaptureSession alloc] init];
+        self.session           = sess;
+        RARCH_RELEASE(sess);
+    }
 
     // Get camera device
     AVCaptureDevice *device = [self selectCameraDevice];
@@ -552,8 +560,12 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         RARCH_LOG("[Camera] Added camera input to session.\n");
     }
 
-    // Create and configure video output
-    self.output = [[AVCaptureVideoDataOutput alloc] init];
+    /* Create and configure video output; owned as the session above. */
+    {
+        AVCaptureVideoDataOutput *out = [[AVCaptureVideoDataOutput alloc] init];
+        self.output                   = out;
+        RARCH_RELEASE(out);
+    }
     self.output.videoSettings = @{
         (NSString*)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA)
     };

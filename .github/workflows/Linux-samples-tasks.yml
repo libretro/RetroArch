@@ -15,6 +15,10 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   samples-tasks:
     name: Build and run samples/tasks
@@ -41,7 +45,25 @@ jobs:
             $pkgs
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
 
       - name: Build database_task
         shell: bash
@@ -139,6 +161,29 @@ jobs:
           test -x video_shader_wildcard_test
           timeout 60 ./video_shader_wildcard_test
           echo "[pass] video_shader_wildcard_test"
+
+      - name: Build and run cloudsync_savefile_owner_test (ASan)
+        shell: bash
+        working-directory: samples/tasks/cloudsync
+        run: |
+          set -eu
+          # Regression test for the save-data rollback cloud sync could
+          # cause at startup.  A core holds its save RAM in memory and
+          # writes it back when content closes, so a sync that replaces
+          # the file in between has its work overwritten and the stale
+          # result uploaded over the server's copy.
+          # save.c::content_savefile_is_live() is the ownership check
+          # tasks/task_cloudsync.c consults before it touches a local
+          # file; the test pins that predicate and the manifest key
+          # lookup the carry-forward uses to recover the hash the last
+          # sync recorded.  Build under AddressSanitizer so a regression
+          # in the list walk is caught at the bounds level.  If save.c
+          # amends the predicate, the verbatim copy in
+          # cloudsync_savefile_owner_test.c must follow.
+          make clean all SANITIZER=address
+          test -x cloudsync_savefile_owner_test
+          timeout 60 ./cloudsync_savefile_owner_test
+          echo "[pass] cloudsync_savefile_owner_test"
 
       - name: Build and run input_remap_bounds_test (ASan)
         shell: bash
@@ -529,6 +574,47 @@ jobs:
           make clean
           echo "[pass] scan_begin_budget_test (TSan)"
 
+      - name: Build and run database_scan_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -eu
+          # End-to-end oracle for tasks/task_database.c, built from the
+          # shipping translation units.  Alongside the database pairing
+          # and playlist assertions it already carries, three memory
+          # safety invariants of the manual scan state machine are
+          # pinned here:
+          #
+          #   - a content list whose entries exactly fill
+          #     string_list_new()'s initial capacity must leave
+          #     DATABASE_SCAN_ITERATE_NEXT at the M3U or the end state.
+          #     An exhausted index must never reach
+          #     MANUAL_SCAN_ITERATE_CONTENT, which reads its entry
+          #     before any bounds check;
+          #
+          #   - a content directory with nothing scannable in it must be
+          #     rejected as invalid content by the database branch of
+          #     manual_scan_begin_dir_list(), the same rule the
+          #     non-database branch applies, instead of iterating an
+          #     empty list;
+          #
+          #   - task_database_cue_prune() and gdi_prune() must leave the
+          #     entry being scanned alone when a cue or gdi sheet names
+          #     itself, because the serial lookup reads that path next.
+          #
+          # The first and third are bounds and lifetime properties that
+          # a plain build walks straight past, so this lane is sanitized
+          # only and LeakSanitizer decides the teardown as well.
+          make clean database_scan_test SANITIZER=address,undefined
+          test -x database_scan_test
+          scan_root="$(mktemp -d)"
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 900 \
+             ./database_scan_test "$scan_root"
+          rm -rf "$scan_root"
+          make clean
+          echo "[pass] database_scan_test (ASan)"
+
       - name: Build and run pl_manager_budget_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/playlist_manager
@@ -597,6 +683,28 @@ jobs:
           make all SANITIZER=thread -j$(nproc)
           TSAN_OPTIONS=halt_on_error=1 ./overlay_budget_test
           make clean >/dev/null
+
+      - name: Build and run overlay_visibility_bounds_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/overlay
+        run: |
+          set -eu
+          # The overlay visibility index does not come from the overlay:
+          # led/drivers/led_overlay.c forwards settings->uints.led_map[],
+          # which configuration.c reads from the config file with no
+          # range of its own.  Unbounded, "led1_map = 500" wrote past
+          # overlay_visibility[MAX_VISIBILITY] during drivers_init() and
+          # handed the same index to the video driver's set_alpha().
+          # This builds the shipping LED driver to pin that it really
+          # does forward config values unaltered, and checks the bound
+          # covers the array exactly.  If input_driver.c changes that
+          # bound, the verbatim copy in the test must follow.
+          make -f Makefile.visibility clean >/dev/null
+          make -f Makefile.visibility all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./overlay_visibility_bounds_test
+          make -f Makefile.visibility clean >/dev/null
 
       - name: Build and run content_prefetch_test (plain, ASan + UBSan, TSan)
         shell: bash
@@ -1085,7 +1193,25 @@ jobs:
             $pkgs
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
 
       - name: C89 syntax check for the HTTP task translation units
         shell: bash

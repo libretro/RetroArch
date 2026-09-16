@@ -144,6 +144,24 @@ bool video_driver_texture_load(void *data,
    return true;
 }
 
+/* The asynchronous upload, as the contract has it: the handle comes
+ * back through done() and the image is released, both here and at
+ * once, which is what the synchronous case does. The sample does not
+ * run a video thread; what it exercises is the task, and the task
+ * has to hand its image and tag over exactly once either way. */
+bool video_driver_texture_load_async(void *data,
+      enum texture_filter_type filter_type,
+      void (*done)(void *user, uintptr_t handle), void *user,
+      void (*release)(void *img))
+{
+   (void)filter_type;
+   if (done)
+      done(user, (uintptr_t)1);
+   if (release)
+      release(data);
+   return true;
+}
+
 bool video_driver_texture_unload(uintptr_t *id)
 {
    if (id)

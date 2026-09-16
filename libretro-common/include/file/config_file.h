@@ -54,6 +54,20 @@ RETRO_BEGIN_DECLS
 enum config_file_flags
 {
    CONF_FILE_FLG_MODIFIED                 = (1 << 0),
+   /* Asserts that no key passed to a setter is already in the
+    * config, letting the setters skip the lookup that would find
+    * it.  Set this ONLY on a config whose whole content the caller
+    * writes - typically a fresh config_file_new_alloc().  On a
+    * config parsed from a file it is a promise the caller cannot
+    * keep: the setter appends a second entry with the same key, the
+    * file is written with both, and on reload the stale one wins,
+    * so the edit is silently lost and the file grows by a duplicate
+    * set per save.
+    *
+    * It buys much less than it used to.  Skipping the lookup once
+    * also skipped an O(n) walk to the end of the list; that walk is
+    * gone, and what remains is one hash probe per set - about 11ms
+    * across 203701 inserts. */
    CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES = (1 << 1)
 };
 
@@ -98,9 +112,16 @@ struct config_file
     * lifetime and pilfer semantics match owned_bufs. */
    struct config_file_entry_pool *entry_pool;
    struct config_entry_list *entries;
+   /* The last node of 'entries'.  There used to be a second tracker,
+    * 'last', maintained only by config_set_string() while this one
+    * was maintained only by the parser; they drifted and dropped
+    * entries.  One field, written by everything that can extend the
+    * list. */
    struct config_entry_list *tail;
-   struct config_entry_list *last;
    struct config_include_list *includes;
+   /* Last node of 'includes', so adding one is O(1) instead of a
+    * walk per '#include'. */
+   struct config_include_list *includes_tail;
    struct path_linked_list *references;
    unsigned include_depth;
    uint8_t flags;
@@ -551,8 +572,14 @@ bool config_file_write(config_file_t *conf, const char *path, bool val);
  *
  * Dump the current config to an already opened file.
  * Does not close the file.
+ *
+ * @return true if the whole config was written.  false means
+ * nothing - or not all - of it reached @file: the stream is in
+ * error, or the dump buffer could not be allocated.  A caller
+ * replacing an existing file must not commit the result when this
+ * returns false.
  **/
-void config_file_dump(config_file_t *conf, FILE *file, bool val);
+bool config_file_dump(config_file_t *conf, FILE *file, bool val);
 
 RETRO_END_DECLS
 

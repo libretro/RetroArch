@@ -61,6 +61,12 @@
  */
 
 static void sdl2_gfx_free(void *data);
+
+/* Keeps the geometry a display draw needs, without asking the stack for
+ * however much the caller wants to draw. Returns false when it cannot
+ * be had, and the draw is skipped rather than the stack overrun. */
+static bool sdl2_display_geometry_reserve(sdl2_video_t *vid,
+      size_t verts, size_t indices);
 #ifdef HAVE_OVERLAY
 static void sdl2_overlay_free(sdl2_video_t *vid);
 static void sdl2_overlays_render(sdl2_video_t *vid);
@@ -256,7 +262,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
    video_driver_update_viewport(&vid->vp, false, vid->video.force_aspect, true);
 
    /* Tell the rest of the engine about our actual window dimensions.
-    * Without this, video_st->width/height retain whatever value was
+    * Without this, the output size keeps whatever value was
     * computed from core geometry at init time (eg 320x240 for an
     * NES-like core), so menu_driver_frame and gfx_widgets_frame
     * receive a tiny video_height in video_info, position widgets
@@ -383,15 +389,37 @@ static void *sdl2_gfx_init(const video_info_t *video,
    }
 
    RARCH_LOG("[SDL2] Available displays:\n");
-   for (i = 0; i < SDL_GetNumVideoDisplays(); ++i)
    {
-      SDL_DisplayMode mode;
+      bool any_refresh = false;
 
-      if (SDL_GetCurrentDisplayMode(i, &mode) < 0)
-         RARCH_LOG("[SDL2] \tDisplay #%i mode: unknown.\n", i);
-      else
-         RARCH_LOG("[SDL2] \tDisplay #%i mode: %ix%i@%ihz.\n", i, mode.w, mode.h,
-                   mode.refresh_rate);
+      for (i = 0; i < SDL_GetNumVideoDisplays(); ++i)
+      {
+         SDL_DisplayMode mode;
+
+         if (SDL_GetCurrentDisplayMode(i, &mode) < 0)
+            RARCH_LOG("[SDL2] \tDisplay #%i mode: unknown.\n", i);
+         else
+         {
+            RARCH_LOG("[SDL2] \tDisplay #%i mode: %ix%i@%ihz.\n", i, mode.w, mode.h,
+                      mode.refresh_rate);
+            if (mode.refresh_rate > 0)
+               any_refresh = true;
+         }
+      }
+
+      /* A display that reports no refresh rate has no vertical blank to
+       * present against - an offscreen or dummy video driver, or a
+       * remote session. SDL still grants SDL_RENDERER_PRESENTVSYNC on
+       * one, and SDL_GetRendererInfo still reports it as granted, so
+       * nothing in the flags gives this away: the present simply
+       * returns immediately and the frontend runs as fast as the
+       * machine allows while believing the display is pacing it. Said
+       * here because it cannot be inferred later; the statistics
+       * overlay's Pacing line shows the measured rate beside the claim
+       * for the same reason. */
+      if (video->vsync && !any_refresh)
+         RARCH_WARN("[SDL2] Vsync was requested but no display reports a "
+               "refresh rate; presentation will not pace the frontend.\n");
    }
 
    if (!video->fullscreen)
@@ -769,6 +797,13 @@ static void sdl2_gfx_free(void *data)
    /* Same constraint - overlay textures are owned by vid->renderer.
     * Drop them before SDL_DestroyRenderer below. */
    sdl2_overlay_free(vid);
+
+   free(vid->display_verts);
+   free(vid->display_indices);
+   vid->display_verts       = NULL;
+   vid->display_indices     = NULL;
+   vid->display_verts_cap   = 0;
+   vid->display_indices_cap = 0;
 #endif
 
    if (vid->renderer)
@@ -1129,6 +1164,28 @@ static void gfx_display_sdl2_scissor_end(void *data,
  * Without case 1, every widget call to gfx_display_draw_quad gets
  * silently dropped (vertex pointer is NULL) and the entire widget
  * system renders as nothing. */
+static bool sdl2_display_geometry_reserve(sdl2_video_t *vid,
+      size_t verts, size_t indices)
+{
+   if (verts > vid->display_verts_cap)
+   {
+      void *p = realloc(vid->display_verts, sizeof(SDL_Vertex) * verts);
+      if (!p)
+         return false;
+      vid->display_verts     = p;
+      vid->display_verts_cap = verts;
+   }
+   if (indices > vid->display_indices_cap)
+   {
+      int *p = (int*)realloc(vid->display_indices, sizeof(int) * indices);
+      if (!p)
+         return false;
+      vid->display_indices     = p;
+      vid->display_indices_cap = indices;
+   }
+   return true;
+}
+
 static void gfx_display_sdl2_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
@@ -1163,7 +1220,9 @@ static void gfx_display_sdl2_draw(gfx_display_ctx_draw_t *draw,
     * flat-shaded geometry, which is a reasonable degraded path. */
    tex = (SDL_Texture*)(uintptr_t)draw->texture;
 
-   verts = (SDL_Vertex*)alloca(sizeof(SDL_Vertex) * n);
+   if (!sdl2_display_geometry_reserve(vid, n, (n > 2) ? ((n - 2) * 3) : 6))
+      return;
+   verts = (SDL_Vertex*)vid->display_verts;
 
    /* Path 1: gfx_display_draw_quad - vtx is NULL, geometry comes
     * from draw->x/y/width/height with y bottom-up.  n is always 4.
@@ -1389,7 +1448,7 @@ static void gfx_display_sdl2_draw(gfx_display_ctx_draw_t *draw,
 
    /* General triangle-strip expansion: n verts -> (n-2) triangles. */
    num_idx = (n - 2) * 3;
-   indices = (int*)alloca(sizeof(int) * num_idx);
+   indices = vid->display_indices;
    for (i = 0; i < n - 2; i++)
    {
       if ((i & 1) == 0)
@@ -1443,6 +1502,9 @@ static void gfx_display_sdl2_draw_pipeline(
  * the emulated framebuffer. Both can coexist.
  */
 
+/* A line is built a chunk of glyphs at a time */
+#define SDL2_FONT_MAX_GLYPHS 256
+
 typedef struct
 {
    sdl2_video_t                  *vid;
@@ -1453,6 +1515,14 @@ typedef struct
    int                            tex_width;
    int                            tex_height;
    bool                           atlas_dirty;
+
+   /* The chunk a line is built into before it is handed over. Here
+    * rather than on the stack of the function that fills it: a glyph
+    * is four vertices and six indices, and SDL2_FONT_MAX_GLYPHS of
+    * them is past what this tree allows a frame. One font renders at
+    * a time on the thread that draws. */
+   SDL_Vertex                     verts[SDL2_FONT_MAX_GLYPHS * 4];
+   int                            idx[SDL2_FONT_MAX_GLYPHS * 6];
 } sdl2_raster_t;
 
 static void sdl2_raster_font_upload_atlas(sdl2_raster_t *font)
@@ -1609,9 +1679,8 @@ static void sdl2_raster_font_render_line(
       enum text_alignment align,
       unsigned width, unsigned height)
 {
-#define SDL2_FONT_MAX_GLYPHS 256
-   SDL_Vertex  verts[SDL2_FONT_MAX_GLYPHS * 4];
-   int         idx[SDL2_FONT_MAX_GLYPHS * 6];
+   SDL_Vertex *verts = font->verts;
+   int        *idx   = font->idx;
    int         n_glyphs = 0;
    const char *cur      = msg;
    const char *cur_end  = msg + msg_len;
@@ -2209,6 +2278,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_sdl2 = {
    GFX_VIDEO_DRIVER_SDL2,
    "sdl2",
    false,
+   true,
    gfx_display_sdl2_scissor_begin,
    gfx_display_sdl2_scissor_end
 };

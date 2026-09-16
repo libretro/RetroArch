@@ -1,0 +1,15 @@
+# function                    bytes   (release build, x86-64 GCC)
+#
+# Over the ceiling and left that way, each with its reason. A frame
+# that is not listed here fails the sweep; one that grows past what is
+# recorded fails too, and the number moves in the commit that grows it.
+#
+# switch_res_crt          a CRT mode switch, once when the resolution
+#                         changes, on the main thread
+# spirv_cache_save        shader cache written once per compiled pass,
+# spirv_cache_load        read once per pass at load
+# gfx_anim_preview_probe  probes a preview file, off the frame path
+switch_res_crt              4440
+spirv_cache_save            4312
+spirv_cache_load            4296
+gfx_anim_preview_probe      4128

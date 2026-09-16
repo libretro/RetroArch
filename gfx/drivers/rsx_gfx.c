@@ -268,6 +268,15 @@ typedef struct
    u32 pos_offset;
    u32 uv_offset;
    u32 col_offset;
+
+   /* The chunk a line is built into before it is handed over. Here
+    * rather than on the stack of the function that fills it: three
+    * arrays of MAX_MSG_LEN_CHUNK glyphs are twelve kilobytes, and a
+    * frame that size is three times what this tree allows. One font
+    * renders at a time on the thread that draws, so one is enough. */
+   float font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
+   float font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
+   float font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
 } rsx_font_t;
 
 static const float rsx_vertexes[8] = {
@@ -750,9 +759,9 @@ static void rsx_font_render_line(rsx_t *rsx,
 {
    int i;
    struct video_coords coords;
-   float font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
-   float font_vertex    [2 * 6 * MAX_MSG_LEN_CHUNK];
-   float font_color     [4 * 6 * MAX_MSG_LEN_CHUNK];
+   float *font_tex_coords = font->font_tex_coords;
+   float *font_vertex     = font->font_vertex;
+   float *font_color      = font->font_color;
    float color_block[4 * 6];
    int n;
    const char* msg_end  = msg + msg_len;
@@ -2708,6 +2717,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_rsx = {
    &rsx_font,
    GFX_VIDEO_DRIVER_RSX,
    "rsx",
+   true,
    true,
    gfx_display_rsx_scissor_begin,
    gfx_display_rsx_scissor_end

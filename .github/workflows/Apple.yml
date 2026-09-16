@@ -11,6 +11,7 @@ name: CI Apple
 
 on:
   push:
+    branches: [master]
   pull_request:
 
 permissions:
@@ -18,6 +19,10 @@ permissions:
 
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
   # ------------------------------------------------------------------
@@ -52,6 +57,7 @@ jobs:
   netplay-discovery-guard:
     name: Build graph - netplay mDNS discovery
     runs-on: macos-latest
+    timeout-minutes: 60
 
     steps:
     - uses: actions/checkout@v6
@@ -128,6 +134,7 @@ jobs:
   tvos:
     name: tvOS build (non-gating)
     runs-on: macos-latest
+    timeout-minutes: 60
     continue-on-error: true
 
     steps:

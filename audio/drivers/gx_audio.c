@@ -43,6 +43,18 @@ typedef struct
    volatile unsigned dma_busy;
    volatile unsigned dma_next;
    volatile unsigned dma_write;
+   /* Thread queue the DMA callback signals after every chunk, so a
+    * waiter sleeps a chunk at a time instead of spinning. Same pattern
+    * the video driver uses for the retrace callback. */
+   OSCond dma_cond;
+   /* Frames the DMA has played since it started, for the sink rate
+    * estimate. Written only by the DMA callback and read by the
+    * frontend; volatile rather than atomic because this is a
+    * single-core CPU with no store buffer to reorder around, which is
+    * the same reason dma_busy and dma_next above are declared this
+    * way. 32-bit so the read cannot tear: at 48 kHz it wraps in about
+    * a day, which the estimator's differences handle. */
+   volatile uint32_t consumed;
    bool nonblock;
    bool is_paused;
 } gx_audio_t;
@@ -71,11 +83,25 @@ static void gx_audio_dma_callback(void)
    DCFlushRange(wa->data[wa->dma_next], CHUNK_SIZE);
 
    AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
+   /* A chunk the DMA has finished with: device time. */
+   wa->consumed += CHUNK_FRAMES;
+   OSSignalCond(wa->dma_cond);
+}
+
+/* Frames the DMA has played since it started. The callback fires once
+ * per chunk, so counting chunks counts device time; there is no queue
+ * to subtract, because the callback is the hardware finishing with a
+ * chunk rather than a queue being filled. */
+static size_t gx_audio_frames_consumed(void *data)
+{
+   gx_audio_t *wa = (gx_audio_t*)data;
+   if (!wa)
+      return 0;
+   return (size_t)wa->consumed;
 }
 
 static void *gx_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      unsigned block_frames,
       unsigned *new_rate)
 {
    gx_audio_t *wa = (gx_audio_t*)memalign(32, sizeof(*wa));
@@ -103,6 +129,7 @@ static void *gx_audio_init(const char *device,
    wa->dma_write = BLOCKS - 1;
    DCFlushRange(wa->data, sizeof(wa->data));
    stop_audio    = false;
+   OSInitThreadQueue(&wa->dma_cond);
 
    /* Publish to the IRQ callback only after the struct is fully
     * initialised. AIInitDMA arms the DMA engine which is what kicks
@@ -156,10 +183,20 @@ static ssize_t gx_audio_write(void *data, const void *buf_, size_t len)
       if (frames < to_write)
          to_write = frames;
 
-      /* FIXME: Nonblocking audio should break out of loop
-       * when it has nothing to write. */
-      while ((    wa->dma_write == wa->dma_next
-               || wa->dma_write == wa->dma_busy) && !wa->nonblock);
+      /* The chunk to fill is the one queued for DMA (dma_next) or the
+       * one the DMA is playing (dma_busy): the ring is full.  Sleep on
+       * the DMA callback's queue a chunk at a time, as wait_writable()
+       * does, rather than spin; and give up when there is no callback
+       * coming - stopped or paused, the spin never ended - or when the
+       * caller does not want to wait, returning what went in rather
+       * than writing over the chunk being played. */
+      while (    wa->dma_write == wa->dma_next
+              || wa->dma_write == wa->dma_busy)
+      {
+         if (wa->nonblock || stop_audio || wa->is_paused)
+            return (ssize_t)(len - (frames << 2));
+         OSSleepThread(wa->dma_cond);
+      }
 
       gx_audio_lr_swap(wa->data[wa->dma_write] + wa->write_ptr,
             buf, to_write);
@@ -229,6 +266,8 @@ static void gx_audio_free(void *data)
    stop_audio = true;
    AIStopDMA();
    AIRegisterDMACallback(NULL);
+   if (wa->dma_cond)
+      OSCloseThreadQueue(wa->dma_cond);
 
    free(data);
 }
@@ -241,8 +280,36 @@ static size_t gx_audio_write_avail(void *data)
 }
 
 static size_t gx_audio_buffer_size(void *data) { return BLOCKS * CHUNK_SIZE; }
-/* Stub: keep returning false, but the audio_driver_t dispatcher
- * unconditionally derefs ->use_float, so this slot cannot be NULL. */
+
+/* Sleep on the DMA callback's queue until at least len bytes of chunks
+ * are free, len capped at half the ring so the wait always ends. A
+ * chunk completing between the check and the sleep costs one more
+ * chunk of waiting, not a hang. Returns the free space then, or 0 while
+ * stopped. */
+static size_t gx_audio_wait_writable(void *data, size_t len)
+{
+   gx_audio_t *wa = (gx_audio_t*)data;
+   size_t avail;
+
+   if (len > (BLOCKS * CHUNK_SIZE) / 2)
+      len = (BLOCKS * CHUNK_SIZE) / 2;
+
+   for (;;)
+   {
+      if (stop_audio || wa->is_paused)
+         return 0;
+      avail = gx_audio_write_avail(wa);
+      if (avail >= len)
+         return avail;
+      OSSleepThread(wa->dma_cond);
+   }
+}
+/* Not a stub: the Audio Interface takes signed 16-bit big-endian
+ * stereo PCM by DMA and nothing else - AI_CONTROL selects only the
+ * rate, and libogc's aesnd/asnd voices are 8- and 16-bit too - so the
+ * frontend's float-to-int16 conversion before write() is the only
+ * place float can go. The dispatcher derefs ->use_float unconditionally,
+ * so the slot cannot be NULL either. */
 static bool gx_audio_use_float(void *data) { return false; }
 
 audio_driver_t audio_gx = {
@@ -259,5 +326,7 @@ audio_driver_t audio_gx = {
    NULL,
    gx_audio_write_avail,
    gx_audio_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   gx_audio_wait_writable,
+   gx_audio_frames_consumed
 };

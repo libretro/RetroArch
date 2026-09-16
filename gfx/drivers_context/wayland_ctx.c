@@ -504,6 +504,8 @@ static void wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t t
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    wl->swap_complete = true;
+   if (wl->frame_cb == cb)
+      wl->frame_cb   = NULL;
 
    /* Destroy this callback */
    wl_callback_destroy(cb);
@@ -540,6 +542,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
       /* Set Wayland frame callback. */
       cb = wl_surface_frame(wl->surface);
       wl_callback_add_listener(cb, &wl_surface_frame_listener, wl);
+      wl->frame_cb = cb;
    }
 
    if (wl->present_clock)
@@ -579,6 +582,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
          {
             /* Deadline met. */
             wl_callback_destroy(cb);
+            wl->frame_cb = NULL;
             return;
          }
          uint64_t remaining_time = deadline - current_time;
@@ -595,6 +599,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
                /* Timeout met, or polling error. */
                wl_display_cancel_read(wl->input.dpy);
                wl_callback_destroy(cb);
+               wl->frame_cb = NULL;
                return;
             }
             wl_display_read_events(wl->input.dpy);
@@ -664,6 +669,19 @@ static bool gfx_ctx_wl_destroy_surface(void *data)
 #endif
 }
 
+/* The compositor tells us when the surface is not being scanned out -
+ * occluded, minimised, screen locked - and the swap path above already
+ * skips the frame callback and the presentation feedback in that
+ * state, for the same reason. Reported here so the runloop can pace
+ * the loop rather than the swap spinning through it. Compositors older
+ * than xdg_wm_base v6 never send the state, wl->suspended stays false,
+ * and this is always true, as before. */
+static bool gfx_ctx_wl_presentable(void *data)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return wl && !wl->suspended;
+}
+
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
@@ -701,5 +719,6 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL,
    NULL,
    gfx_ctx_wl_create_surface,
-   gfx_ctx_wl_destroy_surface
+   gfx_ctx_wl_destroy_surface,
+   gfx_ctx_wl_presentable
 };

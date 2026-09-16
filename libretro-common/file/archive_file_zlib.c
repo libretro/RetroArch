@@ -54,13 +54,9 @@
 /* Either decoder will do for a member stored with Zstandard; rzstd is
  * preferred where a build has it, and the reference remains available
  * until every platform has moved. */
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
-#define ZIP_HAVE_ZSTD 1
 #ifdef HAVE_RZSTD
+#define ZIP_HAVE_ZSTD 1
 #include <encodings/rzstd.h>
-#else
-#include <zstd.h>
-#endif
 #endif
 
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
@@ -153,7 +149,7 @@ static bool zlib_stream_decompress_data_to_file_init(
    zip_context_free_stream(zip_context, false);
 
    /* seek past most of the local directory header */
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
    if (state->archive_mmap_data)
    {
       /* cdata is a file offset taken from the central directory and is
@@ -307,7 +303,7 @@ static int zlib_stream_decompress_data_to_file_iterate(
 
    if (zip_context->cmode == ZIP_MODE_STORED)
    {
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
       /* Simply copy the data to the output buffer */
       if (zip_context->state->archive_mmap_data)
          memcpy(zip_context->decompressed_data,
@@ -335,7 +331,7 @@ static int zlib_stream_decompress_data_to_file_iterate(
       if (!zip_context->zstream)
          return 1;
 
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
       if (state->archive_mmap_data)
       {
          /* Decompress from the mapped file */
@@ -419,21 +415,13 @@ static int zlib_stream_decompress_data_to_file_iterate(
       size_t result;
       int    zerr;
 
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
       if (state->archive_mmap_data)
       {
-#ifdef HAVE_RZSTD
          zerr = (rzstd_decode(
                zip_context->decompressed_data, zip_context->usize,
                state->archive_mmap_data + (size_t)zip_context->fdoffset,
                zip_context->csize, &result) != RZSTD_PROCESS_END);
-#else
-         result = ZSTD_decompress(
-               zip_context->decompressed_data, zip_context->usize,
-               state->archive_mmap_data + (size_t)zip_context->fdoffset,
-               zip_context->csize);
-         zerr   = ZSTD_isError(result);
-#endif
       }
       else
 #endif
@@ -446,17 +434,10 @@ static int zlib_stream_decompress_data_to_file_iterate(
                   zip_context->tmpbuf, zip_context->csize) < 0)
             return -1;
 
-#ifdef HAVE_RZSTD
          zerr = (rzstd_decode(
                zip_context->decompressed_data, zip_context->usize,
                zip_context->tmpbuf, zip_context->csize, &result)
                != RZSTD_PROCESS_END);
-#else
-         result = ZSTD_decompress(
-               zip_context->decompressed_data, zip_context->usize,
-               zip_context->tmpbuf, zip_context->csize);
-         zerr   = ZSTD_isError(result);
-#endif
       }
 
       if (zerr)
@@ -898,7 +879,7 @@ static int file_archive_entry_source_capture(
       uint8_t local_header_buf[4];
       uint8_t *local_header;
       uint32_t nl, el;
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
       if (state->archive_mmap_data)
          local_header = state->archive_mmap_data + (size_t)cdata + 26;
       else
@@ -973,7 +954,7 @@ file_archive_entry_source_t *file_archive_entry_source_open(
       if (!(s->z = rinflate_new(-15)))
          goto error_stop;
 #endif
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
       if (!s->state.archive_mmap_data)
 #endif
       {
@@ -1013,7 +994,7 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
 
    if (s->cmode == ZIP_MODE_STORED)
    {
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
       if (s->state.archive_mmap_data)
          memcpy(dst, s->state.archive_mmap_data
                + (size_t)s->fdoffset + s->out_off, (size_t)n);
@@ -1042,7 +1023,7 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
             uint32_t chunk = s->csize - s->in_off;
             if (chunk == 0)
                break;
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
             if (s->state.archive_mmap_data)
             {
                z->next_in  = s->state.archive_mmap_data
@@ -1104,7 +1085,7 @@ int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
          const uint8_t *iptr;
          if (chunk == 0)
             break;
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
          if (s->state.archive_mmap_data)
          {
             if (chunk > _READ_CHUNK_SIZE)

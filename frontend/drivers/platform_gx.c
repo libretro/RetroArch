@@ -231,7 +231,7 @@ static void frontend_gx_get_env(int *argc, char *argv[],
          if (     string_starts_with_size(argv[0], "usb1", STRLEN_CONST("usb1"))
                || string_starts_with_size(argv[0], "usb2", STRLEN_CONST("usb2")))
          {
-            size_t _len = strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], "usb",
+            size_t _len = strlcpy_lit(g_defaults.dirs[DEFAULT_DIR_CORE], "usb",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
             strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE]       + _len,
                   argv[0] + 4,

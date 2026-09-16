@@ -50,6 +50,7 @@
 
 #include "../../autosave.h"
 #include "../../configuration.h"
+#include "../../audio/audio_driver.h"
 #include "../../command.h"
 #include "../../content.h"
 #include "../../core.h"
@@ -151,6 +152,7 @@
 /* Activate this to enable assertions on code sections
  * that should be exclusive to one modus */
 #include <assert.h>
+#include <compat/strl.h>
 #define NETPLAY_ASSERT_MODUS(m) assert(networking_driver_st.data->modus==(m));
 #else
 #define NETPLAY_ASSERT_MODUS(m)
@@ -284,8 +286,12 @@ uint32_t netplay_content_crc(void)
       }
       else
       {
+         /* The whole content file, hashed once at session start:
+          * FREQUENT_ACCESS so the VFS maps it where it can and the
+          * CRC is folded from the mapping rather than read out. */
          intfstream_t *fd = intfstream_open_file(path,
-               RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+               RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
          if (fd)
          {
             if (!intfstream_get_crc(fd, &crc))
@@ -778,7 +784,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          }
       }
       else
-         strlcpy(ad_packet_buffer.frontend, "N/A",
+         strlcpy_lit(ad_packet_buffer.frontend, "N/A",
             sizeof(ad_packet_buffer.frontend));
 
       strlcpy(ad_packet_buffer.core, sysinfo->library_name,
@@ -827,7 +833,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          strlcpy(ad_packet_buffer.content,
             (basename && *basename) ? basename : "N/A",
             sizeof(ad_packet_buffer.content));
-         strlcpy(ad_packet_buffer.subsystem_name, "N/A",
+         strlcpy_lit(ad_packet_buffer.subsystem_name, "N/A",
             sizeof(ad_packet_buffer.subsystem_name));
 
          ad_packet_buffer.content_crc = (int32_t)htonl(netplay_content_crc());
@@ -1321,6 +1327,7 @@ bool netplay_handshake_init(netplay_t *netplay,
          retroarch_menu_running();
          line.label         = msg_hash_to_str(MSG_NETPLAY_ENTER_PASSWORD);
          line.label_setting = "no_setting";
+         line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
          line.cb            = handshake_password;
          if (!menu_input_dialog_start(&line))
             return false;
@@ -1408,9 +1415,9 @@ static bool netplay_handshake_info(netplay_t *netplay,
    }
    else
    {
-      strlcpy(info_buf.core_name,
+      strlcpy_lit(info_buf.core_name,
             "UNKNOWN", sizeof(info_buf.core_name));
-      strlcpy(info_buf.core_version,
+      strlcpy_lit(info_buf.core_version,
             "UNKNOWN", sizeof(info_buf.core_version));
    }
 
@@ -2305,29 +2312,63 @@ bool netplay_delta_frame_ready(netplay_t *netplay, struct delta_frame *delta,
    return true;
 }
 
-static const uint8_t* netplay_get_savestate_coremem(netplay_t* netplay, const uint8_t* input)
+/* Size field of a savestate container block header.  Read through
+ * uint32_t: a uint8_t promotes to int, so a plain 'b[7] << 24' with
+ * the top bit set overflows, and the negative result sign-extends
+ * when it lands in a size_t. */
+static uint32_t netplay_read_block_size(const uint8_t *hdr)
 {
-   /* If the container header is detected, find the coremem block */
-   if (memcmp(input, "NETPLAY", 7) == 0)
+   return   ((uint32_t)hdr[7] << 24)
+          | ((uint32_t)hdr[6] << 16)
+          | ((uint32_t)hdr[5] << 8)
+          |  (uint32_t)hdr[4];
+}
+
+/* Walks a "NETPLAY1" container from 'input' to 'stop' and returns the
+ * start of the MEM block content, or NULL if the container has no MEM
+ * block before its END block or a block runs past 'stop'.  Each
+ * block is checked to fit before it is stepped over, so a stale or
+ * uninitialized tail past the END block is never interpreted. */
+static const uint8_t* netplay_find_block(const uint8_t *input,
+      const uint8_t *stop, const char *want)
+{
+   input += 8; /* NETPLAY# */
+
+   while ((size_t)(stop - input) >= 8)
    {
-      const uint8_t* stop = input + netplay->state_size;
-      input += 8; /* NETPLAY# */
+      size_t block_size     = netplay_read_block_size(input);
+      size_t aligned_size   = CONTENT_ALIGN_SIZE(block_size);
+      const uint8_t *marker = input;
 
-      while (input < stop)
-      {
-         size_t block_size = (input[7] << 24 | input[6] << 16 | input[5] << 8 | input[4]);
-         const uint8_t* marker = input;
+      input += 8;
 
-         input += 8;
+      if (memcmp(marker, NETPLAYSTATE_END_BLOCK, 4) == 0)
+         return NULL;
+      /* The writer always pads a block to 8 bytes, so the padded size
+       * has to fit too; the first test catches size_t wrap on the
+       * padding. */
+      if (   aligned_size < block_size
+          || aligned_size > (size_t)(stop - input))
+         return NULL;
+      if (memcmp(marker, want, 4) == 0)
+         return input;
 
-         if (memcmp(marker, NETPLAYSTATE_MEM_BLOCK, 4) == 0)
-            break;
-
-         input += CONTENT_ALIGN_SIZE(block_size);
-      }
+      input += aligned_size;
    }
 
-   return input;
+   return NULL;
+}
+
+/* Returns the start of the core's own serialized memory inside a
+ * state buffer, or NULL for a malformed container.  Raw core data
+ * (no container header) is returned as-is. */
+static const uint8_t* netplay_get_savestate_coremem(netplay_t* netplay, const uint8_t* input)
+{
+   if (netplay->state_size < 8 || memcmp(input, "NETPLAY", 7) != 0)
+      return input;
+
+   return netplay_find_block(input, input + netplay->state_size,
+         NETPLAYSTATE_MEM_BLOCK);
 }
 
 /**
@@ -2343,6 +2384,12 @@ static uint32_t netplay_delta_frame_crc(netplay_t *netplay,
    NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
    input = netplay_get_savestate_coremem(netplay,
       (const uint8_t*)delta->state);
+
+   /* A malformed container carries no core memory to hash; report a
+    * mismatch so the peer state gets re-requested rather than hashing
+    * whatever happens to follow the buffer. */
+   if (!input)
+      return 0;
 
    return encoding_crc32(0L, input, netplay->coremem_size);
 }
@@ -6300,7 +6347,8 @@ static bool netplay_get_cmd(netplay_t *netplay,
             if (state_size > netplay->state_size)
             {
                /* other client state size is larger than ours, grow ours */
-               netplay->state_size = state_size;
+               size_t old_state_size = netplay->state_size;
+               netplay->state_size   = state_size;
                for (i = 0; i < netplay->buffer_size; i++)
                {
                   /* realloc-to-tmp to avoid the classic realloc-
@@ -6316,6 +6364,11 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   if (!tmp)
                      return false;
                   netplay->buffer[i].state = tmp;
+                  /* The container walk stops at the END block, but
+                   * keep the grown tail defined for anything that
+                   * still reads the full state_size. */
+                  memset((uint8_t*)tmp + old_state_size, 0,
+                        netplay->state_size - old_state_size);
                }
             }
 
@@ -7739,7 +7792,7 @@ static void netplay_send_savestate(netplay_t *netplay,
       const uint8_t* input = netplay_get_savestate_coremem(netplay,
             (const uint8_t*)serial_info->data_const);
 
-      if (input != serial_info->data_const)
+      if (input && input != serial_info->data_const)
       {
          serial_info->data_const = input;
          serial_info->size = netplay->coremem_size;
@@ -7765,6 +7818,19 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
     * We need this because even if RARCH_NETPLAY_CTL_ALLOW_PAUSE returns false
     * on some platforms the frontend may try to force netplay to pause. */
    if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
+      return;
+
+   /* A server that disables pausing answers NETPLAY_CMD_PAUSE from a
+    * client with a NAK and hangs the connection up, so a client whose
+    * server disallows it must not announce a pause at all. The
+    * frontend reaches here for transient states as well as for a
+    * deliberate pause - pushing the Quick Menu parks the runloop for
+    * a single frame, which is how opening the menu or the chat prompt
+    * arrives - and announcing those cost the connection over
+    * something the user never asked for. Leaving local_paused unset
+    * keeps the pair symmetric: the resume that netplay_pre_frame
+    * sends off the back of it is suppressed with it. */
+   if (paused && !netplay->is_server && !netplay->allow_pausing)
       return;
 
    netplay->local_paused = paused;
@@ -7894,14 +7960,31 @@ static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
    const uint8_t* stop        = input + serial_info->size;
    bool seen_core             = false;
 
+   if (serial_info->size < 8)
+      return false;
+
    input += 8; /* NETPLAY1 */
 
-   while (input < stop)
+   /* The buffer is netplay->state_size bytes, sized for the largest
+    * container this side can build, but a client builds without the
+    * ACHV block and a peer's state can be a different size again, so
+    * the container usually ends before the buffer does.  Stop at the
+    * END block rather than the buffer end: what follows is a stale
+    * or uninitialized tail, not more blocks. */
+   while ((size_t)(stop - input) >= 8)
    {
-      size_t block_size     = (input[7] << 24 | input[6] << 16 |  input[5] << 8 | input[4]);
+      size_t block_size     = netplay_read_block_size(input);
+      size_t aligned_size   = CONTENT_ALIGN_SIZE(block_size);
       const uint8_t *marker = input;
 
       input += 8;
+
+      if (memcmp(marker, NETPLAYSTATE_END_BLOCK, 4) == 0)
+         break;
+
+      if (   aligned_size < block_size
+          || aligned_size > (size_t)(stop - input))
+         return false;
 
       if (memcmp(marker, NETPLAYSTATE_MEM_BLOCK, 4) == 0)
       {
@@ -7937,15 +8020,16 @@ static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
             }
          }
 
+         /* Flags word, then the rcheevos data.  Skip the flags on a
+          * copy: the block step below already covers the whole
+          * block, and stepping 'input' here as well used to land the
+          * walk 8 bytes past the next header. */
          if (block_size > 8)
-         {
-            input += 8;
-            rcheevos_set_serialized_data((void*)input);
-         }
+            rcheevos_set_serialized_data((void*)(input + 8));
       }
 #endif
 
-      input += CONTENT_ALIGN_SIZE(block_size);
+      input += aligned_size;
    }
 
    if (!seen_core)
@@ -8013,7 +8097,10 @@ static bool netplay_build_savestate(netplay_t* netplay, retro_ctx_serialize_info
       output += 8;
       memset(output, 0, 8);
       output[0] = rcheevos_hardcore_active() ? 1 : 0;
-      output += cheevos_size;
+      /* Step by the padded size, as the reader does and as
+       * state_size was budgeted; an unpadded step puts the END
+       * header where the reader does not look for it. */
+      output += CONTENT_ALIGN_SIZE(cheevos_size);
    }
 #endif
 
@@ -8715,6 +8802,15 @@ size_t audio_sample_batch_net(const int16_t *data, size_t frames)
    if (!netplay_should_skip(netplay) && !netplay->stall)
       return netplay->cbs.sample_batch_cb(data, frames);
    return frames;
+}
+
+/* The float batch entry's gate: the same skip as the int16 batch
+ * above, asked from inside the entry the core holds by pointer. */
+bool audio_float_gate_net(void)
+{
+   net_driver_state_t *net_st  = &networking_driver_st;
+   netplay_t          *netplay = net_st->data;
+   return netplay_should_skip(netplay) || netplay->stall;
 }
 
 static void netplay_announce_cb(retro_task_t *task, void *task_data,
@@ -9474,6 +9570,14 @@ void deinit_netplay(void)
       net_st->flags            &= ~(NET_DRIVER_ST_FLAG_NETPLAY_ENABLED
                                 |   NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT);
 
+#ifdef HAVE_MENU
+      /* The runloop holds the core behind the menu again from the next
+       * iteration; end its audio as the menu's open would have. */
+      if (     (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+            && config_get_ptr()->bools.menu_pause_libretro)
+         audio_driver_pause_fade(true);
+#endif
+
 #if HAVE_RUNAHEAD
       /* Reinitialize preemptive frames if we're disabling
        * netplay mid-session. Skip if the core isn't running:
@@ -9658,6 +9762,15 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
          net_st->core_netpacket_interface->start)
       net_st->core_netpacket_interface->start(0,
             netplay_netpacket_send_cb, netplay_netpacket_poll_receive_cb);
+
+#ifdef HAVE_MENU
+   /* The core runs behind the menu while netplay forbids pausing; bring
+    * its audio back as the menu's close would. */
+   if (     (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+         && settings->bools.menu_pause_libretro
+         && !netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+      audio_driver_pause_fade(false);
+#endif
 
    return true;
 
@@ -10548,7 +10661,10 @@ static void gfx_widget_netplay_ping_iterate(void *user_data,
    netplay_t          *netplay  = net_st->data;
    settings_t         *settings = config_get_ptr();
 #ifdef HAVE_MENU
-   bool menu_open               = menu_state_get_ptr()->flags &
+   /* What the frame this iterate belongs to was built with: the menu's
+    * own flags are a read-modify-write on the main thread, and this
+    * runs on the thread that draws. */
+   bool menu_open               = dispwidget_get_ptr()->frame_menu_st_flags &
       MENU_ST_FLAG_ALIVE;
 #endif
    bool show_ping               = settings->bools.netplay_ping_show;

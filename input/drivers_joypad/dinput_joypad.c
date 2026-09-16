@@ -33,54 +33,15 @@
 #include "../../tasks/tasks_internal.h"
 #include "../input_keymaps.h"
 #include "../../retroarch.h"
+#include <features/features_cpu.h>
+
 #include "../../verbosity.h"
 
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
-#ifndef __DINPUT_JOYPAD_H
-#define __DINPUT_JOYPAD_H
+#include "dinput_joypad.h"
 
-#include <stdint.h>
-#include <boolean.h>
-#include <retro_common_api.h>
-
-#define WIN32_LEAN_AND_MEAN
-#include <dinput.h>
-
-/* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
-#define ARRAY_SIZE_RGB_BUTTONS 128
-
-/* DirectInput POV value indicating the hat is centred (no direction pressed).
- * rgdwPOV[] returns this sentinel when the hat is released. */
-#define DINPUT_POV_CENTERED 0xFFFFFFFFu
-
-RETRO_BEGIN_DECLS
-
-struct dinput_joypad_data
-{
-   LPDIRECTINPUTDEVICE8 joypad;
-   DIJOYSTATE2          joy_state;
-   char                *joy_name;
-   char                *joy_friendly_name;
-   int32_t              vid;
-   int32_t              pid;
-   LPDIRECTINPUTEFFECT  rumble_iface[2];
-   DIEFFECT             rumble_props;
-   /* Persistent storage for fields referenced by rumble_props pointers.
-    * Previously these lived on the stack in dinput_create_rumble_effects(),
-    * causing rumble_props to hold dangling pointers after that call returned. */
-   DWORD                rumble_axis;
-   LONG                 rumble_direction;
-   DIENVELOPE           rumble_envelope;
-   DICONSTANTFORCE      rumble_force;
-};
-
-RETRO_END_DECLS
-
-#endif
-
-/* TODO/FIXME - globals referenced outside; candidate for context-struct refactor */
 struct dinput_joypad_data g_pads[MAX_USERS];
 unsigned g_joypad_cnt;
 
@@ -420,12 +381,49 @@ static bool dinput_joypad_ctx_create(void)
  * so teardown joins it; the stall this can incur only occurs if the
  * user quits or hotplugs while an enumeration is still running,
  * instead of unconditionally blocking startup as the old
- * synchronous enumeration did. */
+ * synchronous enumeration did.
+ *
+ * The wait is a poll rather than a wait on a primitive because the
+ * flag is cleared by the task's own main-thread callback: nothing
+ * will clear it unless this loop keeps servicing the task queue. It
+ * is also deliberately unbounded. EnumDevices() walks the HID/PnP
+ * tree and a wedged driver stack can hold it for seconds; giving up
+ * and returning would let the caller free the pad state and the
+ * DirectInput context that the enumeration is still walking, trading
+ * a slow exit for a crash. The one thing that was missing is any
+ * sign of it: a user whose Bluetooth stack is stuck saw the frontend
+ * freeze on exit with nothing in the log. Now it says so, once after
+ * a second and then every five, so a report of "hangs on quit" comes
+ * with the reason attached. */
 static void dinput_joypad_enum_wait(void)
 {
+   retro_time_t start;
+   unsigned reported = 0;
+
+   if (!g_dinput_enum_inflight)
+      return;
+
+   start = cpu_features_get_time_usec();
+
    while (g_dinput_enum_inflight)
    {
+      retro_time_t waited;
+      /* Pump first: on the frame the task finished, its callback runs
+       * here and the loop leaves without sleeping at all, so the common
+       * case costs nothing beyond the pump itself. */
       task_queue_check();
+      if (!g_dinput_enum_inflight)
+         break;
+
+      waited = cpu_features_get_time_usec() - start;
+      if (waited > (retro_time_t)(1000000 + reported * 5000000))
+      {
+         RARCH_WARN("[DInput] Still waiting for pad enumeration to "
+               "finish after %u s; a device driver stack may be "
+               "stalled.\n", (unsigned)(waited / 1000000));
+         reported++;
+      }
+
       retro_sleep(1);
    }
 }
@@ -460,7 +458,15 @@ static void dinput_joypad_destroy(void)
       free(g_pads[i].joy_friendly_name);
       g_pads[i].joy_friendly_name = NULL;
 
-      input_config_clear_device_name(i);
+      /* No input_config_clear_device_name() here. Disconnects are
+       * announced from poll() - joypad_driver_reinit() runs it once
+       * more before destroy() for exactly that - and
+       * input_autoconfigure_disconnect() clears the whole port record.
+       * Clearing just the name here left vid, pid and the
+       * autoconfigured flag behind, and blanked the field that
+       * input_autoconfigure_connect_ex() compares against to suppress
+       * a repeat 'configured in port' notification. No other joypad
+       * driver does this. */
    }
 
    g_joypad_cnt = 0;

@@ -44,6 +44,7 @@
 #include "../core_info.h"
 #include "../file_path_special.h"
 #include "../configuration.h"
+#include "../audio/audio_driver.h"
 #include "../gfx/video_driver.h"
 #include "../msg_hash.h"
 #include "../runloop.h"
@@ -61,11 +62,11 @@
   fits inside one frame even on the worst storage we support.
 
   This is the size of one read/write call, NOT the amount of work
-  a tick may do.  It used to be both, which capped the save/load
-  task at SAVE_STATE_CHUNK * tick_rate == ~6MB/s no matter what
-  the device could actually do: measured on NVMe, one 100KB
+  a tick may do.  Tying the two together caps the save/load task
+  at SAVE_STATE_CHUNK * tick_rate == ~6MB/s no matter what the
+  device can actually do: measured on NVMe, one 100KB
   intfstream_write costs ~62us out of a 16667us frame, so 99.6%
-  of every frame's budget was spent idle and a 16MB state took
+  of every frame's budget sits idle and a 16MB state takes
   164 ticks (2.7s at 60Hz) to write.  The tick budget below is
   what bounds a tick now; the quantum only bounds how long the
   handler can overshoot that budget, which is why it stays sized
@@ -144,6 +145,21 @@ typedef struct
    ssize_t bytes_read;
    int state_slot;
    uint8_t flags;
+   /* Frontend rastate blocks, captured on the main thread at push for
+    * the background path: SET_SAVE_STATE_IN_BACKGROUND is the core's
+    * promise about its own serialize, not about the frontend's replay
+    * or achievement state, so the worker serializes only the core and
+    * writes these as captured. */
+   void  *fe_replay;
+   size_t fe_replay_size;
+   void  *fe_cheevos;
+   size_t fe_cheevos_size;
+   /* Captured at push on the main thread: the load handler's
+    * core-readiness poll reads the frame counter through this,
+    * never through the video singleton - task workers reach no
+    * getter. The read stays a single benign per-tick poll of a
+    * monotonic counter. */
+   const uint64_t *frame_count;
    char path[PATH_MAX_LENGTH];
 } save_task_state_t;
 
@@ -211,6 +227,7 @@ bool content_undo_load_state(void)
    unsigned i;
    bool ret                  = false;
    bool captured             = false;
+   bool ramped               = false;
    unsigned num_blocks       = 0;
    void *restore_data        = NULL;
    size_t restore_size       = 0;
@@ -286,11 +303,12 @@ bool content_undo_load_state(void)
    }
 
    /* The state about to be restored lives in undo_load_buf, and the
-    * capture below overwrites undo_load_buf - hence the copy this
-    * used to make.  Detaching the allocation does the same job for
-    * nothing: after the detach undo_load_buf owns no buffer, so the
-    * capture serializes into the spare and swaps that in, and neither
-    * one can touch the bytes being restored. */
+    * capture below overwrites undo_load_buf - so the bytes being
+    * restored must be kept out of its reach.  Detaching the
+    * allocation does that for free: after the detach undo_load_buf
+    * owns no buffer, so the capture serializes into the spare and
+    * swaps that in, and neither one can touch the bytes being
+    * restored. */
    restore_data           = undo_load_buf.data;
    restore_size           = undo_load_buf.size;
    restore_cap            = undo_load_buf.capacity;
@@ -298,11 +316,17 @@ bool content_undo_load_state(void)
    undo_load_buf.size     = 0;
    undo_load_buf.capacity = 0;
 
+   /* An undo jumps the game's state exactly as a load does. See
+    * audio_driver_jump_fade_begin(). */
+   ramped                 = audio_driver_jump_fade_begin();
+
    /* Swap the current state with the backup state. This way, we can undo
    what we're undoing */
    captured               = content_save_state("RAM", false);
 
    ret = content_deserialize_state(restore_data, restore_size);
+
+   audio_driver_jump_fade_end(ramped);
 
    if (captured)
    {
@@ -414,8 +438,7 @@ static void task_save_handler_finished(retro_task_t *task,
    task_data = (save_task_state_t*)calloc(1, sizeof(*task_data));
    /* NULL-check: the memcpy below NULL-derefs on OOM.  The
     * completion callbacks save_state_cb / undo_save_state_cb
-    * used to assume task_data is non-NULL - both have been made
-    * NULL-tolerant to match this code path.  On OOM we leave
+    * are NULL-tolerant to match this code path.  On OOM we leave
     * task_data unset (NULL); task_set_data is skipped and the
     * completion callback receives NULL for its task_data
     * parameter. */
@@ -433,6 +456,8 @@ static void task_save_handler_finished(retro_task_t *task,
       free(state->data);
       state->data = NULL;
    }
+   free(state->fe_replay);
+   free(state->fe_cheevos);
 
    free(state);
 }
@@ -451,6 +476,16 @@ static void task_save_handler_finished(retro_task_t *task,
       if (_pad > 0)                                               \
          memset((output) + (unaligned_size), 0, _pad);            \
    } while (0)
+
+/* Frontend blocks pre-captured on the main thread; NULL means read
+ * them live, which is only the main thread's to do. */
+typedef struct rastate_captured
+{
+   const void *replay;
+   size_t      replay_size;
+   const void *cheevos;
+   size_t      cheevos_size;
+} rastate_captured_t;
 
 static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
 {
@@ -476,6 +511,31 @@ static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
    else
       size->replay_size = 0;
 #endif
+   return size->total_size;
+}
+
+/* The worker's sizing: the core live - its serialize is what the
+ * core's background request vouches for - and the frontend's blocks
+ * from the capture, with no live frontend read on this path at all. */
+static size_t content_get_rastate_size_captured(rastate_size_info_t* size,
+      const rastate_captured_t *captured)
+{
+   size_t info_size = core_serialize_size();
+   if (!info_size)
+      return 0;
+   size->coremem_size = info_size;
+   size->total_size   = 8 + 8 + CONTENT_ALIGN_SIZE(info_size) + 8;
+#ifdef HAVE_CHEEVOS
+   size->cheevos_size = captured->cheevos_size;
+   if (size->cheevos_size > 0)
+      size->total_size += 8 + CONTENT_ALIGN_SIZE(size->cheevos_size);
+#endif
+#ifdef HAVE_BSV_MOVIE
+   size->replay_size = captured->replay_size;
+   if (size->replay_size > 0)
+      size->total_size += 8 + CONTENT_ALIGN_SIZE(size->replay_size);
+#endif
+   (void)captured;
    return size->total_size;
 }
 
@@ -565,6 +625,54 @@ static bool content_write_serialized_state(void* buffer,
 
    content_write_block_header(output, RASTATE_END_BLOCK, 0);
 
+   return true;
+}
+
+/* The worker's writer: the frontend blocks come from the push-time
+ * capture and the core serializes live. No live frontend read exists
+ * on this path - the split is what the thread audit holds. */
+static bool content_write_serialized_state_captured(void* buffer,
+      rastate_size_info_t* size, const rastate_captured_t *captured)
+{
+   retro_ctx_serialize_info_t serial_info;
+   unsigned char* output = (unsigned char*)buffer;
+
+   memcpy(output, "RASTATE", 7);
+   output[7] = RASTATE_VERSION;
+   output   += 8;
+
+#ifdef HAVE_BSV_MOVIE
+   if (captured->replay && size->replay_size > 0)
+   {
+      content_write_block_header(output,
+            RASTATE_REPLAY_BLOCK, size->replay_size);
+      memcpy(output + 8, captured->replay, size->replay_size);
+      CONTENT_ZERO_PADDING(output + 8, size->replay_size);
+      output += CONTENT_ALIGN_SIZE(size->replay_size) + 8;
+   }
+#endif
+
+   content_write_block_header(output, RASTATE_MEM_BLOCK, size->coremem_size);
+   output += 8;
+   serial_info.size = size->coremem_size;
+   serial_info.data = (void*)output;
+   if (!core_serialize(&serial_info))
+      return false;
+   CONTENT_ZERO_PADDING(output, size->coremem_size);
+   output += CONTENT_ALIGN_SIZE(size->coremem_size);
+
+#ifdef HAVE_CHEEVOS
+   if (captured->cheevos && size->cheevos_size > 0)
+   {
+      content_write_block_header(output,
+            RASTATE_CHEEVOS_BLOCK, size->cheevos_size);
+      memcpy(output + 8, captured->cheevos, size->cheevos_size);
+      CONTENT_ZERO_PADDING(output + 8, size->cheevos_size);
+      output += CONTENT_ALIGN_SIZE(size->cheevos_size) + 8;
+   }
+#endif
+
+   content_write_block_header(output, RASTATE_END_BLOCK, 0);
    return true;
 }
 
@@ -690,14 +798,36 @@ static void task_save_handler(retro_task_t *task)
    if (!state->data)
    {
       size_t _len = 0;
-      state->data = content_get_serialized_data(&_len);
-      state->size = (ssize_t)_len;
+      rastate_size_info_t size;
+      rastate_captured_t captured;
+      captured.replay       = state->fe_replay;
+      captured.replay_size  = state->fe_replay_size;
+      captured.cheevos      = state->fe_cheevos;
+      captured.cheevos_size = state->fe_cheevos_size;
+      state->size = 0;
+      if ((_len = content_get_rastate_size_captured(&size, &captured)) > 0)
+      {
+         if ((state->data = malloc(_len)))
+         {
+            if (!content_write_serialized_state_captured(state->data,
+                     &size, &captured))
+            {
+               free(state->data);
+               state->data = NULL;
+            }
+            else
+               /* size is filled exactly when the sizing call above
+                * succeeded; the other arms leave it at its initial
+                * zero rather than reading it. */
+               state->size = (ssize_t)size.total_size;
+         }
+      }
 
-      /* A failed serialize used to leave data NULL and size 0, and
-       * every test below then read as success: remaining was 0, so
-       * written == remaining, and written == size, so the handler
-       * reported a COMPLETED save of a zero-byte file.  The user got
-       * a 'state saved' notification and an empty slot. */
+      /* A failed serialize must be failed here: with data NULL and
+       * size 0, every test below reads as success - remaining is 0,
+       * so written == remaining and written == size - and the
+       * handler reports a COMPLETED save of a zero-byte file, giving
+       * the user a 'state saved' notification and an empty slot. */
       if (!state->data || state->size <= 0)
       {
          RARCH_ERR("[State] save task could not serialize core state "
@@ -722,13 +852,13 @@ static void task_save_handler(retro_task_t *task)
 
       if (!state->file)
       {
-         /* This used to be a bare return.  The task was neither
-          * errored nor finished, so the queue re-entered it on the
-          * next tick and it retried the open forever - and because
-          * save tasks are TASK_TYPE_BLOCKING, that one task wedged
-          * every other blocking task for the rest of the session.
-          * An open that failed once (read-only medium, bad path,
-          * no space) is not going to succeed on retry; fail it. */
+         /* This must fail the task, not bare-return: a task neither
+          * errored nor finished is re-entered on the next tick and
+          * retries the open forever - and because save tasks are
+          * TASK_TYPE_BLOCKING, that one task wedges every other
+          * blocking task for the rest of the session.  An open that
+          * failed once (read-only medium, bad path, no space) is not
+          * going to succeed on retry; fail it. */
          RARCH_ERR("[State] save task could not open \"%s\" for writing "
                "(slot %d). The auto-index slot was already advanced, so "
                "this leaves an advanced slot with no save file.\n",
@@ -932,10 +1062,9 @@ static void task_load_handler_finished(retro_task_t *task,
 
    if (!(task_data = (load_task_data_t*)calloc(1, sizeof(*task_data))))
    {
-      /* Pre-existing leak: old code early-returned without
-       * freeing state.  On OOM set a task error (so the user
-       * sees 'load state failed' rather than silent failure),
-       * free state properly, and return.  The completion
+      /* On OOM: set a task error (so the user sees 'load state
+       * failed' rather than silent failure), free state - an early
+       * return without the free leaks it - and return.  The completion
        * callbacks handle NULL task_data via their own NULL-
        * checks. */
       if (!task_get_error(task))
@@ -964,27 +1093,25 @@ static void task_load_handler(retro_task_t *task)
    uint8_t flg;
    ssize_t remaining, bytes_read;
    save_task_state_t *state = (save_task_state_t*)task->state;
-   video_driver_state_t *video_st  = video_state_get_ptr();
 
    /* Ensure the core is ready for loading states (Dolphin CLI).
     *
-    * This used to spin here (while (...) retro_sleep(1)).  Two
-    * problems with that.  When the task queue is not threaded the
-    * handler runs on the same thread that advances frame_count, so
-    * the condition it waits on can never become true and the spin is
-    * an unconditional hang; it only ever went unnoticed because
-    * frame_count is already past 2 by the time a user loads a state
-    * interactively, and CLI autoload is the one path that reaches
-    * here early.  When it IS threaded, this is an unsynchronised read
-    * of a counter the video thread writes - a data race, and TSan
-    * reports it.
+    * A spin here (while (...) retro_sleep(1)) cannot work.  When
+    * the task queue is not threaded the handler runs on the same
+    * thread that advances frame_count, so the condition it would
+    * wait on can never become true and the spin is an unconditional
+    * hang - masked interactively only because frame_count is already
+    * past 2 by the time a user loads a state, and CLI autoload is
+    * the one path that reaches here early.  When it IS threaded, a
+    * spin is a hot unsynchronised read of a counter the video thread
+    * writes - a data race, and TSan reports it.
     *
     * Yielding does both jobs: the task stays queued and is re-entered
     * on the next tick, by which time the runloop has advanced the
-    * counter.  The read is still unsynchronised, but it is now a
-    * single benign poll of a monotonic counter rather than a spin,
-    * and no progress depends on this thread observing it promptly. */
-   if (video_st->frame_count < 2)
+    * counter.  The read stays unsynchronised, but as a single benign
+    * poll of a monotonic counter per tick, with no progress depending
+    * on this thread observing it promptly. */
+   if (*state->frame_count < 2)
       return;
 
    if (!state->file)
@@ -1418,10 +1545,20 @@ static void content_load_state_cb(retro_task_t *task,
       }
    }
 
-   /* Backup the current state so we can undo this load */
-   content_save_state("RAM", false);
+   /* A state load is a discontinuity in the game's own audio, and the work
+    * below blocks this thread long enough for the device to run dry. End the
+    * stream on the pause tail first and bring it back on the resume ramp, so
+    * both land in silence. See audio_driver_jump_fade_begin(). */
+   {
+      bool ramped = audio_driver_jump_fade_begin();
 
-   ret = content_deserialize_state(buf, _len);
+      /* Backup the current state so we can undo this load */
+      content_save_state("RAM", false);
+
+      ret = content_deserialize_state(buf, _len);
+
+      audio_driver_jump_fade_end(ramped);
+   }
 
    /* Flush back. */
    for (i = 0; i < num_blocks; i++)
@@ -1491,6 +1628,57 @@ static void save_state_cb(retro_task_t *task,
    free(state);
 }
 
+#if defined(HAVE_BSV_MOVIE) || defined(HAVE_CHEEVOS)
+/* The frontend's rastate blocks, captured where they belong: the main
+ * thread, when the background save is pushed. The worker then
+ * serializes only the core - which is what the core's
+ * SET_SAVE_STATE_IN_BACKGROUND request vouches for. */
+static void content_capture_frontend_blocks(save_task_state_t *state)
+{
+#ifdef HAVE_BSV_MOVIE
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+#ifdef HAVE_REWIND
+      bool frame_is_reversed = state_manager_frame_is_reversed();
+#else
+      bool frame_is_reversed = false;
+#endif
+      if (   (input_st->bsv_movie_state.flags
+               & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
+          && !frame_is_reversed)
+      {
+         size_t _len = replay_get_serialize_size();
+         if (_len > 0 && (state->fe_replay = malloc(_len)))
+         {
+            if (replay_get_serialized_data(state->fe_replay))
+               state->fe_replay_size = _len;
+            else
+            {
+               free(state->fe_replay);
+               state->fe_replay = NULL;
+            }
+         }
+      }
+   }
+#endif
+#ifdef HAVE_CHEEVOS
+   {
+      size_t _len = rcheevos_get_serialize_size();
+      if (_len > 0 && (state->fe_cheevos = malloc(_len)))
+      {
+         if (rcheevos_get_serialized_data(state->fe_cheevos))
+            state->fe_cheevos_size = _len;
+         else
+         {
+            free(state->fe_cheevos);
+            state->fe_cheevos = NULL;
+         }
+      }
+   }
+#endif
+}
+#endif
+
 /**
  * task_push_save_state:
  * @path : file path of the save state
@@ -1511,6 +1699,13 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
    strlcpy(state->path, path, sizeof(state->path));
    state->data                   = data;
    state->size                   = len;
+#if defined(HAVE_BSV_MOVIE) || defined(HAVE_CHEEVOS)
+   /* A background save arrives without data: the worker serializes
+    * the core, and the frontend's blocks are captured here, on the
+    * main thread. */
+   if (!data)
+      content_capture_frontend_blocks(state);
+#endif
    /* Don't show OSD messages if we are auto-saving */
    if (autosave)
       state->flags              |= (  SAVE_TASK_FLAG_AUTOSAVE
@@ -1658,6 +1853,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    if (!settings->bools.notification_show_save_state)
       state->flags             |= SAVE_TASK_FLAG_MUTE;
 
+   state->frame_count           = &video_state_get_ptr()->frame_count;
    task->state                  = state;
    task->type                   = TASK_TYPE_BLOCKING;
    task->handler                = task_load_handler;
@@ -1981,6 +2177,7 @@ bool content_load_state(const char *path,
    if (!settings->bools.notification_show_save_state)
       state->flags             |= SAVE_TASK_FLAG_MUTE;
 
+   state->frame_count           = &video_state_get_ptr()->frame_count;
    task->type                   = TASK_TYPE_BLOCKING;
    task->state                  = state;
    task->handler                = task_load_handler;
@@ -2096,6 +2293,7 @@ bool content_undo_save_disabled(void)
 bool content_load_state_from_ram(void)
 {
    bool ret        = false;
+   bool ramped     = false;
 
    if (!core_info_current_supports_savestate())
    {
@@ -2112,10 +2310,17 @@ bool content_load_state_from_ram(void)
          (unsigned)ram_buf.state_buf.size,
          msg_hash_to_str(MSG_BYTES));
 
+   /* Same discontinuity as a load from disk, so the same bracket. See
+    * audio_driver_jump_fade_begin(). */
+   ramped = audio_driver_jump_fade_begin();
+
    /* Backup the current state so we can undo this load */
    content_save_state("RAM", false);
 
    ret = content_deserialize_state(ram_buf.state_buf.data, ram_buf.state_buf.size);
+
+   audio_driver_jump_fade_end(ramped);
+
    if (!ret)
    {
       RARCH_ERR("[State] %s.\n",

@@ -462,6 +462,10 @@ void dxgi_copy(
 #ifdef __WINRT__
 bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd);
 
+/* Applies, on the main thread, the HDR-setting disable the frame-path
+ * support check may have flagged; called from video_driver_frame. */
+void dxgi_hdr_process_deferred_disable(void);
+
 /* Self-contained probe: creates and releases its own factory, so the
  * caller's TU needs no COM headers. See dxgi_common.c for details. */
 bool dxgi_display_hdr_active(HWND hwnd);

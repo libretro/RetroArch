@@ -91,6 +91,8 @@ static const struct
    char s_704e200c[7];
    char s_b92166cd[13];
    char s_5d29b870[18];
+   char s_6996339b[7];
+   char s_ddf679b9[7];
    char s_10342503[13];
    char s_d31f6d88[18];
    char s_f03e9c42[20];
@@ -460,6 +462,8 @@ static const struct
    "\327\224\327\241\327\250",
    "\327\252\327\231\327\247\327\231\327\231\327\224",
    "\327\236\327\231\327\223\327\242 \327\223\327\231\327\241\327\247",
+   "\327\251\327\236\327\242",
+   "\327\244\327\234\327\230",
    "\327\224\327\225\327\250\327\223\327\225\327\252",
    "\327\224\327\225\327\250\327\223 \327\234\327\231\327\221\327\224",
    "\327\224\327\225\327\250\327\223\327\252 \327\252\327\225\327\233\327\237",
@@ -751,7 +755,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_he_blob_check[
-      (sizeof(msg_hash_he_blob) == (6144u
+      (sizeof(msg_hash_he_blob) == (6158u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 20u
@@ -866,6 +870,8 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,

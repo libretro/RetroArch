@@ -15,6 +15,10 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   samples:
     name: Build and run libretro-common/samples
@@ -28,7 +32,9 @@ jobs:
           # All three packages ship on the stock ubuntu-latest image, so
           # this step is a no-op there and apt is only contacted if the
           # image ever drops one of them.
-          if dpkg -s build-essential zlib1g-dev clang >/dev/null 2>&1; then
+          # ffmpeg (with libx264): formats/h264/rh264_lossless_test builds
+          # its lossless corpus and its reference decodes with it.
+          if dpkg -s build-essential zlib1g-dev clang ffmpeg >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
           fi
@@ -40,10 +46,28 @@ jobs:
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            build-essential zlib1g-dev clang
+            build-essential zlib1g-dev clang ffmpeg
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
 
       - name: Build and run samples
         shell: bash
@@ -72,6 +96,7 @@ jobs:
             snprintf
             unbase64_test
             crc32_test
+            emscripten_mmap_test
             archive_zip_test
             archive_zstd_test
             config_file_test
@@ -81,11 +106,13 @@ jobs:
             rpng
             rzip_chunk_size_test
             rzip_matches_buf_test
+            rzip_codec_test
             data_transfer_source_test
             data_transfer_prefix_test
             data_transfer_window_test
             audio_transfer_window_test
             rjpeg_test
+            rh264_lossless_test
             r7z_lzma_props_test
             vcdiff_test
             net_ifinfo
@@ -94,6 +121,7 @@ jobs:
             vfs_large_file_test
             vfs_seek_contract_test
             vfs_bulk_read_test
+            vfs_v5_metadata_test
             vfs_hybrid_test
             filestream_rbuf_fault_test
             cdrom_cuesheet_overflow_test
@@ -118,13 +146,38 @@ jobs:
             screenshot_io_bench
             word_wrap_overflow_test
             task_queue_title_error_test
+            task_queue_init_failure_test
             tpool_wait_test
             data_transfer_pool_scrub_test
             retro_atomic_test
             retro_atomic_extern_c_linkage_test
             retro_atomic_extern_c_linkage_test_cxx
+            # The PS2 EE backend, built off-target against a stub
+            # <kernel.h>: the PS2 CI lane compiles it, this runs it.
+            retro_atomic_ps2_backend_test
             retro_spsc_test
+            mpsc_stack_test
+            retro_waitable_spsc_test
+            retro_eventcount_test
+            # Runs its natural tier only here; Makefile.test's
+            # threads-samples forces each tier in turn.  On the
+            # runner's cores the fence check is load-bearing, which
+            # this box cannot make it.
+            retro_procbarrier_test
+            retro_asym_eventcount_test
+            msg_fifo_queue_test
             audio_mixer_loop_test
+            audio_mixer_rate_guard_test
+            # The AC-3 / E-AC-3 frame layer against ffmpeg's streams:
+            # ffmpeg is in the package list above for it.
+            rac3_frame_test
+            rac3_tables_test
+            rac3_decode_test
+            rac3_encode_test
+            # IEC 61937 bursts against ffmpeg's spdif muxer and demuxer.
+            iec61937_test
+            # The AC-3 arm of audio_transfer against ffmpeg's decode.
+            audio_transfer_ac3_test
           )
 
           # Targets that are built but deliberately not executed, each
@@ -158,6 +211,15 @@ jobs:
           # regressions but not executed.
           declare -a BUILD_ONLY_DIRS=(
             formats/xml
+            # A benchmark, not a test: its numbers only mean something
+            # on two dedicated physical cores, which a runner is not.
+            queues/retro_spsc_bench
+            # The same, and for the same reason: it reports park and
+            # commit counts under contention, which a shared runner
+            # cannot produce meaningfully. It also builds a second
+            # binary, the scond variant, and being build-only covers
+            # both without naming either.
+            rthreads/retro_eventcount_bench
           )
 
           # Samples that are currently broken at build time on a stock
@@ -399,6 +461,27 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_atomic_test
 
+      - name: Run mpsc_stack_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/queues/mpsc_stack_test
+        run: |
+          # mpsc_stack.h is the lock-free many-producer single-consumer
+          # stack the runloop's deferred messages ride.  Its contract is
+          # the push's compare-exchange publishing the node against the
+          # drain's exchange; a weakened push loses nodes under
+          # contention, observable as a drained-count mismatch AND as a
+          # TSan-reported race.  The default ASan/UBSan pass above
+          # catches neither reliably - the race needs TSan's scheduling
+          # to manifest - so this lane is the one that holds the
+          # contract.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./mpsc_stack_test
+
       - name: Run retro_spsc_test under Clang + ThreadSanitizer
         shell: bash
         working-directory: libretro-common/samples/queues/retro_spsc_test
@@ -424,6 +507,32 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_spsc_test
 
+      - name: Run retro_eventcount_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/rthreads/retro_eventcount_test
+        run: |
+          # retro_eventcount parks a consumer without putting a lock on
+          # the producer's fast path.  What it can get wrong is a lost
+          # wakeup: a notify that reads zero waiters while a consumer
+          # that has not yet seen the new epoch is on its way into a
+          # park.  The guard is a seq_cst fence on both sides, and a
+          # build with either fence weakened still passes on x86 TSO,
+          # so the value checks alone prove nothing -- TSan is what
+          # sees the missing barrier.
+          #
+          # 'make check' runs the address-wait backend and then the
+          # condition-variable one, which is the backend macOS, the
+          # BSDs and the console ports get.  Both matter; only the
+          # first is native here.
+          #
+          # The harness carries its own watchdog, so a genuine lost
+          # wakeup fails the job in a minute instead of hanging it.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make check SANITIZER=thread
+
       - name: Run crc32_test under Clang + ThreadSanitizer
         shell: bash
         working-directory: libretro-common/samples/encodings/crc32
@@ -443,6 +552,92 @@ jobs:
           CC=clang make all SANITIZER=thread
 
           TSAN_OPTIONS=halt_on_error=1 ./crc32_test
+
+  # memmap.h picks between libretro-common's mman shim and the
+  # platform's own <sys/mman.h>, and Emscripten is the target where
+  # that choice is load-bearing: its libc declares mmap with a 64-bit
+  # off_t while the shim declares a 32-bit size_t, so a consumer that
+  # sees both declarations fails to compile, and reserve/commit has no
+  # meaning behind it at all - an anonymous mmap there allocates and
+  # zeroes the whole length, and mprotect and madvise are no-ops.
+  #
+  # None of that is reachable from the native sweep above, which
+  # compiles the sample with every Emscripten branch preprocessed
+  # away.  This lane is where the declarations are held to libc's.
+  emscripten-memmap:
+    name: Emscripten memmap ABI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # Pinned rather than floating: the job exists to hold a libc ABI,
+      # so the toolchain it is held against changes deliberately.
+      EM_VERSION: 5.0.1
+      EM_CACHE_FOLDER: emsdk-cache
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
+
+      - name: Cache emsdk
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.EM_CACHE_FOLDER }}
+          key: ${{ env.EM_VERSION }}-${{ runner.os }}
+
+      - name: Set up Emscripten
+        uses: emscripten-core/setup-emsdk@v15
+        with:
+          version: ${{ env.EM_VERSION }}
+          actions-cache-folder: ${{ env.EM_CACHE_FOLDER }}
+
+      - name: Run the memmap sample under node
+        shell: bash
+        working-directory: libretro-common/samples/memmap/emscripten_mmap
+        run: |
+          set -eu
+          set -o pipefail
+          # Fails to compile without the libc declaration; the mmap
+          # assignment through an off_t-typed function pointer is the
+          # discriminator.  The mprotect / reserve / msync checks that
+          # follow it cover the calls the same header choice hands to
+          # libc.
+          make clean
+          make check-wasm
+
+      - name: Compile vfs_implementation.c with file mappings enabled
+        shell: bash
+        working-directory: libretro-common
+        run: |
+          set -eu
+          set -o pipefail
+          # The in-tree translation unit that includes memmap.h and
+          # <sys/mman.h> together.  Makefile.emscripten does not set
+          # HAVE_MMAP today, so nothing else compiles this shape for
+          # wasm - which is exactly why the two declarations can drift
+          # apart unnoticed until a downstream consumer hits it.
+          emcc -std=c89 -D_GNU_SOURCE -DHAVE_MMAP \
+             -Wall -Wextra -Werror \
+             -I include -c vfs/vfs_implementation.c \
+             -o "$RUNNER_TEMP/vfs_implementation.o"
 
   # Cross-architecture validation lane for retro_atomic_test.
   #
@@ -493,7 +688,25 @@ jobs:
             clang
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
 
       - name: Build fuzz target
         shell: bash
@@ -572,7 +785,25 @@ jobs:
             build-essential ${{ matrix.apt_pkgs }} qemu-user-static
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
 
       - name: Build retro_atomic_test for ${{ matrix.arch }}
         working-directory: libretro-common/samples/atomic/retro_atomic_test
@@ -689,7 +920,25 @@ jobs:
             build-essential ${{ matrix.apt_pkgs }} qemu-user-static
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
 
       - name: Build crc32_test for ${{ matrix.name }}
         working-directory: libretro-common/samples/encodings/crc32
@@ -728,3 +977,22 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
              ./vfs_mapped_ptr_test
           echo "[pass] vfs_mapped_ptr_test (MMAP=0, ASan)"
+
+      - name: Run vfs_v5_metadata_test against a copy_file_range that ignores len
+        shell: bash
+        working-directory: libretro-common/samples/file/vfs
+        run: |
+          set -eu
+          # A sandboxed kernel (gVisor on some hosted runners) answers
+          # copy_file_range by copying to EOF regardless of len.  The
+          # VFS must account the bytes, retire the kernel path for the
+          # process, and finish the copy in place on the portable path.
+          # FAKE_CFR=1 is the to-EOF case, FAKE_CFR=2 a partial overshoot
+          # that leaves the copy part-way and has to be resumed.
+          for mode in 1 2; do
+            make clean >/dev/null
+            make vfs_v5_metadata_test FAKE_CFR=$mode SANITIZER=address,undefined
+            ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+               ./vfs_v5_metadata_test
+            echo "[pass] vfs_v5_metadata_test (FAKE_CFR=$mode, ASan)"
+          done

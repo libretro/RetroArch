@@ -66,6 +66,7 @@
 #endif
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
+#include <compat/strl.h>
 #endif
 
 #ifdef __WINRT__
@@ -274,6 +275,7 @@ typedef struct
       uint32_t                   rotation;
       uint32_t                   total_subframes;
       uint32_t                   current_subframe;
+      uint32_t                   swap_count;
       float                      core_aspect;
       float                      core_aspect_rot;
 
@@ -1855,6 +1857,7 @@ static bool d3d10_shader_load_step(void *data,
                &d3d10->pass[i].core_aspect_rot,
                &d3d10->pass[i].total_subframes,
                &d3d10->pass[i].current_subframe,
+               &d3d10->pass[i].swap_count,
             }
          };
 
@@ -1889,12 +1892,12 @@ static bool d3d10_shader_load_step(void *data,
                ds->shader_preset->pass[i].source.string.fragment;
             size_t _len = strlcpy(_path, slang_path, sizeof(_path));
 
-            strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
             d3d10_init_shader(d3d10->device, vs_src, 0,
                   _path, "main", NULL, NULL, desc, countof(desc),
                   &ds->passes[i].shader);
 
-            strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
             d3d10_init_shader(d3d10->device, ps_src, 0, _path,
                   NULL, "main", NULL, NULL, 0,
                   &ds->passes[i].shader);
@@ -2071,6 +2074,7 @@ static bool d3d10_gfx_set_shader(void* data,
             &d3d10->pass[i].core_aspect_rot, /* OriginalAspectRotated */
             &d3d10->pass[i].total_subframes, /* TotalSubFrames */
             &d3d10->pass[i].current_subframe,/* CurrentSubFrame */
+            &d3d10->pass[i].swap_count, /* SwapCount */
          }
       };
       /* clang-format on */
@@ -2093,13 +2097,13 @@ static bool d3d10_gfx_set_shader(void* data,
          const char *vs_src     = d3d10->shader_preset->pass[i].source.string.vertex;
          const char *ps_src     = d3d10->shader_preset->pass[i].source.string.fragment;
          size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
-         strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
 
          d3d10_init_shader(d3d10->device, vs_src, 0,
                _path, "main", NULL, NULL, desc,
                countof(desc), &d3d10->pass[i].shader);
 
-         strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
 
          d3d10_init_shader(d3d10->device, ps_src,
                0, _path, NULL, "main",
@@ -2234,7 +2238,7 @@ static void d3d10_gfx_free(void* data)
 
 
 #if 0
-   video_st_flags = video_st->flags;
+   video_st_flags = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
    if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {
       cached_device_d3d10 = d3d10->device;
@@ -3029,6 +3033,15 @@ static bool d3d10_gfx_frame(
 
    if (d3d10->shader_preset)
    {
+      /* Loop-invariant for the whole chain: every pass of one frame
+       * sees the same frame. Gathered once rather than once per pass. */
+      uint32_t pass_frame_time_delta;
+      uint32_t pass_rotation;
+      int32_t  pass_frame_direction;
+      float    pass_original_fps;
+      float    pass_core_aspect;
+      float    pass_core_aspect_rot;
+
       for (i = 0; i < d3d10->shader_preset->passes; i++)
       {
          if (d3d10->shader_preset->pass[i].feedback)
@@ -3039,10 +3052,23 @@ static bool d3d10_gfx_frame(
          }
       }
 
+      pass_frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
+      pass_original_fps     = video_driver_get_original_fps();
+      pass_rotation         = retroarch_get_rotation();
+      pass_core_aspect      = video_driver_get_core_aspect();
+      pass_core_aspect_rot  = pass_core_aspect;
+#ifdef HAVE_REWIND
+      pass_frame_direction  = state_manager_frame_is_reversed() ? -1 : 1;
+#else
+      pass_frame_direction  = 1;
+#endif
+      /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
+      if (pass_rotation == 1 || pass_rotation == 3)
+         pass_core_aspect_rot = 1 / pass_core_aspect_rot;
+
       for (i = 0; i < d3d10->shader_preset->passes; i++)
       {
          int j;
-         uint32_t rot;
 
          d3d10_set_shader(context, &d3d10->pass[i].shader);
 
@@ -3052,21 +3078,12 @@ static bool d3d10_gfx_frame(
          else
             d3d10->pass[i].frame_count   = frame_count;
 
-#ifdef HAVE_REWIND
-         d3d10->pass[i].frame_direction  = state_manager_frame_is_reversed()
-            ? -1 : 1;
-#else
-         d3d10->pass[i].frame_direction  = 1;
-#endif
-         d3d10->pass[i].frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
-         d3d10->pass[i].original_fps     = video_driver_get_original_fps();
-         d3d10->pass[i].rotation         = retroarch_get_rotation();
-         d3d10->pass[i].core_aspect      = video_driver_get_core_aspect();
-         /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
-         d3d10->pass[i].core_aspect_rot  = video_driver_get_core_aspect();
-         rot = retroarch_get_rotation();
-         if (rot == 1 || rot == 3)
-            d3d10->pass[i].core_aspect_rot = 1/d3d10->pass[i].core_aspect_rot;
+         d3d10->pass[i].frame_direction  = pass_frame_direction;
+         d3d10->pass[i].frame_time_delta = pass_frame_time_delta;
+         d3d10->pass[i].original_fps     = pass_original_fps;
+         d3d10->pass[i].rotation         = pass_rotation;
+         d3d10->pass[i].core_aspect      = pass_core_aspect;
+         d3d10->pass[i].core_aspect_rot  = pass_core_aspect_rot;
 
          /* Sub-frame info for multiframe shaders (per real content frame).
             Should always be 1 for non-use of subframes */
@@ -3082,6 +3099,7 @@ static bool d3d10_gfx_frame(
               d3d10->pass[i].total_subframes = video_info->shader_subframes;
 
            d3d10->pass[i].current_subframe = 1;
+           d3d10->pass[i].swap_count       = (uint32_t)video_info->swap_count;
          }
 
          for (j = 0; j < SLANG_CBUFFER_MAX; j++)
@@ -3470,6 +3488,7 @@ static bool d3d10_gfx_frame(
             {
                d3d10->pass[m].total_subframes = video_info->shader_subframes;
                d3d10->pass[m].current_subframe = k+1;
+               d3d10->pass[m].swap_count       = (uint32_t)(video_info->swap_count + k);
             }
          if (!d3d10_gfx_frame(d3d10, NULL, 0, 0, frame_count, 0, msg,
                   video_info))
@@ -4007,6 +4026,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
    &d3d10_font,
    GFX_VIDEO_DRIVER_DIRECT3D10,
    "d3d10",
+   true,
    true,
    gfx_display_d3d10_scissor_begin,
    gfx_display_d3d10_scissor_end

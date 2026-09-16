@@ -93,6 +93,9 @@ struct apng_frame
     * framing or fdAT sequence numbers. */
    struct apng_part *parts;
    int      num_parts;
+   /* Byte span of the frame's data chunks, first chunk header to the
+    * last chunk's CRC end: what must be resident to decode it. */
+   size_t   data_start, data_end;
 };
 
 struct rpng_apng_stream
@@ -364,6 +367,9 @@ static bool apng_index(rpng_apng_stream_t *s)
             f->parts = np;
             f->parts[f->num_parts].off = (size_t)(pay - s->buf);
             f->parts[f->num_parts].len = clen;
+            if (f->num_parts == 0)
+               f->data_start = p;
+            f->data_end = p + chunk_total;
             f->num_parts++;
          }
          /* else: non-animated default image, skipped for animation */
@@ -384,6 +390,9 @@ static bool apng_index(rpng_apng_stream_t *s)
             /* Skip the 4-byte sequence number; the rest is data. */
             f->parts[f->num_parts].off = (size_t)(pay - s->buf) + 4;
             f->parts[f->num_parts].len = clen - 4;
+            if (f->num_parts == 0)
+               f->data_start = p;
+            f->data_end = p + chunk_total;
             f->num_parts++;
          }
       }
@@ -498,18 +507,55 @@ rpng_apng_stream_t *rpng_apng_stream_open_avail(const uint8_t *buf,
    return s;
 }
 
-/* Declare how many leading bytes are resident; monotonic.  Resumes the
- * chunk walk so frames that have since arrived become playable. */
+/* Declare how many leading bytes are readable.  An exact store, not a
+ * raise: a windowing feeder takes pages back behind the decoder and
+ * rewinds its window at a loop, so the bound must be allowed to fall or
+ * next() would decode a frame off pages that are no longer there.  The
+ * index (chunk offsets) survives a lowered bound; only decoding checks
+ * against it.  A raise resumes the chunk walk so frames that have since
+ * arrived become playable. */
 void rpng_apng_stream_set_avail(rpng_apng_stream_t *s, size_t avail)
 {
+   size_t was;
    if (!s)
       return;
    if (avail > s->len)
       avail = s->len;
-   if (avail <= s->avail)
-      return;
+   was      = s->avail;
    s->avail = avail;
-   apng_index(s);   /* extends s->indexed; malformed input just stops it */
+   if (avail > was)
+      apng_index(s);   /* extends s->indexed; malformed input just stops it */
+}
+
+size_t rpng_apng_stream_media_floor(const rpng_apng_stream_t *s)
+{
+   if (!s || s->indexed < 1)
+      return 0;
+   return s->frames[0].data_start;
+}
+
+size_t rpng_apng_stream_consumed(const rpng_apng_stream_t *s)
+{
+   if (!s)
+      return 0;
+   if (s->cursor < s->indexed)
+      return s->frames[s->cursor].data_start;
+   return s->index_done ? s->len : s->scan_pos;
+}
+
+void rpng_apng_stream_next_span(const rpng_apng_stream_t *s,
+      size_t *lo, size_t *hi)
+{
+   if (lo)
+      *lo = 0;
+   if (hi)
+      *hi = 0;
+   if (!s || s->cursor >= s->indexed)
+      return;
+   if (lo)
+      *lo = s->frames[s->cursor].data_start;
+   if (hi)
+      *hi = s->frames[s->cursor].data_end;
 }
 
 void rpng_apng_stream_get_info(const rpng_apng_stream_t *s,
@@ -732,6 +778,11 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
       return NULL;
 
    f = &s->frames[s->cursor];
+   /* Indexed, but the data chunks must also lie below the readable
+    * bound right now: a windowing feeder lowers it when it takes pages
+    * back.  Nothing consumed; the caller retries once fed. */
+   if (f->data_end > s->avail)
+      return NULL;
 
    /* Apply the previous frame's disposal to the canvas. */
    apng_apply_prev_dispose(s);
@@ -782,21 +833,46 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
    return s->canvas;
 }
 
+static void apng_swap_rb(uint32_t *px, size_t n)
+{
+   size_t i;
+   for (i = 0; i < n; i++)
+   {
+      uint32_t v = px[i];
+      px[i] = (v & 0xFF00FF00u) | ((v & 0xFFu) << 16) | ((v >> 16) & 0xFFu);
+   }
+}
+
 bool rpng_apng_stream_set_argb(rpng_apng_stream_t *s, int argb)
 {
-   /* Honoured only at a clean boundary (before any frame emitted or
-    * right after a rewind); the canvas is composited in whatever order
-    * frames are decoded in, and switching mid-animation would require
-    * re-swizzling the persistent canvas.  Report success only when it
-    * can be applied cleanly so the caller keeps converting otherwise. */
+   int want;
    if (!s)
       return false;
-   if (s->emitted == 0)
-   {
-      s->emit_argb = argb ? 1 : 0;
+   want = argb ? 1 : 0;
+   /* The order already being emitted is trivially honoured.  This
+    * used to answer false to ANY ask after the first frame - including
+    * the repeat ask for the same order - and the raster menu's worker
+    * asks per frame and swizzles on false: every APNG frame but the
+    * first came out with R and B swapped, after a full-canvas pass it
+    * did not need. */
+   if (want == s->emit_argb)
       return true;
+   /* A real switch: the order is a property of the persistent canvas
+    * (frames blend onto it), so convert it in place once, at this
+    * frame boundary, as rwebp does - and the region saved for a
+    * pending DISPOSE_PREVIOUS with it, since that is copied back onto
+    * the canvas before the next frame.  Compositing itself is
+    * order-agnostic (alpha is the top byte either way).  Before any
+    * frame the canvas is all zeros and the flag just flips. */
+   if (s->emitted > 0 && s->canvas)
+   {
+      apng_swap_rb(s->canvas, (size_t)s->canvas_w * (size_t)s->canvas_h);
+      if (s->have_prev && s->prev_save
+            && s->prev_dispose == APNG_DISPOSE_PREVIOUS)
+         apng_swap_rb(s->prev_save, (size_t)s->prev_w * (size_t)s->prev_h);
    }
-   return false;
+   s->emit_argb = want;
+   return true;
 }
 
 void rpng_apng_stream_rewind(rpng_apng_stream_t *s)

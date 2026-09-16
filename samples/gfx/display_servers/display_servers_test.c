@@ -109,6 +109,7 @@
 #include <string.h>
 
 #include <X11/Xlibint.h>
+#include <X11/Xatom.h>
 #include <X11/extensions/Xrandr.h>
 
 #include "../../../gfx/video_display_server.h"
@@ -139,6 +140,17 @@ typedef struct
    int output_ncrtc;
 
    int output_connection; /* RR_Connected or RR_Disconnected */
+
+   /* A real server lists the output's crtc among the screen's; the
+    * orientation cases deliberately keep them disjoint to catch
+    * indexing one array with the other, so the modeline cases opt
+    * in to the realistic layout. */
+   int output_crtc_in_screen;
+
+   /* get_edid: the "EDID" output property. 0 bytes = no property (a
+    * DDX that does not relay it, or a DDC-less CRT). */
+   int edid_len;
+   int fail_output_property;
 } stub_cfg_t;
 
 typedef struct
@@ -147,6 +159,10 @@ typedef struct
    int    set_crtc_config_calls;
    RRCrtc queried_crtcs[MAX_LOGGED];
    RRCrtc configured_crtcs[MAX_LOGGED];
+   int    create_mode_calls;
+   int    destroy_mode_calls;
+   int    add_output_mode_calls;
+   int    delete_output_mode_calls;
    int    bad_free;
 } stub_log_t;
 
@@ -288,6 +304,92 @@ int XDeleteProperty(Display *dpy, Window w, Atom prop)
    return 0;
 }
 
+int XFree(void *p)
+{
+   stub_free(p);
+   return 1;
+}
+
+int XRRGetOutputProperty(Display *dpy, RROutput output, Atom property,
+      long offset, long length, Bool delete_, Bool pending, Atom req_type,
+      Atom *actual_type, int *actual_format, unsigned long *nitems,
+      unsigned long *bytes_after, unsigned char **prop)
+{
+   unsigned char *p;
+   int i;
+   (void)dpy; (void)output; (void)property; (void)offset; (void)delete_;
+   (void)pending; (void)req_type;
+   s_tag = "output_property";
+   *prop = NULL;
+   *nitems = 0;
+   *bytes_after = 0;
+   if (s_cfg.fail_output_property)
+      return BadAtom;
+   *actual_type   = s_cfg.edid_len ? XA_INTEGER : None;
+   *actual_format = s_cfg.edid_len ? 8 : 0;
+   if (!s_cfg.edid_len)
+      return Success;
+   if (length * 4 < s_cfg.edid_len)
+   {
+      fprintf(stderr, "FAIL: get_edid asked for %ld bytes, the property holds %d\n",
+            length * 4, s_cfg.edid_len);
+      exit(1);
+   }
+   if (!(p = (unsigned char*)stub_alloc((size_t)s_cfg.edid_len)))
+      return BadAlloc;
+   for (i = 0; i < s_cfg.edid_len; i++)
+      p[i] = (unsigned char)(i * 5 + 1);
+   *nitems = (unsigned long)s_cfg.edid_len;
+   *prop   = p;
+   return Success;
+}
+
+/* The modeline path traps X errors around each RandR call; the
+ * stub never raises one, so the handler is stored and returned. */
+static XErrorHandler s_error_handler;
+XErrorHandler XSetErrorHandler(XErrorHandler handler)
+{
+   XErrorHandler old = s_error_handler;
+   s_error_handler   = handler;
+   return old;
+}
+
+int XClearWindow(Display *dpy, Window w) { (void)dpy; (void)w; return 0; }
+
+/* The modeline path locates the head under the RetroArch window;
+ * g_x11_win is 0 here, so neither is reached, but the driver links
+ * them. */
+Status XGetWindowAttributes(Display *dpy, Window w, XWindowAttributes *attr)
+{
+   (void)dpy; (void)w;
+   memset(attr, 0, sizeof(*attr));
+   return 0;
+}
+
+Bool XTranslateCoordinates(Display *dpy, Window src, Window dst,
+      int sx, int sy, int *dx, int *dy, Window *child)
+{
+   (void)dpy; (void)src; (void)dst; (void)sx; (void)sy;
+   *dx = *dy = 0;
+   *child = 0;
+   return False;
+}
+
+GC XCreateGC(Display *dpy, Drawable d, unsigned long mask, XGCValues *v)
+{
+   (void)dpy; (void)d; (void)mask; (void)v;
+   return (GC)stub_alloc(16);
+}
+
+int XFreeGC(Display *dpy, GC gc) { (void)dpy; stub_free(gc); return 0; }
+
+int XFillRectangle(Display *dpy, Drawable d, GC gc, int x, int y,
+      unsigned int w, unsigned int h)
+{
+   (void)dpy; (void)d; (void)gc; (void)x; (void)y; (void)w; (void)h;
+   return 0;
+}
+
 /* ------------------------------------------------------------------
  * XRandR
  * ------------------------------------------------------------------ */
@@ -356,6 +458,33 @@ void XRRFreeScreenResources(XRRScreenResources *r)
    stub_free(r);
 }
 
+Status XRRQueryVersion(Display *dpy, int *major, int *minor)
+{
+   (void)dpy;
+   *major = 1;
+   *minor = 5;
+   return 1;
+}
+
+Rotation XRRConfigCurrentConfiguration(XRRScreenConfiguration *c,
+      Rotation *rotation)
+{
+   (void)c;
+   *rotation = RR_Rotate_0;
+   return RR_Rotate_0;
+}
+
+Status XRRGetScreenSizeRange(Display *dpy, Window w, int *min_w,
+      int *min_h, int *max_w, int *max_h)
+{
+   (void)dpy; (void)w;
+   *min_w = 320;
+   *min_h = 200;
+   *max_w = 16384;
+   *max_h = 16384;
+   return 1;
+}
+
 XRRScreenConfiguration *XRRGetScreenInfo(Display *dpy, Window w)
 {
    (void)dpy; (void)w;
@@ -388,7 +517,7 @@ XRROutputInfo *XRRGetOutputInfo(Display *dpy, XRRScreenResources *res,
    o->connection = (unsigned short)s_cfg.output_connection;
    o->name       = (char*)"STUB-1";
    o->nameLen    = 6;
-   o->crtc       = OUTPUT_CRTC_BASE;
+   o->crtc       = s_cfg.output_crtc_in_screen ? SCREEN_CRTC_BASE : OUTPUT_CRTC_BASE;
    o->ncrtc      = s_cfg.output_ncrtc;
 
    if (o->ncrtc > 0)
@@ -463,19 +592,27 @@ RRMode XRRCreateMode(Display *dpy, Window w, XRRModeInfo *info)
       strncpy(s_mode_name, info->name, n);
       s_mode_name[n] = '\0';
    }
+   s_log.create_mode_calls++;
    return 42;
 }
 
-void XRRDestroyMode(Display *dpy, RRMode mode) { (void)dpy; (void)mode; }
+void XRRDestroyMode(Display *dpy, RRMode mode)
+{
+   (void)dpy; (void)mode;
+   s_log.destroy_mode_calls++;
+   s_mode_name[0] = '\0';
+}
 
 void XRRAddOutputMode(Display *dpy, RROutput out, RRMode mode)
 {
    (void)dpy; (void)out; (void)mode;
+   s_log.add_output_mode_calls++;
 }
 
 void XRRDeleteOutputMode(Display *dpy, RROutput out, RRMode mode)
 {
    (void)dpy; (void)out; (void)mode;
+   s_log.delete_output_mode_calls++;
 }
 
 /* ------------------------------------------------------------------
@@ -499,7 +636,9 @@ size_t strlcpy_retro__(char *dest, const char *source, size_t size)
    return src_size;
 }
 
-void video_monitor_set_refresh_rate(float hz) { (void)hz; }
+void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
+void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
+void RARCH_ERR(const char *fmt, ...)  { (void)fmt; }
 
 /* ------------------------------------------------------------------
  * Cases
@@ -726,40 +865,143 @@ static int test_set_orientation_query_failures(void)
    return 0;
 }
 
-static int test_set_resolution_query_failures(void)
+/* The modeline path: open binds the connected output, add creates a
+ * RandR mode and attaches it, set reconfigures the crtc, delete
+ * detaches and destroys, close puts the desktop back. Each failing
+ * query must fail the op cleanly, never signal or leak. */
+static int test_modeline_lifecycle(void)
+{
+   stub_cfg_t cfg;
+   void *data;
+   video_modeline_disp_t ds;
+   video_modeline_t mode;
+   video_modeline_t listed[8];
+   int n;
+
+   cfg_default(&cfg);
+   cfg.output_crtc_in_screen = 1;
+   stub_reset(&cfg);
+   memset(&ds, 0, sizeof(ds));
+   strcpy(ds.screen, "auto");
+
+   memset(&mode, 0, sizeof(mode));
+   mode.pclock  = 6700000;
+   mode.width   = mode.hactive = 320;
+   mode.hbegin  = 336;
+   mode.hend    = 367;
+   mode.htotal  = 426;
+   mode.height  = mode.vactive = 240;
+   mode.vbegin  = 244;
+   mode.vend    = 247;
+   mode.vtotal  = 262;
+   mode.vfreq   = 60.0;
+   mode.refresh = 60;
+
+   data = dispserv_x11.init();
+   if (!dispserv_x11.modeline_open(data, &ds))
+   {
+      fprintf(stderr, "FAIL: modeline_open failed on a connected output\n");
+      return 1;
+   }
+   if (dispserv_x11.modeline_caps(data) != MODELINE_CAPS_ADD)
+   {
+      fprintf(stderr, "FAIL: XRandR caps should be ADD only\n");
+      return 1;
+   }
+   n = dispserv_x11.modeline_enum(data, listed, 8);
+   if (n < 0)
+   {
+      fprintf(stderr, "FAIL: modeline_enum failed\n");
+      return 1;
+   }
+   if (!dispserv_x11.modeline_add(data, &mode) || mode.platform_data != 42)
+   {
+      fprintf(stderr, "FAIL: modeline_add did not create and attach the mode\n");
+      return 1;
+   }
+   if (s_log.create_mode_calls != 1 || s_log.add_output_mode_calls != 1)
+   {
+      fprintf(stderr, "FAIL: add made %d create / %d attach calls\n",
+            s_log.create_mode_calls, s_log.add_output_mode_calls);
+      return 1;
+   }
+   if (!dispserv_x11.modeline_set(data, &mode))
+   {
+      fprintf(stderr, "FAIL: modeline_set failed on the added mode\n");
+      return 1;
+   }
+   if (s_log.set_crtc_config_calls == 0)
+   {
+      fprintf(stderr, "FAIL: set configured no crtc\n");
+      return 1;
+   }
+   if (!dispserv_x11.modeline_delete(data, &mode) || mode.platform_data != 0)
+   {
+      fprintf(stderr, "FAIL: modeline_delete did not remove the mode\n");
+      return 1;
+   }
+   if (s_log.delete_output_mode_calls != 1 || s_log.destroy_mode_calls != 1)
+   {
+      fprintf(stderr, "FAIL: delete made %d detach / %d destroy calls\n",
+            s_log.delete_output_mode_calls, s_log.destroy_mode_calls);
+      return 1;
+   }
+   dispserv_x11.modeline_close(data);
+   dispserv_x11.destroy(data);
+
+   if (s_log.bad_free)
+   {
+      fprintf(stderr, "FAIL: modeline lifecycle produced %d bad free(s)\n",
+            s_log.bad_free);
+      return 1;
+   }
+   if (stub_leaks("modeline lifecycle"))
+      return 1;
+
+   printf("[pass] modeline open/add/set/delete/close on XRandR\n");
+   return 0;
+}
+
+static int test_modeline_query_failures(void)
 {
    int i;
 
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < 4; i++)
    {
       stub_cfg_t cfg;
       void *data;
+      video_modeline_disp_t ds;
       const char *what;
+      bool opened;
 
       cfg_default(&cfg);
-      if (i == 0)
+      switch (i)
       {
-         cfg.fail_output_info = 1;
-         what                 = "output_info";
-      }
-      else
-      {
-         cfg.fail_crtc_info = 1;
-         what               = "crtc_info";
+         case 0: cfg.fail_open_display     = 1; what = "open_display";     break;
+         case 1: cfg.fail_screen_resources = 1; what = "screen_resources"; break;
+         case 2: cfg.fail_output_info      = 1; what = "output_info";      break;
+         default: cfg.output_connection = RR_Disconnected; what = "disconnected"; break;
       }
       stub_reset(&cfg);
+      memset(&ds, 0, sizeof(ds));
+      strcpy(ds.screen, "auto");
 
-      data = dispserv_x11.init();
-      dispserv_x11.set_resolution(data, 1280, 720, 60, 60.0f, 0, 0, 0, 0);
-      dispserv_x11.destroy(data);
-
-      if (i == 1 && s_log.set_crtc_config_calls != 0)
+      data   = dispserv_x11.init();
+      opened = dispserv_x11.modeline_open(data, &ds);
+      if (opened)
       {
-         fprintf(stderr,
-               "FAIL: crtc_info failure still configured %d crtc(s)\n",
-               s_log.set_crtc_config_calls);
+         fprintf(stderr, "FAIL: %s failure still opened the modeline path\n", what);
          return 1;
       }
+      /* Ops after a failed open must refuse rather than dereference */
+      if (dispserv_x11.modeline_enum(data, NULL, 0) != -1)
+      {
+         fprintf(stderr, "FAIL: %s: enum after failed open did not refuse\n", what);
+         return 1;
+      }
+      dispserv_x11.modeline_close(data);
+      dispserv_x11.destroy(data);
+
       if (s_log.bad_free)
       {
          fprintf(stderr, "FAIL: %s failure produced %d bad free(s)\n",
@@ -770,12 +1012,87 @@ static int test_set_resolution_query_failures(void)
          return 1;
    }
 
-   printf("[pass] set_resolution survives its failing queries\n");
+   printf("[pass] modeline_open survives its failing queries\n");
+   return 0;
+}
+
+/* ------------------------------------------------------------------
+ * get_edid: the output property under the window, whole blocks only,
+ * every query freed, and no other head's block when this one has
+ * none.
+ * ------------------------------------------------------------------ */
+
+static int test_get_edid(void)
+{
+   int i;
+
+   for (i = 0; i < 6; i++)
+   {
+      stub_cfg_t cfg;
+      void *data;
+      uint8_t out[1024];
+      int n, want;
+      size_t max = sizeof(out);
+      const char *what;
+
+      cfg_default(&cfg);
+      switch (i)
+      {
+         case 0: cfg.edid_len = 256;      want = 256; what = "two blocks";     break;
+         case 1: cfg.edid_len = 256 + 17; want = 256; what = "stray bytes";    break;
+         case 2: cfg.edid_len = 256; max = 200; want = 128; what = "short buffer"; break;
+         case 3: cfg.edid_len = 0;        want = -1;  what = "no property";    break;
+         case 4: cfg.fail_output_property = 1; want = -1; what = "property error"; break;
+         default: cfg.fail_screen_resources = 1; cfg.edid_len = 256; want = -1;
+                  what = "screen_resources"; break;
+      }
+      stub_reset(&cfg);
+      memset(out, 0xee, sizeof(out));
+
+      data = dispserv_x11.init();
+      n    = dispserv_x11.get_edid(data, out, max);
+      dispserv_x11.destroy(data);
+
+      /* -1 cases may still find a real block through DRM sysfs on
+       * the box running the test */
+      if (want == -1 ? (n != -1 && (n < 128 || n % 128)) : n != want)
+      {
+         fprintf(stderr, "FAIL: get_edid %s returned %d, want %d\n", what, n, want);
+         return 1;
+      }
+      if (want > 0)
+      {
+         int b;
+         for (b = 0; b < want; b++)
+            if (out[b] != (uint8_t)(b * 5 + 1))
+            {
+               fprintf(stderr, "FAIL: get_edid %s byte %d wrong\n", what, b);
+               return 1;
+            }
+         if (out[want] != 0xee)
+         {
+            fprintf(stderr, "FAIL: get_edid %s wrote past %d\n", what, want);
+            return 1;
+         }
+      }
+      if (s_log.bad_free)
+      {
+         fprintf(stderr, "FAIL: get_edid %s produced %d bad free(s)\n",
+               what, s_log.bad_free);
+         return 1;
+      }
+      if (stub_leaks(what))
+         return 1;
+   }
+
+   printf("[pass] get_edid reads the output property in whole blocks and frees its queries\n");
    return 0;
 }
 
 int main(void)
 {
+   if (test_get_edid())
+      return 1;
    if (test_orientation_query_failures())
       return 1;
    if (test_orientation_output_disconnected())
@@ -786,7 +1103,9 @@ int main(void)
       return 1;
    if (test_set_orientation_query_failures())
       return 1;
-   if (test_set_resolution_query_failures())
+   if (test_modeline_lifecycle())
+      return 1;
+   if (test_modeline_query_failures())
       return 1;
 
    puts("ALL OK");

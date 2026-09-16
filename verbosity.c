@@ -79,8 +79,21 @@
 #include "verbosity.h"
 #include "file_path_special.h"
 
-#ifdef HAVE_QT
+#ifdef RARCH_INTERNAL
+/* Defines HAVE_COMPANION_WIMP when a desktop companion (Qt, native
+ * Win32, native Cocoa) is in the build; its log view mirrors the log. */
 #include "ui/ui_companion_driver.h"
+#endif
+
+/* The companion copy of a log line is formatted from a copy of the
+ * argument list so the platform sink below still sees an untouched one.
+ * C89 has no va_copy; gcc/clang spell the same thing __va_copy. */
+#ifndef va_copy
+# ifdef __va_copy
+#  define va_copy(dst, src) __va_copy(dst, src)
+# else
+#  define va_copy(dst, src) ((dst) = (src))
+# endif
 #endif
 
 #ifdef RARCH_INTERNAL
@@ -160,6 +173,14 @@ bool is_logging_to_file(void)
    return main_verbosity_st.initialized;
 }
 
+/* The one consumer is the menu's LOG_VERBOSITY setting, which
+ * binds this as its boolean target. The framework writes through
+ * it, and the setting's change handler immediately re-drives
+ * verbosity_enable()/verbosity_disable() from the written value, so
+ * the console attach/detach side effect always follows. Removing
+ * the getter would mean shadowing the flag in menu code and syncing
+ * it by hand; a bound pointer with a reconciling handler is the
+ * smaller contract. Nothing else may write through this. */
 bool *verbosity_get_ptr(void)
 {
    return &main_verbosity_st.verbosity;
@@ -168,12 +189,23 @@ bool *verbosity_get_ptr(void)
 void retro_main_log_file_init(const char *path, bool append)
 {
    FILE *tmp;
+#ifdef HAVE_LIBNX
+   static bool mtx_inited = false;
+#endif
 
    if (main_verbosity_st.initialized)
       return;
 
 #ifdef HAVE_LIBNX
-   mutexInit(&main_verbosity_st.mtx);
+   /* Once for the process: a file->console->file cycle re-enters
+    * here, and re-initializing a mutex another thread may be
+    * holding for a write is exactly the race the mutex exists to
+    * prevent. Deinit never destroys it for the same reason. */
+   if (!mtx_inited)
+   {
+      mutexInit(&main_verbosity_st.mtx);
+      mtx_inited = true;
+   }
 #endif
 
    /* Default to stderr; only override when a valid path is given */
@@ -222,10 +254,120 @@ void retro_main_log_file_deinit(void)
 }
 
 #if !defined(HAVE_LOGGER)
+/* Compiled for every consumer past the Xbox/WinRT head branch,
+ * which formats into its own bounded buffer: the Android file arm,
+ * the Apple arms (one format feeding printf/os_log/asl and the
+ * file), the desktop companion mirror, and the generic branch. */
+#if defined(ANDROID) \
+ || (!defined(_XBOX1) && !defined(__WINRT__))
+/* Format tag and message into one buffer and write it with a single
+ * stdio call: the per-call lock then keeps concurrent lines whole.
+ * Lines wider than the stack buffer take an exact-sized heap detour
+ * rather than truncating; if that allocation fails, the truncated
+ * stack line ships - a shortened message over a dropped one. */
+/* Format "tag body" once into the caller's stack line, taking an
+ * exact-sized heap detour for wider lines rather than truncating
+ * (allocation failure ships the truncated stack line - a shortened
+ * message over a dropped one). Returns the buffer to hand to every
+ * sink; *heap is owned by the caller and freed after the sinks are
+ * done. Consumes one formatting pass of ap (plus one of a private
+ * copy for the measuring pass). */
+static const char *rarch_log_line_format(char *line, size_t line_size,
+      char **heap, const char *tag_v, const char *fmt, va_list ap)
+{
+   int t_len    = snprintf(line, line_size, "%s ", tag_v);
+   int b_len;
+   va_list ap_cp;
+
+   *heap = NULL;
+
+   if (t_len < 0 || t_len >= (int)line_size)
+      t_len = 0;
+
+   va_copy(ap_cp, ap);
+   b_len = vsnprintf(line + t_len, line_size - (size_t)t_len,
+         fmt, ap_cp);
+   va_end(ap_cp);
+
+   if (b_len >= (int)(line_size - (size_t)t_len))
+   {
+      size_t need = (size_t)t_len + (size_t)b_len + 1;
+      if ((*heap = (char*)malloc(need)))
+      {
+         memcpy(*heap, line, (size_t)t_len);
+         vsnprintf(*heap + t_len, need - (size_t)t_len, fmt, ap);
+         return *heap;
+      }
+   }
+   else if (b_len < 0)
+      line[t_len] = '\0';
+
+   return line;
+}
+
+/* Errors and warnings must survive a crash whose report they may be,
+ * so their lines reach the OS before this returns. Informational
+ * traffic rides stdio's buffer - the per-line flush was the file
+ * sink's dominant cost - and becomes durable at the flush points:
+ * rarch_log_file_deinit()'s fclose, and any later flushed line on
+ * the same stream. The cost of that ride is the documented one: a
+ * hard crash can lose the buffered tail of INFO/DEBUG lines written
+ * after the last error or warning. Tags are matched by exact label;
+ * a core-supplied custom tag rides the buffer like INFO. */
+static bool rarch_log_tag_wants_flush(const char *tag_v)
+{
+   /* strcmp, not memcmp with the pattern's sizeof: the tag can be a
+    * shorter string than the pattern ("[WARN]" against "[ERROR]"'s
+    * eight bytes), and a sized compare reads past its terminator -
+    * a one-byte overread AddressSanitizer stops the process for. */
+   return strcmp(tag_v, FILE_PATH_LOG_ERROR) == 0
+       || strcmp(tag_v, FILE_PATH_LOG_WARN)  == 0;
+}
+
+/* One write - and, for lines that must not wait, one flush - under
+ * the LibNX mutex where it exists. */
+static void rarch_log_line_emit(FILE *fp, const char *out, bool flush)
+{
+#if defined(HAVE_LIBNX)
+   /* Around exactly one write and its flush; libnx newlib's stdio
+    * locking history is why this exists at all. */
+   mutexLock(&main_verbosity_st.mtx);
+#endif
+   fputs(out, fp);
+   if (flush)
+      fflush(fp);
+#if defined(HAVE_LIBNX)
+   mutexUnlock(&main_verbosity_st.mtx);
+#endif
+}
+
+#if defined(ANDROID)
+/* The Android file arm is the one caller that still wants
+ * format-and-emit as a unit; the generic and Apple region formats
+ * once up front and hands the buffer to each sink itself. */
+static void rarch_log_line_write(FILE *fp, const char *tag_v,
+      const char *fmt, va_list ap)
+{
+   char line[1024];
+   char *heap      = NULL;
+   const char *out = rarch_log_line_format(line, sizeof(line), &heap,
+         tag_v, fmt, ap);
+
+   rarch_log_line_emit(fp, out, rarch_log_tag_wants_flush(tag_v));
+   free(heap);
+}
+#endif
+#endif
+
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
 #if defined(_XBOX1) || defined(__WINRT__)
-   char buffer[256];
+   /* wvsprintf takes no size and writes past any small buffer on a
+    * long expansion; vsnprintf is bounded on both targets (the msvc
+    * compat header maps it for the Xbox toolchain), and 1024 matches
+    * the line budget the generic branch uses. Truncation stays the
+    * policy here - no heap on this target. */
+   char buffer[1024];
    int _len;
    const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
    buffer[0] = '\0';
@@ -233,13 +375,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          "%s: %s ", FILE_PATH_PROGRAM_NAME, tag_v);
 
    if (_len > 0 && _len < (int)sizeof(buffer))
-   {
-#if defined(__WINRT__)
       vsnprintf(buffer + _len, sizeof(buffer) - (size_t)_len, fmt, ap);
-#else
-      wvsprintf(buffer + _len, fmt, ap);
-#endif
-   }
 #ifdef _DEBUG
    OutputDebugStringA(buffer);
 #endif
@@ -254,18 +390,22 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       FILE *fp = main_verbosity_st.fp;
       if (main_verbosity_st.initialized && fp)
       {
-         /* Already logging to file: single write path, no Android log overhead */
-         vfprintf(fp, fmt, ap);
-         fflush(fp);
+         /* Logging to file: one formatted write, tag included -
+          * the file carries the same line format as every other
+          * platform (logcat gets the tag as a priority instead). */
+         const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
+         rarch_log_line_write(fp, tag_v, fmt, ap);
       }
       else
       {
          int prio = ANDROID_LOG_INFO;
          if (tag)
          {
-            if (memcmp(tag, FILE_PATH_LOG_WARN, sizeof(FILE_PATH_LOG_WARN)) == 0)
+            /* strcmp for the same reason as rarch_log_tag_wants_flush:
+             * a sized memcmp reads past a shorter tag's terminator. */
+            if (strcmp(tag, FILE_PATH_LOG_WARN) == 0)
                prio = ANDROID_LOG_WARN;
-            else if (memcmp(tag, FILE_PATH_LOG_ERROR, sizeof(FILE_PATH_LOG_ERROR)) == 0)
+            else if (strcmp(tag, FILE_PATH_LOG_ERROR) == 0)
                prio = ANDROID_LOG_ERROR;
          }
          __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
@@ -276,90 +416,52 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    {
       FILE       *fp    = main_verbosity_st.fp;
       const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
+      /* One format for every consumer in this region - the desktop
+       * companion's log view, the Apple sinks, the file - instead of
+       * a formatting pass (and on Apple a heap vasprintf, and in the
+       * companion a second 1024-byte copy whose overflow went
+       * unhandled) per sink. */
+      char        line[1024];
+      char       *heap  = NULL;
+      const char *out   = rarch_log_line_format(line, sizeof(line),
+            &heap, tag_v, fmt, ap);
 
-#if defined(HAVE_QT) || defined(__WINRT__)
-      {
-         char buffer[1024];
-         int r;
-         buffer[0] = '\0';
-         r = vsnprintf(buffer, sizeof(buffer), fmt, ap);
-         if (r < 0)
-         {
-            buffer[sizeof(buffer) - 1] = '\0';
-            if (buffer[0] != '\0')
-               buffer[sizeof(buffer) - 2] = '\n';
-            else
-            {
-               buffer[0] = '\n';
-               buffer[1] = '\0';
-            }
-         }
-         if (fp)
-         {
-            fprintf(fp, "%s %s", tag_v, buffer);
-            fflush(fp);
-         }
-
-#if defined(HAVE_QT)
-         ui_companion_driver_log_msg(buffer);
+#ifdef HAVE_COMPANION_WIMP
+      /* Mirror the line into the desktop companion's log view, when
+       * one is open. The companion now shows the tag too, and wide
+       * lines arrive whole through the shared heap detour. */
+      if (ui_companion_driver_log_active())
+         ui_companion_driver_log_msg(out);
 #endif
-#if defined(__WINRT__)
-         OutputDebugStringA(buffer);
-#endif
-      }
-
-#else
 
 #if TARGET_OS_MAC
       {
-         int     r;
-         va_list ap_cp;
-         char   *buffer = NULL;
-         va_copy(ap_cp, ap);
-         r = vasprintf(&buffer, fmt, ap_cp);
-         va_end(ap_cp);
-
-         if (r < 0 || !buffer)
-         {
-            free(buffer);
-            buffer = (char*)malloc(2);
-            if (!buffer)
-               goto apple_log_done;
-            buffer[0] = '\n';
-            buffer[1] = '\0';
-         }
-
 #if TARGET_OS_MAC && !TARGET_OS_IPHONE
          /* Emit to the terminal unconditionally so Terminal.app and
           * Xcode's console always see output. The file write is gated
           * on `initialized` (= a real log file was opened) because fp
           * defaults to stderr when no file is configured; without the
           * guard, every line would print twice in the no-file case. */
-         printf("%s %s", tag_v, buffer);
+         printf("%s", out);
          if (main_verbosity_st.initialized && fp)
-         {
-            fprintf(fp, "%s %s", tag_v, buffer);
-            fflush(fp);
-         }
+            rarch_log_line_emit(fp, out,
+                  rarch_log_tag_wants_flush(tag_v));
 
 #else
          {
 #if TARGET_OS_SIMULATOR
-            fprintf(stderr, "%s %s", tag_v, buffer);
+            fprintf(stderr, "%s", out);
 #elif defined(__IPHONE_10_0) && (__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0)
-            os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
+            os_log(OS_LOG_DEFAULT, "%s", out);
 #elif defined(__TV_OS_VERSION_MIN_REQUIRED) && defined(__TVOS_10_0) \
          && (__TV_OS_VERSION_MIN_REQUIRED >= __TVOS_10_0)
-            os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
+            os_log(OS_LOG_DEFAULT, "%s", out);
 #else
             {
                static aslclient asl_client      = NULL;
                static int       asl_initialized = 0;
                aslmsg           msg;
 
-#if defined(HAVE_LIBNX)
-               mutexLock(&g_verbosity->mtx);
-#endif
                if (!asl_initialized)
                {
                   asl_client      = asl_open(FILE_PATH_PROGRAM_NAME,
@@ -367,51 +469,30 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
                                     ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
                   asl_initialized = 1;
                }
-#if defined(HAVE_LIBNX)
-               mutexUnlock(&g_verbosity->mtx);
-#endif
                msg = asl_new(ASL_TYPE_MSG);
                asl_set(msg, ASL_KEY_READ_UID, "-1");
-               asl_log(asl_client, msg, ASL_LEVEL_NOTICE,
-               "%s %s", tag_v, buffer);
+               asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", out);
                asl_free(msg);
             }
 #endif
 
             if (main_verbosity_st.initialized && fp)
-            {
-               fprintf(fp, "%s %s", tag_v, buffer);
-               fflush(fp);
-            }
+               rarch_log_line_emit(fp, out,
+                     rarch_log_tag_wants_flush(tag_v));
          }
 #endif
-
-         free(buffer);
       }
-
-apple_log_done:;
 
 #else
-      {
-#  if defined(HAVE_LIBNX)
-         mutexLock(&main_verbosity_st.mtx);
-#  endif
-
-         if (fp)
-         {
-            /* Write tag and message in one fprintf call to reduce
-             * write() syscall overhead vs. separate fprintf+vfprintf */
-            fprintf(fp, "%s ", tag_v);
-            vfprintf(fp, fmt, ap);
-            fflush(fp);
-         }
-
-#  if defined(HAVE_LIBNX)
-         mutexUnlock(&main_verbosity_st.mtx);
-#  endif
-      }
+      if (fp)
+         /* stdio's per-call lock keeps the single write whole under
+          * concurrent writers; the format above already took the
+          * heap detour for wide lines. */
+         rarch_log_line_emit(fp, out,
+               rarch_log_tag_wants_flush(tag_v));
 #endif
-#endif
+
+      free(heap);
    }
 #endif
 }
@@ -420,8 +501,10 @@ void RARCH_LOG_BUFFER(uint8_t *data, size_t len)
 {
    size_t i;
    size_t offset     = 0;
-   const uint8_t *end = data + len;
    uint8_t buf[16];
+
+   if (!data && len)
+      return;
 
    RARCH_LOG("== %d-byte buffer ==================\n", (int)len);
 
@@ -452,7 +535,6 @@ void RARCH_LOG_BUFFER(uint8_t *data, size_t len)
          buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
    }
    RARCH_LOG("==================================\n");
-   (void)end; /* suppress unused-variable warning */
 }
 
 void RARCH_DBG(const char *fmt, ...)

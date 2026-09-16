@@ -1,0 +1,9 @@
+[
+{
+  "comment": "Physical-location (input_phys) autoconfig matching. Device P (001f:0020) is described by two profiles with identical vendor/product ids and identical input_device, distinguished only by input_phys. The bogus-phys profile sorts first, so a correct run must rank the matching-phys profile above it (60 vs 40) rather than take the first acceptable file. The connect string carries the device's phys after '@@'.",
+  "action": 1,
+  "param_num": 0,
+  "param_str": "(001f:0020) Test joypad device P@@usb-0000:00:14.0-3/input0",
+  "frame": 0
+}
+]

@@ -88,20 +88,20 @@ static size_t frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
          if (server)
          {
             if ((vi.dwBuildNumber >= 14393) && (vi.dwBuildNumber < 17763))
-               _len = strlcpy(s, "Windows Server 2016", len);
+               _len = strlcpy_lit(s, "Windows Server 2016", len);
             else if ((vi.dwBuildNumber >= 17763) && (vi.dwBuildNumber < 20348))
-               _len = strlcpy(s, "Windows Server 2019", len);
+               _len = strlcpy_lit(s, "Windows Server 2019", len);
             else if ((vi.dwBuildNumber >= 20348) && (vi.dwBuildNumber < 26100))
-               _len = strlcpy(s, "Windows Server 2022", len);
+               _len = strlcpy_lit(s, "Windows Server 2022", len);
 		    else if (vi.dwBuildNumber >= 26100)
-				_len = strlcpy(s, "Windows Server 2025", len);
+				_len = strlcpy_lit(s, "Windows Server 2025", len);
          }
          else
          {
             if ((vi.dwBuildNumber >= 10240) && (vi.dwBuildNumber < 22000))
-               _len = strlcpy(s, "Windows 10", len);
+               _len = strlcpy_lit(s, "Windows 10", len);
             else if (vi.dwBuildNumber >= 22000)
-               _len = strlcpy(s, "Windows 11", len);
+               _len = strlcpy_lit(s, "Windows 11", len);
          }
          break;
       default:
@@ -111,22 +111,22 @@ static size_t frontend_uwp_get_os(char *s, size_t len, int *major, int *minor)
 
    if (arch && *arch)
    {
-      _len += strlcpy(s + _len, " ",  len - _len);
+      _len += strlcpy_lit(s + _len, " ",  len - _len);
       _len += strlcpy(s + _len, arch, len - _len);
    }
 
-   _len += strlcpy(s + _len, " Build ", len - _len);
+   _len += strlcpy_lit(s + _len, " Build ", len - _len);
    _len += strlcpy(s + _len, build_str, len - _len);
 
    if (vi.szCSDVersion && *vi.szCSDVersion)
    {
-      _len += strlcpy(s + _len, " ", len - _len);
+      _len += strlcpy_lit(s + _len, " ", len - _len);
       _len += strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
 
    if (uwp_device_family && *uwp_device_family)
    {
-      _len += strlcpy(s + _len, " ", len - _len);
+      _len += strlcpy_lit(s + _len, " ", len - _len);
       strlcpy(s + _len, uwp_device_family, len - _len);
    }
    return _len;
@@ -304,7 +304,7 @@ static void frontend_uwp_env_get(int *argc, char *argv[],
 #ifdef HAVE_MENU
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_OPENGL_CORE)
    if (string_is_equal(uwp_device_family, "Windows.Mobile"))
-      strlcpy(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
+      strlcpy_lit(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
 #endif
 #endif
 

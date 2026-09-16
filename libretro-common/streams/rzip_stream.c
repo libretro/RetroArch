@@ -25,6 +25,9 @@
 
 #include <streams/file_stream.h>
 #include <streams/trans_stream.h>
+#ifdef HAVE_RZSTD
+#include <encodings/rzstd.h>
+#endif
 
 #include <streams/rzip_stream.h>
 
@@ -33,8 +36,17 @@
 #include <features/features_cpu.h>
 #endif
 
-/* Current RZIP file format version */
-#define RZIP_VERSION 1
+/* RZIP file format versions: 1 is chunks of deflate, 2 chunks of
+ * Zstandard frames. The container is the same otherwise, and a reader
+ * takes either where its codec is compiled in. */
+#define RZIP_VERSION_DEFLATE 1
+#define RZIP_VERSION_ZSTD    2
+#define RZIP_VERSION RZIP_VERSION_DEFLATE
+/* The Zstandard level. The built-in encoder runs at one speed
+ * whatever the level today, about a fifth faster than deflate at
+ * level 6 and a seventh larger; its decoder is seven times faster
+ * than inflate, which is what a load pays. */
+#define RZIP_ZSTD_LEVEL 3
 
 /* Compression level
  * > zlib default of 6 provides the best
@@ -54,6 +66,41 @@
 /* Header sizes (in bytes) */
 #define RZIP_HEADER_SIZE 20
 #define RZIP_CHUNK_HEADER_SIZE 4
+
+/* The codec every writer opened from here uses. Zstandard where the
+ * codec is compiled in - several times deflate's speed at the same
+ * size - and deflate otherwise; the frontend's setting changes it. A
+ * reader takes either, from the file. */
+static enum rzip_codec rzip_write_codec =
+#ifdef HAVE_RZSTD
+      RZIP_CODEC_ZSTD;
+#else
+      RZIP_CODEC_DEFLATE;
+#endif
+
+void rzipstream_set_write_codec(enum rzip_codec codec)
+{
+#ifndef HAVE_RZSTD
+   codec = RZIP_CODEC_DEFLATE;
+#endif
+   rzip_write_codec = codec;
+}
+
+enum rzip_codec rzipstream_get_write_codec(void)
+{
+   return rzip_write_codec;
+}
+
+bool rzipstream_codec_available(enum rzip_codec codec)
+{
+   if (codec == RZIP_CODEC_DEFLATE)
+      return true;
+#ifdef HAVE_RZSTD
+   if (codec == RZIP_CODEC_ZSTD)
+      return true;
+#endif
+   return false;
+}
 
 /* Holds all metadata for an RZIP file stream */
 #ifdef HAVE_THREADS
@@ -128,6 +175,9 @@ struct rzipstream
    uint32_t out_buf_ptr;
    uint32_t out_buf_occupancy;
    uint32_t chunk_size;
+   /* RZIP_VERSION_DEFLATE or RZIP_VERSION_ZSTD: read from the header,
+    * or chosen at open for a writer. */
+   uint8_t  version;
 #ifdef HAVE_THREADS
    rzip_par_t *par;
    bool par_attempted;
@@ -173,7 +223,11 @@ static bool rzipstream_read_file_header(rzipstream_t *stream)
        || (header_bytes[3] !=           73)  /* I */
        || (header_bytes[4] !=           80)  /* P */
        || (header_bytes[5] !=          118)  /* v */
-       || (header_bytes[6] != RZIP_VERSION)  /* file format version number */
+       || (   header_bytes[6] != RZIP_VERSION_DEFLATE
+#ifdef HAVE_RZSTD
+           && header_bytes[6] != RZIP_VERSION_ZSTD
+#endif
+          )                                  /* file format version number */
        || (header_bytes[7] !=           35)) /* # */
    {
       /* Reset file to start */
@@ -183,6 +237,8 @@ static bool rzipstream_read_file_header(rzipstream_t *stream)
       stream->is_compressed = false;
       return true;
    }
+
+   stream->version = header_bytes[6];
 
    /* Get uncompressed chunk size - next 4 bytes */
    if ((stream->chunk_size = (
@@ -237,7 +293,7 @@ static bool rzipstream_write_file_header(rzipstream_t *stream)
    header_bytes[3]    =        73;    /* I */
    header_bytes[4]    =        80;    /* P */
    header_bytes[5]    =       118;    /* v */
-   header_bytes[6]    = RZIP_VERSION; /* file format version number */
+   header_bytes[6]    = stream->version; /* file format version number */
    header_bytes[7]    =        35;    /* # */
 
    /* > Uncompressed chunk size - next 4 bytes */
@@ -334,29 +390,46 @@ static bool rzipstream_init_stream(
     * and determine associated buffer sizes */
    if (stream->is_writing)
    {
-      /* Compression */
-      if (!(stream->deflate_backend = trans_stream_get_zlib_deflate_backend()))
-         return false;
+      /* Compression: the backend the stream's version names */
+#ifdef HAVE_RZSTD
+      if (stream->version == RZIP_VERSION_ZSTD)
+      {
+         if (!(stream->deflate_backend = trans_stream_get_rzstd_encode_backend()))
+            return false;
+         if (!(stream->deflate_stream = stream->deflate_backend->stream_new()))
+            return false;
+         if (!stream->deflate_backend->define(
+               stream->deflate_stream, "level", RZIP_ZSTD_LEVEL))
+            return false;
+         stream->in_buf_size  = stream->chunk_size;
+         stream->out_buf_size = (uint32_t)rzstd_compress_bound(stream->chunk_size);
+      }
+      else
+#endif
+      {
+         if (!(stream->deflate_backend = trans_stream_get_zlib_deflate_backend()))
+            return false;
 
-      if (!(stream->deflate_stream = stream->deflate_backend->stream_new()))
-         return false;
+         if (!(stream->deflate_stream = stream->deflate_backend->stream_new()))
+            return false;
 
-      /* Set compression level */
-      if (!stream->deflate_backend->define(
-            stream->deflate_stream, "level", RZIP_COMPRESSION_LEVEL))
-         return false;
+         /* Set compression level */
+         if (!stream->deflate_backend->define(
+               stream->deflate_stream, "level", RZIP_COMPRESSION_LEVEL))
+            return false;
 
-      /* Buffers
-       * > Input: uncompressed
-       * > Output: compressed */
-      stream->in_buf_size  = stream->chunk_size;
-      stream->out_buf_size = stream->chunk_size * 2;
-      /* > Account for minimum zlib overhead
-       *   of 11 bytes... */
-      stream->out_buf_size =
-            (stream->out_buf_size < (stream->in_buf_size + 11)) ?
-                  stream->out_buf_size + 11 :
-                  stream->out_buf_size;
+         /* Buffers
+          * > Input: uncompressed
+          * > Output: compressed */
+         stream->in_buf_size  = stream->chunk_size;
+         stream->out_buf_size = stream->chunk_size * 2;
+         /* > Account for minimum zlib overhead
+          *   of 11 bytes... */
+         stream->out_buf_size =
+               (stream->out_buf_size < (stream->in_buf_size + 11)) ?
+                     stream->out_buf_size + 11 :
+                     stream->out_buf_size;
+      }
 
       /* Redundant safety check */
       if (   (stream->in_buf_size  == 0)
@@ -367,7 +440,15 @@ static bool rzipstream_init_stream(
     * stream (or buffers) if source file is uncompressed */
    else if (stream->is_compressed)
    {
-      /* Decompression */
+      /* Decompression: the backend the file's version names */
+#ifdef HAVE_RZSTD
+      if (stream->version == RZIP_VERSION_ZSTD)
+      {
+         if (!(stream->inflate_backend = trans_stream_get_rzstd_decode_backend()))
+            return false;
+      }
+      else
+#endif
       if (!(stream->inflate_backend = trans_stream_get_zlib_inflate_backend()))
          return false;
 
@@ -503,6 +584,13 @@ rzipstream_t* rzipstream_open(const char *path, unsigned mode)
    stream->out_buf_size    = 0;
    stream->out_buf_ptr     = 0;
    stream->out_buf_occupancy = 0;
+   /* A writer's version is the codec chosen for writing; a reader's
+    * comes from the file's header. */
+   stream->version         = RZIP_VERSION_DEFLATE;
+#ifdef HAVE_RZSTD
+   if (rzip_write_codec == RZIP_CODEC_ZSTD)
+      stream->version      = RZIP_VERSION_ZSTD;
+#endif
 
    /* Initialise stream */
    if (!rzipstream_init_stream(
@@ -785,7 +873,7 @@ bool rzipstream_matches_buf(const char *path, const void *data, size_t len)
       /* RZIPSTREAM_MATCHES_BUF_CHUNK, sized by the stack rather than
        * by the decompressor: this is libretro-common API, so a caller
        * can be on a spawned thread, and GEKKO threads get 8 KiB
-       * (STACKSIZE in rthreads/gx_pthread.h).  See the same
+       * (the GEKKO STACKSIZE in rthreads.c).  See the same
        * ceiling and its measured cost in filestream_matches_buf(). */
       uint8_t chunk[RZIPSTREAM_MATCHES_BUF_CHUNK];
       size_t  off = 0;
@@ -1089,12 +1177,17 @@ static bool rzipstream_par_init(rzipstream_t *stream)
       worker->par     = par;
       worker->index   = i;
 
-      if (!(worker->backend = trans_stream_get_zlib_deflate_backend()))
+      worker->backend = stream->deflate_backend;
+      if (!worker->backend)
          goto error;
       if (!(worker->stream = worker->backend->stream_new()))
          goto error;
       if (!worker->backend->define(
-            worker->stream, "level", RZIP_COMPRESSION_LEVEL))
+            worker->stream, "level",
+#ifdef HAVE_RZSTD
+            stream->version == RZIP_VERSION_ZSTD ? RZIP_ZSTD_LEVEL :
+#endif
+            RZIP_COMPRESSION_LEVEL))
          goto error;
 
       if (!(par->slots[i].out = (uint8_t*)malloc(par->out_buf_size)))

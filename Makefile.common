@@ -129,7 +129,9 @@ endif
 
 ifneq ($(findstring Darwin,$(OS)),)
    OSX := 1
-   LIBS += -framework AppKit
+   # IOKit for the power-source query in platform_darwin.m, which every
+   # macOS build makes; the HID driver adds nothing beyond it.
+   LIBS += -framework AppKit -framework IOKit
    ARCHFLAGS=
    MINVERFLAGS=
    ifeq ($(shell uname -p),arm)
@@ -159,7 +161,8 @@ ifneq ($(findstring Darwin,$(OS)),)
       MINVERFLAGS     = -mmacosx-version-min=10.6
       ARCHFLAGS       = -arch x86
    else ifeq ($(ARCH),ppc)
-      MINVERFLAGS     = -mmacosx-version-min=10.5
+      # 10.5 unless the invoker targets older (10.4 is the floor).
+      MINVERFLAGS     = -mmacosx-version-min=$(or $(MACOSX_DEPLOYMENT_TARGET),10.5)
       ARCHFLAGS       = -arch ppc
    endif
    ifeq ($(BUILDBOT),1)
@@ -316,6 +319,11 @@ OBJ += \
        file_path_special.o \
        $(LIBRETRO_COMM_DIR)/hash/lrc_hash.o \
        audio/audio_driver.o \
+       audio/audio_upmix.o \
+       audio/audio_stretch.o \
+       audio/audio_speed_lpf.o \
+       audio/audio_pipeline_stretch.o \
+       audio/audio_binaural.o \
        input/input_driver.o \
        input/common/input_hid_common.o \
        led/led_driver.o \
@@ -323,6 +331,7 @@ OBJ += \
        gfx/gfx_display.o \
        gfx/gfx_animation.o \
        gfx/gfx_thumbnail.o \
+       gfx/gfx_anim_preview.o \
        configuration.o \
        $(LIBRETRO_COMM_DIR)/dynamic/dylib.o \
        cores/dynamic_dummy.o \
@@ -409,6 +418,7 @@ OBJ += \
        playlist.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        $(LIBRETRO_COMM_DIR)/memory/mem_stats.o \
+       $(LIBRETRO_COMM_DIR)/memory/mempool.o \
        verbosity.o \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
        $(LIBRETRO_COMM_DIR)/time/rtime.o \
@@ -435,6 +445,14 @@ endif
 ifeq ($(HAVE_BSV_MOVIE), 1)
    DEFINES += -DHAVE_BSV_MOVIE
    OBJ += input/bsv/bsvmovie.o
+endif
+
+# The MessagePack encoder is shared: the database stores its records
+# with it and the BSV movie format writes its frames with it, so it is
+# linked when either is built rather than only with the database.
+ifneq ($(filter 1,$(HAVE_LIBRETRODB) $(HAVE_BSV_MOVIE)),)
+   OBJ += libretro-db/rmsgpack.o \
+          libretro-db/rmsgpack_dom.o
 endif
 
 ifeq ($(HAVE_STATESTREAM), 1)
@@ -548,8 +566,6 @@ ifeq ($(HAVE_LIBRETRODB), 1)
    OBJ += libretro-db/bintree.o \
           libretro-db/libretrodb.o \
           libretro-db/query.o \
-          libretro-db/rmsgpack.o \
-          libretro-db/rmsgpack_dom.o \
           database_info.o \
           tasks/task_database_cue.o
 
@@ -799,23 +815,8 @@ endif
 ifeq ($(HAVE_COREAUDIO), 1)
    DEFINES += -DHAVE_COREAUDIO
    OBJ += audio/drivers/coreaudio.o
-ifeq ($(HAVE_MICROPHONE), 1)
-   OBJ += audio/drivers/coreaudio_mic_macos.o
-   # AVFoundation is 10.7+ and only needed by the microphone driver.
-   # The base coreaudio.c path doesn't use it, so keep it out of the
-   # link line on targets without microphone support (e.g. pre-10.7
-   # / Tiger / Leopard / PowerPC).
-   LIBS += -framework AVFoundation
-endif
    HAVE_COREAUDIO_LIBS = 1
-   LIBS += -framework AudioToolbox -framework Accelerate
-endif
-
-ifeq ($(HAVE_COREAUDIO3), 1)
-   DEFINES += -DHAVE_COREAUDIO3
-   OBJ += audio/drivers/coreaudio3.o
-   HAVE_COREAUDIO_LIBS = 1
-   LIBS += -framework AudioToolbox -framework AVFoundation
+   LIBS += -framework AudioToolbox
 endif
 
 ifeq ($(HAVE_COREAUDIO_LIBS), 1)
@@ -845,14 +846,15 @@ endif
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += audio/drivers/ctr_csnd_audio.o \
           audio/drivers/ctr_dsp_audio.o
-ifeq ($(HAVE_THREADS), 1)
-   OBJ += audio/drivers/ctr_dsp_thread_audio.o
-endif
 endif
 
 ifeq ($(HAVE_ALSA), 1)
-   OBJ += audio/drivers/alsa.o \
-          audio/common/alsa.o
+   OBJ += audio/common/alsa.o
+   # audio/drivers/alsa.c carries both drivers; see HAVE_TINYALSA below
+   # for the case where it is built without alsa-lib.
+   ifneq ($(HAVE_TINYALSA), 1)
+      OBJ += audio/drivers/alsa.o
+   endif
 
    ifneq ($(HAVE_HAKCHI), 1)
       ifneq ($(HAVE_SEGAM), 1)
@@ -868,7 +870,10 @@ ifeq ($(HAVE_ALSA), 1)
 endif
 
 ifeq ($(HAVE_TINYALSA), 1)
-   OBJ += audio/drivers/tinyalsa.o
+   # The embedded driver lives in audio/drivers/alsa.c beside the
+   # alsa-lib one, each behind its own define; one object either way,
+   # and a build with only this one needs no alsa-lib.
+   OBJ += audio/drivers/alsa.o
    DEFINES += -DHAVE_TINYALSA
 endif
 
@@ -950,6 +955,14 @@ ifeq ($(HAVE_XAUDIO), 1)
    LIBS += -lole32
 endif
 
+# WDM-KS: kernel streaming. setupapi and ksuser are resolved at
+# runtime rather than linked, so that a binary carrying this driver
+# still loads on a Windows that has neither.
+ifeq ($(HAVE_WDMKS), 1)
+   OBJ += audio/drivers/wdmks.o
+   DEFINES += -DHAVE_WDMKS
+endif
+
 ifeq ($(HAVE_MMDEVAPI), 1)
 	OBJ += audio/common/mmdevice_common.o
 endif
@@ -984,6 +997,30 @@ OBJ += $(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.o \
        $(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.o \
        $(LIBRETRO_COMM_DIR)/audio/conversion/mono_to_stereo_float.o \
        $(LIBRETRO_COMM_DIR)/audio/conversion/stereo_to_mono_float.o \
+
+# AC-3: the frame layer, decoder and encoder from ATSC A/52 and the
+# IEC 61937 burst framing, no dependencies. The decoder is an arm of
+# audio_transfer (an .ac3 file in the mixer); the encoder and the
+# framing carry a wider layout to a device that decodes Dolby Digital
+# but takes stereo PCM only (WASAPI exclusive mode, and WDM-KS).
+DEFINES += -DHAVE_RAC3
+OBJ += $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_frame.o \
+       $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_decode.o \
+       $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_encode.o \
+       $(LIBRETRO_COMM_DIR)/formats/iec61937/iec61937.o
+
+# Linear PCM, and the DTS frame layer. Neither has a dependency and
+# both are small, so they are in wherever rac3 is: LPCM is what a disc
+# carries when nothing was compressed, and rdts is what carries a DTS
+# stream to a decoder that is not this one - the bursts iec61937
+# already frames.
+DEFINES += -DHAVE_RLPCM -DHAVE_RDTS
+OBJ += $(LIBRETRO_COMM_DIR)/formats/lpcm/rlpcm.o \
+       $(LIBRETRO_COMM_DIR)/formats/dts/rdts.o
+
+# The bitstream source: where a stream that arrived already coded
+# plugs into the output path, which the PCM pipeline has no place for.
+OBJ += audio/audio_bitstream.o
 
 ifeq ($(HAVE_RWAV), 1)
 DEFINES += -DHAVE_RWAV
@@ -1119,6 +1156,7 @@ endif
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/menu_driver.o \
+          menu/menu_str.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \
           menu/cbs/menu_cbs_select.o \
@@ -1176,7 +1214,12 @@ endif
 
 ifeq ($(HAVE_THREADS), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
+          $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.o \
+          $(LIBRETRO_COMM_DIR)/rthreads/retro_procbarrier.o \
+          $(LIBRETRO_COMM_DIR)/rthreads/retro_asym_eventcount.o \
+          $(LIBRETRO_COMM_DIR)/queues/retro_waitable_spsc.o \
           gfx/video_thread_wrapper.o \
+          gfx/video_thread_hw.o \
           audio/audio_thread_wrapper.o
    DEFINES += -DHAVE_THREADS
    ifeq ($(findstring Haiku,$(OS)),)
@@ -1249,14 +1292,12 @@ endif
 ifeq ($(TARGET), retroarch_switch)
    ifeq ($(HAVE_LIBNX), 1)
       OBJ += gfx/drivers/switch_nx_gfx.o \
-             audio/drivers/switch_libnx_audren_audio.o \
-             audio/drivers/switch_libnx_audren_thread_audio.o
+             audio/drivers/switch_libnx_audren_audio.o
       ifeq ($(HAVE_OPENGL), 1)
          OBJ += gfx/drivers_context/switch_ctx.o
       endif
    endif
    OBJ += audio/drivers/switch_audio.o \
-          audio/drivers/switch_thread_audio.o \
           input/drivers/switch_input.o \
           input/drivers_joypad/switch_joypad.o \
           frontend/drivers/platform_switch.o
@@ -1469,8 +1510,21 @@ endif
 
 # Companion UI
 
+# Shared companion core (ui/companion/) is needed by every desktop
+# companion driver: Qt, native Win32, native Cocoa. Added once.
 ifneq ($(findstring Win32,$(OS)),)
-   OBJ += ui/drivers/ui_win32.o
+   OBJ += ui/drivers/ui_win32.o \
+          ui/drivers/ui_win32_companion.o
+   # comctl32: InitCommonControls / list-view / status bar used by the
+   # native Win32 companion (MSVC builds pull it in via #pragma comment).
+   LIBS += -lcomctl32 -lshell32 -lole32
+   HAVE_COMPANION_CORE = 1
+endif
+ifeq ($(HAVE_QT), 1)
+   HAVE_COMPANION_CORE = 1
+endif
+ifeq ($(HAVE_COMPANION_CORE), 1)
+   OBJ += ui/companion/companion_core.o ui/companion/companion_thumbs.o ui/companion/companion_dock.o
 endif
 
 # Video
@@ -1677,6 +1731,7 @@ ifeq ($(HAVE_SDL3), 1)
           input/drivers/sdl3_input.o \
           gfx/drivers/sdl3_gfx.o \
           gfx/common/sdl3_common.o \
+          gfx/display_servers/dispserv_sdl3.o \
           audio/drivers/sdl3_audio.o
 
    ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL1) $(HAVE_OPENGL_CORE) $(HAVE_OPENGLES)),)
@@ -1689,7 +1744,8 @@ ifeq ($(HAVE_SDL3), 1)
 else ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \
-	  gfx/common/sdl2_common.o
+	  gfx/common/sdl2_common.o \
+	  gfx/display_servers/dispserv_sdl2.o
    DEF_FLAGS += $(SDL2_CFLAGS)
    # See the SDL3 note above: drop SDL's WinMain shim lib, we set
    # SDL_MAIN_HANDLED and provide our own entry point.
@@ -1765,9 +1821,12 @@ ifeq ($(HAVE_VULKAN), 1)
    # into Contents/Frameworks) produces a self-contained bundle with no
    # external MoltenVK dependency. Matches what Xcode's
    # LD_RUNPATH_SEARCH_PATHS does for the .xcodeproj build.
+   # The Vulkan render view is a CAMetalLayer on a Metal device, so the
+   # Metal frameworks are linked whether or not the Metal driver is.
    ifneq ($(findstring Darwin,$(OS)),)
       LDFLAGS += -Xlinker -rpath -Xlinker @executable_path/../Frameworks \
                  -Xlinker -rpath -Xlinker @executable_path/../Frameworks/MoltenVK.framework
+      LIBS    += -framework Metal -framework QuartzCore
    endif
 endif
 
@@ -1841,7 +1900,8 @@ endif
 
 ifeq ($(HAVE_D3D11), 1)
    HAVE_D3D_COMMON = 1
-   OBJ += gfx/drivers/d3d11.o
+   OBJ += gfx/drivers/d3d11.o \
+          gfx/common/d3d11_deferred_proxy.o
    DEFINES += -DHAVE_D3D11
 endif
 
@@ -1849,7 +1909,6 @@ ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d12.o
    DEFINES += -DHAVE_D3D12
-   DEFINES += -DHAVE_D3DKMT
 endif
 
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
@@ -1979,7 +2038,17 @@ ifneq ($(HAVE_BUILTINSPIRV_CROSS), 0)
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_parser.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_parsed_ir.o
+   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_c.o
+   # The C API translation unit compiles its backend wrappers only
+   # when these are defined truthy.
+   DEFINES += -DSPIRV_CROSS_C_API_GLSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_HLSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_MSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_CPP=0
+   DEFINES += -DSPIRV_CROSS_C_API_REFLECT=0
 else
+   # slang_process.c is C: the header path must reach the C compiler too.
+   CFLAGS   += $(SPIRV_CROSS_CFLAGS)
    CXXFLAGS += $(SPIRV_CROSS_CFLAGS)
    LIBS     += $(SPIRV_CROSS_LIBS)
 endif
@@ -2017,45 +2086,17 @@ ifeq ($(HAVE_7ZIP),1)
            $(7ZOBJ)
 endif
 
-# The built-in Zstandard codec. Independent of HAVE_ZSTD: a build may
-# have either, both while platforms are moving over, or eventually only
-# this one, at which point HAVE_ZSTD and deps/zstd can go.
+# The built-in Zstandard codec: one C file, no dependency.
 ifeq ($(HAVE_RZSTD),1)
    DEFINES += -DHAVE_RZSTD
-   OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.o
+   OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.o \
+          $(LIBRETRO_COMM_DIR)/streams/trans_stream_rzstd.o
 endif
 
-ifeq ($(HAVE_ZSTD),1)
-   INCLUDE_DIRS += -I$(DEPS_DIR)/zstd/lib
-   DEFINES += -DHAVE_ZSTD -DZSTD_DISABLE_ASM
-   ZSOBJ = $(DEPS_DIR)/zstd/lib/common/entropy_common.o \
-           $(DEPS_DIR)/zstd/lib/common/error_private.o \
-           $(DEPS_DIR)/zstd/lib/common/fse_decompress.o \
-           $(DEPS_DIR)/zstd/lib/common/zstd_common.o \
-           $(DEPS_DIR)/zstd/lib/common/xxhash.o \
-           $(DEPS_DIR)/zstd/lib/compress/fse_compress.o \
-           $(DEPS_DIR)/zstd/lib/compress/hist.o \
-           $(DEPS_DIR)/zstd/lib/compress/huf_compress.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_compress.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_literals.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_sequences.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_compress_superblock.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_double_fast.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_fast.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_lazy.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_ldm.o \
-           $(DEPS_DIR)/zstd/lib/compress/zstd_opt.o \
-           $(DEPS_DIR)/zstd/lib/decompress/huf_decompress.o \
-           $(DEPS_DIR)/zstd/lib/decompress/zstd_ddict.o \
-           $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress.o \
-           $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress_block.o
-
-   OBJ += $(ZSOBJ)
-endif
 
 # The archive backend needs one decoder, not a particular one. Testing
 # the two concatenated would be wrong: "00" is not empty.
-ifneq ($(filter 1,$(HAVE_ZSTD) $(HAVE_RZSTD)),)
+ifeq ($(HAVE_RZSTD),1)
    OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zstd.o
 endif
 
@@ -2248,7 +2289,7 @@ else
    # The CHD Zstandard codec decodes through whichever backend is
    # configured, rzstd first. Same shape as the FLAC test above: either
    # one gives libchdr a decoder, so build the wrapper for both.
-   ifneq ($(filter 1,$(HAVE_ZSTD) $(HAVE_RZSTD)),)
+   ifeq ($(HAVE_RZSTD),1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zstd.o
    endif
 endif
@@ -2376,9 +2417,7 @@ endif
 # AVFoundation camera + recording (Apple, macOS 10.7+ / iOS).  The
 # 10.7 gate is enforced in qb/config.libs.sh (see the HAVE_AVF block
 # there); this section just wires the object files and frameworks in
-# when HAVE_AVF is on.  Note that HAVE_MICROPHONE and HAVE_COREAUDIO3
-# above also add -framework AVFoundation for their own reasons; make
-# tolerates the repeat and the linker de-duplicates.
+# when HAVE_AVF is on.
 ifeq ($(HAVE_AVF), 1)
    DEFINES += -DHAVE_AVF
    OBJ     += camera/drivers/avfoundation.o \
@@ -2540,18 +2579,17 @@ ifeq ($(HAVE_NETWORKING), 1)
       DEFINES += -DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH
       INCLUDE_DIRS += -Ideps/rcheevos/include
 
+      # rc_compat carries native recursive mutexes for the consoles
+      # that build threaded (GEKKO, 3DS, WiiU, Vita), so only a
+      # thread-less build compiles the locks out.
       ifneq ($(HAVE_THREADS), 1)
-         DEFINES += -DRC_NO_THREADS
-      else ifneq (,$(filter GEKKO,$(CFLAGS)))
-         # Gekko (Wii) and 3DS use custom pthread wrappers (see rthreads.c)
-         DEFINES += -DRC_NO_THREADS
-      else ifneq (,$(filter _3DS,$(CFLAGS)))
          DEFINES += -DRC_NO_THREADS
       endif
 
       OBJ += cheevos/cheevos.o \
              cheevos/cheevos_client.o \
              cheevos/cheevos_menu.o \
+             cheevos/cheevos_badge.o \
              $(LIBRETRO_COMM_DIR)/formats/cdfs/cdfs.o \
              deps/rcheevos/src/rc_client.o \
              deps/rcheevos/src/rc_compat.o \
@@ -2583,7 +2621,7 @@ ifeq ($(HAVE_NETWORKING), 1)
              deps/rcheevos/src/rapi/rc_api_user.o \
 
       # RVZ/WIA disc image support for RetroAchievements
-      HAVE_CHEEVOS_RVZ ?= $(if $(filter 1,$(HAVE_ZSTD) $(HAVE_RZSTD)),1,0)
+      HAVE_CHEEVOS_RVZ ?= $(if $(filter 1,$(HAVE_RZSTD)),1,0)
       ifeq ($(HAVE_CHEEVOS_RVZ), 1)
          DEFINES += -DHAVE_CHEEVOS_RVZ
          OBJ += cheevos/cheevos_rvz.o
@@ -2659,6 +2697,19 @@ ifneq ($(findstring Win32,$(OS)),)
           gfx/display_servers/dispserv_win32.o \
           gfx/common/dx_guids.o
 
+   # Scanline Sync. Despite the name, D3DKMT is the kernel-mode thunk
+   # into dxgkrnl.sys rather than Direct3D: gdi32 forwards
+   # D3DKMTGetScanLine to ext-ms-win-dx-d3dkmt-dxcore, the adapter is
+   # opened from a plain GDI HDC via EnumDisplayDevices()/CreateDC(),
+   # and d3dkmt_init() runs from win32_window_init(), which every win32
+   # video driver calls - w_vk_ctx, wgl_ctx, gdi and sdl2 as much as
+   # the d3d ones. It lives in win32_common.c, so gate it the same way
+   # that object is gated. It used to be defined only as a side effect
+   # of HAVE_D3D12, which silently dropped the feature from a
+   # Vulkan-or-GL-only Windows build.
+   DEFINES += -DHAVE_D3DKMT
+   INCLUDE_DIRS += -isystemgfx/include/dxsdk
+
    # Legacy pre-DXGI GUID storage in their own TUs to avoid clashes
    # between system <d3d8types.h> / <d3d9types.h> and the bundled
    # <dxsdk/dxgitype.h>. See dx_guids.c header comment.
@@ -2695,37 +2746,24 @@ ifeq ($(HAVE_FFMPEG), 1)
    INCLUDE_DIRS += -Iffmpeg
 endif
 
-# CRT mode switching
+# Video modeline engine (CRT mode switching is its first consumer)
 ifeq ($(HAVE_CRTSWITCHRES), 1)
-   INCLUDE_DIRS += -I$(DEPS_DIR)/switchres
+   HAVE_MODELINE = 1
+endif
+ifeq ($(HAVE_MODELINE), 1)
+   DEFINES += -DHAVE_MODELINE
    OBJ += gfx/video_crt_switch.o \
-          $(DEPS_DIR)/switchres/monitor.o \
-          $(DEPS_DIR)/switchres/modeline.o \
-          $(DEPS_DIR)/switchres/switchres.o \
-          $(DEPS_DIR)/switchres/display.o \
-          $(DEPS_DIR)/switchres/custom_video.o \
-          $(DEPS_DIR)/switchres/log.o \
-          $(DEPS_DIR)/switchres/switchres_wrapper.o \
-          $(DEPS_DIR)/switchres/edid.o
+          gfx/modeline/modeline_core.o \
+          gfx/modeline/modeline_monitor.o \
+          gfx/modeline/modeline_list.o \
+          gfx/modeline/modeline_ini.o \
+          gfx/modeline/modeline_edid.o
    ifneq ($(findstring Win32,$(OS)),)
-      OBJ += $(DEPS_DIR)/switchres/display_windows.o \
-             $(DEPS_DIR)/switchres/custom_video_ati_family.o \
-             $(DEPS_DIR)/switchres/custom_video_ati.o \
-             $(DEPS_DIR)/switchres/custom_video_adl.o \
-             $(DEPS_DIR)/switchres/custom_video_pstrip.o \
-             $(DEPS_DIR)/switchres/resync_windows.o
+      OBJ += gfx/display_servers/win32_modeline_resync.o \
+             gfx/display_servers/win32_modeline_adl.o \
+             gfx/display_servers/win32_modeline_ati.o \
+             gfx/display_servers/win32_modeline_pstrip.o
    endif
-   ifneq ($(findstring Linux,$(OS)),)
-      OBJ += $(DEPS_DIR)/switchres/display_linux.o
-      ifeq ($(HAVE_X11)$(HAVE_XRANDR), 11)
-         OBJ += $(DEPS_DIR)/switchres/custom_video_xrandr.o
-         DEFINES += -DSR_WITH_XRANDR
-      endif
-   endif
-   ifneq ($(findstring Win32,$(OS)),)
-      DEFINES += -DSR_WIN32_STATIC
-   endif
-   LIBS += -lstdc++
 endif
 
 ifeq ($(HAVE_COMPRESSION), 1)
@@ -2734,18 +2772,17 @@ ifeq ($(HAVE_COMPRESSION), 1)
 endif
 
 ifeq ($(HAVE_COCOA), 1)
-   HAVE_COCOA_COMMON = 1
-endif
-ifeq ($(HAVE_COCOA_METAL), 1)
-   HAVE_COCOA_COMMON = 1
-   DEFINES += -DHAVE_COCOA_METAL
-endif
-
-ifeq ($(HAVE_COCOA_COMMON),1)
-   DEFINES += -DHAVE_MAIN -DOSX -DHAVE_COCOA
+   DEFINES += -DHAVE_MAIN -DTARGET_OS_OSX=1 -DHAVE_COCOA
    OBJ += input/drivers/cocoa_input.o \
           ui/drivers/ui_cocoa.o \
+          ui/drivers/ui_cocoa_companion.o \
           ui/drivers/cocoa/cocoa_common.o
+   # HAVE_COCOA_COMMON is only known here, after the companion-core
+   # block above ran; add the shared core if Qt/Win32 did not already.
+   ifneq ($(HAVE_COMPANION_CORE), 1)
+      OBJ += ui/companion/companion_core.o ui/companion/companion_thumbs.o ui/companion/companion_dock.o
+      HAVE_COMPANION_CORE = 1
+   endif
    # RetroArchPlaylistManager uses Obj-C lightweight generics and
    # nullability macros (Xcode 7+, 2015).  It's fine on iOS/tvOS and
    # modern macOS (10.11+), but GCC 4.0 / old clang on pre-10.11
@@ -2832,17 +2869,21 @@ ifeq ($(WANT_LIBFAT), 1)
 endif
 
 ifeq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
-   OBJ += libretro-common/audio/dsp_filters/chorus.o \
+   OBJ += libretro-common/audio/dsp_filters/bitcrusher.o \
+          libretro-common/audio/dsp_filters/chorus.o \
           libretro-common/audio/dsp_filters/crystalizer.o \
           libretro-common/audio/dsp_filters/echo.o \
           libretro-common/audio/dsp_filters/eq.o \
           libretro-common/audio/dsp_filters/iir.o \
+          libretro-common/audio/dsp_filters/overdrive.o \
           libretro-common/audio/dsp_filters/panning.o \
           libretro-common/audio/dsp_filters/phaser.o \
           libretro-common/audio/dsp_filters/reverb.o \
+          libretro-common/audio/dsp_filters/reverb_early.o \
           libretro-common/audio/dsp_filters/tremolo.o \
           libretro-common/audio/dsp_filters/vibrato.o \
-          libretro-common/audio/dsp_filters/wahwah.o
+          libretro-common/audio/dsp_filters/wahwah.o \
+          libretro-common/audio/dsp_filters/wsolapitchtempo.o
 endif
 
 ifeq ($(HAVE_RPILED), 1)

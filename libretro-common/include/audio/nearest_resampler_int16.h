@@ -44,6 +44,9 @@ void *nearest_resampler_int16_init(void);
 void  nearest_resampler_int16_process(void *re,
       struct resampler_data_int16 *data);
 
+/* Restore fresh-stream history without allocation or configuration changes. */
+void  nearest_resampler_int16_reset(void *re);
+
 void  nearest_resampler_int16_free(void *re);
 
 #ifdef __cplusplus

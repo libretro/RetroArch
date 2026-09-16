@@ -151,30 +151,38 @@ static bool create_filter_graph(retro_dsp_filter_t *dsp, float sample_rate)
 }
 
 #if defined(HAVE_FILTERS_BUILTIN)
+extern const struct dspfilter_implementation *bitcrusher_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *chorus_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *delta_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *echo_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *eq_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *iir_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *overdrive_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *panning_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *phaser_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *reverb_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *earlyreverb_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *tremolo_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *vibrato_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 extern const struct dspfilter_implementation *wahwah_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
+extern const struct dspfilter_implementation *wsolapitchtempo_dspfilter_get_implementation(dspfilter_simd_mask_t mask);
 
 static const dspfilter_get_implementation_t dsp_plugs_builtin[] = {
+   bitcrusher_dspfilter_get_implementation,
    chorus_dspfilter_get_implementation,
    delta_dspfilter_get_implementation,
    echo_dspfilter_get_implementation,
    eq_dspfilter_get_implementation,
    iir_dspfilter_get_implementation,
+   overdrive_dspfilter_get_implementation,
    panning_dspfilter_get_implementation,
    phaser_dspfilter_get_implementation,
    reverb_dspfilter_get_implementation,
+   earlyreverb_dspfilter_get_implementation,
    tremolo_dspfilter_get_implementation,
    vibrato_dspfilter_get_implementation,
    wahwah_dspfilter_get_implementation,
+   wsolapitchtempo_dspfilter_get_implementation,
 };
 
 static bool append_plugs(retro_dsp_filter_t *dsp, struct string_list *list)
@@ -322,8 +330,8 @@ void retro_dsp_filter_free(retro_dsp_filter_t *dsp)
       if (dsp->plugs[i].lib)
          dylib_close(dsp->plugs[i].lib);
    }
-   free(dsp->plugs);
 #endif
+   free(dsp->plugs);
 
    if (dsp->conf)
       config_file_free(dsp->conf);

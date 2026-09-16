@@ -2470,6 +2470,7 @@ static int raac_decode_ics(raac_t *a, raac_bits *b, raac_ch *c,
    raac_pulse pulse;
    int global_gain = (int)raac_getbits(b, 8);
    pulse.pulse_present = 0;
+   pulse.number        = 0;
    if (!common_window)
       if (raac_ics_info(a, b, c) < 0)
          return -1;

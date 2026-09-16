@@ -28,6 +28,12 @@
 #ifdef HAVE_RJPEG
 #include <formats/rjpeg.h>
 #endif
+#ifdef HAVE_RTGA
+#include <formats/rtga.h>
+#endif
+#ifdef HAVE_RBMP
+#include <formats/rbmp.h>
+#endif
 #include <formats/image.h>
 #include <gfx/scaler/scaler.h>
 #include <compat/strl.h>
@@ -352,8 +358,9 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
     * is cleared on every video reinit (core start/stop), so a value
     * sampled in that window can disagree with the driver's actual upload
     * format and yield R/B-swapped images.  Re-sample it here, once, at
-    * decode start (after any reinit has settled) - not in the per-chunk
-    * decode loop, where it would lock display_lock on every iteration. */
+    * decode start (after any reinit has settled) - not in the
+    * per-chunk decode loop, where even the one atomic read per
+    * iteration would buy nothing: the value cannot change mid-decode. */
    image->ti.supports_rgba = (video_driver_get_disp_flags()
          & VIDEO_FLAG_USE_RGBA) ? true : false;
 
@@ -673,8 +680,8 @@ bool task_image_load_handler(retro_task_t *task)
       bool is_video = (image->type == IMAGE_TYPE_WEBM)
                    || (image->type == IMAGE_TYPE_MP4);
       /* Types whose decoders decode against a growing buffer with a
-       * resident-frontier wall: video stills, and (avail-aware) PNG and
-       * JPEG.  Their avail must be raised each tick as the read
+       * resident-frontier wall: video stills, and (avail-aware) PNG,
+       * JPEG, TGA and BMP.  Their avail must be raised each tick as the read
        * advances.  WEBP is excluded - it has no wall and instead starts
        * only once its still chunk is wholly resident. */
       bool is_prefix = is_video
@@ -683,6 +690,12 @@ bool task_image_load_handler(retro_task_t *task)
 #endif
 #ifdef HAVE_RJPEG
                     || (image->type == IMAGE_TYPE_JPEG)
+#endif
+#ifdef HAVE_RTGA
+                    || (image->type == IMAGE_TYPE_TGA)
+#endif
+#ifdef HAVE_RBMP
+                    || (image->type == IMAGE_TYPE_BMP)
 #endif
                     ;
 
@@ -742,6 +755,21 @@ bool task_image_load_handler(retro_task_t *task)
                    * whole-buffer as before. */
                   if (!ready && image->type == IMAGE_TYPE_JPEG)
                      ready = rjpeg_header_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+#ifdef HAVE_RTGA
+                  /* TGA starts once the header, id field and colour
+                   * map are resident; rows are then painted from the
+                   * prefix, walling at the resident frontier. */
+                  if (!ready && image->type == IMAGE_TYPE_TGA)
+                     ready = rtga_header_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+#ifdef HAVE_RBMP
+                  /* BMP starts once bfOffBits is resident, i.e. the
+                   * DIB header, masks and palette have all arrived. */
+                  if (!ready && image->type == IMAGE_TYPE_BMP)
+                     ready = rbmp_header_ready(
                            nbio_xfer_ptr(nbio, NULL), done);
 #endif
                }
@@ -1144,6 +1172,40 @@ typedef struct
    uint64_t  *generation_ptr;  /* pointer to the STATIC gen counter      */
 } icon_load_tag_t;
 
+static void icon_image_release(void *img)
+{
+   struct texture_image *ti = (struct texture_image*)img;
+   if (ti)
+   {
+      image_texture_free(ti);
+      free(ti);
+   }
+}
+
+/* Main thread, when the upload has a handle (or failed with 0). The
+ * generation check lives here, not at queue time: the target may have
+ * been freed while the upload was in flight. A stale result, or one
+ * for a target that already got a newer handle, is unloaded rather
+ * than leaked. */
+static void icon_load_done(void *user, uintptr_t handle)
+{
+   icon_load_tag_t *tag = (icon_load_tag_t*)user;
+   if (!tag)
+      return;
+   if (tag->generation != *tag->generation_ptr)
+   {
+      if (handle)
+         video_driver_texture_unload(&handle);
+   }
+   else if (handle)
+   {
+      if (*tag->target)
+         video_driver_texture_unload(tag->target);
+      *tag->target = handle;
+   }
+   free(tag);
+}
+
 static void cb_task_icon_load(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
@@ -1163,8 +1225,15 @@ static void cb_task_icon_load(retro_task_t *task,
    if (!img || img->width < 1 || img->height < 1 || !img->pixels)
       goto end;
 
-   video_driver_texture_load(img, gfx_display_texture_filter(),
-         tag->target);
+   /* Under threaded video the upload goes to the video thread's
+    * queue and the handle comes back through icon_load_done() at a
+    * later frame - never a blocking round trip to the video thread
+    * per icon, which costs up to one present each, on the main
+    * thread, dozens of times at startup; img and tag are theirs
+    * now. */
+   if (video_driver_texture_load_async(img, gfx_display_texture_filter(),
+            icon_load_done, tag, icon_image_release))
+      return;
 
 end:
    if (img)

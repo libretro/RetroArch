@@ -33,6 +33,14 @@ void* ssl_socket_init(int fd, const char *domain);
 
 int ssl_socket_connect(void *state_data, void *data, bool timeout_enable, bool nonblock);
 
+/* The TLS library's own code for the most recent failure in
+ * ssl_socket_init()/ssl_socket_connect(), as the library reports it
+ * (mbedtls: negative, so -0x7780 style; BearSSL: its BR_ERR_* value),
+ * or 0 when the last failure was in the socket layer or there was
+ * none.  For logging: it is what turns "connect failed" into a
+ * message the library's error table can decode. */
+int ssl_socket_last_error(void *state_data);
+
 int ssl_socket_send_all_blocking(void *state_data, const void *data_, size_t len, bool no_signal);
 
 ssize_t ssl_socket_send_all_nonblocking(void *state_data, const void *data_, size_t len, bool no_signal);

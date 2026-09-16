@@ -1533,8 +1533,11 @@ static bool webm_load_mp4(webm_player_t *p)
    for (;;)
    {
       int need_more = 0;
+      /* The fill below is sequential, so the stall range the demuxer
+       * can report (need_lo/need_hi) is of no use here. */
       p->mp4vs = rmp4_video_stream_open_avail(p->file_buf,
-            (size_t)p->file_len, data_transfer_avail(p->dt), &need_more);
+            (size_t)p->file_len, data_transfer_avail(p->dt), &need_more,
+            NULL, NULL);
       if (p->mp4vs)
          break;
       if (!need_more || data_transfer_failed(p->dt)
@@ -1566,7 +1569,8 @@ static bool webm_load_mp4(webm_player_t *p)
    {
       int need_more = 0;
       rmp4_t *m = rmp4_open_memory_avail(p->file_buf,
-            (size_t)p->file_len, data_transfer_avail(p->dt), &need_more);
+            (size_t)p->file_len, data_transfer_avail(p->dt), &need_more,
+            NULL, NULL);
       /* the video open above required the moov, so this cannot fail
        * for want of bytes */
       if (m)

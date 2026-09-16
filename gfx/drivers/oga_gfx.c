@@ -30,6 +30,8 @@
 
 #include <libretro.h>
 
+#include <compat/strl.h>
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -41,6 +43,7 @@
 #include "frontend/frontend_driver.h"
 
 #include "../font_driver.h"
+#include "../video_driver.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -328,6 +331,11 @@ static void oga_free(void *data)
    for (i = 0; i < NUM_PAGES; ++i)
       oga_destroy_framebuf(vid->pages[i]);
 
+   /* frame_surface->map is handed to the core through
+    * oga_get_current_software_framebuffer, so the cached frame can
+    * point straight into it. Retire before tearing it down. */
+   video_driver_cached_frame_retire();
+
    oga_destroy_surface(vid->frame_surface);
    oga_destroy_surface(vid->msg_surface);
    oga_destroy_surface(vid->menu_surface);
@@ -607,14 +615,26 @@ static bool oga_frame(void *data, const void *frame, unsigned width,
       unsigned int blend = video_info->runloop_is_paused ? 0x800105 : 0;
       oga_rect_t r;
 
+      /* The surface holds the geometry declared at init. A core is
+       * free to hand over more than it declared, so take what fits:
+       * the rows the surface has, and the bytes one of its rows
+       * holds. Both the copy below and the blit that follows read and
+       * write this allocation. */
+      if (width  > (unsigned)vid->frame_surface->width)
+         width  = (unsigned)vid->frame_surface->width;
+      if (height > (unsigned)vid->frame_surface->height)
+         height = (unsigned)vid->frame_surface->height;
+
       if (src != dst)
       {
-         int dst_pitch = vid->frame_surface->pitch;
-         int yy = height;
+         int    dst_pitch = vid->frame_surface->pitch;
+         size_t row       = (pitch < (unsigned)dst_pitch)
+            ? (size_t)pitch : (size_t)dst_pitch;
+         int    yy        = (int)height;
 
          while (yy > 0)
          {
-             memcpy(dst, src, pitch);
+             memcpy(dst, src, row);
              src += pitch;
              dst += dst_pitch;
              --yy;
@@ -743,7 +763,15 @@ static void oga_set_rotation(void *data, unsigned rotation)
 static bool oga_get_current_software_framebuffer(void *data, struct retro_framebuffer *framebuffer)
 {
    oga_video_t *vid = (oga_video_t*)data;
-   if (!vid)
+   if (!vid || !vid->frame_surface)
+      return false;
+
+   /* The surface is allocated once, to the geometry the core declared
+    * at init. A core that asks for more than that -- after raising its
+    * geometry, say -- gets nothing rather than a buffer it would
+    * render past the end of. */
+   if (     (int)framebuffer->width  > vid->frame_surface->width
+         || (int)framebuffer->height > vid->frame_surface->height)
       return false;
 
    framebuffer->format = vid->frame_surface->rk_format == RK_FORMAT_BGRA_8888 ?

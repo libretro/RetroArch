@@ -339,6 +339,8 @@ bool take_screenshot(
 
 bool event_load_save_files(bool is_sram_load_disabled);
 
+bool content_savefile_is_live(const char *path);
+
 bool event_save_files(bool sram_used, bool compress_files,
       const char *path_cheat_database);
 
@@ -389,6 +391,7 @@ bool input_autoconfigure_connect_ex(
       uint8_t flags);
 bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
+bool input_autoconfigure_reconnect(unsigned port);
 
 void set_save_state_in_background(bool state);
 void set_save_state_disable_undo(bool disable);

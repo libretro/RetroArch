@@ -27,6 +27,8 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
+#include <compat/strl.h>
+
 #include "../../driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -2706,6 +2708,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
    &gx2_font,
    GFX_VIDEO_DRIVER_WIIU,
    "gx2",
+   true,
    true,
    gfx_display_wiiu_scissor_begin,
    gfx_display_wiiu_scissor_end

@@ -56,6 +56,8 @@ static FcConfig *fc_config = NULL;
 
 #ifdef WIIU
 #include <wiiu/os.h>
+
+#include <compat/strl.h>
 #endif
 
 #include FT_FREETYPE_H

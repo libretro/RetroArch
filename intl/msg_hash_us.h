@@ -1230,6 +1230,70 @@ MSG_HASH(
    "Disc Information"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
+   "Keyboard %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY,
+   "Load %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY,
+   "Start %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
+   "Title: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,
+   "System: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_SERIAL,
+   "Serial#: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_VERSION,
+   "Version: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE,
+   "Release Date: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_GENUINE,
+   "Genuine Disc: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACKS,
+   "Number of tracks: %d"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK,
+   "Track %d:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_MODE,
+   " - Mode: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   "Audio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_DATA_MODE,
+   "Mode %d"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE,
+   " - Size: %.1f MB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_LENGTH,
+   " - Length: %02d:%02d.%02d"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
    "View information about inserted media discs."
    )
@@ -1248,6 +1312,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    "View information specific to the device."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
+   "Display Information"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISPLAY_INFORMATION,
+   "View the display server, output, mode and physical size of the display in use."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INFORMATION,
+   "EDID"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISPLAY_EDID_INFORMATION,
+   "View the EDID the display in use reports: identity, capabilities, supported timings and extension blocks."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -1484,6 +1564,10 @@ MSG_HASH(
    "Video Context Driver"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
+   "Pacing"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
    "Display Width (mm)"
    )
@@ -1494,6 +1578,158 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
    "Display DPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_SERVER,
+   "Display Server"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
+   "Output"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION,
+   "Resolution"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE,
+   "Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
+   "Orientation"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+   "Read"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
+   "EDID Version"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_MANUFACTURER,
+   "Manufacturer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PRODUCT,
+   "Product Code"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL,
+   "Serial Number"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DATE,
+   "Manufactured"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_NAME,
+   "Monitor Name"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TEXT,
+   "Text"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INPUT,
+   "Video Input"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SCREEN_SIZE,
+   "Screen Size"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMMA,
+   "Gamma"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_FEATURES,
+   "Features"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHROMATICITY,
+   "Chromaticity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMUT,
+   "Colour Gamut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RANGE_LIMITS,
+   "Range Limits"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_ESTABLISHED_TIMINGS,
+   "Established Timing"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
+   "Standard Timing"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DETAILED_TIMING,
+   "Detailed Timing"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PREFERRED,
+   "preferred"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_EXTENSION,
+   "Extension Block"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_FLAGS,
+   "CTA Capabilities"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_VIDEO,
+   "CTA Video Formats"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_AUDIO,
+   "CTA Audio Formats"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDMI,
+   "HDMI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDR,
+   "HDR Static Metadata"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_COLORIMETRY,
+   "Colorimetry"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DID_SECTIONS,
+   "DisplayID Sections"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM,
+   "Checksum"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
+   "OK"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD,
+   "Bad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
+   "Only part of the EDID could be read"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   "A built-in laptop or all-in-one panel carries no EDID. An external display connected over DDC does."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   "Raw"
    )
 
 /* Main Menu > Information > Database Manager > Information */
@@ -3219,6 +3455,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
    "MIDI driver to use. (Restart required)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_DRIVER,
+   "Companion UI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
+   "Desktop companion UI driver to use when the Desktop Menu is enabled. (Restart required)"
+   )
 
 /* Settings > Video */
 
@@ -3518,11 +3762,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Improves performance at the cost of latency and more video stuttering. Use only if full speed cannot be obtained otherwise."
+   "Run the core and the video driver on separate threads, so the display keeps its cadence when the core stutters and the core overlaps with the shader chain and present. With 'Threaded Video Display Pacing' the core starts as late as the next refresh allows, matching the latency of Frame Delay. Cores that render on the GPU run threaded with the Vulkan, Direct3D 11, Direct3D 12 and gl drivers; with other drivers they run unthreaded whatever this is set to."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
-   "Use threaded video driver. Using this might improve performance at the possible cost of latency and more video stuttering."
+   "Run the video driver on a thread of its own. The display keeps its cadence when the core stutters, and the core runs its next frame while the last one goes through the shader chain and present. With 'Threaded Video Display Pacing' the core starts as late as the next refresh allows, which keeps latency at what Frame Delay gives."
    )
 /* GENERATED REGION: black frame insertion group (see settings_def_black_frame_insertion.h). */
 #define SETTINGS_DEF_STRINGS_PASS
@@ -4485,6 +4729,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #include "../settings/settings_def_crt_switchres.h"
+#include "../settings/settings_def_video_sdl_display_server.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_BOOL_H
@@ -8764,6 +9009,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Maximum audio latency in milliseconds. The driver aims to keep actual latency at 50% of this value. Might not be honored if the audio driver can't provide given latency."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY_FLOOR,
+   "Minimum Audio Latency (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY_FLOOR,
+   "The lowest audio latency RetroArch will ask a driver for. Eight milliseconds by default, which is what it was fixed at for a long time: a setting of zero used to reach the drivers and they handled it inconsistently. Drivers that talk to the device directly - WASAPI in exclusive mode, ASIO, WDM-KS - can often negotiate a shorter period than that, so lowering this lets them. A driver that cannot go lower will not; it keeps its own hardware floor either way."
+   )
 
 #ifdef HAVE_MICROPHONE
 /* Settings > Audio > Input */
@@ -10738,6 +10991,16 @@ MSG_HASH(
    "Use the Android system keyboard for menu text entry instead of the built-in on-screen keyboard. Enables clipboard paste and password managers. Requires a touchscreen or an input method that can be navigated with a gamepad."
    )
 #endif
+#ifdef HAVE_SDL3
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+   "Use System Keyboard"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+   "Use the device's screen keyboard for menu text entry instead of the built-in on-screen keyboard. Only applies when the system provides a screen keyboard. Requires a touchscreen or an input method that can be navigated with a gamepad."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "OFF"
@@ -11666,7 +11929,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   "Loads and applies the next shader preset file in the root of the 'Video Shaders' directory."
+   "Loads and applies the next shader preset in the folder of the current preset. After the last one, moves on to the next folder at the same level."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
@@ -11674,7 +11937,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
-   "Loads and applies the previous shader preset file in the root of the 'Video Shaders' directory."
+   "Loads and applies the previous shader preset in the folder of the current preset. Before the first one, moves back to the previous folder at the same level."
    )
 
 MSG_HASH(
@@ -14671,6 +14934,46 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO,
+   "Auto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ALWAYS,
+   "Always"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIN_ABBREV,
+   "Min."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAX_ABBREV,
+   "Max."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_CONSOLE,
+   "Console"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_HANDHELD,
+   "Handheld"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY,
+   "Audio Latency"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_DEVICE_PERIOD,
+   "Device Period"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_CLIENT_BUFFER,
+   "Client Buffer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM,
+   "KRB if available, NTLM if not"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
@@ -25351,6 +25654,14 @@ MSG_HASH(
    "Select File"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
+   "Relaxed"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   "Forced"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_NORMAL,
    "Normal"
    )
@@ -30257,6 +30568,58 @@ MSG_HASH(
    "Remember window geometry:"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+   "Restore the desktop menu window to the position and size it had when RetroArch last quit."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+   "Open the content browser on the tab that was selected when RetroArch last quit."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THEME,
+   "Colour theme of the desktop menu: follow the system, use the built-in dark theme, or load a custom stylesheet."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+   "List hidden files and folders in the file browser."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+   "Colour used to highlight the selected row, as #rrggbb."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+   "When a core is already loaded, offer it first when starting content."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+   "Playlist to show when the desktop menu opens. Leave empty for the first one."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+   "Memory kept for decoded thumbnails, in megabytes. Larger values scroll big playlists more smoothly."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
+   "Largest edge, in pixels, an image dropped onto a thumbnail is scaled down to before saving. 0 keeps the original size."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_CUSTOM_THEME,
+   "Stylesheet file used when the theme is set to Custom."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   "Most entries the All Playlists view shows in list mode. 0 shows every entry."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   "Most entries the All Playlists view shows in grid mode. 0 shows every entry."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SCAN_FINISH_CONFIRM,
+   "Show a message when a content scan finishes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
    "Remember last content browser tab:"
    )
@@ -30635,10 +30998,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    "Update failed."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
-   "Contributors"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
@@ -31439,6 +31798,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUDIO_MUTED,
    "Audio muted."
+   )
+MSG_HASH(
+   MSG_AUDIO_ASIO_NOT_RUNNING,
+   "ASIO is not the running audio driver yet. Restart RetroArch to open its control panel."
+   )
+MSG_HASH(
+   MSG_CRT_SWITCH_EDID_WRITTEN,
+   "EDID written to %s. See the log for how to load it."
+   )
+MSG_HASH(
+   MSG_CRT_SWITCH_EDID_FAILED,
+   "Could not write an EDID for the selected CRT preset."
    )
 MSG_HASH(
    MSG_AUDIO_UNMUTED,
@@ -32729,6 +33100,14 @@ MSG_HASH(
    "RetroAchievements: Logged in as \"%s\"."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE,
+   "Hardcore"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CASUAL_MODE,
+   "Casual"
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "You must pause or disable Achievements Hardcore Mode to load states."
    )
@@ -32839,6 +33218,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_NORMAL,
    "Normal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
+   "Stereo"
+   )
+MSG_HASH(
+   MSG_COMPRESSION_CODEC_DEFLATE,
+   "Deflate"
+   )
+MSG_HASH(
+   MSG_COMPRESSION_CODEC_ZSTD,
+   "Zstandard"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHER,

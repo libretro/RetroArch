@@ -29,6 +29,7 @@
 #include "../tasks/tasks_internal.h"
 
 #include "natt.h"
+#include <compat/strl.h>
 
 bool natt_init(struct natt_discovery *discovery)
 {
@@ -251,7 +252,7 @@ static bool natt_build_control_url(
       if (control_path)
          *control_path = '\0';
       if (control_url->data[0] != '/')
-         strlcpy(device->control + _len, "/",
+         strlcpy_lit(device->control + _len, "/",
                sizeof(device->control) - _len);
       /* Make sure the control URL isn't too long. */
       if (strlcat(device->control, control_url->data,

@@ -30,11 +30,24 @@
  * What it implements: Ogg-encapsulated Vorbis I, all residue types and
  * floor type 1, sample-accurate seeking, and interleaved f32 output.
  *
+ * Chained Ogg streams - several complete logical bitstreams one after
+ * another - play through, link after link, on the streaming interface
+ * (rvorbis_stream_*). Each link restarts its granule at zero, so
+ * positions are carried as the frames the earlier links handed out plus
+ * the current link's granule. A link that disagrees with the first on
+ * channel count ends the stream rather than changing format underneath
+ * a caller that sized its buffers at the start. Because nothing in the
+ * interface says "no more input is coming", a link boundary that falls
+ * on the end of the fed input reads as the end of the file; callers
+ * that hand over a whole file at once, which is how every caller in
+ * tree uses it, are unaffected.
+ *
  * What it does not implement: floor type 0 (ancient encoders only;
- * such streams are refused with a dedicated error), chained or
- * multiplexed Ogg streams (the first logical stream is decoded), raw
- * unencapsulated Vorbis packets, file/callback I/O (memory only), and
- * encoding.
+ * such streams are refused with a dedicated error), chained streams on
+ * the whole-file interface (rvorbis_open_memory decodes the first link,
+ * and its length and seeks answer for that link alone), multiplexed Ogg
+ * streams (the first logical stream is decoded), raw unencapsulated
+ * Vorbis packets, file/callback I/O (memory only), and encoding.
  */
 /* Two complete pipelines, selected at runtime by which read the mixer
  * calls: rvorbis_get_samples_float_interleaved drives the float
@@ -6241,6 +6254,14 @@ struct rvorbis_stream
    uint32_t       serial;
    uint32_t       cur_serial;
    int            have_serial;
+
+   /* A chained file is several complete logical bitstreams one after
+    * another. Each restarts its granule at zero, so positions are kept
+    * as link_base plus the current link's granule, and link_end says a
+    * link has finished and the next page may open another. */
+   int            link_end;
+   uint64_t       link_base;
+   int            link_channels;
    int            skip_page;
    int            drop_pkt;
    int            resyncing;  /* joined mid-stream; still converging   */
@@ -6433,8 +6454,64 @@ void rvorbis_stream_reset(rvorbis_stream_t *s)
    s->page_done= 0;
    s->limit    = 0;
    s->have_limit = 0;
+   s->link_end = 0;
+   s->link_base = 0;
+   s->link_channels = 0;
    if (s->opened)
       rvorbis_packet_reset(s->dec);
+}
+
+/* One logical bitstream has ended. A chained file may carry another
+ * behind it, so the position reached is banked and the parser goes back
+ * to looking for a page rather than stopping: only running out of input
+ * says the file is over. */
+static void rvs_link_end(rvorbis_stream_t *s)
+{
+   /* What this link has yet to hand out still belongs to it, and its
+    * limit is what trims the overhang off the end, so neither is
+    * cleared here: the accounting is banked when the next link opens. */
+   s->link_end  = 1;
+   s->pkt_len   = 0;
+   s->page_done = 0;
+   s->hdr_have  = 0;
+   s->state     = RVS_HDR;
+}
+
+/* A page opening a new logical bitstream. The decoder built for the
+ * previous link is no use for this one - its codebooks are the old
+ * link's - so it is torn down and rebuilt from the new link's headers. */
+static void rvs_link_begin(rvorbis_stream_t *s, uint32_t serial)
+{
+   /* Positions restart at zero in each link, so the frames the previous
+    * ones handed out are carried as a base under the new granules. */
+   s->link_base  = s->have_limit ? s->limit
+      : (s->pos_known ? s->pos : s->emitted);
+   s->granule    = 0;
+   s->limit      = 0;
+   s->have_limit = 0;
+   s->pending    = 0;
+   s->pos        = s->link_base;
+   s->pos_known  = 1;
+
+   if (s->opened)
+      rvorbis_close(s->dec);
+   s->dec       = NULL;
+   s->opened    = 0;
+   free(s->id);
+   s->id        = NULL;
+   s->id_len    = 0;
+   free(s->setup);
+   s->setup     = NULL;
+   s->setup_len = 0;
+
+   s->serial      = serial;
+   s->have_serial = 0;   /* adopted again when the id header arrives */
+   s->skip_page   = 0;
+   s->drop_pkt    = 0;
+   /* The head of a stream, not a join into the middle of one: there is
+    * no overlap to converge on. */
+   s->resyncing   = 0;
+   s->link_end    = 0;
 }
 
 /* One assembled packet.  Returns 0 on a hard failure. */
@@ -6481,6 +6558,18 @@ static int rvs_packet(rvorbis_stream_t *s)
          }
          s->opened   = 1;
          s->channels = rvorbis_get_info(s->dec).channels;
+
+         /* A later link of a chained file that disagrees with the first
+          * on channel count cannot be handed to a caller that sized its
+          * buffers, and picked its mixer, from what the first link
+          * reported. The file ends where the agreement does. */
+         if (s->link_channels && s->channels != s->link_channels)
+         {
+            s->eos   = 1;
+            s->state = RVS_DONE;
+            return 1;
+         }
+         s->link_channels = s->channels;
       }
       return 1;                 /* comment header, or anything else   */
    }
@@ -6566,8 +6655,7 @@ int rvorbis_stream_process(rvorbis_stream_t *s, size_t *read, size_t *wrote)
             if (s->have_limit
                   && (s->pos_known ? s->pos : s->emitted) >= s->limit)
             {
-               s->pending = 0;
-               s->state   = RVS_DONE;
+               rvs_link_end(s);
                continue;
             }
             if (got > 0)
@@ -6583,7 +6671,7 @@ int rvorbis_stream_process(rvorbis_stream_t *s, size_t *read, size_t *wrote)
        * where nothing else says where the output landed. */
       if (s->page_done && s->pending <= 0)
       {
-         s->pos       = s->granule;
+         s->pos       = s->link_base + s->granule;
          s->pos_known = 1;
          s->page_done = 0;
       }
@@ -6618,6 +6706,17 @@ int rvorbis_stream_process(rvorbis_stream_t *s, size_t *read, size_t *wrote)
                s->hdr[s->hdr_have++] = s->in[s->in_pos++];
             if (s->hdr_have < 27)
             {
+               /* Nothing more behind a finished link: the file is over.
+                * A single-link file reaches this the moment its EOS
+                * page is consumed, which is where it used to report the
+                * end from. */
+               if (s->link_end)
+               {
+                  s->eos   = 1;
+                  s->state = RVS_DONE;
+                  ret      = RVORBIS_STREAM_EOS;
+                  goto out;
+               }
                ret = RVORBIS_STREAM_NEED_IN;
                goto out;
             }
@@ -6651,6 +6750,11 @@ int rvorbis_stream_process(rvorbis_stream_t *s, size_t *read, size_t *wrote)
                for (k = 0; k < 4; k++)
                   sn |= (uint32_t)s->hdr[14 + k] << (8 * k);
                s->cur_serial = sn;
+               /* A page carrying the beginning-of-stream flag after a
+                * link has ended opens the next link of a chained file.
+                * Anything else after one is a stray page. */
+               if (s->link_end && (s->hdr[5] & 0x02))
+                  rvs_link_begin(s, sn);
                s->skip_page  = (s->have_serial && sn != s->serial);
                if (!s->skip_page)
                {
@@ -6661,7 +6765,7 @@ int rvorbis_stream_process(rvorbis_stream_t *s, size_t *read, size_t *wrote)
                      s->granule = g;
                   if ((s->hdr[5] & 0x04) && g != (uint64_t)-1)
                   {
-                     s->limit      = g;
+                     s->limit      = s->link_base + g;
                      s->have_limit = 1;
                   }
                   /* A continued flag with nothing carried over means we
@@ -6732,18 +6836,21 @@ int rvorbis_stream_process(rvorbis_stream_t *s, size_t *read, size_t *wrote)
                         goto out;
                      }
                      s->pkt_len = 0;
+                     /* A link this stream cannot continue into was
+                      * refused while opening: stop where the last one
+                      * ended rather than walking the rest of the file. */
+                     if (s->state == RVS_DONE)
+                        break;
                      if (s->pending > 0)
                         break;   /* drain before taking another packet */
                   }
                }
             }
-            if (s->seg_idx >= s->nsegs && !s->seg_left && !s->pkt_ends)
+            if (     s->state == RVS_BODY
+                  && s->seg_idx >= s->nsegs && !s->seg_left && !s->pkt_ends)
             {
                if (!s->skip_page && (s->hdr[5] & 0x04))
-               {
-                  s->eos   = 1;
-                  s->state = RVS_DONE;
-               }
+                  rvs_link_end(s);
                else
                {
                   s->page_done = 1;

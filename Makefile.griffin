@@ -117,7 +117,6 @@ else ifeq ($(platform), ps3-cobra)
 else ifeq ($(libogc_platform), 1)
    EXTERNAL_LIBOGC   ?= 0
    HAVE_OGG_OGC      ?= 0
-   GX_PTHREAD_LEGACY ?= 1
    CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
    LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
@@ -156,10 +155,6 @@ else ifeq ($(libogc_platform), 1)
 
    endif
 
-   ifeq ($(GX_PTHREAD_LEGACY), 1)
-      CFLAGS   += -DGX_PTHREAD_LEGACY
-      CXXFLAGS += -DGX_PTHREAD_LEGACY
-   endif
 
    ifeq ($(platform), ngc)
       MACHDEP := -DHW_DOL -mogc
@@ -222,6 +217,7 @@ else ifeq ($(libogc_platform), 1)
    HAVE_RMODTRACKER                := 1
    HAVE_OVERLAY             := 1
    HAVE_7ZIP                := 1
+   HAVE_RZSTD               := 1
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
@@ -1114,6 +1110,9 @@ endif
 ifeq ($(HAVE_7ZIP), 1)
    CFLAGS      += -DHAVE_7ZIP
 endif
+ifeq ($(HAVE_RZSTD), 1)
+   CFLAGS      += -DHAVE_RZSTD
+endif
 
 ifeq ($(HAVE_SCREENSHOTS), 1)
 	CFLAGS      += -DHAVE_SCREENSHOTS
@@ -1129,6 +1128,11 @@ endif
 
 ifeq ($(HAVE_RWAV), 1)
    CFLAGS      += -DHAVE_RWAV
+endif
+
+# AC-3 (rac3) and IEC 61937: no dependencies, on wherever the mixer is.
+ifeq ($(HAVE_AUDIOMIXER), 1)
+   CFLAGS      += -DHAVE_RAC3
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)

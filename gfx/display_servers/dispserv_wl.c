@@ -17,10 +17,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <boolean.h>
+#include <compat/strl.h>
 
 #include <wayland-client.h>
 
 #include "../video_display_server.h"
+#include "edid_sysfs.h"
 
 typedef struct
 {
@@ -34,6 +36,10 @@ typedef struct
    int      refresh;          /* mHz */
    bool     have_mode;
    bool     have_geometry;
+   /* wl_output v4 name: the DRM connector ("HDMI-A-1"), which is the
+    * sysfs node the EDID lives under; Wayland itself has no
+    * protocol for the EDID */
+   char     name[32];
 } dispserv_wl_t;
 
 /* wl_output listener callbacks */
@@ -73,11 +79,26 @@ static void output_handle_done(void *data,
 static void output_handle_scale(void *data,
       struct wl_output *output, int32_t factor) { }
 
+#ifdef WL_OUTPUT_NAME_SINCE_VERSION
+static void output_handle_name(void *data,
+      struct wl_output *output, const char *name)
+{
+   dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   strlcpy(serv->name, name ? name : "", sizeof(serv->name));
+}
+static void output_handle_description(void *data,
+      struct wl_output *output, const char *description) { }
+#endif
+
 static const struct wl_output_listener output_listener = {
    output_handle_geometry,
    output_handle_mode,
    output_handle_done,
    output_handle_scale,
+#ifdef WL_OUTPUT_NAME_SINCE_VERSION
+   output_handle_name,
+   output_handle_description,
+#endif
 };
 
 /* wl_registry listener */
@@ -91,8 +112,14 @@ static void registry_handle_global(void *data,
    /* Bind to the first wl_output we find */
    if (!serv->output && strcmp(interface, "wl_output") == 0)
    {
+      uint32_t want = 2;
+#ifdef WL_OUTPUT_NAME_SINCE_VERSION
+      /* v4 adds the name event; take it when the compositor has it */
+      if (version >= WL_OUTPUT_NAME_SINCE_VERSION)
+         want = WL_OUTPUT_NAME_SINCE_VERSION;
+#endif
       serv->output = (struct wl_output*)
-         wl_registry_bind(registry, name, &wl_output_interface, 2);
+         wl_registry_bind(registry, name, &wl_output_interface, want);
       wl_output_add_listener(serv->output, &output_listener, serv);
    }
 }
@@ -209,6 +236,19 @@ static bool wl_display_server_get_metrics(void *data,
    return true;
 }
 
+/* No Wayland protocol exposes the EDID; the kernel's sysfs copy for
+ * the output's connector name is the only route. Without a name (a
+ * compositor below wl_output v4) the first enabled connector's. */
+static int wl_display_server_get_edid(void *data, uint8_t *out, size_t max)
+{
+   dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   const char *name    = (serv && serv->name[0]) ? serv->name : NULL;
+   int n               = edid_sysfs_read(name, out, max);
+   if (n < 0 && name)
+      n = edid_sysfs_read(NULL, out, max);
+   return n;
+}
+
 const video_display_server_t dispserv_wl = {
    wl_display_server_init,
    wl_display_server_destroy,
@@ -226,5 +266,18 @@ const video_display_server_t dispserv_wl = {
    NULL, /* get_video_output_next */
    wl_display_server_get_metrics,
    NULL, /* get_flags */
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
+   NULL, /* modeline_list_outputs */
+   NULL, /* modeline_open */
+   NULL, /* modeline_close */
+   NULL, /* modeline_caps */
+   NULL, /* modeline_enum */
+   NULL, /* modeline_add */
+   NULL, /* modeline_update */
+   NULL, /* modeline_delete */
+   NULL, /* modeline_set */
+   NULL, /* modeline_flush */
+   wl_display_server_get_edid,
    "wayland"
 };
