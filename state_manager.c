@@ -773,6 +773,7 @@ void state_manager_event_init(
       return;
 
    rewind_st->size               = 0;
+   retro_atomic_store_release_int(&rewind_st->frame_reversed_atomic, 0);
    rewind_st->flags             &= ~(
                                    STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
                                  | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
@@ -855,6 +856,7 @@ void state_manager_event_deinit(
 
    rewind_st->state  = NULL;
    rewind_st->size   = 0;
+   retro_atomic_store_release_int(&rewind_st->frame_reversed_atomic, 0);
    rewind_st->flags &= ~(
                           STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
                         | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
@@ -927,6 +929,7 @@ bool state_manager_check_rewind(
       was_reversed = true;
 #endif
       audio_driver_frame_is_reverse();
+      retro_atomic_store_release_int(&rewind_st->frame_reversed_atomic, 0);
       rewind_st->flags &= ~STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED;
    }
 
@@ -943,6 +946,8 @@ bool state_manager_check_rewind(
             return false;
 #endif
 
+         retro_atomic_store_release_int(
+               &rewind_st->frame_reversed_atomic, 1);
          rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED;
 
          audio_driver_setup_rewind();
@@ -965,6 +970,8 @@ bool state_manager_check_rewind(
          /* Don't end reversing during playback or recording */
          if(BSV_MOVIE_IS_PLAYBACK_ON() || BSV_MOVIE_IS_RECORDING())
          {
+            retro_atomic_store_release_int(
+                  &rewind_st->frame_reversed_atomic, 1);
             rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED;
             bsv_movie_frame_rewind();
          }

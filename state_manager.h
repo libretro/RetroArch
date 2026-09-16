@@ -23,6 +23,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_atomic.h>
 
 #include "dynamic.h"
 
@@ -71,6 +72,14 @@ struct state_manager_rewind_state
    state_manager_t *state;
    size_t size;
    uint8_t flags;
+   /* Cross-thread mirror of FRAME_IS_REVERSED. The flags word is
+    * main-thread-only rewind logic; this atomic is what
+    * state_manager_frame_is_reversed() reads, because its callers
+    * include the video thread (every FrameDirection uniform, per
+    * frame) and the task worker (task_save), while the writer is
+    * check_rewind on main, per frame. Release-stored wherever the
+    * flag bit changes, acquire-loaded by the reader. */
+   retro_atomic_int_t frame_reversed_atomic;
 };
 
 bool state_manager_frame_is_reversed(void);

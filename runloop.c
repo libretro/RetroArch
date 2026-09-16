@@ -465,7 +465,11 @@ bool runloop_is_content_closing(void)
 bool state_manager_frame_is_reversed(void)
 {
 #ifdef HAVE_REWIND
-   return !!(runloop_state.rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED);
+   /* Acquire on the atomic mirror, not the flags word: callers
+    * include the video thread's FrameDirection reads and the task
+    * worker, while check_rewind writes on main. */
+   return retro_atomic_load_acquire_int(
+         &runloop_state.rewind_st.frame_reversed_atomic) != 0;
 #else
    return false;
 #endif
