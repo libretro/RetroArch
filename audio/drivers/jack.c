@@ -27,6 +27,7 @@
 
 #include <boolean.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 
 #include "../../configuration.h"
 #include "../audio_driver.h"
@@ -43,8 +44,16 @@ typedef struct jack
    uint32_t layout;     /* the frontend's mask, one port a position */
    jack_ringbuffer_t *buffer;
 #ifdef HAVE_THREADS
-   scond_t *cond;
-   slock_t *cond_lock;
+   /* Parked on by the writer; notified from JACK's process and
+    * shutdown callbacks. An eventcount, not a lock and condition
+    * variable: on the lock-free backend the notify is an atomic bump
+    * and a gated wake, so the process callback - JACK's realtime
+    * thread, where taking a lock risks priority inversion against
+    * the very thread it wakes - never takes one, which the old
+    * scond_signal could on the portable backend. The prepare/commit
+    * window also closes the lost-single-wakeup race the shutdown
+    * path's comment used to manage with timed waits alone. */
+   retro_eventcount_t park;
 #endif
    size_t buffer_size;
 #ifdef HAVE_THREADS
@@ -259,7 +268,7 @@ static int ja_process_cb(jack_nframes_t nframes, void *data)
       }
    }
 #ifdef HAVE_THREADS
-   scond_signal(jd->cond);
+   retro_eventcount_notify(&jd->park);
 #endif
    return 0;
 }
@@ -316,7 +325,11 @@ static void ja_shutdown_cb(void *data)
 
    retro_atomic_store_release_int(&jd->shutdown, 1);
 #ifdef HAVE_THREADS
-   scond_signal(jd->cond);
+   /* One notify, never repeated: the eventcount's seq_cst pairing
+    * makes it land against any writer mid-registration, which the
+    * bare signal could lose. The timed waits stay as the lap
+    * clock. */
+   retro_eventcount_notify(&jd->park);
 #endif
 }
 
@@ -424,8 +437,8 @@ static void *ja_init(const char *device,
    retro_atomic_int_init(&jd->is_paused, 0);
 
 #ifdef HAVE_THREADS
-   jd->cond      = scond_new();
-   jd->cond_lock = slock_new();
+   if (!retro_eventcount_init(&jd->park))
+      goto error;
 #endif
 
    jd->client = jack_client_open("RetroArch", JackNullOption, NULL);
@@ -555,10 +568,9 @@ error:
       jack_client_close(jd->client);
    if (jd->buffer)
       jack_ringbuffer_free(jd->buffer);
-   if (jd->cond)
-      scond_free(jd->cond);
-   if (jd->cond_lock)
-      slock_free(jd->cond_lock);
+#ifdef HAVE_THREADS
+   retro_eventcount_free(&jd->park);
+#endif
    free(jd);
    return NULL;
 }
@@ -606,25 +618,24 @@ static ssize_t ja_write(void *data, const void *buf_, size_t len)
       else if (!jd->nonblock)
       {
 #ifdef HAVE_THREADS
-         /* Timed, not indefinite.  The predicate is the ringbuffer's
-          * write space, which is lock-free - the consumer is JACK's
-          * real-time process callback and must not take a lock - so
-          * cond_lock cannot also guard it, and a signal raised between
-          * the write_space test above and this wait reaches no waiter.
-          *
-          * That matters most for the one signal that is never
-          * repeated.  ja_process_cb signals every period, but once the
-          * JACK server goes away it is never called again;
-          * ja_shutdown_cb then signals exactly once, without
-          * cond_lock.  Losing that single wakeup to the window left
-          * this thread parked forever, because the jd->shutdown test
-          * that would have released it sits at the top of a loop the
-          * thread can no longer reach.  A timed wait puts it back
-          * inside the loop, where both shutdown and write space are
-          * rechecked. */
-         slock_lock(jd->cond_lock);
-         scond_wait_timeout(jd->cond, jd->cond_lock, jd->wait_us);
-         slock_unlock(jd->cond_lock);
+         /* Timed, not indefinite: the timeout is the lap clock for
+          * the graph-stalled bound below.  The predicate - the
+          * ringbuffer's write space, and jd->shutdown - is re-checked
+          * inside the eventcount's window, so the one notify that is
+          * never repeated (ja_shutdown_cb's, after the server goes
+          * away and ja_process_cb stops firing) can no longer fall
+          * between the test and the park: a notify inside the window
+          * makes the commit fall through. */
+         {
+            int key = retro_eventcount_prepare_wait(&jd->park);
+            if (   retro_atomic_load_acquire_int(&jd->shutdown)
+                || jack_ringbuffer_write_space(jd->buffer)
+                      >= jd->channels * sizeof(float))
+               retro_eventcount_cancel_wait(&jd->park);
+            else
+               retro_eventcount_commit_wait_timeout(&jd->park, key,
+                     jd->wait_us);
+         }
          /* Bounded overall as well as per wait: a graph that never
           * makes room ends the write with what went. */
          if (--laps < 0)
@@ -719,10 +730,7 @@ static void ja_free(void *data)
       jack_ringbuffer_free(jd->buffer);
 
 #ifdef HAVE_THREADS
-   if (jd->cond_lock)
-      slock_free(jd->cond_lock);
-   if (jd->cond)
-      scond_free(jd->cond);
+   retro_eventcount_free(&jd->park);
 #endif
    free(jd);
 }
@@ -763,9 +771,17 @@ static size_t ja_wait_writable(void *data, size_t len)
       if (avail >= len)
          return avail;
 #ifdef HAVE_THREADS
-      slock_lock(jd->cond_lock);
-      scond_wait_timeout(jd->cond, jd->cond_lock, jd->wait_us);
-      slock_unlock(jd->cond_lock);
+      /* Same window as ja_write's park: shutdown and space re-checked
+       * inside it, the timeout as the lap clock. */
+      {
+         int key = retro_eventcount_prepare_wait(&jd->park);
+         if (   retro_atomic_load_acquire_int(&jd->shutdown)
+             || jack_ringbuffer_write_space(jd->buffer) >= len)
+            retro_eventcount_cancel_wait(&jd->park);
+         else
+            retro_eventcount_commit_wait_timeout(&jd->park, key,
+                  jd->wait_us);
+      }
       /* No room after this many periods: the graph is not running the
        * process callback, and the pass is handed back as no space
        * coming from this call rather than waited on further. */
