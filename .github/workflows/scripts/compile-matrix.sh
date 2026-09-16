@@ -240,25 +240,48 @@ check "audio: openal" "-Itools/platform_stubs/openal -DHAVE_AL -DHAVE_THREADS -W
 check "psp: psp_audio" "-Itools/platform_stubs/psp -DPSP -DHAVE_THREADS -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/psp_audio.c
 check "vita: psp_audio" "-Itools/platform_stubs/vita -DVITA -DHAVE_THREADS -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/psp_audio.c
 
-# rtime.c on every statically linked platform: retro_sleep_until_us's
+# features_cpu.c on every statically linked platform. It owns
+# cpu_features_get_time_usec() and retro_sleep_until_us(); the wait's
 # generic loop calls retro_sleep_us, a per-platform macro from
-# retro_timers.h everywhere but Windows and Darwin, which define it in
-# rtime.c itself and so prove nothing about the rest. Each lane
-# compiles the whole TU under one platform's defines against hermetic
-# stubs of the SDK headers retro_timers.h pulls. The host compiler
-# predefines __linux__ and friends, and a lane that kept them took the
-# Linux branch of every #if ladder - so console lanes shed them.
-RTIME_TU=libretro-common/time/rtime.c
+# retro_timers.h everywhere but Windows and Darwin, so the branch that
+# only the console toolchains compile is compiled here, against
+# hermetic stubs of each SDK header the file pulls. The host compiler
+# predefines __linux__ and friends; a lane that keeps them takes the
+# Linux branch of every #if ladder and proves nothing, so these shed
+# them. PSP gets _POSIX_C_SOURCE for the host libc's nanosleep, which
+# pspsdk's newlib declares unconditionally.
+FCPU_TU=libretro-common/features/features_cpu.c
 HOSTOFF="-U__linux__ -U__gnu_linux__ -Ulinux -U__unix__ -U__unix -Uunix"
-check "rtime: 3ds"        "$HOSTOFF -Itools/platform_stubs/ctr -D_3DS -D__3DS__ -DARM11 -DRARCH_CONSOLE" $RTIME_TU
-check "rtime: gekko"      "$HOSTOFF -Itools/platform_stubs/gekko -DGEKKO -DHW_RVL -DRARCH_CONSOLE" $RTIME_TU
-check "rtime: wiiu"       "$HOSTOFF -Itools/platform_stubs/wiiu -DWIIU -DRARCH_CONSOLE" $RTIME_TU
-check "rtime: psp"        "$HOSTOFF -Itools/platform_stubs/psp -DPSP -DRARCH_CONSOLE" $RTIME_TU
-check "rtime: vita"       "$HOSTOFF -Itools/platform_stubs/vita -DVITA -DRARCH_CONSOLE" $RTIME_TU
-check "rtime: ps3"        "$HOSTOFF -Itools/platform_stubs/ps3 -D__PS3__ -DRARCH_CONSOLE" $RTIME_TU
-check "rtime: psl1ght"    "$HOSTOFF -D__PS3__ -D__PSL1GHT__ -DRARCH_CONSOLE" $RTIME_TU
-check "rtime: emscripten" "$HOSTOFF -D__EMSCRIPTEN__ -DEMSCRIPTEN" $RTIME_TU
+check "features_cpu: 3ds"        "$HOSTOFF -Itools/platform_stubs/ctr -D_3DS -D__3DS__ -DARM11 -DRARCH_CONSOLE" $FCPU_TU
+check "features_cpu: gekko"      "$HOSTOFF -Itools/platform_stubs/gekko -DGEKKO -DHW_RVL -DRARCH_CONSOLE" $FCPU_TU
+check "features_cpu: wiiu"       "$HOSTOFF -Itools/platform_stubs/wiiu -DWIIU -DRARCH_CONSOLE" $FCPU_TU
+check "features_cpu: psp"        "$HOSTOFF -Itools/platform_stubs/psp -DPSP -D_POSIX_C_SOURCE=199309L -DRARCH_CONSOLE" $FCPU_TU
+check "features_cpu: vita"       "$HOSTOFF -Itools/platform_stubs/vita -DVITA -DRARCH_CONSOLE" $FCPU_TU
+check "features_cpu: ps3"        "$HOSTOFF -Itools/platform_stubs/ps3 -D__PS3__ -DRARCH_CONSOLE" $FCPU_TU
+check "features_cpu: psl1ght"    "$HOSTOFF -Itools/platform_stubs/psl1ght -D__PS3__ -D__PSL1GHT__ -DRARCH_CONSOLE" $FCPU_TU
+check "features_cpu: emscripten" "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN" $FCPU_TU
 
+# The salamander launchers link a hand-picked subset of libretro-common
+# with -DIS_SALAMANDER: rtime.c for rtime_localtime, no features_cpu.c.
+# A syntax pass cannot see the link error that a symbol from an
+# unlinked TU produces there, so this lane links exactly that object
+# set with a host main, under the Vita salamander's defines.
+salamander_link() {
+   name="$1"; shift
+   defs="$1"; shift
+   if ! out=$($CC $WARN $INC $BASE $defs -o /tmp/salamander_link_check \
+         tools/platform_stubs/salamander_main.c "$@" 2>&1); then
+      echo "FAIL  $name"
+      echo "$out" | sed 's/^/      /' | head -12
+      fail=1
+   else
+      echo "ok    $name"
+   fi
+   rm -f /tmp/salamander_link_check
+}
+salamander_link "salamander link: rtime.c" \
+   "$HOSTOFF -UHAVE_THREADS -Itools/platform_stubs/vita -DVITA -DIS_SALAMANDER -DRARCH_CONSOLE" \
+   libretro-common/time/rtime.c
 
 check "android: opensl" "-DANDROID -DHAVE_OPENSL -Itools/platform_stubs/android -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/opensl.c
 

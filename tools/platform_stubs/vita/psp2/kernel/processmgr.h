@@ -2,4 +2,5 @@
 #ifndef STUB_PSP2_K_processmgr
 #define STUB_PSP2_K_processmgr
 typedef int SceUID;
+long long sceKernelGetSystemTimeWide(void);
 #endif

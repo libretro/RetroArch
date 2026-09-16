@@ -3,4 +3,5 @@
 #ifndef STUB_PSPKERNEL_H
 #define STUB_PSPKERNEL_H
 typedef int SceUID;
+long long sceKernelGetSystemTimeWide(void);
 #endif

@@ -1580,3 +1580,69 @@ end:
    }
 #endif
 }
+
+/* Sleep until cpu_features_get_time_usec() reads at least @deadline.
+ * It lives here, beside the clock it is measured on, and nowhere a
+ * launcher compiles: the salamanders build rtime.c for localtime alone
+ * and never link this file.
+ *
+ * Absolute where the platform offers it, so the time between reading
+ * the clock and entering the kernel, and any early or interrupted
+ * wake, are not added to when the caller comes back. Never early
+ * against that clock on any backend; late as every sleep may be, and
+ * a caller that needs the instant itself sleeps short and spins the
+ * rest, as the frame limiter does with its measured margin. */
+#if (defined(__linux__) || defined(ANDROID)) && !defined(__MACH__)
+/* The exact tool: the clock above is clock_gettime(CLOCK_MONOTONIC)
+ * here, and clock_nanosleep() takes an absolute deadline on the same
+ * clock. EINTR re-arms against the unchanged deadline by definition
+ * of TIMER_ABSTIME. */
+void retro_sleep_until_us(retro_time_t deadline)
+{
+   struct timespec ts;
+   ts.tv_sec  = (time_t)(deadline / 1000000);
+   ts.tv_nsec = (long)((deadline % 1000000) * 1000);
+   while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL) != 0)
+      ;
+}
+#elif defined(__APPLE__) && defined(__MACH__)
+#include <mach/mach_time.h>
+/* mach_wait_until() is the absolute wait, on the Mach clock; the
+ * public microsecond clock above is CLOCK_MONOTONIC, which Darwin
+ * derives from the same hardware ticks. The two are bridged with one
+ * paired read - nanoseconds apart - and unlike a relative sleep the
+ * arming is still absolute in Mach terms, so an early wake or the
+ * kernel's leeway re-arms nothing and accumulates nothing. */
+void retro_sleep_until_us(retro_time_t deadline)
+{
+   static mach_timebase_info_data_t tb;
+   uint64_t ticks;
+   retro_time_t now  = cpu_features_get_time_usec();
+   uint64_t mach_now = mach_absolute_time();
+   if (deadline <= now)
+      return;
+   /* A constant; a racing first read fills in the same values. */
+   if (!tb.denom)
+      mach_timebase_info(&tb);
+   ticks = (uint64_t)(deadline - now) * 1000 * tb.denom / tb.numer;
+   mach_wait_until(mach_now + ticks);
+}
+#else
+/* Windows and everything else: re-arm the platform's best relative
+ * wait - retro_sleep_us from retro_timers.h, included above on every
+ * platform - against the deadline until the clock agrees. On desktop
+ * Windows that wait is rtime.c's per-thread high-resolution timer, so
+ * each lap is microsecond-grained; on a platform whose sleep rounds
+ * up the loop ends one lap past the deadline, no worse than the
+ * relative call was. */
+void retro_sleep_until_us(retro_time_t deadline)
+{
+   for (;;)
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      if (now >= deadline)
+         return;
+      retro_sleep_us((unsigned)(deadline - now));
+   }
+}
+#endif

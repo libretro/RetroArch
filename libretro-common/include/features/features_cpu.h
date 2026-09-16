@@ -61,6 +61,19 @@ retro_perf_tick_t cpu_features_get_perf_counter(void);
 retro_time_t cpu_features_get_time_usec(void);
 
 /**
+ * retro_sleep_until_us:
+ * @deadline : an instant on cpu_features_get_time_usec()'s clock.
+ *
+ * Sleeps until that clock reads at least @deadline. Absolute where the
+ * platform offers it (clock_nanosleep TIMER_ABSTIME on Linux and
+ * Android, mach_wait_until on Darwin), a re-armed high-resolution
+ * relative wait elsewhere. Never early against that clock; may be
+ * late, as every sleep may. Not available to the salamander launchers,
+ * which do not link features_cpu.c.
+ **/
+void retro_sleep_until_us(retro_time_t deadline);
+
+/**
  * Returns the available features (mostly SIMD extensions)
  * supported by this CPU.
  *
