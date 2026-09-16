@@ -5372,13 +5372,15 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    const enum retro_pixel_format
       video_driver_pix_fmt                = video_st->pix_fmt;
    unsigned int rotation                  = retroarch_get_rotation();
+#ifdef HAVE_VIDEO_FILTER
+   const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
+#endif
 
    /* Seed the viewport-parameter snapshot before the driver's init
     * runs: drivers call video_driver_update_viewport() from inside
     * init, and the reader must never spin on an unpublished seq. */
    video_driver_publish_vp_params();
 #ifdef HAVE_VIDEO_FILTER
-   const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 
    /* Bound before any driver or wrapper exists: under threaded video
     * the OSD fonts live on the video thread, and the font driver
