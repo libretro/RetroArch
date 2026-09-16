@@ -49,6 +49,9 @@ void *cc_resampler_int16_init(double bandwidth_mod);
 void  cc_resampler_int16_process(void *re,
       struct resampler_data_int16 *data);
 
+/* Restore fresh-stream history without allocation or configuration changes. */
+void  cc_resampler_int16_reset(void *re);
+
 void  cc_resampler_int16_free(void *re);
 
 #ifdef __cplusplus

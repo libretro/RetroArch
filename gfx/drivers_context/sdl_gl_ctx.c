@@ -458,6 +458,24 @@ static void sdl_ctx_bind_hw_render(void *data, bool enable)
 #endif
 }
 
+/* A minimised or hidden window has nothing behind it to present to:
+ * SDL_GL_SwapWindow() returns at once instead of blocking to vblank,
+ * so with vsync as the only pacing the loop would spin. SDL keeps the
+ * state, so there is none of ours to keep. SDL 1.2 has no equivalent
+ * query and is always presentable, as it was. */
+static bool sdl_ctx_presentable(void *data)
+{
+#ifdef HAVE_SDL2
+   gfx_ctx_sdl_data_t *sdl = (gfx_ctx_sdl_data_t*)data;
+   if (sdl && sdl->win)
+      return !(SDL_GetWindowFlags(sdl->win)
+            & (SDL_WINDOW_MINIMIZED | SDL_WINDOW_HIDDEN));
+#else
+   (void)data;
+#endif
+   return true;
+}
+
 const gfx_ctx_driver_t gfx_ctx_sdl_gl =
 {
    sdl_ctx_init,
@@ -492,5 +510,6 @@ const gfx_ctx_driver_t gfx_ctx_sdl_gl =
    NULL,
    NULL,
    NULL, /* create_surface */
-   NULL  /* destroy_surface */
+   NULL, /* destroy_surface */
+   sdl_ctx_presentable
 };

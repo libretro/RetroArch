@@ -28,8 +28,11 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "font_driver.h"
+#include "gfx_display.h"
 #include "video_thread_wrapper.h"
 #include <retro_atomic.h>
+
+#include <compat/strl.h>
 
 /* ------------------------------------------------------------------
  * Shared font file bytes.
@@ -82,13 +85,17 @@ static font_file_use_t *font_file_uses;
  * the case this exists for.  The file read deliberately happens outside
  * the lock; spinning while another thread pulls megabytes off a memory
  * card would be far worse than the contention it avoids. */
-/* retro_atomic.h's fallback backend has no compare-and-swap: it is
- * selected precisely on the targets whose toolchains offer no
- * lock-free integer atomics, which are the single-core consoles, and
- * there the list is only ever touched from one thread.  Gate on the
- * primitive rather than on a platform list, so a target that gains
- * atomics gains the locking with them. */
-#if defined(HAVE_THREADS) && defined(retro_atomic_cas_int)
+/* Gate on the primitives rather than on a platform list, so a target
+ * that gains atomics gains the locking with them.  Both gates are
+ * needed: the fallback backend has no compare-and-swap at all, and the
+ * PS2 backend has one that is atomic but not lock-free, taken with the
+ * interrupts masked.  Spinning on it would hang the EE outright -- one
+ * core, and a kernel that reschedules only out of an interrupt, so the
+ * thread holding the word never runs again.  Those targets keep the
+ * unlocked path, where the list is only ever touched from one
+ * thread. */
+#if defined(HAVE_THREADS) && defined(retro_atomic_cas_int) \
+ && defined(RETRO_ATOMIC_LOCK_FREE)
 static retro_atomic_int_t font_file_lock_word;
 #define FONT_FILE_LOCK() \
    do { while (!retro_atomic_cas_int(&font_file_lock_word, 0, 1)) { } } while (0)
@@ -325,8 +332,11 @@ static const font_renderer_driver_t *font_renderer_shared_driver(
  * smooth ticker glyph width cache in gfx_animation.c) key their
  * entries on this value: font_data_t pointers can be recycled by
  * the allocator across free/create cycles, so pointer equality
- * alone cannot prove a cached entry still describes a live font */
-static uint32_t font_driver_generation = 0;
+ * alone cannot prove a cached entry still describes a live font.
+ * Atomic because the main thread bumps it while the threaded video
+ * worker reads it, drawing widgets during content. */
+static retro_atomic_int_t font_driver_generation
+   = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 /* Every live font, so they can be rebuilt when the file behind them
  * should change. Singly linked through font_data_t::next. */
@@ -546,14 +556,27 @@ unsigned font_driver_reload_fonts(void)
    if (n)
       /* Derived data cached outside this file - ticker widths, menu
        * line heights - is now stale. */
-      font_driver_generation++;
+      retro_atomic_fetch_add_int(&font_driver_generation, 1);
 
    return n;
 }
 
 uint32_t font_driver_get_generation(void)
 {
-   return font_driver_generation;
+   return (uint32_t)retro_atomic_load_acquire_int(&font_driver_generation);
+}
+
+/* The video singleton's stable address, bound on the main thread at
+ * video init before the threaded wrapper spawns. Under the wrapper
+ * the OSD fonts are created, measured and freed on the video thread,
+ * so every reach into ra-video state in this file goes through the
+ * capture rather than the getter; no thread entry calls into a
+ * singleton getter through here. */
+static video_driver_state_t *font_driver_video_st;
+
+void font_driver_bind_video_state(void *video_st)
+{
+   font_driver_video_st = (video_driver_state_t*)video_st;
 }
 
 int font_renderer_create_default(
@@ -1135,9 +1158,15 @@ void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font_data)
 {
    font_data_t                *font = (font_data_t*)(font_data
-         ? font_data : (void*)video_state_get_ptr()->osd_font);
+         ? font_data : (font_driver_video_st
+            ? (void*)font_driver_video_st->osd_font : NULL));
    const font_renderer_t *renderer  = (font && msg && msg_len)
    ? font->renderer : NULL;
+
+   gfx_display_t *p_disp            = disp_get_ptr();
+
+   /* Quads asked for before this text have to land under it */
+   gfx_display_flush_batch(p_disp);
 
    if (renderer && renderer->render_msg)
    {
@@ -1152,6 +1181,10 @@ void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
       char         *new_msg         = (char*)msg;
       size_t        new_msg_len     = msg_len;
 #endif
+      /* Without a block the backend draws this string on its own;
+       * with one, the draw is counted when the block is flushed */
+      if (p_disp && !(font->block_bound && renderer->bind_block))
+         p_disp->stats.v[GFX_DISPLAY_STAT_FONT_DRAWS]++;
       renderer->render_msg(data,
             font->renderer_data, new_msg, new_msg_len, params);
    }
@@ -1162,7 +1195,10 @@ void font_driver_bind_block(void *font_data, void *block)
    font_data_t *font               = (font_data_t*)font_data;
    const font_renderer_t *renderer = font ? font->renderer : NULL;
    if (renderer && renderer->bind_block)
+   {
       renderer->bind_block(font->renderer_data, block);
+      font->block_bound = (block != NULL);
+   }
 }
 
 /* Flushing is slow - only do it if font has actually been used */
@@ -1215,6 +1251,13 @@ void font_flush(
 
    if (font_data->raster_block.carr.coords.vertices == 0)
       return;
+   {
+      gfx_display_t *p_disp = disp_get_ptr();
+      /* Quads asked for before this text have to land under it */
+      gfx_display_flush_batch(p_disp);
+      if (p_disp && renderer && renderer->flush)
+         p_disp->stats.v[GFX_DISPLAY_STAT_FONT_DRAWS]++;
+   }
    if (renderer && renderer->flush)
       renderer->flush(video_width, video_height, font_data->font->renderer_data);
    font_data->raster_block.carr.coords.vertices = 0;
@@ -1224,7 +1267,8 @@ int font_driver_get_message_width(void *font_data,
       const char *msg, size_t len, float scale)
 {
    font_data_t *font               = (font_data_t*)(font_data
-         ? font_data : (void*)video_state_get_ptr()->osd_font);
+         ? font_data : (font_driver_video_st
+            ? (void*)font_driver_video_st->osd_font : NULL));
    const font_renderer_t *renderer = font ? font->renderer : NULL;
    if (renderer && renderer->get_message_width)
       return renderer->get_message_width(font->renderer_data, msg, len, scale);
@@ -1275,7 +1319,7 @@ static uintptr_t font_driver_free_wrap(void *data)
  * pattern used by texture load/unload.
  *
  * video_thread_texture_handle is self-safe: if the wrapper
- * is not active (VIDEO_FLAG_THREAD_WRAPPER_ACTIVE not set),
+ * is not active (the wrapper is not active),
  * it falls back to calling func(data) on the current thread.
  * If called from the video thread itself, it calls func
  * directly (no deadlock). */
@@ -1295,7 +1339,12 @@ static void font_driver_release_renderer_state(
       font_free_cmd_t cmd;
       cmd.renderer      = renderer;
       cmd.renderer_data = renderer_data;
-      cmd.is_threaded   = is_threaded;
+      /* The renderer's is_threaded means "not on the context thread,
+       * bind it yourself": the GL renderers answer it with
+       * make_current(), and on release that unbinds the context from
+       * the calling thread. This call runs on the video thread, whose
+       * context is already current and must stay so. */
+      cmd.is_threaded   = false;
       video_thread_texture_handle(&cmd, font_driver_free_wrap);
       return;
    }
@@ -1312,7 +1361,7 @@ void font_driver_free(font_data_t *font)
       font_data_t **link      = &font_live;
 
       /* Invalidate any externally cached per-font derived data */
-      font_driver_generation++;
+      retro_atomic_fetch_add_int(&font_driver_generation, 1);
 
       while (*link)
       {
@@ -1444,9 +1493,11 @@ font_data_t *font_driver_init_first(
     * the wrapper is gone. */
    if (     threading_hint
          && video_driver_thread_wrapper_active())
+      /* Runs on the video thread, where the context is current;
+       * is_threaded would make a GL renderer rebind it from there. */
       ok = video_thread_font_init(&font_driver, &font_handle,
             video_data, font_path, font_size, backend, font_init_first,
-            is_threaded);
+            false);
    else
 #endif
    ok = font_init_first(&font_driver, &font_handle,
@@ -1500,7 +1551,11 @@ font_data_t *font_driver_init_first(
  * another driver instance. */
 static void font_driver_free_osd(void)
 {
-   video_driver_state_t *video_st = video_state_get_ptr();
+   video_driver_state_t *video_st = font_driver_video_st;
+
+   /* Unbound == video never initialised == no shared OSD font. */
+   if (!video_st)
+      return;
 
    if (video_st->osd_font)
       font_driver_free((font_data_t*)video_st->osd_font);
@@ -1519,7 +1574,11 @@ void font_driver_init_osd(
     * its images belong to a device that is gone, whose handles the
     * new one will recycle. Drop it rather than keep it. Guarding on
     * presence alone is what let a stale font survive a reinit. */
-   video_driver_state_t *video_st = video_state_get_ptr();
+   video_driver_state_t *video_st = font_driver_video_st;
+
+   /* Unbound == video never initialised == no shared OSD font. */
+   if (!video_st)
+      return;
 
    if (video_st->osd_font && video_st->osd_font_owner != video_data)
    {
@@ -1546,8 +1605,9 @@ void font_driver_init_osd(
 
 bool font_driver_reinit_osd(const char *font_path, float font_size)
 {
-   video_driver_state_t *video_st = video_state_get_ptr();
-   font_data_t          *font     = (font_data_t*)video_st->osd_font;
+   video_driver_state_t *video_st = font_driver_video_st;
+   font_data_t          *font     = video_st
+         ? (font_data_t*)video_st->osd_font : NULL;
 
    /* No shared OSD font: video is not up, or the driver keeps its own
     * and never registered one here. Let the caller fall back. */
@@ -1578,7 +1638,7 @@ bool font_driver_reinit_osd(const char *font_path, float font_size)
 
    /* Derived data cached outside this file - the widgets' line
     * metrics, gfx_animation's ticker widths - is now stale. */
-   font_driver_generation++;
+   retro_atomic_fetch_add_int(&font_driver_generation, 1);
    return true;
 }
 
@@ -1587,7 +1647,11 @@ void font_driver_free_osd_for(void *video_data)
    /* Only the owner may free it. Teardown of an instance that no
     * longer owns the font - a stale or deferred free - must leave the
     * live one alone. */
-   video_driver_state_t *video_st = video_state_get_ptr();
+   video_driver_state_t *video_st = font_driver_video_st;
+
+   /* Unbound == video never initialised == no shared OSD font. */
+   if (!video_st)
+      return;
 
    if (video_st->osd_font && video_st->osd_font_owner == video_data)
       font_driver_free_osd();

@@ -30,6 +30,7 @@
 #endif
 #endif
 
+#include "../video_record.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
@@ -65,7 +66,10 @@
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
+#include "../video_thread_hw.h"
 #endif
+
+static bool gl2_core_context_is_mains(gl2_t *gl);
 
 #include "../font_driver.h"
 
@@ -86,6 +90,9 @@
 #endif
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx_widgets.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 #ifndef GL_UNSIGNED_INT_8_8_8_8_REV
@@ -183,7 +190,7 @@
 #ifndef GL_BGRA8_EXT
 #define GL_BGRA8_EXT 0x93A1
 #endif
-#ifdef IOS
+#if TARGET_OS_IPHONE
 /* Stupid Apple */
 #define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA
 #else
@@ -320,6 +327,14 @@ static bool gl2_init_pbo_readback(gl2_t *gl);
 #ifndef GL_SYNC_FLUSH_COMMANDS_BIT
 #define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
 #endif
+/* The rest of the ARB_sync names the hardware ring uses; the PowerPC
+ * macOS headers have none of them. */
+#ifndef GL_TIMEOUT_IGNORED
+#define GL_TIMEOUT_IGNORED                0xFFFFFFFFFFFFFFFFull
+#endif
+#ifndef GL_TIMEOUT_EXPIRED
+#define GL_TIMEOUT_EXPIRED                0x911B
+#endif
 
 enum gl2_renderchain_flags
 {
@@ -379,6 +394,15 @@ typedef struct
    struct font_atlas *atlas;
 
    video_font_raster_block_t *block;
+
+   /* The chunk a line is built into before it is handed over. Here
+    * rather than on the stack of the function that fills it: three
+    * arrays of MAX_MSG_LEN_CHUNK glyphs are twelve kilobytes, and a
+    * frame that size is three times what this tree allows. One font
+    * renders at a time on the thread that draws, so one is enough. */
+   GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
 } gl2_raster_t;
 
 #if defined(__arm__) || defined(__aarch64__)
@@ -462,7 +486,7 @@ static void gl2_set_viewport(gl2_t *gl,
       unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate);
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 /* There is no default frame buffer on iOS. */
 void glkitview_bind_fbo(void);
 #define gl2_renderchain_bind_backbuffer() glkitview_bind_fbo()
@@ -994,9 +1018,9 @@ static void gl2_raster_font_render_line(gl2_t *gl,
    int i;
    struct video_coords coords;
    const struct font_glyph* glyph_q = NULL;
-   GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat *font_tex_coords = font->font_tex_coords;
+   GLfloat *font_vertex     = font->font_vertex;
+   GLfloat *font_color      = font->font_color;
    GLfloat color_block[4 * 6];
    int n;
    const char* msg_end  = msg + msg_len;
@@ -1353,7 +1377,7 @@ static void gl2_size_format(GLint* internalFormat)
 #endif
 }
 
-#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA) && !defined(IOS)
+#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA) && !TARGET_OS_IPHONE
 static bool gl2_tex_storage_allowed(void)
 {
    static int allowed = -1;
@@ -1405,7 +1429,7 @@ static void gl2_load_texture_image(GLenum target,
       GLenum type,
       const GLvoid * data)
 {
-#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA) && !defined(IOS)
+#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA) && !TARGET_OS_IPHONE
 #ifdef HAVE_OPENGLES2
    enum gl_capability_enum cap = GL_CAPS_TEX_STORAGE_EXT;
 #else
@@ -1590,6 +1614,10 @@ static void gl2_renderchain_render(
       params.out_width     = gl->vp.width;
       params.out_height    = gl->vp.height;
       params.frame_counter = (unsigned int)frame_count;
+      /* Intermediate passes of the same present: the outer frame's
+       * count, read from the shared state since video_info does not
+       * reach this far in. */
+      params.swap_counter  = (unsigned int)video_thread_swap_count();
       params.info          = tex_info;
       params.prev_info     = gl->prev_info;
       params.feedback_info = feedback_info;
@@ -1662,6 +1690,8 @@ static void gl2_renderchain_render(
    params.out_width     = gl->vp.width;
    params.out_height    = gl->vp.height;
    params.frame_counter = (unsigned int)frame_count;
+   /* Last pass of the same present; see above. */
+   params.swap_counter  = (unsigned int)video_thread_swap_count();
    params.info          = tex_info;
    params.prev_info     = gl->prev_info;
    params.feedback_info = feedback_info;
@@ -1712,18 +1742,31 @@ static void gl2_renderchain_deinit_fbo(gl2_t *gl,
    }
 }
 
+/* Take or give back the core's context around work on its objects -
+ * a bind-true / bind-false pair that leaves this thread holding what
+ * it held before. Once the ring has taken the context (the flag) that
+ * work is marshalled to the main thread, where the context already is
+ * current: nothing to bind, and binding would move it. Before the ring
+ * has taken it, this thread builds the objects in the core's context
+ * and gives it back, ring expected or not; this asks the flag alone,
+ * unlike the sites that would leave the context current here. */
+static void gl2_bind_core_context(gl2_t *gl, bool enable)
+{
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !(gl->flags & GL2_FLAG_HW_RING))
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, enable);
+}
+
 static void gl2_renderchain_deinit_hw_render(gl2_t *gl, gl2_renderchain_data_t *chain)
 {
-   if (gl->flags    & GL2_FLAG_SHARED_CONTEXT_USE)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   gl2_bind_core_context(gl, true);
    if (gl->flags    & GL2_FLAG_HW_RENDER_FBO_INIT)
       gl2_delete_fb(gl->textures, gl->hw_render_fbo);
    if (chain->flags & GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT)
       gl2_delete_rb(gl->textures, chain->hw_render_depth);
    gl->flags &= ~GL2_FLAG_HW_RENDER_FBO_INIT;
 
-   if (gl->flags    & GL2_FLAG_SHARED_CONTEXT_USE)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+   gl2_bind_core_context(gl, false);
 }
 
 static bool gl2_create_fbo_targets(gl2_t *gl, gl2_renderchain_data_t *chain)
@@ -2210,8 +2253,7 @@ static bool gl2_renderchain_init_hw_render(
 
    /* We can only share texture objects through contexts.
     * FBOs are "abstract" objects and are not shared. */
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   gl2_bind_core_context(gl, true);
 
    RARCH_LOG("[GL] Initializing HW render (%ux%u).\n", width, height);
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_fbo_size);
@@ -2293,8 +2335,7 @@ static bool gl2_renderchain_init_hw_render(
    gl2_renderchain_bind_backbuffer();
    gl->flags |= GL2_FLAG_HW_RENDER_FBO_INIT;
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+   gl2_bind_core_context(gl, false);
    return true;
 }
 
@@ -2321,6 +2362,70 @@ static void gl2_renderchain_bind_prev_texture(
    }
 }
 
+#ifdef HAVE_GL_ASYNC_READBACK
+static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer)
+{
+   const uint8_t *ptr = NULL;
+#ifdef HAVE_OPENGLES3
+   unsigned num_pixels = gl->vp.width * gl->vp.height;
+#endif
+
+   /* Don't readback if we're in menu mode.
+    * We haven't buffered up enough frames yet, come back later. */
+   if (!gl->pbo_readback_valid[gl->pbo_readback_index])
+      return false;
+
+   gl->pbo_readback_valid[gl->pbo_readback_index] = false;
+   glBindBuffer(GL_PIXEL_PACK_BUFFER,
+         gl->pbo_readback[gl->pbo_readback_index]);
+
+#ifdef HAVE_OPENGLES3
+   /* Slower path, but should work on all implementations at least. */
+   ptr        = (const uint8_t*)glMapBufferRange(GL_PIXEL_PACK_BUFFER,
+         0, num_pixels * sizeof(uint32_t), GL_MAP_READ_BIT);
+
+   if (ptr)
+   {
+      /* Clamp to the region glReadPixels actually wrote
+       * (see gl2_renderchain_readback). */
+      unsigned rb_w = (gl->vp.width  > gl->video_width)
+         ? gl->video_width  : gl->vp.width;
+      unsigned rb_h = (gl->vp.height > gl->video_height)
+         ? gl->video_height : gl->vp.height;
+      video_frame_convert_rgba_to_bgr(
+            (const void*)ptr,
+            buffer,
+            rb_w * sizeof(uint32_t),
+            rb_w * 3,
+            rb_w,
+            rb_h);
+   }
+#else
+   ptr = (const uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+   if (ptr)
+   {
+      struct scaler_ctx *ctx = &gl->pbo_readback_scaler;
+      scaler_ctx_scale_direct(ctx, buffer, ptr);
+   }
+#endif
+
+   if (!ptr)
+   {
+      RARCH_ERR("[GL] Failed to map pixel unpack buffer.\n");
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+      return false;
+   }
+
+   if (!glUnmapBuffer(GL_PIXEL_PACK_BUFFER))
+   {
+      glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+      return false;
+   }
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   return true;
+}
+#endif
+
 static bool gl2_renderchain_read_viewport(
       gl2_t *gl,
       uint8_t *buffer, bool is_idle)
@@ -2337,8 +2442,7 @@ static bool gl2_renderchain_read_viewport(
        || (unsigned)gl->pbo_readback_scaler.in_width  != gl->vp.width
        || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
    {
-      recording_state_t *rec_st = recording_state_get_ptr();
-      if (rec_st && rec_st->enable)
+      if (gl->flags & GL2_FLAG_GPU_RECORDING)
       {
          /* Tear down old PBO resources before reinitializing */
          if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
@@ -2358,55 +2462,8 @@ static bool gl2_renderchain_read_viewport(
 #ifdef HAVE_GL_ASYNC_READBACK
    if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
    {
-      const uint8_t *ptr  = NULL;
-
-      /* Don't readback if we're in menu mode.
-       * We haven't buffered up enough frames yet, come back later. */
-      if (!gl->pbo_readback_valid[gl->pbo_readback_index])
+      if (!gl2_read_pbo(gl, buffer))
          goto error;
-
-      gl->pbo_readback_valid[gl->pbo_readback_index] = false;
-      glBindBuffer(GL_PIXEL_PACK_BUFFER,
-            gl->pbo_readback[gl->pbo_readback_index]);
-
-#ifdef HAVE_OPENGLES3
-      /* Slower path, but should work on all implementations at least. */
-      ptr        = (const uint8_t*)glMapBufferRange(GL_PIXEL_PACK_BUFFER,
-            0, num_pixels * sizeof(uint32_t), GL_MAP_READ_BIT);
-
-      if (ptr)
-      {
-         /* Clamp to the region glReadPixels actually wrote
-          * (see gl2_renderchain_readback). */
-         unsigned rb_w = (gl->vp.width  > gl->video_width)
-            ? gl->video_width  : gl->vp.width;
-         unsigned rb_h = (gl->vp.height > gl->video_height)
-            ? gl->video_height : gl->vp.height;
-         video_frame_convert_rgba_to_bgr(
-               (const void*)ptr,
-               buffer,
-               rb_w * sizeof(uint32_t),
-               rb_w * 3,
-               rb_w,
-               rb_h);
-      }
-#else
-      ptr = (const uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-      if (ptr)
-      {
-         struct scaler_ctx *ctx = &gl->pbo_readback_scaler;
-         scaler_ctx_scale_direct(ctx, buffer, ptr);
-      }
-#endif
-
-      if (!ptr)
-      {
-         RARCH_ERR("[GL] Failed to map pixel unpack buffer.\n");
-         goto error;
-      }
-
-      glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-      glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }
    else
 #endif
@@ -2451,12 +2508,14 @@ static bool gl2_renderchain_read_viewport(
       gl->readback_buffer_screenshot = NULL;
    }
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 
 error:
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return false;
@@ -3203,6 +3262,195 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
    return ret;
 }
 
+/* Whether the threaded wrapper's hardware ring will drive this driver:
+ * decided at init, when the wrapper is already up, from the core's
+ * context type and the setting. */
+/* Whether the core's context belongs to the main thread: it does once
+ * the wrapper's ring has taken it (the flag), and it will as soon as
+ * the ring is set up (expected, from init on). Every place this
+ * thread would take that context for itself asks this, and only this.
+ * Asking only the flag let a bind during init - the stock shader's
+ * load is one - take the context here after the ring was decided but
+ * before it was set up, and the main thread's own bind then failed:
+ * a core with no current context, and no GL function resolved. */
+static bool gl2_core_context_is_mains(gl2_t *gl)
+{
+   /* Both bits are set on the video thread inside blocking command
+    * handlers (init, ring bring-up) while the main thread is parked
+    * in the wrapper's send-and-wait, and read here from the frame
+    * path. The live-settings consultation this replaces read
+    * settings->arrays.video_driver every frame from the video
+    * thread with the main thread running free. */
+   return (gl->flags & (GL2_FLAG_HW_RING | GL2_FLAG_HW_RING_EXPECTED)) != 0;
+}
+
+
+/* --- the threaded wrapper's hardware ring ------------------------------ */
+
+/* Sync objects for the ring: the same condition the driver's own fence
+ * path compiles under. GLES builds finish instead. */
+#if defined(HAVE_GL_SYNC) && !defined(HAVE_OPENGLES)
+#define GL2_HW_RING_SYNC 1
+#endif
+
+/* The core's context, current on the caller - the main thread. The
+ * context driver created it shared with this thread's at init, with
+ * the HW-render FBOs already made inside it. From here on the frame
+ * never takes it back. */
+static bool gl2_hw_ring_context_new(void *data, void **ctx)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || !ctx || !(gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         || !gl->ctx_driver || !gl->ctx_driver->bind_hw_render)
+      return false;
+   gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   gl->flags |= GL2_FLAG_HW_RING;
+   *ctx = gl;
+   return true;
+}
+
+/* Called on the thread that holds the core's context - the main
+ * thread - before the driver is freed. The context is given up here,
+ * where it is current; the driver's own bind would make the video
+ * thread's context current here instead. Without the hook the context
+ * driver's teardown copes with a still-current context, which GLX and
+ * WGL define. */
+static void gl2_hw_ring_context_free(void *data, void *ctx)
+{
+   gl2_t *gl = (gl2_t*)data;
+   (void)ctx;
+   if (!gl)
+      return;
+   gl->flags &= ~GL2_FLAG_HW_RING;
+   if (gl->ctx_driver && gl->ctx_driver->release_current)
+      gl->ctx_driver->release_current(gl->ctx_data);
+}
+
+/* Main thread, the core's context: the FBO for the ring slot, which is
+ * this driver's HW-render FBO of the same index. */
+static uintptr_t gl2_hw_ring_framebuffer(void *data, unsigned slot)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || slot >= gl->textures)
+      return 0;
+   return gl->hw_render_fbo[slot];
+}
+
+/* Main thread, the core's context: place a fence after the core's
+ * rendering and flush, so the frame on the other thread can wait it.
+ * Without sync objects, finish: correct, slower. */
+static bool gl2_hw_ring_capture(void *data, unsigned slot,
+      const void *source, unsigned format)
+{
+   gl2_t *gl = (gl2_t*)data;
+   (void)source; (void)format;
+   if (!gl || slot >= 3)
+      return false;
+#ifdef GL2_HW_RING_SYNC
+   if (gl->flags & GL2_FLAG_HAVE_SYNC)
+   {
+      if (gl->hw_ring_sync[slot])
+         glDeleteSync((GLsync)gl->hw_ring_sync[slot]);
+      gl->hw_ring_sync[slot] = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+      glFlush();
+      return true;
+   }
+#endif
+   glFinish();
+   return true;
+}
+
+/* Video thread: wait the core's fence for the slot on the server, and
+ * read the slot's texture. */
+static bool gl2_hw_ring_present_slot(void *data, unsigned slot)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || slot >= gl->textures)
+      return false;
+#ifdef GL2_HW_RING_SYNC
+   if (gl->hw_ring_sync[slot])
+   {
+      glWaitSync((GLsync)gl->hw_ring_sync[slot], 0, GL_TIMEOUT_IGNORED);
+      glDeleteSync((GLsync)gl->hw_ring_sync[slot]);
+      gl->hw_ring_sync[slot] = NULL;
+   }
+#endif
+   /* The frame advances tex_index itself before reading; land on the
+    * slot after that advance. */
+   gl->tex_index = (slot + gl->textures - 1) % gl->textures;
+   return true;
+}
+
+/* Ring fences: a sync object placed in this thread's context after the
+ * frame, waited by the core's thread before it renders into the slot
+ * again. */
+typedef struct { void *sync; } gl2_ring_fence_t;
+
+static bool gl2_hw_ring_fence_new(void *data, void **fence)
+{
+   gl2_ring_fence_t *f;
+   (void)data;
+   if (!fence || !(f = (gl2_ring_fence_t*)calloc(1, sizeof(*f))))
+      return false;
+   *fence = f;
+   return true;
+}
+
+static void gl2_hw_ring_fence_free(void *data, void *fence)
+{
+   gl2_ring_fence_t *f = (gl2_ring_fence_t*)fence;
+   (void)data;
+   if (!f)
+      return;
+#ifdef GL2_HW_RING_SYNC
+   if (f->sync)
+      glDeleteSync((GLsync)f->sync);
+#endif
+   free(f);
+}
+
+static void gl2_hw_ring_fence_signal(void *data, void *fence)
+{
+   gl2_t *gl = (gl2_t*)data;
+   gl2_ring_fence_t *f = (gl2_ring_fence_t*)fence;
+   if (!gl || !f)
+      return;
+#ifdef GL2_HW_RING_SYNC
+   if (gl->flags & GL2_FLAG_HAVE_SYNC)
+   {
+      if (f->sync)
+         glDeleteSync((GLsync)f->sync);
+      f->sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+      glFlush();
+      return;
+   }
+#endif
+   glFinish();
+}
+
+static bool gl2_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
+{
+   gl2_ring_fence_t *f = (gl2_ring_fence_t*)fence;
+   (void)data;
+   if (!f)
+      return true;
+#ifdef GL2_HW_RING_SYNC
+   if (f->sync)
+   {
+      GLenum r = glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT,
+            timeout_us == HW_RING_WAIT_FOREVER
+               ? GL_TIMEOUT_IGNORED : (GLuint64)timeout_us * 1000);
+      if (r == GL_TIMEOUT_EXPIRED)
+         return false;
+      glDeleteSync((GLsync)f->sync);
+      f->sync = NULL;
+   }
+#else
+   (void)timeout_us;
+#endif
+   return true;
+}
+
 static uintptr_t gl2_get_current_framebuffer(void *data)
 {
    gl2_t *gl = (gl2_t*)data;
@@ -3417,15 +3665,17 @@ static void gl2_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   settings_t *settings            = config_get_ptr();
-   enum texture_filter_type
-      menu_filter                  = settings->bools.menu_linear_filter
-      ? TEXTURE_FILTER_LINEAR
-      : TEXTURE_FILTER_NEAREST;
+   enum texture_filter_type menu_filter;
    unsigned base_size              = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl2_t *gl                       = (gl2_t*)data;
    if (!gl)
       return;
+
+   /* What the last frame carried, not what the setting says now: the
+    * video thread applies this in thread_update_driver_state(). */
+   menu_filter                     = (gl->flags & GL2_FLAG_MENU_LINEAR_FILTER)
+      ? TEXTURE_FILTER_LINEAR
+      : TEXTURE_FILTER_NEAREST;
 
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
@@ -3442,7 +3692,8 @@ static void gl2_set_texture_frame(void *data,
    gl->menu_texture_alpha = alpha;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -3548,12 +3799,25 @@ static void gl2_pbo_async_readback(gl2_t *gl)
    GLenum type = GL_UNSIGNED_INT_8_8_8_8_REV;
 #endif
 
-   gl2_renderchain_bind_pbo(
-         gl->pbo_readback[gl->pbo_readback_index++]);
-   gl->pbo_readback_index &= 3;
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   /* Resize the destination before issuing a copy at the new extent. */
+   if ((unsigned)gl->pbo_readback_scaler.in_width != gl->vp.width
+         || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
+   {
+      glDeleteBuffers(4, gl->pbo_readback);
+      scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+      if (!gl2_init_pbo_readback(gl))
+      {
+         gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
+         return;
+      }
+   }
+#endif
 
-   /* 4 frames back, we can readback. */
+   gl2_renderchain_bind_pbo(
+         gl->pbo_readback[gl->pbo_readback_index]);
    gl->pbo_readback_valid[gl->pbo_readback_index] = true;
+   gl->pbo_readback_index = (gl->pbo_readback_index + 1) & 3;
 
    gl2_renderchain_readback(gl, gl->renderchain_data,
          gl2_get_alignment(gl->vp.width * sizeof(uint32_t)),
@@ -3876,7 +4140,6 @@ static GLuint gl2_ui_target_fbo(gl2_t *gl)
  * a displayable SDR image in the ordinary way. */
 static void gl2_encode_pq_to_sdr(gl2_t *gl)
 {
-   settings_t *settings = config_get_ptr();
    static const float quad_pos[8] = {
       0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
    };
@@ -3903,8 +4166,9 @@ static void gl2_encode_pq_to_sdr(gl2_t *gl)
    if (gl->scrgb.loc_ui_tex >= 0)
       glUniform1i(gl->scrgb.loc_ui_tex, 0);
    if (gl->scrgb.loc_nits >= 0)
-      glUniform1f(gl->scrgb.loc_nits, settings
-            ? settings->floats.video_hdr_paper_white_nits : 200.0f);
+      /* Driver-owned, latched by the HDR poke path: no live
+       * settings on the frame path. */
+      glUniform1f(gl->scrgb.loc_nits, gl->scrgb.paper_white_nits);
    if (gl->scrgb.loc_expand >= 0)
       glUniform1f(gl->scrgb.loc_expand, 0.0f);
    if (gl->scrgb.loc_mode >= 0)
@@ -3931,6 +4195,99 @@ static void gl2_encode_pq_to_sdr(gl2_t *gl)
    glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
 }
 
+/* Copies the backbuffer into the retained texture, sizing that texture
+ * to the window when it does not match. */
+static void gl2_retain_backbuffer(gl2_t *gl)
+{
+   unsigned width  = gl->video_width;
+   unsigned height = gl->video_height;
+
+   if (!width || !height)
+      return;
+
+   gl2_renderchain_bind_backbuffer();
+   if (!gl->retained_texture)
+      glGenTextures(1, &gl->retained_texture);
+   glBindTexture(GL_TEXTURE_2D, gl->retained_texture);
+   if (gl->retained_width != width || gl->retained_height != height)
+   {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      gl->retained_width  = width;
+      gl->retained_height = height;
+   }
+   glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
+   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+}
+
+/* Replays the group the retaining frame made: the retained texture
+ * drawn over the whole window with the stock shader for each light
+ * present, a clear for each dark one, a swap after each. The copy was
+ * taken from the backbuffer, so it is already the right way up and is
+ * drawn with the unflipped vertices. Returns swaps made. */
+static unsigned gl2_present_last(void *data)
+{
+   unsigned i;
+   unsigned done = 0;
+   gl2_t *gl     = (gl2_t*)data;
+
+   if (     !gl || !gl->retained_texture
+         || gl->retained_width  != gl->video_width
+         || gl->retained_height != gl->video_height)
+      return 0;
+
+   for (i = 0; i < gl->retained_light; i++)
+   {
+      gl2_renderchain_bind_backbuffer();
+      glViewport(0, 0, gl->video_width, gl->video_height);
+      glBindTexture(GL_TEXTURE_2D, gl->retained_texture);
+
+      gl->coords.vertex    = vertexes;
+      gl->coords.tex_coord = tex_coords;
+      gl->coords.color     = gl->white_color_ptr;
+      gl->coords.vertices  = 4;
+
+      gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+      gl->shader->set_coords(gl->shader_data, &gl->coords);
+      gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
+
+      glDisable(GL_BLEND);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+      gl->coords.vertex    = gl->vertex_ptr;
+      gl->coords.tex_coord = gl->tex_info.coord;
+      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+      glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
+
+      if (gl->ctx_driver->swap_buffers)
+         gl->ctx_driver->swap_buffers(gl->ctx_data);
+      done++;
+   }
+
+   for (i = 0; i < gl->retained_dark; i++)
+   {
+      gl2_renderchain_bind_backbuffer();
+      glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
+      if (gl->ctx_driver->swap_buffers)
+         gl->ctx_driver->swap_buffers(gl->ctx_data);
+      done++;
+   }
+   return done;
+}
+
+static retro_time_t gl2_get_last_present_time(void *data)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (gl && gl->ctx_driver && gl->ctx_driver->last_present_time)
+      return gl->ctx_driver->last_present_time(gl->ctx_data);
+   return 0;
+}
+
 static bool gl2_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
@@ -3945,7 +4302,6 @@ static bool gl2_frame(void *data, const void *frame,
    unsigned height                     = 0;
    bool use_rgba                       = (video_info->video_st_flags & VIDEO_FLAG_USE_RGBA) ? true : false;
    bool statistics_show                = video_info->statistics_show;
-   bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
    bool input_driver_nonblock_state    = video_info->input_driver_nonblock_state;
    bool hard_sync                      = video_info->hard_sync;
    unsigned hard_sync_frames           = video_info->hard_sync_frames;
@@ -3959,10 +4315,38 @@ static bool gl2_frame(void *data, const void *frame,
    bool widgets_active                 = video_info->widgets_active;
 #endif
    bool overlay_behind_menu            = video_info->overlay_behind_menu;
-   bool video_scale_integer            = config_get_ptr()->bools.video_scale_integer;
+   bool video_scale_integer            = video_info->scale_integer;
 
    if (!gl)
       return false;
+
+   /* These travel with the frame, so this thread does not read what the
+    * main thread writes: the scRGB encode below and gl2_encode_pq_to_sdr()
+    * read the latched copies. */
+   gl->scrgb.menu_nits        = video_info->hdr_menu_nits;
+   gl->scrgb.paper_white_nits = video_info->hdr_paper_white_nits;
+   gl->scrgb.expand_gamut     = video_info->hdr_expand_gamut;
+
+   /* Travels with the frame, for gl2_set_aspect_ratio() to read rather
+    * than the setting the menu writes */
+   if (video_info->ctx_scaling)
+      gl->flags |=  GL2_FLAG_CTX_SCALING;
+   else
+      gl->flags &= ~GL2_FLAG_CTX_SCALING;
+
+   /* Travels with the frame, for set_texture_frame() to read rather
+    * than the setting the menu writes */
+   if (video_info->menu_linear_filter)
+      gl->flags |=  GL2_FLAG_MENU_LINEAR_FILTER;
+   else
+      gl->flags &= ~GL2_FLAG_MENU_LINEAR_FILTER;
+
+   /* Whether to read frames back travels with the frame, so this thread
+    * does not read the recording state the main thread writes. */
+   if (video_info->gpu_recording)
+      gl->flags |=  GL2_FLAG_GPU_RECORDING;
+   else
+      gl->flags &= ~GL2_FLAG_GPU_RECORDING;
 
    /* Resolved only after the guard above: initialising these at
     * declaration dereferenced 'data' before the NULL check ever ran,
@@ -3984,7 +4368,7 @@ static bool gl2_frame(void *data, const void *frame,
 
    gl->shader->use(gl, gl->shader_data, 1, true);
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    /* Apparently the viewport is lost each frame, thanks Apple. */
    gl2_set_viewport(gl, width, height, false, true);
 #endif
@@ -4161,6 +4545,7 @@ static bool gl2_frame(void *data, const void *frame,
    params.out_width        = gl->vp.width;
    params.out_height       = gl->vp.height;
    params.frame_counter    = (unsigned int)frame_count;
+   params.swap_counter    = (unsigned int)video_info->swap_count;
    params.info             = &gl->tex_info;
    params.prev_info        = gl->prev_info;
    params.feedback_info    = &feedback_info;
@@ -4256,7 +4641,6 @@ static bool gl2_frame(void *data, const void *frame,
     * frame, paper white otherwise. */
    if (gl->scrgb.active && gl->scrgb.fbo && gl->scrgb.program)
    {
-      settings_t *settings = config_get_ptr();
       float nits           = 200.0f;
       bool ui_visible      = false;
       bool pq              = gl->video_info.source_hdr10
@@ -4289,10 +4673,9 @@ static bool gl2_frame(void *data, const void *frame,
        * not apply to it - and the UI is composited separately at the
        * menu setting instead, which is what that setting means on the
        * other HDR paths. */
-      if (settings)
-         nits = (!pq && ui_visible)
-               ? settings->floats.video_hdr_menu_nits
-               : settings->floats.video_hdr_paper_white_nits;
+      nits = (!pq && ui_visible)
+            ? gl->scrgb.menu_nits
+            : gl->scrgb.paper_white_nits;
 
       gl2_bind_fb(0);
       glViewport(0, 0, gl->video_width, gl->video_height);
@@ -4305,14 +4688,13 @@ static bool gl2_frame(void *data, const void *frame,
       if (gl->scrgb.loc_nits >= 0)
          glUniform1f(gl->scrgb.loc_nits, nits);
       if (gl->scrgb.loc_expand >= 0)
-         glUniform1f(gl->scrgb.loc_expand, settings
-               ? (float)settings->uints.video_hdr_expand_gamut : 0.0f);
+         glUniform1f(gl->scrgb.loc_expand,
+               (float)gl->scrgb.expand_gamut);
       if (gl->scrgb.loc_mode >= 0)
          glUniform1f(gl->scrgb.loc_mode, pq ? 1.0f : 0.0f);
       if (gl->scrgb.loc_ui_nits >= 0)
          glUniform1f(gl->scrgb.loc_ui_nits,
-               (pq && settings)
-               ? settings->floats.video_hdr_menu_nits : 0.0f);
+               pq ? gl->scrgb.menu_nits : 0.0f);
 
       /* Unit 1 must hold something valid even when the shader will
        * not sample it (uUINits == 0): a stale binding on the unit is
@@ -4361,7 +4743,7 @@ static bool gl2_frame(void *data, const void *frame,
    else if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
    {
       /* If recording has stopped, tear down PBO readback */
-      if (!recording_state_get_ptr()->enable)
+      if (!(gl->flags & GL2_FLAG_GPU_RECORDING))
       {
          glDeleteBuffers(4, gl->pbo_readback);
          scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
@@ -4375,6 +4757,17 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
             gl2_pbo_async_readback(gl);
       }
+   }
+
+   /* The backbuffer is what it is until the swap, so the copy is
+    * taken now. Not from the BFI light dupes, which recurse in here
+    * with the dupe lock held and would only copy the same image. */
+   if (     video_info->retain_output
+         && !(gl->flags & GL2_FLAG_FRAME_DUPE_LOCK))
+   {
+      gl2_retain_backbuffer(gl);
+      gl->retained_light = 1;
+      gl->retained_dark  = 0;
    }
 
     if (gl->ctx_driver->swap_buffers)
@@ -4429,6 +4822,15 @@ static bool gl2_frame(void *data, const void *frame,
                gl->ctx_driver->swap_buffers(gl->ctx_data);
          }
       }
+
+      /* The group this frame made, for present_last() to replay. */
+      if (     video_info->retain_output
+            && !(gl->flags & GL2_FLAG_FRAME_DUPE_LOCK))
+      {
+         gl->retained_light = 1 + (video_info->black_frame_insertion
+               - video_info->bfi_dark_frames);
+         gl->retained_dark  = video_info->bfi_dark_frames;
+      }
    }
 #endif
 
@@ -4449,7 +4851,10 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE)
       glBindVertexArray(0);
 #endif
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   /* Not under the ring: the core's context is current on the main
+    * thread, and this one has no business taking it. */
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }
@@ -4533,6 +4938,8 @@ static void gl2_free(void *data)
    if (gl->menu_texture)
       glDeleteTextures(1, &gl->menu_texture);
 #endif
+   if (gl->retained_texture)
+      glDeleteTextures(1, &gl->retained_texture);
 
 #ifdef HAVE_OVERLAY
    gl2_free_overlay(gl);
@@ -4596,7 +5003,8 @@ static void gl2_set_nonblock_state(
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -4635,7 +5043,7 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
    else
       gl->flags                 &= ~GL2_FLAG_HAVE_SYNC;
 
-   video_driver_set_disp_flags(video_driver_get_disp_flags() & ~VIDEO_FLAG_USE_RGBA);
+   video_driver_modify_disp_flags(0, VIDEO_FLAG_USE_RGBA);
 
    gl2_renderchain_resolve_extensions(gl,
          (gl2_renderchain_data_t*)gl->renderchain_data,
@@ -4644,7 +5052,7 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
 #if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (!gl_check_capability(GL_CAPS_BGRA8888))
    {
-      video_driver_set_disp_flags(video_driver_get_disp_flags() | VIDEO_FLAG_USE_RGBA);
+      video_driver_modify_disp_flags(VIDEO_FLAG_USE_RGBA, 0);
       RARCH_WARN("[GL] GLES implementation does not have BGRA8888 extension.\n"
                  "[GL] 32-bit path will require conversion.\n");
    }
@@ -4746,6 +5154,8 @@ static bool gl2_init_pbo_readback(gl2_t *gl)
 #if !defined(HAVE_OPENGLES2) && !defined(HAVE_PSGL)
    int i;
 
+   gl->pbo_readback_index = 0;
+   memset(gl->pbo_readback_valid, 0, sizeof(gl->pbo_readback_valid));
    glGenBuffers(4, gl->pbo_readback);
 
    for (i = 0; i < 4; i++)
@@ -5003,6 +5413,15 @@ static void *gl2_init(const video_info_t *video,
    if (!gl || !ctx_driver)
       goto error;
 
+   /* Latched here, inside the wrapper's blocking CMD_INIT (the main
+    * thread is parked in send-and-wait, so the settings read is
+    * race-free), for every later gl2_core_context_is_mains() -
+    * including the frame path, where main runs free. */
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active() && video_thread_hw_allowed())
+      gl->flags |= GL2_FLAG_HW_RING_EXPECTED;
+#endif
+
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
    gl->ctx_driver                       = ctx_driver;
@@ -5062,15 +5481,6 @@ static void *gl2_init(const video_info_t *video,
          || !gl->ctx_driver->set_video_mode(gl->ctx_data,
             win_width, win_height, (video->fullscreen || force_fullscreen)))
       goto error;
-#if defined(__APPLE__) && !defined(IOS) && !defined(HAVE_COCOA_METAL)
-   /* This is a hack for now to work around a very annoying
-    * issue that currently eludes us. */
-   if (     !gl->ctx_driver->set_video_mode
-         || !gl->ctx_driver->set_video_mode(gl->ctx_data,
-            win_width, win_height, (video->fullscreen || force_fullscreen)))
-      goto error;
-#endif
-
 #if !defined(RARCH_CONSOLE) || defined(HAVE_LIBNX)
    rglgen_resolve_symbols(ctx_driver->get_proc_address);
 #endif
@@ -5259,8 +5669,14 @@ static void *gl2_init(const video_info_t *video,
    if (gl->flags & GL2_FLAG_HW_RENDER_USE)
    {
       /* All on GPU, no need to excessively
-       * create textures. */
+       * create textures. Under the threaded wrapper's ring the core
+       * renders on another thread into one while this thread reads
+       * another, so there are as many as the ring has slots. */
       gl->textures = 1;
+#ifdef HAVE_THREADS
+      if (video_driver_thread_wrapper_active() && video_thread_hw_allowed())
+         gl->textures = VIDEO_THREAD_HW_RING;
+#endif
 #ifdef GL_DEBUG
       if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       {
@@ -5416,7 +5832,11 @@ static void *gl2_init(const video_info_t *video,
       goto error;
    }
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   /* Init leaves the core's context current for context_reset on this
+    * thread; when the wrapper's ring will drive the core, the main
+    * thread takes that context itself and this one must not hold it. */
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return gl;
@@ -5518,8 +5938,24 @@ static void gl2_update_tex_filter_frame(gl2_t *gl, bool video_smooth)
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+}
+
+/* The HW-render rebuild on a shader change, as a call the wrapper can
+ * run on the core's thread; see gl2_set_shader. */
+static void gl2_deinit_hw_render_cb(void *data)
+{
+   gl2_t *gl = (gl2_t*)data;
+   gl2_renderchain_deinit_hw_render(gl, (gl2_renderchain_data_t*)gl->renderchain_data);
+}
+
+static void gl2_init_hw_render_cb(void *data)
+{
+   gl2_t *gl = (gl2_t*)data;
+   gl2_renderchain_init_hw_render(gl,
+         (gl2_renderchain_data_t*)gl->renderchain_data, gl->tex_w, gl->tex_h);
 }
 
 static bool gl2_set_shader(void *data,
@@ -5603,9 +6039,13 @@ static bool gl2_set_shader(void *data,
 
    if (textures > gl->textures) /* Have to reinit a bit. */
    {
+      /* The HW-render framebuffers live in the core's context. Under
+       * the wrapper's ring that context is current on the core's
+       * thread, which is waiting for this command: the teardown and
+       * rebuild go there. Textures and renderbuffers are shared and
+       * can be made here; framebuffers are not. */
       if ((gl->flags & GL2_FLAG_HW_RENDER_USE) && (gl->flags & GL2_FLAG_FBO_INITED))
-         gl2_renderchain_deinit_hw_render(gl, (gl2_renderchain_data_t*)
-               gl->renderchain_data);
+         video_thread_call_on_waiter(gl2_deinit_hw_render_cb, gl);
 
       glDeleteTextures(gl->textures, gl->texture);
 #if defined(HAVE_PSGL)
@@ -5617,11 +6057,12 @@ static bool gl2_set_shader(void *data,
       RARCH_LOG("[GL] Using %u textures.\n", gl->textures);
       gl2_init_textures(gl);
       gl2_init_textures_data(gl);
+      /* The new textures must be visible to the other context before
+       * its framebuffers attach them. */
+      glFlush();
 
       if (gl->flags & GL2_FLAG_HW_RENDER_USE)
-         gl2_renderchain_init_hw_render(gl,
-               (gl2_renderchain_data_t*)gl->renderchain_data,
-               gl->tex_w, gl->tex_h);
+         video_thread_call_on_waiter(gl2_init_hw_render_cb, gl);
    }
 
    gl2_renderchain_init(gl,
@@ -5630,13 +6071,13 @@ static bool gl2_set_shader(void *data,
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl2_set_shader_viewports(gl, video_scale_integer);
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   gl2_bind_core_context(gl, true);
 
    return true;
 
 error:
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 #endif
    return false;
@@ -5667,6 +6108,39 @@ static bool gl2_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       return false;
 
    return gl2_renderchain_read_viewport(gl, buffer, is_idle);
+}
+
+#if defined(HAVE_GL_ASYNC_READBACK) && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+static bool gl2_record_read(void *data, uint8_t *buffer)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || !gl->vp.width || !gl->vp.height)
+      return false;
+   if (     !(gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
+         || (unsigned)gl->pbo_readback_scaler.in_width != gl->vp.width
+         || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
+   {
+      if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
+      {
+         glDeleteBuffers(4, gl->pbo_readback);
+         scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+      }
+      gl->flags |= GL2_FLAG_PBO_READBACK_ENABLE;
+      if (!gl2_init_pbo_readback(gl))
+         gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
+      return false;
+   }
+   return gl2_read_pbo(gl, buffer);
+}
+#endif
+
+video_record_read_t gl2_get_record_read(void)
+{
+#if defined(HAVE_GL_ASYNC_READBACK) && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   return gl2_record_read;
+#else
+   return NULL;
+#endif
 }
 
 #if 0
@@ -5751,7 +6225,8 @@ static bool gl2_overlay_load(void *data,
 
    if (!gl->overlay_tex)
    {
-      if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+      if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+            && !gl2_core_context_is_mains(gl))
          gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
       return false;
    }
@@ -5782,7 +6257,8 @@ static bool gl2_overlay_load(void *data,
          gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
 
-   if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+   if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
+         && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }
@@ -5862,7 +6338,9 @@ static void gl2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    gl->flags        |= (GL2_FLAG_KEEP_ASPECT
                      |  GL2_FLAG_SHOULD_RESIZE);
 #if defined(HAVE_ODROIDGO2)
-   if (config_get_ptr()->bools.video_ctx_scaling)
+   /* What the last frame carried, not what the setting says now: this
+    * runs on the video thread under the threaded wrapper. */
+   if (gl->flags & GL2_FLAG_CTX_SCALING)
       gl->flags     &= ~GL2_FLAG_KEEP_ASPECT;
 #endif
 }
@@ -6203,7 +6681,19 @@ static const video_poke_interface_t gl2_poke_interface = {
    NULL, /* set_hdr_scanlines */
    NULL, /* set_hdr_subpixel_layout */
    gl2_supports_texture_format,
-   gl2_load_texture_compressed
+   gl2_load_texture_compressed,
+   gl2_present_last,
+   gl2_get_last_present_time,
+   NULL, /* hw_ring_install: Vulkan-shaped */
+   gl2_hw_ring_fence_new,
+   gl2_hw_ring_fence_free,
+   gl2_hw_ring_fence_signal,
+   gl2_hw_ring_fence_wait,
+   gl2_hw_ring_capture,
+   gl2_hw_ring_present_slot,
+   gl2_hw_ring_context_new,
+   gl2_hw_ring_context_free,
+   gl2_hw_ring_framebuffer
 };
 
 static void gl2_get_poke_interface(void *data,
@@ -6408,6 +6898,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    GFX_VIDEO_DRIVER_OPENGL,
    "gl",
    false,
+   true,
    gfx_display_gl2_scissor_begin,
    gfx_display_gl2_scissor_end
 };

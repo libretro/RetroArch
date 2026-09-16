@@ -83,6 +83,13 @@
 
 #include <audio/audio_mixer.h>
 #include <formats/audio.h>
+#ifdef HAVE_RAC3
+#include <formats/rac3.h>
+#ifdef HAVE_RLPCM
+#include <formats/rlpcm.h>
+#endif
+#include <math.h>
+#endif
 
 #include "ogg_fixture.h"
 
@@ -232,6 +239,22 @@ static int check_seek_replays(void *buf, size_t size,
       return 0;
    }
    audio_transfer_set_buffer_ptr(h, type, buf, size);
+#ifdef HAVE_RLPCM
+   /* Raw samples carry no shape, so whoever starts the arm supplies
+    * one - the mixer does it for a sound it loads, and here this does
+    * it for the arm on its own. */
+   if (type == AUDIO_TYPE_LPCM)
+   {
+      rlpcm_format_t *fmt = (rlpcm_format_t*)audio_transfer_lpcm_format(h);
+      if (fmt)
+      {
+         fmt->sample_rate = 48000;
+         fmt->bits        = 16;
+         fmt->channels    = 2;
+         fmt->big_endian  = false;
+      }
+   }
+#endif
    if (!audio_transfer_start(h, type))
    {
       printf("  %s: audio_transfer_start failed\n", what);
@@ -474,6 +497,108 @@ int main(void)
          fails++;
       audio_mixer_destroy(snd);
    }
+
+#ifdef HAVE_RAC3
+   /* The AC-3 arm and the mixer's AC-3 sound type, on a fixture made
+    * here with the encoder: ten 5.1 frames of tones, folded to stereo
+    * by the mixer. The same seek and repeat contracts as Vorbis. */
+   {
+      static float in[1536 * 6];
+      uint8_t *ac3 = (uint8_t*)malloc(4096 * 10);
+      size_t ac3_len = 0; unsigned f, i, c;
+      rac3_encoder_t *enc = rac3_encoder_new(48000, 0x60Fu, 448);
+      for (f = 0; f < 10 && enc; f++)
+      {
+         for (i = 0; i < 1536; i++)
+            for (c = 0; c < 6; c++)
+               in[i * 6 + c] = 0.3f * (float)sin(2.0 * 3.14159265 * (220.0 * (c + 1)) * (double)(f * 1536 + i) / 48000.0);
+         ac3_len += rac3_encode_frame(enc, in, ac3 + ac3_len, 4096 * 10 - ac3_len);
+      }
+      rac3_encoder_free(enc);
+      printf("3b. audio_transfer: an AC-3 stream replays after a seek to 0\n");
+      current_case = "case 3b (AC-3 seek contract)";
+      if (!ac3_len || !check_seek_replays(ac3, ac3_len, AUDIO_TYPE_AC3, "ac3"))
+         fails++;
+      printf("3c. audio_mixer: a repeating AC-3 voice keeps playing past its loop point\n");
+      current_case = "case 3c (mixer repeat, AC-3 float)";
+      if (!(snd = audio_mixer_load_ac3(dup_bytes(ac3, ac3_len), ac3_len)))
+      {
+         printf("  the fixture would not load\n");
+         fails++;
+      }
+      else
+      {
+         if (!mix_repeating(snd, 0, 1, "AC-3 float"))
+            fails++;
+         audio_mixer_destroy(snd);
+      }
+      current_case = "case 3c (mixer repeat, AC-3 int16)";
+      if (!(snd = audio_mixer_load_ac3(dup_bytes(ac3, ac3_len), ac3_len)))
+      {
+         printf("  the fixture would not load\n");
+         fails++;
+      }
+      else
+      {
+         if (!mix_repeating(snd, 1, 1, "AC-3 int16"))
+            fails++;
+         audio_mixer_destroy(snd);
+      }
+      free(ac3);
+   }
+#endif
+
+#ifdef HAVE_RLPCM
+   /* Linear PCM through the same two contracts. The fixture is raw
+    * 16-bit stereo with no header, which is what the mixer's default
+    * shape is for, and it is the one arm whose seek is exact - so a
+    * replay after a seek to 0 has to be the same samples, not merely
+    * the same length. */
+   {
+      size_t   lpcm_frames = 4800;
+      size_t   lpcm_len    = lpcm_frames * 4;
+      uint8_t *lpcm        = (uint8_t*)malloc(lpcm_len);
+      size_t   i;
+      for (i = 0; i < lpcm_frames; i++)
+      {
+         int v = (int)(10000.0 * sin(2.0 * 3.14159265 * 440.0 * (double)i / 48000.0));
+         lpcm[i * 4 + 0] = (uint8_t)(v & 0xFF);
+         lpcm[i * 4 + 1] = (uint8_t)((v >> 8) & 0xFF);
+         lpcm[i * 4 + 2] = (uint8_t)(v & 0xFF);
+         lpcm[i * 4 + 3] = (uint8_t)((v >> 8) & 0xFF);
+      }
+      printf("3d. audio_transfer: an LPCM stream replays after a seek to 0\n");
+      current_case = "case 3d (LPCM seek contract)";
+      if (!check_seek_replays(lpcm, lpcm_len, AUDIO_TYPE_LPCM, "lpcm"))
+         fails++;
+      printf("3e. audio_mixer: a repeating LPCM voice keeps playing past its loop point\n");
+      current_case = "case 3e (mixer repeat, LPCM float)";
+      if (!(snd = audio_mixer_load_lpcm(dup_bytes(lpcm, lpcm_len), lpcm_len)))
+      {
+         printf("  the fixture would not load\n");
+         fails++;
+      }
+      else
+      {
+         if (!mix_repeating(snd, 0, 1, "LPCM float"))
+            fails++;
+         audio_mixer_destroy(snd);
+      }
+      current_case = "case 3e (mixer repeat, LPCM int16)";
+      if (!(snd = audio_mixer_load_lpcm(dup_bytes(lpcm, lpcm_len), lpcm_len)))
+      {
+         printf("  the fixture would not load\n");
+         fails++;
+      }
+      else
+      {
+         if (!mix_repeating(snd, 1, 1, "LPCM int16"))
+            fails++;
+         audio_mixer_destroy(snd);
+      }
+      free(lpcm);
+   }
+#endif
 
    printf("4. audio_mixer: a stream with no audio in it never becomes a voice\n");
    current_case = "case 4 (empty stream)";

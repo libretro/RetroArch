@@ -114,6 +114,20 @@
 #include <retro_assert.h>
 #endif
 #define STACKSIZE (64 * 1024)
+#elif defined(__PS3__)
+#define USE_PS3_THREADS
+#ifdef __PSL1GHT__
+#include <sys/thread.h>
+#include <lv2/mutex.h>
+#include <lv2/cond.h>
+#else
+#include <sys/ppu_thread.h>
+#include <sys/synchronization.h>
+#endif
+#ifdef DEBUG
+#include <retro_assert.h>
+#endif
+#define STACKSIZE (128 * 1024)
 #else
 #include <pthread.h>
 #include <time.h>
@@ -222,11 +236,93 @@ static INLINE void CondVar_Broadcast(CondVar* cv)
 #endif
 
 
+#ifdef USE_PS3_THREADS
+/* Both PS3 SDKs put the same lv2 primitives behind different names, so
+ * the backend below is written against one set of its own. The names
+ * are prefixed because a unity build drops this translation unit in
+ * beside every other one, where the SDK spellings may already mean
+ * something: nothing here can be what another file sees. */
+#ifdef __PSL1GHT__
+typedef sys_lwmutex_attr_t rthreads_ps3_lwmutex_attr_t;
+typedef sys_lwcond_attr_t rthreads_ps3_lwcond_attr_t;
+
+/* Values, rather than the attribute keys some PSL1GHT vintages spell
+ * instead; the pair is what a plain non-recursive mutex asks for. */
+#ifndef SYS_LWMUTEX_PROTOCOL_PRIO
+#define SYS_LWMUTEX_PROTOCOL_PRIO 2
+#endif
+#ifndef SYS_LWMUTEX_ATTR_NOT_RECURSIVE
+#define SYS_LWMUTEX_ATTR_NOT_RECURSIVE 0x0020
+#endif
+
+#define RTHREADS_PS3_LWMUTEX_ATTR_INIT(attr) \
+   do { \
+      (attr).attr_protocol  = SYS_LWMUTEX_PROTOCOL_PRIO; \
+      (attr).attr_recursive = SYS_LWMUTEX_ATTR_NOT_RECURSIVE; \
+      (attr).name[0]        = '\0'; \
+   } while (0)
+#define RTHREADS_PS3_LWCOND_ATTR_INIT(attr) \
+   do { (attr).name[0] = '\0'; } while (0)
+
+#define RTHREADS_PS3_JOINABLE           THREAD_JOINABLE
+#define rthreads_ps3_thread_create      sysThreadCreate
+#define rthreads_ps3_thread_join        sysThreadJoin
+#define rthreads_ps3_thread_detach      sysThreadDetach
+#define rthreads_ps3_thread_exit        sysThreadExit
+#define rthreads_ps3_thread_get_id      sysThreadGetId
+#define rthreads_ps3_thread_get_prio    sysThreadGetPriority
+#define rthreads_ps3_thread_set_prio    sysThreadSetPriority
+#define rthreads_ps3_lwmutex_create     sysLwMutexCreate
+#define rthreads_ps3_lwmutex_destroy    sysLwMutexDestroy
+#define rthreads_ps3_lwmutex_lock       sysLwMutexLock
+#define rthreads_ps3_lwmutex_trylock    sysLwMutexTryLock
+#define rthreads_ps3_lwmutex_unlock     sysLwMutexUnlock
+#define rthreads_ps3_lwcond_create      sysLwCondCreate
+#define rthreads_ps3_lwcond_destroy     sysLwCondDestroy
+#define rthreads_ps3_lwcond_wait        sysLwCondWait
+#define rthreads_ps3_lwcond_signal      sysLwCondSignal
+#define rthreads_ps3_lwcond_signal_all  sysLwCondSignalAll
+#else
+typedef sys_lwmutex_attribute_t rthreads_ps3_lwmutex_attr_t;
+typedef sys_lwcond_attribute_t rthreads_ps3_lwcond_attr_t;
+
+#define RTHREADS_PS3_LWMUTEX_ATTR_INIT(attr) \
+   sys_lwmutex_attribute_initialize(attr)
+#define RTHREADS_PS3_LWCOND_ATTR_INIT(attr) \
+   sys_lwcond_attribute_initialize(attr)
+
+#define RTHREADS_PS3_JOINABLE           SYS_PPU_THREAD_CREATE_JOINABLE
+#define rthreads_ps3_thread_create      sys_ppu_thread_create
+#define rthreads_ps3_thread_join        sys_ppu_thread_join
+#define rthreads_ps3_thread_detach      sys_ppu_thread_detach
+#define rthreads_ps3_thread_exit        sys_ppu_thread_exit
+#define rthreads_ps3_thread_get_id      sys_ppu_thread_get_id
+#define rthreads_ps3_thread_get_prio    sys_ppu_thread_get_priority
+#define rthreads_ps3_thread_set_prio    sys_ppu_thread_set_priority
+#define rthreads_ps3_lwmutex_create     sys_lwmutex_create
+#define rthreads_ps3_lwmutex_destroy    sys_lwmutex_destroy
+#define rthreads_ps3_lwmutex_lock       sys_lwmutex_lock
+#define rthreads_ps3_lwmutex_trylock    sys_lwmutex_trylock
+#define rthreads_ps3_lwmutex_unlock     sys_lwmutex_unlock
+#define rthreads_ps3_lwcond_create      sys_lwcond_create
+#define rthreads_ps3_lwcond_destroy     sys_lwcond_destroy
+#define rthreads_ps3_lwcond_wait        sys_lwcond_wait
+#define rthreads_ps3_lwcond_signal      sys_lwcond_signal
+#define rthreads_ps3_lwcond_signal_all  sys_lwcond_signal_all
+#endif
+
+/* An lv2 wait takes microseconds, with zero standing for no timeout. */
+#define RTHREADS_PS3_NO_TIMEOUT 0
+#endif
+
 #if defined(BSD) || defined(ORBIS)
 #include <sys/time.h>
 #endif
 
 /* sthread_setname */
+#if defined(__APPLE__)
+#include <dlfcn.h>
+#endif
 #if defined(__linux__) && !defined(USE_WIN32_THREADS)
 #include <sys/prctl.h>
 #endif
@@ -236,12 +332,17 @@ static INLINE void CondVar_Broadcast(CondVar* cv)
 #include <unistd.h>
 #endif
 
-/* Android: scond goes straight to the futex. Bionic's condvar issues
- * the wake syscall on every signal whether or not anyone is waiting,
- * so a waiter count in front of it makes the common empty signal
- * free. The constants are spelled out here because they are ABI
- * facts, not header facts: the same values from 2.6-era kernels on. */
-#if defined(__ANDROID__) && !defined(USE_WIN32_THREADS)
+/* Linux: scond goes straight to the futex. The case for it on Android
+ * is that Bionic's condvar issues the wake syscall on every signal
+ * whether or not anyone is waiting, so a waiter count in front of it
+ * makes the common empty signal free. glibc already skips that syscall,
+ * but its condvar still takes its internal lock on the way to finding
+ * out: measured on one core, an empty scond_signal costs 3.6 ns through
+ * pthread_cond and 1.5 ns through the futex path, so the gate is widened
+ * to every Linux build rather than Bionic alone. The constants are
+ * spelled out here because they are ABI facts, not header facts: the
+ * same values from 2.6-era kernels on. */
+#if defined(__linux__) && !defined(USE_WIN32_THREADS)
 #include <sys/syscall.h>
 #include <errno.h>
 #define RTHREADS_FUTEX_SCOND 1
@@ -275,6 +376,8 @@ extern long syscall(long number, ...);
 #if defined(__MACH__) && defined(__APPLE__)
 #include <mach/clock.h>
 #include <mach/mach.h>
+#include <mach/mach_time.h>
+#include <mach/thread_policy.h>
 #include <TargetConditionals.h>
 #include <AvailabilityMacros.h> /* MAC_OS_X_VERSION_MIN_REQUIRED (since 10.2) */
 /* The pthread QoS override API (pthread_override_qos_class_start_np, used by
@@ -378,6 +481,8 @@ struct sthread
    s32 id;
    s32 done;               /* semaphore the exit path signals for a joiner */
    retro_atomic_int_t state;
+#elif defined(USE_PS3_THREADS)
+   sys_ppu_thread_t id;
 #else
    pthread_t id;
 #endif
@@ -401,6 +506,8 @@ struct slock
    Mutex lock;
 #elif defined(USE_PS2_THREADS)
    s32 lock;   /* binary semaphore */
+#elif defined(USE_PS3_THREADS)
+   sys_lwmutex_t lock;
 #else
    pthread_mutex_t lock;
 #endif
@@ -551,6 +658,10 @@ struct scond
 #elif defined(RTHREADS_FUTEX_SCOND)
    retro_atomic_int_t seq;        /* bumped by every signal; futex word */
    retro_atomic_int_t waiters;    /* threads between enqueue and wake */
+#elif defined(USE_PS3_THREADS)
+   sys_lwcond_t work;
+   sys_lwmutex_t *assoc;          /* the lock this condvar is bound to */
+   retro_atomic_int_t bound;      /* nonzero once work exists */
 #else
    pthread_cond_t cond;
 #endif
@@ -745,6 +856,25 @@ static void wiiu_thread_dealloc(OSThread *thread, void *stack)
 }
 #elif defined(USE_PS2_THREADS)
 /* ps2_thread_wrap above takes the sthread itself as its argument. */
+#elif defined(USE_PS3_THREADS)
+/* The entry point takes its argument as a pointer under PSL1GHT and as
+ * the raw register value under the PS3 SDK; it arrives in the same
+ * place either way. An lv2 PPU thread leaves through the exit syscall,
+ * so returning from here is not an option. */
+#ifdef __PSL1GHT__
+static void thread_wrap(void *data_)
+#else
+static void thread_wrap(uint64_t data_)
+#endif
+{
+   struct thread_data *data = (struct thread_data*)(uintptr_t)data_;
+   if (data)
+   {
+      data->func(data->userdata);
+      free(data);
+   }
+   rthreads_ps3_thread_exit(0);
+}
 #else
 #ifdef USE_WIN32_THREADS
 static DWORD CALLBACK thread_wrap(void *data_)
@@ -770,7 +900,8 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
       && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
       && !defined(USE_VITA_THREADS) && !defined(USE_WIIU_THREADS) \
       && !defined(USE_SWITCH_THREADS) && !defined(USE_PS2_THREADS) \
-      && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
+      && !defined(USE_PS3_THREADS) && !defined(__HAIKU__) \
+      && !defined(__EMSCRIPTEN__)
 #define HAVE_THREAD_ATTR
 #endif
 
@@ -1069,6 +1200,35 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
       if (!thread_created)
          free(start);
    }
+#elif defined(USE_PS3_THREADS)
+   {
+      /* lv2 priorities run 0..3071 with lower numbers scheduled first;
+       * the primary thread sits at 1000. Workers inherit the creator's
+       * priority, and an explicit rthreads priority maps across
+       * 2047..512, keeping even the highest request below the band the
+       * system's own threads run in. */
+      sys_ppu_thread_t self = 0;
+      int prio              = 1000;
+
+      rthreads_ps3_thread_get_id(&self);
+      rthreads_ps3_thread_get_prio(self, &prio);
+      if (thread_priority >= 1 && thread_priority <= 100)
+         prio = 2047 - ((thread_priority - 1) * (2047 - 512)) / 99;
+      if (prio < 0)
+         prio = 0;
+      if (prio > 3071)
+         prio = 3071;
+
+      thread->id     = 0;
+      thread_created = rthreads_ps3_thread_create(&thread->id, thread_wrap,
+#ifdef __PSL1GHT__
+            data,
+#else
+            (uint64_t)(uintptr_t)data,
+#endif
+            prio, STACKSIZE, RTHREADS_PS3_JOINABLE,
+            (char*)"rarch_thread") == 0;
+   }
 #else
    thread->id               = 0;
 #ifdef HAVE_THREAD_ATTR
@@ -1335,10 +1495,43 @@ bool sthread_raise_current_priority(void)
       return sceKernelChangeThreadPriority(
             sceKernelGetThreadId(), prio) == 0;
    }
+#elif defined(USE_PS3_THREADS)
+   {
+      sys_ppu_thread_t self = 0;
+      int prio              = 1000;
+      rthreads_ps3_thread_get_id(&self);
+      rthreads_ps3_thread_get_prio(self, &prio);
+      prio -= 128;
+      if (prio < 0)
+         prio = 0;
+      return rthreads_ps3_thread_set_prio(self, prio) == 0;
+   }
 #elif defined(__ANDROID__)
    /* Bionic lets an app move its own threads into the audio band
     * without privilege; -16 is ANDROID_PRIORITY_AUDIO. */
    return setpriority(PRIO_PROCESS, gettid(), -16) == 0;
+#elif defined(__MACH__) && defined(__APPLE__)
+   /* The time-constraint policy is what makes a thread real-time on
+    * Darwin: pthread_setschedparam() only moves it within the
+    * time-shared band. A period close to a small audio IO cycle with
+    * a fraction of it as the budget is what the HAL's own IO thread
+    * runs under; a thread that overruns its budget is demoted by the
+    * kernel, not killed. Needs no privilege. */
+   {
+      struct thread_time_constraint_policy policy;
+      mach_timebase_info_data_t tb;
+      double ns_per_tick;
+      if (mach_timebase_info(&tb) != KERN_SUCCESS || !tb.denom)
+         return false;
+      ns_per_tick         = (double)tb.numer / (double)tb.denom;
+      policy.period       = (uint32_t)(2900000.0 / ns_per_tick);
+      policy.computation  = (uint32_t)( 750000.0 / ns_per_tick);
+      policy.constraint   = (uint32_t)(2900000.0 / ns_per_tick);
+      policy.preemptible  = TRUE;
+      return thread_policy_set(pthread_mach_thread_np(pthread_self()),
+            THREAD_TIME_CONSTRAINT_POLICY, (thread_policy_t)&policy,
+            THREAD_TIME_CONSTRAINT_POLICY_COUNT) == KERN_SUCCESS;
+   }
 #elif defined(RTHREADS_HAVE_SCHEDPARAM)
    /* Real-time round-robin at a middling priority: above every
     * time-shared thread, below anything the system runs at the top of
@@ -1375,9 +1568,20 @@ void sthread_setname(const char *name)
    buf[i] = '\0';
    prctl(PR_SET_NAME, buf, 0, 0, 0);
 #elif defined(__APPLE__)
+   /* pthread_setname_np is 10.6; it is looked up at run time so one
+    * binary builds against, and runs on, 10.5 as well.  The pointer is
+    * kept once found: it cannot come and go while the process runs. */
+   static int (*setname)(const char*) = NULL;
+   static int looked_up               = 0;
    if (!name)
       return;
-   pthread_setname_np(name);
+   if (!looked_up)
+   {
+      *(void**)&setname = dlsym(RTLD_DEFAULT, "pthread_setname_np");
+      looked_up         = 1;
+   }
+   if (setname)
+      setname(name);
 #elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
    if (!name)
       return;
@@ -1476,6 +1680,15 @@ int sthread_detach(sthread_t *thread)
    switch_reap_list = thread;
    mutexUnlock(&switch_reap_lock);
    return 0;
+#elif defined(USE_PS3_THREADS)
+   {
+      int ret;
+      if (!thread)
+         return 0;
+      ret = rthreads_ps3_thread_detach(thread->id);
+      free(thread);
+      return ret;
+   }
 #else
    int ret;
    if (!thread)
@@ -1516,6 +1729,11 @@ void sthread_join(sthread_t *thread)
    WaitSema(thread->done);
    DeleteSema(thread->done);
    free(thread->stack);
+#elif defined(USE_PS3_THREADS)
+   {
+      uint64_t exitcode = 0;
+      rthreads_ps3_thread_join(thread->id, &exitcode);
+   }
 #else
    pthread_join(thread->id, NULL);
 #endif
@@ -1538,6 +1756,14 @@ bool sthread_isself(sthread_t *thread)
    return thread ? threadGetSelf() == &thread->t             : false;
 #elif defined(USE_PS2_THREADS)
    return thread ? GetThreadId() == thread->id               : false;
+#elif defined(USE_PS3_THREADS)
+   {
+      sys_ppu_thread_t self = 0;
+      if (!thread)
+         return false;
+      rthreads_ps3_thread_get_id(&self);
+      return self == thread->id;
+   }
 #else
    return thread ? pthread_equal(pthread_self(), thread->id) : false;
 #endif
@@ -1569,6 +1795,16 @@ slock_t *slock_new(void)
    {
       free(lock);
       return NULL;
+   }
+#elif defined(USE_PS3_THREADS)
+   {
+      rthreads_ps3_lwmutex_attr_t attr;
+      RTHREADS_PS3_LWMUTEX_ATTR_INIT(attr);
+      if (rthreads_ps3_lwmutex_create(&lock->lock, &attr) != 0)
+      {
+         free(lock);
+         return NULL;
+      }
    }
 #elif defined(USE_WIIU_THREADS)
    OSFastMutex_Init(&lock->lock, "rarch_lock");
@@ -1615,6 +1851,8 @@ void slock_free(slock_t *lock)
    /* nothing to destroy */
 #elif defined(USE_PS2_THREADS)
    DeleteSema(lock->lock);
+#elif defined(USE_PS3_THREADS)
+   rthreads_ps3_lwmutex_destroy(&lock->lock);
 #else
    pthread_mutex_destroy(&lock->lock);
 #endif
@@ -1641,6 +1879,8 @@ void slock_lock(slock_t *lock)
    mutexLock(&lock->lock);
 #elif defined(USE_PS2_THREADS)
    WaitSema(lock->lock);
+#elif defined(USE_PS3_THREADS)
+   rthreads_ps3_lwmutex_lock(&lock->lock, RTHREADS_PS3_NO_TIMEOUT);
 #else
    pthread_mutex_lock(&lock->lock);
 #endif
@@ -1664,6 +1904,8 @@ bool slock_try_lock(slock_t *lock)
    return lock && mutexTryLock(&lock->lock);
 #elif defined(USE_PS2_THREADS)
    return lock && (PollSema(lock->lock) >= 0);
+#elif defined(USE_PS3_THREADS)
+   return lock && (rthreads_ps3_lwmutex_trylock(&lock->lock) == 0);
 #else
    return lock && (pthread_mutex_trylock(&lock->lock) == 0);
 #endif
@@ -1689,6 +1931,8 @@ void slock_unlock(slock_t *lock)
    mutexUnlock(&lock->lock);
 #elif defined(USE_PS2_THREADS)
    SignalSema(lock->lock);
+#elif defined(USE_PS3_THREADS)
+   rthreads_ps3_lwmutex_unlock(&lock->lock);
 #else
    pthread_mutex_unlock(&lock->lock);
 #endif
@@ -1710,6 +1954,30 @@ static void scond_bind_vita(scond_t *cond, slock_t *lock)
       cond->assoc = &lock->lock;
       sceKernelCreateLwCond(&cond->work, "rarch_cond", 0,
             &lock->lock, NULL);
+      retro_atomic_store_release_int(&cond->bound, 1);
+   }
+#ifdef DEBUG
+   retro_assert(cond->assoc == &lock->lock);
+#endif
+}
+#endif
+
+#ifdef USE_PS3_THREADS
+/* An lwcond is created bound to one lwmutex, and scond only learns its
+ * lock at the first wait, so binding happens there. The caller holds
+ * the lock at that point, so concurrent first waits are serialized by
+ * the lock itself; a signal that still observes the condvar as unbound
+ * corresponds to a moment with no blocked waiter, where dropping the
+ * signal is what a condvar does anyway. Waiting on one condvar with
+ * two different locks is as undefined here as it is for pthreads. */
+static void scond_bind_ps3(scond_t *cond, slock_t *lock)
+{
+   if (!retro_atomic_load_acquire_int(&cond->bound))
+   {
+      rthreads_ps3_lwcond_attr_t attr;
+      RTHREADS_PS3_LWCOND_ATTR_INIT(attr);
+      cond->assoc = &lock->lock;
+      rthreads_ps3_lwcond_create(&cond->work, &lock->lock, &attr);
       retro_atomic_store_release_int(&cond->bound, 1);
    }
 #ifdef DEBUG
@@ -1752,6 +2020,9 @@ scond_t *scond_new(void)
 #elif defined(USE_VITA_THREADS)
    cond->assoc = NULL;
    retro_atomic_int_init(&cond->bound, 0);
+#elif defined(USE_PS3_THREADS)
+   cond->assoc = NULL;
+   retro_atomic_int_init(&cond->bound, 0);
 #elif defined(USE_WIIU_THREADS)
    OSFastMutex_Init(&cond->gate, "rarch_cond");
 #elif defined(USE_SWITCH_THREADS)
@@ -1789,6 +2060,9 @@ void scond_free(scond_t *cond)
 #elif defined(USE_VITA_THREADS)
    if (retro_atomic_load_acquire_int(&cond->bound))
       sceKernelDeleteLwCond(&cond->work);
+#elif defined(USE_PS3_THREADS)
+   if (retro_atomic_load_acquire_int(&cond->bound))
+      rthreads_ps3_lwcond_destroy(&cond->work);
 #elif defined(USE_WIIU_THREADS)
    /* nothing to destroy: waiter nodes live on their threads' stacks */
 #elif defined(USE_SWITCH_THREADS) || defined(USE_PS2_THREADS) \
@@ -2299,6 +2573,9 @@ void scond_wait(scond_t *cond, slock_t *lock)
 #elif defined(USE_VITA_THREADS)
    scond_bind_vita(cond, lock);
    sceKernelWaitLwCond(&cond->work, NULL);
+#elif defined(USE_PS3_THREADS)
+   scond_bind_ps3(cond, lock);
+   rthreads_ps3_lwcond_wait(&cond->work, RTHREADS_PS3_NO_TIMEOUT);
 #elif defined(USE_WIIU_THREADS)
    struct wiiu_cond_waiter w;
    w.next = NULL;
@@ -2375,6 +2652,10 @@ int scond_broadcast(scond_t *cond)
 #elif defined(USE_VITA_THREADS)
    if (retro_atomic_load_acquire_int(&cond->bound))
       sceKernelSignalLwCondAll(&cond->work);
+   return 0;
+#elif defined(USE_PS3_THREADS)
+   if (retro_atomic_load_acquire_int(&cond->bound))
+      rthreads_ps3_lwcond_signal_all(&cond->work);
    return 0;
 #elif defined(USE_WIIU_THREADS)
    struct wiiu_cond_waiter *w, *next;
@@ -2473,6 +2754,9 @@ void scond_signal(scond_t *cond)
 #elif defined(USE_VITA_THREADS)
    if (retro_atomic_load_acquire_int(&cond->bound))
       sceKernelSignalLwCond(&cond->work);
+#elif defined(USE_PS3_THREADS)
+   if (retro_atomic_load_acquire_int(&cond->bound))
+      rthreads_ps3_lwcond_signal(&cond->work);
 #elif defined(USE_WIIU_THREADS)
    struct wiiu_cond_waiter *w;
    OSFastMutex_Lock(&cond->gate);
@@ -2603,6 +2887,12 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    }
    slock_lock(lock);
    return woken;
+#elif defined(USE_PS3_THREADS)
+   if (timeout_us <= 0)
+      return false;
+   scond_bind_ps3(cond, lock);
+   return rthreads_ps3_lwcond_wait(&cond->work,
+         (uint64_t)timeout_us) == 0;
 #elif defined(USE_VITA_THREADS)
    unsigned int to;
    if (timeout_us <= 0)
@@ -2755,12 +3045,6 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    now.tv_sec  = mts.tv_sec;
    now.tv_nsec = mts.tv_nsec;
 #endif
-#elif !defined(__PSL1GHT__) && defined(__PS3__)
-   sys_time_sec_t s;
-   sys_time_nsec_t n;
-   sys_time_get_current_time(&s, &n);
-   now.tv_sec            = s;
-   now.tv_nsec           = n;
 #elif defined(RETRO_WIN32_USE_PTHREADS)
    _ftime64_s(&now);
 #else
@@ -2860,6 +3144,12 @@ uintptr_t sthread_get_current_thread_id(void)
    return (uintptr_t)threadGetSelf();
 #elif defined(USE_PS2_THREADS)
    return (uintptr_t)GetThreadId();
+#elif defined(USE_PS3_THREADS)
+   {
+      sys_ppu_thread_t self = 0;
+      rthreads_ps3_thread_get_id(&self);
+      return (uintptr_t)self;
+   }
 #else
    return (uintptr_t)pthread_self();
 #endif
@@ -2885,7 +3175,7 @@ bool sthread_is_main_thread(void)
       && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
       && !defined(USE_VITA_THREADS) && !defined(USE_WIIU_THREADS) \
       && !defined(USE_SWITCH_THREADS) && !defined(USE_PS2_THREADS) \
-      && !defined(__ANDROID__)
+      && !defined(USE_PS3_THREADS) && !defined(__ANDROID__)
 #define RTHREADS_HAVE_CANCEL 1
 #endif
 

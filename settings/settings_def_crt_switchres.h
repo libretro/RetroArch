@@ -6,7 +6,7 @@
 
 S_UINT_EX(crt_switch_resolution, CRT_SWITCH_RESOLUTION,
       "crt_switch_resolution",
-      DEFAULT_CRT_SWITCH_RESOLUTION, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, CRT_SWITCH_NONE, CRT_SWITCH_INI, 1.0, 0, setting_action_ok_uint, setting_get_string_representation_uint_crt_switch_resolutions, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      DEFAULT_CRT_SWITCH_RESOLUTION, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, CRT_SWITCH_NONE, CRT_SWITCH_EDID, 1.0, 0, setting_action_ok_uint, setting_get_string_representation_uint_crt_switch_resolutions, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "CRT SwitchRes",
       "For CRT displays only. Attempts to use exact core/game resolution and refresh rate.")
 S_UINT_EX(crt_switch_resolution_super, CRT_SWITCH_RESOLUTION_SUPER,
@@ -46,6 +46,12 @@ S_BOOL(crt_switch_custom_refresh_enable, CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRES
       false, SD_FLAG_NONE, 0, 0,
       "Custom Refresh Rate",
       "Use a custom refresh rate specified in the configuration file if needed.")
+#if defined(HAVE_MODELINE) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_ACTION_EX(CRT_SWITCH_WRITE_EDID,
+      "crt_switch_write_edid", SD_FLAG_ADVANCED, setting_action_crt_switch_write_edid, NULL, 0,
+      "Write EDID for CRT Preset",
+      "Write an EDID block describing the selected CRT preset to the config directory. Loaded as a firmware EDID on Linux (drm.edid_firmware) or an EDID override on Windows it lets a display without DDC report its sync limits, so the system boots at a rate the CRT can show. Nothing is installed; the log says where the file is and how to use it.")
+#endif
 S_BOOL(crt_switch_hires_menu, CRT_SWITCH_HIRES_MENU,
       "crt_switch_hires_menu",
       false, SD_FLAG_NONE, 0, 0,

@@ -66,6 +66,9 @@ bool	video_windowed_fullscreen	1	1
 bool	video_vsync	1	1
 bool	video_scan_subframes	1	0
 bool	video_waitable_swapchains	1	1
+bool	video_threaded_present_repeat	1	0
+bool	video_threaded_display_pacing	1	0
+bool	video_present_timing_from_display	1	1
 bool	video_hard_sync	1	0
 bool	menu_throttle_framerate	1	1
 bool	video_ctx_scaling	1	0
@@ -98,6 +101,7 @@ bool	input_overlay_pointer_enable	1	1
 bool	fps_show	1	0
 bool	memory_show	1	0
 bool	statistics_show	1	0
+bool	statistics_hide_in_menu	1	1
 bool	framecount_show	1	0
 bool	netplay_ping_show	1	0
 bool	menu_show_load_content_animation	1	1
@@ -188,6 +192,7 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
 bool	scan_serial_and_crc	1	0
@@ -212,7 +217,6 @@ bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
 bool	rewind_enable	1	0
-bool	playlist_show_entry_idx	1	1
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
@@ -222,6 +226,7 @@ bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	1
 bool	video_font_enable	1	1
 bool	smb_client_enable	1	0
+bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0
 bool	core_updater_auto_backup	1	0
@@ -250,8 +255,11 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	1
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
-bool	audio_threaded_pipeline	1	0
-bool	audio_thread_priority	1	0
+bool	audio_threaded_pipeline	1	1
+bool	audio_time_stretch	1	0
+bool	audio_time_stretch_lowpass	1	0
+bool	audio_thread_priority	1	1
+bool	audio_sink_rate_estimation	1	1
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1
@@ -259,6 +267,7 @@ bool	video_force_srgb_disable	1	0
 bool	video_shader_watch_files	1	0
 bool	video_shader_remember_last_dir	1	0
 bool	android_input_disconnect_workaround	1	0
+bool	video_frame_time_sample_from_display	1	0
 bool	video_frame_time_sample_gated	1	0
 bool	video_adaptive_vsync	1	0
 bool	video_gl_direct_spirv	1	0
@@ -398,7 +407,6 @@ int	crt_switch_vertical_adjust	0	0
 int	state_slot	0	0
 int	replay_slot	0	0
 int	video_max_frame_latency	1	1
-int	video_scanline_sync_offset	1	0
 int	netplay_check_frames	1	600
 int	content_favorites_size	1	200
 int	input_overlay_lightgun_port	1	-1
@@ -459,6 +467,7 @@ uint	savestate_automatic_interval	1	0
 uint	savestate_max_keep	1	0
 uint	replay_max_keep	1	0
 uint	replay_checkpoint_interval	1	0
+uint	save_compression_codec	1	0
 uint	video_msg_bgcolor_red	1	0
 uint	video_msg_bgcolor_green	1	0
 uint	video_msg_bgcolor_blue	1	0
@@ -483,6 +492,7 @@ uint	menu_xmb_vertical_fade_factor	1	100
 uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
+uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
 uint	menu_scroll_delay	1	256
 uint	ai_service_source_lang	1	0
 uint	ai_service_target_lang	1	0
@@ -495,7 +505,6 @@ uint	accessibility_narrator_engine	1	ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK
 uint	menu_screensaver_animation	1	MENU_SCREENSAVER_BLANK
 uint	libretro_log_level	1	1
 uint	video_autoswitch_refresh_rate	1	AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN
-uint	audio_block_frames	1	0
 uint	content_history_size	1	200
 uint	input_menu_toggle_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_quit_gamepad_combo	1	INPUT_COMBO_NONE
@@ -559,6 +568,7 @@ uint	rewind_buffer_size_step	1	10
 uint	input_block_timeout	1	1
 uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
+uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920
@@ -715,6 +725,9 @@ bool	video_windowed_fullscreen	1	1
 bool	video_vsync	1	1
 bool	video_scan_subframes	1	0
 bool	video_waitable_swapchains	1	1
+bool	video_threaded_present_repeat	1	0
+bool	video_threaded_display_pacing	1	0
+bool	video_present_timing_from_display	1	1
 bool	video_hard_sync	1	0
 bool	menu_throttle_framerate	1	1
 bool	video_ctx_scaling	1	0
@@ -747,6 +760,7 @@ bool	input_overlay_pointer_enable	1	0
 bool	fps_show	1	0
 bool	memory_show	1	0
 bool	statistics_show	1	0
+bool	statistics_hide_in_menu	1	1
 bool	framecount_show	1	0
 bool	netplay_ping_show	1	0
 bool	menu_show_load_content_animation	1	1
@@ -837,6 +851,7 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
 bool	scan_serial_and_crc	1	0
@@ -861,7 +876,6 @@ bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
 bool	rewind_enable	1	0
-bool	playlist_show_entry_idx	1	1
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
@@ -871,6 +885,7 @@ bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	0
 bool	video_font_enable	1	1
 bool	smb_client_enable	1	0
+bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0
 bool	core_updater_auto_backup	1	0
@@ -899,14 +914,18 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	0
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
-bool	audio_threaded_pipeline	1	0
-bool	audio_thread_priority	1	0
+bool	audio_threaded_pipeline	1	1
+bool	audio_time_stretch	1	0
+bool	audio_time_stretch_lowpass	1	0
+bool	audio_thread_priority	1	1
+bool	audio_sink_rate_estimation	1	1
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1
 bool	video_force_srgb_disable	1	0
 bool	video_shader_watch_files	1	0
 bool	video_shader_remember_last_dir	1	0
+bool	video_frame_time_sample_from_display	1	0
 bool	video_frame_time_sample_gated	1	0
 bool	video_adaptive_vsync	1	0
 bool	video_gl_direct_spirv	1	0
@@ -1046,7 +1065,6 @@ int	crt_switch_vertical_adjust	0	0
 int	state_slot	0	0
 int	replay_slot	0	0
 int	video_max_frame_latency	1	1
-int	video_scanline_sync_offset	1	0
 int	netplay_check_frames	1	600
 int	content_favorites_size	1	200
 int	input_overlay_lightgun_port	1	-1
@@ -1106,6 +1124,7 @@ uint	savestate_automatic_interval	1	0
 uint	savestate_max_keep	1	0
 uint	replay_max_keep	1	0
 uint	replay_checkpoint_interval	1	0
+uint	save_compression_codec	1	0
 uint	video_msg_bgcolor_red	1	0
 uint	video_msg_bgcolor_green	1	0
 uint	video_msg_bgcolor_blue	1	0
@@ -1130,6 +1149,7 @@ uint	menu_xmb_vertical_fade_factor	1	100
 uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
+uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
 uint	menu_scroll_delay	1	256
 uint	ai_service_source_lang	1	0
 uint	ai_service_target_lang	1	0
@@ -1142,7 +1162,6 @@ uint	accessibility_narrator_engine	1	ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK
 uint	menu_screensaver_animation	1	MENU_SCREENSAVER_BLANK
 uint	libretro_log_level	1	1
 uint	video_autoswitch_refresh_rate	1	AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN
-uint	audio_block_frames	1	0
 uint	content_history_size	1	200
 uint	input_menu_toggle_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_quit_gamepad_combo	1	INPUT_COMBO_NONE
@@ -1204,6 +1223,7 @@ uint	video_monitor_index	1	0
 uint	rewind_buffer_size_step	1	10
 uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
+uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920
@@ -1355,11 +1375,15 @@ bool	rgui_show_start_screen	0	1
 bool	netplay_start_as_spectator	0	0
 bool	network_remote_enable	0	0
 bool	ui_companion_toggle	0	0
+bool	desktop_menu_save_dock_positions	1	0
 bool	video_fullscreen	1	0
 bool	video_windowed_fullscreen	1	1
 bool	video_vsync	1	1
 bool	video_scan_subframes	1	0
 bool	video_waitable_swapchains	1	1
+bool	video_threaded_present_repeat	1	0
+bool	video_threaded_display_pacing	1	0
+bool	video_present_timing_from_display	1	1
 bool	video_hard_sync	1	0
 bool	menu_throttle_framerate	1	1
 bool	video_ctx_scaling	1	0
@@ -1392,6 +1416,7 @@ bool	input_overlay_pointer_enable	1	0
 bool	fps_show	1	0
 bool	memory_show	1	0
 bool	statistics_show	1	0
+bool	statistics_hide_in_menu	1	1
 bool	framecount_show	1	0
 bool	netplay_ping_show	1	0
 bool	menu_show_load_content_animation	1	1
@@ -1442,6 +1467,11 @@ bool	input_sensors_enable	1	1
 bool	ui_companion_enable	1	0
 bool	ui_companion_start_on_boot	1	1
 bool	desktop_menu_enable	1	1
+bool	desktop_menu_suggest_loaded_core_first	1	0
+bool	desktop_menu_save_last_tab	1	0
+bool	desktop_menu_save_geometry	1	0
+bool	desktop_menu_show_welcome_screen	1	1
+bool	desktop_menu_scan_finish_confirm	1	1
 bool	ai_service_enable	1	0
 bool	ai_service_pause	1	0
 bool	video_scale_integer	1	0
@@ -1485,6 +1515,7 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
 bool	scan_serial_and_crc	1	0
@@ -1509,7 +1540,6 @@ bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
 bool	rewind_enable	1	0
-bool	playlist_show_entry_idx	1	1
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
@@ -1519,6 +1549,7 @@ bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	0
 bool	video_font_enable	1	1
 bool	smb_client_enable	1	0
+bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0
 bool	core_updater_auto_backup	1	0
@@ -1548,14 +1579,18 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	0
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
-bool	audio_threaded_pipeline	1	0
-bool	audio_thread_priority	1	0
+bool	audio_threaded_pipeline	1	1
+bool	audio_time_stretch	1	0
+bool	audio_time_stretch_lowpass	1	0
+bool	audio_thread_priority	1	1
+bool	audio_sink_rate_estimation	1	1
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1
 bool	video_force_srgb_disable	1	0
 bool	video_shader_watch_files	1	0
 bool	video_shader_remember_last_dir	1	0
+bool	video_frame_time_sample_from_display	1	0
 bool	video_frame_time_sample_gated	1	0
 bool	video_adaptive_vsync	1	0
 bool	video_gl_direct_spirv	1	0
@@ -1695,7 +1730,6 @@ int	crt_switch_vertical_adjust	0	0
 int	state_slot	0	0
 int	replay_slot	0	0
 int	video_max_frame_latency	1	1
-int	video_scanline_sync_offset	1	0
 int	netplay_check_frames	1	600
 int	content_favorites_size	1	200
 int	input_overlay_lightgun_port	1	-1
@@ -1756,6 +1790,7 @@ uint	savestate_automatic_interval	1	0
 uint	savestate_max_keep	1	0
 uint	replay_max_keep	1	0
 uint	replay_checkpoint_interval	1	0
+uint	save_compression_codec	1	0
 uint	video_msg_bgcolor_red	1	0
 uint	video_msg_bgcolor_green	1	0
 uint	video_msg_bgcolor_blue	1	0
@@ -1780,7 +1815,22 @@ uint	menu_xmb_vertical_fade_factor	1	100
 uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
+uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
 uint	menu_scroll_delay	1	256
+uint	desktop_menu_view_type	1	0
+uint	desktop_menu_thumbnail_type	1	0
+uint	desktop_menu_last_tab	1	0
+uint	desktop_menu_thumbnail_cache_limit	1	500
+uint	desktop_menu_thumbnail_max_size	1	0
+uint	desktop_menu_thumbnail_quality	1	0
+uint	desktop_menu_icon_view_zoom	1	50
+uint	desktop_menu_all_playlists_list_max_count	1	0
+uint	desktop_menu_all_playlists_grid_max_count	1	0
+uint	desktop_menu_theme	1	0
+uint	desktop_menu_window_x	1	0
+uint	desktop_menu_window_y	1	0
+uint	desktop_menu_window_width	1	0
+uint	desktop_menu_window_height	1	0
 uint	ai_service_source_lang	1	0
 uint	ai_service_target_lang	1	0
 uint	video_scale_integer_axis	1	0
@@ -1792,7 +1842,6 @@ uint	accessibility_narrator_engine	1	ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK
 uint	menu_screensaver_animation	1	MENU_SCREENSAVER_BLANK
 uint	libretro_log_level	1	1
 uint	video_autoswitch_refresh_rate	1	AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN
-uint	audio_block_frames	1	0
 uint	content_history_size	1	200
 uint	input_menu_toggle_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_quit_gamepad_combo	1	INPUT_COMBO_NONE
@@ -1855,6 +1904,7 @@ uint	video_monitor_index	1	0
 uint	rewind_buffer_size_step	1	10
 uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
+uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920

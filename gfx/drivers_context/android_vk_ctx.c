@@ -251,6 +251,14 @@ static bool android_gfx_ctx_vk_bind_api(void *data,
 
 static bool android_gfx_ctx_vk_suppress_screensaver(void *data, bool enable) { return false; }
 
+static bool android_gfx_ctx_vk_presentable(void *data)
+{
+   android_ctx_data_vk_t *and = (android_ctx_data_vk_t*)data;
+   if (!and || and->surface_lost)
+      return false;
+   return and->vk.swapchain != VK_NULL_HANDLE;
+}
+
 static void android_gfx_ctx_vk_swap_buffers(void *data)
 {
    android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)data;
@@ -262,11 +270,11 @@ static void android_gfx_ctx_vk_swap_buffers(void *data)
    if (and->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
       and->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
-      if (and->vk.swapchain == VK_NULL_HANDLE)
-      {
-         retro_sleep(10);
-      }
-      else
+      /* No swapchain - the window is minimised or zero-sized, and
+       * the create is retried in vulkan_acquire_next_image() below,
+       * which throttles that path itself. Nothing to present and
+       * nothing to wait for here. */
+      if (and->vk.swapchain != VK_NULL_HANDLE)
          vulkan_present(&and->vk, and->vk.context.current_swapchain_index);
    }
    vulkan_acquire_next_image(&and->vk);
@@ -340,5 +348,6 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    android_gfx_ctx_vk_get_context_data,
    NULL,                                     /* make_current */
    android_gfx_ctx_vk_create_surface,
-   android_gfx_ctx_vk_destroy_surface
+   android_gfx_ctx_vk_destroy_surface,
+   android_gfx_ctx_vk_presentable
 };

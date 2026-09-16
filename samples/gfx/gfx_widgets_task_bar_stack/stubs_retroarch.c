@@ -64,11 +64,13 @@
 #include <stdint.h>
 #include <string.h>
 #include <boolean.h>
+#include <features/features_cpu.h>
 
 #include "../../../gfx/gfx_widgets.h"
 #include "../../../gfx/gfx_display.h"
 #include "../../../gfx/gfx_animation.h"
 #include "../../../retroarch.h"
+#include "../../../configuration.h"
 #include "../../../msg_hash.h"
 
 /* --- singletons --- */
@@ -131,6 +133,16 @@ bool font_driver_matches(const font_data_t *font,
       const char *path, float size)
 { (void)font; (void)path; (void)size; return false; }
 
+/* The widgets turn blending on and off through gfx_display now, and
+ * send its batch out at the end of their frame. Nothing draws here. */
+static gfx_display_t stub_disp;
+gfx_display_t *disp_get_ptr(void) { return &stub_disp; }
+void gfx_display_flush_batch(gfx_display_t *p_disp) { (void)p_disp; }
+void gfx_display_blend_begin(gfx_display_ctx_driver_t *dispctx, void *data)
+{ (void)dispctx; (void)data; }
+void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx, void *data)
+{ (void)dispctx; (void)data; }
+
 /* --- display: signatures copied from gfx/gfx_display.h --- */
 void gfx_display_draw_quad(gfx_display_t *p_disp, void *data,
       unsigned video_width, unsigned video_height,
@@ -169,6 +181,15 @@ void gfx_display_draw_text(const font_data_t *font, const char *text,
      s_rec_count++;
   }
 }
+
+/* gfx_widgets_draw_icon() reaches the display driver through this
+ * rather than through one of the helpers below, so it needs its own
+ * stub even though nothing here draws. */
+void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
+      gfx_display_ctx_draw_t *draw, void *data,
+      unsigned video_width, unsigned video_height)
+{ (void)dispctx; (void)draw; (void)data;
+  (void)video_width; (void)video_height; }
 
 void gfx_display_rotate_z(gfx_display_t *p_disp, math_matrix_4x4 *matrix,
       float cosine, float sine, void *data)
@@ -222,12 +243,23 @@ font_data_t *gfx_display_font_file(gfx_display_t *p_disp, char *fontpath,
   return NULL; }
 
 /* --- animation --- */
-bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
+bool gfx_animation_push_widget(gfx_animation_ctx_entry_t *entry)
 { (void)entry; return true; }
-bool gfx_animation_kill_by_tag(uintptr_t *tag) { (void)tag; return true; }
-void gfx_animation_timer_start(float *timer,
+bool gfx_animation_kill_widget_by_tag(uintptr_t *tag) { (void)tag; return true; }
+void gfx_animation_timer_start_widget(float *timer,
       gfx_timer_ctx_entry_t *timer_entry)
 { (void)timer_entry; if (timer) *timer = 0.0f; }
+void gfx_animation_widgets_own(bool worker) { (void)worker; }
+void gfx_animation_update_widgets(retro_time_t current_time,
+      float ticker_speed, unsigned video_width, unsigned video_height)
+{ (void)current_time; (void)ticker_speed; (void)video_width; (void)video_height; }
+
+/* --- the threaded video worker's widget step and its text handoff,
+ *     which no test here drives --- */
+static settings_t s_settings;
+settings_t *config_get_ptr(void) { return &s_settings; }
+retro_time_t cpu_features_get_time_usec(void) { return 0; }
+void video_thread_status_text(const char *s) { (void)s; }
 
 /* --- video driver --- */
 uint32_t video_driver_get_disp_flags(void) { return 0; }

@@ -71,6 +71,11 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len);
  * rh264_video_plane, -1 when nothing is pending. */
 int rh264_video_drain(rh264_video *v);
 
+/* Bits per sample of the decoded pictures (8..14).  Above 8 the planes
+ * hold uint16_t samples: rh264_video_plane still returns a byte
+ * pointer (cast it; the stride counts samples). */
+int rh264_video_bit_depth(const rh264_video *v);
+
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */
 const uint8_t *rh264_video_plane(const rh264_video *v, int plane,
       int *stride, int *width, int *height);

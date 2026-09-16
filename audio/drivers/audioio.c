@@ -33,7 +33,7 @@
 #define DEFAULT_DEV "/dev/audio"
 
 static void *audioio_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_out_rate)
+       unsigned *new_out_rate)
 {
    struct audio_info info;
    const char *audiodev  = device ? device : DEFAULT_DEV;

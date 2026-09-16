@@ -52,7 +52,10 @@
 #include <memalign.h>
 #include <math.h>
 
+#include "sinc_resampler_internal.h"
+
 #include <audio/sinc_resampler_int16.h>
+#include <audio/sinc_resampler.h>
 
 /* On targets whose compiler can auto-vectorize an int16*int32->int64 MAC
  * (e.g. AArch64/NEON via smlal), splitting the Kaiser inner loop into a
@@ -335,43 +338,55 @@ static void sinc_i16_process_kaiser(rarch_sinc_resampler_int16_t *re,
             const int32_t *np = re->phase_table
                               + (((re->time + ratio) >> sb) & row_mask) * taps2;
 
-            /* Both halves of the next row: the delta half is read first. */
             SINC_I16_PREFETCH(np);
-            SINC_I16_PREFETCH(np + taps);
+            /* Exact table phases need neither delta reads nor interpolation. */
+            if (!dsub)
+            {
+               for (i = 0; i < taps; i++)
+               {
+                  sum_l += (int64_t)buffer_l[i] * pt[i];
+                  sum_r += (int64_t)buffer_r[i] * pt[i];
+               }
+            }
+            else
+            {
+               /* Both halves of the next row: the delta half is read first. */
+               SINC_I16_PREFETCH(np + taps);
 
 #ifdef SINC_I16_KAISER_FISSION
-            {
-               int32_t *cs = re->coef_scratch;
-               /* Interp pass: coeff = pt[i] + trunc(dsub*dt[i] / 2^sb).
-                * Adding (2^sb-1) to negative products before the arithmetic
-                * shift turns floor into truncate-toward-zero (branchless, so
-                * the following MAC pass auto-vectorizes; bit-exact). */
-               for (i = 0; i < taps; i++)
                {
-                  int64_t prod = (int64_t)dsub * dt[i];
-                  int64_t bias = (prod >> 63) & (((int64_t)1 << sb) - 1);
-                  cs[i]        = pt[i] + (int32_t)((prod + bias) >> sb);
+                  int32_t *cs = re->coef_scratch;
+                  /* Interp pass: coeff = pt[i] + trunc(dsub*dt[i] / 2^sb).
+                   * Adding (2^sb-1) to negative products before the arithmetic
+                   * shift turns floor into truncate-toward-zero (branchless, so
+                   * the following MAC pass auto-vectorizes; bit-exact). */
+                  for (i = 0; i < taps; i++)
+                  {
+                     int64_t prod = (int64_t)dsub * dt[i];
+                     int64_t bias = (prod >> 63) & (((int64_t)1 << sb) - 1);
+                     cs[i]        = pt[i] + (int32_t)((prod + bias) >> sb);
+                  }
+                  for (i = 0; i < taps; i++)
+                  {
+                     sum_l += (int64_t)buffer_l[i] * cs[i];
+                     sum_r += (int64_t)buffer_r[i] * cs[i];
+                  }
                }
-               for (i = 0; i < taps; i++)
-               {
-                  sum_l += (int64_t)buffer_l[i] * cs[i];
-                  sum_r += (int64_t)buffer_r[i] * cs[i];
-               }
-            }
 #else
-            for (i = 0; i < taps; i++)
-            {
-               /* coeff = pt[i] + trunc(dsub * dt[i] / 2^sb); dsub >= 0. */
-               int64_t prod = (int64_t)dsub * dt[i];
-               int32_t c;
-               if (prod >= 0)
-                  c = pt[i] + (int32_t)( prod >> sb);
-               else
-                  c = pt[i] - (int32_t)((-prod) >> sb);
-               sum_l += (int64_t)buffer_l[i] * c;
-               sum_r += (int64_t)buffer_r[i] * c;
-            }
+               for (i = 0; i < taps; i++)
+               {
+                  /* coeff = pt[i] + trunc(dsub * dt[i] / 2^sb); dsub >= 0. */
+                  int64_t prod = (int64_t)dsub * dt[i];
+                  int32_t c;
+                  if (prod >= 0)
+                     c = pt[i] + (int32_t)( prod >> sb);
+                  else
+                     c = pt[i] - (int32_t)((-prod) >> sb);
+                  sum_l += (int64_t)buffer_l[i] * c;
+                  sum_r += (int64_t)buffer_r[i] * c;
+               }
 #endif
+            }
 
             output[0] = sinc_i16_sat(sinc_i16_round_shift(sum_l));
             output[1] = sinc_i16_sat(sinc_i16_round_shift(sum_r));
@@ -448,6 +463,18 @@ void sinc_resampler_int16_process(void *re_, struct resampler_data_int16 *data)
 /* Lifecycle.                                                                */
 /* ------------------------------------------------------------------------- */
 
+void sinc_resampler_int16_reset(void *re_)
+{
+   rarch_sinc_resampler_int16_t *re = (rarch_sinc_resampler_int16_t*)re_;
+   if (!re)
+      return;
+   memset(re->buffer_l, 0, 4 * re->taps * sizeof(*re->buffer_l));
+   re->ptr         = 0;
+   re->time        = 0;
+   re->ratio_fixed = 0;
+   re->ratio_bits  = 0;
+}
+
 void sinc_resampler_int16_free(void *re_)
 {
    rarch_sinc_resampler_int16_t *re = (rarch_sinc_resampler_int16_t*)re_;
@@ -458,8 +485,8 @@ void sinc_resampler_int16_free(void *re_)
    free(re);
 }
 
-void *sinc_resampler_int16_init(double bandwidth_mod,
-      enum sinc_int16_quality quality)
+void *sinc_resampler_int16_init_hq(double bandwidth_mod,
+      enum sinc_int16_quality quality, int hq_oversampling)
 {
    double   cutoff  = 0.0;
    unsigned sidelobes = 0;
@@ -516,6 +543,20 @@ void *sinc_resampler_int16_init(double bandwidth_mod,
          break;
    }
 
+   if (hq_oversampling && bandwidth_mod >= 2.0)
+   {
+      cutoff            = SINC_HQ_CUTOFF;
+      sidelobes         = SINC_HQ_SIDELOBES;
+      re->phase_bits    = SINC_HQ_PHASE_BITS;
+      re->subphase_bits = SINC_HQ_SUBPHASE_BITS;
+      window            = SINC_I16_WINDOW_KAISER;
+      re->kaiser_beta   = SINC_HQ_KAISER_BETA;
+   }
+
+   if (!sinc_resampler_ratio_valid(bandwidth_mod,
+            re->phase_bits, re->subphase_bits))
+      goto error;
+
    re->window        = (unsigned)window;
    re->subphase_mask = (1u << re->subphase_bits) - 1u;
    re->taps          = sidelobes * 2;
@@ -567,4 +608,10 @@ void *sinc_resampler_int16_init(double bandwidth_mod,
 error:
    sinc_resampler_int16_free(re);
    return NULL;
+}
+
+void *sinc_resampler_int16_init(double bandwidth_mod,
+      enum sinc_int16_quality quality)
+{
+   return sinc_resampler_int16_init_hq(bandwidth_mod, quality, 0);
 }

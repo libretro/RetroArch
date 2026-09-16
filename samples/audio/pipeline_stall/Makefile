@@ -11,6 +11,11 @@ flags   += -std=gnu99
 
 SOURCES_C := \
 	pipeline_stall_test.c \
+	../../../audio/audio_upmix.c \
+	../../../audio/audio_stretch.c \
+	../../../audio/audio_pipeline_stretch.c \
+	../../../audio/audio_speed_lpf.c \
+	../../../audio/audio_binaural.c \
 	stubs_retroarch.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/lists/dir_list.c \
@@ -19,6 +24,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
 	$(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.c \
 	$(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.c \

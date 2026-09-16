@@ -110,7 +110,7 @@ static uint8_t *sevenzip_slurp(const char *path, size_t *out_len)
 static int sevenzip_bind_data(struct sevenzip_context_t *ctx,
       file_archive_transfer_t *state, const char *file)
 {
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
    if (state->archive_mmap_data && state->archive_size > 0)
    {
       ctx->data      = state->archive_mmap_data;

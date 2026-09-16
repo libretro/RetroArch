@@ -6,6 +6,11 @@
 
 /* Toggling hides/shows 'frame_time_counter_auto_reset', so the
  * menu needs a rebuild on change: refresh handlers on all three. */
+S_BOOL(video_frame_time_sample_from_display, VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
+      "video_frame_time_sample_from_display",
+      DEFAULT_FRAME_TIME_SAMPLE_FROM_DISPLAY, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Sample Frame Time From The Display",
+      "Read 'Estimated Screen Refresh Rate' from the display's own report of when each frame reached it, instead of timing the frontend's frame loop. Only the readout changes: it stops being skewed by the core's frame rate and the loop's timing noise. Does not affect how frames are paced or presented. Applies where the video driver can report it; the frame loop is timed otherwise.")
 S_BOOL_EX(video_frame_time_sample_gated, VIDEO_FRAME_TIME_SAMPLE_GATED,
       "video_frame_time_sample_gated",
       DEFAULT_FRAME_TIME_SAMPLE_GATED, SD_FLAG_NONE, 0, 0,

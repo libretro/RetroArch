@@ -43,6 +43,20 @@ void video_driver_get_video_output_size(unsigned *w, unsigned *h, char *d, size_
 void video_driver_get_viewport_info(void *vp) { (void)vp; }
 void *video_state_get_ptr(void) { static char b[4096]; return b; }
 unsigned gfx_display_texture_filter(void) { return 0; }
+/* gfx_thumbnail_draw() reaches the display driver through this rather
+ * than through one of the helpers, so it needs its own stub even
+ * though nothing here draws.
+ *
+ * The two pointer parameters are void* rather than their real types.
+ * This file declares its own view of the frontend and including
+ * gfx_display.h to name them drags in a video_driver.h that conflicts
+ * with those declarations; C linkage does not carry parameter types,
+ * so the symbol matches what gfx_thumbnail.c calls either way. */
+void gfx_display_draw(void *dispctx, void *draw, void *data,
+      unsigned video_width, unsigned video_height)
+{ (void)dispctx; (void)draw; (void)data;
+  (void)video_width; (void)video_height; }
+
 void gfx_display_rotate_z(void *a, void *b) { (void)a; (void)b; }
 void *disp_get_ptr(void) { static char b[8192]; return b; }
 
@@ -56,6 +70,13 @@ void gfx_animation_push(void *entry)
    (void)entry;
    hp.fade_pushes++;
 }
+
+/* Blending goes through gfx_display now, on the same terms as the
+ * draw above: void* for the same reason, and nothing to do here. */
+void gfx_display_blend_begin(void *dispctx, void *data)
+{ (void)dispctx; (void)data; }
+void gfx_display_blend_end(void *dispctx, void *data)
+{ (void)dispctx; (void)data; }
 bool gfx_animation_kill_by_tag(uintptr_t *tag) { (void)tag; return true; }
 
 /* ---- task queue ---- */

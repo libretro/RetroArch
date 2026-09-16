@@ -57,6 +57,7 @@
 #endif
 
 #include <boolean.h>
+#include <retro_atomic.h>
 #include <libretro.h>
 #include <retro_dirent.h>
 #include <retro_inline.h>
@@ -144,7 +145,12 @@ static char unix_cpu_model_name[64]      = {0};
 static int speak_pid                     = 0;
 #endif
 
-static volatile sig_atomic_t unix_sighandler_quit;
+/* Counts SIGINT/SIGTERM. Written by the signal handler and read by
+ * the main thread and, through x11_alive(), the threaded video worker:
+ * an atomic rather than a volatile sig_atomic_t, which is only safe
+ * between a handler and the thread it interrupted. Lock-free for int,
+ * so usable in the handler. */
+static retro_atomic_int_t unix_sighandler_quit = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 #ifndef ANDROID
 static enum frontend_fork unix_fork_mode = FRONTEND_FORK_NONE;
@@ -3912,20 +3918,21 @@ static void frontend_unix_exitspawn(char *s, size_t len, char *args)
 /*#include <valgrind/valgrind.h>*/
 static void frontend_unix_sighandler(int sig)
 {
+   int quit;
 #ifdef VALGRIND_PRINTF_BACKTRACE
    VALGRIND_PRINTF_BACKTRACE("SIGINT");
 #endif
    (void)sig;
-   unix_sighandler_quit++;
-   if (unix_sighandler_quit == 1)
+   quit = retro_atomic_fetch_add_int(&unix_sighandler_quit, 1) + 1;
+   if (quit == 1)
    {
 #if defined(HAVE_SDL_DINGUX)
       retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
 #endif
    }
-   if (unix_sighandler_quit == 2) exit(1);
+   if (quit == 2) exit(1);
    /* in case there's a second deadlock in a C++ destructor or something */
-   if (unix_sighandler_quit >= 3) abort();
+   if (quit >= 3) abort();
 }
 
 static void frontend_unix_install_signal_handlers(void)
@@ -3942,17 +3949,17 @@ static void frontend_unix_install_signal_handlers(void)
 
 static int frontend_unix_get_signal_handler_state(void)
 {
-   return (int)unix_sighandler_quit;
+   return retro_atomic_load_acquire_int(&unix_sighandler_quit);
 }
 
 static void frontend_unix_set_signal_handler_state(int value)
 {
-   unix_sighandler_quit = value;
+   retro_atomic_store_release_int(&unix_sighandler_quit, value);
 }
 
 static void frontend_unix_destroy_signal_handler_state(void)
 {
-   unix_sighandler_quit = 0;
+   retro_atomic_store_release_int(&unix_sighandler_quit, 0);
 }
 
 /* To free change_data, call the function again with a NULL 

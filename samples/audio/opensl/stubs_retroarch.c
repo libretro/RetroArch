@@ -1,0 +1,25 @@
+/* The frontend symbols audio/drivers/opensl.c refers to. */
+#include <stdio.h>
+#include <stdarg.h>
+#include "../../../audio/audio_driver.h"
+#include "../../../configuration.h"
+#include "../../../defaults.h"
+static settings_t settings;
+settings_t *config_get_ptr(void) { return &settings; }
+void RARCH_LOG(const char *fmt, ...)  { va_list ap; va_start(ap, fmt); printf("      [log] "); vprintf(fmt, ap); va_end(ap); }
+void RARCH_WARN(const char *fmt, ...) { va_list ap; va_start(ap, fmt); printf("      [warn] "); vprintf(fmt, ap); va_end(ap); }
+void RARCH_ERR(const char *fmt, ...)  { va_list ap; va_start(ap, fmt); printf("      [err] "); vprintf(fmt, ap); va_end(ap); }
+void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
+void audio_driver_set_buffer_size(size_t bufsize) { (void)bufsize; }
+void audio_driver_set_device_latency(size_t frames) { (void)frames; }
+uint32_t audio_driver_requested_layout(void) { return 0x3; }
+
+/* The device's transfer granularity, as the platform reports it. The
+ * harness sets it to model a phone's fast-mixer burst. */
+unsigned stub_device_block_frames = 0;
+unsigned audio_driver_device_block_frames(void) { return stub_device_block_frames; }
+
+/* The platform's audio defaults: audio_driver_device_block_frames()
+ * reads the device's transfer granularity from here, and no platform
+ * in a harness reports one. */
+struct defaults g_defaults;

@@ -41,6 +41,10 @@
 #include "../../frontend/frontend_driver.h"
 
 #define xstr(s) str(s)
+
+/* A host that is down must not hang the frontend at startup; the
+ * connect is retried this many times and then the driver fails. */
+#define NETWORK_VIDEO_CONNECT_ATTEMPTS 5
 #define str(s) #s
 
 enum
@@ -97,6 +101,7 @@ static void *network_gfx_init(const video_info_t *video,
    int fd;
    struct addrinfo *addr = NULL, *next_addr = NULL;
    settings_t *settings                 = config_get_ptr();
+   unsigned retries                     = 0;
    network_video_t *network             = (network_video_t*)calloc(1, sizeof(*network));
    const char *joypad_driver            = settings->arrays.input_joypad_driver;
 
@@ -120,6 +125,7 @@ static void *network_gfx_init(const video_info_t *video,
 
    RARCH_LOG("[Network] Connecting to host %s:%d...\n", network->address, network->port);
 try_connect:
+   retries++;
    fd = socket_init((void**)&addr, network->port, network->address, SOCKET_TYPE_STREAM, 0);
 
    for (next_addr = addr; fd >= 0; fd = socket_next((void**)&next_addr))
@@ -143,9 +149,24 @@ try_connect:
       RARCH_LOG("[Network] Connected to host.\n");
    else
    {
-      RARCH_LOG("[Network] Could not connect to host, retrying...\n");
-      retro_sleep(1000);
-      goto try_connect;
+      /* Bounded. socket_connect_with_timeout() above already spends up
+       * to five seconds per address, so a host that is down costs about
+       * that per attempt on its own; the second between rounds is for a
+       * host that refuses instantly - nothing listening on the port -
+       * so it is not hammered. Unbounded, as this was, a host that
+       * never answers hung the frontend at startup with no way out but
+       * killing it. */
+      if (retries < NETWORK_VIDEO_CONNECT_ATTEMPTS)
+      {
+         RARCH_LOG("[Network] Could not connect to host, retrying (%u of %u)...\n",
+               retries, (unsigned)NETWORK_VIDEO_CONNECT_ATTEMPTS);
+         retro_sleep(1000);
+         goto try_connect;
+      }
+      RARCH_ERR("[Network] Could not connect to host %s:%d after %u attempts.\n",
+            network->address, network->port, retries);
+      free(network);
+      return NULL;
    }
 
    RARCH_LOG("[Network] Init complete.\n");

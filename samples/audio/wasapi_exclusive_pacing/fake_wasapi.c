@@ -13,6 +13,8 @@
 
 const GUID IID_IAudioClient        = { 1, 0, 0, {0} };
 const GUID IID_IAudioRenderClient  = { 2, 0, 0, {0} };
+const GUID mmdevice_IID_IAudioClock  = { 7, 0, 0, {0} };
+const GUID mmdevice_IID_IAudioClock2 = { 8, 0, 0, {0} };
 const GUID IID_IAudioCaptureClient = { 3, 0, 0, {0} };
 const GUID mmdevice_IID_IAudioClient3 = { 4, 0, 0, {0} };
 const GUID KSDATAFORMAT_SUBTYPE_IEEE_FLOAT = { 3, 0, 16, {0x80,0,0,0xaa,0,0x38,0x9b,0x71} };
@@ -79,10 +81,108 @@ void CoTaskMemFree(void *p) { free(p); }
 static struct
 {
    unsigned rate;
+   int      have_clock, have_clock2;
+   int      withhold_events;
    REFERENCE_TIME min_period, default_period;
    bool accept_float;
    unsigned engine_min_frames, locked_period_frames;
-} g_cfg = { 48000, 30000, 100000, false, 0, 0 };
+   unsigned max_channels;      /* PCM channels the pin takes; 0 = any */
+   bool accept_iec61937_ac3;   /* the Dolby Digital subtype, exclusive */
+   /* How far the device's own clock runs from nominal, in parts per
+    * million. Both clock interfaces hand back a QPC timestamp beside
+    * the position, and that pair is what the driver fits its clock
+    * estimate from - so a device that runs fast or slow is scripted
+    * here by deriving the timestamp from the position at a rate that
+    * is not quite the nominal one. */
+   double   clock_ppm;
+} g_cfg = { 48000, 0, 0, 0, 30000, 100000, false, 0, 0, 0, false, 0.0 };
+
+/* The QPC timestamp that goes with a position, in 100 ns units, which
+ * is what both clock interfaces specify. */
+static UINT64 fake_qpc_for(size_t frames)
+{
+   double rate = (double)(g_cfg.rate ? g_cfg.rate : 48000)
+      * (1.0 + g_cfg.clock_ppm / 1000000.0);
+   return (UINT64)((double)frames * 10000000.0 / rate);
+}
+
+void fake_device_configure_drift(double ppm)
+{
+   g_cfg.clock_ppm = ppm;
+}
+
+/* Everything released to the device while capturing, for a harness
+ * that wants to look at the bytes and not just count them. */
+static uint8_t *g_cap      = NULL;
+static size_t   g_cap_len  = 0, g_cap_cap = 0;
+/* What fake_device_captured() hands out. The append buffer grows by
+ * realloc from the device thread, so its address is not the caller's
+ * to hold: a harness that reads the bytes after the call - which is
+ * the point of the call - would be reading a block the writer had
+ * already moved. This one is written only inside that function, under
+ * the lock, so the pointer it returns stays put until the harness asks
+ * again. */
+static uint8_t *g_snap     = NULL;
+static size_t   g_snap_cap = 0;
+static bool     g_capture  = false;
+static pthread_mutex_t g_cap_lock = PTHREAD_MUTEX_INITIALIZER;   /* the harness sets, the device thread appends */
+
+void fake_device_configure_channels(unsigned max_channels, bool accept_iec61937_ac3)
+{
+   g_cfg.max_channels       = max_channels;
+   g_cfg.accept_iec61937_ac3 = accept_iec61937_ac3;
+}
+
+void fake_device_capture(bool on)
+{
+   pthread_mutex_lock(&g_cap_lock);
+   g_capture = on;
+   if (on)
+      g_cap_len = 0;
+   pthread_mutex_unlock(&g_cap_lock);
+}
+
+size_t fake_device_captured(const uint8_t **buf)
+{
+   size_t n;
+   pthread_mutex_lock(&g_cap_lock);
+   n = g_cap_len;
+   if (n > g_snap_cap)
+   {
+      uint8_t *grown = (uint8_t*)realloc(g_snap, n);
+      if (grown)
+      {
+         g_snap     = grown;
+         g_snap_cap = n;
+      }
+      else
+         n = g_snap_cap;
+   }
+   if (n)
+      memcpy(g_snap, g_cap, n);
+   *buf = g_snap;
+   pthread_mutex_unlock(&g_cap_lock);
+   return n;
+}
+
+static const GUID g_dolby_digital = { 0x00000092, 0x0000, 0x0010, { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
+
+/* The pin's answer to a format, exclusive: the PCM channel gate and
+ * the compressed subtypes it decodes. */
+static HRESULT format_answer(const WAVEFORMATEX *fmt)
+{
+   if (fmt->wFormatTag == 0xFFFE && fmt->cbSize >= 22)
+   {
+      const WAVEFORMATEXTENSIBLE *x = (const WAVEFORMATEXTENSIBLE*)fmt;
+      if (memcmp(&x->SubFormat, &g_dolby_digital, sizeof(GUID)) == 0)
+         return g_cfg.accept_iec61937_ac3 ? S_OK : AUDCLNT_E_UNSUPPORTED_FORMAT;
+   }
+   if (g_cfg.max_channels && fmt->nChannels > g_cfg.max_channels)
+      return AUDCLNT_E_UNSUPPORTED_FORMAT;
+   if (fmt->wFormatTag != WAVE_FORMAT_PCM && !g_cfg.accept_float)
+      return AUDCLNT_E_UNSUPPORTED_FORMAT;
+   return S_OK;
+}
 
 void fake_device_configure_engine(unsigned engine_min_frames, unsigned locked_period_frames)
 {
@@ -94,6 +194,9 @@ typedef struct fake_client
 {
    IAudioClient       client;
    IAudioClient3      client3;
+   IAudioClock        clock;
+   IAudioClock2       clock2;
+   int                have_clock, have_clock2;
    IAudioRenderClient render;
    unsigned           refs;
    bool               initialised, running;
@@ -114,6 +217,23 @@ typedef struct fake_client
 } fake_client_t;
 
 static fake_client_t *g_last = NULL;
+
+void fake_device_withhold_events(int on)
+{
+   /* Read by the engine thread on every period. */
+   __atomic_store_n(&g_cfg.withhold_events, on, __ATOMIC_RELEASE);
+}
+
+void fake_device_configure_clock(int have_clock, int have_clock2)
+{
+   g_cfg.have_clock  = have_clock;
+   g_cfg.have_clock2 = have_clock2;
+}
+
+unsigned long long fake_device_played(void)
+{
+   fake_device_stats_t s; fake_device_stats(&s); return (unsigned long long)s.frames_consumed;
+}
 
 void fake_device_configure(unsigned rate, REFERENCE_TIME min_period_hns,
       REFERENCE_TIME default_period_hns, bool accept_float)
@@ -156,7 +276,12 @@ static void *device_thread(void *p)
          else { c->stats.frames_consumed += c->padding; c->padding = 0; c->stats.periods_unanswered++; }
       }
       pthread_mutex_unlock(&c->m);
-      if (c->event) SetEvent(c->event);
+      /* The engine plays whether or not anyone is told. Withholding
+       * the signal is what a pump held past its period looks like
+       * from the driver's side: the frames went out, the events that
+       * would have counted them did not arrive. */
+      if (c->event && !__atomic_load_n(&g_cfg.withhold_events, __ATOMIC_ACQUIRE))
+         SetEvent(c->event);
    }
    return NULL;
 }
@@ -197,7 +322,7 @@ static HRESULT c_initialize(IAudioClient *t, AUDCLNT_SHAREMODE mode, DWORD flags
       if (!(flags & AUDCLNT_STREAMFLAGS_EVENTCALLBACK)) return E_FAIL;
       if (dur != per) return AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL;
       if (per < g_cfg.min_period) return AUDCLNT_E_INVALID_DEVICE_PERIOD;
-      if (fmt->wFormatTag != WAVE_FORMAT_PCM && !g_cfg.accept_float) return AUDCLNT_E_UNSUPPORTED_FORMAT;
+      if (format_answer(fmt) != S_OK) return AUDCLNT_E_UNSUPPORTED_FORMAT;
       c->period_hns    = per;
       c->period_frames = (unsigned)((per * g_cfg.rate + 5000000) / 10000000);
       c->buffer_frames = c->period_frames;
@@ -238,7 +363,9 @@ static HRESULT c_isformatsupported(IAudioClient *t, AUDCLNT_SHAREMODE mode, cons
    (void)t;
    if (closest) *closest = NULL;
    if (mode == AUDCLNT_SHAREMODE_EXCLUSIVE)
-      return (fmt->wFormatTag == WAVE_FORMAT_PCM || g_cfg.accept_float) ? S_OK : AUDCLNT_E_UNSUPPORTED_FORMAT;
+      return format_answer(fmt);
+   if (g_cfg.max_channels && fmt->nChannels > g_cfg.max_channels)
+      return AUDCLNT_E_UNSUPPORTED_FORMAT;
    return S_OK; /* shared: the engine mixes anything */
 }
 static HRESULT c_getmixformat(IAudioClient *t, WAVEFORMATEX **f) { (void)t; *f = NULL; return E_FAIL; }
@@ -273,9 +400,68 @@ static HRESULT c_getservice(IAudioClient *t, REFIID iid, void **out)
 {
    fake_client_t *c = (fake_client_t*)t->fake;
    if (memcmp(iid, &IID_IAudioRenderClient, sizeof(GUID)) == 0) { c->refs++; *out = &c->render; return S_OK; }
+   if (memcmp(iid, &mmdevice_IID_IAudioClock, sizeof(GUID)) == 0 && c->have_clock)
+   { c->refs++; *out = &c->clock; return S_OK; }
    *out = NULL;
    return E_NOINTERFACE;
 }
+/* The device's position, which is the frames the scripted engine has
+ * actually played - independent of whether the driver saw the events
+ * that played them. */
+static HRESULT clk_qi(IAudioClock *t, REFIID iid, void **out)
+{
+   fake_client_t *c = (fake_client_t*)t->fake;
+   if (memcmp(iid, &mmdevice_IID_IAudioClock2, sizeof(GUID)) == 0 && c->have_clock2)
+   { c->refs++; *out = &c->clock2; return S_OK; }
+   *out = NULL;
+   return E_NOINTERFACE;
+}
+static DWORD clk_addref(IAudioClock *t) { return ++((fake_client_t*)t->fake)->refs; }
+static DWORD clk_release(IAudioClock *t) { return --((fake_client_t*)t->fake)->refs; }
+static HRESULT clk_getfreq(IAudioClock *t, UINT64 *f)
+{
+   /* A frequency that is not the sample rate, so a driver that
+    * assumes the position is already in frames reads wrong. */
+   (void)t;
+   *f = 10000000ULL;
+   return S_OK;
+}
+static HRESULT clk_getpos(IAudioClock *t, UINT64 *p, UINT64 *q)
+{
+   fake_client_t *c = (fake_client_t*)t->fake;
+   size_t         n;
+   pthread_mutex_lock(&c->m);
+   n = c->stats.frames_consumed;
+   pthread_mutex_unlock(&c->m);
+   *p = (UINT64)n * 10000000ULL
+      / (g_cfg.rate ? g_cfg.rate : 48000);
+   if (q) *q = fake_qpc_for(n);
+   return S_OK;
+}
+static const IAudioClockVtbl clock_vtbl =
+{ clk_qi, clk_addref, clk_release, clk_getfreq, clk_getpos };
+
+static HRESULT clk2_qi(IAudioClock2 *t, REFIID iid, void **out)
+{ (void)t; (void)iid; *out = NULL; return E_NOINTERFACE; }
+static DWORD clk2_addref(IAudioClock2 *t) { return ++((fake_client_t*)t->fake)->refs; }
+static DWORD clk2_release(IAudioClock2 *t) { return --((fake_client_t*)t->fake)->refs; }
+static HRESULT clk2_getpos(IAudioClock2 *t, UINT64 *p, UINT64 *q)
+{
+   /* The engine writes this under c->m, so it is read under c->m: a
+    * real device clock is coherent, and reading it torn here is the
+    * harness racing itself rather than anything the driver did. */
+   fake_client_t *c = (fake_client_t*)t->fake;
+   size_t         n;
+   pthread_mutex_lock(&c->m);
+   n = c->stats.frames_consumed;
+   pthread_mutex_unlock(&c->m);
+   *p = (UINT64)n;
+   if (q) *q = fake_qpc_for(n);
+   return S_OK;
+}
+static const IAudioClock2Vtbl clock2_vtbl =
+{ clk2_qi, clk2_addref, clk2_release, clk2_getpos };
+
 static const IAudioClientVtbl client_vtbl = {
    c_qi, c_addref, c_release, c_initialize, c_getbuffersize, c_getstreamlatency,
    c_getpadding, c_isformatsupported, c_getmixformat, c_getdeviceperiod,
@@ -349,6 +535,32 @@ static HRESULT r_releasebuffer(IAudioRenderClient *t, UINT32 n, DWORD flags)
    (void)flags;
    pthread_mutex_lock(&c->m);
    c->stats.buffers_released++;
+   pthread_mutex_lock(&g_cap_lock);
+   if (g_capture && n)
+   {
+      size_t bytes = (size_t)n * c->frame_bytes;
+      if (g_cap_len + bytes > g_cap_cap)
+      {
+         size_t   want  = (g_cap_len + bytes) * 2;
+         uint8_t *grown = (uint8_t*)realloc(g_cap, want);
+         /* Out of room is not this sim's failure to report, and the
+          * old block is still good; drop the release rather than
+          * write past it. */
+         if (grown)
+         {
+            g_cap     = grown;
+            g_cap_cap = want;
+         }
+         else
+            bytes = 0;
+      }
+      if (bytes)
+      {
+         memcpy(g_cap + g_cap_len, c->buffer, bytes);
+         g_cap_len += bytes;
+      }
+   }
+   pthread_mutex_unlock(&g_cap_lock);
    if (c->mode == AUDCLNT_SHAREMODE_EXCLUSIVE) c->released = true;
    else c->padding += n;
    pthread_mutex_unlock(&c->m);
@@ -368,6 +580,10 @@ static HRESULT d_activate(IMMDevice *t, REFIID iid, DWORD ctx, void *pa, void **
    c = (fake_client_t*)calloc(1, sizeof(*c));
    c->client.lpVtbl  = &client_vtbl;  c->client.fake  = c;
    c->client3.lpVtbl = &client3_vtbl; c->client3.fake = c;
+   c->clock.lpVtbl   = &clock_vtbl;   c->clock.fake   = c;
+   c->clock2.lpVtbl  = &clock2_vtbl;  c->clock2.fake  = c;
+   c->have_clock     = g_cfg.have_clock;
+   c->have_clock2    = g_cfg.have_clock2;
    c->render.lpVtbl  = &render_vtbl;  c->render.fake  = c;
    c->refs = 1;
    pthread_mutex_init(&c->m, NULL);
@@ -377,6 +593,11 @@ static HRESULT d_activate(IMMDevice *t, REFIID iid, DWORD ctx, void *pa, void **
 static const IMMDeviceVtbl device_vtbl = { d_qi, d_addref, d_release, d_activate };
 static IMMDevice g_device = { &device_vtbl, NULL };
 
+/* Counted, so a leak or double release shows in the test. */
+static int g_com_refs = 0;
+bool  mmdevice_com_init(void) { g_com_refs++; return true; }
+void  mmdevice_com_uninit(bool init) { if (init) g_com_refs--; }
+int   fake_com_refs(void) { return g_com_refs; }
 void *mmdevice_init_device(const char *id, unsigned data_flow) { (void)id; (void)data_flow; return &g_device; }
 const char *mmdevice_hresult_name(int hr)
 {
@@ -400,3 +621,6 @@ DWORD GetLastError(void) { return 0; }
 
 HANDLE GetCurrentThread(void) { return NULL; }
 BOOL SetThreadPriority(HANDLE h, int prio) { (void)h; (void)prio; return TRUE; }
+HMODULE LoadLibraryA(const char *name) { (void)name; return NULL; }
+void   *GetProcAddress(HMODULE m, const char *name) { (void)m; (void)name; return NULL; }
+BOOL    FreeLibrary(HMODULE m) { (void)m; return TRUE; }

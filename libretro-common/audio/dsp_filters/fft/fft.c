@@ -62,7 +62,9 @@ static void build_bitinverse(unsigned *bitinverse, unsigned size_log2)
 
 static fft_complex_t exp_imag(double phase)
 {
-   fft_complex_t out = { cos(phase), sin(phase) };
+   fft_complex_t out;
+   out.real = cos(phase);
+   out.imag = sin(phase);
    return out;
 }
 

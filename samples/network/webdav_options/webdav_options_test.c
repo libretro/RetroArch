@@ -175,6 +175,64 @@ static void check_token_matching(void)
 
 /* --------------------------------------------------------------------- */
 
+
+/* --- the probe has to run at all ------------------------------------- */
+
+extern unsigned webdav_stub_stat_calls;
+extern bool     webdav_stub_stat_auth;
+extern void     webdav_stub_reset(void);
+
+static unsigned begin_completions;
+
+static void begin_cb(void *user_data, const char *path, bool success,
+      RFILE *file)
+{
+   (void)user_data; (void)path; (void)success; (void)file;
+   begin_completions++;
+}
+
+/* webdav_sync_begin() must open every sync with OPTIONS, credentials or
+ * not. dav_verified is set from that response alone, and MKCOL answers
+ * 405 on a collection that already exists (RFC 4918 9.3.1) - a 405 that
+ * is only forgiven once the endpoint has been verified. An endpoint
+ * reached without a username would otherwise fail every upload into a
+ * directory it had already created. */
+static void test_begin_probes_regardless_of_credentials(void)
+{
+   settings_t *settings = config_get_ptr();
+
+   strlcpy(settings->arrays.webdav_url, "http://example.invalid/dav/",
+         sizeof(settings->arrays.webdav_url));
+
+   /* With credentials. */
+   strlcpy(settings->arrays.webdav_username, "user",
+         sizeof(settings->arrays.webdav_username));
+   strlcpy(settings->arrays.webdav_password, "pass",
+         sizeof(settings->arrays.webdav_password));
+   webdav_stub_reset();
+   begin_completions = 0;
+   CHECK(webdav_sync_begin(begin_cb, NULL), "begin refused with credentials");
+   CHECK(webdav_stub_stat_calls == 1, "authenticated begin did not probe once (%u)",
+         webdav_stub_stat_calls);
+   CHECK(webdav_stub_stat_auth, "authenticated begin sent no Authorization header");
+   CHECK(begin_completions == 0, "begin completed without waiting for the probe");
+
+   /* Without. */
+   settings->arrays.webdav_username[0] = '\0';
+   settings->arrays.webdav_password[0] = '\0';
+   webdav_stub_reset();
+   begin_completions = 0;
+   CHECK(webdav_sync_begin(begin_cb, NULL), "begin refused without credentials");
+   CHECK(webdav_stub_stat_calls == 1,
+         "anonymous begin skipped the probe (%u calls); MKCOL 405 would then be fatal",
+         webdav_stub_stat_calls);
+   CHECK(!webdav_stub_stat_auth, "anonymous begin sent an Authorization header");
+   CHECK(begin_completions == 0,
+         "anonymous begin reported success before the probe answered");
+
+   webdav_sync_end(begin_cb, NULL);
+}
+
 int main(void)
 {
    probe_result_t r;
@@ -229,11 +287,13 @@ int main(void)
       CHECK(!dav && !seen && !method, "NULL header list: probe invented a result");
    }
 
+   test_begin_probes_regardless_of_credentials();
+
    if (failures)
    {
       printf("%u failure(s)\n", failures);
       return 1;
    }
-   printf("webdav_check_options: all header sets classified correctly\n");
+   printf("webdav probe: header sets classified and the probe always runs\n");
    return 0;
 }

@@ -49,6 +49,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   # glibc and Apple libc.  Both take the descriptor path, since
   # VFS_HAVE_FILE_MAPPING covers anything with mmap.
@@ -75,7 +79,7 @@ jobs:
             asan_opts: detect_leaks=0
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build and run
         shell: bash
@@ -89,6 +93,7 @@ jobs:
             ASAN_OPTIONS=${{ matrix.asan_opts }} ./vfs_bulk_read_test
             ./vfs_seek_contract_test
             ./vfs_mapped_ptr_test
+            ./vfs_v5_metadata_test
           }
           # Mapping on (what the platform actually ships), mapping off
           # with the descriptor path forced (what the consoles have),
@@ -128,7 +133,7 @@ jobs:
         shell: msys2 {0}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: msys2/setup-msys2@v2
         with:
@@ -158,6 +163,9 @@ jobs:
           make MMAP=0
           ./vfs_bulk_read_test.exe
           ./vfs_seek_contract_test.exe
+          # Win32 branches of the v5 metadata ops: attributes,
+          # SetFileTime, CopyFileW, find-data dirent_stat.
+          ./vfs_v5_metadata_test.exe
           # Exercises the Win32 CreateFileMapping/MapViewOfFile
           # backend, which no other job in the tree reaches.
           ./vfs_mapped_ptr_test.exe

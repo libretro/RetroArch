@@ -22,8 +22,11 @@
 
 #ifndef RGLGEN_PRIVATE_HEADERS_H__
 #define RGLGEN_PRIVATE_HEADERS_H__
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
-#if defined(IOS)
+#if TARGET_OS_IPHONE
 
 #if defined(HAVE_OPENGLES3)
 #include <OpenGLES/ES3/gl.h>

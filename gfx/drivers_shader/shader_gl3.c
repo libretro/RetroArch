@@ -798,8 +798,7 @@ struct gl3_common_resources
    gl3_buffer_locations quad_loc;
 };
 
-/* Every default was zero, so a memset covers the initializers the
- * in-class ones used to supply. */
+/* Every field starts at zero, so a memset covers the whole struct. */
 static void gl3_common_resources_init(gl3_common_resources *common)
 {
    static float quad_data[] = {
@@ -824,8 +823,8 @@ static void gl3_common_resources_init(gl3_common_resources *common)
 static void gl3_common_resources_free(gl3_common_resources *common)
 {
    size_t i;
-   /* The unique_ptr vector used to free these on destruction; the plain
-    * array does not, so every LUT has to be released by hand. */
+   /* The LUT array owns its textures, so each one is released by
+    * hand before the array itself goes. */
    for (i = 0; i < common->num_luts; i++)
       gl3_static_texture_free(&common->luts[i]);
    free(common->luts);
@@ -1073,6 +1072,7 @@ struct gl3_pass
    size_t uniforms_size;
 
    uint64_t frame_count;
+   uint64_t swap_count;
    unsigned frame_count_period;
    int32_t frame_direction;
    uint32_t frame_time_delta;
@@ -1175,8 +1175,8 @@ static void gl3_pass_build_commands(struct gl3_pass *pass,
       const float *mvp);
 static void gl3_pass_free(struct gl3_pass *pass);
 
-/* Every default was zero except these four, which the in-class
- * initializers used to supply. */
+/* Every field starts at zero except the four set below, so the
+ * allocation is zeroed and only those are written. */
 static struct gl3_pass *gl3_pass_new(bool final_pass)
 {
    struct gl3_pass *pass = (struct gl3_pass*)calloc(1, sizeof(*pass));
@@ -1626,6 +1626,7 @@ static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
    gl3_pass_reflect_parameter(pass, "Gyroscope", &pass->reflection.semantics[SLANG_SEMANTIC_GYROSCOPE]);
    gl3_pass_reflect_parameter(pass, "Accelerometer", &pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER]);
    gl3_pass_reflect_parameter(pass, "AccelerometerRest", &pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST]);
+   gl3_pass_reflect_parameter(pass, "SwapCount", &pass->reflection.semantics[SLANG_SEMANTIC_SWAP_COUNT]);
 
    {
       const slang_semantic_meta *g =
@@ -1637,7 +1638,7 @@ static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
       if (g->uniform || g->push_constant ||
           a->uniform || a->push_constant ||
           r->uniform || r->push_constant)
-         input_state_get_ptr()->shader_uses_sensors = true;
+         input_driver_set_shader_uses_sensors(true);
    }
 
    gl3_pass_reflect_texture_parameter(pass, "OriginalSize",
@@ -1696,7 +1697,7 @@ static void gl3_pass_get_output_size(struct gl3_pass *pass,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         width = (retroarch_get_rotation() % 2 ? pass->curr_vp.height : pass->curr_vp.width) * pass->pass_info.scale_x;
+         width = (pass->rotation % 2 ? pass->curr_vp.height : pass->curr_vp.width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -1718,7 +1719,7 @@ static void gl3_pass_get_output_size(struct gl3_pass *pass,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         height = (retroarch_get_rotation() % 2 ? pass->curr_vp.width : pass->curr_vp.height) * pass->pass_info.scale_y;
+         height = (pass->rotation % 2 ? pass->curr_vp.width : pass->curr_vp.height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -2224,17 +2225,23 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
                       pass->total_subframes);
    gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
                       pass->current_subframe);
+   /* Each sub-frame is its own present; CurrentSubFrame is 1-based. */
+   gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_SWAP_COUNT,
+                      (uint32_t)(pass->swap_count
+                         + (pass->current_subframe
+                            ? pass->current_subframe - 1 : 0)));
 
-   /* Sensor pass->uniforms — per-frame snapshot cached
-    * by input_driver_poll() on the main thread */
+   /* Sensor pass->uniforms — one coherent seqlock'd snapshot of the
+    * values input_driver_poll() published on the main thread. */
    {
-      input_driver_state_t *input_st = input_state_get_ptr();
+      float gyro[3], accel[3], rest[3];
+      input_driver_read_sensor_snapshot(gyro, accel, rest);
       gl3_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_GYROSCOPE,
-                        input_st->sensor_gyroscope_cache);
+                        gyro);
       gl3_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER,
-                        input_st->sensor_accelerometer_cache);
+                        accel);
       gl3_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER_REST,
-                        input_st->sensor_accelerometer_rest);
+                        rest);
    }
 
    /* Standard inputs */
@@ -3416,6 +3423,13 @@ static void gl3_chain_set_frame_count(struct gl3_filter_chain *chain, uint64_t c
       gl3_pass_set_frame_count(chain->passes[i], count);
 }
 
+static void gl3_chain_set_swap_count(struct gl3_filter_chain *chain, uint64_t count)
+{
+   unsigned i;
+   for (i = 0; i < chain->num_passes; i++)
+      chain->passes[i]->swap_count = count;
+}
+
 static void gl3_chain_set_frame_count_period(struct gl3_filter_chain *chain, unsigned pass, unsigned period)
 {
    gl3_pass_set_frame_count_period(chain->passes[pass], period);
@@ -4057,7 +4071,7 @@ struct video_shader *gl3_filter_chain_get_preset(
 void gl3_filter_chain_free(gl3_filter_chain_t *chain)
 {
    gl3_chain_free(chain);
-   input_state_get_ptr()->shader_uses_sensors = false;
+   input_driver_set_shader_uses_sensors(false);
 }
 
 void gl3_filter_chain_set_shader(
@@ -4095,6 +4109,13 @@ void gl3_filter_chain_set_frame_count(
       uint64_t count)
 {
    gl3_chain_set_frame_count(chain, count);
+}
+
+void gl3_filter_chain_set_swap_count(
+      gl3_filter_chain_t *chain,
+      uint64_t count)
+{
+   gl3_chain_set_swap_count(chain, count);
 }
 
 void gl3_filter_chain_set_frame_direction(

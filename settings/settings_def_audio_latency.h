@@ -12,6 +12,12 @@ S_UINT_DF(audio_latency, AUDIO_LATENCY,
       SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 512, 1, 0, setting_action_ok_uint, NULL, 0,
       "Audio Latency (ms)",
       "Desired audio latency in milliseconds. Might not be honored if the audio driver can't provide it.")
+S_UINT(audio_latency_floor, AUDIO_LATENCY_FLOOR,
+      "audio_latency_floor",
+      DEFAULT_AUDIO_LATENCY_FLOOR, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 1, 16, 1, 0,
+      setting_action_ok_uint, NULL,
+      "Minimum Audio Latency (ms)",
+      "The lowest audio latency RetroArch will ask a driver for. Eight milliseconds by default, which is where this was fixed for a long time: a setting of zero used to reach the drivers and they handled it inconsistently. Drivers that talk to the device directly - WASAPI in exclusive mode, ASIO, WDM-KS - can often negotiate a shorter period than that, so lowering this lets them. A driver that cannot go lower will not; it keeps its own hardware floor either way.")
 #ifdef HAVE_MICROPHONE
 S_UINT_DF(microphone_latency, MICROPHONE_LATENCY,
       "microphone_latency",

@@ -75,10 +75,15 @@ enum slang_semantic
    SLANG_SEMANTIC_ACCELEROMETER         = 20,
    /* vec3, accelerometer rest position XYZ */
    SLANG_SEMANTIC_ACCELEROMETER_REST    = 21,
-   SLANG_NUM_BASE_SEMANTICS        = 22,
+   /* uint, presents completed before this frame's first present. Advances
+    * on every swap the display sees - core frames, BFI dark frames, shader
+    * sub-frames and repeats alike - so a shader can key an effect to the
+    * monitor's cadence rather than the core's. */
+   SLANG_SEMANTIC_SWAP_COUNT            = 22,
+   SLANG_NUM_BASE_SEMANTICS        = 23,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 23,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 24,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1
@@ -323,16 +328,17 @@ bool glslang_compile_shader_cached(const char *shader_path,
       glslang_output *output, void *include_cache);
 
 /* Merge parameters harvested into @meta into @shader, enforcing the
- * duplicate-must-match rule.  (Formerly a C++ overload of
- * slang_preprocess_parse_parameters.) */
+ * duplicate-must-match rule.  @pass is the pass @meta was harvested
+ * from, and is recorded on each parameter this call adds, so that a
+ * parameter is owned by the first pass declaring it. */
 bool slang_preprocess_parse_parameters_meta(const glslang_meta *meta,
-      struct video_shader *shader);
+      struct video_shader *shader, unsigned pass);
 
 /* Utility function to implement the same parameter reflection
  * which happens in the slang backend.
  * This does preprocess over the input file to handle #includes and so on. */
 bool slang_preprocess_parse_parameters(const char *shader_path,
-      struct video_shader *shader);
+      struct video_shader *shader, unsigned pass);
 
 /* As slang_preprocess_parse_parameters(), but expands '#include'
  * directives through @include_cache (see glslang_include_cache_new).
@@ -340,7 +346,7 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
  * share helper files, so one cache across that walk avoids re-reading
  * them per pass.  A NULL cache behaves exactly like the uncached call. */
 bool slang_preprocess_parse_parameters_cached(const char *shader_path,
-      struct video_shader *shader, void *include_cache);
+      struct video_shader *shader, unsigned pass, void *include_cache);
 
 /* Name-map lifecycle.  set_unique appends name -> (semantic, index);
  * it fails on a duplicate name, an over-long name, or allocation

@@ -26,6 +26,11 @@
 #include <retro_common_api.h>
 #include <retro_spsc.h>
 #include <retro_atomic.h>
+/* Outside the HAVE_THREADS guard below: its struct is a value member of
+ * the state, needs only retro_atomic, and a build without threads never
+ * calls into it - so the type has to exist there even though nothing
+ * uses it. */
+#include <rthreads/retro_eventcount.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #else
@@ -50,8 +55,16 @@ typedef struct scond scond_t;
 #include <audio/sinc_resampler_int16.h>
 
 #include "audio_defines.h"
+#include "audio_upmix.h"
+#include "audio_binaural.h"
+#include "audio_pipeline_layout.h"
 
 #define AUDIO_BUFFER_FREE_SAMPLES_COUNT (8 * 1024)
+
+/* Output frames of played audio kept for the pause tail. Must hold the
+ * longest period the tail search may pick plus the window it is matched
+ * over, which at 48kHz is about 21ms and 3ms respectively. */
+#define AUDIO_PAUSE_HIST_FRAMES         2048
 
 RETRO_BEGIN_DECLS
 
@@ -125,12 +138,12 @@ typedef struct audio_driver
     * Returns: audio driver handle on success, otherwise NULL.
     **/
    void *(*init)(const char *device, unsigned rate,
-         unsigned latency, unsigned block_frames, unsigned *new_rate);
+         unsigned latency, unsigned *new_rate);
 
    /*
     * @data         : Pointer to audio data handle.
     * @buf          : Audio buffer data.
-    * @size         : Size of audio buffer.
+    * @size         : Size of audio buffer in bytes.
     *
     * Write samples to audio driver.
     *
@@ -144,13 +157,13 @@ typedef struct audio_driver
     * format will be used, with range [-1.0, 1.0].
     * If not, signed 16-bit samples in native byte ordering will be used.
     *
-    * This function returns the number of frames successfully written.
+    * This function returns the number of input bytes successfully written.
     * If an error occurs, -1 should be returned.
     * Note that non-blocking behavior that cannot write at this time
     * should return 0 as returning -1 will terminate the driver.
     *
     * Unless said otherwise with set_nonblock_state(), all writes
-    * are blocking, and it should block till it has written all frames.
+    * are blocking, and it should block till it has written all input bytes.
     */
    ssize_t (*write)(void *data, const void *s, size_t len);
 
@@ -274,14 +287,27 @@ typedef struct audio_driver
     * resampling. The driver is responsible for resampling from input_rate
     * to its output rate, applying the rate_adjust factor for A/V sync,
     * and applying the volume gain to the output.
+    * All frame counts here are input stereo frames, never output frames or
+    * bytes. Return 0..frames for the accepted prefix; return -1 only when
+    * an error occurs before accepting any input. A later error must return
+    * the accepted prefix. Zero frames is a no-op returning 0. The driver
+    * must consume or copy accepted samples before returning; it cannot
+    * retain the caller's pointer. Unaccepted input remains caller-owned.
+    * The frontend may discard that suffix under its nonblocking policy.
+    * Acceptance does not mean playback: conversion/device consumption may
+    * happen later. Output-frame accounting is a separate estimate.
+    * A nonempty request requires samples, a positive representable input
+    * rate, a finite positive rate_adjust and a finite nonnegative volume.
+    * Unsupported parameters or failed control changes must not silently
+    * accept input using stale settings.
     *
     * @param data        Driver context
     * @param samples     Interleaved int16 stereo samples (LRLRLR...)
     * @param frames      Number of frames (pairs of samples)
     * @param input_rate  Source sample rate in Hz
-    * @param rate_adjust Rate adjustment multiplier for A/V sync (1.0 = normal)
+    * @param rate_adjust Output-duration multiplier for A/V sync and playback speed (1.0 = normal)
     * @param volume      Volume gain to apply (0.0 = muted, 1.0 = full volume)
-    * @return Number of frames written, or -1 on error
+    * @return Number of input frames accepted, or -1 on error
     */
    ssize_t (*write_raw)(void *data, const int16_t *samples, size_t frames,
          unsigned input_rate, double rate_adjust, float volume);
@@ -301,7 +327,118 @@ typedef struct audio_driver
     * keep the inline path.
     */
    size_t (*wait_writable)(void *data, size_t len);
+
+   /**
+    * Optional. Frames the device has consumed since start(), in output
+    * frames, monotonic and free-running on the device's own clock: a
+    * driver with a callback counts what each callback took, one with a
+    * queue counts what it released less what the device still holds.
+    * Compared over time with the frames the frontend wrote, it gives
+    * the device's real sample rate against the host's clock, and the
+    * frontend trims its resampling ratio by that - slowly, by parts per
+    * million - so a buffer no longer drifts to an underrun or overrun
+    * on the difference between two crystals. NULL leaves the frontend
+    * without the estimate, as before.
+    */
+   size_t (*frames_consumed)(void *data);
+
+
+   /* Optional. Periods the device played silence for want of audio
+    * since init: the callback found less than one period in the
+    * buffer and zero-filled it. Counted where it happens, one atomic
+    * add on that path only; never logged from there. Read by the
+    * frontend for the statistics overlay each frame, and once at
+    * driver teardown for the log. NULL when the driver cannot tell. */
+   size_t (*underruns)(void *data);
+
+   /* Optional. The speaker layout the device was opened with, as a
+    * mask of AUDIO_SPEAKER_ positions (audio_upmix.h), interleaved in
+    * ascending bit order. A driver that can open more than stereo
+    * asks audio_driver_requested_layout() at init for the layout the
+    * frontend wants, opens what the device grants, and reports here
+    * what it actually opened - the positions, not a count: a device
+    * that drives the rear pair from the sides reports SIDE_LEFT and
+    * SIDE_RIGHT, whatever was asked. The frontend upmixes its stereo
+    * mix to that layout at the last step before write(). NULL, or
+    * AUDIO_LAYOUT_STEREO, means stereo and the pipeline as it always
+    * was. Every byte the driver reports - write_avail(),
+    * buffer_size(), what write() accepts - is in frames of that
+    * layout's channels. */
+   uint32_t (*layout)(void *data);
+   /**
+    * Optional, and only for drivers whose frames_consumed() reads a
+    * clock the hardware provides: the same count as this driver would
+    * have produced without one, on the same terms - monotonic, in
+    * output frames, from start(). WASAPI's is its service events
+    * counted and multiplied by a period, which is what it used to
+    * return outright.
+    *
+    * It exists to be disagreed with. The two are compared over the
+    * same window and the difference reported in parts per million,
+    * which says on real hardware what the approximation costs -
+    * whether a device's events really do arrive one per period, and
+    * where they do not, by how much. Nothing is controlled from it;
+    * the estimate the frontend acts on is frames_consumed() alone.
+    * NULL where a driver has only the one number, which is most of
+    * them.
+    *
+    * Last in this structure deliberately. Most drivers initialise it
+    * positionally and name nothing, so an entry added anywhere but
+    * the end silently moves every one after it - which is how this
+    * one first went in, giving three drivers a layout function where
+    * their underrun counter should have been.
+    */
+   size_t (*frames_consumed_fallback)(void *data);
+
+   /* The device's clock against the rate the driver asked for, in
+    * parts per million, where the driver can measure one: fitted from
+    * whatever pairing of position and time its API provides - the
+    * ASIO time information, CoreAudio's callback timestamp, ALSA's
+    * audio or system timestamp, PipeWire's time report, JACK's cycle
+    * times.
+    *
+    * This is a measurement and nothing acts on it. It exists so the
+    * figure can be watched live beside the sink estimate that does
+    * drive rate control, on real hardware, before anyone decides
+    * whether it should be preferred.
+    *
+    * Returns false, leaving *ppm alone, until there is an estimate -
+    * which takes a second of window at least, and never arrives on a
+    * device that reports nothing usable. NULL where a driver has no
+    * clock to read, which is most of them.
+    *
+    * ADD NEW MEMBERS AT THE END. A member inserted above this line
+    * shifts every driver's initialiser by one and the compiler will
+    * not always say so; that has broken the Android build before. */
+   bool (*device_clock_ppm)(void *data, double *ppm);
 } audio_driver_t;
+
+/* The layout the user asked for, one of the AUDIO_LAYOUT_ masks. A
+ * driver opening a device reads this; a driver without the layout
+ * hook is not asked. */
+uint32_t audio_driver_requested_layout(void);
+
+/* Netplay's gate on the float batch entry; see
+ * audio_driver_set_float_gate(). */
+typedef bool (*audio_driver_float_gate_t)(void);
+
+/* A snapshot of the sink estimate's counts, taken when a window opens. */
+typedef struct
+{
+   double   offered;                   /* sink_offered */
+   uint64_t consumed;                  /* frames_consumed() */
+   uint64_t consumed_alt;              /* frames_consumed_fallback(), where there is one */
+   double   pipe;                      /* what the pipe ring held, in nominal device frames */
+   double   device;                    /* what the device's buffer held, in device frames */
+} audio_sink_mark_t;
+
+/* A sum of windows: their time, and what the source and the device did. */
+typedef struct
+{
+   int64_t  usec;
+   double   offered;
+   double   consumed;
+} audio_sink_sum_t;
 
 typedef struct
 {
@@ -325,6 +462,11 @@ typedef struct
    size_t output_samples_buf_length;
 #ifdef HAVE_REWIND
    int16_t *rewind_buf;
+   /* The same reverse buffer for a float core: its frames as it gave
+    * them, no round trip through int16 on the way in or out. Indexed
+    * by rewind_ptr like rewind_buf; which one holds the audio follows
+    * core_float. */
+   float   *rewind_buf_f;
 #endif
 
    /**
@@ -393,29 +535,29 @@ typedef struct
     */
    int16_t *arena_int16;                                 /* ptr alignment */
    float   *arena_float;                                 /* ptr alignment */
-   /**
-    * Threaded pipeline (AUDIO_FLAG_PIPELINE_THREADED). pipe_ring carries
-    * raw int16 stereo frames at the core's rate from the main thread to
-    * the audio thread; lock-free, one producer (frame end / rewind /
-    * menu audio, all main thread) and one consumer (the wrapper thread).
-    * pipe_scratch is the consumer's bounce buffer for one slice pulled
-    * out of the ring; pipe_conv is the producer's staging area for the
-    * float batch callback, which must be int16 before it is published.
-    * Both are regions of arena_int16.
-    */
+   /* Native-format frames from one producer to the audio consumer.
+    * pipe_scratch is the consumer bounce buffer; pipe_conv is producer
+    * conversion staging. Both live in pipe_arena. */
    retro_spsc_t pipe_ring;
-   int16_t *pipe_scratch;
-   int16_t *pipe_conv;
+   uint8_t *pipe_scratch;
+   uint8_t *pipe_conv;
+   /* Both in pipe_arena, each a pass at the widest frame the ring can carry. */
+   void    *pipe_arena;
    /* Written once by the wrapper thread as it leaves its loop, read by
     * the producer's wait. Its own field, not a bit in flags: the main
     * thread read-modify-writes flags and a second writer would lose
     * bits. */
    volatile bool pipe_consumer_gone;
    /* Throttle channel for audio_sync without vsync: the consumer bumps
-    * pipe_gen under pipe_lock after every pass and signals pipe_cond;
-    * a producer that found the ring full waits for the generation to
-    * change. The ring itself is never touched under this lock; the lock
-    * only orders the two generation counters against their waits. */
+    * pipe_gen after every pass and notifies pipe_space; a producer that
+    * found the ring full waits for the generation to change. No lock:
+    * the generation is an atomic, the eventcount is only how the
+    * producer parks, and a pass that completes with nobody parked pays
+    * a read-modify-write and a load rather than a lock acquisition.
+    *
+    * Once per pass is the whole cadence. The consumer notifies where a
+    * pass ends and nowhere else, so the count of notifies is the count
+    * of passes however finely the producer publishes. */
    /**
     * Held across a pipeline pass, and by the main thread whenever it
     * changes something a pass reads: the DSP filter pointer and the
@@ -427,24 +569,41 @@ typedef struct
     * Never held across a device write.
     */
    slock_t *state_lock;
-   slock_t *pipe_lock;
-   scond_t *pipe_cond;
-   unsigned pipe_gen;
+   retro_eventcount_t pipe_space;
+   retro_atomic_int_t pipe_gen;
    /* Data channel the other way: the producer bumps pipe_data_gen and
-    * signals pipe_data_cond after every publish; the consumer sleeps on
-    * it while the ring is empty. */
-   scond_t *pipe_data_cond;
-   unsigned pipe_data_gen;
-   /* Set by audio_driver_pipeline_wake() under pipe_lock and cleared by
-    * the consumer when it acts on it. Sticky, unlike the signal, so a
-    * wake raised before the consumer reaches its wait is not lost. */
-   bool     pipe_wake;
-   /* Set by the producer under pipe_lock when a full ring did not drain
-    * within its bounded wait, cleared by the consumer when a pass
-    * completes. While set, the producer drops rather than waits, so a
-    * device that has stopped draining costs the frame nothing beyond
-    * the one wait that found it out. */
-   bool     pipe_stalled;
+    * notifies pipe_data, and the consumer sleeps on it while the ring
+    * holds less than it wants.
+    *
+    * Normally once per frame, not once per publish. A core may hand over its audio
+    * a scanline at a time; a notify per retro_spsc_write() would turn
+    * one frame into hundreds of consumer passes, each a scanline wide.
+    * The ring carries the data, so ordinary publishes need no announcement.
+    * A blocking full-ring wait must also wake the consumer: the producer
+    * cannot reach frame end until space is released. All producer data
+    * notifications go through audio_driver_pipeline_signal(). */
+   retro_eventcount_t pipe_data;
+   retro_atomic_int_t pipe_data_gen;
+   /* Set by audio_driver_pipeline_wake() and cleared by the consumer
+    * when it acts on it. Sticky, unlike the notify beside it, so a wake
+    * raised before the consumer reaches its wait is not lost. One
+    * setter and one clearer, so an atomic is the whole of it. */
+   retro_atomic_int_t pipe_wake;
+   /* Whether the two parking objects above have been brought up.
+    * audio_driver_pipeline_wake() is reachable before they have been
+    * and must do nothing then; it used to ask whether pipe_lock had
+    * been created, and there is no lock left to ask about. */
+   bool     pipe_park_ready;
+   /* Set by the producer when a full ring did not drain within its
+    * bounded wait, cleared by the consumer when a pass completes. While
+    * set, the producer drops rather than waits, so a device that has
+    * stopped draining costs the frame nothing beyond the one wait that
+    * found it out.
+    *
+    * One writer each way and neither cares which of them won a race -
+    * a lost clear is one more frame of dropping, a lost set is one more
+    * bounded wait - so it is an atomic rather than lock-held state. */
+   retro_atomic_int_t pipe_stalled;
    /**
     * What the audio thread needs to know about the runloop and the
     * menu, published by the main thread with
@@ -455,19 +614,100 @@ typedef struct
     * racing read of the runloop's flag word is not.
     */
    retro_atomic_int_t runloop_snapshot;
-   /* Upper bound on input samples per consumer pass: one video frame's
-    * worth, capped to a slice. */
-   size_t   pipe_pass_int16s;
+   /* The slowmotion ratio setting, published alongside
+    * runloop_snapshot as the float's bit pattern, so the value the
+    * consumer applies is bit-for-bit the one the main thread read.
+    * Meaningful only when AUDIO_SNAP_SLOWMOTION is set, like the
+    * setting itself. */
+   retro_atomic_int_t runloop_slowmotion_bits;
+   /* The fast-forward ratio the main thread last published, override
+    * already resolved against the setting; the seed of the speed
+    * estimate reads it on the submit path. Bit pattern of a float. */
+   retro_atomic_int_t runloop_ffratio_bits;
+   /* The ring's unit: bytes per stereo frame of what the core
+    * published - int16 or, for a float core, float. Every count on
+    * the pipe is in frames; bytes appear only at the ring's edge. */
+   size_t   pipe_frame_bytes;
+   /* The ring's frame width: stereo, or - for a core that negotiated
+    * the multi-channel batch entry before the driver came up - the
+    * canonical frame of every position, AUDIO_PIPE_CANON_CHANNELS
+    * wide, a slot per speaker bit, the ones the batch lacks zero. A
+    * fixed width, so the ring is never switched under the consumer;
+    * layout boundaries travel through pipe_layouts before audio publication.
+    * pipe_wide is the consumer's bounce for a pass of the
+    * frame. Producers construct frames directly in writable ring spans. */
+   unsigned pipe_channels;
+   unsigned pipe_layout; /* producer-only requested layout */
+   /* The output rate setting as of the driver's init - what the device
+    * was asked to open at. The flush's sink accounting divides by it,
+    * and the flush runs on the pipeline consumer, so it is latched
+    * here rather than read from settings there; a changed setting
+    * reaches it through the reinit that makes it real. */
+   unsigned out_rate;
+   uint8_t *pipe_wide;
+   size_t   pipe_wide_bytes;
+   bool     core_multi;   /* the multi-channel entry was negotiated */
+   /* Whether the ring carries float frames - the core negotiated float
+    * output - or int16. Decided before any audio flows: at pipe init
+    * from core_float, or when the negotiation lands on an empty ring. */
+   bool     pipe_float;
+   /* The core negotiated float audio output; set by the runloop when
+    * it hands the float batch entry out, cleared when the core goes. */
+   bool     core_float;
+   audio_driver_float_gate_t float_gate;
+   /* Upper bound on frames per consumer pass: one video frame's worth,
+    * capped to a slice. */
+   size_t   pipe_pass_frames;
+   /* Rate control's fill on the threaded pipeline, as free space in
+    * device bytes, sampled by the producer before each publish and
+    * read by the consumer's controller; -1 before the first sample.
+    *
+    * The device's own fill cannot be the control variable here: the
+    * consumer waits for half the device's buffer and writes half, so
+    * that fill sits between half and full whatever the clocks do, and a
+    * controller reading it - at any point of the pass - sees a constant
+    * error and pins the ratio at a bound. What the clocks move is the
+    * pipe ring in front of the device: a production surplus collects
+    * there, a deficit empties it. So the fill is the two together, the
+    * pipe's frames counted at the device's rate, and it is read where
+    * the frame-synchronous path read it, once a frame on the core's
+    * thread before the frame is published - the pipe at its low point,
+    * the device wherever it is. The device's mean free space over the
+    * pass is a quarter of its buffer, the controller's setpoint is
+    * half, and the difference is added so a balanced pipe reads as no
+    * error. */
+   retro_atomic_int_t pipe_ctrl_avail;
+   /* The driver's underrun count as the consumer last saw it; a change
+    * means the device played silence since, and what the pipe holds
+    * past its target is late audio, discarded. Consumer thread only. */
+   size_t   pipe_underruns_seen;
+   /* Whether the consumer's next pass is its first: it waits for the
+    * pipe's target then, not just a frame. Consumer thread only after
+    * init. */
+   bool     pipe_priming;
    /* The audio thread's own copy of AUDIO_FLAG_PIPELINE_THREADED. Set
     * before the wrapper thread is released and cleared after it is
     * joined, so the thread never reads the flags word - which the main
     * thread read-modify-writes at will - just to know it is running. */
    bool pipe_threaded;
+   /* The fast-forward speedup multiplier, measured by the producer on
+    * the core's thread and read by the consumer, as a Q16 fixed-point
+    * value. The consumer's own cadence is the device's, so it cannot
+    * measure how fast the core is running; only the producer can. */
+   retro_atomic_int_t pipe_ff_mult_q16;
 #ifdef HAVE_REWIND
    size_t rewind_ptr;
    size_t rewind_size;
 #endif
    size_t buffer_size;
+   /* The device stage behind the driver's buffer, in frames at the
+    * output rate, as the driver reports it: what ASIOGetLatencies gives
+    * for output, say. 0 when the driver reports none. Set by the driver
+    * through audio_driver_set_device_latency(); shown in the statistics
+    * overlay next to the buffer, since it is the part of the path the
+    * setting cannot reach and the part that differs most between
+    * devices. */
+   size_t device_latency_frames;
    size_t data_ptr;
 
    unsigned free_samples_buf[AUDIO_BUFFER_FREE_SAMPLES_COUNT];
@@ -496,7 +736,11 @@ typedef struct
 
    char resampler_ident[64];
 
-   bool reinit_request;
+   /* A driver's request to be reinitialised - a device change or an
+    * unplug, set from its notification thread. Taken by the runloop
+    * once a frame on the main thread with no audio lock held; see
+    * audio_driver_take_reinit_request(). */
+   retro_atomic_int_t reinit_request;
    bool mute_enable;
 #ifdef HAVE_AUDIOMIXER
    bool mixer_mute_enable;
@@ -505,8 +749,10 @@ typedef struct
 
    /* Sample the flush delta-time when fast forwarding to find the correct ratio. */
    retro_time_t last_flush_time;
-   /* Exponential moving average */
+   /* Exponential moving averages of the flush interval and of the
+    * interval its audio takes at 1.0x */
    retro_time_t avg_flush_delta;
+   double avg_expected_delta;
 
    /* Rate-limit state for the DRC compute.
     *
@@ -530,6 +776,61 @@ typedef struct
     * keeps the "one frame's worth" target accurate at any output sample
     * rate (48 kHz, 96 kHz, 192 kHz, ...) and any content fps. */
    double   cached_rate_adjust;        /* last computed factor; default 1.0 */
+
+   /* Sink rate estimation: see audio_driver_sink_update(). Counted
+    * where the driver's write() is called, on the thread that flushes;
+    * the estimate runs there too. */
+   double   sink_offered;              /* the source's count, in frames at the nominal
+                                          ratio: what the core published into the
+                                          pipeline's ring, or off it what was offered
+                                          with the ratio in force divided out. Owned
+                                          by the thread that closes the windows. */
+   uint64_t sink_offered_raw;          /* output frames offered, as offered */
+   uint64_t sink_accepted;             /* output frames the driver took */
+   /* The estimate: windows of a few seconds, each read as a change in
+    * the counts above and in the device's consumption, kept when it
+    * measures the clocks and summed; the bias is the summed ratio.
+    * See audio_driver_sink_update(). */
+   int64_t  sink_started;              /* usec; 0 = not started */
+   /* Windows left out in a row. Not read by the frontend - it is read
+    * by samples/audio/sink_rate, which asserts that a stalled device
+    * leaves its window out rather than folding a frozen clock into the
+    * estimate. That is a behaviour with no other observable, so the
+    * counter is what makes it testable. */
+   unsigned sink_discarded;
+   int64_t  sink_window_at;            /* usec; when the open window closes */
+   double   sink_alt_ppm;              /* the driver's own approximation against its clock, ppm */
+   int64_t  sink_apply_at;             /* usec; the next setting of the bias */
+   audio_sink_mark_t sink_at_window;   /* the counts when the open window opened */
+   /* The last windows' time and source count, for the source's band:
+    * a window closes at a publish, so its length carries that publish's
+    * lateness - a frame of the core's run time - which the next window
+    * carries back. Over a few windows it cancels; a stall does not. */
+   int64_t  sink_recent_usec[4];
+   double   sink_recent_offered[4];
+   double   sink_recent_consumed[4];
+   unsigned sink_recent_head;
+   audio_sink_sum_t  sink_kept;        /* the windows summed for the bias */
+   audio_sink_sum_t  sink_pending;     /* windows since the last kept one, for the rates shown meanwhile */
+   bool              sink_pending_broken; /* a dry spell is in it: shown, never merged into the kept sums */
+   unsigned sink_settled;              /* kept windows in a row, up to 2, after which the sums stand */
+   unsigned sink_applied;              /* times the bias has been set */
+   /* AUDIO_SINK_WARNED_* said once each, in two words because the two
+    * sides run on different threads: on the threaded pipeline the
+    * estimator runs on the core's thread, from submit, and the flush
+    * on the audio thread, and |= is a read-modify-write. Each word is
+    * written only by the thread that owns it, and no flag lives in
+    * both. */
+   unsigned sink_warned;               /* the estimator's: sink_window(), sink_apply() */
+   unsigned sink_warned_flush;         /* the flush's: sink_refused() */
+   double   sink_bias;                 /* multiplied into the ratio; 1.0 = none */
+   /* The bias for the thread that resamples, in hundredths of a part
+    * per million: on the threaded pipeline the estimate runs on the
+    * core's thread and the resampler on the audio thread, and a double
+    * is not a single word. */
+   retro_atomic_int_t sink_bias_q;
+   double   sink_rate_hz;              /* the device's rate as measured; 0 = unknown */
+   double   sink_source_hz;            /* the source's rate at the nominal ratio, as measured */
    size_t   samples_since_drc;         /* int16 samples submitted since last update */
    size_t   drc_threshold_int16s;      /* one frame's worth of stereo int16 at the current rate */
    /* Set by audio_driver_frame_end() so the next flush recomputes the
@@ -554,6 +855,145 @@ typedef struct
     * Used to re-initialise the resampler on the transition back to actual
     * resampling so it does not resume from a stale ring buffer. */
    bool     resampler_bypassed;
+   bool     resampler_hq; /* resolved software HQ policy for this audio instance */
+
+   /* Last stereo frame handed to the device, and how many frames of the
+    * next flush still have the resume ramp to apply. See
+    * audio_driver_pause_fade(). */
+   float                 last_out[2];
+   unsigned              fade_in_frames;
+   /* A resume ramp owed to the core's first audio after the pause; the
+    * menu's silence in between must not spend it. */
+   bool                  fade_in_pending;
+   /* Rolling copy of the most recent output frames, and how much of it is
+    * valid. A copy of what has already gone to the device, never a delay
+    * line, so it costs nothing on the fast-forward path. Lets a pause be
+    * concealed with a continuation of the waveform rather than a decaying
+    * DC level. See audio_driver_pause_fade(). */
+   float                 pause_hist[AUDIO_PAUSE_HIST_FRAMES * 2];
+   unsigned              pause_hist_pos;
+   unsigned              pause_hist_fill;
+   /* Output frames still to be dropped after a pause tail has been written.
+    * The tail goes straight to the device, ahead of whatever the resampler
+    * still holds, so without this its leftovers are spliced in behind it. */
+   unsigned              pause_mute_frames;
+   /* Non-zero between the pause tail and the resume ramp. Read from
+    * whichever thread the core hands its audio over on, hence atomic. See
+    * audio_driver_core_silenced(). */
+   retro_atomic_int_t    core_silenced;
+   /* Set by a resume in audio_driver_pause_fade(); the first flush after it
+    * fills the device with silence before writing. See
+    * audio_driver_resume_topup(). */
+   bool                  resume_topup_pending;
+
+   /* The layout the device was opened with - AUDIO_LAYOUT_STEREO
+    * unless the driver reports a wider one - its channel count, and
+    * the stage that widens the stereo mix to it at the last step
+    * before write(). The buffers hold one write's frames at
+    * out_channels, float and int16. */
+   uint32_t      out_layout;
+   unsigned      out_channels;
+   /* The multi-channel batch entry (RETRO_ENVIRONMENT_GET_AUDIO_
+    * SAMPLE_BATCH_MULTI): the layout the core last delivered, and
+    * the stereo fold of a batch, grown to the largest batch seen. The
+    * pipeline carries stereo; a core's wider frame is folded here at
+    * the boundary, and the device's upmix widens the stereo again.
+    * core_layout is stereo until the core delivers something else,
+    * and the overlay says what it was folded from. */
+   uint32_t      core_layout;
+   void         *multi_fold;
+   size_t        multi_fold_frames;
+   /* the recorder's frame from a batch of another layout or format */
+   int16_t      *record_remap;
+   size_t        record_remap_frames;
+   /* The discrete path: a core's channels past the front pair, kept
+    * apart to a device that has their positions. The front pair goes
+    * through the pipeline as every stereo core's does - the filters,
+    * the resampler, the mixer, rate control - and the others go
+    * beside it through their own instances of the same resampler at
+    * the same ratio, in pairs, so their frame count is the fronts'.
+    * At the write they take the device slots of their positions and
+    * the upmix fills what the core did not send. Stereo ring only:
+    * on the threaded pipeline the extras are not carried yet, and the
+    * entry folds instead. */
+   struct
+   {
+      unsigned  channels;        /* extras: core channels less two, 0 = none */
+      uint32_t  positions;       /* their mask, without FL and FR */
+      unsigned  nres;            /* resampler instances: (channels + 1) / 2 */
+      void     *res[4];          /* float: resampler_data; int16: resampler_data_int16 */
+      /* The driver res[] was made with, on the float path. Kept here
+       * rather than reached for through audio_st->resampler at the
+       * free: these are this struct's own allocations, and the main
+       * resampler is a different object that need not still be there
+       * - when it was not, res[] was leaked. NULL on the int16 path,
+       * which frees through resampler_int16_free. */
+      const retro_resampler_t *res_drv;
+      bool      res_int16;       /* which kind res[] holds */
+      bool      bypassed;
+      float    *in_f;            /* frames * channels, interleaved, this batch */
+      int16_t  *in_i;
+      float    *pair_in;         /* native scratch only; all NULL for two extras */
+      float    *pair_out;
+      int16_t  *pair_in_i;
+      int16_t  *pair_out_i;
+      float    *out_f;           /* the resampled extras, frames * channels */
+      int16_t  *out_i;
+      size_t    cap_in;          /* frames the in buffers hold */
+      size_t    cap_out;         /* frames the out and pair buffers hold */
+      size_t    in_frames;       /* pending in this flush */
+      size_t    out_frames;      /* produced by the last resample */
+      bool      pending;         /* extras accompany the flush in progress */
+      bool      is_float;
+   } extra;
+   audio_upmix_t upmix;
+   float        *upmix_buf;
+   int16_t      *upmix_i16;
+   size_t        upmix_frames;
+
+   /* Headphones on a stereo device: the stereo mix is widened to a
+    * virtual 5.1 by the upmix and rendered back to two ears by the
+    * binaural stage, so the rears are behind the listener. On when
+    * the setting is and the device is stereo; the render lands in
+    * upmix_buf's second half. */
+   bool             virtualize;
+   audio_binaural_t binaural;
+   float           *virt_buf;      /* frames * 6 floats, the virtual 5.1 */
+   /* Keep existing hot audio fields together when adding transport state. */
+   audio_pipeline_layout_t pipe_layouts;
+   /* Consumer-owned view into output scratch until a short write completes. */
+   const uint8_t *pipe_pending;
+   size_t pipe_pending_bytes;
+   void (*resampler_int16_reset)(void *);
+#ifdef HAVE_THREADS
+   struct audio_pipeline_stretch *pipe_transport;
+   void *pipe_transport_output;
+   uint32_t pipe_transport_serial, pipe_transport_search;
+   unsigned pipe_transport_rate;
+   /* Producer-owned source count for the current fast-forward frame. */
+   size_t pipe_ff_frames;
+   /* A pause and a resume as ring positions, in the ring's own byte
+    * count, published by the main thread and read by the consumer. What
+    * the ring held at a pause is stale behind its tail: the consumer
+    * takes it out unplayed up to pipe_discard_to, and pipe_discard_gen
+    * against pipe_discard_seen, the consumer's own record, says a pause
+    * has been published since. The core's first audio after a resume
+    * starts at pipe_fade_in_at: the consumer never takes a chunk across
+    * it and arms the resume ramp on reaching it, through pipe_arm_fade,
+    * consumer thread only. */
+   retro_atomic_size_t pipe_discard_to;
+   retro_atomic_int_t  pipe_discard_gen;
+   int                 pipe_discard_seen;
+   retro_atomic_size_t pipe_fade_in_at;
+   retro_atomic_int_t  pipe_fade_in_set;
+   bool                pipe_arm_fade;
+   uint8_t pipe_transport_follow;
+   /* Mutually exclusive with pipe_transport; shares its output storage. */
+   struct audio_pipeline_stretch *pipe_transport_suspended;
+#endif
+   struct audio_inline_transport *inline_transport;
+   /* Frozen at audio reinitialization; SRC owns speed in filter-only mode. */
+   bool transport_lpf_only;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);
@@ -567,6 +1007,25 @@ void audio_driver_dsp_filter_free(void);
 bool audio_driver_dsp_filter_init(const char *device);
 
 void audio_driver_set_buffer_size(size_t bufsize);
+
+/* The device's own transfer granularity in frames, where the platform
+ * knows it: Android reports the fast mixer's burst through
+ * OUTPUT_FRAMES_PER_BUFFER, and a buffer that is not a multiple of it
+ * leaves the fast path. Zero where the platform does not say, which is
+ * everywhere else - a driver that gets zero picks its own block from
+ * the latency it was asked for.
+ *
+ * This is a property of the sink, in the same class as the device
+ * period WASAPI reports or the period grid an ALSA card refines to.
+ * Those are asked of the device; this one is asked of the platform,
+ * because the sink cannot be asked directly. Neither is a preference. */
+unsigned audio_driver_device_block_frames(void);
+
+/* Records the device stage behind the driver's buffer, in frames at the
+ * output rate; 0 to say the driver reports none. Reset when a driver is
+ * initialised, so a driver that reports one calls this after each init
+ * or reinit, and again if the device changes it. */
+void audio_driver_set_device_latency(size_t frames);
 
 bool audio_driver_get_devices_list(void **ptr);
 
@@ -583,6 +1042,45 @@ void audio_driver_setup_rewind(void);
 void audio_driver_set_nonblock_state(bool nonblock);
 
 /**
+ * audio_driver_pause_fade:
+ * @paused : true when the runloop has just paused, false when it has just
+ *           resumed.
+ *
+ * Ramps the audio down when the core stops and back up when it starts,
+ * instead of ending and restarting the stream mid-waveform. The ramp down
+ * is written onto audio already at the device; the ramp up is applied by
+ * audio_driver_flush() to the first frames the core produces afterwards.
+ **/
+void audio_driver_pause_fade(bool paused);
+
+/**
+ * audio_driver_core_silenced:
+ *
+ * True between the pause tail and the resume ramp, while the frontend has
+ * deliberately ended the core's audio. Lets a caller that would ramp out for
+ * its own reasons - a state load - leave an already-down stream alone rather
+ * than bring it back up on the way out.
+ **/
+bool audio_driver_core_silenced(void);
+
+/**
+ * audio_driver_jump_fade_begin:
+ * audio_driver_jump_fade_end:
+ * @ramped : what _begin returned.
+ *
+ * Bracket a jump the frontend makes in the game's state - a state load, an
+ * undo, a core reset - with the pause tail and the resume ramp, so both the
+ * splice and whatever gap the work leaves behind land in silence.
+ *
+ * A stream already down - the jump was made from the menu, or while paused -
+ * is left alone: _begin returns false and _end then does nothing, so the ramp
+ * back up stays with whatever took the stream down.
+ **/
+bool audio_driver_jump_fade_begin(void);
+
+void audio_driver_jump_fade_end(bool ramped);
+
+/**
  * audio_driver_pipeline_consumer_exit:
  *
  * Called by the audio thread wrapper as its thread leaves the loop, so
@@ -590,6 +1088,74 @@ void audio_driver_set_nonblock_state(bool nonblock);
  * will never run again.
  **/
 void audio_driver_pipeline_consumer_exit(void);
+
+#ifdef HAVE_THREADS
+struct audio_pipeline_stretch;
+/* Main producer thread, without worker locks held. Prepare on an empty source
+ * ring with no pending device output; replacement starts a new DSP epoch.
+ * Prepared sessions are consumed by the audio callback. The caller supplies
+ * source-ordered controls; normal callbacks do not declare EOF.
+ * Failure preserves an existing session. Release explicitly cancels retained
+ * output/history. Both transactions park and restore the real wrapper.
+ * Empty-ring format renegotiation rebuilds the session; allocation failure
+ * releases it while preserving the new native ring format. */
+bool audio_driver_pipeline_transport_prepare(unsigned rate, uint32_t search_channels);
+
+/* Prepare and seed current runloop tempo/cutoff in one parked transaction.
+ * Empty source/no pending device output required. Failure preserves the old
+ * transport and metadata; unsupported speed is rejected before allocation.
+ * Explicit startup API: does not register an automatic update caller. */
+bool audio_driver_pipeline_transport_prepare_runloop(unsigned rate,
+      uint32_t search_channels, bool lowpass);
+
+/* Opt in to producer updates before the first publish of each frame.
+ * Unsupported speed cancels retained DSP/device output and returns to the
+ * legacy pipeline while retaining transport storage. Supported speed resumes
+ * after queued source and pending device output drain; no forced source drop
+ * or allocation on recovery. Metadata pressure drops that publish and retries
+ * at the next one. Same preparation preconditions. */
+bool audio_driver_pipeline_transport_start_runloop(unsigned rate,
+      uint32_t search_channels, bool lowpass);
+void audio_driver_pipeline_transport_release(void);
+/* Main source producer only, before publishing the affected audio. Tempo is
+ * source frames/output frame in Q16, 0.25..32 when active (ignored when inactive).
+ * cutoff is core-rate Hz, or zero to disable filtering. Preserve the current
+ * source layout; publish layout changes before this call at the same boundary.
+ * A missing session, invalid tempo or full queue returns false without changing
+ * the request. Retry before publishing affected audio. No mode activation. */
+bool audio_driver_pipeline_transport_request(uint32_t tempo_q16,
+      bool active, bool reset, uint32_t cutoff);
+
+/* Same transaction, with optional speed-linked low-pass coloration.
+ * The cutoff uses the prepared core rate and requested Q16 speed; unity
+ * and slow motion are dry. Filtering is independent of active (WSOLA).
+ * On failure retry before publishing source. */
+bool audio_driver_pipeline_transport_request_speed(uint32_t tempo_q16,
+      bool active, bool reset, bool lowpass);
+
+/* Producer-only, before publishing the next source block. Compose current
+ * runloop slow motion and the last frame's fast-forward estimate, respecting
+ * audio_fastforward_speedup. Paused/normal playback requests unity. Reject
+ * unsupported speeds (outside 0.25..32) without changing queued controls.
+ * Does not prepare a transport or select a fallback on failure. */
+bool audio_driver_pipeline_transport_request_runloop(bool reset, bool lowpass);
+/* Consumer thread, or main thread with the wrapper parked; no worker locks
+ * held. Cancel owned transport/device output and reset DSP history, skipping
+ * exactly frames of queued native source. Zero preserves queued source.
+ * Invalid/oversized requests leave state untouched. Notify the producer when
+ * source space is released. This does not acknowledge a device underrun. */
+bool audio_driver_pipeline_transport_discard(size_t frames);
+/* Consumer-only bounded pass for a pitch-preserving transport session. Stage
+ * must own this driver's native ring/metadata and separate output storage;
+ * serial is caller-owned, initially zero. The caller owns source waits,
+ * priming, lifecycle/discontinuity discard and EOF selection. False requires
+ * caller intervention (invalid state, pause/inactive, underrun or stage error).
+ * Device backpressure/retries return true without new source consumption.
+ * No stage initialization or mode selection is performed here. */
+bool audio_driver_pipeline_transport_step(struct audio_pipeline_stretch *stage,
+      uint32_t *serial, size_t input_budget, size_t output_budget,
+      bool finishing, bool *complete);
+#endif
 
 /**
  * audio_driver_pipeline_wake:
@@ -622,7 +1188,15 @@ enum audio_runloop_snapshot_bits
    AUDIO_SNAP_FASTMOTION  = (1 << 2),
    AUDIO_SNAP_MENU_ALIVE  = (1 << 3),
    AUDIO_SNAP_MENU_PAUSES = (1 << 4),
-   AUDIO_SNAP_ALLOW_PAUSE = (1 << 5)
+   AUDIO_SNAP_ALLOW_PAUSE = (1 << 5),
+   /* Settings the pipeline consumer and the flush consult, published
+    * with the rest so they are never read from settings off the main
+    * thread: Audio Sync, and Fast-Forward Frameskip's audio speedup. */
+   AUDIO_SNAP_SYNC        = (1 << 6),
+   AUDIO_SNAP_FF_SPEEDUP  = (1 << 7),
+   AUDIO_SNAP_SINK_EST    = (1 << 8),
+   AUDIO_SNAP_FASTPATH_S16 = (1 << 9),
+   AUDIO_SNAP_STRETCH_LPF = (1 << 10)
 };
 
 /**
@@ -655,6 +1229,15 @@ void audio_driver_publish_runloop(void);
  **/
 void audio_driver_frame_end(void);
 
+/**
+ * audio_driver_callback:
+ *
+ * One pass of the audio thread. The threaded pipeline consumer waits
+ * internally. A core callback returns true after a device write or
+ * consuming input into bounded stretch state, which may need more source
+ * before it can write. False means no progress (paused, suspended or an
+ * empty callback); the caller parks before asking again.
+ **/
 bool audio_driver_callback(void);
 
 bool audio_driver_has_callback(void);
@@ -771,6 +1354,13 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames);
  **/
 size_t audio_driver_sample_batch_float(const float *data, size_t frames);
 
+/* The multi-channel batch entries handed to a core that negotiated
+ * RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI: a frame of the
+ * layout's channels, folded to stereo and passed to the classic
+ * entry of the same sample format. 0 for a layout not taken. */
+size_t audio_driver_sample_batch_multi_int16(const int16_t *data, size_t frames, unsigned channels, unsigned layout);
+size_t audio_driver_sample_batch_multi_float(const float *data, size_t frames, unsigned channels, unsigned layout);
+
 #ifdef HAVE_REWIND
 /**
  * audio_driver_sample_rewind:
@@ -807,7 +1397,6 @@ extern audio_driver_t audio_rsound;
 extern audio_driver_t audio_audioio;
 extern audio_driver_t audio_oss;
 extern audio_driver_t audio_alsa;
-extern audio_driver_t audio_alsathread;
 extern audio_driver_t audio_tinyalsa;
 extern audio_driver_t audio_roar;
 extern audio_driver_t audio_openal;
@@ -820,6 +1409,7 @@ extern audio_driver_t audio_pulse;
 extern audio_driver_t audio_pipewire;
 extern audio_driver_t audio_dsound;
 extern audio_driver_t audio_wasapi;
+extern audio_driver_t audio_wdmks;
 #ifdef HAVE_ASIO
 extern audio_driver_t audio_asio;
 /* Opens the running ASIO driver's control panel. False when ASIO is not
@@ -830,7 +1420,6 @@ bool audio_asio_output_channel_name(unsigned ch, char *buf, size_t len);
 unsigned audio_asio_output_channel_count(void);
 #endif
 extern audio_driver_t audio_coreaudio;
-extern audio_driver_t audio_coreaudio3;
 extern audio_driver_t audio_xenon360;
 extern audio_driver_t audio_ps3;
 extern audio_driver_t audio_gx;
@@ -840,12 +1429,9 @@ extern audio_driver_t audio_ps2;
 extern audio_driver_t audio_ctr_csnd;
 extern audio_driver_t audio_ctr_dsp;
 #ifdef HAVE_THREADS
-extern audio_driver_t audio_ctr_dsp_thread;
 #endif
 extern audio_driver_t audio_switch;
-extern audio_driver_t audio_switch_thread;
 extern audio_driver_t audio_switch_libnx_audren;
-extern audio_driver_t audio_switch_libnx_audren_thread;
 extern audio_driver_t audio_rwebaudio;
 extern audio_driver_t audio_audioworklet;
 
@@ -865,7 +1451,62 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st);
 
 const char *audio_driver_get_ident(void);
 
+/* The speaker path in effect, in a few words, for the statistics
+ * overlay: the layout the device opened with and how it is filled.
+ * Returns the length written. */
+size_t audio_driver_get_layout_desc(char *s, size_t len);
+
+/* The core negotiated float audio output, or has gone. The threaded
+ * pipeline's ring takes the core's format from this: float frames
+ * from a float core, with no round trip through int16. */
+void audio_driver_set_core_float(bool core_float);
+
+/* The core negotiated RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI:
+ * a driver brought up after this carries the canonical wide frame on
+ * its threaded ring, so a batch's channels reach the device apart.
+ * Negotiated after the driver is up, the entry folds to stereo until
+ * the next driver init. */
+void audio_driver_set_core_multi(bool core_multi);
+
+/* A gate on the float batch entry, for netplay: the core holds that
+ * entry by pointer, so it cannot be swapped for an intercepting one
+ * as the int16 callbacks are. When set, the entry asks it whether the
+ * frame's audio is to be dropped - a replayed frame during rollback,
+ * or a stall - and returns without playing it. NULL when netplay is
+ * not intercepting. */
+void audio_driver_set_float_gate(audio_driver_float_gate_t gate);
+
+/* Periods the device played silence for want of audio since the driver
+ * was initialised, where the driver counts them; 0 otherwise. */
+size_t audio_driver_get_underruns(void);
+
+/* Whether a driver has asked to be reinitialised since the last call;
+ * clears the request. The runloop calls this once a frame, on the main
+ * thread, holding no audio lock, and acts on it there: the reinit
+ * tears the driver down and up, which frees the state lock and, on
+ * the threaded pipeline, joins the audio thread, so it can be run
+ * neither under the lock nor from that thread. */
+bool audio_driver_take_reinit_request(void);
+
 double audio_driver_get_buffer_latency_ms(void);
+
+/* The device stage behind the buffer in ms, as set by
+ * audio_driver_set_device_latency(); 0 when the driver reports none. */
+double audio_driver_get_device_latency_ms(void);
+
+/* The device's sample rate as measured against the host clock, in Hz,
+ * and the ratio bias applied for it; 0 when no driver reports
+ * frames_consumed() or no window has completed yet. */
+double audio_driver_get_sink_rate_hz(double *bias, double *source_hz);
+
+/* Parts per million by which a driver's own approximation of the
+ * device's consumption differs from the clock it reads, over the last
+ * window; 0 where it has no second number to compare. */
+double audio_driver_get_sink_alt_ppm(void);
+
+/* The device's own clock against the rate the driver asked for, ppm.
+ * False where the driver has no clock or has not fitted one yet. */
+bool audio_driver_get_device_clock_ppm(double *ppm);
 
 extern audio_driver_t *audio_drivers[];
 

@@ -358,7 +358,9 @@ static void reverb_process(void *data, struct dspfilter_output *output,
 
    for (i = 0; i < input->frames; i++, out += 2)
    {
-      float in[2] = { out[0], out[1] };
+      float in[2];
+      in[0] = out[0];
+      in[1] = out[1];
 
       out[0] = revmodel_process(&rev->left, in[0]);
       out[1] = revmodel_process(&rev->right, in[1]);

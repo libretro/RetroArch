@@ -880,10 +880,12 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
             float s      = sinf(draw->rotation);
             float inv_vw = 1.0f / (float)video_width;
             float inv_vh = 1.0f / (float)video_height;
-            float ox[4]  = { -half_w,  half_w, -half_w,  half_w };
-            float oy[4]  = { -half_h, -half_h,  half_h,  half_h };
+            float ox[4], oy[4];
             float rx[4], ry[4];
             int   k;
+            /* Assigned, not initialised: C89 wants constant initialisers */
+            ox[0] = -half_w; ox[1] =  half_w; ox[2] = -half_w; ox[3] =  half_w;
+            oy[0] = -half_h; oy[1] = -half_h; oy[2] =  half_h; oy[3] =  half_h;
             for (k = 0; k < 4; k++)
             {
                rx[k] = (ox[k] * c - oy[k] * s) * inv_vw;
@@ -2288,7 +2290,15 @@ static bool d3d9_cg_renderchain_init_shader_fvf(
                pass->attrib_map, 0);
       else
       {
-         D3DVERTEXELEMENT9 elem = D3D9_DECL_FVF_TEXCOORD(index, 3, tex_index);
+         /* D3D9_DECL_FVF_TEXCOORD(index, 3, tex_index), field by field:
+          * C89 wants constant initialisers */
+         D3DVERTEXELEMENT9 elem;
+         elem.Stream     = (WORD)(index);
+         elem.Offset     = (WORD)(3 * sizeof(float));
+         elem.Type       = D3DDECLTYPE_FLOAT2;
+         elem.Method     = D3DDECLMETHOD_DEFAULT;
+         elem.Usage      = D3DDECLUSAGE_TEXCOORD;
+         elem.UsageIndex = (BYTE)(tex_index);
 
          unsigned_vector_list_append((struct unsigned_vector_list *)
                pass->attrib_map, index);
@@ -3977,7 +3987,7 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
 #ifdef HAVE_WINDOW
       /* Use new_width / new_height directly rather than reading
        * them back via video_driver_get_output_size: nothing in the
-       * codebase writes video_st->width / height between the
+       * codebase sets the output size between the
        * set_size above and this call except us. */
       if (!win32_set_video_mode(d3d, new_width, new_height,
             info->fullscreen))
@@ -4449,9 +4459,8 @@ static bool d3d9_cg_frame(void *data, const void *frame,
 
       if (!d3d9_cg_restore(d3d))
       {
-         video_driver_state_t *video_st = video_state_get_ptr();
          RARCH_ERR("[D3D9 Cg] Failed to restore. Requesting reinit.\n");
-         video_st->flags |= VIDEO_FLAG_GPU_DEVICE_LOST;
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
          return false;
       }
    }
@@ -4623,10 +4632,9 @@ static bool d3d9_cg_frame(void *data, const void *frame,
       HRESULT hr = IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
       if (hr == D3DERR_DEVICELOST)
       {
-         video_driver_state_t *video_st = video_state_get_ptr();
          RARCH_WARN("[D3D9 Cg] Device lost detected on Present().\n");
          d3d->needs_restore = true;
-         video_st->flags |= VIDEO_FLAG_GPU_DEVICE_LOST;
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
          return false;
       }
    }
@@ -4847,7 +4855,7 @@ static bool d3d9_cg_alive(void *data)
    d3d9_video_t *d3d     = (d3d9_video_t*)data;
 
    /* Read from local bookkeeping rather than video_st (which would
-    * acquire context_lock + display_lock).  d3d->vp.full_* is
+    * cross threads needlessly).  d3d->vp.full_* is
     * written at every set_size call site in this driver. */
    temp_width  = d3d->vp.full_width;
    temp_height = d3d->vp.full_height;
@@ -5043,6 +5051,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg = {
    &d3d9_cg_font,
    GFX_VIDEO_DRIVER_DIRECT3D9_CG,
    "d3d9_cg",
+   true,
    true,
    gfx_display_d3d9_cg_scissor_begin,
    gfx_display_d3d9_cg_scissor_end

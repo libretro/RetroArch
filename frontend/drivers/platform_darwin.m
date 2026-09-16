@@ -24,10 +24,11 @@
 #include <sys/utsname.h>
 
 #include <mach/mach.h>
+#include <dlfcn.h>
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
-#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
 #import <AVFoundation/AVFoundation.h>
 #endif
 
@@ -40,13 +41,13 @@
 #include <objc/message.h>
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 #include <Carbon/Carbon.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>
 
 #include <sys/sysctl.h>
-#elif defined(IOS)
+#elif TARGET_OS_IPHONE
 #include <UIKit/UIDevice.h>
 #include <sys/sysctl.h>
 #endif
@@ -82,6 +83,9 @@
 #include "../../ui/ui_companion_driver.h"
 #include "../../paths.h"
 #include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 typedef enum
 {
@@ -123,7 +127,7 @@ typedef enum
    CFAllDomainsMask     = 0x0ffff  /* All domains: all of the above and future items */
 } CFDomainMask;
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 static int speak_pid                            = 0;
 #endif
 
@@ -163,11 +167,11 @@ void CFTemporaryDirectory(char *s, size_t len)
    CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
 }
 
-#if defined(IOS)
+#if TARGET_OS_IPHONE
 void get_ios_version(int *major, int *minor);
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 
 #define PMGMT_STRMATCH(a,b) (CFStringCompare(a, b, 0) == kCFCompareEqualTo)
 #define PMGMT_GETVAL(k,v)   CFDictionaryGetValueIfPresent(dict, CFSTR(k), (const void **) v)
@@ -280,11 +284,11 @@ static void darwin_check_power_source(
 
 static void frontend_darwin_get_name(char *s, size_t len)
 {
-#if defined(IOS)
+#if TARGET_OS_IPHONE
    struct utsname buffer;
    if (uname(&buffer) == 0)
       strlcpy(s, buffer.machine, len);
-#elif defined(OSX)
+#elif TARGET_OS_OSX
    size_t _len = 0;
    sysctlbyname("hw.model", NULL, &_len, NULL, 0);
     if (_len)
@@ -295,44 +299,72 @@ static void frontend_darwin_get_name(char *s, size_t len)
 static size_t frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
    size_t _len;
-#if defined(IOS)
+#if TARGET_OS_IPHONE
    get_ios_version(major, minor);
 #if TARGET_OS_TV
    _len = strlcpy_lit(s, "tvOS", len);
 #else
    _len = strlcpy_lit(s, "iOS", len);
 #endif
-#elif defined(OSX)
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 /* MAC_OS_X_VERSION_10_13 */
-   NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
-   *major = (int)version.majorVersion;
-   *minor = (int)version.minorVersion;
-#else
-   /* MacOS 10.9 includes the [NSProcessInfo operatingSystemVersion] function, but it's not in the 10.9 SDK. So, call it via NSInvocation */
-   /* Credit: OpenJDK (https://github.com/openjdk/jdk/commit/d4c7db50) */
-   if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
+#elif TARGET_OS_OSX
+   /* The OS version cannot change while the process runs, so it is
+    * read once and kept; get_os() is called from the menu's system
+    * information list, which is rebuilt every time it is opened. */
+   static int cached_major = 0, cached_minor = 0;
+
+   if (!cached_major)
    {
-      typedef struct
+      NSProcessInfo *pi = [NSProcessInfo processInfo];
+      /* -operatingSystemVersion is 10.10. It returns a struct of three
+       * NSIntegers, which is returned in memory on x86_64 and in
+       * registers on arm64 - objc_msgSend against objc_msgSend_stret -
+       * so it is sent through NSInvocation, which gets that right on
+       * both without this file having to. Once per process, so the
+       * invocation costs nothing that matters.
+       * Credit for the shape: OpenJDK (openjdk/jdk d4c7db50). */
+      if ([pi respondsToSelector:@selector(operatingSystemVersion)])
       {
-         NSInteger majorVersion;
-         NSInteger minorVersion;
-         NSInteger patchVersion;
-      } NSMyOSVersion;
-      NSMyOSVersion version;
-      NSMethodSignature *sig = [[NSProcessInfo processInfo] methodSignatureForSelector:@selector(operatingSystemVersion)];
-      NSInvocation *invoke = [NSInvocation invocationWithMethodSignature:sig];
-      invoke.selector = @selector(operatingSystemVersion);
-      [invoke invokeWithTarget:[NSProcessInfo processInfo]];
-      [invoke getReturnValue:&version];
-      *major = (int)version.majorVersion;
-      *minor = (int)version.minorVersion;
+         typedef struct
+         {
+            NSInteger majorVersion;
+            NSInteger minorVersion;
+            NSInteger patchVersion;
+         } darwin_os_version_t;
+         darwin_os_version_t version = {0, 0, 0};
+         NSMethodSignature *sig      = [pi methodSignatureForSelector:
+               @selector(operatingSystemVersion)];
+         NSInvocation *invoke        = [NSInvocation invocationWithMethodSignature:sig];
+         invoke.selector             = @selector(operatingSystemVersion);
+         [invoke invokeWithTarget:pi];
+         [invoke getReturnValue:&version];
+         cached_major = (int)version.majorVersion;
+         cached_minor = (int)version.minorVersion;
+      }
+      else
+      {
+         /* Before 10.10 there is Gestalt, which is deprecated since
+          * 10.8 and gone from the newest SDKs' headers, so it is
+          * resolved rather than called - the selectors are the
+          * four-character codes 'sys1' and 'sys2'. A system old enough
+          * to need this has it. */
+         typedef int16_t (*darwin_gestalt_t)(uint32_t, int32_t*);
+         darwin_gestalt_t gestalt = (darwin_gestalt_t)dlsym(RTLD_DEFAULT, "Gestalt");
+         int32_t gmajor = 0, gminor = 0;
+         if (gestalt)
+         {
+            gestalt(0x73797331 /* 'sys1' */, &gmajor);
+            gestalt(0x73797332 /* 'sys2' */, &gminor);
+         }
+         cached_major = (int)gmajor;
+         cached_minor = (int)gminor;
+      }
+      /* Never zero again, or the probe repeats every call. */
+      if (!cached_major)
+         cached_major = -1;
    }
-   else
-   {
-      Gestalt(gestaltSystemVersionMinor, (SInt32*)minor);
-      Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
-   }
-#endif
+
+   *major = (cached_major > 0) ? cached_major : 0;
+   *minor = cached_minor;
    _len = strlcpy_lit(s, "OSX", len);
 #endif
    return _len;
@@ -360,7 +392,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    CFRelease(bundle_url);
    path_resolve_realpath(bundle_path_buf, sizeof(bundle_path_buf), true);
 
-#if defined(OSX)
+#if TARGET_OS_OSX
    fill_pathname_application_data(application_data, sizeof(application_data));
 
    BOOL portable; /* steam || RAPortableInstall || portable.txt */
@@ -414,9 +446,9 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
 #if defined(HAVE_UPDATE_CORES) || defined(HAVE_STEAM)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], application_data, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#elif defined(OSX) && defined(HAVE_APPLE_STORE)
+#elif TARGET_OS_OSX && defined(HAVE_APPLE_STORE)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Contents/Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#elif defined(IOS) && defined(HAVE_FRAMEWORKS)
+#elif TARGET_OS_IPHONE && defined(HAVE_FRAMEWORKS)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #else
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -507,7 +539,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
       int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
-#if defined(OSX)
+#if TARGET_OS_OSX
    CFIndex i, total;
    CFArrayRef list;
    bool have_ac, have_battery, charging;
@@ -583,7 +615,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
    return ret;
 }
 
-#ifndef OSX
+#if !TARGET_OS_OSX
 #ifndef CPU_ARCH_ABI64
 #define CPU_ARCH_ABI64          0x01000000
 #endif
@@ -595,7 +627,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
 
 static enum frontend_architecture frontend_darwin_get_arch(void)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
     struct utsname buffer;
 
     if (uname(&buffer) != 0)
@@ -684,16 +716,31 @@ static const char* frontend_darwin_get_cpu_model_name(void)
 static enum retro_language frontend_darwin_get_user_language(void)
 {
    char s[128];
-   CFArrayRef langs = CFLocaleCopyPreferredLanguages();
-   CFStringRef langCode = CFArrayGetValueAtIndex(langs, 0);
+   CFArrayRef langs;
+   CFStringRef langCode;
+   /* CFLocaleCopyPreferredLanguages is 10.5; looked up at run time so
+    * one binary builds against, and runs on, 10.4 as well. */
+   CFArrayRef (*copy_langs)(void) = (CFArrayRef (*)(void))
+      dlsym(RTLD_DEFAULT, "CFLocaleCopyPreferredLanguages");
+   if (!copy_langs)
+      return RETRO_LANGUAGE_ENGLISH;
+   langs = copy_langs();
+   if (!langs || CFArrayGetCount(langs) < 1)
+   {
+      if (langs)
+         CFRelease(langs);
+      return RETRO_LANGUAGE_ENGLISH;
+   }
+   langCode = CFArrayGetValueAtIndex(langs, 0);
    CFStringGetCString(langCode, s, sizeof(s), kCFStringEncodingUTF8);
+   CFRelease(langs);
    /* iOS and OS X only support the language ID syntax consisting
     * of a language designator and optional region or script designator. */
    string_replace_all_chars(s, '-', '_');
    return retroarch_get_language_from_iso(s);
 }
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 static char* accessibility_mac_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -828,11 +875,11 @@ static bool accessibility_speak_macos(int speed,
 
 static bool frontend_darwin_is_narrator_running(void)
 {
-#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (@available(macOS 10.14, iOS 7, tvOS 9, *))
       return true;
 #endif
-#if OSX
+#if TARGET_OS_OSX
    return is_narrator_running_macos();
 #else
    return false;
@@ -847,7 +894,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
    else if (speed > 10)
       speed               = 10;
 
-#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (@available(macOS 10.14, iOS 7, tvOS 9, *))
    {
       static dispatch_once_t once;
@@ -874,7 +921,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
    }
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
    return accessibility_speak_macos(speed, speak_text, priority);
 #else
    return false;

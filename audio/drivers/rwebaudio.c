@@ -70,7 +70,6 @@ static void rwebaudio_free(void *data)
 }
 
 static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
       unsigned *new_rate)
 {
    rwebaudio_data_t *rwebaudio;

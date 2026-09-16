@@ -161,10 +161,39 @@ public class RetroActivityCommon extends NativeActivity
     }
   };
 
+  /* Startup gate bookkeeping.  The native thread is held on one gate
+   * until both the storage permission has been resolved and the core
+   * symlink pass has finished; whichever of the two lands last
+   * releases it.  All fields are guarded by mStartupGateLock. */
+  private final Object mStartupGateLock = new Object();
+  private boolean mStartupPermissionResolved;
+  private boolean mStartupPermissionGranted;
+  private boolean mStartupSymlinksDone;
+  private boolean mStartupGateReleased;
+
+  /* Serializes the symlink pass against the one PlayCoreManager runs
+   * after a module install, so two passes never delete and recreate
+   * the same links at once. */
+  private final Object mSymlinkLock = new Object();
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
-    cleanupSymlinks();
-    updateSymlinks();
+    /* The symlink pass walks the app data and native library trees,
+     * which is disk I/O that does not belong on the UI thread.  Run
+     * it on a worker and let it release its half of the startup gate
+     * when done; the native side keeps waiting for it, so cores are
+     * still in place before native core enumeration runs. */
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          cleanupSymlinks();
+          updateSymlinks();
+        } finally {
+          startupSymlinksDone();
+        }
+      }
+    }, "RetroArch-symlinks").start();
 
     if (Build.VERSION.SDK_INT >= 33) {
       registerReceiver(
@@ -217,6 +246,48 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   /**
+   * Records the startup permission outcome and releases the native
+   * gate if the symlink pass has already finished.  Runs on the UI
+   * thread, after super.onCreate has loaded the native library.
+   */
+  private void startupPermissionResolved(boolean granted)
+  {
+    synchronized (mStartupGateLock)
+    {
+      mStartupPermissionResolved = true;
+      mStartupPermissionGranted  = granted;
+      releaseStartupGateLocked();
+    }
+  }
+
+  /**
+   * Records completion of the symlink pass and releases the native
+   * gate if the permission outcome is already known.  Runs on the
+   * symlink worker; the native library is guaranteed loaded by then
+   * because the permission outcome is only recorded after
+   * super.onCreate.
+   */
+  private void startupSymlinksDone()
+  {
+    synchronized (mStartupGateLock)
+    {
+      mStartupSymlinksDone = true;
+      releaseStartupGateLocked();
+    }
+  }
+
+  /** Caller holds mStartupGateLock. */
+  private void releaseStartupGateLocked()
+  {
+    if (mStartupGateReleased
+        || !mStartupPermissionResolved
+        || !mStartupSymlinksDone)
+      return;
+    mStartupGateReleased = true;
+    permissionsResolved(mStartupPermissionGranted);
+  }
+
+  /**
    * Resolves the startup storage permission and releases the native
    * startup gate.  A launch through the Java launcher (recognized by
    * its CONFIGFILE extra), a Play Store build, or an already-settled
@@ -231,7 +302,7 @@ public class RetroActivityCommon extends NativeActivity
 
     if (viaLauncher || isPlayStoreBuild() || hasStoragePermission())
     {
-      permissionsResolved(hasStoragePermission());
+      startupPermissionResolved(hasStoragePermission());
       return;
     }
 
@@ -260,7 +331,7 @@ public class RetroActivityCommon extends NativeActivity
               }
               catch (Exception e2)
               {
-                permissionsResolved(false);
+                startupPermissionResolved(false);
               }
             }
           }
@@ -270,7 +341,7 @@ public class RetroActivityCommon extends NativeActivity
           @Override
           public void onClick(android.content.DialogInterface dialog, int which)
           {
-            permissionsResolved(false);
+            startupPermissionResolved(false);
           }
         })
         .setOnCancelListener(new android.content.DialogInterface.OnCancelListener()
@@ -278,7 +349,7 @@ public class RetroActivityCommon extends NativeActivity
           @Override
           public void onCancel(android.content.DialogInterface dialog)
           {
-            permissionsResolved(false);
+            startupPermissionResolved(false);
           }
         })
         .show();
@@ -297,7 +368,7 @@ public class RetroActivityCommon extends NativeActivity
   {
     if (requestCode == REQUEST_CODE_STARTUP_PERMISSIONS)
     {
-      permissionsResolved(hasStoragePermission());
+      startupPermissionResolved(hasStoragePermission());
       return;
     }
     super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -310,7 +381,7 @@ public class RetroActivityCommon extends NativeActivity
     {
       /* The Settings return carries no intent; resolve from the live
        * state and proceed either way. */
-      permissionsResolved(hasStoragePermission());
+      startupPermissionResolved(hasStoragePermission());
       return;
     }
 
@@ -1796,13 +1867,16 @@ public class RetroActivityCommon extends NativeActivity
   private void cleanupSymlinks() {
     if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
 
-    File[] files = new File(getCorePath()).listFiles();
-    for(int i = 0; i < files.length; i++) {
-      try {
-        Os.readlink(files[i].getAbsolutePath());
-        files[i].delete();
-      } catch (Exception e) {
-        // File is not a symlink, so don't delete.
+    synchronized (mSymlinkLock) {
+      File[] files = new File(getCorePath()).listFiles();
+      if(files == null) return;
+      for(int i = 0; i < files.length; i++) {
+        try {
+          Os.readlink(files[i].getAbsolutePath());
+          files[i].delete();
+        } catch (Exception e) {
+          // File is not a symlink, so don't delete.
+        }
       }
     }
   }
@@ -1814,8 +1888,10 @@ public class RetroActivityCommon extends NativeActivity
   public void updateSymlinks() {
     if(!isPlayStoreBuild()) return;
 
-    traverseFilesystem(getFilesDir());
-    traverseFilesystem(new File(getApplicationInfo().nativeLibraryDir));
+    synchronized (mSymlinkLock) {
+      traverseFilesystem(getFilesDir());
+      traverseFilesystem(new File(getApplicationInfo().nativeLibraryDir));
+    }
   }
 
   /**

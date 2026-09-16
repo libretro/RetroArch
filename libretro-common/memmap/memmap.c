@@ -199,12 +199,18 @@ int memsync(void *start, void *end)
     * webOS armv7 GCC rejects it as an implicit declaration. */
    __builtin___clear_cache((char*)start, (char*)end);
    return 0;
-#elif defined(HAVE_MMAN) && defined(MS_SYNC) && defined(MS_INVALIDATE)
+#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MS_SYNC) && defined(MS_INVALIDATE)
    /* Gate on the constants rather than on HAVE_MMAN alone: DJGPP falls
     * into the HAVE_MMAN branch of memmap.h and ships a <sys/mman.h>
     * that includes cleanly but declares neither msync nor the MS_
     * flags. Without this the call compiles to an implicit declaration
-    * and then fails on the undefined constants. */
+    * and then fails on the undefined constants.
+    *
+    * Emscripten is the one target named outright rather than reached
+    * through the constants: it declares msync and both MS_ flags, but
+    * that msync refuses any address outside a live mapping, and wasm
+    * has no instruction cache standing behind this call anyway, so the
+    * no-op below is the answer there. */
    size_t _len = (char*)end - (char*)start;
    return msync(start, _len, MS_SYNC | MS_INVALIDATE
 #ifdef __QNX__
@@ -232,7 +238,15 @@ int memprotect(void *addr, size_t len)
 
 #if defined(_WIN32)
 #define MEMMAP_HAVE_RESERVE 1
-#elif defined(HAVE_MMAN)
+/* Emscripten is named here rather than left to the capability checks
+ * below, which it would pass: it has MAP_PRIVATE, MAP_ANONYMOUS and
+ * _SC_PAGESIZE. What it does not have is a reservation - an anonymous
+ * mmap allocates and zeroes the whole length there, so the range is
+ * committed the moment it is asked for, and mprotect and madvise are
+ * no-ops, so the guards memrearm() and memdecommit() exist to install
+ * would report success without arming anything. Reporting no support
+ * keeps consumers on their fallback, which is the honest answer. */
+#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__)
 /* memmap.h has already included <sys/mman.h> in this case; sysconf and
  * _SC_PAGESIZE need <unistd.h> as well. */
 #include <unistd.h>
@@ -265,6 +279,15 @@ size_t mempagesize(void)
 
 void *memreserve(size_t len)
 {
+#if defined(MEMMAP_TEST_NO_RESERVE)
+   /* Test hook: behave like a platform that cannot reserve address
+    * space (memreserve refused), so the data_transfer whole-file path -
+    * and everything that must agree with it - can be exercised on a
+    * host that normally can. Off unless the env var is set, so a build
+    * with the hook still reserves by default. */
+   if (getenv("MEMMAP_NO_RESERVE"))
+      return NULL;
+#endif
 #if !defined(MEMMAP_HAVE_RESERVE)
    (void)len;
    return NULL;

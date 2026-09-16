@@ -150,9 +150,6 @@ typedef struct d3d8_video
    bool quitting;
    bool needs_restore;
    bool overlays_enabled;
-   /* TODO - refactor this away properly. */
-   bool resolution_hd_enable;
-
    /* Only used for Xbox */
    bool widescreen_mode;
 
@@ -1997,21 +1994,18 @@ static void d3d8_get_video_size(d3d8_video_t *d3d,
          *width                    = 640;
          *height                   = 480;
          d3d->widescreen_mode      = false;
-         d3d->resolution_hd_enable = true;
       }
       else if (video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
          *width                    = 1280;
          *height                   = 720;
          d3d->widescreen_mode      = true;
-         d3d->resolution_hd_enable = true;
       }
       else if (video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
          *width                    = 1920;
          *height                   = 1080;
          d3d->widescreen_mode      = true;
-         d3d->resolution_hd_enable = true;
       }
    }
 }
@@ -2388,12 +2382,11 @@ static bool d3d8_alive(void *data)
    bool        quit     = false;
    bool        resize   = false;
 
-   /* Read from local bookkeeping rather than video_st (which
-    * would acquire context_lock + display_lock).  d3d->vp.full_*
-    * is written at every set_size call site in this driver, so
-    * it stays in sync with video_st->width/height as long as no
-    * other code path writes them.  In practice nothing does --
-    * see video_driver.c audit. */
+   /* Read from local bookkeeping rather than video_st.
+    * d3d->vp.full_* is written at every set_size call site in
+    * this driver, so it stays in sync with the output size as
+    * long as no other code path sets it.  In practice nothing
+    * does -- see video_driver.c audit. */
    temp_width  = d3d->vp.full_width;
    temp_height = d3d->vp.full_height;
 
@@ -2523,7 +2516,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
 #ifdef HAVE_WINDOW
       /* Use new_width / new_height directly rather than reading
        * them back via video_driver_get_output_size: nothing in the
-       * codebase writes video_st->width / height between the
+       * codebase sets the output size between the
        * set_size above and this call except us. */
       if (!win32_set_video_mode(d3d, new_width, new_height,
             info->fullscreen))
@@ -3397,6 +3390,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d8 = {
    GFX_VIDEO_DRIVER_DIRECT3D8,
    "d3d8",
    false,
+   true,
    gfx_display_d3d8_scissor_begin,
    gfx_display_d3d8_scissor_end
 };

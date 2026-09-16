@@ -3753,7 +3753,7 @@ static int16_t udev_input_state(
 
             for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
             {
-               if (binds[port][i].valid)
+               if (RETRO_KEYBIND_VALID(&binds[port][i]))
                {
                   if (udev_mouse_button_pressed(udev, port, binds[port][i].mbutton))
                      ret |= (1 << i);
@@ -3764,10 +3764,10 @@ static int16_t udev_input_state(
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (binds[port][i].valid)
+                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
                   {
-                     if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
-                           && udev_keyboard_pressed(udev, binds[port][i].key))
+                     if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
+                           && udev_keyboard_pressed(udev, RETRO_KEYBIND_KEY(&binds[port][i])))
                         ret |= (1 << i);
                   }
                }
@@ -3778,10 +3778,10 @@ static int16_t udev_input_state(
 
          if (id < RARCH_BIND_LIST_END)
          {
-            if (binds[port][id].valid)
+            if (RETRO_KEYBIND_VALID(&binds[port][id]))
             {
-               if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
-                     && udev_keyboard_pressed(udev, binds[port][id].key)
+               if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
+                     && udev_keyboard_pressed(udev, RETRO_KEYBIND_KEY(&binds[port][id]))
                      && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                   )
                   return 1;
@@ -3803,10 +3803,10 @@ static int16_t udev_input_state(
 
             input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
-            id_minus_valid        = binds[port][id_minus].valid;
-            id_plus_valid         = binds[port][id_plus].valid;
-            id_minus_key          = binds[port][id_minus].key;
-            id_plus_key           = binds[port][id_plus].key;
+            id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
+            id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
+            id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
+            id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
 
             if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
@@ -3888,7 +3888,7 @@ static int16_t udev_input_state(
                   const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                      ? bind_joyaxis : autobind_joyaxis;
 
-                  if (binds[port][new_id].valid)
+                  if (RETRO_KEYBIND_VALID(&binds[port][new_id]))
                   {
                      if ((uint16_t)joykey != NO_BTN && joypad->button(
                               joyport, (uint16_t)joykey))
@@ -3897,9 +3897,9 @@ static int16_t udev_input_state(
                            ((float)abs(joypad->axis(joyport, joyaxis))
                             / 0x8000) > axis_threshold)
                         return 1;
-                     else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
+                     else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
                            && !keyboard_mapping_blocked
-                           && udev_keyboard_pressed(udev, binds[port][new_id].key)
+                           && udev_keyboard_pressed(udev, RETRO_KEYBIND_KEY(&binds[port][new_id]))
                         )
                         return 1;
                      else if (udev_mouse_button_pressed(udev, port, binds[port][new_id].mbutton))
@@ -4017,8 +4017,12 @@ static float udev_get_sensor_input(void *data, unsigned port, unsigned id)
    return 0.0f;
 }
 
+/* @denied counts the nodes that exist but rejected the open with
+ * EACCES, so the caller can tell a machine with no such devices apart
+ * from one where the user lacks read access to them. */
 static bool open_devices(udev_input_t *udev,
-      enum udev_input_dev_type type, device_handle_cb cb)
+      enum udev_input_dev_type type, device_handle_cb cb,
+      unsigned *denied)
 {
    struct udev_device *dev;
    const char             *type_str = g_dev_type_str[type];
@@ -4059,6 +4063,13 @@ static bool open_devices(udev_input_t *udev,
 
             close(fd);
          }
+         else
+         {
+            if (errno == EACCES)
+               (*denied)++;
+            RARCH_DBG("[udev] Could not open \"%s\": %s.\n",
+                  devnode, strerror(errno));
+         }
       }
       udev_device_unref(dev);
    }
@@ -4074,6 +4085,7 @@ static void *udev_input_init(const char *joypad_driver)
    int keyboard=0;
    int fd;
    int i;
+   unsigned denied = 0;
 #ifdef UDEV_XKB_HANDLING
    gfx_ctx_ident_t ctx_ident;
 #endif
@@ -4117,17 +4129,17 @@ static void *udev_input_init(const char *joypad_driver)
 
    udev->fd  = fd;
 
-   if (!open_devices(udev, UDEV_INPUT_KEYBOARD, udev_handle_keyboard))
+   if (!open_devices(udev, UDEV_INPUT_KEYBOARD, udev_handle_keyboard, &denied))
       goto error;
 
-   if (!open_devices(udev, UDEV_INPUT_MOUSE, udev_handle_mouse))
+   if (!open_devices(udev, UDEV_INPUT_MOUSE, udev_handle_mouse, &denied))
       goto error;
 
-   if (!open_devices(udev, UDEV_INPUT_TOUCHPAD, udev_handle_mouse))
+   if (!open_devices(udev, UDEV_INPUT_TOUCHPAD, udev_handle_mouse, &denied))
       goto error;
 
 #ifdef UDEV_TOUCH_SUPPORT
-   if (!open_devices(udev, UDEV_INPUT_TOUCHSCREEN, udev_handle_touch))
+   if (!open_devices(udev, UDEV_INPUT_TOUCHSCREEN, udev_handle_touch, &denied))
       goto error;
 #endif
 
@@ -4137,6 +4149,9 @@ static void *udev_input_init(const char *joypad_driver)
    {
       settings_t *settings = config_get_ptr();
       RARCH_WARN("[udev] Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
+      if (denied)
+         RARCH_WARN("[udev] %u node(s) refused the open with EACCES. Keyboards and mice are not covered by the seat ACLs on most distributions, so the user needs read access to them by other means, typically membership of the \"input\" group.\n",
+               denied);
       /* Start screen is not used nowadays, but it still gets true value only
        * on first startup without config file, so it should be good to catch
        * initial boots without udev devices available. */

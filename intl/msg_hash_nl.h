@@ -201,7 +201,6 @@ static const struct
    char s_ae87ea53[258];
    char s_9834febe[467];
    char s_93805cc8[471];
-   char s_b495662b[151];
    char s_9953f4e2[250];
    char s_79e212bd[5];
    char s_6342700c[10];
@@ -249,13 +248,13 @@ static const struct
    char s_35a1323d[12];
    char s_f72667c9[9];
    char s_adce4374[15];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[45];
 #endif
    char s_4e447c6c[54];
    char s_d9a51d02[14];
    char s_98760b94[29];
-   char s_af6007a1[12];
    char s_da068369[15];
    char s_daead8a5[7];
    char s_48c208ee[17];
@@ -288,6 +287,7 @@ static const struct
    char s_e5aeacf9[23];
    char s_24976a5b[21];
    char s_5209cc72[29];
+   char s_e2eedfe1[12];
    char s_9f1f3534[59];
    char s_e66b1cb9[36];
    char s_1bf49fce[33];
@@ -596,11 +596,13 @@ static const struct
    char s_15f24ff4[11];
    char s_ec7e8026[9];
    char s_5d29b870[18];
+   char s_6996339b[7];
    char s_08e9410c[19];
    char s_d95824aa[20];
    char s_639f529e[12];
    char s_4927597c[17];
    char s_77b74366[21];
+   char s_ddf679b9[8];
    char s_3b7e9d77[10];
    char s_d31f6d88[20];
    char s_f03e9c42[18];
@@ -1483,7 +1485,6 @@ static const struct
    char s_74b77b4a[14];
    char s_7534cfc9[6];
    char s_36259b63[15];
-   char s_37368130[11];
    char s_d51f54a2[13];
    char s_b35f573c[6];
    char s_1cad7751[13];
@@ -2629,8 +2630,6 @@ static const struct
    char s_d9153542[53];
    char s_8e48ec69[44];
    char s_cd43c108[77];
-   char s_cd46e260[96];
-   char s_cd482ffe[94];
    char s_49336383[49];
    char s_e92351d4[142];
    char s_8e22cdce[49];
@@ -3386,7 +3385,6 @@ static const struct
    char s_36033606[198];
    char s_2e69508b[363];
    char s_7e96b5ce[44];
-   char s_3547866d[158];
    char s_c2314d30[192];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[175];
@@ -4330,8 +4328,6 @@ static const struct
    "oor weergave. Niet voor gebruik bij frequenties die geen veelvoud zijn van 60Hz zoals 144Hz, 165"
    "Hz, etc. Niet combineren met Swap Interval > 1, BFI, Frame Delay, of synchroniseren naar Exact C"
    "ontent Framerate. VRR van het systeem aan laten staan is ok, maar die instelling niet.",
-   "Gebruik threaded video stuurprogramma. Gebruik hiervan kan de prestaties verbeteren tegen de mog"
-   "elijke kosten van vertraging en meer video stottering.",
    "Synchroniseer met Exacte Content Framerate. Deze optie staat gelijk aan het forceren van x1 snel"
    "heid terwijl snel vooruit gaat nog altijd toegestaan is. Geen afwijking van de core gevraagde ve"
    "rnieuwingssnelheid, geen geluid Dynamisch Ratio Controle.",
@@ -4381,13 +4377,13 @@ static const struct
    "Spraakmodus",
    "Doeltaal",
    "AI-Service URL",
+   "Altijd",
 #ifndef HAVE_DYNAMIC
    "Herlaad de Core Altijd bij \"Inhoud Invoeren\"",
 #endif
    "Tijdelijke oplossing voor het loskoppelen van Android",
    "App-pictogram",
    "Open het ASIO Controlepaneel",
-   "Blok Frames",
    "Audio Apparaat",
    "Geluid",
    "Audio DSP Plugin",
@@ -4420,6 +4416,7 @@ static const struct
    "WASAPI Exclusieve mode",
    "WASAPI Float formaat",
    "WASAPI Gedeelde bufferlengte",
+   "Automatisch",
    "Opslagbestand: interval om SaveRam automatisch op te slaan",
    "Laad Override Bestanden Automatisch",
    "Laad Remap Bestanden Automatisch",
@@ -4728,11 +4725,13 @@ static const struct
    "Gepauzeerd",
    "Afspelen",
    "Schijf Informatie",
+   "Geluid",
    "Laad nieuwe schijf",
    "Huidige schijfindex",
    "Disk Beheer",
    "Schijf Uitwerpen",
    "Disk Image Toevoegen",
+   "Uitvoer",
    "Standaard",
    "Een Core Downloaden",
    "Inhoud-downloader",
@@ -5615,7 +5614,6 @@ static const struct
    "&Ontlaad core",
    "&hulp",
    "Over RetroArch",
-   "bijdragers",
    "Documentatie",
    "Legen",
    "&Gereedschap",
@@ -6884,8 +6882,6 @@ static const struct
    "Slaat de staat op in het huidige geselecteerde slot.",
    "Maakt een afbeelding van de huidige inhoud.",
    "Houdt de huidige geselecteerde shader aan/uit wanneer toets wordt ingedrukt.",
-   "Laadt en past het volgende shader preset-bestand toe in de hoofdmap van de map 'Video Shaders'.",
-   "Laadt en past het vorige shader preset-bestand toe in de hoofdmap van de map 'Video Shaders'.",
    "Schakelt de huidig geselecteerde shader aan/uit.",
    "Maakt slow-motion mogelijk wanneer het knop is vastgehouden. Inhoud wordt op normale snelheid ui"
    "tgevoerd wanneer de sleutel wordt losgelaten.",
@@ -7947,8 +7943,6 @@ static const struct
    "erapporteerde framesnelheid, wat zorgt voor een verbeterde framepacing bij het hardlopen van b.v"
    ". 30 fps-inhoud op een 60 Hz-scherm of 60 fps-inhoud op een 120 Hz-scherm.",
    "Video-synchronisatie instellingen wijzigen.",
-   "Verbetert prestaties ten koste van latentie en vloeiendheid van het beeld. Gebruik dit alleen wa"
-   "nneer het afspelen op volle snelheid niet anders mogelijk is.",
    "Probeer de prestaties te verbeteren door de Metal-argumentbuffers te gebruiken. Voor sommige cor"
    "es kan dit nodig zijn. Dit kan sommige shaders breken, met name op oude hardware of OS versies.",
 #if defined(RARCH_MOBILE)
@@ -8577,7 +8571,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (174520u
+      (sizeof(msg_hash_nl_blob) == (174032u
 #ifdef ANDROID
        + 375u
 #endif
@@ -9171,7 +9165,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
@@ -9219,13 +9212,13 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -9258,6 +9251,7 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -9566,11 +9560,13 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -10453,7 +10449,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
@@ -11598,8 +11593,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -12355,7 +12348,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

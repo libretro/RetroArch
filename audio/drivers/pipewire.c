@@ -14,6 +14,11 @@
  */
 
 #include <spa/param/audio/format-utils.h>
+/* A note for the eventcount census: this driver stays off it, on
+ * purpose, for pulse.c's reason - pw_thread_loop is the library's
+ * mandated rendezvous, its lock covers every pw_* call, and the
+ * data path already runs on PipeWire's own lock-free
+ * spa_ringbuffer. Same column as ALSA's device waits. */
 #include <spa/utils/ringbuffer.h>
 #include <spa/utils/result.h>
 #include <spa/param/props.h>
@@ -21,6 +26,7 @@
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
 #include <retro_endianness.h>
 
 #include "../common/pipewire.h"
@@ -45,8 +51,39 @@ typedef struct pipewire_audio
    struct spa_audio_info_raw info;
    uint32_t highwater_mark;
    uint32_t frame_size;
+   uint32_t layout;      /* the frontend's mask the stream carries */
    struct spa_ringbuffer ring;
    uint8_t buffer[RINGBUFFER_SIZE];
+   /* Frames handed to the graph since the stream started, for the sink
+    * rate estimate. The process callback is the graph asking for a
+    * quantum, so what it takes is the device's own clock; silence
+    * during an underrun counts, because the quantum elapsed either
+    * way. Written only by the callback, read by the frontend through
+    * pwire_frames_consumed(). */
+   retro_atomic_size_t consumed;
+
+   /* The device clock, fitted from the time report the graph already
+    * hands over.
+    *
+    * pw_time carries three things worth having and this driver was
+    * using one of them: now, the nanosecond time the report was taken
+    * at; ticks, the position the far end is reading, in units of rate;
+    * and delay, which is what the latency line uses. ticks against now
+    * is the graph's clock against the wall, and since ticks are in
+    * 1/samplerate units both sides are seconds - so the slope is the
+    * ratio directly and needs no sample rate to interpret.
+    *
+    * A fit over every sample, not two points: noise on a single anchor
+    * divides by the window and reads as drift. Touched under the
+    * thread loop lock, beside the call that already fetches the
+    * report, so this adds no call and nothing to the data thread.
+    * Nothing here feeds rate control. */
+   int64_t  clk_anchor_now;
+   uint64_t clk_anchor_ticks;
+   int      clk_have_anchor;
+   double   clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
+   int      clk_ppm;
+   int      clk_valid;
 } pipewire_audio_t;
 
 static size_t pwire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
@@ -76,33 +113,45 @@ static size_t pwire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannel
    return nchannels;
 }
 
-static void pwire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
+/* The stream's positions from the frontend's layout mask, in the
+ * mask's ascending-bit order - which is the order the frames carry.
+ * Mono is its own case. A count never decides a position: the two
+ * six-channel layouts differ in the rear pair, and each is given as
+ * itself. */
+static void pwire_set_position_layout(uint32_t layout,
+      uint32_t position[SPA_AUDIO_MAX_CHANNELS])
 {
+   static const struct { uint32_t bit; uint32_t spa; } map[] = {
+      { AUDIO_SPEAKER_FRONT_LEFT,            SPA_AUDIO_CHANNEL_FL  },
+      { AUDIO_SPEAKER_FRONT_RIGHT,           SPA_AUDIO_CHANNEL_FR  },
+      { AUDIO_SPEAKER_FRONT_CENTER,          SPA_AUDIO_CHANNEL_FC  },
+      { AUDIO_SPEAKER_LOW_FREQUENCY,         SPA_AUDIO_CHANNEL_LFE },
+      { AUDIO_SPEAKER_BACK_LEFT,             SPA_AUDIO_CHANNEL_RL  },
+      { AUDIO_SPEAKER_BACK_RIGHT,            SPA_AUDIO_CHANNEL_RR  },
+      { AUDIO_SPEAKER_FRONT_LEFT_OF_CENTER,  SPA_AUDIO_CHANNEL_FLC },
+      { AUDIO_SPEAKER_FRONT_RIGHT_OF_CENTER, SPA_AUDIO_CHANNEL_FRC },
+      { AUDIO_SPEAKER_BACK_CENTER,           SPA_AUDIO_CHANNEL_RC  },
+      { AUDIO_SPEAKER_SIDE_LEFT,             SPA_AUDIO_CHANNEL_SL  },
+      { AUDIO_SPEAKER_SIDE_RIGHT,            SPA_AUDIO_CHANNEL_SR  },
+   };
+   size_t i, n = 0;
    memcpy(position, (uint32_t[SPA_AUDIO_MAX_CHANNELS]) { SPA_AUDIO_CHANNEL_UNKNOWN, },
          sizeof(uint32_t) * SPA_AUDIO_MAX_CHANNELS);
+   for (i = 0; i < ARRAY_SIZE(map); i++)
+      if (layout & map[i].bit)
+         position[n++] = map[i].spa;
+}
 
-   switch (channels)
+static void pwire_set_position(uint32_t channels, uint32_t position[SPA_AUDIO_MAX_CHANNELS])
+{
+   if (channels == 1)
    {
-      case 8:
-         position[6] = SPA_AUDIO_CHANNEL_SL;
-         position[7] = SPA_AUDIO_CHANNEL_SR;
-         /* fallthrough */
-      case 6:
-         position[2] = SPA_AUDIO_CHANNEL_FC;
-         position[3] = SPA_AUDIO_CHANNEL_LFE;
-         position[4] = SPA_AUDIO_CHANNEL_RL;
-         position[5] = SPA_AUDIO_CHANNEL_RR;
-         /* fallthrough */
-      case 2:
-         position[0] = SPA_AUDIO_CHANNEL_FL;
-         position[1] = SPA_AUDIO_CHANNEL_FR;
-         break;
-      case 1:
-         position[0] = SPA_AUDIO_CHANNEL_MONO;
-         break;
-      default:
-         RARCH_ERR("[PipeWire] Internal error: unsupported channel count %d.\n", channels);
+      memcpy(position, (uint32_t[SPA_AUDIO_MAX_CHANNELS]) { SPA_AUDIO_CHANNEL_UNKNOWN, },
+            sizeof(uint32_t) * SPA_AUDIO_MAX_CHANNELS);
+      position[0] = SPA_AUDIO_CHANNEL_MONO;
+      return;
    }
+   pwire_set_position_layout(AUDIO_LAYOUT_STEREO, position);
 }
 
 #ifdef HAVE_MICROPHONE
@@ -254,6 +303,45 @@ static void pwire_microphone_close_mic(void *driver_context, void *mic_context)
       pw_thread_loop_unlock(pw->thread_loop);
       free(mic);
    }
+}
+
+/* Sleeps until the capture ring holds len bytes, then says how many it
+ * holds. The same wait pwire_microphone_read() does, without the copy:
+ * one PIPEWIRE_STREAM_WAIT_MS bound on the thread loop, so a graph that
+ * has stopped delivering returns what it has - possibly nothing - and
+ * the caller comes back later rather than parking here. */
+static size_t pwire_microphone_wait_readable(void *driver_context,
+      void *mic_context, size_t len)
+{
+   uint32_t idx;
+   int32_t  readable;
+   const char            *error = NULL;
+   pipewire_core_t          *pw = (pipewire_core_t*)driver_context;
+   pipewire_microphone_t   *mic = (pipewire_microphone_t*)mic_context;
+
+   if (!pw || !mic)
+      return 0;
+   if (pw_stream_get_state(mic->stream, &error) != PW_STREAM_STATE_STREAMING)
+      return 0;
+
+   pw_thread_loop_lock(pw->thread_loop);
+
+   for (;;)
+   {
+      readable = spa_ringbuffer_get_read_index(&mic->ring, &idx);
+      if (readable >= (int32_t)len)
+         break;
+      if (!pipewire_loop_wait_ms(pw->thread_loop, PIPEWIRE_STREAM_WAIT_MS))
+         break;
+      if (pw_stream_get_state(mic->stream, &error) != PW_STREAM_STATE_STREAMING)
+      {
+         pw_thread_loop_unlock(pw->thread_loop);
+         return 0;
+      }
+   }
+
+   pw_thread_loop_unlock(pw->thread_loop);
+   return readable > 0 ? (size_t)readable : 0;
 }
 
 static int pwire_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
@@ -529,7 +617,8 @@ microphone_driver_t microphone_pipewire = {
       pwire_microphone_mic_alive,
       pwire_microphone_start_mic,
       pwire_microphone_stop_mic,
-      pwire_microphone_mic_use_float
+      pwire_microphone_mic_use_float,
+      pwire_microphone_wait_readable
 };
 #endif
 
@@ -592,8 +681,34 @@ static void pwire_playback_process_cb(void *data)
    buf->datas[0].chunk->stride = audio->frame_size;
    buf->datas[0].chunk->size   = n_bytes;
 
+   if (audio->frame_size)
+      retro_atomic_fetch_add_size(&audio->consumed,
+            (size_t)(n_bytes / audio->frame_size));
+
    pw_stream_queue_buffer(audio->stream, b);
    pw_thread_loop_signal(audio->pw->thread_loop, false);
+}
+
+/* Frames the graph has taken since the stream started. The process
+ * callback is the graph asking for a quantum, so counting what it takes
+ * counts device time - JACK's shape rather than ALSA's, with no queue
+ * to subtract. */
+/* The graph clock, for the statistics overlay. */
+static bool pwire_device_clock_ppm(void *data, double *ppm)
+{
+   pipewire_audio_t *audio = (pipewire_audio_t*)data;
+   if (!audio || !audio->clk_valid)
+      return false;
+   *ppm = (double)audio->clk_ppm;
+   return true;
+}
+
+static size_t pwire_frames_consumed(void *data)
+{
+   pipewire_audio_t *audio = (pipewire_audio_t*)data;
+   if (!audio)
+      return 0;
+   return retro_atomic_load_acquire_size(&audio->consumed);
 }
 
 static void pwire_free(void *data);
@@ -679,7 +794,6 @@ static struct string_list *pwire_enumerate_sinks(void)
 
 static void *pwire_init(const char *device, unsigned rate,
       unsigned latency,
-      unsigned block_frames,
       unsigned *new_rate)
 {
    int                         res;
@@ -701,11 +815,15 @@ static void *pwire_init(const char *device, unsigned rate,
    if (!pipewire_core_wait_resync(audio->pw))
       goto unlock_error;
 
+   /* The layout the frontend asked for, with its positions: PipeWire
+    * routes each to the sink's channel of that position, or mixes
+    * where the sink lacks one, so what is asked is what is carried. */
+   audio->layout        = audio_driver_requested_layout();
    audio->info.format   = is_little_endian() ? SPA_AUDIO_FORMAT_F32_LE : SPA_AUDIO_FORMAT_F32_BE;
-   audio->info.channels = DEFAULT_CHANNELS;
-   pwire_set_position(DEFAULT_CHANNELS, audio->info.position);
+   audio->info.channels = audio_layout_channels(audio->layout);
+   pwire_set_position_layout(audio->layout, audio->info.position);
    audio->info.rate     = rate;
-   audio->frame_size    = pwire_calc_frame_size(audio->info.format, DEFAULT_CHANNELS);
+   audio->frame_size    = pwire_calc_frame_size(audio->info.format, audio->info.channels);
 
    props = pw_properties_new(PW_KEY_MEDIA_TYPE,          PW_RARCH_MEDIA_TYPE_AUDIO,
                              PW_KEY_MEDIA_CATEGORY,      PW_RARCH_MEDIA_CATEGORY_PLAYBACK,
@@ -963,6 +1081,19 @@ static void pwire_free(void *data)
    if (!audio)
       return;
 
+   /* What the graph's clock was doing against the wall. Logged, not
+    * acted on: until these have been read off a range of hardware
+    * they are measurements, and a clock estimate that is wrong is
+    * worse than one that is absent. Note this is the graph's clock -
+    * with a device driving it that is the device, and with something
+    * else driving it, it is that. */
+   if (audio->clk_valid)
+      RARCH_LOG("[PipeWire] Graph clock, fitted from the time report:"
+            " %+d ppm.\n", audio->clk_ppm);
+   else
+      RARCH_LOG("[PipeWire] Graph clock: not enough usable time reports"
+            " to fit one.\n");
+
    if (audio->stream)
    {
       pw_thread_loop_lock(audio->pw->thread_loop);
@@ -975,6 +1106,12 @@ static void pwire_free(void *data)
 }
 
 static bool pwire_use_float(void *data) { return true; }
+
+static uint32_t pwire_layout(void *data)
+{
+   pipewire_audio_t *audio = (pipewire_audio_t*)data;
+   return audio ? audio->layout : AUDIO_LAYOUT_STEREO;
+}
 
 static struct string_list *pwire_enumerate_sinks(void);
 
@@ -1009,6 +1146,74 @@ static size_t pwire_write_avail(void *data)
    pw_thread_loop_lock(audio->pw->thread_loop);
    written = spa_ringbuffer_get_write_index(&audio->ring, &idx);
    length  = audio->highwater_mark - written;
+   {
+      /* The graph's stage behind the ring, for the statistics overlay:
+       * pw_time.delay is the frames between the stream seeing a sample
+       * and the device, in units of pw_time.rate, which is 1/rate for
+       * an audio stream. It settles once the graph is running, so it
+       * is read here, each time, rather than once at init. */
+      struct pw_time t;
+      int rc;
+      memset(&t, 0, sizeof(t));
+#if PW_CHECK_VERSION(0, 3, 50)
+      rc = pw_stream_get_time_n(audio->stream, &t, sizeof(t));
+#else
+      rc = pw_stream_get_time(audio->stream, &t);
+#endif
+      if (rc == 0 && t.rate.denom && t.delay > 0 && audio->info.rate)
+         audio_driver_set_device_latency((size_t)
+               ((uint64_t)t.delay * t.rate.num * audio->info.rate / t.rate.denom));
+
+      /* And the clock, from the same report - see the note on the
+       * fields. ticks are in units of t.rate, which for an audio
+       * stream is 1/samplerate, so both axes are seconds and the
+       * slope is the ratio. */
+      if (rc == 0 && t.rate.denom && t.now > 0 && t.ticks)
+      {
+         if (!audio->clk_have_anchor)
+         {
+            audio->clk_anchor_now   = t.now;
+            audio->clk_anchor_ticks = t.ticks;
+            audio->clk_have_anchor  = 1;
+            audio->clk_sx = audio->clk_sy = audio->clk_sxx = 0.0;
+            audio->clk_sxy = audio->clk_n = 0.0;
+         }
+         else if (     t.now   > audio->clk_anchor_now
+                    && t.ticks >= audio->clk_anchor_ticks)
+         {
+            double x = (double)(t.now - audio->clk_anchor_now) / 1000000000.0;
+            double y = (double)(t.ticks - audio->clk_anchor_ticks)
+               * (double)t.rate.num / (double)t.rate.denom;
+            double d;
+
+            audio->clk_sx  += x;
+            audio->clk_sy  += y;
+            audio->clk_sxx += x * x;
+            audio->clk_sxy += x * y;
+            audio->clk_n   += 1.0;
+
+            d = audio->clk_n * audio->clk_sxx - audio->clk_sx * audio->clk_sx;
+            if (x >= 1.0 && d > 0.0)
+            {
+               double slope = (audio->clk_n * audio->clk_sxy
+                     - audio->clk_sx * audio->clk_sy) / d;
+               double ppm   = (slope - 1.0) * 1000000.0;
+               if (ppm > -100000.0 && ppm < 100000.0)
+               {
+                  audio->clk_ppm   = (int)ppm;
+                  audio->clk_valid = 1;
+               }
+            }
+         }
+         else
+         {
+            audio->clk_anchor_now   = t.now;
+            audio->clk_anchor_ticks = t.ticks;
+            audio->clk_sx = audio->clk_sy = audio->clk_sxx = 0.0;
+            audio->clk_sxy = audio->clk_n = 0.0;
+         }
+      }
+   }
    pw_thread_loop_unlock(audio->pw->thread_loop);
 
    return length;
@@ -1074,5 +1279,10 @@ audio_driver_t audio_pipewire = {
       pwire_write_avail,
       pwire_buffer_size,
       NULL, /* write_raw */
-      pwire_wait_writable
+      pwire_wait_writable,
+      pwire_frames_consumed,
+      NULL, /* underruns */
+      pwire_layout,
+      NULL, /* frames_consumed_fallback */
+      pwire_device_clock_ppm
 };

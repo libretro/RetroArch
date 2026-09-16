@@ -53,6 +53,7 @@ else
 	HAVE_RTGA							:= 1
 	HAVE_OVERLAY					:= 1
 	HAVE_7ZIP							:= 1
+	HAVE_RZSTD							:= 1
 	HAVE_EGL 							:= 1
 	HAVE_GFX_WIDGETS 			:= 1
 	HAVE_GLSL      				:= 1
@@ -88,6 +89,7 @@ else
 	HAVE_UPDATE_CORE_INFO 		:= 1
 	HAVE_CONFIGFILE 			:= 1
 	HAVE_CHD 							:= 1
+HAVE_RCHD = 1
 	HAVE_STATIC_VIDEO_FILTERS = 1
 	HAVE_STATIC_AUDIO_FILTERS = 1
 	HAVE_CORE_INFO_CACHE	:= 1

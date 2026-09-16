@@ -62,11 +62,29 @@ static void unreachable(const char *what)
    abort();
 }
 
+/* The OPTIONS probe is the one piece of I/O the driver is expected to
+ * start, so this stub records the call rather than aborting on it.
+ * webdav_stub_stat_auth says whether an Authorization header went with
+ * it, which is what separates an anonymous probe from an authenticated
+ * one. */
+unsigned webdav_stub_stat_calls = 0;
+bool     webdav_stub_stat_auth  = false;
+
+void webdav_stub_reset(void)
+{
+   webdav_stub_stat_calls = 0;
+   webdav_stub_stat_auth  = false;
+}
+
 void *task_push_webdav_stat(const char *url, bool head,
       const char *headers, retro_task_callback_t cb, void *user_data)
 {
-   (void)url; (void)head; (void)headers; (void)cb; (void)user_data;
-   unreachable("task_push_webdav_stat");
+   (void)url; (void)head; (void)cb;
+   webdav_stub_stat_calls++;
+   webdav_stub_stat_auth = (headers != NULL);
+   /* The caller owns this until the task completes; nothing here does,
+    * so release it now and keep the harness leak-clean under ASan. */
+   free(user_data);
    return NULL;
 }
 

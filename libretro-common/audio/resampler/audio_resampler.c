@@ -27,6 +27,7 @@
 #include <file/config_file_userdata.h>
 
 #include <audio/audio_resampler.h>
+#include <audio/sinc_resampler.h>
 
 static void resampler_null_process(void *a, struct resampler_data *b) { }
 static void resampler_null_free(void *a) { }
@@ -114,11 +115,13 @@ static const retro_resampler_t *find_resampler_driver(const char *ident)
 static bool resampler_append_plugs(void **re,
       const retro_resampler_t **backend,
       enum resampler_quality quality,
-      double bw_ratio)
+      double bw_ratio, bool hq_oversampling)
 {
    resampler_simd_mask_t mask = (resampler_simd_mask_t)cpu_features_get();
 
-   if (*backend)
+   if (hq_oversampling && *backend == &sinc_resampler)
+      *re = sinc_resampler_init_hq(bw_ratio, quality, mask, 1);
+   else if (*backend)
       *re = (*backend)->init(&resampler_config, bw_ratio, quality, mask);
 
    if (!*re)
@@ -158,7 +161,7 @@ const char *audio_resampler_driver_find_ident(int idx)
 }
 
 /**
- * retro_resampler_realloc:
+ * retro_resampler_realloc_hq:
  * @re                         : Resampler handle
  * @backend                    : Resampler backend that is about to be set.
  * @ident                      : Identifier name for resampler we want.
@@ -169,8 +172,9 @@ const char *audio_resampler_driver_find_ident(int idx)
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
-bool retro_resampler_realloc(void **re, const retro_resampler_t **backend,
-      const char *ident, enum resampler_quality quality, double bw_ratio)
+bool retro_resampler_realloc_hq(void **re, const retro_resampler_t **backend,
+      const char *ident, enum resampler_quality quality, double bw_ratio,
+      bool hq_oversampling)
 {
    if (*re && *backend)
       (*backend)->free(*re);
@@ -178,7 +182,7 @@ bool retro_resampler_realloc(void **re, const retro_resampler_t **backend,
    *re      = NULL;
    *backend = find_resampler_driver(ident);
 
-   if (!resampler_append_plugs(re, backend, quality, bw_ratio))
+   if (!resampler_append_plugs(re, backend, quality, bw_ratio, hq_oversampling))
    {
       if (!*re)
          *backend = NULL;
@@ -186,4 +190,10 @@ bool retro_resampler_realloc(void **re, const retro_resampler_t **backend,
    }
 
    return true;
+}
+
+bool retro_resampler_realloc(void **re, const retro_resampler_t **backend,
+      const char *ident, enum resampler_quality quality, double bw_ratio)
+{
+   return retro_resampler_realloc_hq(re, backend, ident, quality, bw_ratio, false);
 }

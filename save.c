@@ -24,6 +24,7 @@
 #include <streams/file_stream.h>
 #include <streams/rzip_stream.h>
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <time/rtime.h>
@@ -70,6 +71,16 @@ enum autosave_flags
 
 struct autosave
 {
+   /* The core's frame, published rather than locked: the main thread
+    * makes this odd before retro_run() and even after the post-core
+    * work, with a plain release store - no mutex, no read-modify-write
+    * - and the worker reads it either side of its snapshot. A snapshot
+    * that overlaps a frame may be torn, and the sequence is how that
+    * is noticed; it is dropped and retried. The main thread used to
+    * take every handle's mutex around retro_run(): a lock held across
+    * core execution, whose cache line moved between the emulation
+    * thread and the storage worker every frame. */
+   retro_atomic_size_t frame_seq;
    void *buffer;
    const void *retro_buffer;
    char *path;
@@ -113,8 +124,15 @@ static void autosave_thread(void *data)
 
    for (;;)
    {
-      bool differ   = false;
-      bool compress = false;
+      bool differ       = false;
+      bool compress     = false;
+      size_t seq_before = 0;
+
+      /* Taken outside the frame, without the main thread's help: read
+       * the sequence, take the snapshot, read it again. Odd means the
+       * core is running now; a change means a frame began or ended
+       * while it was taken. */
+      seq_before = retro_atomic_load_acquire_size(&save->frame_seq);
 
       slock_lock(save->lock);
 
@@ -122,7 +140,7 @@ static void autosave_thread(void *data)
        * since our last check, skip the expensive memcmp.
        * Falls back to full comparison if the dirty flag
        * was never set (conservative default). */
-      if (save->flags & AUTOSAVE_FLAG_DIRTY)
+      if (!(seq_before & 1) && (save->flags & AUTOSAVE_FLAG_DIRTY))
       {
          const size_t word_size = sizeof(size_t);
          const size_t aligned   = save->bufsize / word_size;
@@ -176,6 +194,18 @@ static void autosave_thread(void *data)
       compress = (save->flags & AUTOSAVE_FLAG_COMPRESS_FILES) != 0;
 
       slock_unlock(save->lock);
+
+      /* A frame began or ended while the snapshot was taken: part of
+       * it may be from before that frame and part from after. Drop it
+       * and leave the buffer dirty, so the next interval retries; the
+       * file is only ever written from a snapshot known whole. */
+      if (differ && retro_atomic_load_acquire_size(&save->frame_seq) != seq_before)
+      {
+         differ = false;
+         slock_lock(save->lock);
+         save->flags |= AUTOSAVE_FLAG_DIRTY;
+         slock_unlock(save->lock);
+      }
 
       if (differ)
       {
@@ -418,7 +448,12 @@ void autosave_lock(void)
    {
       autosave_t *handle = autosave_state.list[i];
       if (handle)
-         slock_lock(handle->lock);
+      {
+         /* Odd: the core is running, and any snapshot overlapping
+          * this window is discarded by the worker. */
+         size_t seq = retro_atomic_load_acquire_size(&handle->frame_seq);
+         retro_atomic_store_release_size(&handle->frame_seq, seq + 1);
+      }
    }
 }
 
@@ -438,8 +473,14 @@ void autosave_unlock(void)
       autosave_t *handle = autosave_state.list[i];
       if (handle)
       {
+         /* Even: the frame is over and the buffer is stable until the
+          * next one begins. The dirty bit is set here without the
+          * mutex - the worker only clears it, and a lost update costs
+          * one more comparison, never a missed save: the write below
+          * is driven by the comparison, not by the bit. */
+         size_t seq = retro_atomic_load_acquire_size(&handle->frame_seq);
          handle->flags |= AUTOSAVE_FLAG_DIRTY;
-         slock_unlock(handle->lock);
+         retro_atomic_store_release_size(&handle->frame_seq, seq + 1);
       }
    }
 }
@@ -711,6 +752,40 @@ bool event_load_save_files(bool is_sram_load_disabled)
       ret |= content_load_ram_file(i);
 
    return ret;
+}
+
+/**
+ * content_savefile_is_live:
+ * @path             : absolute path to a file on disk
+ *
+ * Answers whether a loaded core owns @path. Ownership runs from the
+ * point the save file list is built for the content up to the point
+ * the deinit chain has written save RAM back out and torn the list
+ * down again, and it is the window in which core memory rather than
+ * the file on disk holds the authoritative copy.
+ *
+ * Anything that would replace or remove such a file needs to ask:
+ * whatever it puts on disk is overwritten from core memory when the
+ * content closes.
+ *
+ * The comparison ignores case on every platform. A false positive
+ * costs nothing beyond leaving a file alone for one more round, while
+ * a false negative is the data loss this exists to prevent.
+ *
+ * Returns: true if a loaded core owns @path.
+ **/
+bool content_savefile_is_live(const char *path)
+{
+   size_t i;
+
+   if (!task_save_files || string_is_empty(path))
+      return false;
+
+   for (i = 0; i < task_save_files->size; i++)
+      if (string_is_equal_noncase(task_save_files->elems[i].data, path))
+         return true;
+
+   return false;
 }
 
 void path_init_savefile_rtc(const char *savefile_path)

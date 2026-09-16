@@ -59,7 +59,7 @@ int main(void)
    void *alsa_ctx;
 
    /* alsa running on the null PCM, as after a normal init. */
-   alsa_ctx = audio_alsa.init("null", 48000, 64, 1024, &new_rate);
+   alsa_ctx = audio_alsa.init("null", 48000, 64, &new_rate);
    if (!alsa_ctx)
    {
       printf("SKIP: null PCM unavailable\n");

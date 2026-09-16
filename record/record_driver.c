@@ -24,6 +24,10 @@
 #include "../configuration.h"
 #include "../list_special.h"
 #include "../gfx/video_driver.h"
+#include "../audio/audio_driver.h"
+#ifdef HAVE_THREADS
+#include "../gfx/video_thread_wrapper.h"
+#endif
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../runloop.h"
@@ -31,6 +35,7 @@
 #include "../defaults.h"
 
 #include "record_driver.h"
+#include "../audio/audio_upmix.h"
 #include "drivers/record_ffmpeg.h"
 #include "drivers/record_wav.h"
 #include "drivers/record_avfoundation.h"
@@ -136,6 +141,12 @@ bool recording_deinit(void)
    bool history_list_enable        = config_get_ptr()->bools.history_list_enable;
 #endif
 
+#ifdef HAVE_THREADS
+   /* The GPU recorder reads from the frames the video thread presents;
+    * let any in-flight one finish before its readback target goes. */
+   video_thread_wait_idle();
+#endif
+
    if (     !recording_st->data
 		   || !recording_st->driver)
       return false;
@@ -196,6 +207,12 @@ bool recording_init(void)
       video_driver_pix_fmt              = video_st->pix_fmt;
    recording_state_t *recording_st      = &recording_state;
    bool recording_enable                = recording_st->enable;
+
+#ifdef HAVE_THREADS
+   /* No frame may be mid-present while the recorder binds to the
+    * driver's readback path. No-op without the wrapper. */
+   video_thread_wait_idle();
+#endif
 
    if (!recording_enable)
       return false;
@@ -288,7 +305,24 @@ bool recording_init(void)
    params.out_height                = av_info->geometry.base_height;
    params.fb_width                  = av_info->geometry.max_width;
    params.fb_height                 = av_info->geometry.max_height;
+   /* A core delivering a wider layout than stereo through the
+    * multi-channel batch entry is recorded in it, where the container
+    * has a default layout for the count - quad, 5.1 with the pair at
+    * the back, 7.1 - which are the layouts in the order the recorder
+    * takes them. Anything else, stereo. */
    params.channels                  = 2;
+   recording_st->layout              = AUDIO_LAYOUT_STEREO;
+   {
+      uint32_t core_layout = audio_state_get_ptr()->core_layout;
+      if (     core_layout == AUDIO_LAYOUT_QUAD
+            || core_layout == AUDIO_LAYOUT_5POINT1
+            || core_layout == AUDIO_LAYOUT_7POINT1)
+      {
+         params.channels   = audio_layout_channels(core_layout);
+         recording_st->layout = core_layout;
+      }
+   }
+   recording_st->channels            = params.channels;
    params.filename                  = output;
    params.fps                       = av_info->timing.fps;
    params.samplerate                = av_info->timing.sample_rate;
@@ -348,8 +382,8 @@ bool recording_init(void)
       params.fb_height                    = next_pow2(vp.height);
 
       if (video_force_aspect &&
-            (video_st->aspect_ratio > 0.0f))
-         params.aspect_ratio              = video_st->aspect_ratio;
+            (VIDEO_DRIVER_ASPECT_RATIO(video_st) > 0.0f))
+         params.aspect_ratio              = VIDEO_DRIVER_ASPECT_RATIO(video_st);
       else
          params.aspect_ratio              = (float)vp.width / vp.height;
 
@@ -373,8 +407,8 @@ bool recording_init(void)
       }
 
       if (video_force_aspect &&
-            (video_st->aspect_ratio > 0.0f))
-         params.aspect_ratio = video_st->aspect_ratio;
+            (VIDEO_DRIVER_ASPECT_RATIO(video_st) > 0.0f))
+         params.aspect_ratio = VIDEO_DRIVER_ASPECT_RATIO(video_st);
       else
          params.aspect_ratio = (float)params.out_width / params.out_height;
 
@@ -387,7 +421,7 @@ bool recording_init(void)
 
          params.pix_fmt      = FFEMU_PIX_RGB565;
 
-         if (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
+         if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_STATE_OUT_RGB32)
             params.pix_fmt = FFEMU_PIX_ARGB8888;
 
          rarch_softfilter_get_max_output_size(

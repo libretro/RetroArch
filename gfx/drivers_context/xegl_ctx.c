@@ -543,6 +543,17 @@ static void gfx_ctx_xegl_swap_buffers(void *data)
 #endif
 }
 
+static void gfx_ctx_xegl_release_current(void *data)
+{
+#ifdef HAVE_EGL
+   xegl_ctx_data_t *xegl = (xegl_ctx_data_t*)data;
+   if (xegl)
+      egl_release_current(&xegl->egl);
+#else
+   (void)data;
+#endif
+}
+
 static void gfx_ctx_xegl_bind_hw_render(void *data, bool enable)
 {
 #ifdef HAVE_EGL
@@ -563,6 +574,7 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 {
    switch (xegl_api)
    {
+      case GFX_CTX_OPENGL_API:
       case GFX_CTX_OPENGL_ES_API:
       case GFX_CTX_OPENVG_API:
 #ifdef HAVE_EGL
@@ -570,7 +582,6 @@ static gfx_ctx_proc_t gfx_ctx_xegl_get_proc_address(const char *symbol)
 #else
          break;
 #endif
-      case GFX_CTX_OPENGL_API:
       case GFX_CTX_NONE:
       default:
          break;
@@ -659,5 +670,8 @@ const gfx_ctx_driver_t gfx_ctx_x_egl =
    NULL,
    NULL,
    gfx_ctx_xegl_create_surface,
-   gfx_ctx_xegl_destroy_surface
+   gfx_ctx_xegl_destroy_surface,
+   x11_presentable,
+   NULL, /* last_present_time */
+   gfx_ctx_xegl_release_current
 };

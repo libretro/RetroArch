@@ -22,6 +22,7 @@
 #include <pulse/pulseaudio.h>
 
 #include <boolean.h>
+#include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
 
@@ -32,6 +33,7 @@ typedef struct
 {
    pa_threaded_mainloop *mainloop;
    pa_context *context;
+   uint32_t layout;   /* the frontend's mask the stream carries */
    pa_stream *stream;
    size_t buffer_size;
    /* The server's request granularity; wait_writable() only needs
@@ -45,7 +47,33 @@ typedef struct
    bool is_ready;
    /* Set by the timeout event pulse_wait_ms() arms. */
    bool timed_out;
+   /* Frames handed to the server since the stream opened, for the sink
+    * rate estimate; the device's own count is this less whatever is
+    * still queued. Written and read on the frontend's thread, under
+    * the mainloop lock where the writes happen. */
+   uint64_t frames_written;
+   unsigned rate;
+   /* What the server last said, from its own thread, for the reads the
+    * frontend makes every frame: the writable size, from the write
+    * callback's argument and after each write; the sink's own latency
+    * behind the stream, in frames, from the latency update. Read
+    * without the mainloop lock. Stale by at most one server period -
+    * the write callback fires at each - and stale on the full side,
+    * since only a callback raises the writable size and every write
+    * lowers it at once. */
+   retro_atomic_size_t writable_cached;
+   retro_atomic_size_t sink_frames_cached;
 } pa_t;
+
+/* A note for the eventcount census: this driver stays off it, on
+ * purpose. Every wait and signal here is pa_threaded_mainloop's own
+ * rendezvous, which is not machinery this file chose but the
+ * library's contract - every pa_* call below must hold the mainloop
+ * lock, callbacks are dispatched under it, and
+ * pa_threaded_mainloop_signal is only meaningful from inside it.
+ * Parking on anything of ours would step outside that contract, and
+ * there is nothing else here to park on: no fifo of ours sits in
+ * front of pa_stream_write. Same column as ALSA's device waits. */
 
 /* Bounds on the waits below. A server that is answering signals in
  * milliseconds; these are for one that is not - stopped consuming, or
@@ -186,12 +214,20 @@ static void pulse_stream_state_cb(pa_stream *s, void *data)
 static void pulse_stream_request_cb(pa_stream *s, size_t len, void *data)
 {
    pa_t *pa = (pa_t*)data;
+   retro_atomic_store_release_size(&pa->writable_cached, len);
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
 static void pulse_stream_latency_update_cb(pa_stream *s, void *data)
 {
    pa_t *pa = (pa_t*)data;
+   /* On the mainloop thread, the lock held: the timing info is
+    * current here. sink_usec is the part of the latency that is not
+    * the server's queue; NULL until timing data has arrived. */
+   const pa_timing_info *ti = pa_stream_get_timing_info(s);
+   if (ti && pa->rate)
+      retro_atomic_store_release_size(&pa->sink_frames_cached,
+            (size_t)((uint64_t)ti->sink_usec * pa->rate / 1000000));
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
@@ -213,25 +249,56 @@ static void pulse_buffer_attr_cb(pa_stream *s, void *data)
    pa_t *pa = (pa_t*)data;
    const pa_buffer_attr *server_attr = pa_stream_get_buffer_attr(s);
    if (server_attr)
+   {
       pa->buffer_size = server_attr->tlength;
       pa->minreq      = server_attr->minreq;
+   }
 
 #if 0
    RARCH_LOG("[PulseAudio] Got new buffer size %u.\n", (unsigned)pa->buffer_size);
 #endif
 }
 
+/* A channel map of the layout's positions in the mask's ascending-bit
+ * order, which is the order the frames carry. A count never decides
+ * a position: the two six-channel layouts differ in the rear pair and
+ * each is given as itself. */
+static void pulse_channel_map(uint32_t layout, pa_channel_map *map)
+{
+   static const struct { uint32_t bit; pa_channel_position_t pos; } table[] = {
+      { AUDIO_SPEAKER_FRONT_LEFT,            PA_CHANNEL_POSITION_FRONT_LEFT            },
+      { AUDIO_SPEAKER_FRONT_RIGHT,           PA_CHANNEL_POSITION_FRONT_RIGHT           },
+      { AUDIO_SPEAKER_FRONT_CENTER,          PA_CHANNEL_POSITION_FRONT_CENTER          },
+      { AUDIO_SPEAKER_LOW_FREQUENCY,         PA_CHANNEL_POSITION_LFE                   },
+      { AUDIO_SPEAKER_BACK_LEFT,             PA_CHANNEL_POSITION_REAR_LEFT             },
+      { AUDIO_SPEAKER_BACK_RIGHT,            PA_CHANNEL_POSITION_REAR_RIGHT            },
+      { AUDIO_SPEAKER_FRONT_LEFT_OF_CENTER,  PA_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER  },
+      { AUDIO_SPEAKER_FRONT_RIGHT_OF_CENTER, PA_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER },
+      { AUDIO_SPEAKER_BACK_CENTER,           PA_CHANNEL_POSITION_REAR_CENTER           },
+      { AUDIO_SPEAKER_SIDE_LEFT,             PA_CHANNEL_POSITION_SIDE_LEFT             },
+      { AUDIO_SPEAKER_SIDE_RIGHT,            PA_CHANNEL_POSITION_SIDE_RIGHT            },
+   };
+   size_t i;
+   pa_channel_map_init(map);
+   for (i = 0; i < ARRAY_SIZE(table); i++)
+      if (layout & table[i].bit)
+         map->map[map->channels++] = table[i].pos;
+}
+
 static void *pulse_init(const char *device, unsigned rate,
-      unsigned latency, unsigned block_frames,
+      unsigned latency, 
       unsigned *new_rate)
 {
    pa_sample_spec spec;
+   pa_channel_map map;
    pa_buffer_attr        buffer_attr = {0};
    const pa_buffer_attr *server_attr = NULL;
    pa_t                          *pa = (pa_t*)calloc(1, sizeof(*pa));
 
    if (!pa)
       return NULL;
+   retro_atomic_size_init(&pa->writable_cached, 0);
+   retro_atomic_size_init(&pa->sink_frames_cached, 0);
 
    memset(&spec, 0, sizeof(spec));
 
@@ -275,11 +342,18 @@ static void *pulse_init(const char *device, unsigned rate,
    if (device)
      pa_context_set_default_sink(pa->context, device, NULL, NULL);
 
+   /* The layout the frontend asked for, as a channel map of its
+    * positions in the mask's order: the server routes each to the
+    * sink's channel of that position, or remixes where the sink
+    * lacks one, so what is asked is what is carried. */
+   pa->layout    = audio_driver_requested_layout();
    spec.format   = is_little_endian() ? PA_SAMPLE_FLOAT32LE : PA_SAMPLE_FLOAT32BE;
-   spec.channels = 2;
+   spec.channels = (uint8_t)audio_layout_channels(pa->layout);
    spec.rate     = rate;
+   pulse_channel_map(pa->layout, &map);
+   pa->rate      = rate;
 
-   pa->stream    = pa_stream_new(pa->context, "audio", &spec, NULL);
+   pa->stream    = pa_stream_new(pa->context, "audio", &spec, &map);
    if (!pa->stream)
       goto unlock_error;
 
@@ -323,9 +397,15 @@ static void *pulse_init(const char *device, unsigned rate,
             (unsigned)pa->buffer_size);
    }
    else
+   {
       pa->buffer_size = buffer_attr.tlength;
       pa->minreq      = buffer_attr.tlength / 4;
+   }
 
+   /* Seeded here, under the lock; the write callback keeps it. */
+   retro_atomic_store_release_size(&pa->writable_cached,
+         pa_stream_writable_size(pa->stream));
+   retro_atomic_store_release_size(&pa->sink_frames_cached, 0);
    pa_threaded_mainloop_unlock(pa->mainloop);
    pa->is_ready = true;
 
@@ -397,6 +477,10 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
          buf     += writable;
          len     -= writable;
          _len    += writable;
+         /* Float32 at the layout's channels, fixed at stream setup. */
+         pa->frames_written += writable / (audio_layout_channels(pa->layout) * sizeof(float));
+         retro_atomic_store_release_size(&pa->writable_cached,
+               pa_stream_writable_size(pa->stream));
       }
       else if (!pa->nonblock)
       {
@@ -465,26 +549,73 @@ static void pulse_set_nonblock_state(void *data, bool state)
 
 static bool pulse_use_float(void *data) { return true; }
 
+static uint32_t pulse_layout(void *data)
+{
+   pa_t *pa = (pa_t*)data;
+   return pa ? pa->layout : AUDIO_LAYOUT_STEREO;
+}
+
+/* Read every frame by the frontend; served from what the server's
+ * thread last said, with no lock. See writable_cached. */
 static size_t pulse_write_avail(void *data)
 {
-   size_t _len;
    pa_t *pa = (pa_t*)data;
+   size_t sink;
 
    if (!pa->is_ready)
       return 0;
 
-   pa_threaded_mainloop_lock(pa->mainloop);
-   _len = pa_stream_writable_size(pa->stream);
-
    audio_driver_set_buffer_size(pa->buffer_size); /* Can change spuriously. */
-   pa_threaded_mainloop_unlock(pa->mainloop);
-   return _len;
+   sink = retro_atomic_load_acquire_size(&pa->sink_frames_cached);
+   if (sink)
+      audio_driver_set_device_latency(sink);
+   return retro_atomic_load_acquire_size(&pa->writable_cached);
 }
 
 static size_t pulse_buffer_size(void *data)
 {
    pa_t *pa = (pa_t*)data;
    return pa->buffer_size;
+}
+
+/* Frames the device has taken since the stream opened.
+ *
+ * PulseAudio has no callback per period to count, so this is ALSA's
+ * shape rather than JACK's: everything handed to the server, less what
+ * has not been played yet. pa_stream_get_latency() reports that
+ * remainder in microseconds - the server's queue plus the sink's own,
+ * which is what should be subtracted - and it is only meaningful once
+ * timing data has arrived, so a stream that has not got any yet
+ * reports nothing rather than a count that would read as a stall.
+ *
+ * The negative case is real: on a monitor source or right after a
+ * flush the latency can come back negative, meaning the server is
+ * ahead of the write pointer. Subtracting it would inflate the count. */
+static size_t pulse_frames_consumed(void *data)
+{
+   pa_t     *pa = (pa_t*)data;
+   pa_usec_t lat_usec;
+   int       negative = 0;
+   uint64_t  queued;
+
+   if (!pa || !pa->is_ready || !pa->rate)
+      return 0;
+
+   pa_threaded_mainloop_lock(pa->mainloop);
+   if (pa_stream_get_latency(pa->stream, &lat_usec, &negative) < 0)
+   {
+      pa_threaded_mainloop_unlock(pa->mainloop);
+      return 0;
+   }
+   queued = negative ? 0
+         : (uint64_t)((double)lat_usec * (double)pa->rate / 1000000.0);
+   if (queued > pa->frames_written)
+      queued = pa->frames_written;
+   {
+      size_t out = (size_t)(pa->frames_written - queued);
+      pa_threaded_mainloop_unlock(pa->mainloop);
+      return out;
+   }
 }
 
 /* Sleep on the mainloop until at least len bytes are writable. The
@@ -662,5 +793,8 @@ audio_driver_t audio_pulse = {
    pulse_write_avail,
    pulse_buffer_size,
    NULL, /* write_raw */
-   pulse_wait_writable
+   pulse_wait_writable,
+   pulse_frames_consumed,
+   NULL, /* underruns */
+   pulse_layout
 };

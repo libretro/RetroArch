@@ -30,6 +30,7 @@
 #include "../../input/input_remapping.h"
 
 #include "../../retroarch.h"
+#include "../../ui/ui_companion_driver.h"
 #include "../../core_option_manager.h"
 
 #ifdef HAVE_CHEEVOS
@@ -198,18 +199,6 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
    }
    return 0;
 }
-
-#ifdef HAVE_CHEEVOS
-static int menu_action_sublabel_achievement_pause_menu(file_list_t* list,
-      unsigned type, unsigned i, const char* label, const char* path, char* s, size_t len)
-{
-   if (string_is_equal(path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE), len);
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME), len);
-   return 1;
-}
-#endif
 
 #ifdef HAVE_AUDIOMIXER
 DEFAULT_SUBLABEL_MACRO(menu_action_sublabel_setting_audio_mixer_add_to_mixer_and_play,
@@ -517,6 +506,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_select_physical_keyboard,   ME
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_android_input_disconnect_workaround, MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_android_system_keyboard,     MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD)
 #endif
+#ifdef HAVE_SDL3
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_sdl3_system_keyboard,        MENU_ENUM_SUBLABEL_INPUT_SDL3_SYSTEM_KEYBOARD)
+#endif
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_animation,       MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_animation_speed, MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED)
@@ -524,6 +516,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_animation_speed, ME
 #ifdef HAVE_BLUETOOTH
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_driver,              MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER)
 #endif
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_ui_companion_driver,           MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER)
 
 #ifdef HAVE_MICROPHONE
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_microphone_driver,                  MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER)
@@ -625,7 +618,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_dingux_rs90_softfilter_type,  
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_bias_portrait_x,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_bias_portrait_y,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y)
 #endif
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_show_wimp,                             MENU_ENUM_SUBLABEL_SHOW_WIMP)
 #endif
 
@@ -804,8 +797,7 @@ static int action_bind_sublabel_cheevos_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned offset = type - MENU_SETTINGS_CHEEVOS_START;
-   rcheevos_menu_get_sublabel(offset, s, len);
+   rcheevos_menu_get_sublabel(i, s, len);
    return 0;
 }
 #endif
@@ -1283,11 +1275,11 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
 
    /* Check whether runtime info should be loaded from log file */
-   if (entry->runtime_status == PLAYLIST_RUNTIME_UNKNOWN)
+   if (PLAYLIST_RUNTIME_STATUS(entry) == PLAYLIST_RUNTIME_UNKNOWN)
       runtime_update_playlist(playlist, playlist_index);
 
    /* Check whether runtime info is valid */
-   if (entry->runtime_status == PLAYLIST_RUNTIME_VALID)
+   if (PLAYLIST_RUNTIME_STATUS(entry) == PLAYLIST_RUNTIME_VALID)
    {
       size_t n = 0;
       char tmp[128];
@@ -1442,6 +1434,28 @@ static int action_bind_sublabel_from_enum(
    if (cbs && cbs->sublabel_enum != MSG_UNKNOWN)
       strlcpy(s, msg_hash_to_str(cbs->sublabel_enum), len);
    return 1;
+}
+
+size_t menu_cbs_sublabel_for_enum(enum msg_hash_enums enum_idx,
+      unsigned type, size_t size, char *s, size_t len)
+{
+   menu_file_list_cbs_t cbs;
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   memset(&cbs, 0, sizeof(cbs));
+   cbs.enum_idx      = enum_idx;
+   cbs.sublabel_enum = MSG_UNKNOWN;
+   menu_cbs_init_bind_sublabel(&cbs, NULL, NULL, 0, type, size);
+   /* Table-driven: the bound callback reads sublabel_enum back out of
+    * the list's action data, which a caller without a list cannot
+    * supply, so read it here. This is what went missing for the
+    * desktop companions' tooltips when the sublabels became data. */
+   if (cbs.sublabel_enum != MSG_UNKNOWN)
+      return strlcpy(s, msg_hash_to_str(cbs.sublabel_enum), len);
+   if (cbs.action_sublabel && cbs.action_sublabel != action_bind_sublabel_from_enum)
+      cbs.action_sublabel(NULL, type, 0, NULL, NULL, s, len);
+   return strlen(s);
 }
 
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
@@ -1790,8 +1804,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST, MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST },
       { MENU_ENUM_LABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE, MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE },
       { MENU_ENUM_LABEL_CRT_SWITCH_HIRES_MENU, MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU },
+      { MENU_ENUM_LABEL_CRT_SWITCH_WRITE_EDID, MENU_ENUM_SUBLABEL_CRT_SWITCH_WRITE_EDID },
+      { MENU_ENUM_LABEL_VIDEO_SDL_DISPLAY_SERVER, MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER },
       { MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY, MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY },
       { MENU_ENUM_LABEL_AUDIO_FASTPATH_S16, MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16 },
+      { MENU_ENUM_LABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING, MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING },
       { MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION, MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION },
       { MENU_ENUM_LABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE, MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE },
       { MENU_ENUM_LABEL_MENU_THUMBNAIL_PREVIEW_AUDIO, MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO },
@@ -1972,6 +1989,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_PLAYLIST_ENTRY_RENAME, MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME },
       { MENU_ENUM_LABEL_PLAYLIST_ENTRY_REMOVE, MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE },
       { MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE, MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE },
+      { MENU_ENUM_LABEL_THREAD_PREFER_FAST_CORES, MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES },
       { MENU_ENUM_LABEL_SHOW_ADVANCED_SETTINGS, MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS },
       { MENU_ENUM_LABEL_SAVESTATE_LIST, MENU_ENUM_SUBLABEL_SAVESTATE_LIST },
       { MENU_ENUM_LABEL_STATE_SLOT_RUN, MENU_ENUM_SUBLABEL_LOAD_STATE },
@@ -2193,6 +2211,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_SAVESTATE_THUMBNAIL_ENABLE, MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE },
       { MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION, MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION },
       { MENU_ENUM_LABEL_SAVESTATE_FILE_COMPRESSION, MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION },
+      { MENU_ENUM_LABEL_SAVE_COMPRESSION_CODEC, MENU_ENUM_SUBLABEL_SAVE_COMPRESSION_CODEC },
       { MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE, MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE },
       { MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD, MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD },
       { MENU_ENUM_LABEL_PERFCNT_ENABLE, MENU_ENUM_SUBLABEL_PERFCNT_ENABLE },
@@ -2219,6 +2238,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_VIDEO_GPU_RECORD, MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD },
       { MENU_ENUM_LABEL_VIDEO_FULLSCREEN, MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN },
       { MENU_ENUM_LABEL_VIDEO_WINDOWED_FULLSCREEN, MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN },
+      { MENU_ENUM_LABEL_VIDEO_FSE_NEGOTIATION, MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION },
       { MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_REFRESH_RATE, MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE },
       { MENU_ENUM_LABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD, MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD },
       { MENU_ENUM_LABEL_VIDEO_FORCE_SRGB_DISABLE, MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE },
@@ -2275,6 +2295,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_RESTART_RETROARCH, MENU_ENUM_SUBLABEL_RESTART_RETROARCH },
       { MENU_ENUM_LABEL_NETWORK_INFORMATION, MENU_ENUM_SUBLABEL_NETWORK_INFORMATION },
       { MENU_ENUM_LABEL_SYSTEM_INFORMATION, MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION },
+      { MENU_ENUM_LABEL_DISPLAY_INFORMATION, MENU_ENUM_SUBLABEL_DISPLAY_INFORMATION },
+      { MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION, MENU_ENUM_SUBLABEL_DISPLAY_EDID_INFORMATION },
       { MENU_ENUM_LABEL_LOAD_CONTENT_LIST, MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST },
       { MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS, MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS },
       { MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL, MENU_ENUM_SUBLABEL_LOAD_CONTENT_SPECIAL },
@@ -2338,6 +2360,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_INPUT_TOUCH_SCALE, MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE },
       { MENU_ENUM_LABEL_AUDIO_SYNC, MENU_ENUM_SUBLABEL_AUDIO_SYNC },
       { MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE, MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE },
+      { MENU_ENUM_LABEL_AUDIO_TIME_STRETCH, MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH },
+      { MENU_ENUM_LABEL_AUDIO_TIME_STRETCH_LOWPASS, MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS },
+      { MENU_ENUM_LABEL_AUDIO_SINK_RATE_ESTIMATION, MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION },
       { MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY, MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY },
       { MENU_ENUM_LABEL_AUDIO_VOLUME, MENU_ENUM_SUBLABEL_AUDIO_VOLUME },
       { MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR, MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR },
@@ -2381,6 +2406,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_VIDEO_SCAN_SUBFRAMES, MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES },
       { MENU_ENUM_LABEL_VIDEO_FRAME_DELAY, MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY },
       { MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO, MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO },
+      { MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY, MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY },
       { MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED, MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED },
       { MENU_ENUM_LABEL_VIDEO_SHADER_DELAY, MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY },
       { MENU_ENUM_LABEL_ADD_CONTENT_LIST, MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST },
@@ -2411,9 +2437,13 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_UPDATER_SETTINGS, MENU_ENUM_SUBLABEL_UPDATER_SETTINGS },
       { MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES, MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES },
       { MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS, MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS },
+      { MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT, MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT },
+      { MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING, MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING },
+      { MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY, MENU_ENUM_SUBLABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY },
       { MENU_ENUM_LABEL_VIDEO_MAX_FRAME_LATENCY, MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY },
       { MENU_ENUM_LABEL_NETPLAY_PING_SHOW, MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW },
       { MENU_ENUM_LABEL_STATISTICS_SHOW, MENU_ENUM_SUBLABEL_STATISTICS_SHOW },
+      { MENU_ENUM_LABEL_STATISTICS_HIDE_IN_MENU, MENU_ENUM_SUBLABEL_STATISTICS_HIDE_IN_MENU },
       { MENU_ENUM_LABEL_FPS_SHOW, MENU_ENUM_SUBLABEL_FPS_SHOW },
       { MENU_ENUM_LABEL_FPS_UPDATE_INTERVAL, MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL },
       { MENU_ENUM_LABEL_FRAMECOUNT_SHOW, MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW },
@@ -3053,6 +3083,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_driver);
 #endif
             break;
+         case MENU_ENUM_LABEL_UI_COMPANION_DRIVER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_ui_companion_driver);
+            break;
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
          case MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_menu_screensaver_animation);
@@ -3075,6 +3108,11 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_INPUT_ANDROID_SYSTEM_KEYBOARD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_android_system_keyboard);
+            break;
+#endif
+#ifdef HAVE_SDL3
+         case MENU_ENUM_LABEL_INPUT_SDL3_SYSTEM_KEYBOARD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_sdl3_system_keyboard);
             break;
 #endif
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:
@@ -3324,9 +3362,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_list);
             break;
-         case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU:
-            BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_achievement_pause_menu);
-            break;
          case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_pause_cancel);
             break;
@@ -3339,11 +3374,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ACHIEVEMENT_SERVER_UNREACHABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_server_unreachable);
             break;
-         case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
-         case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY_HARDCORE:
-         case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
-         case MENU_ENUM_LABEL_CHEEVOS_UNSUPPORTED_ENTRY:
-         case MENU_ENUM_LABEL_CHEEVOS_UNOFFICIAL_ENTRY:
+         case MENU_ENUM_LABEL_CHEEVOS_MENU_ENTRY:
+         case MENU_ENUM_LABEL_CHEEVOS_MENU_SUBMENU:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_entry);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_ENABLE:
@@ -3557,7 +3589,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_video_filter_enable);
             break;
 #endif
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
          case MENU_ENUM_LABEL_SHOW_WIMP:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_show_wimp);
             break;

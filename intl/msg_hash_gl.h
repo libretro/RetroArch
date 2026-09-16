@@ -207,7 +207,6 @@ static const struct
    char s_9834febe[479];
    char s_93805cc8_0[500];
    char s_93805cc8_1[82];
-   char s_b495662b[134];
    char s_9953f4e2[256];
    char s_de76d2dc[28];
    char s_79e212bd[5];
@@ -258,6 +257,7 @@ static const struct
    char s_35a1323d[13];
    char s_f72667c9[18];
    char s_adce4374[18];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[45];
 #endif
@@ -265,7 +265,6 @@ static const struct
    char s_d9a51d02[21];
    char s_12e77e8f[8];
    char s_98760b94[28];
-   char s_af6007a1[18];
    char s_da068369[12];
    char s_daead8a5[4];
    char s_48c208ee[16];
@@ -284,6 +283,7 @@ static const struct
    char s_c82d0aee[11];
    char s_e2062515[38];
    char s_ad791974[7];
+   char s_fcd64038[9];
    char s_b271ae95[20];
    char s_fb84857a[7];
    char s_3943c7ae[35];
@@ -632,11 +632,14 @@ static const struct
    char s_15f24ff4[9];
    char s_ec7e8026[8];
    char s_5d29b870[27];
+   char s_6996339b[4];
    char s_08e9410c[18];
    char s_d95824aa[24];
    char s_639f529e[17];
    char s_4927597c[15];
    char s_77b74366[14];
+   char s_690efede[8];
+   char s_ddf679b9[7];
    char s_3b7e9d77[12];
    char s_10342503[10];
    char s_d31f6d88[21];
@@ -1545,7 +1548,6 @@ static const struct
    char s_74b77b4a[22];
    char s_7534cfc9[7];
    char s_36259b63[16];
-   char s_37368130[14];
    char s_d51f54a2[15];
    char s_b35f573c[7];
    char s_1cad7751[13];
@@ -1995,6 +1997,7 @@ static const struct
    char s_43ac80a0[16];
    char s_6959ce80[18];
    char s_886631ec[21];
+   char s_aa628249[5];
    char s_ebe994b4[23];
    char s_1c62c301[8];
    char s_a8bb35b6[9];
@@ -2719,8 +2722,6 @@ static const struct
    char s_d9153542[52];
    char s_8e48ec69[38];
    char s_cd43c108[91];
-   char s_cd46e260[112];
-   char s_cd482ffe[110];
    char s_49336383[56];
    char s_e92351d4[109];
    char s_8e22cdce[52];
@@ -3455,7 +3456,6 @@ static const struct
    char s_1eebf4f8[217];
    char s_2f2ca2b6[217];
    char s_2c9be635[140];
-   char s_05ec12e6[190];
    char s_b5a603de[53];
    char s_d9c2db25[75];
 #ifdef HAVE_ODROIDGO2
@@ -3498,7 +3498,6 @@ static const struct
    char s_d62ed5dc[379];
    char s_2e69508b[409];
    char s_7e96b5ce[57];
-   char s_3547866d[140];
    char s_c2314d30[233];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[177];
@@ -3615,6 +3614,7 @@ static const struct
    char s_ec5751c3[26];
    char s_af4b70f4[41];
    char s_d9afe3b5[46];
+   char s_70ecb843[8];
    char s_312fd783[45];
    char s_96df643a[87];
    char s_150b4ebe[76];
@@ -4515,8 +4515,6 @@ static const struct
    "iplos de 60 Hz, como 144 Hz, 165 Hz, etc. Non combine con Intervalo de intercambio > 1, BFI, Ret"
    "raso de fotogramas ou Sincronizaci\303\263n con frecuencia de fotogramas de cont",
    "ido exacto. Deixar o sistema VRR activado est\303\241 ben, pero non esa configuraci\303\263n.",
-   "Usa un controlador de v\303\255deo enroscado. Usalo pode mellorar o rendemento polo posible cust"
-   "o da latencia e m\303\241is tartamudeo de v\303\255deo.",
    "Sincronizar coa taxa de fotogramas de contido exacto. Esta opci\303\263n \303\251 o equivalente "
    "a forzar a velocidade x1 a\303\255nda que permite un avance r\303\241pido. Sen desviaci\303\263n"
    " da frecuencia de actualizaci\303\263n do n\303\272cleo solicitada, nin control din\303\241mico "
@@ -4570,6 +4568,7 @@ static const struct
    "Modo de fala",
    "Lingua de destino",
    "URL do servizo AI",
+   "Sempre",
 #ifndef HAVE_DYNAMIC
    "Recarga sempre o n\303\272cleo ao executar contido",
 #endif
@@ -4577,7 +4576,6 @@ static const struct
    "Icona da aplicaci\303\263n",
    "Activos",
    "Abrir panel de control ASIO",
-   "Bloque fotogramas",
    "Dispositivo",
    "Son",
    "Complemento DSP",
@@ -4596,6 +4594,7 @@ static const struct
    "Mesturador",
    "Ganancia de volume do mesturador (dB)",
    "Acalar",
+   "Est\303\251reo",
    "Taxa de sa\303\255da (Hz)",
    "Sa\303\255da",
    "Control din\303\241mico da taxa de audio",
@@ -4945,11 +4944,14 @@ static const struct
    "En pausa",
    "En xogo",
    "Informaci\303\263n sobre o disco",
+   "Son",
    "Cargar disco novo",
    "\303\215ndice actual do disco",
    "Control de disco",
    "Expulsar Disco",
    "Inserir disco",
+   "Dacordo",
+   "Sa\303\255da",
    "Por defecto",
    "Descargas",
    "Descargar un n\303\272cleo",
@@ -5861,7 +5863,6 @@ static const struct
    "&Descargar un N\303\272cleo",
    "&Axuda",
    "Sobre RetroArch",
-   "Colaboradores",
    "Documentaci\303\263n",
    "Limpar",
    "&Ferramentas",
@@ -6319,6 +6320,7 @@ static const struct
    "Versi\303\263n de Git",
    "Versi\303\263n de Lakka",
    "Versi\303\263n de MoltenVK",
+   "Paso",
    "Fonte de alimentaci\303\263n",
    "Cargada",
    "Cargando",
@@ -7212,10 +7214,6 @@ static const struct
    "Captura unha imaxe do contido actual.",
    "Mant\303\251n o sombreado seleccionado activado/desactivado mentres se mante\303\261a a tecla pu"
    "lsada.",
-   "Carga e aplica o seguinte ficheiro predefinido de sombreadores na ra\303\255z do directorio \"So"
-   "mbreadores de v\303\255deo\".",
-   "Carga e aplica o ficheiro predefinido do sombreador anterior na ra\303\255z do directorio \"Somb"
-   "readores de v\303\255deo\".",
    "Activa/desactiva o sombreador seleccionado actualmente.",
    "Permite a c\303\241mara lenta cando se mante\303\261a. O contido exec\303\272tase \303\241 veloc"
    "idade normal cando se solta a tecla.",
@@ -8353,9 +8351,6 @@ static const struct
    "or da pantalla). Pode introducir artefactos de escala.",
    "Captura a imaxe despois de aplicar filtros (pero non sombreadores). O v\303\255deo ter\303\241 u"
    "n aspecto tan elegante como o que ves na t\303\272a pantalla.",
-   "Frecuencia de actualizaci\303\263n vertical da t\303\272a pantalla. \303\232sase para calcular u"
-   "nha taxa de entrada de son axeitada. Isto ignorarase se est\303\241 activado \342\200\234V\303"
-   "\255deo con f\303\255os (Threaded Video)\342\200\235.",
    "A taxa de actualizaci\303\263n estimada da pantalla en Hz.",
    "A taxa de actualizaci\303\263n segundo a informada polo controlador da pantalla.",
 #ifdef HAVE_ODROIDGO2
@@ -8433,8 +8428,6 @@ static const struct
    "mo de fotogramas mellorado cando se executa, por exemplo. Contido de 30 fps nunha pantalla de 60"
    " Hz ou contido de 60 fps nunha pantalla de 120 Hz.",
    "Cambiar as configuraci\303\263ns de sincronizaci\303\263n de v\303\255deo.",
-   "Millora o rendemento a costa da latencia e que o v\303\255deo vaia a saltos. \303\232sao s\303"
-   "\263 se a velocidade completa non se pode obter doutra maneira.",
    "Tenta mellorar o rendemento usando b\303\272feres de argumentos de Metal. Alg\303\272ns n\303"
    "\272cleos poden requirilo. Isto pode provocar erros nalg\303\272ns sombreadores, especialmente e"
    "n soporte f\303\255sico antigo ou versi\303\263ns antigas do sistema operativo.",
@@ -8582,6 +8575,7 @@ static const struct
    "Este xogo non ten logros.",
    "Erro ao cargar o xogo de RetroLogros: %s",
    "RetroLogros: Non se puido identificar o xogo.",
+   "Extremo",
    "Modo Hardcore dos logros cambiado polo host.",
    "Cargouse un estado de gardado. Logros Modo Hardcore desactivado para a sesi\303\263n actual.",
    "Activouse un truco. Logros Modo Hardcore desactivado para a sesi\303\263n actual.",
@@ -9097,7 +9091,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (194231u
+      (sizeof(msg_hash_gl_blob) == (193561u
 #ifdef ANDROID
        + 365u
 #endif
@@ -9683,7 +9677,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -9734,6 +9727,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -9741,7 +9735,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -9760,6 +9753,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
@@ -10108,11 +10102,14 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -11021,7 +11018,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
@@ -11470,6 +11466,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -12193,8 +12190,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -12929,7 +12924,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -12972,7 +12966,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -13089,6 +13082,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
    (uint32_t)MSG_CHEEVOS_GAME_LOAD_FAILED,
    (uint32_t)MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE,
    (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
    (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,

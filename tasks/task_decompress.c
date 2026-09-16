@@ -465,7 +465,7 @@ void *task_push_decompress(
 #ifdef HAVE_7ZIP
           && strcasecmp(ext, "7z")  != 0
 #endif
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
           && strcasecmp(ext, "zst") != 0
 #endif
          )

@@ -73,6 +73,12 @@ int video_thread_font_init_calls = 0;
 
 bool video_driver_is_threaded(void) { return true; }
 
+/* font_driver.c asks this before routing a font call through the
+ * threaded wrapper. This sample drives that path deliberately - its
+ * whole subject is what the wrapper does to a font's lifetime - so it
+ * answers the same as video_driver_is_threaded() above. */
+bool video_driver_thread_wrapper_active(void) { return true; }
+
 uintptr_t video_thread_texture_handle(void *data,
       uintptr_t (*handle_get)(void *data))
 { return handle_get ? handle_get(data) : 0; }
@@ -149,3 +155,9 @@ void slock_free(slock_t *l)
 void slock_lock(slock_t *l)   { pthread_mutex_lock((pthread_mutex_t*)l); }
 void slock_unlock(slock_t *l) { pthread_mutex_unlock((pthread_mutex_t*)l); }
 #endif
+
+/* font_driver.c sends gfx_display's batch out before it draws text,
+ * so that quads asked for first land under it. There is no batch
+ * here; the pointer is a blob for the symbol to return. */
+void *disp_get_ptr(void) { static char b[8192]; return b; }
+void gfx_display_flush_batch(void *p_disp) { (void)p_disp; }

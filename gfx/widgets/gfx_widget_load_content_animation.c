@@ -191,9 +191,9 @@ static void gfx_widget_load_content_animation_reset(void)
    uintptr_t timer_tag                              = (uintptr_t)&state->timer;
 
    /* Kill any existing timers/animations */
-   gfx_animation_kill_by_tag(&timer_tag);
-   gfx_animation_kill_by_tag(&alpha_tag);
-   gfx_animation_kill_by_tag(&slide_offset_tag);
+   gfx_animation_kill_widget_by_tag(&timer_tag);
+   gfx_animation_kill_widget_by_tag(&alpha_tag);
+   gfx_animation_kill_widget_by_tag(&slide_offset_tag);
 
    /* Reset pertinent state parameters */
    state->status             = GFX_WIDGET_LOAD_CONTENT_IDLE;
@@ -261,7 +261,7 @@ static void gfx_widget_load_content_animation_wait_cb(void *userdata)
    animation_entry.cb           = gfx_widget_load_content_animation_fade_out_cb;
    animation_entry.userdata     = NULL;
 
-   gfx_animation_push(&animation_entry);
+   gfx_animation_push_widget(&animation_entry);
    state->status = GFX_WIDGET_LOAD_CONTENT_FADE_OUT;
 }
 
@@ -275,7 +275,7 @@ static void gfx_widget_load_content_animation_slide_cb(void *userdata)
    timer.cb       = gfx_widget_load_content_animation_wait_cb;
    timer.userdata = state;
 
-   gfx_animation_timer_start(&state->timer, &timer);
+   gfx_animation_timer_start_widget(&state->timer, &timer);
    state->status = GFX_WIDGET_LOAD_CONTENT_WAIT;
 }
 
@@ -296,7 +296,7 @@ static void gfx_widget_load_content_animation_fade_in_cb(void *userdata)
    animation_entry.cb           = gfx_widget_load_content_animation_slide_cb;
    animation_entry.userdata     = state;
 
-   gfx_animation_push(&animation_entry);
+   gfx_animation_push_widget(&animation_entry);
    state->status = GFX_WIDGET_LOAD_CONTENT_SLIDE;
 }
 
@@ -306,13 +306,20 @@ static void gfx_widget_load_content_animation_fade_in_cb(void *userdata)
  * show none.  Safe to call whether or not the animation is running:
  * a value set while idle is simply what the next animation starts
  * with, and the reset on start clears it. */
-void gfx_widget_set_load_content_progress(int8_t progress)
+static void gfx_widget_set_load_content_progress_state(int8_t progress)
 {
    p_w_load_content_animation_st.progress =
          (progress > 100) ? 100 : progress;
 }
 
-bool gfx_widget_start_load_content_animation(void)
+void gfx_widget_set_load_content_progress(int8_t progress)
+{
+   gfx_widgets_state_lock();
+   gfx_widget_set_load_content_progress_state(progress);
+   gfx_widgets_state_unlock();
+}
+
+static bool gfx_widget_start_load_content_animation_state(void)
 {
    gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
@@ -568,6 +575,15 @@ icon_done:
    return true;
 }
 
+bool gfx_widget_start_load_content_animation(void)
+{
+   bool ret;
+   gfx_widgets_state_lock();
+   ret = gfx_widget_start_load_content_animation_state();
+   gfx_widgets_state_unlock();
+   return ret;
+}
+
 /* Widget layout() */
 
 static void gfx_widget_load_content_animation_calculate(
@@ -711,7 +727,7 @@ static void gfx_widget_load_content_animation_iterate(void *user_data,
       animation_entry.cb           = gfx_widget_load_content_animation_fade_in_cb;
       animation_entry.userdata     = state;
 
-      gfx_animation_push(&animation_entry);
+      gfx_animation_push_widget(&animation_entry);
       state->status = GFX_WIDGET_LOAD_CONTENT_FADE_IN;
    }
 }
@@ -915,8 +931,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
          if (state->icon_texture)
          {
-            if (dispctx && dispctx->blend_begin)
-               dispctx->blend_begin(userdata);
+            gfx_display_blend_begin(dispctx, userdata);
 
             gfx_widgets_draw_icon(
                   userdata,
@@ -933,8 +948,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   0.0f, /* sine(rad)  = sine(0) = 0.0f */
                   icon_color);
 
-            if (dispctx && dispctx->blend_end)
-               dispctx->blend_end(userdata);
+            gfx_display_blend_end(dispctx, userdata);
          }
          /* If there is no icon, draw a placeholder
           * (otherwise layout will look terrible...) */

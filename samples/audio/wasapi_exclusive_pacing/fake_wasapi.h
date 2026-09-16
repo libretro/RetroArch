@@ -42,7 +42,20 @@ typedef WCHAR   *LPWSTR;
 typedef struct { uint32_t Data1; uint16_t Data2, Data3; uint8_t Data4[8]; } GUID;
 typedef const GUID *REFIID;
 extern const GUID IID_IAudioClient, IID_IAudioRenderClient, IID_IAudioCaptureClient,
-       mmdevice_IID_IAudioClient3, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, KSDATAFORMAT_SUBTYPE_PCM;
+       mmdevice_IID_IAudioClient3, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, KSDATAFORMAT_SUBTYPE_PCM,
+       mmdevice_IID_IAudioClock, mmdevice_IID_IAudioClock2;
+
+/* Whether the scripted endpoint offers a device clock, and which. */
+void fake_device_configure_clock(int have_clock, int have_clock2);
+/* How far the device's clock runs from nominal, in ppm: the QPC
+ * timestamp handed back beside the position is derived from it. */
+void fake_device_configure_drift(double ppm);
+/* Frames the scripted engine has played, which is what the fake's
+ * clock reports. */
+unsigned long long fake_device_played(void);
+/* Stop signalling the client's event while the engine keeps playing -
+ * a pump held past its period, from the driver's side. */
+void fake_device_withhold_events(int on);
 
 /* --- Wave formats ---------------------------------------------------- */
 #define WAVE_FORMAT_PCM        1
@@ -58,6 +71,16 @@ typedef struct {
    union { WORD wValidBitsPerSample, wSamplesPerBlock, wReserved; } Samples;
    DWORD dwChannelMask; GUID SubFormat;
 } WAVEFORMATEXTENSIBLE;
+/* As mmdevice_common_inline.h defines them, for the driver's AC-3 path. */
+typedef struct
+{
+   WAVEFORMATEXTENSIBLE FormatExt;
+   DWORD dwEncodedSamplesPerSec;
+   DWORD dwEncodedChannelCount;
+   DWORD dwAverageBytesPerSec;
+} mmdevice_iec61937_format_t;
+static const GUID mmdevice_SUBTYPE_IEC61937_DOLBY_DIGITAL =
+   { 0x00000092, 0x0000, 0x0010, { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
 
 /* --- AUDCLNT --------------------------------------------------------- */
 typedef enum { AUDCLNT_SHAREMODE_SHARED = 0, AUDCLNT_SHAREMODE_EXCLUSIVE = 1 } AUDCLNT_SHAREMODE;
@@ -79,6 +102,31 @@ typedef enum { AUDCLNT_SHAREMODE_SHARED = 0, AUDCLNT_SHAREMODE_EXCLUSIVE = 1 } A
 #define AUDCLNT_E_ENGINE_FORMAT_LOCKED AUDCLNT_ERR(0x029)
 
 /* --- COM objects: the vtable shapes the driver's macros dereference --- */
+typedef unsigned long long UINT64;
+
+/* IAudioClock and IAudioClock2: the device's own position. The fake
+ * advances it from the frames the scripted engine has actually
+ * played, so a test can drop service events - which is what a
+ * descheduled pump looks like - and watch the event count fall behind
+ * a clock that does not. */
+typedef struct IAudioClock IAudioClock;
+typedef struct IAudioClock2 IAudioClock2;
+typedef struct IAudioClockVtbl {
+   HRESULT (*QueryInterface)(IAudioClock *, REFIID, void **);
+   DWORD   (*AddRef)(IAudioClock *);
+   DWORD   (*Release)(IAudioClock *);
+   HRESULT (*GetFrequency)(IAudioClock *, UINT64 *);
+   HRESULT (*GetPosition)(IAudioClock *, UINT64 *, UINT64 *);
+} IAudioClockVtbl;
+struct IAudioClock { const IAudioClockVtbl *lpVtbl; void *fake; };
+typedef struct IAudioClock2Vtbl {
+   HRESULT (*QueryInterface)(IAudioClock2 *, REFIID, void **);
+   DWORD   (*AddRef)(IAudioClock2 *);
+   DWORD   (*Release)(IAudioClock2 *);
+   HRESULT (*GetDevicePosition)(IAudioClock2 *, UINT64 *, UINT64 *);
+} IAudioClock2Vtbl;
+struct IAudioClock2 { const IAudioClock2Vtbl *lpVtbl; void *fake; };
+
 typedef struct IAudioClient IAudioClient;
 typedef struct IAudioClient3 IAudioClient3;
 typedef struct IAudioRenderClient IAudioRenderClient;
@@ -128,6 +176,10 @@ struct IMMDevice { const IMMDeviceVtbl *lpVtbl; void *fake; };
 #define _IAudioRenderClient_GetBuffer(This,n,pp)        ((This)->lpVtbl->GetBuffer(This,n,pp))
 #define _IAudioRenderClient_ReleaseBuffer(This,n,f)     ((This)->lpVtbl->ReleaseBuffer(This,n,f))
 #define _IAudioClient_GetService(This,riid,ppv)         ((This)->lpVtbl->GetService(This,&(riid),ppv))
+#define _IAudioClock_GetFrequency(This,p)               ((This)->lpVtbl->GetFrequency(This,p))
+#define _IAudioClock_GetPosition(This,p,q)              ((This)->lpVtbl->GetPosition(This,p,q))
+#define _IAudioClock_QueryInterface(This,riid,ppv)      ((This)->lpVtbl->QueryInterface(This,&(riid),ppv))
+#define _IAudioClock2_GetDevicePosition(This,p,q)       ((This)->lpVtbl->GetDevicePosition(This,p,q))
 #define _IAudioClient_SetEventHandle(This,h)            ((This)->lpVtbl->SetEventHandle(This,h))
 #define _IAudioClient_GetBufferSize(This,p)             ((This)->lpVtbl->GetBufferSize(This,p))
 #define _IAudioClient_GetStreamLatency(This,p)          ((This)->lpVtbl->GetStreamLatency(This,p))
@@ -135,6 +187,7 @@ struct IMMDevice { const IMMDeviceVtbl *lpVtbl; void *fake; };
 #define _IAudioClient_Initialize(This,m,f,d,p,fmt,g)    ((This)->lpVtbl->Initialize(This,m,f,d,p,fmt,g))
 #define _IAudioClient_QueryInterface(This,riid,ppv)     ((This)->lpVtbl->QueryInterface(This,riid,ppv))
 #define _IAudioClient_IsFormatSupported(This,m,fmt,pp)  ((This)->lpVtbl->IsFormatSupported(This,m,fmt,pp))
+#define _IAudioClient_GetMixFormat(This,pp)              ((This)->lpVtbl->GetMixFormat(This,pp))
 #define _IMMDevice_Activate(This,iid,c,pa,ppv)          ((This)->lpVtbl->Activate(This,&(iid),c,pa,ppv))
 /* IAudioClient3: the Windows 10 interface with selectable shared-mode
  * engine periods. Offered when configured to be; the fake's vtable
@@ -163,6 +216,8 @@ void   Sleep(DWORD ms);
 void   CoTaskMemFree(void *p);
 
 /* --- mmdevice_common.h ----------------------------------------------- */
+bool        mmdevice_com_init(void);
+void        mmdevice_com_uninit(bool init);
 void       *mmdevice_init_device(const char *id, unsigned data_flow);
 const char *mmdevice_hresult_name(int hr);
 void       *mmdevice_list_new(const void *u, unsigned data_flow);
@@ -191,7 +246,16 @@ void fake_device_configure(unsigned rate, REFERENCE_TIME min_period_hns,
  * holds the engine there and any other period is refused with
  * AUDCLNT_E_ENGINE_PERIODICITY_LOCKED. */
 void fake_device_configure_engine(unsigned engine_min_frames, unsigned locked_period_frames);
+/* The pin's PCM channel limit (0: any) and whether it takes AC-3 over
+ * IEC 61937 in exclusive mode - a TV on HDMI: 2 and true. */
+void fake_device_configure_channels(unsigned max_channels, bool accept_iec61937_ac3);
+/* Keep every byte released to the device from now on; what was kept. */
+void   fake_device_capture(bool on);
+size_t fake_device_captured(const uint8_t **buf);
 void fake_device_stats(fake_device_stats_t *out);
+/* Outstanding mmdevice_com_init() references; zero once every driver
+ * instance opened in the test has been freed. */
+int  fake_com_refs(void);
 
 /* The device-notification thread the driver starts: the fake gives it
  * nothing to do, and the driver posts it WM_QUIT on stop. */
@@ -211,5 +275,16 @@ DWORD GetLastError(void);
 #define THREAD_PRIORITY_TIME_CRITICAL 15
 HANDLE GetCurrentThread(void);
 BOOL SetThreadPriority(HANDLE h, int prio);
+/* There is no multimedia class scheduler here, so LoadLibraryA
+ * answers no and the driver takes the fallback - which is the path
+ * this harness keeps honest. */
+typedef void *HMODULE;
+typedef const wchar_t *LPCWSTR;
+typedef DWORD *LPDWORD;
+#define WINAPI
+#define INVALID_HANDLE_VALUE ((HANDLE)(intptr_t)-1)
+HMODULE LoadLibraryA(const char *name);
+void   *GetProcAddress(HMODULE m, const char *name);
+BOOL    FreeLibrary(HMODULE m);
 
 #endif

@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include <X11/Xatom.h>
+#include <poll.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -73,7 +74,12 @@ Colormap g_x11_cmap;
 static XF86VidModeModeInfo desktop_mode;
 #endif
 static bool xdg_screensaver_available       = true;
-static bool g_x11_has_focus                 = false;
+/* Whether the window is mapped - the compositor or WM has it on
+ * screen. Written only by MapNotify and UnmapNotify below, and once at
+ * input-context creation; nothing to do with keyboard focus, which
+ * x11_has_focus() asks the server for. The old name said focus and
+ * misled a reader into thinking an unfocused window cleared it. */
+static bool g_x11_mapped                    = false;
 static bool g_x11_true_full                 = false;
 static XConfigureEvent g_x11_xce            = {0};
 static Atom XA_NET_WM_STATE;
@@ -543,7 +549,7 @@ static bool x11_create_input_context(Display *dpy,
    x11_destroy_input_context(xim, xic);
    x11_init_keyboard_lut();
 
-   g_x11_has_focus = true;
+   g_x11_mapped = true;
 
    if (!(*xim = XOpenIM(dpy, NULL, NULL, NULL)))
    {
@@ -692,12 +698,12 @@ bool x11_alive(void *data)
 
          case MapNotify:
             if (event.xmap.window == g_x11_win)
-               g_x11_has_focus = true;
+               g_x11_mapped = true;
             break;
 
          case UnmapNotify:
             if (event.xunmap.window == g_x11_win)
-               g_x11_has_focus = false;
+               g_x11_mapped = false;
             break;
 
          case ConfigureNotify:
@@ -825,7 +831,18 @@ void x11_get_video_size(void *data, unsigned *width, unsigned *height)
 
 bool x11_has_focus_internal(void *data)
 {
-   return g_x11_has_focus;
+   return g_x11_mapped;
+}
+
+/* Nothing to present to while the window is unmapped - minimised, on
+ * another workspace, or withdrawn. The X server discards the drawing
+ * and neither glXSwapBuffers nor a Vulkan present blocks, so with the
+ * display as the only pacing the loop would spin. Unfocused is not
+ * unmapped and is deliberately not tested here: a visible window that
+ * happens not to have the keyboard must keep running at full rate. */
+bool x11_presentable(void *data)
+{
+   return g_x11_mapped;
 }
 
 bool x11_has_focus(void *data)
@@ -835,7 +852,7 @@ bool x11_has_focus(void *data)
 
    XGetInputFocus(g_x11_dpy, &win, &rev);
 
-   return (win == g_x11_win && g_x11_has_focus) || g_x11_true_full;
+   return (win == g_x11_win && g_x11_mapped) || g_x11_true_full;
 }
 
 bool x11_connect(void)
@@ -1076,4 +1093,17 @@ char *x11_get_wm_name(Display *dpy)
    XFree(propdata);
 
    return title;
+}
+
+bool x11_idle_wait_ms(unsigned ms)
+{
+   struct pollfd pfd;
+   Display *dpy = g_x11_dpy;
+   if (!dpy)
+      return false;
+   pfd.fd      = ConnectionNumber(dpy);
+   pfd.events  = POLLIN;
+   pfd.revents = 0;
+   poll(&pfd, 1, (int)ms);
+   return true;
 }

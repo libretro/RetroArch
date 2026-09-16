@@ -1,6 +1,8 @@
 #import <Foundation/Foundation.h>
 #import <Foundation/NSNetServices.h>
 
+#import <defines/cocoa_defines.h>
+
 #import "netplay_private.h"
 
 #import "content.h"
@@ -42,7 +44,13 @@ static NetplayBonjourMan *nbm_instance;
 - (void)publish:(netplay_t *)netplay
 {
     RARCH_LOG("[Bonjour] Publishing netplay service on port %d\n", netplay->tcp_port);
-    self.service = [[NSNetService alloc] initWithDomain:@"" type:@NETPLAY_MDNS_TYPE name:@"" port:netplay->tcp_port];
+    {
+        /* The property retains what it is handed, so the reference the
+         * allocation carries is released once it is stored. */
+        NSNetService *svc = [[NSNetService alloc] initWithDomain:@"" type:@NETPLAY_MDNS_TYPE name:@"" port:netplay->tcp_port];
+        self.service      = svc;
+        RARCH_RELEASE(svc);
+    }
     [self.service setTXTRecordData:[self TXTdataFromNetplay:netplay]];
     [self.service setDelegate:self];
     [self.service publish];
@@ -65,7 +73,11 @@ static NetplayBonjourMan *nbm_instance;
      * array the worker thread is still publishing. */
     dispatch_async(dispatch_get_main_queue(), ^{
         self.services = [NSMutableArray arrayWithCapacity: 0];
-        self.browser  = [[NSNetServiceBrowser alloc] init];
+        {
+            NSNetServiceBrowser *br = [[NSNetServiceBrowser alloc] init];
+            self.browser            = br;
+            RARCH_RELEASE(br);
+        }
         [self.browser setDelegate:self];
         [self.browser searchForServicesOfType:@NETPLAY_MDNS_TYPE inDomain:@""];
     });
@@ -158,7 +170,12 @@ static bool srv_address_to_string(NSNetService *srv, char *address,
      * runs on the task worker thread, so enumerating the live array
      * here races -didFindService: (mutation during fast enumeration
      * raises NSGenericException).  Stop the browser on its own queue and
-     * enumerate a snapshot. */
+     * enumerate a snapshot.
+     *
+     * -copy hands back a reference this method owns.  There is no
+     * autorelease pool on a task worker, so it is released here, and
+     * the two allocation failures below leave the loop rather than the
+     * method so that they pass through it. */
     __block NSArray<NSNetService*> *services = nil;
     void (^stop_and_snapshot)(void) = ^{
         [self.browser stop];
@@ -218,7 +235,7 @@ static bool srv_address_to_string(NSNetService *srv, char *address,
                 net_st->discovered_hosts.hosts = (struct netplay_host*)
                 malloc(sizeof(*net_st->discovered_hosts.hosts));
                 if (!net_st->discovered_hosts.hosts)
-                    return;
+                    break;
                 net_st->discovered_hosts.allocated = 1;
             }
             else
@@ -234,7 +251,7 @@ static bool srv_address_to_string(NSNetService *srv, char *address,
                     memset(&net_st->discovered_hosts, 0,
                            sizeof(net_st->discovered_hosts));
 
-                    return;
+                    break;
                 }
 
                 net_st->discovered_hosts.allocated = new_allocated;
@@ -282,6 +299,8 @@ static bool srv_address_to_string(NSNetService *srv, char *address,
             host->has_spectate_password = string_is_equal(flag, "true");
         }
     }
+
+    RARCH_RELEASE(services);
 }
 
 #pragma mark - Browse helper functions
@@ -330,7 +349,9 @@ static bool srv_address_to_string(NSNetService *srv, char *address,
 
 - (NSData *)nick:(netplay_t *)netplay
 {
-    return [[NSData alloc] initWithBytes:netplay->nick length:strlen(netplay->nick)];
+    NSData *d = [[NSData alloc] initWithBytes:netplay->nick length:strlen(netplay->nick)];
+    RARCH_AUTORELEASE(d);
+    return d;
 }
 
 - (NSData *)frontend
@@ -352,18 +373,24 @@ static bool srv_address_to_string(NSNetService *srv, char *address,
 - (NSData *)core
 {
     struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-    return [[NSData alloc] initWithBytes:system->library_name length:strlen(system->library_name)];
+    NSData *d = [[NSData alloc] initWithBytes:system->library_name length:strlen(system->library_name)];
+    RARCH_AUTORELEASE(d);
+    return d;
 }
 
 - (NSData *)core_version
 {
     struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
-    return [[NSData alloc] initWithBytes:system->library_version length:strlen(system->library_version)];
+    NSData *d = [[NSData alloc] initWithBytes:system->library_version length:strlen(system->library_version)];
+    RARCH_AUTORELEASE(d);
+    return d;
 }
 
 - (NSData *)retroarch_version
 {
-    return [[NSData alloc] initWithBytes:PACKAGE_VERSION length:strlen(PACKAGE_VERSION)];
+    NSData *d = [[NSData alloc] initWithBytes:PACKAGE_VERSION length:strlen(PACKAGE_VERSION)];
+    RARCH_AUTORELEASE(d);
+    return d;
 }
 
 - (NSData *)content
@@ -382,41 +409,52 @@ static bool srv_address_to_string(NSNetService *srv, char *address,
                 break;
             [data appendBytes:"|" length:strlen("|")];
         }
+        RARCH_AUTORELEASE(data);
         return data;
     }
     else
     {
         const char *basename = path_basename(path_get(RARCH_PATH_BASENAME));
+        NSData *d;
         if (!basename || !*basename)
             basename = "N/A";
-        return [[NSData alloc] initWithBytes:basename length:strlen(basename)];
+        d = [[NSData alloc] initWithBytes:basename length:strlen(basename)];
+        RARCH_AUTORELEASE(d);
+        return d;
     }
 }
 
 - (NSData *)subsystem_name
 {
     struct string_list *subsystem = path_get_subsystem_list();
+    NSData *d;
     if (subsystem && subsystem->size > 0)
     {
         const char *path = path_get(RARCH_PATH_SUBSYSTEM);
-        return [[NSData alloc] initWithBytes:path length:strlen(path)];
+        d = [[NSData alloc] initWithBytes:path length:strlen(path)];
     }
     else
-        return [[NSData alloc] initWithBytes:"N/A" length:3];
+        d = [[NSData alloc] initWithBytes:"N/A" length:3];
+    RARCH_AUTORELEASE(d);
+    return d;
 }
 
 - (NSData *)has_password
 {
     settings_t *settings = config_get_ptr();
     const char *has_password = !*settings->paths.netplay_password ? "false" : "true";
-    return [[NSData alloc] initWithBytes:has_password length:strlen(has_password)];
+    NSData *d = [[NSData alloc] initWithBytes:has_password length:strlen(has_password)];
+    RARCH_AUTORELEASE(d);
+    return d;
 }
 
 - (NSData *)has_spectate_password
 {
     settings_t *settings = config_get_ptr();
     const char *has_password = !*settings->paths.netplay_spectate_password ? "false" : "true";
-    return [[NSData alloc] initWithBytes:has_password length:strlen(has_password)];
+    NSData *d = [[NSData alloc] initWithBytes:has_password length:strlen(has_password)];
+    RARCH_AUTORELEASE(d);
+    return d;
 }
 
 - (void)suspend

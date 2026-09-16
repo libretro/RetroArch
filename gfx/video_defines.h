@@ -19,6 +19,12 @@
 
 #include <retro_common_api.h>
 
+/* One-cycle alias: builds that still pass the old switch get the
+ * in-tree modeline engine. */
+#if defined(HAVE_CRTSWITCHRES) && !defined(HAVE_MODELINE)
+#define HAVE_MODELINE
+#endif
+
 RETRO_BEGIN_DECLS
 
 enum

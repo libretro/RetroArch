@@ -112,6 +112,9 @@ void retro_sleep(unsigned msec);
 #endif
 #elif defined(_WIN32)
 #define retro_sleep(msec) (Sleep((msec)))
+#elif defined(__APPLE__) && defined(__MACH__)
+/* Darwin: the same Mach-clock deadline retro_sleep_us() takes. */
+#define retro_sleep(msec) (retro_sleep_us(1000 * (msec)))
 #elif defined(XENON)
 #define retro_sleep(msec) (udelay(1000 * (msec)))
 #elif !defined(__PSL1GHT__) && defined(__PS3__)
@@ -155,10 +158,12 @@ static INLINE void retro_sleep(unsigned msec)
 #define retro_sleep_us(usec) (svcSleepThread(1000 * (s64)(usec)))
 #elif defined(__WINRT__) || (defined(WINAPI_FAMILY) && defined(WINAPI_FAMILY_PHONE_APP) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #define retro_sleep_us(usec) (SleepEx(((usec) + 500) / 1000, FALSE))
-#elif defined(_WIN32) && !defined(_XBOX)
-/* Desktop Windows: see the note on retro_sleep() above. Implemented in
- * libretro-common/time/rtime.c, where it is the primitive that
- * retro_sleep() itself is expressed in terms of. */
+#elif (defined(_WIN32) && !defined(_XBOX)) || (defined(__APPLE__) && defined(__MACH__))
+/* Desktop Windows: see the note on retro_sleep() above. Darwin: an
+ * absolute deadline on the Mach clock through mach_wait_until(), not a
+ * relative nanosleep(). Both implemented in libretro-common/time/rtime.c,
+ * where on Windows it is the primitive that retro_sleep() itself is
+ * expressed in terms of. */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -185,6 +190,27 @@ static INLINE void retro_sleep_us(unsigned usec)
    tv.tv_sec          = usec / 1000000;
    tv.tv_nsec         = (usec % 1000000) * 1000;
    nanosleep(&tv, NULL);
+}
+#endif
+
+/**
+ * retro_sleep_until_us:
+ * @deadline : an instant on cpu_features_get_time_usec()'s clock.
+ *
+ * Sleeps until that clock reads at least @deadline. Absolute where
+ * the platform offers it (clock_nanosleep TIMER_ABSTIME on Linux and
+ * Android, mach_wait_until on Darwin), a re-armed high-resolution
+ * relative wait elsewhere - so the time between reading the clock
+ * and entering the kernel, and any early or interrupted wake, are
+ * not added to when the caller comes back. Never early against that
+ * clock; may be late, as every sleep may. Implemented in rtime.c.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <stdint.h>
+void retro_sleep_until_us(int64_t deadline);
+#ifdef __cplusplus
 }
 #endif
 

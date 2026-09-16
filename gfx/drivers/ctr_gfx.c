@@ -3054,6 +3054,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
    GFX_VIDEO_DRIVER_CTR,
    "ctr",
    true,
+   false,
    NULL,
    NULL
 };

@@ -45,9 +45,16 @@ const char *audio_thread_wrapped_ident(void *data);
 /* The driver the wrapper is running, or NULL if data is NULL. */
 const audio_driver_t *audio_thread_wrapped_driver(void *data);
 
+/* Main-thread control transaction. Wait for the current consumer pass, run
+ * control while parked, then restore the previous running/stopped state.
+ * Call with no locks needed by the worker held. The callback must not call
+ * the wrapper. */
+void audio_thread_apply_control(void *data,
+      void (*control)(void *userdata), void *userdata);
+
 bool audio_init_thread(const audio_driver_t **out_driver, void **out_data,
       const char *device, unsigned out_rate, unsigned *new_rate, unsigned latency,
-      unsigned block_frames, bool raise_priority,
+      bool raise_priority,
       bool prefer_fast_cores,
       const audio_driver_t *driver);
 

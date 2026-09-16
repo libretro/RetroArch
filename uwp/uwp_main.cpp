@@ -817,6 +817,13 @@ extern "C" {
       return App::GetInstance()->IsWindowFocused();
    }
 
+   /* DwmGetCompositionTimingInfo is not available to app containers,
+    * so the presenter paces on its own clock. */
+   retro_time_t win32_dwm_last_vblank_time(void)
+   {
+      return 0;
+   }
+
    bool win32_set_video_mode(void *data, unsigned width, unsigned height, bool fullscreen)
    {
       if (App::GetInstance()->IsInitialized())

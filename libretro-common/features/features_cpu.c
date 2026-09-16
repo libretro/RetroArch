@@ -37,6 +37,9 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <windows.h>
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+#include <intrin.h>
+#endif
 #endif
 
 #ifdef __PSL1GHT__
@@ -168,45 +171,37 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 retro_perf_tick_t cpu_features_get_perf_counter(void)
 {
    retro_perf_tick_t time_ticks = 0;
-#if defined(_WIN32)
-   long tv_sec, tv_usec;
-#if defined(_MSC_VER) && _MSC_VER <= 1200
-   static const unsigned __int64 epoch = 11644473600000000;
-#else
-   static const unsigned __int64 epoch = 11644473600000000ULL;
-#endif
-   FILETIME file_time;
-   SYSTEMTIME system_time;
-   ULARGE_INTEGER ularge;
-
-   GetSystemTime(&system_time);
-   SystemTimeToFileTime(&system_time, &file_time);
-   ularge.LowPart  = file_time.dwLowDateTime;
-   ularge.HighPart = file_time.dwHighDateTime;
-
-   tv_sec     = (long)((ularge.QuadPart - epoch) / 10000000L);
-   tv_usec    = (long)(system_time.wMilliseconds * 1000);
-   time_ticks = (1000000 * tv_sec + tv_usec);
+   /* The CPU's own cycle counter wherever there is one: a register
+    * read, no clock behind it. Platform clocks follow for the rest. */
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+   time_ticks = (retro_perf_tick_t)__rdtsc();
+#elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+   {
+      unsigned a, d;
+      __asm__ __volatile__ ("rdtsc" : "=a" (a), "=d" (d));
+      time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
+   }
+#elif defined(__GNUC__) && defined(__aarch64__)
+   __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r" (time_ticks));
+#elif defined(__GNUC__) && defined(__ARM_ARCH_6__)
+   __asm__ __volatile__ ("mrc p15, 0, %0, c9, c13, 0" : "=r" (time_ticks));
+#elif defined(_WIN32)
+   {
+      LARGE_INTEGER c;
+      QueryPerformanceCounter(&c);
+      time_ticks = (retro_perf_tick_t)c.QuadPart;
+   }
 #elif defined(GEKKO)
    time_ticks = gettime();
 #elif !defined(__MACH__) && !defined(__FreeBSD__) && (defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__) || defined(__PPC64__) || defined(__powerpc64__))
    time_ticks = __mftb();
 #elif (defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK > 0) || defined(__QNX__) || defined(ANDROID)
-   struct timespec tv;
-   if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
-      time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
-         (retro_perf_tick_t)tv.tv_nsec;
-
-#elif defined(__GNUC__) && defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(_M_X64) || defined(_M_AMD64)
-   __asm__ volatile ("rdtsc" : "=A" (time_ticks));
-#elif defined(__GNUC__) && defined(__x86_64__) || defined(_M_IX86)
-   unsigned a, d;
-   __asm__ volatile ("rdtsc" : "=a" (a), "=d" (d));
-   time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
-#elif defined(__ARM_ARCH_6__)
-   __asm__ volatile( "mrc p15, 0, %0, c9, c13, 0" : "=r"(time_ticks) );
-#elif defined(__aarch64__)
-   __asm__ volatile( "mrs %0, cntvct_el0" : "=r"(time_ticks) );
+   {
+      struct timespec tv;
+      if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
+         time_ticks = (retro_perf_tick_t)tv.tv_sec * 1000000000 +
+            (retro_perf_tick_t)tv.tv_nsec;
+   }
 #elif defined(PSP) || defined(VITA)
    time_ticks = sceKernelGetSystemTimeWide();
 #elif defined(ORBIS)
@@ -1085,13 +1080,22 @@ static uint64_t cpu_features_probe(void)
 #else
    _val = 0;
    _len = sizeof(_val);
-   /* Older key first; newer systems also carry the FEAT_ spelling. */
-   if (   (sysctlbyname("hw.optional.armv8_crc32", &_val, &_len, NULL, 0) == 0
-           && _val)
-       || (_val = 0, _len = sizeof(_val),
-           sysctlbyname("hw.optional.arm.FEAT_CRC32", &_val, &_len, NULL, 0) == 0
-           && _val))
+   /* Older key first; newer systems also carry the FEAT_ spelling.
+    * Written out rather than folded into one condition with a comma
+    * operator: the second query needs the buffer and its length reset
+    * first, and doing that inside a short-circuit || is both a warning
+    * and a thing to read twice. */
+   if (sysctlbyname("hw.optional.armv8_crc32", &_val, &_len, NULL, 0) == 0
+         && _val)
       cpu |= RETRO_SIMD_CRC32;
+   else
+   {
+      _val = 0;
+      _len = sizeof(_val);
+      if (sysctlbyname("hw.optional.arm.FEAT_CRC32", &_val, &_len, NULL, 0) == 0
+            && _val)
+         cpu |= RETRO_SIMD_CRC32;
+   }
    _val = 0;
    _len = sizeof(_val);
    if (sysctlbyname("hw.optional.arm.FEAT_AES", &_val, &_len, NULL, 0) == 0

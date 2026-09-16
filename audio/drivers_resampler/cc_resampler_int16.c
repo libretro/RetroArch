@@ -205,6 +205,16 @@ void cc_resampler_int16_process(void *re_, struct resampler_data_int16 *data)
       re->process(re_, data);
 }
 
+void cc_resampler_int16_reset(void *re_)
+{
+   cc_resampler_int16_t *re = (cc_resampler_int16_t*)re_;
+   unsigned i;
+   if (!re) return;
+   for (i = 0; i < 4; i++)
+      re->buf_l[i] = re->buf_r[i] = 0;
+   re->distance = re->process == cc_i16_upsample ? 2 * CC_I16_ONE : 0;
+}
+
 void cc_resampler_int16_free(void *re_)
 {
    cc_resampler_int16_t *re = (cc_resampler_int16_t*)re_;

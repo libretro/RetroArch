@@ -38,6 +38,9 @@
 #include <memalign.h>
 
 #include <audio/audio_resampler.h>
+#include "sinc_resampler_internal.h"
+
+#include <audio/sinc_resampler.h>
 
 #ifdef __SSE__
 #include <xmmintrin.h>
@@ -674,6 +677,18 @@ static void resampler_sinc_free(void *data)
    free(resamp);
 }
 
+/* The rings, the ring pointer and the phase; the table stands. */
+static void resampler_sinc_reset(void *data)
+{
+   rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)data;
+   if (!resamp)
+      return;
+   memset(resamp->buffer_l, 0, sizeof(float) * 2 * resamp->taps);
+   memset(resamp->buffer_r, 0, sizeof(float) * 2 * resamp->taps);
+   resamp->ptr  = 0;
+   resamp->time = 0;
+}
+
 static void sinc_init_table_kaiser(rarch_sinc_resampler_t *resamp,
       double cutoff,
       float *phase_table, int phases, int taps, int calculate_delta)
@@ -810,9 +825,9 @@ static void sinc_init_table_lanczos(
    }
 }
 
-static void *resampler_sinc_new(const struct resampler_config *config,
-      double bandwidth_mod, enum resampler_quality quality,
-      resampler_simd_mask_t mask)
+void *sinc_resampler_init_hq(double bandwidth_mod,
+      enum resampler_quality quality, resampler_simd_mask_t mask,
+      int hq_oversampling)
 {
    double cutoff                  = 0.0;
    size_t phase_elems             = 0;
@@ -870,6 +885,21 @@ static void *resampler_sinc_new(const struct resampler_config *config,
          re->kaiser_beta   = 5.5;
          break;
    }
+
+   if (hq_oversampling && bandwidth_mod >= 2.0)
+   {
+      cutoff            = SINC_HQ_CUTOFF;
+      sidelobes         = SINC_HQ_SIDELOBES;
+      re->phase_bits    = SINC_HQ_PHASE_BITS;
+      re->subphase_bits = SINC_HQ_SUBPHASE_BITS;
+      window_type       = SINC_WINDOW_KAISER;
+      re->kaiser_beta   = SINC_HQ_KAISER_BETA;
+      enable_avx        = 1;
+   }
+
+   if (!sinc_resampler_ratio_valid(bandwidth_mod,
+            re->phase_bits, re->subphase_bits))
+      goto error;
 
    re->subphase_mask = (1 << re->subphase_bits) - 1;
    re->subphase_mod  = 1.0f / (1 << re->subphase_bits);
@@ -966,6 +996,14 @@ error:
    return NULL;
 }
 
+static void *resampler_sinc_new(const struct resampler_config *config,
+      double bandwidth_mod, enum resampler_quality quality,
+      resampler_simd_mask_t mask)
+{
+   (void)config;
+   return sinc_resampler_init_hq(bandwidth_mod, quality, mask, 0);
+}
+
 /* Thin dispatcher: the vtable is shared across all live instances, so the
  * actual kernel is read from the instance itself.  One indirect call per
  * process() invocation (per chunk, not per sample) - no measurable cost. */
@@ -980,7 +1018,8 @@ retro_resampler_t sinc_resampler = {
    resampler_sinc_free,
    RESAMPLER_API_VERSION,
    "sinc",
-   "sinc"
+   "sinc",
+   resampler_sinc_reset
 };
 
 #if defined(__GNUC__) && defined(__OPTIMIZE__) && !defined(__clang__)

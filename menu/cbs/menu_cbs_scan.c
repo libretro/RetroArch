@@ -31,6 +31,9 @@
 #include "../../config.def.h"
 #include "../../configuration.h"
 #include "../../tasks/tasks_internal.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifndef BIND_ACTION_SCAN
 #define BIND_ACTION_SCAN(cbs, name) (cbs)->action_scan = (name)
@@ -50,7 +53,7 @@ void handle_dbscan_finished(retro_task_t *task,
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-#if IOS
+#if TARGET_OS_IPHONE
    char dir_path[DIR_MAX_LENGTH];
 #endif
    char fullpath[PATH_MAX_LENGTH];
@@ -62,7 +65,7 @@ int action_scan_file(const char *path,
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
    menu_path = dir_path;
 #endif
@@ -83,7 +86,7 @@ int action_scan_file(const char *path,
 int action_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx)
 {
-#if IOS
+#if TARGET_OS_IPHONE
    char dir_path[DIR_MAX_LENGTH];
 #endif
    char fullpath[PATH_MAX_LENGTH];
@@ -95,7 +98,7 @@ int action_scan_directory(const char *path,
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
    menu_path = dir_path;
 #endif
@@ -232,9 +235,9 @@ static int action_scan_input_desc(const char *path,
    if (target)
    {
       /* Clear mapping bit */
-      input_keyboard_mapping_bits(0, target->key);
+      input_keyboard_mapping_bits(0, RETRO_KEYBIND_KEY(target));
 
-      target->key     = RETROK_UNKNOWN;
+      RETRO_KEYBIND_SET_KEY(target, RETROK_UNKNOWN);
       target->joykey  = NO_BTN;
       target->joyaxis = AXIS_NONE;
       target->mbutton = NO_BTN;

@@ -71,6 +71,7 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 /Cg/
 /GL/
 /SDL/
+/SDL3/
 /ffmpeg/
 /freetype2/
 /ft2build.h
@@ -98,7 +99,7 @@ content_video_history.lpl
 saves
 screenshots
 autoconfig
-config
+/config
 /database
 overlays
 playlists
@@ -269,7 +270,17 @@ gfx/common/wayland/tearing-control-v1.c
 # samples/: built harness executables and objects. Each directory's
 # test is <dir>_test; nothing built there is source.
 samples/**/*_test
+samples/audio/stretch/stretch_bench
 samples/**/*.o
+libretro-common/samples/**/*_test
+!libretro-common/samples/**/*_test/
+# Harness executables that are not named <dir>_test. This one had been
+# committed as a built binary, which made any make clean in that
+# directory show up as a deletion.
+samples/audio/embedded_alsa/abi_check
+samples/gfx/font_lifecycle/lifecycle
+samples/gfx/font_lifecycle/lifecycle-threaded
+samples/gfx/font_lifecycle/create
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip
@@ -307,3 +318,4 @@ gfx/drivers/rsx_shaders/modern_opaque.fpo
 gfx/drivers/rsx_shaders/modern_opaque.vpo
 pkg/psl1ght/pkg/USRDIR/shaders_cg/
 !pkg/psl1ght/pkg/USRDIR/system/
+samples/audio/embedded_alsa/ealsa_abi.h

@@ -2,6 +2,7 @@ name: CI DOS/DJGPP
 
 on:
   push:
+    branches: [master]
   pull_request:
   repository_dispatch:
     types: [run_build]
@@ -12,15 +13,20 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     container:
       image: reallibretroretroarch/libretro-djgpp-build-container:latest
       options: --user root
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Compile RA
       run: |

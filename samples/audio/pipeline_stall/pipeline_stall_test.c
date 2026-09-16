@@ -62,10 +62,10 @@ static retro_atomic_int_t dev_frames_took = RETRO_ATOMIC_INT_INITIALIZER(0);
 static retro_atomic_int_t dev_waits       = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 static void *dev_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_rate)
+      unsigned *new_rate)
 {
    static int handle = 1;
-   (void)device; (void)latency; (void)block_frames;
+   (void)device; (void)latency;
    if (new_rate) *new_rate = rate;
    return &handle;
 }
@@ -167,7 +167,7 @@ static bool pipeline_up(size_t ring_bytes)
 
    memset(st, 0, sizeof(*st));
    st->current_audio      = &scripted_driver;
-   st->context_audio_data = scripted_driver.init(NULL, 48000, 64, 0, NULL);
+   st->context_audio_data = scripted_driver.init(NULL, 48000, 64, NULL);
    st->input              = 48000.0;
    st->src_ratio_orig     = 1.0;
    st->src_ratio_curr     = 1.0;
@@ -175,41 +175,40 @@ static bool pipeline_up(size_t ring_bytes)
    st->volume_gain        = 1.0f;
    st->buffer_size        = scripted_driver.buffer_size(st->context_audio_data);
    st->output_samples_buf = (float*)malloc(65536);
-   st->pipe_scratch       = (int16_t*)malloc(65536);
-   st->pipe_pass_int16s   = 1600;
+   st->pipe_scratch       = (uint8_t*)malloc(65536);
+   st->pipe_conv          = (uint8_t*)malloc(65536);
+   st->pipe_pass_frames   = 800;
+   st->pipe_frame_bytes   = 2 * sizeof(int16_t);
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
       return false;
-   st->pipe_lock      = slock_new();
-   st->pipe_cond      = scond_new();
-   st->pipe_data_cond = scond_new();
+   retro_eventcount_init(&st->pipe_space);
+   retro_eventcount_init(&st->pipe_data);
    st->state_lock     = slock_new();
+   st->pipe_park_ready = true;
    st->pipe_threaded  = true;
    AUDIO_FLAGS_SET(st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_STARTED
          | AUDIO_FLAG_PIPELINE_THREADED);
-   return st->pipe_lock && st->pipe_cond && st->pipe_data_cond
-      && st->state_lock && st->output_samples_buf && st->pipe_scratch;
+   return st->state_lock && st->output_samples_buf && st->pipe_scratch;
 }
 
 static void pipeline_down(void)
 {
    audio_driver_state_t *st = &audio_driver_st;
    retro_spsc_free(&st->pipe_ring);
-   slock_free(st->pipe_lock);
-   scond_free(st->pipe_cond);
-   scond_free(st->pipe_data_cond);
+   retro_eventcount_free(&st->pipe_space);
+   retro_eventcount_free(&st->pipe_data);
    slock_free(st->state_lock);
    free(st->output_samples_buf);
    free(st->pipe_scratch);
+   free(st->pipe_conv);
 }
 
-/* pipe_stalled is written by both threads under pipe_lock; read it the
+/* pipe_stalled is written by both threads; read it the
  * same way, as the production code does. */
 static bool stalled_now(void)
 {
    bool v;
-   slock_lock(audio_driver_st.pipe_lock);
-   v = audio_driver_st.pipe_stalled;
-   slock_unlock(audio_driver_st.pipe_lock);
+   v = retro_atomic_load_acquire_int(&audio_driver_st.pipe_stalled) ? true : false;
    return v;
 }
 
@@ -220,7 +219,7 @@ static double produce_frame(void)
 {
    double t0 = now_ms();
    audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
-         sizeof(frame_audio) / sizeof(int16_t), false, false);
+         sizeof(frame_audio) / sizeof(int16_t), false, false, false, true);
    audio_driver_pipeline_signal(&audio_driver_st);
    return now_ms() - t0;
 }
@@ -312,11 +311,33 @@ int main(void)
    CHECK(stalled_now(), "second stall: not recorded");
    CHECK(worst < 50.0, "second stall: a frame cost %.1f ms", worst);
 
+   /* 5. A driver's reinit request is not acted on by the producer or
+    *    the consumer: neither may run the reinit, which frees the state
+    *    lock they hold and joins the thread they may be. Frames keep
+    *    flowing, command_event() - which the stub aborts on - is never
+    *    reached, and the request is there for the runloop to take, once. */
    STAGE(6);
    retro_atomic_store_release_int(&dev_stalled, 0);
+   retro_atomic_store_release_int(&audio_driver_st.reinit_request, 1);
+   for (i = 0; i < 20; i++)
+      produce_frame();
+   CHECK(audio_driver_take_reinit_request(), "the request was consumed off the main thread");
+   CHECK(!audio_driver_take_reinit_request(), "the request was not cleared when taken");
+   /* The same on the frame-synchronous path: flush under the state
+    * lock, on this thread. */
    retro_atomic_store_release_int(&consumer_run, 0);
    audio_driver_pipeline_wake();
    pthread_join(cons, NULL);
+   AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_PIPELINE_THREADED);
+   audio_driver_st.pipe_threaded = false;
+   retro_atomic_store_release_int(&audio_driver_st.reinit_request, 1);
+   for (i = 0; i < 20; i++)
+      audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
+            sizeof(frame_audio) / sizeof(int16_t), false, false, false, true);
+   CHECK(audio_driver_st.state_lock != NULL, "the state lock was freed under a flush");
+   CHECK(audio_driver_take_reinit_request(), "the request was consumed inside flush");
+
+   STAGE(7);
    pipeline_down();
 
    STAGE(-1);
@@ -325,6 +346,6 @@ int main(void)
       printf("%u failure(s)\n", failures);
       return 1;
    }
-   printf("pipeline stall: consumer takes only what it can deliver; producer drops at once once stalled\n");
+   printf("pipeline stall: consumer takes only what it can deliver; producer drops at once once stalled, and neither takes a reinit request\n");
    return 0;
 }

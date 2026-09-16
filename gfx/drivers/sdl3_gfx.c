@@ -43,6 +43,10 @@
 #include <SDL3/SDL.h>
 #include "../common/sdl3_common.h"
 
+#ifdef WEBOS
+#include "../common/sdl3_common_webos.h"
+#endif
+
 #include "../font_driver.h"
 #include "../gfx_display.h"
 #include "../video_thread_wrapper.h"
@@ -226,6 +230,12 @@ static void *sdl3_gfx_init(const video_info_t *video,
    sdl3_video_t *vid = NULL;
 
    sdl3_set_app_metadata();
+
+#ifdef WEBOS
+   SDL_SetHint(SDL_HINT_WEBOS_ACCESS_POLICY_KEYS_BACK, "true");
+   SDL_SetHint(SDL_HINT_WEBOS_ACCESS_POLICY_KEYS_EXIT, "true");
+   SDL_SetHint(SDL_HINT_WEBOS_CURSOR_SLEEP_TIME, "5000");
+#endif
 
    /* Initialize the video system. */
    if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
@@ -1759,6 +1769,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_sdl3 = {
    GFX_VIDEO_DRIVER_SDL3,
    "sdl3",
    false,
+   true,
    gfx_display_sdl3_scissor_begin,
    gfx_display_sdl3_scissor_end
 };

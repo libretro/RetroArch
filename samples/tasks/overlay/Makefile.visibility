@@ -1,0 +1,38 @@
+TARGET := overlay_visibility_bounds_test
+
+# The unit under test on the caller side is the shipping
+# led/drivers/led_overlay.c, built from the tree so the test sees what
+# it really forwards. input_overlay_set_visibility() itself needs the
+# whole input driver to link, so the test supplies it and keeps a
+# verbatim copy of its index bound.
+REPO_ROOT         := ../../..
+LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
+
+SOURCES := overlay_visibility_bounds_test.c \
+           $(REPO_ROOT)/led/drivers/led_overlay.c
+
+OBJS := $(SOURCES:.c=.o)
+
+CFLAGS += -Wall -pedantic -std=gnu99 -g -O1 -fno-omit-frame-pointer \
+          -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT) -I$(REPO_ROOT)/deps
+
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
+all: $(TARGET)
+
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+check: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -f $(TARGET) $(OBJS)
+
+.PHONY: all check clean

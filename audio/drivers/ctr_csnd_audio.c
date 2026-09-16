@@ -104,7 +104,6 @@ Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan,
 }
 
 static void *ctr_csnd_audio_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
       unsigned *new_rate)
 {
    ctr_csnd_audio_t *ctr = (ctr_csnd_audio_t*)calloc(1, sizeof(ctr_csnd_audio_t));
@@ -190,8 +189,21 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
          int laps = CTR_CSND_AUDIO_WAIT_LAPS;
          do
          {
-            /* todo: compute the correct sleep period */
-            retro_sleep(1);
+            /* Computed, not guessed: how many samples must play
+             * before whichever half of the predicate below is
+             * unsatisfied can flip - the smaller of the two - over
+             * the fixed rate, floored at a millisecond. The cursor
+             * is the hardware's, nothing notifies, so a timed wait
+             * is the honest one, and svcSleepThread underneath is
+             * nanosecond-precise. */
+            uint32_t owed1 = ((CTR_CSND_AUDIO_COUNT >> 1)
+                  - (ctr->playpos - ctr->pos)) & CTR_CSND_AUDIO_COUNT_MASK;
+            uint32_t owed2 = ((CTR_CSND_AUDIO_COUNT >> 4)
+                  - (ctr->pos - ctr->playpos)) & CTR_CSND_AUDIO_COUNT_MASK;
+            uint32_t owed  = owed1 < owed2 ? owed1 : owed2;
+            uint32_t us    = (uint32_t)((uint64_t)owed * 1000000
+                     / CTR_CSND_AUDIO_RATE);
+            retro_sleep_us(us < 1000 ? 1000 : us);
             ctr_csnd_audio_update_playpos(ctr);
             if (--laps < 0)
                return 0;

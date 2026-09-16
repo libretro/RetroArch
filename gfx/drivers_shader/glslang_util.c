@@ -18,9 +18,6 @@
 
 #include <retro_miscellaneous.h>
 #include <compat/intrinsics.h>
-#include <file/file_path.h>
-#include <file/config_file.h>
-#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -87,18 +84,16 @@ void shader_line_buf_free(struct shader_line_buf *buf)
  * bytes.  32 covers the longest probe literal with margin. */
 #define SHADER_LINE_BUF_PROBE_SLACK 32
 
-static bool shader_line_buf_append_batch(struct shader_line_buf *buf,
-      const char *const *lines, const size_t *lens, size_t count)
+/* Make room for @data_bytes more bytes of text and @lines more line
+ * offsets.  The two arrays start life in one allocation; growing
+ * either splits the pair, so each branch below moves the other array
+ * to an allocation of its own before releasing the combined block. */
+static bool shader_line_buf_reserve(struct shader_line_buf *buf,
+      size_t data_bytes, size_t lines)
 {
-   size_t i;
-   size_t total_data  = 0;
-
-   /* Pre-calculate total bytes needed for all lines */
-   for (i = 0; i < count; i++)
-      total_data += lens[i] + 1; /* +1 for null terminator */
-
    /* Single data-capacity check */
    {
+      size_t total_data = data_bytes;
       size_t needed = buf->len + total_data + SHADER_LINE_BUF_PROBE_SLACK;
       if (needed > buf->cap)
       {
@@ -139,10 +134,10 @@ static bool shader_line_buf_append_batch(struct shader_line_buf *buf,
    }
 
    /* Single line_offsets capacity check */
-   if (buf->num_lines + count > buf->lines_cap)
+   if (buf->num_lines + lines > buf->lines_cap)
    {
       size_t  new_lcap = buf->lines_cap;
-      while (new_lcap < buf->num_lines + count)
+      while (new_lcap < buf->num_lines + lines)
          new_lcap *= 2;
       if (buf->_single_alloc)
       {
@@ -150,9 +145,10 @@ static bool shader_line_buf_append_batch(struct shader_line_buf *buf,
          if (!new_off)
             return false;
          memcpy(new_off, buf->line_offsets, buf->num_lines * sizeof(size_t));
-         /* Don't free line_offsets—it's part of combined block;
-          * data still points to start of the block. */
-         /* Actually, we must split: allocate data separately too. */
+         /* The combined block holds both arrays, so growing one of
+          * them splits the pair: the offsets move to the allocation
+          * above and the data is copied to one of its own, after
+          * which the combined block is released once. */
          {
             char *new_data = (char*)malloc(buf->cap);
             if (!new_data)
@@ -179,6 +175,21 @@ static bool shader_line_buf_append_batch(struct shader_line_buf *buf,
       }
    }
 
+   return true;
+}
+
+static bool shader_line_buf_append_batch(struct shader_line_buf *buf,
+      const char *const *lines, const size_t *lens, size_t count)
+{
+   size_t i;
+   size_t total_data = 0;
+
+   for (i = 0; i < count; i++)
+      total_data += lens[i] + 1; /* +1 for null terminator */
+
+   if (!shader_line_buf_reserve(buf, total_data, count))
+      return false;
+
    /* Bulk copy all lines — no further checks needed */
    for (i = 0; i < count; i++)
    {
@@ -194,6 +205,32 @@ static bool shader_line_buf_append_batch(struct shader_line_buf *buf,
    return true;
 }
 
+/* Append an already-built run of lines: @data is the NUL-separated
+ * text as it sits in a shader_line_buf, @offsets the position of each
+ * line within it.  The text goes in with one copy and the offsets are
+ * rebased onto the end of @buf. */
+static bool shader_line_buf_append_block(struct shader_line_buf *buf,
+      const char *data, size_t len, const size_t *offsets, size_t lines)
+{
+   size_t i;
+   size_t base;
+
+   if (!lines)
+      return true;
+   if (!shader_line_buf_reserve(buf, len, lines))
+      return false;
+
+   base = buf->len;
+   memcpy(buf->data + base, data, len);
+   buf->len += len;
+
+   for (i = 0; i < lines; i++)
+      buf->line_offsets[buf->num_lines++] = base + offsets[i];
+
+   memset(buf->data + buf->len, 0, SHADER_LINE_BUF_PROBE_SLACK);
+   return true;
+}
+
 static bool shader_line_buf_append(struct shader_line_buf *buf,
       const char *line, size_t line_len)
 {
@@ -204,10 +241,6 @@ const char *shader_line_buf_get(const struct shader_line_buf *buf, size_t index)
 {
    return buf->data + buf->line_offsets[index];
 }
-
-/* -------------------------------------------------------------------
- * Original helper functions (unchanged)
- * ------------------------------------------------------------------- */
 
 /* Copy the quoted include filename out of @line into @s.
  *
@@ -304,26 +337,30 @@ enum slang_texture_semantic slang_name_to_texture_semantic_array(
 static const char _define_originalaspect[] = "#define _HAS_ORIGINALASPECT_UNIFORMS";
 static const char _define_frametime[]      = "#define _HAS_FRAMETIME_UNIFORMS";
 static const char _define_sensor[]         = "#define _HAS_SENSOR_UNIFORMS";
+static const char _define_swapcount[]      = "#define _HAS_SWAPCOUNT_UNIFORM";
 static const char _ext_line_directive[]    = "#extension GL_GOOGLE_cpp_style_line_directive : require";
 
 #define DEFINE_ORIGINALASPECT_LEN (sizeof(_define_originalaspect) - 1)
 #define DEFINE_FRAMETIME_LEN      (sizeof(_define_frametime) - 1)
 #define DEFINE_SENSOR_LEN         (sizeof(_define_sensor) - 1)
+#define DEFINE_SWAPCOUNT_LEN      (sizeof(_define_swapcount) - 1)
 #define EXT_LINE_DIRECTIVE_LEN    (sizeof(_ext_line_directive) - 1)
 
 static bool emit_feature_defines(struct shader_line_buf *output)
 {
-   static const char *const lines[3] = {
+   static const char *const lines[4] = {
       _define_originalaspect,
       _define_frametime,
-      _define_sensor
+      _define_sensor,
+      _define_swapcount
    };
-   static const size_t lens[3] = {
+   static const size_t lens[4] = {
       DEFINE_ORIGINALASPECT_LEN,
       DEFINE_FRAMETIME_LEN,
-      DEFINE_SENSOR_LEN
+      DEFINE_SENSOR_LEN,
+      DEFINE_SWAPCOUNT_LEN
    };
-   return shader_line_buf_append_batch(output, lines, lens, 3);
+   return shader_line_buf_append_batch(output, lines, lens, 4);
 }
 
 /* Build a "#line N \"file\"" directive into tmp using a precomputed suffix.
@@ -369,6 +406,22 @@ struct slang_include_cache_entry
    char    *path;
    uint8_t *data;
    int64_t  len;
+   /* The lines this file expands to when it is included, in the
+    * shader_line_buf layout: NUL-separated text plus the offset of
+    * each line within it.  An include expands the same way wherever
+    * it appears - the '#line' directive that returns to the parent is
+    * written by the parent after the recursive call - so one capture
+    * serves every pass that includes it. */
+   char    *exp_data;
+   size_t  *exp_offsets;
+   size_t   exp_len;
+   size_t   exp_lines;
+   /* The same capture for a pragma-only expansion, which is what a
+    * caller after '#pragma' metadata asks for. */
+   char    *prg_data;
+   size_t  *prg_offsets;
+   size_t   prg_len;
+   size_t   prg_lines;
 };
 
 struct slang_include_cache
@@ -387,11 +440,26 @@ static void slang_include_cache_free(struct slang_include_cache *cache)
    {
       free(cache->entries[i].path);
       free(cache->entries[i].data);
+      free(cache->entries[i].exp_data);
+      free(cache->entries[i].exp_offsets);
+      free(cache->entries[i].prg_data);
+      free(cache->entries[i].prg_offsets);
    }
    free(cache->entries);
    cache->entries = NULL;
    cache->num     = 0;
    cache->cap     = 0;
+}
+
+static struct slang_include_cache_entry *slang_include_cache_find(
+      struct slang_include_cache *cache, const char *path)
+{
+   size_t i;
+   if (cache)
+      for (i = 0; i < cache->num; i++)
+         if (string_is_equal(cache->entries[i].path, path))
+            return &cache->entries[i];
+   return NULL;
 }
 
 /* Look up @path; on a miss read it and record it.
@@ -408,26 +476,23 @@ static void slang_include_cache_free(struct slang_include_cache *cache)
 static bool slang_include_cache_read(struct slang_include_cache *cache,
       const char *path, const uint8_t **buf, int64_t *len, bool *owned)
 {
-   size_t i;
    uint8_t *data = NULL;
    int64_t  n    = 0;
 
    *owned = false;
 
-   if (cache)
    {
-      for (i = 0; i < cache->num; i++)
+      struct slang_include_cache_entry *hit =
+            slang_include_cache_find(cache, path);
+      if (hit)
       {
-         if (string_is_equal(cache->entries[i].path, path))
-         {
-            *buf = cache->entries[i].data;
-            *len = cache->entries[i].len;
-            return true;
-         }
+         *buf = hit->data;
+         *len = hit->len;
+         return true;
       }
    }
 
-   if (!filestream_read_file(path, (void**)&data, &n))
+   if (!video_shader_source_read(path, (char**)&data, &n))
       return false;
 
    if (cache && n > 0)
@@ -451,9 +516,17 @@ static bool slang_include_cache_read(struct slang_include_cache *cache,
          {
             /* Retain the buffer that was just read rather than a
              * duplicate of it; the caller only ever reads from it. */
-            cache->entries[cache->num].path = path_copy;
-            cache->entries[cache->num].data = data;
-            cache->entries[cache->num].len  = n;
+            cache->entries[cache->num].path        = path_copy;
+            cache->entries[cache->num].data        = data;
+            cache->entries[cache->num].len         = n;
+            cache->entries[cache->num].exp_data    = NULL;
+            cache->entries[cache->num].exp_offsets = NULL;
+            cache->entries[cache->num].exp_len     = 0;
+            cache->entries[cache->num].exp_lines   = 0;
+            cache->entries[cache->num].prg_data    = NULL;
+            cache->entries[cache->num].prg_offsets = NULL;
+            cache->entries[cache->num].prg_len     = 0;
+            cache->entries[cache->num].prg_lines   = 0;
             cache->num++;
             *buf = data;
             *len = n;
@@ -471,7 +544,7 @@ static bool slang_include_cache_read(struct slang_include_cache *cache,
 
 static bool glslang_read_shader_file_internal(const char *path,
       struct shader_line_buf *output, bool root_file, bool is_optional,
-      struct slang_include_cache *cache);
+      struct slang_include_cache *cache, bool pragmas_only);
 
 void *glslang_include_cache_new(void)
 {
@@ -497,7 +570,7 @@ bool glslang_read_shader_file_cached(const char *path,
     * single expansion. */
    if (cache)
       return glslang_read_shader_file_internal(path, output, root_file,
-            is_optional, (struct slang_include_cache*)cache);
+            is_optional, (struct slang_include_cache*)cache, false);
    return glslang_read_shader_file(path, output, root_file, is_optional);
 }
 
@@ -512,17 +585,47 @@ bool glslang_read_shader_file(const char *path,
    cache.num     = 0;
    cache.cap     = 0;
    ret = glslang_read_shader_file_internal(path, output, root_file,
-         is_optional, &cache);
+         is_optional, &cache, false);
    slang_include_cache_free(&cache);
    return ret;
 }
 
+bool glslang_read_shader_pragmas_cached(const char *path,
+      struct shader_line_buf *output, void *cache)
+{
+   if (cache)
+      return glslang_read_shader_file_internal(path, output, true, false,
+            (struct slang_include_cache*)cache, true);
+   {
+      struct slang_include_cache own;
+      bool ret;
+      own.entries = NULL;
+      own.num     = 0;
+      own.cap     = 0;
+      ret = glslang_read_shader_file_internal(path, output, true, false,
+            &own, true);
+      slang_include_cache_free(&own);
+      return ret;
+   }
+}
+
 static bool glslang_read_shader_file_internal(const char *path,
       struct shader_line_buf *output, bool root_file, bool is_optional,
-      struct slang_include_cache *cache)
+      struct slang_include_cache *cache, bool pragmas_only)
 {
-   char tmp[PATH_MAX_LENGTH];
-   char line_suffix[PATH_MAX_LENGTH]; /* precomputed: " \"basename\"" */
+   /* Off the frame: this function recurses once per level of include
+    * nesting, and three PATH_MAX_LENGTH arrays cost every level six
+    * kilobytes of stack. On the heap they cost the same per level but
+    * unwind with it, and the frame that holds them is a few hundred
+    * bytes rather than past what this tree allows. */
+   struct
+   {
+      char tmp[PATH_MAX_LENGTH];
+      char line_suffix[PATH_MAX_LENGTH]; /* precomputed: " \"basename\"" */
+      char include_path[PATH_MAX_LENGTH];
+   } *scratch = NULL;
+   char *tmp;
+   char *line_suffix;
    size_t line_suffix_len = 0;
    const char *basename      = NULL;
    const uint8_t *buf        = NULL;
@@ -533,21 +636,59 @@ static bool glslang_read_shader_file_internal(const char *path,
     * longest such line seen, not to the file. */
    char   *cr_scratch        = NULL;
    size_t  cr_scratch_cap    = 0;
-
-   tmp[0] = '\0';
+   /* Where this file's lines start in @output, so the run it produces
+    * can be handed to the cache once it is complete. */
+   size_t  cap_len           = 0;
+   size_t  cap_lines         = 0;
+   bool    capture           = false;
+   bool    nested            = false;
 
    /* Sanity check */
    if (!path || path[0] == '\0' || !output)
       return false;
 
-   basename = path_basename_nocompression(path);
+   basename = video_shader_source_ident_name(path);
 
    if (!basename || basename[0] == '\0')
       return false;
 
+   if (!(scratch = (void*)malloc(sizeof(*scratch))))
+      return false;
+
+   tmp         = scratch->tmp;
+   line_suffix = scratch->line_suffix;
+   tmp[0]      = '\0';
+
+   /* An include expands to the same lines wherever it appears: the
+    * '#line' directive that returns to the parent's position is
+    * written by the parent after the call below, and nothing else
+    * here reads the parent.  So the first expansion of a file that
+    * includes nothing itself is captured, and every later one is a
+    * copy of it.  A file that does include is left out: its run is
+    * mostly the runs of the leaves below it, which are captured on
+    * their own, and holding a second copy of them costs far more
+    * memory than the scan it would save. */
+   if (!root_file && cache)
+   {
+      struct slang_include_cache_entry *hit =
+            slang_include_cache_find(cache, path);
+      if (hit)
+      {
+         if (pragmas_only && hit->prg_data)
+            return shader_line_buf_append_block(output, hit->prg_data,
+                  hit->prg_len, hit->prg_offsets, hit->prg_lines);
+         if (!pragmas_only && hit->exp_data)
+            return shader_line_buf_append_block(output, hit->exp_data,
+                  hit->exp_len, hit->exp_offsets, hit->exp_lines);
+      }
+      capture   = true;
+      cap_len   = output->len;
+      cap_lines = output->num_lines;
+   }
+
    /* Precompute the #line directive suffix: ' "basename"'
     * so the inner loop only needs to write the line number. */
-   line_suffix_len = (size_t)snprintf(line_suffix, sizeof(line_suffix),
+   line_suffix_len = (size_t)snprintf(line_suffix, PATH_MAX_LENGTH,
          " \"%s\"", basename);
 
    /* Read file contents (served from this root read's cache when the
@@ -556,6 +697,7 @@ static bool glslang_read_shader_file_internal(const char *path,
    {
       if (!is_optional)
          RARCH_ERR("[Slang] Failed to open shader file: \"%s\".\n", path);
+      free(scratch);
       return false;
    }
 
@@ -566,7 +708,8 @@ static bool glslang_read_shader_file_internal(const char *path,
     * written to: no terminator is planted at buf_len, and no line is
     * compacted in place.  That keeps this function usable on memory
     * the include cache owns and lends out read-only, so a cache hit
-    * no longer has to hand over a private copy of the whole file.
+    * hands over the bytes themselves rather than a private copy of
+    * the whole file.
     *
     * Line ends are found with memchr() and \r is handled without
     * copying in the two cases that cover real files - no \r at all,
@@ -584,7 +727,7 @@ static bool glslang_read_shader_file_internal(const char *path,
       /* If this is the 'parent' shader file and a slang file,
        * ensure that first line is a 'VERSION' string */
       bool check_version = root_file
-            && (strcmp(path_get_extension(path), "slang") == 0);
+            && video_shader_source_ident_is_slang(path);
 
       while (cursor < buf_end)
       {
@@ -645,23 +788,26 @@ static bool glslang_read_shader_file_internal(const char *path,
                   goto cleanup;
                }
 
-               if (!shader_line_buf_append(output, line_start,
-                        cur_line_len))
-                  goto cleanup;
+               if (!pragmas_only)
+               {
+                  if (!shader_line_buf_append(output, line_start,
+                           cur_line_len))
+                     goto cleanup;
 
-               /* Allows us to use #line to make dealing with shader
-                * errors easier. */
-               if (!shader_line_buf_append(output,
-                     _ext_line_directive, EXT_LINE_DIRECTIVE_LEN))
-                  goto cleanup;
+                  /* Allows us to use #line to make dealing with shader
+                   * errors easier. */
+                  if (!shader_line_buf_append(output,
+                        _ext_line_directive, EXT_LINE_DIRECTIVE_LEN))
+                     goto cleanup;
 
-               if (!emit_feature_defines(output))
-                  goto cleanup;
+                  if (!emit_feature_defines(output))
+                     goto cleanup;
 
-               line_len = build_line_directive(tmp, sizeof(tmp),
-                     2u, line_suffix, line_suffix_len);
-               if (!shader_line_buf_append(output, tmp, line_len))
-                  goto cleanup;
+                  line_len = build_line_directive(tmp, PATH_MAX_LENGTH,
+                        2u, line_suffix, line_suffix_len);
+                  if (!shader_line_buf_append(output, tmp, line_len))
+                     goto cleanup;
+               }
 
                /* Advance past this line in the real buffer */
                cursor = next;
@@ -670,13 +816,16 @@ static bool glslang_read_shader_file_internal(const char *path,
             }
 
             /* Non-root or non-slang: emit feature defines + #line once */
-            if (!emit_feature_defines(output))
-               goto cleanup;
+            if (!pragmas_only)
+            {
+               if (!emit_feature_defines(output))
+                  goto cleanup;
 
-            line_len = build_line_directive(tmp, sizeof(tmp),
-                  root_file ? 2u : 1u, line_suffix, line_suffix_len);
-            if (!shader_line_buf_append(output, tmp, line_len))
-               goto cleanup;
+               line_len = build_line_directive(tmp, PATH_MAX_LENGTH,
+                     root_file ? 2u : 1u, line_suffix, line_suffix_len);
+               if (!shader_line_buf_append(output, tmp, line_len))
+                  goto cleanup;
+            }
          }
 
          /* Skip line 0 (the #version line) for root slang files —
@@ -698,14 +847,9 @@ static bool glslang_read_shader_file_internal(const char *path,
                   && !memcmp("#include ", line_start, sizeof("#include ")-1))
                   || include_optional)
             {
-               char include_path[PATH_MAX_LENGTH];
-               /* tmp is free here: its only use is the #line directive
-                * built after the recursive call below, so the include
-                * name can borrow it instead of costing this frame a
-                * third PATH_MAX_LENGTH array - this function recurses
-                * once per level of include nesting. */
+               char *include_path = scratch->include_path;
                if (   !slang_get_include_file(line_start, cur_line_len,
-                           tmp, sizeof(tmp))
+                           tmp, PATH_MAX_LENGTH)
                    || tmp[0] == '\0')
                {
                   RARCH_ERR("[Slang] Invalid include statement \"%.*s\".\n",
@@ -714,11 +858,17 @@ static bool glslang_read_shader_file_internal(const char *path,
                }
 
                include_path[0] = '\0';
-               fill_pathname_resolve_relative(
-                     include_path, path, tmp, sizeof(include_path));
+               if (!video_shader_source_resolve(path, tmp,
+                        include_path, PATH_MAX_LENGTH))
+               {
+                  RARCH_ERR("[Slang] Could not resolve include \"%s\".\n",
+                        tmp);
+                  goto cleanup;
+               }
 
+               nested = true;
                if (!glslang_read_shader_file_internal(include_path, output,
-                     false, include_optional, cache))
+                     false, include_optional, cache, pragmas_only))
                {
                   if (!include_optional)
                      goto cleanup;
@@ -726,24 +876,36 @@ static bool glslang_read_shader_file_internal(const char *path,
                         include_path);
                }
 
-               line_len = build_line_directive(tmp, sizeof(tmp),
-                     (unsigned)(line_idx + 1), line_suffix, line_suffix_len);
-               if (!shader_line_buf_append(output, tmp, line_len))
-                  goto cleanup;
+               if (!pragmas_only)
+               {
+                  line_len = build_line_directive(tmp, PATH_MAX_LENGTH,
+                        (unsigned)(line_idx + 1), line_suffix,
+                        line_suffix_len);
+                  if (!shader_line_buf_append(output, tmp, line_len))
+                     goto cleanup;
+               }
             }
             else if (  ((cur_line_len >= sizeof("#endif")-1)
                      && !memcmp("#endif", line_start, sizeof("#endif")-1))
                     || ((cur_line_len >= sizeof("#pragma")-1)
                      && !memcmp("#pragma", line_start, sizeof("#pragma")-1)))
             {
-               if (!shader_line_buf_append(output, line_start, cur_line_len))
-                  goto cleanup;
-               line_len = build_line_directive(tmp, sizeof(tmp),
-                     (unsigned)(line_idx + 2), line_suffix, line_suffix_len);
-               if (!shader_line_buf_append(output, tmp, line_len))
-                  goto cleanup;
+               bool is_pragma = (cur_line_len >= sizeof("#pragma")-1)
+                     && !memcmp("#pragma", line_start, sizeof("#pragma")-1);
+               if (!pragmas_only || is_pragma)
+                  if (!shader_line_buf_append(output, line_start,
+                           cur_line_len))
+                     goto cleanup;
+               if (!pragmas_only)
+               {
+                  line_len = build_line_directive(tmp, PATH_MAX_LENGTH,
+                        (unsigned)(line_idx + 2), line_suffix,
+                        line_suffix_len);
+                  if (!shader_line_buf_append(output, tmp, line_len))
+                     goto cleanup;
+               }
             }
-            else
+            else if (!pragmas_only)
             {
                if (!shader_line_buf_append(output, line_start, cur_line_len))
                   goto cleanup;
@@ -761,6 +923,57 @@ static bool glslang_read_shader_file_internal(const char *path,
    ret = true;
 
 cleanup:
+   free(scratch);
+   /* Re-find rather than hold a pointer: a nested include may have
+    * grown the entry array out from under one taken above. */
+   /* A file that includes others is captured in pragma-only form as
+    * well: its run there is a handful of lines rather than the runs of
+    * everything beneath it, so the memory that rules the full form out
+    * is not at stake. */
+   if (ret && capture && (pragmas_only || !nested))
+   {
+      struct slang_include_cache_entry *e =
+            slang_include_cache_find(cache, path);
+      if (e && !(pragmas_only ? e->prg_data : e->exp_data))
+      {
+         size_t  blk_len   = output->len       - cap_len;
+         size_t  blk_lines = output->num_lines - cap_lines;
+         /* A run can legitimately be empty - a helper with no pragmas
+          * under a pragma-only expansion - and a non-NULL block is
+          * what marks the entry as captured, so always allocate. */
+         char   *blk       = (char*)malloc(blk_len ? blk_len : 1);
+         size_t *offs      = (size_t*)malloc(blk_lines
+               ? blk_lines * sizeof(size_t) : sizeof(size_t));
+         if (blk && offs)
+         {
+            size_t i;
+            memcpy(blk, output->data + cap_len, blk_len);
+            for (i = 0; i < blk_lines; i++)
+               offs[i] = output->line_offsets[cap_lines + i] - cap_len;
+            if (pragmas_only)
+            {
+               e->prg_data    = blk;
+               e->prg_offsets = offs;
+               e->prg_len     = blk_len;
+               e->prg_lines   = blk_lines;
+            }
+            else
+            {
+               e->exp_data    = blk;
+               e->exp_offsets = offs;
+               e->exp_len     = blk_len;
+               e->exp_lines   = blk_lines;
+            }
+         }
+         else
+         {
+            /* Not remembered is only slower, never wrong. */
+            free(blk);
+            free(offs);
+         }
+      }
+   }
+
    free(cr_scratch);
    if (buf_owned)
       free((void*)buf);

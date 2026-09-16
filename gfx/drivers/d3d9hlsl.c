@@ -951,10 +951,12 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
             /* Pixel-space corner offsets (dx, dy) for each of the
              * four quad vertices.  Order matches the (x1,y1)..
              * (x2,y2) layout used immediately below. */
-            float ox[4]        = { -half_w,  half_w, -half_w,  half_w };
-            float oy[4]        = { -half_h, -half_h,  half_h,  half_h };
+            float ox[4], oy[4];
             float rx[4], ry[4];
             int   k;
+            /* Assigned, not initialised: C89 wants constant initialisers */
+            ox[0] = -half_w; ox[1] =  half_w; ox[2] = -half_w; ox[3] =  half_w;
+            oy[0] = -half_h; oy[1] = -half_h; oy[2] =  half_h; oy[3] =  half_h;
             for (k = 0; k < 4; k++)
             {
                rx[k] = (ox[k] * c - oy[k] * s) * inv_vw;
@@ -2005,7 +2007,11 @@ static INLINE void d3d9_hlsl_set_param_1f(
    reg = d3d9_hlsl_ctab_find_register(bytecode, bytecode_dwords, name, NULL, NULL);
    if (reg >= 0)
    {
-      float v4[4] = { *(const float*)value, 0.0f, 0.0f, 0.0f };
+      float v4[4];
+      v4[0] = *(const float*)value;
+      v4[1] = 0.0f;
+      v4[2] = 0.0f;
+      v4[3] = 0.0f;
       if (is_vertex)
          d3d9_hlsl_set_vs_const(dev, reg, v4, 1);
       else
@@ -2396,14 +2402,17 @@ static void d3d9_hlsl_renderchain_render_pass(
                pd->vs_map.mvp, mvp_data, 4);
 
       {
-         float video_size[2]   = {
-            (float)pass->last_width, (float)pass->last_height };
-         float texture_size[2] = {
-            (float)pass->info.tex_w, (float)pass->info.tex_h };
-         float output_size[2]  = {
-            (float)vp_width,
-            (float)vp_height };
+         float video_size[2];
+         float texture_size[2];
+         float output_size[2];
          float frame_cnt;
+
+         video_size[0]   = (float)pass->last_width;
+         video_size[1]   = (float)pass->last_height;
+         texture_size[0] = (float)pass->info.tex_w;
+         texture_size[1] = (float)pass->info.tex_h;
+         output_size[0]  = (float)vp_width;
+         output_size[1]  = (float)vp_height;
 
          if (pass->info.pass->frame_count_mod)
             frame_cnt = (float)(chain->chain.frame_count
@@ -2419,29 +2428,55 @@ static void d3d9_hlsl_renderchain_render_pass(
          if (pd->ps_map.video_size >= 0
                && pd->ps_map.video_size == pd->ps_map.texture_size)
          {
-            float packed0[4] = { video_size[0], video_size[1],
-               texture_size[0], texture_size[1] };
-            float packed1[4] = { output_size[0], output_size[1],
-               frame_cnt, 1.0f };
+            float packed0[4];
+            float packed1[4];
+            packed0[0] = video_size[0];
+            packed0[1] = video_size[1];
+            packed0[2] = texture_size[0];
+            packed0[3] = texture_size[1];
+            packed1[0] = output_size[0];
+            packed1[1] = output_size[1];
+            packed1[2] = frame_cnt;
+            packed1[3] = 1.0f;
             d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.video_size, packed0, 1);
             d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.output_size, packed1, 1);
          }
          else
          {
-            float vs4[4] = { video_size[0], video_size[1], 0.0f, 0.0f };
-            float ts4[4] = { texture_size[0], texture_size[1], 0.0f, 0.0f };
+            float vs4[4];
+            float ts4[4];
+            vs4[0] = video_size[0];
+            vs4[1] = video_size[1];
+            vs4[2] = 0.0f;
+            vs4[3] = 0.0f;
+            ts4[0] = texture_size[0];
+            ts4[1] = texture_size[1];
+            ts4[2] = 0.0f;
+            ts4[3] = 0.0f;
             d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.video_size,   vs4, 1);
             d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.texture_size, ts4, 1);
             if (pd->ps_map.output_size >= 0
                   && pd->ps_map.output_size == pd->ps_map.frame_count)
             {
-               float packed[4] = { output_size[0], output_size[1], frame_cnt, 1.0f };
+               float packed[4];
+               packed[0] = output_size[0];
+               packed[1] = output_size[1];
+               packed[2] = frame_cnt;
+               packed[3] = 1.0f;
                d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.output_size, packed, 1);
             }
             else
             {
-               float os4[4] = { output_size[0], output_size[1], 0.0f, 0.0f };
-               float fc4[4] = { frame_cnt, 0.0f, 0.0f, 0.0f };
+               float os4[4];
+               float fc4[4];
+               os4[0] = output_size[0];
+               os4[1] = output_size[1];
+               os4[2] = 0.0f;
+               os4[3] = 0.0f;
+               fc4[0] = frame_cnt;
+               fc4[1] = 0.0f;
+               fc4[2] = 0.0f;
+               fc4[3] = 0.0f;
                d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.output_size,  os4, 1);
                d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.frame_count,  fc4, 1);
             }
@@ -2451,29 +2486,55 @@ static void d3d9_hlsl_renderchain_render_pass(
          if (pd->vs_map.video_size >= 0
                && pd->vs_map.video_size == pd->vs_map.texture_size)
          {
-            float packed0[4] = { video_size[0], video_size[1],
-               texture_size[0], texture_size[1] };
-            float packed1[4] = { output_size[0], output_size[1],
-               frame_cnt, 1.0f };
+            float packed0[4];
+            float packed1[4];
+            packed0[0] = video_size[0];
+            packed0[1] = video_size[1];
+            packed0[2] = texture_size[0];
+            packed0[3] = texture_size[1];
+            packed1[0] = output_size[0];
+            packed1[1] = output_size[1];
+            packed1[2] = frame_cnt;
+            packed1[3] = 1.0f;
             d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.video_size, packed0, 1);
             d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.output_size, packed1, 1);
          }
          else
          {
-            float vs4[4] = { video_size[0], video_size[1], 0.0f, 0.0f };
-            float ts4[4] = { texture_size[0], texture_size[1], 0.0f, 0.0f };
+            float vs4[4];
+            float ts4[4];
+            vs4[0] = video_size[0];
+            vs4[1] = video_size[1];
+            vs4[2] = 0.0f;
+            vs4[3] = 0.0f;
+            ts4[0] = texture_size[0];
+            ts4[1] = texture_size[1];
+            ts4[2] = 0.0f;
+            ts4[3] = 0.0f;
             d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.video_size,   vs4, 1);
             d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.texture_size, ts4, 1);
             if (pd->vs_map.output_size >= 0
                   && pd->vs_map.output_size == pd->vs_map.frame_count)
             {
-               float packed[4] = { output_size[0], output_size[1], frame_cnt, 1.0f };
+               float packed[4];
+               packed[0] = output_size[0];
+               packed[1] = output_size[1];
+               packed[2] = frame_cnt;
+               packed[3] = 1.0f;
                d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.output_size, packed, 1);
             }
             else
             {
-               float os4[4] = { output_size[0], output_size[1], 0.0f, 0.0f };
-               float fc4[4] = { frame_cnt, 0.0f, 0.0f, 0.0f };
+               float os4[4];
+               float fc4[4];
+               os4[0] = output_size[0];
+               os4[1] = output_size[1];
+               os4[2] = 0.0f;
+               os4[3] = 0.0f;
+               fc4[0] = frame_cnt;
+               fc4[1] = 0.0f;
+               fc4[2] = 0.0f;
+               fc4[3] = 0.0f;
                d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.output_size,  os4, 1);
                d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.frame_count,  fc4, 1);
             }
@@ -2504,10 +2565,16 @@ static void d3d9_hlsl_renderchain_render_pass(
          }
 
          {
-            float vs[4] = { (float)first_pass->last_width,
-               (float)first_pass->last_height, 0.0f, 0.0f };
-            float ts[4] = { (float)first_pass->info.tex_w,
-               (float)first_pass->info.tex_h, 0.0f, 0.0f };
+            float vs[4];
+            float ts[4];
+            vs[0] = (float)first_pass->last_width;
+            vs[1] = (float)first_pass->last_height;
+            vs[2] = 0.0f;
+            vs[3] = 0.0f;
+            ts[0] = (float)first_pass->info.tex_w;
+            ts[1] = (float)first_pass->info.tex_h;
+            ts[2] = 0.0f;
+            ts[3] = 0.0f;
             d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.orig_video_size,   vs, 1);
             d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.orig_texture_size, ts, 1);
             d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.orig_video_size,   vs, 1);
@@ -2519,8 +2586,12 @@ static void d3d9_hlsl_renderchain_render_pass(
       {
          int32_t prev_filter = d3d_translate_filter(
                chain->chain.passes->data[0].info.pass->filter);
-         float ts[4] = { (float)chain->chain.passes->data[0].info.tex_w,
-            (float)chain->chain.passes->data[0].info.tex_h, 0.0f, 0.0f };
+         float ts[4];
+
+         ts[0] = (float)chain->chain.passes->data[0].info.tex_w;
+         ts[1] = (float)chain->chain.passes->data[0].info.tex_h;
+         ts[2] = 0.0f;
+         ts[3] = 0.0f;
 
          for (i = 0; i < TEXTURES - 1; i++)
          {
@@ -2543,12 +2614,13 @@ static void d3d9_hlsl_renderchain_render_pass(
             }
 
             {
-               float vs[4] = {
-                  (float)chain->chain.prev.last_width[
-                     (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK],
-                  (float)chain->chain.prev.last_height[
-                     (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK],
-                  0.0f, 0.0f };
+               float vs[4];
+               vs[0] = (float)chain->chain.prev.last_width[
+                     (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK];
+               vs[1] = (float)chain->chain.prev.last_height[
+                     (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK];
+               vs[2] = 0.0f;
+               vs[3] = 0.0f;
                d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.prev_video_size[i],   vs, 1);
                d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.prev_texture_size[i], ts, 1);
                d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.prev_video_size[i],   vs, 1);
@@ -2601,10 +2673,16 @@ static void d3d9_hlsl_renderchain_render_pass(
             }
 
             {
-               float vs[4] = { (float)cp->last_width,
-                  (float)cp->last_height, 0.0f, 0.0f };
-               float ts[4] = { (float)cp->info.tex_w,
-                  (float)cp->info.tex_h, 0.0f, 0.0f };
+               float vs[4];
+               float ts[4];
+               vs[0] = (float)cp->last_width;
+               vs[1] = (float)cp->last_height;
+               vs[2] = 0.0f;
+               vs[3] = 0.0f;
+               ts[0] = (float)cp->info.tex_w;
+               ts[1] = (float)cp->info.tex_h;
+               ts[2] = 0.0f;
+               ts[3] = 0.0f;
                d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.pass_video_size[i-1],   vs, 1);
                d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.pass_texture_size[i-1], ts, 1);
                d3d9_hlsl_set_ps_const(chain->chain.dev, pd->ps_map.pass_video_size[i-1],   vs, 1);
@@ -2616,13 +2694,17 @@ static void d3d9_hlsl_renderchain_render_pass(
       /* Upload shader parameters */
       for (i = 0; i < d3d->shader.num_parameters; i++)
       {
-         float val[4] = { d3d->shader.parameters[i].current, 0.0f, 0.0f, 0.0f };
+         float val[4];
          int ps_reg   = d3d9_hlsl_ctab_find_register(
                pd->ps_bytecode, pd->ps_bytecode_dwords,
                d3d->shader.parameters[i].id, NULL, NULL);
          int vs_reg   = d3d9_hlsl_ctab_find_register(
                pd->vs_bytecode, pd->vs_bytecode_dwords,
                d3d->shader.parameters[i].id, NULL, NULL);
+         val[0] = d3d->shader.parameters[i].current;
+         val[1] = 0.0f;
+         val[2] = 0.0f;
+         val[3] = 0.0f;
          d3d9_hlsl_set_ps_const(chain->chain.dev, ps_reg, val, 1);
          d3d9_hlsl_set_vs_const(chain->chain.dev, vs_reg, val, 1);
       }
@@ -7217,7 +7299,7 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
 #ifdef HAVE_WINDOW
       /* Use new_width / new_height directly rather than reading
        * them back via video_driver_get_output_size: nothing in the
-       * codebase writes video_st->width / height between the
+       * codebase sets the output size between the
        * set_size above and this call except us. */
       if (!win32_set_video_mode(d3d, new_width, new_height,
             info->fullscreen))
@@ -7686,9 +7768,8 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
 
       if (!d3d9_hlsl_restore(d3d))
       {
-         video_driver_state_t *video_st = video_state_get_ptr();
          RARCH_ERR("[D3D9 HLSL] Failed to restore. Requesting reinit.\n");
-         video_st->flags |= VIDEO_FLAG_GPU_DEVICE_LOST;
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
          return false;
       }
    }
@@ -7854,10 +7935,9 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       HRESULT hr = IDirect3DDevice9_Present(d3d->dev, NULL, NULL, NULL, NULL);
       if (hr == D3DERR_DEVICELOST)
       {
-         video_driver_state_t *video_st = video_state_get_ptr();
          RARCH_WARN("[D3D9 HLSL] Device lost detected on Present().\n");
          d3d->needs_restore = true;
-         video_st->flags |= VIDEO_FLAG_GPU_DEVICE_LOST;
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
          return false;
       }
    }
@@ -8199,7 +8279,7 @@ static bool d3d9_hlsl_alive(void *data)
    d3d9_video_t *d3d     = (d3d9_video_t*)data;
 
    /* Read from local bookkeeping rather than video_st (which would
-    * acquire context_lock + display_lock).  d3d->vp.full_* is
+    * cross threads needlessly).  d3d->vp.full_* is
     * written at every set_size call site in this driver. */
    temp_width  = d3d->vp.full_width;
    temp_height = d3d->vp.full_height;
@@ -8411,6 +8491,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
    &d3d9_hlsl_font,
    GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
    "d3d9_hlsl",
+   true,
    true,
    gfx_display_d3d9_hlsl_scissor_begin,
    gfx_display_d3d9_hlsl_scissor_end

@@ -184,6 +184,18 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
       vendor  = SDL_GetGamepadVendor(gamepad);
       product = SDL_GetGamepadProduct(gamepad);
 
+#ifdef WEBOS
+   if (vendor == 0x9999 && product == 0x9999)
+   {
+      RARCH_WARN("[SDL] Ignoring pad #%d (vendor: %d; product: %d).\n", jid, vendor, product);
+      if (pad->joypad)
+         SDL_CloseJoystick(pad->joypad);
+
+      pad->joypad = NULL;
+      return;
+   }
+#endif
+
       /* Ensure the player index matches the slot. */
       if (SDL_GetGamepadPlayerIndex(gamepad) != slot)
          SDL_SetGamepadPlayerIndex(gamepad, slot);

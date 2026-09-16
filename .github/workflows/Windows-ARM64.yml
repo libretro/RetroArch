@@ -2,6 +2,7 @@ name: CI Windows ARM64 (MSVC)
 
 on:
   push:
+    branches: [master]
   pull_request:
   repository_dispatch:
     types: [run_build]
@@ -12,9 +13,14 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   msvc:
     runs-on: windows-11-arm
+    timeout-minutes: 90
     strategy:
       matrix:
         version: [2022]
@@ -22,7 +28,7 @@ jobs:
         platform: [ARM64]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1

@@ -19,6 +19,7 @@
 #include <string.h>
 #include <limits.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -170,7 +171,10 @@ static int udev_open_joystick(const char *path)
    int fd = open(path, O_RDWR | O_NONBLOCK);
 
    if (fd < 0)
+   {
+      RARCH_DBG("[udev] Could not open \"%s\": %s.\n", path, strerror(errno));
       return fd;
+   }
 
    if (  (ioctl(fd, EVIOCGBIT(0,      sizeof(evbit)),  evbit)  < 0) ||
          (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||

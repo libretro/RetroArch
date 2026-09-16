@@ -269,7 +269,7 @@ bool core_backup_get_backup_crc(char *s, uint32_t *crc)
             /* Open backup file */
             backup_file = intfstream_open_file(
                   s, RETRO_VFS_FILE_ACCESS_READ,
-                  RETRO_VFS_FILE_ACCESS_HINT_NONE);
+                  RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
 
             if (backup_file)
             {

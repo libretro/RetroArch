@@ -61,7 +61,30 @@ enum gl2_flags
    GL2_FLAG_MENU_TEXTURE_ENABLE    = (1 << 19),
    GL2_FLAG_MENU_TEXTURE_FULLSCREEN= (1 << 20),
    GL2_FLAG_NONE                   = (1 << 21),
-   GL2_FLAG_FRAME_DUPE_LOCK        = (1 << 22)
+   GL2_FLAG_FRAME_DUPE_LOCK        = (1 << 22),
+   /* The threaded wrapper's hardware ring is driving this driver: the
+    * core's context is current on the main thread, so this thread
+    * never takes it, and the frame reads the ring's slot. */
+   GL2_FLAG_HW_RING                = (1 << 23),
+   /* Latched at init: the wrapper was active and the driver
+    * configuration allowed a hw ring when this context came up.
+    * core_context_is_mains() reads this instead of consulting the
+    * live settings from the frame path (the video thread, with the
+    * main thread running free). */
+   GL2_FLAG_HW_RING_EXPECTED = (1 << 27),
+   /* GPU recording is on: taken from the frame the frontend hands over,
+    * so this thread never reads the recording state the main thread
+    * writes (video_frame_info_t::gpu_recording). */
+   GL2_FLAG_GPU_RECORDING          = (1 << 24),
+   /* What the last frame said context scaling should be:
+    * set_aspect_ratio() runs on the video thread under the threaded
+    * wrapper, and reading the setting there races the menu writing it. */
+   GL2_FLAG_CTX_SCALING            = (1 << 25),
+   /* What the last frame said the menu filter should be:
+    * set_texture_frame() is applied by the video thread in
+    * thread_update_driver_state(), and reading the setting there races
+    * the menu writing it. */
+   GL2_FLAG_MENU_LINEAR_FILTER     = (1 << 26)
 };
 
 struct gl2
@@ -90,9 +113,23 @@ struct gl2
    GLuint pbo;
    GLuint *overlay_tex;
    GLuint menu_texture;
+   /* Copy of the last presented backbuffer, taken with
+    * glCopyTexSubImage2D before the swap of a frame() that asked for it
+    * (retain_output), plus the group that frame put on screen for
+    * present_last() to replay. GL 1.1 / GLES2, so every context. */
+   GLuint retained_texture;
+   unsigned retained_width;
+   unsigned retained_height;
+   unsigned retained_light;
+   unsigned retained_dark;
    GLuint pbo_readback[4];
    GLuint texture[GFX_MAX_TEXTURES];
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
+   /* The threaded wrapper's hardware ring: the fence the core's thread
+    * placed after rendering into each slot's texture, for the frame on
+    * this thread to wait before reading it. Sync objects are shared
+    * between the two contexts. */
+   void *hw_ring_sync[3];
 
    uint32_t flags;
 
@@ -155,6 +192,11 @@ struct gl2
       GLint    loc_mode;
       GLint    loc_ui_nits;
       bool   active;
+      /* The HDR settings this frame carried (video_frame_info_t), so the
+       * thread that draws never reads what the menu writes */
+      float    menu_nits;
+      float    paper_white_nits;
+      unsigned expand_gamut;
    } scrgb;
 
 };

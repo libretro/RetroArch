@@ -97,7 +97,7 @@ static INLINE double besseli0(double x)
 
 static INLINE double kaiser_window_function(double index, double beta)
 {
-   return besseli0(beta * sqrtf(1 - index * index));
+   return besseli0(beta * sqrt(1 - index * index));
 }
 
 #endif

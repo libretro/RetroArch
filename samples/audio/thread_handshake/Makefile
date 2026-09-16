@@ -10,12 +10,16 @@ flags   += -std=gnu99
 
 SOURCES_C := \
 	thread_handshake_test.c \
+	../../../audio/audio_upmix.c \
+	../../../audio/audio_binaural.c \
 	stubs_retroarch.c \
 	$(CORE_DIR)/audio/audio_thread_wrapper.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
-	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
 CFLAGS += -Wall $(INCDIRS)
 CFLAGS += -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU \

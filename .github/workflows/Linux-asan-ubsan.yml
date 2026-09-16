@@ -51,6 +51,10 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   asan-ubsan:
     name: Build with ASan+UBSan and run headless smoke
@@ -86,7 +90,7 @@ jobs:
             $pkgs
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Configure (no menu, no discord/cheevos/networking, sdl2 on)
         # Trim the build surface for the first iteration so any

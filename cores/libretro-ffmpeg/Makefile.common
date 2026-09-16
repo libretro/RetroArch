@@ -20,7 +20,7 @@ INCFLAGS           += -I$(BASE_DIR) -I$(CORE_DIR) -I$(LIBRETRO_COMM_DIR)/include
 
 LIBRETRO_SOURCE    += $(CORE_DIR)/ffmpeg_core.c \
 		      $(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
-		      $(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
+		      $(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
 		      $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
 ifeq ($(LIBRETRO_SWITCH), 1)

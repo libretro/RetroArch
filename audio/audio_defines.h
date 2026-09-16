@@ -184,7 +184,17 @@ enum audio_driver_state_flags
     * runloop's pace record so "audio is holding the loop" is a fact
     * about this iteration rather than a guess about who wrote.
     */
-   AUDIO_FLAG_WROTE        = (1 << 10)
+   AUDIO_FLAG_WROTE        = (1 << 10),
+   /* The mixer subsystem is between audio_mixer_init() and
+    * audio_mixer_done(): the window in which claiming voices is
+    * legal. audio_driver_init_internal() raises it right after the
+    * mixer comes up; audio_driver_mixer_deinit() drops it before the
+    * mixer goes down. Streams arriving outside the window - a mixer
+    * load task retiring after teardown at shutdown, or a menu sound
+    * during a session whose audio driver failed to initialize - are
+    * refused at audio_driver_mixer_add_stream() instead of claiming
+    * voices whose locks are gone. */
+   AUDIO_FLAG_MIXER_INITED = (1 << 11)
 };
 
 typedef struct audio_statistics

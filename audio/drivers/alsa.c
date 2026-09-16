@@ -15,17 +15,38 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Two drivers live here, and a build may have either or both.
+ *
+ * "alsa" talks to alsa-lib, which is what a desktop Linux has. It is
+ * everything below, up to the embedded section.
+ *
+ * "tinyalsa" talks to the kernel's PCM character devices directly -
+ * the ioctls of <sound/asound.h> - and needs no library at all, which
+ * is what an embedded build wants. It is the section at the end of
+ * this file, under HAVE_TINYALSA, and its includes are its own: a
+ * build with only HAVE_TINYALSA never sees an alsa-lib header. */
+
 #include <stdlib.h>
 
 #include <lists/string_list.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../../config.h"
+#endif
+
+#ifdef HAVE_ALSA
 #include <alsa/asoundlib.h>
 #include <alsa/pcm.h>
+#endif
 #include <errno.h>
 
 #include "../audio_driver.h"
+#ifdef HAVE_ALSA
 #include "../common/alsa.h"
+#endif
 #include "../../verbosity.h"
+
+#ifdef HAVE_ALSA
 
 #ifdef HAVE_MICROPHONE
 #include "../microphone_driver.h"
@@ -269,6 +290,85 @@ static bool alsa_microphone_stop_mic(void *driver_context, void *mic_context)
    return alsa_stop_pcm(mic->pcm);
 }
 
+/* Bounded like the playback side's, and for the same reason: a stalled
+ * capture must cost a dropped slice rather than a parked worker. */
+#define ALSA_WAIT_READABLE_LAPS 8
+
+/* Sleeps until the microphone has samples, then says how many. The
+ * counterpart of alsa_wait_writable(): snd_pcm_avail() on a capture
+ * stream reports frames ready to read rather than room to write, and
+ * snd_pcm_start() begins capture where it began playback. Bounded by
+ * two periods per wait and ALSA_WAIT_READABLE_LAPS waits, so a device
+ * that has stopped delivering returns 0 and the caller retries later
+ * rather than parking the capture thread. */
+static size_t alsa_microphone_wait_readable(void *driver_context,
+      void *mic_context, size_t len)
+{
+   alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
+   snd_pcm_sframes_t want;
+   int laps       = ALSA_WAIT_READABLE_LAPS;
+   int timeout_ms;
+
+   if (!mic || !mic->pcm)
+      return 0;
+
+   want       = BYTES_TO_FRAMES(len, mic->stream_info.frame_bits);
+   timeout_ms = (int)(((unsigned long)mic->stream_info.period_frames * 2000ul)
+         / (mic->stream_info.rate ? mic->stream_info.rate : 48000u));
+   if (timeout_ms < 20)
+      timeout_ms = 20;
+   if (timeout_ms > 200)
+      timeout_ms = 200;
+
+   if (want > (snd_pcm_sframes_t)mic->stream_info.period_frames)
+      want = (snd_pcm_sframes_t)mic->stream_info.period_frames;
+
+   for (;;)
+   {
+      int rc;
+      snd_pcm_sframes_t avail = snd_pcm_avail(mic->pcm);
+
+      if (avail == -EPIPE || avail == -ESTRPIPE || avail == -EINTR)
+      {
+         if (snd_pcm_recover(mic->pcm, (int)avail, 1) < 0)
+            return 0;
+         if (--laps < 0)
+            return 0;
+         continue;
+      }
+      if (avail < 0)
+         return 0;
+      if (avail >= want)
+         return FRAMES_TO_BYTES(avail, mic->stream_info.frame_bits);
+
+      if (snd_pcm_state(mic->pcm) == SND_PCM_STATE_PREPARED)
+      {
+         rc = snd_pcm_start(mic->pcm);
+         if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
+         {
+            if (snd_pcm_recover(mic->pcm, rc, 1) < 0)
+               return 0;
+         }
+         else if (rc < 0)
+            return 0;
+      }
+
+      rc = snd_pcm_wait(mic->pcm, timeout_ms);
+      if (rc == 0)
+         return 0;
+      if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
+      {
+         if (snd_pcm_recover(mic->pcm, rc, 1) < 0)
+            return 0;
+      }
+      else if (rc < 0)
+         return 0;
+
+      if (--laps < 0)
+         return 0;
+   }
+}
+
 static bool alsa_microphone_mic_use_float(const void *driver_context, const void *mic_context)
 {
    alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
@@ -288,7 +388,8 @@ microphone_driver_t microphone_alsa = {
         alsa_microphone_mic_alive,
         alsa_microphone_start_mic,
         alsa_microphone_stop_mic,
-        alsa_microphone_mic_use_float
+        alsa_microphone_mic_use_float,
+        alsa_microphone_wait_readable
 };
 #endif
 
@@ -296,9 +397,70 @@ typedef struct alsa
 {
    snd_pcm_t *pcm;
    alsa_stream_info_t stream_info;
+   uint32_t requested_layout;
+   /* Frames snd_pcm_writei() accepted since open; less what the device
+    * still holds, it is what the device has consumed. */
+   uint64_t frames_written;
    bool nonblock;
+   /* Stopped, as the frontend sees it: alive() is its inverse. Held
+    * says how: the stream paused with its buffer kept, or dropped,
+    * its buffer discarded, to be prepared again on start. */
    bool is_paused;
+   bool held;
+
+   /* The device clock, fitted from what snd_pcm_status() reports.
+    *
+    * frames_consumed() below is this driver's own write count less
+    * what the device still holds - close, and what the sink estimator
+    * has always used, but an inference either way. snd_pcm_status()
+    * hands over the delay and a timestamp for it in one snapshot, and
+    * the slope of position against that timestamp is the rate the
+    * hardware is really running at.
+    *
+    * Where the driver fills in an audio timestamp as well - the DMA or
+    * link clock, which is the hardware counting itself rather than
+    * anything inferred - the ratio of that against the system
+    * timestamp is the same number more directly, and it is taken in
+    * preference. Plenty of devices leave it at zero; the null PCM
+    * does, which is what the harness sees.
+    *
+    * A fit over every sample, not two points: noise on a single anchor
+    * divides by the window and reads as drift, fifty parts per million
+    * for half a millisecond at a ten-second window. Sums in seconds
+    * and frames relative to the anchor, because a fit on raw
+    * nanoseconds loses its answer to cancellation.
+    *
+    * Sampled from the writer thread, which is the only thread that
+    * touches any of it. Nothing here feeds rate control. */
+   uint64_t clk_anchor_pos;
+   uint64_t clk_anchor_ns;
+   int      clk_have_anchor;
+   double   clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
+   int      clk_ppm;
+   int      clk_valid;
+   /* The same from the audio timestamp, where the driver provides one. */
+   uint64_t clk_a_anchor_audio_ns;
+   uint64_t clk_a_anchor_sys_ns;
+   int      clk_a_have_anchor;
+   double   clk_a_sx, clk_a_sy, clk_a_sxx, clk_a_sxy, clk_a_n;
+   int      clk_a_ppm;
+   int      clk_a_valid;
 } alsa_t;
+
+/* The layout the device actually has, from its channel map; the
+ * requested one where the map could not be read; stereo where the
+ * device would not open wider. */
+static uint32_t alsa_layout(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   if (!alsa || alsa->stream_info.channels <= 2)
+      return AUDIO_LAYOUT_STEREO;
+   if (alsa->stream_info.layout)
+      return alsa->stream_info.layout;
+   if (alsa->stream_info.channels == audio_layout_channels(alsa->requested_layout))
+      return alsa->requested_layout;
+   return AUDIO_LAYOUT_STEREO;
+}
 
 static bool alsa_use_float(void *data)
 {
@@ -307,8 +469,8 @@ static bool alsa_use_float(void *data)
 }
 
 static void alsa_free(void *data);
+static void alsa_clock_sample(alsa_t *alsa);
 static void *alsa_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
       unsigned *new_rate)
 {
    alsa_t *alsa = (alsa_t*)calloc(1, sizeof(alsa_t));
@@ -321,8 +483,10 @@ static void *alsa_init(const char *device, unsigned rate, unsigned latency,
 
    RARCH_LOG("[ALSA] Using ALSA version %s.\n", snd_asoundlib_version());
 
+   alsa->requested_layout = audio_driver_requested_layout();
    if (alsa_init_pcm(&alsa->pcm, device, SND_PCM_STREAM_PLAYBACK, rate,
-            latency, 2, &alsa->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
+            latency, audio_layout_channels(alsa->requested_layout),
+            &alsa->stream_info, new_rate, SND_PCM_NONBLOCK) < 0)
       goto error;
 
    return alsa;
@@ -338,26 +502,32 @@ error:
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
 #define FRAMES_TO_BYTES(frames, frame_bits) ((frames) * frame_bits / 8)
 
+/* Stopped is a state of this driver, not of the hardware: alive() is
+ * false after stop() and true after start() on every device. A device
+ * that can pause holds its buffer across the stop; one that cannot,
+ * or whose pause fails when asked - a USB gadget, the Pulse and
+ * PipeWire plugins - has its buffer dropped, and the stream is
+ * prepared again on start and started by the first write. The
+ * frontend's ring is the source of truth for what was queued. */
 static bool alsa_start(void *data, bool is_shutdown)
 {
    alsa_t *alsa = (alsa_t*)data;
+   int ret;
    if (!alsa->is_paused)
       return true;
 
-   if (     alsa->stream_info.can_pause
-         && alsa->is_paused)
+   if (alsa->held)
+      ret = snd_pcm_pause(alsa->pcm, 0);
+   else
+      ret = snd_pcm_prepare(alsa->pcm);
+   if (ret < 0)
    {
-      int ret = snd_pcm_pause(alsa->pcm, 0);
-
-      if (ret < 0)
-      {
-         RARCH_ERR("[ALSA] Failed to unpause: %s.\n",
-               snd_strerror(ret));
-         return false;
-      }
-
-      alsa->is_paused = false;
+      RARCH_ERR("[ALSA] Failed to %s: %s.\n",
+            alsa->held ? "unpause" : "prepare", snd_strerror(ret));
+      return false;
    }
+   alsa->is_paused = false;
+   alsa->held      = false;
    return true;
 }
 
@@ -393,49 +563,57 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
             return -1;
 
          _len  += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
+         alsa->frames_written += (uint64_t)frames;
+         alsa_clock_sample(alsa);
          buf   += (frames << 1) * frames_size;
          size  -= frames;
       }
    }
    else
    {
-      bool eagain_retry         = true;
+      /* Write first; the device usually has the room, and a wait
+       * before every write was a syscall and a scheduler round trip
+       * for nothing. Wait only when it says EAGAIN, and then for a
+       * bounded time - one buffer's worth - so a device that stops
+       * draining costs a bounded pause and a short write, never the
+       * audio thread. A wait that returns without space, twice, is
+       * that device. */
+      unsigned waits    = 0;
+      int      wait_ms  = 100;
+      if (alsa->stream_info.buffer_size && alsa->stream_info.rate)
+         wait_ms = (int)((uint64_t)BYTES_TO_FRAMES(alsa->stream_info.buffer_size,
+                     alsa->stream_info.frame_bits) * 1000 / alsa->stream_info.rate) + 1;
 
       while (size)
       {
-         snd_pcm_sframes_t frames;
-         int rc = snd_pcm_wait(alsa->pcm, -1);
-
-         if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
-         {
-            if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
-               return -1;
-            continue;
-         }
-
-         frames = snd_pcm_writei(alsa->pcm, buf, size);
+         snd_pcm_sframes_t frames = snd_pcm_writei(alsa->pcm, buf, size);
 
          if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
          {
             if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
                return -1;
-
             break;
          }
          else if (frames == -EAGAIN)
          {
-            /* Definitely not supposed to happen. */
-            if (eagain_retry)
+            int rc;
+            if (waits++ >= 2)
+               break;
+            rc = snd_pcm_wait(alsa->pcm, wait_ms);
+            if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
             {
-               eagain_retry = false;
-               continue;
+               if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
+                  return -1;
             }
-            break;
+            continue;
          }
          else if (frames < 0)
             return -1;
 
+         waits = 0;
          _len += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
+         alsa->frames_written += (uint64_t)frames;
+         alsa_clock_sample(alsa);
          buf  += (frames << 1) * frames_size;
          size -= frames;
       }
@@ -455,20 +633,24 @@ static bool alsa_alive(void *data)
 static bool alsa_stop(void *data)
 {
    alsa_t *alsa = (alsa_t*)data;
+   int ret;
    if (alsa->is_paused)
-	  return true;
+      return true;
 
-   if (alsa->stream_info.can_pause
-         && !alsa->is_paused)
+   if (alsa->stream_info.can_pause && snd_pcm_pause(alsa->pcm, 1) == 0)
    {
-      int ret = snd_pcm_pause(alsa->pcm, 1);
-
-      if (ret < 0)
-         return false;
-
       alsa->is_paused = true;
+      alsa->held      = true;
+      return true;
    }
-
+   ret = snd_pcm_drop(alsa->pcm);
+   if (ret < 0)
+   {
+      RARCH_ERR("[ALSA] Failed to stop: %s.\n", snd_strerror(ret));
+      return false;
+   }
+   alsa->is_paused = true;
+   alsa->held      = false;
    return true;
 }
 
@@ -484,6 +666,23 @@ static void alsa_free(void *data)
 
    if (alsa)
    {
+      /* What the device clock was doing, against the rate this driver
+       * asked for. Logged, not acted on: until these have been read
+       * off a range of hardware they are measurements, and a clock
+       * estimate that is wrong is worse than one that is absent.
+       * Where both appear they should agree, and a disagreement is
+       * the result worth having. */
+      if (alsa->clk_a_valid)
+         RARCH_LOG("[ALSA] Device clock, from the driver's audio"
+               " timestamp: %+d ppm.\n", alsa->clk_a_ppm);
+      if (alsa->clk_valid)
+         RARCH_LOG("[ALSA] Device clock, fitted from the position and"
+               " its timestamp: %+d ppm against %u Hz.\n",
+               alsa->clk_ppm, alsa->stream_info.rate);
+      else if (!alsa->clk_a_valid)
+         RARCH_LOG("[ALSA] Device clock: not enough usable timestamps"
+               " to fit one.\n");
+
       alsa_free_pcm(alsa->pcm);
 
       snd_config_update_free_global();
@@ -601,6 +800,175 @@ void alsa_device_list_free(void *data, void *array_list_data)
       string_list_free(s);
 }
 
+/* What the device has consumed: frames accepted, less the frames still
+ * queued in front of it. snd_pcm_delay() is that queue when the stream
+ * runs; while it does not - paused, or recovering from an underrun -
+ * the count holds. */
+/* One step of a least-squares fit of y against x, returning the slope
+ * once there is a second of span to take it across. The two clock
+ * estimates below are the same fit on different pairs. */
+static bool alsa_clk_fit(double *sx, double *sy, double *sxx, double *sxy,
+      double *n, double x, double y, double *slope)
+{
+   double d;
+   *sx  += x;
+   *sy  += y;
+   *sxx += x * x;
+   *sxy += x * y;
+   *n   += 1.0;
+   d     = *n * *sxx - *sx * *sx;
+   if (x < 1.0 || d <= 0.0)
+      return false;
+   *slope = (*n * *sxy - *sx * *sy) / d;
+   return true;
+}
+
+static INLINE uint64_t alsa_ts_ns(snd_htimestamp_t t)
+{
+   return (uint64_t)t.tv_sec * 1000000000ULL + (uint64_t)t.tv_nsec;
+}
+
+/* Samples the device clock. Called from the writer, which is the only
+ * thread that touches this state. Measured and logged, never acted
+ * on - see the note on the fields. */
+static void alsa_clock_sample(alsa_t *alsa)
+{
+   snd_pcm_status_t *status = NULL;
+   snd_htimestamp_t  sys, aud;
+   snd_pcm_sframes_t delay;
+   uint64_t          sys_ns, aud_ns, pos;
+   unsigned          rate = alsa->stream_info.rate;
+
+   if (!alsa->pcm || !rate)
+      return;
+
+   snd_pcm_status_alloca(&status);
+   if (snd_pcm_status(alsa->pcm, status) < 0)
+      return;
+
+   snd_pcm_status_get_htstamp(status, &sys);
+   snd_pcm_status_get_audio_htstamp(status, &aud);
+   delay  = snd_pcm_status_get_delay(status);
+   sys_ns = alsa_ts_ns(sys);
+   aud_ns = alsa_ts_ns(aud);
+
+   if (!sys_ns)
+      return;
+
+   /* The hardware's own clock against the system's, where the driver
+    * counts one. This needs no rate and no delay - it is two clocks
+    * compared directly. */
+   if (aud_ns)
+   {
+      if (!alsa->clk_a_have_anchor)
+      {
+         alsa->clk_a_anchor_audio_ns = aud_ns;
+         alsa->clk_a_anchor_sys_ns   = sys_ns;
+         alsa->clk_a_have_anchor     = 1;
+         alsa->clk_a_sx = alsa->clk_a_sy = alsa->clk_a_sxx = 0.0;
+         alsa->clk_a_sxy = alsa->clk_a_n = 0.0;
+      }
+      else if (     sys_ns > alsa->clk_a_anchor_sys_ns
+                 && aud_ns >= alsa->clk_a_anchor_audio_ns)
+      {
+         double slope = 0.0;
+         double x = (double)(sys_ns - alsa->clk_a_anchor_sys_ns) / 1000000000.0;
+         double y = (double)(aud_ns - alsa->clk_a_anchor_audio_ns) / 1000000000.0;
+         if (alsa_clk_fit(&alsa->clk_a_sx, &alsa->clk_a_sy, &alsa->clk_a_sxx,
+                  &alsa->clk_a_sxy, &alsa->clk_a_n, x, y, &slope))
+         {
+            double ppm = (slope - 1.0) * 1000000.0;
+            if (ppm > -100000.0 && ppm < 100000.0)
+            {
+               alsa->clk_a_ppm   = (int)ppm;
+               alsa->clk_a_valid = 1;
+            }
+         }
+      }
+      else
+      {
+         alsa->clk_a_anchor_audio_ns = aud_ns;
+         alsa->clk_a_anchor_sys_ns   = sys_ns;
+         alsa->clk_a_sx = alsa->clk_a_sy = alsa->clk_a_sxx = 0.0;
+         alsa->clk_a_sxy = alsa->clk_a_n = 0.0;
+      }
+   }
+
+   /* And the position against the timestamp it was taken with, which
+    * every device can answer. An error in the delay shifts the whole
+    * line and leaves its slope alone, which is why this is worth
+    * fitting even though the position itself is inferred. */
+   if (delay < 0 || (uint64_t)delay > alsa->frames_written)
+      return;
+   pos = alsa->frames_written - (uint64_t)delay;
+
+   if (!alsa->clk_have_anchor)
+   {
+      alsa->clk_anchor_pos  = pos;
+      alsa->clk_anchor_ns   = sys_ns;
+      alsa->clk_have_anchor = 1;
+      alsa->clk_sx = alsa->clk_sy = alsa->clk_sxx = 0.0;
+      alsa->clk_sxy = alsa->clk_n = 0.0;
+   }
+   else if (sys_ns > alsa->clk_anchor_ns && pos >= alsa->clk_anchor_pos)
+   {
+      double slope = 0.0;
+      double x = (double)(sys_ns - alsa->clk_anchor_ns) / 1000000000.0;
+      double y = (double)(pos - alsa->clk_anchor_pos);
+      if (alsa_clk_fit(&alsa->clk_sx, &alsa->clk_sy, &alsa->clk_sxx,
+               &alsa->clk_sxy, &alsa->clk_n, x, y, &slope))
+      {
+         double ppm = (slope / (double)rate - 1.0) * 1000000.0;
+         if (ppm > -100000.0 && ppm < 100000.0)
+         {
+            alsa->clk_ppm   = (int)ppm;
+            alsa->clk_valid = 1;
+         }
+      }
+   }
+   else
+   {
+      alsa->clk_anchor_pos = pos;
+      alsa->clk_anchor_ns  = sys_ns;
+      alsa->clk_sx = alsa->clk_sy = alsa->clk_sxx = 0.0;
+      alsa->clk_sxy = alsa->clk_n = 0.0;
+   }
+}
+
+/* The device clock, for the statistics overlay. The audio timestamp
+ * where the driver counts one, since it is two clocks compared
+ * directly; the fitted position otherwise. */
+static bool alsa_device_clock_ppm(void *data, double *ppm)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   if (!alsa)
+      return false;
+   if (alsa->clk_a_valid)
+   {
+      *ppm = (double)alsa->clk_a_ppm;
+      return true;
+   }
+   if (alsa->clk_valid)
+   {
+      *ppm = (double)alsa->clk_ppm;
+      return true;
+   }
+   return false;
+}
+
+static size_t alsa_frames_consumed(void *data)
+{
+   alsa_t *alsa            = (alsa_t*)data;
+   snd_pcm_sframes_t delay = 0;
+   if (!alsa || !alsa->pcm)
+      return 0;
+   if (snd_pcm_delay(alsa->pcm, &delay) < 0 || delay < 0)
+      delay = 0;
+   if ((uint64_t)delay > alsa->frames_written)
+      return 0;
+   return (size_t)(alsa->frames_written - (uint64_t)delay);
+}
+
 audio_driver_t audio_alsa = {
    alsa_init,
    alsa_write,
@@ -616,726 +984,802 @@ audio_driver_t audio_alsa = {
    alsa_write_avail,
    alsa_buffer_size,
    NULL, /* write_raw */
-   alsa_wait_writable
+   alsa_wait_writable,
+   alsa_frames_consumed,
+   NULL, /* underruns */
+   alsa_layout,
+   NULL, /* frames_consumed_fallback */
+   alsa_device_clock_ppm
 };
 
-/* ===========================================================================
- * Threaded ALSA driver ("alsathread"): a worker thread owns the blocking
- * snd_pcm_writei while the frontend writes into a fifo.  A separate,
- * independently selectable driver - not a replacement for the synchronous
- * "alsa" driver above, which is always built.  This section is guarded by
- * exactly the expression audio_driver.c uses to register audio_alsathread
- * and microphone_alsathread, so the vtables exist iff they are registered
- * (previously alsathread.c had no internal guard and relied on the build
- * system, which griffin did not enforce).
- * ======================================================================== */
-#if !defined(__QNX__) && !defined(MIYOO) && defined(HAVE_THREADS)
+#endif /* HAVE_ALSA */
 
-#include <boolean.h>
-#include <rthreads/rthreads.h>
-#include <queues/fifo_queue.h>
 
-typedef struct alsa_thread_info
+
+/* ================= the embedded driver: "tinyalsa" =================
+ *
+ * The kernel's PCM devices, spoken to directly: /dev/snd/pcmC<card>D<dev>p
+ * and the ioctls of <sound/asound.h>. No library, which is the point -
+ * an embedded build has the kernel and nothing else.
+ *
+ * Written against that header, which carries the Linux-syscall-note
+ * exception so userspace may use it. It replaces a vendored copy of
+ * Android's tinyalsa; the driver keeps its "tinyalsa" ident so no
+ * configuration changes, but the implementation is RetroArch's and
+ * can therefore take what the rest of the audio stack now expects:
+ * float output, a channel layout, the frames the device has consumed,
+ * and a bounded wait for writable space.
+ *
+ * The parameter negotiation is the one part of this that is not
+ * obvious from the structs. A hw_params carries a mask per masked
+ * parameter (access, format, subformat) and an interval per numeric
+ * one (channels, rate, period size, buffer size, ...). The caller
+ * fills every mask with every bit and every interval with its widest
+ * range, narrows the ones it cares about, sets rmask to say which it
+ * touched, and asks the kernel to refine: the kernel intersects each
+ * with what the hardware can do and hands the result back. Refining
+ * with a single value in an interval is how a specific rate is asked
+ * for; refining with a range is how the hardware is asked what it
+ * supports. HW_PARAMS then commits a fully determined set. */
+
+#ifdef HAVE_TINYALSA
+
+#include <stdio.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <poll.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <limits.h>
+#include <retro_endianness.h>
+#include <retro_miscellaneous.h>
+
+#include "../audio_upmix.h"
+
+/* The kernel's PCM ABI, spelled out rather than included.
+ *
+ * <sound/asound.h> is where these come from, and it is not included
+ * for two reasons: an embedded toolchain need not carry it, which is
+ * the whole point of this driver; and where alsa-lib is also present
+ * the two headers define the same names differently and cannot both
+ * be in one translation unit. The layouts are an ABI - the kernel
+ * will not move them - so a copy is safe in a way a copy of an
+ * interface never is. Everything below is prefixed so nothing here
+ * can collide with alsa-lib's names above. */
+
+typedef unsigned long ealsa_uframes_t;
+typedef signed long   ealsa_sframes_t;
+
+#define EALSA_MASK_MAX          256
+#define EALSA_P_ACCESS          0
+#define EALSA_P_FORMAT          1
+#define EALSA_P_SUBFORMAT       2
+#define EALSA_P_FIRST_MASK      EALSA_P_ACCESS
+#define EALSA_P_LAST_MASK       EALSA_P_SUBFORMAT
+#define EALSA_P_SAMPLE_BITS     8
+#define EALSA_P_CHANNELS        10
+#define EALSA_P_RATE            11
+#define EALSA_P_PERIOD_SIZE     13
+#define EALSA_P_PERIODS         15
+#define EALSA_P_BUFFER_SIZE     17
+#define EALSA_P_TICK_TIME       19
+#define EALSA_P_FIRST_INTERVAL  EALSA_P_SAMPLE_BITS
+#define EALSA_P_LAST_INTERVAL   EALSA_P_TICK_TIME
+
+#define EALSA_ACCESS_RW_INTERLEAVED 3
+#define EALSA_FMT_S16_LE            2
+#define EALSA_FMT_S16_BE            3
+#define EALSA_FMT_FLOAT_LE          14
+#define EALSA_FMT_FLOAT_BE          15
+
+#define EALSA_INFO_PAUSE            0x00080000
+#define EALSA_TSTAMP_NONE           0
+
+struct ealsa_interval
 {
-   snd_pcm_t *pcm;
-   fifo_buffer_t *buffer;
-   /* True only while the playback worker is inside its bounded wait
-    * for the producer; lets the producer skip the condition signal
-    * entirely in steady state (checked under fifo_lock, so no torn
-    * reads). */
-   volatile bool worker_waiting;
-   sthread_t *worker_thread;
-   /* Guards buffer, worker_waiting and thread_dead, and is also the
-    * mutex `cond` is waited on with.  These must be the same lock: a
-    * condition variable whose predicate is protected by a different
-    * mutex has a window between testing the predicate and blocking,
-    * during which a signal has no waiter to reach and is discarded. */
-   slock_t *fifo_lock;
-   scond_t *cond;
-   alsa_stream_info_t stream_info;
-   volatile bool thread_dead;
-} alsa_thread_info_t;
-
-static void alsa_thread_free_info_members(alsa_thread_info_t *info)
-{
-   if (info)
-   {
-      if (info->worker_thread)
-      {
-         slock_lock(info->fifo_lock);
-         info->thread_dead = true;
-         scond_signal(info->cond);
-         slock_unlock(info->fifo_lock);
-         sthread_join(info->worker_thread);
-      }
-      if (info->buffer)
-         fifo_free(info->buffer);
-      if (info->cond)
-         scond_free(info->cond);
-      if (info->fifo_lock)
-         slock_free(info->fifo_lock);
-      if (info->pcm)
-         alsa_free_pcm(info->pcm);
-   }
-   /* Do NOT free() info itself; it's embedded within another struct
-    * that will be freed. */
-}
-
-#ifdef HAVE_MICROPHONE
-#include "../microphone_driver.h"
-
-typedef struct alsa_thread_microphone_handle
-{
-   alsa_thread_info_t info;
-} alsa_thread_microphone_handle_t;
-
-typedef struct alsa_thread_microphone
-{
-   bool nonblock;
-} alsa_thread_microphone_t;
-
-static void *alsa_thread_microphone_init(void)
-{
-   alsa_thread_microphone_t *alsa = (alsa_thread_microphone_t*)calloc(1, sizeof(alsa_thread_microphone_t));
-
-   if (!alsa)
-   {
-      RARCH_ERR("[ALSA] Failed to allocate driver context.\n");
-      return NULL;
-   }
-
-   RARCH_LOG("[ALSA] Using ALSA version %s\n", snd_asoundlib_version());
-
-   return alsa;
-}
-
-/* Forward declaration */
-static void alsa_thread_microphone_close_mic(void *driver_context, void *mic_context);
-
-static void alsa_thread_microphone_free(void *driver_context)
-{
-   alsa_thread_microphone_t *alsa = (alsa_thread_microphone_t*)driver_context;
-
-   if (alsa)
-      free(alsa);
-}
-
-/** @see alsa_thread_read_microphone() */
-static void alsa_microphone_worker_thread(void *mic_context)
-{
-   alsa_thread_microphone_handle_t *mic = (alsa_thread_microphone_handle_t*)mic_context;
-   uint8_t                         *buf = NULL;
-   uintptr_t                  thread_id = sthread_get_current_thread_id();
-
-   if (!(buf = (uint8_t *)calloc(1, mic->info.stream_info.period_size)))
-   {
-      RARCH_ERR("[ALSA] [capture thread %p] Failed to allocate audio buffer.\n", thread_id);
-      goto end;
-   }
-
-   RARCH_DBG("[ALSA] [capture thread %p] Beginning microphone worker thread.\n", thread_id);
-   RARCH_DBG("[ALSA] [capture thread %p] Microphone \"%s\" is in state %s.\n",
-             thread_id,
-             snd_pcm_name(mic->info.pcm),
-             snd_pcm_state_name(snd_pcm_state(mic->info.pcm)));
-
-   /* Until we're told to stop... */
-   while (!mic->info.thread_dead)
-   {
-      size_t avail;
-      size_t fifo_size;
-      snd_pcm_sframes_t frames;
-      int errnum = 0;
-
-      /* Lock the incoming sample queue (the main thread may block) */
-      slock_lock(mic->info.fifo_lock);
-
-      /* Fill the incoming sample queue with whatever we recently read */
-      avail     = FIFO_WRITE_AVAIL(mic->info.buffer);
-      fifo_size = MIN(mic->info.stream_info.period_size, avail);
-      fifo_write(mic->info.buffer, buf, fifo_size);
-
-      /* Tell the main thread that it's okay to query the mic again */
-      scond_signal(mic->info.cond);
-
-      /* Unlock the incoming sample queue (the main thread may resume) */
-      slock_unlock(mic->info.fifo_lock);
-
-      /* If underrun, fill rest with silence. */
-      memset(buf + fifo_size, 0, mic->info.stream_info.period_size - fifo_size);
-
-      errnum = snd_pcm_wait(mic->info.pcm, 33);
-
-      if (errnum == 0)
-      {
-         RARCH_DBG("[ALSA] [capture thread %p] Timeout after 33ms waiting for input.\n", thread_id);
-         continue;
-      }
-      else if (errnum == -EPIPE || errnum == -ESTRPIPE || errnum == -EINTR)
-      {
-         RARCH_WARN("[ALSA] [capture thread %p] Wait error: %s.\n",
-                    thread_id,
-                    snd_strerror(errnum));
-
-         if ((errnum = snd_pcm_recover(mic->info.pcm, errnum, false)) < 0)
-         {
-            RARCH_ERR("[ALSA] [capture thread %p] Failed to recover from prior wait error: %s.\n",
-                      thread_id,
-                      snd_strerror(errnum));
-
-            break;
-         }
-
-         continue;
-      }
-
-      frames = snd_pcm_readi(mic->info.pcm, buf, mic->info.stream_info.period_frames);
-
-      if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
-      {
-         RARCH_WARN("[ALSA] [capture thread %p] Read error: %s.\n",
-                    thread_id,
-                    snd_strerror(frames));
-
-         if ((errnum = snd_pcm_recover(mic->info.pcm, frames, false)) < 0)
-         {
-            RARCH_ERR("[ALSA] [capture thread %p] Failed to recover from prior read error: %s.\n",
-                      thread_id,
-                      snd_strerror(errnum));
-            break;
-         }
-
-         continue;
-      }
-      else if (frames < 0)
-      {
-         RARCH_ERR("[ALSA] [capture thread %p] Read error: %s.\n",
-                   thread_id,
-                   snd_strerror(frames));
-         break;
-      }
-   }
-
-end:
-   slock_lock(mic->info.fifo_lock);
-   mic->info.thread_dead = true;
-   scond_signal(mic->info.cond);
-   slock_unlock(mic->info.fifo_lock);
-   free(buf);
-   RARCH_DBG("[ALSA] [capture thread %p] Ending microphone worker thread.\n", thread_id);
-}
-
-static int alsa_thread_microphone_read(void *driver_context, void *mic_context, void *sv, size_t len)
-{
-   snd_pcm_state_t state;
-   size_t _len = 0;
-   uint8_t *s  = (uint8_t*)sv;
-   alsa_thread_microphone_t       *alsa = (alsa_thread_microphone_t*)driver_context;
-   alsa_thread_microphone_handle_t *mic = (alsa_thread_microphone_handle_t*)mic_context;
-
-   if (!alsa || !mic || !s) /* If any of the parameters were invalid... */
-      return -1;
-
-   if (mic->info.thread_dead) /* If the mic thread is shutting down... */
-      return -1;
-
-   state = snd_pcm_state(mic->info.pcm);
-   if (state != SND_PCM_STATE_RUNNING)
-   {
-      int errnum;
-      RARCH_WARN("[ALSA] Expected microphone \"%s\" to be in state RUNNING, was in state %s.\n",
-                 snd_pcm_name(mic->info.pcm), snd_pcm_state_name(state));
-
-      errnum = snd_pcm_start(mic->info.pcm);
-      if (errnum < 0)
-      {
-         RARCH_ERR("[ALSA] Failed to start microphone \"%s\": %s.\n",
-                   snd_pcm_name(mic->info.pcm), snd_strerror(errnum));
-
-         return -1;
-      }
-   }
-
-   /* If driver interactions shouldn't block... */
-   if (alsa->nonblock)
-   {
-      size_t avail;
-
-      /* "Hey, I'm gonna borrow the queue." */
-      slock_lock(mic->info.fifo_lock);
-
-      avail           = FIFO_READ_AVAIL(mic->info.buffer);
-      _len            = MIN(avail, len);
-
-      /* "It's okay if you don't have any new samples, I'll just check in on you later." */
-      fifo_read(mic->info.buffer, s, _len);
-
-      /* "Here, take this queue back." */
-      slock_unlock(mic->info.fifo_lock);
-   }
-   else
-   {
-      /* Until we've read all requested samples (or we're told to stop)... */
-      while (_len < len && !mic->info.thread_dead)
-      {
-         size_t avail;
-
-         /* "Hey, I'm gonna borrow the queue." */
-         slock_lock(mic->info.fifo_lock);
-
-         avail = FIFO_READ_AVAIL(mic->info.buffer);
-
-         if (avail == 0)
-         { /* "Oh, wait, it's empty." */
-
-            /* "Let me know when you've produced some samples."
-             * Waiting on fifo_lock, which we still hold and which also
-             * guards the emptiness we just tested, is what makes this
-             * safe: scond_wait releases it atomically with blocking,
-             * so a producer cannot slip in between the test and the
-             * wait and have its signal go nowhere. */
-            if (!mic->info.thread_dead)
-               scond_wait(mic->info.cond, mic->info.fifo_lock);
-
-            /* "Oh, you're ready? Okay, I'm gonna continue." */
-            slock_unlock(mic->info.fifo_lock);
-         }
-         else
-         {
-            size_t read_amt = MIN(len - _len, avail);
-
-            /* "I'll just go ahead and consume all these samples..."
-             * (As many as will fit in s, or as many as are available.) */
-            fifo_read(mic->info.buffer,s + _len, read_amt);
-
-            /* "I'm done, you can take the queue back now." */
-            slock_unlock(mic->info.fifo_lock);
-            _len += read_amt;
-         }
-         /* "I'll be right back..." */
-      }
-   }
-   return _len;
-}
-
-static bool alsa_thread_microphone_mic_alive(const void *driver_context, const void *mic_context);
-
-static void *alsa_thread_microphone_open_mic(void *driver_context,
-   const char *device, unsigned rate, unsigned latency, unsigned *new_rate)
-{
-   alsa_thread_microphone_t       *alsa = (alsa_thread_microphone_t*)driver_context;
-   alsa_thread_microphone_handle_t *mic = NULL;
-
-   if (!alsa) /* If we weren't given a valid ALSA context... */
-      return NULL;
-
-   /* If the microphone context couldn't be allocated... */
-   if (!(mic = calloc(1, sizeof(alsa_thread_microphone_handle_t))))
-   {
-      RARCH_ERR("[ALSA] Failed to allocate microphone context.\n");
-      return NULL;
-   }
-
-   if (alsa_init_pcm(&mic->info.pcm, device, SND_PCM_STREAM_CAPTURE, rate, latency,
-            1, &mic->info.stream_info, new_rate, 0) < 0)
-      goto error;
-
-   mic->info.fifo_lock = slock_new();
-   mic->info.cond      = scond_new();
-   mic->info.buffer    = fifo_new(mic->info.stream_info.buffer_size);
-   if (!mic->info.fifo_lock || !mic->info.cond || !mic->info.buffer || !mic->info.pcm)
-      goto error;
-
-   mic->info.worker_thread = sthread_create(alsa_microphone_worker_thread, mic);
-   if (!mic->info.worker_thread)
-   {
-      RARCH_ERR("[ALSA] Failed to initialize microphone worker thread.\n");
-      goto error;
-   }
-   RARCH_DBG("[ALSA] Initialized microphone worker thread.\n");
-
-   return mic;
-
-error:
-   RARCH_ERR("[ALSA] Failed to initialize microphone.\n");
-
-   if (mic)
-   {
-      if (mic->info.pcm)
-         snd_pcm_close(mic->info.pcm);
-
-      alsa_thread_microphone_close_mic(alsa, mic);
-   }
-
-   return NULL;
-}
-
-static void alsa_thread_microphone_close_mic(void *driver_context, void *mic_context)
-{
-   alsa_thread_microphone_handle_t *mic  = (alsa_thread_microphone_handle_t*)mic_context;
-   if (mic)
-   {
-      alsa_thread_free_info_members(&mic->info);
-      free(mic);
-   }
-}
-
-static bool alsa_thread_microphone_mic_alive(const void *driver_context, const void *mic_context)
-{
-   alsa_thread_microphone_handle_t *mic = (alsa_thread_microphone_handle_t *)mic_context;
-   if (!mic)
-      return false;
-   return snd_pcm_state(mic->info.pcm) == SND_PCM_STATE_RUNNING;
-}
-
-static void alsa_thread_microphone_set_nonblock_state(void *driver_context, bool state)
-{
-   alsa_thread_microphone_t *alsa = (alsa_thread_microphone_t*)driver_context;
-   alsa->nonblock = state;
-}
-
-static struct string_list *alsa_thread_microphone_device_list_new(const void *data)
-{
-   return alsa_device_list_type_new("Input");
-}
-
-static void alsa_thread_microphone_device_list_free(const void *driver_context, struct string_list *devices)
-{
-   string_list_free(devices);
-   /* Does nothing if devices is NULL */
-}
-
-static bool alsa_thread_microphone_start_mic(void *driver_context, void *mic_context)
-{
-   alsa_thread_microphone_handle_t *mic = (alsa_thread_microphone_handle_t*)mic_context;
-   if (!mic)
-      return false;
-   return alsa_start_pcm(mic->info.pcm);
-}
-
-static bool alsa_thread_microphone_stop_mic(void *driver_context, void *mic_context)
-{
-   alsa_thread_microphone_handle_t *mic = (alsa_thread_microphone_handle_t*)mic_context;
-   if (!mic)
-      return false;
-   return alsa_stop_pcm(mic->info.pcm);
-}
-
-static bool alsa_thread_microphone_mic_use_float(const void *driver_context, const void *mic_context)
-{
-   alsa_thread_microphone_handle_t *mic = (alsa_thread_microphone_handle_t*)mic_context;
-   return mic->info.stream_info.has_float;
-}
-
-microphone_driver_t microphone_alsathread = {
-      alsa_thread_microphone_init,
-      alsa_thread_microphone_free,
-      alsa_thread_microphone_read,
-      alsa_thread_microphone_set_nonblock_state,
-      "alsathread",
-      alsa_thread_microphone_device_list_new,
-      alsa_thread_microphone_device_list_free,
-      alsa_thread_microphone_open_mic,
-      alsa_thread_microphone_close_mic,
-      alsa_thread_microphone_mic_alive,
-      alsa_thread_microphone_start_mic,
-      alsa_thread_microphone_stop_mic,
-      alsa_thread_microphone_mic_use_float
+   unsigned int min, max;
+   unsigned int openmin:1, openmax:1, integer:1, empty:1;
 };
+
+struct ealsa_mask
+{
+   uint32_t bits[(EALSA_MASK_MAX + 31) / 32];
+};
+
+struct ealsa_hw_params
+{
+   unsigned int flags;
+   struct ealsa_mask     masks[EALSA_P_LAST_MASK - EALSA_P_FIRST_MASK + 1];
+   struct ealsa_mask     mres[5];
+   struct ealsa_interval intervals[EALSA_P_LAST_INTERVAL - EALSA_P_FIRST_INTERVAL + 1];
+   struct ealsa_interval ires[9];
+   unsigned int rmask, cmask, info, msbits, rate_num, rate_den;
+   ealsa_uframes_t fifo_size;
+   unsigned char reserved[64];
+};
+
+struct ealsa_sw_params
+{
+   int tstamp_mode;
+   unsigned int period_step;
+   unsigned int sleep_min;
+   ealsa_uframes_t avail_min;
+   ealsa_uframes_t xfer_align;
+   ealsa_uframes_t start_threshold;
+   ealsa_uframes_t stop_threshold;
+   ealsa_uframes_t silence_threshold;
+   ealsa_uframes_t silence_size;
+   ealsa_uframes_t boundary;
+   unsigned int proto;
+   unsigned int tstamp_type;
+   unsigned char reserved[56];
+};
+
+struct ealsa_xferi
+{
+   ealsa_sframes_t result;
+   void           *buf;
+   ealsa_uframes_t frames;
+};
+
+#define EALSA_IOCTL_HW_REFINE     _IOWR('A', 0x10, struct ealsa_hw_params)
+#define EALSA_IOCTL_HW_PARAMS     _IOWR('A', 0x11, struct ealsa_hw_params)
+#define EALSA_IOCTL_SW_PARAMS     _IOWR('A', 0x13, struct ealsa_sw_params)
+#define EALSA_IOCTL_DELAY         _IOR('A', 0x21, ealsa_sframes_t)
+#define EALSA_IOCTL_PREPARE       _IO('A', 0x40)
+#define EALSA_IOCTL_START         _IO('A', 0x42)
+#define EALSA_IOCTL_DROP          _IO('A', 0x43)
+#define EALSA_IOCTL_PAUSE         _IOW('A', 0x45, int)
+#define EALSA_IOCTL_WRITEI_FRAMES _IOW('A', 0x50, struct ealsa_xferi)
+
+/* The seam the harness replaces: everything this driver does to a
+ * device goes through these. */
+#ifndef EALSA_SYSCALLS
+#define ealsa_open_dev(path, flags)  open((path), (flags))
+#define ealsa_ioctl(fd, req, arg)    ioctl((fd), (req), (arg))
+#define ealsa_close(fd)              close((fd))
+#define ealsa_poll(fds, n, timeout)  poll((fds), (n), (timeout))
 #endif
 
-typedef struct alsa_thread
+#define EALSA_FORMAT_S16   0
+#define EALSA_FORMAT_FLOAT 1
+
+typedef struct ealsa
 {
-   alsa_thread_info_t info;
-   bool nonblock;
-   bool is_paused;
-} alsa_thread_t;
+   int      fd;
+   unsigned rate;
+   unsigned channels;
+   uint32_t layout;
+   unsigned frame_bits;
+   size_t   buffer_size;      /* bytes */
+   size_t   period_frames;
+   size_t   buffer_frames;
+   uint64_t frames_written;   /* handed to the device since it opened */
+   bool     nonblock;
+   bool     has_float;
+   bool     can_pause;
+   bool     is_paused;
+   bool     running;
+} ealsa_t;
 
-static void alsa_worker_thread(void *data)
+/* ---- the parameter set ---------------------------------------- */
+
+static INLINE struct ealsa_mask *ealsa_mask(struct ealsa_hw_params *p,
+      unsigned param)
 {
-   int64_t period_us;
-   int64_t budget_us;
-   alsa_thread_t *alsa = (alsa_thread_t*)data;
-   uint8_t        *buf = (uint8_t *)calloc(1, alsa->info.stream_info.period_size);
-   uintptr_t thread_id = sthread_get_current_thread_id();
-
-   if (!buf)
-   {
-      RARCH_ERR("[ALSA] [playback thread %p] Failed to allocate audio buffer.\n", thread_id);
-      goto end;
-   }
-
-   RARCH_DBG("[ALSA] [playback thread %p] Beginning playback worker thread.\n", thread_id);
-   /* Bounded wait budget for a late producer, expressed in wall time:
-    * after a blocking writei returns, the device still holds close to
-    * a full buffer of queued audio, so the worker can afford to wait
-    * (buffer/period - 1) periods for the fifo to reach a full period
-    * before padding with silence.  Waiting there absorbs ordinary
-    * producer lateness (scheduler jitter, video-frame beat against
-    * the period grid) without injecting an audible mid-stream gap;
-    * only a genuinely stalled producer still degrades to silence,
-    * and it does so before the device xruns. */
-   period_us = (int64_t)alsa->info.stream_info.period_frames
-         * 1000000 / alsa->info.stream_info.rate;
-   budget_us = period_us
-         * ((int64_t)(alsa->info.stream_info.buffer_size
-               / alsa->info.stream_info.period_size) - 1);
-
-   while (!alsa->info.thread_dead)
-   {
-      size_t avail;
-      size_t fifo_size;
-      snd_pcm_sframes_t frames;
-      slock_lock(alsa->info.fifo_lock);
-      avail     = FIFO_READ_AVAIL(alsa->info.buffer);
-      if (avail < alsa->info.stream_info.period_size)
-      {
-         int64_t waited_us = 0;
-         while (   avail < alsa->info.stream_info.period_size
-                && waited_us < budget_us
-                && !alsa->info.thread_dead)
-         {
-            alsa->info.worker_waiting = true;
-            /* Waits on fifo_lock, the same lock the avail test above
-             * was made under, so the producer's signal cannot land in
-             * a gap where nobody is waiting yet.  scond_wait_timeout
-             * releases it while blocked and reacquires it on return,
-             * so the reread below is still under the lock. */
-            if (!alsa->info.thread_dead)
-               scond_wait_timeout(alsa->info.cond,
-                     alsa->info.fifo_lock, period_us / 2);
-            /* Upper bound on time spent regardless of early wakeups:
-             * overestimating only makes the worker give up sooner,
-             * never lets the device xrun. */
-            waited_us += period_us / 2;
-            avail = FIFO_READ_AVAIL(alsa->info.buffer);
-         }
-         alsa->info.worker_waiting = false;
-      }
-      fifo_size = MIN(alsa->info.stream_info.period_size, avail);
-      fifo_read(alsa->info.buffer, buf, fifo_size);
-      scond_signal(alsa->info.cond);
-      slock_unlock(alsa->info.fifo_lock);
-
-      /* Genuine underrun (producer stalled past the wait budget):
-       * fill the rest with silence. */
-      memset(buf + fifo_size, 0, alsa->info.stream_info.period_size - fifo_size);
-
-      frames = snd_pcm_writei(alsa->info.pcm, buf, alsa->info.stream_info.period_frames);
-
-      if (     frames == -EPIPE
-            || frames == -EINTR
-            || frames == -ESTRPIPE)
-      {
-         if (snd_pcm_recover(alsa->info.pcm, frames, false) < 0)
-         {
-            RARCH_ERR("[ALSA] [playback thread %p] Failed to recover from error: %s.\n",
-               thread_id,
-               snd_strerror(frames));
-            break;
-         }
-
-         continue;
-      }
-      else if (frames < 0)
-      {
-         RARCH_ERR("[ALSA] [playback thread %p] Error writing audio to device: %s.\n",
-            thread_id,
-            snd_strerror(frames));
-         break;
-      }
-   }
-
-end:
-   slock_lock(alsa->info.fifo_lock);
-   alsa->info.thread_dead = true;
-   scond_signal(alsa->info.cond);
-   slock_unlock(alsa->info.fifo_lock);
-   free(buf);
-   RARCH_DBG("[ALSA] [playback thread %p] Ending playback worker thread...\n", thread_id);
+   return &p->masks[param - EALSA_P_FIRST_MASK];
 }
 
-static bool alsa_thread_use_float(void *data)
+static INLINE struct ealsa_interval *ealsa_interval(struct ealsa_hw_params *p,
+      unsigned param)
 {
-   alsa_thread_t *alsa = (alsa_thread_t*)data;
-   return alsa->info.stream_info.has_float;
+   return &p->intervals[param - EALSA_P_FIRST_INTERVAL];
 }
 
-static void alsa_thread_free(void *data)
+/* Every mask full and every interval as wide as it goes: the set the
+ * kernel narrows. rmask names every parameter, so a refine returns
+ * what the hardware can do with all of them. */
+static void ealsa_params_any(struct ealsa_hw_params *p)
 {
-   alsa_thread_t *alsa = (alsa_thread_t*)data;
-
-   if (alsa)
+   unsigned i;
+   memset(p, 0, sizeof(*p));
+   for (i = EALSA_P_FIRST_MASK; i <= EALSA_P_LAST_MASK; i++)
+      memset(ealsa_mask(p, i)->bits, 0xff, sizeof(ealsa_mask(p, i)->bits));
+   for (i = EALSA_P_FIRST_INTERVAL; i <= EALSA_P_LAST_INTERVAL; i++)
    {
-      alsa_thread_free_info_members(&alsa->info);
-      free(alsa);
+      struct ealsa_interval *iv = ealsa_interval(p, i);
+      iv->min = 0;
+      iv->max = UINT_MAX;
    }
+   p->rmask = ~0u;
+   p->cmask = 0;
+   p->info  = ~0u;
 }
 
-static void *alsa_thread_init(const char *device,
-      unsigned rate, unsigned latency,
-      unsigned block_frames,
-      unsigned *new_rate)
+static void ealsa_mask_only(struct ealsa_hw_params *p, unsigned param,
+      unsigned bit)
 {
-   alsa_thread_t *alsa = (alsa_thread_t*)calloc(1, sizeof(alsa_thread_t));
+   struct ealsa_mask *m = ealsa_mask(p, param);
+   memset(m->bits, 0, sizeof(m->bits));
+   m->bits[bit >> 5] = 1u << (bit & 31);
+}
 
-   if (!alsa)
+static void ealsa_interval_exact(struct ealsa_hw_params *p, unsigned param,
+      unsigned value)
+{
+   struct ealsa_interval *iv = ealsa_interval(p, param);
+   iv->min     = value;
+   iv->max     = value;
+   iv->integer = 1;
+   iv->openmin = 0;
+   iv->openmax = 0;
+}
+
+/* A parameter the device may settle anywhere within. HW_PARAMS
+ * refines and then chooses, so a range is a request the card can meet
+ * its own way - which an exact value is not: a card whose periods
+ * come in twos, or whose period size is a multiple of 512, refuses an
+ * exact 4 x 768 outright and the open fails. */
+static void ealsa_interval_range(struct ealsa_hw_params *p, unsigned param,
+      unsigned lo, unsigned hi)
+{
+   struct ealsa_interval *iv = ealsa_interval(p, param);
+   iv->min     = lo;
+   iv->max     = hi;
+   iv->integer = 1;
+}
+
+static unsigned ealsa_interval_min(const struct ealsa_hw_params *p, unsigned param)
+{
+   return p->intervals[param - EALSA_P_FIRST_INTERVAL].min;
+}
+
+static unsigned ealsa_interval_max(const struct ealsa_hw_params *p, unsigned param)
+{
+   return p->intervals[param - EALSA_P_FIRST_INTERVAL].max;
+}
+
+/* The kernel's format numbers for what this driver offers. */
+static unsigned ealsa_format_bit(int format)
+{
+   if (format == EALSA_FORMAT_FLOAT)
+      return is_little_endian() ? EALSA_FMT_FLOAT_LE
+                                : EALSA_FMT_FLOAT_BE;
+   return is_little_endian() ? EALSA_FMT_S16_LE
+                             : EALSA_FMT_S16_BE;
+}
+
+static unsigned ealsa_format_bits(int format)
+{
+   return (format == EALSA_FORMAT_FLOAT) ? 32 : 16;
+}
+
+/* Does the hardware take this format at this channel count and rate?
+ * A refine that comes back without an error says yes, and says what
+ * it would settle on. */
+static bool ealsa_probe(int fd, int format, unsigned channels, unsigned rate)
+{
+   struct ealsa_hw_params p;
+   ealsa_params_any(&p);
+   ealsa_mask_only(&p, EALSA_P_ACCESS, EALSA_ACCESS_RW_INTERLEAVED);
+   ealsa_mask_only(&p, EALSA_P_FORMAT, ealsa_format_bit(format));
+   ealsa_interval_exact(&p, EALSA_P_CHANNELS, channels);
+   ealsa_interval_exact(&p, EALSA_P_RATE, rate);
+   return ealsa_ioctl(fd, EALSA_IOCTL_HW_REFINE, &p) == 0;
+}
+
+/* ---- open and setup -------------------------------------------- */
+
+static bool ealsa_set_params(ealsa_t *ea, int format, unsigned channels,
+      unsigned rate, unsigned latency_ms)
+{
+   struct ealsa_hw_params hw;
+   struct ealsa_sw_params sw;
+   unsigned period_frames, periods = 4;
+
+   /* A period of a quarter of the asked-for latency, so the device
+    * wakes four times across a buffer that holds the latency. */
+   period_frames = (rate * latency_ms) / (1000 * periods);
+   if (period_frames < 64)
+      period_frames = 64;
+
+   ealsa_params_any(&hw);
+   ealsa_mask_only(&hw, EALSA_P_ACCESS, EALSA_ACCESS_RW_INTERLEAVED);
+   ealsa_mask_only(&hw, EALSA_P_FORMAT, ealsa_format_bit(format));
+   ealsa_interval_exact(&hw, EALSA_P_CHANNELS, channels);
+   ealsa_interval_exact(&hw, EALSA_P_RATE, rate);
+   /* The period and the buffer, asked for as "no smaller than this".
+    *
+    * An exact value is refused outright by a card whose periods come
+    * in twos or whose period size is a multiple of 512 - the refine
+    * narrows to nothing and the open fails. A range is met, but the
+    * kernel settles every interval at its minimum, so a range alone
+    * opens the smallest buffer the card has: eight milliseconds where
+    * sixty-four were asked for, which underruns on every frame. So
+    * the range is refined first to see what the card can do, the
+    * smallest value at or above what was wanted is taken from the
+    * result, and that is committed. */
+   ealsa_interval_range(&hw, EALSA_P_PERIOD_SIZE, period_frames, UINT_MAX);
+   ealsa_interval_range(&hw, EALSA_P_PERIODS, 2, 16);
+   if (ealsa_ioctl(ea->fd, EALSA_IOCTL_HW_REFINE, &hw) < 0)
+      return false;
+   period_frames = ealsa_interval_min(&hw, EALSA_P_PERIOD_SIZE);
+   if (!period_frames)
+      return false;
+   ealsa_interval_exact(&hw, EALSA_P_PERIOD_SIZE, period_frames);
+
+   /* The buffer the latency asks for, rounded up to a whole number of
+    * the period the card settled on, then asked for exactly so the
+    * card picks the count that makes it. A card that cannot make that
+    * buffer keeps the range it refined and the kernel chooses. */
    {
-      RARCH_ERR("[ALSA] Failed to allocate driver context.\n");
+      struct ealsa_hw_params want = hw;
+      unsigned buffer_frames = (rate * latency_ms) / 1000;
+      unsigned n             = (buffer_frames + period_frames - 1) / period_frames;
+      if (n < 2)
+         n = 2;
+      ealsa_interval_exact(&want, EALSA_P_BUFFER_SIZE, n * period_frames);
+      if (ealsa_ioctl(ea->fd, EALSA_IOCTL_HW_REFINE, &want) == 0)
+         hw = want;
+   }
+
+   if (ealsa_ioctl(ea->fd, EALSA_IOCTL_HW_PARAMS, &hw) < 0)
+      return false;
+
+   ea->period_frames = ealsa_interval_min(&hw, EALSA_P_PERIOD_SIZE);
+   ea->buffer_frames = ealsa_interval_min(&hw, EALSA_P_BUFFER_SIZE);
+   if (ea->buffer_frames < ea->period_frames)
+      ea->buffer_frames = ea->period_frames
+            * ealsa_interval_min(&hw, EALSA_P_PERIODS);
+   if (!ea->period_frames)
+      ea->period_frames = period_frames;
+   if (!ea->buffer_frames)
+      ea->buffer_frames = ea->period_frames * periods;
+   ea->can_pause     = (hw.info & EALSA_INFO_PAUSE) != 0;
+   ea->rate          = rate;
+   ea->channels      = channels;
+   ea->has_float     = (format == EALSA_FORMAT_FLOAT);
+   ea->frame_bits    = ealsa_format_bits(format) * channels;
+   ea->buffer_size   = ea->buffer_frames * ea->frame_bits / 8;
+
+   memset(&sw, 0, sizeof(sw));
+   sw.tstamp_mode       = EALSA_TSTAMP_NONE;
+   sw.avail_min         = ea->period_frames;
+   /* Started explicitly, so the first write does not begin playing a
+    * buffer that is not yet full. */
+   sw.start_threshold   = ea->buffer_frames + 1;
+   /* Never stopped on an underrun: an xrun is recovered by the write
+    * path, and a stopped stream would need a prepare the caller did
+    * not ask for. */
+   sw.stop_threshold    = ULONG_MAX;
+   sw.silence_threshold = 0;
+   sw.silence_size      = 0;
+   /* The pointer wrap: the largest multiple of the buffer that fits,
+    * which is what the kernel compares the application pointer
+    * against. The test is on the value before doubling, so the
+    * doubling cannot overflow - testing the doubled value wraps it to
+    * zero at the top and the loop never ends. */
+   sw.boundary          = ea->buffer_frames;
+   while (sw.boundary <= (ULONG_MAX >> 2))
+      sw.boundary *= 2;
+   sw.stop_threshold    = sw.boundary;
+   if (ealsa_ioctl(ea->fd, EALSA_IOCTL_SW_PARAMS, &sw) < 0)
+      return false;
+   return ealsa_ioctl(ea->fd, EALSA_IOCTL_PREPARE, NULL) == 0;
+}
+
+/* Frames the device still holds. DELAY rather than STATUS: the status
+ * struct carries timespecs whose layout has moved between kernel
+ * versions, and the delay is the only figure this driver wants. */
+static ealsa_sframes_t ealsa_delay(ealsa_t *ea)
+{
+   ealsa_sframes_t d = 0;
+   if (ealsa_ioctl(ea->fd, EALSA_IOCTL_DELAY, &d) < 0)
+      return 0;
+   return d;
+}
+
+/* Frames the device could take now: its buffer less what it holds. */
+static size_t ealsa_avail(ealsa_t *ea)
+{
+   ealsa_sframes_t d = ealsa_delay(ea);
+   if (d <= 0)
+      return ea->buffer_frames;
+   if ((size_t)d >= ea->buffer_frames)
+      return 0;
+   return ea->buffer_frames - (size_t)d;
+}
+
+static bool ealsa_recover(ealsa_t *ea)
+{
+   if (ealsa_ioctl(ea->fd, EALSA_IOCTL_PREPARE, NULL) < 0)
+      return false;
+   ea->running = false;
+   return true;
+}
+
+/* ---- the driver ------------------------------------------------ */
+
+typedef struct ealsa tinyalsa_t;
+
+static void tinyalsa_free(void *data)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   if (!ea)
+      return;
+   if (ea->fd >= 0)
+   {
+      ealsa_ioctl(ea->fd, EALSA_IOCTL_DROP, NULL);
+      ealsa_close(ea->fd);
+   }
+   free(ea);
+}
+
+static void *tinyalsa_init(const char *devicestr, unsigned rate,
+      unsigned latency,  unsigned *new_rate)
+{
+   char     path[64];
+   unsigned card = 0, device = 0, want_channels, ch;
+   uint32_t want_layout = audio_driver_requested_layout();
+   int      format      = EALSA_FORMAT_S16;
+   ealsa_t *ea          = (ealsa_t*)calloc(1, sizeof(*ea));
+
+   if (!ea)
       return NULL;
-   }
+   ea->fd = -1;
 
-   RARCH_LOG("[ALSA] Using ALSA version %s.\n", snd_asoundlib_version());
-
-   if (alsa_init_pcm(&alsa->info.pcm, device, SND_PCM_STREAM_PLAYBACK, rate,
-            latency, 2, &alsa->info.stream_info, new_rate, 0) < 0)
-      goto error;
-
-   alsa->info.fifo_lock = slock_new();
-   alsa->info.cond      = scond_new();
-   alsa->info.buffer    = fifo_new(alsa->info.stream_info.buffer_size);
-   if (!alsa->info.fifo_lock || !alsa->info.cond || !alsa->info.buffer)
-      goto error;
-
-   alsa->info.worker_thread = sthread_create(alsa_worker_thread, alsa);
-   if (!alsa->info.worker_thread)
+   /* "<card>,<device>", either part optional. */
+   if (devicestr)
    {
-      RARCH_ERR("[ALSA] Failed to initialize worker thread.\n");
+      char *endp;
+      unsigned long v = strtoul(devicestr, &endp, 10);
+      if (endp != devicestr)
+      {
+         card = (unsigned)v;
+         if (*endp == ',')
+         {
+            const char *p = endp + 1;
+            v = strtoul(p, &endp, 10);
+            if (endp != p)
+               device = (unsigned)v;
+         }
+      }
+   }
+
+   snprintf(path, sizeof(path), "/dev/snd/pcmC%uD%up", card, device);
+   if ((ea->fd = ealsa_open_dev(path, O_RDWR)) < 0)
+   {
+      RARCH_ERR("[TINYALSA] Cannot open %s.\n", path);
+      goto error;
+   }
+   RARCH_LOG("[TINYALSA] Using card %u, device %u.\n", card, device);
+
+   /* The rate the device will take: asked for first, and if it is
+    * refused, the nearest end of what the hardware reports. The
+    * frontend is told through new_rate either way. */
+   {
+      struct ealsa_hw_params p;
+      ealsa_params_any(&p);
+      ealsa_mask_only(&p, EALSA_P_ACCESS, EALSA_ACCESS_RW_INTERLEAVED);
+      if (ealsa_ioctl(ea->fd, EALSA_IOCTL_HW_REFINE, &p) < 0)
+      {
+         RARCH_ERR("[TINYALSA] The device reports no usable parameters.\n");
+         goto error;
+      }
+      {
+         unsigned min = ealsa_interval_min(&p, EALSA_P_RATE);
+         unsigned max = ealsa_interval_max(&p, EALSA_P_RATE);
+         if (rate < min || rate > max)
+         {
+            RARCH_WARN("[TINYALSA] %u Hz is outside the device's %u-%u Hz.\n",
+                  rate, min, max);
+            rate = (rate < min) ? min : max;
+         }
+      }
+   }
+
+   /* Float where the device takes it: the pipeline is float, and an
+    * s16 device is the only reason to narrow. */
+   if (ealsa_probe(ea->fd, EALSA_FORMAT_FLOAT, 2, rate))
+      format = EALSA_FORMAT_FLOAT;
+
+   /* The layout the frontend asked for, if the device has that many
+    * channels; stereo otherwise. */
+   want_channels = audio_layout_channels(want_layout);
+   if (want_channels < 2 || !audio_layout_supported(want_layout))
+   {
+      want_channels = 2;
+      want_layout   = AUDIO_LAYOUT_STEREO;
+   }
+   for (ch = want_channels; ch >= 2; ch -= 2)
+   {
+      if (ealsa_probe(ea->fd, format, ch, rate))
+         break;
+      if (ch == 2)
+      {
+         RARCH_ERR("[TINYALSA] The device takes neither the layout nor stereo.\n");
+         goto error;
+      }
+   }
+   if (ch != want_channels)
+   {
+      RARCH_WARN("[TINYALSA] %u channels refused; opening %u.\n", want_channels, ch);
+      want_layout = AUDIO_LAYOUT_STEREO;
+   }
+   ea->layout = (ch == want_channels) ? want_layout : AUDIO_LAYOUT_STEREO;
+
+   if (!latency)
+      latency = 64;
+   if (!ealsa_set_params(ea, format, ch, rate, latency))
+   {
+      RARCH_ERR("[TINYALSA] The device refused the parameters.\n");
       goto error;
    }
 
-   return alsa;
+   if (new_rate)
+      *new_rate = ea->rate;
+
+   RARCH_LOG("[TINYALSA] %u Hz, %u channels, %s, layout 0x%x.\n",
+         ea->rate, ea->channels, ea->has_float ? "float" : "s16",
+         (unsigned)ea->layout);
+   RARCH_LOG("[TINYALSA] Period %u frames, buffer %u frames (%u bytes).\n",
+         (unsigned)ea->period_frames, (unsigned)ea->buffer_frames,
+         (unsigned)ea->buffer_size);
+   RARCH_LOG("[TINYALSA] Can pause: %s.\n", ea->can_pause ? "yes" : "no");
+   return ea;
 
 error:
-   RARCH_ERR("[ALSA] Failed to initialize.\n");
-
-   alsa_thread_free(alsa);
-
+   tinyalsa_free(ea);
    return NULL;
 }
 
-static ssize_t alsa_thread_write(void *data, const void *s, size_t len)
+static ssize_t tinyalsa_write(void *data, const void *buf, size_t len)
 {
-   ssize_t _len = 0;
-   alsa_thread_t *alsa = (alsa_thread_t*)data;
+   ealsa_t *ea      = (ealsa_t*)data;
+   const uint8_t *p = (const uint8_t*)buf;
+   size_t   frames  = len * 8 / ea->frame_bits;
+   size_t   written = 0;
 
-   if (alsa->info.thread_dead)
-      return -1;
-
-   if (alsa->nonblock)
+   while (frames)
    {
-      size_t avail;
+      struct ealsa_xferi x;
+      x.buf    = (void*)p;
+      x.frames = frames;
+      x.result = 0;
 
-      slock_lock(alsa->info.fifo_lock);
-      avail = FIFO_WRITE_AVAIL(alsa->info.buffer);
-      _len  = MIN(avail, len);
-
-      fifo_write(alsa->info.buffer, s, _len);
-      if (alsa->info.worker_waiting)
-         scond_signal(alsa->info.cond);
-      slock_unlock(alsa->info.fifo_lock);
-   }
-   else
-   {
-      while (_len < (ssize_t)len && !alsa->info.thread_dead)
+      if (ealsa_ioctl(ea->fd, EALSA_IOCTL_WRITEI_FRAMES, &x) < 0)
       {
-         size_t avail;
-         slock_lock(alsa->info.fifo_lock);
-         avail = FIFO_WRITE_AVAIL(alsa->info.buffer);
-
-         if (avail == 0)
+         if (errno == EAGAIN)
          {
-            /* Wait on the lock the avail test was made under; see the
-             * note on fifo_lock in alsa_thread_info_t.  Previously
-             * this dropped fifo_lock and took cond_lock before
-             * blocking, so a worker that drained and signalled in
-             * between found no waiter, and this thread then sat in an
-             * untimed wait until the worker's next period despite the
-             * space it wanted already existing. */
-            if (!alsa->info.thread_dead)
-               scond_wait(alsa->info.cond, alsa->info.fifo_lock);
-            slock_unlock(alsa->info.fifo_lock);
+            if (ea->nonblock)
+               break;
+            /* Blocking: wait for the device to free a period, and
+             * come back short rather than spinning if it does not. */
+            {
+               struct pollfd pfd;
+               int           pr;
+               pfd.fd      = ea->fd;
+               pfd.events  = POLLOUT;
+               pfd.revents = 0;
+               pr          = ealsa_poll(&pfd, 1, 100);
+               /* A signal is not the device saying no: RetroArch takes
+                * them for its timers, and treating one as a refusal
+                * returned a short write for no reason. */
+               if (pr < 0 && errno == EINTR)
+                  continue;
+               if (pr <= 0)
+                  break;
+            }
+            continue;
          }
-         else
+         if (errno == EPIPE || errno == ESTRPIPE)
          {
-            size_t write_amt = MIN(len - _len, avail);
-            fifo_write(alsa->info.buffer,
-                  (const char*)s + _len, write_amt);
-            if (alsa->info.worker_waiting)
-               scond_signal(alsa->info.cond);
-            slock_unlock(alsa->info.fifo_lock);
-            _len += write_amt;
+            /* An underrun, or a resume after a suspend: prepared
+             * again and the frames go out on the next turn. */
+            if (!ealsa_recover(ea))
+               return -1;
+            continue;
          }
+         return written ? (ssize_t)(written * ea->frame_bits / 8) : -1;
+      }
+      if (x.result <= 0)
+         break;
+      p                   += (size_t)x.result * ea->frame_bits / 8;
+      frames              -= x.result;
+      written             += x.result;
+      ea->frames_written  += x.result;
+      /* Started once the buffer holds something: the threshold is
+       * past the buffer's end, so the kernel never starts it. */
+      if (!ea->running && !ea->is_paused)
+      {
+         if (ealsa_ioctl(ea->fd, EALSA_IOCTL_START, NULL) == 0)
+            ea->running = true;
       }
    }
-   return _len;
+   return (ssize_t)(written * ea->frame_bits / 8);
 }
 
-static bool alsa_thread_alive(void *data)
+/* Frames the device has played: what was handed to it, less what it
+ * still holds. The sink rate estimate reads this. */
+static size_t tinyalsa_frames_consumed(void *data)
 {
-   alsa_thread_t *alsa = (alsa_thread_t*)data;
-   if (!alsa)
-      return false;
-   return !alsa->is_paused;
+   ealsa_t        *ea = (ealsa_t*)data;
+   ealsa_sframes_t d  = ealsa_delay(ea);
+   uint64_t queued    = (d > 0) ? (uint64_t)d : 0;
+   if (queued > ea->frames_written)
+      return (size_t)ea->frames_written;
+   return (size_t)(ea->frames_written - queued);
 }
 
-static bool alsa_thread_stop(void *data)
+static size_t tinyalsa_write_avail(void *data)
 {
-   alsa_thread_t *alsa = (alsa_thread_t*)data;
-   if (alsa)
-      alsa->is_paused = true;
+   ealsa_t *ea = (ealsa_t*)data;
+   return ealsa_avail(ea) * ea->frame_bits / 8;
+}
+
+static size_t tinyalsa_buffer_size(void *data)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   return ea->buffer_size;
+}
+
+/* Waits until the device can take @len bytes, bounded so a device
+ * that has stopped draining hands the pass back. */
+static size_t tinyalsa_wait_writable(void *data, size_t len)
+{
+   ealsa_t *ea    = (ealsa_t*)data;
+   size_t   want  = len * 8 / ea->frame_bits;
+   unsigned laps  = 8;
+   int      ms    = (int)(ea->period_frames * 2000 / (ea->rate ? ea->rate : 48000));
+   if (ms < 2)
+      ms = 2;
+   else if (ms > 100)
+      ms = 100;
+   if (want > ea->buffer_frames)
+      want = ea->buffer_frames;
+   while (laps--)
+   {
+      struct pollfd pfd;
+      size_t avail = ealsa_avail(ea);
+      if (avail >= want)
+         return avail * ea->frame_bits / 8;
+      if (ea->nonblock || ea->is_paused)
+         break;
+      pfd.fd      = ea->fd;
+      pfd.events  = POLLOUT;
+      pfd.revents = 0;
+      {
+         int pr = ealsa_poll(&pfd, 1, ms);
+         if (pr < 0 && errno == EINTR)
+            continue;      /* a signal, not a device short of room */
+         if (pr <= 0)
+            break;
+      }
+   }
+   return ealsa_avail(ea) * ea->frame_bits / 8;
+}
+
+static bool tinyalsa_stop(void *data)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   if (ea->is_paused)
+      return true;
+   if (ea->can_pause && ea->running)
+   {
+      int on = 1;
+      if (ealsa_ioctl(ea->fd, EALSA_IOCTL_PAUSE, &on) == 0)
+      {
+         ea->is_paused = true;
+         return true;
+      }
+   }
+   /* No pause, or it was refused: dropped, and prepared again so the
+    * next start has somewhere to begin. */
+   ealsa_ioctl(ea->fd, EALSA_IOCTL_DROP, NULL);
+   ea->running   = false;
+   ea->is_paused = ealsa_ioctl(ea->fd, EALSA_IOCTL_PREPARE, NULL) == 0;
+   return ea->is_paused;
+}
+
+static bool tinyalsa_start(void *data, bool is_shutdown)
+{
+   ealsa_t *ea = (ealsa_t*)data;
+   (void)is_shutdown;
+   if (!ea->is_paused)
+      return true;
+   if (ea->can_pause && ea->running)
+   {
+      int off = 0;
+      if (ealsa_ioctl(ea->fd, EALSA_IOCTL_PAUSE, &off) < 0)
+         return false;
+   }
+   ea->is_paused = false;
    return true;
 }
 
-static void alsa_thread_set_nonblock_state(void *data, bool state)
+static bool tinyalsa_alive(void *data)
 {
-   alsa_thread_t *alsa = (alsa_thread_t*)data;
-   alsa->nonblock = state;
+   ealsa_t *ea = (ealsa_t*)data;
+   return ea && !ea->is_paused;
 }
 
-static bool alsa_thread_start(void *data, bool is_shutdown)
+static void tinyalsa_set_nonblock_state(void *data, bool state)
 {
-   alsa_thread_t *alsa = (alsa_thread_t*)data;
-
-   if (alsa)
-      alsa->is_paused = false;
-   return true;
+   ealsa_t *ea = (ealsa_t*)data;
+   ea->nonblock = state;
 }
 
-static size_t alsa_thread_write_avail(void *data)
+static bool tinyalsa_use_float(void *data)
 {
-   size_t _len;
-   alsa_thread_t *alsa = (alsa_thread_t*)data;
-   if (alsa->info.thread_dead)
-      return 0;
-   slock_lock(alsa->info.fifo_lock);
-   _len = FIFO_WRITE_AVAIL(alsa->info.buffer);
-   slock_unlock(alsa->info.fifo_lock);
-   return _len;
+   ealsa_t *ea = (ealsa_t*)data;
+   return ea->has_float;
 }
 
-static size_t alsa_thread_buffer_size(void *data)
+static uint32_t tinyalsa_layout(void *data)
 {
-   alsa_thread_t *alsa = (alsa_thread_t*)data;
-   return alsa->info.stream_info.buffer_size;
+   ealsa_t *ea = (ealsa_t*)data;
+   return ea ? ea->layout : AUDIO_LAYOUT_STEREO;
 }
 
-audio_driver_t audio_alsathread = {
-   alsa_thread_init,
-   alsa_thread_write,
-   alsa_thread_stop,
-   alsa_thread_start,
-   alsa_thread_alive,
-   alsa_thread_set_nonblock_state,
-   alsa_thread_free,
-   alsa_thread_use_float,
-   "alsathread",
-   alsa_device_list_new, /* Shared with the sync driver above -
-                            * they don't use the driver context. */
-   alsa_device_list_free,
-   alsa_thread_write_avail,
-   alsa_thread_buffer_size,
-   NULL /* write_raw */
+/* The playback devices the kernel exposes, as "<card>,<device>" with
+ * the name the driver reports. */
+static void *tinyalsa_device_list_new(void *data)
+{
+   struct string_list *list = string_list_new();
+   unsigned card, device;
+   (void)data;
+   if (!list)
+      return NULL;
+   for (card = 0; card < 8; card++)
+   {
+      for (device = 0; device < 8; device++)
+      {
+         char path[64], label[32];
+         int fd;
+         union string_list_elem_attr attr;
+         snprintf(path, sizeof(path), "/dev/snd/pcmC%uD%up", card, device);
+         /* Opened only to see whether it is there; the name the
+          * frontend shows is the "<card>,<device>" it passes back. */
+         if ((fd = ealsa_open_dev(path, O_RDWR | O_NONBLOCK)) < 0)
+            continue;
+         ealsa_close(fd);
+         snprintf(label, sizeof(label), "%u,%u", card, device);
+         attr.i = 0;
+         string_list_append(list, label, attr);
+      }
+   }
+   return list;
+}
+
+static void tinyalsa_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *s = (struct string_list*)array_list_data;
+   (void)data;
+   if (s)
+      string_list_free(s);
+}
+
+audio_driver_t audio_tinyalsa = {
+   tinyalsa_init,
+   tinyalsa_write,
+   tinyalsa_stop,
+   tinyalsa_start,
+   tinyalsa_alive,
+   tinyalsa_set_nonblock_state,
+   tinyalsa_free,
+   tinyalsa_use_float,
+   "tinyalsa",
+   tinyalsa_device_list_new,
+   tinyalsa_device_list_free,
+   tinyalsa_write_avail,
+   tinyalsa_buffer_size,
+   NULL, /* write_raw */
+   tinyalsa_wait_writable,
+   tinyalsa_frames_consumed,
+   NULL, /* underruns */
+   tinyalsa_layout
 };
 
-#endif /* !__QNX__ && !MIYOO && HAVE_THREADS */
+#endif /* HAVE_TINYALSA */

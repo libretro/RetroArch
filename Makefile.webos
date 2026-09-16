@@ -18,7 +18,9 @@ WEBOS_USR_LIB_DIR     ?= $(STAGING_DIR)/usr/lib
 WEBOS_LIB_DIR         ?= $(STAGING_DIR)/lib
 
 ADD_SDL2_LIB          ?= 0
-SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.12-webos.1/SDL2-2.30.12-webos-abi.tar.gz
+ADD_SDL3_LIB          ?= 0
+SDL2_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-2.30.12-webos.5/SDL2-2.30.12-webos-abi.tar.gz
+SDL3_PREBUILT_ARCHIVE ?= https://github.com/webosbrew/SDL-webOS/releases/download/release-3.4.16-webos.2/SDL3-3.4.16-webos.2.tar.gz
 64TO32_BRIDGE_DIR     ?= /media/developer/apps/usr/palm/applications/org.webosbrew.bridge-64to32
 ELF_INTERPRETER_BIN   ?= /lib/ld-linux-aarch64.so.1
 SET_ELF_INTERPRETER   ?= 0
@@ -121,6 +123,7 @@ HAVE_RDDS = 1
 HAVE_RUNAHEAD = 1
 HAVE_SDL = 0
 HAVE_SDL2 ?= 1
+HAVE_SDL3 ?= 0
 HAVE_SHADERPIPELINE = 1
 HAVE_STB_IMAGE = 1
 HAVE_RVORBIS = 1
@@ -239,6 +242,9 @@ ifeq ($(HAVE_PULSE),1)
 endif
 ifeq ($(HAVE_SDL2),1)
   DEFINES += -DHAVE_SDL2
+endif
+ifeq ($(HAVE_SDL3),1)
+  DEFINES += -DHAVE_SDL3
 endif
 ifeq ($(SET_ELF_INTERPRETER), 1)
   ELF_INTERPRETER ?= $(64TO32_BRIDGE_DIR)$(ELF_INTERPRETER_BIN)
@@ -375,6 +381,9 @@ clean:
 	$(Q)rm -rf SDL
 	$(Q)rm -rf SDL.tmp
 	$(Q)rm -f SDL2-prebuilt.tar.gz.tmp
+	$(Q)rm -rf SDL3
+	$(Q)rm -rf SDL3.tmp
+	$(Q)rm -f SDL3-prebuilt.tar.gz.tmp
 	$(Q)rm -rf webos/*.ipk
 	$(Q)rm -rf webos/dist
 
@@ -398,7 +407,27 @@ ifeq ($(ADD_SDL2_LIB), 1)
 	fi
 endif
 
-ipk: prebuild $(TARGET) sdl2
+sdl3: $(TARGET)
+ifeq ($(ADD_SDL3_LIB), 1)
+	@if [ ! -f SDL3/lib/libSDL3.so.0 ]; then \
+		echo "Downloading SDL3 prebuilt"; \
+		rm -rf SDL3.tmp SDL3-prebuilt.tar.gz.tmp; \
+		mkdir -p SDL3.tmp; \
+		curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 --connect-timeout 30 \
+			-o SDL3-prebuilt.tar.gz.tmp $(SDL3_PREBUILT_ARCHIVE) \
+			|| { echo "error: SDL3 prebuilt download failed: $(SDL3_PREBUILT_ARCHIVE)"; \
+			     rm -rf SDL3.tmp SDL3-prebuilt.tar.gz.tmp; exit 1; }; \
+		tar -C SDL3.tmp -zxf SDL3-prebuilt.tar.gz.tmp \
+			|| { echo "error: SDL3 prebuilt archive is corrupt or truncated"; \
+			     rm -rf SDL3.tmp SDL3-prebuilt.tar.gz.tmp; exit 1; }; \
+		rm -f SDL3-prebuilt.tar.gz.tmp; \
+		mv SDL3.tmp SDL3; \
+	else \
+		echo "SDL3 prebuilt already exists, skipping download"; \
+	fi
+endif
+
+ipk: prebuild $(TARGET) sdl2 sdl3
 	rm -rf webos/dist
 	mkdir -p webos/dist/lib
 ifeq ($(SET_ELF_INTERPRETER), 1)
@@ -414,6 +443,9 @@ endif
 	cp -vf $(WEBOS_LIB_DIR)/libatomic.so.1 webos/dist/lib/
 ifeq ($(ADD_SDL2_LIB), 1)
 	cp -vf SDL/lib/libSDL2-2.0.so.0 webos/dist/lib/
+endif
+ifeq ($(ADD_SDL3_LIB), 1)
+	cp -vf SDL3/lib/libSDL3.so.0 webos/dist/lib/
 endif
 ifneq ($(DEBUG), 1)
 	$(STRIP) webos/dist/$(TARGET)

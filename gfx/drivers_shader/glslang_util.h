@@ -199,6 +199,14 @@ void *glslang_include_cache_new(void);
 
 void glslang_include_cache_free(void *cache);
 
+/* Expand @path but keep only its '#pragma' lines, following '#include'
+ * as usual.  glslang_parse_meta() reads nothing else, so a caller after
+ * shader metadata gets the same lines in the same order without the
+ * flattened source around them - a 12-pass pack emits hundreds of lines
+ * this way rather than a hundred thousand.  Not for compilation. */
+bool glslang_read_shader_pragmas_cached(const char *path,
+      struct shader_line_buf *output, void *cache);
+
 /* As glslang_read_shader_file(), but reads through @cache. */
 bool glslang_read_shader_file_cached(const char *path,
       struct shader_line_buf *output, bool root_file, bool is_optional,

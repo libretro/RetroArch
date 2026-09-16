@@ -21,10 +21,10 @@
 #endif
 
 #include <retro_common_api.h>
+#include <retro_atomic.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
 #include <queues/message_queue.h>
-#include <queues/fifo_queue.h>
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
@@ -190,35 +190,61 @@ typedef struct disp_widget_msg
 
    uint16_t flags;
    int8_t task_progress;
-   /* How many tasks have used this notification? */
-   uint8_t task_count;
    bool alternative_look;
 } disp_widget_msg_t;
 
 typedef struct dispgfx_widget
 {
-   uint64_t gfx_widgets_frame_count;
-
 #ifdef HAVE_THREADS
-   slock_t* current_msgs_lock;
    /* Serialises producer and consumer access to msg_queue.
     * Producers (gfx_widgets_msg_queue_push) can be called from
-    * any thread -- the threaded task system at libretro-common/
-    * queues/task_queue.c runs a worker thread, and several call
-    * paths reach the producer without holding any other lock
-    * (notably gfx/video_driver.c::video_driver_frame, which
-    * releases RUNLOOP_MSG_QUEUE_LOCK before the call).  The
-    * consumer (gfx_widgets_iterate) runs on the main thread
-    * but did not previously serialise its fifo_read against
-    * concurrent producer fifo_writes.  This separates concerns:
-    * current_msgs_lock continues to guard the displayed-message
-    * deque (current_msgs[]); msg_queue_lock guards the FIFO
-    * staging buffer.  Acquired by every fifo_* call site and
-    * by FIFO_*_AVAIL checks where the result is used to gate a
-    * subsequent FIFO operation. */
+    * any thread, and no caller holds any other lock across the
+    * call (the runloop message queue is main-thread state with no
+    * lock at all; its off-main producers ride a deferral).  The
+    * consumer is whichever thread owns the widgets: the threaded
+    * video worker when it draws them, the main thread otherwise.
+    * msg_queue_lock guards the pending ring (msg_queue[] /
+    * msg_queue_head / msg_queue_count) and is held across every
+    * push and pop of it.  The displayed messages (current_msgs[])
+    * belong to that same owning thread alone and take no lock. */
    slock_t* msg_queue_lock;
+   /* Everything the widgets draw. With the threaded video wrapper the
+    * worker animates, iterates and draws it while the main thread's
+    * setters, task updates and relayout change it, so both sides hold
+    * this: the worker across its step and its draw, a writer across its
+    * change. Outermost of the widget locks. Recursive for
+    * its owner through state_owner/state_depth, and released for as
+    * long as its owner waits on the worker (gfx_widgets_state_yield()),
+    * so a writer that loads or frees a texture cannot deadlock against
+    * a draw waiting for it. Untouched without the wrapper. */
+   slock_t* state_lock;
+   retro_atomic_size_t state_owner;
+   unsigned state_depth;
+   /* The threaded video worker animates and lays out the widgets
+    * (gfx_widgets_worker_step()). Set at init and cleared at deinit,
+    * when neither thread is in the widgets; a field of its own rather
+    * than a bit in 'flags', which the main thread read-modify-writes
+    * while the worker would read this. */
+   /* The video singleton's stable address, captured at
+    * gfx_widgets_init on the main thread before the draw worker
+    * exists: the worker's step and the state-lock dispatch reach
+    * ra-video state through this, never through the getter. */
+   void *video_st;
+   bool worker;
 #endif
-   fifo_buffer_t msg_queue;
+   /* Messages pushed but not yet on screen: a ring of pointers,
+    * pushed from any thread (gfx_widgets_msg_queue_push), popped by
+    * the thread that owns the widgets, one per frame.  Was a
+    * fifo_buffer_t carrying sizeof(pointer)-byte records: a heap
+    * buffer, byte arithmetic and a write that silently wrapped when
+    * full, for what is a bounded array of MSG_QUEUE_PENDING_MAX
+    * pointers.  Several producers, so this is not an SPSC ring and
+    * stays under msg_queue_lock.  msg_queue_count is written only
+    * under it; the consumer reads it without, so a frame with nothing
+    * pending takes no lock at all. */
+   disp_widget_msg_t* msg_queue[MSG_QUEUE_PENDING_MAX];
+   unsigned msg_queue_head;
+   retro_atomic_int_t msg_queue_count;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
    gfx_widget_fonts_t gfx_widget_fonts; /* ptr alignment */
 
@@ -262,7 +288,6 @@ typedef struct dispgfx_widget
    unsigned msg_queue_icon_offset_y;
    unsigned msg_queue_scissor_start_x;
    unsigned msg_queue_default_rect_width;
-   unsigned msg_queue_regular_padding_x;
    unsigned msg_queue_regular_text_start;
    unsigned msg_queue_task_text_start_x;
    unsigned divider_width_1px;
@@ -310,6 +335,12 @@ typedef struct dispgfx_widget
 
    char monochrome_png_path[PATH_MAX_LENGTH];
    char gfx_widgets_path[PATH_MAX_LENGTH];
+
+   /* The menu state the frame being iterated was built with. A widget
+    * that wants to know whether the menu is open reads this rather
+    * than the menu's own flags: those are a read-modify-write on the
+    * main thread, and an iterate runs on the thread that draws. */
+   uint16_t frame_menu_st_flags;
 } dispgfx_widget_t;
 
 /* A widget */
@@ -464,6 +495,10 @@ void gfx_widget_set_cheevos_set_loading(bool visible);
 /* TODO/FIXME/WARNING: Not thread safe! */
 void gfx_widget_set_generic_message(
       const char *message, unsigned duration);
+void gfx_widget_set_generic_message_fixed(const char *prefix,
+      const char *name, const char *suffix, const char *slot,
+      unsigned duration);
+void gfx_widget_set_generic_message_progress(const char *label);
 void gfx_widget_set_libretro_message(
       const char *message, unsigned duration);
 void gfx_widget_set_progress_message(
@@ -478,7 +513,39 @@ void gfx_widget_set_load_content_progress(int8_t progress);
 /* All the functions below should be called in
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
+#ifdef HAVE_THREADS
+void gfx_widgets_state_lock(void);
+void gfx_widgets_state_unlock(void);
+unsigned gfx_widgets_state_yield(void);
+void gfx_widgets_state_resume(unsigned depth);
+#else
+#define gfx_widgets_state_lock()     ((void)0)
+#define gfx_widgets_state_unlock()   ((void)0)
+#endif
+
 void gfx_widgets_frame(void *data);
+
+#ifdef HAVE_THREADS
+/* Threaded video worker, before the driver's frame: what the runloop
+ * does for the widgets without the wrapper, less the layout. */
+void gfx_widgets_worker_step(void *data,
+      const char *status_text, size_t status_text_len);
+
+/* Main thread, under the wrapper: hands the on-screen panels' text to
+ * the frame about to be pushed, for gfx_widgets_worker_step(), and
+ * clears status_text, which video_driver_frame() would otherwise write
+ * into widget state after the push. */
+void gfx_widgets_status_text_to_frame(void *data, char *status_text);
+
+/* The main thread's part of gfx_widgets_iterate() while the worker
+ * runs the rest: relayout on a screen, scale or font change. */
+void gfx_widgets_iterate_layout(
+      void *data_disp,
+      void *settings_data,
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path,
+      bool is_threaded);
+#endif
 
 bool gfx_widgets_visible(void *data);
 

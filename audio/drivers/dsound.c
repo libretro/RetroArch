@@ -35,8 +35,24 @@
 #include <rthreads/rthreads.h>
 #endif
 #include <lists/string_list.h>
+
+/* The WAVEFORMATEXTENSIBLE subtypes, by value. They live in ksmedia.h,
+ * which the 2005 SDK does not reach at _WIN32_WINNT=0x0400 - that
+ * build fails on them as undeclared identifiers - and where a newer
+ * SDK does declare them it declares them without an instance to link,
+ * which is why audio/common/mmdevice_common_inline.h spells them out
+ * for WASAPI as well. Their values are fixed by the WAVE format:
+ * 00000001 for integer PCM and 00000003 for float, both in the
+ * 0000-0010-8000-00AA00389B71 family. */
+static const GUID ra_dsound_subtype_pcm =
+   { 0x00000001, 0x0000, 0x0010,
+     { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
+static const GUID ra_dsound_subtype_float =
+   { 0x00000003, 0x0000, 0x0010,
+     { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
 #include <retro_atomic.h>
 #include <retro_spsc.h>
+#include <rthreads/retro_eventcount.h>
 #include <string/stdstring.h>
 
 #if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600 /*_WIN32_WINNT_VISTA */)
@@ -64,7 +80,13 @@
 #pragma comment(lib, "dsound")
 #endif
 
-#define CHUNK_SIZE 256
+/* The unit the mixer thread locks and fills: 256 bytes for stereo, as
+ * it always was, made a multiple of the frame for a wider layout so
+ * that no lock and no ring boundary splits a frame (the ring's size
+ * is a multiple of it, and DirectSound wants it a multiple of the
+ * block align). */
+#define CHUNK_BASE 256
+#define CHUNK_SIZE (ds->chunk)
 #define DSOUND_TIMEOUT 256
 
 typedef struct dsound
@@ -79,8 +101,12 @@ typedef struct dsound
     * tracks dsound_t; initialised in dsound_init, released in
     * dsound_free after the worker has been joined. */
    retro_spsc_t ring;
-
-   HANDLE      event;
+   /* The writer's park, notified by dsound_thread after each block it
+    * moves and once when it clears thread_alive. An eventcount rather
+    * than the auto-reset event it replaces: the notify is gated, so
+    * the steady state - writer keeping ahead, never waiting - costs
+    * the pump no syscall per chunk, where SetEvent always was one. */
+   retro_eventcount_t park;
 #ifdef HAVE_THREADS
    sthread_t *thread;
 #else
@@ -95,6 +121,9 @@ typedef struct dsound
 #endif
    size_t fifo_bufsize;
    unsigned buffer_size;
+   unsigned chunk;       /* bytes per lock: CHUNK_BASE made a multiple of the frame */
+   unsigned frame_size;  /* bytes per frame at the opened format */
+   uint32_t layout;      /* the frontend's mask the buffer was opened with */
 
    bool nonblock;
    bool is_paused;
@@ -105,6 +134,15 @@ typedef struct dsound
     * /volatile:iso, which is what ARM64 builds get, so state it like
     * the ring buffer beside it already does. */
    retro_atomic_int_t thread_alive;
+
+   /* The play cursor unwrapped, in frames, for the sink rate estimate:
+    * the mixer thread reads the cursor every pass, well within a
+    * buffer's length, and adds each advance here. Kept in a 32-bit
+    * atomic so the reader on another thread sees whole values; at
+    * 48 kHz it holds twelve hours, and the estimate treats a wrap as a
+    * restart. */
+   retro_atomic_int_t frames_played;
+   DWORD              last_read_ptr;
 } dsound_t;
 
 struct audio_lock
@@ -258,7 +296,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
 
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
-   IDirectSoundBuffer_GetCurrentPosition(ds->dsb, NULL, &write_ptr);
+   IDirectSoundBuffer_GetCurrentPosition(ds->dsb, &ds->last_read_ptr, &write_ptr);
    write_ptr += ds->buffer_size / 2;
    if (write_ptr >= ds->buffer_size)
       write_ptr -= ds->buffer_size;
@@ -272,6 +310,17 @@ static DWORD CALLBACK dsound_thread(PVOID data)
 
       IDirectSoundBuffer_GetCurrentPosition(ds->dsb, &read_ptr, NULL);
       avail = _dsound_write_avail(read_ptr, write_ptr, ds->buffer_size);
+
+      /* The cursor's advance since the last pass, unwrapped: the
+       * device's consumption, silence included. */
+      {
+         DWORD adv = read_ptr + ds->buffer_size - ds->last_read_ptr;
+         if (adv >= ds->buffer_size)
+            adv -= ds->buffer_size;
+         ds->last_read_ptr = read_ptr;
+         retro_atomic_fetch_add_int(&ds->frames_played,
+               (int)(adv / ds->frame_size));
+      }
 
       /* Consumer-side query; only this thread advances the read
        * cursor, so the value cannot shrink under us between here and
@@ -297,7 +346,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          if (!dsound_grab_region(ds, write_ptr, &region, res))
          {
             retro_atomic_store_release_int(&ds->thread_alive, 0);
-            SetEvent(ds->event);
+            retro_eventcount_notify(&ds->park);
             break;
          }
       }
@@ -344,7 +393,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          write_ptr -= ds->buffer_size;
 
       if (is_pull)
-         SetEvent(ds->event);
+         retro_eventcount_notify(&ds->park);
    }
 
    /* Return normally: under HAVE_THREADS this function runs inside the
@@ -426,8 +475,7 @@ static void dsound_free(void *data)
    if (ds->ds)
       IDirectSound_Release(ds->ds);
 
-   if (ds->event)
-      CloseHandle(ds->event);
+   retro_eventcount_free(&ds->park);
 
    /* Safe here and only here: dsound_stop_thread has joined the
     * consumer, so the ring has no live reader. */
@@ -436,25 +484,39 @@ static void dsound_free(void *data)
    free(ds);
 }
 
-static void dsound_set_format(WAVEFORMATEX *wf,
-      bool float_fmt, unsigned channels, unsigned rate)
+/* Stereo is the plain format it always was; a wider layout is a
+ * WAVEFORMATEXTENSIBLE with the frontend's mask as the channel mask,
+ * the same bits DirectSound uses (the same as WASAPI's), so each
+ * channel goes to its speaker rather than the driver's guess for
+ * the count. */
+static void dsound_set_format(WAVEFORMATEXTENSIBLE *wfx,
+      bool float_fmt, unsigned channels, uint32_t layout, unsigned rate)
 {
+   WAVEFORMATEX *wf      = &wfx->Format;
    WORD wBitsPerSample   = float_fmt ? 32 : 16;
    WORD nBlockAlign      = (channels * wBitsPerSample) / 8;
    DWORD nAvgBytesPerSec = rate * nBlockAlign;
 
-   if (float_fmt)
-      wf->wFormatTag     = WAVE_FORMAT_IEEE_FLOAT;
-   else
-      wf->wFormatTag     = WAVE_FORMAT_PCM;
-
+   memset(wfx, 0, sizeof(*wfx));
    wf->nChannels         = channels;
    wf->nSamplesPerSec    = rate;
    wf->nAvgBytesPerSec   = nAvgBytesPerSec;
    wf->nBlockAlign       = nBlockAlign;
    wf->wBitsPerSample    = wBitsPerSample;
-
-   wf->cbSize            = 0;
+   if (channels > 2)
+   {
+      wf->wFormatTag              = WAVE_FORMAT_EXTENSIBLE;
+      wf->cbSize                  = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
+      wfx->Samples.wValidBitsPerSample = wBitsPerSample;
+      wfx->dwChannelMask          = (DWORD)layout;
+      wfx->SubFormat              = float_fmt
+            ? ra_dsound_subtype_float : ra_dsound_subtype_pcm;
+   }
+   else
+   {
+      wf->wFormatTag     = float_fmt ? WAVE_FORMAT_IEEE_FLOAT : WAVE_FORMAT_PCM;
+      wf->cbSize         = 0;
+   }
 }
 
 static const char *dsound_wave_format_name(const WAVEFORMATEX *format)
@@ -465,6 +527,13 @@ static const char *dsound_wave_format_name(const WAVEFORMATEX *format)
          return "WAVE_FORMAT_PCM";
       case WAVE_FORMAT_IEEE_FLOAT:
          return "WAVE_FORMAT_IEEE_FLOAT";
+      case WAVE_FORMAT_EXTENSIBLE:
+      {
+         const WAVEFORMATEXTENSIBLE *x = (const WAVEFORMATEXTENSIBLE*)format;
+         if (!memcmp(&x->SubFormat, &ra_dsound_subtype_float, sizeof(GUID)))
+            return "WAVE_FORMAT_EXTENSIBLE float";
+         return "WAVE_FORMAT_EXTENSIBLE PCM";
+      }
       default:
          break;
    }
@@ -501,6 +570,11 @@ static void dsound_size_stages(dsound_t *ds, unsigned latency,
          ? (unsigned)(setting_bytes - fifo_capacity / 2) : 0;
    if (ds->buffer_size < floor_bytes)
       ds->buffer_size   = (unsigned)floor_bytes;
+   /* the lock unit: 256 bytes made a multiple of the frame */
+   ds->frame_size       = wf->nBlockAlign;
+   ds->chunk            = CHUNK_BASE;
+   while (ds->chunk % ds->frame_size)
+      ds->chunk        += CHUNK_BASE;
    ds->buffer_size     /= CHUNK_SIZE;
    ds->buffer_size     *= CHUNK_SIZE;
    if (ds->buffer_size < 4 * CHUNK_SIZE)
@@ -508,17 +582,24 @@ static void dsound_size_stages(dsound_t *ds, unsigned latency,
 }
 
 static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_rate)
+       unsigned *new_rate)
 {
    LPGUID selected_device = NULL;
-   WAVEFORMATEX wf        = {0};
+   WAVEFORMATEXTENSIBLE wfx;
+   WAVEFORMATEX *wf       = &wfx.Format;
    DSBUFFERDESC bufdesc   = {0};
    bool want_float        = (config_get_ptr()->uints.audio_format_negotiation
          == AUDIO_FORMAT_NEGOTIATION_FLOAT);
    dsound_t *ds           = (dsound_t*)calloc(1, sizeof(*ds));
+   /* The layout the frontend asked for; a buffer the device will not
+    * make with it is retried as stereo, and the layout hook says
+    * which. */
+   uint32_t layout        = audio_driver_requested_layout();
+   unsigned channels      = audio_layout_channels(layout);
 
    if (!ds)
       return NULL;
+   ds->layout = AUDIO_LAYOUT_STEREO;
 
 
    if (dev)
@@ -573,15 +654,15 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       goto error;
 #endif
 
-   dsound_set_format(&wf, want_float, 2, rate);
+   dsound_set_format(&wfx, want_float, channels, layout, rate);
    RARCH_DBG("[DirectSound] Requesting %u-bit %u-channel client with %s samples at %uHz %ums.\n",
-         wf.wBitsPerSample,
-         wf.nChannels,
-         dsound_wave_format_name(&wf),
-         wf.nSamplesPerSec,
+         wf->wBitsPerSample,
+         wf->nChannels,
+         dsound_wave_format_name(wf),
+         wf->nSamplesPerSec,
          latency);
 
-   dsound_size_stages(ds, latency, &wf);
+   dsound_size_stages(ds, latency, wf);
 
    bufdesc.dwSize        = sizeof(DSBUFFERDESC);
    bufdesc.dwFlags       = 0;
@@ -589,34 +670,51 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    bufdesc.dwFlags       = DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_GLOBALFOCUS;
 #endif
    bufdesc.dwBufferBytes = ds->buffer_size;
-   bufdesc.lpwfxFormat   = &wf;
+   bufdesc.lpwfxFormat   = wf;
 
-   ds->event = CreateEvent(NULL, false, false, NULL);
-   if (!ds->event)
+   if (!retro_eventcount_init(&ds->park))
       goto error;
 
-   if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) != DS_OK)
+   /* The formats in the order they are given up: the layout as asked
+    * in float, the layout as int16, then stereo in each. A refused
+    * layout costs the layout before it costs the sample format. */
    {
-      /* Only a float request has a lower format to fall back to. An int16
-       * request that fails has nowhere lower to go, so it errors out. */
-      if (!want_float)
+      unsigned pass;
+      bool     made = false;
+      for (pass = 0; pass < 4 && !made; pass++)
+      {
+         bool     f   = (pass & 1) ? false : want_float;
+         unsigned chs = (pass < 2) ? channels : 2;
+         uint32_t lay = (pass < 2) ? layout : AUDIO_LAYOUT_STEREO;
+         if (pass & 1)
+         {
+            if (!want_float)
+               continue;      /* int16 was the first try already */
+         }
+         if (pass >= 2 && channels <= 2)
+            break;            /* stereo was the first two tries */
+         if (pass)
+         {
+            dsound_set_format(&wfx, f, chs, lay, rate);
+            dsound_size_stages(ds, latency, wf);
+            bufdesc.dwBufferBytes = ds->buffer_size;
+            bufdesc.lpwfxFormat   = wf;
+         }
+         if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) == DS_OK)
+         {
+            made          = true;
+            ds->use_float = f;
+            ds->layout    = lay;
+            if (pass == 1)
+               RARCH_WARN("[DirectSound] Failed to create float buffer, falling back to 16-bit PCM.\n");
+            else if (pass >= 2)
+               RARCH_WARN("[DirectSound] The device would not make a %u-channel buffer (layout 0x%03x); opened stereo.\n",
+                     channels, layout);
+         }
+      }
+      if (!made)
          goto error;
-
-      RARCH_WARN("[DirectSound] Failed to create float buffer, falling back to 16-bit PCM.\n");
-
-      dsound_set_format(&wf, false, 2, rate);
-      dsound_size_stages(ds, latency, &wf);
-
-      bufdesc.dwBufferBytes = ds->buffer_size;
-      bufdesc.lpwfxFormat   = &wf;
-
-      if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) != DS_OK)
-         goto error;
-
-      ds->use_float = false;
    }
-   else
-      ds->use_float = want_float;
 
    /* Staging fifo between dsound_write and the feeder thread.  This is
     * the only occupancy rate control can observe (write_avail /
@@ -638,14 +736,14 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    ds->fifo_bufsize = retro_spsc_write_avail(&ds->ring);
 
    RARCH_LOG("[DirectSound] Initialized %u-bit %s: %u ms setting as a %u-byte fifo (%u ms, rate control holds it about half full) in front of a %u-byte ring (%u ms); about %u ms from write to the device.\n",
-         wf.wBitsPerSample,
-         dsound_wave_format_name(&wf),
+         wf->wBitsPerSample,
+         dsound_wave_format_name(wf),
          latency,
          (unsigned)ds->fifo_bufsize,
-         (unsigned)((1000 * ds->fifo_bufsize) / wf.nAvgBytesPerSec),
+         (unsigned)((1000 * ds->fifo_bufsize) / wf->nAvgBytesPerSec),
          ds->buffer_size,
-         (unsigned)((1000 * ds->buffer_size) / wf.nAvgBytesPerSec),
-         (unsigned)((1000 * (ds->fifo_bufsize / 2 + ds->buffer_size)) / wf.nAvgBytesPerSec));
+         (unsigned)((1000 * ds->buffer_size) / wf->nAvgBytesPerSec),
+         (unsigned)((1000 * (ds->fifo_bufsize / 2 + ds->buffer_size)) / wf->nAvgBytesPerSec));
 
    IDirectSoundBuffer_SetVolume(ds->dsb, DSBVOLUME_MAX);
    IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
@@ -749,8 +847,20 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
           * a period with no event is a play cursor that has stalled,
           * not a device gone: the write returns what went, and a lost
           * buffer still reports through the flag on the next call. */
-         if (avail == 0 && !(WaitForSingleObject(ds->event, DSOUND_TIMEOUT) == WAIT_OBJECT_0))
-            break;
+         if (avail == 0)
+         {
+            /* Space and liveness re-checked inside the window, so the
+             * pump's notify - including its last one, clearing
+             * thread_alive - cannot fall between the test and the
+             * park. */
+            int key = retro_eventcount_prepare_wait(&ds->park);
+            if (   retro_spsc_write_avail(&ds->ring)
+                || !retro_atomic_load_acquire_int(&ds->thread_alive))
+               retro_eventcount_cancel_wait(&ds->park);
+            else if (!retro_eventcount_commit_wait_timeout(&ds->park,
+                     key, (int64_t)DSOUND_TIMEOUT * 1000))
+               break;
+         }
       }
    }
 
@@ -782,8 +892,15 @@ static size_t dsound_wait_writable(void *data, size_t len)
        * keeps moving blocks but never frees enough. */
       if (--laps < 0)
          return 0;
-      if (WaitForSingleObject(ds->event, DSOUND_TIMEOUT) != WAIT_OBJECT_0)
-         return 0;
+      {
+         int key = retro_eventcount_prepare_wait(&ds->park);
+         if (   retro_spsc_write_avail(&ds->ring) >= len
+             || !retro_atomic_load_acquire_int(&ds->thread_alive))
+            retro_eventcount_cancel_wait(&ds->park);
+         else if (!retro_eventcount_commit_wait_timeout(&ds->park,
+                  key, (int64_t)DSOUND_TIMEOUT * 1000))
+            return 0;
+      }
    }
 }
 
@@ -794,6 +911,14 @@ static size_t dsound_write_avail(void *data)
 
    avail = retro_spsc_write_avail(&ds->ring);
    return avail;
+}
+
+static size_t dsound_frames_consumed(void *data)
+{
+   dsound_t *ds = (dsound_t*)data;
+   if (!ds)
+      return 0;
+   return (size_t)(unsigned)retro_atomic_load_acquire_int(&ds->frames_played);
 }
 
 static size_t dsound_buffer_size(void *data)
@@ -816,6 +941,12 @@ static void dsound_device_list_free(void *u, void *slp)
       string_list_free(sl);
 }
 
+static uint32_t dsound_layout(void *data)
+{
+   dsound_t *ds = (dsound_t*)data;
+   return ds ? ds->layout : AUDIO_LAYOUT_STEREO;
+}
+
 audio_driver_t audio_dsound = {
    dsound_init,
    dsound_write,
@@ -831,5 +962,8 @@ audio_driver_t audio_dsound = {
    dsound_write_avail,
    dsound_buffer_size,
    NULL, /* write_raw */
-   dsound_wait_writable
+   dsound_wait_writable,
+   dsound_frames_consumed,
+   NULL, /* underruns */
+   dsound_layout
 };

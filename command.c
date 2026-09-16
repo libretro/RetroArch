@@ -69,6 +69,9 @@
 #include "version_git.h"
 #include "tasks/task_content.h"
 #include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define CMD_BUF_SIZE 4096
 
@@ -180,10 +183,15 @@ static void command_parse_msg(command_t *handle, char *buf)
 {
    char     *save  = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
+   unsigned gen    = input_driver_command_generation();
 
    while (tok)
    {
       command_parse_sub_msg(handle, tok);
+      /* The command may have reinitialised the input driver, which
+       * owns and has now freed 'handle'. Nothing further may use it. */
+      if (input_driver_command_generation() != gen)
+         return;
       tok = strtok_r(NULL, "\n", &save);
    }
 }
@@ -222,6 +230,7 @@ static void network_command_free(command_t *handle)
 static void command_network_poll(command_t *handle)
 {
    ssize_t ret;
+   unsigned gen = input_driver_command_generation();
    char buf[2048];
    command_network_t *netcmd = (command_network_t*)handle->userptr;
 
@@ -240,6 +249,10 @@ static void command_network_poll(command_t *handle)
       buf[ret] = '\0';
 
       command_parse_msg(handle, buf);
+      /* See command_generation: the command may have freed this
+       * object. The remaining datagrams wait for the next poll. */
+      if (input_driver_command_generation() != gen)
+         return;
    }
 }
 
@@ -363,14 +376,25 @@ static void command_stdin_poll(command_t *handle)
       else
       {
          ptrdiff_t msg_len;
+         size_t    rest;
+         char     *msg;
          *last_newline++ = '\0';
          msg_len         = last_newline - stdincmd->stdin_buf;
+         rest            = stdincmd->stdin_buf_ptr - msg_len;
 
-         command_parse_msg(handle, stdincmd->stdin_buf);
-
-         memmove(stdincmd->stdin_buf, last_newline,
-               stdincmd->stdin_buf_ptr - msg_len);
-         stdincmd->stdin_buf_ptr -= msg_len;
+         /* A command can free this object from under us (see
+          * command_generation): take the message off the buffer, tidy the
+          * buffer, and only then run the message from a private copy,
+          * touching nothing of this object afterwards. */
+         msg = strdup(stdincmd->stdin_buf);
+         memmove(stdincmd->stdin_buf, last_newline, rest);
+         stdincmd->stdin_buf_ptr = rest;
+         if (msg)
+         {
+            command_parse_msg(handle, msg);
+            free(msg);
+         }
+         return;
       }
    }
 }
@@ -583,6 +607,7 @@ static void uds_command_free(command_t *handle)
 
 static void command_uds_poll(command_t *handle)
 {
+   unsigned gen = input_driver_command_generation();
    int i;
    int fd;
    ssize_t ret;
@@ -611,6 +636,9 @@ static void command_uds_poll(command_t *handle)
          udscmd->last_fd = fd;
 
          command_parse_msg(handle, buf);
+         /* See command_generation: this object may be gone now. */
+         if (input_driver_command_generation() != gen)
+            return;
       }
       else
       {
@@ -929,17 +957,21 @@ bool command_seek_replay(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
    char reply[32];
-   char *endptr;
+   char *endptr  = NULL;
    size_t _len;
    bool ret      = true;
-   int64_t frame = strtoll(arg, &endptr, 10);
+   int64_t frame = arg ? (int64_t)strtoll(arg, &endptr, 10) : 0;
    input_driver_state_t *input_st = input_state_get_ptr();
-   if (!endptr)
+   /* strtoll always writes a valid pointer, so the end pointer is
+    * never NULL - an empty or non-numeric argument shows up as no
+    * characters consumed. */
+   if (!arg || endptr == arg)
       ret = false;
    if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_PLAYBACK | BSV_FLAG_MOVIE_RECORDING)))
       ret = false;
 #ifdef HAVE_CHEEVOS
-   ret = !rcheevos_hardcore_active();
+   if (rcheevos_hardcore_active())
+      ret = false;
 #endif
    if (ret)
       ret = movie_seek_to_frame(input_st, frame);
@@ -1087,7 +1119,7 @@ bool command_load_core(command_t *cmd, const char* arg)
    if (!arg || !*arg)
       return false;
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    {
       char exp[PATH_MAX_LENGTH];
       fill_pathname_expand_special(exp, arg, sizeof(exp));
@@ -1143,7 +1175,7 @@ bool command_load_content(command_t *cmd, const char* arg)
    memcpy(core_path, arg, _len);
    core_path[_len] = '\0';
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    {
       char exp[PATH_MAX_LENGTH];
       fill_pathname_expand_special(exp, sep + 1, sizeof(exp));
@@ -1626,7 +1658,7 @@ static size_t command_event_save_config(const char *config_path,
 #endif
    if (path_exists && config_save_file(config_path))
    {
-#if IOS
+#if TARGET_OS_IPHONE
       char tmp[PATH_MAX_LENGTH] = {0};
       fill_pathname_abbreviate_special(tmp, config_path, sizeof(tmp));
       _len = snprintf(s, len, "%s \"%s\".",
@@ -2770,6 +2802,7 @@ void command_event_reinit(const int flags)
    const input_device_driver_t
       *sec_joypad                 = NULL;
 #endif
+
    /* Snapshot the last cached core frame before tearing the video
     * driver down.  video_driver_free() invalidates the cache as
     * part of the reinit cycle (the pointer was borrowed from the
@@ -2800,6 +2833,35 @@ void command_event_reinit(const int flags)
    unsigned      cached_snapshot_h    = 0;
    size_t        cached_snapshot_p    = 0;
    size_t        cached_snapshot_size = 0;
+   /* A reinit while the video driver is down must not create a
+    * driver instance. It happens when content loads over running
+    * content: core deinit tears the drivers down, then unloading
+    * the old content's override fires CMD_EVENT_REINIT (the
+    * override changed video_fullscreen, and CORE_RUNNING is still
+    * set). An instance created here is replaced by
+    * retroarch_main_init's drivers_init without being freed - an
+    * orphaned window and device that widget fonts keep drawing
+    * into - while the next drivers_init applies the restored mode
+    * anyway. Guarded here, in the layer that owns reinit, so every
+    * caller is covered and call sites stay bare command_events.
+    *
+    * Nothing can be ungrabbed with the drivers down, but the grab
+    * flag is bookkeeping the win32 focus pump and the grab toggle
+    * read later, so leave it as the skipped reinit's game-focus
+    * reapply would have: released, unless exclusive fullscreen
+    * (which re-grabs on init), auto-grab or game focus keeps it.
+    * Everything below reuses this function's own locals. */
+   if (!video_st->data)
+   {
+      if (     !settings->bools.video_fullscreen
+            && !(video_driver_get_disp_flags() & VIDEO_FLAG_FORCE_FULLSCREEN)
+            && !settings->bools.input_auto_mouse_grab
+            && !input_st->game_focus_state.enabled)
+         input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
+      return;
+   }
+
+
 
    {
       struct command_reinit_snapshot_ctx ctx;
@@ -2871,12 +2933,13 @@ void command_event_reinit(const int flags)
        * premature render). */
       if (menu_st->flags & MENU_ST_FLAG_ALIVE)
       {
+         unsigned output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
          if (     menu_st->driver_ctx
                && menu_st->driver_ctx->render)
             menu_st->driver_ctx->render(
                   menu_st->userdata,
-                  video_st->width,
-                  video_st->height,
+                  VIDEO_DRIVER_OUTPUT_WIDTH(output_size),
+                  VIDEO_DRIVER_OUTPUT_HEIGHT(output_size),
                   false);
 
          if (     video_st->poke

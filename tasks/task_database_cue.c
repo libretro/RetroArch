@@ -2144,7 +2144,6 @@ static bool intfstream_file_get_crc_and_size_fd(intfstream_t *fd,
       uint32_t *crc, uint64_t *size)
 {
    bool rv;
-   uint8_t *data = NULL;
 
    if (file_size < 0)
    {
@@ -2173,30 +2172,26 @@ static bool intfstream_file_get_crc_and_size_fd(intfstream_t *fd,
        * call, as the single full-span read used to. */
       uint32_t accumulator = 0;
       int64_t  remaining   = len;
-      size_t   buffer_len  = 256 * 1024;
 
       if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
          return false;
 
-      if (!(data = (uint8_t*)malloc(buffer_len)))
-         return false;
-
+      /* intfstream_crc_step() folds straight out of the VFS mapping
+       * when the file was opened FREQUENT_ACCESS (as
+       * intfstream_file_get_crc_and_size() does), and keeps one
+       * scratch buffer for the stream otherwise; either way no
+       * per-call allocation here.  A short step - end of file inside
+       * the span - fails the call, as a short read used to. */
       while (remaining > 0)
       {
-         int64_t want = (remaining < (int64_t)buffer_len)
-               ? remaining : (int64_t)buffer_len;
-
-         if (intfstream_read(fd, data, want) != want)
-         {
-            free(data);
+         int64_t got = intfstream_crc_step(fd, &accumulator,
+               (size_t)((remaining < (int64_t)(256 * 1024))
+                     ? remaining : (int64_t)(256 * 1024)));
+         if (got <= 0)
             return false;
-         }
-
-         accumulator = encoding_crc32(accumulator, data, (size_t)want);
-         remaining  -= want;
+         remaining -= got;
       }
 
-      free(data);
       *crc = accumulator;
       return true;
    }
@@ -2209,8 +2204,13 @@ bool intfstream_file_get_crc_and_size(const char *name,
       uint64_t offset, int64_t len, uint32_t *crc, uint64_t *size)
 {
    bool rv;
+   /* FREQUENT_ACCESS: the VFS maps the file where it can, and the
+    * CRC below is then computed in place from the mapping rather
+    * than read out through a buffer.  Where it cannot map (a URL
+    * scheme, a 32-bit host and a huge image) the hint is just a
+    * hint and the read path is what it was. */
    intfstream_t *fd = intfstream_open_file(name,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
 
    if (!fd)
       return false;

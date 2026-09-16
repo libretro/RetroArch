@@ -440,11 +440,20 @@ char *rm3u_dump(rm3u_t *m3u,
    if (!m3u->path || !*m3u->path)
       return NULL;
 
-   /* Get M3U file base directory */
+   /* Get M3U file base directory. An M3U with no directory component
+    * gets an empty base, so entries are used as written; path_basedir
+    * would give "./" here, which is why this is a branch and not a call.
+    *
+    * The first two bytes are written before the branch. They are what
+    * path_basedir reads first, and it is inlined into this function
+    * while strlcpy, which fills them, is not -- so an older GCC (the
+    * PS3 toolchain's) cannot see the write and warns that base_dir may
+    * be used uninitialised. Writing them here is visible to any
+    * analyser; the strlcpy in the taken branch overwrites them. */
+   base_dir[0] = '\0';
+   base_dir[1] = '\0';
    if (find_last_slash(m3u->path))
       fill_pathname_basedir(base_dir, m3u->path, sizeof(base_dir));
-   else
-      base_dir[0]   = '\0';
 
    /* Loop over entries */
    for (i = 0; i < RBUF_LEN(m3u->entries); i++)

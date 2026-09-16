@@ -23,8 +23,9 @@
 #include <compat/strl.h>
 
 #include <boolean.h>
-#include <queues/fifo_queue.h>
+#include <retro_spsc.h>
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <file/config_file.h>
@@ -143,6 +144,13 @@ struct ff_audio_info
     */
    const retro_resampler_t *resampler;
    void *resampler_data;
+   /* The float resampler is stereo: a wider frame goes through one
+    * instance per pair at the same ratio on the same count, which
+    * produces the same number of frames for every pair. resampler_data
+    * is the first pair's; the others follow here. */
+   void *resampler_pair[3];
+   float *pair_in, *pair_out;
+   size_t pair_frames;
 
    /* When the encoder consumes s16 and a resample is required, use the
     * integer sinc resampler so the game signal never detours through
@@ -213,14 +221,31 @@ typedef struct ffmpeg
 
    scond_t *cond;
    slock_t *cond_lock;
-   slock_t *lock;
-   fifo_buffer_t *audio_fifo;
-   fifo_buffer_t *video_fifo;
-   fifo_buffer_t *attr_fifo;
+   /* The three queues to the encoder thread.  Single producer (the
+    * main thread in ffmpeg_push_video / ffmpeg_push_audio), single
+    * consumer (ffmpeg_thread), so lock-free retro_spsc rings: the
+    * push of a frame - up to MAX_FRAMES frames of fb_width x
+    * fb_height in video_fifo - and the encoder's read of one no
+    * longer exclude each other, where before both copied the whole
+    * frame under one lock.  cond/cond_lock stay for the sleeps.
+    * After deinit_thread() has joined the encoder, the main thread
+    * drains them alone (ffmpeg_flush_buffers). */
+   retro_spsc_t audio_fifo;
+   retro_spsc_t video_fifo;
+   retro_spsc_t attr_fifo;
+   bool fifos_init;
    sthread_t *thread;
 
-   volatile bool alive;
-   volatile bool can_sleep;
+   /* Set by init_thread(), cleared by deinit_thread(); the encoder
+    * thread's loop condition and the push paths' bail-out.  Was a
+    * volatile bool, which TSan flagged against the clear. */
+   retro_atomic_int_t alive;
+   /* Whether the encoder thread may sleep when it finds the queues
+    * empty. Every access is under cond_lock, or - the one in
+    * init_thread() - before the thread it is read by exists, so the
+    * lock is what protects it. It carried a volatile, which says the
+    * opposite: that it is a flag crossing threads without one. */
+   bool can_sleep;
 } ffmpeg_t;
 
 AVFormatContext *ctx;
@@ -371,14 +396,14 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
    audio->codec                 = avcodec_alloc_context3(codec);
 
    audio->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
+   /* The default layout for the count: mono, stereo, quad, 5.1 (the
+    * pair at the back), 7.1 - FL FR FC LFE BL BR SL SR, the order the
+    * frames arrive in. */
 #if HAVE_CH_LAYOUT
-   audio->codec->ch_layout = (param->channels > 1)
-      ? (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO
-      : (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
+   av_channel_layout_default(&audio->codec->ch_layout, (int)param->channels);
 #else
    audio->codec->channels       = param->channels;
-   audio->codec->channel_layout = (param->channels > 1)
-      ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+   audio->codec->channel_layout = av_get_default_channel_layout((int)param->channels);
 #endif
 
    ffmpeg_audio_resolve_format(audio, codec);
@@ -408,12 +433,26 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
       }
 
       if (!audio->resampler_int16)
+      {
+         unsigned i, npairs = (param->channels + 1) / 2;
          retro_resampler_realloc(
                &audio->resampler_data,
                &audio->resampler,
                audio_resampler,
                RESAMPLER_QUALITY_DONTCARE,
                audio->ratio);
+         for (i = 1; i < npairs && i < 4; i++)
+         {
+            const retro_resampler_t *drv = NULL;
+            retro_resampler_realloc(&audio->resampler_pair[i - 1], &drv,
+                  audio_resampler, RESAMPLER_QUALITY_DONTCARE, audio->ratio);
+            if (!audio->resampler_pair[i - 1])
+            {
+               RARCH_ERR("[FFmpeg] Cannot create the resampler for channel pair %u.\n", i);
+               return false;
+            }
+         }
+      }
    }
    else
    {
@@ -995,16 +1034,29 @@ static void ffmpeg_thread(void *data);
 
 static bool init_thread(ffmpeg_t *handle)
 {
-   handle->lock       = slock_new();
    handle->cond_lock  = slock_new();
    handle->cond       = scond_new();
-   handle->audio_fifo = fifo_new(32000 * sizeof(int16_t) *
-         handle->params.channels * MAX_FRAMES / 60); /* Some arbitrary max size. */
-   handle->attr_fifo  = fifo_new(sizeof(struct record_video_data) * MAX_FRAMES);
-   handle->video_fifo = fifo_new(handle->params.fb_width * handle->params.fb_height *
-         handle->video.pix_size * MAX_FRAMES);
+   /* fifo_new() was never checked; a ring that fails to init fails
+    * the recorder now.  (retro_spsc rounds each capacity up to a
+    * power of two, so they hold at least what the fifos did; the
+    * room checks in the push paths bound both attr and video, so a
+    * larger attr ring cannot admit a frame the video ring lacks
+    * room for.) */
+   handle->fifos_init =
+         retro_spsc_init(&handle->audio_fifo, 32000 * sizeof(int16_t) *
+               handle->params.channels * MAX_FRAMES / 60) /* Some arbitrary max size. */
+      && retro_spsc_init(&handle->attr_fifo, sizeof(struct record_video_data) * MAX_FRAMES)
+      && retro_spsc_init(&handle->video_fifo, handle->params.fb_width * handle->params.fb_height *
+               handle->video.pix_size * MAX_FRAMES);
+   if (!handle->fifos_init)
+   {
+      retro_spsc_free(&handle->audio_fifo);
+      retro_spsc_free(&handle->attr_fifo);
+      retro_spsc_free(&handle->video_fifo);
+      return false;
+   }
 
-   handle->alive     = true;
+   retro_atomic_store_release_int(&handle->alive, 1);
    handle->can_sleep = true;
    handle->thread    = sthread_create(ffmpeg_thread, handle);
 
@@ -1017,14 +1069,13 @@ static void deinit_thread(ffmpeg_t *handle)
       return;
 
    slock_lock(handle->cond_lock);
-   handle->alive = false;
+   retro_atomic_store_release_int(&handle->alive, 0);
    handle->can_sleep = false;
    slock_unlock(handle->cond_lock);
 
    scond_signal(handle->cond);
    sthread_join(handle->thread);
 
-   slock_free(handle->lock);
    slock_free(handle->cond_lock);
    scond_free(handle->cond);
 
@@ -1033,23 +1084,12 @@ static void deinit_thread(ffmpeg_t *handle)
 
 static void deinit_thread_buf(ffmpeg_t *handle)
 {
-   if (handle->audio_fifo)
-   {
-      fifo_free(handle->audio_fifo);
-      handle->audio_fifo = NULL;
-   }
-
-   if (handle->attr_fifo)
-   {
-      fifo_free(handle->attr_fifo);
-      handle->attr_fifo = NULL;
-   }
-
-   if (handle->video_fifo)
-   {
-      fifo_free(handle->video_fifo);
-      handle->video_fifo = NULL;
-   }
+   if (!handle->fifos_init)
+      return;
+   retro_spsc_free(&handle->audio_fifo);
+   retro_spsc_free(&handle->attr_fifo);
+   retro_spsc_free(&handle->video_fifo);
+   handle->fifos_init = false;
 }
 
 static void ffmpeg_free(void *data)
@@ -1101,6 +1141,17 @@ static void ffmpeg_free(void *data)
 
    if (handle->audio.resampler && handle->audio.resampler_data)
       handle->audio.resampler->free(handle->audio.resampler_data);
+   if (handle->audio.resampler)
+   {
+      unsigned i;
+      for (i = 0; i < 3; i++)
+         if (handle->audio.resampler_pair[i])
+            handle->audio.resampler->free(handle->audio.resampler_pair[i]);
+   }
+   memset(handle->audio.resampler_pair, 0, sizeof(handle->audio.resampler_pair));
+   av_freep(&handle->audio.pair_in);
+   av_freep(&handle->audio.pair_out);
+   handle->audio.pair_frames    = 0;
    handle->audio.resampler      = NULL;
    handle->audio.resampler_data = NULL;
 
@@ -1205,18 +1256,28 @@ static bool ffmpeg_push_video(void *data,
    if (drop_frame)
       return true;
 
+   /* Tightly pack our frame to conserve memory.
+    * libretro tends to use a very large pitch.
+    */
+   attr_data = *vid;
+
+   if (attr_data.is_dupe)
+      attr_data.width = attr_data.height = attr_data.pitch = 0;
+   else
+      attr_data.pitch = (int)(attr_data.width * handle->video.pix_size);
+
    for (;;)
    {
-      unsigned avail;
-
-      slock_lock(handle->lock);
-      avail = (unsigned)FIFO_WRITE_AVAIL(handle->attr_fifo);
-      slock_unlock(handle->lock);
-
-      if (!handle->alive)
+      /* Room for the attr and for the frame's bytes: the old check
+       * only asked the attr fifo, relying on the two being sized in
+       * step; the rings are sized independently now (power-of-two
+       * rounding), so ask both. */
+      if (!retro_atomic_load_acquire_int(&handle->alive))
          return false;
 
-      if (avail >= sizeof(*vid))
+      if (     retro_spsc_write_avail(&handle->attr_fifo) >= sizeof(attr_data)
+            && retro_spsc_write_avail(&handle->video_fifo)
+                  >= (size_t)attr_data.height * attr_data.pitch)
          break;
 
       slock_lock(handle->cond_lock);
@@ -1232,25 +1293,14 @@ static bool ffmpeg_push_video(void *data,
       slock_unlock(handle->cond_lock);
    }
 
-   slock_lock(handle->lock);
-
-   /* Tightly pack our frame to conserve memory.
-    * libretro tends to use a very large pitch.
-    */
-   attr_data = *vid;
-
-   if (attr_data.is_dupe)
-      attr_data.width = attr_data.height = attr_data.pitch = 0;
-   else
-      attr_data.pitch = (int)(attr_data.width * handle->video.pix_size);
-
-   fifo_write(handle->attr_fifo, &attr_data, sizeof(attr_data));
-
+   /* Frame first, attr last: the encoder takes the attr as the
+    * signal that a whole frame is behind it, and the ring's
+    * release/acquire on each write orders the rows before it. */
    for (y = 0; y < attr_data.height; y++, offset += vid->pitch)
-      fifo_write(handle->video_fifo,
+      retro_spsc_write(&handle->video_fifo,
             (const uint8_t*)vid->data + offset, attr_data.pitch);
 
-   slock_unlock(handle->lock);
+   retro_spsc_write(&handle->attr_fifo, &attr_data, sizeof(attr_data));
    scond_signal(handle->cond);
 
    return true;
@@ -1269,17 +1319,11 @@ static bool ffmpeg_push_audio(void *data,
 
    for (;;)
    {
-      unsigned avail;
-
-      slock_lock(handle->lock);
-      avail = (unsigned)FIFO_WRITE_AVAIL(handle->audio_fifo);
-      slock_unlock(handle->lock);
-
-      if (!handle->alive)
+      if (!retro_atomic_load_acquire_int(&handle->alive))
          return false;
 
-      if (avail >= audio_data->frames * handle->params.channels
-            * sizeof(int16_t))
+      if (retro_spsc_write_avail(&handle->audio_fifo)
+            >= audio_data->frames * handle->params.channels * sizeof(int16_t))
          break;
 
       slock_lock(handle->cond_lock);
@@ -1295,10 +1339,8 @@ static bool ffmpeg_push_audio(void *data,
       slock_unlock(handle->cond_lock);
    }
 
-   slock_lock(handle->lock);
-   fifo_write(handle->audio_fifo, audio_data->data,
+   retro_spsc_write(&handle->audio_fifo, audio_data->data,
          audio_data->frames * handle->params.channels * sizeof(int16_t));
-   slock_unlock(handle->lock);
    scond_signal(handle->cond);
 
    return true;
@@ -1659,15 +1701,63 @@ static void ffmpeg_audio_resample(ffmpeg_t *handle,
 
    if (handle->audio.resampler)
    {
-      /* It's always two channels ... */
       struct resampler_data info = {0};
+      const unsigned ch = handle->params.channels;
 
-      info.data_in      = (const float*)aud->data;
-      info.data_out     = handle->audio.resample_out;
-      info.input_frames = aud->frames;
-      info.ratio        = handle->audio.ratio;
-
-      handle->audio.resampler->process(handle->audio.resampler_data, &info);
+      if (ch <= 2)
+      {
+         info.data_in      = (const float*)aud->data;
+         info.data_out     = handle->audio.resample_out;
+         info.input_frames = aud->frames;
+         info.ratio        = handle->audio.ratio;
+         handle->audio.resampler->process(handle->audio.resampler_data, &info);
+      }
+      else
+      {
+         /* a wider frame: each pair through its own instance, the
+          * last channel of an odd count paired with itself */
+         const float *in = (const float*)aud->data;
+         unsigned npairs = (ch + 1) / 2, i, c0, c1;
+         size_t f, out_frames = 0;
+         size_t need_out = (size_t)(aud->frames * handle->audio.ratio) + 16;
+         if (aud->frames > handle->audio.pair_frames)
+         {
+            float *ni = (float*)av_realloc(handle->audio.pair_in, aud->frames * 2 * sizeof(float));
+            float *no = (float*)av_realloc(handle->audio.pair_out, need_out * 2 * sizeof(float));
+            if (!ni || !no)
+               return;
+            handle->audio.pair_in     = ni;
+            handle->audio.pair_out    = no;
+            handle->audio.pair_frames = aud->frames;
+         }
+         for (i = 0; i < npairs; i++)
+         {
+            c0 = 2 * i;
+            c1 = (2 * i + 1 < ch) ? 2 * i + 1 : 2 * i;
+            for (f = 0; f < aud->frames; f++)
+            {
+               handle->audio.pair_in[2 * f]     = in[f * ch + c0];
+               handle->audio.pair_in[2 * f + 1] = in[f * ch + c1];
+            }
+            memset(&info, 0, sizeof(info));
+            info.data_in      = handle->audio.pair_in;
+            info.data_out     = handle->audio.pair_out;
+            info.input_frames = aud->frames;
+            info.ratio        = handle->audio.ratio;
+            handle->audio.resampler->process(
+                  i == 0 ? handle->audio.resampler_data : handle->audio.resampler_pair[i - 1], &info);
+            if (info.output_frames > handle->audio.resample_out_frames)
+               info.output_frames = handle->audio.resample_out_frames;
+            for (f = 0; f < info.output_frames; f++)
+            {
+               handle->audio.resample_out[f * ch + c0] = handle->audio.pair_out[2 * f];
+               if (c1 != c0)
+                  handle->audio.resample_out[f * ch + c1] = handle->audio.pair_out[2 * f + 1];
+            }
+            out_frames = info.output_frames;
+         }
+         info.output_frames = out_frames;
+      }
 
       aud->data         = handle->audio.resample_out;
       aud->frames       = info.output_frames;
@@ -1727,13 +1817,13 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
 static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
       size_t audio_buf_size)
 {
-   size_t avail = FIFO_READ_AVAIL(handle->audio_fifo);
+   size_t avail = retro_spsc_read_avail(&handle->audio_fifo);
 
    if (avail)
    {
       struct record_audio_data aud = {0};
 
-      fifo_read(handle->audio_fifo, audio_buf, avail);
+      retro_spsc_read(&handle->audio_fifo, audio_buf, avail);
 
       aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
       aud.data = audio_buf;
@@ -1773,11 +1863,11 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
        * subsequent ffmpeg_free teardown. */
       if (handle->config.audio_enable && audio_buf)
       {
-         if (FIFO_READ_AVAIL(handle->audio_fifo) >= audio_buf_size)
+         if (retro_spsc_read_avail(&handle->audio_fifo) >= audio_buf_size)
          {
             struct record_audio_data aud = {0};
 
-            fifo_read(handle->audio_fifo, audio_buf, audio_buf_size);
+            retro_spsc_read(&handle->audio_fifo, audio_buf, audio_buf_size);
             aud.frames = handle->audio.codec->frame_size;
             aud.data   = audio_buf;
             ffmpeg_push_audio_thread(handle, &aud, true);
@@ -1788,10 +1878,10 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
       /* Gate video-fifo drain on video_buf non-NULL: same
        * reasoning as the audio branch. */
-      if (video_buf && FIFO_READ_AVAIL(handle->attr_fifo) >= sizeof(attr_buf))
+      if (video_buf && retro_spsc_read_avail(&handle->attr_fifo) >= sizeof(attr_buf))
       {
-         fifo_read(handle->attr_fifo, &attr_buf, sizeof(attr_buf));
-         fifo_read(handle->video_fifo, video_buf,
+         retro_spsc_read(&handle->attr_fifo, &attr_buf, sizeof(attr_buf));
+         retro_spsc_read(&handle->video_fifo, video_buf,
                attr_buf.height * attr_buf.pitch);
          attr_buf.data = video_buf;
          ffmpeg_push_video_thread(handle, &attr_buf);
@@ -1845,21 +1935,19 @@ static void ffmpeg_thread(void *data)
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf       = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
 
-   while (ff->alive)
+   while (retro_atomic_load_acquire_int(&ff->alive))
    {
       struct record_video_data attr_buf;
 
       bool avail_video = false;
       bool avail_audio = false;
 
-      slock_lock(ff->lock);
-      if (FIFO_READ_AVAIL(ff->attr_fifo) >= sizeof(attr_buf))
+      if (retro_spsc_read_avail(&ff->attr_fifo) >= sizeof(attr_buf))
          avail_video = true;
 
       if (ff->config.audio_enable)
-         if (FIFO_READ_AVAIL(ff->audio_fifo) >= audio_buf_size)
+         if (retro_spsc_read_avail(&ff->audio_fifo) >= audio_buf_size)
             avail_audio = true;
-      slock_unlock(ff->lock);
 
       if (!avail_video && !avail_audio)
       {
@@ -1878,11 +1966,9 @@ static void ffmpeg_thread(void *data)
 
       if (avail_video && video_buf)
       {
-         slock_lock(ff->lock);
-         fifo_read(ff->attr_fifo, &attr_buf, sizeof(attr_buf));
-         fifo_read(ff->video_fifo, video_buf,
+         retro_spsc_read(&ff->attr_fifo, &attr_buf, sizeof(attr_buf));
+         retro_spsc_read(&ff->video_fifo, video_buf,
                attr_buf.height * attr_buf.pitch);
-         slock_unlock(ff->lock);
          scond_signal(ff->cond);
 
          attr_buf.data = video_buf;
@@ -1893,9 +1979,7 @@ static void ffmpeg_thread(void *data)
       {
          struct record_audio_data aud = {0};
 
-         slock_lock(ff->lock);
-         fifo_read(ff->audio_fifo, audio_buf, audio_buf_size);
-         slock_unlock(ff->lock);
+         retro_spsc_read(&ff->audio_fifo, audio_buf, audio_buf_size);
          scond_signal(ff->cond);
 
          aud.frames = ff->audio.codec->frame_size;

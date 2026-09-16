@@ -39,8 +39,10 @@ if [ "$1" = "--consumers-of" ]; then
    FILES=""
    for h in "$@"; do
       base=$(basename "$h")
+      # Linux-only test harnesses under */test/ are not Win32 / C89
+      # consumers (they have their own scripts under tools/).
       FILES="$FILES $(grep -rl --include='*.c' "#include.*[\"/]$base\"" . \
-         | grep -v '^./deps/' | sed 's#^\./##')"
+         | grep -v '^./deps/' | grep -v '/test/' | sed 's#^\./##')"
    done
    FILES=$(echo $FILES | tr ' ' '\n' | sort -u)
    [ -z "$FILES" ] && { echo "no consumers found for: $*" >&2; exit 2; }
@@ -65,28 +67,109 @@ C89FLAGS="-fsyntax-only -std=c89 -ansi -pedantic -Werror=pedantic \
  -D_GNU_SOURCE -I. -Ilibretro-common/include -Ideps -Ideps/stb -Igfx/include \
  -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU \
  -DHAVE_NETWORKING -DHAVE_CHEEVOS -DHAVE_RUNAHEAD -DHAVE_REWIND \
- -DHAVE_AUDIOMIXER -DHAVE_OVERLAY -DHAVE_RGUI -DHAVE_XMB -DHAVE_OZONE"
+ -DHAVE_AUDIOMIXER -DHAVE_OVERLAY -DHAVE_RGUI -DHAVE_XMB -DHAVE_OZONE \
+ -DHAVE_VULKAN -DHAVE_SCREENSHOTS"
+# A Windows-only translation unit is only ever built with the Win32
+# feature set of pass 1, so pass 2 takes those defines for it too:
+# without them it checks code no build compiles and misses code every
+# Win32 build does (wnd_proc_d3d_common is declared behind HAVE_D3D*).
+WIN32DEFS=$(printf '%s\n' $FLAGS | grep '^-D' | tr '\n' ' ')
+
+# A Win32-only translation unit cannot be C89-checked with the host gcc:
+# <windows.h> is not there, the pass dies on the include and the
+# missing-header filter below forgives it - so ui_win32_companion.c was
+# silently never checked, and MSVC 2005 found the C89 violations instead.
+# Use the 32-bit mingw compiler for those when it is installed (the width
+# MSVC 2005 builds, where a shift by 32 is undefined too).
+C89CC_WIN32="${C89CC_WIN32:-i686-w64-mingw32-gcc}"
+command -v "$C89CC_WIN32" >/dev/null 2>&1 || C89CC_WIN32=""
+
+# Pass 0: the declaration a compiler here cannot miss.
+#
+# glibc 2.38 declares strlcpy and strlcat itself, so a .c that uses
+# them without including <compat/strl.h> compiles clean on this box
+# and on both passes below, then fails on MXE, clang and the webOS
+# toolchain, where the only declaration is libretro-common's. That is
+# how it reached master in modeline_edid.c. A grep is the only check
+# that does not depend on what the host's headers happen to provide:
+# a file that uses one of these must include the compat header
+# itself, not lean on whatever a project header dragged in.
+check_compat_include()
+{
+   f="$1"
+   miss=""
+   if grep -qE '\b(strlcpy|strlcat|strlcpy_lit|strlcat_lit)[[:space:]]*\(' "$f" \
+         && ! grep -q 'compat/strl\.h' "$f"; then
+      miss="compat/strl.h"
+   fi
+   if grep -qE '\bstrcasestr[[:space:]]*\(' "$f" \
+         && ! grep -q 'compat/strcasestr\.h' "$f"; then
+      miss="$miss compat/strcasestr.h"
+   fi
+   [ -z "$miss" ] && return 0
+   echo "FAIL [decl]  $f"
+   echo "     uses a libretro-common string helper without including:$miss" \
+      | sed 's/^/     /'
+   return 1
+}
 
 fail=0; n=0
 for f in $FILES; do
    n=$((n+1))
-   # Only real errors, not warnings; and not "file not found" for
-   # optional platform headers this box does not have.
+   check_compat_include "$f" || fail=1
+   # Only real errors, not warnings. A missing header named without a
+   # path (d3dkmthk.h: an optional platform header this box lacks) is
+   # forgiven; a missing header with a path component (../companion/x.h:
+   # a project header) is not - that once let a stale include of a
+   # deleted header through as "ok".
    err=$($CC $FLAGS "$f" 2>&1 | grep -E ' error: ' \
-         | grep -vE 'No such file|file not found' | head -3)
+         | grep -vE 'error: [A-Za-z0-9_.-]+: No such file|error: [A-Za-z0-9_.-]+: file not found' | head -3)
    if [ -n "$err" ]; then
       echo "FAIL [win32] $f"; echo "$err" | sed 's/^/     /'; fail=1
    fi
-   # Skip pass 2 for files that are Windows-only by path; they are not
-   # in the linux-c89 job and -ansi breaks the Windows headers.
+   # Windows-only translation units cannot take pass 2 with the host
+   # gcc (<windows.h> is not there, and -ansi breaks those headers
+   # anyway). They still have to satisfy C89 - MSVC 2005 builds them -
+   # so use the 32-bit mingw compiler when it is installed: same width
+   # as that build, so a shift by 32 shows up too. Without it, say so
+   # rather than pass silently, which is how declarations after
+   # statements reached master in ui_win32_companion.c.
+   cc89="$C89CC"
+   c89defs=""
+   # The OpenGL core driver is built only where slang is: configure
+   # turns HAVE_OPENGL_CORE off when slang is off (check_enabled SLANG
+   # OPENGL_CORE in qb/config.libs.sh), so checking it without
+   # HAVE_SLANG checks a configuration no build produces - and it fails,
+   # because the members it names are declared behind that guard. Give
+   # it the pairing the real builds have.
    case "$f" in
-      *win32*|*dinput*|*xinput*|*wasapi*|*xaudio*|*asio*|*dsound*|*d3d*|*dxgi*|*wgl*|*uwp*|*winraw*|*_w.c|*/w_*) continue;;
+      *gl3.c|*shader_gl3.c|*slang_process.c|*glslang_util.c)
+         c89defs="-DHAVE_SLANG -DHAVE_SPIRV_CROSS -DHAVE_OPENGL_CORE"
+         ;;
    esac
-   err=$($C89CC $C89FLAGS "$f" 2>&1 | grep -E ' error: ' \
-         | grep -vE 'No such file|file not found' | head -3)
+   case "$f" in
+      *win32*|*dinput*|*xinput*|*wasapi*|*xaudio*|*asio*|*dsound*|*d3d*|*dxgi*|*wgl*|*uwp*|*winraw*|*_w.c|*/w_*)
+         if [ -n "$C89CC_WIN32" ]; then
+            cc89="$C89CC_WIN32"
+            c89defs="$WIN32DEFS"
+         else
+            echo "skip [c89]  $f (install gcc-mingw-w64-i686 to check it)"
+            continue
+         fi
+         ;;
+      *)
+         if grep -q '#include <windows\.h>' "$f"; then
+            [ -n "$C89CC_WIN32" ] || { echo "skip [c89]  $f (install gcc-mingw-w64-i686)"; continue; }
+            cc89="$C89CC_WIN32"
+            c89defs="$WIN32DEFS"
+         fi
+         ;;
+   esac
+   err=$($cc89 $C89FLAGS $c89defs -Wno-overlength-strings "$f" 2>&1 | grep -E ' error: ' \
+         | grep -vE 'error: [A-Za-z0-9_.-]+: No such file|error: [A-Za-z0-9_.-]+: file not found' | head -3)
    if [ -n "$err" ]; then
       echo "FAIL [c89]   $f"; echo "$err" | sed 's/^/     /'; fail=1
    fi
 done
-[ $fail = 0 ] && echo "ok: $n translation units clean (win32 gnu99 + linux c89 pedantic)"
+[ $fail = 0 ] && echo "ok: $n translation units clean (compat decls + win32 gnu99 + linux c89 pedantic)"
 exit $fail

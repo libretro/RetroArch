@@ -130,6 +130,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <features/features_cpu.h>
 #include <net/net_http.h>
 #include <net/net_compat.h>
 
@@ -157,6 +158,10 @@
 
 static int failures;
 static int checks;
+
+/* Long enough that a timeout is unmistakable against scheduler
+ * noise, and short enough that the test does not crawl. */
+#define WAIT_TIMEOUT_MS 20
 
 #define CHECK(cond, ...) \
    do { \
@@ -411,7 +416,10 @@ done:
    return NULL;
 }
 
-static int srv_start(struct srv_spec *sp, pthread_t *th)
+/* Binds a loopback listener for @sp and runs @fn against it, so a test
+ * can supply a peer that behaves differently from the framing server. */
+static int srv_start_with(struct srv_spec *sp, pthread_t *th,
+      void *(*fn)(void*))
 {
    struct sockaddr_in sa;
    socklen_t sl = sizeof(sa);
@@ -433,7 +441,12 @@ static int srv_start(struct srv_spec *sp, pthread_t *th)
    if (getsockname(sp->listen_fd, (struct sockaddr*)&sa, &sl) < 0)
       return 0;
    sp->port = ntohs(sa.sin_port);
-   return pthread_create(th, NULL, server_thread, sp) == 0;
+   return pthread_create(th, NULL, fn, sp) == 0;
+}
+
+static int srv_start(struct srv_spec *sp, pthread_t *th)
+{
+   return srv_start_with(sp, th, server_thread);
 }
 
 /* ================================================================= */
@@ -1079,6 +1092,269 @@ static void test_deinit_releases_globals(void)
 
 /* ================================================================= */
 
+
+/* ----------------------------------------------------------------- */
+/* net_http_wait(): the wait a threaded transfer does between passes  */
+/* ----------------------------------------------------------------- */
+
+/* task_http_iterate_transfer() has nothing to pace it when the task
+ * queue is threaded, so between passes it waits. It used to sleep a
+ * fixed millisecond, which is paid in full whether the peer answered
+ * instantly or not at all. net_http_wait() waits on the socket
+ * instead: same ceiling when nothing arrives, returns the moment
+ * something does.
+ *
+ * Two properties have to hold or the change is not worth making:
+ *
+ *   - a peer that says nothing must hold the caller for the timeout
+ *     and no longer, since the task queue runs handlers one at a time
+ *     and everything else is behind this one;
+ *   - a peer that answers must release the caller in far less than the
+ *     timeout, which is the whole point.
+ *
+ * There is a third that matters more than either: when the last pass
+ * stopped on its own drain budget there are bytes buffered already,
+ * and waiting on the socket for them would be waiting for something
+ * that has already arrived. That case must not wait at all. */
+static void t_wait_returns_on_data_not_on_timeout(void)
+{
+   struct srv_spec sp;
+   pthread_t th;
+   char url[128];
+   struct http_connection_t *conn;
+   struct http_t *h;
+   size_t pos = 0, tot = 0;
+   retro_time_t t0, elapsed;
+   int    waits_that_timed_out = 0;
+   int    waits_that_signalled = 0;
+   long   passes = 0;
+
+   memset(&sp, 0, sizeof(sp));
+   sp.body    = 512 * 1024;
+   sp.frame   = FRAME_LEN;
+   /* Dribble, so the transfer really does have to wait repeatedly
+    * rather than finding the whole body in the first drain. */
+   sp.dribble = 4096;
+
+   /* The pattern main() built is shared by every test and is larger
+    * than this body; re-initialising it here would leave the later
+    * tests comparing against the wrong bytes. */
+   if (!srv_start(&sp, &th))
+   {
+      CHECK(0, "could not start the test server");
+      return;
+   }
+
+   snprintf(url, sizeof(url), "http://127.0.0.1:%d/payload", sp.port);
+   if (!(conn = net_http_connection_new(url, "GET", NULL)))
+   {
+      CHECK(0, "connection_new failed");
+      return;
+   }
+   net_http_connection_iterate(conn);
+   if (!net_http_connection_done(conn) || !(h = net_http_new(conn)))
+   {
+      CHECK(0, "connection setup failed");
+      net_http_connection_free(conn);
+      return;
+   }
+   net_http_connection_free(conn);
+
+   t0 = cpu_features_get_time_usec();
+
+   while (!net_http_update(h, &pos, &tot))
+   {
+      retro_time_t w0 = cpu_features_get_time_usec();
+      bool ready      = net_http_wait(h, WAIT_TIMEOUT_MS);
+      retro_time_t dt = cpu_features_get_time_usec() - w0;
+
+      passes++;
+
+      if (ready)
+      {
+         waits_that_signalled++;
+         /* Either there was nothing to wait for, or the socket
+          * signalled. Neither may burn the timeout. */
+         CHECK(dt < (retro_time_t)WAIT_TIMEOUT_MS * 1000,
+               "a wait that reported ready still took %ldus of a %dms timeout",
+               (long)dt, WAIT_TIMEOUT_MS);
+      }
+      else
+      {
+         waits_that_timed_out++;
+         /* A timeout must be the timeout, not longer. Half the bound
+          * is slack for scheduler granularity. */
+         CHECK(dt >= (retro_time_t)WAIT_TIMEOUT_MS * 1000 / 2,
+               "a wait reported a timeout after only %ldus", (long)dt);
+         CHECK(dt < (retro_time_t)WAIT_TIMEOUT_MS * 3000,
+               "a wait overran its %dms timeout, taking %ldus",
+               WAIT_TIMEOUT_MS, (long)dt);
+      }
+
+      if (passes > 200000)
+      {
+         CHECK(0, "transfer wedged");
+         break;
+      }
+   }
+
+   elapsed = cpu_features_get_time_usec() - t0;
+
+   CHECK(net_http_status(h) == 200, "status %d, expected 200",
+         net_http_status(h));
+
+   /* The transfer is what decides how long this takes, not the
+    * timeout. If every pass had burned the full wait, a body needing
+    * this many passes could not have finished anywhere near this
+    * quickly. */
+   CHECK(waits_that_signalled > 0,
+         "no wait ever returned early; every pass paid the timeout");
+   CHECK(elapsed < (retro_time_t)passes * WAIT_TIMEOUT_MS * 1000,
+         "the transfer took %ldus over %ld passes, which is the timeout "
+         "paid in full every time", (long)elapsed, passes);
+
+   printf("    waits: %d signalled, %d timed out, over %ld passes in %ldus\n",
+         waits_that_signalled, waits_that_timed_out, passes, (long)elapsed);
+
+   {
+      char  *data;
+      size_t len;
+      data = (char*)net_http_data(h, &len, true);
+      CHECK(len == sp.body, "short body: got %lu of %lu",
+            (unsigned long)len, (unsigned long)sp.body);
+      if (data && len == sp.body)
+         CHECK(memcmp(data, g_pattern, sp.body) == 0,
+               "body does not match the pattern");
+      free(data);
+   }
+
+   net_http_delete(h);
+   pthread_join(th, NULL);
+}
+
+/* Nothing to wait on must never block: no handle, no socket yet, and a
+ * finished or failed transfer all return at once. A wait in any of
+ * those states would hold the whole task queue for its timeout. */
+static void t_wait_without_a_socket_does_not_block(void)
+{
+   retro_time_t t0 = cpu_features_get_time_usec();
+   bool         r  = net_http_wait(NULL, WAIT_TIMEOUT_MS);
+   retro_time_t dt = cpu_features_get_time_usec() - t0;
+
+   CHECK(r, "a wait on no handle reported a timeout");
+   CHECK(dt < (retro_time_t)WAIT_TIMEOUT_MS * 1000 / 2,
+         "a wait on no handle took %ldus", (long)dt);
+}
+
+
+/* A peer that accepts the connection and then says nothing. This is
+ * the branch that protects the task queue: the queue runs handlers one
+ * at a time, so a transfer waiting on a silent peer holds every other
+ * task behind it for exactly as long as the timeout and no longer. */
+static void *silent_server_thread(void *arg)
+{
+   struct srv_spec *sp = (struct srv_spec*)arg;
+   int    cs           = accept(sp->listen_fd, NULL, NULL);
+   char   req[1024];
+
+   if (cs < 0)
+      return NULL;
+   /* Consume the request so the client's send completes, then stall
+    * until the test closes us down. */
+   while (read(cs, req, sizeof(req)) > 0)
+      ;
+   close(cs);
+   return NULL;
+}
+
+static void t_wait_on_a_silent_peer_times_out(void)
+{
+   struct srv_spec sp;
+   pthread_t th;
+   char url[128];
+   struct http_connection_t *conn;
+   struct http_t *h;
+   size_t pos = 0, tot = 0;
+   retro_time_t t0, dt = 0;
+   int    i;
+   bool   saw_timeout = false;
+   bool   ended       = false;
+
+   memset(&sp, 0, sizeof(sp));
+   sp.frame = FRAME_LEN;
+
+   /* Drop any pooled connections first. An earlier test's server can
+    * have left one for a loopback port the kernel then hands back to
+    * the listener below, and reusing a dead connection would end this
+    * transfer before it ever had to wait. */
+   net_http_deinit();
+
+   if (!srv_start_with(&sp, &th, silent_server_thread))
+   {
+      CHECK(0, "could not start the silent test server");
+      return;
+   }
+
+   snprintf(url, sizeof(url), "http://127.0.0.1:%d/payload", sp.port);
+   if (!(conn = net_http_connection_new(url, "GET", NULL)))
+   {
+      CHECK(0, "connection_new failed");
+      return;
+   }
+   net_http_connection_iterate(conn);
+   if (!net_http_connection_done(conn) || !(h = net_http_new(conn)))
+   {
+      CHECK(0, "connection setup failed");
+      net_http_connection_free(conn);
+      return;
+   }
+   net_http_connection_free(conn);
+
+   /* Drive far enough to have the request out and be waiting on the
+    * response; the peer will never send one. The result is tracked
+    * across the loop rather than read off the last pass, since the
+    * early passes - connect, then send - are ready immediately and
+    * only the read that follows them has anything to wait for. */
+   for (i = 0; i < 256 && !saw_timeout; i++)
+   {
+      if (net_http_update(h, &pos, &tot))
+      {
+         ended = true;
+         break;
+      }
+      t0 = cpu_features_get_time_usec();
+      if (!net_http_wait(h, WAIT_TIMEOUT_MS))
+      {
+         dt          = cpu_features_get_time_usec() - t0;
+         saw_timeout = true;
+      }
+   }
+
+   /* Loud rather than silent: a peer that closed before the transfer
+    * ever had to wait leaves the timeout path unexercised, and a test
+    * that quietly checks nothing is worse than one that fails. */
+   CHECK(!ended || saw_timeout,
+         "the peer ended the transfer before any wait was needed");
+   CHECK(saw_timeout, "a wait on a peer that never answers never timed out");
+
+   if (saw_timeout)
+   {
+      CHECK(dt >= (retro_time_t)WAIT_TIMEOUT_MS * 1000 / 2,
+            "the timeout came back after only %ldus of %dms",
+            (long)dt, WAIT_TIMEOUT_MS);
+      CHECK(dt < (retro_time_t)WAIT_TIMEOUT_MS * 3000,
+            "the wait overran its %dms timeout, taking %ldus",
+            WAIT_TIMEOUT_MS, (long)dt);
+      printf("    a silent peer held the caller for %ldus of a %dms bound\n",
+            (long)dt, WAIT_TIMEOUT_MS);
+   }
+
+   net_http_delete(h);
+   shutdown(sp.listen_fd, SHUT_RDWR);
+   close(sp.listen_fd);
+   pthread_join(th, NULL);
+}
+
 int main(void)
 {
    size_t chunk_sizes[] = { 1, 3, 511, 1024, 8192, 65536 };
@@ -1113,6 +1389,11 @@ int main(void)
    test_framing(FRAME_EOF,     32 * 1024, 0,   3);
    test_framing(FRAME_CHUNKED, 32 * 1024, 1,   1);
    test_framing(FRAME_CHUNKED, 32 * 1024, 511, 5);
+
+   printf("\n[threaded wait]\n");
+   t_wait_without_a_socket_does_not_block();
+   t_wait_returns_on_data_not_on_timeout();
+   t_wait_on_a_silent_peer_times_out();
 
    printf("\n[tick cost]\n");
    test_tick_cost(FRAME_LEN,     0);

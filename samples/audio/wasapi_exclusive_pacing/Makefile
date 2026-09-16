@@ -8,9 +8,18 @@ LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 TARGET    := wasapi_exclusive_pacing_test
 GEN       := wasapi_sim.c
 SOURCES_C := wasapi_exclusive_pacing_test.c fake_wasapi.c stubs_retroarch.c $(GEN) \
+	../../../audio/audio_upmix.c \
+	../../../audio/audio_binaural.c \
+	$(LIBRETRO_COMM_DIR)/formats/ac3/rac3_frame.c \
+	$(LIBRETRO_COMM_DIR)/formats/ac3/rac3_decode.c \
+	$(LIBRETRO_COMM_DIR)/formats/ac3/rac3_encode.c \
+	$(LIBRETRO_COMM_DIR)/formats/iec61937/iec61937.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
+	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c

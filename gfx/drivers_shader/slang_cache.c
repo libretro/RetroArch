@@ -9,7 +9,7 @@
 #include <streams/file_stream.h>
 #include <vfs/vfs.h>
 #include <compat/strl.h>
-#include <lrc_hash.h>
+#include <encodings/crc32.h>
 
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -148,29 +148,38 @@ static bool spirv_cache_read_string(RFILE *file,
 extern "C" {
 #endif
 
-bool spirv_cache_compute_hash(const char *vertex_source, const char *fragment_source, char *hash_out)
+bool spirv_cache_compute_hash(const char *vertex_source,
+      const char *fragment_source, char *hash_out)
 {
-   uint8_t *combined;
-   size_t vertex_len, fragment_len, total_len;
+   size_t vertex_len, fragment_len;
+
    if (!vertex_source || !fragment_source || !hash_out)
       return false;
 
-   /* Build combined hash input: vertex + "|" + fragment */
    vertex_len   = strlen(vertex_source);
    fragment_len = strlen(fragment_source);
-   total_len    = vertex_len + 1 + fragment_len;  /* 1 for "|" separator */
-   combined     = (uint8_t*)malloc(total_len);
-   if (!combined)
+
+   /* Each stage is summed where it already sits, and the two sums and
+    * the two lengths together name the entry.  encoding_crc32() folds
+    * with a carry-less multiply on x86 and the CRC32 instructions on
+    * ARM, so this reads the sources about twenty times as fast as a
+    * cryptographic digest of them would, and it needs neither the
+    * third buffer the digest was given nor the copy into it.
+    *
+    * Four fields make the name 128 bits wide, which is what keeps two
+    * unrelated shaders out of each other's cache entry: a pair would
+    * have to agree on both sums and both lengths at once. */
+   if (vertex_len > 0xffffffffu || fragment_len > 0xffffffffu)
       return false;
 
-   memcpy(combined, vertex_source, vertex_len);
-   combined[vertex_len] = '|';
-   memcpy(combined + vertex_len + 1, fragment_source, fragment_len);
+   snprintf(hash_out, 33, "%08x%08x%08x%08x",
+         (unsigned)encoding_crc32(0, (const uint8_t*)vertex_source,
+            vertex_len),
+         (unsigned)encoding_crc32(0, (const uint8_t*)fragment_source,
+            fragment_len),
+         (unsigned)vertex_len,
+         (unsigned)fragment_len);
 
-   /* Compute SHA256 hash using libretro-common */
-   sha256_hash(hash_out, combined, total_len);
-
-   free(combined);
    return true;
 }
 

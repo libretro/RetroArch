@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2015-2018 - Andre Leiradella
- *  Copyright (C) 2019-2023 - Brian Weiss
+ *  Copyright (C) 2019-2026 - Brian Weiss
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -104,12 +104,16 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* menuitems */
    0,    /* menuitem_capacity */
    0,    /* menuitem_count */
+   0,    /* menuitem_info_type */
+   0,    /* menuitem_submenu_type */
+   0,    /* menuitem_submenu_id */
 #endif
    NULL, /* hash_error */
    true, /* hardcore_allowed */
    false,/* hardcore_requires_reload */
    false,/* hardcore_being_enabled */
    true, /* core_supports */
+   false,/* has_unsupported_achievements */
    false,/* badges_loaded */
    false /* badges_loading */
 };
@@ -346,35 +350,53 @@ struct rcheevos_retry_achievement_info_t
 {
    uint32_t achievement_id;
    float rarity;
+   /* The badge file this retry is waiting for, built when the task is
+    * armed: the handler runs on the threaded task queue's worker, and
+    * checking a captured path is plain VFS where rebuilding it would
+    * read the config and the menu theme mid-wait. */
+   char badge_fullpath[PATH_MAX_LENGTH];
 };
+
+/* The task's callback: the main thread, at task retrieval. The popup
+ * measures text and starts a widget, which is the main thread's to do;
+ * the worker only decides when this runs. */
+static void rcheevos_retry_achievement_popup_cb(retro_task_t* task,
+      void* task_data, void* user_data, const char* error)
+{
+   struct rcheevos_retry_achievement_info_t* info =
+      (struct rcheevos_retry_achievement_info_t*)user_data;
+   const rc_client_achievement_t* cheevo;
+
+   (void)task_data;
+   (void)error;
+
+   if (!info)
+      return;
+
+   /* achievement gone means the game was unloaded: no popup */
+   if ((cheevo = rc_client_get_achievement_info(rcheevos_locals.client,
+         info->achievement_id)))
+      rcheevos_show_achievement_popup(cheevo, info->rarity);
+
+   task->user_data = NULL;
+   free(info);
+}
 
 static void rcheevos_retry_achievement_popup(retro_task_t* task)
 {
    struct rcheevos_retry_achievement_info_t* info = (struct rcheevos_retry_achievement_info_t*)task->user_data;
-   const rc_client_achievement_t* cheevo = rc_client_get_achievement_info(rcheevos_locals.client, info->achievement_id);
-   if (!cheevo)
-   {
-      /* achievement not found, assume game unloaded and don't show the popup */
-   }
-   else if (task->progress > 4 || rcheevos_is_badge_available(cheevo->badge_name, false))
-   {
-      /* badge is available now, or we've reached the retry limit. show the popup */
-      rcheevos_show_achievement_popup(cheevo, info->rarity);
-   }
-   else
+
+   if (task->progress <= 4 && !path_is_valid(info->badge_fullpath))
    {
       /* second retry in 200ms, third is 400ms, fourth in 800ms. if not available after 1500ms
-       * (100+200+400+800), then just show the popup with the placeholder. */
+       * (100+200+400+800), then the callback shows the placeholder. */
       task->progress <<= 1;
       task->when = cpu_features_get_time_usec() + 100000 * task->progress; /* first retry in 100ms */
       return;
    }
 
-   /* cleanup the user data */
-   task->user_data = NULL;
-   free(info);
-
-   /* mark task as complete so it will get cleaned up */
+   /* badge is available now, or we've reached the retry limit: finish,
+    * and the callback shows the popup on the main thread. */
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
@@ -426,10 +448,21 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
                }
                else
                {
+                  char badge_file[24];
+
                   info->achievement_id = cheevo->id;
                   info->rarity = rarity;
+                  rcheevos_get_local_badge_filename(badge_file,
+                        sizeof(badge_file), cheevo->badge_name, false);
+                  fill_pathname_application_special(info->badge_fullpath,
+                        sizeof(info->badge_fullpath),
+                        APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
+                  fill_pathname_join(info->badge_fullpath,
+                        info->badge_fullpath, badge_file,
+                        sizeof(info->badge_fullpath));
 
                   task->handler = rcheevos_retry_achievement_popup;
+                  task->callback = rcheevos_retry_achievement_popup_cb;
                   task->user_data = info;
                   task->progress = 1;
                   task->when = cpu_features_get_time_usec() + 100000; /* first retry in 100ms */
@@ -1399,6 +1432,8 @@ static void rcheevos_show_game_placard(void)
 
    if (summary.num_unsupported_achievements)
    {
+      rcheevos_locals.has_unsupported_achievements = true;
+
       if (_len < sizeof(msg) - 4)
       {
          msg[_len++] = ' ';
@@ -1546,6 +1581,14 @@ static void rcheevos_client_login_callback(int result,
       {
          CHEEVOS_LOG(RCHEEVOS_TAG "Login did not return token\n");
       }
+
+#ifdef HAVE_MENU
+      {
+         char badge_name[32];
+         snprintf(badge_name, sizeof(badge_name), "u%u", rc_djb2(user->username));
+         rcheevos_client_expire_badge(badge_name, user->avatar_last_updated);
+      }
+#endif
 
       /* show notification (if enabled) */
       if (settings->bools.cheevos_visibility_account)
@@ -1899,6 +1942,7 @@ bool rcheevos_load(const void *data)
       rcheevos_client_download_placeholder_badge();
    }
 
+   rcheevos_locals.has_unsupported_achievements = false;
    rcheevos_locals.hash_error = NULL;
    rc_client_set_hardcore_enabled(rcheevos_locals.client, settings->bools.cheevos_hardcore_mode_enable);
    rc_client_set_unofficial_enabled(rcheevos_locals.client, settings->bools.cheevos_test_unofficial);

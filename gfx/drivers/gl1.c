@@ -85,6 +85,9 @@
 
 #ifdef VITA
 #include <defines/psp_defines.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define GL_RGBA8                    GL_RGBA
 #define GL_RGB8                     GL_RGB
@@ -202,8 +205,8 @@ typedef struct gl1
    unsigned char *menu_video_buf;
    size_t menu_frame_cap;
    /* Staging for the CPU BGRA->RGBA swizzle in gl1_draw_tex when the
-    * GL lacks GL_EXT_bgra, kept across frames and grown on demand; it
-    * used to be malloc'd and freed on every upload. */
+    * GL lacks GL_EXT_bgra, kept across frames and grown on demand
+    * rather than malloc'd and freed per upload. */
    uint8_t *swizzle_buf;
    size_t   swizzle_cap;
 #ifdef VITA
@@ -286,6 +289,11 @@ typedef struct gl1
       unsigned width;
       unsigned height;
       bool   active;
+      /* The HDR settings this frame carried (video_frame_info_t), so the
+       * thread that draws never reads what the menu writes */
+      float    menu_nits;
+      float    paper_white_nits;
+      unsigned expand_gamut;
    } scrgb;
 
    /* Captured from video_info_t at init: whether the source frames are
@@ -295,6 +303,11 @@ typedef struct gl1
     * tonemap otherwise). */
    bool source_10bit;
    bool source_hdr10;
+   /* What the last frame said the menu filter should be:
+    * set_texture_frame() is applied by the video thread in
+    * thread_update_driver_state(), and reading the setting there races
+    * the menu writing it. */
+   bool frame_menu_linear_filter;
 } gl1_t;
 
 #ifdef VITA
@@ -365,6 +378,15 @@ typedef struct
    struct font_atlas *atlas;
 
    video_font_raster_block_t *block;
+
+   /* The chunk a line is built into before it is handed over. Here
+    * rather than on the stack of the function that fills it: three
+    * arrays of MAX_MSG_LEN_CHUNK glyphs are twelve kilobytes, and a
+    * frame that size is three times what this tree allows. One font
+    * renders at a time on the thread that draws, so one is enough. */
+   GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
 } gl1_raster_t;
 
 static const GLfloat gl1_menu_vertexes[8]    = {
@@ -801,9 +823,9 @@ static void gl1_raster_font_render_line(gl1_t *gl,
 {
    int i;
    struct video_coords coords;
-   GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat *font_tex_coords = font->font_tex_coords;
+   GLfloat *font_vertex     = font->font_vertex;
+   GLfloat *font_color      = font->font_color;
    GLfloat color_block[4 * 6];
    int n;
    const char* msg_end  = msg + msg_len;
@@ -1346,7 +1368,7 @@ static void *gl1_init(const video_info_t *video,
       gl1->ctx_driver->get_video_size(gl1->ctx_data,
                &mode_width, &mode_height);
 
-#if defined(__APPLE__) && !defined(IOS)
+#if defined(__APPLE__) && !TARGET_OS_IPHONE
    /* This is a hack for now to work around a very annoying
     * issue that currently eludes us. */
    if (     !gl1->ctx_driver->set_video_mode
@@ -1606,7 +1628,7 @@ static void gl1_tonemap_pq_rows(gl1_t *gl1, const void *frame,
    static bool    warned     = false;
    settings_t *settings      = config_get_ptr();
    float paper_white         = settings
-         ? settings->floats.video_hdr_paper_white_nits : 200.0f;
+         ? gl1->scrgb.paper_white_nits : 200.0f;
    unsigned x, y;
 
    if (paper_white < 1.0f)
@@ -2204,6 +2226,7 @@ static bool gl1_frame(void *data, const void *frame,
    unsigned n;
 #ifdef HAVE_MENU
    bool menu_is_alive               = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+
 #endif
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active              = video_info->widgets_active;
@@ -2213,10 +2236,21 @@ static bool gl1_frame(void *data, const void *frame,
       &video_info->osd_stat_params;
    bool overlay_behind_menu         = video_info->overlay_behind_menu;
 
+   /* These travel with the frame, so this thread does not read what the
+    * main thread writes: the scRGB encode below and gl1_tonemap_pq_rows()
+    * read the latched copies. */
+   gl1->scrgb.menu_nits             = video_info->hdr_menu_nits;
+   gl1->scrgb.paper_white_nits      = video_info->hdr_paper_white_nits;
+   gl1->scrgb.expand_gamut          = video_info->hdr_expand_gamut;
+
    /* gl1 fixed-function has no programmable pipeline, so the
     * animated XMB backgrounds (Ribbon / Snow / Bokeh / etc.) can't
     * run -- force that off so XMB falls back to the static gradient. */
    video_info->menu_shader_pipeline = 0;
+
+   /* Travels with the frame, for set_texture_frame() to read rather
+    * than the setting the menu writes */
+   gl1->frame_menu_linear_filter    = video_info->menu_linear_filter;
 
    if (gl1->flags & GL1_FLAG_SHOULD_RESIZE)
    {
@@ -2493,7 +2527,6 @@ static bool gl1_frame(void *data, const void *frame,
     * otherwise; both read live per frame. */
    if (gl1->scrgb.active && gl1->scrgb.fbo && gl1->scrgb.program)
    {
-      settings_t *settings = config_get_ptr();
       float nits           = 200.0f;
       bool ui_visible      = false;
       bool pq              = gl1->source_hdr10
@@ -2519,10 +2552,9 @@ static bool gl1_frame(void *data, const void *frame,
        * does not apply to it - and its UI is composited separately at
        * the menu setting; SDR content keeps the existing whole-frame
        * behaviour. */
-      if (settings)
-         nits = (!pq && ui_visible)
-               ? settings->floats.video_hdr_menu_nits
-               : settings->floats.video_hdr_paper_white_nits;
+      nits = (!pq && ui_visible)
+            ? gl1->scrgb.menu_nits
+            : gl1->scrgb.paper_white_nits;
 
       gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
       glViewport(0, 0, video_width, video_height);
@@ -2536,14 +2568,13 @@ static bool gl1_frame(void *data, const void *frame,
       if (gl1->scrgb.loc_nits >= 0)
          gl1->scrgb.Uniform1f(gl1->scrgb.loc_nits, nits);
       if (gl1->scrgb.loc_expand >= 0)
-         gl1->scrgb.Uniform1f(gl1->scrgb.loc_expand, settings
-               ? (float)settings->uints.video_hdr_expand_gamut : 0.0f);
+         gl1->scrgb.Uniform1f(gl1->scrgb.loc_expand,
+               (float)gl1->scrgb.expand_gamut);
       if (gl1->scrgb.loc_mode >= 0)
          gl1->scrgb.Uniform1f(gl1->scrgb.loc_mode, pq ? 1.0f : 0.0f);
       if (gl1->scrgb.loc_ui_nits >= 0)
          gl1->scrgb.Uniform1f(gl1->scrgb.loc_ui_nits,
-               (pq && settings)
-               ? settings->floats.video_hdr_menu_nits : 0.0f);
+               pq ? gl1->scrgb.menu_nits : 0.0f);
 
       /* Unit 1 must hold something valid even when the shader will not
        * sample it. ActiveTexture is guaranteed resolved here: the
@@ -2693,8 +2724,8 @@ static bool gl1_alive(void *data)
    bool ret             = false;
    gl1_t *gl1           = (gl1_t*)data;
 
-   /* Read from local bookkeeping rather than video_st (which would
-    * acquire context_lock + display_lock).  gl1->vp.full_* is
+   /* Read from local bookkeeping rather than video_st: this runs on
+    * the video thread, and gl1->vp.full_* is this driver's own state,
     * written at every set_size call site in this driver. */
    temp_width  = gl1->vp.full_width;
    temp_height = gl1->vp.full_height;
@@ -2878,14 +2909,17 @@ static void gl1_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   settings_t *settings      = config_get_ptr();
-   bool menu_linear_filter   = settings->bools.menu_linear_filter;
    unsigned pitch            = width * (rgb32 ? 4 : 2);
    gl1_t              *gl1   = (gl1_t*)data;
    size_t required;
+   /* What the last frame carried, not what the setting says now: the
+    * video thread applies this in thread_update_driver_state(). */
+   bool menu_linear_filter;
 
    if (!gl1 || !frame || !width || !height || !pitch)
       return;
+
+   menu_linear_filter        = gl1->frame_menu_linear_filter;
 
    if (menu_linear_filter)
       gl1->flags            |=  GL1_FLAG_MENU_SMOOTH;
@@ -3528,6 +3562,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl1 = {
    GFX_VIDEO_DRIVER_OPENGL1,
    "gl1",
    false,
+   true,
    gfx_display_gl1_scissor_begin,
    gfx_display_gl1_scissor_end
 };

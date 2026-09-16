@@ -3031,6 +3031,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gxm = {
    GFX_VIDEO_DRIVER_GXM,
    "vita2d",
    true,
+   true,
    gfx_display_gxm_scissor_begin,
    gfx_display_gxm_scissor_end
 };

@@ -783,6 +783,7 @@ struct CommonResources
     * read by every pass in build_semantics().  Eliminates N per-pass
     * copies of identical data and the O(passes) broadcast loops. */
    uint64_t frame_count;
+   uint64_t swap_count;
    int32_t frame_direction;       /* init: 1 */
    uint32_t frame_time_delta;
    float original_fps;
@@ -965,7 +966,24 @@ struct vulkan_filter_chain
    bool alias_initialized;
    bool emits_hdr_colorspace;
    bool emits_hdr16_output;
+
+   /* See vulkan_filter_chain_create_info. */
+   void *queue_lock_handle;
+   void (*lock_queue)(void *handle);
+   void (*unlock_queue)(void *handle);
 };
+
+static INLINE void slang_chain_lock_queue(struct vulkan_filter_chain *chain)
+{
+   if (chain->lock_queue)
+      chain->lock_queue(chain->queue_lock_handle);
+}
+
+static INLINE void slang_chain_unlock_queue(struct vulkan_filter_chain *chain)
+{
+   if (chain->unlock_queue)
+      chain->unlock_queue(chain->queue_lock_handle);
+}
 
 static struct vulkan_filter_chain *slang_chain_new(
       const vulkan_filter_chain_create_info *info);
@@ -1482,12 +1500,22 @@ static bool vulkan_filter_chain_load_luts(
          vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
          return false;
       }
+      if (info->lock_queue)
+         info->lock_queue(info->queue_lock_handle);
       if (vkQueueSubmit(info->queue, 1, &submit_info, fence) != VK_SUCCESS)
       {
+         if (info->unlock_queue)
+            info->unlock_queue(info->queue_lock_handle);
          vkDestroyFence(info->device, fence, NULL);
          vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
          return false;
       }
+      /* Dropped before the wait on purpose: vkQueuePresentKHR takes the
+       * same lock, and stalling it across a fence wait is what the TDR
+       * note in vulkan_common.c warns about. The submit itself is the
+       * only part that needs the queue externally synchronised. */
+      if (info->unlock_queue)
+         info->unlock_queue(info->queue_lock_handle);
       vkWaitForFences(info->device, 1, &fence, VK_TRUE, UINT64_MAX);
       vkDestroyFence(info->device, fence, NULL);
    }
@@ -1509,6 +1537,9 @@ static struct vulkan_filter_chain *slang_chain_new(
    chain->memory_properties = *info->memory_properties;
    chain->cache             = info->pipeline_cache;
    chain->original_format   = info->original_format;
+   chain->queue_lock_handle = info->queue_lock_handle;
+   chain->lock_queue        = info->lock_queue;
+   chain->unlock_queue      = info->unlock_queue;
    common_resources_init(&chain->common, info->device,
          info->memory_properties);
    chain->max_input_size_width  = info->max_input_size.width;
@@ -1623,7 +1654,16 @@ static void slang_chain_execute_deferred(struct vulkan_filter_chain *chain)
 
 static void slang_chain_flush(struct vulkan_filter_chain *chain)
 {
+   /* vkDeviceWaitIdle is specified as vkQueueWaitIdle on every queue,
+    * and so needs the same external synchronisation a submit does.
+    * Nothing weaker than holding the lock across the wait satisfies
+    * that, which does mean vkQueuePresentKHR blocks for the duration
+    * (see the TDR note in vulkan_common.c) -- acceptable here because
+    * every caller is a chain teardown or rebuild, never a per-frame
+    * path. */
+   slang_chain_lock_queue(chain);
    vkDeviceWaitIdle(chain->device);
+   slang_chain_unlock_queue(chain);
    slang_chain_execute_deferred(chain);
 }
 
@@ -1870,6 +1910,27 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
    unsigned i;
    size_t required_images = 0;
 
+   for (i = 0; i < chain->pass_count; i++)
+   {
+      size_t _y = chain->passes[i]->reflection.semantic_textures[
+               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
+      required_images = MAX(required_images, _y);
+   }
+
+   /* Rebuilding for a new swapchain (e.g. a vsync toggle on
+    * fast-forward) must not blank the recorded frames.
+    *
+    * A matching count is enough to reuse the existing buffers: they are
+    * sized from chain->max_input_size_* and chain->original_format, both
+    * of which are set once in slang_chain_new() and never mutated, and
+    * slang_chain_update_history() re-sizes each one per frame against
+    * the live input texture anyway. Nothing here depends on the
+    * swapchain. The num_history test is load-bearing, not redundant:
+    * without it a fresh chain with required_images == 1 would take this
+    * return and skip the common.original_history reset below. */
+   if (chain->num_history && chain->num_history + 1 == required_images)
+      return true;
+
    for (i = 0; i < chain->num_history; i++)
       slang_framebuffer_delete(&chain->original_history[i]);
    free(chain->original_history);
@@ -1878,13 +1939,6 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
    texture_array_resize(&chain->common.original_history,
          &chain->common.num_original_history, 0);
    chain->history_ring_index = 0;
-
-   for (i = 0; i < chain->pass_count; i++)
-   {
-      size_t _y = chain->passes[i]->reflection.semantic_textures[
-               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
-      required_images = MAX(required_images, _y);
-   }
 
    if (required_images < 2)
    {
@@ -1956,9 +2010,24 @@ static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain)
 
       if (use_feedback)
       {
-         if (!slang_pass_init_feedback(chain->passes[i]))
-            return false;
-         RARCH_LOG("[Vulkan] Using framebuffer feedback for pass #%u.\n", i);
+         /* Kept across swapchain rebuilds; only a new buffer needs clearing. */
+         if (!chain->passes[i]->fb_feedback)
+         {
+            if (!slang_pass_init_feedback(chain->passes[i]))
+               return false;
+            chain->require_clear = true;
+            RARCH_LOG("[Vulkan] Using framebuffer feedback for pass #%u.\n", i);
+         }
+      }
+      else if (chain->passes[i]->fb_feedback)
+      {
+         /* slang_pass_build() no longer deletes fb_feedback, so a pass
+          * that stops needing feedback would hold on to a buffer that
+          * slang_pass_end_frame() keeps swapping with the live
+          * framebuffer, while only the latter is ever resized or
+          * re-formatted. Drop it here so the invariant
+          * slang_pass_build() used to guarantee still holds. */
+         slang_framebuffer_delete(&chain->passes[i]->fb_feedback);
       }
    }
 
@@ -1973,7 +2042,6 @@ static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain)
    if (!texture_array_resize(&chain->common.fb_feedback,
             &chain->common.num_fb_feedback, chain->pass_count - 1))
       return false;
-   chain->require_clear = true;
    return true;
 }
 
@@ -2174,7 +2242,13 @@ static bool slang_chain_init(struct vulkan_filter_chain *chain)
          return false;
    }
 
-   chain->require_clear = false;
+   /* require_clear is deliberately not cleared here. A rebuild can land
+    * before the first frame has consumed a pending clear (loading a
+    * shader sets VK_FLAG_SHOULD_RESIZE, which recreates the swapchain),
+    * and resetting the flag would leave the history and feedback
+    * buffers with undefined contents for that first frame.
+    * slang_chain_build_offscreen_passes() is the only place that clears
+    * it, once the clear has actually been recorded. */
    if (!slang_chain_init_ubo(chain))
       return false;
    RARCH_DBG("[Vulkan] Chain UBO ready.\n");
@@ -2489,7 +2563,13 @@ static bool slang_chain_finalize(struct vulkan_filter_chain *chain)
       chain->alias_initialized = true;
    }
 
-   chain->require_clear = false;
+   /* require_clear is deliberately not cleared here. A rebuild can land
+    * before the first frame has consumed a pending clear (loading a
+    * shader sets VK_FLAG_SHOULD_RESIZE, which recreates the swapchain),
+    * and resetting the flag would leave the history and feedback
+    * buffers with undefined contents for that first frame.
+    * slang_chain_build_offscreen_passes() is the only place that clears
+    * it, once the clear has actually been recorded. */
    if (!slang_chain_init_ubo(chain))
       return false;
    if (!slang_chain_init_history(chain))
@@ -2823,7 +2903,7 @@ static void slang_pass_get_output_size(struct slang_pass *pass,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         width = (retroarch_get_rotation() % 2 ? pass->curr_vp.height : pass->curr_vp.width) * pass->pass_info.scale_x;
+         width = (pass->common->rotation % 2 ? pass->curr_vp.height : pass->curr_vp.width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -2845,7 +2925,7 @@ static void slang_pass_get_output_size(struct slang_pass *pass,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         height = (retroarch_get_rotation() % 2 ? pass->curr_vp.width : pass->curr_vp.height) * pass->pass_info.scale_y;
+         height = (pass->common->rotation % 2 ? pass->curr_vp.width : pass->curr_vp.height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -3112,8 +3192,11 @@ static bool slang_pass_init_pipeline(struct slang_pass *pass)
    input_assembly.sType                         = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
    input_assembly.pNext                         = NULL;
    input_assembly.flags                         = 0;
+   /* Restart on: it only acts on indexed draws, of which the shader
+    * chain makes none, and Metal cannot turn it off for strips, so
+    * MoltenVK would otherwise warn once per pass on every load. */
    input_assembly.topology                      = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-   input_assembly.primitiveRestartEnable        = VK_FALSE;
+   input_assembly.primitiveRestartEnable        = VK_TRUE;
 
    /* VAO state */
    attributes[0].location                       = 0;
@@ -3469,7 +3552,6 @@ static bool slang_pass_build(struct slang_pass *pass)
       return false;
 
    slang_framebuffer_delete(&pass->framebuffer);
-   slang_framebuffer_delete(&pass->fb_feedback);
 
    if (!pass->final_pass)
    {
@@ -3527,7 +3609,7 @@ static bool slang_pass_build(struct slang_pass *pass)
       if (g->uniform || g->push_constant ||
           a->uniform || a->push_constant ||
           r->uniform || r->push_constant)
-         input_state_get_ptr()->shader_uses_sensors = true;
+         input_driver_set_shader_uses_sensors(true);
    }
 
    /* Filter out pass->parameters which we will never use anyways.
@@ -3800,6 +3882,12 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
    slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
                       pass->common->current_subframe);
 
+   /* Each sub-frame is its own present; CurrentSubFrame is 1-based. */
+   slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_SWAP_COUNT,
+                      (uint32_t)(pass->common->swap_count
+                         + (pass->common->current_subframe
+                            ? pass->common->current_subframe - 1 : 0)));
+
    slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
                       pass->common->frame_time_delta);
 
@@ -3838,16 +3926,17 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
                       pass->common->hdr10);
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
-   /* Sensor uniforms — per-frame snapshot cached
-    * by input_driver_poll() on the main thread */
+   /* Sensor uniforms — one coherent seqlock'd snapshot of the values
+    * input_driver_poll() published on the main thread. */
    {
-      input_driver_state_t *input_st = input_state_get_ptr();
+      float gyro[3], accel[3], rest[3];
+      input_driver_read_sensor_snapshot(gyro, accel, rest);
       slang_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_GYROSCOPE,
-                        input_st->sensor_gyroscope_cache);
+                        gyro);
       slang_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER,
-                        input_st->sensor_accelerometer_cache);
+                        accel);
       slang_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER_REST,
-                        input_st->sensor_accelerometer_rest);
+                        rest);
    }
 
    /* Standard inputs */
@@ -4930,7 +5019,7 @@ void vulkan_filter_chain_free(
       vulkan_filter_chain_t *chain)
 {
    slang_chain_free(chain);
-   input_state_get_ptr()->shader_uses_sensors = false;
+   input_driver_set_shader_uses_sensors(false);
 }
 
 void vulkan_filter_chain_set_shader(
@@ -4989,6 +5078,13 @@ void vulkan_filter_chain_set_frame_count(
       uint64_t count)
 {
    slang_chain_set_frame_count(chain, count);
+}
+
+void vulkan_filter_chain_set_swap_count(
+      vulkan_filter_chain_t *chain,
+      uint64_t count)
+{
+   chain->common.swap_count = count;
 }
 
 void vulkan_filter_chain_set_frame_count_period(

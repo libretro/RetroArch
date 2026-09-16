@@ -15,6 +15,7 @@
 
 #include <compat/strl.h>
 #include <retro_environment.h>
+#include <retro_atomic.h>
 #include <gfx/scaler/pixconv.h>
 
 #ifdef HAVE_CONFIG_H
@@ -2582,6 +2583,21 @@ bool dxgi_display_hdr_active(HWND hwnd)
    return ret;
 }
 
+/* Set from the frame-path HDR check when the display cannot do HDR;
+ * consumed on the main thread. */
+static retro_atomic_int_t dxgi_hdr_disable_pending;
+
+void dxgi_hdr_process_deferred_disable(void)
+{
+   if (retro_atomic_load_acquire_int(&dxgi_hdr_disable_pending))
+   {
+      settings_t *settings           = config_get_ptr();
+      retro_atomic_store_relaxed_int(&dxgi_hdr_disable_pending, 0);
+      settings->flags               |= SETTINGS_FLG_MODIFIED;
+      settings->uints.video_hdr_mode = 0;
+   }
+}
+
 #ifdef __WINRT__
 bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd)
 #else
@@ -2773,18 +2789,22 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
 	  * guarantees both paths. */
          if (supported)
          {
-            uint32_t disp_flags = video_driver_get_disp_flags();
-            disp_flags |= VIDEO_FLAG_HDR_SUPPORT;
-            disp_flags |= VIDEO_FLAG_HDR10_SUPPORT;
-            disp_flags |= VIDEO_FLAG_SCRGB_SUPPORT;
-            video_driver_set_disp_flags(disp_flags);
+            video_driver_modify_disp_flags(
+                  VIDEO_FLAG_HDR_SUPPORT
+                | VIDEO_FLAG_HDR10_SUPPORT
+                | VIDEO_FLAG_SCRGB_SUPPORT, 0);
          }
          else
          {
-            settings_t*    settings           = config_get_ptr();
-            settings->flags                  |= SETTINGS_FLG_MODIFIED;
-            settings->uints.video_hdr_mode    = 0;
-            video_driver_set_disp_flags(video_driver_get_disp_flags() & ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT));
+            /* Force-disabling the HDR setting is a settings write,
+             * and this check runs from the D3D frame paths - the
+             * video thread under the wrapper, main running free.
+             * Flag it; the main thread applies it in
+             * dxgi_hdr_process_deferred_disable() on its next
+             * video_driver_frame. The disp-flags clear is atomic
+             * and stays here. */
+            retro_atomic_store_release_int(&dxgi_hdr_disable_pending, 1);
+            video_driver_modify_disp_flags(0, VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
          }
       }
       else

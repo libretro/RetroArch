@@ -1,5 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2015-2016 - Andre Leiradella
+ *  Copyright (C) 2019-2026 - Brian Weiss
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -58,7 +59,16 @@ bool rcheevos_get_support_cheevos(void);
 const char* rcheevos_get_hash(void);
 int rcheevos_get_richpresence(char *s, size_t len);
 int rcheevos_get_game_badge_url(char *s, size_t len);
+/* Returns a texture handle owned by the caller, or 0 while the badge
+ * is still being loaded (or is missing and, with download_if_missing,
+ * now downloading); ask again later. Main thread. */
 uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing);
+/* Drop cached and in-flight badge textures (video context reset). */
+void rcheevos_badge_cache_reset(void);
+/* Start the download of a badge missing locally (cheevos_menu.c). */
+void rcheevos_badge_request_download(const char* badge, bool locked);
+/* "NNNNN[_lock].png" for a badge, into @badge_file. */
+void rcheevos_get_local_badge_filename(char badge_file[], size_t badge_file_size, const char* badge, bool locked);
 bool rcheevos_is_badge_available(const char* badge, bool locked);
 
 uint8_t* rcheevos_patch_address(unsigned address);

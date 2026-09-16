@@ -217,13 +217,11 @@ LOCAL_LDLIBS	 := -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS) -ldl
 LOCAL_C_INCLUDES := \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/zstd/lib
+		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb
 
 INCLUDE_DIRS     := \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/zstd/lib/
+		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
 
 ifeq ($(HAVE_CHEEVOS),1)
 INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include

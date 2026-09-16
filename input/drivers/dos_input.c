@@ -142,9 +142,9 @@ static int16_t dos_input_state(
 
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND && !keyboard_mapping_blocked; i++)
                {
-                  if (binds[port][i].valid && binds[port][i].key && binds[port][i].key < RETROK_LAST)
+                  if (RETRO_KEYBIND_VALID(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
                   {
-                        if (dos_key_state[rarch_keysym_lut[(enum retro_key)binds[port][i].key]])
+                        if (dos_key_state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][i])]])
                            ret |= (1 << i);
                   }
                }
@@ -152,11 +152,11 @@ static int16_t dos_input_state(
                return ret;
             }
 
-            if (binds[port][id].valid)
+            if (RETRO_KEYBIND_VALID(&binds[port][id]))
             {
-               if (  (binds[port][id].key && binds[port][id].key < RETROK_LAST)
+               if (  (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
                       && (id < RARCH_BIND_LIST_END
-                      && dos_key_state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]])
+                      && dos_key_state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][id])]])
                       && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                   )
                   return 1;

@@ -37,6 +37,7 @@
 #include <time.h>
 
 #include <queues/task_queue.h>
+#include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <retro_timers.h>
 #include <streams/file_stream.h>
@@ -55,8 +56,8 @@
  * in.  The real definitions live in intl/msg_hash_us.c and
  * configuration.c, but those files transitively require RARCH_INTERNAL
  * which drags in the entire frontend subsystem.  This sample only
- * exercises task_push_dbscan; none of these symbols are actually
- * invoked on the path through task_push_dbscan / task_queue_check.
+ * exercises task_push_dbscan, and msg_hash_to_str_us() is the one stub
+ * a check depends on: it names the invalid content message.
  *
  * These take enum msg_hash_enums now that configuration.h - included
  * for settings_t - brings msg_hash.h with it.  They used to be
@@ -72,7 +73,8 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
 const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 {
-   (void)msg;
+   if (msg == MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT)
+      return "invalid content";
    return "";
 }
 
@@ -100,16 +102,20 @@ settings_t *config_get_ptr(void)
    return &settings;
 }
 
-/* Additional stubs for retroarch-core symbols referenced transitively.
- * None of these are exercised on the dbscan path; they're link-time
- * stubs to avoid pulling in retroarch.c, runloop.c, frontend drivers,
- * and the UI/video subsystems. */
+static bool invalid_content_pushed = false;
+
+/* Additional stubs for retroarch-core symbols referenced transitively,
+ * to avoid pulling in retroarch.c, runloop.c, frontend drivers, and the
+ * UI/video subsystems.  runloop_msg_queue_push() also records the
+ * invalid content message. */
 void runloop_msg_queue_push(const char *msg, size_t len,
       unsigned prio, unsigned duration,
       bool flush, char *title, unsigned icon, unsigned category)
 {
-   (void)msg; (void)len; (void)prio; (void)duration;
+   (void)len; (void)prio; (void)duration;
    (void)flush; (void)title; (void)icon; (void)category;
+   if (msg && !strcmp(msg, "invalid content"))
+      invalid_content_pushed = true;
 }
 
 bool retroarch_override_setting_is_set(unsigned enum_idx, void *data)
@@ -431,6 +437,29 @@ static void msgq_push(retro_task_t *task, const char *msg,
    (void)task; (void)msg; (void)prio; (void)duration; (void)flush;
 }
 
+/* Returns false if the scan could not be started; otherwise waits for
+ * it, and scan_completed says whether it finished in time. */
+static bool run_scan(const char *pl_dir, const char *db_dir,
+      const char *dir)
+{
+   time_t started;
+
+   loop_active    = true;
+   scan_completed = false;
+   if (!task_push_dbscan(pl_dir, db_dir, dir, true, false, scan_cb))
+      return false;
+
+   started = time(NULL);
+   while (loop_active)
+   {
+      task_queue_check();
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         break;
+      retro_sleep(1);
+   }
+   return true;
+}
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -533,7 +562,7 @@ int main(int argc, char **argv)
       fprintf(f,
             "display_name = \"Scan Test\"\n"
             "corename = \"ScanTest\"\n"
-            "supported_extensions = \"bin|cue|zip\"\n"
+            "supported_extensions = \"bin|cue|gdi|zip\"\n"
             "database = \"Test Alpha|Test Beta|Test Disc|Test Zip\"\n");
       fclose(f);
    }
@@ -565,21 +594,10 @@ int main(int argc, char **argv)
             MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, NULL))
       check(0, "system name", "could not be set");
 
-   if (!task_push_dbscan(pl_dir, db_dir, in_dir, true, false, scan_cb))
+   if (!run_scan(pl_dir, db_dir, in_dir))
    {
       check(0, "scan started", "task_push_dbscan refused");
       goto done;
-   }
-
-   {
-      time_t started = time(NULL);
-      while (loop_active)
-      {
-         task_queue_check();
-         if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
-            break;
-         retro_sleep(1);
-      }
    }
    check(scan_completed, "scan ran to completion",
          scan_completed ? "callback fired" : "timed out");
@@ -618,6 +636,84 @@ int main(int argc, char **argv)
          "cue resolved through its track", "Disc The Game");
    check(file_contains(p, ".cue"),
          "playlist records the sheet, not the track", "path ends .cue");
+
+   /* A strict scan hands every file to DATABASE_SCAN_ITERATE_NEXT.  32
+    * files fill string_list_new()'s initial capacity, so ASan catches a
+    * read past the last entry. */
+   {
+      char pad_dir[512];
+      uint32_t i;
+
+      sprintf(pad_dir, "%s/scan_pad", root);
+      path_mkdir(pad_dir);
+      for (i = 0; i < 32; i++)
+      {
+         sprintf(p, "%s/pad_%02u.bin", pad_dir, (unsigned)i);
+         if (!write_content(p, 0x7AD00000u + i, 1024))
+         { check(0, "fixture", "crc forcing failed"); goto done; }
+      }
+
+      if (!run_scan(pl_dir, db_dir, pad_dir))
+      {
+         check(0, "full list scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      check(scan_completed, "scan of a full content list completed",
+            scan_completed ? "callback fired" : "timed out");
+   }
+
+   /* An empty folder has no entry to start iterating from. */
+   {
+      char empty_dir[512];
+
+      sprintf(empty_dir, "%s/scan_empty", root);
+      path_mkdir(empty_dir);
+
+      invalid_content_pushed = false;
+      if (!run_scan(pl_dir, db_dir, empty_dir))
+      {
+         check(0, "empty folder scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      check(scan_completed && invalid_content_pushed,
+            "empty folder reported as invalid content",
+            !scan_completed ? "timed out"
+            : invalid_content_pushed ? "message pushed" : "no message");
+   }
+
+   /* A sheet that names itself is still the entry being scanned, so
+    * pruning its tracks must not free it.  Only ASan sees the
+    * use-after-free. */
+   {
+      char self_dir[512];
+      FILE *f;
+
+      sprintf(self_dir, "%s/scan_self", root);
+      path_mkdir(self_dir);
+
+      sprintf(p, "%s/self.cue", self_dir);
+      if (!(f = fopen(p, "w")))
+      { check(0, "fixture", "could not write cue"); goto done; }
+      fprintf(f,
+            "FILE \"self.cue\" BINARY\n"
+            "  TRACK 01 MODE1/2352\n"
+            "    INDEX 01 00:00:00\n");
+      fclose(f);
+
+      sprintf(p, "%s/self.gdi", self_dir);
+      if (!(f = fopen(p, "w")))
+      { check(0, "fixture", "could not write gdi"); goto done; }
+      fprintf(f, "1\n1 0 4 2352 self.gdi 0\n");
+      fclose(f);
+
+      if (!run_scan(pl_dir, db_dir, self_dir))
+      {
+         check(0, "self-naming sheet scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      check(scan_completed, "self-naming cue and gdi scanned",
+            scan_completed ? "callback fired" : "timed out");
+   }
 
 done:
    printf("\n%d checks, %d failures\n", checks, failures);

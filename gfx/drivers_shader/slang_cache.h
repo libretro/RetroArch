@@ -17,7 +17,7 @@ struct glslang_output;
  *
  * @param vertex_source   Preprocessed vertex stage source (null-terminated string)
  * @param fragment_source Preprocessed fragment stage source (null-terminated string)
- * @param hash_out        Output buffer for hex-encoded hash (must be at least 65 bytes: 64 hex chars + null terminator)
+ * @param hash_out        Output buffer for the hex-encoded name (must be at least 33 bytes: 32 hex chars + null terminator)
  * @return true on success, false on error
  */
 bool spirv_cache_compute_hash(const char *vertex_source, const char *fragment_source, char *hash_out);

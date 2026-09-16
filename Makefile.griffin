@@ -217,6 +217,7 @@ else ifeq ($(libogc_platform), 1)
    HAVE_RMODTRACKER                := 1
    HAVE_OVERLAY             := 1
    HAVE_7ZIP                := 1
+   HAVE_RZSTD               := 1
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
@@ -1109,6 +1110,9 @@ endif
 ifeq ($(HAVE_7ZIP), 1)
    CFLAGS      += -DHAVE_7ZIP
 endif
+ifeq ($(HAVE_RZSTD), 1)
+   CFLAGS      += -DHAVE_RZSTD
+endif
 
 ifeq ($(HAVE_SCREENSHOTS), 1)
 	CFLAGS      += -DHAVE_SCREENSHOTS
@@ -1124,6 +1128,11 @@ endif
 
 ifeq ($(HAVE_RWAV), 1)
    CFLAGS      += -DHAVE_RWAV
+endif
+
+# AC-3 (rac3) and IEC 61937: no dependencies, on wherever the mixer is.
+ifeq ($(HAVE_AUDIOMIXER), 1)
+   CFLAGS      += -DHAVE_RAC3
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)

@@ -30,6 +30,9 @@
 
 #define VFS_FRONTEND
 #include <retro_environment.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define CINTERFACE
 
@@ -70,6 +73,7 @@
 
 #if _MSC_VER && !defined(__WINRT__)
 #include "../libretro-common/compat/compat_snprintf.c"
+#include "../libretro-common/compat/compat_strtoll.c"
 #endif
 
 #include "../verbosity.c"
@@ -145,7 +149,7 @@ ARCHIVE FILE
 #include "../libretro-common/file/archive_file_7z.c"
 #endif
 
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 #include "../libretro-common/file/archive_file_zstd.c"
 #endif
 
@@ -158,6 +162,7 @@ COMPRESSION
 #include "../libretro-common/encodings/encoding_deflate.c"
 #ifdef HAVE_RZSTD
 #include "../libretro-common/encodings/encoding_rzstd.c"
+#include "../libretro-common/streams/trans_stream_rzstd.c"
 #endif
 #include "../libretro-common/streams/trans_stream_deflate.c"
 #include "../libretro-common/streams/rzip_stream.c"
@@ -222,9 +227,10 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos.c"
 #include "../cheevos/cheevos_client.c"
 #include "../cheevos/cheevos_menu.c"
+#include "../cheevos/cheevos_badge.c"
 
 #if defined(HAVE_CHEEVOS_RVZ)
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 #include "../cheevos/cheevos_rvz.c"
 #endif
 #endif
@@ -530,6 +536,25 @@ VIDEO IMAGE
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 #include "../libretro-common/file/rbmp_file.c"
 
+#ifdef HAVE_RAC3
+#include "../libretro-common/formats/ac3/rac3_frame.c"
+#include "../libretro-common/formats/ac3/rac3_decode.c"
+#include "../libretro-common/formats/ac3/rac3_encode.c"
+#include "../libretro-common/formats/iec61937/iec61937.c"
+#endif
+
+#ifdef HAVE_RLPCM
+#include "../libretro-common/formats/lpcm/rlpcm.c"
+#endif
+
+#ifdef HAVE_RDTS
+#include "../libretro-common/formats/dts/rdts.c"
+#endif
+
+#if defined(HAVE_RDTS) || defined(HAVE_RAC3)
+#include "../audio/audio_bitstream.c"
+#endif
+
 #ifdef HAVE_RWAV
 #include "../libretro-common/formats/wav/rwav.c"
 #endif
@@ -561,6 +586,7 @@ VIDEO DRIVER
 
 #if defined(HAVE_D3D11)
 #include "../gfx/drivers/d3d11.c"
+#include "../gfx/common/d3d11_deferred_proxy.c"
 #endif
 
 #if defined(HAVE_D3D12)
@@ -594,6 +620,7 @@ VIDEO DRIVER
 #ifdef HAVE_SDL2
 #include "../gfx/drivers/sdl2_gfx.c"
 #include "../gfx/common/sdl2_common.c"
+#include "../gfx/display_servers/dispserv_sdl2.c"
 #endif
 
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
@@ -829,7 +856,7 @@ INPUT
 #include "../deps/libShake/src/common/error.c"
 #include "../deps/libShake/src/common/helpers.c"
 #include "../deps/libShake/src/common/presets.c"
-#if defined(OSX)
+#if TARGET_OS_OSX
 #include "../deps/libShake/src/osx/shake.c"
 #elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
 #include "../deps/libShake/src/linux/shake.c"
@@ -892,6 +919,18 @@ FIFO BUFFER
 ============================================================ */
 #include "../libretro-common/queues/fifo_queue.c"
 #include "../libretro-common/queues/retro_spsc.c"
+/* The waitable queue and the eventcount it parks on are both under
+ * HAVE_THREADS, because the eventcount is not thread-free: it calls
+ * slock_new and scond_new directly, in twenty-odd places, and those
+ * live in rthreads.c which only this configuration builds. Moving the
+ * eventcount out on the theory that it degrades to a spin was wrong
+ * and produced a threadless build that linked against rthreads. */
+#if defined(HAVE_THREADS)
+#include "../libretro-common/queues/retro_waitable_spsc.c"
+#include "../libretro-common/rthreads/retro_eventcount.c"
+#include "../libretro-common/rthreads/retro_procbarrier.c"
+#include "../libretro-common/rthreads/retro_asym_eventcount.c"
+#endif
 
 /*============================================================
 AUDIO RESAMPLER
@@ -967,6 +1006,11 @@ RSOUND
 AUDIO
 ============================================================ */
 #include "../audio/audio_driver.c"
+#include "../audio/audio_upmix.c"
+#include "../audio/audio_stretch.c"
+#include "../audio/audio_speed_lpf.c"
+#include "../audio/audio_pipeline_stretch.c"
+#include "../audio/audio_binaural.c"
 #if defined(__PS3__) || defined (__PSL1GHT__)
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
@@ -984,13 +1028,14 @@ AUDIO
 #elif defined(_3DS)
 #include "../audio/drivers/ctr_csnd_audio.c"
 #include "../audio/drivers/ctr_dsp_audio.c"
-#ifdef HAVE_THREADS
-#include "../audio/drivers/ctr_dsp_thread_audio.c"
-#endif
 #endif
 
 #ifdef HAVE_XAUDIO
 #include "../audio/drivers/xaudio.c"
+#endif
+
+#ifdef HAVE_WDMKS
+#include "../audio/drivers/wdmks.c"
 #endif
 
 #if defined(HAVE_SDL3)
@@ -998,6 +1043,7 @@ AUDIO
 #include "../input/drivers/sdl3_input.c"
 #include "../gfx/drivers/sdl3_gfx.c"
 #include "../gfx/common/sdl3_common.c"
+#include "../gfx/display_servers/dispserv_sdl3.c"
 #include "../audio/drivers/sdl3_audio.c"
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/sdl3_gl_ctx.c"
@@ -1038,8 +1084,9 @@ AUDIO
 #endif
 #endif
 
-#ifdef HAVE_TINYALSA
-#include "../audio/drivers/tinyalsa.c"
+#if defined(HAVE_TINYALSA) && !defined(HAVE_ALSA)
+/* Both drivers are in this file; with HAVE_ALSA it came in above. */
+#include "../audio/drivers/alsa.c"
 #endif
 
 #ifdef HAVE_PULSE
@@ -1074,12 +1121,24 @@ MIDI
 /*============================================================
 DRIVERS
 ============================================================ */
-#ifdef HAVE_CRTSWITCHRES
+#ifdef HAVE_MODELINE
+#include "../gfx/modeline/modeline_core.c"
+#include "../gfx/modeline/modeline_monitor.c"
+#include "../gfx/modeline/modeline_list.c"
+#include "../gfx/modeline/modeline_ini.c"
+#include "../gfx/modeline/modeline_edid.c"
 #include "../gfx/video_crt_switch.c"
+#ifdef _WIN32
+#include "../gfx/display_servers/win32_modeline_resync.c"
+#include "../gfx/display_servers/win32_modeline_adl.c"
+#include "../gfx/display_servers/win32_modeline_ati.c"
+#include "../gfx/display_servers/win32_modeline_pstrip.c"
+#endif
 #endif
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_thumbnail.c"
+#include "../gfx/gfx_anim_preview.c"
 
 /* rflac is used by the audio mixer (HAVE_RFLAC) and by the CHD FLAC
  * decoder in libchdr (HAVE_CHD). Include its implementation once, ahead
@@ -1146,17 +1205,21 @@ FILTERS
 #endif
 
 #ifdef HAVE_DSP_FILTER
+#include "../libretro-common/audio/dsp_filters/bitcrusher.c"
 #include "../libretro-common/audio/dsp_filters/chorus.c"
 #include "../libretro-common/audio/dsp_filters/crystalizer.c"
 #include "../libretro-common/audio/dsp_filters/echo.c"
 #include "../libretro-common/audio/dsp_filters/eq.c"
 #include "../libretro-common/audio/dsp_filters/iir.c"
+#include "../libretro-common/audio/dsp_filters/overdrive.c"
 #include "../libretro-common/audio/dsp_filters/panning.c"
 #include "../libretro-common/audio/dsp_filters/phaser.c"
 #include "../libretro-common/audio/dsp_filters/reverb.c"
+#include "../libretro-common/audio/dsp_filters/reverb_early.c"
 #include "../libretro-common/audio/dsp_filters/tremolo.c"
 #include "../libretro-common/audio/dsp_filters/vibrato.c"
 #include "../libretro-common/audio/dsp_filters/wahwah.c"
+#include "../libretro-common/audio/dsp_filters/wsolapitchtempo.c"
 #endif
 #endif
 
@@ -1313,6 +1376,7 @@ UI
 ============================================================ */
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #include "../ui/drivers/ui_win32.c"
+#include "../ui/drivers/ui_win32_companion.c"
 #endif
 
 /*============================================================
@@ -1333,6 +1397,11 @@ RETROARCH
 #endif
 #include "../command.c"
 #include "../ui/ui_companion_driver.c"
+#ifdef HAVE_COMPANION_WIMP
+#include "../ui/companion/companion_core.c"
+#include "../ui/companion/companion_thumbs.c"
+#include "../ui/companion/companion_dock.c"
+#endif
 #include "../libretro-common/queues/task_queue.c"
 
 #include "../msg_hash.c"
@@ -1383,6 +1452,7 @@ THREAD
 
 #include "../libretro-common/rthreads/rthreads.c"
 #include "../gfx/video_thread_wrapper.c"
+#include "../gfx/video_thread_hw.c"
 #include "../audio/audio_thread_wrapper.c"
 #endif
 
@@ -1569,7 +1639,7 @@ DEPENDENCIES
 #define GRIFFIN_HAVE_R7Z_LZMA 1
 #include "../libretro-common/formats/7z/r7z_lzma.c"
 
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 #include "../libretro-common/formats/libchdr/libchdr_zstd.c"
 #endif
 #endif  /* !HAVE_RCHD */
@@ -1589,32 +1659,6 @@ DEPENDENCIES
 #include "../libretro-common/formats/7z/r7z_filters.c"
 #endif
 
-#ifdef HAVE_ZSTD
-#if (DEBUGLEVEL>=2)
-#include "../deps/zstd/lib/common/debug.c"
-#endif
-#include "../deps/zstd/lib/common/entropy_common.c"
-#include "../deps/zstd/lib/common/error_private.c"
-#include "../deps/zstd/lib/common/fse_decompress.c"
-#include "../deps/zstd/lib/common/zstd_common.c"
-#include "../deps/zstd/lib/common/xxhash.c"
-#include "../deps/zstd/lib/compress/fse_compress.c"
-#include "../deps/zstd/lib/compress/hist.c"
-#include "../deps/zstd/lib/compress/huf_compress.c"
-#include "../deps/zstd/lib/compress/zstd_compress.c"
-#include "../deps/zstd/lib/compress/zstd_compress_literals.c"
-#include "../deps/zstd/lib/compress/zstd_compress_sequences.c"
-#include "../deps/zstd/lib/compress/zstd_compress_superblock.c"
-#include "../deps/zstd/lib/compress/zstd_double_fast.c"
-#include "../deps/zstd/lib/compress/zstd_fast.c"
-#include "../deps/zstd/lib/compress/zstd_lazy.c"
-#include "../deps/zstd/lib/compress/zstd_ldm.c"
-#include "../deps/zstd/lib/compress/zstd_opt.c"
-#include "../deps/zstd/lib/decompress/huf_decompress.c"
-#include "../deps/zstd/lib/decompress/zstd_ddict.c"
-#include "../deps/zstd/lib/decompress/zstd_decompress.c"
-#include "../deps/zstd/lib/decompress/zstd_decompress_block.c"
-#endif
 
 #ifdef WANT_LIBFAT
 #include "../deps/libfat/cache.c"

@@ -44,6 +44,13 @@
 /* Keep it off unless you're chasing a core bug, it slows things down. */
 #define STRICT_BUF_SIZE 0
 
+/* A dirty run of this many words or more is copied with memcpy; a
+ * shorter one by the loop, which for the few-word runs that dominate
+ * a delta costs less than a call. */
+#ifndef STATE_MANAGER_MEMCPY_WORDS
+#define STATE_MANAGER_MEMCPY_WORDS 32
+#endif
+
 #ifndef UINT16_MAX
 #define UINT16_MAX 0xffff
 #endif
@@ -246,22 +253,70 @@ static size_t find_same(const uint16_t *a, const uint16_t *b)
    return a - a_org;
 }
 
+/* Adds two sizes, or reports that the sum does not fit. */
+static bool state_manager_size_add(size_t a, size_t b, size_t *out)
+{
+   if (a > (size_t)-1 - b)
+      return false;
+   *out = a + b;
+   return true;
+}
+
+/* Multiplies two sizes, or reports that the product does not fit. */
+static bool state_manager_size_mul(size_t a, size_t b, size_t *out)
+{
+   if (b && a > (size_t)-1 / b)
+      return false;
+   *out = a * b;
+   return true;
+}
+
 /* Returns the maximum compressed size of a savestate.
- * It is very likely to compress to far less. */
+ * It is very likely to compress to far less.
+ *
+ * Every term derives from @uncomp, which reaches here from a core's
+ * retro_serialize_size(), so the roundings and the per-block overhead
+ * are added and multiplied under check. Returns 0 when the answer does
+ * not fit a size_t; a real answer always carries the three closing
+ * uint16_t and so is never 0. */
 static size_t state_manager_raw_maxsize(size_t uncomp)
 {
    /* bytes covered by a compressed block */
-   const int maxcblkcover = UINT16_MAX * sizeof(uint16_t);
+   const size_t maxcblkcover = UINT16_MAX * sizeof(uint16_t);
+   size_t uncomp16;
+   size_t maxcblks;
+   size_t overhead;
+   size_t total;
+
    /* uncompressed size, rounded to 16 bits */
-   size_t uncomp16        = (uncomp + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
+   if (!state_manager_size_add(uncomp, sizeof(uint16_t) - 1, &uncomp16))
+      return 0;
+   uncomp16 &= -sizeof(uint16_t);
+
    /* number of blocks */
-   size_t maxcblks        = (uncomp + maxcblkcover - 1) / maxcblkcover;
-   return uncomp16 + maxcblks * sizeof(uint16_t) * 2 /* two u16 overhead per block */ + sizeof(uint16_t) *
-      3; /* three u16 to end it */
+   if (!state_manager_size_add(uncomp, maxcblkcover - 1, &maxcblks))
+      return 0;
+   maxcblks /= maxcblkcover;
+
+   /* two u16 overhead per block */
+   if (!state_manager_size_mul(maxcblks, sizeof(uint16_t) * 2, &overhead))
+      return 0;
+   if (!state_manager_size_add(uncomp16, overhead, &total))
+      return 0;
+   /* three u16 to end it */
+   if (!state_manager_size_add(total, sizeof(uint16_t) * 3, &total))
+      return 0;
+
+   return total;
 }
 
 /*
- * Takes two savestates and creates a patch that turns 'src' into 'dst'.
+ * A reverse delta. Takes two savestates, 'src' the older and 'dst' the
+ * newer, and creates a patch that, applied to a copy of 'dst', restores
+ * 'src': the patch stores the old words of every run that differs, so
+ * a rewind step applies it to the current state to get the previous
+ * one. The next push swaps the blocks, so the block that was 'dst'
+ * becomes 'src' for the following patch.
  *
  * 'patch' must be size 'state_manager_raw_maxsize(len)' or more.
  * Returns the number of bytes actually written to 'patch'.
@@ -308,8 +363,14 @@ static size_t state_manager_raw_compress(const void *src,
       *compressed16++ = changed;
       *compressed16++ = skip;
 
-      for (i = 0; i < changed; i++)
-         compressed16[i] = old16[i];
+      /* The typical dirty run is a few words, where a call costs more
+       * than the loop; a long one - a framebuffer, a redrawn tilemap -
+       * is a copy. */
+      if (changed >= STATE_MANAGER_MEMCPY_WORDS)
+         memcpy(compressed16, old16, changed * sizeof(uint16_t));
+      else
+         for (i = 0; i < changed; i++)
+            compressed16[i] = old16[i];
 
       old16        += changed;
       new16        += changed;
@@ -332,42 +393,89 @@ static size_t state_manager_raw_compress(const void *src,
  * If the given arguments do not match a previous call to
  * state_manager_raw_compress(), anything at all can happen.
  */
-static void state_manager_raw_decompress(const void *patch, void *data)
+/* Applies a patch to 'data', a block of 'len' bytes. Two passes: the
+ * first walks every token and checks that each run of changed words
+ * and each skip stays inside the block and that the record ends inside
+ * 'patch_len' bytes; the second writes. A record that fails the first
+ * pass changes nothing and returns false, so a corrupted ring cannot
+ * write past the block, nor leave it half-applied. */
+static bool state_manager_raw_decompress(const void *patch, size_t patch_len,
+      void *data, size_t len)
 {
-   uint16_t         *out16 = (uint16_t*)data;
    const uint16_t *patch16 = (const uint16_t*)patch;
+   const uint16_t *p       = patch16;
+   size_t patch_words      = patch_len / sizeof(uint16_t);
+   size_t words            = len / sizeof(uint16_t);
+   size_t at               = 0;
+   uint16_t *out16         = (uint16_t*)data;
 
    for (;;)
    {
-      uint16_t numchanged  = *(patch16++);
+      uint16_t numchanged;
+      if ((size_t)(p - patch16) >= patch_words)
+         return false;
+      numchanged = *p++;
+      if (numchanged)
+      {
+         uint16_t skip;
+         if ((size_t)(p - patch16) + 1 + numchanged > patch_words)
+            return false;
+         skip = *p++;
+         if (skip > words - at)
+            return false;
+         at += skip;
+         if (numchanged > words - at)
+            return false;
+         at += numchanged;
+         p  += numchanged;
+      }
+      else
+      {
+         uint32_t numunchanged;
+         if ((size_t)(p - patch16) + 2 > patch_words)
+            return false;
+         numunchanged = p[0] | ((uint32_t)p[1] << 16);
+         if (!numunchanged)
+            break;
+         p += 2;
+         if (numunchanged > words - at)
+            return false;
+         at += numunchanged;
+      }
+   }
+
+   for (p = patch16;;)
+   {
+      uint16_t numchanged = *(p++);
 
       if (numchanged)
       {
          uint16_t i;
 
-         out16       += *patch16++;
+         out16       += *p++;
 
-         /* We could do memcpy, but it seems that memcpy has a
-          * constant-per-call overhead that actually shows up.
-          *
-          * Our average size in here seems to be 8 or something.
-          * Therefore, we do something with lower overhead. */
-         for (i = 0; i < numchanged; i++)
-            out16[i]  = patch16[i];
+         /* The typical run is a few words, where a call costs more
+          * than the loop; a long one is a copy. */
+         if (numchanged >= STATE_MANAGER_MEMCPY_WORDS)
+            memcpy(out16, p, numchanged * sizeof(uint16_t));
+         else
+            for (i = 0; i < numchanged; i++)
+               out16[i]  = p[i];
 
-         patch16     += numchanged;
+         p           += numchanged;
          out16       += numchanged;
       }
       else
       {
-         uint32_t numunchanged = patch16[0] | (patch16[1] << 16);
+         uint32_t numunchanged = p[0] | ((uint32_t)p[1] << 16);
 
          if (!numunchanged)
             break;
-         patch16 += 2;
+         p       += 2;
          out16   += numunchanged;
       }
    }
+   return true;
 }
 
 /* The start offsets point to 'nextstart' of any given compressed frame.
@@ -443,9 +551,23 @@ static state_manager_t *state_manager_new(
    if (!state)
       return NULL;
 
-   block_size         = (state_size + sizeof(uint16_t) - 1) & -sizeof(uint16_t);
+   /* state_size is whatever the core answered retro_serialize_size()
+    * with. The block layout, the sentinel positions and the two-block
+    * doubling all derive from it, and an unchecked derivation wraps to
+    * an allocation smaller than the offsets computed from the same
+    * numbers, so each step is taken under check and a size that cannot
+    * be laid out is refused. */
+   if (!state_manager_size_add(state_size, sizeof(uint16_t) - 1, &block_size))
+      goto error;
+   block_size        &= -sizeof(uint16_t);
+
    /* the compressed data is surrounded by pointers to the other side */
-   max_comp_size      = state_manager_raw_maxsize(state_size) + sizeof(size_t) * 2;
+   if (!(max_comp_size = state_manager_raw_maxsize(state_size)))
+      goto error;
+   if (!state_manager_size_add(max_comp_size, sizeof(size_t) * 2,
+            &max_comp_size))
+      goto error;
+
    state_data         = (uint8_t*)malloc(buffer_size);
 
    if (!state_data)
@@ -461,9 +583,12 @@ static state_manager_t *state_manager_new(
     * begin at that sentinel and read a full vector beyond it, so the tail
     * padding must be at least the widest load find_change can issue.
     * Keep the two in step: widening the scanner means widening this. */
-   single_block_alloc = block_size + sizeof(uint16_t) * 4
-      + STATE_MANAGER_SCAN_PAD;
-   alloc_size         = single_block_alloc * 2;
+   if (!state_manager_size_add(block_size,
+            sizeof(uint16_t) * 4 + STATE_MANAGER_SCAN_PAD,
+            &single_block_alloc))
+      goto error;
+   if (!state_manager_size_mul(single_block_alloc, 2, &alloc_size))
+      goto error;
    block_buf          = (uint8_t*)calloc(alloc_size, 1);
 
    if (!block_buf)
@@ -523,12 +648,24 @@ static bool state_manager_pop(state_manager_t *state, const void **data)
       return false;
 
    start                        = read_size_t(state->head - sizeof(size_t));
-   state->head                  = state->data + start;
+   /* start comes out of the buffer itself, so it is checked by
+    * subtracting from the capacity rather than adding to it: the
+    * addition wraps on a corrupt value and lets the bound pass. */
+   if (     state->capacity < sizeof(size_t)
+         || start > state->capacity - sizeof(size_t))
+      return false;
    compressed                   = state->data + start + sizeof(size_t);
    out                          = state->thisblock;
 
-   state_manager_raw_decompress(compressed, out);
+   /* The record runs from its start to the size_t that pointed here;
+    * a record that does not decode inside that, or inside the block,
+    * is the end of the ring's usable history. */
+   if (!state_manager_raw_decompress(compressed,
+            (size_t)(state->head - sizeof(size_t) - compressed), out,
+            state->blocksize))
+      return false;
 
+   state->head                  = state->data + start;
    state->entries--;
    return true;
 }
@@ -595,11 +732,18 @@ recheckcapacity:;
       compressed       += state_manager_raw_compress(oldb, newb,
             state->blocksize, compressed);
 
+      /* The next record must fit before the end of the ring without
+       * folding mid-record; if it will not, the head folds to the
+       * start now, and the record that starts there is dropped, as a
+       * record dropped for room anywhere else is. */
       if (compressed - state->data + state->maxcompsize > state->capacity)
       {
          compressed     = state->data;
          if (state->tail == state->data + sizeof(size_t))
+         {
             state->tail = state->data + read_size_t(state->tail);
+            state->entries--;
+         }
       }
       write_size_t(compressed, state->head-state->data);
       compressed       += sizeof(size_t);
@@ -629,6 +773,7 @@ void state_manager_event_init(
       return;
 
    rewind_st->size               = 0;
+   retro_atomic_store_release_int(&rewind_st->frame_reversed_atomic, 0);
    rewind_st->flags             &= ~(
                                    STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
                                  | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
@@ -676,8 +821,11 @@ void state_manager_event_init(
          rewind_buffer_size);
 
    if (!rewind_st->state)
+   {
       RARCH_WARN("[Rewind] %s.\n",
             msg_hash_to_str(MSG_REWIND_INIT_FAILED));
+      return;
+   }
 
    state_manager_push_where(rewind_st->state, &state);
 
@@ -708,6 +856,7 @@ void state_manager_event_deinit(
 
    rewind_st->state  = NULL;
    rewind_st->size   = 0;
+   retro_atomic_store_release_int(&rewind_st->frame_reversed_atomic, 0);
    rewind_st->flags &= ~(
                           STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED
                         | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
@@ -780,6 +929,7 @@ bool state_manager_check_rewind(
       was_reversed = true;
 #endif
       audio_driver_frame_is_reverse();
+      retro_atomic_store_release_int(&rewind_st->frame_reversed_atomic, 0);
       rewind_st->flags &= ~STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED;
    }
 
@@ -796,6 +946,8 @@ bool state_manager_check_rewind(
             return false;
 #endif
 
+         retro_atomic_store_release_int(
+               &rewind_st->frame_reversed_atomic, 1);
          rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED;
 
          audio_driver_setup_rewind();
@@ -818,6 +970,8 @@ bool state_manager_check_rewind(
          /* Don't end reversing during playback or recording */
          if(BSV_MOVIE_IS_PLAYBACK_ON() || BSV_MOVIE_IS_RECORDING())
          {
+            retro_atomic_store_release_int(
+                  &rewind_st->frame_reversed_atomic, 1);
             rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED;
             bsv_movie_frame_rewind();
          }

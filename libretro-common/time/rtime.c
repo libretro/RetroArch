@@ -36,6 +36,44 @@
 slock_t *rtime_localtime_lock = NULL;
 #endif
 
+#if defined(__APPLE__) && defined(__MACH__)
+#include <mach/mach_time.h>
+#include <sched.h>
+#include <stdint.h>
+
+/* Darwin: the sleep is an absolute deadline on the Mach clock, the
+ * same clock cpu_features_get_time_usec() reads there, so the time
+ * spent between reading it and entering the kernel is not added to the
+ * wait as it is by a relative nanosleep(). mach_wait_until() and the
+ * timebase have been in libSystem since 10.0. The kernel may still
+ * hold a normal-priority thread past the deadline by its timer leeway;
+ * what returns is never early, and a caller that needs the deadline
+ * itself sleeps short and spins the rest. */
+static mach_timebase_info_data_t rtime_mach_tb;
+
+void retro_sleep_us(unsigned usec)
+{
+   uint64_t ticks;
+
+   /* A zero duration means "yield the rest of this time slice". */
+   if (!usec)
+   {
+      sched_yield();
+      return;
+   }
+
+   /* The timebase is a constant; a racing first read fills it with
+    * the same values, so no guard is needed. */
+   if (!rtime_mach_tb.denom)
+      mach_timebase_info(&rtime_mach_tb);
+
+   /* Nanoseconds to Mach ticks; the ratio is 1:1 on Intel and
+    * 125:3 on Apple silicon, so the product fits for any usec. */
+   ticks = (uint64_t)usec * 1000 * rtime_mach_tb.denom / rtime_mach_tb.numer;
+   mach_wait_until(mach_absolute_time() + ticks);
+}
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -246,7 +284,13 @@ static void rtime_sleep_init(void)
 
 /* The timer object must not be shared between threads: SetWaitableTimer()
  * on a handle that another thread is already waiting on reschedules that
- * thread's wait. One handle per thread, created on first use. */
+ * thread's wait. One handle per thread, created on first use.
+ *
+ * Handles are process objects, so a thread that exits leaves its timer
+ * open until the process does. That is one kernel object per thread
+ * that ever slept, which is nothing for a fixed set of worker threads
+ * and something to be aware of for a thread created per event: sleep
+ * from a persistent thread instead. */
 static HANDLE rtime_sleep_timer_get(void)
 {
    HANDLE timer = (HANDLE)TlsGetValue(rtime_sleep_tls);
@@ -336,8 +380,9 @@ void retro_sleep(unsigned msec)
 
 /* Called from rtime_deinit(), i.e. main thread only, at program or
  * core termination - by which point no other thread may still be
- * calling retro_sleep(). Timer handles belonging to threads that have
- * already exited are reclaimed by the OS. */
+ * calling retro_sleep(). Only the calling thread's own timer can be
+ * closed here: the TLS slot is per thread, so other threads' handles
+ * cannot be reached, and they stay open until the process exits. */
 static void rtime_sleep_deinit(void)
 {
    HANDLE timer;
@@ -419,3 +464,77 @@ struct tm *rtime_localtime(const time_t *timep, struct tm *result)
 
    return result;
 }
+
+/* ---- retro_sleep_until_us ------------------------------------------
+ *
+ * Sleep until cpu_features_get_time_usec() reads at least @deadline.
+ * The point over retro_sleep_us(deadline - now) is what happens to the
+ * time between reading the clock and entering the kernel, and to an
+ * early or interrupted wake: an absolute wait re-arms against the
+ * deadline itself, so neither is added to when the caller comes back.
+ * Never returns early against that clock; like every sleep, it may
+ * return late, and a caller that needs the instant itself sleeps
+ * short of it and spins the rest (the frame limiter does exactly
+ * this, with a measured margin).
+ */
+#include <features/features_cpu.h>
+/* Where retro_sleep_us lives for every platform that is not this
+ * file: a macro over the OS call on the consoles and emscripten, an
+ * inline nanosleep otherwise. The generic loop below is only correct
+ * with this in view - without it the two platforms that define the
+ * function in this file compiled and every statically linked one
+ * did not. */
+#include <retro_timers.h>
+
+#if (defined(__linux__) || defined(ANDROID)) && !defined(__MACH__)
+/* The exact tool: cpu_features_get_time_usec() here is
+ * clock_gettime(CLOCK_MONOTONIC), and clock_nanosleep() takes an
+ * absolute deadline on the same clock. EINTR re-arms against the
+ * unchanged deadline by definition of TIMER_ABSTIME. */
+#include <time.h>
+void retro_sleep_until_us(retro_time_t deadline)
+{
+   struct timespec ts;
+   ts.tv_sec  = (time_t)(deadline / 1000000);
+   ts.tv_nsec = (long)((deadline % 1000000) * 1000);
+   while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL) != 0)
+      ;
+}
+#elif defined(__APPLE__) && defined(__MACH__)
+/* mach_wait_until() is the absolute wait, on the Mach clock; the
+ * public microsecond clock is CLOCK_MONOTONIC, which Darwin derives
+ * from the same hardware ticks. The two are bridged with one paired
+ * read - the pair is nanoseconds apart, and unlike a relative sleep
+ * the arming is still absolute in Mach terms, so an early wake or
+ * the leeway re-arms nothing and accumulates nothing. */
+void retro_sleep_until_us(retro_time_t deadline)
+{
+   uint64_t ticks;
+   retro_time_t now = cpu_features_get_time_usec();
+   uint64_t mach_now = mach_absolute_time();
+   if (deadline <= now)
+      return;
+   if (!rtime_mach_tb.denom)
+      mach_timebase_info(&rtime_mach_tb);
+   ticks = (uint64_t)(deadline - now) * 1000
+         * rtime_mach_tb.denom / rtime_mach_tb.numer;
+   mach_wait_until(mach_now + ticks);
+}
+#else
+/* Windows and everything else: re-arm the platform's best relative
+ * wait against the deadline until the clock agrees. On desktop
+ * Windows that wait is this file's per-thread high-resolution timer,
+ * so each lap is microsecond-grained; on a platform whose sleep
+ * rounds up, the loop simply ends on the first lap past the
+ * deadline, no worse than the relative call was. */
+void retro_sleep_until_us(retro_time_t deadline)
+{
+   for (;;)
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      if (now >= deadline)
+         return;
+      retro_sleep_us((unsigned)(deadline - now));
+   }
+}
+#endif

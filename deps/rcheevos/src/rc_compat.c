@@ -1,4 +1,4 @@
-#if !defined(RC_NO_THREADS) && !defined(_WIN32) && !defined(GEKKO) && !defined(_3DS) && !defined(VITA) && !defined(WIIU) && !defined(__SWITCH__) && (!defined(_XOPEN_SOURCE) || (_XOPEN_SOURCE - 0) < 500)
+#if !defined(RC_NO_THREADS) && !defined(_WIN32) && !defined(GEKKO) && !defined(_3DS) && !defined(VITA) && !defined(WIIU) && !defined(__SWITCH__) && !defined(__APPLE__) && (!defined(_XOPEN_SOURCE) || (_XOPEN_SOURCE - 0) < 500)
 /* We'll want to use pthread_mutexattr_settype/PTHREAD_MUTEX_RECURSIVE, but glibc only conditionally exposes pthread_mutexattr_settype and PTHREAD_MUTEX_RECURSIVE depending on feature flags
  * Defining _XOPEN_SOURCE must be done at the top of the source file, before including any headers
  * pthread_mutexattr_settype/PTHREAD_MUTEX_RECURSIVE are specified the Single UNIX Specification (Version 2, 1997), along with POSIX later on (IEEE Standard 1003.1-2008), so should cover practically any pthread implementation

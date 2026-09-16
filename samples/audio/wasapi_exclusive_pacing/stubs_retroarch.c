@@ -7,6 +7,8 @@
 #include <stdarg.h>
 
 #include "../../../configuration.h"
+#include "../../../defaults.h"
+#include "../../../audio/audio_driver.h"
 
 /* audio/common/alsa.c reads one field - audio_format_negotiation -
  * during hw-params setup; zero is AUTO, which lets the null PCM pick
@@ -15,6 +17,17 @@ settings_t *config_get_ptr(void)
 {
    static settings_t settings;
    return &settings;
+}
+
+/* wasapi.c's mmdevice-watcher spawn hands the thread a pointer to
+ * audio_state_get_ptr()->reinit_request - the capture happens at the
+ * spawn site inside wasapi.c, so this sim needs the getter the real
+ * frontend provides. The scenarios never spawn the watcher, but the
+ * linker wants the symbol either way. */
+audio_driver_state_t *audio_state_get_ptr(void)
+{
+   static audio_driver_state_t audio_st;
+   return &audio_st;
 }
 
 void RARCH_LOG(const char *fmt, ...)
@@ -48,3 +61,17 @@ void RARCH_DBG(const char *fmt, ...)
    vprintf(fmt, ap);
    va_end(ap);
 }
+
+/* The device stage the driver reports for the statistics overlay;
+ * nothing here reads it. */
+void audio_driver_set_device_latency(size_t frames) { (void)frames; }
+
+/* The layout the driver under test asks the frontend for: stereo
+ * unless a case sets otherwise. */
+uint32_t stub_requested_layout = 0x3u;
+uint32_t audio_driver_requested_layout(void) { return stub_requested_layout; }
+
+/* The platform's audio defaults: audio_driver_device_block_frames()
+ * reads the device's transfer granularity from here, and no platform
+ * in a harness reports one. */
+struct defaults g_defaults;

@@ -110,6 +110,10 @@ void gl3_filter_chain_set_frame_count(
       gl3_filter_chain_t *chain,
       uint64_t count);
 
+void gl3_filter_chain_set_swap_count(
+      gl3_filter_chain_t *chain,
+      uint64_t count);
+
 void gl3_filter_chain_set_frame_count_period(
       gl3_filter_chain_t *chain,
       unsigned pass,
@@ -237,6 +241,10 @@ GLuint gl3_cross_compile_program(
  * Implemented by the gl3 driver; the result is cached after the first call.
  **/
 bool gl3_spirv_binary_supported(void);
+/* Latches the direct-SPIR-V user toggle; called at init and
+ * set_shader (blocking windows) so binary_supported never reads
+ * live settings from the video thread. */
+void gl3_spirv_refresh_direct_toggle(void);
 
 /**
  * gl3_spirv_link_program:

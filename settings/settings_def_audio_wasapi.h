@@ -22,3 +22,13 @@ S_UINT_EX(audio_wasapi_sh_buffer_length, AUDIO_WASAPI_SH_BUFFER_LENGTH,
       "WASAPI Shared Buffer Length",
       "The intermediate buffer length (in frames) when using the WASAPI driver in shared mode.")
 #endif
+
+/* Descriptor and configuration rows are #ifdef HAVE_WASAPI; the string
+ * tables always carry this row via the strings pass. */
+#if defined(HAVE_WASAPI) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_BOOL(audio_wasapi_mmcss, AUDIO_WASAPI_MMCSS,
+      "audio_wasapi_mmcss",
+      false, SD_FLAG_ADVANCED, 0, CMD_EVENT_AUDIO_REINIT,
+      "Prefer Pro Audio Scheduling",
+      "Hand the WASAPI device thread to Windows' multimedia class scheduler rather than raising its priority directly. Meant for very low Audio Latency settings; it is not always the better of the two, and on some systems it makes the worst frame worse, so it is off unless measured. The driver reports how late it woke, with the scheduling it used, when audio is torn down.")
+#endif

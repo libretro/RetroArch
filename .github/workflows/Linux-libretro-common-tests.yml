@@ -21,6 +21,10 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   libretro-common-tests:
     name: Build and run libretro-common/Makefile.test
@@ -31,7 +35,9 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 8
         run: |
-          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64"
+          # ffmpeg: tools/companion_thumbs_test.sh builds its video-hover
+          # fixture (a 2 KB Baseline MP4) with it.
+          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -58,7 +64,25 @@ jobs:
           # contributor's local run is not blocked.
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
 
       - name: Build and run the unit test suites
         shell: bash
@@ -74,7 +98,12 @@ jobs:
           # coverage, in order -- coverage files collide otherwise.
           # Any suite failing to build, or any check failing, or any
           # sanitizer report, fails the job.
-          make -f Makefile.test \
+          # 'unit-tests' by name: the default goal of Makefile.test is
+          # win32-configs, so a bare make here builds the Windows A/W
+          # matrix and none of the suites this step exists to run.  The
+          # 'all' target adds the concurrency and I/O samples, whose
+          # runtime depends on how many processors the runner has.
+          make -f Makefile.test unit-tests \
              LIBCHECK_CFLAGS="$(pkg-config --cflags check)" \
              CFLAGS="$(pkg-config --cflags check)"
           echo "[pass] libretro-common unit test suites"
@@ -93,6 +122,118 @@ jobs:
           # branch broken.  This is the same check at source level, for
           # free, on Linux.
           python3 tools/vfs_backend_parity.py
+
+      - name: Check companion backend feature parity
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The Qt, Win32 and Cocoa desktop companions share one C core
+          # but each has its own presentation; a backend can quietly omit
+          # a feature (no file browser, no scan, no core picker) and still
+          # build and run, the gap only showing when a user switches
+          # drivers.  Source-level check, for free, on Linux.
+          python3 tools/companion_parity.py
+
+      - name: Companion thumbnail engine regression test (plain, TSan, ASan)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The shared thumbnail engine every desktop companion draws
+          # through: real decoder, decode threads, cache, priority,
+          # cancel, shutdown, and one hover on a video (the still and
+          # the animation share one session).  Under both sanitizers,
+          # since it is the one piece of threaded code in the
+          # companions.
+          tools/companion_thumbs_test.sh
+          tools/companion_thumbs_test.sh tsan
+          tools/companion_thumbs_test.sh asan
+
+      - name: Companion core regression test (plain, ASan)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The toolkit-free model every desktop companion drives:
+          # playlist listing and All Playlists, the thumbnail path rule,
+          # the file browser, the run / needs-core paths, launch
+          # options - against real .lpl fixtures, with RetroArch's
+          # state replaced by stubs.
+          tools/companion_core_test.sh
+          tools/companion_core_test.sh asan
+          tools/companion_core_test.sh tsan
+
+      - name: C89 / Win32 syntax gate on the companion sources
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # MSVC 2005 builds these as C89 through griffin. The gate's
+          # second pass needs a 32-bit mingw for the Windows-only unit
+          # (the host gcc has no <windows.h>, which used to make the
+          # pass skip it silently - that is how mixed declarations
+          # reached master).
+          sudo apt-get install -y -qq gcc-mingw-w64-i686 gcc-mingw-w64-x86-64 > /dev/null
+          tools/mingw_syntax_check.sh ui/drivers/ui_win32_companion.c \
+             ui/companion/companion_core.c ui/companion/companion_thumbs.c \
+             ui/companion/companion_dock.c \
+             gfx/gfx_anim_preview.c
+
+      - name: Cocoa companion regression harness (GNUstep AppKit, headless)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The real ui/drivers/ui_cocoa_companion.m, compiled and linked
+          # against GNUstep's Foundation + AppKit with the real companion
+          # core and the core test's fixtures, driven under Xvfb the way a
+          # user drives it (view popup, File Browser tab, close) and
+          # checked on the AppKit objects themselves.
+          sudo apt-get install -y -qq gobjc gnustep-devel gnustep-back-common xvfb > /dev/null
+          tools/companion_cocoa_test.sh
+          # ASan too: the grid's prefetch reaching past the thumbnail
+          # marks only shows under a checking allocator (it crashed the
+          # app on macOS, where Apple's is one).
+          tools/companion_cocoa_test.sh asan
+
+      - name: Win32 companion regression harness (mingw + Wine, headless)
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The real ui/drivers/ui_win32_companion.c, built with mingw and
+          # linked with the real companion core and the core test's
+          # fixtures, run under Wine on Xvfb and driven with the messages
+          # the widgets send; checked on the real controls.
+          sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine xvfb > /dev/null
+          tools/companion_win32_test.sh
+
+      - name: WDM-KS ABI against the system ks.h
+        shell: bash
+        working-directory: samples/audio/wdmks_abi
+        run: |
+          set -eu
+          # audio/common/wdmks_ks.h declares the kernel-streaming
+          # interface the WDM-KS driver uses, because ks.h and
+          # ksmedia.h ship with the driver kit rather than the
+          # Platform SDK and not every toolchain here has them.
+          #
+          # That is only safe while what is declared matches what the
+          # system declares. A wrong layout does not fail to build and
+          # does not misbehave visibly: it hands the kernel a structure
+          # whose fields are in the wrong places. So this compiles ours
+          # beside the real headers and asserts every size, every field
+          # offset, every constant and the IOCTL code, on both word
+          # sizes, and in C89 as well as gnu99.
+          #
+          # It has already earned it. KSDATAFORMAT is a union with a
+          # LONGLONG that aligns it to eight; declared as the plain
+          # struct it resembles, KSDATARANGE_AUDIO came out 84 bytes
+          # against 88 and every field past the first would have been
+          # read four bytes off.
+          make check
+          echo "[pass] wdmks_abi"
 
       - name: Check stack frame budget
         shell: bash

@@ -954,7 +954,7 @@ void NETRETROPAD_CORE_PREFIX(retro_reset)(void)
    open_UDP_socket();
    input_state_validated = 0;
    combo_state_validated = 0;
-   memset(keyboard_state_validated, 0, RETROK_LAST);
+   memset(keyboard_state_validated, 0, sizeof(keyboard_state_validated));
 }
 
 void NETRETROPAD_CORE_PREFIX(retro_run)(void)

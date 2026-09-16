@@ -49,6 +49,9 @@
 
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
+#ifdef HAVE_THREADS
+#include "../video_thread_hw.h"
+#endif
 #endif
 
 #include "../font_driver.h"
@@ -63,6 +66,9 @@
 #endif
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx_widgets.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 #define GL3_SET_TEXTURE_COORDS(coords, xamt, yamt) \
@@ -185,6 +191,11 @@ typedef struct gl3
       unsigned width;
       unsigned height;
       bool     active;
+      /* The HDR settings this frame carried (video_frame_info_t), so the
+       * thread that draws never reads what the menu writes */
+      float    menu_nits;
+      float    paper_white_nits;
+      unsigned expand_gamut;
    } scrgb;
 #endif /* HAVE_SLANG */
 
@@ -196,6 +207,7 @@ typedef struct gl3
    unsigned out_vp_width;
    unsigned out_vp_height;
    unsigned rotation;
+   unsigned rotation_raw;
    unsigned textures_index;
    unsigned scratch_vbo_index;
    unsigned fence_count;
@@ -221,6 +233,14 @@ typedef struct gl3
    GLuint hw_render_texture;
    GLuint hw_render_fbo;
    GLuint hw_render_rb_ds;
+   /* The threaded wrapper's hardware ring: a target per slot, made in
+    * the core's context beside the driver's own, which is slot 0; the
+    * fence the core's thread placed after rendering into each, for the
+    * frame to wait before reading it. Sync objects are shared between
+    * the two contexts. */
+   GLuint hw_ring_texture[3];
+   GLuint hw_ring_fbo[3];
+   void  *hw_ring_sync[3];
 
    float menu_texture_alpha;
    math_matrix_4x4 mvp;                /* float alignment */
@@ -232,6 +252,11 @@ typedef struct gl3
 
    bool pbo_readback_valid[GL_CORE_NUM_PBOS];
    bool menu_texture_rgb32;
+   /* What the last frame said the menu filter should be:
+    * set_texture_frame() is applied by the video thread in
+    * thread_update_driver_state(), and reading the setting there races
+    * the menu writing it. */
+   bool frame_menu_linear_filter;
 } gl3_t;
 
 typedef struct gl3_video_shader_ctx_init
@@ -344,12 +369,18 @@ void gl3_framebuffer_copy_partial(
       float rx, float ry)
 {
    GLuint vbo;
-   const float quad_data[16] = {
+   /* C89: an aggregate initializer must be constant, and rx/ry are
+    * not; the four corners are set after declaration. */
+   float quad_data[16] = {
       0.0f, 0.0f, 0.0f, 0.0f,
-      1.0f, 0.0f, rx,   0.0f,
-      0.0f, 1.0f, 0.0f, ry,
-      1.0f, 1.0f, rx,   ry,
+      1.0f, 0.0f, 0.0f, 0.0f,
+      0.0f, 1.0f, 0.0f, 0.0f,
+      1.0f, 1.0f, 0.0f, 0.0f,
    };
+   quad_data[6]  = rx;
+   quad_data[11] = ry;
+   quad_data[14] = rx;
+   quad_data[15] = ry;
 
    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
    glActiveTexture(GL_TEXTURE2);
@@ -508,13 +539,30 @@ static bool gl3_parse_version(const char *version,
  *
  * Returns: true if glShaderBinary/glSpecializeShader can consume SPIR-V.
  */
+#if !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES)
+/* The user toggle, latched at init and at every set_shader - both
+ * blocking wrapper commands, so the read cannot race - which is
+ * exactly the "takes effect on the next preset load" promise the
+ * old per-call settings read made, minus the per-call settings read
+ * from the video thread's lazy pass builds. */
+static bool gl3_direct_spirv_enabled;
+
+void gl3_spirv_refresh_direct_toggle(void)
+{
+   settings_t *settings    = config_get_ptr();
+   gl3_direct_spirv_enabled =
+         settings && settings->bools.video_gl_direct_spirv;
+}
+#else
+void gl3_spirv_refresh_direct_toggle(void) { }
+#endif
+
 bool gl3_spirv_binary_supported(void)
 {
 #if defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES)
    return false;
 #else
    static int supported = -1;
-   settings_t *settings = config_get_ptr();
    GLint num_formats    = 0;
    GLint num_extensions = 0;
    GLint i;
@@ -522,9 +570,7 @@ bool gl3_spirv_binary_supported(void)
    unsigned minor       = 0;
    bool have_extension  = false;
 
-   /* Checked on every call rather than latched with the capability, so
-    * toggling the menu entry takes effect on the next preset load. */
-   if (!settings || !settings->bools.video_gl_direct_spirv)
+   if (!gl3_direct_spirv_enabled)
       return false;
 
    if (supported >= 0)
@@ -1078,6 +1124,15 @@ typedef struct
    struct font_atlas *atlas;
 
    video_font_raster_block_t *block;
+
+   /* The chunk a line is built into before it is handed over. Here
+    * rather than on the stack of the function that fills it: three
+    * arrays of MAX_MSG_LEN_CHUNK glyphs are twelve kilobytes, and a
+    * frame that size is three times what this tree allows. One font
+    * renders at a time on the thread that draws, so one is enough. */
+   GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
 } gl3_raster_t;
 
 static void gl3_raster_font_free(void *data,
@@ -1300,11 +1355,11 @@ static void gl3_raster_font_render_line(gl3_t *gl,
 {
    int i;
    struct video_coords coords;
-   GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_vertex    [2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat *font_tex_coords = font->font_tex_coords;
+   GLfloat *font_vertex     = font->font_vertex;
+   GLfloat *font_color      = font->font_color;
    GLfloat color_block[4 * 6];
    int n;
-   GLfloat font_color     [4 * 6 * MAX_MSG_LEN_CHUNK];
    const char* msg_end  = msg + msg_len;
    int x                = pre_x;
    int y                = roundf(pos_y * gl->vp.height);
@@ -1880,6 +1935,20 @@ static void gl3_deinit_hw_render(gl3_t *gl)
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
+   {
+      unsigned i;
+      for (i = 1; i < 3; i++)
+      {
+         if (gl->hw_ring_fbo[i])
+            glDeleteFramebuffers(1, &gl->hw_ring_fbo[i]);
+         if (gl->hw_ring_texture[i])
+            glDeleteTextures(1, &gl->hw_ring_texture[i]);
+         gl->hw_ring_fbo[i]     = 0;
+         gl->hw_ring_texture[i] = 0;
+      }
+      gl->hw_ring_fbo[0]     = 0;
+      gl->hw_ring_texture[0] = 0;
+   }
    if (gl->hw_render_fbo)
       glDeleteFramebuffers(1, &gl->hw_render_fbo);
    if (gl->hw_render_rb_ds)
@@ -2037,6 +2106,9 @@ static void gl3_destroy_resources(gl3_t *gl)
    gl3_deinit_hw_render(gl);
 }
 
+static bool gl3_hw_ring_expected(void);
+static bool gl3_core_context_is_mains(gl3_t *gl);
+
 static bool gl3_init_hw_render(gl3_t *gl, unsigned width, unsigned height)
 {
    GLint max_fbo_size;
@@ -2116,6 +2188,39 @@ static bool gl3_init_hw_render(gl3_t *gl, unsigned width, unsigned height)
    gl->flags               |= GL3_FLAG_HW_RENDER_ENABLE;
    gl->hw_render_max_width  = width;
    gl->hw_render_max_height = height;
+
+   /* The ring's other slots: the same target again, sharing the depth
+    * renderbuffer, which only the core's rendering touches and never
+    * two slots at once. Slot 0 is the driver's own. */
+   gl->hw_ring_texture[0] = gl->hw_render_texture;
+   gl->hw_ring_fbo[0]     = gl->hw_render_fbo;
+   if (gl3_hw_ring_expected())
+   {
+      unsigned i;
+      for (i = 1; i < 3; i++)
+      {
+         glGenFramebuffers(1, &gl->hw_ring_fbo[i]);
+         glBindFramebuffer(GL_FRAMEBUFFER, gl->hw_ring_fbo[i]);
+         glGenTextures(1, &gl->hw_ring_texture[i]);
+         glBindTexture(GL_TEXTURE_2D, gl->hw_ring_texture[i]);
+         glTexStorage2D(GL_TEXTURE_2D, 1,
+               gl->video_info.source_hdr10 ? GL_RGB10_A2 : GL_RGBA8,
+               width, height);
+         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+               GL_TEXTURE_2D, gl->hw_ring_texture[i], 0);
+         if (gl->hw_render_rb_ds)
+         {
+            if (hwr->stencil)
+               glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                     GL_RENDERBUFFER, gl->hw_render_rb_ds);
+            else
+               glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                     GL_RENDERBUFFER, gl->hw_render_rb_ds);
+         }
+         glClear(GL_COLOR_BUFFER_BIT);
+      }
+   }
+
    glBindTexture(GL_TEXTURE_2D, 0);
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -3169,6 +3274,20 @@ static void *gl3_init(const video_info_t *video,
    if (!gl || !ctx_driver)
       goto error;
 
+   /* Latched here, inside the wrapper's blocking CMD_INIT (the main
+    * thread is parked in send-and-wait, so the settings read is
+    * race-free), for every later gl3_core_context_is_mains() -
+    * including the frame path, where main runs free. */
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active() && video_thread_hw_allowed())
+      gl->flags |= GL3_FLAG_HW_RING_EXPECTED;
+#endif
+
+   /* Seed the raw rotation latch inside the same blocking window;
+    * set_rotation keeps it current from here on. */
+   gl->rotation_raw = retroarch_get_rotation();
+   gl3_spirv_refresh_direct_toggle();
+
    video_context_driver_set(ctx_driver);
 
    gl->ctx_driver = ctx_driver;
@@ -3367,7 +3486,8 @@ static void *gl3_init(const video_info_t *video,
    glBindVertexArray(gl->vao);
    glBindVertexArray(0);
 
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return gl;
 
@@ -3641,7 +3761,8 @@ static void gl3_set_nonblock_state(void *data, bool state,
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
 
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -3692,7 +3813,8 @@ static bool gl3_shader_load_begin(void *data,
          ds->filter,
          &deferred->total_passes);
 
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    if (!ds->new_chain)
@@ -3743,7 +3865,8 @@ static bool gl3_shader_load_step(void *data,
 
       deferred->current_pass++;
 
-      if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+      if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+            && !gl3_core_context_is_mains(gl))
          gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
       return true; /* more work remains */
@@ -3784,7 +3907,8 @@ static bool gl3_shader_load_step(void *data,
    }
 
 cleanup:
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    free(ds);
    deferred->driver_data = NULL;
@@ -3798,6 +3922,10 @@ static bool gl3_set_shader(void *data,
    gl3_t *gl = (gl3_t *)data;
    if (!gl)
       return false;
+
+   /* Blocking window: refresh the direct-SPIR-V toggle latch, the
+    * "next preset load" moment its semantics promise. */
+   gl3_spirv_refresh_direct_toggle();
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
@@ -3831,7 +3959,8 @@ static bool gl3_set_shader(void *data,
    if (!gl3_init_filter_chain_with_path(gl, path))
       return false;
 
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 
    return true;
@@ -3844,6 +3973,11 @@ static void gl3_set_rotation(void *data, unsigned rotation)
    if (!gl)
       return;
 
+   /* Raw 0-3 value alongside the transformed degrees: the frame
+    * path feeds it to the filter chain, and reading it here -
+    * written only inside blocking wrapper commands - replaces a
+    * per-frame retroarch_get_rotation() from the video thread. */
+   gl->rotation_raw = rotation;
    if (video_driver_is_hw_context() && (gl->flags & GL3_FLAG_HW_RENDER_BOTTOM_LEFT))
       gl->rotation = 90 * rotation;
    else
@@ -3998,8 +4132,7 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
        || (unsigned)gl->pbo_readback_scaler.in_width  != gl->vp.width
        || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
    {
-      recording_state_t *rec_st = recording_state_get_ptr();
-      if (rec_st && rec_st->enable)
+      if (gl->flags & GL3_FLAG_GPU_RECORDING)
       {
          /* Tear down old PBO resources before reinitializing */
          if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
@@ -4071,12 +4204,17 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       gl->readback_buffer_screenshot = NULL;
    }
 
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   /* Init leaves the core's context current for context_reset on this
+    * thread; when the wrapper's ring will drive the core, the main
+    * thread takes that context itself and this one must not hold it. */
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 
 error:
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return false;
 }
@@ -4154,12 +4292,14 @@ static void gl3_update_cpu_texture(gl3_t *gl,
 static void gl3_draw_menu_texture(gl3_t *gl,
       unsigned width, unsigned height)
 {
-   const float vbo_data[32] = {
-      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
-      1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, gl->menu_texture_alpha,
+   /* C89: the alpha is not a constant; set after declaration. */
+   float vbo_data[32] = {
+      0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+      0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
    };
+   vbo_data[7] = vbo_data[15] = vbo_data[23] = vbo_data[31] = gl->menu_texture_alpha;
 
    glEnable(GL_BLEND);
    glDisable(GL_CULL_FACE);
@@ -4449,6 +4589,10 @@ static void gl3_renderchain_render(
       params.out_width     = gl->vp.width;
       params.out_height    = gl->vp.height;
       params.frame_counter = (unsigned int)frame_count;
+      /* Intermediate passes of the same present: the outer frame's
+       * count, read from the shared state since video_info does not
+       * reach this far in. */
+      params.swap_counter  = (unsigned int)video_thread_swap_count();
       params.info          = tex_info;
       params.prev_info     = gl->chain.prev_info;
       params.feedback_info = feedback_info;
@@ -4515,6 +4659,7 @@ static void gl3_renderchain_render(
    params.out_width     = gl->vp.width;
    params.out_height    = gl->vp.height;
    params.frame_counter = (unsigned int)frame_count;
+   params.swap_counter  = (unsigned int)video_thread_swap_count();
    params.info          = tex_info;
    params.prev_info     = gl->chain.prev_info;
    params.feedback_info = feedback_info;
@@ -4542,7 +4687,6 @@ static void gl3_renderchain_render(
  * linear-light compositing applies. */
 static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
 {
-   settings_t *settings = config_get_ptr();
    float ubo_data[20];
    static const float quad_pos[8] = {
       0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
@@ -4562,8 +4706,11 @@ static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
    }
 
    memcpy(ubo_data, gl->mvp_no_rot.data, 16 * sizeof(float));
-   ubo_data[16] = settings
-         ? settings->floats.video_hdr_paper_white_nits : 200.0f;
+   /* Driver-owned, latched by the HDR poke path: the frame path
+    * (video thread, main running free) reads no live settings. The
+    * settings null-check this replaces was a vestige of the fetch
+    * that once supplied the value. */
+   ubo_data[16] = gl->scrgb.paper_white_nits;
    ubo_data[17] = 0.0f;
    ubo_data[18] = 2.0f;   /* PQ -> SDR */
    ubo_data[19] = 0.0f;   /* no separate UI layer on this path */
@@ -4643,6 +4790,24 @@ static bool gl3_frame(void *data, const void *frame,
    if (!gl)
       return false;
 
+   /* Travels with the frame, for set_texture_frame() to read rather
+    * than the setting the menu writes */
+   gl->frame_menu_linear_filter = video_info->menu_linear_filter;
+
+   /* These travel with the frame, so this thread does not read what the
+    * main thread writes: the scRGB encode below and gl3_encode_pq_to_sdr()
+    * read the latched copies. */
+   gl->scrgb.menu_nits        = video_info->hdr_menu_nits;
+   gl->scrgb.paper_white_nits = video_info->hdr_paper_white_nits;
+   gl->scrgb.expand_gamut     = video_info->hdr_expand_gamut;
+
+   /* Whether to read frames back travels with the frame, so this thread
+    * does not read the recording state the main thread writes. */
+   if (video_info->gpu_recording)
+      gl->flags |=  GL3_FLAG_GPU_RECORDING;
+   else
+      gl->flags &= ~GL3_FLAG_GPU_RECORDING;
+
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
    glBindVertexArray(gl->vao);
@@ -4650,7 +4815,7 @@ static bool gl3_frame(void *data, const void *frame,
    if (gl->chain.active)
       gl->chain.shader->use(gl, gl->chain.shader_data, 1, true);
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    /* Apparently the viewport is lost each frame, thanks Apple. */
    gl3_set_viewport(gl, width, height, false, true);
 #endif
@@ -4859,6 +5024,7 @@ static bool gl3_frame(void *data, const void *frame,
       params.out_width     = gl->vp.width;
       params.out_height    = gl->vp.height;
       params.frame_counter = (unsigned int)frame_count;
+      params.swap_counter  = (unsigned int)video_info->swap_count;
       params.info          = &gl->chain.tex_info;
       params.prev_info     = gl->chain.prev_info;
       params.feedback_info = &feedback_info;
@@ -4929,6 +5095,8 @@ static bool gl3_frame(void *data, const void *frame,
       }
 
       gl3_filter_chain_set_frame_count(filter_chain, frame_count);
+      gl3_filter_chain_set_swap_count(filter_chain,
+            video_info->swap_count);
 #ifdef HAVE_REWIND
       gl3_filter_chain_set_frame_direction(filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
 #else
@@ -4938,14 +5106,16 @@ static bool gl3_frame(void *data, const void *frame,
 
       gl3_filter_chain_set_original_fps(filter_chain, video_driver_get_original_fps());
 
-      gl3_filter_chain_set_rotation(filter_chain, retroarch_get_rotation());
-
-      gl3_filter_chain_set_core_aspect(filter_chain, video_driver_get_core_aspect());
-
-      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
       {
-         uint32_t rot          = retroarch_get_rotation();
-         float core_aspect_rot = video_driver_get_core_aspect();
+         uint32_t rot          = gl->rotation_raw;
+         float core_aspect     = video_driver_get_core_aspect();
+         float core_aspect_rot = core_aspect;
+
+         gl3_filter_chain_set_rotation(filter_chain, rot);
+
+         gl3_filter_chain_set_core_aspect(filter_chain, core_aspect);
+
+         /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
          if (rot == 1 || rot == 3)
             core_aspect_rot    = 1 / core_aspect_rot;
          gl3_filter_chain_set_core_aspect_rot(filter_chain, core_aspect_rot);
@@ -5064,7 +5234,6 @@ static bool gl3_frame(void *data, const void *frame,
     * the backbuffer as before. */
    if (gl->scrgb.active && gl->scrgb.fbo && gl->pipelines.hdr_scrgb)
    {
-      settings_t *settings = config_get_ptr();
       float ubo_data[20];
       bool ui_visible      = false;
       static const float quad_pos[8] = {
@@ -5078,8 +5247,8 @@ static bool gl3_frame(void *data, const void *frame,
        * when any UI is composited this frame (menu, overlay, OSD
        * message, statistics, widgets), the SDR content is scaled by
        * Menu HDR Brightness (video_hdr_menu_nits) instead of paper
-       * white -- this is the setting that controls menu brightness on
-       * the other four HDR drivers and was previously ignored here. */
+       * white -- this is the setting that controls menu brightness
+       * across the HDR drivers. */
 #ifdef HAVE_MENU
       if (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)
          ui_visible = true;
@@ -5098,10 +5267,8 @@ static bool gl3_frame(void *data, const void *frame,
       {
          bool  pq         = gl->video_info.source_hdr10
                          && gl->scrgb.ui_fbo != 0;
-         float paper_white = settings
-               ? settings->floats.video_hdr_paper_white_nits : 200.0f;
-         float menu_nits   = settings
-               ? settings->floats.video_hdr_menu_nits : 200.0f;
+         float paper_white = gl->scrgb.paper_white_nits;
+         float menu_nits   = gl->scrgb.menu_nits;
 
          memcpy(ubo_data, gl->mvp_no_rot.data, 16 * sizeof(float));
          /* SDR content keeps the existing single-target behaviour,
@@ -5112,8 +5279,7 @@ static bool gl3_frame(void *data, const void *frame,
          ubo_data[16] = pq
                ? paper_white
                : (ui_visible ? menu_nits : paper_white);
-         ubo_data[17] = settings
-               ? (float)settings->uints.video_hdr_expand_gamut : 0.0f;
+         ubo_data[17] = (float)gl->scrgb.expand_gamut;
          /* 0 = SDR -> scRGB, 1 = PQ -> scRGB (2 is the SDR-output
           * fallback, issued from gl3_encode_pq_to_sdr instead). */
          ubo_data[18] = pq ? 1.0f : 0.0f;
@@ -5209,7 +5375,7 @@ static bool gl3_frame(void *data, const void *frame,
    else if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
    {
       /* If recording has stopped, tear down PBO readback */
-      if (!recording_state_get_ptr()->enable)
+      if (!(gl->flags & GL3_FLAG_GPU_RECORDING))
       {
          gl3_deinit_pbo_readback(gl);
          gl->flags &= ~GL3_FLAG_PBO_READBACK_ENABLE;
@@ -5318,7 +5484,10 @@ static bool gl3_frame(void *data, const void *frame,
       gl3_fence_iterate(gl, hard_sync_frames);
 
    glBindVertexArray(0);
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   /* Not under the ring: the core's context is current on the main
+    * thread, and this one has no business taking it. */
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return true;
 }
@@ -5519,15 +5688,18 @@ static void gl3_set_texture_frame(void *data,
       const void *frame, bool rgb32, unsigned width, unsigned height,
       float alpha)
 {
-   settings_t *settings = config_get_ptr();
-   GLenum menu_filter   = settings->bools.menu_linear_filter
-      ? GL_LINEAR : GL_NEAREST;
    unsigned base_size   = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl3_t *gl            = (gl3_t*)data;
    bool recreate;
+   /* What the last frame carried, not what the setting says now: the
+    * video thread applies this in thread_update_driver_state(). */
+   GLenum menu_filter;
 
    if (!gl)
       return;
+
+   menu_filter          = gl->frame_menu_linear_filter
+      ? GL_LINEAR : GL_NEAREST;
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
@@ -5581,7 +5753,8 @@ static void gl3_set_texture_frame(void *data,
 
    glBindTexture(GL_TEXTURE_2D, 0);
    gl->menu_texture_alpha = alpha;
-   if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
 }
 
@@ -5600,6 +5773,177 @@ static void gl3_set_texture_enable(void *data, bool state, bool fullscreen)
       gl->flags |=  GL3_FLAG_MENU_TEXTURE_FULLSCREEN;
    else
       gl->flags &= ~GL3_FLAG_MENU_TEXTURE_FULLSCREEN;
+}
+
+/* Whether the threaded wrapper's hardware ring will drive this driver:
+ * decided at init, when the wrapper is already up, from the core's
+ * context type and the driver name. */
+static bool gl3_hw_ring_expected(void)
+{
+#ifdef HAVE_THREADS
+   return video_driver_thread_wrapper_active() && video_thread_hw_allowed();
+#else
+   return false;
+#endif
+}
+
+/* Whether the core's context belongs to the main thread: it does once
+ * the wrapper's ring has taken it (the flag), and it will as soon as
+ * the ring is set up (expected, from init on). Every place this
+ * thread would take that context for itself asks this, and only this.
+ * Asking only the flag let a bind during init - the stock shader's
+ * load is one - take the context here after the ring was decided but
+ * before it was set up, and the main thread's own bind then failed:
+ * a core with no current context, and no GL function resolved. */
+static bool gl3_core_context_is_mains(gl3_t *gl)
+{
+   /* Both bits are set on the video thread inside blocking command
+    * handlers (init, ring bring-up) while the main thread is parked
+    * in the wrapper's send-and-wait, and read here from the frame
+    * path. The live-settings consultation this replaces read
+    * settings->arrays.video_driver every frame from the video
+    * thread with the main thread running free. */
+   return (gl->flags & (GL3_FLAG_HW_RING | GL3_FLAG_HW_RING_EXPECTED)) != 0;
+}
+
+
+/* --- the threaded wrapper's hardware ring ------------------------------ */
+
+/* ARB_sync names the hardware ring uses; the PowerPC macOS headers
+ * have none of them. */
+#ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
+#define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
+#endif
+#ifndef GL_SYNC_FLUSH_COMMANDS_BIT
+#define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
+#endif
+#ifndef GL_TIMEOUT_IGNORED
+#define GL_TIMEOUT_IGNORED                0xFFFFFFFFFFFFFFFFull
+#endif
+#ifndef GL_TIMEOUT_EXPIRED
+#define GL_TIMEOUT_EXPIRED                0x911B
+#endif
+
+/* The core's context, current on the caller - the main thread. From
+ * here on the frame never takes it back. */
+static bool gl3_hw_ring_context_new(void *data, void **ctx)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl || !ctx || !(gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         || !gl->ctx_driver || !gl->ctx_driver->bind_hw_render)
+      return false;
+   gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+   gl->flags |= GL3_FLAG_HW_RING;
+   *ctx = gl;
+   return true;
+}
+
+/* Called on the thread that holds the core's context - the main
+ * thread - before the driver is freed. The context is given up here,
+ * where it is current; the driver's own bind would make the video
+ * thread's context current here instead. Without the hook the context
+ * driver's teardown copes with a still-current context, which GLX and
+ * WGL define. */
+static void gl3_hw_ring_context_free(void *data, void *ctx)
+{
+   gl3_t *gl = (gl3_t*)data;
+   (void)ctx;
+   if (!gl)
+      return;
+   gl->flags &= ~GL3_FLAG_HW_RING;
+   if (gl->ctx_driver && gl->ctx_driver->release_current)
+      gl->ctx_driver->release_current(gl->ctx_data);
+}
+
+static uintptr_t gl3_hw_ring_framebuffer(void *data, unsigned slot)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl || slot >= 3)
+      return 0;
+   return gl->hw_ring_fbo[slot];
+}
+
+/* Main thread, the core's context: a fence after the core's rendering
+ * into the slot, flushed so the other thread's wait can see it. */
+static bool gl3_hw_ring_capture(void *data, unsigned slot,
+      const void *source, unsigned format)
+{
+   gl3_t *gl = (gl3_t*)data;
+   (void)source; (void)format;
+   if (!gl || slot >= 3)
+      return false;
+   if (gl->hw_ring_sync[slot])
+      glDeleteSync((GLsync)gl->hw_ring_sync[slot]);
+   gl->hw_ring_sync[slot] = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+   glFlush();
+   return true;
+}
+
+/* Video thread: wait the core's fence on the server, and read the
+ * slot's texture as the frame's HW-render texture. */
+static bool gl3_hw_ring_present_slot(void *data, unsigned slot)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl || slot >= 3 || !gl->hw_ring_texture[slot])
+      return false;
+   if (gl->hw_ring_sync[slot])
+   {
+      glWaitSync((GLsync)gl->hw_ring_sync[slot], 0, GL_TIMEOUT_IGNORED);
+      glDeleteSync((GLsync)gl->hw_ring_sync[slot]);
+      gl->hw_ring_sync[slot] = NULL;
+   }
+   gl->hw_render_texture = gl->hw_ring_texture[slot];
+   return true;
+}
+
+typedef struct { void *sync; } gl3_ring_fence_t;
+
+static bool gl3_hw_ring_fence_new(void *data, void **fence)
+{
+   gl3_ring_fence_t *f;
+   (void)data;
+   if (!fence || !(f = (gl3_ring_fence_t*)calloc(1, sizeof(*f))))
+      return false;
+   *fence = f;
+   return true;
+}
+
+static void gl3_hw_ring_fence_free(void *data, void *fence)
+{
+   gl3_ring_fence_t *f = (gl3_ring_fence_t*)fence;
+   (void)data;
+   if (!f)
+      return;
+   if (f->sync)
+      glDeleteSync((GLsync)f->sync);
+   free(f);
+}
+
+static void gl3_hw_ring_fence_signal(void *data, void *fence)
+{
+   gl3_ring_fence_t *f = (gl3_ring_fence_t*)fence;
+   (void)data;
+   if (!f)
+      return;
+   if (f->sync)
+      glDeleteSync((GLsync)f->sync);
+   f->sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+   glFlush();
+}
+
+static bool gl3_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
+{
+   gl3_ring_fence_t *f = (gl3_ring_fence_t*)fence;
+   (void)data;
+   if (!f || !f->sync)
+      return true;
+   if (glClientWaitSync((GLsync)f->sync, GL_SYNC_FLUSH_COMMANDS_BIT,
+            timeout_us == HW_RING_WAIT_FOREVER
+               ? GL_TIMEOUT_IGNORED : (GLuint64)timeout_us * 1000) == GL_TIMEOUT_EXPIRED)
+      return false;
+   glDeleteSync((GLsync)f->sync);
+   f->sync = NULL;
+   return true;
 }
 
 static uintptr_t gl3_get_current_framebuffer(void *data)
@@ -5784,7 +6128,19 @@ static const video_poke_interface_t gl3_poke_interface = {
    NULL, /* set_hdr_scanlines */
    NULL, /* set_hdr_subpixel_layout */
    gl3_supports_texture_format,
-   gl3_load_texture_compressed
+   gl3_load_texture_compressed,
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install: Vulkan-shaped */
+   gl3_hw_ring_fence_new,
+   gl3_hw_ring_fence_free,
+   gl3_hw_ring_fence_signal,
+   gl3_hw_ring_fence_wait,
+   gl3_hw_ring_capture,
+   gl3_hw_ring_present_slot,
+   gl3_hw_ring_context_new,
+   gl3_hw_ring_context_free,
+   gl3_hw_ring_framebuffer
 };
 
 static void gl3_get_poke_interface(void *data,
@@ -5903,6 +6259,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    GFX_VIDEO_DRIVER_OPENGL_CORE,
    "glcore",
    false,
+   true,
    gfx_display_gl3_scissor_begin,
    gfx_display_gl3_scissor_end
 };

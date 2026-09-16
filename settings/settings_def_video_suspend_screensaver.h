@@ -11,9 +11,9 @@
 #define S_BOOL_H S_BOOL
 #endif
 #endif
-/* Descriptor and configuration rows are #if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV); the string
+/* Descriptor and configuration rows are #if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV); the string
  * tables always carry this row via the strings pass. */
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV) || defined(SETTINGS_DEF_STRINGS_PASS) || defined(SETTINGS_DEF_CONFIG_PASS)
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV) || defined(SETTINGS_DEF_STRINGS_PASS) || defined(SETTINGS_DEF_CONFIG_PASS)
 S_BOOL_H(ui_suspend_screensaver_enable, SUSPEND_SCREENSAVER_ENABLE,
       "suspend_screensaver_enable",
       true, SD_FLAG_LAKKA_ADVANCED, 0, 0,

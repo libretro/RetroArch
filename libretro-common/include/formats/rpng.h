@@ -83,7 +83,7 @@ void rpng_apng_stream_rewind(rpng_apng_stream_t *s);
 
 /* Progressive open over a partially-resident buffer: only the first
  * 'avail' bytes are guaranteed present.  Succeeds once the header and
- * at least one frame are in; raise the frontier with
+ * at least one frame are in; move the bound with
  * rpng_apng_stream_set_avail as the read advances and later frames
  * become playable.  Returns NULL with *need_more set when the header is
  * not resident yet.  Until a frame is indexed, next() reports
@@ -91,6 +91,21 @@ void rpng_apng_stream_rewind(rpng_apng_stream_t *s);
 rpng_apng_stream_t *rpng_apng_stream_open_avail(const uint8_t *buf,
       size_t len, size_t avail, int *need_more);
 void rpng_apng_stream_set_avail(rpng_apng_stream_t *s, size_t avail);
+
+/* Byte cursor for a windowing feeder (see rwebp_anim_stream_consumed
+ * for the contract).  media_floor is the first frame's first data
+ * chunk; consumed is where the next decode reads - the next frame's
+ * data start, the scan position while its index is still arriving, the
+ * buffer length once the file is exhausted; rewind() drops it to the
+ * floor.  next_span is the [lo, hi) byte range of the next frame's
+ * data chunks (0/0 when not indexed yet), so a feeder can make a frame
+ * larger than its lookahead resident before asking for it.  set_avail
+ * is an exact store: a feeder may lower it, and next() refuses (NULL,
+ * nothing consumed) a frame whose data lies past it. */
+size_t rpng_apng_stream_media_floor(const rpng_apng_stream_t *s);
+size_t rpng_apng_stream_consumed(const rpng_apng_stream_t *s);
+void rpng_apng_stream_next_span(const rpng_apng_stream_t *s,
+      size_t *lo, size_t *hi);
 
 rpng_t *rpng_alloc(void);
 

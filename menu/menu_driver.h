@@ -67,7 +67,9 @@ RETRO_BEGIN_DECLS
 #endif
 
 #define DATETIME_CHECK_INTERVAL    1000000
-#define MENU_DRAW_ENTRY_DELAY      30
+/* Single-click playlist button hold: entry drawing stays
+ * suppressed for this long (us) after the click */
+#define MENU_DRAW_ENTRY_DELAY      500000
 
 #define MENU_LIST_GET(list, idx) ((list) ? ((list)->menu_stack[(idx)]) : NULL)
 
@@ -419,6 +421,12 @@ typedef struct menu_ctx_driver
    /* This will be invoked whenever a menu entry action
     * (menu_entry_action()) is performed */
    int (*entry_action)(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
+   /* Move the list itself by the given number of mouse wheel
+    * notches, negative towards the top, leaving the selection
+    * where it is. Drivers whose list position *is* the selection
+    * leave this NULL and keep getting MENU_ACTION_UP/DOWN.
+    * Returns false when the driver cannot scroll right now. */
+   bool (*wheel_scroll)(void *userdata, int notches);
 } menu_ctx_driver_t;
 
 typedef struct
@@ -525,11 +533,11 @@ struct menu_state
    } scroll;
 
    /* unsigned alignment */
-   unsigned input_dialog_kb_type;
    unsigned input_dialog_kb_idx;
    unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
+   enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;
 #ifdef HAVE_RUNAHEAD
    unsigned int runahead_mode;
 #endif
@@ -563,6 +571,12 @@ struct menu_state
    char input_dialog_kb_label[256];
 #endif
    unsigned char kb_key_state[RETROK_LAST];
+
+   /* The entry generic_menu_iterate() looks at once a frame. Here
+    * rather than on its stack: a menu_entry_t is 3872 bytes, which put
+    * that frame at 4312 where this tree allows four thousand. One is
+    * looked at a time, on the thread that iterates. */
+   menu_entry_t iterate_entry;
 };
 
 typedef struct menu_content_ctx_defer_info

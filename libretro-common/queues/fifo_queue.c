@@ -31,9 +31,12 @@
 
 static bool fifo_initialize_internal(fifo_buffer_t *buf, size_t len)
 {
-   uint8_t *buffer    = (uint8_t*)calloc(1, len + 1);
+   uint8_t *buffer;
 
-   if (!buffer)
+   /* The ring is len + 1 bytes; SIZE_MAX would wrap that to nothing. */
+   if (len == (size_t)-1)
+      return false;
+   if (!(buffer = (uint8_t*)calloc(1, len + 1)))
       return false;
 
    buf->buffer        = buffer;
@@ -89,38 +92,75 @@ fifo_buffer_t *fifo_new(size_t len)
    return buf;
 }
 
+/* The precondition, documented in the header: len is at most what is
+ * available, so the copy crosses the ring's end at most once. The
+ * tail test is written so it cannot wrap size_t. */
 void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t len)
 {
+   size_t tail        = buffer->size - buffer->end;
    size_t first_write = len;
    size_t rest_write  = 0;
 
-   if (buffer->end + len > buffer->size)
+   if (len > tail)
    {
-      first_write = buffer->size - buffer->end;
-      rest_write  = len - first_write;
+      first_write = tail;
+      rest_write  = len - tail;
    }
 
    memcpy(buffer->buffer + buffer->end, in_buf, first_write);
    if (rest_write > 0)
       memcpy(buffer->buffer, (const uint8_t*)in_buf + first_write, rest_write);
 
-   buffer->end = (buffer->end + len) % buffer->size;
+   /* len is under size, so the index crosses the ring's end at most
+    * once: a compare and a subtract, not a division by a size that is
+    * never a power of two. */
+   buffer->end += len;
+   if (buffer->end >= buffer->size)
+      buffer->end -= buffer->size;
 }
 
 void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t len)
 {
+   size_t tail       = buffer->size - buffer->first;
    size_t first_read = len;
    size_t rest_read  = 0;
 
-   if (buffer->first + len > buffer->size)
+   if (len > tail)
    {
-      first_read = buffer->size - buffer->first;
-      rest_read  = len - first_read;
+      first_read = tail;
+      rest_read  = len - tail;
    }
 
    memcpy(in_buf, (const uint8_t*)buffer->buffer + buffer->first, first_read);
    if (rest_read > 0)
       memcpy((uint8_t*)in_buf + first_read, buffer->buffer, rest_read);
 
-   buffer->first = (buffer->first + len) % buffer->size;
+   buffer->first += len;
+   if (buffer->first >= buffer->size)
+      buffer->first -= buffer->size;
+}
+
+/* The checked calls clamp to what is available and say how much moved;
+ * a length past it is a short write or read, never a copy past the
+ * ring. For a caller that has already clamped - the audio drivers,
+ * which read the availability under their own lock - the unchecked
+ * calls above do not recompute it. */
+size_t fifo_write_checked(fifo_buffer_t *buffer, const void *in_buf, size_t len)
+{
+   size_t avail = FIFO_WRITE_AVAIL(buffer);
+   if (len > avail)
+      len = avail;
+   if (len)
+      fifo_write(buffer, in_buf, len);
+   return len;
+}
+
+size_t fifo_read_checked(fifo_buffer_t *buffer, void *in_buf, size_t len)
+{
+   size_t avail = FIFO_READ_AVAIL(buffer);
+   if (len > avail)
+      len = avail;
+   if (len)
+      fifo_read(buffer, in_buf, len);
+   return len;
 }

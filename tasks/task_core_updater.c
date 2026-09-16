@@ -83,6 +83,12 @@ typedef struct core_updater_list_handle
    bool http_task_finished;
    bool http_task_complete;
    bool http_task_success;
+   /* Captured on the main thread at push: the handler runs on the
+    * threaded task queue's worker and parses the core list against
+    * these, never against the live settings. */
+   char dir_libretro[DIR_MAX_LENGTH];
+   char path_libretro_info[PATH_MAX_LENGTH];
+   char network_buildbot_url[PATH_MAX_LENGTH];
 } core_updater_list_handle_t;
 
 /* Download core */
@@ -157,6 +163,13 @@ typedef struct update_installed_cores_handle
     * again (see UPDATE_INSTALLED_CORES_WAIT_LIST). */
    bool list_task_complete;
    bool download_task_complete;
+   /* Captured on the main thread when this task is pushed: its
+    * handler runs on the worker and pushes the list task from
+    * there, so the list task's captures come from here, not from
+    * a settings read on the worker. */
+   char dir_libretro[DIR_MAX_LENGTH];
+   char path_libretro_info[PATH_MAX_LENGTH];
+   char network_buildbot_url[PATH_MAX_LENGTH];
 } update_installed_cores_handle_t;
 
 #if defined(ANDROID)
@@ -209,9 +222,9 @@ typedef struct play_feature_delivery_switch_cores_handle
 
 /* Sliced CRC32 of a core file.
  *
- * This used to be a blocking intfstream_get_crc() over the whole
- * file, called from inside a task handler tick.  The cost of that
- * tick is therefore a function of core size and nothing else --
+ * Sliced, because a blocking intfstream_get_crc() over the whole
+ * file inside a task handler tick makes the cost of that tick a
+ * function of core size and nothing else --
  * unbounded from the frontend's point of view.  Measured cold on
  * NVMe: 43ms for a 40MB core, 112ms for a 260MB one, i.e. 3 to 7
  * dropped frames per core.  RetroArch's SD-card and spinning-disk
@@ -263,9 +276,11 @@ static bool task_core_updater_crc_step(core_crc_slice_t *slice,
    if (!slice->active)
    {
       slice->accumulator = 0;
+      /* FREQUENT_ACCESS: mapped where the VFS can, and each
+       * crc_step() then folds from the mapping without a read. */
       if (!(slice->file = intfstream_open_file(core_path,
                   RETRO_VFS_FILE_ACCESS_READ,
-                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+                  RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)))
       {
          *crc = 0;
          return true;
@@ -366,19 +381,14 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
       case CORE_UPDATER_LIST_BEGIN:
          {
             char buildbot_url[PATH_MAX_LENGTH];
-            settings_t *settings    = config_get_ptr();
             file_transfer_t *transf = NULL;
             const char *net_buildbot_url;
 
             /* Reset core updater list */
             core_updater_list_reset(list_handle->core_list);
 
-            /* Get core listing URL - check settings first to
-             * avoid dereferencing NULL */
-            if (!settings)
-               goto task_finished;
-
-            net_buildbot_url = settings->paths.network_buildbot_url;
+            /* Get core listing URL from the push-time capture */
+            net_buildbot_url = list_handle->network_buildbot_url;
 
             if (!net_buildbot_url || !*net_buildbot_url)
                goto task_finished;
@@ -455,17 +465,13 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             {
                /* Parse HTTP transfer data */
                if (list_handle->http_data)
-               {
-                  settings_t *settings = config_get_ptr();
-                  if (settings)
-                     core_updater_list_parse_network_data(
-                           list_handle->core_list,
-                           settings->paths.directory_libretro,
-                           settings->paths.path_libretro_info,
-                           settings->paths.network_buildbot_url,
-                           list_handle->http_data->data,
-                           list_handle->http_data->len);
-               }
+                  core_updater_list_parse_network_data(
+                        list_handle->core_list,
+                        list_handle->dir_libretro,
+                        list_handle->path_libretro_info,
+                        list_handle->network_buildbot_url,
+                        list_handle->http_data->data,
+                        list_handle->http_data->len);
             }
             else
             {
@@ -474,16 +480,8 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                task_set_title(task, strdup(msg_hash_to_str(MSG_CORE_LIST_FAILED)));
             }
 
-            /* Enable menu refresh, if required */
-#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
-            {
-               struct menu_state *menu_st = menu_state_get_ptr();
-               if (list_handle->refresh_menu)
-                  menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
-               else
-                  menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
-            }
-#endif
+            /* Menu refresh happens in the task's callback: the
+             * main thread, where menu flags are written. */
          }
          /* fall-through */
       default:
@@ -543,13 +541,36 @@ static void cb_task_core_updater_get_list(
    update_installed_cores_handle_t *update_installed_handle =
          (update_installed_cores_handle_t*)user_data;
 
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+   /* The main thread, at task retrieval: menu flags are a plain
+    * read-modify-write, so every writer must be here, racing
+    * nothing. */
+   {
+      core_updater_list_handle_t *list_handle =
+            (core_updater_list_handle_t*)task->state;
+      struct menu_state *menu_st = menu_state_get_ptr();
+      if (list_handle && menu_st)
+      {
+         if (list_handle->refresh_menu)
+            menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
+         else
+            menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      }
+   }
+#endif
+
    if (update_installed_handle)
       update_installed_handle->list_task_complete = true;
 }
 
-static void *task_push_get_core_updater_list_internal(
+/* The push with the three paths as values: reads no live settings,
+ * so the worker that pushes the list task from the update-installed
+ * handler can call it with its own push-time captures. */
+static void *task_push_get_core_updater_list_captured(
       core_updater_list_t* core_list, bool mute, bool refresh_menu,
-      update_installed_cores_handle_t *update_installed_handle)
+      update_installed_cores_handle_t *update_installed_handle,
+      const char *dir_libretro, const char *path_libretro_info,
+      const char *network_buildbot_url)
 {
    task_finder_data_t find_data;
    retro_task_t *task                      = NULL;
@@ -575,6 +596,12 @@ static void *task_push_get_core_updater_list_internal(
    list_handle->http_task_complete = false;
    list_handle->http_task_success  = false;
    list_handle->http_data          = NULL;
+   strlcpy(list_handle->dir_libretro, dir_libretro,
+         sizeof(list_handle->dir_libretro));
+   strlcpy(list_handle->path_libretro_info, path_libretro_info,
+         sizeof(list_handle->path_libretro_info));
+   strlcpy(list_handle->network_buildbot_url, network_buildbot_url,
+         sizeof(list_handle->network_buildbot_url));
    list_handle->status             = CORE_UPDATER_LIST_BEGIN;
 
    /* Concurrent downloads of the buildbot core listing
@@ -623,6 +650,20 @@ error:
       free_core_updater_list_handle(list_handle);
 
    return NULL;
+}
+
+/* The live push: main-thread callers, reading the settings at the
+ * moment of the push. */
+static void *task_push_get_core_updater_list_internal(
+      core_updater_list_t* core_list, bool mute, bool refresh_menu,
+      update_installed_cores_handle_t *update_installed_handle)
+{
+   settings_t *settings = config_get_ptr();
+   return task_push_get_core_updater_list_captured(
+         core_list, mute, refresh_menu, update_installed_handle,
+         settings->paths.directory_libretro,
+         settings->paths.path_libretro_info,
+         settings->paths.network_buildbot_url);
 }
 
 void *task_push_get_core_updater_list(
@@ -970,9 +1011,9 @@ static void task_core_updater_download_handler(retro_task_t *task)
             transf->user_data = (void*)download_handle;
 
             /* The body is streamed straight to transf->path as it
-             * arrives, so everything that used to gate the write in
-             * cb_http_task_core_updater_download() has to happen
-             * before the transfer starts rather than after it. */
+             * arrives, so every check that gates the write has to
+             * happen before the transfer starts rather than after
+             * it. */
             strlcpy(output_dir, transf->path, sizeof(output_dir));
             path_basedir_wrapper(output_dir);
 
@@ -1003,9 +1044,9 @@ static void task_core_updater_download_handler(retro_task_t *task)
             }
 #endif
 
-            /* Title that task_push_http_transfer_file() used to build
-             * internally; task_push_http_download_file() takes it as
-             * an argument instead. */
+            /* The transfer title, which
+             * task_push_http_download_file() takes as an
+             * argument. */
             _tlen = 0;
             http_title[0] = '\0';
             strlcpy_append(http_title, sizeof(http_title), &_tlen,
@@ -1416,9 +1457,12 @@ static void task_update_installed_cores_handler(retro_task_t *task)
          /* If push failed, go to end
           * (error will message will be displayed when
           * final task title is set) */
-         if (!task_push_get_core_updater_list_internal(
+         if (!task_push_get_core_updater_list_captured(
                   update_installed_handle->core_list,
-                  true, false, update_installed_handle))
+                  true, false, update_installed_handle,
+                  update_installed_handle->dir_libretro,
+                  update_installed_handle->path_libretro_info,
+                  update_installed_handle->network_buildbot_url))
             update_installed_handle->status = UPDATE_INSTALLED_CORES_END;
          else
             update_installed_handle->status = UPDATE_INSTALLED_CORES_WAIT_LIST;
@@ -1752,6 +1796,20 @@ void task_push_update_installed_cores(
    /* Configure handle */
    update_installed_handle->auto_backup              = auto_backup;
    update_installed_handle->auto_backup_history_size = auto_backup_history_size;
+   /* Captured here, on the main thread: the handler pushes the list
+    * task from the worker with these. */
+   {
+      settings_t *settings = config_get_ptr();
+      strlcpy(update_installed_handle->dir_libretro,
+            settings->paths.directory_libretro,
+            sizeof(update_installed_handle->dir_libretro));
+      strlcpy(update_installed_handle->path_libretro_info,
+            settings->paths.path_libretro_info,
+            sizeof(update_installed_handle->path_libretro_info));
+      strlcpy(update_installed_handle->network_buildbot_url,
+            settings->paths.network_buildbot_url,
+            sizeof(update_installed_handle->network_buildbot_url));
+   }
    update_installed_handle->path_dir_libretro        = strdup(path_dir_libretro);
    update_installed_handle->path_dir_core_assets     = (!path_dir_core_assets || !*path_dir_core_assets) ?
          NULL : strdup(path_dir_core_assets);

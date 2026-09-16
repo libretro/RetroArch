@@ -166,6 +166,13 @@ const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len);
  * the whole file, so a caller can charge admission against the window
  * in the first case and against the file in the second. */
 bool data_transfer_window_is_reserved(data_transfer_t *dt);
+
+/* Bytes currently committed by a windowed transfer: the resident head
+ * plus the moving window. A count for measurement (harness numbers,
+ * a memory readout), not a position: it says how much is resident,
+ * not where, so it gives a second consumer nothing to read by. For a
+ * transfer that settled into a whole-file commit it is the length. */
+size_t data_transfer_window_resident(data_transfer_t *dt);
 /* True when this build can reserve address space, i.e. when
  * data_transfer_open_window will map a window rather than degrading to
  * reading the whole file.  Lets a caller decide before opening whether

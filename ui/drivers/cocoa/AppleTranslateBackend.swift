@@ -288,8 +288,26 @@ private func performOCR(imageData: UnsafePointer<UInt8>, width: Int, height: Int
 
 // MARK: - Speech Synthesis
 
+/* AVSpeechSynthesizerDelegate is annotated Sendable in recent SDKs, so
+ * conforming to it makes this class Sendable too - and AVSpeechSynthesizer
+ * is not, which is what the warning says. The conformance is declared
+ * @unchecked rather than the property being exempted, because what has to
+ * hold is a property of the whole object and saying so in one place is
+ * more honest than exempting one member of it.
+ *
+ * What holds: one of these is created per request, kept alive by a single
+ * global reference, and driven from one place. The synthesizer is touched
+ * by synthesize() and by the two delegate callbacks, which AVFoundation
+ * serialises against each other, and nothing else refers to it. It is not
+ * shared between requests and there is no second thread writing it.
+ *
+ * What this does not claim: that the class would be safe if it were
+ * shared. It would not - completion and audioBuffers are plain stored
+ * properties with no lock. If this ever outlives one request or gains a
+ * second caller, the assertion below stops being true and the fix is
+ * isolation rather than a wider @unchecked. */
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, *)
-private class SpeechSynthesizer: NSObject, AVSpeechSynthesizerDelegate {
+private final class SpeechSynthesizer: NSObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
     private let synthesizer = AVSpeechSynthesizer()
     private var audioBuffers: [AVAudioBuffer] = []
     private var completion: ((Data?, String?) -> Void)?

@@ -88,6 +88,9 @@
 #endif
 #include "../../gfx/video_display_server.h"
 #include "../../manual_content_scan.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -99,7 +102,7 @@
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
 #endif
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #endif
 
@@ -180,7 +183,7 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
    return generic_action_ok(path, label, type, idx, entry_idx, _id, _flush); \
 }
 
-#define DEFAULT_ACTION_DIALOG_START(funcname, _label, _idx, _cb) \
+#define DEFAULT_ACTION_DIALOG_START_TYPE(funcname, _label, _idx, _cb, _text_type) \
 static int (funcname)(const char *path, const char *label_setting, unsigned type, size_t idx, size_t entry_idx) \
 { \
    menu_input_ctx_line_t line; \
@@ -188,11 +191,15 @@ static int (funcname)(const char *path, const char *label_setting, unsigned type
    line.label_setting = label_setting; \
    line.type          = type; \
    line.idx           = (_idx); \
+   line.text_type     = (_text_type); \
    line.cb            = _cb; \
    if (!menu_input_dialog_start(&line)) \
       return -1; \
    return 0; \
 }
+
+#define DEFAULT_ACTION_DIALOG_START(funcname, _label, _idx, _cb) \
+   DEFAULT_ACTION_DIALOG_START_TYPE(funcname, _label, _idx, _cb, MENU_INPUT_DIALOG_KB_TYPE_TEXT)
 
 
 #define DEFAULT_ACTION_OK_START_BUILTIN_CORE(funcname, _id) \
@@ -329,8 +336,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_MIXER_STREAM_SETTINGS_LIST;
       case ACTION_OK_DL_ACCOUNTS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST;
-      case ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST:
-         return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_LIST;
+      case ACTION_OK_DL_ACHIEVEMENTS_SUBMENU_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_ACHIEVEMENTS_SUBMENU_LIST;
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_SETTINGS_LIST;
       case ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST:
@@ -1025,7 +1032,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
          if (menu)
          {
-#if IOS
+#if TARGET_OS_IPHONE
             fill_pathname_expand_special(tmp, menu->scratch2_buf, sizeof(tmp));
             menu_path    = tmp;
 #else
@@ -1573,7 +1580,7 @@ int generic_action_ok_displaylist_push(
 
          if (path && menu_path)
          {
-#if IOS
+#if TARGET_OS_IPHONE
             fill_pathname_expand_special(parent_dir, menu_path, sizeof(parent_dir));
             fill_pathname_join_special(tmp,
                   parent_dir, path, sizeof(tmp));
@@ -1589,7 +1596,7 @@ int generic_action_ok_displaylist_push(
          fill_pathname_parent_dir(parent_dir,
                parent_dir, sizeof(parent_dir));
 
-#if IOS
+#if TARGET_OS_IPHONE
          fill_pathname_abbreviate_special(tmp, parent_dir, sizeof(tmp));
          strlcpy(parent_dir, tmp, sizeof(parent_dir));
 #endif
@@ -1753,7 +1760,7 @@ int generic_action_ok_displaylist_push(
       }
          break;
       case ACTION_OK_DL_ACCOUNTS_LIST:
-      case ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST:
+      case ACTION_OK_DL_ACHIEVEMENTS_SUBMENU_LIST:
       case ACTION_OK_DL_INPUT_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_TURBO_FIRE_SETTINGS_LIST:
@@ -2029,12 +2036,32 @@ static int action_ok_dl_from_map(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t i;
-   /* The ok callback signature carries no enum_idx; the previous
-    * lookup keyed on 'type', but for these entries 'type' is the
-    * menu_settings_type (MENU_SETTING_ACTION), never the label enum,
-    * so every row missed and fell through to the archive/file browser.
-    * Key on the entry's canonical label instead, which is what the
-    * bind path matched on. */
+   /* The ok callback signature carries no enum_idx, so fetch the
+    * entry's cbs and key on the same cbs->enum_idx the bind path
+    * matched on. The entry's label string is not a usable key:
+    * saved Explore views are appended under
+    * MENU_ENUM_LABEL_GOTO_EXPLORE with the .lvw path in the label
+    * slot, so a string compare against the canonical label misses
+    * and falls through to the archive/file browser. */
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = menu_list
+         ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   menu_file_list_cbs_t *cbs  = selection_buf
+         ? (menu_file_list_cbs_t*)
+           file_list_get_actiondata_at_offset(selection_buf, idx) : NULL;
+
+   if (cbs && cbs->enum_idx != MSG_UNKNOWN)
+   {
+      for (i = 0; i < ARRAY_SIZE(ok_dl_map); i++)
+         if ((uint32_t)cbs->enum_idx == ok_dl_map[i].enum_idx)
+            return generic_action_ok_displaylist_push(path, NULL,
+                  label, type, idx, entry_idx,
+                  (unsigned)ok_dl_map[i].dl_id);
+   }
+
+   /* Entries reachable without a live selection buffer still
+    * resolve when their label is the canonical one. */
    for (i = 0; i < ARRAY_SIZE(ok_dl_map); i++)
       if (string_is_equal(label,
             msg_hash_to_str((enum msg_hash_enums)ok_dl_map[i].enum_idx)))
@@ -2146,7 +2173,7 @@ static int file_load_with_detect_core_wrapper(
 
    {
       menu_content_ctx_defer_info_t def_info;
-#if IOS
+#if TARGET_OS_IPHONE
       char tmp_path[PATH_MAX_LENGTH];
 #endif
       char menu_path_new[PATH_MAX_LENGTH];
@@ -2158,7 +2185,7 @@ static int file_load_with_detect_core_wrapper(
 
       menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
       if (menu_path)
       {
          fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
@@ -2176,7 +2203,7 @@ static int file_load_with_detect_core_wrapper(
             strlcpy(menu_path_new, menu->scratch_buf, sizeof(menu_path_new));
          else
          {
-#if IOS
+#if TARGET_OS_IPHONE
             fill_pathname_join_special(tmp_path,
                   menu->scratch2_buf, menu->scratch_buf, sizeof(tmp_path));
             fill_pathname_expand_special(menu_path_new, tmp_path, sizeof(menu_path_new));
@@ -2358,7 +2385,7 @@ static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, enum msg_hash_enums flush_id)
 {
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp_path[PATH_MAX_LENGTH];
 #endif
    char action_path[PATH_MAX_LENGTH];
@@ -2384,7 +2411,7 @@ static int generic_action_ok(const char *path,
    menu_entries_get_last_stack(&menu_path,
          &menu_label, NULL, &enum_idx, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
    menu_path = tmp_path;
 #endif
@@ -3537,6 +3564,7 @@ static int action_ok_wifi(const char *path, const char *label_setting,
       line.label_setting = label_setting;
       line.type          = type;
       line.idx           = (unsigned)idx;
+      line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
       line.cb            = menu_input_wifi_cb;
       if (!menu_input_dialog_start(&line))
          return -1;
@@ -3914,9 +3942,11 @@ static int action_ok_video_filter_remove(const char *path,
       return -1;
    if (*settings->paths.path_softfilter_plugin)
    {
-      /* Unload video filter */
+      /* Unload video filter. The driver was set up for its output
+       * (pixel format and scale), so set it up again without it, as
+       * the reset does */
       settings->paths.path_softfilter_plugin[0] = '\0';
-      video_driver_filter_free();
+      command_event(CMD_EVENT_REINIT, NULL);
       /* Refresh menu */
       menu_st->flags         |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                              |  MENU_ST_FLAG_PREVENT_POPULATE;
@@ -3976,20 +4006,22 @@ static void menu_input_st_string_cb_cheat_file_save_as(
 }
 #endif
 
-DEFAULT_ACTION_DIALOG_START(action_ok_enable_settings,
+DEFAULT_ACTION_DIALOG_START_TYPE(action_ok_enable_settings,
    msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD),
    (unsigned)entry_idx,
-   menu_input_st_string_cb_enable_settings)
+   menu_input_st_string_cb_enable_settings,
+   MENU_INPUT_DIALOG_KB_TYPE_PASSWORD)
 #ifdef HAVE_CHEATS
 DEFAULT_ACTION_DIALOG_START(action_ok_cheat_file_save_as,
    msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME),
    (unsigned)idx,
    menu_input_st_string_cb_cheat_file_save_as)
 #endif
-DEFAULT_ACTION_DIALOG_START(action_ok_disable_kiosk_mode,
+DEFAULT_ACTION_DIALOG_START_TYPE(action_ok_disable_kiosk_mode,
    msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD),
    (unsigned)entry_idx,
-   menu_input_st_string_cb_disable_kiosk_mode)
+   menu_input_st_string_cb_disable_kiosk_mode,
+   MENU_INPUT_DIALOG_KB_TYPE_PASSWORD)
 static int action_ok_rename_entry(const char *path,
       const char *label_setting, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4001,6 +4033,7 @@ static int action_ok_rename_entry(const char *path,
    line.label_setting                 = label_setting;
    line.type                          = type;
    line.idx                           = (unsigned)entry_idx;
+   line.text_type                     = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                            = menu_input_st_string_cb_rename_entry;
 
    if (!menu_input_dialog_start(&line))
@@ -4287,7 +4320,6 @@ static int action_ok_remap_file_flush(const char *path,
    /* Log result */
    if (ret)
    {
-      /* TODO/FIXME - localize */
       RARCH_LOG(
             "[Remap] Saved input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
@@ -4297,7 +4329,6 @@ static int action_ok_remap_file_flush(const char *path,
    }
    else
    {
-      /* TODO/FIXME - localize */
       RARCH_LOG(
             "[Remap] Failed to save input remapping options to \"%s\".\n",
             path_remapfile ? path_remapfile : "UNKNOWN");
@@ -4436,7 +4467,7 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_path_manual_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#if IOS
+#if TARGET_OS_IPHONE
    char dir_path[DIR_MAX_LENGTH];
 #endif
    char content_dir[DIR_MAX_LENGTH];
@@ -4449,7 +4480,7 @@ static int action_ok_path_manual_scan_directory(const char *path,
    {
       menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
       fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
       menu_path = dir_path;
 #endif
@@ -5199,6 +5230,9 @@ static int action_ok_halt_replay(const char *path,
    return 0;
 }
 
+#ifdef HAVE_CHEEVOS
+/* Both of these are bound by the achievement entries below, which are
+ * compiled only with achievements on. */
 static int action_ok_close_submenu(const char* path,
    const char* label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -5212,6 +5246,7 @@ static int action_ok_cheevos_toggle_hardcore_mode(const char *path,
    action_cancel_pop_default(path, label, type, idx);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
+#endif
 
 static int action_ok_undo_load_state(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -6757,6 +6792,7 @@ static int action_ok_add_entry_to_new_playlist(const char *path,
    line.label_setting         = NULL;
    line.type                  = 0;
    line.idx                   = 0;
+   line.text_type             = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                    = (string_is_equal(label, (char*)MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST_STR) ?
                                       action_input_add_entry_to_new_playlist :
                                       action_input_add_entry_to_new_playlist_quickmenu);
@@ -7042,7 +7078,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_steam_settings_list, ACTION_OK_DL_STEAM_
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_steam_list, ACTION_OK_DL_CORE_MANAGER_STEAM_LIST)
 #endif
 #ifdef HAVE_CHEEVOS
-DEFAULT_ACTION_OK_FUNC(action_ok_push_achievements_hardcore_pause_list, ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST)
+DEFAULT_ACTION_OK_FUNC(action_ok_push_achievements_submenu, ACTION_OK_DL_ACHIEVEMENTS_SUBMENU_LIST)
 #endif
 DEFAULT_ACTION_OK_FUNC(action_ok_push_core_information_list, ACTION_OK_DL_CORE_INFORMATION_LIST)
 #ifdef HAVE_MIST
@@ -7079,7 +7115,7 @@ static int action_ok_open_picker(const char *path,
 #if TARGET_OS_IOS
    ios_show_file_sheet();
    return 0;
-#elif defined(OSX) && defined(HAVE_APPLE_STORE)
+#elif TARGET_OS_OSX && defined(HAVE_APPLE_STORE)
    osx_show_file_sheet();
    return 0;
 #elif defined(ANDROID) && defined(HAVE_SAF)
@@ -7401,7 +7437,7 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
 {
    menu_entry_t entry;
    char current_value[PATH_MAX_LENGTH];
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp[PATH_MAX_LENGTH];
 #endif
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -7422,7 +7458,7 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
       menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
       strlcpy(current_value, entry.value, sizeof(current_value));
    }
-#if IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(tmp, current_value, sizeof(tmp));
    if (!path_is_directory(tmp))
       current_value[0] = '\0';
@@ -7721,15 +7757,20 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
 
    video_shader_driver_get_current_shader(&shader_info);
 
-   param_prev    = &shader_info.data->parameters[entry_idx - offset];
    if (shader)
       param_menu = &shader->parameters [entry_idx - offset];
 
-   if (!param_prev || !param_menu)
+   if (!shader_info.data || !param_menu)
       return -1;
 
-   param_prev->current  = val;
-   param_menu->current  = param_prev->current;
+   /* Clamp against the live parameter's stable range, then submit
+    * through the owning-thread setter (see menu_cbs_right.c). */
+   param_prev           = &shader_info.data->parameters[entry_idx - offset];
+   val                  = MIN(MAX(param_prev->minimum, val),
+         param_prev->maximum);
+   video_shader_driver_set_parameter(shader_info.data,
+         entry_idx - offset, val);
+   param_menu->current  = val;
 
    shader->flags       |= SHDR_FLAG_MODIFIED;
 
@@ -8445,7 +8486,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    menu_path           = menu->scratch2_buf;
    content_path        = menu->scratch_buf;
 
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp_path[PATH_MAX_LENGTH];
    fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
    menu_path = tmp_path;
@@ -9638,12 +9679,15 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CORE_DELETE,                         action_ok_core_delete},
          {MENU_ENUM_LABEL_CORE_CREATE_BACKUP,                  action_ok_core_create_backup},
          {MENU_ENUM_LABEL_DELETE_PLAYLIST,                     action_ok_delete_playlist},
+#ifdef HAVE_CHEEVOS
+         {MENU_ENUM_LABEL_CHEEVOS_MENU_SUBMENU,                action_ok_push_achievements_submenu},
          {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,              action_ok_push_default},
          {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE,                   action_ok_cheevos_toggle_hardcore_mode},
          {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL,            action_ok_close_submenu},
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,                  action_ok_cheevos_toggle_hardcore_mode},
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL,           action_ok_close_submenu },
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,  action_ok_close_submenu },
+#endif
 #ifdef HAVE_MICROPHONE
          {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,                 action_ok_push_microphone_settings_list},
 #endif
@@ -9667,6 +9711,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,        action_ok_push_default},
          {MENU_ENUM_LABEL_DISC_INFORMATION,                    action_ok_push_default},
          {MENU_ENUM_LABEL_SYSTEM_INFORMATION,                  action_ok_push_default},
+         {MENU_ENUM_LABEL_DISPLAY_INFORMATION,                 action_ok_push_default},
+         {MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION,            action_ok_push_default},
          {MENU_ENUM_LABEL_NETWORK_INFORMATION,                 action_ok_push_default},
          {MENU_ENUM_LABEL_ACHIEVEMENT_LIST,                    action_ok_push_default},
          {MENU_ENUM_LABEL_DISK_OPTIONS,                        action_ok_push_default},

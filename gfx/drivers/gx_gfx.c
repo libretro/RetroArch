@@ -1588,14 +1588,13 @@ static bool gx_frame(void *data, const void *frame,
       video_frame_info_t *video_info)
 {
    char fps_text_buf[128];
-   settings_t               *settings = config_get_ptr();
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;
    uint32_t level                     = 0;
-   unsigned overscan_corr_top         = settings->uints.video_overscan_correction_top;
-   unsigned overscan_corr_bottom      = settings->uints.video_overscan_correction_bottom;
-   bool video_smooth                  = settings->bools.video_smooth;
-   unsigned video_aspect_ratio_idx    = settings->uints.video_aspect_ratio_idx;
+   unsigned overscan_corr_top         = video_info->overscan_correction_top;
+   unsigned overscan_corr_bottom      = video_info->overscan_correction_bottom;
+   bool video_smooth                  = video_info->video_smooth;
+   unsigned video_aspect_ratio_idx    = video_info->aspect_ratio_idx;
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif

@@ -201,7 +201,6 @@ static const struct
    char s_9834febe_1[4];
    char s_93805cc8_0[500];
    char s_93805cc8_1[58];
-   char s_b495662b[140];
    char s_9953f4e2[273];
    char s_79e212bd[5];
    char s_6342700c[7];
@@ -250,13 +249,13 @@ static const struct
    char s_35a1323d[14];
    char s_f72667c9[15];
    char s_adce4374[15];
+   char s_5984f4f9[6];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[52];
 #endif
    char s_4e447c6c[29];
    char s_d9a51d02[15];
    char s_12e77e8f[12];
-   char s_af6007a1[17];
    char s_da068369[12];
    char s_daead8a5[5];
    char s_a38cafbb[21];
@@ -592,11 +591,14 @@ static const struct
    char s_15f24ff4[12];
    char s_ec7e8026[15];
    char s_5d29b870[18];
+   char s_6996339b[5];
    char s_08e9410c[20];
    char s_d95824aa[23];
    char s_639f529e[18];
    char s_4927597c[14];
    char s_77b74366[13];
+   char s_ab49119c[19];
+   char s_ddf679b9[8];
    char s_3b7e9d77[10];
    char s_10342503[19];
    char s_d31f6d88[17];
@@ -1458,7 +1460,6 @@ static const struct
    char s_74b77b4a[17];
    char s_7534cfc9[12];
    char s_36259b63[13];
-   char s_37368130[16];
    char s_d51f54a2[12];
    char s_b35f573c[10];
    char s_1cad7751[11];
@@ -1855,6 +1856,7 @@ static const struct
    char s_2c296537[17];
    char s_43ac80a0[11];
    char s_6959ce80[12];
+   char s_aa628249[7];
    char s_ebe994b4[17];
    char s_1c62c301[7];
    char s_a8bb35b6[11];
@@ -2489,8 +2491,6 @@ static const struct
    char s_16ee5cf4[36];
    char s_d9153542[47];
    char s_8e48ec69[39];
-   char s_cd46e260[94];
-   char s_cd482ffe[98];
    char s_49336383[40];
    char s_e92351d4[104];
    char s_8e22cdce[61];
@@ -3174,7 +3174,6 @@ static const struct
    char s_36033606[178];
    char s_2e69508b[350];
    char s_7e96b5ce[40];
-   char s_3547866d[144];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[169];
    char s_82c9e376[152];
@@ -4239,9 +4238,6 @@ static const struct
    "\231esn\303\251 sn\303\255mkov\303\251 frekvence obsahu. Ponech\303\241n\303\255 zapnut\303\251h"
    "o ",
    "syst\303\251mov\303\251ho VRR je v po\305\231\303\241dku, jen ne toto nastaven\303\255.",
-   "Pou\305\276ijte ovlada\304\215 videa se z\303\241vitem. Jeho pou\305\276it\303\255 m\305\257\305"
-   "\276e zv\303\275\305\241it v\303\275kon za cenu mo\305\276n\303\251ho zpo\305\276d\304\233n\303"
-   "\255 a v\304\233t\305\241\303\255ho zadrh\303\241v\303\241n\303\255 videa.",
    "Synchronizace s p\305\231esn\303\275m sn\303\255mkov\303\275m kmito\304\215tem obsahu. Tato mo"
    "\305\276nost je ekvivalentem vynucen\303\255 rychlosti x1 a z\303\241rove\305\210 umo\305\276"
    "\305\210uje rychl\303\251 p\305\231ev\303\255jen\303\255 vp\305\231ed. \305\275\303\241dn\303"
@@ -4294,6 +4290,7 @@ static const struct
    "Re\305\276im \305\231e\304\215i",
    "C\303\255lov\303\275 jazyk",
    "AI slu\305\276ba URL",
+   "V\305\276dy",
 #ifndef HAVE_DYNAMIC
    "V\305\276dy znovu na\304\215\303\255st j\303\241dro p\305\231i spu\305\241t\304\233n\303\255 obs"
    "ahu",
@@ -4301,7 +4298,6 @@ static const struct
    "\305\230e\305\241en\303\255 odpojen\303\255 Androidu",
    "Ikona aplikace",
    "Prost\305\231edky",
-   "Blokov\303\251 sn\303\255mky",
    "Za\305\231\303\255zen\303\255",
    "Zvuk",
    "Odstranit DSP Plugin",
@@ -4641,11 +4637,14 @@ static const struct
    "Pozastaveno",
    "P\305\231ehr\303\241v\303\241 se",
    "Informace o disku",
+   "Zvuk",
    "Na\304\215\303\255st nov\303\275 disk",
    "Aktu\303\241ln\303\255 index disku",
    "Ovl\303\241d\303\241n\303\255 disku",
    "Vysunout disk",
    "Vlo\305\276it disk",
+   "Nezpracovan\303\241 Data",
+   "V\303\275stup",
    "V\303\275choz\303\255",
    "Sta\305\276en\303\251 polo\305\276ky",
    "St\303\241hnout j\303\241dro",
@@ -5518,7 +5517,6 @@ static const struct
    "&Vylo\305\276it j\303\241dro",
    "&N\303\241pov\304\233da",
    "O RetroArchu",
-   "P\305\231isp\304\233vatel\303\251",
    "Dokumentace",
    "Vy\304\215istit",
    "&N\303\241stroje",
@@ -5928,6 +5926,7 @@ static const struct
    "N\303\241zev Frontendu",
    "Verze Gitu",
    "Verze Lakky",
+   "Pokrok",
    "Zdroj nap\303\241jen\303\255",
    "Nabito",
    "Nab\303\255jen\303\255",
@@ -6820,10 +6819,6 @@ static const struct
    "Zapnut\303\255/vypnut\303\255 funkce Run-Ahead.",
    "Ulo\305\276\303\255 pozici do aktu\303\241ln\304\233 vybran\303\251ho slotu.",
    "Zachyt\303\255 obr\303\241zek aktu\303\241ln\303\255ho obsahu.",
-   "Na\304\215te a pou\305\276ije dal\305\241\303\255 soubor p\305\231edvolby shaderu v ko\305\231en"
-   "ov\303\251m adres\303\241\305\231i 'Video Shadery'.",
-   "Na\304\215te a pou\305\276ije p\305\231edchoz\303\255 soubor p\305\231edvolby shaderu v ko\305"
-   "\231enov\303\251m adres\303\241\305\231i 'Video Shadery'.",
    "Zapne/vypne aktu\303\241ln\304\233 vybran\303\275 shader.",
    "Povol\303\255 zpomalen\303\275 pohyb p\305\231i podr\305\276en\303\255. Po uvoln\304\233n\303"
    "\255 tla\304\215\303\255tka b\304\233\305\276\303\255 obsah norm\303\241ln\303\255 rychlost\303"
@@ -8135,9 +8130,6 @@ static const struct
    "\303\255 krokov\303\241n\303\255 sn\303\255mk\305\257 p\305\231i spu\305\241t\304\233n\303\255 n"
    "ap\305\231. obsahu s 30 fps na displeji s 60 Hz nebo obsahu s 60 fps na displeji se 120 Hz.",
    "Zm\304\233nit nastaven\303\255 synchronizace videa.",
-   "Zvy\305\241uje v\303\275kon za cenu zpo\305\276d\304\233n\303\255 a v\304\233t\305\241\303\255ho"
-   " zadrh\303\241v\303\241n\303\255 videa. Pou\305\276ijte pouze v p\305\231\303\255pad\304\233, "
-   "\305\276e nelze dos\303\241hnout pln\303\251 rychlosti jinak.",
 #if defined(RARCH_MOBILE)
    "Vodorovn\303\241 poloha obsahu, kdy\305\276 je zobrazovac\303\255 plocha \305\241ir\305\241\303"
    "\255 ne\305\276 \305\241\303\255\305\231ka obsahu. 0,0 je zcela vlevo, 0,5 je uprost\305\231ed, "
@@ -8811,7 +8803,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (163248u
+      (sizeof(msg_hash_cs_blob) == (162784u
 #ifdef ANDROID
        + 390u
 #endif
@@ -9362,7 +9354,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
@@ -9411,13 +9402,13 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
@@ -9753,11 +9744,14 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -10619,7 +10613,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
@@ -11015,6 +11008,7 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -11649,8 +11643,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -12334,7 +12326,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,

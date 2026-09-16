@@ -18,8 +18,8 @@
 #include <string.h>
 
 #include <lists/string_list.h>
-#include <queues/fifo_queue.h>
 #include <rthreads/rthreads.h>
+#include <features/features_cpu.h>
 
 #include "audio_thread_wrapper.h"
 #include "audio_driver.h"
@@ -30,6 +30,18 @@
  * that is answering, so anything near this is a device that has
  * stopped returning from a call; the wait continues either way. */
 #define AUDIO_THREAD_HANDSHAKE_WARN_US (2 * 1000 * 1000)
+/* Long past any device that is merely slow to open: a driver's init()
+ * that has not returned by now is not going to, and the frontend goes
+ * on without audio rather than never returning from drivers_init(). */
+#define AUDIO_THREAD_HANDSHAKE_GIVEUP_US (30 * 1000 * 1000)
+
+/* How long the loop parks when audio_driver_callback() had nothing to
+ * render or consume - a core paused behind the menu, or a callback
+ * that pushed no samples. There is no device write to pace on in that
+ * case, so this is the poll interval for the core coming back, and
+ * the bound on how late the first samples after it come out. A stop
+ * request signals the condition and cuts the wait short. */
+#define AUDIO_THREAD_IDLE_WAIT_US 1000
 
 typedef struct audio_thread
 {
@@ -43,11 +55,13 @@ typedef struct audio_thread
    unsigned *new_rate;
 
    int inited;
+   /* The frontend stopped waiting for init(): this thread owns its own
+    * state from there and frees it when init() finally returns. */
+   bool abandoned;
 
    /* Initialization options. */
    unsigned out_rate;
    unsigned latency;
-   unsigned block_frames;
 
    bool alive;
    bool stopped;
@@ -55,6 +69,9 @@ typedef struct audio_thread
    bool is_paused;
    bool is_shutdown;
    bool use_float;
+   /* The layout the inner driver opened with, read as use_float is:
+    * on the thread, once, right after init. */
+   uint32_t layout;
    /* Ask the OS for a higher scheduling class from inside the thread. */
    bool raise_priority;
    bool prefer_fast_cores;
@@ -91,13 +108,31 @@ static void audio_thread_loop(void *data)
 
    thr->driver_data   = thr->driver->init(
          thr->device, thr->out_rate, thr->latency,
-         thr->block_frames, thr->new_rate);
+         thr->new_rate);
    slock_lock(thr->lock);
    thr->inited        = thr->driver_data ? 1 : -1;
    if (thr->inited > 0 && thr->driver->use_float)
       thr->use_float  = thr->driver->use_float(thr->driver_data);
+   thr->layout        = AUDIO_LAYOUT_STEREO;
+   if (thr->inited > 0 && thr->driver->layout)
+      thr->layout     = thr->driver->layout(thr->driver_data);
    scond_signal(thr->cond);
-   slock_unlock(thr->lock);
+   {
+      bool abandoned = thr->abandoned;
+      slock_unlock(thr->lock);
+
+      /* Nobody is waiting for this any more, and nobody else will free
+       * it: init() took longer than the frontend was willing to wait. */
+      if (abandoned)
+      {
+         if (thr->driver_data && thr->driver->free)
+            thr->driver->free(thr->driver_data);
+         slock_free(thr->lock);
+         scond_free(thr->cond);
+         free(thr);
+         return;
+      }
+   }
 
    if (thr->inited < 0)
       return;
@@ -153,7 +188,15 @@ static void audio_thread_loop(void *data)
       }
 
       slock_unlock(thr->lock);
-      audio_driver_callback();
+
+      if (!audio_driver_callback())
+      {
+         slock_lock(thr->lock);
+         if (thr->alive && !thr->stopped)
+            scond_wait_timeout(thr->cond, thr->lock,
+                  AUDIO_THREAD_IDLE_WAIT_US);
+         slock_unlock(thr->lock);
+      }
    }
 
    audio_driver_pipeline_consumer_exit();
@@ -283,6 +326,22 @@ static bool audio_thread_alive(void *data)
    return alive;
 }
 
+void audio_thread_apply_control(void *data,
+      void (*control)(void *userdata), void *userdata)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   bool running;
+   if (!thr || !control)
+      return;
+   slock_lock(thr->lock);
+   running = !thr->stopped;
+   slock_unlock(thr->lock);
+   audio_thread_block(thr);
+   control(userdata);
+   if (running)
+      audio_thread_unblock(thr);
+}
+
 static bool audio_thread_stop(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
@@ -371,6 +430,57 @@ static size_t audio_thread_wait_writable(void *data, size_t len)
    return thr->driver->wait_writable(thr->driver_data, len);
 }
 
+/* The wrapped driver's count, for the sink rate estimate: without this
+ * the frontend saw the wrapper's NULL and never measured under the
+ * threaded pipeline - which is where every reporter runs. */
+/* The wrapper is the driver the frontend sees, so a hook it does not
+ * forward is a hook the frontend never calls. This one it did not,
+ * and a 5.1 device under the threaded driver got the stereo mix as
+ * 8-byte frames into 24-byte ones. */
+static uint32_t audio_thread_layout(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr)
+      return AUDIO_LAYOUT_STEREO;
+   return thr->layout;
+}
+
+static size_t audio_thread_underruns(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr || !thr->driver->underruns || !thr->driver_data)
+      return 0;
+   return thr->driver->underruns(thr->driver_data);
+}
+
+static size_t audio_thread_frames_consumed(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr || !thr->driver->frames_consumed || !thr->driver_data)
+      return 0;
+   return thr->driver->frames_consumed(thr->driver_data);
+}
+
+/* The driver's own count of frames the device took, where it keeps one
+ * beside the device clock. Not forwarded before, so the sink-rate
+ * comparison this exists for went missing on exactly the configuration
+ * it is most wanted on - the threaded one. */
+static bool audio_thread_device_clock_ppm(void *data, double *ppm)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr || !thr->driver->device_clock_ppm || !thr->driver_data)
+      return false;
+   return thr->driver->device_clock_ppm(thr->driver_data, ppm);
+}
+
+static size_t audio_thread_frames_consumed_fallback(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr || !thr->driver->frames_consumed_fallback || !thr->driver_data)
+      return 0;
+   return thr->driver->frames_consumed_fallback(thr->driver_data);
+}
+
 static ssize_t audio_thread_write(void *data, const void *s, size_t len)
 {
    ssize_t _len;
@@ -447,7 +557,12 @@ static const audio_driver_t audio_thread = {
    audio_thread_write_avail,
    audio_thread_buffer_size,
    NULL, /* write_raw */
-   audio_thread_wait_writable
+   audio_thread_wait_writable,
+   audio_thread_frames_consumed,
+   audio_thread_underruns,
+   audio_thread_layout,
+   audio_thread_frames_consumed_fallback,
+   audio_thread_device_clock_ppm
 };
 
 /**
@@ -469,7 +584,7 @@ static const audio_driver_t audio_thread = {
 bool audio_init_thread(const audio_driver_t **out_driver,
       void **out_data, const char *device, unsigned audio_out_rate,
       unsigned *new_rate, unsigned latency,
-      unsigned block_frames, bool raise_priority,
+      bool raise_priority,
       bool prefer_fast_cores,
       const audio_driver_t *drv)
 {
@@ -484,7 +599,6 @@ bool audio_init_thread(const audio_driver_t **out_driver,
    thr->out_rate       = audio_out_rate;
    thr->new_rate       = new_rate;
    thr->latency        = latency;
-   thr->block_frames   = block_frames;
 
    if (!(thr->cond     = scond_new()))
       goto error;
@@ -497,15 +611,32 @@ bool audio_init_thread(const audio_driver_t **out_driver,
    if (!(thr->thread   = sthread_create(audio_thread_loop, thr)))
       goto error;
 
-   /* Wait until thread has initialized (or failed) the driver. Not
-    * abandoned either: the thread owns thr until it is joined, so
-    * returning early would free it underneath. A driver whose init()
-    * does not return is reported instead of stalling silently. */
+   /* Wait until thread has initialized (or failed) the driver, but not
+    * for ever: a driver whose init() never returns, or a thread that
+    * died inside it, would otherwise leave the frontend waiting here
+    * with no way out. Past the deadline the thread is told it owns its
+    * own state and this returns without it - freeing it here would pull
+    * it out from under a thread still using it. */
    slock_lock(thr->lock);
    {
-      bool warned = false;
+      bool warned         = false;
+      retro_time_t giveup = cpu_features_get_time_usec()
+         + AUDIO_THREAD_HANDSHAKE_GIVEUP_US;
       while (!thr->inited)
       {
+         retro_time_t now = cpu_features_get_time_usec();
+         if (now >= giveup)
+         {
+            thr->abandoned = true;
+            slock_unlock(thr->lock);
+            RARCH_ERR("[Audio] Driver \"%s\" did not return from init after %d seconds; going on without audio.\n",
+                  thr->driver->ident ? thr->driver->ident : "?",
+                  (int)(AUDIO_THREAD_HANDSHAKE_GIVEUP_US / 1000000));
+            sthread_detach(thr->thread);
+            *out_driver = NULL;
+            *out_data   = NULL;
+            return false;
+         }
          if (scond_wait_timeout(thr->cond, thr->lock,
                   AUDIO_THREAD_HANDSHAKE_WARN_US))
             continue;

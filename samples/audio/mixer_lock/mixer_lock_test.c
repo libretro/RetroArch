@@ -82,6 +82,15 @@ static void *watchdog(void *arg)
  * only that add_stream walks its manual-slot path. */
 static unsigned char dummy_wav[64];
 
+/* Ownership counter for the stage-0 refusal: the contract releases
+ * buf_owner on every outcome, a refusal included. */
+static unsigned owner_frees = 0;
+static void counting_owner_free(void *owner)
+{
+   (void)owner;
+   owner_frees++;
+}
+
 static void fill_params(audio_mixer_stream_params_t *p, unsigned slot)
 {
    memset(p, 0, sizeof(*p));
@@ -110,6 +119,29 @@ int main(void)
       printf("FAIL: could not create the state lock\n");
       return 1;
    }
+
+   /* 0. Outside the mixer's init..done window every add is refused,
+    *    with ownership released and the lock balanced - the contract
+    *    AUDIO_FLAG_MIXER_INITED enforces for streams retiring after
+    *    teardown. */
+   STAGE(0);
+   fill_params(&params, slot);
+   owner_frees      = 0;
+   params.buf_owner      = dummy_wav;
+   params.buf_owner_free = counting_owner_free;
+   CHECK(!audio_driver_mixer_add_stream(&params),
+         "add_stream accepted a stream outside the init window");
+   CHECK(owner_frees == 1,
+         "refused add released the owner %u times, want exactly 1",
+         owner_frees);
+   /* Lock balance after the refusal is proven the way stage 6 proves
+    * it: the next add - stage 1 - has to be able to take the lock,
+    * and the watchdog turns a held lock into an abort. */
+
+   /* Everything below runs inside the window, as the shipping
+    * lifecycle has it: audio_driver_init_internal() raises the latch
+    * right after audio_mixer_init(). */
+   AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_MIXER_INITED);
 
    /* 1. The menu-sound load itself: an empty manual slot. This is the
     *    call that deadlocked. */

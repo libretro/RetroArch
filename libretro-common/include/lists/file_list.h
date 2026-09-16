@@ -23,6 +23,7 @@
 #ifndef __LIBRETRO_SDK_FILE_LIST_H__
 #define __LIBRETRO_SDK_FILE_LIST_H__
 
+#include <stdint.h>
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
@@ -39,8 +40,12 @@ struct item_file
    char *path;
    char *label;
    char *alt;
-   size_t directory_ptr;
    size_t entry_idx;
+   /* An index into the list this item belongs to, so 32 bits covers
+    * any list that fits in memory. Sitting next to 'type' it costs
+    * nothing the padding was not already taking: one of these exists
+    * per menu row, and a playlist view has one row per entry. */
+   uint32_t directory_ptr;
    unsigned type;
 };
 

@@ -173,7 +173,10 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
    if (conf->flags & CONF_FILE_FLG_MODIFIED)
    {
       if (!path || !*path)
-         config_file_dump(conf, stdout, sort);
+      {
+         if (!config_file_dump(conf, stdout, sort))
+            return false;
+      }
       else
       {
          /* The stdio buffer is heap, not a local.  At 16 KiB it was
@@ -221,11 +224,26 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
 
          /* The dump goes to a temporary beside the target and is
           * renamed over it only once complete and error-checked.
-          * An interrupted or failed save - process kill, power
-          * loss, full disk - then leaves the previous file intact
-          * instead of a truncated one, and a save that hits a
-          * write error reports failure instead of silently
-          * replacing a good config with a partial one. */
+          * An interrupted or failed save - process kill, full disk,
+          * a write error - then leaves the previous file intact
+          * instead of a truncated one, and reports failure instead
+          * of silently replacing a good config with a partial one.
+          *
+          * Note what this does NOT cover, because the comment here
+          * used to claim it: sudden power loss.  Durability across
+          * that needs the data on the medium before the rename and
+          * the rename itself on the medium after - fsync() on the
+          * temporary before close and fsync() on the parent
+          * directory after - and neither happens here.  What
+          * survives a power cut is whatever the filesystem's own
+          * ordering happened to give, which on ext4 data=ordered is
+          * usually the old file or the new one and on others is not
+          * promised at all.  Adding the two fsync()s unconditionally
+          * is not the answer either: config writes run from task
+          * handlers and land on flash on most targets, where the
+          * stall is measured in hundreds of milliseconds.  If a
+          * caller needs the guarantee it should ask for it
+          * explicitly. */
          _len     = strlen(path);
          tmp_path = (char*)malloc(_len + sizeof(".tmp"));
 
@@ -244,9 +262,13 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
             return false;
          }
          setvbuf(file, NULL, _IOFBF, 0x4000);
-         config_file_dump(conf, file, sort);
 
-         wr_ok = !ferror(file);
+         /* A dump that could not allocate its staging buffer writes
+          * nothing and leaves ferror() clean, so the check below
+          * would have renamed an empty temporary over the target. */
+         wr_ok = config_file_dump(conf, file, sort);
+         if (wr_ok)
+            wr_ok = !ferror(file);
          if (fclose(file) != 0)
             wr_ok = false;
 

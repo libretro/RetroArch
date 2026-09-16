@@ -575,10 +575,10 @@ static void test_init_failure_cleanup(void)
       printf("[FAIL] archive init failure did not clean up immediately\n");
       failures++;
    }
-#ifdef HAVE_MMAP
-   if (state.archive_mmap_data || state.archive_mmap_fd != 0)
+#ifdef VFS_HAVE_FILE_MAPPING
+   if (state.archive_mmap_data)
    {
-      printf("[FAIL] archive init failure retained mmap ownership\n");
+      printf("[FAIL] archive init failure retained the mapping\n");
       failures++;
    }
 #endif

@@ -23,6 +23,7 @@
 #ifndef __LIBRETRO_SDK_VFS_H
 #define __LIBRETRO_SDK_VFS_H
 
+#include <stdio.h>
 #include <retro_common_api.h>
 #include <boolean.h>
 #include <stdint.h>

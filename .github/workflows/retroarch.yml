@@ -16,9 +16,14 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   linux-c89: # Smoketest build using most restrictive compiler and default options
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Dependencies
         timeout-minutes: 5
@@ -42,7 +47,7 @@ jobs:
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
             $pkgs
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: Configure
         run: ./configure
       - name: Build

@@ -25,6 +25,8 @@
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
 
+#include <compat/strl.h>
+
 #include "file_path_special.h"
 #include "verbosity.h"
 #include "msg_hash.h"

@@ -55,6 +55,24 @@ enum task_style
 
 typedef struct retro_task retro_task_t;
 
+/* Execution-context contract, relied on throughout tasks/:
+ *
+ * The handler runs on the task runner's context - the single worker
+ * thread when the threaded runner is active, the pumping thread
+ * otherwise. Because the threaded runner has exactly one worker,
+ * handlers never race each other; but a handler must confine its
+ * writes to its own task's state (and to data whose ownership was
+ * transferred into it at push), because everything else here runs
+ * elsewhere.
+ *
+ * The callback and cleanup run on whichever thread retires the
+ * queue - task_queue_check() or a task_queue_wait() - which in
+ * RetroArch is the main thread. File-scope statics in task files
+ * (pending flags, result caches, handoff pointers) are therefore
+ * written only from push-side code and callbacks, never from
+ * handlers: that main-affinity, not any lock, is what makes them
+ * safe. A handler that wrote one would race the main thread. */
+
 /** @copydoc retro_task::callback */
 typedef void (*retro_task_callback_t)(retro_task_t *task,
       void *task_data,

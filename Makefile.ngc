@@ -136,6 +136,7 @@ HAVE_RTGA                := 1
 HAVE_RMODTRACKER                := 1
 HAVE_OVERLAY             := 1
 HAVE_7ZIP                := 1
+HAVE_RZSTD               := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
 HAVE_XDELTA              := 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
@@ -179,8 +180,8 @@ ifeq ($(HAVE_LOGGER), 1)
    CFLAGS      += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 endif
 
-ifeq ($(HAVE_KERNEL_PRX), 1)
-   CFLAGS      += -DHAVE_KERNEL_PRX
+ifeq ($(HAVE_THREADS), 1)
+   CFLAGS      += -DHAVE_THREADS
 endif
 
 ifeq ($(HAVE_WIIUSB_HID), 1)

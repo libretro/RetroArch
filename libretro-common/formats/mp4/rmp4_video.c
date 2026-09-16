@@ -361,6 +361,55 @@ static void rmp4_video_yuv_row_neon(uint32_t *dr,
 }
 #endif
 
+/* 4:4:4: one chroma sample per luma sample, so the row kernels above,
+ * which pair each chroma sample with two luma samples, do not apply;
+ * the scalar conversion runs per sample instead.  Rare enough (an
+ * H.264 High 4:4:4 recording) not to warrant its own SIMD rows. */
+static void rmp4_video_blit_yuv444(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h,
+      const uint8_t *y, int ys,
+      const uint8_t *u, const uint8_t *v, int uvs,
+      unsigned matrix, int argb)
+{
+   const int16_t *k = rmp4_video_coefs(matrix, h);
+   unsigned j, i;
+   for (j = 0; j < h; j++)
+   {
+      const uint8_t *yr = y + (size_t)j * ys;
+      const uint8_t *ur = u + (size_t)j * uvs;
+      const uint8_t *vr = v + (size_t)j * uvs;
+      uint32_t      *dr = dst + (size_t)j * dst_stride;
+      for (i = 0; i < w; i++)
+         dr[i] = rmp4_video_yuv_px(yr[i], ur[i], vr[i], k, argb);
+   }
+}
+
+/* Any bit depth above 8 at any subsampling, to 8-bit ARGB: the samples
+ * are scaled down to eight bits and converted as the 8-bit path does.
+ * This is the SDR route for high-bit-depth H.264 (10-bit 4:2:0 with a
+ * PQ / HLG transfer takes the shared HDR blits instead, as H.265 and
+ * VP9 do).  Scalar; such streams are rare enough not to warrant SIMD. */
+static void rmp4_video_blit_yuv_hbd(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h,
+      const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      int chsh, int cvsh, int bd, unsigned matrix, int argb)
+{
+   const int16_t *k = rmp4_video_coefs(matrix, h);
+   int sh = bd - 8;
+   unsigned j, i;
+   for (j = 0; j < h; j++)
+   {
+      const uint16_t *yr = y + (size_t)j * ys;
+      const uint16_t *ur = u + (size_t)(j >> cvsh) * uvs;
+      const uint16_t *vr = v + (size_t)(j >> cvsh) * uvs;
+      uint32_t       *dr = dst + (size_t)j * dst_stride;
+      for (i = 0; i < w; i++)
+         dr[i] = rmp4_video_yuv_px(yr[i] >> sh, ur[i >> chsh] >> sh,
+               vr[i >> chsh] >> sh, k, argb);
+   }
+}
+
 static void rmp4_video_blit_yuv(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h,
       const uint8_t *y, int ys,
@@ -975,6 +1024,11 @@ size_t rmp4_video_stream_consumed(rmp4_video_stream_t *s)
    return s ? rmp4_consumed(s->demux) : 0;
 }
 
+int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s)
+{
+   return (s && s->demux) ? rmp4_duration_ns(s->demux) : 0;
+}
+
 const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
 {
    if (!s)
@@ -1048,9 +1102,49 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
             w = (int)s->width;
          if ((unsigned)h > s->height)
             h = (int)s->height;
-         rmp4_video_blit_yuv(s->frame, s->width,
-               (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
-               (ch < h) ? 1 : 0, s->emit_argb);
+         if (rh264_video_bit_depth(s->h264) > 8)
+         {
+            /* High 10 and friends: uint16_t samples, stride in
+             * samples.  10-bit 4:2:0 goes where H.265 Main10 goes -
+             * the shared HDR blits, XRGB2101010 when the caller asked
+             * for it; anything else scales down to the 8-bit path. */
+            int bd = rh264_video_bit_depth(s->h264);
+            if (bd == 10 && cw < w && ch < h)
+            {
+               if (s->want10)
+               {
+                  rwebm_video_blit_i420_10bit(s->frame, s->width,
+                        (unsigned)w, (unsigned)h,
+                        (const uint16_t*)y, ys,
+                        (const uint16_t*)u, (const uint16_t*)v, uvs,
+                        s->matrix, s->transfer, s->range, 0);
+                  s->is10 = 1;
+               }
+               else
+                  rwebm_video_blit_i420_hbd(s->frame, s->width,
+                        (unsigned)w, (unsigned)h,
+                        (const uint16_t*)y, ys,
+                        (const uint16_t*)u, (const uint16_t*)v, uvs,
+                        s->matrix, s->transfer, s->range, 0,
+                        s->emit_argb ? 0 : 1);
+            }
+            else
+               rmp4_video_blit_yuv_hbd(s->frame, s->width,
+                     (unsigned)w, (unsigned)h,
+                     (const uint16_t*)y, ys,
+                     (const uint16_t*)u, (const uint16_t*)v, uvs,
+                     (cw < w) ? 1 : 0, (ch < h) ? 1 : 0, bd, s->matrix,
+                     s->emit_argb);
+            return s->frame;
+         }
+         if (cw >= w)   /* 4:4:4: luma-sized chroma */
+            rmp4_video_blit_yuv444(s->frame, s->width,
+                  (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
+                  s->emit_argb);
+         else
+            rmp4_video_blit_yuv(s->frame, s->width,
+                  (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
+                  (ch < h) ? 1 : 0, s->emit_argb);
          return s->frame;
       }
       case 4:  /* H.265: planes valid until the next decode or drain */

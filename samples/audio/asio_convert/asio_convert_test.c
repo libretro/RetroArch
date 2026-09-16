@@ -57,7 +57,7 @@ static void run(const char *name, ASIOSampleType type, size_t bps,
          (unsigned)asio_bytes_per_sample(type), (unsigned)bps);
    CHECK(asio_convert_known(type), "%s: reported unknown", name);
 
-   asio_convert_frames(type, src, FRAMES_IN, FRAMES_OUT, out_l, out_r, false);
+   { void *bufs_[2]; bufs_[0] = out_l; bufs_[1] = out_r; asio_convert_frames(type, src, FRAMES_IN, FRAMES_OUT, 2, bufs_, false); }
 
    for (i = 0; i < FRAMES_IN * bps; i++)
    {
@@ -168,7 +168,7 @@ int main(void)
       int16_t l[128], r[128];
       int i;
       for (i = 0; i < 100; i++) { src[i * 2] = 0.5f; src[i * 2 + 1] = -0.5f; }
-      asio_convert_frames(ASIOSTInt16LSB, src, 100, 128, l, r, false);
+      { void *bufs_[2]; bufs_[0] = l; bufs_[1] = r; asio_convert_frames(ASIOSTInt16LSB, src, 100, 128, 2, bufs_, false); }
       CHECK(l[0] == 16384 && r[0] == -16384, "run-out: frames before the ramp were changed");
       CHECK(l[100 - ASIO_FADE_FRAMES - 1] == 16384, "run-out: frame before the ramp was changed");
       CHECK(l[99] == 0 && r[99] == 0, "run-out: the last supplied frame is not zero (%d)", l[99]);
@@ -186,7 +186,7 @@ int main(void)
       int16_t l[64], r[64];
       int i;
       for (i = 0; i < 64; i++) { src[i * 2] = 0.5f; src[i * 2 + 1] = -0.5f; }
-      asio_convert_frames(ASIOSTInt16LSB, src, 64, 64, l, r, true);
+      { void *bufs_[2]; bufs_[0] = l; bufs_[1] = r; asio_convert_frames(ASIOSTInt16LSB, src, 64, 64, 2, bufs_, true); }
       CHECK(l[0] < 1000 && l[0] > 0, "fade-in: the first frame is not near zero (%d)", l[0]);
       CHECK(l[ASIO_FADE_FRAMES - 1] == 16384, "fade-in: the last ramp frame is not full (%d)",
             l[ASIO_FADE_FRAMES - 1]);
@@ -199,7 +199,7 @@ int main(void)
       int16_t l[64], r[64];
       int i;
       for (i = 0; i < 64; i++) { src[i * 2] = 0.5f; src[i * 2 + 1] = -0.5f; }
-      asio_convert_frames(ASIOSTInt16LSB, src, 64, 64, l, r, false);
+      { void *bufs_[2]; bufs_[0] = l; bufs_[1] = r; asio_convert_frames(ASIOSTInt16LSB, src, 64, 64, 2, bufs_, false); }
       CHECK(l[0] == 16384 && l[63] == 16384, "full period: a fade was applied (%d, %d)", l[0], l[63]);
    }
 
@@ -207,7 +207,7 @@ int main(void)
    {
       float src[2] = { 1.5f, -1.5f };
       unsigned char l[2], r[2];
-      asio_convert_frames(ASIOSTInt16LSB, src, 1, 1, l, r, false);
+      { void *bufs_[2]; bufs_[0] = l; bufs_[1] = r; asio_convert_frames(ASIOSTInt16LSB, src, 1, 1, 2, bufs_, false); }
       CHECK(l[0] == 0xff && l[1] == 0x7f, "saturation: +1.5 did not clamp to max");
       CHECK(r[0] == 0x00 && r[1] == 0x80, "saturation: -1.5 did not clamp to min");
    }
@@ -218,9 +218,29 @@ int main(void)
       unsigned char l[4], r[4];
       memset(l, 0xAA, 4); memset(r, 0xAA, 4);
       CHECK(!asio_convert_known(99L), "type 99 reported as convertible");
-      asio_convert_frames(99L, src, 1, 1, l, r, false);
+      { void *bufs_[2]; bufs_[0] = l; bufs_[1] = r; asio_convert_frames(99L, src, 1, 1, 2, bufs_, false); }
       CHECK(l[0] == 0 && l[3] == 0 && r[0] == 0 && r[3] == 0,
             "unknown type: not silence");
+   }
+
+   /* Six channels: frame i's channel c is src[i * 6 + c], and it lands
+    * in bufs[c]; the fade-out touches every channel alike. */
+   {
+      float src[64 * 6]; int16_t out[6][64]; void *bufs[6];
+      int i, c; unsigned bad = 0;
+      for (i = 0; i < 64; i++)
+         for (c = 0; c < 6; c++)
+            src[i * 6 + c] = (float)(c + 1) * 0.1f;
+      for (c = 0; c < 6; c++) bufs[c] = out[c];
+      asio_convert_frames(ASIOSTInt16LSB, src, 40, 64, 6, bufs, false);
+      for (c = 0; c < 6; c++)
+      {
+         if (out[c][0] != (int16_t)asio_float_to_int((float)(c + 1) * 0.1f, 16)) bad++;
+         if (out[c][63] != 0) bad++;                          /* silence past have */
+         if (!(out[c][39] < out[c][0] && out[c][39] >= 0)) bad++; /* faded out */
+      }
+      CHECK(bad == 0, "six channels: %u slots wrong", bad);
+      printf("   six channels: each in its own buffer, faded together\n");
    }
 
    if (failures)

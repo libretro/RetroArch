@@ -52,13 +52,16 @@ typedef struct
    size_t current_size;
    size_t buffer_size;
    size_t samples;
+   /* Held for every call into the renderer and for the wave buffer
+    * states and the buffer being filled: write_avail() reads them on
+    * the frontend's thread while the writer, on the audio thread, adds
+    * and starts. */
    Mutex update_lock;
    bool nonblock;
 } libnx_audren_t;
 
 static void *libnx_audren_audio_init(
       const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
       unsigned *new_rate)
 {
    unsigned i, j;
@@ -81,7 +84,9 @@ static void *libnx_audren_audio_init(
    real_latency = MAX(5, latency);
    RARCH_LOG("[Audren] real_latency is %u.\n", real_latency);
 
-   aud->nonblock     = !block_frames;
+   /* Blocking until the frontend says otherwise: it sets non-blocking
+    * at init only when audio sync is off. */
+   aud->nonblock     = false;
    /* The latency setting is split across the BUFFER_COUNT wave buffers
     * the renderer plays in turn, so that the buffers together hold the
     * setting and rate control - which sees the total, below - holds it
@@ -181,11 +186,11 @@ fail:
 static size_t libnx_audren_audio_room(libnx_audren_t *aud)
 {
    size_t   free_bufs = 0;
+   size_t   room;
    unsigned i;
 
    mutexLock(&aud->update_lock);
    audrvUpdate(&aud->drv);
-   mutexUnlock(&aud->update_lock);
 
    for (i = 0; i < BUFFER_COUNT; i++)
       if (     aud->wavebufs[i].state == AudioDriverWaveBufState_Free
@@ -198,10 +203,13 @@ static size_t libnx_audren_audio_room(libnx_audren_t *aud)
    {
       if (free_bufs)
          free_bufs--;
-      return free_bufs * aud->buffer_size
+      room = free_bufs * aud->buffer_size
             + (aud->buffer_size - aud->current_size);
    }
-   return free_bufs * aud->buffer_size;
+   else
+      room = free_bufs * aud->buffer_size;
+   mutexUnlock(&aud->update_lock);
+   return room;
 }
 
 static size_t libnx_audren_audio_buffer_size(void *data)
@@ -237,11 +245,15 @@ static size_t libnx_audren_audio_append(
    void *dstbuf     = NULL;
    ssize_t free_idx = -1;
 
+   mutexLock(&aud->update_lock);
    if (!aud->current_wavebuf)
    {
       free_idx = libnx_audren_audio_get_free_wavebuf_idx(aud);
       if (free_idx == -1)
+      {
+         mutexUnlock(&aud->update_lock);
          return 0;
+      }
 
       aud->current_wavebuf = &aud->wavebufs[free_idx];
       aud->current_pool_ptr = aud->mempool + (free_idx * aud->buffer_size);
@@ -260,18 +272,12 @@ static size_t libnx_audren_audio_append(
    if (aud->current_size == aud->buffer_size)
    {
       audrvVoiceAddWaveBuf(&aud->drv, 0, aud->current_wavebuf);
-
-      mutexLock(&aud->update_lock);
       audrvUpdate(&aud->drv);
-      mutexUnlock(&aud->update_lock);
-
       if (!audrvVoiceIsPlaying(&aud->drv, 0))
-      {
          audrvVoiceStart(&aud->drv, 0);
-      }
-
       aud->current_wavebuf = NULL;
    }
+   mutexUnlock(&aud->update_lock);
 
    return len;
 }
@@ -321,7 +327,9 @@ static bool libnx_audren_audio_stop(void *data)
    if (!aud)
       return false;
 
+   mutexLock(&aud->update_lock);
    audrvVoiceStop(&aud->drv, 0);
+   mutexUnlock(&aud->update_lock);
 
    return true;
 }
@@ -334,7 +342,9 @@ static bool libnx_audren_audio_start(void *data, bool is_shutdown)
    if (!aud)
       return false;
 
+   mutexLock(&aud->update_lock);
    audrvVoiceStart(&aud->drv, 0);
+   mutexUnlock(&aud->update_lock);
 
    return true;
 }

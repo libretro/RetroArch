@@ -47,7 +47,7 @@ static void delta_process(void *data, struct dspfilter_output *output,
 {
    unsigned i, c;
    struct delta_data *d   = (struct delta_data*)data;
-   float *out             = output->samples;
+   float *out             = input->samples;
    output->samples        = input->samples;
    output->frames         = input->frames;
 

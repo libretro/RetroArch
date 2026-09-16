@@ -2,6 +2,7 @@ name: CI macOS
 
 on:
   push:
+    branches: [master]
   pull_request:
 
 permissions:
@@ -10,12 +11,26 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 60
 
     steps:
     - uses: actions/checkout@v6
+
+    - name: Cocoa companion harness on Apple's AppKit
+      run: |
+        set -o pipefail
+        # The same harness the Linux job runs under GNUstep, built with
+        # Apple's clang against the real Cocoa framework and run on the
+        # runner's window server: key-window arbitration after closing the
+        # companion, the grid, the tables, the dialogs - as AppKit does them.
+        tools/companion_cocoa_test_macos.sh 2>&1 | grep -v "^$"
 
     - name: Compile RA
       run: |
