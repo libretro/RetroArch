@@ -398,7 +398,18 @@ typedef struct gfx_thumb_anim_job
    unsigned  width, height;
    int       duration_ms;            /* of the READY frame             */
    int32_t   loops_left;             /* worker-maintained, -1 infinite */
-   int       status;                 /* enum gfx_thumb_anim_job_status */
+   /* enum gfx_thumb_anim_job_status. Atomic: the per-vsync poll
+    * reads it with acquire loads and consumes with a plain store,
+    * no lock - the worker's READY/FINISHED store is a release made
+    * after the frame, duration and loops_left are written, so an
+    * acquire that sees READY sees the decode's results whole. Every
+    * other field of a job is owned by whichever side the status
+    * says may touch it: the worker between RUNNING and its release
+    * store, the main thread everywhere else. Queue membership and
+    * the release()'s wait-out-RUNNING rendezvous stay under
+    * gfx_thumb_worker_lock; status writes made there are atomic
+    * stores like the rest. */
+   retro_atomic_int_t status;
    uint8_t   type;                   /* enum image_type_enum           */
    bool      use_rgba;               /* output word format             */
 } gfx_thumb_anim_job_t;
@@ -499,13 +510,18 @@ static void gfx_thumbnail_anim_worker(void *unused)
       if (!gfx_thumb_worker_head)
          gfx_thumb_worker_tail = NULL;
       job->next             = NULL;
-      job->status           = GFX_THUMB_JOB_RUNNING;
+      retro_atomic_store_relaxed_int(&job->status,
+            GFX_THUMB_JOB_RUNNING);
 
       slock_unlock(gfx_thumb_worker_lock);
       alive = gfx_thumbnail_anim_job_step(job);
       slock_lock(gfx_thumb_worker_lock);
 
-      job->status = alive ? GFX_THUMB_JOB_READY : GFX_THUMB_JOB_FINISHED;
+      /* Release: publishes frame, duration_ms and loops_left to the
+       * poll's acquire load. The broadcast under the lock is for
+       * release()'s wait-out-RUNNING rendezvous. */
+      retro_atomic_store_release_int(&job->status,
+            alive ? GFX_THUMB_JOB_READY : GFX_THUMB_JOB_FINISHED);
       scond_broadcast(gfx_thumb_worker_done);
    }
    slock_unlock(gfx_thumb_worker_lock);
@@ -544,7 +560,7 @@ fail:
 static void gfx_thumbnail_anim_job_enqueue(gfx_thumb_anim_job_t *job)
 {
    slock_lock(gfx_thumb_worker_lock);
-   job->status = GFX_THUMB_JOB_QUEUED;
+   retro_atomic_store_relaxed_int(&job->status, GFX_THUMB_JOB_QUEUED);
    job->next   = NULL;
    if (gfx_thumb_worker_tail)
       gfx_thumb_worker_tail->next = job;
@@ -562,7 +578,8 @@ static void gfx_thumbnail_anim_job_release(gfx_thumb_anim_job_t *job)
    if (!gfx_thumb_worker_lock)
       return;
    slock_lock(gfx_thumb_worker_lock);
-   if (job->status == GFX_THUMB_JOB_QUEUED)
+   if (retro_atomic_load_relaxed_int(&job->status)
+         == GFX_THUMB_JOB_QUEUED)
    {
       gfx_thumb_anim_job_t **pp = &gfx_thumb_worker_head;
       while (*pp && *pp != job)
@@ -579,7 +596,8 @@ static void gfx_thumbnail_anim_job_release(gfx_thumb_anim_job_t *job)
          }
       }
    }
-   while (job->status == GFX_THUMB_JOB_RUNNING)
+   while (retro_atomic_load_relaxed_int(&job->status)
+         == GFX_THUMB_JOB_RUNNING)
       scond_wait(gfx_thumb_worker_done, gfx_thumb_worker_lock);
    slock_unlock(gfx_thumb_worker_lock);
 }
@@ -1333,7 +1351,8 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          j0->use_rgba   =
                (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
                      ? true : false;
-         j1->status     = GFX_THUMB_JOB_IDLE;
+         retro_atomic_store_relaxed_int(&j1->status,
+               GFX_THUMB_JOB_IDLE);
          thumbnail->anim_job        = j0;
          thumbnail->anim_job2       = j1;
          thumbnail->anim_job_upload = 0;
@@ -1341,10 +1360,12 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          return;
       }
 
-      slock_lock(gfx_thumb_worker_lock);
-      su = ju->status;
-      so = jo->status;
-      slock_unlock(gfx_thumb_worker_lock);
+      /* Two independent acquire loads, no lock: each field's answer
+       * stands on its own. A job the poll sees as IDLE cannot be
+       * touched by the worker (it is not queued), and one seen as
+       * READY is done - the pair needs no joint snapshot. */
+      su = retro_atomic_load_acquire_int(&ju->status);
+      so = retro_atomic_load_acquire_int(&jo->status);
 
       /* Decode-ahead: the due-side job holds its frame, its sibling is
        * consumed - start the sibling on the following frame now, ahead
@@ -1381,10 +1402,9 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
             ju->width, ju->height, ju->use_rgba);
       gfx_thumbnail_anim_schedule(thumbnail, ju->duration_ms, now);
 
-      slock_lock(gfx_thumb_worker_lock);
-      ju->status = GFX_THUMB_JOB_IDLE;   /* consumed */
-      so         = jo->status;
-      slock_unlock(gfx_thumb_worker_lock);
+      retro_atomic_store_relaxed_int(&ju->status,
+            GFX_THUMB_JOB_IDLE);   /* consumed; worker holds no ref */
+      so = retro_atomic_load_acquire_int(&jo->status);
       thumbnail->anim_job_upload ^= 1;
 
       /* Keep the worker fed: if the sibling already banked the next
