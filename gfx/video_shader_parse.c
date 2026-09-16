@@ -3102,9 +3102,12 @@ static bool video_shader_dir_get_anchor(settings_t *settings,
 
       if (!video_shader_dir_follow_references(s, len))
       {
-         /* Nothing to follow. The wrapper's own folder only anchors
-          * if it holds presets to cycle, which the config directory
-          * the menu writes retroarch.* to does not */
+         /* Nothing to follow: the wrapper is a full preset. Its own
+          * folder only anchors if it holds presets other than
+          * retroarch.*, which the menu writes into the Video Shaders
+          * directory (or, failing that, the menu config or config
+          * directory) - a folder holding only that has nothing to
+          * cycle */
          char wrapper_dir[DIR_MAX_LENGTH];
          fill_pathname_basedir(wrapper_dir, s, sizeof(wrapper_dir));
          return video_shader_dir_has_preset(wrapper_dir,
