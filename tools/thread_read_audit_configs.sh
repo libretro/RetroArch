@@ -11,8 +11,9 @@
 # entry/finding counts plus --list-unaudited for what that binary
 # still cannot see. Coverage as of this script's writing:
 #
-#   linux    50 entries (wifi, bluetooth, libusb HID and the ffmpeg
-#            decode/record/camera workers included - packages below)
+#   linux    51 entries (wifi, bluetooth, libusb HID, the ffmpeg
+#            decode/record/camera workers and the Vulkan swapchain
+#            mailbox included - packages below)
 #   windows  52 entries (dinput, xinput, winraw, wasapi, mmdevice,
 #            the modeline resync thread and the companion workers)
 #
@@ -23,7 +24,7 @@
 #
 # Debian/Ubuntu packages for the full Linux config:
 #   libusb-1.0-0-dev libavcodec-dev libavformat-dev libavutil-dev
-#   libswscale-dev libswresample-dev libavdevice-dev
+#   libswscale-dev libswresample-dev libavdevice-dev libvulkan-dev
 # For the Windows config: gcc-mingw-w64-x86-64 (host objdump reads
 # the PE natively; no wine needed - the audit is static).
 
@@ -38,7 +39,7 @@ audit()
 case "${1:-}" in
    linux)
       ./configure --enable-wifi --enable-bluetooth --enable-hid \
-                  --enable-ffmpeg
+                  --enable-ffmpeg --enable-vulkan
       make -j"$(nproc)" retroarch
       audit retroarch
       ;;
