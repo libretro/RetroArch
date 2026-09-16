@@ -254,47 +254,60 @@ void retro_main_log_file_deinit(void)
 }
 
 #if !defined(HAVE_LOGGER)
-/* Compiled for its two consumers: the Android file arm and the
- * generic branch. Xbox/WinRT formats into its own bounded buffer,
- * and the Apple arms go through their platform sinks. */
+/* Compiled for every consumer past the Xbox/WinRT head branch,
+ * which formats into its own bounded buffer: the Android file arm,
+ * the Apple arms (one format feeding printf/os_log/asl and the
+ * file), the desktop companion mirror, and the generic branch. */
 #if defined(ANDROID) \
- || (!defined(_XBOX1) && !defined(__WINRT__) && !defined(__APPLE__))
+ || (!defined(_XBOX1) && !defined(__WINRT__))
 /* Format tag and message into one buffer and write it with a single
  * stdio call: the per-call lock then keeps concurrent lines whole.
  * Lines wider than the stack buffer take an exact-sized heap detour
  * rather than truncating; if that allocation fails, the truncated
  * stack line ships - a shortened message over a dropped one. */
-static void rarch_log_line_write(FILE *fp, const char *tag_v,
-      const char *fmt, va_list ap)
+/* Format "tag body" once into the caller's stack line, taking an
+ * exact-sized heap detour for wider lines rather than truncating
+ * (allocation failure ships the truncated stack line - a shortened
+ * message over a dropped one). Returns the buffer to hand to every
+ * sink; *heap is owned by the caller and freed after the sinks are
+ * done. Consumes one formatting pass of ap (plus one of a private
+ * copy for the measuring pass). */
+static const char *rarch_log_line_format(char *line, size_t line_size,
+      char **heap, const char *tag_v, const char *fmt, va_list ap)
 {
-   char line[1024];
-   char *out    = line;
-   char *heap   = NULL;
-   int t_len    = snprintf(line, sizeof(line), "%s ", tag_v);
+   int t_len    = snprintf(line, line_size, "%s ", tag_v);
    int b_len;
    va_list ap_cp;
 
-   if (t_len < 0 || t_len >= (int)sizeof(line))
+   *heap = NULL;
+
+   if (t_len < 0 || t_len >= (int)line_size)
       t_len = 0;
 
    va_copy(ap_cp, ap);
-   b_len = vsnprintf(line + t_len, sizeof(line) - (size_t)t_len,
+   b_len = vsnprintf(line + t_len, line_size - (size_t)t_len,
          fmt, ap_cp);
    va_end(ap_cp);
 
-   if (b_len >= (int)(sizeof(line) - (size_t)t_len))
+   if (b_len >= (int)(line_size - (size_t)t_len))
    {
       size_t need = (size_t)t_len + (size_t)b_len + 1;
-      if ((heap = (char*)malloc(need)))
+      if ((*heap = (char*)malloc(need)))
       {
-         memcpy(heap, line, (size_t)t_len);
-         vsnprintf(heap + t_len, need - (size_t)t_len, fmt, ap);
-         out = heap;
+         memcpy(*heap, line, (size_t)t_len);
+         vsnprintf(*heap + t_len, need - (size_t)t_len, fmt, ap);
+         return *heap;
       }
    }
    else if (b_len < 0)
       line[t_len] = '\0';
 
+   return line;
+}
+
+/* One write, one flush, under the LibNX mutex where it exists. */
+static void rarch_log_line_emit(FILE *fp, const char *out)
+{
 #if defined(HAVE_LIBNX)
    /* Around exactly one write and its flush; libnx newlib's stdio
     * locking history is why this exists at all. */
@@ -305,9 +318,24 @@ static void rarch_log_line_write(FILE *fp, const char *tag_v,
 #if defined(HAVE_LIBNX)
    mutexUnlock(&main_verbosity_st.mtx);
 #endif
+}
 
+#if defined(ANDROID)
+/* The Android file arm is the one caller that still wants
+ * format-and-emit as a unit; the generic and Apple region formats
+ * once up front and hands the buffer to each sink itself. */
+static void rarch_log_line_write(FILE *fp, const char *tag_v,
+      const char *fmt, va_list ap)
+{
+   char line[1024];
+   char *heap      = NULL;
+   const char *out = rarch_log_line_format(line, sizeof(line), &heap,
+         tag_v, fmt, ap);
+
+   rarch_log_line_emit(fp, out);
    free(heap);
 }
+#endif
 #endif
 
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
@@ -365,76 +393,45 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
    {
       FILE       *fp    = main_verbosity_st.fp;
       const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
+      /* One format for every consumer in this region - the desktop
+       * companion's log view, the Apple sinks, the file - instead of
+       * a formatting pass (and on Apple a heap vasprintf, and in the
+       * companion a second 1024-byte copy whose overflow went
+       * unhandled) per sink. */
+      char        line[1024];
+      char       *heap  = NULL;
+      const char *out   = rarch_log_line_format(line, sizeof(line),
+            &heap, tag_v, fmt, ap);
 
 #ifdef HAVE_COMPANION_WIMP
-      /* Mirror the line into the desktop companion's log view, when one
-       * is open. Orthogonal to the platform sink: it formats from a copy
-       * of the arguments and the normal output below still happens. */
+      /* Mirror the line into the desktop companion's log view, when
+       * one is open. The companion now shows the tag too, and wide
+       * lines arrive whole through the shared heap detour. */
       if (ui_companion_driver_log_active())
-      {
-         char buffer[1024];
-         int r;
-         va_list ap_cp;
-         va_copy(ap_cp, ap);
-         buffer[0] = '\0';
-         r = vsnprintf(buffer, sizeof(buffer), fmt, ap_cp);
-         va_end(ap_cp);
-         if (r < 0)
-         {
-            buffer[sizeof(buffer) - 1] = '\0';
-            if (buffer[0] != '\0')
-               buffer[sizeof(buffer) - 2] = '\n';
-            else
-            {
-               buffer[0] = '\n';
-               buffer[1] = '\0';
-            }
-         }
-         ui_companion_driver_log_msg(buffer);
-      }
+         ui_companion_driver_log_msg(out);
 #endif
 
 #if TARGET_OS_MAC
       {
-         int     r;
-         va_list ap_cp;
-         char   *buffer = NULL;
-         va_copy(ap_cp, ap);
-         r = vasprintf(&buffer, fmt, ap_cp);
-         va_end(ap_cp);
-
-         if (r < 0 || !buffer)
-         {
-            free(buffer);
-            buffer = (char*)malloc(2);
-            if (!buffer)
-               goto apple_log_done;
-            buffer[0] = '\n';
-            buffer[1] = '\0';
-         }
-
 #if TARGET_OS_MAC && !TARGET_OS_IPHONE
          /* Emit to the terminal unconditionally so Terminal.app and
           * Xcode's console always see output. The file write is gated
           * on `initialized` (= a real log file was opened) because fp
           * defaults to stderr when no file is configured; without the
           * guard, every line would print twice in the no-file case. */
-         printf("%s %s", tag_v, buffer);
+         printf("%s", out);
          if (main_verbosity_st.initialized && fp)
-         {
-            fprintf(fp, "%s %s", tag_v, buffer);
-            fflush(fp);
-         }
+            rarch_log_line_emit(fp, out);
 
 #else
          {
 #if TARGET_OS_SIMULATOR
-            fprintf(stderr, "%s %s", tag_v, buffer);
+            fprintf(stderr, "%s", out);
 #elif defined(__IPHONE_10_0) && (__IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_10_0)
-            os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
+            os_log(OS_LOG_DEFAULT, "%s", out);
 #elif defined(__TV_OS_VERSION_MIN_REQUIRED) && defined(__TVOS_10_0) \
          && (__TV_OS_VERSION_MIN_REQUIRED >= __TVOS_10_0)
-            os_log(OS_LOG_DEFAULT, "%s %s", tag_v, buffer);
+            os_log(OS_LOG_DEFAULT, "%s", out);
 #else
             {
                static aslclient asl_client      = NULL;
@@ -450,37 +447,26 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
                }
                msg = asl_new(ASL_TYPE_MSG);
                asl_set(msg, ASL_KEY_READ_UID, "-1");
-               asl_log(asl_client, msg, ASL_LEVEL_NOTICE,
-               "%s %s", tag_v, buffer);
+               asl_log(asl_client, msg, ASL_LEVEL_NOTICE, "%s", out);
                asl_free(msg);
             }
 #endif
 
             if (main_verbosity_st.initialized && fp)
-            {
-               fprintf(fp, "%s %s", tag_v, buffer);
-               fflush(fp);
-            }
+               rarch_log_line_emit(fp, out);
          }
 #endif
-
-         free(buffer);
       }
-
-apple_log_done:;
 
 #else
       if (fp)
-      {
-         /* Format once - tag and message into one buffer - and write
-          * once. stdio's per-call lock then keeps concurrent lines
-          * whole on every platform, where the old tag-call plus
-          * body-call pair could interleave between threads; lines
-          * wider than the stack buffer take an exact-sized heap
-          * detour rather than truncating. */
-         rarch_log_line_write(fp, tag_v, fmt, ap);
-      }
+         /* stdio's per-call lock keeps the single write whole under
+          * concurrent writers; the format above already took the
+          * heap detour for wide lines. */
+         rarch_log_line_emit(fp, out);
 #endif
+
+      free(heap);
    }
 #endif
 }
