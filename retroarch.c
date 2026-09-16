@@ -6393,6 +6393,22 @@ static void sdl_exit(void)
  * Cleanly exit RetroArch.
  *
  **/
+/* Retire the task queue while every subsystem a finish callback can
+ * reach is still alive: the exit path tears drivers down before
+ * task_queue_deinit(), and deinit abandons whatever is still queued
+ * - handlers never run, finish callbacks never fire, cleanup
+ * callbacks never release their owners. Cancelling first lets
+ * cancellation-aware handlers wind down instead of completing their
+ * work, and the bound keeps a stuck transfer from hanging quit;
+ * whatever survives the bound meets the old abandonment, now the
+ * fallback instead of the rule. Scheduled-for-later tasks (a set
+ * 'when') do not hold the wait and are dropped as designed. */
+void retroarch_drain_tasks_for_exit(void)
+{
+   task_queue_reset();
+   task_queue_wait_timeout(NULL, NULL, 3 * 1000 * 1000);
+}
+
 void main_exit(void *args)
 {
    struct rarch_state *p_rarch  = &rarch_st;
@@ -6401,6 +6417,8 @@ void main_exit(void *args)
    struct menu_state  *menu_st  = menu_state_get_ptr();
 #endif
    settings_t     *settings     = config_get_ptr();
+
+   retroarch_drain_tasks_for_exit();
 
    video_driver_restore_cached(settings);
 

@@ -754,7 +754,13 @@ static void threaded_worker(void *userdata)
       if (!worker_continue)
       {
          slock_unlock(running_lock);
-         break; /* should we keep running until all tasks finished? */
+         /* No: draining is the caller's job, done while the
+          * subsystems that finish callbacks reach are still alive
+          * (RetroArch's exit path cancels and drains, bounded,
+          * before any teardown). Whatever is still here when deinit
+          * runs is deliberately abandoned - running its handlers
+          * during teardown would be worse. */
+         break;
       }
 
       /* Get first task to run */
