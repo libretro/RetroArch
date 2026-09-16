@@ -146,6 +146,15 @@ typedef struct video_display_server
     * node for the wl_output name, Win32 the PnP monitor's registry
     * key. Optional; the menu shows "not available" for NULL. */
    int      (*get_edid)(void *data, uint8_t *out, size_t max);
+   /* Block the calling thread until the windowing system's event
+    * transport has something readable, or @ms milliseconds pass,
+    * whichever comes first - and dispatch nothing: the next input
+    * poll consumes as it always did. Returns false when this server
+    * has no waitable source, and the caller sleeps instead. A server
+    * whose host drives the main loop itself (an OS run loop calling
+    * into us) returns true without waiting; the host's loop is the
+    * wait. */
+   bool     (*idle_wait)(void *data, unsigned ms);
    const char *ident;
 } video_display_server_t;
 
@@ -159,6 +168,10 @@ int  video_display_server_get_scanline(void);
 bool video_display_server_wait_vblank(void);
 
 bool video_display_server_set_window_opacity(unsigned opacity);
+
+/* The idle wait through the current display server; false when
+ * there is none or it has no waitable source. */
+bool video_display_server_idle_wait(unsigned ms);
 
 bool video_display_server_set_window_progress(int progress, bool finished);
 

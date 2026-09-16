@@ -393,6 +393,15 @@ static bool sdl3_display_server_modeline_flush(void *data)
    return true;
 }
 
+/* SDL_WaitEventTimeout with a NULL event waits for the queue to be
+ * non-empty and removes nothing; the input driver's poll dequeues. */
+static bool sdl3_display_server_idle_wait(void *data, unsigned ms)
+{
+   (void)data;
+   SDL_WaitEventTimeout(NULL, (Sint32)ms);
+   return true;
+}
+
 const video_display_server_t dispserv_sdl3 = {
    sdl3_display_server_init,
    sdl3_display_server_destroy,
@@ -423,5 +432,6 @@ const video_display_server_t dispserv_sdl3 = {
    sdl3_display_server_modeline_set,
    sdl3_display_server_modeline_flush,
    NULL, /* get_edid */
+   sdl3_display_server_idle_wait,
    "sdl3"
 };

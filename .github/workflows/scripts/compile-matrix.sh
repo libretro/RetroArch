@@ -288,6 +288,7 @@ salamander_link "salamander link: rtime.c" \
 # (jni, looper, native_activity, sensor, configuration, window) with
 # the host identity shed.
 check "android: runloop" "$HOSTOFF -DANDROID -Itools/platform_stubs/android" runloop.c
+check "android: dispserv" "$HOSTOFF -DANDROID -Itools/platform_stubs/android" gfx/display_servers/dispserv_android.c
 
 check "android: opensl" "-DANDROID -DHAVE_OPENSL -Itools/platform_stubs/android -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/opensl.c
 

@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <android/native_window.h>
+#include <sys/system_properties.h>
 
 #include <compat/strl.h>
 
@@ -548,6 +549,20 @@ bool android_display_has_focus(void *data)
    return focused;
 }
 
+/* The thread's looper is ident-based - prepared with
+ * ALOOPER_PREPARE_ALLOW_NON_CALLBACKS - so a poll here reports
+ * readiness and consumes nothing; the next android_input_poll
+ * dispatches the ident as it always did. Input, app commands and the
+ * sensor queue all arrive through this one object. */
+static bool android_display_server_idle_wait(void *data, unsigned ms)
+{
+   (void)data;
+   if (!ALooper_forThread())
+      return false;
+   ALooper_pollOnce((int)ms, NULL, NULL, NULL);
+   return true;
+}
+
 const video_display_server_t dispserv_android = {
    android_display_server_init,
    android_display_server_destroy,
@@ -578,5 +593,6 @@ const video_display_server_t dispserv_android = {
    NULL, /* modeline_set */
    NULL, /* modeline_flush */
    NULL, /* get_edid */
+   android_display_server_idle_wait,
    "android"
 };

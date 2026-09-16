@@ -417,5 +417,6 @@ const video_display_server_t dispserv_kms = {
    kms_display_server_modeline_set,
    kms_display_server_modeline_flush,
    kms_display_server_get_edid,
+   NULL /* idle_wait: no window, no event transport */,
    "kms"
 };

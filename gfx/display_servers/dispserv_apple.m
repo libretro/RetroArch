@@ -23,6 +23,7 @@
 #include <string.h>
 #include "../verbosity.h"
 #include "../video_display_server.h"
+#include "../../ui/ui_companion_driver.h"
 #include "../modeline/modeline_edid.h"
 #include "../video_driver.h"
 #include "../../ui/drivers/cocoa/apple_platform.h"
@@ -1405,6 +1406,32 @@ static int apple_display_server_get_edid(void *data, uint8_t *out, size_t max)
 #endif
 #endif
 
+/* Two loop models exist here. Under HAVE_QT RetroArch owns the main
+ * loop (ui_cocoa.m) and pumps CFRunLoop itself between iterations;
+ * there the wait is a run of the default mode that returns at the
+ * first handled source or at the deadline - the MsgWait shape. On
+ * every other build the OS drives: runloop_iterate is called from a
+ * CFRunLoop observer or a CADisplayLink step, so the run loop between
+ * callbacks is the wait and this returns at once - except a
+ * backgrounded iOS/tvOS app, which keeps the caller's sleep, since a
+ * suspended run loop must not become a spin if it does get called. */
+static bool apple_display_server_idle_wait(void *data, unsigned ms)
+{
+   (void)data;
+#if defined(HAVE_QT)
+   CFRunLoopRunInMode(kCFRunLoopDefaultMode, (CFTimeInterval)ms / 1000.0,
+         TRUE);
+   return true;
+#else
+#if defined(HAVE_COCOATOUCH)
+   if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
+      return false;
+#endif
+   (void)ms;
+   return true;
+#endif
+}
+
 const video_display_server_t dispserv_apple = {
    apple_display_server_init,
    apple_display_server_destroy,
@@ -1454,5 +1481,6 @@ const video_display_server_t dispserv_apple = {
 #else
    NULL, /* get_edid */
 #endif
+   apple_display_server_idle_wait,
    "apple"
 };

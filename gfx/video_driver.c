@@ -177,6 +177,7 @@ static const video_display_server_t dispserv_null = {
    NULL, /* modeline_set */
    NULL, /* modeline_flush */
    NULL, /* get_edid */
+   NULL, /* idle_wait */
    "null"
 };
 
@@ -1734,6 +1735,15 @@ bool video_display_server_set_window_opacity(unsigned opacity)
    if (current_display_server && current_display_server->set_window_opacity)
       return current_display_server->set_window_opacity(
             video_st->current_display_server_data, opacity);
+   return false;
+}
+
+bool video_display_server_idle_wait(unsigned ms)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   if (current_display_server && current_display_server->idle_wait)
+      return current_display_server->idle_wait(
+            video_st->current_display_server_data, ms);
    return false;
 }
 

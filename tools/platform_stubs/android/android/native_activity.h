@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <android/configuration.h>
 #include <android/looper.h>
-typedef struct ANativeWindow ANativeWindow;
+#include <android/native_window.h>
 typedef struct AInputQueue AInputQueue;
 typedef struct AInputEvent AInputEvent;
 typedef struct ANativeActivity { struct ANativeActivityCallbacks *callbacks; JavaVM *vm; JNIEnv *env; jobject clazz; const char *internalDataPath; const char *externalDataPath; int32_t sdkVersion; void *instance; AAssetManager *assetManager; const char *obbPath; } ANativeActivity;

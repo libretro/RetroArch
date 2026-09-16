@@ -6331,54 +6331,16 @@ bool runloop_is_inited(void)
    return retro_atomic_load_acquire_int(&runloop_inited) != 0;
 }
 
-/* The pause / unfocused wait. A fixed ten-millisecond sleep answered
- * the pause key five milliseconds late on average and woke the
- * process a hundred times a second for nothing; what it was waiting
- * for is user input, so where the platform has a waitable source of
- * it, block there instead, with the same ten milliseconds as the
- * bound rather than the schedule.
- *
- * Windows: the calling thread's own message queue, which is where
- * every input path here begins; the wait removes nothing, so the
- * normal poll consumes as before. X11: readiness of the connection
- * socket - a plain poll() on the fd, no Xlib call, so it is safe
- * against a threaded video context using the same Display; events a
- * dispatcher already drained were someone's to act on. Wayland's fd
- * needs the prepare-read protocol to be watched safely, so it keeps
- * the sleep rather than gaining a deadlock; so does everything else
- * without a source. */
+/* The pause / unfocused wait: what it waits for is user input, so
+ * where the windowing system offers a waitable event transport the
+ * display server blocks on it, with ten milliseconds as the bound
+ * rather than the schedule; where it offers none the bound is the
+ * sleep it always was. Readiness only - nothing is dispatched here,
+ * the next input poll consumes as before. */
 static void runloop_idle_wait(void)
 {
-#if defined(ANDROID)
-   /* The platform that reaches this fallback most: unfocused but
-    * foreground. (The IDLE case never gets here - android_input_poll
-    * itself blocks on the looper indefinitely there, and the call
-    * site exempts it.) The looper is ident-based, prepared with
-    * ALOOPER_PREPARE_ALLOW_NON_CALLBACKS, so a poll here reports
-    * readiness and consumes nothing: the wake returns to the loop and
-    * the next android_input_poll dispatches the ident exactly as it
-    * would have. Input, app commands and the sensor queue all arrive
-    * through this one object, so nothing else needs watching. The
-    * wait stays here rather than folding into android_input_poll
-    * because that poll's own timeout is input_block_timeout, a
-    * running-latency setting unrelated to pause; the two are kept
-    * apart on purpose. */
-   if (ALooper_forThread())
-      ALooper_pollOnce(10, NULL, NULL, NULL);
-   else
+   if (!video_display_server_idle_wait(10))
       retro_sleep(10);
-#elif defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-   MsgWaitForMultipleObjectsEx(0, NULL, 10, QS_ALLINPUT,
-         MWMO_INPUTAVAILABLE);
-#elif defined(HAVE_X11)
-   /* In x11_common.c: Xlib's headers do not belong in this file,
-    * so the one declaration is repeated here. */
-   extern bool x11_idle_wait_ms(unsigned ms);
-   if (!x11_idle_wait_ms(10))
-      retro_sleep(10);
-#else
-   retro_sleep(10);
-#endif
 }
 
 static enum runloop_state_enum runloop_check_state(
@@ -8436,15 +8398,14 @@ int runloop_iterate(void)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
 #if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
+         /* A deferred main-loop timeout: the browser's yield, not a
+          * wait of ours. */
          platform_emscripten_deferred_sleep(10);
 #else
-#if defined(HAVE_COCOATOUCH)
-         if (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
-#endif
 #if defined(ANDROID)
          /* When IDLE, android_input_poll() already blocked on the looper
-          * until the OS sent something; a sleep on top only delays the
-          * response to it. Unfocused-but-foreground still sleeps. */
+          * until the OS sent something; a wait on top only delays the
+          * response to it. Unfocused-but-foreground still waits. */
          if (!(runloop_st->flags & RUNLOOP_FLAG_IDLE))
 #endif
             runloop_idle_wait();

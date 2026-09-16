@@ -112,5 +112,6 @@ const video_display_server_t dispserv_uwp = {
    NULL, /* modeline_set */
    NULL, /* modeline_flush */
    NULL, /* get_edid */
+   NULL /* idle_wait: CoreDispatcher wait, a later round */,
    "uwp"
 };

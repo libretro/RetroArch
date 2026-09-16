@@ -1487,6 +1487,18 @@ static int win32_display_server_get_edid(void *data, uint8_t *out, size_t max)
 #endif
 }
 
+/* The calling thread's own message queue is where every Win32 input
+ * path begins. With no handles the wait is on the queue alone; with
+ * QS_ALLINPUT and MWMO_INPUTAVAILABLE it returns for any message,
+ * including one already queued, and removes nothing. */
+static bool win32_display_server_idle_wait(void *data, unsigned ms)
+{
+   (void)data;
+   MsgWaitForMultipleObjectsEx(0, NULL, ms, QS_ALLINPUT,
+         MWMO_INPUTAVAILABLE);
+   return true;
+}
+
 const video_display_server_t dispserv_win32 = {
    win32_display_server_init,
    win32_display_server_destroy,
@@ -1540,5 +1552,6 @@ const video_display_server_t dispserv_win32 = {
    NULL, /* modeline_flush */
 #endif
    win32_display_server_get_edid,
+   win32_display_server_idle_wait,
    "win32"
 };

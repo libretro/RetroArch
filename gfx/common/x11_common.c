@@ -25,7 +25,6 @@
 #include <unistd.h>
 
 #include <X11/Xatom.h>
-#include <poll.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -1093,17 +1092,4 @@ char *x11_get_wm_name(Display *dpy)
    XFree(propdata);
 
    return title;
-}
-
-bool x11_idle_wait_ms(unsigned ms)
-{
-   struct pollfd pfd;
-   Display *dpy = g_x11_dpy;
-   if (!dpy)
-      return false;
-   pfd.fd      = ConnectionNumber(dpy);
-   pfd.events  = POLLIN;
-   pfd.revents = 0;
-   poll(&pfd, 1, (int)ms);
-   return true;
 }

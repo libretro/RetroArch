@@ -33,6 +33,9 @@
 #include <jni.h>
 #include <poll.h>
 #include <sched.h>
+/* struct android_app below is sized by DEFAULT_MAX_PADS; include its
+ * home rather than rely on whoever included this header first. */
+#include "../../input/input_driver.h"
 
 #include <android/looper.h>
 #include <android/configuration.h>
