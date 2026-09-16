@@ -11,14 +11,20 @@ for d in samples/audio/*/; do
    [ -f "$d/Makefile" ] || continue
    if grep -rqs "$base" "$d"Makefile "$d"*.c "$d"*.h 2>/dev/null; then
       found=1
-      ( cd "$d" && make clean >/dev/null 2>&1
-        if ! timeout 240 make >/tmp/asc.log 2>&1; then
-           echo "BUILD-FAIL $d"; grep -m2 "error\|undefined" /tmp/asc.log; exit 1
-        fi
-        t=$(ls *_test 2>/dev/null | head -1)
-        if [ -n "$t" ] && ! timeout 120 "./$t" >/tmp/asc_run.log 2>&1; then
-           echo "RUN-FAIL $d"; tail -3 /tmp/asc_run.log; exit 1
-        fi
+      ( cd "$d" && for san in "" address,undefined thread; do
+           [ -n "$san" ] && ! grep -q SANITIZER Makefile && continue
+           make clean >/dev/null 2>&1
+           if ! timeout 240 make SANITIZER=$san >/tmp/asc.log 2>&1; then
+              echo "BUILD-FAIL $d (SANITIZER=$san)"
+              grep -m2 "error\|undefined" /tmp/asc.log; exit 1
+           fi
+           t=$(ls *_test 2>/dev/null | head -1)
+           if [ -n "$t" ] && ! timeout 180 "./$t" >/tmp/asc_run.log 2>&1; then
+              echo "RUN-FAIL $d (SANITIZER=$san)"
+              grep -m6 "ThreadSanitizer\|AddressSanitizer\|runtime error" /tmp/asc_run.log || tail -3 /tmp/asc_run.log
+              exit 1
+           fi
+        done
         echo "ok    $d" ) || fail=1
    fi
 done

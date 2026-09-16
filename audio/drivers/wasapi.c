@@ -209,7 +209,12 @@ typedef struct
     * and the frontend, told of underruns meanwhile, discarded the
     * audio it had primed the pipe with, then filled the fifo at rate
     * control's pace: a quarter of a minute low. Pump-written. */
-   bool           fed;
+   /* The writer has ever fed the ring: written by the writer, read
+    * by the pump to keep pre-first-write silence out of the underrun
+    * count. Under fifo_lock once; the conversion left it a plain
+    * bool across two threads, which TSan flagged in the pacing
+    * suite. An atomic now. */
+   retro_atomic_int_t fed;
    unsigned       ac3_frame_size;
    uint8_t        ac3_frame[RAC3_MAX_FRAME_BYTES];
    uint8_t        ac3_burst[IEC61937_AC3_BURST_BYTES];
@@ -2025,6 +2030,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    retro_atomic_64_init(&w->consumed, 0);
    retro_atomic_64_init(&w->released, 0);
    retro_atomic_int_init(&w->ac3_inflight, 0);
+   retro_atomic_int_init(&w->fed, 0);
    w->park_inited = retro_eventcount_init(&w->park);
    if (!w->park_inited)
       goto error;
@@ -2357,7 +2363,7 @@ static void wasapi_pump_thread(void *data)
          {
             memset(dest, 0, w->engine_buffer_size);
             flags = AUDCLNT_BUFFERFLAGS_SILENT;
-            if (w->fed)
+            if (retro_atomic_load_acquire_int(&w->fed))
                retro_atomic_fetch_add_size(&w->underruns, 1);
          }
          /* Each period released is one the device takes; silence
@@ -2569,7 +2575,7 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
          if (ir > room)
             ir = room;
          retro_spsc_write(&w->ring, (const char*)data + _len, ir);
-         w->fed = true;
+         retro_atomic_store_release_int(&w->fed, 1);
          _len += ir;
       }
    }
