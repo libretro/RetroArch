@@ -9,6 +9,7 @@
 //  
 
 #import <Foundation/Foundation.h>
+#include "../../apple_runtime.h"
 
 #import "JITSupport.h"
 
@@ -57,7 +58,7 @@ static void *exception_handler(void *argument) {
 }
 
 bool jb_enable_ptrace_hack(void) {
-    if (@available(iOS 26, *))
+    if (apple_runtime_available(0, APPLE_RUNTIME_VER(26, 0, 0), 0))
         return false;
 
     bool debugged = jb_has_debugger_attached();
@@ -110,7 +111,7 @@ static bool device_has_txm(void)
    static bool has_txm = false;
    static dispatch_once_t once = 0;
    dispatch_once(&once, ^{
-      if (@available(iOS 26, tvOS 26, *))
+      if (apple_runtime_available(0, APPLE_RUNTIME_VER(26, 0, 0), APPLE_RUNTIME_VER(26, 0, 0)))
       {
          /* Check for TXM firmware on disk. Non-TXM devices (e.g. A10X) running
           * iOS/tvOS 26 won't have this file. */
@@ -183,7 +184,7 @@ static bool device_has_txm(void)
 
 static bool requires_dual_map(void)
 {
-   if (@available(iOS 26, tvOS 26, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(26, 0, 0), APPLE_RUNTIME_VER(26, 0, 0)))
       return true;
    return false;
 }

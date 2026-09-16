@@ -14,6 +14,7 @@
  */
 
 #import <CoreLocation/CoreLocation.h>
+#include "../../apple_runtime.h"
 #include "../../location_driver.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -52,14 +53,14 @@
 
 - (void)requestAuthorization {
     CLAuthorizationStatus status;
-    if (@available(macOS 11.0, iOS 14.0, tvOS 14.0, *))
+    if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
         status = [_locationManager authorizationStatus];
     else
         status = [CLLocationManager authorizationStatus];
 
     if (status == kCLAuthorizationStatusNotDetermined)
     {
-        if (@available(macOS 10.15, *))
+        if (apple_runtime_available(APPLE_RUNTIME_VER(10, 15, 0), 0, 0))
             [_locationManager requestWhenInUseAuthorization];
 #if TARGET_OS_OSX
         else
@@ -85,10 +86,10 @@
 
 - (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
 #if TARGET_OS_OSX
-    if (@available(macOS 10.12, *))
+    if (apple_runtime_available(APPLE_RUNTIME_VER(10, 12, 0), 0, 0))
         self.authorized = (status == kCLAuthorizationStatusAuthorizedAlways);
 #elif TARGET_OS_IPHONE
-    if (@available(iOS 8.0, tvOS 9.0, *))
+    if (apple_runtime_available(0, APPLE_RUNTIME_VER(8, 0, 0), APPLE_RUNTIME_VER(9, 0, 0)))
         self.authorized = (status == kCLAuthorizationStatusAuthorizedWhenInUse ||
                            status == kCLAuthorizationStatusAuthorizedAlways);
 #endif

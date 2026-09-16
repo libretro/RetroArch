@@ -16,6 +16,7 @@
  */
 
 #include <stdint.h>
+#include "../../apple_runtime.h"
 #include <stddef.h>
 #include <string.h>
 #include <unistd.h>
@@ -876,7 +877,7 @@ static bool accessibility_speak_macos(int speed,
 static bool frontend_darwin_is_narrator_running(void)
 {
 #if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
-   if (@available(macOS 10.14, iOS 7, tvOS 9, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(10, 14, 0), APPLE_RUNTIME_VER(7, 0, 0), APPLE_RUNTIME_VER(9, 0, 0)))
       return true;
 #endif
 #if TARGET_OS_OSX
@@ -895,7 +896,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
       speed               = 10;
 
 #if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
-   if (@available(macOS 10.14, iOS 7, tvOS 9, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(10, 14, 0), APPLE_RUNTIME_VER(7, 0, 0), APPLE_RUNTIME_VER(9, 0, 0)))
    {
       static dispatch_once_t once;
       static AVSpeechSynthesizer *synth;
@@ -931,7 +932,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
 static void frontend_darwin_content_loaded(void)
 {
 #ifdef HAVE_SWIFT
-   if (@available(macOS 13.0, iOS 16.0, tvOS 16.0, *)) {
+   if (apple_runtime_available(APPLE_RUNTIME_VER(13, 0, 0), APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0))) {
       [RetroArchAppShortcuts contentLoaded];
    }
 #endif

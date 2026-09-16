@@ -13,6 +13,7 @@
  */
 
 #import <TargetConditionals.h>
+#include "../../apple_runtime.h"
 #if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
 #else
@@ -196,7 +197,7 @@ static bool apple_display_server_set_resolution(void *data,
       int center, int monitor_index, int xoffset, int padjust)
 {
    CocoaView *view = [CocoaView get];
-   if (@available(macOS 14.0, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(14, 0, 0), 0, 0))
    {
       if (!view || !view.displayLink)
       {
@@ -299,7 +300,7 @@ static bool apple_display_server_set_resolution(void *data,
       RARCH_DBG("[Video] Setting refresh rate to %.3f Hz (no resolution change)\n", hz);
 
    /* Set refresh rate for display link */
-   if (@available(macOS 14, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(14, 0, 0), 0, 0))
       view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
    return true;
 }
@@ -318,7 +319,7 @@ static bool apple_display_server_set_resolution(void *data,
    /* iOS: Only refresh rate changes */
    RARCH_DBG("[Video] Setting refresh rate to %.3f Hz\n", hz);
 #if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
-    if (@available(iOS 15, tvOS 15, *))
+    if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
        view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
    else
 #endif
@@ -351,7 +352,7 @@ static void *apple_display_server_get_resolution_list(
 
    /* Use pixel dimensions when available (macOS 10.8+), otherwise fall back to logical dimensions */
    size_t currentWidth, currentHeight;
-   if (@available(macOS 10.8, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(10, 8, 0), 0, 0))
    {
       currentWidth = CGDisplayModeGetPixelWidth(currentMode);
       currentHeight = CGDisplayModeGetPixelHeight(currentMode);
@@ -376,7 +377,7 @@ static void *apple_display_server_get_resolution_list(
    {
       CGDisplayModeRef mode = (CGDisplayModeRef)CFArrayGetValueAtIndex(displayModes, i);
       size_t modeWidth, modeHeight;
-      if (@available(macOS 10.8, *))
+      if (apple_runtime_available(APPLE_RUNTIME_VER(10, 8, 0), 0, 0))
       {
          modeWidth = CGDisplayModeGetPixelWidth(mode);
          modeHeight = CGDisplayModeGetPixelHeight(mode);
@@ -402,7 +403,7 @@ static void *apple_display_server_get_resolution_list(
    {
       CGDisplayModeRef mode = (CGDisplayModeRef)CFArrayGetValueAtIndex(displayModes, i);
       size_t modeWidth, modeHeight;
-      if (@available(macOS 10.8, *))
+      if (apple_runtime_available(APPLE_RUNTIME_VER(10, 8, 0), 0, 0))
       {
          modeWidth = CGDisplayModeGetPixelWidth(mode);
          modeHeight = CGDisplayModeGetPixelHeight(mode);
@@ -497,7 +498,7 @@ static void *apple_display_server_get_resolution_list(
    width = (unsigned)nativeBounds.size.width;
    height = (unsigned)nativeBounds.size.height;
 #if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
-   if (@available(iOS 15, tvOS 15, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
       currentRate = [CocoaView get].displayLink.preferredFrameRateRange.preferred;
    else
 #endif
@@ -505,7 +506,7 @@ static void *apple_display_server_get_resolution_list(
 
    /* Detect ProMotion displays and available refresh rates */
 #if !TARGET_OS_TV
-   if (@available(iOS 10.3, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 3, 0), 0))
    {
       NSInteger maxFPS = mainScreen.maximumFramesPerSecond;
 
@@ -579,7 +580,7 @@ static void apple_display_server_set_screen_orientation(void *data, enum rotatio
             break;
     }
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 160000
-    if (@available(iOS 16.0, *))
+    if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), 0))
     {
         [[CocoaView get] setNeedsUpdateOfSupportedInterfaceOrientations];
     }
@@ -645,7 +646,7 @@ static void *apple_display_server_init(void)
          {
             RARCH_DBG("[Video] Setting initial refresh rate to %.3f Hz\n", hz);
 #if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
-            if (@available(iOS 15, tvOS 15, *))
+            if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
                view.displayLink.preferredFrameRateRange =
                   CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
             else
@@ -657,7 +658,7 @@ static void *apple_display_server_init(void)
          CocoaView *view = [CocoaView get];
          if (view)
          {
-            if (@available(macOS 14, *))
+            if (apple_runtime_available(APPLE_RUNTIME_VER(14, 0, 0), 0, 0))
             {
                RARCH_DBG("[Video] Setting initial refresh rate to %.3f Hz\n", hz);
                view.displayLink.preferredFrameRateRange =

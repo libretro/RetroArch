@@ -14,6 +14,7 @@
  */
 
 #include <Foundation/Foundation.h>
+#include "../../apple_runtime.h"
 #include <Metal/Metal.h>
 #include <MetalKit/MetalKit.h>
 #include <QuartzCore/QuartzCore.h>
@@ -498,13 +499,15 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
  * while the latter were phased out for newer point releases and checking
  * them fails silently even when the APIs are in fact present.
  *
- * Runtime: the HDR paths are still guarded with @available(...) checks
- * because RetroArch's Apple deployment targets (macOS 10.13, iOS 11) are
- * lower than the first HDR-capable OS release on each platform.  When
- * the runtime gate is false the driver stays in SDR mode.
+ * Runtime: the HDR paths are still guarded with cached runtime version
+ * checks (apple_runtime_available) because RetroArch's Apple deployment
+ * targets (macOS 10.13, iOS 11) are lower than the first HDR-capable OS
+ * release on each platform.  When the runtime gate is false the driver
+ * stays in SDR mode.
  *
- * METAL_HDR_AVAILABLE guards compile-time only. Whenever we touch an HDR-specific
- * API inside those blocks, an @available check guards runtime dispatch. */
+ * METAL_HDR_AVAILABLE guards compile-time only. Whenever we touch an
+ * HDR-specific API inside those blocks, an apple_runtime_available
+ * check guards runtime dispatch. */
 #include <Availability.h>
 #include <TargetConditionals.h>
 #if defined(TARGET_OS_TV) && TARGET_OS_TV
@@ -546,7 +549,7 @@ static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
    if (hdr_mode == METAL_HDR_MODE_OFF)
    {
       layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
-      if (@available(macOS 11.0, iOS 16.0, tvOS 16.0, *))
+      if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0)))
       {
          CGColorSpaceRef cs = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
          if (cs)
@@ -559,7 +562,7 @@ static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
       return MTLPixelFormatBGRA8Unorm;
    }
 
-   if (@available(macOS 11.0, iOS 16.0, tvOS 16.0, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0)))
    {
       MTLPixelFormat fmt = (hdr_mode == METAL_HDR_MODE_SCRGB)
          ? MTLPixelFormatRGBA16Float
@@ -593,7 +596,7 @@ static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
 static bool metal_display_supports_edr(void)
 {
 #if TARGET_OS_OSX
-   if (@available(macOS 10.15, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(10, 15, 0), 0, 0))
    {
       NSScreen *screen = [NSScreen mainScreen];
       /* Potential, not current: the value reflects what the display *could*
@@ -613,10 +616,10 @@ static bool metal_display_supports_edr(void)
     * a deeper refactor.  Assume HDR is available when the tvOS gate
     * passes — the user has to opt in to enable it anyway, and tvOS 16
     * is only shipping on HDR-capable hardware (Apple TV 4K). */
-   if (@available(tvOS 16.0, *))
+   if (apple_runtime_available(0, 0, APPLE_RUNTIME_VER(16, 0, 0)))
       return true;
 #else
-   if (@available(iOS 16.0, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), 0))
    {
       UIScreen *screen = [UIScreen mainScreen];
       if (screen)
@@ -844,7 +847,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
       _layer.displaySyncEnabled  = YES;
 #endif
       /* Configure drawable pool for triple-buffering */
-      if (@available(iOS 13.0, macOS 10.15.4, tvOS 13.0, *))
+      if (apple_runtime_available(APPLE_RUNTIME_VER(10, 15, 4), APPLE_RUNTIME_VER(13, 0, 0), APPLE_RUNTIME_VER(13, 0, 0)))
          _layer.maximumDrawableCount = MAX_INFLIGHT;
       _library                   = l;
       _commandQueue              = [_device newCommandQueue];
@@ -1564,7 +1567,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 
    if (wantEnable)
    {
-      if (@available(macOS 11.0, iOS 16.0, tvOS 16.0, *))
+      if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0)))
       {
          if (mode == METAL_HDR_OUTPUT_HDR10)
          {
@@ -1611,7 +1614,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
     * treats sRGB 8-bit content as extended range. */
    _layer.pixelFormat = newFmt;
 #if METAL_HDR_AVAILABLE
-   if (@available(macOS 11.0, iOS 16.0, tvOS 16.0, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0)))
    {
       if (newCS)
          _layer.colorspace = newCS;
@@ -6538,7 +6541,7 @@ static bool metal_supports_texture_format(void *video_data,
          return false;
    }
    dev = md.context.device;
-   if (@available(macOS 11.0, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), 0, 0))
       return dev.supportsBCTextureCompression ? true : false;
    return true; /* BC always available on pre-11 (Intel) Macs */
 #else

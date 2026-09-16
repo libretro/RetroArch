@@ -14,6 +14,7 @@
  */
 
 #include <stdint.h>
+#include "../../apple_runtime.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -456,7 +457,7 @@ enum
    uint32_t character = 0;
    uint32_t mod       = 0;
    NSUInteger mods    = 0;
-   if (@available(iOS 13.4, tvOS 13.4, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 4, 0), APPLE_RUNTIME_VER(13, 4, 0)))
    {
       ch = (NSString*)press.key.characters;
       mods = event.modifierFlags;
@@ -490,7 +491,7 @@ enum
                                     RETRO_DEVICE_KEYBOARD);
    }
 
-   if (@available(iOS 13.4, tvOS 13.4, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 4, 0), APPLE_RUNTIME_VER(13, 4, 0)))
       apple_input_keyboard_event(down,
                                  (uint32_t)press.key.keyCode, character, mod,
                                  RETRO_DEVICE_KEYBOARD);
@@ -541,7 +542,7 @@ enum
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
-   if (@available(iOS 13.4, tvOS 13.4, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 4, 0), APPLE_RUNTIME_VER(13, 4, 0)))
    {
       if (event.type == UIEventTypeHover)
          return;
@@ -739,7 +740,7 @@ API_AVAILABLE(ios(13.0), tvos(13.0))
    UIView *rootView = [CocoaView get].view;
    [rootView addSubview:_renderView];
 #if TARGET_OS_IOS
-   if (@available(iOS 13.4, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 4, 0), 0))
    {
       /* +[UIPointerInteraction alloc] initWithDelegate: returns +1.
        * -addInteraction: retains internally, so autorelease our own
@@ -1153,20 +1154,20 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
 #endif
 
 #if HAVE_SWIFT
-   if (@available(iOS 16.0, tvOS 16.0, *)) {
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0))) {
       [RetroArchAppShortcuts updateAppShortcuts];
    }
 #endif
 
 #if TARGET_OS_IOS
-   if (@available(iOS 13.0, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 0, 0), 0))
       [MXMetricManager.sharedManager addSubscriber:self];
 #endif
 
 #ifdef HAVE_MFI
    extern void *apple_gamecontroller_joypad_init(void *data);
    apple_gamecontroller_joypad_init(NULL);
-   if (@available(macOS 11, iOS 14, tvOS 14, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
    {
       [[NSNotificationCenter defaultCenter] addObserverForName:GCMouseDidConnectNotification
                                                         object:nil

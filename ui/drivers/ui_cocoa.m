@@ -15,6 +15,7 @@
  */
 
 #include <objc/objc-runtime.h>
+#include "../../apple_runtime.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -796,7 +797,7 @@ static ui_application_t ui_application_cocoa = {
    [self setupMainWindow];
 
 #if HAVE_SWIFT
-   if (@available(macOS 13.0, *)) {
+   if (apple_runtime_available(APPLE_RUNTIME_VER(13, 0, 0), 0, 0)) {
       [RetroArchAppShortcuts updateAppShortcuts];
    }
 #endif

@@ -14,6 +14,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#include "../../apple_runtime.h"
 #import <AVFoundation/AVFoundation.h>
 #import <CoreVideo/CoreVideo.h>
 #import <CoreMedia/CoreMedia.h>
@@ -260,7 +261,7 @@ static void *avfoundation_record_init(const struct record_params *params)
       NSString *videoCodec = AVVideoCodecTypeH264;
       bool useHEVC         = false;
 #if defined(MAC_OS_X_VERSION_10_13) || defined(__IPHONE_11_0)
-      if (@available(macOS 10.13, iOS 11.0, tvOS 11.0, *))
+      if (apple_runtime_available(APPLE_RUNTIME_VER(10, 13, 0), APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(11, 0, 0)))
       {
          if (params->preset == RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY
                || params->preset == RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY)

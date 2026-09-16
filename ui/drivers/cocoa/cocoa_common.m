@@ -15,6 +15,8 @@
  */
 
 #import <AvailabilityMacros.h>
+#include "../../../apple_runtime.h"
+#include <objc/message.h>
 #include <sys/stat.h>
 #ifdef HAVE_COCOATOUCH
 /* Grand Central Dispatch is used by the iOS/tvOS code only; the macOS
@@ -90,11 +92,11 @@ extern bool RAIsVoiceOverRunning(void)
 extern bool RAIsVoiceOverRunning(void)
 {
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= 101300
-   /* @available is clang-only (Xcode 7+).  GCC 4.0 rejects the
-    * '@' as a stray token.  isVoiceOverEnabled on NSWorkspace is
-    * 10.13+ anyway, so on older SDKs we skip this block entirely
-    * and fall through to the return below. */
-   if (@available(macOS 10.13, *))
+   /* The runtime check compiles on any toolchain, but the #if stays:
+    * isVoiceOverEnabled on NSWorkspace is only declared by 10.13+
+    * SDKs, so on older SDKs we skip this block entirely and fall
+    * through to the return below. */
+   if (apple_runtime_available(APPLE_RUNTIME_VER(10, 13, 0), 0, 0))
       return [[NSWorkspace sharedWorkspace] isVoiceOverEnabled];
 #endif
    return false;
@@ -267,7 +269,7 @@ void rarch_stop_draw_observer(void)
       {
          float hz = (float)[UIScreen mainScreen].maximumFramesPerSecond;
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
-         if (@available(iOS 15.0, tvOS 15.0, *))
+         if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
             [view.displayLink setPreferredFrameRateRange:
                CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz)];
          else
@@ -278,7 +280,7 @@ void rarch_stop_draw_observer(void)
       }
       [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 #elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
-      if (@available(macOS 14.0, *))
+      if (apple_runtime_available(APPLE_RUNTIME_VER(14, 0, 0), 0, 0))
       {
          CGDirectDisplayID did = CGMainDisplayID();
          CGDisplayModeRef mode = CGDisplayCopyDisplayMode(did);
@@ -359,7 +361,7 @@ void rarch_stop_draw_observer(void)
 - (bool)didMicroGamepadPress:(UIPressType)type
 {
     /* Are these presses that controllers send? */
-    if (@available(tvOS 14.3, *))
+    if (apple_runtime_available(0, 0, APPLE_RUNTIME_VER(14, 3, 0)))
         if (type == UIPressTypePageUp || type == UIPressTypePageDown)
             return true;
 
@@ -467,7 +469,7 @@ void rarch_stop_draw_observer(void)
     for (UIPress *press in presses)
     {
         bool has_key = false;
-        if (@available(tvOS 14, *))
+        if (apple_runtime_available(0, 0, APPLE_RUNTIME_VER(14, 0, 0)))
             has_key = !![press key];
         /* If we're at the top it doesn't matter who pressed it, we want to leave */
         if (press.type == UIPressTypeMenu && [self menuIsAtTop])
@@ -654,7 +656,7 @@ void rarch_stop_draw_observer(void)
 -(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
 {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-    if (@available(iOS 11, *))
+    if (apple_runtime_available(0, APPLE_RUNTIME_VER(11, 0, 0), 0))
     {
         [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext>  _Nonnull context) {
             [self adjustViewFrameForSafeArea];
@@ -669,7 +671,7 @@ void rarch_stop_draw_observer(void)
     * the notch in iPhone X phones. In multitasking mode,
     * we should only adjust within the current view bounds,
     * not force full screen dimensions. */
-   if (@available(iOS 11, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(11, 0, 0), 0))
    {
       /* Early return if core systems aren't initialized yet */
       settings_t *settings = config_get_ptr();
@@ -707,12 +709,40 @@ void rarch_stop_draw_observer(void)
          return;
 
       UIEdgeInsets inset   = window.safeAreaInsets;
-      UIInterfaceOrientation orientation;
-      if (@available(iOS 16.0, *)) {
-         orientation = window.windowScene.effectiveGeometry.interfaceOrientation;
-      } else {
-         orientation = [[UIApplication sharedApplication] statusBarOrientation];
+      /* UIWindowScene.effectiveGeometry is an iOS 16 API that older
+       * SDKs do not declare, so it is resolved entirely at runtime via
+       * objc_msgSend - same cost as a compiled property access.
+       * Capability is checked once per process (-1 = not yet checked). */
+      static SEL sel_window_scene        = NULL;
+      static SEL sel_effective_geometry  = NULL;
+      static SEL sel_iface_orientation   = NULL;
+      static int has_scene_geometry      = -1;
+      UIInterfaceOrientation orientation = (UIInterfaceOrientation)0;
+      if (has_scene_geometry == -1)
+      {
+         Class cls              = NSClassFromString(@"UIWindowScene");
+         sel_window_scene       = sel_registerName("windowScene");
+         sel_effective_geometry = sel_registerName("effectiveGeometry");
+         sel_iface_orientation  = sel_registerName("interfaceOrientation");
+         has_scene_geometry     = (cls && [cls instancesRespondToSelector:
+               sel_effective_geometry]) ? 1 : 0;
       }
+      if (has_scene_geometry)
+      {
+         id scene = ((id (*)(id, SEL))objc_msgSend)(window, sel_window_scene);
+         if (scene)
+         {
+            id geometry = ((id (*)(id, SEL))objc_msgSend)(scene,
+                  sel_effective_geometry);
+            if (geometry)
+               orientation = (UIInterfaceOrientation)
+                     ((NSInteger (*)(id, SEL))objc_msgSend)(geometry,
+                           sel_iface_orientation);
+         }
+      }
+      /* 0 == unknown */
+      if (orientation == (UIInterfaceOrientation)0)
+         orientation = [[UIApplication sharedApplication] statusBarOrientation];
 
       switch (orientation)
       {
@@ -764,7 +794,7 @@ void rarch_stop_draw_observer(void)
 /* NOTE: This version runs on iOS6+. */
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
-  if (@available(iOS 16, *))
+  if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), 0))
   {
     if (self.shouldLockCurrentInterfaceOrientation)
       return 1 << self.lockInterfaceOrientation;
@@ -852,7 +882,7 @@ void rarch_stop_draw_observer(void)
 - (void)viewDidAppear:(BOOL)animated
 {
 #if TARGET_OS_IOS
-    if (@available(iOS 11.0, *))
+    if (apple_runtime_available(0, APPLE_RUNTIME_VER(11, 0, 0), 0))
         [self setNeedsUpdateOfHomeIndicatorAutoHidden];
 #endif
 }
@@ -1324,7 +1354,7 @@ float cocoa_get_refresh_rate(void)
     * preferredFramesPerSecond, pre-10.0 still gets frameInterval,
     * and a 0 answer here still falls through to them. */
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
-   if (@available(iOS 10.3, tvOS 10.2, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 3, 0), APPLE_RUNTIME_VER(10, 2, 0)))
    {
       NSInteger max_fps = [[UIScreen mainScreen] maximumFramesPerSecond];
       if (max_fps > 0)
@@ -1336,11 +1366,11 @@ float cocoa_get_refresh_rate(void)
       if (dl)
       {
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
-         if (@available(iOS 15.0, tvOS 15.0, *))
+         if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
             return dl.preferredFrameRateRange.preferred;
 #endif
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000 || __TV_OS_VERSION_MAX_ALLOWED >= 100000
-         if (@available(iOS 10.0, tvOS 10.0, *))
+         if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), APPLE_RUNTIME_VER(10, 0, 0)))
             return dl.preferredFramesPerSecond;
 #endif
          /* iOS 6 - 9 / tvOS < 10: only frameInterval exists.  It is
@@ -1357,7 +1387,7 @@ float cocoa_get_refresh_rate(void)
       }
    }
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
-   if (@available(iOS 10.3, tvOS 10.2, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 3, 0), APPLE_RUNTIME_VER(10, 2, 0)))
       return [UIScreen mainScreen].maximumFramesPerSecond;
 #endif
    return 60.0f;
@@ -1370,7 +1400,7 @@ void cocoa_get_video_output_size(unsigned *width, unsigned *height,
 #if TARGET_OS_IPHONE
    UIScreen *screen = [UIScreen mainScreen];
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000 || __TV_OS_VERSION_MAX_ALLOWED >= 90000
-   if (@available(iOS 8.0, tvOS 9.0, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(8, 0, 0), APPLE_RUNTIME_VER(9, 0, 0)))
    {
       /* nativeBounds is physical pixels, orientation-independent. */
       CGRect b = screen.nativeBounds;
@@ -1943,7 +1973,7 @@ static void topshelfProcessPending(NSArray *pending, NSDictionary *contentDict, 
 
 void update_topshelf(void)
 {
-   if (@available(tvOS 13.0, *))
+   if (apple_runtime_available(0, 0, APPLE_RUNTIME_VER(13, 0, 0)))
    {
       NSUserDefaults *ud = [[NSUserDefaults alloc] initWithSuiteName:kRetroArchAppGroup];
       if (!ud)

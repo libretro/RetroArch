@@ -15,6 +15,7 @@
  */
 
 #include <stdint.h>
+#include "../../apple_runtime.h"
 #include <unistd.h>
 
 #include <retro_miscellaneous.h>
@@ -406,18 +407,18 @@ static void *cocoa_input_init(const char *joypad_driver)
 {
    cocoa_input_data_t *apple = NULL;
 #ifdef HAVE_COREMOTION
-   if (@available(macOS 10.15, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(10, 15, 0), 0, 0))
       if (!motionManager)
          motionManager = [[CMMotionManager alloc] init];
 #endif
 
 #if TARGET_OS_IOS
-   if (@available(iOS 14, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
       cocoa_input_init_haptic_engine();
    else
    {
       /* Fallback for iOS 10-13 */
-      if (@available(iOS 10, *))
+      if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
       {
          if (!feedbackGenerator)
             feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
@@ -767,7 +768,7 @@ static void cocoa_input_free(void *data)
       return;
 
 #if TARGET_OS_IOS
-   if (@available(iOS 14, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
    {
       if (keypressHapticEngine)
       {
@@ -779,7 +780,7 @@ static void cocoa_input_free(void *data)
          }];
       }
    }
-   else if (@available(iOS 10, *))
+   else if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
       feedbackGenerator = nil;
 #endif
 
@@ -809,7 +810,7 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
       return false;
 
 #ifdef HAVE_MFI
-   if (@available(iOS 14.0, macOS 11.0, tvOS 14.0, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
    {
       for (GCController *controller in [GCController controllers])
       {
@@ -872,7 +873,7 @@ static void cocoa_sensor_rotate_xy(float *x, float *y)
 {
    float rawX = *x, rawY = *y;
    UIInterfaceOrientation orient;
-   if (@available(iOS 16.0, *)) {
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), 0)) {
       UIWindow *window = [[UIApplication sharedApplication] delegate].window;
       if (!window) {
          return;
@@ -904,7 +905,7 @@ static void cocoa_sensor_rotate_xy(float *x, float *y)
 static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id)
 {
 #ifdef HAVE_MFI
-   if (@available(iOS 14.0, macOS 11.0, tvOS 14.0, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
    {
       for (GCController *controller in [GCController controllers])
       {
@@ -997,7 +998,7 @@ static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL
 
 static void cocoa_input_keypress_vibrate(void)
 {
-   if (@available(iOS 14, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
    {
       /* Reinitialize engine if iOS stopped it (e.g., during backgrounding) */
       if (!keypressHapticEngine)
@@ -1071,7 +1072,7 @@ static void cocoa_input_keypress_vibrate(void)
    else
    {
       /* Fallback for iOS 10-13 */
-      if (@available(iOS 10, *))
+      if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
       {
          if (feedbackGenerator)
          {
@@ -1115,7 +1116,7 @@ static void cocoa_input_grab_mouse(void *data, bool state)
 
    apple->mouse_grabbed = state;
 
-   if (@available(iOS 14, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
       [[CocoaView get] setNeedsUpdateOfPrefersPointerLocked];
 }
 #endif
