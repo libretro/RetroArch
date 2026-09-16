@@ -318,33 +318,6 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       }
 #endif
 
-#if defined(__WINRT__)
-      {
-         char buffer[1024];
-         int r;
-         buffer[0] = '\0';
-         r = vsnprintf(buffer, sizeof(buffer), fmt, ap);
-         if (r < 0)
-         {
-            buffer[sizeof(buffer) - 1] = '\0';
-            if (buffer[0] != '\0')
-               buffer[sizeof(buffer) - 2] = '\n';
-            else
-            {
-               buffer[0] = '\n';
-               buffer[1] = '\0';
-            }
-         }
-         if (fp)
-         {
-            fprintf(fp, "%s %s", tag_v, buffer);
-            fflush(fp);
-         }
-         OutputDebugStringA(buffer);
-      }
-
-#else
-
 #if TARGET_OS_MAC
       {
          int     r;
@@ -392,9 +365,6 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
                static int       asl_initialized = 0;
                aslmsg           msg;
 
-#if defined(HAVE_LIBNX)
-               mutexLock(&g_verbosity->mtx);
-#endif
                if (!asl_initialized)
                {
                   asl_client      = asl_open(FILE_PATH_PROGRAM_NAME,
@@ -402,9 +372,6 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
                                     ASL_OPT_STDERR | ASL_OPT_NO_DELAY);
                   asl_initialized = 1;
                }
-#if defined(HAVE_LIBNX)
-               mutexUnlock(&g_verbosity->mtx);
-#endif
                msg = asl_new(ASL_TYPE_MSG);
                asl_set(msg, ASL_KEY_READ_UID, "-1");
                asl_log(asl_client, msg, ASL_LEVEL_NOTICE,
@@ -427,25 +394,57 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 apple_log_done:;
 
 #else
+      if (fp)
       {
+         /* Format once - tag and message into one buffer - and write
+          * once. stdio's per-call lock then keeps concurrent lines
+          * whole on every platform, where the old tag-call plus
+          * body-call pair could interleave between threads; lines
+          * wider than the stack buffer take an exact-sized heap
+          * detour rather than truncating. */
+         char line[1024];
+         char *out    = line;
+         char *heap   = NULL;
+         int t_len    = snprintf(line, sizeof(line), "%s ", tag_v);
+         int b_len;
+         va_list ap_cp;
+
+         if (t_len < 0 || t_len >= (int)sizeof(line))
+            t_len = 0;
+
+         va_copy(ap_cp, ap);
+         b_len = vsnprintf(line + t_len, sizeof(line) - (size_t)t_len,
+               fmt, ap_cp);
+         va_end(ap_cp);
+
+         if (b_len >= (int)(sizeof(line) - (size_t)t_len))
+         {
+            size_t need = (size_t)t_len + (size_t)b_len + 1;
+            if ((heap = (char*)malloc(need)))
+            {
+               memcpy(heap, line, (size_t)t_len);
+               vsnprintf(heap + t_len, need - (size_t)t_len, fmt, ap);
+               out = heap;
+            }
+            /* On allocation failure the truncated stack line ships:
+             * a shortened message over a dropped one. */
+         }
+         else if (b_len < 0)
+            line[t_len] = '\0';
+
 #  if defined(HAVE_LIBNX)
+         /* Around exactly one write and its flush; libnx newlib's
+          * stdio locking history is why this exists at all. */
          mutexLock(&main_verbosity_st.mtx);
 #  endif
-
-         if (fp)
-         {
-            /* Write tag and message in one fprintf call to reduce
-             * write() syscall overhead vs. separate fprintf+vfprintf */
-            fprintf(fp, "%s ", tag_v);
-            vfprintf(fp, fmt, ap);
-            fflush(fp);
-         }
-
+         fputs(out, fp);
+         fflush(fp);
 #  if defined(HAVE_LIBNX)
          mutexUnlock(&main_verbosity_st.mtx);
 #  endif
+
+         free(heap);
       }
-#endif
 #endif
    }
 #endif
