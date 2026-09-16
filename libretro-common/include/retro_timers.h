@@ -193,4 +193,25 @@ static INLINE void retro_sleep_us(unsigned usec)
 }
 #endif
 
+/**
+ * retro_sleep_until_us:
+ * @deadline : an instant on cpu_features_get_time_usec()'s clock.
+ *
+ * Sleeps until that clock reads at least @deadline. Absolute where
+ * the platform offers it (clock_nanosleep TIMER_ABSTIME on Linux and
+ * Android, mach_wait_until on Darwin), a re-armed high-resolution
+ * relative wait elsewhere - so the time between reading the clock
+ * and entering the kernel, and any early or interrupted wake, are
+ * not added to when the caller comes back. Never early against that
+ * clock; may be late, as every sleep may. Implemented in rtime.c.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <stdint.h>
+void retro_sleep_until_us(int64_t deadline);
+#ifdef __cplusplus
+}
+#endif
+
 #endif

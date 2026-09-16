@@ -8720,10 +8720,15 @@ end:
              * act on a sub-millisecond remainder, nor spin. */
             platform_emscripten_deferred_sleep((int)(to_sleep_us / 1000));
 #else
-            /* Sleep short by the margin the sleep has been seen to
-             * overshoot, then spin the remainder to the deadline:
-             * the sleep decides how much is spun, the clock decides
-             * where the frame lands. */
+            /* Sleep short of the deadline by the measured margin,
+             * then spin the remainder: the sleep decides how much is
+             * spun, the clock decides where the frame lands. The
+             * sleep is absolute - retro_sleep_until_us re-arms
+             * against the deadline itself - so the time between
+             * reading the clock and entering the kernel, and any
+             * early or interrupted wake, no longer land in the
+             * margin; what the margin measures now is purely the
+             * kernel's own overshoot, which is what it was for. */
             const retro_time_t deadline = runloop_st->frame_limit_anchor_ns / 1000;
             retro_time_t now            = end_frame_time;
 #if defined(HAVE_COCOATOUCH)
@@ -8733,12 +8738,13 @@ end:
 #endif
             if (to_sleep_us > runloop_st->frame_limit_margin)
             {
-               const retro_time_t asked = to_sleep_us - runloop_st->frame_limit_margin;
-               retro_sleep_us((unsigned)asked);
+               const retro_time_t asked_until =
+                     deadline - runloop_st->frame_limit_margin;
+               retro_sleep_until_us(asked_until);
                now = cpu_features_get_time_usec();
                runloop_st->frame_limit_margin = runloop_pace_margin_update(
                      runloop_st->frame_limit_margin,
-                     now - (end_frame_time + asked), frame_limit_min);
+                     now - asked_until, frame_limit_min);
             }
             while (now < deadline)
             {
