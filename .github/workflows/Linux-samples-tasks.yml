@@ -387,6 +387,44 @@ jobs:
           make clean
           echo "[pass] core_crc_slice_test (TSan)"
 
+      - name: Build and run get_list_refresh_flags_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/core_updater
+        run: |
+          set -eu
+          # Regression lane for the menu refresh flags around the
+          # core updater get-list task, against the shipping
+          # tasks/task_core_updater.c, tasks/task_http.c,
+          # task_queue.c and net_http.c.
+          #
+          # The Core Downloader entry point sets
+          # MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH before pushing
+          # the get-list task, and only the task's retirement
+          # callback clears it again.  The callback reads
+          # refresh_menu through task->state, so the handle has to
+          # stay attached to the task until retrieval; a handler
+          # that frees it early turns the clear into a silent no-op,
+          # MENU_ENTRIES_NEEDS_REFRESH() then stays false for the
+          # rest of the session, and one visit to Core Downloader
+          # wedges every deeper menu until restart.  The test drives
+          # the real push end to end against a loopback
+          # .index-extended server, both values of refresh_menu, and
+          # asserts the flags clear and the refresh gate comes back.
+          make -f Makefile.refresh_flags clean all
+          test -x get_list_refresh_flags_test
+          timeout 600 ./get_list_refresh_flags_test
+          echo "[pass] get_list_refresh_flags_test"
+          make -f Makefile.refresh_flags clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./get_list_refresh_flags_test
+          echo "[pass] get_list_refresh_flags_test (ASan)"
+          make -f Makefile.refresh_flags clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 \
+             ./get_list_refresh_flags_test
+          make -f Makefile.refresh_flags clean
+          echo "[pass] get_list_refresh_flags_test (TSan)"
+
       - name: Build and run core_backup_io_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/core_backup

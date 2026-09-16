@@ -23,6 +23,7 @@
 #include <boolean.h>
 
 #include <string/stdstring.h>
+#include <lists/string_list.h>
 #include <file/file_path.h>
 #include <net/net_http.h>
 #include <streams/interface_stream.h>
@@ -354,6 +355,10 @@ static void free_core_updater_list_handle(
       /* since we took ownership, we have to destroy it ourself */
       if (list_handle->http_data->data)
          free(list_handle->http_data->data);
+      /* the headers list task_http.c attaches is part of that
+       * ownership */
+      if (list_handle->http_data->headers)
+         string_list_free(list_handle->http_data->headers);
 
       free(list_handle->http_data);
    }
@@ -493,22 +498,26 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
 
 task_finished:
    if (task)
-   {
-      /* Clear the state pointer before the handle is freed.  The
-       * worker runs handlers with running_lock released and the task
-       * still linked into tasks_running, so a task that has finished
-       * here stays visible to retro_task_threaded_find() until the
-       * worker retires it.  The finders in this file dereference
-       * task->state, so leaving it pointing at freed memory is a
-       * use-after-free - task_core_updater_download_finder() strcmps
-       * through it, which is a hard crash the moment
-       * task_update_installed_cores_handler() pushes the next core. */
-      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
-   }
+}
+
+/* Runs at retrieval on the main thread, after the task callback.
+ * The handle must stay attached to task->state until here: the
+ * finders in this file dereference task->state on a task that is
+ * still findable, and cb_task_core_updater_get_list() reads
+ * refresh_menu through it to clear the menu refresh flags - both on
+ * a task the worker has already marked FINISHED.  The task stays
+ * visible to retro_task_threaded_find() until it is retired, so the
+ * handle it exposes has to stay alive exactly that long, and this
+ * cleanup is the first point past both users. */
+static void task_core_updater_get_list_cleanup(retro_task_t *task)
+{
+   core_updater_list_handle_t *list_handle =
+         (core_updater_list_handle_t*)task->state;
 
    if (list_handle)
       free_core_updater_list_handle(list_handle);
+   task->state = NULL;
 }
 
 static bool task_core_updater_get_list_finder(retro_task_t *task, void *user_data)
@@ -619,6 +628,7 @@ static void *task_push_get_core_updater_list_captured(
 
    /* Configure task */
    task->handler          = task_core_updater_get_list_handler;
+   task->cleanup          = task_core_updater_get_list_cleanup;
    task->state            = list_handle;
    task->title            = strdup(msg_hash_to_str(MSG_FETCHING_CORE_LIST));
    task->progress         = 0;
