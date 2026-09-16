@@ -222,6 +222,13 @@ check_nothreads() {
    done
    [ "$bad" = 1 ] || echo "ok    $name"
 }
+# Console rgui: the menu driver's GEKKO and DINGUX shapes have their
+# own framebuffer dimensions, aspect handling and pixel converters;
+# a syntax pass keeps refactors honest for both. GEKKO needs one
+# tiny libogc stub header (tools/platform_stubs/gekko).
+check "gekko: rgui"  "-DGEKKO -DHAVE_MENU -DHAVE_RGUI -Itools/platform_stubs/gekko" menu/drivers/rgui.c
+check "dingux: rgui" "-DDINGUX -DHAVE_MENU -DHAVE_RGUI" menu/drivers/rgui.c
+
 check_nothreads "no threads: gl2"          "$GLDEFS $GLINC"       gfx/drivers/gl2.c
 check_nothreads "no threads: video_driver" "$GLINC"               gfx/video_driver.c
 check_nothreads "no threads: retroarch"    "$GLINC -DHAVE_COMMAND -DHAVE_STDIN_CMD" retroarch.c
