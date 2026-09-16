@@ -14,6 +14,11 @@
  */
 
 #include <spa/param/audio/format-utils.h>
+/* A note for the eventcount census: this driver stays off it, on
+ * purpose, for pulse.c's reason - pw_thread_loop is the library's
+ * mandated rendezvous, its lock covers every pw_* call, and the
+ * data path already runs on PipeWire's own lock-free
+ * spa_ringbuffer. Same column as ALSA's device waits. */
 #include <spa/utils/ringbuffer.h>
 #include <spa/utils/result.h>
 #include <spa/param/props.h>

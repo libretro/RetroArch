@@ -65,6 +65,16 @@ typedef struct
    retro_atomic_size_t sink_frames_cached;
 } pa_t;
 
+/* A note for the eventcount census: this driver stays off it, on
+ * purpose. Every wait and signal here is pa_threaded_mainloop's own
+ * rendezvous, which is not machinery this file chose but the
+ * library's contract - every pa_* call below must hold the mainloop
+ * lock, callbacks are dispatched under it, and
+ * pa_threaded_mainloop_signal is only meaningful from inside it.
+ * Parking on anything of ours would step outside that contract, and
+ * there is nothing else here to park on: no fifo of ours sits in
+ * front of pa_stream_write. Same column as ALSA's device waits. */
+
 /* Bounds on the waits below. A server that is answering signals in
  * milliseconds; these are for one that is not - stopped consuming, or
  * gone without the state callback having fired yet. */
