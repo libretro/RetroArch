@@ -396,8 +396,19 @@ typedef struct thread_video
    input_driver_t **input;
    void **input_data;
 
-   float *alpha_mod;
-   slock_t *alpha_lock;
+   /* Overlay alpha modulation, lock-free. The values are float bits
+    * in atomic ints: the main thread's set_alpha (fire-and-forget by
+    * design) stores a value relaxed and then store-releases
+    * alpha_update; the video thread's per-frame apply clears the
+    * flag with an acquire exchange BEFORE reading the values, so a
+    * set that lands mid-apply re-raises the flag and is applied
+    * whole next frame - the exchange-first order is what makes an
+    * update impossible to lose. The array pointer and alpha_mods
+    * are written only inside the CMD_OVERLAY_LOAD handler, with the
+    * main thread blocked in that command's reply wait and the video
+    * thread out of its frame call, so plain reads of both are safe
+    * everywhere. */
+   retro_atomic_int_t *alpha_mod;
 
    struct
    {
@@ -443,7 +454,7 @@ typedef struct thread_video
    enum thread_cmd send_cmd;
    enum thread_cmd reply_cmd;
 
-   bool alpha_update;
+   retro_atomic_int_t alpha_update;
 
    /* Core frames cross to the video thread through a two-slot ring so
     * the main thread's copy of frame N+1 overlaps the worker's upload

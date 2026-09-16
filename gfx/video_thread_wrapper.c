@@ -31,6 +31,20 @@
 
 #include "video_driver.h"
 #include "video_thread_wrapper.h"
+
+/* Float <-> bits for the overlay alpha atomics. */
+static INLINE int video_thread_float_bits(float f)
+{
+   int b;
+   memcpy(&b, &f, sizeof(b));
+   return b;
+}
+static INLINE float video_thread_bits_float(int b)
+{
+   float f;
+   memcpy(&f, &b, sizeof(f));
+   return f;
+}
 #ifdef HAVE_GFX_WIDGETS
 #include "gfx_widgets.h"
 #endif
@@ -440,18 +454,18 @@ static void thread_update_driver_state(thread_video_t *thr)
 #endif
 
 #ifdef HAVE_OVERLAY
-   slock_lock(thr->alpha_lock);
-   if (thr->alpha_update)
+   /* Clear first, then read: see alpha_mod in the header. */
+   if (retro_atomic_fetch_and_int(&thr->alpha_update, 0))
    {
       if (thr->driver_data && thr->overlay && thr->overlay->set_alpha)
       {
          int i;
          for (i = 0; i < (int)thr->alpha_mods; i++)
-            thr->overlay->set_alpha(thr->driver_data, i, thr->alpha_mod[i]);
+            thr->overlay->set_alpha(thr->driver_data, i,
+                  video_thread_bits_float(retro_atomic_load_relaxed_int(
+                        &thr->alpha_mod[i])));
       }
-      thr->alpha_update = false;
    }
-   slock_unlock(thr->alpha_lock);
 #endif
 
    if (thr->apply_state_changes)
@@ -630,21 +644,23 @@ static bool video_thread_handle_packet(
 
             if (tmp_alpha_mods > 0)
             {
-               float *tmp_alpha_mod = (float*)realloc(thr->alpha_mod,
-                  tmp_alpha_mods * sizeof(float));
+               retro_atomic_int_t *tmp_alpha_mod = (retro_atomic_int_t*)
+                  realloc((void*)thr->alpha_mod,
+                     tmp_alpha_mods * sizeof(retro_atomic_int_t));
                if (tmp_alpha_mod)
                {
                   /* Avoid temporary garbage data. */
                   int i;
                   for (i = 0; i < (int)tmp_alpha_mods; i++)
-                     tmp_alpha_mod[i] = 1.0f;
+                     retro_atomic_store_relaxed_int(&tmp_alpha_mod[i],
+                           video_thread_float_bits(1.0f));
                   thr->alpha_mods = tmp_alpha_mods;
                   thr->alpha_mod  = tmp_alpha_mod;
                }
             }
             else
             {
-               free(thr->alpha_mod);
+               free((void*)thr->alpha_mod);
                thr->alpha_mods = 0;
                thr->alpha_mod  = NULL;
             }
@@ -2442,8 +2458,6 @@ static bool video_thread_init(thread_video_t *thr,
 
    if (!(thr->lock        = slock_new()))
       return false;
-   if (!(thr->alpha_lock  = slock_new()))
-      return false;
    if (!(thr->frame.lock  = slock_new()))
       return false;
    if (!(thr->waiter_call.cond = scond_new()))
@@ -2680,10 +2694,9 @@ static void video_thread_free(void *data)
       memalign_free(thr->frame.slot[0].buffer);
       memalign_free(thr->frame.slot[1].buffer);
 #endif
-      free(thr->alpha_mod);
+      free((void*)thr->alpha_mod);
 
       slock_free(thr->frame.lock);
-      slock_free(thr->alpha_lock);
       slock_free(thr->lock);
       scond_free(thr->cond_reply);
       scond_free(thr->waiter_call.cond);
@@ -2813,10 +2826,12 @@ static void thread_overlay_set_alpha(void *data, unsigned idx, float mod)
 
    if (thr)
    {
-      slock_lock(thr->alpha_lock);
-      thr->alpha_mod[idx] = mod;
-      thr->alpha_update   = true;
-      slock_unlock(thr->alpha_lock);
+      if (idx < thr->alpha_mods)
+         retro_atomic_store_relaxed_int(&thr->alpha_mod[idx],
+               video_thread_float_bits(mod));
+      /* Release: the value store above is visible to the apply's
+       * acquire exchange. */
+      retro_atomic_store_release_int(&thr->alpha_update, 1);
    }
 }
 
