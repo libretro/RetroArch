@@ -283,6 +283,12 @@ salamander_link "salamander link: rtime.c" \
    "$HOSTOFF -UHAVE_THREADS -Itools/platform_stubs/vita -DVITA -DIS_SALAMANDER -DRARCH_CONSOLE" \
    libretro-common/time/rtime.c
 
+# runloop.c under Android: runloop_idle_wait's looper branch, and every
+# other ANDROID block in the file, compiled against hermetic NDK stubs
+# (jni, looper, native_activity, sensor, configuration, window) with
+# the host identity shed.
+check "android: runloop" "$HOSTOFF -DANDROID -Itools/platform_stubs/android" runloop.c
+
 check "android: opensl" "-DANDROID -DHAVE_OPENSL -Itools/platform_stubs/android -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/opensl.c
 
 check "gekko: rgui"  "-DGEKKO -DHAVE_MENU -DHAVE_RGUI -Itools/platform_stubs/gekko" menu/drivers/rgui.c

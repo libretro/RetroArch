@@ -6349,7 +6349,25 @@ bool runloop_is_inited(void)
  * without a source. */
 static void runloop_idle_wait(void)
 {
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#if defined(ANDROID)
+   /* The platform that reaches this fallback most: unfocused but
+    * foreground. (The IDLE case never gets here - android_input_poll
+    * itself blocks on the looper indefinitely there, and the call
+    * site exempts it.) The looper is ident-based, prepared with
+    * ALOOPER_PREPARE_ALLOW_NON_CALLBACKS, so a poll here reports
+    * readiness and consumes nothing: the wake returns to the loop and
+    * the next android_input_poll dispatches the ident exactly as it
+    * would have. Input, app commands and the sensor queue all arrive
+    * through this one object, so nothing else needs watching. The
+    * wait stays here rather than folding into android_input_poll
+    * because that poll's own timeout is input_block_timeout, a
+    * running-latency setting unrelated to pause; the two are kept
+    * apart on purpose. */
+   if (ALooper_forThread())
+      ALooper_pollOnce(10, NULL, NULL, NULL);
+   else
+      retro_sleep(10);
+#elif defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    MsgWaitForMultipleObjectsEx(0, NULL, 10, QS_ALLINPUT,
          MWMO_INPUTAVAILABLE);
 #elif defined(HAVE_X11)
