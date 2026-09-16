@@ -194,8 +194,10 @@ static bool sdl3_vk_ctx_set_resize(void *data,
    }
 
    if (sdl->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
+   {
       vulkan_acquire_next_image(&sdl->vk);
-   sdl->vk.context.flags         |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+      sdl->vk.context.flags      |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   }
    sdl->vk.flags                 &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    return true;
 }

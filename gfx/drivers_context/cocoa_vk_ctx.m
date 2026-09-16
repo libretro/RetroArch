@@ -527,9 +527,11 @@ static void cocoa_vk_gfx_ctx_set_resize_mainthread(void *userdata)
       return;
    }
 
-   cocoa_ctx->vk.context.flags   |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
    if (cocoa_ctx->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
+   {
+      cocoa_ctx->vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
       vulkan_acquire_next_image(&cocoa_ctx->vk);
+   }
    cocoa_ctx->vk.flags           &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    args->ok                       = true;
 }

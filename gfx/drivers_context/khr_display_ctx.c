@@ -124,9 +124,10 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
    }
 
    if (khr->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
+   {
       vulkan_acquire_next_image(&khr->vk);
-
-   khr->vk.context.flags      |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+      khr->vk.context.flags   |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   }
    khr->vk.flags              &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    return true;
 }
