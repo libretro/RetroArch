@@ -6003,6 +6003,17 @@ void video_driver_frame(const void *data, unsigned width,
     * their consumers). */
    video_driver_publish_vp_params();
 
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+   /* The DXGI frame-path HDR check cannot write settings from the
+    * video thread; it flags, and the main thread applies here
+    * (declared locally to keep the windows headers out of this
+    * shared file). */
+   {
+      extern void dxgi_hdr_process_deferred_disable(void);
+      dxgi_hdr_process_deferred_disable();
+   }
+#endif
+
    status_text[0]                 = '\0';
    video_driver_msg[0]            = '\0';
 

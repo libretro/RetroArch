@@ -506,6 +506,12 @@ typedef struct
    D3D12Debug debugController;
 #endif
    uint32_t flags;
+   /* settings->uints.video_swapchain_bit_depth, seeded at init and
+    * refreshed in apply_state_changes (a blocking command, so the
+    * settings read inside it cannot race main): the frame's resize
+    * handling consumes this instead of live settings on the video
+    * thread. */
+   unsigned swapchain_bit_depth_latched;
    int8_t wait_for_vblank;
 } d3d12_video_t;
 
@@ -4028,6 +4034,7 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
        * profiles, aperture grilles) without pulling in the HDR
        * pipeline.  Opt-in; G22/P709 is correct for both depths. */
       settings_t *settings     = config_get_ptr();
+      d3d12->swapchain_bit_depth_latched = settings->uints.video_swapchain_bit_depth;
       d3d12->chain.bit_depth   = (settings->uints.video_swapchain_bit_depth == 2)
          ? DXGI_SWAPCHAIN_BIT_DEPTH_10 : DXGI_SWAPCHAIN_BIT_DEPTH_8;
    }
@@ -4972,8 +4979,8 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
       }
       else
       {
-         width = retroarch_get_rotation() % 2 ? height : width;
-         height = retroarch_get_rotation() % 2 ? width : height;
+         width = video_driver_get_rotation_snapshot() % 2 ? height : width;
+         height = video_driver_get_rotation_snapshot() % 2 ? width : height;
 
          d3d12->pass[i].rt.size_data.x = width;
          d3d12->pass[i].rt.size_data.y = height;
@@ -5252,9 +5259,6 @@ static bool d3d12_gfx_frame(
    bool nonblock_state            = video_info->input_driver_nonblock_state;
    bool runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
    bool runloop_is_paused         = video_info->runloop_is_paused;
-   /* Cache settings pointer once per frame to avoid repeated
-    * config_get_ptr() calls in the shader pass loop. */
-   settings_t *frame_settings     = config_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
@@ -5350,9 +5354,8 @@ static bool d3d12_gfx_frame(
           * whenever it disagrees with the current depth, so it has
           * to honour the setting the creation path already honours,
           * or a 10-bit SDR chain is torn straight back down. */
-         settings_t *settings = config_get_ptr();
          desired_bit_depth    =
-            (settings->uints.video_swapchain_bit_depth == 2)
+            (d3d12->swapchain_bit_depth_latched == 2)
             ? DXGI_SWAPCHAIN_BIT_DEPTH_10 : DXGI_SWAPCHAIN_BIT_DEPTH_8;
       }
 
@@ -5749,7 +5752,7 @@ static bool d3d12_gfx_frame(
       {
          uint32_t pass_frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
          float    pass_original_fps     = video_driver_get_original_fps();
-         uint32_t pass_rotation         = retroarch_get_rotation();
+         uint32_t pass_rotation         = video_driver_get_rotation_snapshot();
          float    pass_core_aspect      = video_driver_get_core_aspect();
          float    pass_core_aspect_rot  = pass_core_aspect;
 #ifdef HAVE_REWIND
@@ -5759,10 +5762,13 @@ static bool d3d12_gfx_frame(
 #endif
 #ifdef HAVE_DXGI_HDR
          unsigned pass_hdr_mode           = video_info->hdr_mode;
-         float    pass_paper_white_nits   = frame_settings->floats.video_hdr_paper_white_nits;
-         float    pass_hdr_scanlines      = frame_settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
-         unsigned pass_subpixel_layout    = frame_settings->uints.video_hdr_subpixel_layout;
-         unsigned pass_expand_gamut       = frame_settings->uints.video_hdr_expand_gamut;
+         /* From the driver's latches - the HDR pokes store into
+          * hdr.ubo_values and init seeds them - never live settings
+          * on the video thread. */
+         float    pass_paper_white_nits   = d3d12->hdr.ubo_values.paper_white_nits;
+         float    pass_hdr_scanlines      = d3d12->hdr.ubo_values.scanlines;
+         unsigned pass_subpixel_layout    = d3d12->hdr.ubo_values.subpixel_layout;
+         unsigned pass_expand_gamut       = d3d12->hdr.ubo_values.expand_gamut;
 #endif
 
          /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
@@ -6055,7 +6061,9 @@ static bool d3d12_gfx_frame(
             d3d12->hdr.ubo_values.output_size.width   = d3d12->frame.output_size.x;
             d3d12->hdr.ubo_values.output_size.height  = d3d12->frame.output_size.y;
 
-            d3d12->hdr.ubo_values.scanlines           = frame_settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
+            /* Already in ubo_values via the poke or the menu
+             * suppression around this frame; the settings re-read
+             * was redundant and a live read. */
 
             if (video_info->hdr_mode == 2) /* scRGB */
             {
@@ -7666,7 +7674,14 @@ static void d3d12_gfx_apply_state_changes(void* data)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
    if (d3d12)
+   {
+      settings_t *settings = config_get_ptr();
+      /* Blocking command: main is parked, so this settings read
+       * cannot race, and the frame's resize path reads the latch. */
+      d3d12->swapchain_bit_depth_latched =
+            settings->uints.video_swapchain_bit_depth;
       d3d12->flags |= D3D12_ST_FLAG_RESIZE_VIEWPORT;
+   }
 }
 
 static void d3d12_gfx_set_osd_msg(

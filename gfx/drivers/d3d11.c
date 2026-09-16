@@ -364,6 +364,12 @@ typedef struct
    unsigned              swap_interval;
    int8_t                wait_for_vblank;
    uint32_t              flags;
+   /* settings->uints.video_swapchain_bit_depth, seeded at init and
+    * refreshed in apply_state_changes (a blocking command, so the
+    * settings read inside it cannot race main): the frame's resize
+    * handling consumes this instead of live settings on the video
+    * thread. */
+   unsigned swapchain_bit_depth_latched;
    d3d11_shader_t        shaders[GFX_MAX_SHADERS];
 #ifdef HAVE_DXGI_HDR
    enum dxgi_swapchain_bit_depth
@@ -3194,6 +3200,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
        * profiles, aperture grilles) without pulling in the HDR
        * pipeline.  Opt-in; G22/P709 is correct for both depths. */
       settings_t *settings     = config_get_ptr();
+      d3d11->swapchain_bit_depth_latched = settings->uints.video_swapchain_bit_depth;
       d3d11->chain_bit_depth   = (settings->uints.video_swapchain_bit_depth == 2)
          ? DXGI_SWAPCHAIN_BIT_DEPTH_10 : DXGI_SWAPCHAIN_BIT_DEPTH_8;
    }
@@ -4134,7 +4141,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
    int rot;
    bool last_pass;
    d3d11->mvp_last_pass = d3d11->ubo_values.mvp;
-   rot                  = retroarch_get_rotation();
+   rot                  = video_driver_get_rotation_snapshot();
 
    for (i = 0; i < d3d11->shader_preset->passes; i++)
    {
@@ -4455,9 +4462,8 @@ static bool d3d11_gfx_frame(
           * whenever it disagrees with the current depth, so it has
           * to honour the setting the creation path already honours,
           * or a 10-bit SDR chain is torn straight back down. */
-         settings_t *settings = config_get_ptr();
          desired_bit_depth    =
-            (settings->uints.video_swapchain_bit_depth == 2)
+            (d3d11->swapchain_bit_depth_latched == 2)
             ? DXGI_SWAPCHAIN_BIT_DEPTH_10 : DXGI_SWAPCHAIN_BIT_DEPTH_8;
       }
 
@@ -4761,7 +4767,7 @@ static bool d3d11_gfx_frame(
 
       pass_frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
       pass_original_fps     = video_driver_get_original_fps();
-      pass_rotation         = retroarch_get_rotation();
+      pass_rotation         = video_driver_get_rotation_snapshot();
       pass_core_aspect      = video_driver_get_core_aspect();
       pass_core_aspect_rot  = pass_core_aspect;
 #ifdef HAVE_REWIND
@@ -4817,16 +4823,18 @@ static bool d3d11_gfx_frame(
 
 #ifdef HAVE_DXGI_HDR
          {
-            settings_t*    settings = config_get_ptr();
-
+            /* From the driver's latches: the HDR pokes store into
+             * hdr.ubo_values (blocking commands under the wrapper)
+             * and init seeds them, so the frame never reads live
+             * settings here. */
             d3d11->pass[i].hdr_mode             = video_info->hdr_mode;
 
             if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
             {
-               d3d11->pass[i].paper_white_nits  = settings->floats.video_hdr_paper_white_nits;
-               d3d11->pass[i].scanlines         = settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
-               d3d11->pass[i].subpixel_layout   = settings->uints.video_hdr_subpixel_layout;
-               d3d11->pass[i].expand_gamut      = settings->uints.video_hdr_expand_gamut;
+               d3d11->pass[i].paper_white_nits  = d3d11->hdr.ubo_values.paper_white_nits;
+               d3d11->pass[i].scanlines         = d3d11->hdr.ubo_values.scanlines;
+               d3d11->pass[i].subpixel_layout   = d3d11->hdr.ubo_values.subpixel_layout;
+               d3d11->pass[i].expand_gamut      = d3d11->hdr.ubo_values.expand_gamut;
             }
          }
 #endif /* HAVE_DXGI_HDR */ 
@@ -4983,14 +4991,16 @@ static bool d3d11_gfx_frame(
          context->lpVtbl->GSSetShader(context, shader->gs, NULL, 0);
 
          {
-            settings_t* settings                      = config_get_ptr();
             d3d11->hdr.ubo_values.source_size.width   = width;
             d3d11->hdr.ubo_values.source_size.height  = height;
 
             d3d11->hdr.ubo_values.output_size.width   = d3d11->frame.output_size.x;
             d3d11->hdr.ubo_values.output_size.height  = d3d11->frame.output_size.y;
 
-            d3d11->hdr.ubo_values.scanlines           = settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
+            /* scanlines already lives in ubo_values: the poke wrote
+             * it there, or the menu-scanline suppression around this
+             * frame did; re-reading settings here was redundant and
+             * a live read from the video thread. */
 
             if (video_info->hdr_mode == 2) /* scRGB */
             {
@@ -6163,7 +6173,14 @@ static void d3d11_gfx_apply_state_changes(void* data)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
    if (d3d11)
+   {
+      settings_t *settings = config_get_ptr();
+      /* Blocking command: main is parked, so this settings read
+       * cannot race, and the frame's resize path reads the latch. */
+      d3d11->swapchain_bit_depth_latched =
+            settings->uints.video_swapchain_bit_depth;
       d3d11->flags |= D3D11_ST_FLAG_RESIZE_VIEWPORT;
+   }
 }
 
 static void d3d11_gfx_set_osd_msg(
