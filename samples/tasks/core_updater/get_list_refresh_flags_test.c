@@ -29,6 +29,7 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #include <retro_timers.h>
 #include <features/features_cpu.h>
 
@@ -56,7 +57,11 @@ static int failures = 0;
 
 /* ---------------- loopback server: serves .index-extended -------- */
 
-static int srv_fd = -1;
+/* The listening socket is read by the accept loop on the server
+ * thread and retired by server_stop on the main thread: an atomic,
+ * published once before the thread starts and replaced once to stop
+ * it. The accept loop reads it fresh each lap so the -1 lands. */
+static retro_atomic_int_t srv_fd;
 static sthread_t *srv_thread  = NULL;
 static volatile int srv_port  = 0;
 
@@ -72,7 +77,9 @@ static void server_thread(void *unused)
    {
       struct sockaddr_in cli;
       socklen_t clen = sizeof(cli);
-      int cfd        = accept(srv_fd, (struct sockaddr*)&cli, &clen);
+      int fd         = retro_atomic_load_acquire_int(&srv_fd);
+      int cfd        = fd >= 0
+            ? accept(fd, (struct sockaddr*)&cli, &clen) : -1;
       size_t have    = 0;
       if (cfd < 0)
          return;
@@ -103,32 +110,36 @@ static bool server_start(void)
 {
    struct sockaddr_in addr;
    socklen_t alen = sizeof(addr);
-   srv_fd = socket(AF_INET, SOCK_STREAM, 0);
-   if (srv_fd < 0)
+   int fd = socket(AF_INET, SOCK_STREAM, 0);
+   if (fd < 0)
       return false;
    memset(&addr, 0, sizeof(addr));
    addr.sin_family      = AF_INET;
    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-   if (bind(srv_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0)
+   if (bind(fd, (struct sockaddr*)&addr, sizeof(addr)) < 0)
       return false;
-   if (listen(srv_fd, 4) < 0)
+   if (listen(fd, 4) < 0)
       return false;
-   getsockname(srv_fd, (struct sockaddr*)&addr, &alen);
+   getsockname(fd, (struct sockaddr*)&addr, &alen);
    srv_port   = ntohs(addr.sin_port);
+   /* Published before the thread exists; sthread_create orders it. */
+   retro_atomic_store_release_int(&srv_fd, fd);
    srv_thread = sthread_create(server_thread, NULL);
    return srv_thread != NULL;
 }
 
 static void server_stop(void)
 {
-   if (srv_fd >= 0)
    {
-      int fd = srv_fd;
-      srv_fd = -1;
-      /* Unblock the accept loop before closing: a close alone does
-       * not wake a thread parked in accept() on every libc. */
-      shutdown(fd, SHUT_RDWR);
-      socket_close(fd);
+      int fd = retro_atomic_load_acquire_int(&srv_fd);
+      retro_atomic_store_release_int(&srv_fd, -1);
+      if (fd >= 0)
+      {
+         /* Unblock the accept loop before closing: a close alone does
+          * not wake a thread parked in accept() on every libc. */
+         shutdown(fd, SHUT_RDWR);
+         socket_close(fd);
+      }
    }
    if (srv_thread)
    {

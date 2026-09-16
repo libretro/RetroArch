@@ -132,6 +132,10 @@ typedef struct core_updater_download_handle
    retro_atomic_int_t decompress_task_complete;
    bool crc_match;
    bool http_task_finished;
+   /* Written by the HTTP callback before it publishes
+    * http_task_complete; the worker moves itself to the error state
+    * on seeing it, so only the worker ever writes status. */
+   bool http_task_error;
    bool auto_backup;
    bool decompress_task_finished;
    bool backup_enabled;
@@ -770,9 +774,6 @@ void cb_http_task_core_updater_download(
    if (!(download_handle = (core_updater_download_handle_t*)transf->user_data))
       goto finish;
 
-   /* Update download_handle task status */
-   retro_atomic_store_release_int(&download_handle->http_task_complete, 1);
-
    /* The body was streamed to transf->path as it arrived, so
     * data->data is NULL by design and there is nothing to write here.
     * task_push_http_download_file() removes the partial file unless
@@ -824,15 +825,23 @@ finish:
        * (no data, no transfer, no user_data), so it cannot be
        * dereferenced unconditionally here. */
       if (download_handle)
-         download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+         download_handle->http_task_error = true;
    }
    if (transf)
       free(transf);
 
-   /* if no decompress task was queued, mark it as completed */
-   if (download_handle && !download_handle->decompress_task)
-      retro_atomic_store_release_int(
-            &download_handle->decompress_task_complete, 1);
+   if (download_handle)
+   {
+      /* If no decompress task was queued, mark it as completed */
+      if (!download_handle->decompress_task)
+         retro_atomic_store_release_int(
+               &download_handle->decompress_task_complete, 1);
+
+      /* Publish last: decompress_task, http_task_error and the
+       * decompress flag above are the payload the worker reads once
+       * it acquires this. */
+      retro_atomic_store_release_int(&download_handle->http_task_complete, 1);
+   }
 }
 
 static void free_core_updater_download_handle(core_updater_download_handle_t *download_handle)
@@ -1139,6 +1148,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
                size_t _len;
                char task_title[128];
 
+               if (download_handle->http_task_error)
+               {
+                  download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+                  break;
+               }
+
                /* Update task title */
                task_free_title(task);
 
@@ -1362,6 +1377,7 @@ static void *task_push_core_updater_download_internal(
    download_handle->crc_match                = false;
    download_handle->http_task                = NULL;
    download_handle->http_task_finished       = false;
+   download_handle->http_task_error          = false;
    retro_atomic_store_release_int(&download_handle->http_task_complete, 0);
    download_handle->decompress_task          = NULL;
    download_handle->decompress_task_finished = false;
