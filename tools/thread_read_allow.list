@@ -1,17 +1,6 @@
-# Owner-domain reads: a subsystem's own thread reading its own
-# pointer-stable singleton. The video thread and ra-video's state is
-# the design; the audit holds everything else to published snapshots,
-# latched fields, or arguments captured when the work was posted.
-video_thread_loop|video_state_get_ptr
 # runloop_msg_queue_push() defers an off-main caller before touching
 # anything: the worker's message waits under the message queue lock
 # for the main thread's iterate to replay it. Its widget, font,
 # accessibility and settings work therefore happens on the main
 # thread for every caller.
 @boundary runloop_msg_queue_push
-# task_load_handler polls video frame_count once per tick to hold the
-# load until the core has rendered (Dolphin CLI): a single benign
-# read of a monotonic counter, one per tick with the tick yielding in
-# between, documented at the site. No settings coherence is at stake
-# and no progress depends on observing it promptly.
-task_load_handler|video_state_get_ptr

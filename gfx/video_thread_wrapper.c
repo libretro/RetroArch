@@ -407,9 +407,17 @@ void video_thread_main_pump(void)
 #endif
 }
 
+/* The wrapper instance, captured on the main thread at init and
+ * cleared at free: the entry points below are callable from the
+ * video thread itself (fonts and textures live there under the
+ * wrapper), and they reach the wrapper through this capture, never
+ * through the video singleton's getter. Pointer-stable for exactly
+ * the window in which the video thread exists. */
+static thread_video_t *video_thread_thr_capture;
+
 void video_thread_call_on_waiter(void (*fn)(void *data), void *data)
 {
-   thread_video_t *thr = (thread_video_t*)video_state_get_ptr()->data;
+   thread_video_t *thr = video_thread_thr_capture;
    if (!thr || !fn)
       return;
    if (!video_driver_thread_wrapper_active() || !video_thread_is_self(thr))
@@ -1029,10 +1037,11 @@ void video_thread_async_poll(void)
  * The scaler and the narrowing scratch buffer hold still while frames
  * are in flight; the video driver deinit waits this thread idle before
  * freeing them. */
-static void video_thread_convert(unsigned kind, const void **data,
+static void video_thread_convert(thread_video_t *thr,
+      unsigned kind, const void **data,
       unsigned width, unsigned height, unsigned *pitch)
 {
-   video_driver_state_t *video_st = video_state_get_ptr();
+   video_driver_state_t *video_st = thr->video_st;
 
    if (!*data)
       return;
@@ -1085,10 +1094,11 @@ void video_thread_defer_convert(enum video_thread_convert kind)
  * filter and its output buffer hold still while frames are in flight;
  * video_driver_init_filter() and video_driver_filter_free() wait this
  * thread idle first. */
-static void video_thread_filter(const void **data,
+static void video_thread_filter(thread_video_t *thr,
+      const void **data,
       unsigned *width, unsigned *height, unsigned *pitch)
 {
-   video_driver_state_t *video_st = video_state_get_ptr();
+   video_driver_state_t *video_st = thr->video_st;
    unsigned out_width             = 0;
    unsigned out_height            = 0;
    unsigned out_pitch;
@@ -1583,7 +1593,7 @@ static void video_thread_loop(void *data)
                /* This thread presents, so it owns the swap counter; the
                 * value carried from the main thread is whatever it read
                 * when the frame was built and is superseded here. */
-               video_info->swap_count = video_state_get_ptr()->swap_count;
+               video_info->swap_count = thr->video_st->swap_count;
                /* Retain what this frame puts on screen when the setting
                 * is on and the driver can put it there again. Shader
                 * sub-frames opt out: each is a different shader output
@@ -1629,11 +1639,11 @@ static void video_thread_loop(void *data)
                   unsigned fheight  = thr->frame.slot[slot].height;
                   unsigned fpitch   = thr->frame.slot[slot].pitch;
                   if (thr->frame.slot[slot].convert)
-                     video_thread_convert(thr->frame.slot[slot].convert,
+                     video_thread_convert(thr, thr->frame.slot[slot].convert,
                            &fdata, fwidth, fheight, &fpitch);
 #ifdef HAVE_VIDEO_FILTER
                   if (thr->frame.slot[slot].filter_bpp)
-                     video_thread_filter(&fdata, &fwidth, &fheight, &fpitch);
+                     video_thread_filter(thr, &fdata, &fwidth, &fheight, &fpitch);
 #endif
                   ret = thr->driver->frame(thr->driver_data,
                      fdata, fwidth, fheight,
@@ -1709,12 +1719,12 @@ static void video_thread_loop(void *data)
           * thr->driver->frame() above, so publish the result rather
           * than letting the main thread read video_driver_st. */
          retro_atomic_store_release_int(&thr->scale_packed, (int)(
-                 ((video_state_get_ptr()->scale_width  & 0xFFFFu) << 16)
-               |  (video_state_get_ptr()->scale_height & 0xFFFFu)));
+                 ((thr->video_st->scale_width  & 0xFFFFu) << 16)
+               |  (thr->video_st->scale_height & 0xFFFFu)));
          /* Under the wrapper this thread owns swap_count; every advance
           * happens here, under lock, so the main thread can read it
           * consistently through video_thread_swap_count(). */
-         video_state_get_ptr()->swap_count += presents;
+         thr->video_st->swap_count += presents;
          thr->driver_refresh_rate = refresh_rate;
          if (ret_frame)
          {
@@ -1811,7 +1821,7 @@ static void video_thread_loop(void *data)
          slock_lock(thr->lock);
          if (swaps)
          {
-            video_state_get_ptr()->swap_count += swaps;
+            thr->video_st->swap_count += swaps;
             thr->frames_repeated++;
             video_thread_schedule_next(thr);
          }
@@ -2000,7 +2010,7 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
       retro_time_t vblank;
       retro_time_t target;
       bool drained         = false;
-      double fps = video_state_get_ptr()->av_info.timing.fps;
+      double fps = thr->video_st->av_info.timing.fps;
       if (margin < 500)
          margin = 500;
 
@@ -2113,10 +2123,10 @@ static bool video_thread_frame(void *data, const void *frame_,
       if (thr->driver_data && thr->driver && thr->driver->frame)
       {
          if (convert)
-            video_thread_convert(convert, &frame_, width, height, &pitch);
+            video_thread_convert(thr, convert, &frame_, width, height, &pitch);
 #ifdef HAVE_VIDEO_FILTER
          if (filter_bpp)
-            video_thread_filter(&frame_, &width, &height, &pitch);
+            video_thread_filter(thr, &frame_, &width, &height, &pitch);
 #endif
          return thr->driver->frame(thr->driver_data, frame_,
             width, height, frame_count, pitch, msg, video_info);
@@ -2456,6 +2466,8 @@ static bool video_thread_init(thread_video_t *thr,
 {
    thread_packet_t pkt;
 
+   thr->video_st            = video_state_get_ptr();
+   video_thread_thr_capture = thr;
    if (!(thr->lock        = slock_new()))
       return false;
    if (!(thr->frame.lock  = slock_new()))
@@ -2623,6 +2635,11 @@ static bool video_thread_read_viewport(void *data,
 static void video_thread_free(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
+
+   /* Cleared before any teardown: entry points that reach the
+    * wrapper through the capture stop taking this instance now. */
+   if (video_thread_thr_capture == thr)
+      video_thread_thr_capture = NULL;
 
    if (thr)
    {
@@ -3504,18 +3521,11 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
       bool is_threaded)
 {
    thread_packet_t pkt;
-   video_driver_state_t *video_st = video_state_get_ptr();
-   thread_video_t       *thr;
-
-   /* Only safe to interpret video_st->data as a thread_video_t*
-    * when the threaded video wrapper is actually active.  During
-    * driver reinit, is_threaded may already reflect the new
-    * configuration while video_st->data still points to the
-    * previous (possibly non-threaded) driver's private state. */
-   if (!video_st->thread_wrapper_active)
-      return false;
-
-   thr = (thread_video_t*)video_st->data;
+   /* The capture is set while the wrapper is active and cleared at
+    * free, so a NULL here covers both "no wrapper" and the reinit
+    * window in which callers' threaded flags may already reflect a
+    * configuration the wrapper no longer matches. */
+   thread_video_t       *thr = video_thread_thr_capture;
 
    if (!thr)
       return false;
@@ -3538,23 +3548,16 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
 uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
 {
    thread_packet_t pkt;
-   video_driver_state_t *video_st = video_state_get_ptr();
-   thread_video_t       *thr;
-
-   /* Only safe to interpret video_st->data as a thread_video_t*
-    * when the threaded video wrapper is actually active.  During
-    * driver reinit, callers' "threaded" flags may already reflect
-    * the new configuration while video_st->data still points to
-    * the previous driver's private state.  Fall back to calling
-    * func directly (same contract as the "already on video
+   /* The capture is set while the wrapper is active and cleared at
+    * free, so a NULL covers both "no wrapper" and the reinit window
+    * in which callers' threaded flags may already reflect a
+    * configuration the wrapper no longer matches.  Fall back to
+    * calling func directly (same contract as the "already on video
     * thread" branch below). */
-   if (!video_st->thread_wrapper_active)
-      return func(data);
-
-   thr = (thread_video_t*)video_st->data;
+   thread_video_t       *thr = video_thread_thr_capture;
 
    if (!thr)
-      return 0;
+      return func(data);
 
    /* if we're already on the video thread, just call the function, otherwise
     * we may deadlock with ourself waiting for the packet to be processed. */

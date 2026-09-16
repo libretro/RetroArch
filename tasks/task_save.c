@@ -154,6 +154,12 @@ typedef struct
    size_t fe_replay_size;
    void  *fe_cheevos;
    size_t fe_cheevos_size;
+   /* Captured at push on the main thread: the load handler's
+    * core-readiness poll reads the frame counter through this,
+    * never through the video singleton - task workers reach no
+    * getter. The read stays a single benign per-tick poll of a
+    * monotonic counter. */
+   const uint64_t *frame_count;
    char path[PATH_MAX_LENGTH];
 } save_task_state_t;
 
@@ -1087,7 +1093,6 @@ static void task_load_handler(retro_task_t *task)
    uint8_t flg;
    ssize_t remaining, bytes_read;
    save_task_state_t *state = (save_task_state_t*)task->state;
-   video_driver_state_t *video_st  = video_state_get_ptr();
 
    /* Ensure the core is ready for loading states (Dolphin CLI).
     *
@@ -1106,7 +1111,7 @@ static void task_load_handler(retro_task_t *task)
     * counter.  The read stays unsynchronised, but as a single benign
     * poll of a monotonic counter per tick, with no progress depending
     * on this thread observing it promptly. */
-   if (video_st->frame_count < 2)
+   if (*state->frame_count < 2)
       return;
 
    if (!state->file)
@@ -1848,6 +1853,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    if (!settings->bools.notification_show_save_state)
       state->flags             |= SAVE_TASK_FLAG_MUTE;
 
+   state->frame_count           = &video_state_get_ptr()->frame_count;
    task->state                  = state;
    task->type                   = TASK_TYPE_BLOCKING;
    task->handler                = task_load_handler;
@@ -2171,6 +2177,7 @@ bool content_load_state(const char *path,
    if (!settings->bools.notification_show_save_state)
       state->flags             |= SAVE_TASK_FLAG_MUTE;
 
+   state->frame_count           = &video_state_get_ptr()->frame_count;
    task->type                   = TASK_TYPE_BLOCKING;
    task->state                  = state;
    task->handler                = task_load_handler;

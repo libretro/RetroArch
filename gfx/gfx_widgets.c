@@ -2555,7 +2555,9 @@ bool gfx_widgets_init(
 #ifdef HAVE_THREADS
    /* Under the threaded video wrapper the worker that draws the
     * widgets also animates and lays them out */
-   p_dispwidget->worker = video_state_get_ptr()->thread_wrapper_active;
+   p_dispwidget->video_st = video_state_get_ptr();
+   p_dispwidget->worker   = ((video_driver_state_t*)
+         p_dispwidget->video_st)->thread_wrapper_active;
    gfx_animation_widgets_own(p_dispwidget->worker);
 #endif
 
@@ -2791,7 +2793,9 @@ void gfx_widgets_state_lock(void)
    uintptr_t self;
 
    if (     !p_dispwidget->state_lock
-         || !video_state_get_ptr()->thread_wrapper_active)
+         || !p_dispwidget->video_st
+         || !((video_driver_state_t*)
+               p_dispwidget->video_st)->thread_wrapper_active)
       return;
 
    self = sthread_get_current_thread_id();

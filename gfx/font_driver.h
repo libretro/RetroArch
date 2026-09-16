@@ -270,6 +270,10 @@ void font_flush(
       unsigned video_height,
       font_data_impl_t *font_data);
 
+/* Main thread, at video init before the wrapper spawns; see the
+ * capture in font_driver.c. */
+void font_driver_bind_video_state(void *video_st);
+
 font_data_t *font_driver_init_first(
       void *video_data,
       const char *font_path,

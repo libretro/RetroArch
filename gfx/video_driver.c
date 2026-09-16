@@ -5145,6 +5145,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    static uint16_t dummy_pixels[32]       = {0};
    runloop_state_t *runloop_st            = runloop_state_get_ptr();
    settings_t       *settings             = config_get_ptr();
+
    input_driver_state_t *input_st         = input_state_get_ptr();
    video_driver_state_t *video_st         = &video_driver_st;
    struct retro_game_geometry *geom       = &video_st->av_info.geometry;
@@ -5153,6 +5154,11 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    unsigned int rotation                  = retroarch_get_rotation();
 #ifdef HAVE_VIDEO_FILTER
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
+
+   /* Bound before any driver or wrapper exists: under threaded video
+    * the OSD fonts live on the video thread, and the font driver
+    * reaches ra-video state through this capture, not the getter. */
+   font_driver_bind_video_state(video_state_get_ptr());
 
    /* Init video filter only when game is running */
    if ((     runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED)

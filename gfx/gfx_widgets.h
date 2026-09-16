@@ -225,6 +225,11 @@ typedef struct dispgfx_widget
     * when neither thread is in the widgets; a field of its own rather
     * than a bit in 'flags', which the main thread read-modify-writes
     * while the worker would read this. */
+   /* The video singleton's stable address, captured at
+    * gfx_widgets_init on the main thread before the draw worker
+    * exists: the worker's step and the state-lock dispatch reach
+    * ra-video state through this, never through the getter. */
+   void *video_st;
    bool worker;
 #endif
    /* Messages pushed but not yet on screen: a ring of pointers,

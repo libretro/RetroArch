@@ -383,6 +383,11 @@ typedef struct thread_video
    scond_t *cond_ring;
    scond_t *cond_thread;
    sthread_t *thread;
+   /* The video singleton's (stable) address, captured on the main
+    * thread at init: the loop and its helpers reach ra-video state
+    * through this, never through the getter, so no thread entry in
+    * this file calls into a singleton getter at all. */
+   video_driver_state_t *video_st;
 
    video_info_t info;
    const video_driver_t *driver;
