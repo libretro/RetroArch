@@ -60,6 +60,23 @@ static INLINE float video_bits_float(int b)
    memcpy(&f, &b, sizeof(f));
    return f;
 }
+
+/* Everything video_driver_update_viewport() and its integer-scaling
+ * helper need from settings and runloop state, snapshotted so the
+ * video thread's frame closures never read either live. */
+struct video_vp_param_snap
+{
+   float    aspect;
+   float    bias_x, bias_y;
+   float    bias_portrait_x, bias_portrait_y;
+   unsigned rotation, core_req_rotation;
+   unsigned aspect_ratio_idx, si_scaling, si_axis;
+   int      custom_x, custom_y;
+   unsigned custom_w, custom_h;
+   bool     scale_integer;
+};
+
+static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 #include "video_filter.h"
 #include "video_display_server.h"
 #include "modeline/modeline_list.h"
@@ -2470,6 +2487,10 @@ bool video_driver_set_rotation(unsigned rotation)
 {
    video_driver_state_t *video_st   = &video_driver_st;
    const video_driver_t *vid        = video_st->current_video;
+   /* Publish before the driver call: under the wrapper the call is a
+    * blocking command, so the video thread observes the new snapshot
+    * before it can act on the new rotation. */
+   video_driver_publish_vp_params();
    if (!vid || !vid->set_rotation || !video_st->data)
       return false;
    vid->set_rotation(video_st->data, rotation);
@@ -2719,9 +2740,14 @@ float video_driver_get_core_aspect(void)
    else
       out_aspect = (float)geom->base_width / geom->base_height;
 
-   /* Flip rotated aspect */
-   if ((retroarch_get_rotation() + retroarch_get_core_requested_rotation()) % 2)
-      return (1.0f / out_aspect);
+   /* Flip rotated aspect - rotations from the seqlock'd snapshot,
+    * this runs on the video thread inside the frame closures. */
+   {
+      struct video_vp_param_snap ps;
+      video_driver_read_vp_params(&ps);
+      if ((ps.rotation + ps.core_req_rotation) % 2)
+         return (1.0f / out_aspect);
+   }
    return out_aspect;
 }
 
@@ -2867,46 +2893,57 @@ void video_driver_set_aspect_ratio(void)
 
    if (poke && poke->set_aspect_ratio)
       poke->set_aspect_ratio(video_st->data, aspect_ratio_idx);
+
+   /* The frame path's aspect snapshot follows the change before any
+    * consumer can run: the driver pokes below are blocking commands
+    * under the wrapper. */
+   video_driver_publish_vp_params();
 }
 
 void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
       unsigned vp_width, unsigned vp_height, bool y_down,
       float device_aspect, float desired_aspect)
 {
-   settings_t *settings = config_get_ptr();
+   /* Reached from the drivers' frame closures (resize handling), so
+    * everything here comes from the seqlock'd snapshot rather than
+    * live settings; the external console caller gets the same
+    * frame-fresh values. */
+   struct video_vp_param_snap ps;
    video_driver_state_t
       *video_st         = &video_driver_st;
    int x                = 0;
    int y                = 0;
-   float vp_bias_x      = settings->floats.video_vp_bias_x;
-   float vp_bias_y      = settings->floats.video_vp_bias_y;
+   float vp_bias_x;
+   float vp_bias_y;
+   unsigned video_aspect_ratio_idx;
+   video_driver_read_vp_params(&ps);
+   vp_bias_x            = ps.bias_x;
+   vp_bias_y            = ps.bias_y;
+   video_aspect_ratio_idx = ps.aspect_ratio_idx;
 #if defined(RARCH_MOBILE)
    if (vp_width < vp_height)
    {
-      vp_bias_x         = settings->floats.video_vp_bias_portrait_x;
-      vp_bias_y         = settings->floats.video_vp_bias_portrait_y;
+      vp_bias_x         = ps.bias_portrait_x;
+      vp_bias_y         = ps.bias_portrait_y;
    }
 #endif
    if (!y_down)
       vp_bias_y         = 1.0 - vp_bias_y;
 
-   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      video_viewport_t *custom_vp = &settings->video_vp_custom;
-
-      if (custom_vp)
       {
          int padding_x     = 0;
          int padding_y     = 0;
 
-         x                 = custom_vp->x;
-         y                 = custom_vp->y;
+         x                 = ps.custom_x;
+         y                 = ps.custom_y;
 
          if (!y_down)
             y = -y;
 
-         padding_x         = vp_width - custom_vp->width;
-         padding_y         = vp_height - custom_vp->height;
+         padding_x         = vp_width - (int)ps.custom_w;
+         padding_y         = vp_height - (int)ps.custom_h;
 
          if (padding_x < 0)
          {
@@ -2919,8 +2956,8 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
             padding_y *= 2;
          }
 
-         vp_width          = custom_vp->width;
-         vp_height         = custom_vp->height;
+         vp_width          = ps.custom_w;
+         vp_height         = ps.custom_h;
          x                += padding_x * vp_bias_x;
          y                += padding_y * vp_bias_y;
       }
@@ -2974,7 +3011,7 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
  **/
 static void video_viewport_get_scaled_integer(
       video_driver_state_t *video_st,
-      settings_t *settings,
+      const struct video_vp_param_snap *ps,
       struct video_viewport *vp,
       unsigned width, unsigned height,
       float aspect_ratio, bool keep_aspect,
@@ -2983,13 +3020,13 @@ static void video_viewport_get_scaled_integer(
 {
    int x                           = 0;
    int y                           = 0;
-   unsigned video_aspect_ratio_idx = settings->uints.video_aspect_ratio_idx;
-   unsigned scaling                = settings->uints.video_scale_integer_scaling;
-   unsigned axis                   = settings->uints.video_scale_integer_axis;
+   unsigned video_aspect_ratio_idx = ps->aspect_ratio_idx;
+   unsigned scaling                = ps->si_scaling;
+   unsigned axis                   = ps->si_axis;
    int padding_x                   = 0;
    int padding_y                   = 0;
-   float vp_bias_x                 = settings->floats.video_vp_bias_x;
-   float vp_bias_y                 = settings->floats.video_vp_bias_y;
+   float vp_bias_x                 = ps->bias_x;
+   float vp_bias_y                 = ps->bias_y;
    const void *cache_data          = NULL;
    unsigned content_width          = 0;
    unsigned content_height         = 0;
@@ -2999,8 +3036,8 @@ static void video_viewport_get_scaled_integer(
 #if defined(RARCH_MOBILE)
    if (width < height)
    {
-      vp_bias_x                    = settings->floats.video_vp_bias_portrait_x;
-      vp_bias_y                    = settings->floats.video_vp_bias_portrait_y;
+      vp_bias_x                    = ps->bias_portrait_x;
+      vp_bias_y                    = ps->bias_portrait_y;
    }
 #endif
 
@@ -3039,18 +3076,15 @@ static void video_viewport_get_scaled_integer(
 
    if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
-      struct video_viewport *custom_vp = &settings->video_vp_custom;
-
-      if (custom_vp)
       {
-         x         = custom_vp->x;
-         y         = custom_vp->y;
+         x         = ps->custom_x;
+         y         = ps->custom_y;
 
          if (!y_down)
             y = -y;
 
-         padding_x = width - custom_vp->width;
-         padding_y = height - custom_vp->height;
+         padding_x = width - (int)ps->custom_w;
+         padding_y = height - (int)ps->custom_h;
 
          if (padding_x < 0)
          {
@@ -3063,8 +3097,8 @@ static void video_viewport_get_scaled_integer(
             padding_y *= 2;
          }
 
-         width     = custom_vp->width;
-         height    = custom_vp->height;
+         width     = ps->custom_w;
+         height    = ps->custom_h;
       }
    }
    /* Make sure that we don't get 0x scale ... */
@@ -3327,16 +3361,112 @@ static void video_viewport_get_scaled_integer(
 }
 
 
+/* Main-thread publisher of the seqlock'd viewport parameters; see
+ * the field comment in video_driver.h for the publish points and
+ * why each is ordered before its video-thread consumer. */
+void video_driver_publish_vp_params(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   settings_t *settings           = config_get_ptr();
+   int seq = retro_atomic_load_relaxed_int(&video_st->vp_params_seq);
+   retro_atomic_int_t *b          = video_st->vp_params_bits;
+
+   retro_atomic_store_relaxed_int(&video_st->vp_params_seq, seq + 1);
+   retro_atomic_thread_fence_release();
+   retro_atomic_store_relaxed_int(&b[0],
+         settings->bools.video_scale_integer ? 1 : 0);
+   retro_atomic_store_relaxed_int(&b[1],  (int)retroarch_get_rotation());
+   retro_atomic_store_relaxed_int(&b[2],
+         (int)retroarch_get_core_requested_rotation());
+   retro_atomic_store_relaxed_int(&b[3],
+         video_float_bits(VIDEO_DRIVER_ASPECT_RATIO(video_st)));
+   retro_atomic_store_relaxed_int(&b[4],
+         (int)settings->uints.video_aspect_ratio_idx);
+   retro_atomic_store_relaxed_int(&b[5],
+         (int)settings->uints.video_scale_integer_scaling);
+   retro_atomic_store_relaxed_int(&b[6],
+         (int)settings->uints.video_scale_integer_axis);
+   retro_atomic_store_relaxed_int(&b[7],
+         video_float_bits(settings->floats.video_vp_bias_x));
+   retro_atomic_store_relaxed_int(&b[8],
+         video_float_bits(settings->floats.video_vp_bias_y));
+#if defined(RARCH_MOBILE)
+   retro_atomic_store_relaxed_int(&b[9],
+         video_float_bits(settings->floats.video_vp_bias_portrait_x));
+   retro_atomic_store_relaxed_int(&b[10],
+         video_float_bits(settings->floats.video_vp_bias_portrait_y));
+#else
+   /* The portrait bias fields only exist in mobile builds; mirror
+    * the landscape values so the slots are never unpublished. */
+   retro_atomic_store_relaxed_int(&b[9],
+         video_float_bits(settings->floats.video_vp_bias_x));
+   retro_atomic_store_relaxed_int(&b[10],
+         video_float_bits(settings->floats.video_vp_bias_y));
+#endif
+   retro_atomic_store_relaxed_int(&b[11], settings->video_vp_custom.x);
+   retro_atomic_store_relaxed_int(&b[12], settings->video_vp_custom.y);
+   retro_atomic_store_relaxed_int(&b[13],
+         (int)settings->video_vp_custom.width);
+   retro_atomic_store_relaxed_int(&b[14],
+         (int)settings->video_vp_custom.height);
+   retro_atomic_thread_fence_release();
+   retro_atomic_store_release_int(&video_st->vp_params_seq, seq + 2);
+}
+
+/* Seqlock read of the published parameters; converges immediately on
+ * the main thread (same thread as the writer) and retries across a
+ * concurrent publish on the video thread. */
+static void video_driver_read_vp_params(struct video_vp_param_snap *ps)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   retro_atomic_int_t *b          = video_st->vp_params_bits;
+   for (;;)
+   {
+      int v[15];
+      int i;
+      int s1 = retro_atomic_load_acquire_int(&video_st->vp_params_seq);
+      if (s1 & 1)
+         continue;
+      for (i = 0; i < 15; i++)
+         v[i] = retro_atomic_load_relaxed_int(&b[i]);
+      retro_atomic_thread_fence_acquire();
+      if (retro_atomic_load_relaxed_int(&video_st->vp_params_seq) == s1)
+      {
+         ps->scale_integer     = (v[0] != 0);
+         ps->rotation          = (unsigned)v[1];
+         ps->core_req_rotation = (unsigned)v[2];
+         ps->aspect            = video_bits_float(v[3]);
+         ps->aspect_ratio_idx  = (unsigned)v[4];
+         ps->si_scaling        = (unsigned)v[5];
+         ps->si_axis           = (unsigned)v[6];
+         ps->bias_x            = video_bits_float(v[7]);
+         ps->bias_y            = video_bits_float(v[8]);
+         ps->bias_portrait_x   = video_bits_float(v[9]);
+         ps->bias_portrait_y   = video_bits_float(v[10]);
+         ps->custom_x          = v[11];
+         ps->custom_y          = v[12];
+         ps->custom_w          = (unsigned)v[13];
+         ps->custom_h          = (unsigned)v[14];
+         return;
+      }
+   }
+}
+
 void video_driver_update_viewport(
       struct video_viewport* vp, bool force_full, bool keep_aspect, bool y_down)
 {
-   settings_t *settings            = config_get_ptr();
-   bool video_scale_integer        = settings->bools.video_scale_integer;
+   struct video_vp_param_snap ps;
+   bool video_scale_integer;
+   unsigned int rotation;
+   float video_driver_aspect_ratio;
    video_driver_state_t *video_st  = &video_driver_st;
    const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
    void *ctx_data                  = (void*)video_st->context_data;
-   float video_driver_aspect_ratio = VIDEO_DRIVER_ASPECT_RATIO(video_st);
-   unsigned int rotation           = retroarch_get_rotation();
+
+   video_driver_read_vp_params(&ps);
+   video_scale_integer             = ps.scale_integer;
+   rotation                        = ps.rotation;
+   video_driver_aspect_ratio       = ps.aspect;
 
    vp->x                           = 0;
    vp->y                           = 0;
@@ -3421,7 +3551,7 @@ void video_driver_update_viewport(
 
    if (video_scale_integer && !force_full)
       video_viewport_get_scaled_integer(video_st,
-            settings,
+            &ps,
             vp,
             vp->full_width,
             vp->full_height,
@@ -5242,6 +5372,11 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    const enum retro_pixel_format
       video_driver_pix_fmt                = video_st->pix_fmt;
    unsigned int rotation                  = retroarch_get_rotation();
+
+   /* Seed the viewport-parameter snapshot before the driver's init
+    * runs: drivers call video_driver_update_viewport() from inside
+    * init, and the reader must never spin on an unpublished seq. */
+   video_driver_publish_vp_params();
 #ifdef HAVE_VIDEO_FILTER
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 
@@ -5837,6 +5972,7 @@ void video_driver_frame(const void *data, unsigned width,
    unsigned int rotation          = retroarch_get_rotation();
    const enum retro_pixel_format
       video_driver_pix_fmt        = video_st->pix_fmt;
+
    bool runloop_idle              = (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false;
    bool video_driver_active       = (video_st->main_flags   & VIDEO_FLAG_ACTIVE) ? true : false;
    bool menu_is_alive             = false;
@@ -5845,6 +5981,12 @@ void video_driver_frame(const void *data, unsigned width,
    bool widgets_active            = p_dispwidget->active;
 #endif
    recording_state_t *recording_st= recording_state_get_ptr();
+
+   /* Per-frame catch-all publish of the viewport-parameter snapshot
+    * (main thread; plain settings toggles land within a frame, the
+    * ordered publishes in set_rotation/set_aspect_ratio land before
+    * their consumers). */
+   video_driver_publish_vp_params();
 
    status_text[0]                 = '\0';
    video_driver_msg[0]            = '\0';

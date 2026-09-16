@@ -1261,8 +1261,23 @@ typedef struct
     * copy. Written on the main thread at overlay load, read on
     * whichever thread scales the viewport. */
    retro_atomic_int_t overlay_vp_seq;
+
    retro_atomic_int_t overlay_vp_bits[4];
 #endif
+
+   /* Viewport parameters the frame path needs, seqlock-published so
+    * video_driver_update_viewport() and video_driver_get_core_aspect()
+    * never read live settings or runloop state from the video thread:
+    * scale-integer flag, both rotations, the aspect ratio, the
+    * aspect index, integer-scaling mode and axis, the viewport
+    * biases (landscape and portrait), and the custom viewport
+    * rectangle. Written on the main thread - at init, in set_aspect_ratio
+    * and set_rotation (both ordered before their video-thread
+    * consumers by the wrapper's command handoff), and once per
+    * video_driver_frame as the catch-all for plain settings toggles -
+    * and read under the same seq discipline as the overlay viewport. */
+   retro_atomic_int_t vp_params_seq;
+   retro_atomic_int_t vp_params_bits[16];
    unsigned scale_width;
    unsigned scale_height;
    /* Microseconds between the last two frames handed to the video
@@ -1436,6 +1451,10 @@ bool video_driver_get_prev_video_out(void);
 void video_driver_monitor_reset(void);
 
 void video_driver_set_aspect_ratio(void);
+
+/* Publishes the seqlock'd viewport-parameter snapshot from the main
+ * thread; see the field comment on vp_params_seq. */
+void video_driver_publish_vp_params(void);
 
 void video_driver_update_viewport(struct video_viewport* vp,
       bool force_full, bool keep_aspect, bool y_down);
