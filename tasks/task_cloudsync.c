@@ -441,9 +441,29 @@ static bool task_cloud_sync_manifest_append_dir(file_list_t *manifest,
  * thread when the task is pushed; the handler reads it from the task's
  * state. The caller owns the list.
  */
-static struct string_list *task_cloud_sync_directory_map_new(settings_t *settings)
+/* One entry of the map, transactionally: the path copy is made
+ * first, the append second, and the copy is attached only once both
+ * exist, so a failed append never indexes size - 1 of a list it did
+ * not grow and a failed copy never leaves an entry whose userdata -
+ * the directory the manifest walks - is NULL. */
+static bool task_cloud_sync_directory_map_add(struct string_list *list,
+      const char *name, size_t name_len, const char *dir)
 {
    union string_list_elem_attr attr = {0};
+   char *path = strdup(dir);
+   if (!path)
+      return false;
+   if (!string_list_append_n(list, name, name_len, attr))
+   {
+      free(path);
+      return false;
+   }
+   list->elems[list->size - 1].userdata = path;
+   return true;
+}
+
+static struct string_list *task_cloud_sync_directory_map_new(settings_t *settings)
+{
    char  dir[DIR_MAX_LENGTH];
    struct string_list *list = string_list_new();
 
@@ -452,37 +472,47 @@ static struct string_list *task_cloud_sync_directory_map_new(settings_t *setting
 
    if (settings->bools.cloud_sync_sync_configs)
    {
-      string_list_append_n(list, "config", STRLEN_CONST("config"), attr);
       fill_pathname_application_special(dir,
             sizeof(dir), APPLICATION_SPECIAL_DIRECTORY_CONFIG);
-      list->elems[list->size - 1].userdata = strdup(dir);
+      if (!task_cloud_sync_directory_map_add(list,
+               "config", STRLEN_CONST("config"), dir))
+         goto error;
    }
 
    if (settings->bools.cloud_sync_sync_saves)
    {
-      string_list_append_n(list, "saves", STRLEN_CONST("saves"), attr);
-      list->elems[list->size - 1].userdata = strdup(dir_get_ptr(RARCH_DIR_SAVEFILE));
-
-      string_list_append_n(list, "states", STRLEN_CONST("states"), attr);
-      list->elems[list->size - 1].userdata = strdup(dir_get_ptr(RARCH_DIR_SAVESTATE));
+      if (!task_cloud_sync_directory_map_add(list,
+               "saves", STRLEN_CONST("saves"),
+               dir_get_ptr(RARCH_DIR_SAVEFILE)))
+         goto error;
+      if (!task_cloud_sync_directory_map_add(list,
+               "states", STRLEN_CONST("states"),
+               dir_get_ptr(RARCH_DIR_SAVESTATE)))
+         goto error;
    }
 
    if (settings->bools.cloud_sync_sync_thumbs)
    {
-      string_list_append_n(list, "thumbnails", STRLEN_CONST("thumbnails"),
-      attr);
-      strlcpy(dir, settings->paths.directory_thumbnails, sizeof(dir));
-      list->elems[list->size - 1].userdata = strdup(dir);
+      if (!task_cloud_sync_directory_map_add(list,
+               "thumbnails", STRLEN_CONST("thumbnails"),
+               settings->paths.directory_thumbnails))
+         goto error;
    }
 
    if (settings->bools.cloud_sync_sync_system)
    {
-      string_list_append_n(list, "system", STRLEN_CONST("system"), attr);
-      strlcpy(dir, settings->paths.directory_system, sizeof(dir));
-      list->elems[list->size - 1].userdata = strdup(dir);
+      if (!task_cloud_sync_directory_map_add(list,
+               "system", STRLEN_CONST("system"),
+               settings->paths.directory_system))
+         goto error;
    }
 
    return list;
+
+error:
+   /* string_list_free releases every attached userdata. */
+   string_list_free(list);
+   return NULL;
 }
 
 /**
