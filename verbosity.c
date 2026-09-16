@@ -305,8 +305,26 @@ static const char *rarch_log_line_format(char *line, size_t line_size,
    return line;
 }
 
-/* One write, one flush, under the LibNX mutex where it exists. */
-static void rarch_log_line_emit(FILE *fp, const char *out)
+/* Errors and warnings must survive a crash whose report they may be,
+ * so their lines reach the OS before this returns. Informational
+ * traffic rides stdio's buffer - the per-line flush was the file
+ * sink's dominant cost - and becomes durable at the flush points:
+ * rarch_log_file_deinit()'s fclose, and any later flushed line on
+ * the same stream. The cost of that ride is the documented one: a
+ * hard crash can lose the buffered tail of INFO/DEBUG lines written
+ * after the last error or warning. Tags are matched by exact label;
+ * a core-supplied custom tag rides the buffer like INFO. */
+static bool rarch_log_tag_wants_flush(const char *tag_v)
+{
+   return memcmp(tag_v, FILE_PATH_LOG_ERROR,
+               sizeof(FILE_PATH_LOG_ERROR)) == 0
+       || memcmp(tag_v, FILE_PATH_LOG_WARN,
+               sizeof(FILE_PATH_LOG_WARN))  == 0;
+}
+
+/* One write - and, for lines that must not wait, one flush - under
+ * the LibNX mutex where it exists. */
+static void rarch_log_line_emit(FILE *fp, const char *out, bool flush)
 {
 #if defined(HAVE_LIBNX)
    /* Around exactly one write and its flush; libnx newlib's stdio
@@ -314,7 +332,8 @@ static void rarch_log_line_emit(FILE *fp, const char *out)
    mutexLock(&main_verbosity_st.mtx);
 #endif
    fputs(out, fp);
-   fflush(fp);
+   if (flush)
+      fflush(fp);
 #if defined(HAVE_LIBNX)
    mutexUnlock(&main_verbosity_st.mtx);
 #endif
@@ -332,7 +351,7 @@ static void rarch_log_line_write(FILE *fp, const char *tag_v,
    const char *out = rarch_log_line_format(line, sizeof(line), &heap,
          tag_v, fmt, ap);
 
-   rarch_log_line_emit(fp, out);
+   rarch_log_line_emit(fp, out, rarch_log_tag_wants_flush(tag_v));
    free(heap);
 }
 #endif
@@ -421,7 +440,8 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
           * guard, every line would print twice in the no-file case. */
          printf("%s", out);
          if (main_verbosity_st.initialized && fp)
-            rarch_log_line_emit(fp, out);
+            rarch_log_line_emit(fp, out,
+                  rarch_log_tag_wants_flush(tag_v));
 
 #else
          {
@@ -453,7 +473,8 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #endif
 
             if (main_verbosity_st.initialized && fp)
-               rarch_log_line_emit(fp, out);
+               rarch_log_line_emit(fp, out,
+                     rarch_log_tag_wants_flush(tag_v));
          }
 #endif
       }
@@ -463,7 +484,8 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          /* stdio's per-call lock keeps the single write whole under
           * concurrent writers; the format above already took the
           * heap detour for wide lines. */
-         rarch_log_line_emit(fp, out);
+         rarch_log_line_emit(fp, out,
+               rarch_log_tag_wants_flush(tag_v));
 #endif
 
       free(heap);
