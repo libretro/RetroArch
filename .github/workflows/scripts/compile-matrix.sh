@@ -229,6 +229,10 @@ check_nothreads() {
 # The Android OpenSL driver compiles nowhere else; a stub SLES header
 # set (tools/platform_stubs/android) keeps its lock-free write path
 # and hardened teardown under a syntax gate.
+# OpenAL: not in the audit build's configure; system AL headers are
+# real, so no stubs. Covers the eventcount park path (threads on).
+check "audio: openal" "-DHAVE_AL -DHAVE_THREADS -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/openal.c
+
 check "android: opensl" "-DANDROID -DHAVE_OPENSL -Itools/platform_stubs/android -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/opensl.c
 
 check "gekko: rgui"  "-DGEKKO -DHAVE_MENU -DHAVE_RGUI -Itools/platform_stubs/gekko" menu/drivers/rgui.c

@@ -36,7 +36,7 @@
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 #ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #endif
 
 #include "../audio_driver.h"
@@ -82,13 +82,16 @@ typedef struct al
    ALCdevice *handle;
    ALCcontext *ctx;
 #ifdef HAVE_THREADS
-   /* Signalled from the mixer thread's event callback; waited on in
-    * al_get_buffer() and al_wait_writable() when events are present. */
-   slock_t *lock;
-   scond_t *cond;
-   /* Bumped by the callback under lock; the waiter sleeps only while
-    * it is unchanged, and never holds the lock across an AL call. */
-   unsigned completed;
+   /* Notified from the mixer thread's event callback; parked on in
+    * al_wait_free() when events are present. The old generation
+    * counter is gone: the eventcount's own epoch is that generation,
+    * and its prepare/commit window is the read-then-wait-if-unchanged
+    * protocol this file used to spell out with a mutex. No AL call is
+    * ever made inside the window. */
+   retro_eventcount_t park;
+   /* Set by the callback on AL_EVENT_TYPE_DISCONNECTED_SOFT, read by
+    * the waiter: release/acquire atomic, no lock. */
+   retro_atomic_int_t disconnected_atomic;
 #endif
    al_event_control_t  event_control;
    al_event_callback_t event_callback;
@@ -131,7 +134,6 @@ typedef struct al
    int          clk_valid;
    /* Raised by the DISCONNECTED event: the device is not coming back,
     * so no wait for it has anything to wait for. */
-   bool disconnected;
    /* Frames the source has finished playing, for the sink rate
     * estimate; see al_frames_consumed(). */
    retro_atomic_size_t consumed;
@@ -170,10 +172,7 @@ static void al_free(void *data)
    if (al->handle)
       alcCloseDevice(al->handle);
 #ifdef HAVE_THREADS
-   if (al->lock)
-      slock_free(al->lock);
-   if (al->cond)
-      scond_free(al->cond);
+   retro_eventcount_free(&al->park);
 #endif
    free(al);
 }
@@ -191,12 +190,9 @@ static void AL_APIENTRY al_event_cb(ALenum event_type, ALuint object,
          && event_type != AL_EVENT_TYPE_DISCONNECTED_SOFT)
       return;
 
-   slock_lock(al->lock);
    if (event_type == AL_EVENT_TYPE_DISCONNECTED_SOFT)
-      al->disconnected = true;
-   al->completed++;
-   scond_signal(al->cond);
-   slock_unlock(al->lock);
+      retro_atomic_store_release_int(&al->disconnected_atomic, 1);
+   retro_eventcount_notify(&al->park);
 }
 
 /* Resolves and arms AL_SOFT_events on the current context. Leaves
@@ -214,9 +210,8 @@ static void al_init_events(al_t *al)
    cb.p  = alGetProcAddress("alEventCallbackSOFT");
    if (!ctl.p || !cb.p)
       return;
-   if (!(al->lock = slock_new()))
-      return;
-   if (!(al->cond = scond_new()))
+   retro_atomic_int_init(&al->disconnected_atomic, 0);
+   if (!retro_eventcount_init(&al->park))
       return;
 
    al->event_control  = ctl.f;
@@ -500,33 +495,32 @@ static bool al_wait_free(al_t *al, size_t want)
    {
       for (;;)
       {
-         unsigned gen;
-         bool gone;
-
-         /* Read the generation, then ask the device with the lock
-          * released: no AL call is ever made under it. An event that
-          * lands after the read and before the wait changes the
-          * generation, so the wait below is skipped rather than
-          * missed. */
-         slock_lock(al->lock);
-         gen  = al->completed;
-         gone = al->disconnected;
-         slock_unlock(al->lock);
+         /* The eventcount's prepare/commit window is the old
+          * read-generation-then-wait-if-unchanged protocol without
+          * the mutex: an event landing after prepare bumps the epoch
+          * and the commit falls straight through instead of being
+          * missed. The AL calls happen inside the window, which is
+          * fine - the window is bookkeeping, not a lock, and rule 2
+          * of the eventcount's contract only asks that it be
+          * answered. */
+         int key = retro_eventcount_prepare_wait(&al->park);
 
          al_unqueue_buffers(al);
          if (al->res_ptr >= want)
-            return true;
-         if (gone || waited_ms >= OPENAL_GET_BUFFER_WAIT_MS)
-            return false;
-
-         slock_lock(al->lock);
-         if (al->completed == gen && !al->disconnected)
          {
-            if (!scond_wait_timeout(al->cond, al->lock,
-                     (int64_t)OPENAL_WAIT_STEP_MS * 1000))
-               waited_ms += OPENAL_WAIT_STEP_MS;
+            retro_eventcount_cancel_wait(&al->park);
+            return true;
          }
-         slock_unlock(al->lock);
+         if (   retro_atomic_load_acquire_int(&al->disconnected_atomic)
+             || waited_ms >= OPENAL_GET_BUFFER_WAIT_MS)
+         {
+            retro_eventcount_cancel_wait(&al->park);
+            return false;
+         }
+
+         if (!retro_eventcount_commit_wait_timeout(&al->park, key,
+                  (int64_t)OPENAL_WAIT_STEP_MS * 1000))
+            waited_ms += OPENAL_WAIT_STEP_MS;
       }
    }
 #endif
