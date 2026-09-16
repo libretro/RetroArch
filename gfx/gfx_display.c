@@ -1410,12 +1410,28 @@ bool gfx_display_reset_icon_texture(
 #define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
 #endif
 
+/* The mipmap choice, published for the draw-thread texture loads:
+ * every main-thread caller of the live read below refreshes it, and
+ * main callers run at least per menu rebuild, so the latch tracks
+ * the setting to within one texture's filter mode. */
+static retro_atomic_int_t gfx_display_mipmap_latch;
+
 enum texture_filter_type gfx_display_texture_filter(void)
 {
    settings_t *settings = config_get_ptr();
-   if (settings && settings->bools.menu_texture_mipmapping)
-      return TEXTURE_FILTER_MIPMAP_LINEAR;
-   return TEXTURE_FILTER_LINEAR;
+   int mip              = settings
+         && settings->bools.menu_texture_mipmapping;
+   retro_atomic_store_relaxed_int(&gfx_display_mipmap_latch, mip);
+   return mip ? TEXTURE_FILTER_MIPMAP_LINEAR : TEXTURE_FILTER_LINEAR;
+}
+
+/* For texture loads issued off the main thread - badge fetches from
+ * the widget appliers, the screenshot widget's iterate - where the
+ * live settings must not be read. */
+enum texture_filter_type gfx_display_texture_filter_latched(void)
+{
+   return retro_atomic_load_relaxed_int(&gfx_display_mipmap_latch)
+         ? TEXTURE_FILTER_MIPMAP_LINEAR : TEXTURE_FILTER_LINEAR;
 }
 
 bool gfx_display_load_icon(

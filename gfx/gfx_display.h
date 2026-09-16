@@ -405,6 +405,9 @@ bool gfx_display_reset_textures_list(
  * but aliases under heavy minification.  Controlled by the
  * 'menu_texture_mipmapping' setting. */
 enum texture_filter_type gfx_display_texture_filter(void);
+/* The latched variant, for texture loads issued off the main
+ * thread; see gfx_display.c. */
+enum texture_filter_type gfx_display_texture_filter_latched(void);
 
 bool gfx_display_reset_icon_texture(
       const char *texture_path,

@@ -428,7 +428,8 @@ static void gfx_widget_screenshot_iterate(
       state->y       = 0.0f;
 
       gfx_display_reset_textures_list(state->filename,
-            "", &state->texture, gfx_display_texture_filter(),
+            "", &state->texture,
+            gfx_display_texture_filter_latched(),
             &state->texture_width, &state->texture_height);
 
       state->height = font_regular->line_height * 4;

@@ -88,6 +88,7 @@ void rcheevos_badge_request_download(const char* badge, bool locked)
 }
 
 enum texture_filter_type gfx_display_texture_filter(void) { return TEXTURE_FILTER_LINEAR; }
+enum texture_filter_type gfx_display_texture_filter_latched(void) { return TEXTURE_FILTER_LINEAR; }
 uint32_t video_driver_get_disp_flags(void) { return 0; }
 
 bool task_push_image_load(const char *fullpath, bool supports_rgba,

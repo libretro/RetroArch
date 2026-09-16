@@ -129,7 +129,8 @@ static void badge_decode_done(retro_task_t *task,
       badge_image_release(img);
       return;
    }
-   if (!video_driver_texture_load_async(img, gfx_display_texture_filter(),
+   if (!video_driver_texture_load_async(img,
+         gfx_display_texture_filter_latched(),
             badge_upload_done, tag, badge_image_release))
    {
       badge_image_release(img);
