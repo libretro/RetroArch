@@ -1440,7 +1440,13 @@ struct config_file_stream
    char *win;        /* accumulation window (unparsed tail + incoming) */
    size_t cap;       /* window allocation                              */
    size_t len;       /* unparsed bytes held at win[0..len)             */
-   size_t total_in;  /* cumulative pushed bytes (map pre-sizing)       */
+   /* Cumulative pushed bytes, saturating: this only ever feeds the
+    * map pre-size hint, and RHMAP_FIT is a no-op once the map is
+    * big enough, so a stream large enough to reach the ceiling
+    * wants the largest hint rather than a wrapped small one. The
+    * allocation and copy sizing is stream->len, checked separately
+    * at the top of push(). */
+   size_t total_in;
    bool oom;
    bool ended;       /* an embedded NUL ended the stream (see push)    */
 };
@@ -1542,7 +1548,10 @@ bool config_file_stream_push(config_file_stream_t *stream,
 
    memcpy(stream->win + stream->len, data, len);
    stream->len            += len;
-   stream->total_in       += len;
+   if (stream->total_in > ((size_t)-1) - len)
+      stream->total_in     = (size_t)-1;
+   else
+      stream->total_in    += len;
    stream->win[stream->len] = '\0';
 
    /* Parse every complete line in the window.  memrchr is not
