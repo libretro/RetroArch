@@ -66,6 +66,12 @@
 
 #include <formats/rac3.h>
 #include <formats/iec61937.h>
+#include <retro_atomic.h>
+#ifdef HAVE_THREADS
+#include <retro_spsc.h>
+#include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#endif
 
 #include "../audio_upmix.h"
 #include "../audio_driver.h"
@@ -1569,6 +1575,27 @@ typedef struct
    unsigned char  *rt_buf;
    size_t          rt_size;
    size_t          rt_write;
+#ifdef HAVE_THREADS
+   /* The refill thread's estate, threaded looped pins only. The
+    * frontend writes rt_ring - the one frontend buffer; the mapped
+    * loop is the device's - and parks on rt_park when it is full.
+    * The thread waits the notification event (or, with none, sleeps
+    * a slice and reads the register), samples the position every
+    * period - so the wrap window is never outrun however long the
+    * frontend is descheduled - moves ring bytes into the loop, and
+    * notifies. rt_write, rt_played*, rt_last*, clk_* and the
+    * position reads all become the thread's own on this path; what
+    * the frontend needs back is published through the atomics
+    * below. */
+   retro_spsc_t        rt_ring;
+   size_t              rt_ring_size;
+   retro_eventcount_t  rt_park;
+   sthread_t          *rt_thread;
+   retro_atomic_int_t  rt_run;
+   retro_atomic_64_t   rt_frames_pub;  /* absolute frames played */
+   retro_atomic_int_t  clk_ppm_pub;
+   retro_atomic_int_t  clk_valid_pub;
+#endif
    volatile ULONG *rt_pos;      /* byte offset, updated by the device */
    bool            rt_presentation;
    retro_time_t    rt_last_usec;  /* when the cursor was last read */
@@ -1608,7 +1635,7 @@ typedef struct
    size_t          ac3_burst_len;
    size_t          ac3_burst_at;
    bool            running;
-   bool            dead;      /* an I/O failed; stop writing, still reclaim */
+   retro_atomic_int_t dead;   /* an I/O failed; stop writing, still reclaim */
    bool            nonblock;
    bool            is_float;
    uint32_t        layout;
@@ -1706,6 +1733,23 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
    w->rt_played   = 0;
    w->rt_played_bytes = 0;
    w->rt_have_last = false;
+#ifdef HAVE_THREADS
+   /* One device loop's worth of frontend ring: the only frontend
+    * buffer, per the notes - packets or the mapped loop stay the
+    * device's. */
+   w->rt_ring_size = w->rt_size;
+   if (!retro_spsc_init(&w->rt_ring, w->rt_ring_size))
+      return false;
+   if (!retro_eventcount_init(&w->rt_park))
+   {
+      retro_spsc_free(&w->rt_ring);
+      return false;
+   }
+   retro_atomic_int_init(&w->rt_run, 0);
+   retro_atomic_64_init(&w->rt_frames_pub, 0);
+   retro_atomic_int_init(&w->clk_ppm_pub, 0);
+   retro_atomic_int_init(&w->clk_valid_pub, 0);
+#endif
    return true;
 }
 
@@ -1852,6 +1896,12 @@ static void wdmks_rt_report_latency(wdmks_t *w)
 static size_t wdmks_rt_free(wdmks_t *w);
 static bool   wdmks_rt_play_offset(wdmks_t *w, ULONG *offset);
 static DWORD  wdmks_watchdog_ms(const wdmks_t *w, size_t bytes);
+static void   wdmks_clock_sample_qpc(wdmks_t *w, uint64_t frames,
+      uint64_t ticks);
+static void   wdmks_clock_sample(wdmks_t *w, uint64_t frames);
+#ifdef HAVE_THREADS
+static size_t wdmks_rt_ring_room(wdmks_t *w);
+#endif
 
 static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
 {
@@ -2108,6 +2158,50 @@ static size_t wdmks_rt_free(wdmks_t *w)
 static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
       size_t size)
 {
+#ifdef HAVE_THREADS
+   /* The refill thread owns the register, the accounting and the
+    * mapped loop; this side owns the ring. The park is on ring room
+    * - the frontend's own buffer - never on the pin, whose waits are
+    * the thread's. */
+   if (w->rt_thread)
+   {
+      size_t   done = 0;
+      unsigned laps = WDMKS_WAIT_LAPS;
+      while (done < size)
+      {
+         size_t room = wdmks_rt_ring_room(w);
+         size_t take = size - done;
+         if (!room)
+         {
+            int key;
+            if (w->nonblock)
+               break;
+            if (!laps-- || !retro_atomic_load_acquire_int(&w->rt_run))
+               break;
+            key = retro_eventcount_prepare_wait(&w->rt_park);
+            if (   wdmks_rt_ring_room(w)
+                || !retro_atomic_load_acquire_int(&w->rt_run))
+            {
+               retro_eventcount_cancel_wait(&w->rt_park);
+               continue;
+            }
+            /* In the pin's own units, as every bound here is. */
+            retro_eventcount_commit_wait_timeout(&w->rt_park, key,
+                  (int64_t)wdmks_watchdog_ms(w, size - done) * 1000);
+            continue;
+         }
+         if (take > room)
+            take = room;
+         take -= take % w->frame_bytes;
+         if (!take)
+            break;
+         retro_spsc_write(&w->rt_ring, src + done, take);
+         done += take;
+      }
+      return (ssize_t)done;
+   }
+#endif
+   {
    size_t done = 0;
    /* Asked for once and then spent, rather than asked again on every
     * lap. The device only ever frees more room as it plays, so room
@@ -2168,7 +2262,100 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
       room       -= chunk;
    }
    return (ssize_t)done;
+   }
 }
+
+#ifdef HAVE_THREADS
+/* One pass of the refill thread: sample the position (the accounting
+ * and the clock fit live here now, sampled every period, so the wrap
+ * window is never outrun), move what the ring has into the loop, and
+ * wake a parked writer. Returns how many bytes moved. */
+static size_t wdmks_rt_pump_once(wdmks_t *w)
+{
+   size_t moved = 0;
+   size_t room;
+   size_t have;
+
+   /* The absolute position where the miniport gives one - it cannot
+    * wrap - and the register's accumulation otherwise. Both feed the
+    * fit; the published count is what frames_consumed answers with. */
+   {
+      uint64_t abs_frames = 0, abs_qpc = 0;
+      ULONG    now        = 0;
+      if (wdmks_rt_presentation(w, &abs_frames, &abs_qpc))
+      {
+         wdmks_clock_sample_qpc(w, abs_frames, abs_qpc);
+         retro_atomic_store_release_64(&w->rt_frames_pub,
+               (int64_t)abs_frames);
+      }
+      else if (wdmks_rt_play_offset(w, &now))
+      {
+         wdmks_clock_sample(w, w->rt_played);
+         retro_atomic_store_release_64(&w->rt_frames_pub,
+               (int64_t)w->rt_played);
+      }
+   }
+   if (w->clk_valid)
+   {
+      retro_atomic_store_relaxed_int(&w->clk_ppm_pub, w->clk_ppm);
+      retro_atomic_store_release_int(&w->clk_valid_pub, 1);
+   }
+
+   room = wdmks_rt_free(w);
+   have = retro_spsc_read_avail(&w->rt_ring);
+   if (have > room)
+      have = room;
+   have -= have % w->frame_bytes;
+
+   while (have)
+   {
+      size_t first = w->rt_size - w->rt_write;
+      if (first > have)
+         first = have;
+      retro_spsc_read(&w->rt_ring, w->rt_buf + w->rt_write, first);
+      if (w->rt_barrier)
+         MemoryBarrier();
+      w->rt_write = (w->rt_write + first) % w->rt_size;
+      moved      += first;
+      have       -= first;
+   }
+   if (moved)
+      retro_eventcount_notify(&w->rt_park);
+   return moved;
+}
+
+/* The thread the register was waiting for: it samples and refills at
+ * the device's pace however long the frontend is descheduled. Waits
+ * are the device's - the notification event under the stream-scaled
+ * watchdog, or a millisecond slice against the register where the
+ * driver offers no event. Never the eventcount: that parks the
+ * frontend on ring room, not this side on the pin. */
+static void wdmks_rt_refill_thread(void *data)
+{
+   wdmks_t *w = (wdmks_t*)data;
+
+   while (retro_atomic_load_acquire_int(&w->rt_run))
+   {
+      if (w->rt_event)
+         WaitForSingleObject(w->rt_event,
+               wdmks_watchdog_ms(w, w->rt_size));
+      else
+         Sleep(1);
+      if (!retro_atomic_load_acquire_int(&w->rt_run))
+         break;
+      wdmks_rt_pump_once(w);
+   }
+}
+
+/* Producer-side ring room, capped to the size that was asked for
+ * (retro_spsc rounds capacity up to a power of two). */
+static size_t wdmks_rt_ring_room(wdmks_t *w)
+{
+   size_t excess = w->rt_ring.capacity - w->rt_ring_size;
+   size_t room   = retro_spsc_write_avail(&w->rt_ring);
+   return room > excess ? room - excess : 0;
+}
+#endif
 
 /* How long to wait for something that should take one period, in
  * milliseconds: twice its duration, with ends on it.
@@ -2227,7 +2414,7 @@ static bool wdmks_packet_done(wdmks_t *w, wdmks_packet_t *p)
        * The stream is marked dead instead: writes stop, and teardown
        * cancels and waits for every packet that was ever submitted,
        * this one included. */
-      w->dead = true;
+      retro_atomic_store_release_int(&w->dead, 1);
    }
    return false;
 }
@@ -2281,7 +2468,7 @@ static ssize_t wdmks_write(void *data, const void *buf, size_t size)
 
    if (!w || w->stream.handle == INVALID_HANDLE_VALUE)
       return -1;
-   if (w->dead)
+   if (retro_atomic_load_acquire_int(&w->dead))
       return -1;
    if (w->stream.looped)
       return wdmks_rt_write(w, src, size);
@@ -2556,6 +2743,13 @@ static size_t wdmks_frames_consumed(void *data)
       ULONG    now = 0;
       uint64_t abs_frames = 0, abs_qpc = 0;
 
+#ifdef HAVE_THREADS
+      /* The refill thread samples every period and owns the fit;
+       * this side takes the published count and touches nothing. */
+      if (w->rt_thread)
+         return (size_t)retro_atomic_load_acquire_64(&w->rt_frames_pub);
+#endif
+
       /* The absolute position where the miniport gives one: it does
        * not wrap, so nothing is lost to a process that missed several
        * laps, and its timestamp was taken by the device rather than
@@ -2581,7 +2775,18 @@ static size_t wdmks_frames_consumed(void *data)
 static bool wdmks_device_clock_ppm(void *data, double *ppm)
 {
    wdmks_t *w = (wdmks_t*)data;
-   if (!w || !w->clk_valid)
+   if (!w)
+      return false;
+#ifdef HAVE_THREADS
+   if (w->rt_thread)
+   {
+      if (!retro_atomic_load_acquire_int(&w->clk_valid_pub))
+         return false;
+      *ppm = (double)retro_atomic_load_relaxed_int(&w->clk_ppm_pub);
+      return true;
+   }
+#endif
+   if (!w->clk_valid)
       return false;
    *ppm = (double)w->clk_ppm;
    return true;
@@ -2614,6 +2819,10 @@ static size_t wdmks_write_avail(void *data)
    wdmks_t *w = (wdmks_t*)data;
    if (!w)
       return 0;
+#ifdef HAVE_THREADS
+   if (w->stream.looped && w->rt_thread)
+      return wdmks_caller_bytes(w, wdmks_rt_ring_room(w));
+#endif
    return wdmks_caller_bytes(w, w->stream.looped
          ? wdmks_rt_free(w) : wdmks_free_bytes(w));
 }
@@ -2637,7 +2846,8 @@ static size_t wdmks_wait_writable(void *data, size_t len)
    unsigned laps = WDMKS_WAIT_LAPS;
    size_t   cap;
 
-   if (!w || w->stream.handle == INVALID_HANDLE_VALUE || w->dead)
+   if (   !w || w->stream.handle == INVALID_HANDLE_VALUE
+       || retro_atomic_load_acquire_int(&w->dead))
       return 0;
 
    cap = (w->stream.looped ? w->rt_size : w->packet_bytes * WDMKS_PACKETS) / 2;
@@ -2646,9 +2856,34 @@ static size_t wdmks_wait_writable(void *data, size_t len)
 
    for (;;)
    {
-      size_t          avail = w->stream.looped
-         ? wdmks_rt_free(w) : wdmks_free_bytes(w);
+      size_t          avail;
       wdmks_packet_t *p;
+
+#ifdef HAVE_THREADS
+      if (w->stream.looped && w->rt_thread)
+      {
+         /* Ring room, and the park the write path uses: the pin's
+          * waits belong to the refill thread now. */
+         int key;
+         avail = wdmks_rt_ring_room(w);
+         if (avail >= len)
+            return avail;
+         if (!laps-- || !retro_atomic_load_acquire_int(&w->rt_run))
+            return 0;
+         key = retro_eventcount_prepare_wait(&w->rt_park);
+         if (   wdmks_rt_ring_room(w) >= len
+             || !retro_atomic_load_acquire_int(&w->rt_run))
+         {
+            retro_eventcount_cancel_wait(&w->rt_park);
+            continue;
+         }
+         retro_eventcount_commit_wait_timeout(&w->rt_park, key,
+               (int64_t)wdmks_watchdog_ms(w, len) * 1000);
+         continue;
+      }
+#endif
+      avail = w->stream.looped
+         ? wdmks_rt_free(w) : wdmks_free_bytes(w);
 
       if (avail >= len)
          return avail;
@@ -2704,6 +2939,14 @@ static bool wdmks_start(void *data, bool is_shutdown)
          || !wdmks_pin_set_state(&w->stream, RA_KSSTATE_PAUSE)
          || !wdmks_pin_set_state(&w->stream, RA_KSSTATE_RUN))
       return false;
+#ifdef HAVE_THREADS
+   if (w->stream.looped && !w->rt_thread)
+   {
+      retro_atomic_store_release_int(&w->rt_run, 1);
+      if (!(w->rt_thread = sthread_create(wdmks_rt_refill_thread, w)))
+         retro_atomic_store_release_int(&w->rt_run, 0);
+   }
+#endif
    w->running = true;
    return true;
 }
@@ -2715,6 +2958,20 @@ static bool wdmks_stop(void *data)
       return false;
    if (!w->running)
       return true;
+#ifdef HAVE_THREADS
+   if (w->rt_thread)
+   {
+      retro_atomic_store_release_int(&w->rt_run, 0);
+      /* The thread may be inside the event's watchdog; the manual
+       * set wakes it now rather than two rings from now. */
+      if (w->rt_event)
+         SetEvent(w->rt_event);
+      sthread_join(w->rt_thread);
+      w->rt_thread = NULL;
+      /* A writer parked on ring room must see the stream go. */
+      retro_eventcount_notify(&w->rt_park);
+   }
+#endif
    if (!wdmks_pin_set_state(&w->stream, RA_KSSTATE_PAUSE))
       return false;
    w->running = false;
@@ -2756,6 +3013,20 @@ static void wdmks_free(void *data)
 
    /* What the device clock was doing against the rate the pin runs
     * at. Logged, never acted on, as in the other drivers. */
+#ifdef HAVE_THREADS
+   /* Free without stop: the thread has to be gone before the pin -
+    * it reads the register and writes the mapped loop. */
+   if (w->rt_thread)
+   {
+      retro_atomic_store_release_int(&w->rt_run, 0);
+      if (w->rt_event)
+         SetEvent(w->rt_event);
+      sthread_join(w->rt_thread);
+      w->rt_thread = NULL;
+      retro_eventcount_notify(&w->rt_park);
+   }
+#endif
+
    if (w->clk_valid)
       RARCH_LOG("[WDM-KS] Device clock, fitted from the pin's position:"
             " %+d ppm against %u Hz.\n", w->clk_ppm, w->rate);
@@ -2768,6 +3039,10 @@ static void wdmks_free(void *data)
       wdmks_pin_close(&w->stream);
       w->rt_buf = NULL;
       w->rt_pos = NULL;
+#ifdef HAVE_THREADS
+      retro_spsc_free(&w->rt_ring);
+      retro_eventcount_free(&w->rt_park);
+#endif
    }
    else if (w->stream.handle != INVALID_HANDLE_VALUE)
    {
