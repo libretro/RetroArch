@@ -66,6 +66,12 @@ enum gl2_flags
     * core's context is current on the main thread, so this thread
     * never takes it, and the frame reads the ring's slot. */
    GL2_FLAG_HW_RING                = (1 << 23),
+   /* Latched at init: the wrapper was active and the driver
+    * configuration allowed a hw ring when this context came up.
+    * core_context_is_mains() reads this instead of consulting the
+    * live settings from the frame path (the video thread, with the
+    * main thread running free). */
+   GL2_FLAG_HW_RING_EXPECTED = (1 << 27),
    /* GPU recording is on: taken from the frame the frontend hands over,
     * so this thread never reads the recording state the main thread
     * writes (video_frame_info_t::gpu_recording). */

@@ -3258,6 +3258,15 @@ static void *gl3_init(const video_info_t *video,
    if (!gl || !ctx_driver)
       goto error;
 
+   /* Latched here, inside the wrapper's blocking CMD_INIT (the main
+    * thread is parked in send-and-wait, so the settings read is
+    * race-free), for every later gl3_core_context_is_mains() -
+    * including the frame path, where main runs free. */
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active() && video_thread_hw_allowed())
+      gl->flags |= GL3_FLAG_HW_RING_EXPECTED;
+#endif
+
    video_context_driver_set(ctx_driver);
 
    gl->ctx_driver = ctx_driver;
@@ -4648,7 +4657,6 @@ static void gl3_renderchain_render(
  * linear-light compositing applies. */
 static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
 {
-   settings_t *settings = config_get_ptr();
    float ubo_data[20];
    static const float quad_pos[8] = {
       0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
@@ -4668,8 +4676,11 @@ static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
    }
 
    memcpy(ubo_data, gl->mvp_no_rot.data, 16 * sizeof(float));
-   ubo_data[16] = settings
-         ? gl->scrgb.paper_white_nits : 200.0f;
+   /* Driver-owned, latched by the HDR poke path: the frame path
+    * (video thread, main running free) reads no live settings. The
+    * settings null-check this replaces was a vestige of the fetch
+    * that once supplied the value. */
+   ubo_data[16] = gl->scrgb.paper_white_nits;
    ubo_data[17] = 0.0f;
    ubo_data[18] = 2.0f;   /* PQ -> SDR */
    ubo_data[19] = 0.0f;   /* no separate UI layer on this path */
@@ -5756,7 +5767,13 @@ static bool gl3_hw_ring_expected(void)
  * a core with no current context, and no GL function resolved. */
 static bool gl3_core_context_is_mains(gl3_t *gl)
 {
-   return (gl->flags & GL3_FLAG_HW_RING) || gl3_hw_ring_expected();
+   /* Both bits are set on the video thread inside blocking command
+    * handlers (init, ring bring-up) while the main thread is parked
+    * in the wrapper's send-and-wait, and read here from the frame
+    * path. The live-settings consultation this replaces read
+    * settings->arrays.video_driver every frame from the video
+    * thread with the main thread running free. */
+   return (gl->flags & (GL3_FLAG_HW_RING | GL3_FLAG_HW_RING_EXPECTED)) != 0;
 }
 
 

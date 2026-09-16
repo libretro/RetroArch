@@ -69,7 +69,6 @@
 #include "../video_thread_hw.h"
 #endif
 
-static bool gl2_hw_ring_expected(void);
 static bool gl2_core_context_is_mains(gl2_t *gl);
 
 #include "../font_driver.h"
@@ -3266,15 +3265,6 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
 /* Whether the threaded wrapper's hardware ring will drive this driver:
  * decided at init, when the wrapper is already up, from the core's
  * context type and the setting. */
-static bool gl2_hw_ring_expected(void)
-{
-#ifdef HAVE_THREADS
-   return video_driver_thread_wrapper_active() && video_thread_hw_allowed();
-#else
-   return false;
-#endif
-}
-
 /* Whether the core's context belongs to the main thread: it does once
  * the wrapper's ring has taken it (the flag), and it will as soon as
  * the ring is set up (expected, from init on). Every place this
@@ -3285,7 +3275,13 @@ static bool gl2_hw_ring_expected(void)
  * a core with no current context, and no GL function resolved. */
 static bool gl2_core_context_is_mains(gl2_t *gl)
 {
-   return (gl->flags & GL2_FLAG_HW_RING) || gl2_hw_ring_expected();
+   /* Both bits are set on the video thread inside blocking command
+    * handlers (init, ring bring-up) while the main thread is parked
+    * in the wrapper's send-and-wait, and read here from the frame
+    * path. The live-settings consultation this replaces read
+    * settings->arrays.video_driver every frame from the video
+    * thread with the main thread running free. */
+   return (gl->flags & (GL2_FLAG_HW_RING | GL2_FLAG_HW_RING_EXPECTED)) != 0;
 }
 
 
@@ -4144,7 +4140,6 @@ static GLuint gl2_ui_target_fbo(gl2_t *gl)
  * a displayable SDR image in the ordinary way. */
 static void gl2_encode_pq_to_sdr(gl2_t *gl)
 {
-   settings_t *settings = config_get_ptr();
    static const float quad_pos[8] = {
       0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
    };
@@ -4171,8 +4166,9 @@ static void gl2_encode_pq_to_sdr(gl2_t *gl)
    if (gl->scrgb.loc_ui_tex >= 0)
       glUniform1i(gl->scrgb.loc_ui_tex, 0);
    if (gl->scrgb.loc_nits >= 0)
-      glUniform1f(gl->scrgb.loc_nits, settings
-            ? gl->scrgb.paper_white_nits : 200.0f);
+      /* Driver-owned, latched by the HDR poke path: no live
+       * settings on the frame path. */
+      glUniform1f(gl->scrgb.loc_nits, gl->scrgb.paper_white_nits);
    if (gl->scrgb.loc_expand >= 0)
       glUniform1f(gl->scrgb.loc_expand, 0.0f);
    if (gl->scrgb.loc_mode >= 0)
@@ -5416,6 +5412,15 @@ static void *gl2_init(const video_info_t *video,
 
    if (!gl || !ctx_driver)
       goto error;
+
+   /* Latched here, inside the wrapper's blocking CMD_INIT (the main
+    * thread is parked in send-and-wait, so the settings read is
+    * race-free), for every later gl2_core_context_is_mains() -
+    * including the frame path, where main runs free. */
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active() && video_thread_hw_allowed())
+      gl->flags |= GL2_FLAG_HW_RING_EXPECTED;
+#endif
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
 
