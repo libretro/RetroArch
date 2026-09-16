@@ -24,6 +24,7 @@
 
 #include <dynamic/dylib.h>
 #include <retro_inline.h>
+#include <retro_atomic.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
@@ -214,23 +215,48 @@ static void *libandroid_handle;
  *
  * The Android soft keyboard runs on the UI thread, so committed/pasted
  * text arrives via the onSystemKeyboardInput JNI callback on that
- * thread; it is staged there (under a lock) and applied on the
- * RetroArch input thread in android_keyboard_poll(). */
+ * thread. Each callback publishes an immutable snapshot - the whole
+ * text plus the finished/cancel flags - into a one-slot atomic
+ * mailbox: publish is exchange-in, freeing whatever snapshot was
+ * never taken, and android_keyboard_poll() on the RetroArch input
+ * thread exchanges it out. Text events supersede each other and only
+ * the latest matters (the Java side sends the whole line every
+ * time, and finished arrives on the last event), so last-wins is
+ * the semantics, not a compromise. No lock: a snapshot either is
+ * not published or is complete, because nothing writes it after
+ * publication. The session fields below the mailbox - the line
+ * buffer and its cursors, the callback, the open flag's writers -
+ * all live on the input thread alone. */
 #define ANDROID_KBD_BUFFER_SIZE 512
 
-static slock_t *android_kbd_lock        = NULL;
+struct android_kbd_msg
+{
+   char text[ANDROID_KBD_BUFFER_SIZE];
+   bool finished;
+   bool cancel;
+};
+
+/* The mailbox, and the gate the UI thread checks before producing.
+ * The gate is stored on the input thread at start/end; a snapshot
+ * that slips in as the session closes sits in the mailbox unread
+ * and is drained at the next start (and at end itself). */
+static retro_atomic_ptr_t android_kbd_pending;
+static retro_atomic_int_t android_kbd_open;
+
+/* Input-thread session state; no other thread touches these. */
 static char    *android_kbd_buffer      = NULL; /* == keyboard_line.buffer */
 static size_t  *android_kbd_size_ptr    = NULL;
 static size_t  *android_kbd_ptr_ptr     = NULL;
 static input_keyboard_line_complete_t android_kbd_cb = NULL;
 static void    *android_kbd_userdata    = NULL;
-static bool     android_kbd_open        = false;
 
-/* Staging: written by the JNI/UI thread, drained by the input thread. */
-static char     android_kbd_staging[ANDROID_KBD_BUFFER_SIZE];
-static bool     android_kbd_dirty       = false;
-static bool     android_kbd_finished    = false;
-static bool     android_kbd_cancel      = false;
+static void android_kbd_drain_pending(void)
+{
+   struct android_kbd_msg *stale = (struct android_kbd_msg *)
+         retro_atomic_exchange_ptr(&android_kbd_pending, NULL);
+   if (stale)
+      free(stale);
+}
 
 /* Called by Java (UI thread) on every text change, and once more with
  * finished = true on Done/Enter. A null text means the keyboard was
@@ -238,29 +264,34 @@ static bool     android_kbd_cancel      = false;
 JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCommon_onSystemKeyboardInput(
       JNIEnv *env, jobject this_obj, jstring text_obj, jboolean finished)
 {
-   if (!android_kbd_lock)
+   struct android_kbd_msg *node;
+   struct android_kbd_msg *stale;
+
+   if (!retro_atomic_load_acquire_int(&android_kbd_open))
       return;
 
-   slock_lock(android_kbd_lock);
+   if (!(node = (struct android_kbd_msg *)malloc(sizeof(*node))))
+      return;
+
+   node->text[0]  = '\0';
+   node->finished = (finished != JNI_FALSE);
+   node->cancel   = false;
    if (text_obj)
    {
       const char *text = (*env)->GetStringUTFChars(env, text_obj, NULL);
       if (text)
       {
-         strlcpy(android_kbd_staging, text, sizeof(android_kbd_staging));
+         strlcpy(node->text, text, sizeof(node->text));
          (*env)->ReleaseStringUTFChars(env, text_obj, text);
       }
-      android_kbd_cancel = false;
    }
    else
-   {
-      android_kbd_staging[0] = '\0';
-      android_kbd_cancel     = true;
-   }
-   android_kbd_dirty = true;
-   if (finished)
-      android_kbd_finished = true;
-   slock_unlock(android_kbd_lock);
+      node->cancel = true;
+
+   stale = (struct android_kbd_msg *)
+         retro_atomic_exchange_ptr(&android_kbd_pending, node);
+   if (stale)
+      free(stale);
 }
 
 bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
@@ -273,9 +304,6 @@ bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
    struct android_app *android_app = (struct android_app*)g_android;
 
    if (!android_app || !android_app->showKeyboard || !buffer_ptr || !size_ptr)
-      return false;
-
-   if (!android_kbd_lock && !(android_kbd_lock = slock_new()))
       return false;
 
    if (!(allocated = (char*)malloc(ANDROID_KBD_BUFFER_SIZE)))
@@ -295,18 +323,15 @@ bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
    if (ptr_ptr)
       *ptr_ptr = len;
 
-   slock_lock(android_kbd_lock);
+   /* A snapshot from a previous session that was never taken. */
+   android_kbd_drain_pending();
+
    android_kbd_buffer     = allocated;
    android_kbd_size_ptr   = size_ptr;
    android_kbd_ptr_ptr    = ptr_ptr;
    android_kbd_cb         = cb;
    android_kbd_userdata   = userdata;
-   android_kbd_staging[0] = '\0';
-   android_kbd_dirty      = false;
-   android_kbd_finished   = false;
-   android_kbd_cancel     = false;
-   android_kbd_open       = true;
-   slock_unlock(android_kbd_lock);
+   retro_atomic_store_release_int(&android_kbd_open, 1);
 
    /* Suppress the built-in OSK for as long as the IME owns the line;
     * without this both are drawn at once and both consume input. */
@@ -329,7 +354,7 @@ bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
 
 bool android_keyboard_active(void)
 {
-   return android_kbd_open;
+   return retro_atomic_load_relaxed_int(&android_kbd_open) != 0;
 }
 
 void android_keyboard_end(void)
@@ -337,53 +362,51 @@ void android_keyboard_end(void)
    JNIEnv             *env         = NULL;
    struct android_app *android_app = (struct android_app*)g_android;
 
-   if (!android_kbd_open || !android_kbd_lock)
+   if (!retro_atomic_load_relaxed_int(&android_kbd_open))
       return;
 
    input_state_get_ptr()->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
 
-   slock_lock(android_kbd_lock);
-   android_kbd_open       = false;
+   /* Close the gate first, then clear the session: the UI thread
+    * checks the gate before producing, and anything that races past
+    * it lands in the mailbox, which is drained here and again at
+    * the next start. */
+   retro_atomic_store_release_int(&android_kbd_open, 0);
    android_kbd_buffer     = NULL;
    android_kbd_size_ptr   = NULL;
    android_kbd_ptr_ptr    = NULL;
    android_kbd_cb         = NULL;
    android_kbd_userdata   = NULL;
-   android_kbd_dirty      = false;
-   android_kbd_finished   = false;
-   android_kbd_cancel     = false;
-   slock_unlock(android_kbd_lock);
+   android_kbd_drain_pending();
 
    if (android_app && android_app->hideKeyboard && (env = jni_thread_getenv()))
       CALL_VOID_METHOD(env, android_app->activity->clazz,
             android_app->hideKeyboard);
 }
 
-/* Drain staged IME text on the RetroArch input thread. */
 void android_keyboard_poll(void)
 {
-   bool                           finished;
-   bool                           cancel;
-   char                          *buffer;
-   void                          *userdata;
+   bool                    finished;
+   bool                    cancel;
+   char                   *buffer;
+   void                   *userdata;
    input_keyboard_line_complete_t cb;
+   struct android_kbd_msg *node;
 
-   if (!android_kbd_open || !android_kbd_lock)
+   if (!retro_atomic_load_relaxed_int(&android_kbd_open))
       return;
 
-   slock_lock(android_kbd_lock);
-   if (!android_kbd_dirty)
-   {
-      slock_unlock(android_kbd_lock);
+   node = (struct android_kbd_msg *)
+         retro_atomic_exchange_ptr(&android_kbd_pending, NULL);
+   if (!node)
       return;
-   }
 
-   /* Sync staged text into the live keyboard line buffer so the menu
+   /* Sync the snapshot into the live keyboard line buffer so the menu
     * displays it (same role as the iOS UITextField delegate). */
-   if (!android_kbd_cancel && android_kbd_buffer)
+   if (!node->cancel && android_kbd_buffer)
    {
       size_t len;
-      strlcpy(android_kbd_buffer, android_kbd_staging, ANDROID_KBD_BUFFER_SIZE);
+      strlcpy(android_kbd_buffer, node->text, ANDROID_KBD_BUFFER_SIZE);
       len = strlen(android_kbd_buffer);
       if (android_kbd_size_ptr)
          *android_kbd_size_ptr = len;
@@ -391,14 +414,12 @@ void android_keyboard_poll(void)
          *android_kbd_ptr_ptr  = len;
    }
 
-   finished             = android_kbd_finished;
-   cancel               = android_kbd_cancel;
-   cb                   = android_kbd_cb;
-   userdata             = android_kbd_userdata;
-   buffer               = android_kbd_buffer;
-   android_kbd_dirty    = false;
-   android_kbd_finished = false;
-   slock_unlock(android_kbd_lock);
+   finished = node->finished;
+   cancel   = node->cancel;
+   cb       = android_kbd_cb;
+   userdata = android_kbd_userdata;
+   buffer   = android_kbd_buffer;
+   free(node);
 
    if (finished)
    {
@@ -418,18 +439,16 @@ void android_keyboard_poll(void)
       }
 
       /* The callback normally closes the dialog (-> android_keyboard_end),
-       * which clears our state. If it didn't, drop the now-freed buffer
-       * pointer so a late JNI callback can't use it after free. */
-      slock_lock(android_kbd_lock);
+       * which clears our state. If it did not, drop the now-freed buffer
+       * pointer so a late snapshot cannot sync into it after free -
+       * everything here is the input thread's own state. */
       if (android_kbd_buffer == buffer)
       {
-         android_kbd_buffer   = NULL;
-         android_kbd_open     = false;
-         android_kbd_dirty    = false;
-         android_kbd_finished = false;
+         android_kbd_buffer = NULL;
+         retro_atomic_store_release_int(&android_kbd_open, 0);
+         android_kbd_drain_pending();
          input_state_get_ptr()->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
       }
-      slock_unlock(android_kbd_lock);
    }
 }
 
