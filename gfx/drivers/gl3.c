@@ -539,13 +539,30 @@ static bool gl3_parse_version(const char *version,
  *
  * Returns: true if glShaderBinary/glSpecializeShader can consume SPIR-V.
  */
+#if !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES)
+/* The user toggle, latched at init and at every set_shader - both
+ * blocking wrapper commands, so the read cannot race - which is
+ * exactly the "takes effect on the next preset load" promise the
+ * old per-call settings read made, minus the per-call settings read
+ * from the video thread's lazy pass builds. */
+static bool gl3_direct_spirv_enabled;
+
+void gl3_spirv_refresh_direct_toggle(void)
+{
+   settings_t *settings    = config_get_ptr();
+   gl3_direct_spirv_enabled =
+         settings && settings->bools.video_gl_direct_spirv;
+}
+#else
+void gl3_spirv_refresh_direct_toggle(void) { }
+#endif
+
 bool gl3_spirv_binary_supported(void)
 {
 #if defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES)
    return false;
 #else
    static int supported = -1;
-   settings_t *settings = config_get_ptr();
    GLint num_formats    = 0;
    GLint num_extensions = 0;
    GLint i;
@@ -553,9 +570,7 @@ bool gl3_spirv_binary_supported(void)
    unsigned minor       = 0;
    bool have_extension  = false;
 
-   /* Checked on every call rather than latched with the capability, so
-    * toggling the menu entry takes effect on the next preset load. */
-   if (!settings || !settings->bools.video_gl_direct_spirv)
+   if (!gl3_direct_spirv_enabled)
       return false;
 
    if (supported >= 0)
@@ -3271,6 +3286,7 @@ static void *gl3_init(const video_info_t *video,
    /* Seed the raw rotation latch inside the same blocking window;
     * set_rotation keeps it current from here on. */
    gl->rotation_raw = retroarch_get_rotation();
+   gl3_spirv_refresh_direct_toggle();
 
    video_context_driver_set(ctx_driver);
 
@@ -3906,6 +3922,10 @@ static bool gl3_set_shader(void *data,
    gl3_t *gl = (gl3_t *)data;
    if (!gl)
       return false;
+
+   /* Blocking window: refresh the direct-SPIR-V toggle latch, the
+    * "next preset load" moment its semantics promise. */
+   gl3_spirv_refresh_direct_toggle();
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);

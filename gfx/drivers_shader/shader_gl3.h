@@ -241,6 +241,10 @@ GLuint gl3_cross_compile_program(
  * Implemented by the gl3 driver; the result is cached after the first call.
  **/
 bool gl3_spirv_binary_supported(void);
+/* Latches the direct-SPIR-V user toggle; called at init and
+ * set_shader (blocking windows) so binary_supported never reads
+ * live settings from the video thread. */
+void gl3_spirv_refresh_direct_toggle(void);
 
 /**
  * gl3_spirv_link_program:

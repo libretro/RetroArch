@@ -179,7 +179,12 @@ def audit(calls, defined, entries, allow, boundaries=frozenset()):
                 continue
             hit = calls.get(f, set()) & set(READERS)
             for r in sorted(hit):
-                if (entry, r) in allow:
+                # Two grains: (callee, reader) allowlists one verified
+                # function wherever it appears - the surgical form the
+                # list's entries use - and (entry, reader) allowlists a
+                # reader across a whole root, for roots that own their
+                # state wholesale.
+                if (f, r) in allow or (entry, r) in allow:
                     continue
                 findings.append((entry, f, r))
     return findings, audited

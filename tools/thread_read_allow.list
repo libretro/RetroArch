@@ -15,3 +15,10 @@ input_driver_read_sensor_snapshot|input_state_get_ptr
 # read with acquire by the poll's demand check. A latch write, not a
 # state read.
 input_driver_set_shader_uses_sensors|input_state_get_ptr
+# video_thread_swap_count: a documented cross-thread accessor. The
+# video thread's own writes to swap_count happen under thr->lock in
+# the wrapper's frame handler; this reader returns the field directly
+# when called on the video thread (or with no wrapper), and takes the
+# same thr->lock otherwise. The getter call is how it reaches the
+# field; both sides are ordered by the lock.
+video_thread_swap_count|video_state_get_ptr

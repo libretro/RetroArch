@@ -303,6 +303,18 @@ typedef struct vk
    unsigned out_vp_height;
    unsigned rotation;
    unsigned rotation_raw;
+   /* settings->uints.video_hdr_mode, latched at init: every change
+    * to the setting triggers CMD_EVENT_REINIT, so it cannot move
+    * under a live driver, and the swapchain-recreate chain rebuild
+    * on the video thread reads this instead of live settings. */
+   unsigned hdr_mode_latched;
+   /* The scanlines/subpixel pokes only pushed into the live chains;
+    * a chain rebuilt on swapchain recreate re-read live settings for
+    * them (and forgot nothing only by that accident). Latched here
+    * by the pokes - blocking commands - and consumed by the rebuild
+    * along with hdr_mode_latched and the ubo_values latches. */
+   float    hdr_scanlines_latched;
+   unsigned hdr_subpixel_latched;
    unsigned num_swapchain_images;
    unsigned last_valid_index;
 
@@ -4882,6 +4894,7 @@ static void vulkan_set_hdr_scanlines(void* data, bool scanlines)
 {
    vk_t *vk                            = (vk_t*)data;
 
+   vk->hdr_scanlines_latched           = scanlines ? 1.0f : 0.0f;
    if(vk->filter_chain)
    {
       vulkan_filter_chain_set_scanlines(
@@ -4898,6 +4911,7 @@ static void vulkan_set_hdr_subpixel_layout(void* data, unsigned subpixel_layout)
 {
    vk_t *vk                            = (vk_t*)data;
 
+   vk->hdr_subpixel_latched            = subpixel_layout;
    if(vk->filter_chain)
    {
       vulkan_filter_chain_set_subpixel_layout(
@@ -4930,7 +4944,6 @@ static void vulkan_set_hdr10(vk_t* vk, vulkan_filter_chain_t* filter_chain, bool
 static bool vulkan_init_default_filter_chain(vk_t *vk)
 {
    struct vulkan_filter_chain_create_info info;
-   settings_t *settings;
 
    if (!vk->context)
       return false;
@@ -4938,7 +4951,10 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    if (vk->filter_chain_default)
       return true;
 
-   settings                   = config_get_ptr();
+   /* Reached from the frame path on swapchain recreate (video
+    * thread, main running free), so every value here comes from the
+    * driver's latches - each written only at init or through a
+    * blocking poke - never from live settings. */
 
    info.device                = vk->context->device;
    info.gpu                   = vk->context->gpu;
@@ -4958,7 +4974,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
 #ifdef VULKAN_HDR_SWAPCHAIN
-   info.hdr_enabled           = settings->uints.video_hdr_mode > 0;
+   info.hdr_enabled           = vk->hdr_mode_latched > 0;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    vk->filter_chain_default   = vulkan_filter_chain_create_default(
@@ -4981,12 +4997,12 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
       bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
          || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain_default));
       bool emits_hdr16 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain_default);
-      unsigned hdr_mode = settings->uints.video_hdr_mode;
+      unsigned hdr_mode = vk->hdr_mode_latched;
 
-      vulkan_filter_chain_set_paper_white_nits(vk->filter_chain_default, settings->floats.video_hdr_paper_white_nits);
-      vulkan_filter_chain_set_expand_gamut(vk->filter_chain_default, settings->uints.video_hdr_expand_gamut);
-      vulkan_filter_chain_set_scanlines(vk->filter_chain_default, settings->bools.video_hdr_scanlines ? 1.0f : 0.0f);
-      vulkan_filter_chain_set_subpixel_layout(vk->filter_chain_default, settings->uints.video_hdr_subpixel_layout);
+      vulkan_filter_chain_set_paper_white_nits(vk->filter_chain_default, vk->hdr.ubo_values.paper_white_nits);
+      vulkan_filter_chain_set_expand_gamut(vk->filter_chain_default, vk->hdr.ubo_values.expand_gamut);
+      vulkan_filter_chain_set_scanlines(vk->filter_chain_default, vk->hdr_scanlines_latched);
+      vulkan_filter_chain_set_subpixel_layout(vk->filter_chain_default, vk->hdr_subpixel_latched);
 
       if (hdr_mode == 2)
       {
@@ -5041,12 +5057,12 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 {
    struct vulkan_filter_chain_create_info info;
-   settings_t *settings;
 
    if (!vk->context)
       return false;
 
-   settings                   = config_get_ptr();
+   /* Reached from the frame path on swapchain recreate like the
+    * default-chain builder: latches only, never live settings. */
 
    info.device                = vk->context->device;
    info.gpu                   = vk->context->gpu;
@@ -5066,7 +5082,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.swapchain.render_pass = vk->render_pass;
    info.swapchain.num_indices = vk->context->num_swapchain_images;
 #ifdef VULKAN_HDR_SWAPCHAIN
-   info.hdr_enabled           = settings->uints.video_hdr_mode > 0;
+   info.hdr_enabled           = vk->hdr_mode_latched > 0;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    vk->filter_chain           = vulkan_filter_chain_create_from_preset(
@@ -5088,12 +5104,12 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
       bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
          || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain));
       bool emits_hdr16 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain);
-      unsigned hdr_mode = settings->uints.video_hdr_mode;
+      unsigned hdr_mode = vk->hdr_mode_latched;
 
-      vulkan_filter_chain_set_paper_white_nits(vk->filter_chain, settings->floats.video_hdr_paper_white_nits);
-      vulkan_filter_chain_set_expand_gamut(vk->filter_chain, settings->uints.video_hdr_expand_gamut);
-      vulkan_filter_chain_set_scanlines(vk->filter_chain, settings->bools.video_hdr_scanlines ? 1.0f : 0.0f);
-      vulkan_filter_chain_set_subpixel_layout(vk->filter_chain, settings->uints.video_hdr_subpixel_layout);
+      vulkan_filter_chain_set_paper_white_nits(vk->filter_chain, vk->hdr.ubo_values.paper_white_nits);
+      vulkan_filter_chain_set_expand_gamut(vk->filter_chain, vk->hdr.ubo_values.expand_gamut);
+      vulkan_filter_chain_set_scanlines(vk->filter_chain, vk->hdr_scanlines_latched);
+      vulkan_filter_chain_set_subpixel_layout(vk->filter_chain, vk->hdr_subpixel_latched);
 
       if (hdr_mode == 2)
       {
@@ -5819,7 +5835,8 @@ static void *vulkan_init(const video_info_t *video,
 
    /* Seed the raw rotation latch inside the blocking CMD_INIT;
     * set_rotation keeps it current from here on. */
-   vk->rotation_raw = retroarch_get_rotation();
+   vk->rotation_raw    = retroarch_get_rotation();
+   vk->hdr_mode_latched = config_get_ptr()->uints.video_hdr_mode;
    ctx_driver                         = vulkan_get_context(vk, settings);
    if (!ctx_driver)
    {
@@ -5987,6 +6004,8 @@ static void *vulkan_init(const video_info_t *video,
    vk->hdr.ubo_values.paper_white_nits    = settings->floats.video_hdr_paper_white_nits;
 
    vk->hdr.ubo_values.expand_gamut        = settings->uints.video_hdr_expand_gamut;
+   vk->hdr_scanlines_latched              = settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
+   vk->hdr_subpixel_latched               = settings->uints.video_hdr_subpixel_layout;
 
    vk->hdr.ubo_values.inverse_tonemap     = 1.0f;     /* Use this to turn on/off the inverse tonemap */
    vk->hdr.ubo_values.hdr10               = 1.0f;     /* Use this to turn on/off the hdr10 */
