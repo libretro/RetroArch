@@ -69,6 +69,43 @@ HANDLER_RE = re.compile(
     r"([a-z_][a-z_0-9]*)")
 SKIP_DIRS = {".git", "deps", "obj-unix", "pkg", "media", "samples"}
 CALLBACK_ENTRIES = ("audio_driver_callback",)
+# Driver frame-context functions: under the threaded wrapper these run
+# on the video thread while the main thread runs free - the wrapper
+# dispatches them through an indirect driver->frame edge the binary
+# walk cannot follow, so they are listed as entries directly. Only the
+# free-running functions belong here: blocking command handlers (init,
+# set_shader, the pokes) execute while the main thread is parked in
+# send-and-wait, where a settings read cannot race, and must NOT be
+# added or every legal init-time read becomes a false finding. Symbols
+# absent from a given build are skipped like any other entry.
+#
+# Opt-in via --frame-context while its 29-finding backlog is triaged;
+# the flagless run remains the standing green gate. Current backlog,
+# grouped by callee (linux audit config, gl2+gl3+vulkan roots):
+#   retroarch_get_rotation        -> config_get_ptr   (per-frame)
+#   video_driver_update_viewport  -> config_get_ptr   (per-frame)
+#   video_thread_swap_count       -> video_state_get_ptr
+#   gfx_widgets_frame             -> disp/video_state (lock exists;
+#                                    verify then allowlist with reason)
+#   menu_driver_frame             -> disp_get_ptr
+#   font_driver_render_msg        -> disp_get_ptr
+#   gfx_display_draw_text         -> video_state_get_ptr
+#   gl3/slang pass_build*         -> input_state_get_ptr (live input
+#                                    as shader uniforms)
+#   vulkan_init_default_filter_chain -> config_get_ptr (swapchain
+#                                    recreate mid-frame)
+#   gl3_spirv_binary_supported    -> config_get_ptr
+INCLUDE_FRAME_CONTEXT = False
+FRAME_CONTEXT_ENTRIES = (
+    "gl2_frame",
+    "gl2_set_texture_frame",
+    "gl3_frame",
+    "gl3_set_texture_frame",
+    "vulkan_frame",
+    "vulkan_set_texture_frame",
+    "d3d11_gfx_frame",
+    "d3d12_gfx_frame",
+)
 
 
 def iter_sources(root):
@@ -96,6 +133,9 @@ def source_entries(root):
             entries.setdefault(m.group(1), rel)
     for name in CALLBACK_ENTRIES:
         entries.setdefault(name, "(pipeline callback)")
+    if INCLUDE_FRAME_CONTEXT:
+        for name in FRAME_CONTEXT_ENTRIES:
+            entries.setdefault(name, "(threaded frame context)")
     return entries
 
 
@@ -271,10 +311,15 @@ def main():
     ap.add_argument("--root", default=".")
     ap.add_argument("--allow", default="tools/thread_read_allow.list")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--frame-context", action="store_true",
+        help="also walk driver frame-context entries (triage backlog; "
+             "not yet part of the green gate)")
     ap.add_argument("--list-unaudited", action="store_true",
                     help="also list source entry points absent from "
                          "this binary (compiled out on this build)")
     args = ap.parse_args()
+    global INCLUDE_FRAME_CONTEXT
+    INCLUDE_FRAME_CONTEXT = args.frame_context
     if args.selftest:
         sys.exit(selftest())
     if not args.binary:
