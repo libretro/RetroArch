@@ -159,6 +159,10 @@ jobs:
             mpsc_stack_test
             retro_waitable_spsc_test
             retro_eventcount_test
+            # retro_sleep_until_us must never return early against the
+            # microsecond clock; the late bound is loose for a loaded
+            # runner.
+            retro_sleep_until_test
             # Runs its natural tier only here; Makefile.test's
             # threads-samples forces each tier in turn.  On the
             # runner's cores the fence check is load-bearing, which
