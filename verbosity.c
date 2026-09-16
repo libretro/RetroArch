@@ -181,12 +181,23 @@ bool *verbosity_get_ptr(void)
 void retro_main_log_file_init(const char *path, bool append)
 {
    FILE *tmp;
+#ifdef HAVE_LIBNX
+   static bool mtx_inited = false;
+#endif
 
    if (main_verbosity_st.initialized)
       return;
 
 #ifdef HAVE_LIBNX
-   mutexInit(&main_verbosity_st.mtx);
+   /* Once for the process: a file->console->file cycle re-enters
+    * here, and re-initializing a mutex another thread may be
+    * holding for a write is exactly the race the mutex exists to
+    * prevent. Deinit never destroys it for the same reason. */
+   if (!mtx_inited)
+   {
+      mutexInit(&main_verbosity_st.mtx);
+      mtx_inited = true;
+   }
 #endif
 
    /* Default to stderr; only override when a valid path is given */
@@ -235,10 +246,71 @@ void retro_main_log_file_deinit(void)
 }
 
 #if !defined(HAVE_LOGGER)
+/* Compiled for its two consumers: the Android file arm and the
+ * generic branch. Xbox/WinRT formats into its own bounded buffer,
+ * and the Apple arms go through their platform sinks. */
+#if defined(ANDROID) \
+ || (!defined(_XBOX1) && !defined(__WINRT__) && !defined(__APPLE__))
+/* Format tag and message into one buffer and write it with a single
+ * stdio call: the per-call lock then keeps concurrent lines whole.
+ * Lines wider than the stack buffer take an exact-sized heap detour
+ * rather than truncating; if that allocation fails, the truncated
+ * stack line ships - a shortened message over a dropped one. */
+static void rarch_log_line_write(FILE *fp, const char *tag_v,
+      const char *fmt, va_list ap)
+{
+   char line[1024];
+   char *out    = line;
+   char *heap   = NULL;
+   int t_len    = snprintf(line, sizeof(line), "%s ", tag_v);
+   int b_len;
+   va_list ap_cp;
+
+   if (t_len < 0 || t_len >= (int)sizeof(line))
+      t_len = 0;
+
+   va_copy(ap_cp, ap);
+   b_len = vsnprintf(line + t_len, sizeof(line) - (size_t)t_len,
+         fmt, ap_cp);
+   va_end(ap_cp);
+
+   if (b_len >= (int)(sizeof(line) - (size_t)t_len))
+   {
+      size_t need = (size_t)t_len + (size_t)b_len + 1;
+      if ((heap = (char*)malloc(need)))
+      {
+         memcpy(heap, line, (size_t)t_len);
+         vsnprintf(heap + t_len, need - (size_t)t_len, fmt, ap);
+         out = heap;
+      }
+   }
+   else if (b_len < 0)
+      line[t_len] = '\0';
+
+#if defined(HAVE_LIBNX)
+   /* Around exactly one write and its flush; libnx newlib's stdio
+    * locking history is why this exists at all. */
+   mutexLock(&main_verbosity_st.mtx);
+#endif
+   fputs(out, fp);
+   fflush(fp);
+#if defined(HAVE_LIBNX)
+   mutexUnlock(&main_verbosity_st.mtx);
+#endif
+
+   free(heap);
+}
+#endif
+
 void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 {
 #if defined(_XBOX1) || defined(__WINRT__)
-   char buffer[256];
+   /* wvsprintf takes no size and writes past any small buffer on a
+    * long expansion; vsnprintf is bounded on both targets (the msvc
+    * compat header maps it for the Xbox toolchain), and 1024 matches
+    * the line budget the generic branch uses. Truncation stays the
+    * policy here - no heap on this target. */
+   char buffer[1024];
    int _len;
    const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
    buffer[0] = '\0';
@@ -246,13 +318,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          "%s: %s ", FILE_PATH_PROGRAM_NAME, tag_v);
 
    if (_len > 0 && _len < (int)sizeof(buffer))
-   {
-#if defined(__WINRT__)
       vsnprintf(buffer + _len, sizeof(buffer) - (size_t)_len, fmt, ap);
-#else
-      wvsprintf(buffer + _len, fmt, ap);
-#endif
-   }
 #ifdef _DEBUG
    OutputDebugStringA(buffer);
 #endif
@@ -267,9 +333,11 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
       FILE *fp = main_verbosity_st.fp;
       if (main_verbosity_st.initialized && fp)
       {
-         /* Already logging to file: single write path, no Android log overhead */
-         vfprintf(fp, fmt, ap);
-         fflush(fp);
+         /* Logging to file: one formatted write, tag included -
+          * the file carries the same line format as every other
+          * platform (logcat gets the tag as a priority instead). */
+         const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
+         rarch_log_line_write(fp, tag_v, fmt, ap);
       }
       else
       {
@@ -402,48 +470,7 @@ apple_log_done:;
           * body-call pair could interleave between threads; lines
           * wider than the stack buffer take an exact-sized heap
           * detour rather than truncating. */
-         char line[1024];
-         char *out    = line;
-         char *heap   = NULL;
-         int t_len    = snprintf(line, sizeof(line), "%s ", tag_v);
-         int b_len;
-         va_list ap_cp;
-
-         if (t_len < 0 || t_len >= (int)sizeof(line))
-            t_len = 0;
-
-         va_copy(ap_cp, ap);
-         b_len = vsnprintf(line + t_len, sizeof(line) - (size_t)t_len,
-               fmt, ap_cp);
-         va_end(ap_cp);
-
-         if (b_len >= (int)(sizeof(line) - (size_t)t_len))
-         {
-            size_t need = (size_t)t_len + (size_t)b_len + 1;
-            if ((heap = (char*)malloc(need)))
-            {
-               memcpy(heap, line, (size_t)t_len);
-               vsnprintf(heap + t_len, need - (size_t)t_len, fmt, ap);
-               out = heap;
-            }
-            /* On allocation failure the truncated stack line ships:
-             * a shortened message over a dropped one. */
-         }
-         else if (b_len < 0)
-            line[t_len] = '\0';
-
-#  if defined(HAVE_LIBNX)
-         /* Around exactly one write and its flush; libnx newlib's
-          * stdio locking history is why this exists at all. */
-         mutexLock(&main_verbosity_st.mtx);
-#  endif
-         fputs(out, fp);
-         fflush(fp);
-#  if defined(HAVE_LIBNX)
-         mutexUnlock(&main_verbosity_st.mtx);
-#  endif
-
-         free(heap);
+         rarch_log_line_write(fp, tag_v, fmt, ap);
       }
 #endif
    }
@@ -454,8 +481,10 @@ void RARCH_LOG_BUFFER(uint8_t *data, size_t len)
 {
    size_t i;
    size_t offset     = 0;
-   const uint8_t *end = data + len;
    uint8_t buf[16];
+
+   if (!data && len)
+      return;
 
    RARCH_LOG("== %d-byte buffer ==================\n", (int)len);
 
@@ -486,7 +515,6 @@ void RARCH_LOG_BUFFER(uint8_t *data, size_t len)
          buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
    }
    RARCH_LOG("==================================\n");
-   (void)end; /* suppress unused-variable warning */
 }
 
 void RARCH_DBG(const char *fmt, ...)
