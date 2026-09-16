@@ -192,7 +192,7 @@ static void gfx_ctx_x_destroy_resources(gfx_ctx_x_data_t *x)
                gl_finish();
                glXMakeContextCurrent(g_x11_dpy, None, None, NULL);
 
-               video_st_flags = video_st->flags;
+               video_st_flags = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
                if (!(video_st_flags & VIDEO_FLAG_CACHE_CONTEXT))
                {
                   if (x->hw_ctx)

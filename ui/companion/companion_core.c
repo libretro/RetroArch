@@ -3200,7 +3200,7 @@ void companion_core_prepare_show_window(companion_core_t *core)
 bool companion_core_video_started_fullscreen(companion_core_t *core)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
-   return core && video_st && (video_st->flags & VIDEO_FLAG_STARTED_FULLSCREEN);
+   return core && video_st && ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_STARTED_FULLSCREEN);
 }
 
 /* --- Inbound notifications ------------------------------------------- */

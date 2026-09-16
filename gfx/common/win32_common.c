@@ -569,7 +569,7 @@ static void win32_save_position(void)
    if (window_save_positions)
    {
       video_driver_state_t *video_st = video_state_get_ptr();
-      uint32_t video_st_flags        = video_st->flags;
+      uint32_t video_st_flags        = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
       bool video_fullscreen          = settings->bools.video_fullscreen;
 
       if (     !video_fullscreen

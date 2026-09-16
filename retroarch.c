@@ -1780,7 +1780,7 @@ void drivers_init(
        && video_st->current_video->gfx_widgets_enabled
        && video_st->current_video->gfx_widgets_enabled(video_st->data))
    {
-      bool rarch_force_fullscreen = (video_st->flags &
+      bool rarch_force_fullscreen = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) &
          VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
       bool video_is_fullscreen    = settings->bools.video_fullscreen
                                  || rarch_force_fullscreen;
@@ -1984,9 +1984,13 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       video_driver_cached_frame_retire();
       video_driver_free_internal();
 #ifdef HAVE_THREADS
+#ifndef RETRO_ATOMIC_HAS_PTR
+      /* The volatile-backend title fallback's lock; every other
+       * backend has no display lock left to free. */
       slock_free(video_st->display_lock);
-      slock_free(video_st->context_lock);
       video_st->display_lock      = NULL;
+#endif
+      slock_free(video_st->context_lock);
       video_st->context_lock      = NULL;
 #endif
       video_st->data              = NULL;
@@ -4209,7 +4213,7 @@ bool command_event(enum event_command cmd, void *data)
 
             if (want_widgets && !widgets_active)
             {
-               bool force_fs            = (video_st->flags &
+               bool force_fs            = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) &
                      VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
                bool video_is_fullscreen = settings->bools.video_fullscreen
                      || force_fs;
@@ -5612,7 +5616,7 @@ bool command_event(enum event_command cmd, void *data)
                *input_st              = input_state_get_ptr();
             bool *userdata            = (bool*)data;
             bool video_fullscreen     = settings->bools.video_fullscreen;
-            bool ra_is_forced_fs      = (video_st->flags &
+            bool ra_is_forced_fs      = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) &
                VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
             bool new_fullscreen_state = !video_fullscreen && !ra_is_forced_fs;
 
@@ -5868,7 +5872,7 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool video_fullscreen                         =
                   settings->bools.video_fullscreen
-               || (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN);
+               || ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_FORCE_FULLSCREEN);
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
             input_driver_state_t
                *input_st                                  = input_state_get_ptr();

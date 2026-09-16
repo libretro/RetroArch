@@ -3958,7 +3958,7 @@ const char *video_shader_get_current_shader_preset(void)
    bool video_shader_enable       = settings->bools.video_shader_enable;
    unsigned video_shader_delay    = settings->uints.video_shader_delay;
    bool auto_shaders_enable       = settings->bools.auto_shaders_enable;
-   bool cli_shader_disable        = (video_st->flags &
+   bool cli_shader_disable        = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) &
       VIDEO_FLAG_CLI_SHADER_DISABLE) ? true : false;
 
    if (!video_shader_enable)
@@ -3975,7 +3975,7 @@ const char *video_shader_get_current_shader_preset(void)
       return runloop_st->runtime_shader_preset_path;
 
    /* load auto-shader once, --set-shader works like a global auto-shader */
-   if (     (video_st->flags & VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD)
+   if (     ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD)
          && !cli_shader_disable)
    {
       gfx_ctx_flags_t flags;

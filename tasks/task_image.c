@@ -359,7 +359,8 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
     * sampled in that window can disagree with the driver's actual upload
     * format and yield R/B-swapped images.  Re-sample it here, once, at
     * decode start (after any reinit has settled) - not in the per-chunk
-    * decode loop, where it would lock display_lock on every iteration. */
+    * decode loop, where the old code took the display lock on every iteration
+    * (that lock is gone; the flags it guarded are atomic now). */
    image->ti.supports_rgba = (video_driver_get_disp_flags()
          & VIDEO_FLAG_USE_RGBA) ? true : false;
 

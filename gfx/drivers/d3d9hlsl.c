@@ -8279,7 +8279,7 @@ static bool d3d9_hlsl_alive(void *data)
    d3d9_video_t *d3d     = (d3d9_video_t*)data;
 
    /* Read from local bookkeeping rather than video_st (which would
-    * acquire context_lock + display_lock).  d3d->vp.full_* is
+    * acquire context_lock; display_lock is gone, its state atomic).  d3d->vp.full_* is
     * written at every set_size call site in this driver. */
    temp_width  = d3d->vp.full_width;
    temp_height = d3d->vp.full_height;

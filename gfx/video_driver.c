@@ -47,6 +47,20 @@
 #if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
 #define VIDEO_TITLE_MAILBOX 1
 #endif
+
+/* Float <-> bits, for the overlay viewport's atomic fields. */
+static INLINE int video_float_bits(float f)
+{
+   int b;
+   memcpy(&b, &f, sizeof(b));
+   return b;
+}
+static INLINE float video_bits_float(int b)
+{
+   float f;
+   memcpy(&f, &b, sizeof(f));
+   return f;
+}
 #include "video_filter.h"
 #include "video_display_server.h"
 #include "modeline/modeline_list.h"
@@ -1830,7 +1844,7 @@ void video_switch_refresh_rate_maybe(
    unsigned video_bfi                 = settings->uints.video_black_frame_insertion;
    unsigned shader_subframes          = settings->uints.video_shader_subframes;
    bool vrr_runloop_enable            = settings->bools.vrr_runloop_enable;
-   bool exclusive_fullscreen          = (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN) || (
+   bool exclusive_fullscreen          = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_FORCE_FULLSCREEN) || (
                                         settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen);
    bool windowed_fullscreen           = settings->bools.video_fullscreen && settings->bools.video_windowed_fullscreen;
    bool all_fullscreen                = settings->bools.video_fullscreen || settings->bools.video_windowed_fullscreen;
@@ -2147,7 +2161,7 @@ bool video_driver_filter_changes_format(void)
    bool core_rgb32                = video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
          || video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010
          || video_st->pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010;
-   bool filter_rgb32              = (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
+   bool filter_rgb32              = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_STATE_OUT_RGB32)
          ? true : false;
    return video_st->state_filter && filter_rgb32 != core_rgb32;
 }
@@ -2215,7 +2229,7 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
    else
       video_driver_modify_disp_flags(0, VIDEO_FLAG_STATE_OUT_RGB32);
 
-   video_st->state_out_bpp   = (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
+   video_st->state_out_bpp   = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_STATE_OUT_RGB32)
       ? sizeof(uint32_t) : sizeof(uint16_t);
 
    /* Every softfilter writes this with vector stores and the video
@@ -2269,7 +2283,7 @@ void video_driver_free_internal(void)
 
    command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
 
-   if (!(video_st->flags & VIDEO_FLAG_CACHE_CONTEXT))
+   if (!((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_CACHE_CONTEXT))
       video_driver_free_hw_context();
 
    if (!(input_st->current_data == video_st->data))
@@ -2535,22 +2549,21 @@ void video_driver_set_overlay_viewport(const struct overlay *active)
    int flags                           = 0;
    if (active && (active->flags & OVERLAY_HAS_VIEWPORT))
       flags = active->flags & (OVERLAY_HAS_VIEWPORT | OVERLAY_VIEWPORT_FILL);
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-      slock_lock(video_st->display_lock);
-#endif
    if (flags)
    {
-      video_st->overlay_vp[0] = active->viewport.x;
-      video_st->overlay_vp[1] = active->viewport.y;
-      video_st->overlay_vp[2] = active->viewport.w;
-      video_st->overlay_vp[3] = active->viewport.h;
+      int seq0 = retro_atomic_load_relaxed_int(&video_st->overlay_vp_seq);
+      retro_atomic_store_release_int(&video_st->overlay_vp_seq, seq0 + 1);
+      retro_atomic_store_relaxed_int(&video_st->overlay_vp_bits[0],
+            video_float_bits(active->viewport.x));
+      retro_atomic_store_relaxed_int(&video_st->overlay_vp_bits[1],
+            video_float_bits(active->viewport.y));
+      retro_atomic_store_relaxed_int(&video_st->overlay_vp_bits[2],
+            video_float_bits(active->viewport.w));
+      retro_atomic_store_relaxed_int(&video_st->overlay_vp_bits[3],
+            video_float_bits(active->viewport.h));
+      retro_atomic_store_release_int(&video_st->overlay_vp_seq, seq0 + 2);
    }
    retro_atomic_store_release_int(&video_st->overlay_vp_flags, flags);
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-      slock_unlock(video_st->display_lock);
-#endif
    if (flags && active != logged)
    {
       RARCH_LOG("[Overlay] Applying viewport override!\n");
@@ -2633,12 +2646,14 @@ void video_driver_lock_new(void)
 {
 #ifdef HAVE_THREADS
    video_driver_state_t *video_st = &video_driver_st;
+#ifndef RETRO_ATOMIC_HAS_PTR
+   /* The volatile-backend title fallback's lock; see the field. */
    slock_free(video_st->display_lock);
-   slock_free(video_st->context_lock);
    video_st->display_lock = NULL;
+   video_st->display_lock = slock_new();
+#endif
+   slock_free(video_st->context_lock);
    video_st->context_lock = NULL;
-   if (!video_st->display_lock)
-      video_st->display_lock = slock_new();
    if (!video_st->context_lock)
       video_st->context_lock = slock_new();
 #ifdef VIDEO_TITLE_MAILBOX
@@ -2717,24 +2732,28 @@ void video_driver_set_viewport_core(void)
       aspectratio_lut[ASPECT_RATIO_CORE].value = core_aspect;
 }
 
-/* Atomically set and/or clear bits of video_driver_st.flags under
- * display_lock, the same lock video_driver_get_disp_flags() takes.
- * Callers must not hold display_lock already; this is a leaf helper.
- * A set/get pair around a |= would not do: the read-modify-write would
- * straddle two separate critical sections. */
+/* Set and/or clear bits of video_driver_st.flags in one atomic step:
+ * a fetch_and followed by a fetch_or would straddle two RMWs, with a
+ * window where the cleared bits are gone and the set bits not yet
+ * there. The CAS loop keeps the combined edit indivisible; the one
+ * backend without CAS is the volatile fallback for single-core
+ * platforms, where the two-step cannot be observed mid-flight. */
 void video_driver_modify_disp_flags(uint32_t set_bits, uint32_t clear_bits)
 {
    video_driver_state_t *video_st = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
+#ifdef RETRO_ATOMIC_HAS_CAS
    {
-      slock_lock(video_st->display_lock);
-      video_st->flags = (video_st->flags & ~clear_bits) | set_bits;
-      slock_unlock(video_st->display_lock);
-      return;
+      int old_flags;
+      do
+      {
+         old_flags = retro_atomic_load_relaxed_int(&video_st->flags);
+      } while (!retro_atomic_cas_int(&video_st->flags, old_flags,
+            (int)((((uint32_t)old_flags) & ~clear_bits) | set_bits)));
    }
+#else
+   retro_atomic_fetch_and_int(&video_st->flags, (int)~clear_bits);
+   retro_atomic_fetch_or_int(&video_st->flags, (int)set_bits);
 #endif
-   video_st->flags = (video_st->flags & ~clear_bits) | set_bits;
 }
 
 static retro_atomic_int_t video_cache_context_ack
@@ -2758,17 +2777,7 @@ void video_driver_cache_context_ack_clear(void)
 uint32_t video_driver_get_disp_flags(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->display_lock)
-   {
-      uint32_t tmp;
-      slock_lock(video_st->display_lock);
-      tmp = video_st->flags;
-      slock_unlock(video_st->display_lock);
-      return tmp;
-   }
-#endif
-   return video_st->flags;
+   return (uint32_t)retro_atomic_load_acquire_int(&video_st->flags);
 }
 
 unsigned video_driver_hdr_max_mode(void)
@@ -3344,19 +3353,28 @@ void video_driver_update_viewport(
    {
       int flags;
       float ol_vp[4];
-#ifdef HAVE_THREADS
-      if (video_st->display_lock)
-         slock_lock(video_st->display_lock);
-#endif
       flags    = retro_atomic_load_acquire_int(&video_st->overlay_vp_flags);
-      ol_vp[0] = video_st->overlay_vp[0];
-      ol_vp[1] = video_st->overlay_vp[1];
-      ol_vp[2] = video_st->overlay_vp[2];
-      ol_vp[3] = video_st->overlay_vp[3];
-#ifdef HAVE_THREADS
-      if (video_st->display_lock)
-         slock_unlock(video_st->display_lock);
-#endif
+      /* Seqlock read: retry while a rewrite is in flight (odd) or
+       * landed across the copy (changed). Rewrites happen at overlay
+       * load, so the loop converges immediately. Shaped so no
+       * comparison ever sees an unset counter. */
+      for (;;)
+      {
+         int s1 = retro_atomic_load_acquire_int(&video_st->overlay_vp_seq);
+         if (s1 & 1)
+            continue;
+         ol_vp[0] = video_bits_float(retro_atomic_load_relaxed_int(
+               &video_st->overlay_vp_bits[0]));
+         ol_vp[1] = video_bits_float(retro_atomic_load_relaxed_int(
+               &video_st->overlay_vp_bits[1]));
+         ol_vp[2] = video_bits_float(retro_atomic_load_relaxed_int(
+               &video_st->overlay_vp_bits[2]));
+         ol_vp[3] = video_bits_float(retro_atomic_load_relaxed_int(
+               &video_st->overlay_vp_bits[3]));
+         retro_atomic_thread_fence_acquire();
+         if (retro_atomic_load_relaxed_int(&video_st->overlay_vp_seq) == s1)
+            break;
+      }
       if (flags & OVERLAY_HAS_VIEWPORT)
       {
          /* Calculate overlay's viewport bounds in pixels */
@@ -4484,17 +4502,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #ifdef HAVE_THREADS
    bool is_threaded                        =
          video_driver_thread_wrapper_active();
-   /* Under the wrapper the video thread's drivers change their own bits
-    * of 'flags' under display_lock; one read of the word, under it */
-   if (is_threaded && video_st->display_lock)
-   {
-      slock_lock(video_st->display_lock);
-      disp_flags                           = video_st->flags;
-      slock_unlock(video_st->display_lock);
-   }
-   else
 #endif
-      disp_flags                           = video_st->flags;
+   /* The video thread's drivers edit their bits of 'flags' through
+    * the atomic funnel; one acquire read sees them whole. */
+   disp_flags                              =
+         (uint32_t)retro_atomic_load_acquire_int(&video_st->flags);
 
    custom_vp                               = &settings->video_vp_custom;
 #ifdef HAVE_GFX_WIDGETS
@@ -4918,7 +4930,7 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
       void *ctx_data              = (void*)video_st->context_data;
       if (ctx->get_flags)
       {
-         if (video_st->flags & VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS)
+         if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS)
          {
             flags->flags     = video_st->deferred_flag_data.flags;
             video_driver_modify_disp_flags(0, VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS);
@@ -5228,7 +5240,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    }
 
    if (     settings->bools.video_fullscreen
-         || (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN))
+         || ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_FORCE_FULLSCREEN))
    {
       width  = settings->uints.video_fullscreen_x;
       height = settings->uints.video_fullscreen_y;
@@ -5382,7 +5394,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video.width                       = width;
    video.height                      = height;
    video.fullscreen                  = settings->bools.video_fullscreen
-         || (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN);
+         || ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_FORCE_FULLSCREEN);
    video.vsync                       = settings->bools.video_vsync
          && !settings->bools.video_scanline_sync
          && (!(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK));
@@ -5409,7 +5421,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
     * gets the core's frames as they are, in the core's format */
    video.rgb32                       =
             (video_st->state_filter && settings->bools.video_filter_enable)
-         ? (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
+         ? ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_STATE_OUT_RGB32)
          : (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
          || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010
          || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010);

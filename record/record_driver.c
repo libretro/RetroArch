@@ -421,7 +421,7 @@ bool recording_init(void)
 
          params.pix_fmt      = FFEMU_PIX_RGB565;
 
-         if (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
+         if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_STATE_OUT_RGB32)
             params.pix_fmt = FFEMU_PIX_ARGB8888;
 
          rarch_softfilter_get_max_output_size(

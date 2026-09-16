@@ -2725,7 +2725,7 @@ static bool gl1_alive(void *data)
    gl1_t *gl1           = (gl1_t*)data;
 
    /* Read from local bookkeeping rather than video_st (which would
-    * acquire context_lock + display_lock).  gl1->vp.full_* is
+    * acquire context_lock; display_lock is gone, its state atomic).  gl1->vp.full_* is
     * written at every set_size call site in this driver. */
    temp_width  = gl1->vp.full_width;
    temp_height = gl1->vp.full_height;

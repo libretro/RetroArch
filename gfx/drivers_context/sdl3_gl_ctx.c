@@ -74,7 +74,7 @@ static void sdl3_ctx_destroy(void *data)
    if (!sdl)
       return;
 
-   if (sdl->ctx && (video_st->flags & VIDEO_FLAG_CACHE_CONTEXT))
+   if (sdl->ctx && ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_CACHE_CONTEXT))
    {
       /* hw_render.cache_context reinit: keep the context alive for
        * the next set_video_mode instead of destroying it. */

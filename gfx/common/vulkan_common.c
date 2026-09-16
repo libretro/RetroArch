@@ -3242,7 +3242,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       vkDestroyDebugUtilsMessengerEXT(vk->context.instance, vk->context.debug_callback, NULL);
 #endif
 
-   video_st_flags              = video_st->flags;
+   video_st_flags              = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
 
    if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
    {

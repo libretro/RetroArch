@@ -1145,7 +1145,13 @@ typedef struct
     * the main thread only, once the wrapper is built and once it has
     * been torn down and the thread joined. */
    bool thread_wrapper_active;
+#if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_PTR)
+   /* Only the backend without pointer atomics still has a lock here,
+    * and only for the window-title fallback protocol: the flags and
+    * the overlay viewport it used to guard are atomic now, and on
+    * every other backend the title rides the mailbox. */
    slock_t *display_lock;
+#endif
    slock_t *context_lock;
 #endif
 
@@ -1174,7 +1180,11 @@ typedef struct
    uintptr_t display;
    uintptr_t window;
 
-   uint32_t flags;
+   /* VIDEO_FLAG_* bits. Atomic: read with relaxed loads anywhere,
+    * modified only through video_driver_modify_disp_flags(), whose
+    * combined clear-then-set is one CAS step where the backend has
+    * one. The display lock this used to ride is gone. */
+   retro_atomic_int_t flags;
    /* Display state only the main thread writes and reads - the
     * VIDEO_FLAG_WIDGETS_* bits and VIDEO_FLAG_ACTIVE, several of them
     * changed every frame - apart from 'flags', which the video
@@ -1212,7 +1222,13 @@ typedef struct
     * OVERLAY_VIEWPORT_FILL) alone says whether there is one; the
     * rectangle - x, y, w, h - is read and written under display_lock. */
    retro_atomic_int_t overlay_vp_flags;
-   float overlay_vp[4];
+   /* x, y, w, h as float bits in atomic ints, under a seqlock:
+    * overlay_vp_seq is bumped odd before a rewrite and even after,
+    * and a reader retries while it is odd or changed across the
+    * copy. Written on the main thread at overlay load, read on
+    * whichever thread scales the viewport. */
+   retro_atomic_int_t overlay_vp_seq;
+   retro_atomic_int_t overlay_vp_bits[4];
 #endif
    unsigned scale_width;
    unsigned scale_height;
