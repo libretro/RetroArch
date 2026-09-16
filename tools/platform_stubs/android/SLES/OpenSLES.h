@@ -20,8 +20,8 @@ typedef struct { SLuint32 formatType, numChannels, samplesPerSec, bitsPerSample,
    containerSize, channelMask, endianness; } SLDataFormat_PCM;
 typedef struct { void *pLocator, *pFormat; } SLDataSource;
 typedef struct { void *pLocator, *pFormat; } SLDataSink;
-typedef struct { SLuint32 locatorType; void *outputMix; } SLDataLocator_OutputMix;
 struct SLObjectItf_; typedef const struct SLObjectItf_ * const * SLObjectItf;
+typedef struct { SLuint32 locatorType; SLObjectItf outputMix; } SLDataLocator_OutputMix;
 struct SLEngineItf_; typedef const struct SLEngineItf_ * const * SLEngineItf;
 struct SLPlayItf_;   typedef const struct SLPlayItf_ * const * SLPlayItf;
 struct SLObjectItf_ {

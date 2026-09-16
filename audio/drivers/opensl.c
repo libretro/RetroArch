@@ -24,7 +24,11 @@
 #include <retro_atomic.h>
 #include <retro_math.h>
 #include <retro_timers.h>
-#include <features/features_cpu.h>
+#include <linux/futex.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <errno.h>
+#include <limits.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -75,6 +79,9 @@ typedef struct sl
     * ARM/AArch64, so the reads need acquire semantics to pair with
     * the acq_rel RMWs - the previous plain volatile reads had none. */
    retro_atomic_int_t buffered_blocks;
+   /* Writers parked on buffered_blocks' futex; the callback skips
+    * its wake syscall while this is zero. */
+   retro_atomic_int_t waiters;
    /* Frames the device has finished with, for the sink rate estimate.
     * The callback fires once per block the device has played, so it is
     * the device's own clock ticking - the same thing the WASAPI pump
@@ -86,13 +93,36 @@ typedef struct sl
    bool is_paused;
 } sl_t;
 
-/* Fully lock-free: two atomic counters and nothing else. The writer
- * side polls the block counter at millisecond grain instead of
- * waiting on a condition, so this callback takes no lock and makes
- * no syscall on libwilhelm's AudioTrack thread - and the driver owns
- * no mutex any thread could ever touch after free (#19561's poisoned
- * mutex is libwilhelm's own; see sl_free). A millisecond of wake
- * latency is noise against a block period of tens of milliseconds. */
+/* Fully lock-free, no sleep, no clock: the writer parks in the
+ * kernel on the block counter's own address (futex - this driver is
+ * Android-only, and Android is Linux), with a relative timeout as
+ * the stall bound, so there is no deadline arithmetic and no wall
+ * clock anywhere in the hot path. FUTEX_WAIT's compare-and-block
+ * removes even the lost-wakeup window the old condition variable had
+ * to tolerate: a counter change between the caller's test and the
+ * kernel's compare makes the wait return immediately. The driver
+ * owns no mutex any thread could ever touch after free (#19561's
+ * poisoned mutex is libwilhelm's own; see sl_free), and this
+ * callback makes no syscall unless a writer is actually parked. */
+static int sl_futex_wait(retro_atomic_int_t *addr, int expected,
+      int64_t timeout_us)
+{
+   struct timespec ts;
+   ts.tv_sec  = (time_t)(timeout_us / 1000000);
+   ts.tv_nsec = (long)((timeout_us % 1000000) * 1000);
+   /* Relative timeout by definition of FUTEX_WAIT.  EAGAIN: the
+    * value already moved; EINTR: retry at the caller's loop. */
+   if (syscall(SYS_futex, (int*)addr, FUTEX_WAIT_PRIVATE,
+            expected, &ts, NULL, 0) == 0)
+      return 0;
+   return errno;
+}
+
+static void sl_futex_wake(retro_atomic_int_t *addr)
+{
+   syscall(SYS_futex, (int*)addr, FUTEX_WAKE_PRIVATE, INT_MAX,
+         NULL, NULL, 0);
+}
 static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
 {
    sl_t *sl = (sl_t*)ctx;
@@ -100,6 +130,10 @@ static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
    /* A block the device has played: device time, whatever the writer
     * managed to supply. */
    retro_atomic_fetch_add_size(&sl->consumed, sl->frames_per_block);
+   /* Wake a parked writer; the common, unthrottled case loads one
+    * atomic and skips the syscall. */
+   if (retro_atomic_load_acquire_int(&sl->waiters))
+      sl_futex_wake(&sl->buffered_blocks);
 }
 
 /* Frames the device has taken since the player started. Counting the
@@ -142,9 +176,13 @@ static void sl_free(void *data)
       if (sl->buffer_queue)
          (*sl->buffer_queue)->Clear(sl->buffer_queue);
       {
-         retro_time_t deadline = cpu_features_get_time_usec() + 50000;
-         SLuint32 state        = SL_PLAYSTATE_PLAYING;
-         while (cpu_features_get_time_usec() < deadline)
+         /* A foreign API's state transition has nothing to park on,
+          * so this one confirmation loop polls - iteration-bounded,
+          * cold path, once per session.  Normally the very first
+          * read already says STOPPED. */
+         int i;
+         SLuint32 state = SL_PLAYSTATE_PLAYING;
+         for (i = 0; i < 50; i++)
          {
             if (   SLPlayItf_GetPlayState(sl->player, &state)
                      != SL_RESULT_SUCCESS
@@ -384,29 +422,28 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
       }
       else
       {
-         /* Bounded poll on the atomic block counter - the driver's
-          * only throttle, and deliberately not a condition wait: the
-          * predicate is already an atomic the callback updates, so a
-          * mutex here guarded nothing but the wait itself, and a
-          * millisecond of poll grain is noise against a block period
-          * of tens of milliseconds.  The bound exists because if the
-          * device stops consuming - device loss, a player error -
-          * there is no callback coming, no shutdown or error signal
-          * anywhere in this driver, and an unbounded wait parked the
-          * thread the core runs on for good. */
+         /* Park on the block counter itself - the driver's only
+          * throttle.  The kernel's compare-and-block means a callback
+          * landing between our test and the wait returns immediately;
+          * the relative timeout is the stall bound, needed because a
+          * dead device sends no callback, no shutdown or error signal
+          * exists anywhere in this driver, and an unbounded wait
+          * parked the thread the core runs on for good.  EINTR
+          * retries; the window it re-arms is the stall bound, which
+          * detects dead devices and owes no precision. */
          bool stalled = false;
-         retro_time_t deadline = cpu_features_get_time_usec()
-               + OPENSL_STALL_TIMEOUT_US;
+         retro_atomic_fetch_add_int(&sl->waiters, 1);
          while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
                == (int)sl->buf_count)
          {
-            if (cpu_features_get_time_usec() >= deadline)
+            if (sl_futex_wait(&sl->buffered_blocks, (int)sl->buf_count,
+                     OPENSL_STALL_TIMEOUT_US) == ETIMEDOUT)
             {
                stalled = true;
                break;
             }
-            retro_sleep(1);
          }
+         retro_atomic_fetch_sub_int(&sl->waiters, 1);
 
          /* Report what was enqueued so far, exactly as the nonblock
           * path above does when the queue is full.  Any partial block
@@ -473,19 +510,22 @@ static size_t sl_wait_writable(void *data, size_t len)
                + (sl->buf_size - sl->buffer_ptr));
       if (avail >= len)
          return avail;
-      /* Same bounded poll as sl_write's throttle: wait for the block
-       * counter to move, give up as stalled after the same timeout. */
+      /* Same parking as sl_write's throttle: block until the counter
+       * moves off the value just sampled, stalled after the same
+       * timeout.  The kernel compares against `buffered`, so a change
+       * since the sample falls straight through. */
+      retro_atomic_fetch_add_int(&sl->waiters, 1);
+      while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+            == buffered)
       {
-         retro_time_t deadline = cpu_features_get_time_usec()
-               + OPENSL_STALL_TIMEOUT_US;
-         while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
-               == buffered)
+         if (sl_futex_wait(&sl->buffered_blocks, buffered,
+                  OPENSL_STALL_TIMEOUT_US) == ETIMEDOUT)
          {
-            if (cpu_features_get_time_usec() >= deadline)
-               return 0;
-            retro_sleep(1);
+            retro_atomic_fetch_sub_int(&sl->waiters, 1);
+            return 0;
          }
       }
+      retro_atomic_fetch_sub_int(&sl->waiters, 1);
    }
 }
 
