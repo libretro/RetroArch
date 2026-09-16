@@ -3430,6 +3430,14 @@ static const video_driver_t video_thread = {
 #endif
    video_thread_get_poke_interface,
    NULL, /* wrap_type_to_enum */
+   /* Deliberately absent: deferred shader loading is main-thread
+    * tick machinery stepping a driver-owned partial chain, and under
+    * the wrapper the chain lives on the video thread - the parse-side
+    * gate (!video_st->threaded in video_shader_parse.c) is the
+    * primary guard against that race, and this NULL is the backstop
+    * that makes the capability test fail even if the gate is ever
+    * bypassed. Threaded video takes the synchronous fallback, whose
+    * driver calls are blocking wrapper commands. */
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
