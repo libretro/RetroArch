@@ -1291,18 +1291,35 @@ typedef struct
    char window_title[512];
    char window_title_prev[512];
    /* A new window title waits for the thread that draws. Where the
-    * atomics have pointer ops (RETRO_ATOMIC_HAS_PTR) it waits as an
-    * immutable heap copy in window_title_pending - a one-slot atomic
-    * mailbox: the main thread exchanges a fresh copy in (freeing any
-    * title never taken), video_driver_get_window_title() exchanges it
-    * out. No tearing is possible and neither side takes a lock;
-    * window_title is then main-thread scratch. On the one backend
-    * without pointer ops the old protocol stands: window_title is
-    * shared, rewritten and copied under display_lock, with
-    * window_title_update as the pending bit read first so a frame
-    * with no new title takes no lock. */
+    * atomics have an exchange (RETRO_ATOMIC_HAS_PTR marks the same
+    * backends that carry it) it crosses through a three-slot buffer
+    * published by index, so the frame path allocates nothing.
+    * window_title_slot holds (slot + 1), or 0 for empty. The main
+    * thread fills a free slot and publishes it with an exchange;
+    * video_driver_get_window_title() exchanges the word back to 0
+    * and copies the slot out. Three slots make the protocol correct
+    * without any timing assumption: at any moment at most one slot
+    * is published and at most one is held by a consumer mid-copy
+    * (the consumer takes sequentially, so it holds only the slot it
+    * exchanged out last). The producer's exchange tells it which is
+    * which - a nonzero return is the untaken previous publish (the
+    * consumer cannot be holding it, so it is free to reuse); a zero
+    * return means the consumer took the previous publish and may
+    * still be copying it, so the producer writes the remaining
+    * third slot. The held slot is therefore never rewritten, no
+    * matter how long the copy stalls. One word flips per publish and
+    * per take, no allocation, no lock; window_title is main-thread
+    * scratch. On the one backend without the exchange the old
+    * protocol stands: window_title is shared, rewritten and copied
+    * under display_lock, with window_title_update as the pending bit
+    * read first so a frame with no new title takes no lock. */
 #if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
-   retro_atomic_ptr_t window_title_pending;
+   char window_title_slot_buf[3][512];
+   retro_atomic_int_t window_title_slot;
+   /* Producer-owned (main thread): the slot the next publish fills,
+    * and the slot the previous publish used. */
+   unsigned window_title_next_slot;
+   unsigned window_title_last_slot;
 #endif
    retro_atomic_int_t window_title_update;
    char gpu_api_version_string[128];

@@ -2649,13 +2649,12 @@ void video_driver_lock_new(void)
 #endif
 #ifdef VIDEO_TITLE_MAILBOX
    /* Runs before the video thread exists; drop anything stale from a
-    * previous driver's life and start empty. */
-   {
-      char *stale = (char*)retro_atomic_exchange_ptr(
-            &video_st->window_title_pending, NULL);
-      if (stale)
-         free(stale);
-   }
+    * previous driver's life and start empty. Nothing to free - the
+    * slots are inline storage. next/last start distinct so the
+    * third-slot arithmetic is valid from the first publish. */
+   retro_atomic_store_release_int(&video_st->window_title_slot, 0);
+   video_st->window_title_next_slot = 0;
+   video_st->window_title_last_slot = 1;
 #endif
 #endif
 }
@@ -4371,19 +4370,33 @@ bool video_driver_has_focus(void)
 #endif
 
 #ifdef VIDEO_TITLE_MAILBOX
-/* Publish window_title (main-thread scratch here) as the pending
- * title. Failure to allocate skips one title update - the next fps
- * interval brings another. */
+/* Publish window_title (main-thread scratch here) through the
+ * three-slot buffer; see the field comment in video_driver.h for the
+ * protocol and why three slots need no timing assumption. Latest
+ * wins: a publish the consumer never took comes back from the
+ * exchange and is reused. */
 static void video_title_publish(video_driver_state_t *video_st)
 {
-   char *copy = strdup(video_st->window_title);
-   if (copy)
-   {
-      char *stale = (char*)retro_atomic_exchange_ptr(
-            &video_st->window_title_pending, copy);
-      if (stale)
-         free(stale);
-   }
+   unsigned pub = video_st->window_title_next_slot;
+   int prev;
+
+   strlcpy(video_st->window_title_slot_buf[pub],
+         video_st->window_title,
+         sizeof(video_st->window_title_slot_buf[pub]));
+   prev = retro_atomic_exchange_int(&video_st->window_title_slot,
+         (int)(pub + 1u));
+
+   if (prev != 0)
+      /* The previous publish was never taken: it cannot be the slot
+       * a consumer is copying, so it is the next one to fill. */
+      video_st->window_title_next_slot = (unsigned)(prev - 1);
+   else
+      /* The consumer took the previous publish and may still be
+       * copying that slot: write the slot that is neither it nor
+       * the one just published. */
+      video_st->window_title_next_slot =
+            3u - pub - video_st->window_title_last_slot;
+   video_st->window_title_last_slot = pub;
 }
 #endif
 
@@ -4408,16 +4421,15 @@ size_t video_driver_get_window_title(char *s, size_t len)
 
 #ifdef VIDEO_TITLE_MAILBOX
    /* Nearly every frame has no new title */
-   if (!retro_atomic_load_acquire_ptr(&video_st->window_title_pending))
+   if (!retro_atomic_load_acquire_int(&video_st->window_title_slot))
       return 0;
    {
-      char *taken = (char*)retro_atomic_exchange_ptr(
-            &video_st->window_title_pending, NULL);
-      if (taken)
-      {
-         n = strlcpy(s, taken, len);
-         free(taken);
-      }
+      int published = retro_atomic_exchange_int(
+            &video_st->window_title_slot, 0);
+      if (published)
+         n = strlcpy(s,
+               video_st->window_title_slot_buf[published - 1],
+               len);
    }
 #else
    /* Nearly every frame has no new title */

@@ -8,11 +8,12 @@ LIBRETRO_COMM_DIR := ../../../libretro-common
 # retro_miscellaneous.h are header-only.
 SOURCES := \
 	window_title_mailbox_test.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 \
+CFLAGS  += $(EXTRA_CFLAGS) -Wall -std=gnu99 -g -O1 \
            -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lpthread -lrt
 
