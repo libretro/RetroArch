@@ -16,6 +16,7 @@
  */
 
 #include <compat/strl.h>
+#include <retro_atomic.h>
 
 #include "../gfx_widgets.h"
 #include "../gfx_animation.h"
@@ -48,6 +49,14 @@ struct gfx_widget_screenshot_state
    char filename[256];
    bool loaded;
    bool state_slot;
+
+   /* The flash-speed and duration settings, latched here on the main
+    * thread at the widget's two entry points. The fadeout and end
+    * animation callbacks fire on the draw thread and must not read
+    * the live settings there; they read these instead. Staleness
+    * across a settings change costs one animation's timing. */
+   retro_atomic_int_t flash_mode;
+   retro_atomic_int_t show_duration;
 };
 
 typedef struct gfx_widget_screenshot_state gfx_widget_screenshot_state_t;
@@ -72,10 +81,11 @@ static gfx_widget_screenshot_state_t p_w_screenshot_st = {
    false          /* state_slot */
 };
 
+/* Animation callback: the draw thread. Settings come from the latch,
+ * never live. */
 static void gfx_widget_screenshot_fadeout(void *userdata)
 {
    gfx_animation_ctx_entry_t entry;
-   settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)userdata;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
 
@@ -86,7 +96,7 @@ static void gfx_widget_screenshot_fadeout(void *userdata)
    entry.target_value   = 0.0f;
    entry.userdata       = NULL;
 
-   switch (settings->uints.notification_show_screenshot_flash)
+   switch (retro_atomic_load_relaxed_int(&state->flash_mode))
    {
       case NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST:
          entry.duration = SCREENSHOT_DURATION_OUT/2;
@@ -141,8 +151,13 @@ static void gfx_widget_state_slot_show_state(
       void *data,
       const char *shotname, const char *filename)
 {
+   settings_t *settings                 = config_get_ptr();
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
 
+   retro_atomic_store_relaxed_int(&state->flash_mode,
+         (int)settings->uints.notification_show_screenshot_flash);
+   retro_atomic_store_relaxed_int(&state->show_duration,
+         (int)settings->uints.notification_show_screenshot_duration);
    state->state_slot = true;
 
    if (!shotname || !filename)
@@ -172,6 +187,10 @@ static void gfx_widget_screenshot_taken_state(
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
 
+   retro_atomic_store_relaxed_int(&state->flash_mode,
+         (int)settings->uints.notification_show_screenshot_flash);
+   retro_atomic_store_relaxed_int(&state->show_duration,
+         (int)settings->uints.notification_show_screenshot_duration);
    state->state_slot = false;
 
    if (settings->uints.notification_show_screenshot_flash != NOTIFICATION_SHOW_SCREENSHOT_FLASH_OFF)
@@ -193,13 +212,15 @@ void gfx_widget_screenshot_taken(
    gfx_widgets_state_unlock();
 }
 
+/* Animation callback: the draw thread. Settings come from the latch,
+ * never live. */
 static void gfx_widget_screenshot_end(void *userdata)
 {
    gfx_animation_ctx_entry_t entry;
-   settings_t *settings                 = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)userdata;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
-   unsigned duration                    = settings->uints.notification_show_screenshot_duration;
+   unsigned duration                    = (unsigned)
+         retro_atomic_load_relaxed_int(&state->show_duration);
 
    entry.cb             = gfx_widget_screenshot_dispose;
    entry.easing_enum    = EASING_OUT_QUAD;
