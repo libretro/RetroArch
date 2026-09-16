@@ -7079,12 +7079,15 @@ MUI_NOINLINE static void materialui_render_entry_touch_feedback(
    }
 }
 
+/* Frame path: runs on the draw thread under threaded video, so the
+ * display preferences come from the video_info snapshot the main
+ * thread assembled, never the live settings. */
 MUI_NOINLINE static void materialui_render_header(
       materialui_handle_t *mui,
       const uintptr_t *tex_list,
       struct menu_state *menu_st,
       menu_list_t *menu_list,
-      settings_t *settings,
+      video_frame_info_t *video_info,
       gfx_display_t *p_disp,
       void *userdata,
       unsigned video_width, unsigned video_height,
@@ -7109,11 +7112,11 @@ MUI_NOINLINE static void materialui_render_header(
    bool use_landscape_layout             = (!(mui->flags & MUI_FLAG_IS_PORTRAIT)) &&
          (mui->last_landscape_layout_optimization != MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED);
    const char *menu_title                = mui->menu_title;
-   bool battery_level_enable             = settings->bools.menu_battery_level_enable;
-   bool menu_timedate_enable             = settings->bools.menu_timedate_enable;
-   unsigned menu_timedate_style          = settings->uints.menu_timedate_style;
-   unsigned menu_timedate_date_separator = settings->uints.menu_timedate_date_separator;
-   bool menu_core_enable                 = settings->bools.menu_core_enable;
+   bool battery_level_enable             = video_info->battery_level_enable;
+   bool menu_timedate_enable             = video_info->timedate_enable;
+   unsigned menu_timedate_style          = video_info->menu.timedate_style;
+   unsigned menu_timedate_date_separator = video_info->menu.timedate_date_separator;
+   bool menu_core_enable                 = video_info->menu.core_enable;
 
    menu_title_buf[0]  = '\0';
 
@@ -8498,7 +8501,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    int list_x_offset;
    math_matrix_4x4 mymat    = {{ 0.0f }};
    materialui_handle_t *mui       = (materialui_handle_t*)data;
-   settings_t *settings           = config_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
    struct menu_state *menu_st     = menu_state_get_ptr();
@@ -8689,7 +8691,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    /* Draw title + system bar */
    materialui_render_header(mui, tex_list, menu_st, menu_list,
-         settings, p_disp, userdata,
+         video_info, p_disp, userdata,
          video_width, video_height, &mymat);
 
    /* Draw navigation bar */
