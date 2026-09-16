@@ -116,8 +116,19 @@ def source_entries(root):
         except OSError:
             continue
         for m in STHREAD_RE.finditer(text):
+            # A create-call forwarding a function-pointer parameter -
+            # sthread_create(thread_func, ...) inside rthreads.c's own
+            # sthread_create - names no function. The parameter is
+            # declared as (*name)( in the same file; a real entry never
+            # is.
+            if re.search(r"\(\s*\*\s*%s\s*\)\s*\(" % re.escape(m.group(1)),
+                         text):
+                continue
             entries.setdefault(m.group(1), rel)
         for m in PTHREAD_RE.finditer(text):
+            if re.search(r"\(\s*\*\s*%s\s*\)\s*\(" % re.escape(m.group(1)),
+                         text):
+                continue
             entries.setdefault(m.group(1), rel)
         for m in HANDLER_RE.finditer(text):
             entries.setdefault(m.group(1), rel)
