@@ -141,8 +141,10 @@ static bool gfx_ctx_w_vk_set_resize(void *data,
    if (vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval))
    {
       if (win32_vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
+      {
          vulkan_acquire_next_image(&win32_vk);
-      win32_vk.context.flags            |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+         win32_vk.context.flags         |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+      }
       win32_vk.flags                    &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
       return true;

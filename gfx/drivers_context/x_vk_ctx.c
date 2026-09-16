@@ -210,8 +210,10 @@ static bool gfx_ctx_x_vk_set_resize(void *data,
    }
 
    if (x->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
+   {
       vulkan_acquire_next_image(&x->vk);
-   x->vk.context.flags            |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+      x->vk.context.flags         |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   }
    x->vk.flags                    &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    return true;
 }
