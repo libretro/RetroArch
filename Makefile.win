@@ -1,6 +1,14 @@
 TARGET = retroarch.exe
 
 HAVE_SCREENSHOTS = 1
+# DEFINES below has carried -DHAVE_OVERLAY since before the object
+# list moved to Makefile.common, which keys off these variables: the
+# define without the variable compiled overlay callers against
+# overlay objects that were never built, and screenshots without
+# rpng could not encode. Set the variables so definitions and
+# objects agree again.
+HAVE_OVERLAY = 1
+HAVE_RPNG = 1
 HAVE_AUDIOMIXER = 1
 HAVE_RWAV = 1
 HAVE_DINPUT = 1
@@ -95,7 +103,10 @@ OBJDIR           := obj-w32
 
 OS               := Win32
 OBJ              :=
-LIBS             := -lm
+# imm32: win32_common.c pulls it with #pragma comment(lib), which
+# MSVC honours and GNU ld silently ignores - link it explicitly or
+# the IME composition calls are undefined under mingw.
+LIBS             := -lm -limm32
 DEFINES			  :=
 DEFINES          += -I. -Ilibretro-common/include -DRARCH_INTERNAL -DHAVE_SCREENSHOTS -DHAVE_OVERLAY
 LDFLAGS          := -L. -static-libgcc

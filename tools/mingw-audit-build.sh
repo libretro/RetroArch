@@ -8,10 +8,8 @@
 # from older mingw-w64 (d3dkmthk.h; the unversioned d3d12 serialize
 # PFN; three D3D interface names mapped to IUnknown - layout is
 # irrelevant, only call edges are read), and imm32 is appended by
-# relinking manually because Makefile.win assigns LIBS with := so no
-# variable reaches the link from outside. HAVE_OVERLAY and HAVE_RPNG
-# are set because Makefile.win's DEFINES already assume them while
-# the object list keys off the make variables.
+# (Makefile.win now links imm32 and sets HAVE_OVERLAY/HAVE_RPNG
+# itself, so this script no longer compensates for either.)
 # Usage: tools/mingw-audit-build.sh   (then:)
 #   python3 tools/thread_read_audit.py --binary retroarch.exe \
 #     --objdump x86_64-w64-mingw32-objdump
@@ -22,8 +20,6 @@ export CFLAGS="-I$STUBS -include $STUBS/d3d12_fixup.h \
 -DID3D12InfoQueue=IUnknown -DD3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP=17"
 MK="make -f Makefile.win HOST_PREFIX=x86_64-w64-mingw32- \
 CXX=x86_64-w64-mingw32-gcc HAVE_D3D11=1 HAVE_D3D12=1 HAVE_FREETYPE=0 \
-HAVE_CG=0 HAVE_XAUDIO=0 HAVE_OVERLAY=1 HAVE_RPNG=1"
-$MK -j"$(nproc)" || true   # everything except the exe rule's link
-$MK -n 2>/dev/null | grep "o retroarch.exe" | head -1 \
-   | sed 's/$/ -limm32/' | sh
+HAVE_CG=0 HAVE_XAUDIO=0"
+$MK -j"$(nproc)"
 ls -la retroarch.exe
