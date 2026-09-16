@@ -52,6 +52,7 @@ static const GUID ra_dsound_subtype_float =
      { 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71 } };
 #include <retro_atomic.h>
 #include <retro_spsc.h>
+#include <rthreads/retro_eventcount.h>
 #include <string/stdstring.h>
 
 #if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600 /*_WIN32_WINNT_VISTA */)
@@ -100,8 +101,12 @@ typedef struct dsound
     * tracks dsound_t; initialised in dsound_init, released in
     * dsound_free after the worker has been joined. */
    retro_spsc_t ring;
-
-   HANDLE      event;
+   /* The writer's park, notified by dsound_thread after each block it
+    * moves and once when it clears thread_alive. An eventcount rather
+    * than the auto-reset event it replaces: the notify is gated, so
+    * the steady state - writer keeping ahead, never waiting - costs
+    * the pump no syscall per chunk, where SetEvent always was one. */
+   retro_eventcount_t park;
 #ifdef HAVE_THREADS
    sthread_t *thread;
 #else
@@ -341,7 +346,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          if (!dsound_grab_region(ds, write_ptr, &region, res))
          {
             retro_atomic_store_release_int(&ds->thread_alive, 0);
-            SetEvent(ds->event);
+            retro_eventcount_notify(&ds->park);
             break;
          }
       }
@@ -388,7 +393,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          write_ptr -= ds->buffer_size;
 
       if (is_pull)
-         SetEvent(ds->event);
+         retro_eventcount_notify(&ds->park);
    }
 
    /* Return normally: under HAVE_THREADS this function runs inside the
@@ -470,8 +475,7 @@ static void dsound_free(void *data)
    if (ds->ds)
       IDirectSound_Release(ds->ds);
 
-   if (ds->event)
-      CloseHandle(ds->event);
+   retro_eventcount_free(&ds->park);
 
    /* Safe here and only here: dsound_stop_thread has joined the
     * consumer, so the ring has no live reader. */
@@ -668,8 +672,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    bufdesc.dwBufferBytes = ds->buffer_size;
    bufdesc.lpwfxFormat   = wf;
 
-   ds->event = CreateEvent(NULL, false, false, NULL);
-   if (!ds->event)
+   if (!retro_eventcount_init(&ds->park))
       goto error;
 
    /* The formats in the order they are given up: the layout as asked
@@ -844,8 +847,20 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
           * a period with no event is a play cursor that has stalled,
           * not a device gone: the write returns what went, and a lost
           * buffer still reports through the flag on the next call. */
-         if (avail == 0 && !(WaitForSingleObject(ds->event, DSOUND_TIMEOUT) == WAIT_OBJECT_0))
-            break;
+         if (avail == 0)
+         {
+            /* Space and liveness re-checked inside the window, so the
+             * pump's notify - including its last one, clearing
+             * thread_alive - cannot fall between the test and the
+             * park. */
+            int key = retro_eventcount_prepare_wait(&ds->park);
+            if (   retro_spsc_write_avail(&ds->ring)
+                || !retro_atomic_load_acquire_int(&ds->thread_alive))
+               retro_eventcount_cancel_wait(&ds->park);
+            else if (!retro_eventcount_commit_wait_timeout(&ds->park,
+                     key, (int64_t)DSOUND_TIMEOUT * 1000))
+               break;
+         }
       }
    }
 
@@ -877,8 +892,15 @@ static size_t dsound_wait_writable(void *data, size_t len)
        * keeps moving blocks but never frees enough. */
       if (--laps < 0)
          return 0;
-      if (WaitForSingleObject(ds->event, DSOUND_TIMEOUT) != WAIT_OBJECT_0)
-         return 0;
+      {
+         int key = retro_eventcount_prepare_wait(&ds->park);
+         if (   retro_spsc_write_avail(&ds->ring) >= len
+             || !retro_atomic_load_acquire_int(&ds->thread_alive))
+            retro_eventcount_cancel_wait(&ds->park);
+         else if (!retro_eventcount_commit_wait_timeout(&ds->park,
+                  key, (int64_t)DSOUND_TIMEOUT * 1000))
+            return 0;
+      }
    }
 }
 
