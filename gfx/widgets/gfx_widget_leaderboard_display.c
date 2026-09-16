@@ -21,6 +21,7 @@
 
 #include "../gfx_display.h"
 #include "../gfx_widgets.h"
+#include <queues/mpsc_stack.h>
 
 #include "../../cheevos/cheevos.h"
 
@@ -60,11 +61,41 @@ struct progress_tracker_info
 #define CHEEVO_LBOARD_LAST_FIXED_CHAR 0x3A
 
 /* TODO: rename; this file handles all achievement tracker information, not just leaderboards */
+/* Every mutation of this widget's state arrives from the cheevos
+ * thread as a whole command node on the lock-free MPSC stack below,
+ * and the draw thread's iterate drains and applies them in arrival
+ * order. From then on the arrays, the progress tracker and the two
+ * flags are draw-thread-only plain state: the frame renders and the
+ * visibility test reads with no lock, and the badge texture fetches,
+ * unloads and font-width queries all run on the draw thread, where
+ * those calls belong. */
+enum lbd_cmd_kind
+{
+   LBD_CMD_SET_TRACKER = 0,
+   LBD_CMD_CLEAR_TRACKERS,
+   LBD_CMD_SET_CHALLENGE,
+   LBD_CMD_CLEAR_CHALLENGES,
+   LBD_CMD_SET_PROGRESS,
+   LBD_CMD_SET_DISCONNECT,
+   LBD_CMD_SET_LOADING
+};
+
+struct lbd_cmd
+{
+   mpsc_stack_node_t link;  /* first: the stack's, from push to drain */
+   unsigned id;
+   uint8_t  kind;           /* enum lbd_cmd_kind */
+   bool     has_value;      /* SET_*: payload present; the two flag
+                             * kinds: the flag's value */
+   char     value[32];      /* tracker display / challenge badge /
+                             * progress text */
+   char     badge[16];      /* SET_PROGRESS: the badge name */
+};
+
+static mpsc_stack_t lbd_pending;
+
 struct gfx_widget_leaderboard_display_state
 {
-#ifdef HAVE_THREADS
-   slock_t* array_lock;
-#endif
    const dispgfx_widget_t *dispwidget_ptr;
    struct leaderboard_display_info tracker_info[CHEEVO_LBOARD_ARRAY_SIZE];
    struct challenge_display_info challenge_info[CHEEVO_CHALLENGE_ARRAY_SIZE];
@@ -91,6 +122,7 @@ static bool gfx_widget_leaderboard_display_init(
    memset(state, 0, sizeof(*state));
    state->dispwidget_ptr   = (const dispgfx_widget_t*)
       dispwidget_get_ptr();
+   mpsc_stack_init(&lbd_pending);
 
    return true;
 }
@@ -99,12 +131,15 @@ static void gfx_widget_leaderboard_display_free(void)
 {
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
+   mpsc_stack_node_t *link = mpsc_stack_drain(&lbd_pending);
+   while (link)
+   {
+      struct lbd_cmd *cmd = (struct lbd_cmd *)link;
+      link = link->next;
+      free(cmd);
+   }
    state->tracker_count   = 0;
    state->challenge_count = 0;
-#ifdef HAVE_THREADS
-   slock_free(state->array_lock);
-   state->array_lock      = NULL;
-#endif
    state->dispwidget_ptr  = NULL;
 }
 
@@ -127,9 +162,6 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
        !state->disconnected)
       return;
 
-#ifdef HAVE_THREADS
-   slock_lock(state->array_lock);
-#endif
 
    {
       float pure_white[16] = {
@@ -419,31 +451,40 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       }
    }
 
-#ifdef HAVE_THREADS
-   slock_unlock(state->array_lock);
-#endif
 }
 
 static void gfx_widgets_clear_leaderboard_displays_state(void)
 {
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
 
-#ifdef HAVE_THREADS
-   slock_lock(state->array_lock);
-#endif
 
    state->tracker_count = 0;
 
-#ifdef HAVE_THREADS
-   slock_unlock(state->array_lock);
-#endif
 }
 
+static void lbd_push(uint8_t kind, unsigned id,
+      const char *value, const char *badge, bool flag)
+{
+   struct lbd_cmd *cmd = (struct lbd_cmd *)malloc(sizeof(*cmd));
+   if (!cmd)
+      return;
+   cmd->kind      = kind;
+   cmd->id        = id;
+   cmd->has_value = value ? true : flag;
+   cmd->value[0]  = '\0';
+   cmd->badge[0]  = '\0';
+   if (value)
+      strlcpy(cmd->value, value, sizeof(cmd->value));
+   if (badge)
+      strlcpy(cmd->badge, badge, sizeof(cmd->badge));
+   mpsc_stack_push(&lbd_pending, &cmd->link);
+}
+
+/* The seven producers below run on the cheevos thread and touch only
+ * the command stack; no widget-state lock is involved. */
 void gfx_widgets_clear_leaderboard_displays(void)
 {
-   gfx_widgets_state_lock();
-   gfx_widgets_clear_leaderboard_displays_state();
-   gfx_widgets_state_unlock();
+   lbd_push(LBD_CMD_CLEAR_TRACKERS, 0, NULL, NULL, false);
 }
 
 static void gfx_widgets_set_leaderboard_display_state(unsigned id, const char* value)
@@ -451,9 +492,6 @@ static void gfx_widgets_set_leaderboard_display_state(unsigned id, const char* v
    unsigned i;
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
 
-#ifdef HAVE_THREADS
-   slock_lock(state->array_lock);
-#endif
 
    for (i = 0; i < state->tracker_count; ++i)
    {
@@ -522,38 +560,25 @@ static void gfx_widgets_set_leaderboard_display_state(unsigned id, const char* v
       }
    }
 
-#ifdef HAVE_THREADS
-   slock_unlock(state->array_lock);
-#endif
 }
 
 void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
 {
-   gfx_widgets_state_lock();
-   gfx_widgets_set_leaderboard_display_state(id, value);
-   gfx_widgets_state_unlock();
+   lbd_push(LBD_CMD_SET_TRACKER, id, value, NULL, false);
 }
 
 static void gfx_widgets_clear_challenge_displays_state(void)
 {
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
 
-#ifdef HAVE_THREADS
-   slock_lock(state->array_lock);
-#endif
 
    state->challenge_count = 0;
 
-#ifdef HAVE_THREADS
-   slock_unlock(state->array_lock);
-#endif
 }
 
 void gfx_widgets_clear_challenge_displays(void)
 {
-   gfx_widgets_state_lock();
-   gfx_widgets_clear_challenge_displays_state();
-   gfx_widgets_state_unlock();
+   lbd_push(LBD_CMD_CLEAR_CHALLENGES, 0, NULL, NULL, false);
 }
 
 static void gfx_widgets_set_challenge_display_state(unsigned id, const char* badge)
@@ -561,14 +586,11 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
    unsigned i;
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
 
-   /* important - this must be done outside the lock because it has the potential to need to
-    * lock the video thread, which may be waiting for the popup queue lock to render popups */
+   /* Draw-thread applier: the badge texture fetch runs here, on the
+    * thread the video driver expects it from. */
    uintptr_t badge_id     = badge ? rcheevos_get_badge_texture(badge, false, true) : 0;
    uintptr_t old_badge_id = 0;
 
-#ifdef HAVE_THREADS
-   slock_lock(state->array_lock);
-#endif
 
    for (i = 0; i < state->challenge_count; ++i)
    {
@@ -617,9 +639,6 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
       }
    }
 
-#ifdef HAVE_THREADS
-   slock_unlock(state->array_lock);
-#endif
 
    if (old_badge_id)
       video_driver_texture_unload(&old_badge_id);
@@ -627,11 +646,11 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
 
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
 {
-   gfx_widgets_state_lock();
-   gfx_widgets_set_challenge_display_state(id, badge);
-   gfx_widgets_state_unlock();
+   lbd_push(LBD_CMD_SET_CHALLENGE, id, badge, NULL, false);
 }
 
+/* Applier, draw thread: the badge fetch, the font width and the old
+ * texture's unload all belong to this thread. */
 static void gfx_widget_set_achievement_progress_state(const char* badge, const char* progress)
 {
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
@@ -664,9 +683,7 @@ static void gfx_widget_set_achievement_progress_state(const char* badge, const c
 
 void gfx_widget_set_achievement_progress(const char* badge, const char* progress)
 {
-   gfx_widgets_state_lock();
-   gfx_widget_set_achievement_progress_state(badge, progress);
-   gfx_widgets_state_unlock();
+   lbd_push(LBD_CMD_SET_PROGRESS, 0, progress, badge, false);
 }
 
 static void gfx_widget_set_cheevos_disconnect_state(bool value)
@@ -677,9 +694,7 @@ static void gfx_widget_set_cheevos_disconnect_state(bool value)
 
 void gfx_widget_set_cheevos_disconnect(bool value)
 {
-   gfx_widgets_state_lock();
-   gfx_widget_set_cheevos_disconnect_state(value);
-   gfx_widgets_state_unlock();
+   lbd_push(LBD_CMD_SET_DISCONNECT, 0, NULL, NULL, value);
 }
 
 static void gfx_widget_set_cheevos_set_loading_state(bool value)
@@ -690,11 +705,53 @@ static void gfx_widget_set_cheevos_set_loading_state(bool value)
 
 void gfx_widget_set_cheevos_set_loading(bool value)
 {
-   gfx_widgets_state_lock();
-   gfx_widget_set_cheevos_set_loading_state(value);
-   gfx_widgets_state_unlock();
+   lbd_push(LBD_CMD_SET_LOADING, 0, NULL, NULL, value);
 }
 
+
+static void gfx_widget_leaderboard_display_iterate(void *user_data,
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path, bool is_threaded)
+{
+   mpsc_stack_node_t *link =
+         mpsc_stack_reverse(mpsc_stack_drain(&lbd_pending));
+
+   while (link)
+   {
+      struct lbd_cmd *cmd = (struct lbd_cmd *)link;
+      link = link->next;
+
+      switch (cmd->kind)
+      {
+         case LBD_CMD_SET_TRACKER:
+            gfx_widgets_set_leaderboard_display_state(cmd->id,
+                  cmd->has_value ? cmd->value : NULL);
+            break;
+         case LBD_CMD_CLEAR_TRACKERS:
+            gfx_widgets_clear_leaderboard_displays_state();
+            break;
+         case LBD_CMD_SET_CHALLENGE:
+            gfx_widgets_set_challenge_display_state(cmd->id,
+                  cmd->has_value ? cmd->value : NULL);
+            break;
+         case LBD_CMD_CLEAR_CHALLENGES:
+            gfx_widgets_clear_challenge_displays_state();
+            break;
+         case LBD_CMD_SET_PROGRESS:
+            gfx_widget_set_achievement_progress_state(
+                  cmd->has_value ? cmd->badge : NULL,
+                  cmd->has_value ? cmd->value : NULL);
+            break;
+         case LBD_CMD_SET_DISCONNECT:
+            gfx_widget_set_cheevos_disconnect_state(cmd->has_value);
+            break;
+         case LBD_CMD_SET_LOADING:
+            gfx_widget_set_cheevos_set_loading_state(cmd->has_value);
+            break;
+      }
+      free(cmd);
+   }
+}
 
 static bool gfx_widget_leaderboard_display_visible(void)
 {
@@ -713,7 +770,7 @@ const gfx_widget_t gfx_widget_leaderboard_display = {
    NULL, /* context_reset*/
    &gfx_widget_leaderboard_display_context_destroy,
    NULL, /* layout */
-   NULL, /* iterate */
+   &gfx_widget_leaderboard_display_iterate,
    &gfx_widget_leaderboard_display_frame,
    &gfx_widget_leaderboard_display_visible
 };
