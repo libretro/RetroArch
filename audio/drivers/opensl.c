@@ -24,11 +24,7 @@
 #include <retro_atomic.h>
 #include <retro_math.h>
 #include <retro_timers.h>
-#include <linux/futex.h>
-#include <sys/syscall.h>
-#include <unistd.h>
-#include <errno.h>
-#include <limits.h>
+#include <rthreads/retro_eventcount.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -79,9 +75,8 @@ typedef struct sl
     * ARM/AArch64, so the reads need acquire semantics to pair with
     * the acq_rel RMWs - the previous plain volatile reads had none. */
    retro_atomic_int_t buffered_blocks;
-   /* Writers parked on buffered_blocks' futex; the callback skips
-    * its wake syscall while this is zero. */
-   retro_atomic_int_t waiters;
+   /* Writers park here when the queue is full or unmoved. */
+   retro_eventcount_t park;
    /* Frames the device has finished with, for the sink rate estimate.
     * The callback fires once per block the device has played, so it is
     * the device's own clock ticking - the same thing the WASAPI pump
@@ -93,36 +88,18 @@ typedef struct sl
    bool is_paused;
 } sl_t;
 
-/* Fully lock-free, no sleep, no clock: the writer parks in the
- * kernel on the block counter's own address (futex - this driver is
- * Android-only, and Android is Linux), with a relative timeout as
- * the stall bound, so there is no deadline arithmetic and no wall
- * clock anywhere in the hot path. FUTEX_WAIT's compare-and-block
- * removes even the lost-wakeup window the old condition variable had
- * to tolerate: a counter change between the caller's test and the
- * kernel's compare makes the wait return immediately. The driver
- * owns no mutex any thread could ever touch after free (#19561's
- * poisoned mutex is libwilhelm's own; see sl_free), and this
- * callback makes no syscall unless a writer is actually parked. */
-static int sl_futex_wait(retro_atomic_int_t *addr, int expected,
-      int64_t timeout_us)
-{
-   struct timespec ts;
-   ts.tv_sec  = (time_t)(timeout_us / 1000000);
-   ts.tv_nsec = (long)((timeout_us % 1000000) * 1000);
-   /* Relative timeout by definition of FUTEX_WAIT.  EAGAIN: the
-    * value already moved; EINTR: retry at the caller's loop. */
-   if (syscall(SYS_futex, (int*)addr, FUTEX_WAIT_PRIVATE,
-            expected, &ts, NULL, 0) == 0)
-      return 0;
-   return errno;
-}
-
-static void sl_futex_wake(retro_atomic_int_t *addr)
-{
-   syscall(SYS_futex, (int*)addr, FUTEX_WAKE_PRIVATE, INT_MAX,
-         NULL, NULL, 0);
-}
+/* Fully lock-free, no sleep, no clock: the writer parks on a
+ * retro_eventcount, which on this driver's one real platform is a
+ * futex - no lock at all, a relative timeout as the stall bound, so
+ * no deadline arithmetic and no wall clock in the hot path - and
+ * whose prepare/commit window removes the lost-wakeup race the old
+ * condition variable had to tolerate. The construct's other
+ * backends keep the file honest if it ever compiles elsewhere. The
+ * driver owns no mutex any thread could ever touch after free
+ * (#19561's poisoned mutex is libwilhelm's own; see sl_free), and
+ * the callback's notify makes no syscall unless a writer is
+ * actually parked - the eventcount gates that itself, with the
+ * seq_cst pairing a hand-rolled waiter flag gets subtly wrong. */
 static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
 {
    sl_t *sl = (sl_t*)ctx;
@@ -130,10 +107,9 @@ static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
    /* A block the device has played: device time, whatever the writer
     * managed to supply. */
    retro_atomic_fetch_add_size(&sl->consumed, sl->frames_per_block);
-   /* Wake a parked writer; the common, unthrottled case loads one
-    * atomic and skips the syscall. */
-   if (retro_atomic_load_acquire_int(&sl->waiters))
-      sl_futex_wake(&sl->buffered_blocks);
+   /* Wake a parked writer; with none parked this is one atomic
+    * bump and one load, no syscall. */
+   retro_eventcount_notify(&sl->park);
 }
 
 /* Frames the device has taken since the player started. Counting the
@@ -202,6 +178,7 @@ static void sl_free(void *data)
    if (sl->engine_object)
       SLObjectItf_Destroy(sl->engine_object);
 
+   retro_eventcount_free(&sl->park);
    free(sl->buffer);
    free(sl->buffer_chunk);
    free(sl);
@@ -234,6 +211,8 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
     * initialize it explicitly before anything can touch it. */
    retro_atomic_int_init(&sl->buffered_blocks, 0);
    retro_atomic_size_init(&sl->consumed, 0);
+   if (!retro_eventcount_init(&sl->park))
+      goto error;
 
    RARCH_LOG("[OpenSL] Requested audio latency: %u ms.\n", latency);
 
@@ -422,28 +401,32 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
       }
       else
       {
-         /* Park on the block counter itself - the driver's only
-          * throttle.  The kernel's compare-and-block means a callback
-          * landing between our test and the wait returns immediately;
-          * the relative timeout is the stall bound, needed because a
-          * dead device sends no callback, no shutdown or error signal
-          * exists anywhere in this driver, and an unbounded wait
-          * parked the thread the core runs on for good.  EINTR
-          * retries; the window it re-arms is the stall bound, which
-          * detects dead devices and owes no precision. */
+         /* The driver's only throttle: the eventcount's documented
+          * loop, predicate re-checked inside the prepare/commit
+          * window so a callback landing there cancels the park
+          * instead of being lost.  The timeout is the stall bound,
+          * needed because a dead device sends no callback, no
+          * shutdown or error signal exists anywhere in this driver,
+          * and an unbounded wait parked the thread the core runs on
+          * for good. */
          bool stalled = false;
-         retro_atomic_fetch_add_int(&sl->waiters, 1);
          while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
                == (int)sl->buf_count)
          {
-            if (sl_futex_wait(&sl->buffered_blocks, (int)sl->buf_count,
-                     OPENSL_STALL_TIMEOUT_US) == ETIMEDOUT)
+            int key = retro_eventcount_prepare_wait(&sl->park);
+            if (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+                  != (int)sl->buf_count)
+            {
+               retro_eventcount_cancel_wait(&sl->park);
+               break;
+            }
+            if (!retro_eventcount_commit_wait_timeout(&sl->park, key,
+                     OPENSL_STALL_TIMEOUT_US))
             {
                stalled = true;
                break;
             }
          }
-         retro_atomic_fetch_sub_int(&sl->waiters, 1);
 
          /* Report what was enqueued so far, exactly as the nonblock
           * path above does when the queue is full.  Any partial block
@@ -512,20 +495,22 @@ static size_t sl_wait_writable(void *data, size_t len)
          return avail;
       /* Same parking as sl_write's throttle: block until the counter
        * moves off the value just sampled, stalled after the same
-       * timeout.  The kernel compares against `buffered`, so a change
-       * since the sample falls straight through. */
-      retro_atomic_fetch_add_int(&sl->waiters, 1);
+       * timeout, with the change-since-sample race closed by the
+       * prepare/commit window. */
       while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
             == buffered)
       {
-         if (sl_futex_wait(&sl->buffered_blocks, buffered,
-                  OPENSL_STALL_TIMEOUT_US) == ETIMEDOUT)
+         int key = retro_eventcount_prepare_wait(&sl->park);
+         if (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+               != buffered)
          {
-            retro_atomic_fetch_sub_int(&sl->waiters, 1);
-            return 0;
+            retro_eventcount_cancel_wait(&sl->park);
+            break;
          }
+         if (!retro_eventcount_commit_wait_timeout(&sl->park, key,
+                  OPENSL_STALL_TIMEOUT_US))
+            return 0;
       }
-      retro_atomic_fetch_sub_int(&sl->waiters, 1);
    }
 }
 
