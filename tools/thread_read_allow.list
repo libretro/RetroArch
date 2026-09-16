@@ -22,3 +22,25 @@ input_driver_set_shader_uses_sensors|input_state_get_ptr
 # same thr->lock otherwise. The getter call is how it reaches the
 # field; both sides are ordered by the lock.
 video_thread_swap_count|video_state_get_ptr
+
+# The widgets/menu/font/display-text stack, verified for the
+# frame-context roots. Two safety arguments cover all five pairs:
+#
+# Batch state: gfx_display's quad batch (batch_* fields) is filled,
+# flushed and latched only on the thread that renders - the video
+# thread under the wrapper - so the flush/latch calls these callees
+# make through disp_get_ptr touch thread-confined state. The
+# main-written scalars on the same struct (framebuf dims, header
+# height) are not read by these callees; menu drivers take their
+# dimensions from their own snapshots per the menu sweep.
+font_driver_render_msg|disp_get_ptr
+menu_driver_frame|disp_get_ptr
+gfx_widgets_frame|disp_get_ptr
+#
+# Vtable dispatch: the video_state reads are current_video, poke and
+# data - the driver call pointers - which change only at video
+# init/free, and a frame cannot execute across either (the wrapper
+# joins and frees through blocking commands). Reading them to
+# dispatch is reading init-stable pointers.
+gfx_widgets_frame|video_state_get_ptr
+gfx_display_draw_text|video_state_get_ptr
