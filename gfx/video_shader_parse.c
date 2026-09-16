@@ -2531,6 +2531,28 @@ bool video_shader_write_preset(const char *path,
  *
  * @return true on success, otherwise false on failure.
  **/
+/* Copies a driver's fully loaded shader into a menu-owned struct
+ * instead of re-parsing the preset chain from disk. The struct is
+ * self-contained inline arrays with one exception:
+ * pass[i].source.string.{vertex,fragment} are driver-owned heap
+ * strings filled during driver compilation - the copy must not
+ * alias them, and the menu never uses them, so they are cleared.
+ * File-watch registration runs here exactly as the parse path runs
+ * it, so the copy is a drop-in for the parse. */
+void video_shader_copy_for_menu(struct video_shader *dst,
+      const struct video_shader *src)
+{
+   unsigned i;
+   *dst = *src;
+   for (i = 0; i < GFX_MAX_SHADERS; i++)
+   {
+      dst->pass[i].source.string.vertex   = NULL;
+      dst->pass[i].source.string.fragment = NULL;
+   }
+   if (config_get_ptr()->bools.video_shader_watch_files)
+      video_shader_watch_preset_files(dst, NULL, NULL);
+}
+
 bool video_shader_load_preset_into_shader(const char *path,
       struct video_shader *shader)
 {
@@ -3864,10 +3886,22 @@ bool video_shader_apply_shader(
                strlcpy(runloop_st->runtime_shader_preset_path, preset_path,
                      sizeof(runloop_st->runtime_shader_preset_path));
 #ifdef HAVE_MENU
-            /* reflect in shader manager */
-            if (menu_shader_manager_set_preset(
-                     shader, type, preset_path, false))
-               shader->flags &= ~SHDR_FLAG_MODIFIED;
+            /* Reflect in the shader manager from the driver's own
+             * loaded struct - it just parsed and compiled this very
+             * preset, so re-walking the reference chain from disk
+             * (a root-chain crawl plus a re-read of the original
+             * file) buys nothing. Fall back to the parse when the
+             * driver has no get_current_shader. */
+            {
+               video_shader_ctx_t live = {0};
+               video_shader_driver_get_current_shader(&live);
+               if (live.data
+                     ? menu_shader_manager_set_preset_from_live(
+                          shader, live.data)
+                     : menu_shader_manager_set_preset(
+                          shader, type, preset_path, false))
+                  shader->flags &= ~SHDR_FLAG_MODIFIED;
+            }
 #endif
          }
          else

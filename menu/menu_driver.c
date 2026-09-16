@@ -7399,6 +7399,30 @@ end:
  *
  * Sets shader preset.
  **/
+/* Same bookkeeping as menu_shader_manager_set_preset's success path,
+ * but the menu shader is copied from the driver's already-loaded
+ * struct instead of re-parsing the preset chain from disk (two
+ * chain walks saved per apply). Also removes a latent index
+ * mismatch: the slang backends rebuild the parameter list by
+ * reflection, and menu actions index the live struct with positions
+ * from the menu's own copy - a copy of the driver's struct agrees
+ * with it by construction, where a fresh parse only happens to. */
+bool menu_shader_manager_set_preset_from_live(
+      struct video_shader *menu_shader,
+      const struct video_shader *live_shader)
+{
+   struct menu_state *menu_st = &menu_driver_state;
+
+   if (!menu_shader || !live_shader)
+      return false;
+
+   video_shader_copy_for_menu(menu_shader, live_shader);
+
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
+   return true;
+}
+
 bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
       enum rarch_shader_type type, const char *preset_path, bool apply)
 {

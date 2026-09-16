@@ -247,6 +247,13 @@ bool video_shader_load_current_parameter_values(config_file_t *conf, struct vide
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
+/* Struct copy of a driver's loaded shader for menu use: everything
+ * but the driver-owned pass source strings, which are cleared in
+ * the copy. Replaces a full re-parse of the preset chain when the
+ * driver has already done it. */
+void video_shader_copy_for_menu(struct video_shader *dst,
+      const struct video_shader *src);
+
 bool video_shader_load_preset_into_shader(const char *path, struct video_shader *shader);
 
 /**

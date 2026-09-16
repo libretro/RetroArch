@@ -815,8 +815,18 @@ void video_driver_shader_deferred_tick(void)
                struct video_shader *shader = menu_shader_get();
                if (shader)
                {
-                  video_shader_load_preset_into_shader(
-                        d->preset_path, shader);
+                  /* The driver just finished loading this preset;
+                   * copy its struct instead of re-walking the
+                   * preset chain from disk. Parse fallback for
+                   * drivers without get_current_shader. */
+                  video_shader_ctx_t live = {0};
+                  video_shader_driver_get_current_shader(&live);
+                  if (live.data)
+                     menu_shader_manager_set_preset_from_live(
+                           shader, live.data);
+                  else
+                     video_shader_load_preset_into_shader(
+                           d->preset_path, shader);
                   shader->flags &= ~SHDR_FLAG_MODIFIED;
                }
 #endif
