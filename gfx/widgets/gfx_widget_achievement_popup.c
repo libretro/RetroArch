@@ -19,10 +19,13 @@
 #include "../gfx_widgets.h"
 
 #include "../../cheevos/cheevos.h"
+#include <queues/mpsc_stack.h>
 
 #define CHEEVO_NOTIFICATION_DURATION      4000
 
 #define CHEEVO_QUEUE_SIZE 8
+
+static mpsc_stack_t gfx_widget_achievement_pending;
 
 typedef struct cheevo_popup
 {
@@ -46,11 +49,25 @@ enum
    ANCHOR_BOTTOM
 };
 
+/* An unlock crossing from the cheevos thread to the draw thread:
+ * the producer builds the whole node - its strings owned by the
+ * node - and pushes it onto the lock-free MPSC stack below; the
+ * draw thread's iterate drains the stack in arrival order into the
+ * ring, which from then on is draw-thread-only state, plain
+ * fields, no lock anywhere. Starting the slide-in animation happens
+ * at drain time too, on the draw thread, which is the only thread
+ * animation state may be touched from. */
+struct cheevo_popup_msg
+{
+   mpsc_stack_node_t link; /* first: the stack's, from push to drain */
+   char *title;
+   char *subtitle;
+   char *badge_name;
+   uintptr_t badge;
+};
+
 struct gfx_widget_achievement_popup_state
 {
-#ifdef HAVE_THREADS
-   slock_t* queue_lock;
-#endif
    cheevo_popup queue[CHEEVO_QUEUE_SIZE]; /* ptr alignment */
    const dispgfx_widget_t* dispwidget_ptr;
    int queue_read_index;
@@ -89,22 +106,33 @@ static bool gfx_widget_achievement_popup_init(gfx_display_t* p_disp,
       dispwidget_get_ptr();
 
    state->queue_read_index = -1;
+   mpsc_stack_init(&gfx_widget_achievement_pending);
 
    return true;
 }
 
+static void gfx_widget_achievement_popup_drain_free(void)
+{
+   mpsc_stack_node_t *link =
+         mpsc_stack_drain(&gfx_widget_achievement_pending);
+   while (link)
+   {
+      struct cheevo_popup_msg *node = (struct cheevo_popup_msg *)link;
+      link = link->next;
+      free(node->title);
+      free(node->subtitle);
+      free(node->badge_name);
+      free(node);
+   }
+}
+
 static void gfx_widget_achievement_popup_free_all(gfx_widget_achievement_popup_state_t* state)
 {
+   gfx_widget_achievement_popup_drain_free();
    if (state->queue_read_index >= 0)
    {
-#ifdef HAVE_THREADS
-      slock_lock(state->queue_lock);
-#endif
       while (state->queue[state->queue_read_index].title)
          gfx_widget_achievement_popup_free_current(state);
-#ifdef HAVE_THREADS
-      slock_unlock(state->queue_lock);
-#endif
    }
 }
 
@@ -114,10 +142,6 @@ static void gfx_widget_achievement_popup_free(void)
 
    gfx_widget_achievement_popup_free_all(state);
 
-#ifdef HAVE_THREADS
-   slock_free(state->queue_lock);
-   state->queue_lock = NULL;
-#endif
    state->dispwidget_ptr = NULL;
 }
 
@@ -136,10 +160,6 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
    if (state->queue_read_index < 0
       || !state->queue[state->queue_read_index].title)
       return;
-
-#ifdef HAVE_THREADS
-   slock_lock(state->queue_lock);
-#endif
 
    {
       float pure_white[16] = {
@@ -374,9 +394,6 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       }
    }
 
-#ifdef HAVE_THREADS
-   slock_unlock(state->queue_lock);
-#endif
 }
 
 static void gfx_widget_achievement_popup_free_current(
@@ -413,9 +430,6 @@ static void gfx_widget_achievement_popup_next(void* userdata)
 {
    gfx_widget_achievement_popup_state_t* state = &p_w_achievement_popup_st;
 
-#ifdef HAVE_THREADS
-   slock_lock(state->queue_lock);
-#endif
 
    if (state->queue_read_index >= 0)
    {
@@ -427,9 +441,6 @@ static void gfx_widget_achievement_popup_next(void* userdata)
          gfx_widget_achievement_popup_start(state);
    }
 
-#ifdef HAVE_THREADS
-   slock_unlock(state->queue_lock);
-#endif
 }
 
 static void gfx_widget_achievement_popup_dismiss(void* userdata)
@@ -602,65 +613,81 @@ static void gfx_widget_achievement_popup_start(
 
 static void gfx_widgets_push_achievement_state(const char* title, const char* subtitle, const char* badge)
 {
-   gfx_widget_achievement_popup_state_t* state = &p_w_achievement_popup_st;
-   int start_notification = 1;
+   struct cheevo_popup_msg *node;
 
-   /* important - this must be done outside the lock because it has the potential to need to
-    * lock the video thread, which may be waiting for the popup queue lock to render popups */
+   /* The badge texture fetch may itself round-trip to the video
+    * thread, so it happens here, before anything queue-shaped. */
    uintptr_t badge_id = rcheevos_get_badge_texture(badge, false, true);
 
-   if (state->queue_read_index < 0)
-   {
-      /* queue uninitialized */
-      memset(&state->queue, 0, sizeof(state->queue));
-      state->queue_read_index = 0;
+   if (!(node = (struct cheevo_popup_msg *)malloc(sizeof(*node))))
+      return;
+   node->title      = strdup(title);
+   node->subtitle   = strdup(subtitle);
+   node->badge      = badge_id;
+   node->badge_name = badge_id ? NULL : strdup(badge);
 
-#ifdef HAVE_THREADS
-      state->queue_lock = slock_new();
-#endif
-   }
-
-#ifdef HAVE_THREADS
-   slock_lock(state->queue_lock);
-#endif
-
-   if (state->queue_write_index == state->queue_read_index)
-   {
-      if (state->queue[state->queue_write_index].title)
-      {
-         /* queue full */
-#ifdef HAVE_THREADS
-         slock_unlock(state->queue_lock);
-#endif
-         return;
-      }
-
-      /* queue empty */
-   }
-   else
-      start_notification = 0; /* notification already being displayed */
-
-   state->queue[state->queue_write_index].badge = badge_id;
-   state->queue[state->queue_write_index].title = strdup(title);
-   state->queue[state->queue_write_index].subtitle = strdup(subtitle);
-   state->queue[state->queue_write_index].badge_name = badge_id ? NULL : strdup(badge);
-   state->queue[state->queue_write_index].badge_retry = 0;
-
-   state->queue_write_index = (state->queue_write_index + 1) % ARRAY_SIZE(state->queue);
-
-   if (start_notification)
-      gfx_widget_achievement_popup_start(state);
-
-#ifdef HAVE_THREADS
-   slock_unlock(state->queue_lock);
-#endif
+   mpsc_stack_push(&gfx_widget_achievement_pending, &node->link);
 }
 
+/* No widget-state lock around the push: it touches only the popup's
+ * own MPSC stack, and everything ring- or animation-shaped happens
+ * at drain time in the iterate, on the draw thread. */
 void gfx_widgets_push_achievement(const char* title, const char* subtitle, const char* badge)
 {
-   gfx_widgets_state_lock();
    gfx_widgets_push_achievement_state(title, subtitle, badge);
-   gfx_widgets_state_unlock();
+}
+
+/* Draw-thread drain: arrival order, ring append, and the slide-in
+ * start for a ring that was empty - the one thread animation state
+ * may be touched from. */
+static void gfx_widget_achievement_popup_iterate(void *user_data,
+      unsigned width, unsigned height, bool fullscreen,
+      const char *dir_assets, char *font_path, bool is_threaded)
+{
+   gfx_widget_achievement_popup_state_t *state = &p_w_achievement_popup_st;
+   mpsc_stack_node_t *link =
+         mpsc_stack_reverse(mpsc_stack_drain(&gfx_widget_achievement_pending));
+
+   while (link)
+   {
+      struct cheevo_popup_msg *node = (struct cheevo_popup_msg *)link;
+      int start_notification = 1;
+      link = link->next;
+
+      if (state->queue_read_index < 0)
+      {
+         memset(&state->queue, 0, sizeof(state->queue));
+         state->queue_read_index = 0;
+      }
+
+      if (state->queue_write_index == state->queue_read_index)
+      {
+         if (state->queue[state->queue_write_index].title)
+         {
+            /* ring full: this popup is dropped whole */
+            free(node->title);
+            free(node->subtitle);
+            free(node->badge_name);
+            free(node);
+            continue;
+         }
+      }
+      else
+         start_notification = 0; /* one is already being displayed */
+
+      state->queue[state->queue_write_index].badge       = node->badge;
+      state->queue[state->queue_write_index].title       = node->title;
+      state->queue[state->queue_write_index].subtitle    = node->subtitle;
+      state->queue[state->queue_write_index].badge_name  = node->badge_name;
+      state->queue[state->queue_write_index].badge_retry = 0;
+      free(node);
+
+      state->queue_write_index =
+            (state->queue_write_index + 1) % ARRAY_SIZE(state->queue);
+
+      if (start_notification)
+         gfx_widget_achievement_popup_start(state);
+   }
 }
 
 static bool gfx_widget_achievement_popup_visible(void)
@@ -676,7 +703,7 @@ const gfx_widget_t gfx_widget_achievement_popup = {
    NULL, /* context_reset*/
    &gfx_widget_achievement_popup_context_destroy,
    NULL, /* layout */
-   NULL, /* iterate */
+   &gfx_widget_achievement_popup_iterate,
    &gfx_widget_achievement_popup_frame,
    &gfx_widget_achievement_popup_visible
 };
