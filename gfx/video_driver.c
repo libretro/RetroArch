@@ -3452,6 +3452,19 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps)
    }
 }
 
+/* The composed rotation (config + core request, 0-3) from the
+ * seqlock'd viewport-parameter snapshot: for uniform uploads and
+ * other consumers on the video thread, where retroarch_get_rotation()
+ * would read live runloop and config state the main thread owns.
+ * Same value, same freshness as the rest of the snapshot - exact
+ * across set_rotation's ordered publish, within a frame otherwise. */
+unsigned video_driver_get_rotation_snapshot(void)
+{
+   struct video_vp_param_snap ps;
+   video_driver_read_vp_params(&ps);
+   return ps.rotation;
+}
+
 void video_driver_update_viewport(
       struct video_viewport* vp, bool force_full, bool keep_aspect, bool y_down)
 {

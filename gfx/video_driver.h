@@ -1456,6 +1456,10 @@ void video_driver_set_aspect_ratio(void);
  * thread; see the field comment on vp_params_seq. */
 void video_driver_publish_vp_params(void);
 
+/* Composed rotation from the seqlock'd snapshot; safe on the video
+ * thread, unlike retroarch_get_rotation(). */
+unsigned video_driver_get_rotation_snapshot(void);
+
 void video_driver_update_viewport(struct video_viewport* vp,
       bool force_full, bool keep_aspect, bool y_down);
 

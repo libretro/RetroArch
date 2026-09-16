@@ -1463,7 +1463,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
       glUniform1f(uni->original_fps, video_driver_get_original_fps());
 
   if (uni->rotation >= 0)
-      glUniform1i(uni->rotation, retroarch_get_rotation());
+      glUniform1i(uni->rotation, video_driver_get_rotation_snapshot());
 
   if (uni->core_aspect >= 0)
       glUniform1f(uni->core_aspect, video_driver_get_core_aspect());
@@ -1472,7 +1472,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
   {
      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
      float core_aspect_rot = video_driver_get_core_aspect();
-     uint32_t rot = retroarch_get_rotation();
+     uint32_t rot = video_driver_get_rotation_snapshot();
      if (rot == 1 || rot == 3)
         core_aspect_rot = 1/core_aspect_rot;
      glUniform1f(uni->core_aspect_rot, core_aspect_rot);
