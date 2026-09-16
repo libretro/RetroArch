@@ -35,6 +35,8 @@
 
 #include <lists/string_list.h>
 #include <queues/fifo_queue.h>
+#include <retro_spsc.h>
+#include <rthreads/retro_eventcount.h>
 #include <formats/rac3.h>
 #include <formats/iec61937.h>
 
@@ -89,17 +91,25 @@ typedef struct
    IMMDevice          *device;
    IAudioClient       *client;
    IAudioRenderClient *renderer;
-   fifo_buffer_t      *buffer;
+   /* The render ring: a lock-free retro_spsc, the writer producing
+    * and the pump consuming, roles that never swap while the pump
+    * exists (the no-threads build is single-threaded and both roles
+    * are one thread). retro_spsc rounds capacity up to a power of
+    * two; fifo_size is the size that was asked for, and every
+    * room figure is capped to it so the rate control keeps the
+    * latency it computed. */
+   retro_spsc_t        ring;
+   size_t              fifo_size;
    size_t engine_buffer_size;
 #ifdef HAVE_THREADS
    /* Exclusive mode: the thread that owns the device's event. Each
-    * period it takes one from the fifo and releases it, or releases
-    * silence and counts an underrun. The writer touches only the fifo,
-    * under fifo_lock; room_cond is signalled each time the pump frees
-    * a period. See wasapi_pump_thread(). */
+    * period it takes one from the ring and releases it, or releases
+    * silence and counts an underrun. The writer parks here when the
+    * ring is full; the pump notifies each time it frees a period. See
+    * wasapi_pump_thread(). */
    sthread_t          *pump;
-   slock_t            *fifo_lock;
-   scond_t            *room_cond;
+   retro_eventcount_t  park;
+   bool                park_inited;
    retro_atomic_int_t  pump_run;
    /* Periods the pump filled with silence for want of audio: one
     * atomic add on that path, read by the frontend's overlay. */
@@ -119,12 +129,13 @@ typedef struct
    retro_atomic_size_t late_usec_max;
    retro_atomic_size_t late_over_period; /* wakes a whole period late or worse */
    bool                mmcss;          /* the scheduler class took */
-   /* Frames the device has consumed, kept by the pump under fifo_lock:
+   /* Frames the device has consumed, kept by the pump alone (load
+    * and store on the atomic; single writer):
     * exclusive, the periods it released, each taken by the device a
     * period after; shared, the frames released less the engine's
     * padding. For the frontend's sink rate estimate. */
-   uint64_t            consumed;
-   uint64_t            released;   /* shared: frames given to the engine */
+   retro_atomic_64_t   consumed;
+   retro_atomic_64_t   released;   /* shared: frames given to the engine */
    unsigned            sh_period_frames; /* shared: frames the engine takes per event */
    unsigned            rate;             /* the stream's, for the clock conversion */
    /* Read by the pump thread instead of the EXCLUSIVE bit in flags:
@@ -151,11 +162,14 @@ typedef struct
    float         *ac3_in;         /* 1536 frames of the layout */
    unsigned       ac3_in_frames;  /* collected so far */
    /* Frames the frontend has written that the device has not taken:
-    * the fifo's and the encoder's together, kept under fifo_lock so
+    * the ring's and the encoder's together, an atomic counter so
     * write_avail() reads one figure - read as two, from two threads,
     * the fifo's room and the encoder's count could be from either
     * side of a burst's push, half the buffer apart. */
-   size_t         ac3_inflight;
+   /* Writer adds, pump subtracts on drain: a two-writer counter, so
+    * a real RMW atomic rather than the fifo lock it lived under. An
+    * int is ample - it counts frames bounded by the ring. */
+   retro_atomic_int_t  ac3_inflight;
    /* The device's own clock, where the endpoint offers one. See the
     * acquisition in wasapi_init_client() for why the event count is
     * not the same thing. */
@@ -194,7 +208,7 @@ typedef struct
     * burst is 32 ms of input and an encode away from the first write,
     * and the frontend, told of underruns meanwhile, discarded the
     * audio it had primed the pipe with, then filled the fifo at rate
-    * control's pace: a quarter of a minute low. Under fifo_lock. */
+    * control's pace: a quarter of a minute low. Pump-written. */
    bool           fed;
    unsigned       ac3_frame_size;
    uint8_t        ac3_frame[RAC3_MAX_FRAME_BYTES];
@@ -266,14 +280,24 @@ static const char *wasapi_wave_format_name(const WAVEFORMATEXTENSIBLE *format)
    return "<unknown>";
 }
 
-/* bytes of the carrier left the fifo for the device; under fifo_lock
+/* bytes of the carrier left the ring for the device; atomic,
  * where there is one */
 static INLINE void wasapi_ac3_drained(wasapi_t *w, size_t bytes)
 {
    if (w->ac3)
    {
-      size_t frames = bytes / 4;
-      w->ac3_inflight = w->ac3_inflight > frames ? w->ac3_inflight - frames : 0;
+      /* The writer's matching add precedes the ring bytes this drain
+       * covers, and the ring's release/acquire pair carries that
+       * order, so the subtract cannot underflow; the CAS loop keeps
+       * the old code's floor at zero all the same. */
+      int frames = (int)(bytes / 4);
+      for (;;)
+      {
+         int cur = retro_atomic_load_acquire_int(&w->ac3_inflight);
+         int nxt = cur > frames ? cur - frames : 0;
+         if (retro_atomic_cas_int(&w->ac3_inflight, cur, nxt))
+            break;
+      }
    }
 }
 
@@ -840,7 +864,6 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels,
       uint32_t layout, uint32_t *layout_out, bool *low_latency)
 {
-   wasapi_sh_engine_period = 0;
    WAVEFORMATEXTENSIBLE wf;
    IAudioClient *client           = NULL;
    settings_t *settings           = config_get_ptr();
@@ -849,6 +872,10 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    REFERENCE_TIME buffer_duration = 0;
    HRESULT hr                     = _IMMDevice_Activate(device,
          IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&client);
+
+   /* Below the declarations, where C89 wants it (the real-flags
+    * decl gate on this file found it above them). */
+   wasapi_sh_engine_period        = 0;
 
    if (FAILED(hr))
    {
@@ -1874,7 +1901,8 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
        * adds its own latency to this in any case. */
       if (w->ac3 && fifo_bytes < (size_t)IEC61937_AC3_BURST_BYTES * 4 + 1)
          fifo_bytes     = (size_t)IEC61937_AC3_BURST_BYTES * 4 + 1;
-      if (!(w->buffer = fifo_new(fifo_bytes)))
+      w->fifo_size = fifo_bytes;
+      if (!retro_spsc_init(&w->ring, fifo_bytes))
          goto error;
       RARCH_LOG("[WASAPI] Exclusive: %u ms setting as a %u-frame fifo (%u ms, rate control holds it about half full) in front of a %u-frame device period (%.1f ms); about %u ms from write to the device.\n",
             latency,
@@ -1981,7 +2009,8 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
             break;
       }
 
-      if (!(w->buffer = fifo_new(sh_buffer_length * w->frame_size)))
+      w->fifo_size = sh_buffer_length * w->frame_size;
+      if (!retro_spsc_init(&w->ring, w->fifo_size))
          goto error;
       RARCH_LOG("[WASAPI] Shared: %u ms setting as a %u-frame fifo (%u ms) in front of a %u-frame engine buffer (%u ms) fed a %s-frame period at a time; %u ms in all, rate control holds the fifo about half full.\n",
             latency, sh_buffer_length, (unsigned)((uint64_t)sh_buffer_length * 1000 / rate),
@@ -1991,11 +2020,13 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    }
 
 #ifdef HAVE_THREADS
-   /* The fifo is shared between the writer and the pump, in both
-    * modes. */
-   w->fifo_lock = slock_new();
-   w->room_cond = scond_new();
-   if (!w->fifo_lock || !w->room_cond)
+   /* The ring is shared between the writer and the pump, in both
+    * modes: lock-free, single producer, single consumer. */
+   retro_atomic_64_init(&w->consumed, 0);
+   retro_atomic_64_init(&w->released, 0);
+   retro_atomic_int_init(&w->ac3_inflight, 0);
+   w->park_inited = retro_eventcount_init(&w->park);
+   if (!w->park_inited)
       goto error;
 #endif
 
@@ -2139,17 +2170,13 @@ error:
 
    if (w->write_event)
       CloseHandle(w->write_event);
-   if (w->buffer)
-      fifo_free(w->buffer);
+   retro_spsc_free(&w->ring);
    if (w->ac3)
       rac3_encoder_free(w->ac3);
    if (w->ac3_in)
       free(w->ac3_in);
 #ifdef HAVE_THREADS
-   if (w->room_cond)
-      scond_free(w->room_cond);
-   if (w->fifo_lock)
-      slock_free(w->fifo_lock);
+   retro_eventcount_free(&w->park);
 #endif
    free(w);
    return NULL;
@@ -2166,6 +2193,16 @@ error:
  * every one: a period from the fifo when one is there, silence and an
  * underrun counted when not. */
 static bool wasapi_push_sh(wasapi_t *w);
+
+/* Producer-side room, capped to the size that was asked for:
+ * retro_spsc rounds capacity up to a power of two, and the rate
+ * control's latency figures assume the requested size. */
+static INLINE size_t wasapi_ring_room(wasapi_t *w)
+{
+   size_t excess = w->ring.capacity - w->fifo_size;
+   size_t room   = retro_spsc_write_avail(&w->ring);
+   return room > excess ? room - excess : 0;
+}
 
 /* The multimedia class scheduler, where the system has it: what
  * Windows offers a thread that must run inside a device period, and
@@ -2311,10 +2348,9 @@ static void wasapi_pump_thread(void *data)
          DWORD  flags       = 0;
          if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
             continue;
-         slock_lock(w->fifo_lock);
-         if (FIFO_READ_AVAIL(w->buffer) >= w->engine_buffer_size)
+         if (retro_spsc_read_avail(&w->ring) >= w->engine_buffer_size)
          {
-            fifo_read(w->buffer, dest, w->engine_buffer_size);
+            retro_spsc_read(&w->ring, dest, w->engine_buffer_size);
             wasapi_ac3_drained(w, w->engine_buffer_size);
          }
          else
@@ -2325,10 +2361,12 @@ static void wasapi_pump_thread(void *data)
                retro_atomic_fetch_add_size(&w->underruns, 1);
          }
          /* Each period released is one the device takes; silence
-          * counts too, the device's clock does not stop for it. */
-         w->consumed += frame_count;
-         scond_signal(w->room_cond);
-         slock_unlock(w->fifo_lock);
+          * counts too, the device's clock does not stop for it.
+          * Single writer (this thread): load and store suffice. */
+         retro_atomic_store_release_64(&w->consumed,
+               retro_atomic_load_acquire_64(&w->consumed)
+                     + (int64_t)frame_count);
+         retro_eventcount_notify(&w->park);
          _IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, flags);
       }
       else
@@ -2339,7 +2377,6 @@ static void wasapi_pump_thread(void *data)
           * IAudioClient3 engine at 3 ms the buffer is three periods and
           * the writer's frame-sized cadence starved it - 46% of periods,
           * in the harness - so the pump feeds it here too. */
-         slock_lock(w->fifo_lock);
          wasapi_push_sh(w);
          /* The engine signals once per period and takes one period per
           * signal, our audio or its own silence: the event is the
@@ -2347,9 +2384,10 @@ static void wasapi_pump_thread(void *data)
           * during an underrun, when the engine plays silence of its
           * own, and read the same pin 400 to 1000 ppm slow that
           * exclusive read at +11. */
-         w->consumed += w->sh_period_frames;
-         scond_signal(w->room_cond);
-         slock_unlock(w->fifo_lock);
+         retro_atomic_store_release_64(&w->consumed,
+               retro_atomic_load_acquire_64(&w->consumed)
+                     + (int64_t)w->sh_period_frames);
+         retro_eventcount_notify(&w->park);
       }
    }
 
@@ -2402,7 +2440,7 @@ static bool wasapi_push_sh(wasapi_t *w)
    size_t read_avail, engine_free, n;
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return false;
-   read_avail  = FIFO_READ_AVAIL(w->buffer);
+   read_avail  = retro_spsc_read_avail(&w->ring);
    engine_free = w->engine_buffer_size - padding * w->frame_size;
    n           = read_avail < engine_free ? read_avail : engine_free;
    n           = (n / w->frame_size) * w->frame_size;
@@ -2412,11 +2450,14 @@ static bool wasapi_push_sh(wasapi_t *w)
       UINT32 frame_count = (UINT32)(n / w->frame_size);
       if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
          return false;
-      fifo_read(w->buffer, dest, n);
+      retro_spsc_read(&w->ring, dest, n);
       if (FAILED(_IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, 0)))
          return false;
 #ifdef HAVE_THREADS
-      w->released += frame_count;
+      /* Single writer (the pump, in threaded builds): load and store. */
+      retro_atomic_store_release_64(&w->released,
+            retro_atomic_load_acquire_64(&w->released)
+                  + (int64_t)frame_count);
 #endif
    }
    return true;
@@ -2446,14 +2487,7 @@ static ssize_t wasapi_write_ac3(wasapi_t *w, const void *data, size_t len)
        * until the fifo has room for it; the caller offers them again. */
       if ((w->flags & WASAPI_FLG_NONBLOCK) && w->ac3_in_frames + take == 1536)
       {
-         size_t room;
-#ifdef HAVE_THREADS
-         slock_lock(w->fifo_lock);
-         room = FIFO_WRITE_AVAIL(w->buffer);
-         slock_unlock(w->fifo_lock);
-#else
-         room = FIFO_WRITE_AVAIL(w->buffer);
-#endif
+         size_t room = wasapi_ring_room(w);
          if (room < IEC61937_AC3_BURST_BYTES)
             break;
       }
@@ -2461,13 +2495,7 @@ static ssize_t wasapi_write_ac3(wasapi_t *w, const void *data, size_t len)
             src + done * w->ac3_frame_size, take * w->ac3_frame_size);
       w->ac3_in_frames += (unsigned)take;
       done             += take;
-#ifdef HAVE_THREADS
-      slock_lock(w->fifo_lock);
-      w->ac3_inflight  += take;
-      slock_unlock(w->fifo_lock);
-#else
-      w->ac3_inflight  += take;
-#endif
+      retro_atomic_fetch_add_int(&w->ac3_inflight, (int)take);
       if (w->ac3_in_frames == 1536)
       {
          size_t n = rac3_encode_frame(w->ac3, w->ac3_in, w->ac3_frame, sizeof(w->ac3_frame));
@@ -2514,27 +2542,36 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
        * Non-blocking: what fits. Blocking: wait for the pump to free
        * room, bounded as every wait here is. */
       int laps = 0;
-      slock_lock(w->fifo_lock);
       while (_len < len)
       {
-         size_t room = FIFO_WRITE_AVAIL(w->buffer);
+         size_t room = wasapi_ring_room(w);
          size_t ir   = len - _len;
          if (!room)
          {
+            int key;
             if (flg & WASAPI_FLG_NONBLOCK)
                break;
             if (!retro_atomic_load_acquire_int(&w->pump_run) || ++laps > WASAPI_TIMEOUT)
                break;
-            scond_wait_timeout(w->room_cond, w->fifo_lock, 1000);
+            /* The eventcount's window replaces the lock the wait
+             * lived under: a period freed between the room check and
+             * the commit bumps the epoch and the commit falls
+             * through. */
+            key = retro_eventcount_prepare_wait(&w->park);
+            if (wasapi_ring_room(w))
+            {
+               retro_eventcount_cancel_wait(&w->park);
+               continue;
+            }
+            retro_eventcount_commit_wait_timeout(&w->park, key, 1000);
             continue;
          }
          if (ir > room)
             ir = room;
-         fifo_write(w->buffer, (const char*)data + _len, ir);
+         retro_spsc_write(&w->ring, (const char*)data + _len, ir);
          w->fed = true;
          _len += ir;
       }
-      slock_unlock(w->fifo_lock);
    }
 #else
    if (flg & WASAPI_FLG_EXCLUSIVE)
@@ -2543,7 +2580,7 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
       while (_len < len)
       {
          size_t ir;
-         size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
+         size_t write_avail = wasapi_ring_room(w);
          if (!write_avail)
          {
             BYTE *dest         = NULL;
@@ -2554,14 +2591,14 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
                break;
             if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
                return -1;
-            fifo_read(w->buffer, dest, w->engine_buffer_size);
+            retro_spsc_read(&w->ring, dest, w->engine_buffer_size);
             wasapi_ac3_drained(w, w->engine_buffer_size);
             if (FAILED(_IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, 0)))
                return -1;
             write_avail = w->engine_buffer_size;
          }
          ir = (len - _len < write_avail) ? len - _len : write_avail;
-         fifo_write(w->buffer, (const char*)data + _len, ir);
+         retro_spsc_write(&w->ring, (const char*)data + _len, ir);
          _len += ir;
       }
    }
@@ -2572,10 +2609,10 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
          size_t write_avail;
          if (!wasapi_push_sh(w))
             return -1;
-         write_avail = FIFO_WRITE_AVAIL(w->buffer);
+         write_avail = wasapi_ring_room(w);
          _len = len < write_avail ? len : write_avail;
          if (_len)
-            fifo_write(w->buffer, data, _len);
+            retro_spsc_write(&w->ring, data, _len);
          /* The room the write made use of may let more reach the
           * engine now, so it does not wait for the next call. */
          if (!wasapi_push_sh(w))
@@ -2590,7 +2627,7 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
             size_t write_avail;
             if (!wasapi_push_sh(w))
                return -1;
-            write_avail        = FIFO_WRITE_AVAIL(w->buffer);
+            write_avail        = wasapi_ring_room(w);
             if (!write_avail)
             {
                /* The fifo and the engine are both full: wait a period
@@ -2602,7 +2639,7 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
             ir = (__len < write_avail) ? __len : write_avail;
             {
                const void *_data = (char*)data + _len;
-               fifo_write(w->buffer, _data, ir);
+               retro_spsc_write(&w->ring, _data, ir);
                _len += ir;
             }
          }
@@ -2715,17 +2752,13 @@ static void wasapi_free(void *wh)
    RELEASE(w->device);
    mmdevice_com_uninit((w->flags & WASAPI_FLG_COM) != 0);
 
-   if (w->buffer)
-      fifo_free(w->buffer);
+   retro_spsc_free(&w->ring);
    if (w->ac3)
       rac3_encoder_free(w->ac3);
    if (w->ac3_in)
       free(w->ac3_in);
 #ifdef HAVE_THREADS
-   if (w->room_cond)
-      scond_free(w->room_cond);
-   if (w->fifo_lock)
-      slock_free(w->fifo_lock);
+   retro_eventcount_free(&w->park);
 #endif
    free(w);
 
@@ -2769,41 +2802,26 @@ static size_t wasapi_write_avail(void *wh)
 
    if (w->flags & WASAPI_FLG_EXCLUSIVE)
    {
-      size_t room;
-#ifdef HAVE_THREADS
-      slock_lock(w->fifo_lock);
-      room = FIFO_WRITE_AVAIL(w->buffer);
-      slock_unlock(w->fifo_lock);
-#else
-      room = FIFO_WRITE_AVAIL(w->buffer);
-#endif
+      size_t room = wasapi_ring_room(w);
       if (w->ac3)
       {
          /* In the frontend's frames: the buffer's frames less those in
           * flight - the fifo's and the encoder's, one figure kept under
           * the lock (a burst is 1536 carrier frames for 1536 layout
           * frames, so the two counts add). */
-         size_t cap = (w->buffer->size - 1) / w->frame_size;
-         size_t inflight;
-#ifdef HAVE_THREADS
-         slock_lock(w->fifo_lock);
-         inflight = w->ac3_inflight;
-         slock_unlock(w->fifo_lock);
-#else
-         inflight = w->ac3_inflight;
-#endif
+         size_t cap = w->fifo_size / w->frame_size;
+         size_t inflight =
+               (size_t)retro_atomic_load_acquire_int(&w->ac3_inflight);
          return (cap > inflight ? cap - inflight : 0) * w->ac3_frame_size;
       }
       return room;
    }
 #ifdef HAVE_THREADS
    {
-      /* Shared, with the pump: the fifo's room under its lock, plus
-       * the engine's, which only the pump fills. */
-      size_t room;
-      slock_lock(w->fifo_lock);
-      room = FIFO_WRITE_AVAIL(w->buffer);
-      slock_unlock(w->fifo_lock);
+      /* Shared, with the pump: the ring's room - a lock-free
+       * producer-side read - plus the engine's, which only the pump
+       * fills. */
+      size_t room = wasapi_ring_room(w);
       if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
          return room;
       return room + (w->engine_buffer_size - padding * w->frame_size);
@@ -2819,7 +2837,7 @@ static size_t wasapi_write_avail(void *wh)
     * engine reported more room.  Rate control consumed that as a
     * mis-scaled, inverted, period-rate noise term in its occupancy
     * measurement. */
-   return FIFO_WRITE_AVAIL(w->buffer)
+   return wasapi_ring_room(w)
          + (w->engine_buffer_size - padding * w->frame_size);
 }
 
@@ -2835,11 +2853,12 @@ static size_t wasapi_buffer_size(void *wh)
    if (w->flags & WASAPI_FLG_EXCLUSIVE)
    {
       if (w->ac3)
-         return (w->buffer->size - 1) / w->frame_size * w->ac3_frame_size;
-      return w->buffer->size - 1;
+         return w->fifo_size / w->frame_size * w->ac3_frame_size;
+      return w->fifo_size;
    }
-   /* The fifo's capacity is one less than its slot count. */
-   return (w->buffer->size - 1) + w->engine_buffer_size;
+   /* The ring reports the size that was asked for (the power-of-two
+    * excess never shows through wasapi_ring_room). */
+   return w->fifo_size + w->engine_buffer_size;
 }
 
 /* Sleep on the engine's event until the fifo in front of it has room.
@@ -2866,18 +2885,24 @@ static size_t wasapi_wait_writable(void *wh, size_t len)
        * every wait here. */
       size_t room;
       int laps = 0;
-      if (len > (w->buffer->size - 1) / 2)
-         len = (w->buffer->size - 1) / 2;
-      slock_lock(w->fifo_lock);
-      while ((room = FIFO_WRITE_AVAIL(w->buffer)) < len
+      if (len > w->fifo_size / 2)
+         len = w->fifo_size / 2;
+      while ((room = wasapi_ring_room(w)) < len
             && retro_atomic_load_acquire_int(&w->pump_run) && ++laps <= WASAPI_TIMEOUT)
-         scond_wait_timeout(w->room_cond, w->fifo_lock, 1000);
-      slock_unlock(w->fifo_lock);
+      {
+         int key = retro_eventcount_prepare_wait(&w->park);
+         if (wasapi_ring_room(w) >= len)
+         {
+            retro_eventcount_cancel_wait(&w->park);
+            break;
+         }
+         retro_eventcount_commit_wait_timeout(&w->park, key, 1000);
+      }
       return room;
    }
 #endif
 
-   while (FIFO_WRITE_AVAIL(w->buffer) == 0)
+   while (wasapi_ring_room(w) == 0)
    {
       BYTE *dest         = NULL;
       UINT32 frame_count = 0;
@@ -2891,7 +2916,7 @@ static size_t wasapi_wait_writable(void *wh, size_t len)
          if (FAILED(_IAudioRenderClient_GetBuffer(
                      w->renderer, frame_count, &dest)))
             return 0;
-         fifo_read(w->buffer, dest, w->engine_buffer_size);
+         retro_spsc_read(&w->ring, dest, w->engine_buffer_size);
          wasapi_ac3_drained(w, w->engine_buffer_size);
       }
       else
@@ -2902,7 +2927,7 @@ static size_t wasapi_wait_writable(void *wh, size_t len)
          size_t ir;
          if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
             return 0;
-         read_avail  = FIFO_READ_AVAIL(w->buffer);
+         read_avail  = retro_spsc_read_avail(&w->ring);
          engine_free = w->engine_buffer_size - padding * w->frame_size;
          ir          = read_avail < engine_free ? read_avail : engine_free;
          if (!ir)
@@ -2911,7 +2936,7 @@ static size_t wasapi_wait_writable(void *wh, size_t len)
          if (FAILED(_IAudioRenderClient_GetBuffer(
                      w->renderer, frame_count, &dest)))
             return 0;
-         fifo_read(w->buffer, dest, ir);
+         retro_spsc_read(&w->ring, dest, ir);
       }
       if (FAILED(_IAudioRenderClient_ReleaseBuffer(
                   w->renderer, frame_count, 0)))
@@ -3022,11 +3047,7 @@ static size_t wasapi_frames_consumed(void *wh)
       return (size_t)frames;
    }
 
-   if (!w->fifo_lock)
-      return 0;
-   slock_lock(w->fifo_lock);
-   n = (size_t)w->consumed;
-   slock_unlock(w->fifo_lock);
+   n = (size_t)retro_atomic_load_acquire_64(&w->consumed);
    return n;
 #else
    (void)wh;
@@ -3042,11 +3063,9 @@ static size_t wasapi_frames_consumed_fallback(void *wh)
 #ifdef HAVE_THREADS
    wasapi_t *w = (wasapi_t*)wh;
    size_t n;
-   if (!w || !w->fifo_lock)
+   if (!w)
       return 0;
-   slock_lock(w->fifo_lock);
-   n = (size_t)w->consumed;
-   slock_unlock(w->fifo_lock);
+   n = (size_t)retro_atomic_load_acquire_64(&w->consumed);
    return n;
 #else
    (void)wh;
