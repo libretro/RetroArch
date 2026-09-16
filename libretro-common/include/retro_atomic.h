@@ -824,7 +824,8 @@ typedef volatile intptr_t retro_atomic_size_t;
 #define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (intptr_t)(v))
 
-#define retro_atomic_load_acquire_int(p)  OSAtomicAdd32Barrier(0, (p))
+#define retro_atomic_load_acquire_int(p) \
+   OSAtomicAdd32Barrier(0, (retro_atomic_int_t*)(p))
 /* Relaxed int load/store: aligned native-width volatile access, which
  * is indivisible on every Apple target; unlike the barrier'd Add(0)
  * above it is neither an RMW nor a barrier. */
@@ -887,7 +888,7 @@ typedef volatile size_t retro_atomic_size_t;
  * The "load via fetch_and_add 0" / "store via lock+swap" idioms are the
  * canonical way to get an atomic load/store out of __sync. */
 #define retro_atomic_load_acquire_int(p) \
-   __sync_fetch_and_add((p), 0)
+   __sync_fetch_and_add((retro_atomic_int_t*)(p), 0)
 /* Relaxed int load/store: aligned volatile int access, no RMW and no
  * __sync_synchronize. */
 #define retro_atomic_load_relaxed_int(p)      (*(p))
@@ -904,7 +905,7 @@ typedef volatile size_t retro_atomic_size_t;
    __sync_fetch_and_and((p), (v))
 
 #define retro_atomic_load_acquire_size(p) \
-   __sync_fetch_and_add((p), (size_t)0)
+   __sync_fetch_and_add((retro_atomic_size_t*)(p), (size_t)0)
 /* Relaxed load: aligned volatile size_t read, no RMW. */
 #define retro_atomic_load_relaxed_size(p) (*(p))
 #define retro_atomic_store_relaxed_size(p, v) \
