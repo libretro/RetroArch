@@ -193,7 +193,15 @@ static SLresult play_set_state(SLPlayItf self, SLuint32 state)
    pthread_mutex_unlock(&q_lock);
    return SL_RESULT_SUCCESS;
 }
-static const struct SLPlayItf_ play_vt = { play_set_state };
+static SLresult play_get_state(SLPlayItf self, SLuint32 *state)
+{
+   (void)self;
+   pthread_mutex_lock(&q_lock);
+   *state = mock_playing ? SL_PLAYSTATE_PLAYING : SL_PLAYSTATE_STOPPED;
+   pthread_mutex_unlock(&q_lock);
+   return SL_RESULT_SUCCESS;
+}
+static const struct SLPlayItf_ play_vt = { play_set_state, play_get_state };
 static const struct SLPlayItf_ *play_obj = &play_vt;
 
 /* ---- objects ---------------------------------------------------- */

@@ -77,6 +77,7 @@ typedef const struct SLPlayItf_ * const * SLPlayItf;
 struct SLPlayItf_
 {
    SLresult (*SetPlayState)(SLPlayItf self, SLuint32 state);
+   SLresult (*GetPlayState)(SLPlayItf self, SLuint32 *state);
 };
 
 SLresult slCreateEngine(SLObjectItf *engine, SLuint32 n, const void *opts,
