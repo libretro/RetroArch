@@ -2703,7 +2703,21 @@ static void vulkan_font_free(void *data, bool is_threaded)
 
    if (font->vk && font->vk->context && font->vk->context->device)
    {
+      /* This runs on the video thread (font frees are dispatched
+       * through video_thread_texture_handle), which serialises it
+       * against command-buffer recording - but the queue is also
+       * shared with HW-render cores submitting from their own
+       * threads through the negotiated lock_queue, and no dispatch
+       * parks those. Every queue access needs the lock; this was
+       * the one of the driver's twenty-six submission-and-wait
+       * sites without it. */
+#ifdef HAVE_THREADS
+      slock_lock(font->vk->context->queue_lock);
+#endif
       vkQueueWaitIdle(font->vk->context->queue);
+#ifdef HAVE_THREADS
+      slock_unlock(font->vk->context->queue_lock);
+#endif
       vulkan_destroy_texture(
             font->vk->context->device, &font->texture);
       vulkan_destroy_texture(
