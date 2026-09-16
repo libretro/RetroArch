@@ -3167,7 +3167,7 @@ static bool gdi_alive(void *data)
    gdi_t *gdi           = (gdi_t*)data;
 
    /* Read from local bookkeeping rather than video_st (which would
-    * acquire context_lock; display_lock is gone, its state atomic).  gdi->full_{width,height}
+    * cross threads needlessly).  gdi->full_{width,height}
     * is written at every set_size call site in this driver. */
    temp_width  = gdi->full_width;
    temp_height = gdi->full_height;

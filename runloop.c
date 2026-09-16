@@ -2549,6 +2549,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          else
             memcpy(hwr, cb, sizeof(*cb));
+
+         /* Publish the type for cross-thread
+          * video_driver_is_hw_context() readers, after the copy has
+          * landed; see hw_context_type in video_driver.h. */
+         retro_atomic_store_release_int(
+               &video_st->hw_context_type, (int)cb->context_type);
 #ifdef DEBUG
          RARCH_DBG("[Environ] Reached end of SET_HW_RENDER.\n");
 #endif
@@ -8863,7 +8869,6 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
    bool accessibility_enable      = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
-   runloop_state_t *runloop_st    = &runloop_state;
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
 

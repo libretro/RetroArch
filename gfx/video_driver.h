@@ -74,7 +74,7 @@
 
 #ifdef HAVE_THREADS
 /* The setting first: without threaded video the answer is known
- * before video_driver_is_hw_context() takes context_lock */
+ * without video_driver_is_hw_context()'s atomic load */
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) ((video_st)->threaded && (!video_driver_is_hw_context() || video_thread_hw_allowed()) && !video_driver_render_context_is_main_thread_only())
 #else
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) (false)
@@ -1152,8 +1152,17 @@ typedef struct
     * this struct that crosses threads is atomic. */
    slock_t *display_lock;
 #endif
-   slock_t *context_lock;
 #endif
+
+   /* hw_render.context_type, published for cross-thread readers:
+    * both writers run on the main thread and store-release this
+    * mirror after their edit lands - SET_HW_RENDER after copying
+    * the callback in, video_driver_free_hw_context() after
+    * context_destroy() and the memset - so an acquire load reading
+    * RETRO_HW_CONTEXT_NONE is guaranteed the teardown completed.
+    * video_driver_is_hw_context() reads only this; the hw_render
+    * struct itself stays main-thread state. */
+   retro_atomic_int_t hw_context_type;
 
    /* Used for 15-bit -> 16-bit conversions that take place before
     * being passed to video driver. */

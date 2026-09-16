@@ -2255,18 +2255,14 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
 void video_driver_free_hw_context(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->context_lock)
-      slock_lock(video_st->context_lock);
-#endif
    if (video_st->hw_render.context_destroy)
       video_st->hw_render.context_destroy();
 
    memset(&video_st->hw_render, 0, sizeof(video_st->hw_render));
-#ifdef HAVE_THREADS
-   if (video_st->context_lock)
-      slock_unlock(video_st->context_lock);
-#endif
+   /* After the memset: an acquire reader that sees NONE is
+    * guaranteed the destroy and the zeroing are complete. */
+   retro_atomic_store_release_int(&video_st->hw_context_type,
+         RETRO_HW_CONTEXT_NONE);
    video_st->hw_render_context_negotiation = NULL;
 }
 
@@ -2651,10 +2647,6 @@ void video_driver_lock_new(void)
    video_st->display_lock = NULL;
    video_st->display_lock = slock_new();
 #endif
-   slock_free(video_st->context_lock);
-   video_st->context_lock = NULL;
-   if (!video_st->context_lock)
-      video_st->context_lock = slock_new();
 #ifdef VIDEO_TITLE_MAILBOX
    /* Runs before the video thread exists; drop anything stale from a
     * previous driver's life and start empty. */
@@ -3598,18 +3590,8 @@ void video_driver_apply_state_changes(void)
 bool video_driver_is_hw_context(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
-#ifdef HAVE_THREADS
-   if (video_st->context_lock)
-   {
-      bool is_hw_context = false;
-      slock_lock(video_st->context_lock);
-      is_hw_context = (video_st->hw_render.context_type
-            != RETRO_HW_CONTEXT_NONE);
-      slock_unlock(video_st->context_lock);
-      return is_hw_context;
-   }
-#endif
-   return video_st->hw_render.context_type != RETRO_HW_CONTEXT_NONE;
+   return retro_atomic_load_acquire_int(&video_st->hw_context_type)
+         != RETRO_HW_CONTEXT_NONE;
 }
 
 bool video_driver_render_context_is_main_thread_only(void)
