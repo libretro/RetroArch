@@ -9031,7 +9031,16 @@ static void write_handler_logging_verbosity(rarch_setting_t *setting)
 
    rarch_cmd                    = write_handler_get_cmd(setting);
 
-   if (!verbosity_is_enabled())
+   /* The framework has already written the bound flag when this
+    * runs, so the freshly written value names the transition the
+    * person asked for. Reading verbosity_is_enabled() here - the
+    * same memory, post-write - took every transition backwards: the
+    * flag snapped back on each press and the log file churned in
+    * the opposite direction of the display. verbosity_enable() and
+    * verbosity_disable() re-assert the flag idempotently and carry
+    * the console attach/detach side effect the direct write skips,
+    * which is what keeps verbosity_get_ptr()'s binding honest. */
+   if (*setting->value.target.boolean)
    {
       settings_t *settings = config_get_ptr();
       rarch_log_file_init(

@@ -173,6 +173,14 @@ bool is_logging_to_file(void)
    return main_verbosity_st.initialized;
 }
 
+/* The one consumer is the menu's LOG_VERBOSITY setting, which
+ * binds this as its boolean target. The framework writes through
+ * it, and the setting's change handler immediately re-drives
+ * verbosity_enable()/verbosity_disable() from the written value, so
+ * the console attach/detach side effect always follows. Removing
+ * the getter would mean shadowing the flag in menu code and syncing
+ * it by hand; a bound pointer with a reconciling handler is the
+ * smaller contract. Nothing else may write through this. */
 bool *verbosity_get_ptr(void)
 {
    return &main_verbosity_st.verbosity;
