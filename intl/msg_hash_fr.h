@@ -2054,6 +2054,7 @@ static const struct
    char s_d7fc4c9c[38];
    char s_d21c686b[31];
    char s_f465878a[42];
+   char s_3aa6b936[38];
    char s_a35a9e13[26];
    char s_8406d44c[7];
    char s_64a91b83[16];
@@ -2568,8 +2569,7 @@ static const struct
    char s_3bac47bd_1[20];
    char s_90e7db40_0[500];
    char s_90e7db40_1[80];
-   char s_b07cd572_0[500];
-   char s_b07cd572_1[205];
+   char s_1b3f0b9a[454];
    char s_4b78ee7f[88];
    char s_aed11d67[133];
    char s_dbe6e749[98];
@@ -3546,6 +3546,7 @@ static const struct
 #endif
    char s_9b51352c[33];
    char s_12510638[78];
+   char s_407622a4[61];
    char s_ac067981[50];
    char s_82d064b1[30];
 #ifdef HAVE_MIST
@@ -6672,6 +6673,7 @@ static const struct
    "D\303\251marrer la RetroManette \303\240 distance",
    "D\303\251marrer le processeur vid\303\251o",
    "Emplacement de la sauvegarde instantan\303\251e",
+   "Masquer les statistiques dans le menu",
    "Afficher les statistiques",
    "Statut",
    "Commandes stdin",
@@ -7291,16 +7293,12 @@ static const struct
    "\251faut est conserv\303\251e et rien d'autre ne change. Cette mesure s'applique au fil d'ex\303"
    "\251cution audio sur",
    " lequel s'ex\303\251cutent le pipeline multithread et les callbacks audio principaux.",
-   "Pr\303\251serve la hauteur tonale (le pitch) lors des ralentis et des avances rapides. Prend en "
-   "charge la lecture sur plusieurs fils d'ex\303\251cution et la lecture synchronis\303\251e \303"
-   "\240 l'image, y compris l'audio multicanal n\303\251goci\303\251. Augmente la charge de traiteme"
-   "nt, la m\303\251moire et la mise en m\303\251moire tampon lorsque cette option est activ\303\251"
-   "e. N\303\251cessite une fr\303\251quence d'\303\251chantillonnage de 8\302\240000 \303\240 192"
-   "\302\240000\302\240Hz. Les vitesses ou formats source non pris en charge utilisent la lecture st"
-   "andard. Les modification",
-   "s de configuration r\303\251initialisent l'audio en m\303\251moire tampon. La pr\303\251servatio"
-   "n de la hauteur tonale (pitch) reprend en lecture sur plusieurs fils d'ex\303\251cution une fois"
-   " l'audio en file d'attente \303\251coul\303\251.",
+   "Att\303\251nue les hautes fr\303\251quences lors de la lecture acc\303\251l\303\251r\303\251e, a"
+   "vec ou sans Changements de vitesse pr\303\251servant la hauteur tonale (pitch). Prend en charge "
+   "les m\303\252mes fr\303\251quences d'\303\251chantillonnage et formats sources. L'activation de "
+   "cette option implique un traitement suppl\303\251mentaire et une mise en m\303\251moire tampon ;"
+   " la lecture \303\240 vitesse normale n'est pas filtr\303\251e. Cet effet optionnel ne remplace p"
+   "as le filtre anticr\303\251nelage du r\303\251\303\251chantillonneur.",
    "Volume sonore (en dB). 0 dB correspond au volume normal, et aucun gain n'est appliqu\303\251.",
    "Autoriser le pilote WASAPI \303\240 prendre le contr\303\264le exclusif du p\303\251riph\303\251"
    "rique audio. Si d\303\251sactiv\303\251, le mode partag\303\251 sera utilis\303\251.",
@@ -8924,6 +8922,7 @@ static const struct
 #endif
    "D\303\251marrer le c\305\223ur sans contenu.",
    "Modifier l'emplacement de sauvegarde instantan\303\251e actuellement s\303\251lectionn\303\251.",
+   "Ne pas afficher les statistiques lorsque le menu est ouvert.",
    "Afficher des statistiques techniques \303\240 l'\303\251cran.",
    "Interface de commandes stdin.",
 #ifdef HAVE_MIST
@@ -10012,7 +10011,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (233655u
+      (sizeof(msg_hash_fr_blob) == (233503u
 #ifdef ANDROID
        + 373u
 #endif
@@ -12465,6 +12464,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
@@ -12971,7 +12971,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -13944,6 +13944,7 @@ static const uint32_t msg_hash_fr_ids[] =
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
 #ifdef HAVE_MIST

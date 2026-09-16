@@ -2042,6 +2042,7 @@ static const struct
    char s_d7fc4c9c[25];
    char s_d21c686b[32];
    char s_f465878a[18];
+   char s_3aa6b936[38];
    char s_a35a9e13[26];
    char s_8406d44c[6];
    char s_64a91b83[15];
@@ -2548,8 +2549,7 @@ static const struct
    char s_3c3598a9[51];
    char s_3bac47bd[425];
    char s_90e7db40[450];
-   char s_b07cd572_0[500];
-   char s_b07cd572_1[80];
+   char s_1b3f0b9a[428];
    char s_4b78ee7f[72];
    char s_aed11d67[146];
    char s_dbe6e749[97];
@@ -3522,6 +3522,7 @@ static const struct
 #endif
    char s_9b51352c[33];
    char s_12510638[43];
+   char s_407622a4[59];
    char s_ac067981[51];
    char s_82d064b1[49];
 #ifdef HAVE_MIST
@@ -6589,6 +6590,7 @@ static const struct
    "Inicia un RetroPad remot",
    "Inicia el processador de v\303\255deo",
    "Posici\303\263 de desat",
+   "Oculta les estad\303\255stiques en el men\303\272",
    "Mostra les estad\303\255stiques",
    "Estat",
    "Comandes stdin",
@@ -7182,15 +7184,11 @@ static const struct
    "eixen; un sistema que la rebutja mant\303\251 la prioritat per defecte i res m\303\251s canvia. "
    "S'aplica al fil d'\303\240udio en qu\303\250 s'executen el Threaded Pipeline i les callbacks d'"
    "\303\240udio principals.",
-   "Conserva el to durant la c\303\240mera lenta i l'avan\303\247 r\303\240pid accelerat. Admet la r"
-   "eproducci\303\263 per fils i fotograma a fotograma, incl\303\262s l'\303\240udio multicanal nego"
-   "ciat. Afegeix cost de processament, mem\303\262ria i emmagatzematge intermedi mentre est\303\240"
-   " activat. Requereix una velocitat de contingut de 8000-192000 Hz. Les velocitats o formats d'ori"
-   "gen no compatibles utilitzen la reproducci\303\263 normal. Els canvis de disseny en l\303\255nia"
-   " restableixen l'\303\240udio emmagatzemat a la mem\303\262ria interm\303\250dia. La reproducci"
-   "\303\263 p",
-   "er fils repr\303\250n la conservaci\303\263 del to despr\303\251s que l'\303\240udio a la cua s'"
-   "esgoti.",
+   "Suavitza les freq\303\274\303\250ncies altes durant la reproducci\303\263 accelerada, tant si s'"
+   "utilitza el canvi de velocitat amb conservaci\303\263 del to com si no. Admet les mateixes taxes"
+   " de contingut i formats d'origen. Afegeix processament i mem\303\262ria preparada quan est\303"
+   "\240 activat; la reproducci\303\263 a velocitat normal no s'hi veu afectada (no s'aplica cap fil"
+   "tre). Aquest efecte opcional no substitueix el filtre antiali\303\240sing del re-mostrejador.",
    "Volum del so (en dB). 0 dB \303\251s el volum normal, sense cap guany afegit.",
    "Permet al controlador WASAPI prendre el control exclusiu del dispositiu d\342\200\231\303\240udi"
    "o. Si es desactiva aquesta opci\303\263, ser\303\240 usat en mode compartit.",
@@ -8697,6 +8695,7 @@ static const struct
 #endif
    "Inicia el nucli sense contingut.",
    "Canvia la posici\303\263 actual de desat r\303\240pid.",
+   "No grafies les estad\303\255stiques mentre el men\303\272 est\303\240 obert.",
    "Mostrar les estad\303\255stiques t\303\250cniques en pantalla.",
    "Interf\303\255cie de comandes de l'entrada est\303\240ndard.",
 #ifdef HAVE_MIST
@@ -9737,7 +9736,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (215968u
+      (sizeof(msg_hash_ca_blob) == (215913u
 #ifdef ANDROID
        + 281u
 #endif
@@ -12185,6 +12184,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
@@ -12686,7 +12686,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -13659,6 +13659,7 @@ static const uint32_t msg_hash_ca_ids[] =
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
 #ifdef HAVE_MIST

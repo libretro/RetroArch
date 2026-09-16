@@ -2072,6 +2072,7 @@ static const struct
    char s_d7fc4c9c[24];
    char s_d21c686b[28];
    char s_f465878a[16];
+   char s_3aa6b936[35];
    char s_a35a9e13[24];
    char s_8406d44c[8];
    char s_64a91b83[15];
@@ -2595,8 +2596,7 @@ static const struct
    char s_3c3598a9[42];
    char s_3bac47bd[393];
    char s_90e7db40[492];
-   char s_b07cd572_0[500];
-   char s_b07cd572_1[74];
+   char s_1b3f0b9a[462];
    char s_4b78ee7f[95];
    char s_aed11d67[146];
    char s_dbe6e749[106];
@@ -3568,6 +3568,7 @@ static const struct
 #endif
    char s_9b51352c[26];
    char s_12510638[59];
+   char s_407622a4[67];
    char s_ac067981[53];
    char s_82d064b1[27];
 #ifdef HAVE_MIST
@@ -6782,6 +6783,7 @@ static const struct
    "Tosaigh RetroPad Cianda",
    "Tosaigh Pr\303\263ise\303\241la\303\255 F\303\255se",
    "Sliot\303\241n St\303\241it",
+   "Folaigh Staitistic\303\255 sa Roghchl\303\241r",
    "Staitistic\303\255 Taispe\303\241na",
    "St\303\241das",
    "orduithe stdin",
@@ -7423,16 +7425,13 @@ static const struct
    "agus n\303\255 athra\303\255onn aon rud eile. Baineann s\303\251 seo leis an sn\303\241ithe fuai"
    "me a ritheann an P\303\255bl\303\255ne Sn\303\241ithithe agus na glaonna ais fuaime l\303\241rna"
    "cha air.",
-   "Coinnigh an ph\303\241irc le linn gluaiseachta mall agus luasgh\303\251araithe ar aghaidh. Taca"
-   "\303\255onn s\303\251 le hathsheinm sn\303\241ithithe agus sioncr\303\263nach fr\303\241ma, lena"
-   " n-\303\241ir\303\255tear fuaim ilchain\303\251il chaibidlithe. Cuireann s\303\251 costas pr\303"
-   "\263ise\303\241la, cuimhne agus maol\303\241n\303\272 leis agus \303\251 cumasaithe. \303\211il"
-   "\303\255onn s\303\251 r\303\241ta \303\241bhair de 8000-192000 Hz. \303\232s\303\241ideann luasa"
-   "nna n\303\263 form\303\241id\303\255 foinse nach dtaca\303\255tear leo athsheinm gn\303\241th. A"
-   "thshocra\303\255onn athruithe ar leagan amach inl\303\255ne fuaim mhaol\303\241naithe. Leanann a"
-   "thsheinm sn\303\241ith",
-   "ithe ar aghaidh ag caomhn\303\272 na p\303\241irce tar \303\251is draen\303\241il fuaime scuaine"
-   ".",
+   "Maolaigh minic\303\255ochta\303\255 arda le linn athsheinm luathaithe, b\303\255odh athruithe lu"
+   "ais a chaomhna\303\255onn an tuin \303\241 n-\303\272s\303\241id n\303\263 n\303\241 b\303\255od"
+   "h. Taca\303\255onn s\303\251 leis na r\303\241ta\303\255 \303\241bhair agus leis na form\303\241"
+   "id\303\255 foinse c\303\251anna. Cuireann s\303\251 pr\303\263ise\303\241il agus cuimhne ullmhai"
+   "the leis nuair a bh\303\255onn s\303\251 gn\303\255omhach; n\303\255 chuirtear scagadh ar bith i"
+   " bhfeidhm ar athsheinm ag gn\303\241thluas. N\303\255 chuirtear an \303\251ifeacht roghnach seo "
+   "in ionad scagaire frith-ailiasaithe an athshampl\303\263ra.",
    "Toirt fuaime (i dB). Is gn\303\241th-thoirt \303\251 0 dB, agus n\303\255 chuirtear aon ghn\303"
    "\263thachan i bhfeidhm.",
    "Lig don tiom\303\241na\303\255 WASAPI smacht eisiach a ghlacadh ar an ngl\303\251as fuaime. M"
@@ -9229,6 +9228,7 @@ static const struct
 #endif
    "Tosaigh cro\303\255 gan \303\241bhar.",
    "Athraigh an sliot\303\241n st\303\241it at\303\241 roghnaithe faoi l\303\241thair.",
+   "N\303\241 tarraing na staitistic\303\255 fad is at\303\241 an roghchl\303\241r ar oscailt.",
    "Taispe\303\241in staitistic\303\255 teicni\303\272la ar an sc\303\241ile\303\241n.",
    "comh\303\251adan ordaithe stdin.",
 #ifdef HAVE_MIST
@@ -10385,7 +10385,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (219744u
+      (sizeof(msg_hash_ga_blob) == (219734u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12860,6 +12860,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
@@ -13378,7 +13379,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -14350,6 +14351,7 @@ static const uint32_t msg_hash_ga_ids[] =
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
 #ifdef HAVE_MIST

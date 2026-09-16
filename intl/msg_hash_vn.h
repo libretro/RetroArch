@@ -2080,6 +2080,7 @@ static const struct
    char s_d7fc4c9c[33];
    char s_d21c686b[43];
    char s_f465878a[22];
+   char s_3aa6b936[28];
    char s_a35a9e13[25];
    char s_8406d44c[14];
    char s_64a91b83[13];
@@ -2613,8 +2614,7 @@ static const struct
    char s_3bac47bd_1[109];
    char s_90e7db40_0[500];
    char s_90e7db40_1[130];
-   char s_b07cd572_0[500];
-   char s_b07cd572_1[276];
+   char s_1b3f0b9a[482];
    char s_4b78ee7f[141];
    char s_aed11d67[149];
    char s_dbe6e749[126];
@@ -3591,6 +3591,7 @@ static const struct
 #endif
    char s_9b51352c[61];
    char s_12510638[64];
+   char s_407622a4[64];
    char s_ac067981[56];
    char s_82d064b1[26];
 #ifdef HAVE_MIST
@@ -7424,6 +7425,7 @@ static const struct
    "Kh\341\273\237i \304\221\341\273\231ng tr\303\254nh x\341\273\255 l\303\275 h\303\254nh \341\272"
    "\243nh",
    "\303\224 l\306\260u tr\341\272\241ng th\303\241i",
+   "\341\272\250n th\341\273\221ng k\303\252 trong Menu",
    "Hi\341\273\203n th\341\273\213 th\341\273\221ng k\303\252",
    "Tr\341\272\241ng th\303\241i",
    "l\341\273\207nh stdin",
@@ -8286,25 +8288,18 @@ static const struct
    "u\341\273\223ng \303\242m thanh m\303\240 Lu\341\273\223ng X\341\273\255 L\303\275 \303\202m Tha"
    "nh Song Song v\303\240 c\303\241c h\303\240m g\341\273\215i l\341\272\241i \303\242m thanh c\341"
    "\273\247a l\303\265i gi\341\272\243 l\341\272\255p s\341\273\255 d\341\273\245ng.",
-   "Gi\341\273\257 nguy\303\252n cao \304\221\341\273\231 khi ph\303\241t ch\341\272\255m v\303\240 "
-   "tua nhanh. H\341\273\227 tr\341\273\243 ph\303\241t l\341\272\241i \304\221a lu\341\273\223ng v"
-   "\303\240 ph\303\241t l\341\272\241i \304\221\341\273\223ng b\341\273\231 theo khung h\303\254nh,"
-   " bao g\341\273\223m c\341\272\243 \303\242m thanh nhi\341\273\201u k\303\252nh \304\221\306\260"
-   "\341\273\243c c\341\272\245u h\303\254nh ph\303\271 h\341\273\243p. Khi b\341\272\255t, t\303"
-   "\255nh n\304\203ng n\303\240y s\341\272\275 l\303\240m t\304\203ng m\341\273\251c s\341\273\255 "
-   "d\341\273\245ng t\303\240i nguy\303\252n x\341\273\255 l\303\275, b\341\273\231 nh\341\273\233 v"
-   "\303\240 b\341\273\231 \304\221\341\273\207m. Y\303\252u c\341\272\247u t\341\272\247n s\341\273"
-   "\221 l\341\272\245y m\341\272\253u c\341\273\247a n\341\273\231i dung t\341\273\253 8000-192000 "
-   "Hz. T\341\273\221c \304\221\341\273\231 ho\341\272\267c \304\221\341\273\213nh d\341\272\241ng n"
-   "gu\341\273\223n kh\303\264ng \304\221\306\260\341\273\243c h\341\273\227 tr\341\273\243 s\341"
-   "\272\275 s\341\273\255 d\341\273\245ng c\303\241ch ph\303\241t th\303\264ng ",
-   "th\306\260\341\273\235ng. Vi\341\273\207c thay \304\221\341\273\225i b\341\273\221 c\341\273\245"
-   "c tr\341\273\261c ti\341\272\277p s\341\272\275 x\303\263a \303\242m thanh \304\221ang \304\221"
-   "\306\260\341\273\243c l\306\260u trong b\341\273\231 \304\221\341\273\207m. Khi ph\303\241t l"
-   "\341\272\241i \304\221a lu\341\273\223ng, t\303\255nh n\304\203ng gi\341\273\257 nguy\303\252n c"
-   "ao \304\221\341\273\231 s\341\272\275 ti\341\272\277p t\341\273\245c ho\341\272\241t \304\221"
-   "\341\273\231ng sau khi ph\303\241t h\341\272\277t ph\341\272\247n \303\242m thanh \304\221\303"
-   "\243 \304\221\306\260\341\273\243c x\341\272\277p h\303\240ng.",
+   "Gi\341\272\243m c\303\241c t\341\272\247n s\341\273\221 cao khi ph\303\241t nhanh, c\303\263 ho"
+   "\341\272\267c kh\303\264ng c\303\263 thay \304\221\341\273\225i t\341\273\221c \304\221\341\273"
+   "\231 nh\306\260ng v\341\272\253n gi\341\273\257 nguy\303\252n cao \304\221\341\273\231. H\341"
+   "\273\227 tr\341\273\243 c\303\271ng c\303\241c t\341\273\221c \304\221\341\273\231 n\341\273\231"
+   "i dung v\303\240 \304\221\341\273\213nh d\341\272\241ng ngu\341\273\223n. Khi b\341\272\255t s"
+   "\341\272\275 t\304\203ng th\303\252m qu\303\241 tr\303\254nh x\341\273\255 l\303\275 v\303\240 b"
+   "\341\273\231 nh\341\273\233 \304\221\306\260\341\273\243c chu\341\272\251n b\341\273\213 tr\306"
+   "\260\341\273\233c; ph\303\241t \341\273\237 t\341\273\221c \304\221\341\273\231 b\303\254nh th"
+   "\306\260\341\273\235ng s\341\272\275 kh\303\264ng \304\221\306\260\341\273\243c l\341\273\215c. "
+   "Hi\341\273\207u \341\273\251ng t\303\271y ch\341\273\215n n\303\240y kh\303\264ng thay th\341"
+   "\272\277 b\341\273\231 l\341\273\215c ch\341\273\221ng r\304\203ng c\306\260a c\341\273\247a b"
+   "\341\273\231 \304\221\341\273\225i t\341\272\247n s\341\273\221 l\341\272\245y m\341\272\253u.",
    "\303\202m l\306\260\341\273\243ng \303\242m thanh (t\303\255nh b\341\272\261ng dB). 0 dB l\303"
    "\240 \303\242m l\306\260\341\273\243ng b\303\254nh th\306\260\341\273\235ng v\303\240 kh\303\264"
    "ng \303\241p d\341\273\245ng b\341\272\245t k\341\273\263 m\341\273\251c khu\341\272\277ch \304"
@@ -11126,6 +11121,8 @@ static const struct
    "\303\264ng c\303\263 n\341\273\231i dung.",
    "Thay \304\221\341\273\225i v\341\273\213 tr\303\255 l\306\260u tr\341\272\241ng th\303\241i \304"
    "\221ang \304\221\306\260\341\273\243c ch\341\273\215n.",
+   "Kh\303\264ng hi\341\273\203n th\341\273\213 th\303\264ng tin th\341\273\221ng k\303\252 khi menu"
+   " \304\221ang m\341\273\237.",
    "Hi\341\273\203n th\341\273\213 th\341\273\221ng k\303\252 k\341\273\271 thu\341\272\255t tr\303"
    "\252n m\303\240n h\303\254nh.",
    "Giao di\341\273\207n l\341\273\207nh stdin.",
@@ -12863,7 +12860,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (248676u
+      (sizeof(msg_hash_vn_blob) == (248474u
 #ifdef ANDROID
        + 373u
 #endif
@@ -15345,6 +15342,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
@@ -15869,7 +15867,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -16841,6 +16839,7 @@ static const uint32_t msg_hash_vn_ids[] =
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
 #ifdef HAVE_MIST
