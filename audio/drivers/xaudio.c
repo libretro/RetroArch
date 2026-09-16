@@ -48,6 +48,7 @@
 #include "../common/mmdevice_common_inline.h"
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #endif
 #endif
 
@@ -147,7 +148,7 @@ struct xaudio2
    xaudio2() :
       buf(0), pXAudio2(0), pMasterVoice(0),
       pSourceVoice(0), bufsize(0), bufptr(0),
-      write_buffer(0), hEvent(0), buffers(0)
+      write_buffer(0), buffers(0)
    {}
 
    virtual ~xaudio2() {}
@@ -155,8 +156,11 @@ struct xaudio2
    STDMETHOD_(void, OnBufferStart) (void *) {}
    STDMETHOD_(void, OnBufferEnd) (void *)
    {
+      /* XAudio2's engine thread: one atomic and a gated wake - no
+       * syscall unless the writer is actually parked, where SetEvent
+       * was one per buffer regardless. */
       retro_atomic_fetch_sub_int(&buffers, 1);
-      SetEvent(hEvent);
+      retro_eventcount_notify(&park);
    }
    STDMETHOD_(void, OnLoopEnd) (void *) {}
    STDMETHOD_(void, OnStreamEnd) () {}
@@ -186,13 +190,14 @@ struct xaudio2
    char _pad0[XA_CACHE_LINE];
 
    /* Touched by the XAudio2 engine thread: OnBufferEnd decrements
-    * `buffers` and signals `hEvent`.  The producer reads both.
+    * `buffers` and notifies `park`.  The producer reads both.
     * retro_atomic rather than raw Interlocked + volatile: the
     * Interlocked RMWs were full barriers, but the producer-side
     * plain volatile reads carried no acquire ordering, which is
     * real on Windows-on-ARM (MSVC defaults to /volatile:iso on
     * ARM64, unlike /volatile:ms on x86/x64). */
-   HANDLE hEvent;
+   /* The writer's park; OnBufferEnd notifies. */
+   retro_eventcount_t park;
    retro_atomic_int_t buffers;
 
    char _pad1[XA_CACHE_LINE];
@@ -213,7 +218,7 @@ static void WINAPI xa_voice_on_buffer_end(IXAudio2VoiceCallback *handle_, void *
    xaudio2_t *handle = (xaudio2_t*)handle_;
    (void)data;
    retro_atomic_fetch_sub_int(&handle->buffers, 1);
-   SetEvent(handle->hEvent);
+   retro_eventcount_notify(&handle->park);
 }
 
 static void WINAPI xa_dummy_voidp(IXAudio2VoiceCallback *handle, void *data) { (void)handle; (void)data; }
@@ -293,8 +298,7 @@ static void xaudio2_free(xaudio2_t *handle)
       IXAudio2_Release(handle->pXAudio2);
    }
 
-   if (handle->hEvent)
-      CloseHandle(handle->hEvent);
+   retro_eventcount_free(&handle->park);
 
    free(handle->buf);
 
@@ -521,8 +525,7 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
                (IXAudio2VoiceCallback*)handle, 0, 0)))
       goto error;
 
-   handle->hEvent  = CreateEvent(0, FALSE, FALSE, 0);
-   if (!handle->hEvent)
+   if (!retro_eventcount_init(&handle->park))
       goto error;
 
    handle->wf      = desired_wf;
@@ -633,8 +636,18 @@ static ssize_t xa_write(void *data, const void *s, size_t len)
           * for. */
          while (retro_atomic_load_acquire_int(&handle->buffers)
                == MAX_BUFFERS - 1)
-            if (!(WaitForSingleObject(handle->hEvent, XAUDIO_TIMEOUT) == WAIT_OBJECT_0))
+         {
+            int key = retro_eventcount_prepare_wait(&handle->park);
+            if (retro_atomic_load_acquire_int(&handle->buffers)
+                  != MAX_BUFFERS - 1)
+            {
+               retro_eventcount_cancel_wait(&handle->park);
+               break;
+            }
+            if (!retro_eventcount_commit_wait_timeout(&handle->park,
+                     key, (int64_t)XAUDIO_TIMEOUT * 1000))
                return (ssize_t)_len;
+         }
 
          xa2buffer.Flags      = 0;
          xa2buffer.AudioBytes = handle->bufsize;
@@ -752,8 +765,17 @@ static size_t xa_wait_writable(void *data, size_t len)
        * keeps completing buffers but never frees enough. */
       if (--laps < 0)
          return 0;
-      if (WaitForSingleObject(handle->hEvent, XAUDIO_TIMEOUT) != WAIT_OBJECT_0)
-         return 0;
+      {
+         int key = retro_eventcount_prepare_wait(&handle->park);
+         if (xaudio2_write_available(handle) >= len)
+         {
+            retro_eventcount_cancel_wait(&handle->park);
+            continue;
+         }
+         if (!retro_eventcount_commit_wait_timeout(&handle->park,
+                  key, (int64_t)XAUDIO_TIMEOUT * 1000))
+            return 0;
+      }
    }
 }
 

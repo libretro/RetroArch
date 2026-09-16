@@ -3127,4 +3127,12 @@ endif
 
 endif
 
+# Cross builds with mingw-w64 (a Linux host, so the MSYS2 detection
+# above never fires): the toolchain ships the 2.8 import library.
+ifneq (,$(findstring mingw,$(CC)$(HOST_PREFIX)))
+ifeq ($(HAVE_XAUDIO), 1)
+   LIBS += -lxaudio2_8
+endif
+endif
+
 ##################################

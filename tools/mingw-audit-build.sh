@@ -20,6 +20,6 @@ export CFLAGS="-I$STUBS -include $STUBS/d3d12_fixup.h \
 -DID3D12InfoQueue=IUnknown -DD3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP=17"
 MK="make -f Makefile.win HOST_PREFIX=x86_64-w64-mingw32- \
 CXX=x86_64-w64-mingw32-gcc HAVE_D3D11=1 HAVE_D3D12=1 HAVE_WDMKS=1 HAVE_FREETYPE=0 \
-HAVE_CG=0 HAVE_XAUDIO=0"
+HAVE_CG=0 HAVE_XAUDIO=1"
 $MK -j"$(nproc)"
 ls -la retroarch.exe
