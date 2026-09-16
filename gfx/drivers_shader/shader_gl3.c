@@ -1638,7 +1638,7 @@ static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
       if (g->uniform || g->push_constant ||
           a->uniform || a->push_constant ||
           r->uniform || r->push_constant)
-         input_state_get_ptr()->shader_uses_sensors = true;
+         input_driver_set_shader_uses_sensors(true);
    }
 
    gl3_pass_reflect_texture_parameter(pass, "OriginalSize",
@@ -2231,16 +2231,17 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
                          + (pass->current_subframe
                             ? pass->current_subframe - 1 : 0)));
 
-   /* Sensor pass->uniforms — per-frame snapshot cached
-    * by input_driver_poll() on the main thread */
+   /* Sensor pass->uniforms — one coherent seqlock'd snapshot of the
+    * values input_driver_poll() published on the main thread. */
    {
-      input_driver_state_t *input_st = input_state_get_ptr();
+      float gyro[3], accel[3], rest[3];
+      input_driver_read_sensor_snapshot(gyro, accel, rest);
       gl3_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_GYROSCOPE,
-                        input_st->sensor_gyroscope_cache);
+                        gyro);
       gl3_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER,
-                        input_st->sensor_accelerometer_cache);
+                        accel);
       gl3_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER_REST,
-                        input_st->sensor_accelerometer_rest);
+                        rest);
    }
 
    /* Standard inputs */
@@ -4070,7 +4071,7 @@ struct video_shader *gl3_filter_chain_get_preset(
 void gl3_filter_chain_free(gl3_filter_chain_t *chain)
 {
    gl3_chain_free(chain);
-   input_state_get_ptr()->shader_uses_sensors = false;
+   input_driver_set_shader_uses_sensors(false);
 }
 
 void gl3_filter_chain_set_shader(

@@ -3609,7 +3609,7 @@ static bool slang_pass_build(struct slang_pass *pass)
       if (g->uniform || g->push_constant ||
           a->uniform || a->push_constant ||
           r->uniform || r->push_constant)
-         input_state_get_ptr()->shader_uses_sensors = true;
+         input_driver_set_shader_uses_sensors(true);
    }
 
    /* Filter out pass->parameters which we will never use anyways.
@@ -3926,16 +3926,17 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
                       pass->common->hdr10);
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
-   /* Sensor uniforms — per-frame snapshot cached
-    * by input_driver_poll() on the main thread */
+   /* Sensor uniforms — one coherent seqlock'd snapshot of the values
+    * input_driver_poll() published on the main thread. */
    {
-      input_driver_state_t *input_st = input_state_get_ptr();
+      float gyro[3], accel[3], rest[3];
+      input_driver_read_sensor_snapshot(gyro, accel, rest);
       slang_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_GYROSCOPE,
-                        input_st->sensor_gyroscope_cache);
+                        gyro);
       slang_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER,
-                        input_st->sensor_accelerometer_cache);
+                        accel);
       slang_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER_REST,
-                        input_st->sensor_accelerometer_rest);
+                        rest);
    }
 
    /* Standard inputs */
@@ -5018,7 +5019,7 @@ void vulkan_filter_chain_free(
       vulkan_filter_chain_t *chain)
 {
    slang_chain_free(chain);
-   input_state_get_ptr()->shader_uses_sensors = false;
+   input_driver_set_shader_uses_sensors(false);
 }
 
 void vulkan_filter_chain_set_shader(

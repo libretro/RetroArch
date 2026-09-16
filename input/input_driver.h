@@ -24,6 +24,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_atomic.h>
 #include <retro_inline.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
@@ -708,7 +709,18 @@ typedef struct
    float rest_accum[3];
    unsigned rest_sample_count;
    bool rest_capturing;
-   bool shader_uses_sensors;
+   /* Set from the shader backends' pass builders (video thread under
+    * the threaded wrapper) through
+    * input_driver_set_shader_uses_sensors(), read by the poll's
+    * demand check on the main thread: atomic with release/acquire,
+    * not a plain bool. */
+   retro_atomic_int_t shader_uses_sensors;
+   /* Seqlock publication of the sensor caches below - poll computes
+    * the caches, then publishes gyro, accelerometer and rest (nine
+    * floats as bits) here for the shader backends' per-frame reads
+    * from the video thread. */
+   retro_atomic_int_t sensor_snap_seq;
+   retro_atomic_int_t sensor_snap_bits[9];
    bool frontend_sensors_enabled;
    unsigned core_accel_rate; /* >0 means core wants accel at this rate */
    unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
@@ -769,6 +781,17 @@ bool input_driver_set_rumble_gain(
  *
  * @return true if the sensor state has been successfully set
  **/
+/* Release-stores the shader-demand latch; callable from the shader
+ * backends on the video thread. */
+void input_driver_set_shader_uses_sensors(bool uses);
+
+/* Seqlock read of the poll-published sensor snapshot: gyroscope,
+ * accelerometer and accelerometer-rest vec3s, coherent as a set.
+ * For the shader backends' per-frame uniform uploads on the video
+ * thread; converges immediately on the main thread. */
+void input_driver_read_sensor_snapshot(float *gyro3,
+      float *accel3, float *rest3);
+
 bool input_driver_set_sensor(
          unsigned port, bool sensors_enable,
          enum retro_sensor_action action, unsigned rate);

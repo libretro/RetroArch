@@ -4,3 +4,14 @@
 # accessibility and settings work therefore happens on the main
 # thread for every caller.
 @boundary runloop_msg_queue_push
+
+# The shader backends' per-frame sensor uniforms: the read side of a
+# seqlock whose only writer is input_driver_poll() on the main thread
+# (nine floats published as bits behind sensor_snap_seq). The getter
+# call inside the helper is how it reaches the atomics, not a live
+# state read.
+input_driver_read_sensor_snapshot|input_state_get_ptr
+# Release-store of the atomic shader-demand latch (shader_uses_sensors),
+# read with acquire by the poll's demand check. A latch write, not a
+# state read.
+input_driver_set_shader_uses_sensors|input_state_get_ptr
