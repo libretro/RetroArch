@@ -4669,6 +4669,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->menu.font_color_green                       = settings->uints.menu_font_color_green;
       video_info->menu.font_color_blue                        = settings->uints.menu_font_color_blue;
       video_info->menu.playlist_show_history_icons            = settings->uints.playlist_show_history_icons;
+      video_info->menu.left_thumbnails                        = settings->uints.menu_left_thumbnails;
+      video_info->menu.ozone_header_icon                      = settings->uints.menu_ozone_header_icon;
+      video_info->menu.ozone_header_separator                 = settings->uints.menu_ozone_header_separator;
       video_info->menu.input_turbo_button                     = settings->uints.input_turbo_button;
       video_info->menu.input_turbo_bind                       = settings->ints.input_turbo_bind;
       video_info->menu.ozone_color_theme                      = settings->uints.menu_ozone_color_theme;
@@ -4695,6 +4698,13 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->menu.xmb_entry_icons                        = settings->bools.menu_xmb_entry_icons;
       video_info->menu.xmb_switch_icons                       = settings->bools.menu_xmb_switch_icons;
       video_info->menu.ozone_sort_after_truncate_playlist_name = settings->bools.ozone_sort_after_truncate_playlist_name;
+      video_info->menu.ozone_scroll_content_metadata          = settings->bools.ozone_scroll_content_metadata;
+      video_info->menu.show_sublabels_current_selection_only  = settings->bools.menu_show_sublabels_current_selection_only;
+      video_info->menu.disable_search_button                  = settings->bools.menu_disable_search_button;
+      video_info->menu.playlist_show_entry_idx                = settings->bools.playlist_show_entry_idx;
+      video_info->menu.kiosk_mode_enable                      = settings->bools.kiosk_mode_enable;
+      video_info->menu.content_runtime_log                    = settings->bools.content_runtime_log;
+      video_info->menu.content_runtime_log_aggregate          = settings->bools.content_runtime_log_aggregate;
       video_info->menu.xmb_font_is_default                    = string_is_equal(
             settings->paths.path_menu_xmb_font, FILE_PATH_UNKNOWN);
       video_info->menu.use_preferred_system_color_theme       = settings->bools.menu_use_preferred_system_color_theme;

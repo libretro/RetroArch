@@ -441,6 +441,9 @@ typedef struct video_frame_menu_settings
    unsigned font_color_green;
    unsigned font_color_blue;
    unsigned playlist_show_history_icons;
+   unsigned left_thumbnails;
+   unsigned ozone_header_icon;
+   unsigned ozone_header_separator;
    unsigned input_turbo_button;
    int      input_turbo_bind;
    unsigned ozone_color_theme;
@@ -465,6 +468,13 @@ typedef struct video_frame_menu_settings
    bool     xmb_entry_icons;
    bool     xmb_switch_icons;
    bool     ozone_sort_after_truncate_playlist_name;
+   bool     ozone_scroll_content_metadata;
+   bool     show_sublabels_current_selection_only;
+   bool     disable_search_button;
+   bool     playlist_show_entry_idx;
+   bool     kiosk_mode_enable;
+   bool     content_runtime_log;
+   bool     content_runtime_log_aggregate;
    /* Derived: whether path_menu_xmb_font is the FILE_PATH_UNKNOWN
     * placeholder, i.e. no custom menu font is configured. The path
     * itself stays out of the per-frame snapshot; the one frame-path
