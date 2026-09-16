@@ -4653,6 +4653,12 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->menu.timedate_style                         = settings->uints.menu_timedate_style;
       video_info->menu.timedate_date_separator                = settings->uints.menu_timedate_date_separator;
       video_info->menu.ticker_type                            = settings->uints.menu_ticker_type;
+      video_info->menu.font_color_red                         = settings->uints.menu_font_color_red;
+      video_info->menu.font_color_green                       = settings->uints.menu_font_color_green;
+      video_info->menu.font_color_blue                        = settings->uints.menu_font_color_blue;
+      video_info->menu.playlist_show_history_icons            = settings->uints.playlist_show_history_icons;
+      video_info->menu.input_turbo_button                     = settings->uints.input_turbo_button;
+      video_info->menu.input_turbo_bind                       = settings->ints.input_turbo_bind;
       video_info->menu.ozone_color_theme                      = settings->uints.menu_ozone_color_theme;
       video_info->menu.startup_page                           = settings->uints.menu_startup_page;
 #ifdef HAVE_XMB
@@ -4674,6 +4680,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->menu.xmb_show_title_header                  = settings->bools.menu_xmb_show_title_header;
       video_info->menu.xmb_vertical_thumbnails                = settings->bools.menu_xmb_vertical_thumbnails;
       video_info->menu.ticker_smooth                          = settings->bools.menu_ticker_smooth;
+      video_info->menu.xmb_entry_icons                        = settings->bools.menu_xmb_entry_icons;
+      video_info->menu.xmb_switch_icons                       = settings->bools.menu_xmb_switch_icons;
+      video_info->menu.ozone_sort_after_truncate_playlist_name = settings->bools.ozone_sort_after_truncate_playlist_name;
+      video_info->menu.xmb_font_is_default                    = string_is_equal(
+            settings->paths.path_menu_xmb_font, FILE_PATH_UNKNOWN);
       video_info->menu.use_preferred_system_color_theme       = settings->bools.menu_use_preferred_system_color_theme;
       video_info->menu.savestate_thumbnail_enable             = settings->bools.savestate_thumbnail_enable;
       video_info->menu.show_sublabels                         = settings->bools.menu_show_sublabels;

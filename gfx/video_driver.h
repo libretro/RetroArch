@@ -437,6 +437,12 @@ typedef struct video_frame_menu_settings
    unsigned timedate_style;
    unsigned timedate_date_separator;
    unsigned ticker_type;
+   unsigned font_color_red;
+   unsigned font_color_green;
+   unsigned font_color_blue;
+   unsigned playlist_show_history_icons;
+   unsigned input_turbo_button;
+   int      input_turbo_bind;
    unsigned ozone_color_theme;
    unsigned startup_page;
    int      xmb_title_margin;
@@ -456,6 +462,14 @@ typedef struct video_frame_menu_settings
    bool     xmb_show_title_header;
    bool     xmb_vertical_thumbnails;
    bool     ticker_smooth;
+   bool     xmb_entry_icons;
+   bool     xmb_switch_icons;
+   bool     ozone_sort_after_truncate_playlist_name;
+   /* Derived: whether path_menu_xmb_font is the FILE_PATH_UNKNOWN
+    * placeholder, i.e. no custom menu font is configured. The path
+    * itself stays out of the per-frame snapshot; the one frame-path
+    * consumer only ever asks this predicate. */
+   bool     xmb_font_is_default;
    bool     use_preferred_system_color_theme;
    bool     savestate_thumbnail_enable;
    bool     show_sublabels;
