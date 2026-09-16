@@ -4988,18 +4988,6 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          retroarch_menu_running_finished(false);
 #endif
-         if (uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
-         {
-#ifdef HAVE_COMPANION_WIMP
-            bool desktop_menu_enable = settings->bools.desktop_menu_enable;
-            bool ui_companion_toggle = settings->bools.ui_companion_toggle;
-#else
-            bool desktop_menu_enable = false;
-            bool ui_companion_toggle = false;
-#endif
-            ui_companion_driver_toggle(desktop_menu_enable,
-                  ui_companion_toggle, false);
-         }
          break;
       case CMD_EVENT_ADD_TO_FAVORITES:
          {

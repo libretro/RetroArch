@@ -6918,9 +6918,9 @@ static enum runloop_state_enum runloop_check_state(
 #endif
       {
          if (pause_nonactive)
-            focused = is_focused && (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND));
+            focused = is_focused;
          else
-            focused = (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND));
+            focused = true;
       }
 
       if (action == old_action)
@@ -7277,12 +7277,6 @@ static enum runloop_state_enum runloop_check_state(
                         menu->userdata,
                         menu->menu_state_msg);
 
-               if (uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
-               {
-                  if (     uico_st->drv
-                        && uico_st->drv->render_messagebox)
-                     uico_st->drv->render_messagebox(menu->menu_state_msg);
-               }
             }
 
             if (BIT64_GET(menu->state, MENU_STATE_BLIT))
@@ -8742,11 +8736,6 @@ end:
              * kernel's own overshoot, which is what it was for. */
             const retro_time_t deadline = runloop_st->frame_limit_anchor_ns / 1000;
             retro_time_t now            = end_frame_time;
-#if defined(HAVE_COCOATOUCH)
-            /* In the background the loop is not paced at all. */
-            if (uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
-               return 1;
-#endif
             if (to_sleep_us > runloop_st->frame_limit_margin)
             {
                const retro_time_t asked_until =

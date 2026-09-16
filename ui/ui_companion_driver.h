@@ -71,8 +71,7 @@ enum ui_msg_window_type
 
 enum uico_driver_state_flags
 {
-   UICO_ST_FLAG_WIMP_IS_INITED   = (1 << 0),
-   UICO_ST_FLAG_IS_ON_FOREGROUND = (1 << 1)
+   UICO_ST_FLAG_WIMP_IS_INITED   = (1 << 0)
 };
 
 typedef struct ui_msg_window_state

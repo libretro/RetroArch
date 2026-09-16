@@ -23,7 +23,6 @@
 #include <string.h>
 #include "../verbosity.h"
 #include "../video_display_server.h"
-#include "../../ui/ui_companion_driver.h"
 #include "../modeline/modeline_edid.h"
 #include "../video_driver.h"
 #include "../../ui/drivers/cocoa/apple_platform.h"
@@ -1407,14 +1406,21 @@ static int apple_display_server_get_edid(void *data, uint8_t *out, size_t max)
 #endif
 
 /* Two loop models exist here. Under HAVE_QT RetroArch owns the main
- * loop (ui_cocoa.m) and pumps CFRunLoop itself between iterations;
- * there the wait is a run of the default mode that returns at the
- * first handled source or at the deadline - the MsgWait shape. On
- * every other build the OS drives: runloop_iterate is called from a
- * CFRunLoop observer or a CADisplayLink step, so the run loop between
- * callbacks is the wait and this returns at once - except a
- * backgrounded iOS/tvOS app, which keeps the caller's sleep, since a
- * suspended run loop must not become a spin if it does get called. */
+ * loop (ui_cocoa.m): it pumps CFRunLoop itself between iterations
+ * from plain C, so a run of the default mode from inside
+ * runloop_iterate is not nested in any CFRunLoop run, and it returns
+ * at the first handled source or the deadline - the MsgWait shape.
+ *
+ * On every other build the OS drives: runloop_iterate is called
+ * from rarch_draw_observer, a CFRunLoop observer. That loop is not a
+ * wait - on macOS and tvOS the observer calls CFRunLoopWakeUp after
+ * every iteration unconditionally, so the run loop never idles and
+ * the caller's sleep is the only thing pacing a paused RetroArch; a
+ * nested CFRunLoopRunInMode from inside the observer would re-enter
+ * the observer and recurse. So the OS-driven builds return false and
+ * keep the sleep. The real Apple wait belongs in cocoa_common.m: an
+ * observer that does not wake the loop while paused, letting it
+ * block on input and the display link. That wants a Mac to verify. */
 static bool apple_display_server_idle_wait(void *data, unsigned ms)
 {
    (void)data;
@@ -1423,12 +1429,8 @@ static bool apple_display_server_idle_wait(void *data, unsigned ms)
          TRUE);
    return true;
 #else
-#if defined(HAVE_COCOATOUCH)
-   if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
-      return false;
-#endif
    (void)ms;
-   return true;
+   return false;
 #endif
 }
 
