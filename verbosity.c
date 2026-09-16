@@ -316,10 +316,12 @@ static const char *rarch_log_line_format(char *line, size_t line_size,
  * a core-supplied custom tag rides the buffer like INFO. */
 static bool rarch_log_tag_wants_flush(const char *tag_v)
 {
-   return memcmp(tag_v, FILE_PATH_LOG_ERROR,
-               sizeof(FILE_PATH_LOG_ERROR)) == 0
-       || memcmp(tag_v, FILE_PATH_LOG_WARN,
-               sizeof(FILE_PATH_LOG_WARN))  == 0;
+   /* strcmp, not memcmp with the pattern's sizeof: the tag can be a
+    * shorter string than the pattern ("[WARN]" against "[ERROR]"'s
+    * eight bytes), and a sized compare reads past its terminator -
+    * a one-byte overread AddressSanitizer stops the process for. */
+   return strcmp(tag_v, FILE_PATH_LOG_ERROR) == 0
+       || strcmp(tag_v, FILE_PATH_LOG_WARN)  == 0;
 }
 
 /* One write - and, for lines that must not wait, one flush - under
@@ -399,9 +401,11 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          int prio = ANDROID_LOG_INFO;
          if (tag)
          {
-            if (memcmp(tag, FILE_PATH_LOG_WARN, sizeof(FILE_PATH_LOG_WARN)) == 0)
+            /* strcmp for the same reason as rarch_log_tag_wants_flush:
+             * a sized memcmp reads past a shorter tag's terminator. */
+            if (strcmp(tag, FILE_PATH_LOG_WARN) == 0)
                prio = ANDROID_LOG_WARN;
-            else if (memcmp(tag, FILE_PATH_LOG_ERROR, sizeof(FILE_PATH_LOG_ERROR)) == 0)
+            else if (strcmp(tag, FILE_PATH_LOG_ERROR) == 0)
                prio = ANDROID_LOG_ERROR;
          }
          __android_log_vprint(prio, FILE_PATH_PROGRAM_NAME, fmt, ap);
