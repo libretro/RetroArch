@@ -57,8 +57,24 @@ check-vulkan: all
 	 if [ "$$errs" != "0" ]; then echo "check-vulkan: $$errs validation error(s)"; exit 1; fi; \
 	 exit $$rc
 
+# The same lanes on any real driver named in DRIVER (gl, glcore, ...),
+# through whatever context the display offers - in CI, llvmpipe under
+# Xvfb with LIBGL_ALWAYS_SOFTWARE=1. No validation layer here: a
+# harness failure, a sanitizer report or a crash is what fails it.
+check-driver: all
+	@if [ -z "$$DISPLAY" ]; then echo "check-driver: no DISPLAY, skipping"; exit 77; fi; \
+	 if [ -z "$(DRIVER)" ]; then echo "check-driver: DRIVER=<video driver> required"; exit 2; fi; \
+	 HARNESS_VIDEO_DRIVER=$(DRIVER) HARNESS_VERBOSE=1 \
+	 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
+	 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1:suppressions=ubsan-vulkan.supp \
+	 TSAN_OPTIONS=halt_on_error=1:second_deadlock_stack=1:suppressions=tsan-gl.supp \
+	 ./$(TARGET) $(CYCLES) > check.log 2>&1; rc=$$?; \
+	 grep -E '\[pass\]|FAIL|all lanes|X Error|Sanitizer' check.log | grep -v 'XFree86-VidMode'; \
+	 rm -f check.log; \
+	 exit $$rc
+
 clean:
 	rm -f $(TARGET) check.log harness_core.so retroarch_nomain.o retroarch_nomain.d \
 	      harness_main.o harness_main.d
 
-.PHONY: all check check-vulkan clean
+.PHONY: all check check-vulkan check-driver clean

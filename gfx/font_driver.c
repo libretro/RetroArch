@@ -486,10 +486,16 @@ static bool font_driver_rebuild(font_data_t *font,
       return false;
 
    /* font->renderer is the backend font_init_first() was handed, so
-    * this is the call that made the font, against a different file. */
+    * this is the call that made the font, against a different file.
+    * A rebuild goes through the video thread whenever the wrapper is
+    * up, whatever thread made the font: the OSD font is made on the
+    * thread that owns the context and carries no threading hint, but
+    * a font-size change rebuilds it from the settings path on the
+    * main thread, and a GL backend making its context current there
+    * while the video thread holds it is an X BadAccess. On the video
+    * thread itself the call runs directly. */
 #ifdef HAVE_THREADS
-   if (     font->threading_hint
-         && video_driver_thread_wrapper_active())
+   if (video_driver_thread_wrapper_active())
       ok = video_thread_font_init(&drv, &handle, font->video_data,
             path, size, font->renderer, font_init_first,
             font->is_threaded);

@@ -3698,6 +3698,14 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
    if (!thr)
       return false;
 
+   /* Already on the video thread - a font the worker rebuilds while
+    * it initialises the driver, or a command handler that reloads
+    * one. A command from the thread that answers commands would wait
+    * on itself; the backend runs here, where the context is. */
+   if (video_thread_is_self(thr))
+      return func(font_driver, font_handle, data, font_path,
+            video_font_size, backend, is_threaded);
+
    pkt.type                       = CMD_FONT_INIT;
    pkt.data.font_init.method      = func;
    pkt.data.font_init.font_driver = font_driver;

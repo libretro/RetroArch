@@ -1,4 +1,4 @@
-name: CI Linux Vulkan [idle waits + validation harness]
+name: CI Linux Vulkan/GL [idle waits + driver harness]
 
 # Two checks on the Vulkan driver, both born from the same bug: a
 # vkQueuePresentKHR under queue_lock waiting for GPU work that a
@@ -31,6 +31,13 @@ name: CI Linux Vulkan [idle waits + validation harness]
 #    frame thread and a driver's frame (the shader chains'
 #    FrameTimeDelta was one) only shows up here. The layer and the
 #    ICD are not instrumented and are suppressed; frontend races fail.
+#
+# 4. GL harness: the same lanes on the gl and glcore drivers over
+#    llvmpipe (LIBGL_ALWAYS_SOFTWARE=1), release and TSan. A GL
+#    context is owned by one thread at a time, so anything the
+#    frontend does against the driver from the wrong thread is an X
+#    BadAccess here rather than a corruption elsewhere; the first run
+#    caught the OSD font rebuild doing exactly that.
 
 on:
   push:
@@ -175,4 +182,64 @@ jobs:
           export DISPLAY=:99
           export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
           SAN=thread VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          make -C samples/gfx/threaded_video clean
+
+  gl-harness:
+    name: Threaded-video harness on ${{ matrix.driver }} (llvmpipe, ${{ matrix.san }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        driver: [gl, glcore]
+        san: [none, thread]
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 8
+        run: |
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libgl-dev libglx-dev libegl-dev libgles-dev libgl1-mesa-dri libglx-mesa0 mesa-utils libasound2-dev"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure
+        run: |
+          ./configure --disable-qt
+          grep -q '^HAVE_OPENGL = 1' config.mk
+          grep -q '^HAVE_OPENGL_CORE = 1' config.mk
+
+      - name: Build
+        run: |
+          if [ "${{ matrix.san }}" = thread ]; then
+            make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=thread DEBUG=1
+          else
+            make -j$(getconf _NPROCESSORS_ONLN)
+          fi
+          test -x retroarch
+
+      - name: Run the harness on ${{ matrix.driver }}
+        shell: bash
+        run: |
+          set -eu
+          Xvfb :99 -screen 0 640x480x24 &
+          for i in $(seq 1 15); do
+            if DISPLAY=:99 xdpyinfo >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          export DISPLAY=:99
+          export LIBGL_ALWAYS_SOFTWARE=1
+          SAN=${{ matrix.san }} DRIVER=${{ matrix.driver }} CYCLES=1 \
+            make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean
