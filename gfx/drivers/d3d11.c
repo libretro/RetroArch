@@ -427,6 +427,10 @@ typedef struct
       D3D11Buffer      vbo;
       d3d11_texture_t* textures;
       int              count;
+      int              vbo_capacity; /* sprites the vbo holds */
+      /* textures are copies of the overlay pack's (load_textures):
+       * drawn from, never released here. */
+      bool             borrowed;
    } overlays;
 #endif
 
@@ -1765,10 +1769,71 @@ static uint32_t d3d11_get_flags(void *data)
 static void d3d11_free_overlays(d3d11_video_t* d3d11)
 {
    int i;
-   for (i = 0; i < d3d11->overlays.count; i++)
-      d3d11_release_texture(&d3d11->overlays.textures[i]);
+   if (!d3d11->overlays.borrowed)
+      for (i = 0; i < d3d11->overlays.count; i++)
+         d3d11_release_texture(&d3d11->overlays.textures[i]);
+   free(d3d11->overlays.textures);
+   d3d11->overlays.textures     = NULL;
+   d3d11->overlays.count        = 0;
+   d3d11->overlays.borrowed     = false;
 
    Release(d3d11->overlays.vbo);
+   d3d11->overlays.vbo          = NULL;
+   d3d11->overlays.vbo_capacity = 0;
+}
+
+/* A page's sprite buffer, reused across pages while it is big enough,
+ * and its sprites reset to the whole screen in white. */
+static d3d11_sprite_t *d3d11_overlay_sprites_begin(d3d11_video_t *d3d11,
+      unsigned num, D3D11_MAPPED_SUBRESOURCE *mapped_vbo)
+{
+   unsigned i;
+   d3d11_sprite_t *sprites;
+
+   if (!d3d11->overlays.vbo || d3d11->overlays.vbo_capacity < (int)num)
+   {
+      D3D11_BUFFER_DESC desc;
+      Release(d3d11->overlays.vbo);
+      d3d11->overlays.vbo      = NULL;
+      desc.ByteWidth           = sizeof(d3d11_sprite_t) * num;
+      desc.Usage               = D3D11_USAGE_DYNAMIC;
+      desc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
+      desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+      desc.MiscFlags           = 0;
+      desc.StructureByteStride = 0;
+      if (FAILED(d3d11->device->lpVtbl->CreateBuffer(d3d11->device,
+                  &desc, NULL, &d3d11->overlays.vbo)))
+         return NULL;
+      d3d11->overlays.vbo_capacity = num;
+   }
+
+   if (FAILED(d3d11->context->lpVtbl->Map(d3d11->context,
+         (D3D11Resource)d3d11->overlays.vbo, 0,
+         D3D11_MAP_WRITE_DISCARD, 0, mapped_vbo)))
+      return NULL;
+   sprites = (d3d11_sprite_t*)mapped_vbo->pData;
+
+   for (i = 0; i < num; i++)
+   {
+      sprites[i].pos.x           = 0.0f;
+      sprites[i].pos.y           = 0.0f;
+      sprites[i].pos.w           = 1.0f;
+      sprites[i].pos.h           = 1.0f;
+
+      sprites[i].coords.u        = 0.0f;
+      sprites[i].coords.v        = 0.0f;
+      sprites[i].coords.w        = 1.0f;
+      sprites[i].coords.h        = 1.0f;
+
+      sprites[i].params.scaling  = 1;
+      sprites[i].params.rotation = 0;
+
+      sprites[i].colors[0]       = 0xFFFFFFFF;
+      sprites[i].colors[1]       = sprites[i].colors[0];
+      sprites[i].colors[2]       = sprites[i].colors[0];
+      sprites[i].colors[3]       = sprites[i].colors[0];
+   }
+   return sprites;
 }
 
 static void d3d11_overlay_vertex_geom(
@@ -1837,10 +1902,8 @@ static void d3d11_overlay_set_alpha(void* data, unsigned index, float mod)
 
 static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
-   D3D11_BUFFER_DESC desc;
    D3D11_MAPPED_SUBRESOURCE    mapped_vbo;
    unsigned                    i;
-   d3d11_sprite_t*             sprites;
    d3d11_video_t*              d3d11  = (d3d11_video_t*)data;
    const struct texture_image* images = (const struct texture_image*)image_data;
 
@@ -1850,24 +1913,15 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
    d3d11_free_overlays(d3d11);
    d3d11->overlays.textures = (d3d11_texture_t*)calloc(
          num_images, sizeof(d3d11_texture_t));
-
+   if (!d3d11->overlays.textures)
+      return false;
    d3d11->overlays.count    = num_images;
-   desc.ByteWidth           = sizeof(d3d11_sprite_t) * num_images;
-   desc.Usage               = D3D11_USAGE_DYNAMIC;
-   desc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
-   desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-   desc.MiscFlags           = 0;
-   desc.StructureByteStride = 0;
-   d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, NULL,
-         &d3d11->overlays.vbo);
 
-   d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_vbo);
-   sprites                  = (d3d11_sprite_t*)mapped_vbo.pData;
+   if (!d3d11_overlay_sprites_begin(d3d11, num_images, &mapped_vbo))
+      return false;
 
    for (i = 0; i < num_images; i++)
    {
-
       d3d11->overlays.textures[i].desc.Width  = images[i].width;
       d3d11->overlays.textures[i].desc.Height = images[i].height;
       d3d11->overlays.textures[i].desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -1880,25 +1934,37 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
                d3d11->context, images[i].width,
                images[i].height, 0, DXGI_FORMAT_B8G8R8A8_UNORM,
                images[i].pixels, &d3d11->overlays.textures[i]);
-
-      sprites[i].pos.x           = 0.0f;
-      sprites[i].pos.y           = 0.0f;
-      sprites[i].pos.w           = 1.0f;
-      sprites[i].pos.h           = 1.0f;
-
-      sprites[i].coords.u        = 0.0f;
-      sprites[i].coords.v        = 0.0f;
-      sprites[i].coords.w        = 1.0f;
-      sprites[i].coords.h        = 1.0f;
-
-      sprites[i].params.scaling  = 1;
-      sprites[i].params.rotation = 0;
-
-      sprites[i].colors[0]       = 0xFFFFFFFF;
-      sprites[i].colors[1]       = sprites[i].colors[0];
-      sprites[i].colors[2]       = sprites[i].colors[0];
-      sprites[i].colors[3]       = sprites[i].colors[0];
    }
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0);
+
+   return true;
+}
+
+/* A page of the pack's textures: copies of d3d11_gfx_load_texture's
+ * d3d11_texture_t per image to draw from, the sprite buffer reused
+ * and reset, and nothing uploaded, created or released. */
+static bool d3d11_overlay_load_textures(void* data,
+      const uintptr_t* textures, unsigned num_textures)
+{
+   D3D11_MAPPED_SUBRESOURCE    mapped_vbo;
+   unsigned                    i;
+   d3d11_video_t*              d3d11  = (d3d11_video_t*)data;
+
+   if (!d3d11)
+      return false;
+
+   d3d11_free_overlays(d3d11);
+   d3d11->overlays.textures = (d3d11_texture_t*)calloc(
+         num_textures, sizeof(d3d11_texture_t));
+   if (!d3d11->overlays.textures)
+      return false;
+   d3d11->overlays.count    = num_textures;
+   d3d11->overlays.borrowed = true;
+
+   if (!d3d11_overlay_sprites_begin(d3d11, num_textures, &mapped_vbo))
+      return false;
+   for (i = 0; i < num_textures; i++)
+      d3d11->overlays.textures[i] = *(const d3d11_texture_t*)textures[i];
    d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0);
 
    return true;
@@ -1935,8 +2001,9 @@ static void d3d11_get_overlay_interface(
       void* data, const video_overlay_interface_t** iface)
 {
    static const video_overlay_interface_t overlay_interface = {
-      d3d11_overlay_enable,      d3d11_overlay_load,        d3d11_overlay_tex_geom,
-      d3d11_overlay_vertex_geom, d3d11_overlay_full_screen, d3d11_overlay_set_alpha,
+      d3d11_overlay_enable,      d3d11_overlay_load,        d3d11_overlay_load_textures,
+      d3d11_overlay_tex_geom,    d3d11_overlay_vertex_geom, d3d11_overlay_full_screen,
+      d3d11_overlay_set_alpha,
    };
 
    *iface = &overlay_interface;

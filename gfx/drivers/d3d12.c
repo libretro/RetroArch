@@ -441,6 +441,10 @@ typedef struct
       D3D12_VERTEX_BUFFER_VIEW vbo_view;
       d3d12_texture_t*         textures;
       int                      count;
+      int                      vbo_capacity; /* sprites the vbo holds */
+      /* textures are copies of the overlay pack's (load_textures):
+       * drawn from, never released here. */
+      bool                     borrowed;
    } overlays;
 #endif
 
@@ -2087,10 +2091,73 @@ static uint32_t d3d12_get_flags(void *data)
 static void d3d12_free_overlays(d3d12_video_t* d3d12)
 {
    size_t i;
-   for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
-      d3d12_release_texture(&d3d12->overlays.textures[i]);
+   if (!d3d12->overlays.borrowed)
+      for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
+         d3d12_release_texture(&d3d12->overlays.textures[i]);
+   free(d3d12->overlays.textures);
+   d3d12->overlays.textures     = NULL;
+   d3d12->overlays.count        = 0;
+   d3d12->overlays.borrowed     = false;
 
    Release(d3d12->overlays.vbo);
+   d3d12->overlays.vbo          = NULL;
+   d3d12->overlays.vbo_capacity = 0;
+}
+
+/* A page's sprite buffer, mapped: reused across pages while it is big
+ * enough (the queue is drained at the top of every frame, so between
+ * frames nothing reads it), else made anew behind a drain of the
+ * frame that may still read the old one. Sprites reset to the whole
+ * screen in white. */
+static d3d12_sprite_t *d3d12_overlay_sprites_begin(d3d12_video_t *d3d12,
+      unsigned num)
+{
+   D3D12_RANGE range;
+   unsigned i;
+   d3d12_sprite_t *sprites = NULL;
+
+   if (!d3d12->overlays.vbo || d3d12->overlays.vbo_capacity < (int)num)
+   {
+      d3d12_queue_drain(d3d12);
+      Release(d3d12->overlays.vbo);
+      d3d12->overlays.vbo                     = NULL;
+      d3d12->overlays.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * num;
+      d3d12->overlays.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
+      d3d12->overlays.vbo_view.BufferLocation = d3d12_create_buffer(
+            d3d12->device, d3d12->overlays.vbo_view.SizeInBytes,
+            &d3d12->overlays.vbo);
+      if (!d3d12->overlays.vbo)
+         return NULL;
+      d3d12->overlays.vbo_capacity            = num;
+   }
+
+   range.Begin = 0;
+   range.End   = 0;
+   if (FAILED(D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites))
+         || !sprites)
+      return NULL;
+
+   for (i = 0; i < num; i++)
+   {
+      sprites[i].pos.x           = 0.0f;
+      sprites[i].pos.y           = 0.0f;
+      sprites[i].pos.w           = 1.0f;
+      sprites[i].pos.h           = 1.0f;
+
+      sprites[i].coords.u        = 0.0f;
+      sprites[i].coords.v        = 0.0f;
+      sprites[i].coords.w        = 1.0f;
+      sprites[i].coords.h        = 1.0f;
+
+      sprites[i].params.scaling  = 1;
+      sprites[i].params.rotation = 0;
+
+      sprites[i].colors[0]       = 0xFFFFFFFF;
+      sprites[i].colors[1]       = sprites[i].colors[0];
+      sprites[i].colors[2]       = sprites[i].colors[0];
+      sprites[i].colors[3]       = sprites[i].colors[0];
+   }
+   return sprites;
 }
 
    static void
@@ -2166,31 +2233,24 @@ static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
 static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_images)
 {
    size_t i;
-   D3D12_RANGE range;
-   d3d12_sprite_t*             sprites = NULL;
    d3d12_video_t*              d3d12   = (d3d12_video_t*)data;
    const struct texture_image* images  = (const struct texture_image*)image_data;
 
    if (!d3d12)
       return false;
 
-   {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12_queue_drain(d3d12);
-   }
+   /* The textures of the page going away may still be read by the
+    * frame in flight. */
+   d3d12_queue_drain(d3d12);
 
    d3d12_free_overlays(d3d12);
    d3d12->overlays.textures = (d3d12_texture_t*)calloc(num_images, sizeof(d3d12_texture_t));
+   if (!d3d12->overlays.textures)
+      return false;
+   d3d12->overlays.count    = num_images;
 
-   d3d12->overlays.count                   = num_images;
-   d3d12->overlays.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * num_images;
-   d3d12->overlays.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
-   d3d12->overlays.vbo_view.BufferLocation = d3d12_create_buffer(
-         d3d12->device, d3d12->overlays.vbo_view.SizeInBytes, &d3d12->overlays.vbo);
-
-   range.Begin                             = 0;
-   range.End                               = 0;
-   D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
+   if (!d3d12_overlay_sprites_begin(d3d12, num_images))
+      return false;
 
    for (i = 0; i < num_images; i++)
    {
@@ -2206,25 +2266,38 @@ static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_
                images[i].width, images[i].height,
                0, DXGI_FORMAT_B8G8R8A8_UNORM, images[i].pixels,
                &d3d12->overlays.textures[i]);
-
-      sprites[i].pos.x           = 0.0f;
-      sprites[i].pos.y           = 0.0f;
-      sprites[i].pos.w           = 1.0f;
-      sprites[i].pos.h           = 1.0f;
-
-      sprites[i].coords.u        = 0.0f;
-      sprites[i].coords.v        = 0.0f;
-      sprites[i].coords.w        = 1.0f;
-      sprites[i].coords.h        = 1.0f;
-
-      sprites[i].params.scaling  = 1;
-      sprites[i].params.rotation = 0;
-
-      sprites[i].colors[0]       = 0xFFFFFFFF;
-      sprites[i].colors[1]       = sprites[i].colors[0];
-      sprites[i].colors[2]       = sprites[i].colors[0];
-      sprites[i].colors[3]       = sprites[i].colors[0];
    }
+   D3D12Unmap(d3d12->overlays.vbo, 0, NULL);
+
+   return true;
+}
+
+/* A page of the pack's textures: copies of d3d12_gfx_load_texture's
+ * d3d12_texture_t per image to draw from (a copy still marked dirty
+ * has its upload recorded by the first draw, as any texture), the
+ * sprite buffer reused and reset, and no upload, no resource made
+ * or released and no drain: the textures the old page copied stay
+ * the pack's. */
+static bool d3d12_overlay_load_textures(void* data,
+      const uintptr_t* textures, unsigned num_textures)
+{
+   size_t i;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return false;
+
+   d3d12_free_overlays(d3d12);
+   d3d12->overlays.textures = (d3d12_texture_t*)calloc(num_textures, sizeof(d3d12_texture_t));
+   if (!d3d12->overlays.textures)
+      return false;
+   d3d12->overlays.count    = num_textures;
+   d3d12->overlays.borrowed = true;
+
+   if (!d3d12_overlay_sprites_begin(d3d12, num_textures))
+      return false;
+   for (i = 0; i < num_textures; i++)
+      d3d12->overlays.textures[i] = *(const d3d12_texture_t*)textures[i];
    D3D12Unmap(d3d12->overlays.vbo, 0, NULL);
 
    return true;
@@ -2260,8 +2333,9 @@ static void d3d12_overlay_full_screen(void* data, bool enable)
 static void d3d12_get_overlay_interface(void* data, const video_overlay_interface_t** iface)
 {
    static const video_overlay_interface_t overlay_interface = {
-      d3d12_overlay_enable,      d3d12_overlay_load,        d3d12_overlay_tex_geom,
-      d3d12_overlay_vertex_geom, d3d12_overlay_full_screen, d3d12_overlay_set_alpha,
+      d3d12_overlay_enable,      d3d12_overlay_load,        d3d12_overlay_load_textures,
+      d3d12_overlay_tex_geom,    d3d12_overlay_vertex_geom, d3d12_overlay_full_screen,
+      d3d12_overlay_set_alpha,
    };
 
    *iface = &overlay_interface;

@@ -377,6 +377,9 @@ typedef struct vk
       struct vk_texture *images;
       struct vk_vertex *vertex;
       unsigned count;
+      /* images are copies of the overlay pack's textures
+       * (load_textures): drawn from, never destroyed here. */
+      bool borrowed;
       /* What a batch of overlays is staged into before it is written and
        * drawn. Here rather than on the stack of the function that fills
        * it: the batch alone is better than four kilobytes, and a frame
@@ -10676,11 +10679,12 @@ static void vulkan_overlay_free(vk_t *vk)
       return;
 
    free(vk->overlay.vertex);
-   for (i = 0; i < (int) vk->overlay.count; i++)
-      if (vk->overlay.images[i].memory != VK_NULL_HANDLE)
-         vulkan_destroy_texture(
-               vk->context->device,
-               &vk->overlay.images[i]);
+   if (!vk->overlay.borrowed)
+      for (i = 0; i < (int) vk->overlay.count; i++)
+         if (vk->overlay.images[i].memory != VK_NULL_HANDLE)
+            vulkan_destroy_texture(
+                  vk->context->device,
+                  &vk->overlay.images[i]);
 
    if (vk->overlay.images)
       free(vk->overlay.images);
@@ -10925,6 +10929,61 @@ static void vulkan_overlay_tex_geom(void *data, unsigned image,
    pv[3].tex_y = y + h;
 }
 
+/* A page of the pack's textures: copies of vulkan_load_texture's
+ * vk_texture per image to draw from, geometry reset, and no upload,
+ * no device object made and no queue wait - the page's previous
+ * copies are dropped, and the textures they copied are the pack's
+ * until the frontend unloads them, deferred as any unload is. */
+static bool vulkan_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   int i;
+   bool old_enabled                   = false;
+   vk_t *vk                           = (vk_t*)data;
+   static const struct vk_color white = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+   };
+
+   if (!vk)
+      return false;
+
+   if (vk->flags & VK_FLAG_OVERLAY_ENABLE)
+      old_enabled           = true;
+   vulkan_overlay_free(vk);
+
+   if (!(vk->overlay.images = (struct vk_texture*)
+            calloc(num_textures, sizeof(*vk->overlay.images))))
+      goto error;
+   vk->overlay.count        = num_textures;
+   vk->overlay.borrowed     = true;
+
+   if (!(vk->overlay.vertex = (struct vk_vertex*)
+      calloc(4 * num_textures, sizeof(*vk->overlay.vertex))))
+      goto error;
+
+   for (i = 0; i < (int) num_textures; i++)
+   {
+      int j;
+      vk->overlay.images[i] = *(const struct vk_texture*)textures[i];
+
+      vulkan_overlay_tex_geom(vk, i, 0, 0, 1, 1);
+      vulkan_overlay_vertex_geom(vk, i, 0, 0, 1, 1);
+      for (j = 0; j < 4; j++)
+         vk->overlay.vertex[4 * i + j].color = white;
+   }
+
+   if (old_enabled)
+      vk->flags |=  VK_FLAG_OVERLAY_ENABLE;
+   else
+      vk->flags &= ~VK_FLAG_OVERLAY_ENABLE;
+
+   return true;
+
+error:
+   vulkan_overlay_free(vk);
+   return false;
+}
+
 static bool vulkan_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
@@ -10989,6 +11048,7 @@ error:
 static const video_overlay_interface_t vulkan_overlay_interface = {
    vulkan_overlay_enable,
    vulkan_overlay_load,
+   vulkan_overlay_load_textures,
    vulkan_overlay_tex_geom,
    vulkan_overlay_vertex_geom,
    vulkan_overlay_full_screen,

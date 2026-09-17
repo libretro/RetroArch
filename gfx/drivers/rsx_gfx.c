@@ -2227,6 +2227,7 @@ static const video_overlay_interface_t rsx_overlay_interface =
 {
    rsx_overlay_enable,
    rsx_overlay_load,
+   NULL, /* load_textures */
    rsx_overlay_tex_geom,
    rsx_overlay_vertex_geom,
    rsx_overlay_full_screen,

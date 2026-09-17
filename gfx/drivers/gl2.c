@@ -6198,11 +6198,57 @@ unsigned *height_p, size_t *pitch_p)
 #endif
 
 #ifdef HAVE_OVERLAY
-static bool gl2_overlay_load(void *data,
-      const void *image_data, unsigned num_images)
+/* The texture names and the vertex, texture and colour coordinate
+ * arrays of a page's images come out of one zeroed block, each region
+ * starting on a 64-byte boundary; overlay_tex owns it. Geometry starts
+ * as the whole screen, colour as opaque white. Names come from
+ * @textures when the page shows the pack's textures, else are made
+ * here for the upload that follows. */
+static bool gl2_overlay_alloc(gl2_t *gl, unsigned num_images,
+      const uintptr_t *textures)
 {
    size_t o_vertex, o_tex, o_color;
    unsigned i, j;
+
+   gl2_free_overlay(gl);
+   o_vertex = ((num_images * sizeof(GLuint)) + 63) & ~(size_t)63;
+   o_tex    = o_vertex + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
+   o_color  = o_tex    + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
+   gl->overlay_tex = (GLuint*)
+      calloc(1, o_color + 4 * 4 * num_images * sizeof(GLfloat));
+
+   if (!gl->overlay_tex)
+      return false;
+
+   gl->overlay_vertex_coord = (GLfloat*)((uint8_t*)gl->overlay_tex + o_vertex);
+   gl->overlay_tex_coord    = (GLfloat*)((uint8_t*)gl->overlay_tex + o_tex);
+   gl->overlay_color_coord  = (GLfloat*)((uint8_t*)gl->overlay_tex + o_color);
+
+   gl->overlays = num_images;
+   if (textures)
+   {
+      for (i = 0; i < num_images; i++)
+         gl->overlay_tex[i] = (GLuint)textures[i];
+      gl->flags |= GL2_FLAG_OVERLAY_BORROWED;
+   }
+   else
+      glGenTextures(num_images, gl->overlay_tex);
+
+   for (i = 0; i < num_images; i++)
+   {
+      gl2_overlay_tex_geom(gl, i, 0, 0, 1, 1);
+      gl2_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
+      for (j = 0; j < 16; j++)
+         gl->overlay_color_coord[16 * i + j] = 1.0f;
+   }
+   return true;
+}
+
+static bool gl2_overlay_load(void *data,
+      const void *image_data, unsigned num_images)
+{
+   unsigned i;
+   bool ok;
    gl2_t *gl = (gl2_t*)data;
    const struct texture_image *images =
       (const struct texture_image*)image_data;
@@ -6213,54 +6259,37 @@ static bool gl2_overlay_load(void *data,
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
-   gl2_free_overlay(gl);
-   /* The texture names and the vertex, texture and colour coordinate
-    * arrays of all overlay images come out of one zeroed block, each
-    * region starting on a 64-byte boundary; overlay_tex owns it. */
-   o_vertex = ((num_images * sizeof(GLuint)) + 63) & ~(size_t)63;
-   o_tex    = o_vertex + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
-   o_color  = o_tex    + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
-   gl->overlay_tex = (GLuint*)
-      calloc(1, o_color + 4 * 4 * num_images * sizeof(GLfloat));
-
-   if (!gl->overlay_tex)
+   if ((ok = gl2_overlay_alloc(gl, num_images, NULL)))
    {
-      if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
-            && !gl2_core_context_is_mains(gl))
-         gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
-      return false;
-   }
+      for (i = 0; i < num_images; i++)
+      {
+         unsigned alignment = gl2_get_alignment(images[i].width
+               * sizeof(uint32_t));
 
-   gl->overlay_vertex_coord = (GLfloat*)((uint8_t*)gl->overlay_tex + o_vertex);
-   gl->overlay_tex_coord    = (GLfloat*)((uint8_t*)gl->overlay_tex + o_tex);
-   gl->overlay_color_coord  = (GLfloat*)((uint8_t*)gl->overlay_tex + o_color);
-
-   gl->overlays = num_images;
-   glGenTextures(num_images, gl->overlay_tex);
-
-   for (i = 0; i < num_images; i++)
-   {
-      unsigned alignment = gl2_get_alignment(images[i].width
-            * sizeof(uint32_t));
-
-      gl_load_texture_data(gl->overlay_tex[i],
-            RARCH_WRAP_EDGE, TEXTURE_FILTER_LINEAR,
-            alignment,
-            images[i].width, images[i].height, images[i].pixels,
-            sizeof(uint32_t));
-
-      /* Default. Stretch to whole screen. */
-      gl2_overlay_tex_geom(gl, i, 0, 0, 1, 1);
-      gl2_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
-
-      for (j = 0; j < 16; j++)
-         gl->overlay_color_coord[16 * i + j] = 1.0f;
+         gl_load_texture_data(gl->overlay_tex[i],
+               RARCH_WRAP_EDGE, TEXTURE_FILTER_LINEAR,
+               alignment,
+               images[i].width, images[i].height, images[i].pixels,
+               sizeof(uint32_t));
+      }
    }
 
    if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
          && !gl2_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
-   return true;
+   return ok;
+}
+
+/* A page of the pack's textures: no upload, no GL call but the
+ * geometry setup. The names are gl2_load_texture's, valid on this
+ * context. */
+static bool gl2_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl)
+      return false;
+   return gl2_overlay_alloc(gl, num_textures, textures);
 }
 
 static void gl2_overlay_enable(void *data, bool state)
@@ -6308,6 +6337,7 @@ static void gl2_overlay_set_alpha(void *data, unsigned image, float mod)
 static const video_overlay_interface_t gl2_overlay_interface = {
    gl2_overlay_enable,
    gl2_overlay_load,
+   gl2_overlay_load_textures,
    gl2_overlay_tex_geom,
    gl2_overlay_vertex_geom,
    gl2_overlay_full_screen,

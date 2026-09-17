@@ -2208,6 +2208,7 @@ static void sdl2_overlays_render(sdl2_video_t *vid)
 static const video_overlay_interface_t sdl2_overlay_iface = {
    sdl2_overlay_enable,
    sdl2_overlay_load,
+   NULL, /* load_textures */
    sdl2_overlay_tex_geom,
    sdl2_overlay_vertex_geom,
    sdl2_overlay_full_screen,

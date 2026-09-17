@@ -1537,6 +1537,7 @@ static const video_overlay_interface_t gx2_overlay_interface =
 {
    gx2_overlay_enable,
    gx2_overlay_load,
+   NULL, /* load_textures */
    gx2_overlay_tex_geom,
    gx2_overlay_vertex_geom,
    gx2_overlay_full_screen,

@@ -1517,6 +1517,7 @@ static void gx_render_overlay(void *data)
 static const video_overlay_interface_t gx_overlay_interface = {
    gx_overlay_enable,
    gx_overlay_load,
+   NULL, /* load_textures */
    gx_overlay_tex_geom,
    gx_overlay_vertex_geom,
    gx_overlay_full_screen,

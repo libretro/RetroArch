@@ -62,6 +62,9 @@ enum gl3_flags
     * live settings from the frame path (the video thread, with the
     * main thread running free). */
    GL3_FLAG_HW_RING_EXPECTED = (1 << 16),
+   /* overlay_tex names belong to the overlay pack (load_textures):
+    * not deleted with the page. */
+   GL3_FLAG_OVERLAY_BORROWED       = (1 << 17),
    /* GPU recording is on: taken from the frame the frontend hands over,
     * so this thread never reads the recording state the main thread
     * writes (video_frame_info_t::gpu_recording). */

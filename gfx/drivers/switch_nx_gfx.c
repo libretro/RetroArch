@@ -902,6 +902,7 @@ static void switch_overlay_set_alpha(void *data, unsigned idx, float mod) { }
 static const video_overlay_interface_t switch_overlay = {
     switch_overlay_enable,
     switch_overlay_load,
+    NULL, /* load_textures */
     switch_overlay_tex_geom,
     switch_overlay_vertex_geom,
     switch_overlay_full_screen,

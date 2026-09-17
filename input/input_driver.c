@@ -3482,14 +3482,115 @@ void input_overlay_set_scale_factor(
    input_overlay_set_vertex_geom(ol);
 }
 
+/* Every unique image of the pack becomes one texture, and every page
+ * a list of handles into that set, so that switching pages uploads
+ * nothing. Only for a driver with load_textures; others keep taking
+ * the pixels through load() on each switch. The handles live until
+ * input_overlay_release_textures(), which the disable runs while the
+ * driver is still there to unload them. Returns false when the pack
+ * cannot be uploaded this way, in which case load() is used. */
+static bool input_overlay_upload_textures(input_overlay_t *ol)
+{
+   uintptr_t *tex;
+   size_t i, j, k, total = ol->num_images;
+
+   if (ol->page_textures || !ol->images || !ol->num_images)
+      return ol->page_textures != NULL;
+
+   for (i = 0; i < ol->size; i++)
+      total += ol->overlays[i].load_images_size;
+   if (!(tex = (uintptr_t*)calloc(total, sizeof(*tex))))
+      return false;
+   ol->page_textures = tex;
+
+   for (i = 0; i < ol->num_images; i++)
+   {
+      if (     !video_driver_texture_load(ol->images[i],
+               TEXTURE_FILTER_LINEAR, &tex[i])
+            || !tex[i])
+      {
+         input_overlay_release_textures(ol);
+         return false;
+      }
+   }
+
+   /* The loader deduplicated by path, so a page's entry shares its
+    * pixels with exactly one unique image. */
+   k = ol->num_images;
+   for (i = 0; i < ol->size; i++)
+   {
+      struct overlay *o = &ol->overlays[i];
+      o->textures       = &tex[k];
+      for (j = 0; j < o->load_images_size; j++, k++)
+      {
+         size_t u;
+         for (u = 0; u < ol->num_images; u++)
+         {
+            if (ol->images[u]->pixels == o->load_images[j].pixels)
+            {
+               tex[k] = tex[u];
+               break;
+            }
+         }
+         if (u == ol->num_images)
+         {
+            input_overlay_release_textures(ol);
+            return false;
+         }
+      }
+   }
+   return true;
+}
+
+void input_overlay_release_textures(input_overlay_t *ol)
+{
+   size_t i;
+   if (!ol || !ol->page_textures)
+      return;
+   for (i = 0; i < ol->num_images; i++)
+      if (ol->page_textures[i])
+         video_driver_texture_unload(&ol->page_textures[i]);
+   for (i = 0; i < ol->size; i++)
+      ol->overlays[i].textures = NULL;
+   free(ol->page_textures);
+   ol->page_textures = NULL;
+}
+
+static void input_overlay_load_active_geom(
+      enum overlay_visibility *visibility,
+      input_overlay_t *ol, float opacity);
+
 void input_overlay_load_active(
       enum overlay_visibility *visibility,
       input_overlay_t *ol, float opacity)
 {
+   if (     ol->iface->load_textures
+         && !(ol->flags & INPUT_OVERLAY_TEXTURES_DECLINED)
+         && input_overlay_upload_textures(ol))
+   {
+      if (ol->iface->load_textures(ol->iface_data,
+               ol->active->textures, ol->active->load_images_size))
+      {
+         input_overlay_load_active_geom(visibility, ol, opacity);
+         return;
+      }
+      /* The wrapper's table answers for any driver; the one beneath
+       * it may have no such path. Not held for nothing. */
+      input_overlay_release_textures(ol);
+      ol->flags |= INPUT_OVERLAY_TEXTURES_DECLINED;
+   }
    if (ol->iface->load)
       ol->iface->load(ol->iface_data, ol->active->load_images,
             ol->active->load_images_size);
+   input_overlay_load_active_geom(visibility, ol, opacity);
+}
 
+/* The per-page state that follows either load: alpha, geometry,
+ * full-screen. */
+static void input_overlay_load_active_geom(
+      enum overlay_visibility *visibility,
+      input_overlay_t *ol, float opacity)
+{
    input_overlay_set_alpha_mod(visibility, ol, opacity);
    input_overlay_set_vertex_geom(ol);
 
@@ -3654,6 +3755,7 @@ static void input_overlay_free(input_overlay_t *ol)
    if (!ol)
       return;
 
+   input_overlay_release_textures(ol);
    input_overlay_free_images(ol);
 
    input_overlay_free_overlays(ol);
@@ -6328,6 +6430,7 @@ static void input_overlay_enable_(bool enable)
       }
 
       /* Load last-active overlay */
+      ol->flags &= ~INPUT_OVERLAY_TEXTURES_DECLINED;
       input_overlay_load_active(input_st->overlay_visibility, ol, opacity);
 
       /* Adjust to current settings */
@@ -6360,6 +6463,9 @@ static void input_overlay_enable_(bool enable)
 
       if (ol->iface && ol->iface->enable)
          ol->iface->enable(ol->iface_data, false);
+      /* The driver has let go of the pack's textures with the page:
+       * unload them while it is still here to do so. */
+      input_overlay_release_textures(ol);
       ol->iface = NULL;
 
       memset(&ol->overlay_state, 0, sizeof(input_overlay_state_t));

@@ -7535,6 +7535,7 @@ static void d3d9_hlsl_overlay_set_alpha(void *data, unsigned index, float mod)
 static const video_overlay_interface_t d3d9_hlsl_overlay_interface = {
    d3d9_hlsl_overlay_enable,
    d3d9_hlsl_overlay_load,
+   NULL, /* load_textures */
    d3d9_hlsl_overlay_tex_geom,
    d3d9_hlsl_overlay_vertex_geom,
    d3d9_hlsl_overlay_full_screen,

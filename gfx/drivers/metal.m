@@ -413,6 +413,9 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 @property(nonatomic, readwrite) bool fullscreen;
 
 - (bool)loadImages:(const struct texture_image *)images count:(NSUInteger)count;
+/* A page of the overlay pack's textures (metal_load_texture handles):
+ * the array retains what it shows and nothing is uploaded. */
+- (bool)loadTextures:(const uintptr_t *)textures count:(NSUInteger)count;
 - (void)updateVertexX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index;
 - (void)updateTextureCoordsX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index;
 - (void)updateAlpha:(float)alpha index:(NSUInteger)index;
@@ -6144,6 +6147,33 @@ typedef struct MTLALIGN(16)
    return YES;
 }
 
+- (bool)loadTextures:(const uintptr_t *)textures count:(NSUInteger)count
+{
+   size_t i;
+   [self _freeImages];
+
+   RARCH_ASSIGN(_images, [NSMutableArray arrayWithCapacity:count]);
+
+   NSUInteger needed = sizeof(SpriteVertex) * count * 4;
+   if (!_vert || _vert.length < needed)
+      RARCH_ASSIGN(_vert, RARCH_AUTORELEASE_R([_context.device newBufferWithLength:needed options:PLATFORM_METAL_RESOURCE_STORAGE_MODE]));
+
+   for (i = 0; i < count; i++)
+   {
+      Texture *t = (__bridge Texture *)(void *)textures[i];
+      if (!t.texture)
+         return NO;
+      _images[i] = t.texture;
+      [self updateVertexX:0 y:0 w:1 h:1 index:i];
+      [self updateTextureCoordsX:0 y:0 w:1 h:1 index:i];
+      [self _updateColorRed:1.0 green:1.0 blue:1.0 alpha:1.0 index:i];
+   }
+
+   _vertDirty = YES;
+
+   return YES;
+}
+
 - (void)drawWithEncoder:(id<MTLRenderCommandEncoder>)rce
 {
    size_t i;
@@ -6970,6 +7000,16 @@ static bool metal_overlay_load(void *data,
    return [md.overlay loadImages:(const struct texture_image *)images count:num_images];
 }
 
+static bool metal_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return NO;
+
+   return [md.overlay loadTextures:textures count:num_textures];
+}
+
 static void metal_overlay_tex_geom(void *data, unsigned index,
       float x, float y, float w, float h)
 {
@@ -7003,6 +7043,7 @@ static void metal_overlay_set_alpha(void *data, unsigned index, float mod)
 static const video_overlay_interface_t metal_overlay_interface = {
    metal_overlay_enable,
    metal_overlay_load,
+   metal_overlay_load_textures,
    metal_overlay_tex_geom,
    metal_overlay_vertex_geom,
    metal_overlay_full_screen,

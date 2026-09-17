@@ -641,14 +641,20 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_OVERLAY_LOAD:
+      case CMD_OVERLAY_LOAD_TEXTURES:
          {
             unsigned tmp_alpha_mods = pkt.data.image.num;
 
-            if (thr->driver_data && thr->overlay && thr->overlay->load)
-               pkt.data.b = thr->overlay->load(thr->driver_data,
-                  pkt.data.image.data, pkt.data.image.num);
-            else
+            if (!thr->driver_data || !thr->overlay)
                pkt.data.b = false;
+            else if (pkt.type == CMD_OVERLAY_LOAD_TEXTURES)
+               pkt.data.b = thr->overlay->load_textures
+                  && thr->overlay->load_textures(thr->driver_data,
+                        pkt.data.image.textures, pkt.data.image.num);
+            else
+               pkt.data.b = thr->overlay->load
+                  && thr->overlay->load(thr->driver_data,
+                        pkt.data.image.data, pkt.data.image.num);
 
             if (tmp_alpha_mods > 0)
             {
@@ -2840,6 +2846,25 @@ static bool thread_overlay_load(void *data,
    return pkt.data.b;
 }
 
+static bool thread_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   thread_packet_t pkt;
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr)
+      return false;
+
+   pkt.type                = CMD_OVERLAY_LOAD_TEXTURES;
+   pkt.data.image.data     = NULL;
+   pkt.data.image.textures = textures;
+   pkt.data.image.num      = num_textures;
+
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+
+   return pkt.data.b;
+}
+
 static void thread_overlay_tex_geom(void *data,
       unsigned idx, float x, float y, float w, float h)
 {
@@ -2920,6 +2945,7 @@ static void thread_overlay_set_alpha(void *data, unsigned idx, float mod)
 static const video_overlay_interface_t thread_overlay = {
    thread_overlay_enable,
    thread_overlay_load,
+   thread_overlay_load_textures,
    thread_overlay_tex_geom,
    thread_overlay_vertex_geom,
    thread_overlay_full_screen,

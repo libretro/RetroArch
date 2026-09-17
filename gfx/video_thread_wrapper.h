@@ -49,6 +49,7 @@ enum thread_cmd
 
    CMD_OVERLAY_ENABLE,
    CMD_OVERLAY_LOAD,
+   CMD_OVERLAY_LOAD_TEXTURES,
    CMD_OVERLAY_TEX_GEOM,
    CMD_OVERLAY_VERTEX_GEOM,
    CMD_OVERLAY_FULL_SCREEN,
@@ -123,6 +124,7 @@ typedef struct thread_packet
       struct
       {
          const struct texture_image *data;
+         const uintptr_t *textures;
          unsigned num;
       } image;
 

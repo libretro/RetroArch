@@ -1148,6 +1148,7 @@ static void hub75_overlay_set_alpha(void *data, unsigned index, float mod)
 static const video_overlay_interface_t hub75_overlay_interface = {
    hub75_overlay_enable,
    hub75_overlay_load,
+   NULL, /* load_textures */
    hub75_overlay_tex_geom,
    hub75_overlay_vertex_geom,
    hub75_overlay_full_screen,

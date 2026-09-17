@@ -3358,6 +3358,7 @@ static void gl1_overlay_set_alpha(void *data, unsigned image, float mod)
 static const video_overlay_interface_t gl1_overlay_interface = {
    gl1_overlay_enable,
    gl1_overlay_load,
+   NULL, /* load_textures */
    gl1_overlay_tex_geom,
    gl1_overlay_vertex_geom,
    gl1_overlay_full_screen,

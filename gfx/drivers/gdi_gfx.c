@@ -3837,6 +3837,7 @@ static void gdi_overlays_render(gdi_t *gdi,
 static const video_overlay_interface_t gdi_overlay_interface = {
    gdi_overlay_enable,
    gdi_overlay_load,
+   NULL, /* load_textures */
    gdi_overlay_tex_geom,
    gdi_overlay_vertex_geom,
    gdi_overlay_full_screen,

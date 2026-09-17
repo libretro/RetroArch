@@ -1796,8 +1796,9 @@ static void gl3_fence_iterate(gl3_t *gl, unsigned hard_sync_frames)
 #ifdef HAVE_OVERLAY
 static void gl3_free_overlay(gl3_t *gl)
 {
-   if (gl->overlay_tex)
+   if (gl->overlay_tex && !(gl->flags & GL3_FLAG_OVERLAY_BORROWED))
       glDeleteTextures(gl->overlays, gl->overlay_tex);
+   gl->flags &= ~GL3_FLAG_OVERLAY_BORROWED;
 
    /* The three coordinate arrays are views into the overlay_tex block. */
    free(gl->overlay_tex);
@@ -3573,24 +3574,19 @@ static void video_texture_load_gl3(
 }
 
 #ifdef HAVE_OVERLAY
-static bool gl3_overlay_load(void *data,
-      const void *image_data, unsigned num_images)
+/* The texture names and the vertex, texture and colour coordinate
+ * arrays of a page's images come out of one zeroed block, each region
+ * starting on a 64-byte boundary; overlay_tex owns it. Geometry starts
+ * as the whole screen, colour as opaque white. Names come from
+ * @textures when the page shows the pack's textures, else are made
+ * by the upload that follows. */
+static bool gl3_overlay_alloc(gl3_t *gl, unsigned num_images,
+      const uintptr_t *textures)
 {
    size_t o_vertex, o_tex, o_color;
-   size_t i;
-   int j;
-   GLuint id;
-   gl3_t *gl = (gl3_t*)data;
-   const struct texture_image *images =
-      (const struct texture_image*)image_data;
-
-   if (!gl)
-      return false;
+   unsigned i, j;
 
    gl3_free_overlay(gl);
-   /* The texture names and the vertex, texture and colour coordinate
-    * arrays of all overlay images come out of one zeroed block, each
-    * region starting on a 64-byte boundary; overlay_tex owns it. */
    o_vertex = ((num_images * sizeof(GLuint)) + 63) & ~(size_t)63;
    o_tex    = o_vertex + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
    o_color  = o_tex    + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
@@ -3605,22 +3601,53 @@ static bool gl3_overlay_load(void *data,
    gl->overlay_color_coord  = (GLfloat*)((uint8_t*)gl->overlay_tex + o_color);
 
    gl->overlays = num_images;
-   glGenTextures(num_images, gl->overlay_tex);
+   if (textures)
+   {
+      for (i = 0; i < num_images; i++)
+         gl->overlay_tex[i] = (GLuint)textures[i];
+      gl->flags |= GL3_FLAG_OVERLAY_BORROWED;
+   }
+
+   for (i = 0; i < num_images; i++)
+   {
+      gl3_overlay_tex_geom   (gl, i, 0, 0, 1, 1);
+      gl3_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
+      for (j = 0; j < 16; j++)
+         gl->overlay_color_coord[16 * i + j] = 1.0f;
+   }
+   return true;
+}
+
+static bool gl3_overlay_load(void *data,
+      const void *image_data, unsigned num_images)
+{
+   unsigned i;
+   GLuint id;
+   gl3_t *gl = (gl3_t*)data;
+   const struct texture_image *images =
+      (const struct texture_image*)image_data;
+
+   if (!gl || !gl3_overlay_alloc(gl, num_images, NULL))
+      return false;
 
    for (i = 0; i < num_images; i++)
    {
       video_texture_load_gl3(&images[i], TEXTURE_FILTER_LINEAR, &id);
       gl->overlay_tex[i] = id;
-
-      /* Default. Stretch to whole screen. */
-      gl3_overlay_tex_geom   (gl, (unsigned)i, 0, 0, 1, 1);
-      gl3_overlay_vertex_geom(gl, (unsigned)i, 0, 0, 1, 1);
-
-      for (j = 0; j < 16; j++)
-         gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
-
    return true;
+}
+
+/* A page of the pack's textures: no upload, no GL call but the
+ * geometry setup. The names are gl3_load_texture's, valid on this
+ * context. */
+static bool gl3_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return false;
+   return gl3_overlay_alloc(gl, num_textures, textures);
 }
 
 static void gl3_overlay_enable(void *data, bool state)
@@ -3669,6 +3696,7 @@ static void gl3_overlay_set_alpha(void *data, unsigned image, float mod)
 static const video_overlay_interface_t gl3_overlay_interface = {
    gl3_overlay_enable,
    gl3_overlay_load,
+   gl3_overlay_load_textures,
    gl3_overlay_tex_geom,
    gl3_overlay_vertex_geom,
    gl3_overlay_full_screen,

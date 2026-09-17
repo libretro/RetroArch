@@ -120,7 +120,10 @@ enum INPUT_OVERLAY_FLAGS
    INPUT_OVERLAY_ALIVE   = (1 << 1),
    INPUT_OVERLAY_BLOCKED = (1 << 2),
    INPUT_OVERLAY_IS_OSK  = (1 << 3),
-   INPUT_OVERLAY_GAMEPAD_HIDDEN = (1 << 4)
+   INPUT_OVERLAY_GAMEPAD_HIDDEN = (1 << 4),
+   /* The driver declined the pack's textures (load_textures): pages
+    * go through load() until the next enable. */
+   INPUT_OVERLAY_TEXTURES_DECLINED = (1 << 5)
 };
 
 enum OVERLAY_FLAGS
@@ -187,6 +190,15 @@ typedef struct video_overlay_interface
    void (*enable)(void *data, bool state);
    bool (*load)(void *data,
          const void *images, unsigned num_images);
+   /* Show @num_textures textures video_driver_texture_load() made,
+    * in place of load(): the driver takes the same per-image
+    * geometry and alpha as for load() but uploads nothing and owns
+    * nothing - the textures are the overlay pack's, uploaded once
+    * for every page and unloaded by the frontend after enable(false).
+    * A page switch is then a pass over indices. Optional; a driver
+    * without it takes load() on every switch as before. */
+   bool (*load_textures)(void *data,
+         const uintptr_t *textures, unsigned num_textures);
    void (*tex_geom)(void *data, unsigned image,
          float x, float y, float w, float h);
    void (*vertex_geom)(void *data, unsigned image,
@@ -268,6 +280,10 @@ struct overlay
 {
    struct overlay_desc *descs;
    struct texture_image *load_images;
+   /* The pack's texture handle of each load_images entry, valid while
+    * the overlay is enabled on a driver with load_textures; views
+    * into input_overlay_t::page_textures. */
+   uintptr_t *textures;
 
    struct texture_image image;
 
@@ -395,6 +411,11 @@ struct input_overlay
    input_overlay_state_t overlay_state;
    input_overlay_pointer_state_t pointer_state;
    struct texture_image **images;
+   /* One block: the pack's texture handle per unique image (the first
+    * num_images entries), then each page's handle list in page order,
+    * which overlay::textures point into. Built by the enable on a
+    * driver with load_textures, unloaded and freed by the disable. */
+   uintptr_t *page_textures;
 
    size_t num_images;
    size_t index;
@@ -465,6 +486,10 @@ void input_overlay_auto_rotate_(
       unsigned video_driver_height,
       bool input_overlay_enable,
       input_overlay_t *ol);
+
+/* Unload the pack's textures (see video_overlay_interface::load_textures)
+ * and forget the page lists. Safe to call with none uploaded. */
+void input_overlay_release_textures(input_overlay_t *ol);
 
 void input_overlay_load_active(
       enum overlay_visibility *visibility,
