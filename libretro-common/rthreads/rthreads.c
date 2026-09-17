@@ -1787,6 +1787,28 @@ static bool sthread_set_affinity_handle(HANDLE h, uint64_t mask)
       mask = ~mask;
    return SetThreadAffinityMask(h, (DWORD_PTR)mask) != 0;
 }
+#elif defined(__ANDROID__)
+/* bionic declares cpu_set_t and sched_setaffinity under _GNU_SOURCE
+ * only, which has to be set before the first system header - not
+ * something a unity build's include order provides. The kernel call
+ * takes a plain bit mask, so it is made directly. */
+static bool sthread_set_tid_affinity(pid_t tid, uint64_t mask)
+{
+   unsigned long bits[64 / (8 * sizeof(unsigned long))];
+   unsigned i;
+   memset(bits, 0, sizeof(bits));
+   if (!mask)
+   {
+      long n = sysconf(_SC_NPROCESSORS_CONF);
+      for (i = 0; (long)i < n && i < 64; i++)
+         mask |= (uint64_t)1 << i;
+   }
+   for (i = 0; i < 64; i++)
+      if (mask & ((uint64_t)1 << i))
+         bits[i / (8 * sizeof(unsigned long))] |=
+            1UL << (i % (8 * sizeof(unsigned long)));
+   return syscall(__NR_sched_setaffinity, tid, sizeof(bits), bits) == 0;
+}
 #elif defined(__linux__) && !defined(USE_GX_THREADS) && !defined(USE_CTR_THREADS) \
    && !defined(USE_PSP_THREADS) && !defined(USE_PS2_THREADS) && !defined(USE_PS3_THREADS) \
    && !defined(USE_SWITCH_THREADS) && !defined(USE_WIIU_THREADS) && !defined(USE_VITA_THREADS)
@@ -1814,6 +1836,16 @@ bool sthread_set_affinity(sthread_t *thread, uint64_t mask)
 {
 #if defined(USE_WIN32_THREADS)
    return thread && sthread_set_affinity_handle(thread->thread, mask);
+#elif defined(__ANDROID__)
+#if __ANDROID_API__ >= 21
+   return thread && sthread_set_tid_affinity(pthread_gettid_np(thread->id), mask);
+#else
+   /* No pthread_gettid_np before API 21 and no other way to name
+    * another thread to sched_setaffinity; only the calling thread can
+    * pin itself there (sthread_set_current_affinity). */
+   (void)thread; (void)mask;
+   return false;
+#endif
 #elif defined(__linux__) && !defined(USE_GX_THREADS) && !defined(USE_CTR_THREADS) \
    && !defined(USE_PSP_THREADS) && !defined(USE_PS2_THREADS) && !defined(USE_PS3_THREADS) \
    && !defined(USE_SWITCH_THREADS) && !defined(USE_WIIU_THREADS) && !defined(USE_VITA_THREADS)
@@ -1821,18 +1853,7 @@ bool sthread_set_affinity(sthread_t *thread, uint64_t mask)
    if (!thread)
       return false;
    sthread_mask_to_set(mask, &set);
-#if defined(__ANDROID__)
-#if __ANDROID_API__ >= 21
-   return sched_setaffinity(pthread_gettid_np(thread->id), sizeof(set), &set) == 0;
-#else
-   /* No pthread_gettid_np before API 21 and no other way to name
-    * another thread to sched_setaffinity; only the calling thread can
-    * pin itself there (sthread_set_current_affinity). */
-   return false;
-#endif
-#else
    return pthread_setaffinity_np(thread->id, sizeof(set), &set) == 0;
-#endif
 #else
    (void)thread; (void)mask;
    return false;
@@ -1843,6 +1864,8 @@ bool sthread_set_current_affinity(uint64_t mask)
 {
 #if defined(USE_WIN32_THREADS)
    return sthread_set_affinity_handle(GetCurrentThread(), mask);
+#elif defined(__ANDROID__)
+   return sthread_set_tid_affinity(0, mask);
 #elif defined(__linux__) && !defined(USE_GX_THREADS) && !defined(USE_CTR_THREADS) \
    && !defined(USE_PSP_THREADS) && !defined(USE_PS2_THREADS) && !defined(USE_PS3_THREADS) \
    && !defined(USE_SWITCH_THREADS) && !defined(USE_WIIU_THREADS) && !defined(USE_VITA_THREADS)

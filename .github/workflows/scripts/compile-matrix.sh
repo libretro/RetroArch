@@ -290,6 +290,12 @@ salamander_link "salamander link: rtime.c" \
 check "android: runloop" "$HOSTOFF -DANDROID -Itools/platform_stubs/android" runloop.c
 check "android: dispserv" "$HOSTOFF -DANDROID -Itools/platform_stubs/android" gfx/display_servers/dispserv_android.c
 
+# The Android arms of rthreads: thread affinity goes to the kernel
+# directly there (bionic keeps cpu_set_t behind _GNU_SOURCE), and the
+# API 21 arm names pthread_gettid_np, which only bionic declares.
+check "android: rthreads (API 21)" "-DHAVE_THREADS -D__ANDROID__ -D__ANDROID_API__=21 -include tools/platform_stubs/android/bionic_pthread_stub.h -Itools/platform_stubs/android" libretro-common/rthreads/rthreads.c
+check "android: rthreads (API 19)" "-DHAVE_THREADS -D__ANDROID__ -D__ANDROID_API__=19 -Itools/platform_stubs/android" libretro-common/rthreads/rthreads.c
+
 check "android: opensl" "-DANDROID -DHAVE_OPENSL -Itools/platform_stubs/android -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/opensl.c
 
 check "gekko: rgui"  "-DGEKKO -DHAVE_MENU -DHAVE_RGUI -Itools/platform_stubs/gekko" menu/drivers/rgui.c
