@@ -47,9 +47,11 @@ static void producer_thread(void *arg)
 
    for (token = 1; token <= TOTAL_TOKENS; token++)
    {
-      /* Spin until there is room for a full token. */
+      /* Spin until there is room for a full token; the yield keeps a
+       * one-core host from spending each of this thread's slices on
+       * the spin while the other side waits its turn. */
       while (retro_spsc_write_avail(&s->q) < sizeof(token))
-         ; /* spin */
+         sthread_yield();
       retro_spsc_write(&s->q, &token, sizeof(token));
       s->produced_tokens++;
    }
@@ -64,7 +66,7 @@ static void consumer_thread(void *arg)
    {
       uint32_t got;
       while (retro_spsc_read_avail(&s->q) < sizeof(got))
-         ; /* spin */
+         sthread_yield();
       retro_spsc_read(&s->q, &got, sizeof(got));
       if (got != expected_token)
          s->mismatches++;
@@ -273,7 +275,8 @@ static void frame_consumer(void *arg)
    {
       const void *data = frame;
       int borrowed = 0;
-      while (retro_spsc_read_avail(&s->q) < s->width) ;
+      while (retro_spsc_read_avail(&s->q) < s->width)
+         sthread_yield();
       if (s->use_spans)
       {
          borrowed = retro_spsc_read_begin(&s->q, &data) >= s->width;
@@ -314,7 +317,8 @@ static int run_frame_stress(int use_spans)
       for (token = 0; token < 100000; token++)
       {
          for (i = 0; i < s.width; i++) frame[i] = (uint8_t)(token * 13 + i);
-         while (!retro_spsc_write_frames(&s.q, frame, 1, s.width)) ;
+         while (!retro_spsc_write_frames(&s.q, frame, 1, s.width))
+            sthread_yield();
       }
       sthread_join(consumer);
       retro_spsc_free(&s.q);

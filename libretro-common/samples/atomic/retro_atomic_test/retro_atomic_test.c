@@ -575,6 +575,7 @@ static int check_spsc_stress(void)
 
 #define SEQ_READERS      4
 #define SEQ_WRITER_PASSES 200000
+#define SEQ_WRITER_PATIENCE 50   /* passes beyond the floor, at most */
 /* A reader that never lands inside a write has not tested anything, so
  * the run asserts it saw the stamp move under it at least once. */
 #define SEQ_READ_TRIES   64
@@ -590,6 +591,7 @@ typedef struct
    retro_atomic_int_t  retried;      /* reads that saw the stamp move   */
    retro_atomic_int_t  sampled;      /* reads that completed cleanly    */
    retro_atomic_int_t  gave_up;      /* reads that exhausted the bound  */
+   size_t              passes;       /* the writer's, once it is done  */
 } seqlock_state_t;
 
 static void seqlock_writer(void *userdata)
@@ -597,7 +599,16 @@ static void seqlock_writer(void *userdata)
    seqlock_state_t *st = (seqlock_state_t*)userdata;
    int pass;
 
-   for (pass = 1; pass <= SEQ_WRITER_PASSES; pass++)
+   /* The pass count is a floor: on a machine with fewer cores than
+    * threads the readers may not run at all while the writer makes
+    * its passes, and a run where no reader ever saw the odd stamp has
+    * not tested the protocol. So the writer keeps going, up to a
+    * bound, until one has. */
+   for (pass = 1;
+        pass <= SEQ_WRITER_PASSES
+        || (   pass <= SEQ_WRITER_PASSES * SEQ_WRITER_PATIENCE
+            && !retro_atomic_load_acquire_int(&st->retried));
+        pass++)
    {
       size_t s = retro_atomic_load_relaxed_size(&st->seq);
 
@@ -611,8 +622,12 @@ static void seqlock_writer(void *userdata)
       retro_atomic_store_relaxed_int(&st->c, -pass * 3);
 
       retro_atomic_store_release_size(&st->seq, s + 2);
+      /* Hand the core over now and then where there is only one. */
+      if ((pass & 1023) == 0)
+         sthread_yield();
    }
 
+   st->passes = pass - 1;
    retro_atomic_store_release_int(&st->writer_done, 1);
 }
 
@@ -677,6 +692,7 @@ static int check_seqlock_stress(void)
    retro_atomic_int_init(&st.retried, 0);
    retro_atomic_int_init(&st.sampled, 0);
    retro_atomic_int_init(&st.gave_up, 0);
+   st.passes = 0;
 
    for (i = 0; i < SEQ_READERS; i++)
       if (!(readers[i] = sthread_create(seqlock_reader, &st)))
@@ -716,7 +732,7 @@ static int check_seqlock_stress(void)
       return 1;
    }
    if ((size_t)retro_atomic_load_acquire_size(&st.seq)
-         != (size_t)SEQ_WRITER_PASSES * 2)
+         != (size_t)st.passes * 2)
    {
       fprintf(stderr, "FAIL seqlock: stamp did not advance by two a pass\n");
       return 1;
