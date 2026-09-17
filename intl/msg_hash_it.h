@@ -3411,7 +3411,6 @@ static const struct
    char s_261210b3[79];
    char s_3a4b246c[114];
    char s_2ceab671[148];
-   char s_977f8e82[122];
    char s_3c679f0a[320];
    char s_5b059407[131];
    char s_36033606[214];
@@ -8071,8 +8070,6 @@ static const struct
    "ntenuto corrente.",
    "Salva una preimpostazione shader che ha un collegamento alla preimpostazione originale caricata "
    "e include solo le modifiche apportate ai parametri.",
-   "Aprire l'esplorazione file all'ultima directory usata durante il caricamento delle preimpostazio"
-   "ni e dei passaggi shader.",
    "ATTENZIONE: Il lampeggiamento rapido pu\303\262 causare persistenza dell'immagine su alcuni sche"
    "rmi. Utilizzare a proprio rischio. // Simula una semplice linea di scansione a scorrimento su pi"
    "\303\271 sub-fotogrammi, suddividendo verticalmente lo schermo e renderizzando ciascuna parte in"
@@ -8738,7 +8735,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183727u
+      (sizeof(msg_hash_it_blob) == (183605u
 #ifdef ANDROID
        + 376u
 #endif
@@ -12539,7 +12536,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

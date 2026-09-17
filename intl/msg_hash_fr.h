@@ -2569,6 +2569,8 @@ static const struct
    char s_3bac47bd_1[20];
    char s_90e7db40_0[500];
    char s_90e7db40_1[80];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[205];
    char s_1b3f0b9a[454];
    char s_4b78ee7f[88];
    char s_aed11d67[133];
@@ -2913,8 +2915,8 @@ static const struct
    char s_d9153542[84];
    char s_8e48ec69[37];
    char s_cd43c108[87];
-   char s_cd46e260[171];
-   char s_cd482ffe[190];
+   char s_cd46e260[368];
+   char s_cd482ffe[390];
    char s_49336383[56];
    char s_e92351d4[129];
    char s_8e22cdce[48];
@@ -3726,7 +3728,7 @@ static const struct
    char s_261210b3[88];
    char s_3a4b246c[132];
    char s_2ceab671[151];
-   char s_977f8e82[120];
+   char s_977f8e82[298];
    char s_3c679f0a[347];
    char s_5b059407[170];
    char s_36033606[190];
@@ -7293,6 +7295,16 @@ static const struct
    "\251faut est conserv\303\251e et rien d'autre ne change. Cette mesure s'applique au fil d'ex\303"
    "\251cution audio sur",
    " lequel s'ex\303\251cutent le pipeline multithread et les callbacks audio principaux.",
+   "Pr\303\251serve la hauteur tonale (le pitch) lors des ralentis et des avances rapides. Prend en "
+   "charge la lecture sur plusieurs fils d'ex\303\251cution et la lecture synchronis\303\251e \303"
+   "\240 l'image, y compris l'audio multicanal n\303\251goci\303\251. Augmente la charge de traiteme"
+   "nt, la m\303\251moire et la mise en m\303\251moire tampon lorsque cette option est activ\303\251"
+   "e. N\303\251cessite une fr\303\251quence d'\303\251chantillonnage de 8\302\240000 \303\240 192"
+   "\302\240000\302\240Hz. Les vitesses ou formats source non pris en charge utilisent la lecture st"
+   "andard. Les modification",
+   "s de configuration r\303\251initialisent l'audio en m\303\251moire tampon. La pr\303\251servatio"
+   "n de la hauteur tonale (pitch) reprend en lecture sur plusieurs fils d'ex\303\251cution une fois"
+   " l'audio en file d'attente \303\251coul\303\251.",
    "Att\303\251nue les hautes fr\303\251quences lors de la lecture acc\303\251l\303\251r\303\251e, a"
    "vec ou sans Changements de vitesse pr\303\251servant la hauteur tonale (pitch). Prend en charge "
    "les m\303\252mes fr\303\251quences d'\303\251chantillonnage et formats sources. L'activation de "
@@ -7829,12 +7841,17 @@ static const struct
    "Capture une image du contenu actuel.",
    "Maintient le shader s\303\251lectionn\303\251 activ\303\251/d\303\251sactiv\303\251 lorsque la t"
    "ouche est enfonc\303\251e.",
-   "Charge et applique le pr\303\251r\303\251glage de shader suivant situ\303\251 dans le dossier du"
-   " pr\303\251r\303\251glage actuel. Une fois le dernier atteint, passe au dossier suivant au m\303"
-   "\252me niveau.",
-   "Charge et applique le pr\303\251r\303\251glage de shader pr\303\251c\303\251dent situ\303\251 da"
-   "ns le dossier du pr\303\251r\303\251glage actuel. Avant le premier pr\303\251r\303\251glage, rev"
-   "ient au dossier pr\303\251c\303\251dent situ\303\251 au m\303\252me niveau.",
+   "Charge et applique le pr\303\251r\303\251glage de shaders suivant situ\303\251 dans le dossier d"
+   "u pr\303\251r\303\251glage actuel. Une fois le dernier atteint, passe au dossier suivant au m"
+   "\303\252me niveau. Si l'option 'Recharger le dernier dossier de shaders utilis\303\251' est d"
+   "\303\251sactiv\303\251e, le syst\303\250me parcourt plut\303\264t les pr\303\251r\303\251glages "
+   "situ\303\251s \303\240 la racine du dossier 'Shaders vid\303\251o', s'il en contient.",
+   "Charge et applique le pr\303\251r\303\251glage de shaders pr\303\251c\303\251dent situ\303\251 d"
+   "ans le dossier du pr\303\251r\303\251glage actuel. Si l'on se trouve au d\303\251but de la liste"
+   ", revient au dossier pr\303\251c\303\251dent au m\303\252me niveau. Si l'option 'Recharger le de"
+   "rnier dossier de shaders utilis\303\251' est d\303\251sactiv\303\251e, le syst\303\250me parcour"
+   "t plut\303\264t les pr\303\251r\303\251glages situ\303\251s \303\240 la racine du dossier 'Shade"
+   "rs vid\303\251o', s'il en contient.",
    "Active/d\303\251sactive le shader actuellement s\303\251lectionn\303\251.",
    "En maintenant la touche, cela active le ralenti. Le contenu rebascule en vitesse normale lorsque"
    " la touche n'est plus maintenue.",
@@ -9264,8 +9281,10 @@ static const struct
    "Enregistrer un pr\303\251r\303\251glage de shaders li\303\251 au pr\303\251r\303\251glage origin"
    "al charg\303\251 et n'inclure que les changements de param\303\250tres que vous avez effectu\303"
    "\251s.",
-   "Ouvre le navigateur de fichiers au dernier dossier utilis\303\251 lors du chargement de pr\303"
-   "\251r\303\251glages de shaders et passages.",
+   "Ouvrir l'explorateur de fichiers au dernier dossier utilis\303\251 lors du chargement des pr\303"
+   "\251r\303\251glages et des passes de shaders. Les touches de raccourcis shader suivant/pr\303"
+   "\251c\303\251dent parcourent les \303\251l\303\251ments \303\240 partir du pr\303\251r\303\251gl"
+   "age actuel au lieu de naviguer \303\240 la racine du dossier 'Shaders vid\303\251o'.",
    "AVERTISSEMENT : Un scintillement rapide peut causer une persistance de l'image sur certains \303"
    "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Simule une ligne de balaya"
    "ge roulante basique au cours de plusieurs sous-images en divisant l'\303\251cran verticalement e"
@@ -10011,7 +10030,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (233503u
+      (sizeof(msg_hash_fr_blob) == (234783u
 #ifdef ANDROID
        + 373u
 #endif
@@ -12971,6 +12990,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,

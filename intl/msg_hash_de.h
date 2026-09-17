@@ -2487,6 +2487,8 @@ static const struct
    char s_3c3598a9[44];
    char s_3bac47bd[447];
    char s_90e7db40[465];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[89];
    char s_1b3f0b9a[400];
    char s_4b78ee7f[62];
    char s_aed11d67[151];
@@ -2828,8 +2830,6 @@ static const struct
    char s_d9153542[57];
    char s_8e48ec69[43];
    char s_cd43c108[81];
-   char s_cd46e260[193];
-   char s_cd482ffe[204];
    char s_49336383[51];
    char s_e92351d4[113];
    char s_8e22cdce[54];
@@ -3640,7 +3640,6 @@ static const struct
    char s_261210b3[78];
    char s_3a4b246c[102];
    char s_2ceab671[153];
-   char s_977f8e82[96];
    char s_3c679f0a[336];
    char s_5b059407[144];
    char s_36033606[199];
@@ -7041,6 +7040,13 @@ static const struct
    " beh\303\244lt die Standardpriorit\303\244t bei, und es \303\244ndert sich nichts weiter. Dies g"
    "ilt f\303\274r den Audiothread, auf dem die Threaded Pipeline und die Core-Audio-Callbacks ausge"
    "f\303\274hrt werden.",
+   "Die Tonh\303\266he bei Zeitlupe und Zeitraffer beibehalten. Unterst\303\274tzt Thread-basierte u"
+   "nd framesynchrone Wiedergabe, einschlie\303\237lich ausgehandeltem Mehrkanal-Audio. Erh\303\266h"
+   "t bei Aktivierung den Rechenaufwand sowie den Speicher- und Pufferbedarf. Erfordert eine Inhalts"
+   "rate von 8000\342\200\223192000\302\240Hz. Nicht unterst\303\274tzte Geschwindigkeiten oder Quel"
+   "lformate verwenden die normale Wiedergabe. Inline-Layout\303\244nderungen setzen den gepufferten"
+   " Ton zur\303\274ck. Bei der Thread-basierten Wiedergabe wird die Tonh\303\266henbei",
+   "behaltung fortgesetzt, sobald der in der Warteschlange befindliche Ton abgearbeitet ist.",
    "Mildert hohe Frequenzen bei beschleunigter Wiedergabe, mit oder ohne tonh\303\266henkonservieren"
    "de Geschwindigkeits\303\244nderungen. Unterst\303\274tzt dieselben Inhaltsraten und Quellformate"
    ". F\303\274gt bei Aktivierung eine Signalverarbeitung und vorbereiteten Speicher hinzu; die Wied"
@@ -7528,12 +7534,6 @@ static const struct
    "Fertigt ein Foto des aktuellen Inhalts an.",
    "H\303\244lt den aktuell ausgew\303\244hlten Shader an/aus, solange die Taste gedr\303\274ckt wir"
    "d.",
-   "L\303\244dt und wendet die n\303\244chste Shader-Voreinstellung aus dem Ordner der aktuellen Vor"
-   "einstellung an. Nach der letzten Voreinstellung wird zum n\303\244chsten Ordner auf derselben Eb"
-   "ene \303\274bergegangen.",
-   "L\303\244dt und wendet die vorherige Shader-Voreinstellung aus dem Ordner der aktuellen Voreinst"
-   "ellung an. Vor der ersten Voreinstellung wechselt das Programm zum vorherigen Ordner auf derselb"
-   "en Ebene zur\303\274ck.",
    "Schaltet den aktuell ausgew\303\244hlten Shader ein/aus.",
    "Aktiviert Zeitlupe, solange gedr\303\274ckt. Inhalte laufen mit normaler Geschwindigkeit, wenn T"
    "aste losgelassen wird.",
@@ -8805,8 +8805,6 @@ static const struct
    " speichern.",
    "Eine Shader-Voreinstellung speichern, die nur die von Dir vorgenommenen Parameter\303\244nderung"
    "en und einen Link zur urspr\303\274nglichen Voreinstellung enth\303\244lt.",
-   "Dateibrowser beim Laden von Shader-Voreinstellungen im zuletzt verwendeten Verzeichnis \303\266f"
-   "fnen.",
    "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
    "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
    "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
@@ -9505,7 +9503,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (207752u
+      (sizeof(msg_hash_de_blob) == (207848u
 #ifdef ANDROID
        + 358u
 #endif
@@ -12397,6 +12395,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -12737,8 +12736,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -13546,7 +13543,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

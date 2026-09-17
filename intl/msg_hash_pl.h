@@ -3693,7 +3693,6 @@ static const struct
    char s_261210b3[72];
    char s_3a4b246c[120];
    char s_2ceab671[115];
-   char s_977f8e82[113];
    char s_3c679f0a[317];
    char s_5b059407[148];
    char s_36033606[191];
@@ -9099,8 +9098,6 @@ static const struct
    "lik\303\263w w bie\305\274\304\205cym katalogu zawarto\305\233ci.",
    "Zapisz ustawienie cienia, kt\303\263re ma link do oryginalnego ustawienia wst\304\231pnego i zaw"
    "iera tylko zmiany parametr\303\263w.",
-   "Otw\303\263rz przegl\304\205dark\304\231 plik\303\263w w ostatnio u\305\274ywanym katalogu podcz"
-   "as \305\202adowania ustawie\305\204 i przebieg\303\263w shadera.",
    "OSTRZE\305\273ENIE: Szybkie migotanie mo\305\274e spowodowa\304\207 utrzymywanie si\304\231 obra"
    "zu na niekt\303\263rych wy\305\233wietlaczach. U\305\274wa\304\207 na w\305\202asne ryzyko // Sy"
    "muluje prost\304\205 krocz\304\205c\304\205 lini\304\231 skanuj\304\205c\304\205 nad wieloma pod"
@@ -9826,7 +9823,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (196283u
+      (sizeof(msg_hash_pl_blob) == (196170u
 #ifdef ANDROID
        + 385u
 #endif
@@ -13928,7 +13925,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

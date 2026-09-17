@@ -2582,6 +2582,8 @@ static const struct
    char s_3c3598a9[48];
    char s_3bac47bd[444];
    char s_90e7db40[499];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[155];
    char s_1b3f0b9a[422];
    char s_4b78ee7f[87];
    char s_aed11d67[145];
@@ -2922,8 +2924,8 @@ static const struct
    char s_d9153542[57];
    char s_8e48ec69[41];
    char s_cd43c108[76];
-   char s_cd46e260[164];
-   char s_cd482ffe[161];
+   char s_cd46e260[348];
+   char s_cd482ffe[345];
    char s_49336383[43];
    char s_e92351d4[115];
    char s_8e22cdce[53];
@@ -3732,7 +3734,7 @@ static const struct
    char s_261210b3[102];
    char s_3a4b246c[128];
    char s_2ceab671[148];
-   char s_977f8e82[107];
+   char s_977f8e82[262];
    char s_3c679f0a[411];
    char s_5b059407[152];
    char s_36033606[159];
@@ -7257,6 +7259,14 @@ static const struct
    "ue lo permitan, si un sistema lo rechaza, la prioridad sigue siendo la predeterminada sin m\303"
    "\241s cambios. Esta opci\303\263n se aplica al hilo de audio en el que se ejecutan la canalizaci"
    "\303\263n multihilo y las llamadas al n\303\272cleo de audio.",
+   "Conserva el tono al aplicar los modos de c\303\241mara lenta y avance r\303\241pido. Esta opci"
+   "\303\263n es compatible con la reproducci\303\263n multihilo y con la sincronizada a fotogramas,"
+   " as\303\255 como con el audio multicanal negociado. Activar esta opci\303\263n aumenta los coste"
+   "s de procesamiento, memoria y de los b\303\272feres. Es necesaria una frecuencia de 8000-192000"
+   "\302\240Hz en el contenido. Toda velocidad o formato de origen no compatibles utilizar\303\241n "
+   "la reproducci\303\263n ordinaria. Los cambios insertados en la disposici\303\263n reinici",
+   "ar\303\241n el audio guardado en el b\303\272fer. La reproducci\303\263n multihilo reanudar\303"
+   "\241 la preservaci\303\263n de tono al terminar de reproducir el audio que est\303\251 en cola.",
    "Suaviza las frecuencias altas al reproducir audio acelerado tanto si la opci\303\263n Cambios de"
    " velocidad con tono constante est\303\241 activada o no. Es compatible con las mismas frecuencia"
    "s de los contenidos y formatos de salida. Activar esta opci\303\263n aumentar\303\241 carga de p"
@@ -7776,9 +7786,14 @@ static const struct
    "Captura una imagen del contenido actual.",
    "Mantiene activado o desactivado el shader seleccionado al pulsar el bot\303\263n.",
    "Carga y aplica el siguiente preajuste de shaders de la carpeta del preajuste actual. Si es el "
-   "\303\272ltimo preajuste, se pasar\303\241 a la siguiente carpeta del mismo nivel.",
-   "Carga y aplica el preajuste de shaders anterior de la carpeta del preajuste actual. Si es el pri"
-   "mer preajuste, se pasar\303\241 a la carpeta anterior del mismo nivel.",
+   "\303\272ltimo preajuste, se pasar\303\241 a la siguiente carpeta del mismo nivel. Al desactivar "
+   "la opci\303\263n Recordar el \303\272ltimo directorio de shaders utilizado, se rotar\303\241n en"
+   " su lugar los preajustes que haya en la ra\303\255z del directorio de shaders de v\303\255deo (s"
+   "i hay).",
+   "Carga y aplica el preajuste anterior de shaders de la carpeta del preajuste actual. Si es el pri"
+   "mer preajuste, se pasar\303\241 a la carpeta anterior del mismo nivel. Al desactivar la opci\303"
+   "\263n Recordar el \303\272ltimo directorio de shaders utilizado, se rotar\303\241n en su lugar l"
+   "os preajustes que haya en la ra\303\255z del directorio de shaders de v\303\255deo (si hay).",
    "Activa o desactiva el shader seleccionado.",
    "Activa la c\303\241mara lenta al mantener pulsado el bot\303\263n. Al soltarlo, el contenido se "
    "ejecutar\303\241 a velocidad normal.",
@@ -9130,8 +9145,10 @@ static const struct
    " del directorio de contenidos actual.",
    "Guarda un preajuste de shaders con un enlace al preajuste original ya cargado e incluye \303\272"
    "nicamente los cambios que hayas hecho en sus par\303\241metros.",
-   "Abre el explorador de archivos en el \303\272ltimo directorio usado para cargar preajustes y pas"
-   "adas de shaders.",
+   "Cuando se vayan a cargar shaders y pasadas, abrir el explorador de archivos en el \303\272ltimo "
+   "directorio usado. Las teclas r\303\241pidas Siguiente shader y Shader anterior rotar\303\241n a "
+   "partir del preajuste actual en vez de por la ra\303\255z del directorio de shaders de v\303\255d"
+   "eo.",
    "ADVERTENCIA: los parpadeos r\303\241pidos pueden provocar persistencia de la imagen (\302\253im"
    "\303\241genes fantasma\302\273) en algunas pantallas. Utiliza esta opci\303\263n bajo tu propia "
    "responsabilidad. // Simula de forma b\303\241sica el escalonamiento de las l\303\255neas de barr"
@@ -9858,7 +9875,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (225360u
+      (sizeof(msg_hash_es_blob) == (226538u
 #ifdef ANDROID
        + 329u
 #endif
@@ -12840,6 +12857,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,

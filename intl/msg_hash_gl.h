@@ -3491,7 +3491,6 @@ static const struct
    char s_261210b3[89];
    char s_3a4b246c[121];
    char s_2ceab671[141];
-   char s_977f8e82[104];
    char s_3c679f0a[321];
    char s_5b059407[143];
    char s_36033606[177];
@@ -8406,8 +8405,6 @@ static const struct
    " directorio de contido actual.",
    "Garda un predefinido de sombreado que ten unha ligaz\303\263n ao predefinido orixinal cargado e "
    "incl\303\272e s\303\263 os cambios de par\303\241metro que fixeches.",
-   "Abrir o explorador de arquivos no \303\272ltimo directorio usado ao cargar predefinidos e pasos "
-   "de sombreado.",
    "ADVERTENCIA: O destello r\303\241pido pode causar retenci\303\263n de imaxe en algunhas pantalla"
    "s. Usa esta opci\303\263n baixo a t\303\272a responsabilidade // Simula unha li\303\261a de expl"
    "oraci\303\263n b\303\241sica \303\263 longo de varios subfotogramas dividindo a pantalla vertica"
@@ -9091,7 +9088,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (193561u
+      (sizeof(msg_hash_gl_blob) == (193457u
 #ifdef ANDROID
        + 365u
 #endif
@@ -12959,7 +12956,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

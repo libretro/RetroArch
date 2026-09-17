@@ -3477,7 +3477,6 @@ static const struct
    char s_261210b3[91];
    char s_3a4b246c[135];
    char s_2ceab671[129];
-   char s_977f8e82[114];
    char s_3c679f0a[304];
    char s_5b059407[152];
    char s_36033606[160];
@@ -8952,8 +8951,6 @@ static const struct
    "\241ll\303\255t\303\241s.",
    "Olyan shader preset ment\303\251se, amely hivatkozik az eredeti bet\303\266lt\303\266tt shaderre"
    " \303\251s csak a param\303\251ter v\303\241ltoz\303\241sokat tartalmazza.",
-   "Shader presetek \303\251s feldolgoz\303\263k bet\303\266lt\303\251sekor a F\303\241jlb\303\266ng"
-   "\303\251sz\305\221 a legut\303\263bb haszn\303\241lt k\303\266nyvt\303\241rat nyitja meg.",
    "FIGYELEM: a gyors vill\303\263dz\303\241s bizonyos kijelz\305\221k\303\266n k\303\251pvisszatart"
    "\303\241st okozhat. Csak saj\303\241t felel\305\221ss\303\251gre. // Egyszer\305\261 g\303\266rd"
    "\303\274l\305\221 elektronsug\303\241r szimul\303\241ci\303\263 t\303\266bb alk\303\251pkock\303"
@@ -9718,7 +9715,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (188672u
+      (sizeof(msg_hash_hu_blob) == (188558u
 #ifdef ANDROID
        + 316u
 #endif
@@ -13582,7 +13579,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

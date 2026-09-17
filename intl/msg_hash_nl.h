@@ -3379,7 +3379,6 @@ static const struct
    char s_261210b3[74];
    char s_3a4b246c[98];
    char s_2ceab671[153];
-   char s_977f8e82[101];
    char s_3c679f0a[287];
    char s_5b059407[142];
    char s_36033606[198];
@@ -7928,8 +7927,6 @@ static const struct
    ".",
    "Sla een shader preset op die een link heeft naar de oorspronkelijk geladen voorinstelling en geb"
    "ruik alleen de door u aangebrachte parameterwijzigingen.",
-   "Open bestandsbrowser in de laatst gebruikte map bij het laden van shader-voorinstellingen en pas"
-   "ses.",
    "WAARSCHUWING: Snelle knipperen kan afbeeldingen in sommige schermen inbranden. Gebruik op eigen "
    "risico // Simuleert een standaard scanlijn over meerdere sub-frames door het scherm verticaal te"
    " verdelen en elk deel van het scherm weer te geven afhankelijk van hoeveel sub-frames er zijn.",
@@ -8571,7 +8568,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (174032u
+      (sizeof(msg_hash_nl_blob) == (173931u
 #ifdef ANDROID
        + 375u
 #endif
@@ -12342,7 +12339,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

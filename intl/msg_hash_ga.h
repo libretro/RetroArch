@@ -2596,6 +2596,8 @@ static const struct
    char s_3c3598a9[42];
    char s_3bac47bd[393];
    char s_90e7db40[492];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[65];
    char s_1b3f0b9a[462];
    char s_4b78ee7f[95];
    char s_aed11d67[146];
@@ -2937,8 +2939,6 @@ static const struct
    char s_d9153542[68];
    char s_8e48ec69[39];
    char s_cd43c108[96];
-   char s_cd46e260[237];
-   char s_cd482ffe[260];
    char s_49336383[63];
    char s_e92351d4[126];
    char s_8e22cdce[43];
@@ -3746,7 +3746,6 @@ static const struct
    char s_261210b3[83];
    char s_3a4b246c[106];
    char s_2ceab671[165];
-   char s_977f8e82[126];
    char s_3c679f0a[334];
    char s_5b059407[178];
    char s_36033606[201];
@@ -7425,6 +7424,15 @@ static const struct
    "agus n\303\255 athra\303\255onn aon rud eile. Baineann s\303\251 seo leis an sn\303\241ithe fuai"
    "me a ritheann an P\303\255bl\303\255ne Sn\303\241ithithe agus na glaonna ais fuaime l\303\241rna"
    "cha air.",
+   "Coinnigh an ph\303\241irc le linn gluaiseachta mall agus luasghluaiseachta. Taca\303\255onn s"
+   "\303\251 le hathsheinm sn\303\241ithithe agus sioncr\303\263nach fr\303\241ma, lena n-\303\241ir"
+   "\303\255tear fuaim ilchain\303\251il chaibidlithe. Cuireann s\303\251 costas pr\303\263ise\303"
+   "\241la, cuimhne agus maol\303\241n\303\272 leis agus \303\251 cumasaithe. \303\211il\303\255onn "
+   "s\303\251 r\303\241ta \303\241bhair de 8000-192000 Hz. \303\232s\303\241ideann luasanna n\303"
+   "\263 form\303\241id\303\255 foinse nach dtaca\303\255tear leo athsheinm gn\303\241th. Athshocra"
+   "\303\255onn athruithe ar leagan amach inl\303\255ne fuaim mhaol\303\241naithe. Leanann athsheinm"
+   " sn\303\241ithithe ar a",
+   "ghaidh ag caomhn\303\272 na p\303\241irce tar \303\251is draen\303\241il fuaime scuaine.",
    "Maolaigh minic\303\255ochta\303\255 arda le linn athsheinm luathaithe, b\303\255odh athruithe lu"
    "ais a chaomhna\303\255onn an tuin \303\241 n-\303\272s\303\241id n\303\263 n\303\241 b\303\255od"
    "h. Taca\303\255onn s\303\251 leis na r\303\241ta\303\255 \303\241bhair agus leis na form\303\241"
@@ -8037,14 +8045,6 @@ static const struct
    "Gabhann s\303\251 \303\255omh\303\241 den \303\241bhar reatha.",
    "Coinn\303\255onn s\303\251 an sc\303\241thl\303\241n at\303\241 roghnaithe faoi l\303\241thair a"
    "r si\303\272l/as agus an eochair br\303\272ite.",
-   "L\303\263d\303\241lann agus cuireann s\303\251 i bhfeidhm an ch\303\251ad r\303\251amhshocr\303"
-   "\272 sc\303\241thaitheora eile i bhfillte\303\241n an r\303\251amhshocraithe reatha. Tar \303"
-   "\251is an chinn dheireanaigh, bogann s\303\251 ar aghaidh chuig an gc\303\251ad fhillte\303\241n"
-   " eile ar an leibh\303\251al c\303\251anna.",
-   "L\303\263d\303\241lann agus cuireann s\303\251 i bhfeidhm an r\303\251amhshocr\303\272 sc\303"
-   "\241th\303\263ra (shader preset) roimhe seo at\303\241 sa bhfillte\303\241n ina bhfuil an r\303"
-   "\251amhshocr\303\272 reatha. Sula sroichtear an ch\303\251ad cheann, bogann s\303\251 ar ais go "
-   "dt\303\255 an fillte\303\241n roimhe sin ar an leibh\303\251al c\303\251anna.",
    "Casann s\303\251 an sc\303\241thl\303\241n at\303\241 roghnaithe faoi l\303\241thair air/as.",
    "Cumasa\303\255onn s\303\251 gluaiseacht mhall nuair a choime\303\241dtar \303\251. Ritheann an t"
    "-\303\241bhar ar luas gn\303\241th nuair a scaoiltear an eochair.",
@@ -9610,8 +9610,6 @@ static const struct
    "S\303\241bh\303\241il r\303\251amhshocr\303\272 sc\303\241thaithe a bhfuil nasc ann chuig an r"
    "\303\251amhshocr\303\272 bunaidh a luchta\303\255odh agus nach bhfuil ann ach na hathruithe para"
    "im\303\251adair a rinne t\303\272.",
-   "Oscail an Brabhs\303\241la\303\255 Comhad san eolaire deireanach a \303\272s\303\241ideadh agus "
-   "r\303\251amhshocruithe agus pasanna sc\303\241thaithe \303\241 lucht\303\272.",
    "RABHADH: D\342\200\231fh\303\251adfadh caochadh tapa a bheith ina ch\303\272is le buanseasmhacht"
    " \303\255omh\303\241 ar roinnt taispe\303\241ntais. \303\232s\303\241id ar do phriacal f\303\251"
    "in // Insamhladh l\303\255ne scanadh rollta bhun\303\272sach thar ilfho-fhr\303\241ma\303\255 tr"
@@ -10385,7 +10383,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (219734u
+      (sizeof(msg_hash_ga_blob) == (219676u
 #ifdef ANDROID
        + 390u
 #endif
@@ -13379,6 +13377,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -13720,8 +13719,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -14528,7 +14525,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

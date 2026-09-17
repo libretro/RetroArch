@@ -3540,7 +3540,6 @@ static const struct
    char s_261210b3[80];
    char s_3a4b246c[112];
    char s_2ceab671[163];
-   char s_977f8e82[105];
    char s_3c679f0a[269];
    char s_5b059407[150];
    char s_36033606[154];
@@ -8589,8 +8588,6 @@ static const struct
    "Salva uma predefini\303\247\303\243o do Shader com um link para a predefini\303\247\303\243o ori"
    "ginal que j\303\241 est\303\241 carregada e inclui apenas as altera\303\247\303\265es que voc"
    "\303\252 fez no par\303\242metro.",
-   "Abre o Navegador de Arquivos no \303\272ltimo diret\303\263rio usado ao carregar predefini\303"
-   "\247\303\265es e passes de shader.",
    "AVISO: Tremula\303\247\303\243o r\303\241pida pode causar persist\303\252ncia de imagem em algum"
    "as telas. Use por sua conta em risco // Simula uma varredura b\303\241sica sobre v\303\241rios s"
    "ubquadros dividindo a tela verticalmente e renderizando cada parte da tela de acordo com quantos"
@@ -9287,7 +9284,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (194508u
+      (sizeof(msg_hash_pt_br_blob) == (194403u
 #ifdef ANDROID
        + 352u
 #endif
@@ -13234,7 +13231,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

@@ -3596,7 +3596,6 @@ static const struct
    char s_261210b3[74];
    char s_3a4b246c[106];
    char s_2ceab671[159];
-   char s_977f8e82[89];
    char s_3c679f0a[291];
    char s_5b059407[132];
    char s_36033606[181];
@@ -8825,8 +8824,6 @@ static const struct
    "Spara en shader-f\303\266rinst\303\244llning som har en l\303\244nk till den ursprungliga f\303"
    "\266rinst\303\244llningen och som endast inneh\303\245ller de parameter\303\244ndringar som du h"
    "ar gjort.",
-   "\303\226ppna filbl\303\244ddrare vid senast anv\303\244nda katalog n\303\244r shader-f\303\266rv"
-   "al och pass l\303\244ses in.",
    "VARNING: Snabbt flimmer kan orsaka bildbest\303\244ndighet p\303\245 vissa sk\303\244rmar. Anv"
    "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
    "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
@@ -9540,7 +9537,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (190382u
+      (sizeof(msg_hash_sv_blob) == (190293u
 #ifdef ANDROID
        + 361u
 #endif
@@ -13536,7 +13533,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

@@ -3168,7 +3168,6 @@ static const struct
    char s_261210b3[76];
    char s_3a4b246c[107];
    char s_2ceab671[137];
-   char s_977f8e82[121];
    char s_3c679f0a[349];
    char s_5b059407[164];
    char s_36033606[178];
@@ -8107,9 +8106,6 @@ static const struct
    "Ulo\305\276it p\305\231edvolbu shaderu, kter\303\241 m\303\241 odkaz na p\305\257vodn\303\255 na"
    "\304\215tenou p\305\231edvolbu a obsahuje pouze zm\304\233ny parametr\305\257, kter\303\251 jste"
    " provedli.",
-   "Otev\305\231en\303\255 Pr\305\257zkumn\303\255ka soubor\305\257 v posledn\303\255m pou\305\276it"
-   "\303\251m adres\303\241\305\231i p\305\231i na\304\215\303\255t\303\241n\303\255 p\305\231edvole"
-   "b a pr\305\257chod\305\257 shader\305\257.",
    "UPOZORN\304\232N\303\215: Rychl\303\251 blik\303\241n\303\255 m\305\257\305\276e na n\304\233kte"
    "r\303\275ch displej\303\255ch zp\305\257sobit p\305\231etrv\303\241v\303\241n\303\255 obrazu. Po"
    "u\305\276\303\255vejte na vlastn\303\255 nebezpe\304\215\303\255 // Simuluje z\303\241kladn\303"
@@ -8803,7 +8799,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162784u
+      (sizeof(msg_hash_cs_blob) == (162663u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12320,7 +12316,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

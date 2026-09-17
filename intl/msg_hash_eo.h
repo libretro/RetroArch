@@ -3561,7 +3561,6 @@ static const struct
    char s_261210b3[75];
    char s_3a4b246c[113];
    char s_2ceab671[122];
-   char s_977f8e82[111];
    char s_3c679f0a[288];
    char s_5b059407[139];
    char s_36033606[159];
@@ -8394,8 +8393,6 @@ static const struct
    "la kuranta enhava dosierujo.",
    "Konservi ombrigilan anta\305\255agordon, kiu havas ligon al la originala anta\305\255agordo \305"
    "\235argita kaj inkluzivas nur la parametraj",
-   "Malfermi dosieresplorilon \304\211e la laste uzata dosierujo kiam \305\235argante ombrigilajn an"
-   "ta\305\255agordojn kaj aplikojn.",
    "AVERTO: Rapida flagro povus ka\305\255zi bildan da\305\255ron (\"image presistence\") en kelkaj "
    "ekranoj. Uzu \304\235in je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subf"
    "ilmeroj dividante la ekrano supren vertikale kaj bildigante \304\211iu parto de la ekrano la\305"
@@ -9061,7 +9058,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172228u
+      (sizeof(msg_hash_eo_blob) == (172117u
 #ifdef ANDROID
        + 312u
 #endif
@@ -13011,7 +13008,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

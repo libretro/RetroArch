@@ -2549,6 +2549,8 @@ static const struct
    char s_3c3598a9[51];
    char s_3bac47bd[425];
    char s_90e7db40[450];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[70];
    char s_1b3f0b9a[428];
    char s_4b78ee7f[72];
    char s_aed11d67[146];
@@ -2890,8 +2892,6 @@ static const struct
    char s_d9153542[53];
    char s_8e48ec69[41];
    char s_cd43c108[79];
-   char s_cd46e260[163];
-   char s_cd482ffe[151];
    char s_49336383[42];
    char s_e92351d4[106];
    char s_8e22cdce[47];
@@ -3700,7 +3700,6 @@ static const struct
    char s_261210b3[83];
    char s_3a4b246c[119];
    char s_2ceab671[136];
-   char s_977f8e82[102];
    char s_3c679f0a[313];
    char s_5b059407[137];
    char s_36033606[174];
@@ -7184,6 +7183,14 @@ static const struct
    "eixen; un sistema que la rebutja mant\303\251 la prioritat per defecte i res m\303\251s canvia. "
    "S'aplica al fil d'\303\240udio en qu\303\250 s'executen el Threaded Pipeline i les callbacks d'"
    "\303\240udio principals.",
+   "Conserva el to durant la c\303\240mera lenta i l'avan\303\247 r\303\240pid. Admet la reproducci"
+   "\303\263 per fils i fotograma a fotograma, incl\303\262s l'\303\240udio multicanal negociat. Afe"
+   "geix cost de processament, mem\303\262ria i emmagatzematge intermedi mentre est\303\240 activat."
+   " Requereix una velocitat de contingut de 8000-192000 Hz. Les velocitats o formats d'origen no co"
+   "mpatibles utilitzen la reproducci\303\263 normal. Els canvis de disseny en l\303\255nia restable"
+   "ixen l'\303\240udio emmagatzemat a la mem\303\262ria interm\303\250dia. La reproducci\303\263 pe"
+   "r fils re",
+   "pr\303\250n la conservaci\303\263 del to despr\303\251s que l'\303\240udio a la cua s'esgoti.",
    "Suavitza les freq\303\274\303\250ncies altes durant la reproducci\303\263 accelerada, tant si s'"
    "utilitza el canvi de velocitat amb conservaci\303\263 del to com si no. Admet les mateixes taxes"
    " de contingut i formats d'origen. Afegeix processament i mem\303\262ria preparada quan est\303"
@@ -7681,11 +7688,6 @@ static const struct
    "Desa un estat a la posici\303\263 actualment seleccionada.",
    "Captura una imatge del contingut actual.",
    "Mant\303\251 el shader seleccionat activat o desactivat mentre la tecla \303\251s clicada.",
-   "Carrega i aplica la seg\303\274ent configuraci\303\263 de shaders de la carpeta actual. Si \303"
-   "\251s la \303\272ltima configuraci\303\263, es canviar\303\240 a la seg\303\274ent carpeta del m"
-   "ateix nivell.",
-   "Carrega i aplica la configuraci\303\263 anterior de shaders de la carpeta actual. Abans de la pr"
-   "imera, es canviar\303\240 a la carpeta anterior del mateix nivell.",
    "Activa o desactiva el shader seleccionat.",
    "Activa la c\303\240mera lenta quan es mant\303\251. El contingut s'executa a velocitat normal qu"
    "an s'amolla la tecla.",
@@ -9005,8 +9007,6 @@ static const struct
    "arpeta de continguts actual.",
    "Desa una predefinici\303\263 de shader que t\303\251 un enlla\303\247 a la predefinici\303\263 c"
    "arregada originalment i inclou nom\303\251s els par\303\240metres canviats.",
-   "Obre l'explorador de fitxers en l'\303\272ltima carpeta que es va obrir per carregar ajustaments"
-   " i shaders.",
    "AV\303\215S: El parpelleig r\303\240pid pot causar errors gr\303\240fics en algunes pantalles. F"
    "es servir aquesta opci\303\263 sota la teva responsabilitat // Simula una l\303\255nia d'escanei"
    "g en moviment b\303\240sica sobre m\303\272ltiples subfotogrames dividint la pantalla en vertica"
@@ -9736,7 +9736,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (215913u
+      (sizeof(msg_hash_ca_blob) == (216067u
 #ifdef ANDROID
        + 281u
 #endif
@@ -12686,6 +12686,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
@@ -13027,8 +13028,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -13836,7 +13835,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

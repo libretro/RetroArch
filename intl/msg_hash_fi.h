@@ -2923,7 +2923,6 @@ static const struct
    char s_261210b3[69];
    char s_3a4b246c[98];
    char s_2ceab671[132];
-   char s_977f8e82[113];
    char s_5b059407[141];
    char s_7e96b5ce[36];
    char s_8010a29e[97];
@@ -6875,8 +6874,6 @@ static const struct
    "tiedostoille.",
    "Tallenna varjostimen esiasetus, jolla on linkki alkuper\303\244iseen esiasetukseen ja joka sis"
    "\303\244lt\303\244\303\244 vain tekem\303\244si parametrimuutokset.",
-   "Tiedostoselain avautuu viimeksi k\303\244ytetyss\303\244 hakemistossa ladattaessa varjostinasetu"
-   "ksia ja suoritusyksik\303\266it\303\244.",
    "Antaa laitteistorender\303\266iville ytimille oman yksityisen kontekstinsa. N\303\244in v\303"
    "\244ltet\303\244\303\244n laitteiston tilamuutosten arvailu kuvien v\303\244liss\303\244.",
    "Muuta videon synkronointiasetuksia.",
@@ -7459,7 +7456,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123969u
+      (sizeof(msg_hash_fi_blob) == (123856u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -10672,7 +10669,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,

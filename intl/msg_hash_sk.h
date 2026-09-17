@@ -3469,7 +3469,6 @@ static const struct
    char s_261210b3[77];
    char s_3a4b246c[106];
    char s_2ceab671[133];
-   char s_977f8e82[108];
    char s_3c679f0a[304];
    char s_5b059407[144];
    char s_36033606[169];
@@ -8705,8 +8704,6 @@ static const struct
    "Ulo\305\276i\305\245 predvo\304\276bu shadera s odkazom na p\303\264vodne na\304\215\303\255tan"
    "\303\272 predvo\304\276bu, ktor\303\241 obsahuje iba zmeny parametrov, ktor\303\251 ste vykonali"
    ".",
-   "Otvori\305\245 prehliada\304\215 s\303\272borov v naposledy pou\305\276itom adres\303\241ri pri "
-   "na\304\215\303\255tan\303\255 predvolieb a passov shaderov.",
    "VAROVANIE: R\303\275chle blikanie m\303\264\305\276e na niektor\303\275ch displejoch sp\303\264s"
    "obi\305\245 pretrv\303\241vanie obrazu. Pou\305\276\303\255vate na vlastn\303\251 riziko // Simu"
    "luje z\303\241kladn\303\275 roluj\303\272ci skenovac\303\255 riadok cez viacero pod-sn\303\255mo"
@@ -9418,7 +9415,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (179055u
+      (sizeof(msg_hash_sk_blob) == (178947u
 #ifdef ANDROID
        + 389u
 #endif
@@ -13287,7 +13284,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
