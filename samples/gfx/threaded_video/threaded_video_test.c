@@ -1872,6 +1872,7 @@ static void lane_surface_update(void)
    enum gfx_surface_submit_result r;
    bool rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) != 0;
    unsigned i;
+   unsigned queued;
    uintptr_t first;
 
    /* Threaded: the descriptor goes to the video thread, the slot
@@ -1906,16 +1907,32 @@ static void lane_surface_update(void)
    }
    first = s->handle;
 
+   /* The first submit above is queued and not yet released. */
+   queued = 1;
    for (i = 0; i < 30; i++)
    {
-      unsigned slot = i & 1;
+      unsigned slot  = i & 1;
+      unsigned tries;
       surf_fill(s, slot, i + 2);
-      r = gfx_surface_submit(s, slot, rgba);
+      /* A queued submit is the video thread's until it has taken it,
+       * and the slot reads BUSY until the release comes back. One
+       * frame is enough on the null driver; a real one runs its own
+       * schedule, so give the release the frames it needs. */
+      for (tries = 0; tries < 8; tries++)
+      {
+         r = gfx_surface_submit(s, slot, rgba);
+         if (r != GFX_SURFACE_SUBMIT_BUSY)
+            break;
+         run_frames(1);
+      }
       CHECK(r == GFX_SURFACE_SUBMIT_QUEUED, "frame %u: submit returned %d", i, r);
+      if (r == GFX_SURFACE_SUBMIT_QUEUED)
+         queued++;
       run_frames(1);
    }
-   run_frames(2);
-   CHECK(surf_releases == 31, "%u releases for 31 threaded submits", surf_releases);
+   run_frames(4);
+   CHECK(surf_releases == queued, "%u releases for %u queued submits",
+         surf_releases, queued);
    CHECK(!s->inflight, "a submit is still in flight after the frames");
    if (video_driver_texture_can_update())
       CHECK(s->handle == first,
