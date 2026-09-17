@@ -1018,6 +1018,33 @@ bool image_transfer_anim_stream_set_output(void *stream,
    return false;
 }
 
+bool image_transfer_anim_stream_set_blit_pool(void *stream,
+      enum image_type_enum type, void *pool, unsigned bands)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         rwebm_video_stream_set_blit_pool((rwebm_video_stream_t*)stream,
+               pool, bands);
+         return true;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         rmp4_video_stream_set_blit_pool((rmp4_video_stream_t*)stream,
+               pool, bands);
+         return true;
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
 bool image_transfer_anim_stream_set_argb(void *stream,
       enum image_type_enum type, int argb)
 {

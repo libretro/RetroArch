@@ -529,6 +529,10 @@ VIDEO IMAGE
  * and by rmp4_video's H.265 Main10 arm, so RMP4 alone needs them too. */
 #include "../libretro-common/formats/image/image_hdr_blit.c"
 #endif
+#if defined(HAVE_RWEBM) || defined(HAVE_RMP4)
+/* The row-band splitter the video streams' blits run through. */
+#include "../libretro-common/formats/image/image_blit_bands.c"
+#endif
 #ifdef HAVE_RDDS
 #include "../libretro-common/formats/dds/rdds.c"
 #endif
@@ -1452,6 +1456,7 @@ THREAD
 #endif
 
 #include "../libretro-common/rthreads/rthreads.c"
+#include "../libretro-common/rthreads/tpool.c"
 #include "../gfx/video_thread_wrapper.c"
 #include "../gfx/video_thread_hw.c"
 #include "../audio/audio_thread_wrapper.c"
@@ -1827,9 +1832,6 @@ ANDROID PLAY FEATURE DELIVERY
 /*============================================================
 FFMPEG
 ============================================================ */
-#ifdef HAVE_FFMPEG
-#include "../libretro-common/rthreads/tpool.c"
-#endif
 
 /*============================================================
 STEAM INTEGRATION USING MIST

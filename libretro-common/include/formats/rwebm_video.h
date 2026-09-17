@@ -163,6 +163,14 @@ void rwebm_video_stream_set_argb(rwebm_video_stream_t *stream, int argb);
 void rwebm_video_stream_set_output(rwebm_video_stream_t *stream,
       uint32_t *out);
 
+/* Convert decoded frames in @bands row bands on @pool (an rthreads
+ * tpool_t of at least bands - 1 threads; the calling thread takes one
+ * band and joins the rest). NULL or bands <= 1 keeps the blit on the
+ * calling thread. The pool is the caller's and must outlive every
+ * decode call made while it is set. */
+void rwebm_video_stream_set_blit_pool(rwebm_video_stream_t *stream,
+      void *pool, unsigned bands);
+
 /* Partial-read support: raise the number of leading buffer bytes that
  * are valid (monotonic).  A blocked step resumes once the needed
  * block's bytes are inside the window; fully-resident streams never

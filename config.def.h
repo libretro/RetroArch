@@ -167,6 +167,10 @@
 /* Play the audio track of animated WebM thumbnails (menu preview). */
 #define DEFAULT_MENU_THUMBNAIL_PREVIEW_AUDIO false
 
+/* Threads converting each frame of an animated WebM/MP4 thumbnail to
+ * pixels; 1 keeps the conversion on the decode thread. */
+#define DEFAULT_MENU_THUMBNAIL_PREVIEW_THREADS 1
+
 #define DEFAULT_SCREEN_BRIGHTNESS 100
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION CRT_SWITCH_NONE

@@ -319,6 +319,17 @@ bool image_transfer_anim_stream_set_argb(void *stream,
 bool image_transfer_anim_stream_set_output(void *stream,
       enum image_type_enum type, uint32_t *out);
 
+/* Have the stream convert each decoded frame to pixels in @bands row
+ * bands on @pool (an rthreads tpool_t with at least bands - 1 threads;
+ * the decoding thread takes one band and joins the rest), so a large
+ * frame's colour conversion is spread over cores. NULL or bands <= 1
+ * converts on the decoding thread as before. Returns true for the
+ * stream types that convert this way (WEBM, MP4); APNG and WEBP
+ * compose their frames and have no such pass. The pool is the
+ * caller's and must outlive every decode made while it is set. */
+bool image_transfer_anim_stream_set_blit_pool(void *stream,
+      enum image_type_enum type, void *pool, unsigned bands);
+
 /* For decoding a still from a file whose read is still in progress:
  * declare how many leading bytes of the buffer are valid.  Monotonic.
  * Honoured by PNG, JPEG, WEBM and MP4, which report the wall two

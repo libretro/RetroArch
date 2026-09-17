@@ -1215,6 +1215,7 @@ endif
 
 ifeq ($(HAVE_THREADS), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
+          $(LIBRETRO_COMM_DIR)/rthreads/tpool.o \
           $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.o \
           $(LIBRETRO_COMM_DIR)/rthreads/retro_procbarrier.o \
           $(LIBRETRO_COMM_DIR)/rthreads/retro_asym_eventcount.o \
@@ -2349,6 +2350,9 @@ ifeq ($(HAVE_RWEBM), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/webm/rwebm.o \
           $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_video.o \
           $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_audio.o
+   # The row-band splitter the video blits run through; the mp4 block
+   # adds it when building without webm.
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/image/image_blit_bands.o
 ifneq ($(HAVE_RWEBP), 1)
    # rwebm_video decodes VP8 tracks with rvp8, normally built with RWEBP
    OBJ += $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.o
@@ -2366,6 +2370,9 @@ ifneq ($(HAVE_RVP9), 1)
    # rmp4_video's H.265 Main10 arm uses the shared 10-bit / HDR
    # I420->RGB blits; normally linked from the HAVE_RVP9 block below.
    OBJ += $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.o
+endif
+ifneq ($(HAVE_RWEBM), 1)
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/image/image_blit_bands.o
 endif
 ifneq ($(HAVE_RWEBP), 1)
 ifneq ($(HAVE_RWEBM), 1)
@@ -2739,8 +2746,7 @@ endif
 
 ifeq ($(HAVE_FFMPEG), 1)
    OBJ += record/drivers/record_ffmpeg.o \
-          cores/libretro-ffmpeg/ffmpeg_core.o \
-          $(LIBRETRO_COMM_DIR)/rthreads/tpool.o
+          cores/libretro-ffmpeg/ffmpeg_core.o
 
    LIBS += $(AVCODEC_LIBS) $(AVFORMAT_LIBS) $(AVUTIL_LIBS) $(SWSCALE_LIBS) $(SWRESAMPLE_LIBS) $(FFMPEG_LIBS) $(AVDEVICE_LIBS)
    DEFINES += -DHAVE_FFMPEG

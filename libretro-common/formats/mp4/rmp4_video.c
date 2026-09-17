@@ -52,6 +52,7 @@
 #include <formats/rh264.h>
 #include <formats/rh265.h>
 #include <formats/rmp4_video.h>
+#include <formats/image_blit_bands.h>
 
 /* Per-packet timestamps are pre-scanned at open so every frame's display
  * duration is known without lookahead decoding; cap the table so a
@@ -74,6 +75,8 @@ struct rmp4_video_stream
    uint32_t    *frame;      /* width * height ABGR words              */
    uint32_t    *out;        /* caller's frame to blit into instead of
                                'frame'; NULL for the stream's own    */
+   void        *blit_pool;  /* tpool_t the blit's row bands run on   */
+   unsigned     blit_bands; /* how many; <= 1 blits on this thread   */
    int64_t     *ts;         /* pre-scanned packet timestamps (ns)     */
    int          ts_count;   /* entries stored in ts                   */
    int          num_frames; /* total video packets in the stream      */
@@ -438,17 +441,6 @@ static void rmp4_video_blit_yuv(uint32_t *dst, unsigned dst_stride,
       }
 #endif
    }
-}
-
-/* 4:2:0: two luma rows share a chroma row. */
-static void rmp4_video_blit_i420(uint32_t *dst, unsigned dst_stride,
-      unsigned w, unsigned h,
-      const uint8_t *y, int ys,
-      const uint8_t *u, const uint8_t *v, int uvs,
-      unsigned matrix, int argb)
-{
-   rmp4_video_blit_yuv(dst, dst_stride, w, h, y, ys, u, v, uvs, matrix, 1,
-         argb);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1016,6 +1008,115 @@ void rmp4_video_stream_set_output(rmp4_video_stream_t *s, uint32_t *out)
       s->out = out;
 }
 
+void rmp4_video_stream_set_blit_pool(rmp4_video_stream_t *s,
+      void *pool, unsigned bands)
+{
+   if (!s)
+      return;
+   s->blit_pool  = pool;
+   s->blit_bands = bands;
+}
+
+/* The blit as a row-band job (image_blit_bands): every parameter of
+ * the frame's blit, with the row offset applied to the plane and
+ * destination pointers per band. The matrix is resolved before the
+ * split so a band's height does not pick the coefficients. */
+typedef struct
+{
+   uint32_t *dst;
+   const void *y, *u, *v;
+   unsigned dst_stride, w;
+   int ys, uvs;
+   int chsh, cvsh, bd;
+   unsigned matrix, transfer, range;
+   int argb;
+   int kind;  /* 0: 8-bit yuv (cvsh), 1: 8-bit 4:4:4, 2: hbd to 8-bit,
+                 3: webm hbd to 8-bit, 4: webm 10-bit */
+} rmp4_blit_ctx_t;
+
+static void rmp4_video_blit_rows(void *arg, unsigned row0, unsigned rows)
+{
+   const rmp4_blit_ctx_t *c = (const rmp4_blit_ctx_t*)arg;
+   uint32_t *dst            = c->dst + (size_t)row0 * c->dst_stride;
+   size_t crow              = (size_t)row0 >> c->cvsh;
+   switch (c->kind)
+   {
+      case 0:
+         rmp4_video_blit_yuv(dst, c->dst_stride, c->w, rows,
+               (const uint8_t*)c->y + (size_t)row0 * c->ys, c->ys,
+               (const uint8_t*)c->u + crow * c->uvs,
+               (const uint8_t*)c->v + crow * c->uvs, c->uvs,
+               c->matrix, c->cvsh, c->argb);
+         break;
+      case 1:
+         rmp4_video_blit_yuv444(dst, c->dst_stride, c->w, rows,
+               (const uint8_t*)c->y + (size_t)row0 * c->ys, c->ys,
+               (const uint8_t*)c->u + (size_t)row0 * c->uvs,
+               (const uint8_t*)c->v + (size_t)row0 * c->uvs, c->uvs,
+               c->matrix, c->argb);
+         break;
+      case 2:
+         rmp4_video_blit_yuv_hbd(dst, c->dst_stride, c->w, rows,
+               (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
+               (const uint16_t*)c->u + crow * c->uvs,
+               (const uint16_t*)c->v + crow * c->uvs, c->uvs,
+               c->chsh, c->cvsh, c->bd, c->matrix, c->argb);
+         break;
+      case 3:
+         rwebm_video_blit_i420_hbd(dst, c->dst_stride, c->w, rows,
+               (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
+               (const uint16_t*)c->u + crow * c->uvs,
+               (const uint16_t*)c->v + crow * c->uvs, c->uvs,
+               c->matrix, c->transfer, c->range, 0, c->argb);
+         break;
+      default:
+         rwebm_video_blit_i420_10bit(dst, c->dst_stride, c->w, rows,
+               (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
+               (const uint16_t*)c->u + crow * c->uvs,
+               (const uint16_t*)c->v + crow * c->uvs, c->uvs,
+               c->matrix, c->transfer, c->range, 0);
+         break;
+   }
+}
+
+/* Run the frame's blit, in bands on the stream's pool when it has
+ * one. An untagged matrix on the 8-bit and hbd paths is decided by the
+ * frame's height here (rmp4_video_coefs); the shared HDR blits take
+ * theirs from the transfer and lazily build their tables, so those
+ * are warmed with a zero-row call before any band can race the
+ * build. Bands start on chroma-row boundaries. */
+static void rmp4_video_blit_frame(rmp4_video_stream_t *s,
+      rmp4_blit_ctx_t *c, unsigned h)
+{
+   if (c->kind <= 2 && !(c->matrix == 1 || c->matrix == 5
+            || c->matrix == 6 || c->matrix == 9 || c->matrix == 10))
+      c->matrix = h >= 720 ? 1 : 5;
+   else if (c->kind > 2 && s->blit_pool && s->blit_bands > 1)
+      rmp4_video_blit_rows(c, 0, 0);
+   image_blit_bands(s->blit_pool, s->blit_bands, h, 1u << c->cvsh,
+         rmp4_video_blit_rows, c);
+}
+
+#define RMP4_BLIT_CTX(c, s_, dst_, w_, y_, u_, v_, ys_, uvs_, kind_, argb_) \
+   do { \
+      (c).dst        = (dst_); \
+      (c).dst_stride = (s_)->width; \
+      (c).w          = (unsigned)(w_); \
+      (c).y          = (y_); \
+      (c).u          = (u_); \
+      (c).v          = (v_); \
+      (c).ys         = (ys_); \
+      (c).uvs        = (uvs_); \
+      (c).chsh       = 1; \
+      (c).cvsh       = 1; \
+      (c).bd         = 8; \
+      (c).matrix     = (s_)->matrix; \
+      (c).transfer   = (s_)->transfer; \
+      (c).range      = (s_)->range; \
+      (c).kind       = (kind_); \
+      (c).argb       = (argb_); \
+   } while (0)
+
 void rmp4_video_stream_set_avail(rmp4_video_stream_t *s, size_t avail)
 {
    if (s)
@@ -1058,9 +1159,11 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
             w = (int)s->width;
          if ((unsigned)h > s->height)
             h = (int)s->height;
-         rmp4_video_blit_i420(dst, s->width,
-               (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
-               s->emit_argb);
+         {
+            rmp4_blit_ctx_t c;
+            RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 0, s->emit_argb);
+            rmp4_video_blit_frame(s, &c, (unsigned)h);
+         }
          return dst;
       }
 #ifdef HAVE_RVP9
@@ -1077,25 +1180,25 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
              * resolution), matching untagged webm content. Without this
              * branch the 10-bit (uint16) planes were handed to the 8-bit
              * blit and mis-decoded. */
+            rmp4_blit_ctx_t c;
             if (s->want10)
             {
-               rwebm_video_blit_i420_10bit(dst, s->width, w, h,
-                     (const uint16_t*)fb->y, s->vp9->ys,
-                     (const uint16_t*)fb->u, (const uint16_t*)fb->v,
-                     s->vp9->uvs, s->matrix, s->transfer, s->range, 0);
+               RMP4_BLIT_CTX(c, s, dst, w, fb->y, fb->u, fb->v,
+                     s->vp9->ys, s->vp9->uvs, 4, 0);
                s->is10 = 1;
             }
             else
-               rwebm_video_blit_i420_hbd(dst, s->width, w, h,
-                     (const uint16_t*)fb->y, s->vp9->ys,
-                     (const uint16_t*)fb->u, (const uint16_t*)fb->v,
-                     s->vp9->uvs, s->matrix, s->transfer, s->range, 0,
-                     s->emit_argb ? 0 : 1);
+               RMP4_BLIT_CTX(c, s, dst, w, fb->y, fb->u, fb->v,
+                     s->vp9->ys, s->vp9->uvs, 3, s->emit_argb ? 0 : 1);
+            rmp4_video_blit_frame(s, &c, h);
          }
          else
-            rmp4_video_blit_i420(dst, s->width, w, h,
-                  fb->y, s->vp9->ys, fb->u, fb->v, s->vp9->uvs, s->matrix,
-                  s->emit_argb);
+         {
+            rmp4_blit_ctx_t c;
+            RMP4_BLIT_CTX(c, s, dst, w, fb->y, fb->u, fb->v,
+                  s->vp9->ys, s->vp9->uvs, 0, s->emit_argb);
+            rmp4_video_blit_frame(s, &c, h);
+         }
          return dst;
       }
 #endif
@@ -1119,42 +1222,43 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
              * the shared HDR blits, XRGB2101010 when the caller asked
              * for it; anything else scales down to the 8-bit path. */
             int bd = rh264_video_bit_depth(s->h264);
+            rmp4_blit_ctx_t c;
             if (bd == 10 && cw < w && ch < h)
             {
                if (s->want10)
                {
-                  rwebm_video_blit_i420_10bit(dst, s->width,
-                        (unsigned)w, (unsigned)h,
-                        (const uint16_t*)y, ys,
-                        (const uint16_t*)u, (const uint16_t*)v, uvs,
-                        s->matrix, s->transfer, s->range, 0);
+                  RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 4, 0);
                   s->is10 = 1;
                }
                else
-                  rwebm_video_blit_i420_hbd(dst, s->width,
-                        (unsigned)w, (unsigned)h,
-                        (const uint16_t*)y, ys,
-                        (const uint16_t*)u, (const uint16_t*)v, uvs,
-                        s->matrix, s->transfer, s->range, 0,
+                  RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 3,
                         s->emit_argb ? 0 : 1);
             }
             else
-               rmp4_video_blit_yuv_hbd(dst, s->width,
-                     (unsigned)w, (unsigned)h,
-                     (const uint16_t*)y, ys,
-                     (const uint16_t*)u, (const uint16_t*)v, uvs,
-                     (cw < w) ? 1 : 0, (ch < h) ? 1 : 0, bd, s->matrix,
-                     s->emit_argb);
+            {
+               RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 2, s->emit_argb);
+               c.chsh = (cw < w) ? 1 : 0;
+               c.cvsh = (ch < h) ? 1 : 0;
+               c.bd   = bd;
+            }
+            rmp4_video_blit_frame(s, &c, (unsigned)h);
             return dst;
          }
-         if (cw >= w)   /* 4:4:4: luma-sized chroma */
-            rmp4_video_blit_yuv444(dst, s->width,
-                  (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
-                  s->emit_argb);
-         else
-            rmp4_video_blit_yuv(dst, s->width,
-                  (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
-                  (ch < h) ? 1 : 0, s->emit_argb);
+         {
+            rmp4_blit_ctx_t c;
+            if (cw >= w)   /* 4:4:4: luma-sized chroma */
+            {
+               RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 1, s->emit_argb);
+               c.chsh = 0;
+               c.cvsh = 0;
+            }
+            else
+            {
+               RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 0, s->emit_argb);
+               c.cvsh = (ch < h) ? 1 : 0;
+            }
+            rmp4_video_blit_frame(s, &c, (unsigned)h);
+         }
          return dst;
       }
       case 4:  /* H.265: planes valid until the next decode or drain */
@@ -1175,30 +1279,27 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
             /* Main10: the plane pointers reference uint16_t samples
              * with the stride in samples; hand them to the shared
              * high-bit-depth blits exactly as the VP9 arm does. */
+            rmp4_blit_ctx_t c;
             if (s->want10)
             {
-               rwebm_video_blit_i420_10bit(dst, s->width,
-                     (unsigned)w, (unsigned)h,
-                     (const uint16_t*)y, ys,
-                     (const uint16_t*)u, (const uint16_t*)v, uvs,
-                     s->matrix, s->transfer, s->range, 0);
+               RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 4, 0);
                s->is10 = 1;
             }
             else
-               rwebm_video_blit_i420_hbd(dst, s->width,
-                     (unsigned)w, (unsigned)h,
-                     (const uint16_t*)y, ys,
-                     (const uint16_t*)u, (const uint16_t*)v, uvs,
-                     s->matrix, s->transfer, s->range, 0,
+               RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 3,
                      s->emit_argb ? 0 : 1);
+            rmp4_video_blit_frame(s, &c, (unsigned)h);
             return dst;
          }
          /* rh265 is 4:2:0 only, so the chroma-vertical-shift argument
           * the H.264 arm derives is always 1 here; keep the same
           * derivation anyway so the two arms stay textually parallel. */
-         rmp4_video_blit_yuv(dst, s->width,
-               (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
-               (ch < h) ? 1 : 0, s->emit_argb);
+         {
+            rmp4_blit_ctx_t c;
+            RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 0, s->emit_argb);
+            c.cvsh = (ch < h) ? 1 : 0;
+            rmp4_video_blit_frame(s, &c, (unsigned)h);
+         }
          return dst;
       }
       default:

@@ -41,6 +41,7 @@ SOURCES := gfx_thumbnail_anim_test.c \
            $(LIBRETRO_COMM_DIR)/memory/mem_stats.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
            $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \

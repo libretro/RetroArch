@@ -136,6 +136,14 @@ void rmp4_video_stream_set_argb(rmp4_video_stream_t *stream, int argb);
 void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
       uint32_t *out);
 
+/* Convert decoded frames in @bands row bands on @pool (an rthreads
+ * tpool_t of at least bands - 1 threads; the calling thread takes one
+ * band and joins the rest). NULL or bands <= 1 keeps the blit on the
+ * calling thread. The pool is the caller's and must outlive every
+ * decode call made while it is set. */
+void rmp4_video_stream_set_blit_pool(rmp4_video_stream_t *stream,
+      void *pool, unsigned bands);
+
 /* Advance past the next displayed frame without colour-converting it:
  * the picture stays inside the decoder and no work is spent on its
  * pixels.  Returns 1 when a frame was consumed (its display duration

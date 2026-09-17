@@ -24,6 +24,7 @@ SOURCES := task_file_transfer_test.c \
            $(LIBRETRO_COMM_DIR)/formats/h264/rh264.c \
            $(LIBRETRO_COMM_DIR)/formats/h265/rh265.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.c \
+           $(LIBRETRO_COMM_DIR)/formats/image/image_blit_bands.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
            $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c \
            $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.c \
@@ -33,6 +34,7 @@ SOURCES := task_file_transfer_test.c \
            $(LIBRETRO_COMM_DIR)/memmap/memmap.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
            $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \

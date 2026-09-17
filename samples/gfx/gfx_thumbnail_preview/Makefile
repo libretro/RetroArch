@@ -43,6 +43,7 @@ SOURCES := gfx_thumbnail_preview_test.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.c \
+           $(LIBRETRO_COMM_DIR)/formats/image/image_blit_bands.c \
            $(LIBRETRO_COMM_DIR)/formats/aac/raac.c \
            $(LIBRETRO_COMM_DIR)/formats/h264/rh264.c \
            $(LIBRETRO_COMM_DIR)/formats/h265/rh265.c \
@@ -155,6 +156,7 @@ ANIM_WINDOW_SOURCES := preview_anim_window_test.c \
            $(LIBRETRO_COMM_DIR)/formats/webm/rwebm.c \
            $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_video.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.c \
+           $(LIBRETRO_COMM_DIR)/formats/image/image_blit_bands.c \
            $(LIBRETRO_COMM_DIR)/memmap/memmap.c \
            $(LIBRETRO_COMM_DIR)/memory/mem_stats.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
@@ -190,6 +192,39 @@ $(DECODE_TARGET): $(DECODE_SOURCES_WEBM) preview_audio_decode_test.c
 $(DECODE_TARGET_NORWEBM): $(DECODE_SOURCES) preview_audio_decode_test.c
 	$(CC) -o $@ $(DECODE_SOURCES) $(DECODE_CFLAGS_COMMON) $(LDFLAGS)
 
+# The banded colour conversion against the single-threaded one, frame
+# for frame, through the real rmp4_video stream on a real tpool.
+BLIT_BANDS_TARGET  := preview_blit_bands_test
+BLIT_BANDS_SOURCES := preview_blit_bands_test.c \
+           $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+           $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
+           $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+           $(LIBRETRO_COMM_DIR)/file/file_path.c \
+           $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+           $(LIBRETRO_COMM_DIR)/formats/h264/rh264.c \
+           $(LIBRETRO_COMM_DIR)/formats/h265/rh265.c \
+           $(LIBRETRO_COMM_DIR)/formats/image/image_blit_bands.c \
+           $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.c \
+           $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c \
+           $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.c \
+           $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c \
+           $(LIBRETRO_COMM_DIR)/lists/string_list.c \
+           $(LIBRETRO_COMM_DIR)/memmap/memmap.c \
+           $(LIBRETRO_COMM_DIR)/memmap/memalign.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
+           $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+           $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
+           $(LIBRETRO_COMM_DIR)/string/stdstring.c \
+           $(LIBRETRO_COMM_DIR)/time/rtime.c \
+           $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+
+$(BLIT_BANDS_TARGET): $(BLIT_BANDS_SOURCES)
+	$(CC) -o $@ $(BLIT_BANDS_SOURCES) \
+	      -Wall -std=gnu99 -g -O1 -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_THREADS \
+	      -DHAVE_MMAP -D_GNU_SOURCE -I$(LIBRETRO_COMM_DIR)/include \
+	      $(EXTRA_CFLAGS) $(LDFLAGS) -lpthread
+
 $(UUT_OBJ): $(UUT_SRC)
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
@@ -213,9 +248,10 @@ $(TARGET): $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 fixtures:
 	python3 mkfixtures.py fixtures
 
-check: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET) fixtures
+check: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET) fixtures
 	./$(TARGET) fixtures/*.mp4 fixtures/anim_lossless.webp
 	./$(ANIM_WINDOW_TARGET) fixtures
+	./$(BLIT_BANDS_TARGET) fixtures/long_video.mp4
 	./$(DECODE_TARGET) fixtures/trailing_large.mp4 1024   island
 	./$(DECODE_TARGET) fixtures/trailing_large.mp4 262144 island
 	./$(DECODE_TARGET_NORWEBM) fixtures/trailing_large.mp4 1024 island
@@ -226,7 +262,7 @@ check: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET)
 # left the following run globbing nothing.  Use distclean to drop them.
 clean:
 	rm -f $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) \
-	      $(ANIM_WINDOW_TARGET) \
+	      $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET) \
 	      $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 
 distclean: clean

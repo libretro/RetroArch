@@ -57,6 +57,7 @@
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/tpool.h>
 #endif
 
 #include "../configuration.h"
@@ -429,6 +430,36 @@ static sthread_t             *gfx_thumb_worker_thread = NULL;
 static gfx_thumb_anim_job_t  *gfx_thumb_worker_head   = NULL;
 static gfx_thumb_anim_job_t  *gfx_thumb_worker_tail   = NULL;
 static bool                   gfx_thumb_worker_die    = false;
+/* The colour-conversion pool the video streams band their blits
+ * over (Animated Thumbnail Threads). The worker alone creates, uses
+ * and destroys it; the poll only publishes how many bands are wanted
+ * (the setting), and the worker re-sizes the pool between frames. */
+static tpool_t               *gfx_thumb_blit_pool     = NULL;
+static unsigned               gfx_thumb_blit_bands    = 1;
+static retro_atomic_int_t     gfx_thumb_blit_wanted;
+
+/* Worker thread: bring the pool to the published band count. A pool
+ * of bands - 1 threads plus the worker's own band. */
+static void gfx_thumbnail_anim_blit_pool_sync(void)
+{
+   int wanted = retro_atomic_load_relaxed_int(&gfx_thumb_blit_wanted);
+   if (wanted < 1)
+      wanted = 1;
+   if ((unsigned)wanted == gfx_thumb_blit_bands)
+      return;
+   if (gfx_thumb_blit_pool)
+   {
+      tpool_destroy(gfx_thumb_blit_pool);
+      gfx_thumb_blit_pool = NULL;
+   }
+   gfx_thumb_blit_bands = 1;
+   if (wanted > 1)
+   {
+      gfx_thumb_blit_pool = tpool_create((size_t)(wanted - 1));
+      if (gfx_thumb_blit_pool)
+         gfx_thumb_blit_bands = (unsigned)wanted;
+   }
+}
 
 /* Decode one displayed frame (handling end-of-pass loop/rewind) and
  * convert it into job->frame in its final upload format. Returns false
@@ -453,6 +484,10 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
     * out their canvas and the copy below decouples it. */
    bool direct               = image_transfer_anim_stream_set_output(
          job->stream, type, job->frame);
+
+   gfx_thumbnail_anim_blit_pool_sync();
+   image_transfer_anim_stream_set_blit_pool(job->stream, type,
+         gfx_thumb_blit_pool, gfx_thumb_blit_bands);
 
    /* The window feed runs HERE, on the thread that decodes, not on
     * the poll.  It reads the demuxer's cursor and stores its bound,
@@ -574,6 +609,8 @@ fail:
 
 static void gfx_thumbnail_anim_job_enqueue(gfx_thumb_anim_job_t *job)
 {
+   retro_atomic_store_relaxed_int(&gfx_thumb_blit_wanted,
+         (int)config_get_ptr()->uints.menu_thumbnail_preview_threads);
    slock_lock(gfx_thumb_worker_lock);
    retro_atomic_store_relaxed_int(&job->status, GFX_THUMB_JOB_QUEUED);
    job->next   = NULL;
@@ -633,6 +670,13 @@ void gfx_thumbnail_anim_worker_deinit(void)
    slock_unlock(gfx_thumb_worker_lock);
    sthread_join(gfx_thumb_worker_thread);
    gfx_thumb_worker_thread = NULL;
+   /* Joined: the pool is nobody's but ours now. */
+   if (gfx_thumb_blit_pool)
+   {
+      tpool_destroy(gfx_thumb_blit_pool);
+      gfx_thumb_blit_pool = NULL;
+   }
+   gfx_thumb_blit_bands = 1;
    scond_free(gfx_thumb_worker_done);
    scond_free(gfx_thumb_worker_wake);
    slock_free(gfx_thumb_worker_lock);
