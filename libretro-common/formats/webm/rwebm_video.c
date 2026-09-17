@@ -428,6 +428,7 @@ static bool rwebm_video_stream_open_decoder(rwebm_video_stream_t *s)
       case RWEBM_CODEC_VP9:
          if (!(s->vp9 = (rvp9_dec*)calloc(1, sizeof(*s->vp9))))
             return false;
+         rvp9_set_tile_pool(s->vp9, s->blit_pool, s->blit_bands);
          return true;
 #endif
       default:
@@ -670,6 +671,11 @@ void rwebm_video_stream_set_blit_pool(rwebm_video_stream_t *s,
       return;
    s->blit_pool  = pool;
    s->blit_bands = bands;
+#ifdef HAVE_RVP9
+   /* VP9 tile columns decode on the same pool, one per thread. */
+   if (s->vp9)
+      rvp9_set_tile_pool(s->vp9, pool, bands);
+#endif
 }
 
 /* The blit as a row-band job (image_blit_bands): every parameter of

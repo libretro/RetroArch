@@ -292,6 +292,18 @@ typedef struct
     * seg_update_map copies forward).  Swapped after every decoded
     * frame while segmentation is enabled. */
    uint8_t *seg_map, *seg_map_prev;
+
+   /* Tile-column threading (rvp9_set_tile_pool): the pool the extra
+    * columns are decoded on, how many threads may share a frame, and
+    * the per-thread shadows of this decoder - one rvp9_dec each, a
+    * shallow copy taken at every frame so the frame-level state and
+    * every buffer are shared and only the tile-local fields (bool
+    * decoder, left contexts, scratch, counts, edges) are private.
+    * NULL / 1 decodes every column on the calling thread. */
+   void    *tile_pool;
+   unsigned tile_threads;
+   void    *shadows;                 /* (tile_threads - 1) rvp9_dec  */
+   unsigned num_shadows;
 } rvp9_dec;
 
 /* Decode one coded VP9 frame (one WebM block / IVF frame payload).
@@ -302,6 +314,18 @@ typedef struct
  * planes .u/.v of (w+1)/2 x (h+1)/2 (stride d->uvs). */
 int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
       int *show_fb);
+
+/* Decode the tile columns of each frame on up to @threads threads:
+ * the calling thread takes the first column and @pool (an rthreads
+ * tpool_t of at least threads - 1 threads) the rest, joined before
+ * the loop filter. VP9 tile columns share nothing but the frame -
+ * no entropy state, no intra or motion-vector neighbours cross a
+ * column edge - so this changes when pixels are written, never what
+ * they are. Frames coded as a single tile column decode as before.
+ * NULL or threads <= 1 restores single-threaded decoding. The pool
+ * is the caller's and must outlive every decode made while it is
+ * set; the extra decoder state is freed by rvp9_free. */
+void rvp9_set_tile_pool(rvp9_dec *d, void *pool, unsigned threads);
 
 /* Release all buffers owned by the decoder.  The rvp9_dec itself is
  * caller-owned.  Safe on a zero-initialised or partially set-up state. */

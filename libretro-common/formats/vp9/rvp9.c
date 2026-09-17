@@ -26,6 +26,23 @@
 
 #include <retro_inline.h>
 #include <formats/rvp9.h>
+#ifdef HAVE_THREADS
+#include <rthreads/tpool.h>
+#endif
+
+/* Tile columns decoded side by side at most; VP9 allows 64. */
+#define RVP9_TILE_THREADS_MAX 8
+
+/* One thread's share of a frame's tile columns (rvp9_decode_tile_cols
+ * in the reconstruction layer). */
+typedef struct
+{
+   rvp9_dec      *d;
+   const uint8_t *tiles;   /* first tile's size prefix (or data) */
+   const uint8_t *end;
+   int            col_first, col_last;
+   int            rc;
+} rvp9_tile_job;
 
 #if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
 #define RVP9_SSE2 1
@@ -3081,6 +3098,8 @@ int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
 #define rvp9_decode_block rvp9_decode_block_hbd
 #define rvp9_decode_frame_impl rvp9_decode_frame_impl_hbd
 #define rvp9_decode_partition rvp9_decode_partition_hbd
+#define rvp9_decode_tile_cols rvp9_decode_tile_cols_hbd
+#define rvp9_tile_job_run rvp9_tile_job_run_hbd
 #define rvp9_extend_modes rvp9_extend_modes_hbd
 #define rvp9_filter16 rvp9_filter16_hbd
 #define rvp9_filter4 rvp9_filter4_hbd
@@ -3221,6 +3240,8 @@ int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
 #undef rvp9_decode_block
 #undef rvp9_decode_frame_impl
 #undef rvp9_decode_partition
+#undef rvp9_decode_tile_cols
+#undef rvp9_tile_job_run
 #undef rvp9_extend_modes
 #undef rvp9_filter16
 #undef rvp9_filter4
@@ -3324,11 +3345,44 @@ int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
 /* ==================================================================== */
 /* Public teardown.                                                     */
 /* ==================================================================== */
+void rvp9_set_tile_pool(rvp9_dec *d, void *pool, unsigned threads)
+{
+   if (!d)
+      return;
+   if (threads > RVP9_TILE_THREADS_MAX)
+      threads = RVP9_TILE_THREADS_MAX;
+   if (!pool || threads <= 1)
+   {
+      d->tile_pool    = NULL;
+      d->tile_threads = 1;
+      return;
+   }
+   if (d->num_shadows < threads - 1)
+   {
+      void *n = realloc(d->shadows, (size_t)(threads - 1) * sizeof(rvp9_dec));
+      if (!n)
+      {
+         d->tile_pool    = NULL;
+         d->tile_threads = 1;
+         return;
+      }
+      d->shadows     = n;
+      d->num_shadows = threads - 1;
+   }
+   d->tile_pool    = pool;
+   d->tile_threads = threads;
+}
+
 void rvp9_free(rvp9_dec *d)
 {
    int i;
    if (!d)
       return;
+   free(d->shadows);
+   d->shadows      = NULL;
+   d->num_shadows  = 0;
+   d->tile_pool    = NULL;
+   d->tile_threads = 1;
    for (i = 0; i < RVP9_FRAME_BUFS; i++)
    {
       free(d->fbs[i].y);

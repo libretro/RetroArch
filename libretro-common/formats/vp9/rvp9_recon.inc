@@ -2434,11 +2434,77 @@ static void rvp9_decode_partition(rvp9_dec *d, int mi_row, int mi_col,
 #if RVP9_RECON_PART == 3
 static void rvp9_loop_filter_frame(rvp9_dec *d);
 
+/* One frame's tile columns [col_first, col_last] on one decoder state,
+ * every tile row of each, in raster order. The tile data is walked
+ * from its start: every tile but the frame's last carries a 4-byte
+ * big-endian size, so a thread finds its columns by skipping the
+ * others. The state is the frame's own or a shadow of it; only its
+ * tile-local fields are written. Returns 0, or the frame's error. */
+static int rvp9_decode_tile_cols(rvp9_dec *d, const uint8_t *tp,
+      const uint8_t *tend, int col_first, int col_last)
+{
+   const rvp9_hdr *hd = &d->hd;
+   int tile_cols      = 1 << hd->log2_tile_cols;
+   int tile_rows      = 1 << hd->log2_tile_rows;
+   int tr, tc, sb_row, sb_col;
+
+   for (tr = 0; tr < tile_rows; tr++)
+   {
+      int row_start = rvp9_tile_offset(tr,     d->mi_rows, hd->log2_tile_rows);
+      int row_end   = rvp9_tile_offset(tr + 1, d->mi_rows, hd->log2_tile_rows);
+      for (tc = 0; tc < tile_cols; tc++)
+      {
+         int last   = (tr == tile_rows - 1) && (tc == tile_cols - 1);
+         size_t tsz;
+         if (!last)
+         {
+            if (tend - tp < 4) return -12;
+            tsz = ((size_t)tp[0] << 24) | ((size_t)tp[1] << 16)
+                | ((size_t)tp[2] << 8)  |  (size_t)tp[3];
+            tp += 4;
+            if (tsz > (size_t)(tend - tp)) return -12;
+         }
+         else
+            tsz = (size_t)(tend - tp);
+
+         if (tc >= col_first && tc <= col_last)
+         {
+            d->tile_col_start = rvp9_tile_offset(tc,     d->mi_cols,
+                  hd->log2_tile_cols);
+            d->tile_col_end   = rvp9_tile_offset(tc + 1, d->mi_cols,
+                  hd->log2_tile_cols);
+
+            if (rvp9_br_init(&d->r, tp, tsz)) return -13;
+
+            for (sb_row = row_start; sb_row < row_end; sb_row += 8)
+            {
+               memset(d->left_seg, 0, sizeof d->left_seg);
+               memset(d->left_ctx, 0, sizeof d->left_ctx);
+               for (sb_col = d->tile_col_start; sb_col < d->tile_col_end;
+                     sb_col += 8)
+                  rvp9_decode_partition(d, sb_row, sb_col, 12, 4);
+            }
+         }
+         tp += tsz;
+      }
+   }
+   return 0;
+}
+
+#ifdef HAVE_THREADS
+static void rvp9_tile_job_run(void *arg)
+{
+   rvp9_tile_job *j = (rvp9_tile_job*)arg;
+   j->rc = rvp9_decode_tile_cols(j->d, j->tiles, j->end,
+         j->col_first, j->col_last);
+}
+#endif
+
 static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       size_t len, int *show_fb)
 {
    rvp9_hdr *hd = &d->hd;
-   int i, sb_row, sb_col;
+   int i;
    size_t tile_off;
 
 
@@ -2691,48 +2757,72 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       const uint8_t *tp   = data + tile_off;
       const uint8_t *tend = data + len;
       int tile_cols       = 1 << hd->log2_tile_cols;
-      int tile_rows       = 1 << hd->log2_tile_rows;
-      int tr, tc;
+      int workers         = 1;
+      int rc;
 
-      for (tr = 0; tr < tile_rows; tr++)
+#ifdef HAVE_THREADS
+      if (d->tile_pool && d->tile_threads > 1 && tile_cols > 1)
       {
-         int row_start = rvp9_tile_offset(tr,     d->mi_rows,
-               hd->log2_tile_rows);
-         int row_end   = rvp9_tile_offset(tr + 1, d->mi_rows,
-               hd->log2_tile_rows);
-         for (tc = 0; tc < tile_cols; tc++)
+         workers = (int)d->tile_threads;
+         if (workers > tile_cols)
+            workers = tile_cols;
+         if (workers > (int)d->num_shadows + 1)
+            workers = (int)d->num_shadows + 1;
+      }
+#endif
+
+      if (workers <= 1)
+         rc = rvp9_decode_tile_cols(d, tp, tend, 0, tile_cols - 1);
+#ifdef HAVE_THREADS
+      else
+      {
+         /* Column ranges are contiguous and as even as they divide.
+          * Each shadow starts as this frame's header-configured
+          * state, decodes its columns into the shared buffers, and
+          * hands back what it counted and whether it hit corrupt
+          * data; the calling thread takes the first range itself. */
+         rvp9_tile_job jobs[RVP9_TILE_THREADS_MAX];
+         rvp9_dec *shadow = (rvp9_dec*)d->shadows;
+         int w, per = tile_cols / workers, extra = tile_cols % workers;
+         int col = 0;
+
+         for (w = 0; w < workers; w++)
          {
-            int last   = (tr == tile_rows - 1) && (tc == tile_cols - 1);
-            size_t tsz;
-            if (!last)
-            {
-               if (tend - tp < 4) return -12;
-               tsz = ((size_t)tp[0] << 24) | ((size_t)tp[1] << 16)
-                   | ((size_t)tp[2] << 8)  |  (size_t)tp[3];
-               tp += 4;
-               if (tsz > (size_t)(tend - tp)) return -12;
-            }
-            else
-               tsz = (size_t)(tend - tp);
+            int n = per + (w < extra ? 1 : 0);
+            jobs[w].d         = w ? &shadow[w - 1] : d;
+            jobs[w].tiles     = tp;
+            jobs[w].end       = tend;
+            jobs[w].col_first = col;
+            jobs[w].col_last  = col + n - 1;
+            jobs[w].rc        = 0;
+            col              += n;
+            if (w)
+               memcpy(&shadow[w - 1], d, sizeof(*d));
+         }
+         for (w = 1; w < workers; w++)
+            if (!tpool_add_work((tpool_t*)d->tile_pool, rvp9_tile_job_run,
+                     &jobs[w]))
+               rvp9_tile_job_run(&jobs[w]);
+         rvp9_tile_job_run(&jobs[0]);
+         tpool_wait((tpool_t*)d->tile_pool);
 
-            d->tile_col_start = rvp9_tile_offset(tc,     d->mi_cols,
-                  hd->log2_tile_cols);
-            d->tile_col_end   = rvp9_tile_offset(tc + 1, d->mi_cols,
-                  hd->log2_tile_cols);
-
-            if (rvp9_br_init(&d->r, tp, tsz)) return -13;
-
-            for (sb_row = row_start; sb_row < row_end; sb_row += 8)
-            {
-               memset(d->left_seg, 0, sizeof d->left_seg);
-               memset(d->left_ctx, 0, sizeof d->left_ctx);
-               for (sb_col = d->tile_col_start; sb_col < d->tile_col_end;
-                     sb_col += 8)
-                  rvp9_decode_partition(d, sb_row, sb_col, 12, 4);
-            }
-            tp += tsz;
+         rc = jobs[0].rc;
+         for (w = 1; w < workers; w++)
+         {
+            const rvp9_dec *sd = &shadow[w - 1];
+            unsigned *dst      = (unsigned*)&d->cnt;
+            const unsigned *src = (const unsigned*)&sd->cnt;
+            size_t k, n = sizeof(d->cnt) / sizeof(unsigned);
+            for (k = 0; k < n; k++)
+               dst[k] += src[k];
+            d->corrupted |= sd->corrupted;
+            if (!rc && jobs[w].rc)
+               rc = jobs[w].rc;
          }
       }
+#endif
+      if (rc)
+         return rc;
    }
    if (d->corrupted) return -14;
 

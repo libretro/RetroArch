@@ -257,7 +257,8 @@ def main():
     if all(os.path.exists(j(n)) for n in ('long_video.mp4', 'anim_lossless.webp',
             'still_lossless.webp', 'anim_lossless.png',
             'anim_dispose_prev.png', 'trailing_large.mp4',
-            'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4')):
+            'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4',
+            'vp9_tiles.webm')):
         print('fixtures present, not rebuilt')
         return
 
@@ -284,6 +285,16 @@ def main():
         '-c:v', 'libx264', '-preset', 'ultrafast', '-b:v', '4M',
         '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart',
         j('long_video.mp4')])
+    # VP9 in four tile columns (1280 px wide, tile-columns 2), for the
+    # threaded-decode oracle: tile columns are what the decoder spreads
+    # over threads, and a frame coded as one column would not exercise
+    # it.  A second of test pattern, inter frames included.
+    subprocess.check_call([
+        'ffmpeg', '-v', 'error', '-y',
+        '-f', 'lavfi', '-i', 'testsrc2=s=1280x360:r=30', '-t', '1',
+        '-c:v', 'libvpx-vp9', '-tile-columns', '2', '-lag-in-frames', '0',
+        '-b:v', '400k', '-pix_fmt', 'yuv420p', '-an',
+        j('vp9_tiles.webm')])
     seed(j('seed_small.mp4'), 3, 640, 360, '300k')
     seed(j('seed_4k.mp4'), 3, 3840, 2160, '400k')
 

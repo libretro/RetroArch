@@ -322,8 +322,10 @@ bool image_transfer_anim_stream_set_output(void *stream,
 /* Have the stream convert each decoded frame to pixels in @bands row
  * bands on @pool (an rthreads tpool_t with at least bands - 1 threads;
  * the decoding thread takes one band and joins the rest), so a large
- * frame's colour conversion is spread over cores. NULL or bands <= 1
- * converts on the decoding thread as before. Returns true for the
+ * frame's colour conversion is spread over cores, and decode a VP9
+ * frame's tile columns on the same threads where the stream carries
+ * more than one. NULL or bands <= 1 keeps all of it on the decoding
+ * thread as before. Returns true for the
  * stream types that convert this way (WEBM, MP4); APNG and WEBP
  * compose their frames and have no such pass. The pool is the
  * caller's and must outlive every decode made while it is set. */

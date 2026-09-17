@@ -165,9 +165,10 @@ void rwebm_video_stream_set_output(rwebm_video_stream_t *stream,
 
 /* Convert decoded frames in @bands row bands on @pool (an rthreads
  * tpool_t of at least bands - 1 threads; the calling thread takes one
- * band and joins the rest). NULL or bands <= 1 keeps the blit on the
- * calling thread. The pool is the caller's and must outlive every
- * decode call made while it is set. */
+ * band and joins the rest), and decode a VP9 frame's tile columns on
+ * the same threads (rvp9_set_tile_pool). NULL or bands <= 1 keeps
+ * everything on the calling thread. The pool is the caller's and must
+ * outlive every decode call made while it is set. */
 void rwebm_video_stream_set_blit_pool(rwebm_video_stream_t *stream,
       void *pool, unsigned bands);
 

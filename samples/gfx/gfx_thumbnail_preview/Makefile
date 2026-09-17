@@ -180,7 +180,9 @@ ifneq ($(SANITIZER),)
 ANIM_WINDOW_CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 endif
 
-all: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET)
+BLIT_BANDS_TARGET  := preview_blit_bands_test
+
+all: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET)
 
 $(ANIM_WINDOW_TARGET): $(ANIM_WINDOW_SOURCES)
 	$(CC) -o $@ $(ANIM_WINDOW_SOURCES) $(ANIM_WINDOW_CFLAGS) $(LDFLAGS) -lz
@@ -194,7 +196,6 @@ $(DECODE_TARGET_NORWEBM): $(DECODE_SOURCES) preview_audio_decode_test.c
 
 # The banded colour conversion against the single-threaded one, frame
 # for frame, through the real rmp4_video stream on a real tpool.
-BLIT_BANDS_TARGET  := preview_blit_bands_test
 BLIT_BANDS_SOURCES := preview_blit_bands_test.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
@@ -208,6 +209,9 @@ BLIT_BANDS_SOURCES := preview_blit_bands_test.c \
            $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c \
            $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.c \
            $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c \
+           $(LIBRETRO_COMM_DIR)/formats/vp9/rvp9.c \
+           $(LIBRETRO_COMM_DIR)/formats/webm/rwebm.c \
+           $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_video.c \
            $(LIBRETRO_COMM_DIR)/lists/string_list.c \
            $(LIBRETRO_COMM_DIR)/memmap/memmap.c \
            $(LIBRETRO_COMM_DIR)/memmap/memalign.c \
@@ -221,7 +225,7 @@ BLIT_BANDS_SOURCES := preview_blit_bands_test.c \
 
 $(BLIT_BANDS_TARGET): $(BLIT_BANDS_SOURCES)
 	$(CC) -o $@ $(BLIT_BANDS_SOURCES) \
-	      -Wall -std=gnu99 -g -O1 -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_THREADS \
+	      -Wall -std=gnu99 -g -O1 -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RH264 -DHAVE_RVP9 -DHAVE_THREADS \
 	      -DHAVE_MMAP -D_GNU_SOURCE -I$(LIBRETRO_COMM_DIR)/include \
 	      $(EXTRA_CFLAGS) $(LDFLAGS) -lpthread
 
@@ -252,6 +256,7 @@ check: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET)
 	./$(TARGET) fixtures/*.mp4 fixtures/anim_lossless.webp
 	./$(ANIM_WINDOW_TARGET) fixtures
 	./$(BLIT_BANDS_TARGET) fixtures/long_video.mp4
+	./$(BLIT_BANDS_TARGET) fixtures/vp9_tiles.webm
 	./$(DECODE_TARGET) fixtures/trailing_large.mp4 1024   island
 	./$(DECODE_TARGET) fixtures/trailing_large.mp4 262144 island
 	./$(DECODE_TARGET_NORWEBM) fixtures/trailing_large.mp4 1024 island
