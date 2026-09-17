@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <boolean.h>
+#include <retro_common_api.h>
 
 #if defined(PSP) || defined(PS2) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU) || defined(SWITCH) || defined(HAVE_LIBNX) || defined(__PS3__) || defined(__PSL1GHT__)
 /* No mman available */
@@ -37,6 +38,8 @@
 #define HAVE_MMAN
 #include <sys/mman.h>
 #endif
+
+RETRO_BEGIN_DECLS
 
 #if !defined(HAVE_MMAN) || defined(_WIN32)
 /* PROT_/MAP_ request bits for the shim platforms (real <sys/mman.h>
@@ -241,5 +244,7 @@ void memshm_unmap(void *addr, size_t len);
  */
 void memjit_write_begin(void);
 void memjit_write_end(void);
+
+RETRO_END_DECLS
 
 #endif
