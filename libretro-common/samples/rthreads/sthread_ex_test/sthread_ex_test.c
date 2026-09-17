@@ -99,15 +99,21 @@ static retro_atomic_int_t g_mask_initial;
 static retro_atomic_int_t g_mask_pinned;
 static retro_atomic_int_t g_mask_cleared;
 static retro_atomic_int_t g_ready;
+static retro_atomic_int_t g_started;
 
 static void pinned_thread(void *arg)
 {
    (void)arg;
    /* What the thread inherited: every CPU the process may use. On a
     * one-CPU box that is 0x1, the same as the pin, so "cleared" is
-    * judged against this and not against "differs from the pin". */
+    * judged against this and not against "differs from the pin".
+    * Read before the pin can land: main waits for g_started before
+    * it pins, else on a multi-core box the pin races this read and
+    * "inherited" comes out as the pin itself. */
    retro_atomic_store_release_int(&g_mask_initial, (int)(read_own_mask() & 0xFFFF));
-   while (!retro_atomic_load_acquire_int(&g_ready)) ;
+   retro_atomic_store_release_int(&g_started, 1);
+   while (!retro_atomic_load_acquire_int(&g_ready))
+      sthread_yield();
    retro_atomic_store_release_int(&g_mask_pinned,  (int)(read_own_mask() & 0xFFFF));
    sthread_set_current_affinity(0);
    retro_atomic_store_release_int(&g_mask_cleared, (int)(read_own_mask() & 0xFFFF));
@@ -136,8 +142,11 @@ int main(void)
 
    /* 2 */
    retro_atomic_store_relaxed_int(&g_ready, 0);
+   retro_atomic_store_relaxed_int(&g_started, 0);
    t = sthread_create(pinned_thread, NULL);
    if (!t) { printf("  FAIL: create\n"); return 1; }
+   while (!retro_atomic_load_acquire_int(&g_started))
+      sthread_yield();
    {
       bool pinned = sthread_set_affinity(t, 1);   /* CPU 0 */
       retro_atomic_store_release_int(&g_ready, 1);
