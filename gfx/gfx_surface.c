@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include "gfx_surface.h"
+#include "gfx_instrument.h"
 
 /* Slots start on a cache line so a producer's row loops and the
  * driver's memcpy into staging run on aligned memory. */
@@ -58,6 +59,8 @@ gfx_surface_t *gfx_surface_new(unsigned width, unsigned height,
    s->filter     = filter;
    s->rgba       = 0xff;
    s->can_update = video_driver_texture_can_update() ? 1 : 0;
+   GFX_INSTR_INC(GFX_INSTR_SURFACE_NEW);
+   GFX_INSTR_ADD(GFX_INSTR_SURFACE_BYTES, (int)(frame_len * num_slots));
    return s;
 }
 
@@ -163,9 +166,15 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
       unsigned slot, bool rgba)
 {
    if (!s || slot >= s->num_slots)
+   {
+      GFX_INSTR_INC(GFX_INSTR_SUBMIT_FAILED);
       return GFX_SURFACE_SUBMIT_FAILED;
+   }
    if (s->inflight)
+   {
+      GFX_INSTR_INC(GFX_INSTR_SUBMIT_BUSY);
       return GFX_SURFACE_SUBMIT_BUSY;
+   }
 
    s->img.pixels        = s->slots[slot];
    s->img.width         = s->width;
@@ -173,7 +182,14 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
    s->img.supports_rgba = rgba;
    s->img.pix10         = false;
    s->img.compressed    = NULL;
-   return gfx_surface_submit_img(s, slot, rgba);
+   {
+      enum gfx_surface_submit_result r = gfx_surface_submit_img(s, slot, rgba);
+      GFX_INSTR_INC(r == GFX_SURFACE_SUBMIT_QUEUED
+            ? GFX_INSTR_SUBMIT_QUEUED
+            : (r == GFX_SURFACE_SUBMIT_DONE
+               ? GFX_INSTR_SUBMIT_DONE : GFX_INSTR_SUBMIT_FAILED));
+      return r;
+   }
 }
 
 enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
@@ -190,6 +206,7 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       /* The caller's buffer does not outlive this call for the video
        * thread's purposes; a slot does. One copy, the size of a frame,
        * against a wait of up to a present. */
+      GFX_INSTR_INC(GFX_INSTR_SUBMIT_COPY);
       memcpy(s->slots[0], pixels,
             (size_t)s->width * s->height * sizeof(uint32_t));
       return gfx_surface_submit(s, 0, rgba);
@@ -202,13 +219,19 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
    s->img.supports_rgba = rgba;
    s->img.pix10         = false;
    s->img.compressed    = NULL;
-   return gfx_surface_upload_sync(s, rgba);
+   {
+      enum gfx_surface_submit_result r = gfx_surface_upload_sync(s, rgba);
+      GFX_INSTR_INC(r == GFX_SURFACE_SUBMIT_DONE
+            ? GFX_INSTR_SUBMIT_DONE : GFX_INSTR_SUBMIT_FAILED);
+      return r;
+   }
 }
 
 void gfx_surface_free(gfx_surface_t *s)
 {
    if (!s)
       return;
+   GFX_INSTR_INC(GFX_INSTR_SURFACE_FREE);
    if (s->inflight)
    {
       /* The video thread still reads the slot and, for a load, will

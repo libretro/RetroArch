@@ -36,6 +36,7 @@
 #include "../config.def.h"
 
 #include "video_driver.h"
+#include "gfx_instrument.h"
 
 /* Decided here, at the top, because an #ifdef on a macro defined
  * later in the file is silently false: the first user of this gate
@@ -3952,6 +3953,7 @@ bool video_driver_texture_load(void *data,
          && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
       image_texture_narrow_10bit(ti);
 
+   GFX_INSTR_INC(GFX_INSTR_TEX_LOAD);
    *id = poke->load_texture(video_st->data, data, threaded, filter_type);
    return true;
 }
@@ -3979,6 +3981,7 @@ bool video_driver_texture_load_async(void *data,
       if (     ti->pix10
             && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
          image_texture_narrow_10bit(ti);
+      GFX_INSTR_INC(GFX_INSTR_TEX_LOAD_ASYNC);
       if (video_thread_texture_load_async(ti, filter_type,
                done, user, release))
          return true;
@@ -3999,11 +4002,14 @@ bool video_driver_texture_update(uintptr_t id, void *data)
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
+   bool ok;
    if (!id || !data || !poke || !poke->update_texture)
       return false;
-   return poke->update_texture(video_st->data, id,
+   ok = poke->update_texture(video_st->data, id,
          (const struct texture_image*)data,
          video_driver_thread_wrapper_active());
+   GFX_INSTR_INC(ok ? GFX_INSTR_TEX_UPDATE : GFX_INSTR_TEX_UPDATE_REFUSED);
+   return ok;
 }
 
 bool video_driver_texture_can_update(void)
@@ -4025,6 +4031,7 @@ bool video_driver_texture_unload(uintptr_t *id)
    const video_poke_interface_t *poke = video_st->poke;
    if (!poke || !poke->unload_texture)
       return false;
+   GFX_INSTR_INC(GFX_INSTR_TEX_UNLOAD);
    poke->unload_texture(video_st->data,
          video_driver_thread_wrapper_active(),
          *id);

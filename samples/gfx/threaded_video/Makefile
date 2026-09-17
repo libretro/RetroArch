@@ -23,6 +23,16 @@ endif
 ifeq ($(VK_DEBUG),1)
 MAKE_ARGS += VULKAN_DEBUG=1
 endif
+# GFX_INSTRUMENT=1 here builds the harness against a tree built the
+# same way: the surface and overlay lanes then print and check what
+# the image paths cost. The tree must carry the flag too - the
+# harness compiles with the tree's own compile line, but links the
+# tree's objects - so it is passed in rather than forced:
+#    make GFX_INSTRUMENT=1 && make -C samples/gfx/threaded_video \
+#         GFX_INSTRUMENT=1 check
+ifeq ($(GFX_INSTRUMENT),1)
+MAKE_ARGS += GFX_INSTRUMENT=1
+endif
 
 all:
 	@MAKE_ARGS="$(MAKE_ARGS)" ./build.sh

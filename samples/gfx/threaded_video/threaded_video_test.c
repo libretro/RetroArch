@@ -1846,6 +1846,7 @@ static void lane_async_texture_load(void)
 /* ------------------------------------------------------------------ */
 
 #include "../../../gfx/gfx_surface.h"
+#include "../../../gfx/gfx_instrument.h"
 #include "../../../input/input_overlay.h"
 
 static unsigned surf_releases;
@@ -1881,6 +1882,9 @@ static void lane_surface_update(void)
    run_frames(3);
    expect_wrapper(true, "surface lane");
 
+#ifdef HAVE_GFX_INSTRUMENT
+   gfx_instrument_reset();
+#endif
    s = gfx_surface_new(64, 48, 2, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
    CHECK(s != NULL, "surface allocation failed");
    if (!s)
@@ -1974,6 +1978,43 @@ static void lane_surface_update(void)
    gfx_surface_free(s);
    run_frames(2);
 
+#ifdef HAVE_GFX_INSTRUMENT
+   /* What those frames cost, on this driver, counted where it
+    * happens: the plan's budget for a streaming surface is one
+    * texture for the run, an update a frame where the driver can,
+    * no allocation per post, and no canvas copy. */
+   {
+      int loads   = gfx_instrument_get(GFX_INSTR_TEX_LOAD);
+      int updates = gfx_instrument_get(GFX_INSTR_TEX_UPDATE);
+      int unloads = gfx_instrument_get(GFX_INSTR_TEX_UNLOAD);
+      int posts   = gfx_instrument_get(GFX_INSTR_ASYNC_POST);
+      int allocs  = gfx_instrument_get(GFX_INSTR_ASYNC_POST_ALLOC);
+      int copies  = gfx_instrument_get(GFX_INSTR_SUBMIT_COPY);
+      fprintf(stderr, "[baseline] surface: %d loads, %d updates, "
+            "%d unloads, %d posts (%d allocated), %d copies\n",
+            loads, updates, unloads, posts, allocs, copies);
+      CHECK(allocs == 0, "%d of %d posts allocated a node", allocs, posts);
+      CHECK(copies == 0, "%d submits copied into a slot", copies);
+      if (video_driver_texture_can_update())
+      {
+         /* One texture per surface, kept for every frame of it: this
+          * is the budget the whole streaming path exists for. */
+         CHECK(loads <= 2, "%d texture loads for two streaming surfaces",
+               loads);
+         /* Every accepted submit updates in place; a submit the
+          * driver drops because its own staging is still in flight
+          * (Vulkan's two-fence check, D3D11's DO_NOT_WAIT, D3D12's
+          * fence tag) returns true without an update, which is the
+          * latest-frame policy working, not a miss. What must never
+          * happen is a submit that neither updates nor is dropped:
+          * that would mean a replacement load, and loads are bounded
+          * above. */
+         CHECK(updates > 0, "no in-place update in %d submits on a "
+               "driver that advertises them", 42);
+      }
+   }
+#endif
+
    if (failures == had)
       fprintf(stderr, "[pass] surface lane (31 threaded, 11 direct submits)\n");
 }
@@ -2063,8 +2104,27 @@ static void lane_overlay_textures_pass(bool threaded)
 static void lane_overlay_textures(void)
 {
    unsigned had = failures;
+#ifdef HAVE_GFX_INSTRUMENT
+   gfx_instrument_reset();
+#endif
    lane_overlay_textures_pass(true);
    lane_overlay_textures_pass(false);
+#ifdef HAVE_GFX_INSTRUMENT
+   {
+      int loads   = gfx_instrument_get(GFX_INSTR_TEX_LOAD);
+      int unloads = gfx_instrument_get(GFX_INSTR_TEX_UNLOAD);
+      fprintf(stderr, "[baseline] overlay: %d loads, %d unloads for "
+            "4 pages over 2 passes\n", loads, unloads);
+      /* Three images a pass, uploaded once each, and a page switch
+       * adds nothing - but the menu's own textures are loaded and
+       * unloaded through the same counters while these frames run,
+       * so the bound is on the order, not the exact count: six
+       * uploads plus the handful the menu makes, never one per page
+       * switch (which would be twelve and climbing with the frames). */
+      CHECK(loads <= 10, "%d texture loads for 6 overlay images: "
+            "a page switch is uploading", loads);
+   }
+#endif
    if (failures == had)
       fprintf(stderr, "[pass] overlay page lane\n");
 }

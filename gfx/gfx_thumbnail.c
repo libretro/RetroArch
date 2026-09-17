@@ -39,6 +39,7 @@
 #include <formats/data_transfer.h>
 
 #include "gfx_surface.h"
+#include "gfx_instrument.h"
 #include "gfx_thumbnail.h"
 #include "../frontend/frontend_driver.h"
 
@@ -522,18 +523,24 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
    }
 
    n = (size_t)job->width * job->height;
+   GFX_INSTR_INC(GFX_INSTR_ANIM_FRAME);
    if (direct && frame == job->frame)
    {
       /* Decoded in place; every video stream honours the order request
        * too, so nothing is left to do. */
+      GFX_INSTR_INC(GFX_INSTR_ANIM_DIRECT);
    }
    else if (job->use_rgba || native_order)
       /* Frame is already in the upload order (RGBA requested, or the
        * stream honoured the ARGB request); the copy just decouples the
        * upload buffer from the decoder's canvas. */
+   {
+      GFX_INSTR_INC(GFX_INSTR_ANIM_COPY);
       memcpy(job->frame, frame, n * sizeof(uint32_t));
+   }
    else
    {
+      GFX_INSTR_INC(GFX_INSTR_ANIM_SWIZZLE);
       /* The stream emits memory-order R,G,B,A; swizzle to ARGB words
        * here so the main thread only has to upload. */
       for (i = 0; i < n; i++)
@@ -1569,11 +1576,16 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       gfx_surface_t *s = sync_surface;
       enum gfx_surface_submit_result res;
 
+      GFX_INSTR_INC(GFX_INSTR_ANIM_FRAME);
       if (sync_direct && frame == s->slots[0])
+      {
+         GFX_INSTR_INC(GFX_INSTR_ANIM_DIRECT);
          res = gfx_surface_submit(s, 0, sync_use_rgba);
+      }
       else if (!sync_use_rgba && !sync_native_order)
       {
          size_t i, n = (size_t)s->width * s->height;
+         GFX_INSTR_INC(GFX_INSTR_ANIM_SWIZZLE);
          for (i = 0; i < n; i++)
          {
             uint32_t px    = frame[i];

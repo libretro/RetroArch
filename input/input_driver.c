@@ -37,6 +37,7 @@
 #endif
 
 #include "input_driver.h"
+#include "../gfx/gfx_instrument.h"
 #include "input_keymaps.h"
 #include "input_remapping.h"
 #include "input_osk.h"
@@ -3571,6 +3572,7 @@ static bool input_overlay_upload_textures(input_overlay_t *ol)
 
    for (i = 0; i < ol->num_images; i++)
    {
+      GFX_INSTR_INC(GFX_INSTR_OVERLAY_UPLOAD);
       if (     !video_driver_texture_load(ol->images[i],
                TEXTURE_FILTER_LINEAR, &tex[i])
             || !tex[i])
@@ -3646,6 +3648,7 @@ void input_overlay_load_active(
       if (ol->iface->load_textures(ol->iface_data,
                ol->active->textures, ol->active->load_images_size))
       {
+         GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE);
          input_overlay_load_active_geom(visibility, ol, opacity);
          return;
       }
@@ -3654,6 +3657,8 @@ void input_overlay_load_active(
       input_overlay_release_textures(ol);
       ol->flags |= INPUT_OVERLAY_TEXTURES_DECLINED;
    }
+   GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE);
+   GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE_LOAD);
    if (ol->iface->load)
       ol->iface->load(ol->iface_data, ol->active->load_images,
             ol->active->load_images_size);
