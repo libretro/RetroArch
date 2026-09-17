@@ -2276,7 +2276,23 @@ static void gfx_widgets_frame_state(void *data)
 
 void gfx_widgets_frame(void *data)
 {
+   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+
    gfx_widgets_state_lock();
+#ifdef HAVE_THREADS
+   /* A frame the wrapper already had queued still says the widgets
+    * are active. Once gfx_widgets_deinit() has taken the worker away
+    * from them - under this lock, before it frees the fonts - the
+    * fonts are not there to draw with; the frame's own flag is the
+    * main thread's word from before that. */
+   if (     !p_dispwidget->worker
+         && p_dispwidget->video_st
+         && ((video_driver_state_t*)p_dispwidget->video_st)->thread_wrapper_active)
+   {
+      gfx_widgets_state_unlock();
+      return;
+   }
+#endif
    gfx_widgets_frame_state(data);
    gfx_widgets_state_unlock();
 
@@ -2675,9 +2691,16 @@ void gfx_widgets_deinit(bool widgets_persisting)
 #ifdef HAVE_THREADS
    /* Back to the main list: the tweens of widgets that persist carry
     * on under whichever video comes up next, and freeing kills the
-    * rest where the widget code looks for them */
+    * rest where the widget code looks for them. Under the state lock:
+    * a frame the worker is drawing finishes first, and every frame
+    * after it sees the worker gone (gfx_widgets_frame()) and draws no
+    * widgets, so the fonts freed below are read by nobody. The frames
+    * the wrapper still holds were queued while the widgets were
+    * active, and would otherwise draw with a font being freed. */
+   gfx_widgets_state_lock();
    p_dispwidget->worker = false;
    gfx_animation_widgets_own(false);
+   gfx_widgets_state_unlock();
 #endif
 
    gfx_widgets_detach_tasks(p_dispwidget);
