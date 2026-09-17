@@ -24,6 +24,7 @@
 #include <rthreads/tpool.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <features/features_cpu.h>
 
 #define BANDS 8
 
@@ -120,6 +121,7 @@ int main(int argc, char **argv)
    uint32_t *a, *b;
    tpool_t *pool;
    int bad = 0;
+   int64_t t0, t1, t2, t3;
 
    if (argc < 2)
    {
@@ -143,14 +145,25 @@ int main(int argc, char **argv)
    if (!a || !b)
       return 2;
 
-   /* Both orders, so the ARGB and RGBA blit rows are each compared. */
+   /* Both orders, so the ARGB and RGBA blit rows are each compared.
+    * The two passes are timed as well: the ratio is what the threads
+    * buy on this machine for this stream, printed for whoever runs
+    * the test by hand - the check itself is only the comparison. */
    vs_argb(&s, 1);
+   t0 = cpu_features_get_time_usec();
    n1 = decode_pass(&s, a, w, h, max, NULL, 1);
+   t1 = cpu_features_get_time_usec();
    vs_rewind(&s);
    pool = tpool_create(BANDS - 1);
    if (!pool)
       return 2;
+   t2 = cpu_features_get_time_usec();
    n2 = decode_pass(&s, b, w, h, max, pool, BANDS);
+   t3 = cpu_features_get_time_usec();
+   if (n1 > 0 && n2 > 0)
+      printf("[time] %.2f ms/frame on one thread, %.2f ms/frame on %u\n",
+            (double)(t1 - t0) / 1000.0 / n1,
+            (double)(t3 - t2) / 1000.0 / n2, BANDS);
 
    if (n1 != n2 || n1 == 0)
    {

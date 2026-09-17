@@ -200,6 +200,7 @@ BLIT_BANDS_SOURCES := preview_blit_bands_test.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+           $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \
            $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
            $(LIBRETRO_COMM_DIR)/formats/h264/rh264.c \
