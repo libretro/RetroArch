@@ -1550,6 +1550,30 @@ end:
    return ret;
 }
 
+/* Waits, by fence, for every frame this context submitted - the only
+ * work that references the swapchain images from this side. This is
+ * what a swapchain teardown or rebuild has to outlive; the rest of the
+ * device's work is a hardware core's, has nothing to do with the
+ * swapchain, and is not drained for it. Needs no queue lock. */
+static void vulkan_context_wait_frames(gfx_ctx_vulkan_data_t *vk)
+{
+   VkFence fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   unsigned count = 0;
+   unsigned i;
+
+   if (vk->context.device == VK_NULL_HANDLE)
+      return;
+   for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
+   {
+      if (     vk->context.swapchain_fences_signalled[i]
+            && vk->context.swapchain_fences[i] != VK_NULL_HANDLE)
+         fences[count++] = vk->context.swapchain_fences[i];
+   }
+   if (count)
+      vkWaitForFences(vk->context.device, count, fences, VK_TRUE,
+            UINT64_MAX);
+}
+
 static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned i;
@@ -1566,7 +1590,11 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
    vulkan_emulated_mailbox_deinit(&vk->mailbox);
    if (vk->swapchain != VK_NULL_HANDLE)
    {
-      vkDeviceWaitIdle(vk->context.device);
+      /* Our frames are the only submissions that touch its images.
+       * The context teardown drains the device before it gets here;
+       * a rebuild after an out-of-date acquire, or a resize, does
+       * not, and a threaded hardware core's work goes on. */
+      vulkan_context_wait_frames(vk);
       vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
       memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
       vk->swapchain                      = VK_NULL_HANDLE;
@@ -2318,7 +2346,14 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    format.format                           = VK_FORMAT_UNDEFINED;
    format.colorSpace                       = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 
-   vkDeviceWaitIdle(vk->context.device);
+   /* Every frame that could still render into the old swapchain's
+    * images has completed, by its own fence: the new swapchain retires
+    * the old one and the old one is destroyed below, and the video
+    * driver rebuilds its framebuffers after waiting on the same
+    * fences. Nothing else on the device is waited for - a resize or a
+    * fullscreen toggle used to drain a threaded hardware core's whole
+    * queue here, unsynchronised with its submissions. */
+   vulkan_context_wait_frames(vk);
    vulkan_acquire_clear_fences(vk);
 
    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->context.gpu,
