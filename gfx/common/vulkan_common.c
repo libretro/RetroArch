@@ -2267,6 +2267,8 @@ retry:
             vulkan_destroy_swapchain(vk);
             RARCH_ERR("[Vulkan] Failed to acquire from swapchain (err = %d).\n",
                   (int)err);
+            if (err == VK_ERROR_DEVICE_LOST)
+               video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
             if (err == VK_ERROR_SURFACE_LOST_KHR)
                RARCH_ERR("[Vulkan] Got VK_ERROR_SURFACE_LOST_KHR.\n");
             /* Force driver to reset swapchain image handles. */
@@ -3547,6 +3549,11 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    {
       RARCH_LOG("[Vulkan] QueuePresent failed (err = %d, result = %d), destroying swapchain.\n",
             (int)err, (int)result);
+      /* A lost device does not come back with a new swapchain: the
+       * whole driver has to, and the runloop does that when it sees
+       * the flag (after a TDR, a GPU reset). */
+      if (err == VK_ERROR_DEVICE_LOST || result == VK_ERROR_DEVICE_LOST)
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
       vulkan_destroy_swapchain(vk);
    }
 

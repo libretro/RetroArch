@@ -8249,6 +8249,23 @@ int runloop_iterate(void)
 
    runloop_msg_queue_drain_deferred();
 
+   /* A video driver that lost its GPU device - a TDR on Windows, a GPU
+    * reset elsewhere - sets this from whichever thread saw it, and
+    * nothing it does on that device works from then on: every frame
+    * fails, and the window shows whatever the last good present left.
+    * Rebuilding the video driver here, on the thread that owns
+    * drivers, is the recovery: the context comes back on the
+    * recovered device, and a hardware core gets context_reset. */
+   if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags)
+         & VIDEO_FLAG_GPU_DEVICE_LOST)
+   {
+      int reinit_flags = DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK
+         | DRIVER_MENU_MASK;
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_GPU_DEVICE_LOST);
+      RARCH_ERR("[Video] The GPU device was lost; reinitialising the video driver.\n");
+      command_event(CMD_EVENT_REINIT, &reinit_flags);
+   }
+
 #ifdef HAVE_DISCORD
    if (discord_st->inited)
    {

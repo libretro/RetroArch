@@ -1658,6 +1658,23 @@ static void vulkan_wait_own_submissions(vk_t *vk)
    vulkan_deferred_cmds_tick(vk);
 }
 
+/* A submission that came back VK_ERROR_DEVICE_LOST: the device is gone
+ * for good - a TDR, a GPU reset - and every frame after would fail the
+ * same way while the window keeps the last good present. The runloop
+ * rebuilds the video driver on its own thread when it sees the flag;
+ * this is the video thread under the wrapper, and can only ask. */
+static void vulkan_check_device_lost(vk_t *vk, VkResult res)
+{
+   if (res != VK_ERROR_DEVICE_LOST)
+      return;
+   if (!(vk->flags & VK_FLAG_DEVICE_LOST_REPORTED))
+   {
+      vk->flags |= VK_FLAG_DEVICE_LOST_REPORTED;
+      RARCH_ERR("[Vulkan] The device was lost (VK_ERROR_DEVICE_LOST).\n");
+      video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+   }
+}
+
 static struct vk_texture vulkan_create_texture(vk_t *vk,
       struct vk_texture *old,
       unsigned width, unsigned height,
@@ -7306,8 +7323,8 @@ static bool vulkan_present_retained_once(vk_t *vk)
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
-   vkQueueSubmit(vk->context->queue, 1,
-         &submit_info, vk->context->swapchain_fences[frame_index]);
+   vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
+         &submit_info, vk->context->swapchain_fences[frame_index]));
    vk->context->swapchain_fences_signalled[frame_index] = true;
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
@@ -8915,8 +8932,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
-   vkQueueSubmit(vk->context->queue, 1,
-         &submit_info, vk->context->swapchain_fences[frame_index]);
+   vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
+         &submit_info, vk->context->swapchain_fences[frame_index]));
    vk->context->swapchain_fences_signalled[frame_index] = true;
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
