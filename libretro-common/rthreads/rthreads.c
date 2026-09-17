@@ -28,6 +28,13 @@
 #endif
 #endif
 
+/* Affinity: cpu_set_t, CPU_SET and pthread_setaffinity_np are GNU
+ * extensions, exposed only when this is set before the first system
+ * header. */
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -891,9 +898,22 @@ static void *thread_wrap(void *data_)
 }
 #endif
 
+static sthread_t *sthread_create_ex(void (*thread_func)(void*),
+      void *userdata, int thread_priority, size_t stack_size);
+
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 {
-   return sthread_create_with_priority(thread_func, userdata, 0);
+   return sthread_create_ex(thread_func, userdata, 0, 0);
+}
+
+sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userdata, int thread_priority)
+{
+   return sthread_create_ex(thread_func, userdata, thread_priority, 0);
+}
+
+sthread_t *sthread_create_with_stack_size(void (*thread_func)(void*), void *userdata, size_t stack_size)
+{
+   return sthread_create_ex(thread_func, userdata, 0, stack_size);
 }
 
 #if !defined(USE_WIN32_THREADS) && !defined(USE_GX_THREADS) \
@@ -905,8 +925,15 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 #define HAVE_THREAD_ATTR
 #endif
 
-sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userdata, int thread_priority)
+static sthread_t *sthread_create_ex(void (*thread_func)(void*),
+      void *userdata, int thread_priority, size_t stack_size)
 {
+#if defined(STACKSIZE)
+   /* 0 keeps the backend's own default. This is the console case: each
+    * takes a size at create, and STACKSIZE is its default. Windows takes
+    * stack_size directly and pthread takes it through the attr. */
+   const size_t stack       = stack_size ? stack_size : (size_t)STACKSIZE;
+#endif
 #ifdef HAVE_THREAD_ATTR
    pthread_attr_t thread_attr;
    bool thread_attr_needed  = false;
@@ -933,7 +960,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 
 #if defined(USE_WIN32_THREADS)
    thread->id               = 0;
-   thread->thread           = CreateThread(NULL, 0, thread_wrap,
+   thread->thread           = CreateThread(NULL, stack_size, thread_wrap,
          data, 0, &thread->id);
    thread_created           = !!thread->thread;
 #elif defined(USE_GX_THREADS)
@@ -945,7 +972,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
          prio        = (u8)(1 + ((thread_priority - 1) * 126) / 99);
       thread->id     = LWP_THREAD_NULL;
       thread_created = LWP_CreateThread(&thread->id, thread_wrap,
-            data, NULL, STACKSIZE, prio) == 0;
+            data, NULL, stack, prio) == 0;
    }
 #elif defined(USE_CTR_THREADS)
    {
@@ -974,7 +1001,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
          prio        = 0x3F;
 
       thread->id     = threadCreate(thread_wrap, data,
-            STACKSIZE, prio, core_id, false);
+            stack, prio, core_id, false);
       thread_created = !!thread->id;
    }
 #elif defined(USE_PSP_THREADS)
@@ -1008,7 +1035,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 
       thread->start   = start;
       thread->id      = sceKernelCreateThread("rarch_thread",
-            psp_thread_wrap, prio, STACKSIZE,
+            psp_thread_wrap, prio, stack,
             PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU, NULL);
       if (thread->id >= 0)
       {
@@ -1039,7 +1066,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
       thread->id       = -1;
       thread->done     = -1;
       retro_atomic_int_init(&thread->state, 0);
-      thread->stack    = memalign(16, STACKSIZE);
+      thread->stack    = memalign(16, stack);
       if (!thread->stack)
       {
          free(thread);
@@ -1064,7 +1091,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
       memset(&th, 0, sizeof(th));
       th.func             = (void*)ps2_thread_wrap;
       th.stack            = thread->stack;
-      th.stack_size       = STACKSIZE;
+      th.stack_size       = stack;
       th.gp_reg           = &_gp;
       th.initial_priority = prio;
       if (thread->done >= 0)
@@ -1101,14 +1128,14 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
       {
          s32 want = 0x3F - ((thread_priority - 1) * (0x3F - 0x1C)) / 99;
          rc       = threadCreate(&thread->t, thread_wrap, data,
-               NULL, STACKSIZE, want, -2);
+               NULL, stack, want, -2);
          if (R_FAILED(rc))
             rc    = threadCreate(&thread->t, thread_wrap, data,
-                  NULL, STACKSIZE, prio, -2);
+                  NULL, stack, prio, -2);
       }
       else
          rc       = threadCreate(&thread->t, thread_wrap, data,
-               NULL, STACKSIZE, prio, -2);
+               NULL, stack, prio, -2);
 
       if (R_SUCCEEDED(rc))
       {
@@ -1128,7 +1155,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
        * top, since PowerPC stacks grow down. */
       int32_t prio;
       uint8_t *block = (uint8_t*)memalign(16,
-            sizeof(OSThread) + STACKSIZE);
+            sizeof(OSThread) + stack);
 
       if (!block)
       {
@@ -1148,7 +1175,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 
       thread->id = (OSThread*)block;
       if (OSCreateThread(thread->id, thread_wrap, 0, (char*)data,
-            block + sizeof(OSThread) + STACKSIZE, STACKSIZE, prio,
+            block + sizeof(OSThread) + stack, stack, prio,
             OS_THREAD_ATTRIB_AFFINITY_ANY))
       {
          OSSetThreadDeallocator(thread->id, wiiu_thread_dealloc);
@@ -1189,7 +1216,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 
       thread->start   = start;
       thread->id      = sceKernelCreateThread("rarch_thread",
-            psp_thread_wrap, prio, STACKSIZE, 0, 0, NULL);
+            psp_thread_wrap, prio, stack, 0, 0, NULL);
       if (thread->id >= 0)
       {
          if (sceKernelStartThread(thread->id, sizeof(start), &start) >= 0)
@@ -1226,7 +1253,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 #else
             (uint64_t)(uintptr_t)data,
 #endif
-            prio, STACKSIZE, RTHREADS_PS3_JOINABLE,
+            prio, stack, RTHREADS_PS3_JOINABLE,
             (char*)"rarch_thread") == 0;
    }
 #else
@@ -1247,9 +1274,16 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 
 #if defined(__APPLE__)
    /* Default stack size on Apple is 512Kb;
-    * for PS2 disc scanning and other reasons, we'd like 2MB. */
-   pthread_attr_setstacksize(&thread_attr , 0x200000 );
+    * for PS2 disc scanning and other reasons, we'd like 2MB. A caller
+    * asking for more than that gets it below. */
+   pthread_attr_setstacksize(&thread_attr, stack_size > 0x200000 ? stack_size : 0x200000);
    thread_attr_needed = true;
+#else
+   if (stack_size)
+   {
+      pthread_attr_setstacksize(&thread_attr, stack_size);
+      thread_attr_needed = true;
+   }
 #endif
 
    if (thread_attr_needed)
@@ -1738,6 +1772,87 @@ void sthread_join(sthread_t *thread)
    pthread_join(thread->id, NULL);
 #endif
    free(thread);
+}
+
+/* Affinity. A mask of 0 means "any CPU", which is how a caller undoes a
+ * pin. Windows takes the mask directly; glibc takes a cpu_set built from
+ * it; Bionic has no pthread_setaffinity_np, so the thread's kernel id is
+ * used with sched_setaffinity instead. Darwin has no hard affinity, only
+ * a scheduler hint, and reports false rather than pretend; so does every
+ * console and every other backend. */
+#if defined(USE_WIN32_THREADS)
+static bool sthread_set_affinity_handle(HANDLE h, uint64_t mask)
+{
+   if (mask == 0)
+      mask = ~mask;
+   return SetThreadAffinityMask(h, (DWORD_PTR)mask) != 0;
+}
+#elif defined(__linux__) && !defined(USE_GX_THREADS) && !defined(USE_CTR_THREADS) \
+   && !defined(USE_PSP_THREADS) && !defined(USE_PS2_THREADS) && !defined(USE_PS3_THREADS) \
+   && !defined(USE_SWITCH_THREADS) && !defined(USE_WIIU_THREADS) && !defined(USE_VITA_THREADS)
+#include <sched.h>
+static void sthread_mask_to_set(uint64_t mask, cpu_set_t *set)
+{
+   unsigned i;
+   CPU_ZERO(set);
+   if (mask)
+   {
+      for (i = 0; i < 64; i++)
+         if (mask & ((uint64_t)1 << i))
+            CPU_SET(i, set);
+   }
+   else
+   {
+      long n = sysconf(_SC_NPROCESSORS_CONF);
+      for (i = 0; (long)i < n && i < CPU_SETSIZE; i++)
+         CPU_SET(i, set);
+   }
+}
+#endif
+
+bool sthread_set_affinity(sthread_t *thread, uint64_t mask)
+{
+#if defined(USE_WIN32_THREADS)
+   return thread && sthread_set_affinity_handle(thread->thread, mask);
+#elif defined(__linux__) && !defined(USE_GX_THREADS) && !defined(USE_CTR_THREADS) \
+   && !defined(USE_PSP_THREADS) && !defined(USE_PS2_THREADS) && !defined(USE_PS3_THREADS) \
+   && !defined(USE_SWITCH_THREADS) && !defined(USE_WIIU_THREADS) && !defined(USE_VITA_THREADS)
+   cpu_set_t set;
+   if (!thread)
+      return false;
+   sthread_mask_to_set(mask, &set);
+#if defined(__ANDROID__)
+#if __ANDROID_API__ >= 21
+   return sched_setaffinity(pthread_gettid_np(thread->id), sizeof(set), &set) == 0;
+#else
+   /* No pthread_gettid_np before API 21 and no other way to name
+    * another thread to sched_setaffinity; only the calling thread can
+    * pin itself there (sthread_set_current_affinity). */
+   return false;
+#endif
+#else
+   return pthread_setaffinity_np(thread->id, sizeof(set), &set) == 0;
+#endif
+#else
+   (void)thread; (void)mask;
+   return false;
+#endif
+}
+
+bool sthread_set_current_affinity(uint64_t mask)
+{
+#if defined(USE_WIN32_THREADS)
+   return sthread_set_affinity_handle(GetCurrentThread(), mask);
+#elif defined(__linux__) && !defined(USE_GX_THREADS) && !defined(USE_CTR_THREADS) \
+   && !defined(USE_PSP_THREADS) && !defined(USE_PS2_THREADS) && !defined(USE_PS3_THREADS) \
+   && !defined(USE_SWITCH_THREADS) && !defined(USE_WIIU_THREADS) && !defined(USE_VITA_THREADS)
+   cpu_set_t set;
+   sthread_mask_to_set(mask, &set);
+   return sched_setaffinity(0, sizeof(set), &set) == 0;
+#else
+   (void)mask;
+   return false;
+#endif
 }
 
 bool sthread_isself(sthread_t *thread)

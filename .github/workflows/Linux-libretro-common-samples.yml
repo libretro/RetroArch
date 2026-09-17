@@ -169,6 +169,7 @@ jobs:
             # this box cannot make it.
             retro_procbarrier_test
             retro_asym_eventcount_test
+            sthread_ex_test
             msg_fifo_queue_test
             audio_mixer_loop_test
             audio_mixer_rate_guard_test
