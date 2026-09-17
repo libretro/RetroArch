@@ -1,0 +1,122 @@
+name: CI Linux Vulkan [idle waits + validation harness]
+
+# Two checks on the Vulkan driver, both born from the same bug: a
+# vkQueuePresentKHR under queue_lock waiting for GPU work that a
+# hardware core could only submit through lock_queue (parallel-GS /
+# Granite stopped the frontend that way). Every vkQueueWaitIdle and
+# vkDeviceWaitIdle in the driver had the same shape - a whole-queue
+# drain, under the lock the core needs, on shader change, overlay
+# load, font free and swapchain resize - and all of them were replaced
+# by waits on the driver's own fences.
+#
+# 1. Idle-wait check: tools/vulkan_idle_wait_check.py fails on any
+#    vkQueueWaitIdle/vkDeviceWaitIdle in the Vulkan code that is not
+#    on tools/vulkan_idle_wait_allow.list, and on a stale entry.
+#
+# 2. Validation harness: the threaded-video harness (real frontend,
+#    real driver, only main() replaced) run on the Vulkan driver over
+#    lavapipe under Xvfb, with the tree built VULKAN_DEBUG=1 so
+#    VK_LAYER_KHRONOS_validation is loaded. The lanes exercise driver
+#    reinit under the wrapper, geometry changes, async texture loads,
+#    font marshalling, present repeat and resize; the layer turns a
+#    texture destroyed while a frame still samples it, a barrier
+#    inside a render pass, or an object leaked at device teardown into
+#    a logged error, and the check-vulkan target fails on any. Those
+#    three were the pre-existing findings the lane produced on its
+#    first run.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  vulkan-idle-waits:
+    name: Vulkan idle-wait allowlist
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Checker self-test
+        shell: bash
+        run: |
+          set -eu
+          python3 tools/vulkan_idle_wait_check.py --selftest
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          python3 tools/vulkan_idle_wait_check.py
+
+  vulkan-validation-harness:
+    name: Threaded-video harness on Vulkan (lavapipe, validation layer)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 8
+        run: |
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure
+        # Non-Qt, as the harness requires (with Qt, main() lives in
+        # ui_qt.o). Everything else at its default so the Vulkan driver
+        # is built with every path a release build has.
+        run: |
+          ./configure --disable-qt
+          grep -q '^HAVE_VULKAN = 1' config.mk
+
+      - name: Build with VULKAN_DEBUG=1
+        # VULKAN_DEBUG enables VK_LAYER_KHRONOS_validation and the
+        # debug messenger that reports through RARCH_ERR. It is a
+        # tree-wide define: vulkan_context_t carries a member under it,
+        # so every TU that includes vulkan_common.h must see it.
+        run: |
+          make -j$(getconf _NPROCESSORS_ONLN) VULKAN_DEBUG=1
+          test -x retroarch
+
+      - name: Run the harness on Vulkan under the validation layer
+        shell: bash
+        run: |
+          set -eu
+          Xvfb :99 -screen 0 640x480x24 &
+          for i in $(seq 1 15); do
+            if DISPLAY=:99 xdpyinfo >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          export DISPLAY=:99
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
+          # The harness build reuses the tree's own compile and link
+          # lines, so it has to name the same build: VK_DEBUG=1.
+          SAN=none VK_DEBUG=1 CYCLES=2 make -C samples/gfx/threaded_video check-vulkan
+          make -C samples/gfx/threaded_video clean

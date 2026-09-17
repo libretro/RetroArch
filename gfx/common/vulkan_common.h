@@ -237,9 +237,12 @@ typedef struct vulkan_context
    VkSemaphore swapchain_recycled_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkSemaphore swapchain_wait_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
 
-#ifdef VULKAN_DEBUG
+   /* Only used under VULKAN_DEBUG, but always present: this struct
+    * is shared by every TU that includes this header, and a member
+    * that exists in some builds of it and not others shifts every
+    * field after it - a debug and a non-debug object linked together
+    * disagreed on graphics_queue_index. VK_NULL_HANDLE otherwise. */
    VkDebugUtilsMessengerEXT debug_callback;
-#endif
    uint32_t graphics_queue_index;
    uint32_t num_swapchain_images;
    uint32_t current_swapchain_index;

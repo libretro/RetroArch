@@ -294,6 +294,9 @@ static void video_thread_user_release(thread_video_t *thr)
 /* user -> thread */
 static bool video_thread_handle_packet(thread_video_t *thr,
       const thread_packet_t *incoming);
+typedef struct video_thread_tex_retire video_thread_tex_retire_t;
+static void video_thread_tex_retire_run(thread_video_t *thr,
+      video_thread_tex_retire_t *list);
 
 /* Queues a command the caller wants nothing back from, for the video
  * thread to run on its next pass. False when it could not be queued -
@@ -533,6 +536,49 @@ static bool video_thread_handle_packet(
          if (     thr->driver
                && thr->driver->font_backend)
             font_driver_free_osd_for(thr->driver_data);
+         /* Textures unloaded since the last frame are still waiting
+          * for a frame that will never come. The driver does not know
+          * them - a loaded texture is the caller's handle, not a
+          * driver object - so it would not take them with it: they
+          * go through the driver now, on its thread, while it is
+          * still here. No frame is in flight: this is the last
+          * command, after the ring drained. */
+         {
+            unsigned i;
+            video_thread_tex_retire_t *l;
+            for (i = 0; i < 2; i++)
+            {
+               l                             = (video_thread_tex_retire_t*)
+                  thr->frame.slot[i].tex_retire;
+               thr->frame.slot[i].tex_retire = NULL;
+               video_thread_tex_retire_run(thr, l);
+            }
+            slock_lock(thr->lock);
+            l               = (video_thread_tex_retire_t*)thr->tex_retire;
+            thr->tex_retire = NULL;
+            slock_unlock(thr->lock);
+            video_thread_tex_retire_run(thr, l);
+         }
+         /* Uploads that completed but were not delivered yet hold a
+          * texture of this driver's that nobody will ever unload:
+          * their done() is answered with 0 after the join, so the
+          * texture goes back to the driver here. An update names the
+          * poster's own texture and is left alone. */
+         {
+            video_thread_async_load_t *n;
+            slock_lock(thr->lock);
+            for (n = thr->async.out_head; n; n = n->next)
+            {
+               if (     n->kind != VIDEO_THREAD_ASYNC_UPDATE
+                     && n->handle
+                     && thr->poke && thr->poke->unload_texture
+                     && thr->driver_data)
+                  thr->poke->unload_texture(thr->driver_data, false,
+                        n->handle);
+               n->handle = 0;
+            }
+            slock_unlock(thr->lock);
+         }
          /* The hardware ring's fences belong to the device. */
          video_thread_hw_free(thr);
          if (thr->driver_data && thr->driver && thr->driver->free)
@@ -1459,11 +1505,11 @@ int video_thread_record_take(void *data, unsigned width, unsigned height,
 /* A texture the frontend released, waiting for the video thread to free
  * it: the thread that holds the GPU context is the only one that may,
  * and only once every frame that could still name it has been drawn. */
-typedef struct video_thread_tex_retire
+struct video_thread_tex_retire
 {
    struct video_thread_tex_retire *next;
    uintptr_t id;
-} video_thread_tex_retire_t;
+};
 
 /* Video thread: frees the textures the frame just drawn carried. Called
  * with no lock held, after the frame, so the driver's delete runs on
@@ -2739,8 +2785,10 @@ static void video_thread_free(void *data)
        * while its thread is still presenting. */
       video_state_get_ptr()->thread_wrapper_active = false;
 
-      /* Textures still waiting to be freed: the driver is gone, and
-       * with it the textures themselves, so only the nodes are left. */
+      /* Textures still waiting to be freed: the worker ran every
+       * retire list through the driver before freeing it (CMD_FREE),
+       * so only nodes posted since, if any, are left, and there is
+       * no driver to send them to. */
       {
          unsigned i;
          video_thread_tex_retire_t *l;

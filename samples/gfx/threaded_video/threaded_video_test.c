@@ -62,6 +62,19 @@ static unsigned failures = 0;
 
 /* ------------------------------------------------------------------ */
 
+/* True when HARNESS_VIDEO_DRIVER names a real driver. The lanes that
+ * instrument the null driver - fake present reports, fake sizes, fake
+ * frame() hooks, heap counting through the null frame path - are
+ * skipped then, because what they assert is the wrapper's handling of
+ * what the null driver was told to say. Every other lane runs through
+ * the real driver, on its real context, and the CI Vulkan lane adds
+ * the validation layer on top. */
+static bool real_driver(void)
+{
+   const char *drv = getenv("HARNESS_VIDEO_DRIVER");
+   return drv && strcmp(drv, "null") != 0;
+}
+
 static void run_frames(unsigned n)
 {
    unsigned i;
@@ -1484,6 +1497,68 @@ static void lane_frame_path_heap(void)
 }
 #endif
 
+/* Lane: the driver's rebuild paths under the wrapper, with a core
+ * running. A shader-chain rebuild (set_shader), a font reload and a
+ * viewport churn each used to drain the whole queue - every one from
+ * under queue_lock on Vulkan - before destroying what a frame in flight
+ * still referenced. They now wait on the driver's own fences or park
+ * the objects on a deferred list. Frames keep flowing through each,
+ * nothing is torn down while a frame still reads it (the validation
+ * layer says so on the CI Vulkan lane), and the wrapper comes back
+ * intact. */
+static void lane_driver_reloads(void)
+{
+   unsigned had = failures;
+   unsigned i;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned long long f0;
+   unsigned long long ran;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "reload lane");
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(3);
+   f0 = core_frames();
+
+   for (i = 0; i < 6; i++)
+   {
+      /* Chain rebuild between two frames, with the previous frame
+       * possibly still on the GPU. */
+      if (video_st->current_video->set_shader)
+         video_st->current_video->set_shader(video_st->data,
+               RARCH_SHADER_NONE, NULL);
+      run_frames(2);
+
+      /* Font reload: rebuild the OSD font at a new size, as a
+       * font-size change does, with the atlas of the old one possibly
+       * still bound by a frame in flight. */
+      font_driver_reinit_osd(NULL, 12.0f + (float)(i & 1));
+      run_frames(2);
+
+      /* Viewport churn: the size change is what tears the swapchain
+       * down on a real driver. */
+      if (video_st->current_video->set_viewport)
+         video_st->current_video->set_viewport(video_st->data,
+               320 + 64 * (i & 1), 240 + 48 * (i & 1), true, true);
+      run_frames(2);
+   }
+   video_thread_wait_idle();
+   expect_wrapper(true, "after reloads");
+   ran = core_frames() - f0;
+   CHECK(ran > 0, "reload lane: the frontend accepted no frames");
+
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   set_threaded_via_setting(false);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] driver-reload lane (%llu frames through 6 rebuilds)\n",
+            ran);
+}
+
 static void lane_waiter_call(void)
 {
    thread_video_t *thr;
@@ -1596,7 +1671,14 @@ static uintptr_t async_fake_load(void *data, void *img, bool threaded,
 
 static void async_fake_unload(void *data, bool threaded, uintptr_t id)
 {
-   (void)data; (void)threaded; (void)id;
+   /* The fake handles are not the driver's; everything else (the
+    * menu's white texture, unloaded while this poke is installed) is,
+    * and goes through, or the driver tears down with it still alive -
+    * which the Vulkan lane's validation layer reports as a leak. */
+   if (id > 0x1000 && id <= 0x1000 + 64)
+      return;
+   if (async_inner_poke && async_inner_poke->unload_texture)
+      async_inner_poke->unload_texture(data, threaded, id);
 }
 
 static void async_get_poke(void *data, const video_poke_interface_t **iface)
@@ -1654,8 +1736,13 @@ static void lane_async_texture_load(void)
    async_driver.poke_interface = async_get_poke;
    thr->driver  = &async_driver;
    async_driver.poke_interface(thr->driver_data, &thr->poke);
-   /* video_driver_texture_load_async() goes through video_st->poke. */
-   video_st->poke = thr->poke;
+   /* video_st->poke stays the wrapper's own table: the upload reaches
+    * the fake through thr->poke on the worker. Pointing video_st->poke
+    * at the inner driver's table while video_st->data is the wrapper
+    * had every poke the runloop makes between frames - set_texture_enable
+    * from runloop_check_state, for one - land on the wrapper struct as
+    * if it were the driver's; the null driver has no such poke, so
+    * only a real driver showed it, as a write past the wrapper. */
 
    async_uploads = async_done_count = async_released = 0;
    for (i = 0; i < ASYNC_N; i++)
@@ -1702,15 +1789,13 @@ static void lane_async_texture_load(void)
    for (i = 0; i < ASYNC_N; i++)
       video_driver_texture_load_async(&imgs[i], TEXTURE_FILTER_LINEAR,
             async_done_cb, (void*)(uintptr_t)i, async_release_cb);
-   /* The video thread reads thr->poke for every queued upload, so the
-    * swap goes under the lock that guards the lists it walks - the
-    * test reaches into the wrapper's own state, and doing so while
-    * its thread runs is a race whoever writes it. */
-   slock_lock(thr->lock);
-   thr->driver = async_inner;
-   thr->poke   = async_inner_poke;
-   slock_unlock(thr->lock);
-   video_st->poke = async_inner_poke;
+   /* The fake poke stays in until the wrapper is gone: a post that the
+    * worker already ran holds a handle the fake load made up, and at
+    * CMD_FREE the worker hands every completed, undelivered upload
+    * back to the driver through thr->poke - through the real driver
+    * that would be a made-up handle to vulkan_unload_texture. The
+    * copied vtable frees the driver exactly as the original does, and
+    * the driver that comes up unthreaded is a fresh instance. */
    set_threaded_via_setting(false);
    run_frames(2);
    CHECK(async_released == ASYNC_N, "teardown released %u of %u images",
@@ -1766,7 +1851,14 @@ int main(int argc, char *argv[])
    snprintf(cfg_path, sizeof(cfg_path), "%s/harness.cfg", dir);
    if ((cfg = fopen(cfg_path, "wb")))
    {
-      fprintf(cfg, "video_driver = \"null\"\n");
+      /* The null driver by default. A real driver from the
+       * environment runs the same lanes through a real context: the
+       * CI Vulkan lane names "vulkan" and runs on lavapipe under the
+       * validation layer, so destroying an image or a buffer a frame
+       * still reads is a logged validation error rather than luck. */
+      fprintf(cfg, "video_driver = \"%s\"\n",
+            getenv("HARNESS_VIDEO_DRIVER")
+            ? getenv("HARNESS_VIDEO_DRIVER") : "null");
       fprintf(cfg, "audio_driver = \"null\"\n");
       fprintf(cfg, "input_driver = \"null\"\n");
       fprintf(cfg, "input_joypad_driver = \"null\"\n");
@@ -1786,6 +1878,11 @@ int main(int argc, char *argv[])
       fclose(cfg);
    }
 
+   /* Frontend logging on request: the CI Vulkan lane reads the
+    * validation layer's reports off RARCH_ERR and fails on any. */
+   if (getenv("HARNESS_VERBOSE"))
+      verbosity_enable();
+
    config_file_set_io_default(config_file_io_filestream());
    rtime_init();
    retroarch_config_init();
@@ -1804,6 +1901,11 @@ int main(int argc, char *argv[])
    }
    rarch_argv[rarch_argc++] = (char*)"-L";
    rarch_argv[rarch_argc++] = core_path;
+   /* Frontend logging on request: a real driver under the validation
+    * layer reports through RARCH_ERR, and the CI Vulkan lane reads
+    * those lines. */
+   if (getenv("HARNESS_VERBOSE"))
+      rarch_argv[rarch_argc++] = (char*)"-v";
 
    if (!retroarch_main_init(rarch_argc, rarch_argv))
    {
@@ -1828,20 +1930,32 @@ int main(int argc, char *argv[])
    lane_toggle_in_game(cycles);
    lane_swap_count();
    lane_async_texture_load();
-   lane_present_repeat();
+   if (!real_driver())
+      lane_present_repeat();
    lane_every_command_replies();
    lane_second_ring_waiter();
    lane_reentrant_from_frame();
    lane_window_thread_present();
-   lane_display_phase();
+   if (!real_driver())
+      lane_display_phase();
    lane_command_runs_once();
    lane_font_marshal();
-   lane_display_pacing();
-   lane_pacing_queue_drain();
+   if (!real_driver())
+   {
+      lane_display_pacing();
+      lane_pacing_queue_drain();
+   }
    lane_zero_copy();
-   lane_waiter_call();
-   lane_frame_path_heap();
-   lane_resize_under_wrapper();
+   lane_driver_reloads();
+   if (!real_driver())
+   {
+      lane_waiter_call();
+      lane_frame_path_heap();
+      lane_resize_under_wrapper();
+   }
+   else
+      fprintf(stderr, "[skip] null-driver instrumented lanes (real driver: %s)\n",
+            getenv("HARNESS_VIDEO_DRIVER"));
 
    /* Orderly shutdown: the teardown barriers are part of what is
     * under test. */

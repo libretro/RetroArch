@@ -971,6 +971,7 @@ struct vulkan_filter_chain
    void *queue_lock_handle;
    void (*lock_queue)(void *handle);
    void (*unlock_queue)(void *handle);
+   void (*wait_submissions)(void *handle);
 };
 
 static INLINE void slang_chain_lock_queue(struct vulkan_filter_chain *chain)
@@ -1539,6 +1540,7 @@ static struct vulkan_filter_chain *slang_chain_new(
    chain->original_format   = info->original_format;
    chain->queue_lock_handle = info->queue_lock_handle;
    chain->lock_queue        = info->lock_queue;
+   chain->wait_submissions  = info->wait_submissions;
    chain->unlock_queue      = info->unlock_queue;
    common_resources_init(&chain->common, info->device,
          info->memory_properties);
@@ -1654,16 +1656,24 @@ static void slang_chain_execute_deferred(struct vulkan_filter_chain *chain)
 
 static void slang_chain_flush(struct vulkan_filter_chain *chain)
 {
-   /* vkDeviceWaitIdle is specified as vkQueueWaitIdle on every queue,
-    * and so needs the same external synchronisation a submit does.
-    * Nothing weaker than holding the lock across the wait satisfies
-    * that, which does mean vkQueuePresentKHR blocks for the duration
-    * (see the TDR note in vulkan_common.c) -- acceptable here because
-    * every caller is a chain teardown or rebuild, never a per-frame
-    * path. */
-   slang_chain_lock_queue(chain);
-   vkDeviceWaitIdle(chain->device);
-   slang_chain_unlock_queue(chain);
+   /* Every caller is a chain teardown or rebuild, and what it has to
+    * outlive is the frames that still reference the chain's images,
+    * buffers and descriptor sets: the video driver's own submissions,
+    * which it can wait on by fence without touching the queue. That
+    * is what wait_submissions does. Only a driver that gave none
+    * gets the device drained, and that is specified as vkQueueWaitIdle
+    * on every queue, so it takes the lock a submit does - and blocks
+    * vkQueuePresentKHR for the duration, and cannot complete while a
+    * hardware core waiting on that same lock still has work to submit
+    * that the queue is waiting for. */
+   if (chain->wait_submissions)
+      chain->wait_submissions(chain->queue_lock_handle);
+   else
+   {
+      slang_chain_lock_queue(chain);
+      vkDeviceWaitIdle(chain->device);
+      slang_chain_unlock_queue(chain);
+   }
    slang_chain_execute_deferred(chain);
 }
 

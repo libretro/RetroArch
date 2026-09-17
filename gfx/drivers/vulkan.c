@@ -923,13 +923,15 @@ static INLINE void vulkan_descriptor_batch_flush(
 static void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture *texture)
 {
    /* Transition to GENERAL layout for linear streamed textures.
-    * We're using linear textures here, so only
-    * GENERAL layout is supported.
-    * If we're already in GENERAL, add a host -> shader read memory barrier
-    * to invalidate texture caches.
-    */
-   if (   (texture->layout != VK_IMAGE_LAYOUT_PREINITIALIZED)
-       && (texture->layout != VK_IMAGE_LAYOUT_GENERAL))
+    * We're using linear textures here, so only GENERAL layout is
+    * supported. vulkan_create_texture() makes that move for every
+    * streamed texture ahead of the frames, so this is reached only
+    * for one it could not (no staging pool yet). Already in GENERAL
+    * there is nothing to do: host writes made before the submission
+    * are visible to it, and a barrier here would land inside the
+    * render pass, where an image barrier on a sampled texture is
+    * not allowed. */
+   if (texture->layout != VK_IMAGE_LAYOUT_PREINITIALIZED)
       return;
 
    switch (texture->type)
@@ -1559,6 +1561,103 @@ static void vulkan_deferred_fences_free(vk_t *vk)
    }
 }
 
+/* Park a heap-allocated texture on the deferred list, to be destroyed
+ * once a full swapchain cycle of submissions has passed. The list
+ * owns the pointer from here. Used by the sites that used to drain
+ * the queue and destroy in place; parking costs nothing and the
+ * frames in flight keep what they were recorded with. Without a node
+ * the texture is destroyed after this driver's submissions retire. */
+static void vulkan_wait_own_submissions(vk_t *vk);
+
+static void vulkan_texture_defer(vk_t *vk, struct vk_texture *texture)
+{
+   struct vk_deferred_texture *node;
+   if (!texture)
+      return;
+   if (vk->context && vk->context->device
+         && (node = (struct vk_deferred_texture*)malloc(sizeof(*node))))
+   {
+      node->texture     = texture;
+      node->frames_left = vk->context->num_swapchain_images + 1;
+#ifdef HAVE_THREADS
+      if (vk->context->queue_lock)
+         slock_lock(vk->context->queue_lock);
+#endif
+      node->next            = vk->deferred_textures;
+      vk->deferred_textures = node;
+#ifdef HAVE_THREADS
+      if (vk->context->queue_lock)
+         slock_unlock(vk->context->queue_lock);
+#endif
+      return;
+   }
+   vulkan_wait_own_submissions(vk);
+   if (vk->context && vk->context->device)
+      vulkan_destroy_texture(vk->context->device, texture);
+   free(texture);
+}
+
+/* Park an embedded texture: its handles move to a heap copy that the
+ * deferred list owns, and the embedded one is cleared. */
+static void vulkan_texture_defer_copy(vk_t *vk, struct vk_texture *texture)
+{
+   struct vk_texture *copy;
+   if (texture->memory == VK_NULL_HANDLE && texture->image == VK_NULL_HANDLE
+         && texture->buffer == VK_NULL_HANDLE)
+      return;
+   if (!(copy = (struct vk_texture*)malloc(sizeof(*copy))))
+   {
+      vulkan_wait_own_submissions(vk);
+      if (vk->context && vk->context->device)
+         vulkan_destroy_texture(vk->context->device, texture);
+      return;
+   }
+   *copy = *texture;
+   memset(texture, 0, sizeof(*texture));
+   texture->type = VULKAN_TEXTURE_STREAMED;
+   vulkan_texture_defer(vk, copy);
+}
+
+/* Wait for every submission this driver has made - the frames in
+ * flight and the one-shot uploads - and nothing else. Every
+ * vkQueueWaitIdle and vkDeviceWaitIdle in this file used to stand
+ * here, and they were wrong twice over: they drained the core's
+ * work as well as this driver's, which a hardware core running
+ * ahead on its own thread pays for at every shader change, overlay
+ * load, font reload and swapchain resize; and they had to run under
+ * queue_lock, so a hardware core parked in lock_queue - whose
+ * unsubmitted work the queue may be waiting on - could never make
+ * the queue idle, and the frontend stopped. This driver's objects
+ * are only ever used by this driver's submissions, and each of those
+ * carries a fence: the frame fences, and one per staging upload.
+ * Waiting on those needs no lock and no drain, and it retires the
+ * uploads on the way, so a flush after this has nothing pending. */
+static void vulkan_wait_own_submissions(vk_t *vk)
+{
+   VkFence fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   unsigned count = 0;
+   unsigned i;
+   struct vk_deferred_cmd *node;
+
+   if (!vk->context || !vk->context->device)
+      return;
+
+   for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
+   {
+      if (     vk->context->swapchain_fences_signalled[i]
+            && vk->context->swapchain_fences[i] != VK_NULL_HANDLE)
+         fences[count++] = vk->context->swapchain_fences[i];
+   }
+   if (count)
+      vkWaitForFences(vk->context->device, count, fences, VK_TRUE,
+            UINT64_MAX);
+
+   for (node = vk->deferred_cmds; node; node = node->next)
+      vkWaitForFences(vk->context->device, 1, &node->fence, VK_TRUE,
+            UINT64_MAX);
+   vulkan_deferred_cmds_tick(vk);
+}
+
 static struct vk_texture vulkan_create_texture(vk_t *vk,
       struct vk_texture *old,
       unsigned width, unsigned height,
@@ -1800,20 +1899,20 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
          break;
    }
 
-   /* We're not reusing the objects themselves. */
+   /* The old texture is not destroyed here and its memory is not
+    * reused: a frame in flight may still be reading it - the frame
+    * textures are per swapchain index, but a size change replaces
+    * one while the frame that last sampled it can still be pending,
+    * and the validation layer reports exactly that on a geometry
+    * change (destroy of an image, and of a view a descriptor set
+    * still holds, while their command buffer runs). The whole old
+    * texture is parked on the deferred list instead and retires with
+    * the frames that could reference it. A size change is rare; the
+    * allocation it costs is not per frame. */
    if (old)
    {
-      if (old->view != VK_NULL_HANDLE)
-         vkDestroyImageView(vk->context->device, old->view, NULL);
-      if (old->image != VK_NULL_HANDLE)
-      {
-         vkDestroyImage(vk->context->device, old->image, NULL);
-#ifdef VULKAN_DEBUG_TEXTURE_ALLOC
-         vulkan_track_dealloc(old->image);
-#endif
-      }
-      if (old->buffer != VK_NULL_HANDLE)
-         vkDestroyBuffer(vk->context->device, old->buffer, NULL);
+      vulkan_texture_defer_copy(vk, old);
+      old = NULL;
    }
 
    /* We can pilfer the old memory and move it over to the new texture. */
@@ -2106,6 +2205,48 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
       }
    }
 
+   /* A streamed texture leaves here already in GENERAL layout, moved
+    * there by a one-shot submission that the queue runs ahead of any
+    * frame that samples it. It used to be moved lazily by the draw
+    * that first sampled it, with a host-to-shader image barrier on
+    * every draw after that - and those draws are inside the frame's
+    * render pass, where an image barrier on anything but an
+    * attachment is not allowed at all. Host writes made before a
+    * submission are visible to it without a barrier, so no per-draw
+    * barrier is needed either. */
+   if (     type == VULKAN_TEXTURE_STREAMED
+         && tex.image != VK_NULL_HANDLE
+         && tex.layout == VK_IMAGE_LAYOUT_PREINITIALIZED
+         && vk->staging_pool != VK_NULL_HANDLE)
+   {
+      VkCommandBuffer staging;
+      VkCommandBufferBeginInfo begin_info;
+      VkCommandBufferAllocateInfo cmd_info;
+
+      cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+      cmd_info.pNext              = NULL;
+      cmd_info.commandPool        = vk->staging_pool;
+      cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+      cmd_info.commandBufferCount = 1;
+      if (vkAllocateCommandBuffers(device, &cmd_info, &staging) == VK_SUCCESS)
+      {
+         begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+         begin_info.pNext            = NULL;
+         begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+         begin_info.pInheritanceInfo = NULL;
+         vkBeginCommandBuffer(staging, &begin_info);
+         VULKAN_IMAGE_LAYOUT_TRANSITION(staging, tex.image,
+               VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_GENERAL,
+               VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+               VK_PIPELINE_STAGE_HOST_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+         vkEndCommandBuffer(staging);
+         vulkan_submit_deferred_cmd(vk, staging, NULL,
+               VK_NULL_HANDLE, VK_NULL_HANDLE);
+         tex.layout = VK_IMAGE_LAYOUT_GENERAL;
+      }
+   }
+
    return tex;
 }
 
@@ -2258,6 +2399,7 @@ static void vulkan_set_viewport(void *data, unsigned vp_width,
 
 static void vulkan_lock_queue(void *handle);
 static void vulkan_unlock_queue(void *handle);
+static void vulkan_chain_wait_submissions(void *handle);
 
 #ifdef HAVE_OVERLAY
 static void vulkan_overlay_free(vk_t *vk);
@@ -2513,11 +2655,23 @@ static void vulkan_init_ribbon_vbo(vk_t *vk,
    VkMemoryRequirements mem_reqs;
    VkMemoryAllocateInfo alloc;
 
-   /* A submitted frame may still read the old buffer; retiring it is
-    * only safe once the device has drained, which a rebuild forces. */
+   /* A submitted frame may still read the old buffer: it goes on the
+    * deferred list, as a buffer-only texture, and retires once the
+    * frames that could reference it have. */
    if (vk->ribbon_vbo.buffer != VK_NULL_HANDLE)
    {
-      vkDeviceWaitIdle(device);
+      struct vk_texture *old = (struct vk_texture*)calloc(1, sizeof(*old));
+      if (old)
+      {
+         old->buffer = vk->ribbon_vbo.buffer;
+         old->memory = vk->ribbon_vbo.memory;
+         old->type   = VULKAN_TEXTURE_STAGING;
+         vk->ribbon_vbo.buffer = VK_NULL_HANDLE;
+         vk->ribbon_vbo.memory = VK_NULL_HANDLE;
+         vulkan_texture_defer(vk, old);
+      }
+      else
+         vulkan_wait_own_submissions(vk);
       vulkan_deinit_ribbon_vbo(vk);
    }
    if (vertices < 4)
@@ -2831,23 +2985,11 @@ static void vulkan_font_free(void *data, bool is_threaded)
    {
       /* This runs on the video thread (font frees are dispatched
        * through video_thread_texture_handle), which serialises it
-       * against command-buffer recording - but the queue is also
-       * shared with HW-render cores submitting from their own
-       * threads through the negotiated lock_queue, and no dispatch
-       * parks those. Every queue access needs the lock; this was
-       * the one of the driver's twenty-six submission-and-wait
-       * sites without it. */
-#ifdef HAVE_THREADS
-      slock_lock(font->vk->context->queue_lock);
-#endif
-      vkQueueWaitIdle(font->vk->context->queue);
-#ifdef HAVE_THREADS
-      slock_unlock(font->vk->context->queue_lock);
-#endif
-      vulkan_destroy_texture(
-            font->vk->context->device, &font->texture);
-      vulkan_destroy_texture(
-            font->vk->context->device, &font->texture_optimal);
+       * against command-buffer recording. The atlas may still be
+       * bound by a frame in flight, so it is parked rather than
+       * destroyed, and no queue is drained for a font. */
+      vulkan_texture_defer_copy(font->vk, &font->texture);
+      vulkan_texture_defer_copy(font->vk, &font->texture_optimal);
    }
 
    free(font->acc);
@@ -5077,6 +5219,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.queue_lock_handle     = vk;
    info.lock_queue            = vulkan_lock_queue;
    info.unlock_queue          = vulkan_unlock_queue;
+   info.wait_submissions      = vulkan_chain_wait_submissions;
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.num_passes            = 0;
    info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
@@ -5185,6 +5328,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.queue_lock_handle     = vk;
    info.lock_queue            = vulkan_lock_queue;
    info.unlock_queue          = vulkan_unlock_queue;
+   info.wait_submissions      = vulkan_chain_wait_submissions;
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.num_passes            = 0;
    info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
@@ -5592,13 +5736,7 @@ static void vulkan_free(void *data)
 
    if (vk->context && vk->context->device)
    {
-#ifdef HAVE_THREADS
-      slock_lock(vk->context->queue_lock);
-#endif
-      vkQueueWaitIdle(vk->context->queue);
-#ifdef HAVE_THREADS
-      slock_unlock(vk->context->queue_lock);
-#endif
+      vulkan_wait_own_submissions(vk);
       vulkan_deferred_textures_flush(vk);
       vulkan_deferred_cmds_flush(vk);
       vulkan_stream_states_flush(vk);
@@ -5771,6 +5909,15 @@ static void vulkan_set_command_buffers(void *handle, uint32_t num_cmd,
    memcpy(vk->hw.cmd, cmd, sizeof(VkCommandBuffer) * num_cmd);
 }
 
+/* The filter chain's wait before a rebuild or teardown: this driver's
+ * own submissions, by fence, with the queue lock free. */
+static void vulkan_chain_wait_submissions(void *handle)
+{
+   vk_t *vk = (vk_t*)handle;
+   if (vk)
+      vulkan_wait_own_submissions(vk);
+}
+
 static void vulkan_lock_queue(void *handle)
 {
 #ifdef HAVE_THREADS
@@ -5805,10 +5952,12 @@ static void vulkan_set_signal_semaphore(void *handle, VkSemaphore semaphore)
  * in vk->hw.image, plus any per-frame semaphores still referenced
  * via vk->hw.semaphores[] and vk->hw.signal_semaphore.
  *
- * vkDeviceWaitIdle ensures the previous frame's submit, which may
- * still hold these handles in waitSemaphores or in descriptor sets
- * bound by the filter chain, has fully retired before we let
- * retro_reset() free them.
+ * Waiting on this driver's own fences ensures the previous frame's
+ * submit, which may still hold these handles in waitSemaphores or
+ * in descriptor sets bound by the filter chain, has fully retired
+ * before we let retro_reset() free them. The core's own work is the
+ * core's to wait for, and draining it here from under queue_lock is
+ * what stopped a threaded core that was still submitting.
  *
  * After this returns, vulkan_frame()'s "vk->hw.image && ..." gate
  * will fail and the existing fallback path will substitute the
@@ -5822,16 +5971,7 @@ static void vulkan_invalidate_hw_render_cache(void *data)
    if (!vk || !(vk->flags & VK_FLAG_HW_ENABLE))
       return;
 
-   if (vk->context && vk->context->device)
-   {
-#ifdef HAVE_THREADS
-      slock_lock(vk->context->queue_lock);
-#endif
-      vkDeviceWaitIdle(vk->context->device);
-#ifdef HAVE_THREADS
-      slock_unlock(vk->context->queue_lock);
-#endif
-   }
+   vulkan_wait_own_submissions(vk);
 
    vk->hw.image            = NULL;
    vk->hw.num_semaphores   = 0;
@@ -6251,15 +6391,10 @@ static void vulkan_check_swapchain(vk_t *vk)
    struct vulkan_filter_chain_swapchain_info filter_info;
 
    memset(vk->readback.record, 0, sizeof(vk->readback.record));
-#ifdef HAVE_THREADS
-   slock_lock(vk->context->queue_lock);
-#endif
-   vkQueueWaitIdle(vk->context->queue);
-#ifdef HAVE_THREADS
-   slock_unlock(vk->context->queue_lock);
-#endif
-   /* Queue is idle and this thread owns recording: safe point to
-    * destroy everything on the deferred list. */
+   vulkan_wait_own_submissions(vk);
+   /* Nothing of this driver's is in flight and this thread owns
+    * recording: safe point to destroy everything on the deferred
+    * list. */
    vulkan_deferred_textures_flush(vk);
    vulkan_deferred_cmds_flush(vk);
    vulkan_deinit_pipelines(vk);
@@ -6510,6 +6645,7 @@ static bool vulkan_shader_load_begin(void *data,
       info.queue_lock_handle     = vk;
       info.lock_queue            = vulkan_lock_queue;
       info.unlock_queue          = vulkan_unlock_queue;
+      info.wait_submissions      = vulkan_chain_wait_submissions;
       info.command_pool          = vk->swapchain[
          vk->context->current_frame_index].cmd_pool;
       info.num_passes            = 0;
@@ -8029,8 +8165,14 @@ static bool vulkan_frame(void *data, const void *frame,
             vk->hw.src_queue_family, vk->context->graphics_queue_index);
    }
 
-   /* Upload texture */
-   if (frame && (!(vk->flags & VK_FLAG_HW_ENABLE)))
+   /* Upload texture. A frame with no extent has nothing to upload
+    * and no texture to make for it: creating one asked Vulkan for a
+    * zero-sized image and buffer every such frame, which the
+    * validation layer rejects, and only kept working because the old
+    * texture's memory was silently reused. The texture that is there
+    * stays, and draws as it did. */
+   if (frame && frame_width && frame_height
+         && (!(vk->flags & VK_FLAG_HW_ENABLE)))
    {
       unsigned y;
       uint8_t *dst        = NULL;
@@ -8829,13 +8971,7 @@ static bool vulkan_frame(void *data, const void *frame,
       if (video_hdr_enable)
       {
          vk->context->flags |= VK_CTX_FLAG_HDR_ENABLE;
-#ifdef HAVE_THREADS
-         slock_lock(vk->context->queue_lock);
-#endif
-         vkQueueWaitIdle(vk->context->queue);
-#ifdef HAVE_THREADS
-         slock_unlock(vk->context->queue_lock);
-#endif
+         vulkan_wait_own_submissions(vk);
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->offscreen_buffer);
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
          vulkan_retained_free(vk);
@@ -9058,18 +9194,19 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
       &vk->swapchain[vk->context->current_frame_index];
    chain                      = vk->chain;
 
+   /* No extent, no texture to lend: the core falls back to its own
+    * buffer, and a zero-sized image is never asked for. */
+   if (!framebuffer->width || !framebuffer->height)
+      return false;
+
    if (chain->texture.width != framebuffer->width ||
          chain->texture.height != framebuffer->height)
    {
-      /* vulkan_create_texture() synchronously unmaps (and, unless the
-       * allocation is pilfered, frees) the old memory. If the core
-       * rendered the previous frame through this callback, the cached
-       * frame still points at that mapping: retire it first so a
-       * concurrent reader cannot be left mid-read of dying memory and
-       * a later cached re-render cannot pick up a stale pointer (the
-       * pilfer path can even remap the same VkDeviceMemory at the
-       * same host address, making a stale pointer look
-       * dereferenceable with the wrong geometry). */
+      /* vulkan_create_texture() parks the old texture and its mapping
+       * on the deferred list. If the core rendered the previous frame
+       * through this callback, the cached frame still points at that
+       * mapping: retire it first so a later cached re-render cannot
+       * pick up a pointer into memory that is about to go. */
       video_driver_cached_frame_retire();
       chain->texture   = vulkan_create_texture(vk, &chain->texture,
             framebuffer->width, framebuffer->height, chain->texture.format,
@@ -9377,17 +9514,8 @@ static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t handle)
    }
 
    /* Out of memory (or no device): fall back to synchronous
-    * destruction behind a queue drain. */
-#ifdef HAVE_THREADS
-   if (vk->context->queue_lock)
-      slock_lock(vk->context->queue_lock);
-#endif
-   if (vk->context->queue)
-      vkQueueWaitIdle(vk->context->queue);
-#ifdef HAVE_THREADS
-   if (vk->context->queue_lock)
-      slock_unlock(vk->context->queue_lock);
-#endif
+    * destruction once this driver's submissions have retired. */
+   vulkan_wait_own_submissions(vk);
    if (vk->context->device)
       vulkan_texture_retire(vk, texture);
    else
@@ -10236,15 +10364,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
             vkWaitForFences(vk->context->device, 1,
                   &frame_fence, VK_TRUE, UINT64_MAX);
          else
-         {
-#ifdef HAVE_THREADS
-            slock_lock(vk->context->queue_lock);
-#endif
-            vkQueueWaitIdle(vk->context->queue);
-#ifdef HAVE_THREADS
-            slock_unlock(vk->context->queue_lock);
-#endif
-         }
+            vulkan_wait_own_submissions(vk);
       }
 
       if (!staging->memory)
@@ -10478,15 +10598,7 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
          vkWaitForFences(vk->context->device, 1,
                &frame_fence, VK_TRUE, UINT64_MAX);
       else
-      {
-#ifdef HAVE_THREADS
-         slock_lock(vk->context->queue_lock);
-#endif
-         vkQueueWaitIdle(vk->context->queue);
-#ifdef HAVE_THREADS
-         slock_unlock(vk->context->queue_lock);
-#endif
-      }
+         vulkan_wait_own_submissions(vk);
    }
 
    vk->flags &= ~VK_FLAG_READBACK_HDR;
@@ -10682,9 +10794,7 @@ static void vulkan_overlay_free(vk_t *vk)
    if (!vk->overlay.borrowed)
       for (i = 0; i < (int) vk->overlay.count; i++)
          if (vk->overlay.images[i].memory != VK_NULL_HANDLE)
-            vulkan_destroy_texture(
-                  vk->context->device,
-                  &vk->overlay.images[i]);
+            vulkan_texture_defer_copy(vk, &vk->overlay.images[i]);
 
    if (vk->overlay.images)
       free(vk->overlay.images);
@@ -10999,15 +11109,10 @@ static bool vulkan_overlay_load(void *data,
    if (!vk)
       return false;
 
-#ifdef HAVE_THREADS
-   slock_lock(vk->context->queue_lock);
-#endif
-   vkQueueWaitIdle(vk->context->queue);
-#ifdef HAVE_THREADS
-   slock_unlock(vk->context->queue_lock);
-#endif
    if (vk->flags & VK_FLAG_OVERLAY_ENABLE)
       old_enabled           = true;
+   /* The old images are parked, not destroyed: a frame in flight may
+    * still sample them, and nothing needs the queue drained. */
    vulkan_overlay_free(vk);
 
    if (!(vk->overlay.images = (struct vk_texture*)

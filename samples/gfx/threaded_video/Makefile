@@ -18,6 +18,11 @@ MAKE_ARGS := SANITIZER=thread DEBUG=1
 else
 MAKE_ARGS :=
 endif
+# VK_DEBUG=1 links a tree built with VULKAN_DEBUG=1 (validation layer
+# on), which check-vulkan wants.
+ifeq ($(VK_DEBUG),1)
+MAKE_ARGS += VULKAN_DEBUG=1
+endif
 
 all:
 	@MAKE_ARGS="$(MAKE_ARGS)" ./build.sh
@@ -30,8 +35,27 @@ check: all
 	 grep -vE '^\[(INFO|DEBUG|WARN|ERROR)\]' check.log; rm -f check.log; \
 	 exit $$rc
 
+# The same lanes on the Vulkan driver: a real context on whatever ICD
+# VK_DRIVER_FILES names (lavapipe in CI), with the tree built
+# VULKAN_DEBUG=1 so the validation layer is loaded and reports through
+# the frontend log. Any validation error fails the run, and so does a
+# harness failure. Needs an X display; with none the target skips
+# (exit 77) rather than failing, as the vulkan_validation sample does.
+check-vulkan: all
+	@if [ -z "$$DISPLAY" ]; then echo "check-vulkan: no DISPLAY, skipping"; exit 77; fi; \
+	 HARNESS_VIDEO_DRIVER=vulkan HARNESS_VERBOSE=1 \
+	 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
+	 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+	 TSAN_OPTIONS=halt_on_error=1:second_deadlock_stack=1 \
+	 ./$(TARGET) $(CYCLES) > check.log 2>&1; rc=$$?; \
+	 grep -E '\[pass\]|FAIL|all lanes|Validation Error' check.log | grep -v 'XFree86-VidMode'; \
+	 errs=$$(grep -c 'Validation Error' check.log); \
+	 rm -f check.log; \
+	 if [ "$$errs" != "0" ]; then echo "check-vulkan: $$errs validation error(s)"; exit 1; fi; \
+	 exit $$rc
+
 clean:
 	rm -f $(TARGET) check.log harness_core.so retroarch_nomain.o retroarch_nomain.d \
 	      harness_main.o harness_main.d
 
-.PHONY: all check clean
+.PHONY: all check check-vulkan clean

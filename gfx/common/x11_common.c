@@ -395,7 +395,15 @@ float x11_get_refresh_rate(void *data)
    screen = attr.screen;
    screenid = XScreenNumberOfScreen(screen);
 
-   XF86VidModeGetModeLine(g_x11_dpy, screenid, &dotclock, &modeline);
+   /* A server without the extension (Xvfb, some nested and remote
+    * servers) leaves the modeline unset, and a zero total made this
+    * a NaN or an infinity that the callers then paced by. Unknown is
+    * 0, as the other paths here report it. */
+   dotclock = 0;
+   memset(&modeline, 0, sizeof(modeline));
+   if (!XF86VidModeGetModeLine(g_x11_dpy, screenid, &dotclock, &modeline)
+         || !modeline.htotal || !modeline.vtotal || !dotclock)
+      return 0.0f;
 
    /* non-native modes like 1080p on a 4K display might use DoubleScan */
    if (modeline.flags & V_DBLSCAN)
