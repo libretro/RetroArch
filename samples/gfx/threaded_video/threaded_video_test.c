@@ -1837,7 +1837,9 @@ int main(int argc, char *argv[])
 {
    char cfg_path[512];
    char dir[400];
-   char *rarch_argv[8];
+   /* NULL past the last argument, as a real main()'s argv is: the
+    * option parser reads up to that. */
+   char *rarch_argv[8] = {0};
    int rarch_argc = 0;
    FILE *cfg;
    char core_path[512];
