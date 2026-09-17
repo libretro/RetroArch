@@ -31,6 +31,16 @@
 #if defined(PSP) || defined(PS2) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU) || defined(SWITCH) || defined(HAVE_LIBNX) || defined(__PS3__) || defined(__PSL1GHT__)
 /* No mman available */
 #elif defined(_WIN32) && !defined(_XBOX)
+/* MSVC's minwindef.h defines min and max as macros in C++ as well as C
+ * -- MinGW's is guarded by #ifndef __cplusplus -- and they then break
+ * every std::numeric_limits<>::max() in any C++ file that reaches this
+ * header. A public header must not leak them. */
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #include <errno.h>
 #include <io.h>

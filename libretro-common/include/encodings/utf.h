@@ -250,6 +250,12 @@ char *utf16_to_utf8_string_alloc(const wchar_t *str);
  * windows.h define, so this pulls it in only where a translation unit
  * has not already. */
 #ifndef _WINDOWS_
+#ifndef NOMINMAX
+#define NOMINMAX   /* MSVC defines min/max as macros in C++ too */
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #endif
 

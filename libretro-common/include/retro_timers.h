@@ -47,6 +47,12 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+#ifndef NOMINMAX
+#define NOMINMAX   /* MSVC defines min/max as macros in C++ too */
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #elif defined(_WIN32) && defined(_XBOX)
 #include <Xtl.h>
