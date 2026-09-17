@@ -171,6 +171,7 @@ jobs:
             retro_asym_eventcount_test
             sthread_ex_test
             memshm_test
+            fastjmp_test
             msg_fifo_queue_test
             audio_mixer_loop_test
             audio_mixer_rate_guard_test
@@ -209,6 +210,10 @@ jobs:
           # leak is fixed, so LeakSanitizer runs at full strictness and
           # any surviving allocation is a real config_file regression.
           declare -A RUN_ENV=(
+            # fastjmp_jmp is a longjmp that is not libc's, so ASan's
+            # fake-stack check cannot follow it; the same holds for
+            # libco. The jump is what the test is for.
+            [fastjmp_test]="ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=0"
           )
 
           # Samples that are build-only (either they require command-line

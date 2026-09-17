@@ -258,6 +258,12 @@ threads-samples:
 	$(MAKE) -C samples/memmap/memshm_test clean
 	$(MAKE) -C samples/memmap/memshm_test check SANITIZER=$(CONCURRENCY_SAN)
 	$(MAKE) -C samples/memmap/memshm_test clean
+	# fastjmp: a jump from three frames down, eight values held across
+	# the set intact at -O2, a hundred thousand round trips; the ASan
+	# fake stack cannot follow a longjmp that is not libc's
+	$(MAKE) -C samples/fastjmp/fastjmp_test clean
+	ASAN_OPTIONS=detect_stack_use_after_return=0 $(MAKE) -C samples/fastjmp/fastjmp_test check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/fastjmp/fastjmp_test clean
 	# same, and the only place the queue and the eventcount are
 	# exercised against each other
 	$(MAKE) -C samples/queues/retro_waitable_spsc_test clean
