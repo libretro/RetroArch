@@ -524,6 +524,7 @@ static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
          if (t && t->codec_private && t->codec_private_size)
             rh265_video_set_extradata(s->h265, t->codec_private,
                   t->codec_private_size);
+         rh265_video_set_thread_pool(s->h265, s->blit_pool, s->blit_bands);
          return true;
       }
       default:
@@ -1021,6 +1022,9 @@ void rmp4_video_stream_set_blit_pool(rmp4_video_stream_t *s,
    if (s->vp9)
       rvp9_set_tile_pool(s->vp9, pool, bands);
 #endif
+   /* H.265 WPP rows likewise. */
+   if (s->h265)
+      rh265_video_set_thread_pool(s->h265, pool, bands);
 }
 
 /* The blit as a row-band job (image_blit_bands): every parameter of

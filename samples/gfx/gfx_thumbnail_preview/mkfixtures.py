@@ -258,7 +258,7 @@ def main():
             'still_lossless.webp', 'anim_lossless.png',
             'anim_dispose_prev.png', 'trailing_large.mp4',
             'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4',
-            'vp9_tiles.webm')):
+            'vp9_tiles.webm', 'hevc_wpp.mp4')):
         print('fixtures present, not rebuilt')
         return
 
@@ -295,6 +295,15 @@ def main():
         '-c:v', 'libvpx-vp9', '-tile-columns', '2', '-lag-in-frames', '0',
         '-b:v', '400k', '-pix_fmt', 'yuv420p', '-an',
         j('vp9_tiles.webm')])
+    # HEVC with wavefront parallel processing (x265's default), for the
+    # same oracle: the CTB rows are what the decoder spreads over
+    # threads.  A second of test pattern, six CTB rows at 360 lines.
+    subprocess.check_call([
+        'ffmpeg', '-v', 'error', '-y',
+        '-f', 'lavfi', '-i', 'testsrc2=s=640x360:r=30', '-t', '1',
+        '-c:v', 'libx265', '-x265-params', 'wpp=1:log-level=none',
+        '-b:v', '400k', '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', '-an',
+        j('hevc_wpp.mp4')])
     seed(j('seed_small.mp4'), 3, 640, 360, '300k')
     seed(j('seed_4k.mp4'), 3, 3840, 2160, '400k')
 

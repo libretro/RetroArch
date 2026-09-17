@@ -225,7 +225,7 @@ BLIT_BANDS_SOURCES := preview_blit_bands_test.c \
 
 $(BLIT_BANDS_TARGET): $(BLIT_BANDS_SOURCES)
 	$(CC) -o $@ $(BLIT_BANDS_SOURCES) \
-	      -Wall -std=gnu99 -g -O1 -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RH264 -DHAVE_RVP9 -DHAVE_THREADS \
+	      -Wall -std=gnu99 -g -O1 -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RH264 -DHAVE_RH265 -DHAVE_RVP9 -DHAVE_THREADS \
 	      -DHAVE_MMAP -D_GNU_SOURCE -I$(LIBRETRO_COMM_DIR)/include \
 	      $(EXTRA_CFLAGS) $(LDFLAGS) -lpthread
 
@@ -257,6 +257,7 @@ check: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET)
 	./$(ANIM_WINDOW_TARGET) fixtures
 	./$(BLIT_BANDS_TARGET) fixtures/long_video.mp4
 	./$(BLIT_BANDS_TARGET) fixtures/vp9_tiles.webm
+	./$(BLIT_BANDS_TARGET) fixtures/hevc_wpp.mp4
 	./$(DECODE_TARGET) fixtures/trailing_large.mp4 1024   island
 	./$(DECODE_TARGET) fixtures/trailing_large.mp4 262144 island
 	./$(DECODE_TARGET_NORWEBM) fixtures/trailing_large.mp4 1024 island

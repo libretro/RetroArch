@@ -74,6 +74,19 @@ const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
 
 void rh265_video_close(rh265_video *v);
 
+/* Decode the CTB rows of a WPP picture (entropy_coding_sync, x265's
+ * default) on up to @threads threads: the calling thread and @pool
+ * (an rthreads tpool_t of at least threads - 1 threads) take rows as
+ * they come free, each row starting two CTBs behind the row above -
+ * the wavefront the syntax was coded for, so this changes when
+ * samples are written, never what they are. Pictures without WPP,
+ * with more than one slice, or with fewer than two rows decode as
+ * before. NULL or threads <= 1 restores single-threaded decoding.
+ * The pool is the caller's and must outlive every decode made while
+ * it is set. */
+void rh265_video_set_thread_pool(rh265_video *v, void *pool,
+      unsigned threads);
+
 RETRO_END_DECLS
 
 #endif

@@ -923,13 +923,15 @@ jobs:
           echo "[pass] preview_audio_decode_test (ASan)"
           # The threaded decode against the single-threaded one, frame
           # for frame: the colour conversion in row bands on a pool,
-          # and for the VP9 fixture (four tile columns) the columns
-          # decoded side by side. Every frame must be byte-identical.
+          # for the VP9 fixture (four tile columns) the columns decoded
+          # side by side, for the HEVC fixture (WPP) the CTB rows on a
+          # wavefront. Every frame must be byte-identical.
           test -x preview_blit_bands_test
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           UBSAN_OPTIONS=print_stacktrace=1 timeout 300 bash -c '
              ./preview_blit_bands_test fixtures/long_video.mp4
-             ./preview_blit_bands_test fixtures/vp9_tiles.webm'
+             ./preview_blit_bands_test fixtures/vp9_tiles.webm
+             ./preview_blit_bands_test fixtures/hevc_wpp.mp4'
           echo "[pass] preview_blit_bands_test (ASan)"
           # clean keeps fixtures/ by design; regenerate anyway so the
           # step cannot silently run against an empty glob.
@@ -943,7 +945,8 @@ jobs:
           # columns, the counts merged after the join.
           TSAN_OPTIONS=halt_on_error=1:allocator_may_return_null=1 timeout 300 bash -c '
              ./preview_blit_bands_test fixtures/long_video.mp4
-             ./preview_blit_bands_test fixtures/vp9_tiles.webm'
+             ./preview_blit_bands_test fixtures/vp9_tiles.webm
+             ./preview_blit_bands_test fixtures/hevc_wpp.mp4'
           echo "[pass] preview_blit_bands_test (TSan)"
           TSAN_OPTIONS=halt_on_error=1 timeout 600 bash -c '
              ./preview_audio_decode_test fixtures/trailing_large.mp4 1024 island
