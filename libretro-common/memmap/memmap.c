@@ -459,7 +459,10 @@ void memshm_unmap(void *addr, size_t len)
       UnmapViewOfFile(addr);
 }
 
-#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__)
+/* Gated on MAP_SHARED, as reserve/commit gates on its constants: DJGPP
+ * defines __unix__ and HAVE_MMAN but ships a stub <sys/mman.h> with no
+ * MAP_SHARED and no shm_open, and falls through to the stubs below. */
+#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_SHARED)
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -552,7 +555,13 @@ void memshm_unmap(void *addr, size_t len) { (void)addr; (void)len; }
 /* JIT write toggle for per-thread W^X                                 */
 /* ------------------------------------------------------------------ */
 
-#if defined(__APPLE__) && defined(__aarch64__)
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+/* pthread_jit_write_protect_np is macOS on Apple Silicon and nothing
+ * else: iOS and tvOS are arm64 and __APPLE__ too, and do not have it.
+ * TARGET_OS_OSX is the test, not the architecture. */
+#if defined(__APPLE__) && defined(__aarch64__) && defined(TARGET_OS_OSX) && TARGET_OS_OSX
 #include <pthread.h>
 /* pthread_jit_write_protect_np is per thread, and so is this depth:
  * one thread's nesting must not flip another's pages. */
