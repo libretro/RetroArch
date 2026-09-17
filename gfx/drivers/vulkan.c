@@ -6935,6 +6935,38 @@ static void vulkan_retain_backbuffer(vk_t *vk, struct vk_image *backbuffer)
 /* One swap of the retained image: copy it into the swapchain image
  * acquired by the previous swap_buffers() and present. Same submit shape
  * as vulkan_inject_black_frame(), with the copy where the clear is. */
+/* A frame whose GPU work is still pending is not presented while the
+ * queue lock is held.
+ *
+ * vkQueuePresentKHR runs under queue_lock, and on some drivers it does
+ * not return until the image it presents has finished rendering - the
+ * NVIDIA exclusive-fullscreen path spins inside the call until then.
+ * That is fine while this thread is the only one submitting: the work
+ * is on the queue and completes. Under the video thread wrapper a
+ * hardware core submits from the main thread through lock_queue, and
+ * its work is not all on the queue when this frame's is: Granite-style
+ * renderers flush per queue, so the graphics batch ahead of this frame
+ * can wait on a compute or transfer batch the core has not submitted
+ * yet. The present then waits, holding the lock, for a submission that
+ * is blocked on the lock, and the whole frontend stops with the core
+ * parked in lock_queue.
+ *
+ * So for a hardware core under the wrapper the frame's fence is waited
+ * out first, with the lock free: the core submits, the queue drains,
+ * the fence signals, and the present under the lock has nothing left
+ * to wait for. A software core, or a hardware core presenting on its
+ * own thread, has no other submitter to wait on and keeps the
+ * asynchronous present; those paths are exactly as they were. */
+static void vulkan_await_frame_before_present(vk_t *vk, unsigned frame_index)
+{
+   if (     (vk->flags & VK_FLAG_HW_ENABLE)
+         && video_driver_thread_wrapper_active()
+         && vk->context->swapchain_fences_signalled[frame_index]
+         && vk->context->swapchain_fences[frame_index] != VK_NULL_HANDLE)
+      vkWaitForFences(vk->context->device, 1,
+            &vk->context->swapchain_fences[frame_index], true, UINT64_MAX);
+}
+
 static bool vulkan_present_retained_once(vk_t *vk)
 {
    VkSubmitInfo submit_info;
@@ -7032,6 +7064,8 @@ static bool vulkan_present_retained_once(vk_t *vk)
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
+
+   vulkan_await_frame_before_present(vk, frame_index);
 
    if (vk->ctx_driver->swap_buffers)
       vk->ctx_driver->swap_buffers(vk->ctx_data);
@@ -8650,6 +8684,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
+
+   vulkan_await_frame_before_present(vk, frame_index);
 
    if (vk->ctx_driver->swap_buffers)
       vk->ctx_driver->swap_buffers(vk->ctx_data);
