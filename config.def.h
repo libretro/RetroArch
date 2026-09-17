@@ -1816,6 +1816,10 @@
 #define DEFAULT_INPUT_AUTO_MOUSE_GRAB false
 #endif
 
+/* Take controller input while RetroArch is not the active window.
+ * On by default: one controller can drive several instances. */
+#define DEFAULT_INPUT_JOYPAD_BACKGROUND true
+
 #if TARGET_OS_IPHONE
 #define DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE false
 #else

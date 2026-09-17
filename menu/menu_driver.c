@@ -5360,9 +5360,13 @@ unsigned menu_event(
    menu_input_t *menu_input                        = &menu_st->input_state;
    input_driver_state_t *input_st                  = input_state_get_ptr();
    input_driver_t *current_input                   = input_st->current_driver;
-   const input_device_driver_t *joypad             = input_st->primary_joypad;
+   /* Read through the idle stand-in while background controller
+    * input is off and the window is unfocused. */
+   const input_device_driver_t *joypad             =
+      input_driver_joypad_for_read(input_st->primary_joypad);
 #ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad         = input_st->secondary_joypad;
+   const input_device_driver_t *sec_joypad         =
+      input_driver_joypad_for_read(input_st->secondary_joypad);
 #else
    const input_device_driver_t *sec_joypad         = NULL;
 #endif

@@ -222,6 +222,7 @@ bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
 bool	video_frame_delay_auto	1	0
 bool	audio_fastpath_s16	1	0
+bool	audio_resampler_hq_oversampling	1	0
 bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	1
 bool	video_font_enable	1	1
@@ -253,6 +254,7 @@ bool	menu_rgui_transparency	1	1
 bool	menu_dynamic_wallpaper_enable	1	1
 bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	1
+bool	input_joypad_background	1	1
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
 bool	audio_threaded_pipeline	1	1
@@ -384,6 +386,7 @@ bool	keyboard_gamepad_enable	1	1
 bool	menu_swap_ok_cancel_buttons	1	1
 bool	menu_swap_scroll_buttons	1	0
 bool	input_android_system_keyboard	1	0
+bool	input_sdl3_system_keyboard	1	0
 bool	stdin_cmd_enable	1	0
 bool	netplay_request_device_p1	1	0
 bool	netplay_request_device_p2	1	0
@@ -427,6 +430,7 @@ uint	menu_xmb_thumbnail_scale_factor	1	100
 uint	menu_shader_pipeline	1	2
 uint	audio_out_rate	1	48000
 uint	audio_latency	0	0
+uint	audio_latency_floor	1	8
 uint	microphone_latency	0	0
 uint	microphone_rate	1	48000
 uint	custom_viewport_width	0	0
@@ -881,6 +885,7 @@ bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
 bool	video_frame_delay_auto	1	0
 bool	audio_fastpath_s16	1	0
+bool	audio_resampler_hq_oversampling	1	0
 bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	0
 bool	video_font_enable	1	1
@@ -912,6 +917,7 @@ bool	menu_rgui_transparency	1	1
 bool	menu_dynamic_wallpaper_enable	1	1
 bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	0
+bool	input_joypad_background	1	1
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
 bool	audio_threaded_pipeline	1	1
@@ -1042,6 +1048,7 @@ bool	keyboard_gamepad_enable	1	1
 bool	menu_swap_ok_cancel_buttons	1	1
 bool	menu_swap_scroll_buttons	1	0
 bool	input_android_system_keyboard	1	0
+bool	input_sdl3_system_keyboard	1	0
 bool	stdin_cmd_enable	1	0
 bool	netplay_request_device_p1	1	0
 bool	netplay_request_device_p2	1	0
@@ -1084,6 +1091,7 @@ uint	menu_xmb_thumbnail_scale_factor	1	100
 uint	menu_shader_pipeline	1	2
 uint	audio_out_rate	1	48000
 uint	audio_latency	0	0
+uint	audio_latency_floor	1	8
 uint	microphone_latency	0	0
 uint	microphone_rate	1	48000
 uint	custom_viewport_width	0	0
@@ -1545,6 +1553,7 @@ bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
 bool	video_frame_delay_auto	1	0
 bool	audio_fastpath_s16	1	0
+bool	audio_resampler_hq_oversampling	1	0
 bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	0
 bool	video_font_enable	1	1
@@ -1577,6 +1586,7 @@ bool	menu_rgui_transparency	1	1
 bool	menu_dynamic_wallpaper_enable	1	1
 bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	0
+bool	input_joypad_background	1	1
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
 bool	audio_threaded_pipeline	1	1
@@ -1707,6 +1717,7 @@ bool	keyboard_gamepad_enable	1	1
 bool	menu_swap_ok_cancel_buttons	1	1
 bool	menu_swap_scroll_buttons	1	0
 bool	input_android_system_keyboard	1	0
+bool	input_sdl3_system_keyboard	1	0
 bool	stdin_cmd_enable	1	0
 bool	netplay_request_device_p1	1	0
 bool	netplay_request_device_p2	1	0
@@ -1750,6 +1761,7 @@ uint	menu_xmb_thumbnail_scale_factor	1	100
 uint	menu_shader_pipeline	1	2
 uint	audio_out_rate	1	48000
 uint	audio_latency	0	0
+uint	audio_latency_floor	1	8
 uint	microphone_latency	0	0
 uint	microphone_rate	1	48000
 uint	custom_viewport_width	0	0

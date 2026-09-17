@@ -196,7 +196,11 @@ enum input_driver_state_flags
    /* This device has a native keyboard panel the frontend could use
     * in place of the built-in OSK. Published the same way; read
     * through input_osk_native_available(). */
-   INP_FLAG_NATIVE_KB_AVAIL          = (1 << 13)
+   INP_FLAG_NATIVE_KB_AVAIL          = (1 << 13),
+   /* Background controller input is off and the window is not
+    * focused: the joypad read paths see an idle controller. Set once
+    * per poll; read through input_driver_joypad_for_read(). */
+   INP_FLAG_JOYPAD_UNFOCUSED         = (1 << 14)
 };
 
 #ifdef HAVE_BSV_MOVIE
@@ -726,6 +730,21 @@ typedef struct
    unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
 } input_driver_state_t;
 
+
+/**
+ * input_driver_joypad_for_read:
+ * @drv                      : primary or secondary joypad driver, or NULL.
+ *
+ * The joypad driver to read controller state from. While background
+ * controller input is off and RetroArch is unfocused this is a stand-in
+ * that reports every button released and every axis centred, so the
+ * menu, hotkeys and the core all see an idle controller. Rumble,
+ * sensors, device names and driver lifetime keep using @drv directly.
+ *
+ * Returns: @drv, or the idle stand-in; NULL if @drv is NULL.
+ **/
+const input_device_driver_t *input_driver_joypad_for_read(
+      const input_device_driver_t *drv);
 
 void input_driver_init_joypads(void);
 

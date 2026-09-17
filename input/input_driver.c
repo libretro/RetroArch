@@ -80,6 +80,7 @@
 #include "../retroarch.h"
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
+#include "../gfx/video_driver.h"
 
 #ifdef ANDROID
 #include "../frontend/drivers/platform_unix.h"
@@ -245,6 +246,50 @@ static input_device_driver_t null_joypad = {
    "null",
 };
 
+
+/* Stands in for the joypad drivers on the read paths while background
+ * controller input is off and the window is unfocused (see
+ * input_driver_joypad_for_read()). Every read is idle and nothing
+ * reaches the real driver. Every read entry is filled, because readers
+ * call button/axis/state without checking for NULL. */
+static bool idle_joypad_query(unsigned pad) { return false; }
+static int32_t idle_joypad_button(unsigned port, uint16_t joykey) { return 0; }
+static int16_t idle_joypad_state(rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds, unsigned port) { return 0; }
+static void idle_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   BIT256_CLEAR_ALL_PTR(state);
+}
+static int16_t idle_joypad_axis(unsigned port, uint32_t joyaxis) { return 0; }
+static void idle_joypad_poll(void) { }
+static bool idle_joypad_rumble(unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength) { return false; }
+static bool idle_joypad_rumble_gain(unsigned pad, unsigned gain) { return false; }
+static bool idle_joypad_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate) { return false; }
+static bool idle_joypad_get_sensor_input(unsigned port,
+      unsigned id, float *value) { return false; }
+static const char *idle_joypad_name(unsigned pad) { return NULL; }
+
+static const input_device_driver_t idle_joypad = {
+   NULL, /* init */
+   idle_joypad_query,
+   NULL, /* destroy */
+   idle_joypad_button,
+   idle_joypad_state,
+   idle_joypad_get_buttons,
+   idle_joypad_axis,
+   idle_joypad_poll,
+   idle_joypad_rumble,
+   idle_joypad_rumble_gain,
+   idle_joypad_set_sensor_state,
+   idle_joypad_get_sensor_input,
+   idle_joypad_name,
+   "idle",
+};
+
+#define INPUT_JOYPAD_FOR_READ(st, drv) \
+   (((drv) && ((st)->flags & INP_FLAG_JOYPAD_UNFOCUSED)) ? &idle_joypad : (drv))
 
 #ifdef HAVE_HID
 static bool null_hid_joypad_query(void *data, unsigned pad) {
@@ -476,6 +521,25 @@ hid_driver_t *hid_drivers[] = {
 #endif
 
 static input_driver_state_t input_driver_st = {0}; /* double alignment */
+
+const input_device_driver_t *input_driver_joypad_for_read(
+      const input_device_driver_t *drv)
+{
+   return INPUT_JOYPAD_FOR_READ(&input_driver_st, drv);
+}
+
+/* Publishes INP_FLAG_JOYPAD_UNFOCUSED for this poll. Only controllers
+ * are gated here; the keyboard and mouse input drivers apply their own
+ * focus checks. The focus query only runs with the setting off. */
+static void input_driver_update_joypad_focus(
+      input_driver_state_t *input_st, const settings_t *settings)
+{
+   if (     !settings->bools.input_joypad_background
+         && !video_driver_has_focus())
+      input_st->flags |=  INP_FLAG_JOYPAD_UNFOCUSED;
+   else
+      input_st->flags &= ~INP_FLAG_JOYPAD_UNFOCUSED;
+}
 
 /**************************************/
 
@@ -2363,9 +2427,11 @@ static int16_t input_state_internal(
    uint8_t max_users                       = (settings->uints.input_max_users
          > MAX_USERS) ? MAX_USERS
          : (uint8_t)settings->uints.input_max_users;
-   const input_device_driver_t *joypad     = input_st->primary_joypad;
+   const input_device_driver_t *joypad     = INPUT_JOYPAD_FOR_READ(
+         input_st, input_st->primary_joypad);
 #ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad = input_st->secondary_joypad;
+   const input_device_driver_t *sec_joypad = INPUT_JOYPAD_FOR_READ(
+         input_st, input_st->secondary_joypad);
 #else
    const input_device_driver_t *sec_joypad = NULL;
 #endif
@@ -5735,7 +5801,8 @@ bool input_key_pressed(int key, bool keyboard_pressed)
    {
       const input_device_driver_t
          *joypad                     = (const input_device_driver_t*)
-         input_driver_st.primary_joypad;
+         INPUT_JOYPAD_FOR_READ(&input_driver_st,
+               input_driver_st.primary_joypad);
       const uint64_t bind_joykey     = input_config_binds[0][key].joykey;
       const uint64_t bind_joyaxis    = input_config_binds[0][key].joyaxis;
       const uint64_t autobind_joykey = input_autoconf_binds[0][key].joykey;
@@ -6954,7 +7021,7 @@ static bool input_keys_pressed_other_sources(
       if (input_state_wrap( \
             input_st->current_driver, \
             input_st->current_data, \
-            input_st->primary_joypad, \
+            joypad, \
             sec_joypad, \
             joypad_info, \
             binds, \
@@ -7020,7 +7087,7 @@ static void input_keys_pressed(
       if (input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
-            input_st->primary_joypad,
+            joypad,
             sec_joypad,
             joypad_info,
             binds,
@@ -7058,7 +7125,7 @@ static void input_keys_pressed(
       ret = input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
-            input_st->primary_joypad,
+            joypad,
             sec_joypad,
             joypad_info,
             binds,
@@ -7108,7 +7175,7 @@ static void input_keys_pressed(
             && input_state_wrap(
                   input_st->current_driver,
                   input_st->current_data,
-                  input_st->primary_joypad,
+                  joypad,
                   sec_joypad,
                   joypad_info,
                   binds,
@@ -7120,7 +7187,7 @@ static void input_keys_pressed(
                && input_state_wrap(
                      input_st->current_driver,
                      input_st->current_data,
-                     input_st->primary_joypad,
+                     joypad,
                      sec_joypad,
                      joypad_info,
                      binds,
@@ -7154,7 +7221,7 @@ static void input_keys_pressed(
             && input_state_wrap(
                   input_st->current_driver,
                   input_st->current_data,
-                  input_st->primary_joypad,
+                  joypad,
                   sec_joypad,
                   joypad_info,
                   binds,
@@ -7208,7 +7275,7 @@ static void input_keys_pressed(
                if (input_state_wrap(
                      input_st->current_driver,
                      input_st->current_data,
-                     input_st->primary_joypad,
+                     joypad,
                      sec_joypad,
                      joypad_info,
                      binds,
@@ -7226,7 +7293,7 @@ static void input_keys_pressed(
                if (input_state_wrap(
                      input_st->current_driver,
                      input_st->current_data,
-                     input_st->primary_joypad,
+                     joypad,
                      sec_joypad,
                      joypad_info,
                      binds,
@@ -7252,7 +7319,7 @@ static void input_keys_pressed(
                if (input_state_wrap(
                      input_st->current_driver,
                      input_st->current_data,
-                     input_st->primary_joypad,
+                     joypad,
                      sec_joypad,
                      joypad_info,
                      binds,
@@ -7271,7 +7338,7 @@ static void input_keys_pressed(
                if (input_state_wrap(
                      input_st->current_driver,
                      input_st->current_data,
-                     input_st->primary_joypad,
+                     joypad,
                      sec_joypad,
                      joypad_info,
                      binds,
@@ -7310,7 +7377,7 @@ static void input_keys_pressed(
             && input_state_wrap(
                   input_st->current_driver,
                   input_st->current_data,
-                  input_st->primary_joypad,
+                  joypad,
                   sec_joypad,
                   joypad_info,
                   binds,
@@ -7452,6 +7519,13 @@ void input_driver_poll(void)
       sec_joypad->poll();
    if (input && input->poll)
       input->poll(input_st->current_data);
+
+   /* The real drivers are polled regardless, so their state stays
+    * current and nothing is replayed on refocus; everything read
+    * below goes through the stand-in while controllers are gated. */
+   input_driver_update_joypad_focus(input_st, settings);
+   joypad                         = INPUT_JOYPAD_FOR_READ(input_st, joypad);
+   sec_joypad                     = INPUT_JOYPAD_FOR_READ(input_st, sec_joypad);
 
    /* Invalidate joypad state bitmask cache for the new frame */
    memset(input_st->joypad_state_cache_valid, 0,
@@ -7744,7 +7818,7 @@ void input_driver_poll(void)
                   int32_t ret = input_state_wrap(
                         input_st->current_driver,
                         input_st->current_data,
-                        input_st->primary_joypad,
+                        joypad,
                         sec_joypad,
                         &joypad_info[i],
                         (*input_st->libretro_input_binds),
@@ -8362,14 +8436,9 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 {
    rarch_joypad_info_t joypad_info;
    input_driver_t *input               = input_st->current_driver;
-   const input_device_driver_t *joypad = input_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                      = input_st->secondary_joypad;
-#else
+   const input_device_driver_t *joypad = NULL;
    const input_device_driver_t
       *sec_joypad                      = NULL;
-#endif
    unsigned block_delay                = settings->uints.input_hotkey_block_delay;
    /* Both of the arrays indexed below are [MAX_USERS]; the setting is
     * read from the config file and is not guaranteed to respect that. */
@@ -8385,6 +8454,16 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          MENU_ST_FLAG_ALIVE) ? true : false;
    bool menu_input_active              = menu_is_alive &&
          !(settings->bools.menu_unified_controls && !display_kb);
+#endif
+
+   /* Hotkeys and menu navigation read the controllers through the
+    * stand-in while they are gated, the same as the core does. */
+   input_driver_update_joypad_focus(input_st, settings);
+   joypad                              = INPUT_JOYPAD_FOR_READ(
+         input_st, input_st->primary_joypad);
+#ifdef HAVE_MFI
+   sec_joypad                          = INPUT_JOYPAD_FOR_READ(
+         input_st, input_st->secondary_joypad);
 #endif
    joypad_info.axis_threshold          = settings->floats.input_axis_threshold;
 

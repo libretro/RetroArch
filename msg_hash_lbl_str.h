@@ -1146,6 +1146,7 @@
 #define MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE_STR "input_autodetect_enable"
 #define MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS_STR "input_auto_game_focus"
 #define MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB_STR "input_auto_mouse_grab"
+#define MENU_ENUM_LABEL_INPUT_JOYPAD_BACKGROUND_STR "input_joypad_background"
 #define MENU_ENUM_LABEL_INPUT_BIND_HOLD_STR "input_bind_hold"
 #define MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT_STR "input_bind_timeout"
 #define MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT_STR "input_block_timeout"
