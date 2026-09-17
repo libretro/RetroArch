@@ -6651,6 +6651,37 @@ static void metal_unload_texture(void *data,
    }
 }
 
+/* Same-size contents into a texture metal_load_texture made:
+ * replaceRegion on the one MTLTexture, the way the menu frame streams
+ * into its TexturedView every frame. Metal resources are safe to
+ * write from any thread and command buffers retain what they sample,
+ * so this runs inline whether or not the wrapper is up, as the
+ * non-mipmapped loads do. A mipmapped texture would need the shared
+ * blit command buffer to regenerate its levels: refused, so the
+ * caller loads a replacement. */
+static bool metal_update_texture(void *video_data, uintptr_t id,
+      const struct texture_image *ti, bool threaded)
+{
+   if (!id || !ti || !ti->pixels)
+      return false;
+
+   @autoreleasepool
+   {
+      Texture *t          = (__bridge Texture *)(void *)id;
+      id<MTLTexture> tex  = t.texture;
+      if (     !tex
+            || tex.mipmapLevelCount > 1
+            || tex.width  != ti->width
+            || tex.height != ti->height)
+         return false;
+      [tex replaceRegion:MTLRegionMake2D(0, 0, ti->width, ti->height)
+              mipmapLevel:0
+                withBytes:ti->pixels
+              bytesPerRow:4 * ti->width];
+   }
+   return true;
+}
+
 /* TODO/FIXME - implement */
 static void metal_set_video_mode(void *data,
                                  unsigned width, unsigned height,
@@ -6899,7 +6930,20 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_set_hdr_scanlines,
    metal_set_hdr_subpixel_layout,
    metal_supports_texture_format,
-   metal_load_texture_compressed
+   metal_load_texture_compressed,
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   metal_update_texture
 };
 
 static void metal_get_poke_interface(void *data,

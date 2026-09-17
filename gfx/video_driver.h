@@ -967,6 +967,21 @@ typedef struct video_poke_interface
     * hands it: the framebuffer for a ring slot, valid in the core's
     * context. Called from the core's thread. */
    uintptr_t (*hw_ring_framebuffer)(void *data, unsigned slot);
+
+   /* Replace the contents of a texture load_texture returned, in
+    * place: @ti carries pixels of the same width, height and channel
+    * order the texture was created with. The handle stays valid and
+    * bound descriptors stay correct, so a streaming producer updates
+    * one persistent resource instead of creating and destroying one
+    * per frame. Returns false when this handle cannot be updated in
+    * place, in which case the caller loads a replacement. A driver
+    * may skip an update it cannot take without waiting for the GPU
+    * (a busy staging slot) and still return true: the texture keeps
+    * showing its previous contents. Optional; NULL when the driver
+    * has no in-place path, and video_driver_texture_can_update()
+    * reports that so callers never post updates it cannot run. */
+   bool (*update_texture)(void *video_data, uintptr_t id,
+         const struct texture_image *ti, bool threaded);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen
@@ -1808,6 +1823,19 @@ bool video_driver_texture_load(void *data,
       uintptr_t *id);
 
 bool video_driver_texture_unload(uintptr_t *id);
+
+/* In-place update of a texture video_driver_texture_load() returned,
+ * see video_poke_interface::update_texture. @data is a struct
+ * texture_image of the same size and channel order. Synchronous: under
+ * threaded video the driver marshals the update onto the video thread
+ * and this waits for it. Returns false when the driver cannot update
+ * this handle in place; the caller then loads a replacement. */
+bool video_driver_texture_update(uintptr_t id, void *data);
+
+/* Whether the active driver can update textures in place at all.
+ * Callers that stream (gfx_surface) decide between an update and a
+ * replacement load on this, once per surface rather than per frame. */
+bool video_driver_texture_can_update(void);
 
 /* Upload without making the caller wait for the video thread. @data
  * is a struct texture_image the caller gives up: it is handed to

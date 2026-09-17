@@ -191,6 +191,16 @@ typedef struct thread_packet
 typedef void (*video_thread_async_done_t)(void *user, uintptr_t handle);
 typedef void (*video_thread_async_release_t)(void *img);
 
+/* What the video thread does with a node. LOAD creates a texture from
+ * img and reports the handle; UPDATE writes img into the texture whose
+ * handle the node carries, in place, and reports that handle back (0
+ * when the driver could not take the update). */
+enum video_thread_async_kind
+{
+   VIDEO_THREAD_ASYNC_LOAD = 0,
+   VIDEO_THREAD_ASYNC_UPDATE
+};
+
 typedef struct video_thread_async_load
 {
    struct video_thread_async_load *next;
@@ -200,6 +210,13 @@ typedef struct video_thread_async_load
    video_thread_async_release_t release;
    uintptr_t handle;
    enum texture_filter_type filter;
+   uint8_t kind;                   /* enum video_thread_async_kind */
+   /* The node belongs to the poster, who embeds it in a resource that
+    * outlives the post: the wrapper never frees it, and delivers
+    * done() exactly once for every accepted post, so the poster can
+    * count on getting it back. Nodes the wrapper allocates itself
+    * (video_thread_texture_load_async) have this clear. */
+   uint8_t caller_owned;
 } video_thread_async_load_t;
 
 /* Deep enough for the burst an overlay issues between two frames - one
@@ -671,6 +688,23 @@ bool video_thread_texture_load_async(void *img,
       enum texture_filter_type filter,
       video_thread_async_done_t done, void *user,
       video_thread_async_release_t release);
+
+/* Post a caller-owned node (see video_thread_async_load_t) for the
+ * video thread: kind, img, handle (UPDATE), filter (LOAD), done, user
+ * and release filled in by the caller, next left alone. The node is
+ * the wrapper's from the return until done() has run, which happens
+ * from video_thread_async_poll() on the main thread, or from the
+ * wrapper's teardown with handle 0. No allocation: this is the
+ * streaming path, one embedded node per surface. Returns false, having
+ * taken nothing, when the wrapper is not active or the caller is the
+ * video thread; the caller then runs the operation synchronously.
+ * Main thread only. */
+bool video_thread_async_post(video_thread_async_load_t *n);
+
+/* Whether the wrapped driver updates textures in place; false while
+ * no wrapper is up. video_driver_texture_can_update() asks this so a
+ * wrapper forwarder is never mistaken for a capability. */
+bool video_thread_texture_can_update(void);
 
 /* Deliver completed asynchronous uploads to their done() callbacks.
  * Main thread; video_thread_frame() calls it, callers that upload

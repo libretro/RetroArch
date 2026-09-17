@@ -3982,6 +3982,30 @@ bool video_driver_texture_load_async(void *data,
    return true;
 }
 
+bool video_driver_texture_update(uintptr_t id, void *data)
+{
+   video_driver_state_t *video_st     = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+   if (!id || !data || !poke || !poke->update_texture)
+      return false;
+   return poke->update_texture(video_st->data, id,
+         (const struct texture_image*)data,
+         video_driver_thread_wrapper_active());
+}
+
+bool video_driver_texture_can_update(void)
+{
+   video_driver_state_t *video_st     = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+#ifdef HAVE_THREADS
+   /* The wrapper's poke forwards the call whether or not the driver
+    * beneath it has one; ask about that driver. */
+   if (video_driver_thread_wrapper_active())
+      return video_thread_texture_can_update();
+#endif
+   return poke && poke->update_texture;
+}
+
 bool video_driver_texture_unload(uintptr_t *id)
 {
    video_driver_state_t *video_st     = &video_driver_st;

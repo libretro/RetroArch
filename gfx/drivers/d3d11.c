@@ -6326,6 +6326,56 @@ static uintptr_t d3d11_gfx_load_texture(
    return d3d11_gfx_load_texture_internal(d3d11, image, filter_type);
 }
 
+/* Same-size contents into a texture d3d11_gfx_load_texture made: the
+ * staging texture it kept is mapped and copied into the resource, as
+ * for the first upload. Immediate-context work, so the video thread's
+ * when the wrapper is up. */
+static bool d3d11_gfx_update_texture_internal(d3d11_video_t *d3d11,
+      uintptr_t handle, const struct texture_image *image)
+{
+   d3d11_texture_t *texture = (d3d11_texture_t*)handle;
+   if (     !d3d11 || !texture || !texture->staging
+         || texture->desc.Width  != image->width
+         || texture->desc.Height != image->height)
+      return false;
+   d3d11_update_texture(d3d11->context, image->width, image->height, 0,
+         texture->desc.Format, image->pixels, texture);
+   return true;
+}
+
+#ifdef HAVE_THREADS
+static uintptr_t d3d11_texture_update_wrap(void *data)
+{
+   d3d11_texture_cmd_t *cmd = (d3d11_texture_cmd_t*)data;
+   cmd->handle = d3d11_gfx_update_texture_internal(cmd->d3d11,
+         cmd->handle, cmd->image) ? cmd->handle : 0;
+   return 0;
+}
+#endif
+
+static bool d3d11_gfx_update_texture(void *video_data, uintptr_t id,
+      const struct texture_image *ti, bool threaded)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)video_data;
+   if (!id || !ti || !ti->pixels)
+      return false;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      d3d11_texture_cmd_t cmd;
+      cmd.d3d11       = d3d11;
+      cmd.image       = (struct texture_image*)ti;
+      cmd.filter_type = TEXTURE_FILTER_LINEAR;
+      cmd.handle      = id;
+      video_thread_texture_handle(&cmd, d3d11_texture_update_wrap);
+      return cmd.handle != 0;
+   }
+#endif
+
+   return d3d11_gfx_update_texture_internal(d3d11, id, ti);
+}
+
 static void d3d11_gfx_unload_texture(void* data,
       bool threaded, uintptr_t handle)
 {
@@ -6660,7 +6710,9 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_hw_ring_capture,
    d3d11_hw_ring_present_slot,
    d3d11_hw_ring_context_new,
-   d3d11_hw_ring_context_free
+   d3d11_hw_ring_context_free,
+   NULL, /* hw_ring_framebuffer */
+   d3d11_gfx_update_texture
 };
 
 static void d3d11_gfx_get_poke_interface(void* data,

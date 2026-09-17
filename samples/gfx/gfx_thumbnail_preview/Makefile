@@ -17,6 +17,9 @@ UUT_OBJ := gfx_thumbnail_uut.o
 # The preview session gfx_thumbnail drives its feeder and audio through.
 ANIM_PREVIEW_SRC := $(REPO_ROOT)/gfx/gfx_anim_preview.c
 ANIM_PREVIEW_OBJ := gfx_anim_preview_uut.o
+# The streaming surface the animation frames go through, real.
+SURFACE_SRC := $(REPO_ROOT)/gfx/gfx_surface.c
+SURFACE_OBJ := gfx_surface_uut.o
 
 # Layout facts (settings_t offsets/size) for the stubs, compiled with
 # UUT_CFLAGS so they match what the UUT's configuration.h produces.
@@ -193,13 +196,16 @@ $(UUT_OBJ): $(UUT_SRC)
 $(ANIM_PREVIEW_OBJ): $(ANIM_PREVIEW_SRC)
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
+$(SURFACE_OBJ): $(SURFACE_SRC)
+	$(CC) -c -o $@ $< $(UUT_CFLAGS)
+
 $(LAYOUT_OBJ): settings_layout_uut.c
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(TARGET): $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ)
+$(TARGET): $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # The fixtures are container layouts, not clips: see mkfixtures.py.
@@ -221,7 +227,7 @@ check: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET)
 clean:
 	rm -f $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) \
 	      $(ANIM_WINDOW_TARGET) \
-	      $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ)
+	      $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 
 distclean: clean
 	rm -rf fixtures

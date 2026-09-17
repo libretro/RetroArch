@@ -7779,6 +7779,58 @@ static uintptr_t d3d12_gfx_load_texture(
    return d3d12_gfx_load_texture_internal(d3d12, image, filter_type);
 }
 
+/* Same-size contents into a texture d3d12_gfx_load_texture made: the
+ * upload buffer it kept is rewritten and the texture marked dirty,
+ * so the next draw that samples it records the copy - the same path
+ * the menu texture streams through. The queue is drained at the top
+ * of every frame, so the buffer is not being read when this writes
+ * it between frames. */
+static bool d3d12_gfx_update_texture_internal(uintptr_t handle,
+      const struct texture_image *image)
+{
+   d3d12_texture_t *texture = (d3d12_texture_t*)handle;
+   if (     !texture || !texture->upload_buffer
+         || texture->desc.Width  != image->width
+         || texture->desc.Height != image->height
+         || texture->desc.MipLevels > 1)
+      return false;
+   d3d12_update_texture(image->width, image->height, 0,
+         texture->desc.Format, image->pixels, texture);
+   return true;
+}
+
+#ifdef HAVE_THREADS
+static uintptr_t d3d12_texture_update_wrap(void *data)
+{
+   d3d12_texture_cmd_t *cmd = (d3d12_texture_cmd_t*)data;
+   cmd->handle = d3d12_gfx_update_texture_internal(cmd->handle,
+         cmd->image) ? cmd->handle : 0;
+   return 0;
+}
+#endif
+
+static bool d3d12_gfx_update_texture(void *video_data, uintptr_t id,
+      const struct texture_image *ti, bool threaded)
+{
+   if (!id || !ti || !ti->pixels)
+      return false;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      d3d12_texture_cmd_t cmd;
+      cmd.d3d12       = (d3d12_video_t*)video_data;
+      cmd.image       = (struct texture_image*)ti;
+      cmd.filter_type = TEXTURE_FILTER_LINEAR;
+      cmd.handle      = id;
+      video_thread_texture_handle(&cmd, d3d12_texture_update_wrap);
+      return cmd.handle != 0;
+   }
+#endif
+
+   return d3d12_gfx_update_texture_internal(id, ti);
+}
+
 static void d3d12_gfx_unload_texture(void* data,
       bool threaded, uintptr_t handle)
 {
@@ -8507,7 +8559,11 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_hw_ring_fence_signal,
    d3d12_hw_ring_fence_wait,
    d3d12_hw_ring_capture,
-   d3d12_hw_ring_present_slot
+   d3d12_hw_ring_present_slot,
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   d3d12_gfx_update_texture
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

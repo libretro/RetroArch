@@ -15,6 +15,10 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 UUT_SRC := $(REPO_ROOT)/gfx/gfx_thumbnail.c
 ANIM_PREVIEW_SRC := $(REPO_ROOT)/gfx/gfx_anim_preview.c
 UUT_OBJ := gfx_thumbnail_uut.o
+# The streaming surface the animation frames go through, real: its
+# video-thread edge (the post) is stubbed and parked like the loads.
+SURFACE_SRC := $(REPO_ROOT)/gfx/gfx_surface.c
+SURFACE_OBJ := gfx_surface_uut.o
 
 SOURCES := gfx_thumbnail_anim_test.c \
            stubs_retroarch.c \
@@ -82,7 +86,10 @@ ANIM_PREVIEW_OBJ := gfx_anim_preview_uut.o
 $(ANIM_PREVIEW_OBJ): $(ANIM_PREVIEW_SRC)
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
-$(TARGET): $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ)
+$(SURFACE_OBJ): $(SURFACE_SRC)
+	$(CC) -c -o $@ $< $(UUT_CFLAGS)
+
+$(TARGET): $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # ASan and TSan are mutually exclusive, hence separate passes.
@@ -96,6 +103,6 @@ sweep:
 	@echo "sweep clean"
 
 clean:
-	rm -f $(TARGET) $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ)
+	rm -f $(TARGET) $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 
 .PHONY: all sweep clean

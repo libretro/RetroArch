@@ -65,6 +65,7 @@
 #include <unistd.h>
 #include <boolean.h>
 #include "gfx/gfx_thumbnail.h"
+#include "gfx/gfx_surface.h"
 
 static const unsigned char anim_webp[] = {
    0x52, 0x49, 0x46, 0x46, 0xb4, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
@@ -88,7 +89,16 @@ static const unsigned char anim_webp[] = {
 int      gt_uploads;
 unsigned gt_last_crc;
 extern int gt_async_mode, gt_async_posted, gt_async_pending;
+extern int gt_can_update, gt_updates;
 void gt_async_flush(void);
+
+/* Whether the thumbnail's animation surface has a frame on its way to
+ * the video thread. */
+static int anim_inflight(const gfx_thumbnail_t *th)
+{
+   const gfx_surface_t *s = (const gfx_surface_t*)th->anim_surface;
+   return s ? s->inflight : 0;
+}
 
 void gfx_thumbnail_anim_open(gfx_thumbnail_t *t, const char *path);
 
@@ -214,18 +224,18 @@ int main(void)
          usleep(16666);
       }
       posted_before_flush = gt_async_posted;
-      if (posted_before_flush != 1 || gt_uploads != 0 || !th.anim_inflight)
+      if (posted_before_flush != 1 || gt_uploads != 0 || !anim_inflight(&th))
       {
          printf("[FAIL] async: %d posted, %d uploaded, inflight=%d before "
                 "delivery (want 1, 0, 1)\n", posted_before_flush,
-                gt_uploads, th.anim_inflight);
+                gt_uploads, anim_inflight(&th));
          bad = 1;
       }
       gt_async_flush();
-      if (gt_uploads != 1 || th.anim_inflight || th.texture != 2)
+      if (gt_uploads != 1 || anim_inflight(&th) || th.texture != 2)
       {
          printf("[FAIL] async: after delivery %d uploaded, inflight=%d, "
-                "texture=%lu\n", gt_uploads, th.anim_inflight,
+                "texture=%lu\n", gt_uploads, anim_inflight(&th),
                 (unsigned long)th.texture);
          bad = 1;
       }
@@ -243,11 +253,11 @@ int main(void)
       /* reset with a frame in flight: delivery must not touch it */
       gfx_thumbnail_reset(&th);
       gt_async_flush();
-      if (th.texture != 0 || th.anim_inflight || gt_async_pending != 0)
+      if (th.texture != 0 || anim_inflight(&th) || gt_async_pending != 0)
       {
          printf("[FAIL] async: delivery after reset installed texture=%lu "
                 "inflight=%d pending=%d\n", (unsigned long)th.texture,
-                th.anim_inflight, gt_async_pending);
+                anim_inflight(&th), gt_async_pending);
          bad = 1;
       }
       if (!bad)
@@ -255,6 +265,49 @@ int main(void)
                 "discarded after reset\n");
    }
    gt_async_mode = 0;
+
+   /* 4. the surface's two routes to the driver. With in-place updates
+    *    every frame after the first is an update of the one texture;
+    *    without them (a driver with no update path) each frame is a
+    *    replacement load and the previous texture is unloaded once
+    *    the new one is in. Either way the frames all arrive. */
+   {
+      int route;
+      for (route = 0; route < 2 && !bad; route++)
+      {
+         reset_thumb(&th);
+         gt_can_update   = route == 0;
+         gt_uploads      = 0;
+         gt_last_crc     = 0;
+         gt_updates      = 0;
+         gt_async_mode   = 1;
+         gt_async_posted = gt_async_pending = 0;
+         gfx_thumbnail_anim_open(&th, path);
+         for (i = 0; i < 240 && gt_uploads < 3; i++)
+         {
+            gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+            gt_async_flush();
+            usleep(16666);
+         }
+         if (gt_uploads < 3 || th.texture != 2
+               || (route == 0 && gt_updates < 2)
+               || (route == 1 && gt_updates != 0))
+         {
+            printf("[FAIL] route %s: %d distinct frames, %d updates, "
+                   "texture=%lu\n", route == 0 ? "update" : "reload",
+                   gt_uploads, gt_updates, (unsigned long)th.texture);
+            bad = 1;
+         }
+         else
+            printf("[ok]   route %s: %d distinct frames, %d in-place "
+                   "updates\n", route == 0 ? "update" : "reload",
+                   gt_uploads, gt_updates);
+         gfx_thumbnail_reset(&th);
+         gt_async_flush();
+         gt_async_mode = 0;
+      }
+      gt_can_update = 1;
+   }
 
    remove(path);
    printf("%s\n", bad ? "FAILED" : "PASS");

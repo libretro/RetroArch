@@ -896,10 +896,23 @@ static void video_thread_async_run(thread_video_t *thr)
    while (n)
    {
       video_thread_async_load_t *next = n->next;
-      n->handle = 0;
-      if (driver_data && poke && poke->load_texture)
-         n->handle = poke->load_texture(driver_data,
-               n->img, false, n->filter);
+      if (n->kind == VIDEO_THREAD_ASYNC_UPDATE)
+      {
+         /* The handle is the poster's texture; it comes back as the
+          * result so done() sees the same value on success, 0 when
+          * the driver refused to update it in place. */
+         if (     !driver_data || !poke || !poke->update_texture
+               || !poke->update_texture(driver_data, n->handle,
+                     (const struct texture_image*)n->img, false))
+            n->handle = 0;
+      }
+      else
+      {
+         n->handle = 0;
+         if (driver_data && poke && poke->load_texture)
+            n->handle = poke->load_texture(driver_data,
+                  n->img, false, n->filter);
+      }
       if (n->release)
          n->release(n->img);
       n->img  = NULL;
@@ -938,9 +951,13 @@ static void video_thread_async_deliver(thread_video_t *thr)
    while (n)
    {
       video_thread_async_load_t *next = n->next;
+      bool caller_owned                = n->caller_owned;
+      /* done() may repost a caller-owned node at once, which rewrites
+       * n->next: nothing of the node is read after the call. */
       if (n->done)
          n->done(n->user, n->handle);
-      free(n);
+      if (!caller_owned)
+         free(n);
       n = next;
    }
 }
@@ -954,20 +971,24 @@ static void video_thread_async_drop_all(thread_video_t *thr)
    while (n)
    {
       video_thread_async_load_t *next = n->next;
+      bool caller_owned                = n->caller_owned;
       if (n->release && n->img)
          n->release(n->img);
       if (n->done)
          n->done(n->user, 0);
-      free(n);
+      if (!caller_owned)
+         free(n);
       n = next;
    }
    n = thr->async.out_head;
    while (n)
    {
       video_thread_async_load_t *next = n->next;
+      bool caller_owned                = n->caller_owned;
       if (n->done)
          n->done(n->user, 0);
-      free(n);
+      if (!caller_owned)
+         free(n);
       n = next;
    }
    thr->async.in_head  = thr->async.in_tail  = NULL;
@@ -995,11 +1016,13 @@ bool video_thread_texture_load_async(void *img,
    if (!(n = (video_thread_async_load_t*)calloc(1, sizeof(*n))))
       return false;
 
-   n->img     = img;
-   n->user    = user;
-   n->done    = done;
-   n->release = release;
-   n->filter  = filter;
+   n->img          = img;
+   n->user         = user;
+   n->done         = done;
+   n->release      = release;
+   n->filter       = filter;
+   n->kind         = VIDEO_THREAD_ASYNC_LOAD;
+   n->caller_owned = 0;
 
    slock_lock(thr->lock);
    if (!retro_atomic_load_acquire_int(&thr->alive))
@@ -1016,6 +1039,48 @@ bool video_thread_texture_load_async(void *img,
    scond_signal(thr->cond_thread);
    slock_unlock(thr->lock);
    return true;
+}
+
+bool video_thread_async_post(video_thread_async_load_t *n)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+
+   if (!video_st->thread_wrapper_active || !n)
+      return false;
+   thr = (thread_video_t*)video_st->data;
+   if (!thr || !thr->thread)
+      return false;
+   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
+      return false;
+
+   n->next         = NULL;
+   n->caller_owned = 1;
+
+   slock_lock(thr->lock);
+   if (!retro_atomic_load_acquire_int(&thr->alive))
+   {
+      slock_unlock(thr->lock);
+      return false;
+   }
+   if (thr->async.in_tail)
+      thr->async.in_tail->next = n;
+   else
+      thr->async.in_head       = n;
+   thr->async.in_tail          = n;
+   scond_signal(thr->cond_thread);
+   slock_unlock(thr->lock);
+   return true;
+}
+
+bool video_thread_texture_can_update(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   if (!video_st->thread_wrapper_active)
+      return false;
+   thr = (thread_video_t*)video_st->data;
+   return thr && thr->poke && thr->poke->update_texture;
 }
 
 void video_thread_async_poll(void)
@@ -3302,6 +3367,16 @@ static bool thread_supports_texture_format(void *video_data,
  * thread_load_texture does. The underlying driver decides whether to marshal
  * the GPU work onto the video thread; the descriptor stays alive because
  * video_thread_texture_handle is synchronous. */
+static bool thread_update_texture(void *video_data, uintptr_t id,
+      const struct texture_image *ti, bool threaded)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+
+   if (thr && thr->driver_data && thr->poke && thr->poke->update_texture)
+      return thr->poke->update_texture(thr->driver_data, id, ti, threaded);
+   return false;
+}
+
 static uintptr_t thread_load_texture_compressed(void *video_data,
       const struct texture_compressed *tc, bool threaded,
       enum texture_filter_type filter_type)
@@ -3378,7 +3453,18 @@ static const video_poke_interface_t thread_poke = {
    thread_supports_texture_format,
    thread_load_texture_compressed,
    thread_present_last,
-   NULL  /* get_last_present_time: consumed on the video thread */
+   NULL, /* get_last_present_time: consumed on the video thread */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   thread_update_texture
 };
 
 static void video_thread_get_poke_interface(void *data,

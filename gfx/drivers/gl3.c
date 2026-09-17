@@ -5562,6 +5562,7 @@ typedef struct
 {
    gl3_t     *gl;
    void      *payload;
+   uintptr_t  handle;
 } gl3_texture_cmd_t;
 
 static uintptr_t video_texture_load_wrap_gl3_mipmap(void *data)
@@ -5641,6 +5642,58 @@ static uintptr_t gl3_load_texture(void *video_data, void *data,
 
    video_texture_load_gl3((struct texture_image*)data, filter_type, &id);
    return id;
+}
+
+/* Same-size contents into a texture gl3_load_texture made: the
+ * immutable storage stays, glTexSubImage2D rewrites level 0. Mip
+ * levels are not regenerated; streaming textures are loaded with
+ * TEXTURE_FILTER_LINEAR. */
+static void gl3_update_texture_internal(uintptr_t id,
+      const struct texture_image *ti)
+{
+   glBindTexture(GL_TEXTURE_2D, (GLuint)id);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
+         GL_RGBA, GL_UNSIGNED_BYTE, ti->pixels);
+   glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+#ifdef HAVE_THREADS
+static uintptr_t video_texture_update_wrap_gl3(void *data)
+{
+   gl3_texture_cmd_t *cmd = (gl3_texture_cmd_t*)data;
+   gl3_t             *gl  = cmd->gl;
+
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+
+   gl3_update_texture_internal(cmd->handle,
+         (const struct texture_image*)cmd->payload);
+   return 1;
+}
+#endif
+
+static bool gl3_update_texture(void *video_data, uintptr_t id,
+      const struct texture_image *ti, bool threaded)
+{
+   if (!id || !ti || !ti->pixels)
+      return false;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      gl3_texture_cmd_t cmd;
+      cmd.gl      = (gl3_t*)video_data;
+      cmd.payload = (void*)ti;
+      cmd.handle  = id;
+      video_thread_texture_handle(&cmd, video_texture_update_wrap_gl3);
+      return true;
+   }
+#endif
+
+   gl3_update_texture_internal(id, ti);
+   return true;
 }
 
 static void gl3_unload_texture(void *data, bool threaded,
@@ -6140,7 +6193,8 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_hw_ring_present_slot,
    gl3_hw_ring_context_new,
    gl3_hw_ring_context_free,
-   gl3_hw_ring_framebuffer
+   gl3_hw_ring_framebuffer,
+   gl3_update_texture
 };
 
 static void gl3_get_poke_interface(void *data,

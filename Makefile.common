@@ -330,6 +330,7 @@ OBJ += \
        gfx/video_driver.o \
        gfx/gfx_display.o \
        gfx/gfx_animation.o \
+       gfx/gfx_surface.o \
        gfx/gfx_thumbnail.o \
        gfx/gfx_anim_preview.o \
        configuration.o \

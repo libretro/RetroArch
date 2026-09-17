@@ -1137,6 +1137,7 @@ DRIVERS
 #endif
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"
+#include "../gfx/gfx_surface.c"
 #include "../gfx/gfx_thumbnail.c"
 #include "../gfx/gfx_anim_preview.c"
 

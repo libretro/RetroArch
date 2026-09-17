@@ -37,6 +37,11 @@ bool video_driver_texture_unload(uintptr_t *id)
    *id = 0;
    return true;
 }
+/* No in-place path: every animation frame is a replacement load, so
+ * the upload and unload counts the probes read keep their meaning. */
+bool video_driver_texture_can_update(void) { return false; }
+bool video_driver_texture_update(uintptr_t id, void *data)
+{ (void)id; (void)data; return false; }
 unsigned video_driver_get_disp_flags(void) { return 0; }
 void video_driver_get_video_output_size(unsigned *w, unsigned *h, char *d, size_t l)
 { *w = 1920; *h = 1080; (void)d; (void)l; }

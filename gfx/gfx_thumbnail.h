@@ -203,7 +203,10 @@ enum gfx_thumbnail_flags
    GFX_THUMB_FLAG_FADE_ACTIVE = (1 << 0),
    GFX_THUMB_FLAG_CORE_ASPECT = (1 << 1),
    GFX_THUMB_FLAG_BG_ONLY     = (1 << 2),
-   GFX_THUMB_FLAG_ANIM_ACTIVE = (1 << 3)
+   GFX_THUMB_FLAG_ANIM_ACTIVE = (1 << 3),
+   /* 'texture' is the animation surface's, which owns and unloads it;
+    * clear while it is a still the thumbnail unloads itself. */
+   GFX_THUMB_FLAG_TEX_SURFACE = (1 << 4)
 };
 
 /* Holds all runtime parameters associated with
@@ -255,6 +258,11 @@ typedef struct
     * of the two uploads next. */
    void *anim_job;
    void *anim_job2;
+   /* The streaming GPU surface (gfx_surface_t*) the animation's frames
+    * are decoded into and shown from: one persistent texture updated
+    * per frame, kept after the animation ends so its last frame stays
+    * as the still. Freed by gfx_thumbnail_reset. */
+   void *anim_surface;
    size_t anim_buf_len;    /* size of anim_buf                         */
    int64_t anim_next_us;   /* time the next frame is due (0 = at once) */
    /* Generation the in-flight request was issued under.  Only
@@ -276,13 +284,11 @@ typedef struct
                                  animation/audio held at the static
                                  frame until it completes */
    /* Asynchronous upload bookkeeping (threaded video). upload_seq is
-    * bumped by gfx_thumbnail_reset(); a completed upload whose seq no
-    * longer matches was superseded and is unloaded on delivery.
-    * anim_inflight is set while one animation frame is on its way to
-    * the video thread; further frames are skipped until it lands, so
-    * a slow present never queues frames faster than it shows them. */
+    * bumped by gfx_thumbnail_reset(); a completed still upload whose
+    * seq no longer matches was superseded and is unloaded on
+    * delivery. Animation frames need none of this: their surface is
+    * freed by the reset and swallows its own completion. */
    uint16_t upload_seq;
-   uint8_t anim_inflight;
    uint8_t anim_windowed;  /* anim_dt is a sliding window fed from the
                               decoder frontier during playback, not a
                               buffer pumped to completion: residency is
@@ -317,6 +323,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_sess       = NULL;
    t->anim_job        = NULL;
    t->anim_job2       = NULL;
+   t->anim_surface    = NULL;
    t->anim_buf_len    = 0;
    t->anim_next_us    = 0;
    t->list_id         = 0;
@@ -332,7 +339,6 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_read_pending = 0;
    t->anim_windowed   = 0;
    t->upload_seq      = 0;
-   t->anim_inflight   = 0;
 }
 
 /* Holds all configuration parameters associated

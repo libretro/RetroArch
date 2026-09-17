@@ -38,6 +38,22 @@ bool video_driver_texture_load(void *data, unsigned filter, uintptr_t *id)
 }
 bool video_driver_texture_unload(uintptr_t *id) { *id = 0; return true; }
 
+/* In-place update: the same oracle, on the same handle. gt_can_update
+ * decides whether the surface takes this path or loads a replacement
+ * per frame, so both are exercised. */
+int gt_can_update = 1;
+int gt_updates;
+bool video_driver_texture_update(uintptr_t id, void *data)
+{
+   uintptr_t same = id;
+   if (!id)
+      return false;
+   gt_updates++;
+   video_driver_texture_load(data, 0, &same);
+   return true;
+}
+bool video_driver_texture_can_update(void) { return gt_can_update != 0; }
+
 /* --- the asynchronous path ---
  * gt_async_mode makes the wrapper look active. Loads are parked here
  * and completed by gt_async_flush(), which runs the CRC oracle, the
@@ -57,6 +73,40 @@ typedef struct gt_async_node
 static gt_async_node_t *gt_async_head, *gt_async_tail;
 
 bool video_driver_thread_wrapper_active(void) { return gt_async_mode != 0; }
+bool video_thread_texture_can_update(void)
+{ return gt_async_mode != 0 && gt_can_update != 0; }
+
+/* Caller-owned nodes (the surface's) are parked the same way and run
+ * on flush by kind; they are never freed here. Layout of the node as
+ * the wrapper declares it: next, img, user, done, release, handle,
+ * filter, kind, caller_owned. */
+typedef struct gt_post_node
+{
+   struct gt_post_node *next;
+   void *img;
+   void *user;
+   void (*done)(void *user, uintptr_t handle);
+   void (*release)(void *img);
+   uintptr_t handle;
+   int filter;
+   uint8_t kind;
+   uint8_t caller_owned;
+} gt_post_node_t;
+static gt_post_node_t *gt_post_head, *gt_post_tail;
+
+bool video_thread_async_post(void *node)
+{
+   gt_post_node_t *n = (gt_post_node_t*)node;
+   if (!gt_async_mode)
+      return false;
+   n->next         = NULL;
+   n->caller_owned = 1;
+   if (gt_post_tail) gt_post_tail->next = n; else gt_post_head = n;
+   gt_post_tail = n;
+   gt_async_posted++;
+   gt_async_pending++;
+   return true;
+}
 
 bool video_driver_texture_load_async(void *data, unsigned filter,
       void (*done)(void *user, uintptr_t handle), void *user,
@@ -85,7 +135,9 @@ bool video_driver_texture_load_async(void *data, unsigned filter,
 void gt_async_flush(void)
 {
    gt_async_node_t *n = gt_async_head;
+   gt_post_node_t  *p = gt_post_head;
    gt_async_head = gt_async_tail = NULL;
+   gt_post_head  = gt_post_tail  = NULL;
    while (n)
    {
       gt_async_node_t *next = n->next;
@@ -96,6 +148,18 @@ void gt_async_flush(void)
       if (n->done)    n->done(n->user, id);
       free(n);
       n = next;
+   }
+   while (p)
+   {
+      gt_post_node_t *next = p->next;
+      uintptr_t id = 0;
+      if (p->kind == 1)
+         id = video_driver_texture_update(p->handle, p->img) ? p->handle : 0;
+      else
+         video_driver_texture_load(p->img, 0, &id);
+      gt_async_pending--;
+      if (p->done)    p->done(p->user, id);
+      p = next;
    }
 }
 unsigned video_driver_get_disp_flags(void) { return 0; }
