@@ -18,7 +18,6 @@
 #include <dynamic/dylib.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
-#include <retro_timers.h>
 #include <retro_math.h>
 
 #ifdef HAVE_CONFIG_H
@@ -2242,17 +2241,25 @@ retry:
          /* Alt-tab or a mode switch under Forced negotiation. Same
           * recovery as out-of-date: rebuild and re-acquire. */
 #endif
-         /* Throw away the old swapchain and try again. */
+         /* Throw away the old swapchain and try again - once. A
+          * swapchain that is out of date the moment it is made is a
+          * window still changing under us; the frame goes without an
+          * image, exactly as when no swapchain could be made, and the
+          * next frame's acquire builds a new one. That used to be a
+          * 10 ms sleep and another go, repeated for as long as the
+          * window kept moving, on the thread that draws. */
          vulkan_destroy_swapchain(vk);
-         /* Swapchain out of date, trying to create new one ... */
-         if (is_retrying)
-         {
-            retro_sleep(10);
-         }
-         else
-            is_retrying = true;
          vulkan_acquire_clear_fences(vk);
-         goto retry;
+         if (!is_retrying)
+         {
+            is_retrying = true;
+            goto retry;
+         }
+         vk->context.current_swapchain_index = 0;
+         vk->context.current_frame_index     = 0;
+         vulkan_acquire_wait_fences(vk);
+         vk->context.flags                  |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
+         return;
       default:
          if (err != VK_SUCCESS)
          {

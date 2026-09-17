@@ -391,7 +391,14 @@ void memdecommit(void *addr, size_t len, bool strict)
 #else
    if (strict)
       mprotect(addr, len, PROT_NONE);
+   /* MADV_DONTNEED is BSD/Linux; a libc built to a strict POSIX
+    * profile has only the posix_madvise() spelling, and one with
+    * neither keeps the pages, which is correct, just not free. */
+#if defined(MADV_DONTNEED)
    madvise(addr, len, MADV_DONTNEED);
+#elif defined(POSIX_MADV_DONTNEED)
+   posix_madvise(addr, len, POSIX_MADV_DONTNEED);
+#endif
 #endif
 #endif
 }
