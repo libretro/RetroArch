@@ -193,8 +193,11 @@ void memrelease(void *addr, size_t len);
  * the process. Windows uses a pagefile-backed file mapping, Android a
  * memfd (Bionic has no shm_open), everything else shm_open.
  *
- * Returns: an opaque handle for memshm_map / memshm_destroy, or NULL.
- * On platforms with no mman this is always NULL.
+ * Returns: a handle for memshm_map / memshm_destroy, or NULL. It is the
+ * platform's own object -- the file descriptor on POSIX, the HANDLE on
+ * Windows -- so a caller that must map the region a way memshm_map does
+ * not offer, such as MAP_FIXED into a reservation it owns, can use it.
+ * Never 0 on POSIX. On platforms with no mman this is always NULL.
  */
 void *memshm_create(const char *name, size_t len);
 

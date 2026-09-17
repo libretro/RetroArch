@@ -483,7 +483,11 @@ void memshm_unmap(void *addr, size_t len)
 #include <sys/syscall.h>
 #endif
 
-/* The handle is the file descriptor, carried in the pointer. */
+/* The handle is the file descriptor itself, carried in the pointer --
+ * as on Windows it is the HANDLE itself. A caller that maps the region
+ * some way memshm_map does not offer (MAP_FIXED into a reservation it
+ * owns) can use it directly. Descriptor 0 would read as NULL, so a
+ * region that lands there is moved off it at create. */
 #define MEMSHM_FD(h)   ((int)(intptr_t)(h))
 #define MEMSHM_H(fd)   ((void*)(intptr_t)(fd))
 
@@ -518,15 +522,22 @@ void *memshm_create(const char *name, size_t len)
       close(fd);
       return NULL;
    }
-   /* fd 0 would read as NULL; it cannot be, since 0 is stdin, but the
-    * handle is "fd + 1" so the encoding never depends on that. */
-   return MEMSHM_H(fd + 1);
+   if (fd == 0)
+   {
+      /* Only if stdin was closed; keep 0 out of the handle anyway. */
+      int moved = fcntl(fd, F_DUPFD_CLOEXEC, 1);
+      close(fd);
+      if (moved < 0)
+         return NULL;
+      fd = moved;
+   }
+   return MEMSHM_H(fd);
 }
 
 void memshm_destroy(void *handle)
 {
    if (handle)
-      close(MEMSHM_FD(handle) - 1);
+      close(MEMSHM_FD(handle));
 }
 
 void *memshm_map(void *handle, size_t offset, void *hint, size_t len, int prot)
@@ -537,7 +548,7 @@ void *memshm_map(void *handle, size_t offset, void *hint, size_t len, int prot)
    /* A hint, never MAP_FIXED: MAP_FIXED silently replaces whatever is
     * there, and a caller that wanted an address it did not get should
     * find out by comparing, not by corrupting a neighbour. */
-   p = mmap(hint, len, prot, MAP_SHARED, MEMSHM_FD(handle) - 1, (off_t)offset);
+   p = mmap(hint, len, prot, MAP_SHARED, MEMSHM_FD(handle), (off_t)offset);
    return (p == MAP_FAILED) ? NULL : p;
 }
 
