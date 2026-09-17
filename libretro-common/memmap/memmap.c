@@ -190,48 +190,36 @@ int mprotect(void *addr, size_t len, int prot)
 
 #endif
 
-#if defined(__MACH__) && defined(__arm__)
+#if defined(__MACH__) && (defined(__arm__) || defined(__aarch64__))
 #include <libkern/OSCacheControl.h>
 #endif
 
 int memsync(void *start, void *end)
 {
-#if defined(__MACH__) && defined(__arm__)
-   size_t _len = (char*)end - (char*)start;
-   sys_dcache_flush(start, _len);
-   sys_icache_invalidate(start, _len);
+   size_t len = (char*)end - (char*)start;
+#if defined(_WIN32) && !defined(_XBOX)
+   /* Coherent on x86; required on ARM64 Windows, where the JIT's writes
+    * are not seen by instruction fetch until this. */
+   return FlushInstructionCache(GetCurrentProcess(), start, len) ? 0 : -1;
+#elif defined(__MACH__) && (defined(__arm__) || defined(__aarch64__))
+   sys_icache_invalidate(start, len);
    return 0;
-#elif defined(__arm__) && !defined(__QNX__)
+#elif (defined(__arm__) || defined(__aarch64__)) && !defined(__QNX__)
    /* __builtin___clear_cache, not bare __clear_cache: the builtin is
-    * known to GCC and clang without any declaration, while the plain
-    * symbol is only declared by some toolchains' libgcc headers -- the
-    * webOS armv7 GCC rejects it as an implicit declaration. */
+    * what both GCC and clang provide, and it is the instruction cache
+    * these callers need flushed -- a JIT that just wrote code. aarch64
+    * does not define __arm__, so it is named here: before, it fell
+    * through to msync below, which flushes data and not instructions. */
    __builtin___clear_cache((char*)start, (char*)end);
    return 0;
 #elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MS_SYNC) && defined(MS_INVALIDATE)
-   /* Gate on the constants rather than on HAVE_MMAN alone: DJGPP falls
-    * into the HAVE_MMAN branch of memmap.h and ships a <sys/mman.h>
-    * that includes cleanly but declares neither msync nor the MS_
-    * flags. Without this the call compiles to an implicit declaration
-    * and then fails on the undefined constants.
-    *
-    * Emscripten is the one target named outright rather than reached
-    * through the constants: it declares msync and both MS_ flags, but
-    * that msync refuses any address outside a live mapping, and wasm
-    * has no instruction cache standing behind this call anyway, so the
-    * no-op below is the answer there. */
-   size_t _len = (char*)end - (char*)start;
-   return msync(start, _len, MS_SYNC | MS_INVALIDATE
+   return msync(start, len, MS_SYNC | MS_INVALIDATE
 #ifdef __QNX__
-         MS_CACHE_ONLY
+         | MS_CACHE_ONLY
 #endif
          );
 #else
-   /* Nothing to do, or no way to do it: the caller treats 0 as
-    * success, and on these targets there is no separate instruction
-    * cache to flush through this path. */
-   (void)start;
-   (void)end;
+   (void)start; (void)end; (void)len;
    return 0;
 #endif
 }
@@ -314,6 +302,31 @@ void *memreserve(size_t len)
    {
       void *m = mmap(NULL, r, PROT_NONE,
             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      return (m == MAP_FAILED) ? NULL : m;
+   }
+#endif
+#endif
+}
+
+/* As memreserve, at a preferred address. The hint is a hint: a taken
+ * address gets another, and the caller compares. On Windows the whole
+ * reservation is one VirtualAlloc at the hint; on mman platforms an
+ * mmap of PROT_NONE at the hint, which the kernel may move. */
+void *memreserve_at(void *hint, size_t len)
+{
+#if !defined(MEMMAP_HAVE_RESERVE)
+   (void)hint; (void)len;
+   return NULL;
+#else
+   size_t page = mempagesize();
+   size_t r    = (len + page - 1) & ~(page - 1);
+   if (!len)
+      return NULL;
+#if defined(_WIN32)
+   return VirtualAlloc(hint, r, MEM_RESERVE, PAGE_NOACCESS);
+#else
+   {
+      void *m = mmap(hint, r, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
       return (m == MAP_FAILED) ? NULL : m;
    }
 #endif

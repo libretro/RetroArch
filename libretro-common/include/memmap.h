@@ -120,6 +120,17 @@ size_t mempagesize(void);
 void *memreserve(size_t len);
 
 /**
+ * memreserve_at:
+ * @hint       : preferred base, or NULL for any.
+ * @len        : bytes; rounded up to a page.
+ *
+ * As memreserve, at a preferred address -- a fastmem window that must
+ * sit where the recompiler expects it. A hint, never forced: the
+ * platform may return another address, and the caller compares.
+ */
+void *memreserve_at(void *hint, size_t len);
+
+/**
  * memcommit:
  * @addr       : start of the sub-range, within a memreserve() result
  * @len        : bytes to make readable and writable

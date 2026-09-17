@@ -9,6 +9,13 @@
  *
  * memjit_write_begin/end are called nested; they do nothing off Apple
  * Silicon and must return, which is all that can be checked here.
+ *
+ * memreserve_at: a reservation asked for at a hint, committed, written
+ * through, and released. Whether the hint was honoured is reported, not
+ * asserted -- the platform may move it -- but the reservation must be
+ * usable wherever it landed. memsync is then called over the committed
+ * range: on this host it is msync or a no-op, on ARM the cache flush,
+ * and it must return 0.
  */
 
 #include <stdio.h>
@@ -75,6 +82,31 @@ int main(void)
    memshm_unmap(b, len);
    memshm_destroy(h);
    printf("  unmapped both, handle destroyed\n");
+
+   /* reserve at a hint */
+   {
+      void *hint = (void*)(uintptr_t)0x200000000ull;   /* 8 GiB: free on any 64-bit host */
+      size_t rlen = 16u << 20;
+      void *r = memreserve_at(hint, rlen);
+      if (!r)
+      {
+         printf("  memreserve_at: not available on this platform\n");
+      }
+      else
+      {
+         volatile uint32_t *pr = (volatile uint32_t*)r;
+         if (!memcommit(r, rlen)) { printf("  FAIL: memcommit\n"); ok = 0; }
+         else
+         {
+            pr[0] = 0x12345678u; pr[(rlen / 4) - 1] = 0x9ABCDEF0u;
+            if (pr[0] != 0x12345678u || pr[(rlen / 4) - 1] != 0x9ABCDEF0u) { printf("  FAIL: reserved+committed memory not writable\n"); ok = 0; }
+            else printf("  reserve_at: 16 MiB %s the hint, committed, written at both ends\n", r == hint ? "at" : "moved from");
+            if (memsync(r, (char*)r + rlen) != 0) { printf("  FAIL: memsync\n"); ok = 0; }
+            else printf("  memsync: returned 0 over the committed range\n");
+         }
+         memrelease(r, rlen);
+      }
+   }
 
    printf(ok ? "memshm: ok\n" : "memshm: FAILED\n");
    return ok ? 0 : 1;
