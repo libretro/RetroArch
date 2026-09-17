@@ -1356,7 +1356,7 @@ static HANDLE wdmks_pin_try(HANDLE filter, ULONG pin_id,
           * apart afterwards - a device already held by something else
           * fails with a busy status for every format, where a device
           * that simply does not do 96 kHz float fails only for that
-          * one, and the two used to produce the same single line. */
+          * one. */
          RARCH_DBG("[WDM-KS] Pin %u refused %u Hz, %u ch, %s: 0x%08lx.\n",
                (unsigned)pin_id, fmt->rate, fmt->channels,
                fmt->is_float ? "float" : "integer", (unsigned long)res);
@@ -1704,15 +1704,10 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
    w->rt_size    = (size_t)out.ActualBufferSize;
    w->rt_barrier = out.CallMemoryBarrier ? true : false;
 
-   /* The ring is the driver's and wraps where the driver wraps it.
-    *
-    * This used to trim the size down to whole frames, which sounds
-    * like the same guard the packet path applies to a transfer and is
-    * not: trimming a modulus does not shorten anybody's ring. It
-    * makes ours wrap at N-r while the hardware keeps wrapping at N,
-    * so the two diverge by r bytes every lap and never come back -
-    * which is worse than the misalignment it was meant to answer, and
-    * silent.
+   /* The ring is the driver's and wraps where the driver wraps it, so
+    * the size is used as given: trimming it to whole frames would
+    * make this side wrap at N-r while the hardware kept wrapping at
+    * N, the two diverging by r bytes every lap.
     *
     * A WaveRT driver is supposed to return a size aligned to the
     * format it accepted, so this should never fire. If one does not,
@@ -3080,20 +3075,68 @@ static void wdmks_free(void *data)
        * CancelIo asks; the wait is what makes it true, and it is done
        * for a failed packet exactly as for a live one, because a
        * failure is not evidence the kernel let go. */
+      /* One deadline for the whole reclaim: the same device answers
+       * for all four packets, and a second is long enough to say it
+       * is not going to. */
+      retro_time_t deadline = cpu_features_get_time_usec() + 1000000;
+
       CancelIo(w->stream.handle);
       for (i = 0; i < WDMKS_PACKETS; i++)
          if (w->packets[i].pending)
          {
+            /* CancelIo asks the kernel for the packet back; a
+             * device that has stopped answering never gives it. This
+             * runs on the frontend's thread at a driver switch or a
+             * content unload, so an unbounded wait here freezes the
+             * application rather than its audio. */
             DWORD moved = 0;
-            GetOverlappedResult(w->stream.handle,
-                  &w->packets[i].overlapped, &moved, TRUE);
-            w->packets[i].pending = false;
+
+            for (;;)
+            {
+               if (GetOverlappedResult(w->stream.handle,
+                        &w->packets[i].overlapped, &moved, FALSE))
+               {
+                  /* Back in our hands: safe to free below. */
+                  w->packets[i].pending = false;
+                  break;
+               }
+               /* Anything but "not yet" means it will not come back,
+                * and the deadline means we stop asking. Either way
+                * pending stays set, which is what tells the loop
+                * below to leave that packet's memory alone. */
+               if (GetLastError() != ERROR_IO_INCOMPLETE)
+                  break;
+               {
+                  /* The kernel signals this event when the transfer
+                   * completes or is cancelled, so the wait costs
+                   * nothing while it lasts. */
+                  retro_time_t left = deadline
+                     - cpu_features_get_time_usec();
+                  if (left <= 0)
+                     break;
+                  if (WaitForSingleObject(w->packets[i].overlapped.hEvent,
+                           (DWORD)(left / 1000) + 1) == WAIT_TIMEOUT)
+                     break;
+               }
+            }
          }
       wdmks_pin_close(&w->stream);
    }
 
    for (i = 0; i < WDMKS_PACKETS; i++)
    {
+      /* A packet the kernel did not give back may still be one it is
+       * reading out of and writing into, so its buffer, its OVERLAPPED
+       * and its event are left allocated. Losing a few kilobytes to a
+       * device that has stopped responding is cheaper than freeing
+       * memory that is still in use. */
+      if (w->packets[i].pending)
+      {
+         RARCH_WARN("[WDM-KS] A packet did not come back; leaking its"
+               " buffer rather than freeing memory the device may"
+               " still be using.\n");
+         continue;
+      }
       if (w->packets[i].overlapped.hEvent)
          CloseHandle(w->packets[i].overlapped.hEvent);
       free(w->packets[i].data);
