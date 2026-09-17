@@ -6368,13 +6368,42 @@ static uintptr_t d3d11_gfx_load_texture(
 static bool d3d11_gfx_update_texture_internal(d3d11_video_t *d3d11,
       uintptr_t handle, const struct texture_image *image)
 {
+   D3D11_MAPPED_SUBRESOURCE mapped;
+   D3D11_BOX box;
+   D3D11DeviceContext ctx   = d3d11->context;
    d3d11_texture_t *texture = (d3d11_texture_t*)handle;
+   HRESULT hr;
+
    if (     !d3d11 || !texture || !texture->staging
          || texture->desc.Width  != image->width
          || texture->desc.Height != image->height)
       return false;
-   d3d11_update_texture(d3d11->context, image->width, image->height, 0,
-         texture->desc.Format, image->pixels, texture);
+
+   /* The staging texture the last update copied from may still be
+    * the GPU's; a plain map would wait for it. This is a streaming
+    * frame with a newer one behind it, so it is dropped instead and
+    * the texture keeps what it shows. */
+   hr = ctx->lpVtbl->Map(ctx, (D3D11Resource)texture->staging, 0,
+         D3D11_MAP_WRITE, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
+   if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
+      return true;
+   if (FAILED(hr))
+      return false;
+
+   dxgi_copy(image->width, image->height, texture->desc.Format, 0,
+         image->pixels, texture->desc.Format, mapped.RowPitch, mapped.pData);
+   ctx->lpVtbl->Unmap(ctx, (D3D11Resource)texture->staging, 0);
+
+   box.left   = 0;
+   box.top    = 0;
+   box.front  = 0;
+   box.right  = image->width;
+   box.bottom = image->height;
+   box.back   = 1;
+   ctx->lpVtbl->CopySubresourceRegion(ctx, (D3D11Resource)texture->handle,
+         0, 0, 0, 0, (D3D11Resource)texture->staging, 0, &box);
+   if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
+      ctx->lpVtbl->GenerateMips(ctx, texture->view);
    return true;
 }
 

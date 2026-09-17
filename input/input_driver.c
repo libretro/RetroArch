@@ -3830,13 +3830,16 @@ static void input_overlay_free(input_overlay_t *ol)
    if (!ol)
       return;
 
+   /* The driver's page refers to the pack's textures: it lets go of
+    * them first, before they are unloaded - under threaded video a
+    * frame can be drawn between the two calls. */
+   if (ol->iface && ol->iface->enable)
+      ol->iface->enable(ol->iface_data, false);
+
    input_overlay_release_textures(ol);
    input_overlay_free_images(ol);
 
    input_overlay_free_overlays(ol);
-
-   if (ol->iface && ol->iface->enable)
-      ol->iface->enable(ol->iface_data, false);
 
    if (ol->path)
    {
