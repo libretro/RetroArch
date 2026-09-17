@@ -351,10 +351,19 @@ jobs:
             make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean
 
-  d3d11-harness:
-    name: Threaded-video harness on d3d11 (WARP, MSYS2 MinGW64)
+  d3d-harness:
+    name: Threaded-video harness on ${{ matrix.driver }} (WARP, MSYS2 MinGW64)
     runs-on: windows-latest
     timeout-minutes: 90
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # d3d12 runs the same lanes on the other explicit-API backend:
+        # its in-place texture update is fence-tagged against the frame
+        # that last copied from the upload buffer, which only a running
+        # driver exercises.
+        driver: [d3d11, d3d12]
 
     steps:
       - name: Checkout
@@ -377,13 +386,14 @@ jobs:
           set -eu
           ./configure --disable-qt
           grep -q '^HAVE_D3D11 = 1' config.mk
+          grep -q '^HAVE_D3D12 = 1' config.mk
           make -j"$(nproc)"
           test -x retroarch.exe
 
-      - name: Run the harness on d3d11
+      - name: Run the harness on ${{ matrix.driver }}
         shell: msys2 {0}
         run: |
           set -eu
           samples/gfx/threaded_video/build.sh
-          SAN=none DRIVER=d3d11 CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
+          SAN=none DRIVER=${{ matrix.driver }} CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean
