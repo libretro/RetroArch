@@ -6689,15 +6689,15 @@ static void metal_unload_texture(void *data,
  * non-mipmapped loads do. A mipmapped texture would need the shared
  * blit command buffer to regenerate its levels: refused, so the
  * caller loads a replacement. */
-static bool metal_update_texture(void *video_data, uintptr_t id,
+static bool metal_update_texture(void *video_data, uintptr_t handle,
       const struct texture_image *ti, bool threaded)
 {
-   if (!id || !ti || !ti->pixels)
+   if (!handle || !ti || !ti->pixels)
       return false;
 
    @autoreleasepool
    {
-      Texture *t          = (__bridge Texture *)(void *)id;
+      Texture *t          = (__bridge Texture *)(void *)handle;
       id<MTLTexture> tex  = t.texture;
       if (     !tex
             || tex.mipmapLevelCount > 1
