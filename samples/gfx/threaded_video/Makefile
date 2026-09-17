@@ -40,12 +40,14 @@ check: all
 # VULKAN_DEBUG=1 so the validation layer is loaded and reports through
 # the frontend log. Any validation error fails the run, and so does a
 # harness failure. Needs an X display; with none the target skips
-# (exit 77) rather than failing, as the vulkan_validation sample does.
+# (exit 77) rather than failing, as the vulkan_validation sample does
+# - except on Windows (OS=Windows_NT, set by the system), where there
+# is no X and the desktop is always there.
 # Under a sanitizer (SAN=thread or SAN=address, matching the tree's
 # build) the uninstrumented layer and ICD are suppressed through
 # tsan-vulkan.supp / ubsan-vulkan.supp; frontend reports still fail.
 check-vulkan: all
-	@if [ -z "$$DISPLAY" ]; then echo "check-vulkan: no DISPLAY, skipping"; exit 77; fi; \
+	@if [ -z "$$DISPLAY" ] && [ "$${OS:-}" != Windows_NT ]; then echo "check-vulkan: no DISPLAY, skipping"; exit 77; fi; \
 	 HARNESS_VIDEO_DRIVER=vulkan HARNESS_VERBOSE=1 \
 	 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
 	 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1:suppressions=ubsan-vulkan.supp \
@@ -63,7 +65,7 @@ check-vulkan: all
 # Xvfb with LIBGL_ALWAYS_SOFTWARE=1. No validation layer here: a
 # harness failure, a sanitizer report or a crash is what fails it.
 check-driver: all
-	@if [ -z "$$DISPLAY" ]; then echo "check-driver: no DISPLAY, skipping"; exit 77; fi; \
+	@if [ -z "$$DISPLAY" ] && [ "$${OS:-}" != Windows_NT ]; then echo "check-driver: no DISPLAY, skipping"; exit 77; fi; \
 	 if [ -z "$(DRIVER)" ]; then echo "check-driver: DRIVER=<video driver> required"; exit 2; fi; \
 	 HARNESS_VIDEO_DRIVER=$(DRIVER) HARNESS_VERBOSE=1 \
 	 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
