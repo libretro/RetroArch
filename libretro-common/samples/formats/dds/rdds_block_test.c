@@ -72,6 +72,21 @@ int main(void)
       for (good = 1, i = 0; i < 16; i++) good &= px(out, i, 255, 0, 0, 200);
       printf("  %s: BC3 alpha a0 everywhere over red\n", good ? "ok" : "FAIL"); ok &= good;
    }
+   /* BC3: the ramp rounds. a0 = 255, a1 = 0, index 2 = 6/7 of a0 =
+    * 218.57..., which is 219 rounded and 218 truncated; index 7 (1/7) is
+    * 36.43 -> 36 either way, so index 2 is the one that tells. Row 0
+    * indices: 2 7 0 1 -> alpha 219, 36, 255, 0. */
+   {
+      uint8_t bc3[16] = { 255, 0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                          0x00, 0xF8, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00 };
+      int good;
+      /* 3-bit indices, LSB first: px0 = 2, px1 = 7, px2 = 0, px3 = 1 ->
+       * 2 | 7 << 3 | 0 << 6 | 1 << 9 = 0x23A -> bytes 0x3A, 0x02 */
+      bc3[2] = 0x3A; bc3[3] = 0x02;
+      memset(out, 0xAA, sizeof(out)); rdds_decode_block_bc3(bc3, out, 16);
+      good = out[3] == 219 && out[7] == 36 && out[11] == 255 && out[15] == 0;
+      printf("  %s: BC3 ramp rounds: 6/7 of 255 -> %u (219 rounded, 218 truncated), 1/7 -> %u\n", good ? "ok" : "FAIL", out[3], out[7]); ok &= good;
+   }
    /* BC7: mode 6, runs and writes every pixel */
    {
       uint8_t bc7[16] = { 0x40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };  /* bit 6 set: mode 6 */
