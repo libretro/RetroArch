@@ -2724,7 +2724,8 @@ void video_driver_unset_stub_frame(void)
  * same frame. Published by video_driver_frame(). */
 retro_time_t video_driver_get_frame_time_delta_usec(void)
 {
-   return (retro_time_t)video_driver_st.frame_time_delta_us;
+   return (retro_time_t)(unsigned)retro_atomic_load_relaxed_int(
+         &video_driver_st.frame_time_delta_us);
 }
 
 /* Get original FPS (core FPS) */
@@ -6200,8 +6201,8 @@ void video_driver_frame(const void *data, unsigned width,
     * previous one to measure against. */
    if (render_frame)
    {
-      video_st->frame_time_delta_us = last_render_time
-         ? (unsigned)(new_time - last_render_time) : 0;
+      retro_atomic_store_relaxed_int(&video_st->frame_time_delta_us,
+            last_render_time ? (int)(unsigned)(new_time - last_render_time) : 0);
       last_render_time              = new_time;
    }
 
