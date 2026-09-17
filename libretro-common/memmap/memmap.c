@@ -524,11 +524,16 @@ void *memshm_create(const char *name, size_t len)
    }
    if (fd == 0)
    {
-      /* Only if stdin was closed; keep 0 out of the handle anyway. */
-      int moved = fcntl(fd, F_DUPFD_CLOEXEC, 1);
+      /* Only if stdin was closed; keep 0 out of the handle anyway.
+       * F_DUPFD_CLOEXEC is POSIX 2008 and missing from the Orbis libc
+       * and the older Apple SDKs; F_DUPFD and a separate F_SETFD are
+       * everywhere, and the gap between them cannot leak the
+       * descriptor to a child this process has not forked yet. */
+      int moved = fcntl(fd, F_DUPFD, 1);
       close(fd);
       if (moved < 0)
          return NULL;
+      fcntl(moved, F_SETFD, FD_CLOEXEC);
       fd = moved;
    }
    return MEMSHM_H(fd);

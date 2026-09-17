@@ -35,6 +35,7 @@ SRCS="ui/companion/companion_thumbs.c \
       $LC/formats/h265/rh265.c \
       $LC/formats/vp8/rvp8.c \
       $LC/formats/image/image_hdr_blit.c \
+      $LC/formats/image/image_blit_bands.c \
       $LC/memory/mem_stats.c \
       ui/companion/test/companion_thumbs_test.c \
       $LC/formats/image_texture.c \
@@ -66,7 +67,8 @@ SRCS="ui/companion/companion_thumbs.c \
       $LC/encodings/encoding_utf.c \
       $LC/time/rtime.c \
       $LC/features/features_cpu.c \
-      $LC/rthreads/rthreads.c"
+      $LC/rthreads/rthreads.c \
+      $LC/rthreads/tpool.c"
 
 # C89 honesty pass on the engine itself (no threads).
 # (_GNU_SOURCE as in the real C89 gate: strict -ansi hides POSIX types
