@@ -1091,6 +1091,27 @@ static int16_t input_joypad_axis(
 
    if (input_analog_deadzone)
    {
+#ifdef ANDROID
+      /* Square deadzone per axis, like mupen64plus-ae. */
+      {
+         float f;
+         float a;
+         (void)normal_mag;
+         f = (float)val * INV_0x7fff;
+         a = f < 0.0f ? -f : f;
+         if (a <= input_analog_deadzone)
+            return 0;
+         if (f > 0.0f)
+            f = (a - input_analog_deadzone) / (1.0f - input_analog_deadzone);
+         else
+            f = -((a - input_analog_deadzone) / (1.0f - input_analog_deadzone));
+         if (f > 1.0f)
+            f = 1.0f;
+         else if (f < -1.0f)
+            f = -1.0f;
+         val = (int16_t)(f * 0x7fff);
+      }
+#else
       /* If below deadzone, short-circuit immediately */
       if (normal_mag <= input_analog_deadzone)
          return 0;
@@ -1104,6 +1125,7 @@ static int16_t input_joypad_axis(
          if (dz_scale > 1.0f) dz_scale = 1.0f;
          val = (int16_t)((float)val * inv_mag * dz_scale);
       }
+#endif
    }
 
    if (input_analog_sensitivity != 1.0f)
@@ -3051,6 +3073,25 @@ static void input_overlay_get_analog_state(
    y_val     = *y_dist / desc->range_y;
    x_val_sat = x_val   / desc->analog_saturate_pct;
    y_val_sat = y_val   / desc->analog_saturate_pct;
+
+#ifdef ANDROID
+   /* Square 0.07 deadzone per axis, like mupen64plus-ae touch. */
+   {
+      float dz = 0.07f;
+      float ax = x_val_sat < 0.0f ? -x_val_sat : x_val_sat;
+      float ay = y_val_sat < 0.0f ? -y_val_sat : y_val_sat;
+      if (ax <= dz)
+         x_val_sat = 0.0f;
+      else
+         x_val_sat = (x_val_sat > 0.0f ? 1.0f : -1.0f)
+            * (ax - dz) / (1.0f - dz);
+      if (ay <= dz)
+         y_val_sat = 0.0f;
+      else
+         y_val_sat = (y_val_sat > 0.0f ? 1.0f : -1.0f)
+            * (ay - dz) / (1.0f - dz);
+   }
+#endif
 
    out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
    out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;

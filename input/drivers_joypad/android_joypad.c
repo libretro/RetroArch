@@ -18,8 +18,40 @@
 
 #include "../../config.def.h"
 
+#include <string.h>
+
 #include "../input_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
+
+static bool android_joypad_is_n64_usb_adapter(const char *name)
+{
+   if (!name || !*name)
+      return false;
+   if (strstr(name, "GC/N64"))
+      return true;
+   if (strstr(name, "N64 to USB"))
+      return true;
+   if (strstr(name, "raphnet"))
+      return true;
+   if (strstr(name, "Mayflash"))
+      return true;
+   if (strstr(name, "N64 USB"))
+      return true;
+   if (strstr(name, "N64 Adapter"))
+      return true;
+   return false;
+}
+
+static int16_t android_joypad_n64_usb_rescale(int16_t val)
+{
+   float f = (float)val * (1.0f / 0x7fff);
+   f /= 0.63f;
+   if (f > 1.0f)
+      f = 1.0f;
+   else if (f < -1.0f)
+      f = -1.0f;
+   return (int16_t)(f * 0x7fff);
+}
 
 static const char *android_joypad_name(unsigned pad)
 {
@@ -81,13 +113,23 @@ static int16_t android_joypad_axis_state(
    {
       int16_t val = android_app->analog_state[port][AXIS_NEG_GET(joyaxis)];
       if (val < 0)
+      {
+         if (android_joypad_is_n64_usb_adapter(
+                  input_config_get_device_name(port)))
+            return android_joypad_n64_usb_rescale(val);
          return val;
+      }
    }
    else if (AXIS_POS_GET(joyaxis) < MAX_AXIS)
    {
       int16_t val = android_app->analog_state[port][AXIS_POS_GET(joyaxis)];
       if (val > 0)
+      {
+         if (android_joypad_is_n64_usb_adapter(
+                  input_config_get_device_name(port)))
+            return android_joypad_n64_usb_rescale(val);
          return val;
+      }
    }
    return 0;
 }
