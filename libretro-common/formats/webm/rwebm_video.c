@@ -60,6 +60,8 @@ struct rwebm_video_stream
    rvp9_dec    *vp9;
 #endif
    uint32_t    *frame;      /* width * height ABGR words              */
+   uint32_t    *out;        /* caller's frame to blit into instead of
+                               'frame'; NULL for the stream's own    */
    int64_t     *ts;         /* pre-scanned packet timestamps (ns)     */
    int          ts_count;   /* entries stored in ts                   */
    int          num_frames; /* total video packets in the stream      */
@@ -652,6 +654,12 @@ void rwebm_video_stream_set_argb(rwebm_video_stream_t *s, int argb)
       s->emit_argb = argb ? 1 : 0;
 }
 
+void rwebm_video_stream_set_output(rwebm_video_stream_t *s, uint32_t *out)
+{
+   if (s)
+      s->out = out;
+}
+
 void rwebm_video_stream_set_avail(rwebm_video_stream_t *s, size_t avail)
 {
    if (s)
@@ -733,12 +741,14 @@ static int rwebm_video_duration_ms(const rwebm_video_stream_t *s, int idx)
    return (int)(t1 / 1000000 - t0 / 1000000);
 }
 
-/* Decode one demuxed packet into s->frame. Returns 1 when a picture was
+/* Decode one demuxed packet into the output frame (the caller's when one
+ * was set, else s->frame). Returns 1 when a picture was
  * produced, 0 when the packet decoded but is not displayed, -1 on a
  * decode error. */
 static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
       const rwebm_packet *pkt)
 {
+   uint32_t *dst = s->out ? s->out : s->frame;
    /* A decoder can be absent if the re-open in rewind hit OOM. */
    if (!s->vp8
 #ifdef HAVE_RVP9
@@ -775,7 +785,7 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
             {
                /* Native 10-bit thumbnail: packed XRGB2101010, SDR-encoded
                 * at 10-bit precision (same colour as the 8-bit path). */
-               rwebm_video_blit_i420_10bit(s->frame, s->width, w, h,
+               rwebm_video_blit_i420_10bit(dst, s->width, w, h,
                      (const uint16_t*)fb->y, s->vp9->ys,
                      (const uint16_t*)fb->u, (const uint16_t*)fb->v,
                      s->vp9->uvs,
@@ -786,7 +796,7 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
                s->is10 = 1;
             }
             else
-               rwebm_video_blit_i420_hbd(s->frame, s->width, w, h,
+               rwebm_video_blit_i420_hbd(dst, s->width, w, h,
                      (const uint16_t*)fb->y, s->vp9->ys,
                      (const uint16_t*)fb->u, (const uint16_t*)fb->v,
                      s->vp9->uvs,
@@ -798,7 +808,7 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
          else
          {
             const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
-            rwebm_video_blit_i420(s->frame, s->width, w, h,
+            rwebm_video_blit_i420(dst, s->width, w, h,
                   fb->y, s->vp9->ys, fb->u, fb->v, s->vp9->uvs,
                   ct ? ct->matrix_coefficients : 0, s->emit_argb);
          }
@@ -828,7 +838,7 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
          h = (int)s->height;
       {
          const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
-         rwebm_video_blit_i420(s->frame, s->width,
+         rwebm_video_blit_i420(dst, s->width,
                (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
                ct ? ct->matrix_coefficients : 0, s->emit_argb);
       }
@@ -881,7 +891,7 @@ const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *s,
 
    while ((r = rwebm_video_stream_step(s, duration_ms)) == 0)
       ;                   /* non-shown frame: keep going      */
-   return (r == 1) ? s->frame : NULL;
+   return (r == 1) ? (s->out ? s->out : s->frame) : NULL;
 }
 
 void rwebm_video_stream_rewind(rwebm_video_stream_t *s)

@@ -990,6 +990,34 @@ void image_transfer_anim_stream_complete_scan(void *stream,
    }
 }
 
+bool image_transfer_anim_stream_set_output(void *stream,
+      enum image_type_enum type, uint32_t *out)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         rwebm_video_stream_set_output((rwebm_video_stream_t*)stream, out);
+         return true;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         rmp4_video_stream_set_output((rmp4_video_stream_t*)stream, out);
+         return true;
+#else
+         break;
+#endif
+      default:
+         /* APNG and WEBP compose each frame on a persistent canvas
+          * that the next frame is built from: their frames come out
+          * of the canvas. */
+         break;
+   }
+   return false;
+}
+
 bool image_transfer_anim_stream_set_argb(void *stream,
       enum image_type_enum type, int argb)
 {

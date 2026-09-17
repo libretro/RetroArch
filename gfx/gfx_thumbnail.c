@@ -448,6 +448,11 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
     * already emits, since this is asked per frame). */
    bool native_order         = image_transfer_anim_stream_set_argb(
          job->stream, type, job->use_rgba ? 0 : 1);
+   /* The video streams blit straight into the job's slot, which is
+    * this job's until the surface releases it; APNG and WEBP hand
+    * out their canvas and the copy below decouples it. */
+   bool direct               = image_transfer_anim_stream_set_output(
+         job->stream, type, job->frame);
 
    /* The window feed runs HERE, on the thread that decodes, not on
     * the poll.  It reads the demuxer's cursor and stores its bound,
@@ -476,7 +481,12 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
    }
 
    n = (size_t)job->width * job->height;
-   if (job->use_rgba || native_order)
+   if (direct && frame == job->frame)
+   {
+      /* Decoded in place; every video stream honours the order request
+       * too, so nothing is left to do. */
+   }
+   else if (job->use_rgba || native_order)
       /* Frame is already in the upload order (RGBA requested, or the
        * stream honoured the ARGB request); the copy just decouples the
        * upload buffer from the decoder's canvas. */
@@ -1166,6 +1176,8 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    int duration_ms                    = 0;
    bool sync_use_rgba                 = false;
    bool sync_native_order             = false;
+   bool sync_direct                   = false;
+   gfx_surface_t *sync_surface        = NULL;
    enum image_type_enum type;
 
    if (   !thumbnail
@@ -1443,6 +1455,25 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    sync_native_order = image_transfer_anim_stream_set_argb(
          thumbnail->anim, type, sync_use_rgba ? 0 : 1);
 
+   /* The surface's slot is the decode target where the stream can
+    * take one (the video streams), so the frame is uploaded from
+    * where it was decoded; when the slot is still on its way to the
+    * video thread from the last poll, nothing is decoded until it is
+    * back. APNG and WEBP hand out their canvas instead. */
+   {
+      unsigned anim_w = 0, anim_h = 0;
+      int num_frames  = 0, loop_count = 0;
+      image_transfer_anim_stream_get_info(thumbnail->anim, type,
+            &anim_w, &anim_h, &num_frames, &loop_count);
+      if (!(sync_surface = gfx_thumbnail_anim_surface(thumbnail,
+                  anim_w, anim_h, 1)))
+         return;
+      if (sync_surface->inflight)
+         return;
+      sync_direct = image_transfer_anim_stream_set_output(thumbnail->anim,
+            type, sync_surface->slots[0]);
+   }
+
    /* Keep the window straddling the decoder (see the worker's step
     * for why this sits next to the decode).  An I/O failure while
     * extending means the decoder would hit the wall and loop early:
@@ -1477,41 +1508,32 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       }
    }
 
-   /* Upload the frame from the decoder's canvas: direct video takes
-    * it from there, threaded video copies it into the surface's slot
-    * first (the canvas is rewritten by the next decode). Every stream
-    * type honours the order request above, so the swizzle below is a
-    * fallback no current stream reaches; it stays for one that cannot
-    * honour the request, and writes the slot directly. */
+   /* Upload the frame: from the slot it was decoded into, or from the
+    * decoder's canvas (direct video takes it from there, threaded
+    * video copies it into the slot first, since the canvas is
+    * rewritten by the next decode). Every stream type honours the
+    * order request above, so the swizzle below is a fallback no
+    * current stream reaches; it stays for one that cannot honour the
+    * request, and writes the slot directly. */
    {
-      unsigned anim_w               = 0;
-      unsigned anim_h               = 0;
-      int num_frames                = 0;
-      int loop_count                = 0;
-      bool use_rgba                 = sync_use_rgba;
-      gfx_surface_t *s;
+      gfx_surface_t *s = sync_surface;
       enum gfx_surface_submit_result res;
 
-      image_transfer_anim_stream_get_info(thumbnail->anim, type,
-            &anim_w, &anim_h, &num_frames, &loop_count);
-      if (!(s = gfx_thumbnail_anim_surface(thumbnail, anim_w, anim_h, 1)))
-         return;
-
-      if (!use_rgba && !sync_native_order)
+      if (sync_direct && frame == s->slots[0])
+         res = gfx_surface_submit(s, 0, sync_use_rgba);
+      else if (!sync_use_rgba && !sync_native_order)
       {
-         size_t i, n = (size_t)anim_w * anim_h;
-         if (s->inflight)
-            return; /* the slot is the video thread's; next poll */
+         size_t i, n = (size_t)s->width * s->height;
          for (i = 0; i < n; i++)
          {
             uint32_t px    = frame[i];
             s->slots[0][i] = (px & 0xFF00FF00u)
                   | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
          }
-         res = gfx_surface_submit(s, 0, use_rgba);
+         res = gfx_surface_submit(s, 0, sync_use_rgba);
       }
       else
-         res = gfx_surface_submit_pixels(s, frame, use_rgba);
+         res = gfx_surface_submit_pixels(s, frame, sync_use_rgba);
 
       if (res == GFX_SURFACE_SUBMIT_BUSY)
          return;

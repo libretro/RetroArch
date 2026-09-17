@@ -307,6 +307,18 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
 bool image_transfer_anim_stream_set_argb(void *stream,
       enum image_type_enum type, int argb);
 
+/* Ask the stream to decode its frames straight into @out (width *
+ * height words of the caller's), which image_transfer_anim_stream_next
+ * then returns, instead of into a frame of its own that the caller
+ * would copy from. NULL restores the stream's own frame. Returns true
+ * when the stream type does so (WEBM, MP4: the blit out of the
+ * decoder's planes has one destination either way); false for APNG
+ * and WEBP, whose frames are composed on a persistent canvas, where
+ * the caller keeps copying. @out must stay valid until the next call
+ * that decodes has returned. */
+bool image_transfer_anim_stream_set_output(void *stream,
+      enum image_type_enum type, uint32_t *out);
+
 /* For decoding a still from a file whose read is still in progress:
  * declare how many leading bytes of the buffer are valid.  Monotonic.
  * Honoured by PNG, JPEG, WEBM and MP4, which report the wall two

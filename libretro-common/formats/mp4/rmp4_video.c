@@ -72,6 +72,8 @@ struct rmp4_video_stream
    rh264_video *h264;
    rh265_video *h265;
    uint32_t    *frame;      /* width * height ABGR words              */
+   uint32_t    *out;        /* caller's frame to blit into instead of
+                               'frame'; NULL for the stream's own    */
    int64_t     *ts;         /* pre-scanned packet timestamps (ns)     */
    int          ts_count;   /* entries stored in ts                   */
    int          num_frames; /* total video packets in the stream      */
@@ -1008,6 +1010,12 @@ int rmp4_video_stream_skip(rmp4_video_stream_t *s, int *duration_ms)
    return r;
 }
 
+void rmp4_video_stream_set_output(rmp4_video_stream_t *s, uint32_t *out)
+{
+   if (s)
+      s->out = out;
+}
+
 void rmp4_video_stream_set_avail(rmp4_video_stream_t *s, size_t avail)
 {
    if (s)
@@ -1031,8 +1039,10 @@ int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s)
 
 const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
 {
+   uint32_t *dst;
    if (!s)
       return NULL;
+   dst = s->out ? s->out : s->frame;
    switch (s->rndr_kind)
    {
       case 1:  /* VP8: planes valid until the next decode call */
@@ -1048,10 +1058,10 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
             w = (int)s->width;
          if ((unsigned)h > s->height)
             h = (int)s->height;
-         rmp4_video_blit_i420(s->frame, s->width,
+         rmp4_video_blit_i420(dst, s->width,
                (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
                s->emit_argb);
-         return s->frame;
+         return dst;
       }
 #ifdef HAVE_RVP9
       case 2:  /* VP9: the recorded show buffer */
@@ -1069,24 +1079,24 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
              * blit and mis-decoded. */
             if (s->want10)
             {
-               rwebm_video_blit_i420_10bit(s->frame, s->width, w, h,
+               rwebm_video_blit_i420_10bit(dst, s->width, w, h,
                      (const uint16_t*)fb->y, s->vp9->ys,
                      (const uint16_t*)fb->u, (const uint16_t*)fb->v,
                      s->vp9->uvs, s->matrix, s->transfer, s->range, 0);
                s->is10 = 1;
             }
             else
-               rwebm_video_blit_i420_hbd(s->frame, s->width, w, h,
+               rwebm_video_blit_i420_hbd(dst, s->width, w, h,
                      (const uint16_t*)fb->y, s->vp9->ys,
                      (const uint16_t*)fb->u, (const uint16_t*)fb->v,
                      s->vp9->uvs, s->matrix, s->transfer, s->range, 0,
                      s->emit_argb ? 0 : 1);
          }
          else
-            rmp4_video_blit_i420(s->frame, s->width, w, h,
+            rmp4_video_blit_i420(dst, s->width, w, h,
                   fb->y, s->vp9->ys, fb->u, fb->v, s->vp9->uvs, s->matrix,
                   s->emit_argb);
-         return s->frame;
+         return dst;
       }
 #endif
       case 3:  /* H.264: planes valid until the next decode or drain */
@@ -1113,7 +1123,7 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
             {
                if (s->want10)
                {
-                  rwebm_video_blit_i420_10bit(s->frame, s->width,
+                  rwebm_video_blit_i420_10bit(dst, s->width,
                         (unsigned)w, (unsigned)h,
                         (const uint16_t*)y, ys,
                         (const uint16_t*)u, (const uint16_t*)v, uvs,
@@ -1121,7 +1131,7 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
                   s->is10 = 1;
                }
                else
-                  rwebm_video_blit_i420_hbd(s->frame, s->width,
+                  rwebm_video_blit_i420_hbd(dst, s->width,
                         (unsigned)w, (unsigned)h,
                         (const uint16_t*)y, ys,
                         (const uint16_t*)u, (const uint16_t*)v, uvs,
@@ -1129,23 +1139,23 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
                         s->emit_argb ? 0 : 1);
             }
             else
-               rmp4_video_blit_yuv_hbd(s->frame, s->width,
+               rmp4_video_blit_yuv_hbd(dst, s->width,
                      (unsigned)w, (unsigned)h,
                      (const uint16_t*)y, ys,
                      (const uint16_t*)u, (const uint16_t*)v, uvs,
                      (cw < w) ? 1 : 0, (ch < h) ? 1 : 0, bd, s->matrix,
                      s->emit_argb);
-            return s->frame;
+            return dst;
          }
          if (cw >= w)   /* 4:4:4: luma-sized chroma */
-            rmp4_video_blit_yuv444(s->frame, s->width,
+            rmp4_video_blit_yuv444(dst, s->width,
                   (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
                   s->emit_argb);
          else
-            rmp4_video_blit_yuv(s->frame, s->width,
+            rmp4_video_blit_yuv(dst, s->width,
                   (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
                   (ch < h) ? 1 : 0, s->emit_argb);
-         return s->frame;
+         return dst;
       }
       case 4:  /* H.265: planes valid until the next decode or drain */
       {
@@ -1167,7 +1177,7 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
              * high-bit-depth blits exactly as the VP9 arm does. */
             if (s->want10)
             {
-               rwebm_video_blit_i420_10bit(s->frame, s->width,
+               rwebm_video_blit_i420_10bit(dst, s->width,
                      (unsigned)w, (unsigned)h,
                      (const uint16_t*)y, ys,
                      (const uint16_t*)u, (const uint16_t*)v, uvs,
@@ -1175,21 +1185,21 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
                s->is10 = 1;
             }
             else
-               rwebm_video_blit_i420_hbd(s->frame, s->width,
+               rwebm_video_blit_i420_hbd(dst, s->width,
                      (unsigned)w, (unsigned)h,
                      (const uint16_t*)y, ys,
                      (const uint16_t*)u, (const uint16_t*)v, uvs,
                      s->matrix, s->transfer, s->range, 0,
                      s->emit_argb ? 0 : 1);
-            return s->frame;
+            return dst;
          }
          /* rh265 is 4:2:0 only, so the chroma-vertical-shift argument
           * the H.264 arm derives is always 1 here; keep the same
           * derivation anyway so the two arms stay textually parallel. */
-         rmp4_video_blit_yuv(s->frame, s->width,
+         rmp4_video_blit_yuv(dst, s->width,
                (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
                (ch < h) ? 1 : 0, s->emit_argb);
-         return s->frame;
+         return dst;
       }
       default:
          break;

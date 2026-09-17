@@ -127,6 +127,15 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *stream,
  * the default order. */
 void rmp4_video_stream_set_argb(rmp4_video_stream_t *stream, int argb);
 
+/* Blit decoded frames into @out - width * height words, the caller's,
+ * which then comes back from rmp4_video_stream_next and _render -
+ * instead of the stream's own frame, so a caller uploading from its
+ * own buffer needs no copy out of the stream. NULL restores the
+ * stream's frame. Takes effect from the next rendered frame; @out must
+ * stay valid until the next call that renders has returned. */
+void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
+      uint32_t *out);
+
 /* Advance past the next displayed frame without colour-converting it:
  * the picture stays inside the decoder and no work is spent on its
  * pixels.  Returns 1 when a frame was consumed (its display duration
