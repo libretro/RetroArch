@@ -31,6 +31,8 @@ name: CI Linux Vulkan/GL [idle waits + driver harness]
 #    frame thread and a driver's frame (the shader chains'
 #    FrameTimeDelta was one) only shows up here. The layer and the
 #    ICD are not instrumented and are suppressed; frontend races fail.
+#    An address,undefined build of the same runs beside it, and the
+#    context-only vulkan_validation sample runs on its own.
 #
 # 4. GL harness: the same lanes on the gl and glcore drivers over
 #    llvmpipe (LIBGL_ALWAYS_SOFTWARE=1), release and TSan. A GL
@@ -135,6 +137,102 @@ jobs:
           SAN=none VK_DEBUG=1 CYCLES=2 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
+  vulkan-validation-sample:
+    name: vulkan_validation sample (lavapipe, validation layer)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 8
+        run: |
+          pkgs="build-essential libx11-dev libx11-xcb-dev libxcb1-dev xvfb x11-utils libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build and run
+        shell: bash
+        run: |
+          set -eu
+          # The context-only sample: vulkan_common.c against the real
+          # loader, brought up and torn down under the validation
+          # layer, and every memory type it advertises selected. It
+          # exits 77 with no display or no device, and that is a pass.
+          Xvfb :99 -screen 0 640x480x24 &
+          for i in $(seq 1 15); do
+            if DISPLAY=:99 xdpyinfo >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          export DISPLAY=:99
+          make -C samples/gfx/vulkan_validation
+          rc=0
+          DISPLAY=:99 VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json \
+            samples/gfx/vulkan_validation/vulkan_validation_test || rc=$?
+          make -C samples/gfx/vulkan_validation clean
+          if [ "$rc" = 77 ]; then echo "skipped: no device"; exit 0; fi
+          exit $rc
+
+  vulkan-asan-harness:
+    name: Threaded-video harness on Vulkan under ASan+UBSan (lavapipe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 8
+        run: |
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure
+        run: |
+          ./configure --disable-qt
+          grep -q '^HAVE_VULKAN = 1' config.mk
+
+      - name: Build with DEBUG=1, VULKAN_DEBUG=1 and -fsanitize=address,undefined
+        run: |
+          make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=address,undefined DEBUG=1 VULKAN_DEBUG=1
+          test -x retroarch
+
+      - name: Run the harness on Vulkan under ASan+UBSan
+        shell: bash
+        run: |
+          set -eu
+          Xvfb :99 -screen 0 640x480x24 &
+          for i in $(seq 1 15); do
+            if DISPLAY=:99 xdpyinfo >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          export DISPLAY=:99
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
+          SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          make -C samples/gfx/threaded_video clean
+
   vulkan-tsan-harness:
     name: Threaded-video harness on Vulkan under TSan (lavapipe)
     runs-on: ubuntu-latest
@@ -192,7 +290,7 @@ jobs:
       fail-fast: false
       matrix:
         driver: [gl, glcore]
-        san: [none, thread]
+        san: [none, address, thread]
 
     steps:
       - name: Install dependencies
@@ -220,11 +318,11 @@ jobs:
 
       - name: Build
         run: |
-          if [ "${{ matrix.san }}" = thread ]; then
-            make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=thread DEBUG=1
-          else
-            make -j$(getconf _NPROCESSORS_ONLN)
-          fi
+          case "${{ matrix.san }}" in
+            thread)  make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=thread DEBUG=1 ;;
+            address) make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=address,undefined DEBUG=1 ;;
+            *)       make -j$(getconf _NPROCESSORS_ONLN) ;;
+          esac
           test -x retroarch
 
       - name: Run the harness on ${{ matrix.driver }}
