@@ -5832,10 +5832,10 @@ static void vulkan_set_image(void *handle,
 
       /* Allocate one extra in case we need to use WSI acquire semaphores. */
       VkPipelineStageFlags *stage_flags = (VkPipelineStageFlags*)realloc(vk->hw.wait_dst_stages,
-            sizeof(VkPipelineStageFlags) * (vk->hw.num_semaphores + 1));
+            sizeof(VkPipelineStageFlags) * (vk->hw.num_semaphores + 1 + VULKAN_MAX_SWAPCHAIN_IMAGES));
 
       VkSemaphore *new_semaphores = (VkSemaphore*)realloc(vk->hw.semaphores,
-            sizeof(VkSemaphore) * (vk->hw.num_semaphores + 1));
+            sizeof(VkSemaphore) * (vk->hw.num_semaphores + 1 + VULKAN_MAX_SWAPCHAIN_IMAGES));
 
       /* realloc() returns NULL on failure and leaves the original
        * block allocated, so storing the result unconditionally both
@@ -7222,6 +7222,8 @@ static void vulkan_await_frame_before_present(vk_t *vk, unsigned frame_index)
 
 static bool vulkan_present_retained_once(vk_t *vk)
 {
+   VkSemaphore wait_sems[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   VkPipelineStageFlags wait_stages[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
    VkSubmitInfo submit_info;
    VkCommandBufferBeginInfo begin_info;
    VkImageCopy region;
@@ -7295,18 +7297,11 @@ static bool vulkan_present_retained_once(vk_t *vk)
       submit_info.pSignalSemaphores    = &vk->context->swapchain_semaphores[swapchain_index];
    }
 
-   if (vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE)
-   {
-      static const VkPipelineStageFlags wait_stage        =
-         VK_PIPELINE_STAGE_TRANSFER_BIT;
-
-      vk->context->swapchain_wait_semaphores[frame_index] =
-         vk->context->swapchain_acquire_semaphore;
-      vk->context->swapchain_acquire_semaphore            = VK_NULL_HANDLE;
-      submit_info.waitSemaphoreCount                      = 1;
-      submit_info.pWaitSemaphores                         = &vk->context->swapchain_wait_semaphores[frame_index];
-      submit_info.pWaitDstStageMask                       = &wait_stage;
-   }
+   submit_info.waitSemaphoreCount = vulkan_context_take_acquire_waits(
+         vk->context, frame_index, wait_sems, wait_stages,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
+   submit_info.pWaitSemaphores    = wait_sems;
+   submit_info.pWaitDstStageMask  = wait_stages;
 
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
@@ -7450,6 +7445,8 @@ static retro_time_t vulkan_get_last_present_time(void *data)
 
 static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
 {
+   VkSemaphore wait_sems[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   VkPipelineStageFlags wait_stages[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
    VkSubmitInfo submit_info;
    VkCommandBufferBeginInfo begin_info;
    const VkImageSubresourceRange range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
@@ -7504,19 +7501,11 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
       submit_info.pSignalSemaphores    = &vk->context->swapchain_semaphores[swapchain_index];
    }
 
-   if (     (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
-         && (vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE))
-   {
-      static const VkPipelineStageFlags wait_stage        =
-         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-      vk->context->swapchain_wait_semaphores[frame_index] =
-         vk->context->swapchain_acquire_semaphore;
-      vk->context->swapchain_acquire_semaphore            = VK_NULL_HANDLE;
-      submit_info.waitSemaphoreCount                      = 1;
-      submit_info.pWaitSemaphores                         = &vk->context->swapchain_wait_semaphores[frame_index];
-      submit_info.pWaitDstStageMask                       = &wait_stage;
-   }
+   submit_info.waitSemaphoreCount = vulkan_context_take_acquire_waits(
+         vk->context, frame_index, wait_sems, wait_stages,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+   submit_info.pWaitSemaphores    = wait_sems;
+   submit_info.pWaitDstStageMask  = wait_stages;
 
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
@@ -7982,6 +7971,8 @@ static bool vulkan_frame(void *data, const void *frame,
       uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   VkSemaphore wait_sems[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   VkPipelineStageFlags wait_stages[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
    int j, k;
    VkSubmitInfo submit_info;
    VkClearValue clear_color;
@@ -8886,32 +8877,19 @@ static bool vulkan_frame(void *data, const void *frame,
       /* Consume the semaphores. */
       vk->flags                     &= ~VK_FLAG_HW_VALID_SEMAPHORE;
 
-      /* We allocated space for this. */
-      if (    (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
-           && (vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE))
-      {
-         vk->context->swapchain_wait_semaphores[frame_index]    =
-            vk->context->swapchain_acquire_semaphore;
-         vk->context->swapchain_acquire_semaphore               = VK_NULL_HANDLE;
-
-         vk->hw.semaphores[submit_info.waitSemaphoreCount]      = vk->context->swapchain_wait_semaphores[frame_index];
-         vk->hw.wait_dst_stages[submit_info.waitSemaphoreCount] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-         submit_info.waitSemaphoreCount++;
-      }
+      /* We allocated space for these. */
+      submit_info.waitSemaphoreCount += vulkan_context_take_acquire_waits(
+            vk->context, frame_index,
+            vk->hw.semaphores      + submit_info.waitSemaphoreCount,
+            vk->hw.wait_dst_stages + submit_info.waitSemaphoreCount,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
    }
-   else if ((vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
-         && (vk->context->swapchain_acquire_semaphore != VK_NULL_HANDLE))
+   else if ((submit_info.waitSemaphoreCount = vulkan_context_take_acquire_waits(
+         vk->context, frame_index, wait_sems, wait_stages,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)))
    {
-      static const VkPipelineStageFlags wait_stage        =
-         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-      vk->context->swapchain_wait_semaphores[frame_index] =
-         vk->context->swapchain_acquire_semaphore;
-      vk->context->swapchain_acquire_semaphore            = VK_NULL_HANDLE;
-
-      submit_info.waitSemaphoreCount = 1;
-      submit_info.pWaitSemaphores    = &vk->context->swapchain_wait_semaphores[frame_index];
-      submit_info.pWaitDstStageMask  = &wait_stage;
+      submit_info.pWaitSemaphores    = wait_sems;
+      submit_info.pWaitDstStageMask  = wait_stages;
    }
    else
    {

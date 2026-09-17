@@ -1553,6 +1553,7 @@ end:
 static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned i;
+   unsigned j;
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    /* Exclusive mode is bound to the swapchain; release it first. */
@@ -1583,10 +1584,21 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
       if (vk->context.swapchain_recycled_semaphores[i] != VK_NULL_HANDLE)
          vkDestroySemaphore(vk->context.device,
                vk->context.swapchain_recycled_semaphores[i], NULL);
-      if (vk->context.swapchain_wait_semaphores[i] != VK_NULL_HANDLE)
+      for (j = 0; j < vk->context.swapchain_num_wait_semaphores[i]; j++)
+         if (vk->context.swapchain_wait_semaphores[i][j] != VK_NULL_HANDLE)
+            vkDestroySemaphore(vk->context.device,
+                  vk->context.swapchain_wait_semaphores[i][j], NULL);
+      vk->context.swapchain_num_wait_semaphores[i] = 0;
+      if (vk->context.swapchain_stale_acquire_semaphores[i] != VK_NULL_HANDLE)
          vkDestroySemaphore(vk->context.device,
-               vk->context.swapchain_wait_semaphores[i], NULL);
+               vk->context.swapchain_stale_acquire_semaphores[i], NULL);
+      vk->context.swapchain_stale_acquire_semaphores[i] = VK_NULL_HANDLE;
    }
+   for (; i < 2 * VULKAN_MAX_SWAPCHAIN_IMAGES + 1; i++)
+      if (vk->context.swapchain_recycled_semaphores[i] != VK_NULL_HANDLE)
+         vkDestroySemaphore(vk->context.device,
+               vk->context.swapchain_recycled_semaphores[i], NULL);
+   vk->context.num_stale_acquire_semaphores = 0;
 
    if (vk->context.swapchain_acquire_semaphore != VK_NULL_HANDLE)
       vkDestroySemaphore(vk->context.device,
@@ -1634,14 +1646,34 @@ static void vulkan_acquire_clear_fences(gfx_ctx_vulkan_data_t *vk)
       }
       vk->context.swapchain_fences_signalled[i] = false;
 
-      if (vk->context.swapchain_wait_semaphores[i])
+      /* The device was drained before this (swapchain teardown), so
+       * every waited semaphore is consumed and goes back to the
+       * pool - the stale ones too. */
       {
          struct vulkan_context *ctx = &vk->context;
-         VkSemaphore sem            = vk->context.swapchain_wait_semaphores[i];
-         assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
-         ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
+         unsigned j;
+         for (j = 0; j < ctx->swapchain_num_wait_semaphores[i]; j++)
+         {
+            VkSemaphore sem = ctx->swapchain_wait_semaphores[i][j];
+            if (sem == VK_NULL_HANDLE)
+               continue;
+            assert(ctx->num_recycled_acquire_semaphores < 2 * VULKAN_MAX_SWAPCHAIN_IMAGES + 1);
+            ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
+            ctx->swapchain_wait_semaphores[i][j] = VK_NULL_HANDLE;
+         }
+         ctx->swapchain_num_wait_semaphores[i] = 0;
       }
-      vk->context.swapchain_wait_semaphores[i] = VK_NULL_HANDLE;
+   }
+   {
+      struct vulkan_context *ctx = &vk->context;
+      for (i = 0; i < ctx->num_stale_acquire_semaphores; i++)
+      {
+         assert(ctx->num_recycled_acquire_semaphores < 2 * VULKAN_MAX_SWAPCHAIN_IMAGES + 1);
+         ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] =
+            ctx->swapchain_stale_acquire_semaphores[i];
+         ctx->swapchain_stale_acquire_semaphores[i] = VK_NULL_HANDLE;
+      }
+      ctx->num_stale_acquire_semaphores = 0;
    }
 
    vk->context.current_frame_index = 0;
@@ -1696,14 +1728,51 @@ static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
    }
    vk->context.swapchain_fences_signalled[index] = false;
 
-   if (vk->context.swapchain_wait_semaphores[index] != VK_NULL_HANDLE)
+   /* The fence covered the submission that waited on these, so
+    * their signals are consumed and they can be acquired with. */
    {
       struct vulkan_context *ctx = &vk->context;
-      VkSemaphore sem            = vk->context.swapchain_wait_semaphores[index];
-      assert(ctx->num_recycled_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES);
-      ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
+      unsigned j;
+      for (j = 0; j < ctx->swapchain_num_wait_semaphores[index]; j++)
+      {
+         VkSemaphore sem = ctx->swapchain_wait_semaphores[index][j];
+         if (sem == VK_NULL_HANDLE)
+            continue;
+         assert(ctx->num_recycled_acquire_semaphores < 2 * VULKAN_MAX_SWAPCHAIN_IMAGES + 1);
+         ctx->swapchain_recycled_semaphores[ctx->num_recycled_acquire_semaphores++] = sem;
+         ctx->swapchain_wait_semaphores[index][j] = VK_NULL_HANDLE;
+      }
+      ctx->swapchain_num_wait_semaphores[index] = 0;
    }
-   vk->context.swapchain_wait_semaphores[index] = VK_NULL_HANDLE;
+}
+
+unsigned vulkan_context_take_acquire_waits(struct vulkan_context *ctx,
+      unsigned frame_index, VkSemaphore *sems,
+      VkPipelineStageFlags *stages, VkPipelineStageFlags stage)
+{
+   unsigned n = 0;
+   unsigned i;
+
+   if (     (ctx->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         && ctx->swapchain_acquire_semaphore != VK_NULL_HANDLE)
+   {
+      sems[n]                                = ctx->swapchain_acquire_semaphore;
+      stages[n]                              = stage;
+      ctx->swapchain_wait_semaphores[frame_index][n] = sems[n];
+      ctx->swapchain_acquire_semaphore       = VK_NULL_HANDLE;
+      n++;
+   }
+   for (i = 0; i < ctx->num_stale_acquire_semaphores; i++)
+   {
+      sems[n]                                = ctx->swapchain_stale_acquire_semaphores[i];
+      stages[n]                              = stage;
+      ctx->swapchain_wait_semaphores[frame_index][n] = sems[n];
+      ctx->swapchain_stale_acquire_semaphores[i]     = VK_NULL_HANDLE;
+      n++;
+   }
+   ctx->num_stale_acquire_semaphores            = 0;
+   ctx->swapchain_num_wait_semaphores[frame_index] = n;
+   return n;
 }
 
 static void vulkan_create_wait_fences(gfx_ctx_vulkan_data_t *vk)
@@ -2091,17 +2160,24 @@ retry:
 
       if (vk->context.swapchain_acquire_semaphore)
       {
-         VkSemaphore old_sem                = vk->context.swapchain_acquire_semaphore;
+         /* The previous acquire was never submitted against: its
+          * signal is still pending, so it can neither be acquired
+          * with again nor destroyed. It goes on the stale list, and
+          * the next submission waits on it along with its own
+          * acquire - that consumes the signal, and it recycles with
+          * that frame. Only when frames have gone unsubmitted for
+          * a whole swapchain's worth is the device drained to
+          * destroy one, as every one of them used to be. */
+         VkSemaphore old_sem                     = vk->context.swapchain_acquire_semaphore;
          vk->context.swapchain_acquire_semaphore = semaphore;
-         /* Swap out the old semaphore first, then destroy it
-          * outside queue_lock.  The old semaphore may still be
-          * in use by a pending queue submission, so we need
-          * vkDeviceWaitIdle before destruction -- but we must
-          * NOT hold queue_lock during the wait, otherwise
-          * vkQueuePresentKHR (which also takes queue_lock)
-          * stalls and can trigger a TDR (0x887A0006). */
-         vkDeviceWaitIdle(vk->context.device);
-         vkDestroySemaphore(vk->context.device, old_sem, NULL);
+         if (vk->context.num_stale_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES)
+            vk->context.swapchain_stale_acquire_semaphores[
+               vk->context.num_stale_acquire_semaphores++] = old_sem;
+         else
+         {
+            vkDeviceWaitIdle(vk->context.device);
+            vkDestroySemaphore(vk->context.device, old_sem, NULL);
+         }
       }
       else
          vk->context.swapchain_acquire_semaphore = semaphore;

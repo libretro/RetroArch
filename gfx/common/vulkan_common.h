@@ -243,8 +243,24 @@ typedef struct vulkan_context
 
    VkSemaphore swapchain_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkSemaphore swapchain_acquire_semaphore;
-   VkSemaphore swapchain_recycled_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
-   VkSemaphore swapchain_wait_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   /* Acquire semaphores not in use: one per frame in flight, one
+    * for the current acquire, and up to VULKAN_MAX_SWAPCHAIN_IMAGES
+    * stale ones (below) - all of them can be recycled at once. */
+   VkSemaphore swapchain_recycled_semaphores[2 * VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   /* The acquire semaphores each frame's submission waits on: its
+    * own acquire plus any stale ones it drained (see
+    * swapchain_stale_acquire_semaphores). Recycled once that frame's
+    * fence has signalled. */
+   VkSemaphore swapchain_wait_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES][VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   unsigned    swapchain_num_wait_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   /* Acquire semaphores whose acquire happened but whose frame never
+    * submitted - so their signal is still pending, and they can be
+    * neither reused for an acquire nor destroyed. The next submission
+    * waits on them alongside its own acquire, which consumes the
+    * signal, and they recycle with that frame. Before, each one
+    * drained the whole device to be destroyed. */
+   VkSemaphore swapchain_stale_acquire_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   unsigned    num_stale_acquire_semaphores;
 
    /* Only used under VULKAN_DEBUG, but always present: this struct
     * is shared by every TU that includes this header, and a member
@@ -418,6 +434,16 @@ retro_time_t vulkan_last_present_time(gfx_ctx_vulkan_data_t *vk);
    ((gfx_ctx_vulkan_data_t*)((char*)(ctx) - offsetof(gfx_ctx_vulkan_data_t, context)))
 
 void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk);
+
+/* Takes the acquire semaphore of the current frame, if one was
+ * acquired, and every stale one, into sems[] and stages[] (each with
+ * room for VULKAN_MAX_SWAPCHAIN_IMAGES + 1 entries) for a submission
+ * that will wait on them, records them against frame_index so they
+ * recycle with its fence, and returns how many it added. stage is the
+ * wait stage for all of them. */
+unsigned vulkan_context_take_acquire_waits(struct vulkan_context *ctx,
+      unsigned frame_index, VkSemaphore *sems,
+      VkPipelineStageFlags *stages, VkPipelineStageFlags stage);
 
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
