@@ -2041,37 +2041,41 @@ static void d3d11_render_overlay(d3d11_video_t *d3d11)
 #endif
 
 #ifdef HAVE_DXGI_HDR
-static void d3d11_set_hdr_menu_nits(void *data, float menu_nits)
+/* Writes hdr.ubo_values to the HDR constant buffer. The buffer exists
+ * only while HDR is enabled - it is made with the HDR swapchain and
+ * from these same values - so with HDR off the values are kept and
+ * nothing is mapped: mapping a NULL resource is a crash inside
+ * d3d11.dll, and every HDR poke is reachable with HDR off. */
+static void d3d11_hdr_ubo_update(d3d11_video_t *d3d11)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_ubo;
+
+   if (!d3d11->hdr.ubo || !d3d11->context)
+      return;
+   if (FAILED(d3d11->context->lpVtbl->Map(
+         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0,
+         D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
+      return;
+   *(dxgi_hdr_uniform_t*)mapped_ubo.pData = d3d11->hdr.ubo_values;
+   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
+}
+
+static void d3d11_set_hdr_menu_nits(void *data, float menu_nits)
+{
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
    d3d11->hdr.menu_nits        = menu_nits;
 
-   if (FAILED(d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
-      return;
-   {
-      dxgi_hdr_uniform_t *ubo = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
-      *ubo                    = d3d11->hdr.ubo_values;
-   }
-   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
+   d3d11_hdr_ubo_update(d3d11);
 }
 
 static void d3d11_set_hdr_paper_white_nits(void* data, float paper_white_nits)
 {
-   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
-   dxgi_hdr_uniform_t *ubo                = NULL;
    d3d11_video_t      *d3d11              = (d3d11_video_t*)data;
 
    d3d11->hdr.ubo_values.paper_white_nits = paper_white_nits;
 
-   if (FAILED(d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
-      return;
-   ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
-   *ubo = d3d11->hdr.ubo_values;
-   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
+   d3d11_hdr_ubo_update(d3d11);
    
    if(d3d11->shader_preset)
    {
@@ -2083,18 +2087,11 @@ static void d3d11_set_hdr_paper_white_nits(void* data, float paper_white_nits)
 
 static void d3d11_set_hdr_expand_gamut(void* data, unsigned expand_gamut)
 {
-   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
-   dxgi_hdr_uniform_t *ubo                = NULL;
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
    d3d11->hdr.ubo_values.expand_gamut     = expand_gamut;
 
-   if (FAILED(d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
-      return;
-   ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
-   *ubo = d3d11->hdr.ubo_values;
-   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
+   d3d11_hdr_ubo_update(d3d11);
    
    if(d3d11->shader_preset)
    {
@@ -2106,18 +2103,11 @@ static void d3d11_set_hdr_expand_gamut(void* data, unsigned expand_gamut)
 
 static void d3d11_set_hdr_scanlines(void* data, bool scanlines)
 {
-   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
-   dxgi_hdr_uniform_t *ubo                = NULL;
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
    d3d11->hdr.ubo_values.scanlines     = scanlines ? 1.0f : 0.0f;
 
-   if (FAILED(d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
-      return;
-   ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
-   *ubo = d3d11->hdr.ubo_values;
-   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
+   d3d11_hdr_ubo_update(d3d11);
    
    if(d3d11->shader_preset)
    {
@@ -2129,18 +2119,11 @@ static void d3d11_set_hdr_scanlines(void* data, bool scanlines)
 
 static void d3d11_set_hdr_subpixel_layout(void* data, unsigned subpixel_layout)
 {
-   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
-   dxgi_hdr_uniform_t *ubo                = NULL;
    d3d11_video_t* d3d11                   = (d3d11_video_t*)data;
 
    d3d11->hdr.ubo_values.subpixel_layout  = subpixel_layout;
 
-   if (FAILED(d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
-      return;
-   ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
-   *ubo = d3d11->hdr.ubo_values;
-   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
+   d3d11_hdr_ubo_update(d3d11);
    
    if(d3d11->shader_preset)
    {
@@ -2152,17 +2135,10 @@ static void d3d11_set_hdr_subpixel_layout(void* data, unsigned subpixel_layout)
 
 static void d3d11_set_hdr_inverse_tonemap(d3d11_video_t* d3d11, bool inverse_tonemap)
 {
-   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
-   dxgi_hdr_uniform_t *ubo                = NULL;
 
    d3d11->hdr.ubo_values.inverse_tonemap  = inverse_tonemap ? 1.0f : 0.0f;
 
-   if (FAILED(d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
-      return;
-   ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
-   *ubo = d3d11->hdr.ubo_values;
-   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
+   d3d11_hdr_ubo_update(d3d11);
    
    if(d3d11->shader_preset)
    {
@@ -2174,17 +2150,9 @@ static void d3d11_set_hdr_inverse_tonemap(d3d11_video_t* d3d11, bool inverse_ton
 
 static void d3d11_set_hdr10(d3d11_video_t* d3d11, bool hdr10)
 {
-   D3D11_MAPPED_SUBRESOURCE mapped_ubo;
-   dxgi_hdr_uniform_t *ubo                = NULL;
-
    d3d11->hdr.ubo_values.hdr10  = hdr10 ? 1.0f : 0.0f;
 
-   if (FAILED(d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped_ubo)))
-      return;
-   ubo  = (dxgi_hdr_uniform_t*)mapped_ubo.pData;
-   *ubo = d3d11->hdr.ubo_values;
-   d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->hdr.ubo, 0);
+   d3d11_hdr_ubo_update(d3d11);
    
    if(d3d11->shader_preset)
    {
