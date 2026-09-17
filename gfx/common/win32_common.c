@@ -447,7 +447,11 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    settings_t *settings  = config_get_ptr();
    MONITORINFOEX *mon    = (MONITORINFOEX*)data;
    HMONITOR *hm_to_use   = (HMONITOR*)hm_data;
-   unsigned fs_monitor   = settings->uints.video_monitor_index;
+   /* Reached from the display server's teardown as well as from
+    * window setup, and the settings are gone by the end of a
+    * shutdown: without one, the monitor the window is on is the
+    * only answer there is. */
+   unsigned fs_monitor   = settings ? settings->uints.video_monitor_index : 0;
    win32_common_state_t
       *g_win32           = (win32_common_state_t*)&win32_st;
 

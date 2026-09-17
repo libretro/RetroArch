@@ -6477,11 +6477,17 @@ void main_exit(void *args)
 #endif
 
    ui_companion_driver_deinit();
-   retroarch_config_deinit();
 
    frontend_driver_shutdown(false);
 
    retroarch_deinit_drivers(&runloop_st->retro_ctx);
+   /* After the drivers: tearing them down reads settings - the Win32
+    * display server restores the original display mode through
+    * win32_monitor_info(), which asks for the monitor index - and a
+    * freed settings object is a crash on the way out, seen on Windows
+    * as a segfault in win32_display_server_destroy() once a run had
+    * changed the mode. */
+   retroarch_config_deinit();
    uico_state_get_ptr()->drv = NULL;
    frontend_driver_free();
 
