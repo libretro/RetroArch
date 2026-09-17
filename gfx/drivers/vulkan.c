@@ -7204,13 +7204,16 @@ static void vulkan_retain_backbuffer(vk_t *vk, struct vk_image *backbuffer)
  * So for a hardware core under the wrapper the frame's fence is waited
  * out first, with the lock free: the core submits, the queue drains,
  * the fence signals, and the present under the lock has nothing left
- * to wait for. A software core, or a hardware core presenting on its
- * own thread, has no other submitter to wait on and keeps the
- * asynchronous present; those paths are exactly as they were. */
+ * to wait for. Only where the present shares the graphics queue: on a
+ * present queue of its own it holds no lock, and needs no wait. A
+ * software core, or a hardware core presenting on its own thread, has
+ * no other submitter to wait on and keeps the asynchronous present;
+ * those paths are exactly as they were. */
 static void vulkan_await_frame_before_present(vk_t *vk, unsigned frame_index)
 {
    if (     (vk->flags & VK_FLAG_HW_ENABLE)
          && video_driver_thread_wrapper_active()
+         && vk->context->present_queue == vk->context->queue
          && vk->context->swapchain_fences_signalled[frame_index]
          && vk->context->swapchain_fences[frame_index] != VK_NULL_HANDLE)
       vkWaitForFences(vk->context->device, 1,

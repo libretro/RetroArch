@@ -214,6 +214,15 @@ typedef struct vulkan_context
    VkPhysicalDevice gpu;
    VkDevice device;
    VkQueue queue;
+   /* The queue presents go to. Distinct from queue where the device
+    * offers a second queue in the graphics family - requested on the
+    * default path, and accepted as presentation_queue from a core that
+    * creates the device - so vkQueuePresentKHR needs no lock at all:
+    * only the frame thread touches it, and a hardware core submitting
+    * through lock_queue is never held behind a present that is waiting
+    * on the display. Equal to queue when the family has one queue, in
+    * which case the present shares queue_lock as before. */
+   VkQueue present_queue;
 
    VkPhysicalDeviceProperties gpu_properties;
    VkPhysicalDeviceMemoryProperties memory_properties;
