@@ -400,3 +400,158 @@ void memrelease(void *addr, size_t len)
 #endif
 #endif
 }
+
+/* ------------------------------------------------------------------ */
+/* Named shared memory, mappable at more than one address              */
+/* ------------------------------------------------------------------ */
+
+#if defined(_WIN32) && !defined(_XBOX)
+
+void *memshm_create(const char *name, size_t len)
+{
+   HANDLE h;
+   wchar_t wname[128];
+   int i;
+   /* The name is ASCII by contract; widen it byte-for-byte. */
+   for (i = 0; i < 127 && name[i]; i++)
+      wname[i] = (wchar_t)(unsigned char)name[i];
+   wname[i] = 0;
+   h = CreateFileMappingW(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
+         (DWORD)((uint64_t)len >> 32), (DWORD)(len & 0xFFFFFFFFu), wname);
+   return (h == NULL) ? NULL : (void*)h;
+}
+
+void memshm_destroy(void *handle)
+{
+   if (handle)
+      CloseHandle((HANDLE)handle);
+}
+
+void *memshm_map(void *handle, size_t offset, void *hint, size_t len, int prot)
+{
+   DWORD access = FILE_MAP_READ;
+   void *p;
+   if (prot & PROT_WRITE)
+      access |= FILE_MAP_WRITE;
+   if (prot & PROT_EXEC)
+      access |= FILE_MAP_EXECUTE;
+   p = MapViewOfFileEx((HANDLE)handle, access,
+         (DWORD)((uint64_t)offset >> 32), (DWORD)(offset & 0xFFFFFFFFu), len, hint);
+   if (!p && hint)
+      p = MapViewOfFileEx((HANDLE)handle, access,
+            (DWORD)((uint64_t)offset >> 32), (DWORD)(offset & 0xFFFFFFFFu), len, NULL);
+   return p;
+}
+
+void memshm_unmap(void *addr, size_t len)
+{
+   (void)len;
+   if (addr)
+      UnmapViewOfFile(addr);
+}
+
+#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__)
+
+#include <unistd.h>
+#include <fcntl.h>
+#if defined(__ANDROID__)
+#include <sys/syscall.h>
+#endif
+
+/* The handle is the file descriptor, carried in the pointer. */
+#define MEMSHM_FD(h)   ((int)(intptr_t)(h))
+#define MEMSHM_H(fd)   ((void*)(intptr_t)(fd))
+
+void *memshm_create(const char *name, size_t len)
+{
+   int fd;
+#if defined(__ANDROID__)
+   /* Bionic has no shm_open. A memfd is anonymous and needs no name in
+    * the filesystem, so nothing to unlink. */
+   fd = (int)syscall(__NR_memfd_create, name, 1u /* MFD_CLOEXEC */);
+   if (fd < 0)
+      return NULL;
+#else
+   fd = shm_open(name, O_CREAT | O_EXCL | O_RDWR, 0600);
+   if (fd < 0)
+      return NULL;
+   /* Unlink at once: the fd keeps the object alive, the name does not
+    * outlive the process. */
+   shm_unlink(name);
+#endif
+   if (ftruncate(fd, (off_t)len) < 0)
+   {
+      close(fd);
+      return NULL;
+   }
+   /* fd 0 would read as NULL; it cannot be, since 0 is stdin, but the
+    * handle is "fd + 1" so the encoding never depends on that. */
+   return MEMSHM_H(fd + 1);
+}
+
+void memshm_destroy(void *handle)
+{
+   if (handle)
+      close(MEMSHM_FD(handle) - 1);
+}
+
+void *memshm_map(void *handle, size_t offset, void *hint, size_t len, int prot)
+{
+   void *p;
+   if (!handle)
+      return NULL;
+   /* A hint, never MAP_FIXED: MAP_FIXED silently replaces whatever is
+    * there, and a caller that wanted an address it did not get should
+    * find out by comparing, not by corrupting a neighbour. */
+   p = mmap(hint, len, prot, MAP_SHARED, MEMSHM_FD(handle) - 1, (off_t)offset);
+   return (p == MAP_FAILED) ? NULL : p;
+}
+
+void memshm_unmap(void *addr, size_t len)
+{
+   if (addr)
+      munmap(addr, len);
+}
+
+#else
+
+void *memshm_create(const char *name, size_t len)
+{
+   (void)name; (void)len;
+   return NULL;
+}
+void memshm_destroy(void *handle) { (void)handle; }
+void *memshm_map(void *handle, size_t offset, void *hint, size_t len, int prot)
+{
+   (void)handle; (void)offset; (void)hint; (void)len; (void)prot;
+   return NULL;
+}
+void memshm_unmap(void *addr, size_t len) { (void)addr; (void)len; }
+
+#endif
+
+/* ------------------------------------------------------------------ */
+/* JIT write toggle for per-thread W^X                                 */
+/* ------------------------------------------------------------------ */
+
+#if defined(__APPLE__) && defined(__aarch64__)
+#include <pthread.h>
+/* pthread_jit_write_protect_np is per thread, and so is this depth:
+ * one thread's nesting must not flip another's pages. */
+static __thread int memjit_depth;
+
+void memjit_write_begin(void)
+{
+   if (memjit_depth++ == 0)
+      pthread_jit_write_protect_np(0);
+}
+
+void memjit_write_end(void)
+{
+   if (--memjit_depth == 0)
+      pthread_jit_write_protect_np(1);
+}
+#else
+void memjit_write_begin(void) { }
+void memjit_write_end(void)   { }
+#endif

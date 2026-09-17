@@ -253,6 +253,11 @@ threads-samples:
 	$(MAKE) -C samples/rthreads/sthread_ex_test clean
 	$(MAKE) -C samples/rthreads/sthread_ex_test check SANITIZER=$(CONCURRENCY_SAN)
 	$(MAKE) -C samples/rthreads/sthread_ex_test clean
+	# shared memory mapped twice is one memory: written through one
+	# address, read through the other
+	$(MAKE) -C samples/memmap/memshm_test clean
+	$(MAKE) -C samples/memmap/memshm_test check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/memmap/memshm_test clean
 	# same, and the only place the queue and the eventcount are
 	# exercised against each other
 	$(MAKE) -C samples/queues/retro_waitable_spsc_test clean
