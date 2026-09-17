@@ -434,6 +434,7 @@ static bool                   gfx_thumb_worker_die    = false;
  * over (Animated Thumbnail Threads). The worker alone creates, uses
  * and destroys it; the poll only publishes how many bands are wanted
  * (the setting), and the worker re-sizes the pool between frames. */
+#define GFX_THUMB_POOL_STACK (512 * 1024)
 static tpool_t               *gfx_thumb_blit_pool     = NULL;
 static unsigned               gfx_thumb_blit_bands    = 1;
 static retro_atomic_int_t     gfx_thumb_blit_wanted;
@@ -455,7 +456,12 @@ static void gfx_thumbnail_anim_blit_pool_sync(void)
    gfx_thumb_blit_bands = 1;
    if (wanted > 1)
    {
-      gfx_thumb_blit_pool = tpool_create((size_t)(wanted - 1));
+      /* The pool decodes VP9 tile columns and HEVC CTB rows as well
+       * as converting bands: a stack that holds those decoders'
+       * recursion with room to spare on every platform, rather than
+       * whatever the platform's thread default is. */
+      gfx_thumb_blit_pool = tpool_create_with_stack_size(
+            (size_t)(wanted - 1), GFX_THUMB_POOL_STACK);
       if (gfx_thumb_blit_pool)
          gfx_thumb_blit_bands = (unsigned)wanted;
    }

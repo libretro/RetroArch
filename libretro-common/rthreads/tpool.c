@@ -148,7 +148,7 @@ static void tpool_worker(void *arg)
    slock_unlock(tp->work_mutex);
 }
 
-tpool_t *tpool_create(size_t num)
+tpool_t *tpool_create_with_stack_size(size_t num, size_t stack_size)
 {
    tpool_t   *tp;
    sthread_t *thread;
@@ -186,7 +186,9 @@ tpool_t *tpool_create(size_t num)
    tp->thread_cnt   = 0;
    for (i = 0; i < num; i++)
    {
-      thread = sthread_create(tpool_worker, tp);
+      thread = stack_size
+            ? sthread_create_with_stack_size(tpool_worker, tp, stack_size)
+            : sthread_create(tpool_worker, tp);
       if (!thread)
          continue;
       tp->thread_cnt++;
@@ -204,6 +206,11 @@ tpool_t *tpool_create(size_t num)
    }
 
    return tp;
+}
+
+tpool_t *tpool_create(size_t num)
+{
+   return tpool_create_with_stack_size(num, 0);
 }
 
 void tpool_destroy(tpool_t *tp)
