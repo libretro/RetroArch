@@ -49,6 +49,15 @@
 #endif
 
 #ifdef _WIN32
+/* FILE_MAP_EXECUTE is XP SP2 / Server 2003 SP1: the kernel rejects it
+ * before that, and an older SDK may not spell it at all. The value is
+ * SECTION_MAP_EXECUTE_EXPLICIT, declared here so the oldest SDK builds;
+ * on a kernel that refuses it MapViewOfFileEx fails and the call reports
+ * NULL rather than mapping without execute. */
+#ifndef FILE_MAP_EXECUTE
+#define FILE_MAP_EXECUTE 0x0020
+#endif
+
 /* Map POSIX prot bits to a PAGE_* protection constant.  Windows has
  * no write-only or exec-only protections; those requests take the
  * nearest expressible superset, as every mman shim does. */
@@ -479,6 +488,15 @@ void *memshm_create(const char *name, size_t len)
     * outlive the process. */
    shm_unlink(name);
 #endif
+   /* off_t is 32 bits where _FILE_OFFSET_BITS is not set, and a cast
+    * would wrap a 2 GB length to a negative one. Refuse rather than
+    * truncate; a caller that needs more on a 32-bit off_t has no way to
+    * get it through this call. */
+   if (sizeof(off_t) < 8 && len > (size_t)0x7FFFFFFFu)
+   {
+      close(fd);
+      return NULL;
+   }
    if (ftruncate(fd, (off_t)len) < 0)
    {
       close(fd);
