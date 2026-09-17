@@ -51,7 +51,7 @@ check-vulkan: all
 	 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1:suppressions=ubsan-vulkan.supp \
 	 TSAN_OPTIONS=halt_on_error=1:second_deadlock_stack=1:suppressions=tsan-vulkan.supp \
 	 ./$(TARGET) $(CYCLES) > check.log 2>&1; rc=$$?; \
-	 grep -E '\[pass\]|FAIL|all lanes|Validation Error' check.log | grep -v 'XFree86-VidMode'; \
+	 grep -E '\[pass\]|FAIL|all lanes|Validation Error|Sanitizer|runtime error|X Error' check.log | grep -v 'XFree86-VidMode'; \
 	 errs=$$(grep -c 'Validation Error' check.log); \
 	 rm -f check.log; \
 	 if [ "$$errs" != "0" ]; then echo "check-vulkan: $$errs validation error(s)"; exit 1; fi; \
