@@ -264,6 +264,12 @@ threads-samples:
 	$(MAKE) -C samples/fastjmp/fastjmp_test clean
 	ASAN_OPTIONS=detect_stack_use_after_return=0 $(MAKE) -C samples/fastjmp/fastjmp_test check SANITIZER=$(CONCURRENCY_SAN)
 	$(MAKE) -C samples/fastjmp/fastjmp_test clean
+	# rdds block decoders: BC1 endpoints and the four-colour
+	# interpolation, BC2 explicit alpha, BC3 interpolated alpha, BC7
+	# writing every pixel, and the row pitch honoured
+	$(MAKE) -C samples/formats/dds clean
+	$(MAKE) -C samples/formats/dds check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/formats/dds clean
 	# same, and the only place the queue and the eventcount are
 	# exercised against each other
 	$(MAKE) -C samples/queues/retro_waitable_spsc_test clean

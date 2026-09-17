@@ -2708,3 +2708,9 @@ rdds_t *rdds_alloc(void)
       return NULL;
    return rdds;
 }
+
+/* The block decoders, public: see rdds.h. */
+void rdds_decode_block_bc1(const void *block, void *out, int pitch) { rdds_bcdec_bc1(block, out, pitch); }
+void rdds_decode_block_bc2(const void *block, void *out, int pitch) { rdds_bcdec_bc2(block, out, pitch); }
+void rdds_decode_block_bc3(const void *block, void *out, int pitch) { rdds_bcdec_bc3(block, out, pitch); }
+void rdds_decode_block_bc7(const void *block, void *out, int pitch) { rdds_bcdec_bc7(block, out, pitch); }

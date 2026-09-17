@@ -58,6 +58,21 @@ bool rdds_set_buf_ptr(rdds_t *rdds, void *data);
 
 void rdds_free(rdds_t *rdds);
 
+/**
+ * rdds_decode_block_bc1 / bc2 / bc3 / bc7:
+ * @block      : one compressed 4x4 block: 8 bytes for BC1, 16 for the rest.
+ * @out        : the 4x4 RGBA8 output, R first in memory; 16 bytes per row.
+ * @pitch      : bytes between output rows; 16 for a packed 4x4.
+ *
+ * The block decoders the DDS loader uses, for a caller that has blocks
+ * from elsewhere -- a compressed texture a GPU cannot take as-is and a
+ * core decodes itself. Alpha is 255 where the format has none.
+ */
+void rdds_decode_block_bc1(const void *block, void *out, int pitch);
+void rdds_decode_block_bc2(const void *block, void *out, int pitch);
+void rdds_decode_block_bc3(const void *block, void *out, int pitch);
+void rdds_decode_block_bc7(const void *block, void *out, int pitch);
+
 rdds_t *rdds_alloc(void);
 
 RETRO_END_DECLS
