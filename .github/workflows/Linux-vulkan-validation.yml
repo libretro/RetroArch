@@ -372,6 +372,7 @@ jobs:
             git
           pacboy: >-
             cc:p
+            gdb:p
 
       - name: Configure and build RetroArch (no Qt)
         shell: msys2 {0}
@@ -387,5 +388,5 @@ jobs:
         run: |
           set -eu
           samples/gfx/threaded_video/build.sh
-          SAN=none DRIVER=d3d11 CYCLES=1 make -C samples/gfx/threaded_video check-driver
+          SAN=none DRIVER=d3d11 CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean

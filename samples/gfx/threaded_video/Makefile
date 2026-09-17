@@ -64,6 +64,11 @@ check-vulkan: all
 # through whatever context the display offers - in CI, llvmpipe under
 # Xvfb with LIBGL_ALWAYS_SOFTWARE=1. No validation layer here: a
 # harness failure, a sanitizer report or a crash is what fails it.
+# GDB=1 runs the harness under gdb, so a crash on a platform with no
+# core dumps to read afterwards (the Windows runner) still leaves its
+# stacks in the log. The exit status is the harness's own.
+RUNNER := $(if $(filter 1,$(GDB)),gdb -q -batch -return-child-result -ex run -ex 'thread apply all bt 25' --args,)
+
 check-driver: all
 	@if [ -z "$$DISPLAY" ] && [ "$${OS:-}" != Windows_NT ]; then echo "check-driver: no DISPLAY, skipping"; exit 77; fi; \
 	 if [ -z "$(DRIVER)" ]; then echo "check-driver: DRIVER=<video driver> required"; exit 2; fi; \
@@ -71,9 +76,12 @@ check-driver: all
 	 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
 	 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1:suppressions=ubsan-vulkan.supp \
 	 TSAN_OPTIONS=halt_on_error=1:second_deadlock_stack=1:suppressions=tsan-gl.supp \
-	 ./$(TARGET) $(CYCLES) > check.log 2>&1; rc=$$?; \
+	 $(RUNNER) ./$(TARGET) $(CYCLES) > check.log 2>&1; rc=$$?; \
 	 grep -E '\[pass\]|FAIL|all lanes' check.log | grep -v 'XFree86-VidMode'; \
-	 if [ $$rc -ne 0 ]; then grep -vE '^\[(INFO|DEBUG|WARN)\]|XFree86-VidMode' check.log; fi; \
+	 if [ $$rc -ne 0 ]; then \
+	    grep -vE '^\[(INFO|DEBUG|WARN)\]|XFree86-VidMode' check.log; \
+	    echo "--- last 60 lines of the run log ---"; tail -60 check.log; \
+	 fi; \
 	 rm -f check.log; \
 	 exit $$rc
 
