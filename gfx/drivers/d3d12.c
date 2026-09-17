@@ -727,6 +727,37 @@ static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descri
    return handle;
 }
 
+/* Waits for the queue to drain, bounded.
+ *
+ * The GPU signals the fence when the work submitted before this point
+ * has retired. A GPU that has been reset or removed never signals, and
+ * waiting without a bound here freezes the frontend thread rather than
+ * the renderer - so the wait gives up, says so once, and returns. The
+ * caller then proceeds on the assumption the work is done, which is
+ * wrong, but a device in that state is not going to read the resources
+ * either. */
+#define D3D12_FENCE_WAIT_MS 2000
+
+static void d3d12_queue_drain(d3d12_video_t *d3d12)
+{
+   D3D12Fence fence = d3d12->queue.fence;
+
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
+         ++d3d12->queue.fenceValue);
+
+   if (fence->lpVtbl->GetCompletedValue(fence) >= d3d12->queue.fenceValue)
+      return;
+
+   fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue,
+         d3d12->queue.fenceEvent);
+
+   if (WaitForSingleObject(d3d12->queue.fenceEvent, D3D12_FENCE_WAIT_MS)
+         != WAIT_OBJECT_0)
+      RARCH_ERR("[D3D12] The GPU did not signal its fence within %u ms;"
+            " the device is most likely lost.\n",
+            (unsigned)D3D12_FENCE_WAIT_MS);
+}
+
 static void d3d12_release_texture(d3d12_texture_t* texture)
 {
    if (!texture->handle)
@@ -1521,12 +1552,7 @@ static void d3d12_font_free(void* data, bool is_threaded)
    {
       d3d12_video_t *d3d12 = font->d3d12;
       D3D12Fence     fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    if (font->font_driver && font->font_data)
@@ -2150,12 +2176,7 @@ static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_
 
    {
       D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    d3d12_free_overlays(d3d12);
@@ -2411,12 +2432,7 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
 
    {
       D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
    d3d12->frame.rotation = rotation;
 
@@ -2912,12 +2928,7 @@ static bool d3d12_shader_load_step(void *data,
 
    {
       D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
    d3d12_free_shader_preset(d3d12);
 
@@ -3077,12 +3088,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    {
       D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
    d3d12_free_shader_preset(d3d12);
 
@@ -3851,12 +3857,7 @@ static void d3d12_gfx_free(void* data)
 
    {
       D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
@@ -5074,12 +5075,7 @@ static bool d3d12_present_retained_once(d3d12_video_t *d3d12)
 
    {
       D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
@@ -5171,12 +5167,7 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12)
 
    {
       D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
@@ -5332,12 +5323,7 @@ static bool d3d12_gfx_frame(
 
    {
       D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
 #ifdef HAVE_DXGI_HDR
@@ -7050,15 +7036,7 @@ static bool d3d12_gpu_hdr_readback_to_bgr24(
 
    /* Wait for the GPU before mapping the readback buffer. */
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
-            ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    read_range.Begin = 0;
@@ -7163,15 +7141,7 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
    /* Ensure the cached_frame submission has finished before reusing the
     * command allocator. */
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
-            ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    back_buffer = d3d12->chain.renderTargets[d3d12->chain.frame_index];
@@ -7257,15 +7227,7 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
          d3d12->queue.handle, 1, (ID3D12CommandList* const*)&cmd);
 
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
-            ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    read_range.Begin = 0;
@@ -7343,15 +7305,7 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    /* Ensure the cached_frame submission above has finished on the GPU
     * before we reuse the command allocator. */
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
-            ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    /* cached_frame rendered into chain.renderTargets[chain.frame_index]
@@ -7506,15 +7460,7 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 
    /* Wait for the copy to complete before mapping. */
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
-            ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    read_range.Begin = 0;
@@ -7774,12 +7720,7 @@ static void d3d12_gfx_unload_texture_internal(
    if (d3d12)
    {
       D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    d3d12_release_texture(texture);
@@ -8032,7 +7973,11 @@ static bool d3d12_hw_ring_capture(void *data, unsigned slot,
       d3d12->hw_ring.capture_fence->lpVtbl->SetEventOnCompletion(
             d3d12->hw_ring.capture_fence, d3d12->hw_ring.capture_value,
             d3d12->hw_ring.capture_event);
-      WaitForSingleObject(d3d12->hw_ring.capture_event, INFINITE);
+      if (WaitForSingleObject(d3d12->hw_ring.capture_event,
+               D3D12_FENCE_WAIT_MS) != WAIT_OBJECT_0)
+         RARCH_ERR("[D3D12] The capture fence did not signal within"
+               " %u ms; the device is most likely lost.\n",
+               (unsigned)D3D12_FENCE_WAIT_MS);
    }
 
    cmd = d3d12->hw_ring.cmd;
@@ -8081,7 +8026,11 @@ static void d3d12_hw_ring_free(d3d12_video_t *d3d12)
       d3d12->hw_ring.capture_fence->lpVtbl->SetEventOnCompletion(
             d3d12->hw_ring.capture_fence, d3d12->hw_ring.capture_value,
             d3d12->hw_ring.capture_event);
-      WaitForSingleObject(d3d12->hw_ring.capture_event, INFINITE);
+      if (WaitForSingleObject(d3d12->hw_ring.capture_event,
+               D3D12_FENCE_WAIT_MS) != WAIT_OBJECT_0)
+         RARCH_ERR("[D3D12] The capture fence did not signal within"
+               " %u ms; the device is most likely lost.\n",
+               (unsigned)D3D12_FENCE_WAIT_MS);
    }
    for (i = 0; i < 3; i++)
    {
@@ -8278,15 +8227,7 @@ static bool d3d12_get_current_software_framebuffer(
     * d3d12_gfx_frame; the subsequent fence wait there will see
     * the fence already satisfied and skip without blocking. */
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(
-            d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(
-               fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    fb->data         = (uint8_t *)d3d12->sw_fb.mapped
@@ -8481,15 +8422,7 @@ static uintptr_t d3d12_gfx_load_texture_compressed(void* video_data,
       D3D12CommandList lists[1];
       lists[0] = (D3D12CommandList)cmd;
       d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1, lists);
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
-            d3d12->queue.fence, ++d3d12->queue.fenceValue);
-      if (d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
-            < d3d12->queue.fenceValue)
-      {
-         d3d12->queue.fence->lpVtbl->SetEventOnCompletion(d3d12->queue.fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
    Release(cmd);
    Release(alloc);
