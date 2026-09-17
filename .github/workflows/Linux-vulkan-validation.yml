@@ -139,7 +139,10 @@ jobs:
           export DISPLAY=:99
           export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
           # The harness build reuses the tree's own compile and link
-          # lines, so it has to name the same build: VK_DEBUG=1.
+          # lines, so it has to name the same build: VK_DEBUG=1. Its
+          # surface and overlay-page lanes run the driver's real
+          # in-place texture update and its borrowed-texture overlay
+          # page here, under the validation layer.
           SAN=none VK_DEBUG=1 CYCLES=2 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 

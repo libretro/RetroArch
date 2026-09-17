@@ -1833,6 +1833,225 @@ static void lane_async_texture_load(void)
       fprintf(stderr, "[pass] async texture load lane (%u uploads)\n", ASYNC_N);
 }
 
+/* ------------------------------------------------------------------ */
+/* Lane: streaming surfaces through the real driver                    */
+/*   A gfx_surface submits frames to whatever driver is up: under the  */
+/*   wrapper a submit is QUEUED and the slot comes back through        */
+/*   release() on a later frame, a second submit meanwhile is BUSY;    */
+/*   without it a submit is DONE at once. On a driver with an in-place */
+/*   update the texture handle never changes across frames; a surface  */
+/*   freed with a frame in flight completes quietly. Under lavapipe    */
+/*   and the validation layer this is what runs vulkan_update_texture  */
+/*   and its stream state for real.                                    */
+/* ------------------------------------------------------------------ */
+
+#include "../../../gfx/gfx_surface.h"
+#include "../../../input/input_overlay.h"
+
+static unsigned surf_releases;
+static unsigned surf_last_slot;
+
+static void surf_release_cb(void *user, gfx_surface_t *s, unsigned slot)
+{
+   (void)user; (void)s;
+   surf_releases++;
+   surf_last_slot = slot;
+}
+
+static void surf_fill(gfx_surface_t *s, unsigned slot, unsigned seed)
+{
+   unsigned i, n = s->width * s->height;
+   for (i = 0; i < n; i++)
+      s->slots[slot][i] = 0xff000000u | ((i * 7u + seed * 31u) & 0xffffffu);
+}
+
+static void lane_surface_update(void)
+{
+   unsigned had = failures;
+   gfx_surface_t *s;
+   enum gfx_surface_submit_result r;
+   bool rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) != 0;
+   unsigned i;
+   uintptr_t first;
+
+   /* Threaded: the descriptor goes to the video thread, the slot
+    * stays the surface's until the frame after. */
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "surface lane");
+
+   s = gfx_surface_new(64, 48, 2, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
+   CHECK(s != NULL, "surface allocation failed");
+   if (!s)
+      return;
+   surf_releases = 0;
+   surf_fill(s, 0, 0);
+   r = gfx_surface_submit(s, 0, rgba);
+   CHECK(r == GFX_SURFACE_SUBMIT_QUEUED, "threaded submit returned %d, not QUEUED", r);
+   surf_fill(s, 1, 1);
+   r = gfx_surface_submit(s, 1, rgba);
+   CHECK(r == GFX_SURFACE_SUBMIT_BUSY, "second submit in flight returned %d, not BUSY", r);
+   run_frames(2);
+   CHECK(surf_releases == 1 && surf_last_slot == 0,
+         "first release: %u releases, slot %u", surf_releases, surf_last_slot);
+   if (!s->handle)
+   {
+      /* The null driver has no texture load: nothing more to see. */
+      fprintf(stderr, "[skip] surface lane: driver made no texture\n");
+      gfx_surface_free(s);
+      run_frames(2);
+      set_threaded_via_setting(false);
+      run_frames(2);
+      return;
+   }
+   first = s->handle;
+
+   for (i = 0; i < 30; i++)
+   {
+      unsigned slot = i & 1;
+      surf_fill(s, slot, i + 2);
+      r = gfx_surface_submit(s, slot, rgba);
+      CHECK(r == GFX_SURFACE_SUBMIT_QUEUED, "frame %u: submit returned %d", i, r);
+      run_frames(1);
+   }
+   run_frames(2);
+   CHECK(surf_releases == 31, "%u releases for 31 threaded submits", surf_releases);
+   CHECK(!s->inflight, "a submit is still in flight after the frames");
+   if (video_driver_texture_can_update())
+      CHECK(s->handle == first,
+            "in-place driver replaced the texture (%lx -> %lx)",
+            (unsigned long)first, (unsigned long)s->handle);
+   else
+      fprintf(stderr, "[info] surface lane: driver has no in-place update; "
+            "replacement loads exercised\n");
+
+   /* Freed with a frame on its way: the completion frees it. */
+   surf_fill(s, 0, 99);
+   r = gfx_surface_submit(s, 0, rgba);
+   CHECK(r == GFX_SURFACE_SUBMIT_QUEUED, "final submit returned %d", r);
+   gfx_surface_free(s);
+   run_frames(3);
+
+   /* Direct: the submit runs the driver here and now. */
+   set_threaded_via_setting(false);
+   run_frames(2);
+   expect_wrapper(false, "surface lane, direct");
+   s = gfx_surface_new(64, 48, 1, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
+   CHECK(s != NULL, "direct surface allocation failed");
+   if (!s)
+      return;
+   surf_fill(s, 0, 0);
+   r = gfx_surface_submit(s, 0, rgba);
+   CHECK(r == GFX_SURFACE_SUBMIT_DONE, "direct submit returned %d, not DONE", r);
+   first = s->handle;
+   CHECK(first != 0, "direct submit made no texture");
+   for (i = 0; i < 10; i++)
+   {
+      surf_fill(s, 0, i + 1);
+      r = gfx_surface_submit(s, 0, rgba);
+      CHECK(r == GFX_SURFACE_SUBMIT_DONE, "direct frame %u returned %d", i, r);
+      run_frames(1);
+   }
+   if (video_driver_texture_can_update())
+      CHECK(s->handle == first, "direct in-place driver replaced the texture");
+   gfx_surface_free(s);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] surface lane (31 threaded, 11 direct submits)\n");
+}
+
+/* ------------------------------------------------------------------ */
+/* Lane: an overlay page of the pack's textures through the driver     */
+/*   Textures made by video_driver_texture_load() are shown as an      */
+/*   overlay page through load_textures(), drawn for a few frames,     */
+/*   swapped for another page with no upload, disabled, and only then  */
+/*   unloaded - the order input_overlay_free() keeps. Threaded and     */
+/*   direct; under validation it is the driver's borrowed-texture      */
+/*   page that runs.                                                   */
+/* ------------------------------------------------------------------ */
+
+static void lane_overlay_textures_pass(bool threaded)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   const video_overlay_interface_t *iface = NULL;
+   static struct texture_image img[3];
+   static uint32_t px[3][16 * 16];
+   uintptr_t tex[3];
+   unsigned i, j;
+
+   set_threaded_via_setting(threaded);
+   run_frames(3);
+   expect_wrapper(threaded, "overlay lane");
+
+   for (i = 0; i < 3; i++)
+   {
+      for (j = 0; j < 16 * 16; j++)
+         px[i][j] = 0x80000000u | (0x0f0f0fu * (i + 1)) | j;
+      img[i].width      = img[i].height = 16;
+      img[i].pixels     = px[i];
+      img[i].compressed = NULL;
+      img[i].pix10      = false;
+      tex[i] = 0;
+      if (!video_driver_texture_load(&img[i], TEXTURE_FILTER_LINEAR, &tex[i]))
+         tex[i] = 0;
+   }
+   if (!tex[0])
+   {
+      fprintf(stderr, "[skip] overlay lane (%s): driver made no texture\n",
+            threaded ? "threaded" : "direct");
+      return;
+   }
+   if (video_st->current_video && video_st->current_video->overlay_interface)
+      video_st->current_video->overlay_interface(video_st->data, &iface);
+   if (!iface || !iface->load_textures)
+   {
+      fprintf(stderr, "[skip] overlay lane (%s): no load_textures\n",
+            threaded ? "threaded" : "direct");
+      for (i = 0; i < 3; i++)
+         if (tex[i])
+            video_driver_texture_unload(&tex[i]);
+      return;
+   }
+
+   /* Page one: two of the textures. */
+   CHECK(iface->load_textures(video_st->data, tex, 2),
+         "load_textures refused page one (%s)", threaded ? "threaded" : "direct");
+   iface->enable(video_st->data, true);
+   for (i = 0; i < 2; i++)
+   {
+      iface->tex_geom(video_st->data, i, 0, 0, 1, 1);
+      iface->vertex_geom(video_st->data, i, 0.1f * i, 0.1f * i, 0.4f, 0.4f);
+      iface->set_alpha(video_st->data, i, 0.75f);
+   }
+   run_frames(4);
+   /* Page two: a different set of the same textures, no upload. */
+   CHECK(iface->load_textures(video_st->data, tex + 1, 2),
+         "load_textures refused page two (%s)", threaded ? "threaded" : "direct");
+   for (i = 0; i < 2; i++)
+   {
+      iface->tex_geom(video_st->data, i, 0, 0, 1, 1);
+      iface->vertex_geom(video_st->data, i, 0.5f, 0.1f * i, 0.3f, 0.3f);
+      iface->set_alpha(video_st->data, i, 1.0f);
+   }
+   run_frames(4);
+   iface->enable(video_st->data, false);
+   run_frames(2);
+   for (i = 0; i < 3; i++)
+      if (tex[i])
+         video_driver_texture_unload(&tex[i]);
+   run_frames(3);
+}
+
+static void lane_overlay_textures(void)
+{
+   unsigned had = failures;
+   lane_overlay_textures_pass(true);
+   lane_overlay_textures_pass(false);
+   if (failures == had)
+      fprintf(stderr, "[pass] overlay page lane\n");
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -1966,6 +2185,8 @@ int main(int argc, char *argv[])
       lane_pacing_queue_drain();
    }
    lane_zero_copy();
+   lane_surface_update();
+   lane_overlay_textures();
    lane_driver_reloads();
    if (!real_driver())
    {
