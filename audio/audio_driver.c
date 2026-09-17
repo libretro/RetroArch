@@ -2104,6 +2104,51 @@ static void audio_driver_ff_frame_end(audio_driver_state_t *audio_st)
    }
 }
 
+/* The callback-core variant of the producer measurement above. A
+ * callback core delivers no frames on the main thread, so there is
+ * nothing to count - but what fast-forward changes for it is
+ * retro_run cadence, so that is what gets measured: one video frame's
+ * worth of audio at the core's input rate is the expected interval,
+ * the wall clock between frame ends is the achieved one, and the EMA
+ * turns the pair into the achieved-speed multiplier exactly as the
+ * threaded pipeline's producer does. Published in pipe_ff_mult_q16
+ * for the audio thread, whose flush reads it and never runs the
+ * cadence measurement itself - on that thread the cadence is the
+ * device draining, and measuring it would only read back the
+ * multiplier last applied (see audio_driver_ff_mult()).
+ *
+ * Runs only when the snapshot carries the fastmotion bit, which
+ * publish withholds for callback cores unless the person opted in
+ * (audio_fastforward_callback), so the off state costs one load. The
+ * reset stores race the audio thread's own idle reset at fast-forward
+ * boundaries; both only ever store zeros and unity there, so the
+ * worst case is one stale EMA sample that the next frame corrects. */
+static void audio_driver_ff_callback_frame_end(audio_driver_state_t *audio_st)
+{
+   int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+   if ((snap & AUDIO_SNAP_FASTMOTION) && !(snap & AUDIO_SNAP_PAUSED))
+   {
+      video_driver_state_t *video_st = video_state_get_ptr();
+      double fps        = (video_st->av_info.timing.fps > 1.0)
+            ? video_st->av_info.timing.fps
+            : AUDIO_DRC_FALLBACK_FPS;
+      double input_rate = (audio_st->input > 0.0f)
+            ? audio_st->input
+            : (double)config_get_ptr()->uints.audio_output_sample_rate;
+      size_t frames     = (size_t)(input_rate / fps);
+      if (frames < 1)
+         frames         = 1;
+      retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
+            (int)(audio_driver_fastforward_ratio_mult(audio_st, frames)
+               * 65536.0));
+   }
+   else if (audio_st->last_flush_time)
+   {
+      audio_driver_ff_mult_reset(audio_st);
+      retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16, 65536);
+   }
+}
+
 /* Whether fast-forward audio follows the measured speed: Speedup asks
  * for it outright, and pitch preservation needs it to hold pitch. The
  * filter-only transport keeps the ordinary Speedup or discard handling. */
@@ -2130,6 +2175,13 @@ static double audio_driver_ff_mult(audio_driver_state_t *audio_st,
       return (double)retro_atomic_load_acquire_int(
             &audio_st->pipe_ff_mult_q16) / 65536.0;
 #endif
+   /* A callback core's flush runs on the audio thread, where cadence
+    * is the device draining: measuring it here would read back the
+    * multiplier last applied. Take the frame-end measurement instead
+    * (see audio_driver_ff_callback_frame_end()). */
+   if (audio_st->callback.callback)
+      return (double)retro_atomic_load_acquire_int(
+            &audio_st->pipe_ff_mult_q16) / 65536.0;
    return audio_driver_fastforward_ratio_mult(audio_st, input_frames);
 }
 
@@ -4568,7 +4620,22 @@ void audio_driver_publish_runloop(void)
       v |= AUDIO_SNAP_PAUSED;
    if (rf & RUNLOOP_FLAG_SLOWMOTION)
       v |= AUDIO_SNAP_SLOWMOTION;
-   if (rf & RUNLOOP_FLAG_FASTMOTION)
+   /* A callback core's audio is paced by the device, not by retro_run:
+    * fast-forward speeds the video while the callback keeps rendering
+    * real time, so there is no surplus for the speed machinery to
+    * absorb. Worse, that machinery measures flush cadence, and on the
+    * callback's audio thread the cadence IS the device draining - the
+    * measurement confirms whatever multiplier it last applied, seeded
+    * at the configured ratio, which sped the audio up and crackled.
+    * Every speed consumer reads this snapshot and callback cores never
+    * run the threaded pipeline, so withholding the bit here restores
+    * the stable behavior: fast-forward leaves callback audio alone.
+    * Opting in publishes the bit, and the multiplier then comes from
+    * the frame-end cadence measurement, never the flush's own (see
+    * audio_driver_ff_callback_frame_end()). */
+   if ((rf & RUNLOOP_FLAG_FASTMOTION)
+         && (   !audio_driver_st.callback.callback
+             || settings->bools.audio_fastforward_callback))
       v |= AUDIO_SNAP_FASTMOTION;
    if (settings->bools.audio_sync)
       v |= AUDIO_SNAP_SYNC;
@@ -5664,7 +5731,12 @@ static bool audio_driver_transport_runloop_tempo(uint32_t *tempo)
    {
       if (flags & RUNLOOP_FLAG_SLOWMOTION)
          duration *= settings->floats.slowmotion_ratio;
+      /* Same rule as audio_driver_publish_runloop(): fast-forward
+       * does not touch a callback core's device-paced audio unless
+       * the person opted in. */
       if ((flags & RUNLOOP_FLAG_FASTMOTION)
+            && (   !audio_driver_st.callback.callback
+                || settings->bools.audio_fastforward_callback)
             && audio_driver_ff_follows(&audio_driver_st,
                settings->bools.audio_fastforward_speedup))
          duration *= retro_atomic_load_acquire_int(
@@ -6445,9 +6517,14 @@ void audio_driver_frame_end(void)
 
    /* A core audio callback fills the accumulator on the audio thread and
     * audio_driver_callback() flushes it there; touching it here would
-    * race that thread. */
+    * race that thread. The frame boundary itself is still this thread's
+    * to measure - it is the only cadence fast-forward changes for a
+    * callback core. */
    if (audio_st->callback.callback)
+   {
+      audio_driver_ff_callback_frame_end(audio_st);
       return;
+   }
 
    /* A suspended frame (run-ahead, preemptive frames) produced nothing
     * and flushes nothing, so arming here would leave the flag to be

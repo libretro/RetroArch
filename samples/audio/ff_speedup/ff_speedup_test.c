@@ -543,13 +543,23 @@ static void test_inline_silent_boundaries(void)
          audio_driver_frame_end();
          if (callback)
          {
-            CHECK(st->last_flush_time == previous, "main frame leaves callback-owned cadence alone");
+            /* The frame boundary owns callback cadence now (see
+             * audio_driver_ff_callback_frame_end()): opted out, the
+             * published word never carries fastmotion, so the boundary
+             * resets whatever the seed left in every mode. */
+            CHECK(st->last_flush_time == 0,
+                  "main frame resets opted-out callback cadence");
             audio_driver_callback();
             CHECK(silent_callbacks == (mode == 1 ? 0u : 1u), "paused callback does not run the core");
          }
-         CHECK(mode == 2 ? st->last_flush_time == previous : st->last_flush_time == 0,
+         /* Fast-forward is never published while a callback core owns
+          * audio (see audio_driver_publish_runloop()), so a callback
+          * core's cadence resets in every mode - active fast-forward
+          * included - and reentry always starts at unity. */
+         CHECK((mode == 2 && !callback)
+                  ? st->last_flush_time == previous : st->last_flush_time == 0,
                "silent boundaries reset released/paused cadence and preserve active batching");
-         if (mode != 2)
+         if (mode != 2 || callback)
             CHECK(audio_driver_fastforward_ratio_mult(st, FRAMES) == 1.0,
                   "inline silent-gap reentry starts at unity");
       }
@@ -564,6 +574,65 @@ static void test_inline_silent_boundaries(void)
          | AUDIO_SNAP_MENU_ALIVE | AUDIO_SNAP_MENU_PAUSES | AUDIO_SNAP_ALLOW_PAUSE);
    audio_driver_callback();
    CHECK(!st->last_flush_time, "menu-paused callback discards idle cadence");
+   fresh();
+   runloop_state_get_ptr()->flags = 0;
+}
+
+/* --- the opt-in: fast-forward affecting callback audio ------------- */
+
+static void test_callback_optin(void)
+{
+   int i, m;
+   settings_t *settings = config_get_ptr();
+
+   /* Off (the default): publish withholds the fastmotion bit for a
+    * callback core, the frame boundary keeps no cadence, and the
+    * audio-thread flush reads unity. */
+   fresh();
+   settings->bools.audio_fastforward_callback = false;
+   audio_driver_st.callback.callback = silent_callback;
+   retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
+   runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
+   for (i = 0; i < 8; i++)
+   {
+      fake_now += ONE_X / 2;
+      audio_driver_frame_end();
+   }
+   CHECK(!(retro_atomic_load_acquire_int(&audio_driver_st.runloop_snapshot)
+            & AUDIO_SNAP_FASTMOTION),
+         "callback opt-out leaves fastmotion unpublished");
+   CHECK(!audio_driver_st.last_flush_time
+         && retro_atomic_load_acquire_int(
+            &audio_driver_st.pipe_ff_mult_q16) == 65536,
+         "callback opt-out keeps fast-forward audio at unity");
+
+   /* On: the bit publishes, the frame boundary is measured, and the
+    * multiplier follows the achieved video speed - never the flush's
+    * own device-drain cadence. Frames land at twice real time, so the
+    * EMA settles near a half. */
+   fresh();
+   settings->bools.audio_fastforward_callback = true;
+   audio_driver_st.callback.callback = silent_callback;
+   retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
+   runloop_state_get_ptr()->flags = RUNLOOP_FLAG_FASTMOTION;
+   for (i = 0; i < 60; i++)
+   {
+      fake_now += ONE_X / 2;
+      audio_driver_frame_end();
+   }
+   CHECK(retro_atomic_load_acquire_int(&audio_driver_st.runloop_snapshot)
+            & AUDIO_SNAP_FASTMOTION,
+         "callback opt-in publishes fastmotion");
+   m = retro_atomic_load_acquire_int(&audio_driver_st.pipe_ff_mult_q16);
+   CHECK(m > 65536 / 4 && m < (65536 * 3) / 4,
+         "callback opt-in multiplier follows the frame cadence");
+   runloop_state_get_ptr()->flags = 0;
+   audio_driver_frame_end();
+   CHECK(!audio_driver_st.last_flush_time
+         && retro_atomic_load_acquire_int(
+            &audio_driver_st.pipe_ff_mult_q16) == 65536,
+         "callback opt-in release returns to unity");
+   settings->bools.audio_fastforward_callback = false;
    fresh();
    runloop_state_get_ptr()->flags = 0;
 }
@@ -634,6 +703,7 @@ int main(void)
    test_fragmented_frame_cadence();
    test_stop_excludes_idle_gap();
    test_inline_silent_boundaries();
+   test_callback_optin();
 
    if (failures)
    {

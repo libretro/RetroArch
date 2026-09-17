@@ -967,6 +967,7 @@
 #define MENU_ENUM_LABEL_AUDIO_ENABLE_MENU_STR "audio_enable_menu"
 #define MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE_STR "audio_fastforward_mute"
 #define MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP_STR "audio_fastforward_speedup"
+#define MENU_ENUM_LABEL_AUDIO_FASTFORWARD_CALLBACK_STR "audio_fastforward_callback"
 #define MENU_ENUM_LABEL_AUDIO_FASTPATH_S16_STR "audio_fastpath_s16"
 #define MENU_ENUM_LABEL_AUDIO_FILTER_DIR_STR "audio_filter_dir"
 #define MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION_STR "audio_format_negotiation"

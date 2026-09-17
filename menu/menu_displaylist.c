@@ -9301,6 +9301,7 @@ unsigned menu_displaylist_build_list(
             {MENU_ENUM_LABEL_AUDIO_REWIND_MUTE,               PARSE_ONLY_BOOL,  true },
             {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,          PARSE_ONLY_BOOL,  true },
             {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP,       PARSE_ONLY_BOOL,  true },
+            {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_CALLBACK,      PARSE_ONLY_BOOL,  true },
 #if defined(HAVE_DSP_FILTER)
             {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                PARSE_ONLY_PATH,  true },
 #endif
@@ -13289,6 +13290,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_FASTFORWARD_FRAMESKIP,       PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,      PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP,   PARSE_ONLY_BOOL,  true },
+               {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_CALLBACK,  PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_SLOWMOTION_RATIO,            PARSE_ONLY_FLOAT, true },
                {MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,          PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,     PARSE_ONLY_BOOL,  false},

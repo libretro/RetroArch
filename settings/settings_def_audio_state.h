@@ -34,6 +34,11 @@ S_BOOL(audio_fastforward_speedup, AUDIO_FASTFORWARD_SPEEDUP,
       DEFAULT_AUDIO_FASTFORWARD_SPEEDUP, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
       "Fast-Forward Audio Speedup",
       "Speed up audio when fast-forwarding. Prevents crackling but shifts pitch.")
+S_BOOL(audio_fastforward_callback, AUDIO_FASTFORWARD_CALLBACK,
+      "audio_fastforward_callback",
+      DEFAULT_AUDIO_FASTFORWARD_CALLBACK, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Fast-Forward Affects Callback Audio",
+      "Apply fast-forward audio handling to cores that render audio through their own callback. These cores produce audio in real time, so the speed is taken from the video's achieved rate. Off keeps their audio at real time, as stable RetroArch always did.")
 S_BOOL(audio_rewind_mute, AUDIO_REWIND_MUTE,
       "audio_rewind_mute",
       DEFAULT_AUDIO_REWIND_MUTE, SD_FLAG_NONE, 0, CMD_EVENT_NONE,

@@ -646,6 +646,7 @@ typedef struct settings
       bool audio_rate_control;
       bool audio_fastforward_mute;
       bool audio_fastforward_speedup;
+      bool audio_fastforward_callback;
       bool audio_fastpath_s16;
       bool audio_resampler_hq_oversampling;
       bool audio_rewind_mute;

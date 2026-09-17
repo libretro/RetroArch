@@ -1408,6 +1408,10 @@
 #define DEFAULT_AUDIO_FASTFORWARD_MUTE false
 /* Speed up audio to match fast forward speed up. */
 #define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
+/* Apply fast-forward audio handling to cores that render audio
+ * through their own callback. Off keeps their audio at real time,
+ * as stable RetroArch always did. */
+#define DEFAULT_AUDIO_FASTFORWARD_CALLBACK false
 /* When a core outputs 16-bit integer audio, the deterministic
  * fixed-point (int16) resampler variant of the selected backend
  * (sinc, nearest, or CC) can be preferred over the float one for any
