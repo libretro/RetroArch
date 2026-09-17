@@ -67,7 +67,11 @@ check-vulkan: all
 # GDB=1 runs the harness under gdb, so a crash on a platform with no
 # core dumps to read afterwards (the Windows runner) still leaves its
 # stacks in the log. The exit status is the harness's own.
-RUNNER := $(if $(filter 1,$(GDB)),gdb -q -batch -return-child-result -ex run -ex 'thread apply all bt 25' --args,)
+# The faulting instruction and the symbol it belongs to, before the
+# backtraces: a stack says which function stopped, not which access
+# did, and a release build on a runner is the only place some of these
+# crashes happen.
+RUNNER := $(if $(filter 1,$(GDB)),gdb -q -batch -return-child-result -ex run -ex 'printf "--- fault site ---\n"' -ex 'x/i $$pc' -ex 'info symbol $$pc' -ex 'info registers rax rbx rcx rdx rsi rdi' -ex 'x/4i $$pc-12' -ex 'thread apply all bt 25' --args,)
 
 check-driver: all
 	@if [ -z "$$DISPLAY" ] && [ "$${OS:-}" != Windows_NT ]; then echo "check-driver: no DISPLAY, skipping"; exit 77; fi; \
