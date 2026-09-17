@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <file/file_path.h>
 
 #include <boolean.h>
 
@@ -1835,7 +1836,6 @@ static void lane_async_texture_load(void)
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
-   char cmd[600];
    char dir[400];
    char *rarch_argv[8];
    int rarch_argc = 0;
@@ -1843,9 +1843,19 @@ int main(int argc, char *argv[])
    char core_path[512];
    unsigned cycles = argc > 1 ? (unsigned)atoi(argv[1]) : 10;
 
-   snprintf(dir, sizeof(dir), "/tmp/threaded_video_harness_%ld", (long)getpid());
-   snprintf(cmd, sizeof(cmd), "mkdir -p %s", dir);
-   if (system(cmd) != 0)
+   /* A scratch directory of our own. path_mkdir() rather than a
+    * shell: on Windows system() is cmd.exe, which has no mkdir -p and
+    * reads /tmp as a switch. TMPDIR, then TEMP (Windows), then /tmp. */
+   {
+      const char *tmp = getenv("TMPDIR");
+      if (!tmp || !*tmp)
+         tmp = getenv("TEMP");
+      if (!tmp || !*tmp)
+         tmp = "/tmp";
+      snprintf(dir, sizeof(dir), "%s/threaded_video_harness_%ld",
+            tmp, (long)getpid());
+   }
+   if (!path_mkdir(dir))
       return 1;
 
    snprintf(cfg_path, sizeof(cfg_path), "%s/harness.cfg", dir);
@@ -1892,12 +1902,20 @@ int main(int argc, char *argv[])
    rarch_argv[rarch_argc++] = (char*)"retroarch";
    rarch_argv[rarch_argc++] = (char*)"--config";
    rarch_argv[rarch_argc++] = cfg_path;
-   /* The harness core, built next to this binary by build.sh. */
+   /* The harness core, built next to this binary by build.sh. Either
+    * separator: Windows argv[0] carries backslashes. */
    {
       const char *slash = strrchr(argv[0], '/');
-      int dirlen        = slash ? (int)(slash - argv[0]) : 1;
-      snprintf(core_path, sizeof(core_path), "%.*s/harness_core.so",
-            dirlen, slash ? argv[0] : ".");
+#ifdef _WIN32
+      const char *bslash = strrchr(argv[0], '\\');
+      if (bslash && (!slash || bslash > slash))
+         slash = bslash;
+#endif
+      {
+         int dirlen = slash ? (int)(slash - argv[0]) : 1;
+         snprintf(core_path, sizeof(core_path), "%.*s/harness_core.so",
+               dirlen, slash ? argv[0] : ".");
+      }
    }
    rarch_argv[rarch_argc++] = (char*)"-L";
    rarch_argv[rarch_argc++] = core_path;
@@ -1963,8 +1981,9 @@ int main(int argc, char *argv[])
    run_frames(3);
    main_exit(NULL);
 
-   snprintf(cmd, sizeof(cmd), "rm -rf %s", dir);
-   if (system(cmd) != 0) { }
+   /* The scratch directory holds the config and nothing else. */
+   remove(cfg_path);
+   rmdir(dir);
 
    if (failures)
    {

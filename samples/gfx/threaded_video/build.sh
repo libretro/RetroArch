@@ -65,7 +65,11 @@ sed -e "s#$objdir/retroarch\.o#$out/retroarch_nomain.o $out/harness_main.o#" \
    "$ld_line" | sh
 
 # The harness core: a plain shared library, no sanitizer, so that what
-# the sanitizer reports is the frontend.
-cc -O1 -g -shared -fPIC -Ilibretro-common/include -o $out/harness_core.so $out/harness_core.c
+# the sanitizer reports is the frontend. Built with the compiler the
+# tree's own compile line names, so a cross build (mingw) gets a core
+# the frontend can load; the .so name is only a name, every loader
+# takes it.
+core_cc=$(awk '{print $1}' "$cc_line")
+$core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -o $out/harness_core.so $out/harness_core.c
 
 echo "built $out/threaded_video_test and $out/harness_core.so"

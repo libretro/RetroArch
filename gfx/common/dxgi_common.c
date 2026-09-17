@@ -33,10 +33,41 @@
 #ifdef __cplusplus
 extern const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIOutput6 = { 0x068346e8,0xaaec,
 0x4b84, {0xad,0xd7,0x13,0x7f,0x51,0x3f,0x77,0xa1 } };
+extern const GUID DECLSPEC_SELECTANY libretro_IID_IDXGISwapChain3 = { 0x94d99bdb,0xf1f8,
+0x4ab0, {0xb2,0x36,0x7d,0xa0,0x17,0x0e,0xda,0xb1 } };
+extern const GUID DECLSPEC_SELECTANY libretro_IID_IDXGISwapChain4 = { 0x3d585d5a,0xbd4a,
+0x489e, {0xb1,0xf4,0x3d,0xbc,0xb6,0x45,0x2f,0xfb } };
 #else
 const GUID DECLSPEC_SELECTANY libretro_IID_IDXGIOutput6 = { 0x068346e8,0xaaec,
 0x4b84, {0xad,0xd7,0x13,0x7f,0x51,0x3f,0x77,0xa1 } };
+const GUID DECLSPEC_SELECTANY libretro_IID_IDXGISwapChain3 = { 0x94d99bdb,0xf1f8,
+0x4ab0, {0xb2,0x36,0x7d,0xa0,0x17,0x0e,0xda,0xb1 } };
+const GUID DECLSPEC_SELECTANY libretro_IID_IDXGISwapChain4 = { 0x3d585d5a,0xbd4a,
+0x489e, {0xb1,0xf4,0x3d,0xbc,0xb6,0x45,0x2f,0xfb } };
 #endif
+
+/* The drivers create an IDXGISwapChain and hold it as an
+ * IDXGISwapChain4: on the DXGI runtime of Windows 10 and later every
+ * swapchain is one. On DXGI 1.1 or 1.2 - Windows 7 and 8, and Wine -
+ * the object ends at IDXGISwapChain or IDXGISwapChain1, and a call
+ * through a later slot reads past its vtable. So before a call that
+ * IDXGISwapChain3 or 4 introduced, ask the object whether it is one;
+ * the reference the query hands back is dropped at once, the caller
+ * keeps using the pointer it has. */
+static bool dxgi_swapchain_implements(DXGISwapChain chain, const GUID *iid)
+{
+   void *probe = NULL;
+#ifdef __cplusplus
+   if (FAILED(chain->QueryInterface(*iid, &probe)) || !probe)
+      return false;
+   ((IUnknown*)probe)->Release();
+#else
+   if (FAILED(chain->lpVtbl->QueryInterface(chain, iid, &probe)) || !probe)
+      return false;
+   ((IUnknown*)probe)->lpVtbl->Release((IUnknown*)probe);
+#endif
+   return true;
+}
 
 #ifdef HAVE_DXGI_HDR
 typedef enum hdr_root_constants
@@ -2836,6 +2867,12 @@ void dxgi_swapchain_color_space(
       DXGI_COLOR_SPACE_TYPE *chain_color_space,
       DXGI_COLOR_SPACE_TYPE color_space)
 {
+   /* CheckColorSpaceSupport and SetColorSpace1 are IDXGISwapChain3's.
+    * A swapchain without them is on a runtime with no colour space
+    * to select: it presents what it always did. */
+   if (!chain_handle
+         || !dxgi_swapchain_implements(chain_handle, &libretro_IID_IDXGISwapChain3))
+      return;
    if (*chain_color_space != color_space)
    {
       UINT color_space_support = 0;
@@ -2896,6 +2933,10 @@ void dxgi_set_hdr_metadata(
    int selected_chroma                              = 0;
 
    if (!handle)
+      return;
+   /* SetHDRMetaData is IDXGISwapChain4's; a swapchain without it has
+    * no HDR metadata to set or to clear. */
+   if (!dxgi_swapchain_implements(handle, &libretro_IID_IDXGISwapChain4))
       return;
 
    /* Clear the hdr meta data if the monitor does not support HDR */

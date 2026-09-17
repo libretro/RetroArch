@@ -63,8 +63,10 @@ void retro_reset(void) { }
 static int      harness_use_fb;
 static unsigned harness_fb_granted;
 
-void harness_core_use_framebuffer(int on) { harness_use_fb = on; }
-unsigned harness_core_fb_granted(void)   { return harness_fb_granted; }
+/* RETRO_API, like the core's own entry points: a Windows DLL exports
+ * only what is marked, and the harness looks these two up by name. */
+RETRO_API void harness_core_use_framebuffer(int on) { harness_use_fb = on; }
+RETRO_API unsigned harness_core_fb_granted(void)   { return harness_fb_granted; }
 
 void retro_run(void)
 {

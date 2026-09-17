@@ -1,4 +1,4 @@
-name: CI Linux Vulkan/GL [idle waits + driver harness]
+name: CI Vulkan/GL/D3D11 [idle waits + driver harness]
 
 # Two checks on the Vulkan driver, both born from the same bug: a
 # vkQueuePresentKHR under queue_lock waiting for GPU work that a
@@ -33,6 +33,12 @@ name: CI Linux Vulkan/GL [idle waits + driver harness]
 #    ICD are not instrumented and are suppressed; frontend races fail.
 #    An address,undefined build of the same runs beside it, and the
 #    context-only vulkan_validation sample runs on its own.
+#
+# 5. D3D11 harness: the same lanes on the d3d11 driver, on a Windows
+#    runner through MSYS2's MinGW64 build of the tree (no Qt, so main
+#    stays in retroarch.o for the harness to replace) and the software
+#    adapter the runner exposes (Microsoft Basic Render Driver, which
+#    is WARP). The first real-driver coverage the Windows drivers get.
 #
 # 4. GL harness: the same lanes on the gl and glcore drivers over
 #    llvmpipe (LIBGL_ALWAYS_SOFTWARE=1), release and TSan. A GL
@@ -340,4 +346,46 @@ jobs:
           export LIBGL_ALWAYS_SOFTWARE=1
           SAN=${{ matrix.san }} DRIVER=${{ matrix.driver }} CYCLES=1 \
             make -C samples/gfx/threaded_video check-driver
+          make -C samples/gfx/threaded_video clean
+
+  d3d11-harness:
+    name: Threaded-video harness on d3d11 (WARP, MSYS2 MinGW64)
+    runs-on: windows-latest
+    timeout-minutes: 90
+    # Advisory until its first green run: the harness has run on a
+    # Windows build under Wine (null driver, every lane), and the d3d11
+    # driver comes up as far as Wine's shader compiler allows; the rest
+    # is the runner's software adapter and real d3dcompiler, which no
+    # machine before the runner had. Drop this line once it passes.
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: >-
+            base-devel
+            git
+          pacboy: >-
+            cc:p
+
+      - name: Configure and build RetroArch (no Qt)
+        shell: msys2 {0}
+        run: |
+          set -eu
+          ./configure --disable-qt
+          grep -q '^HAVE_D3D11 = 1' config.mk
+          make -j"$(nproc)"
+          test -x retroarch.exe
+
+      - name: Run the harness on d3d11
+        shell: msys2 {0}
+        run: |
+          set -eu
+          samples/gfx/threaded_video/build.sh
+          SAN=none DRIVER=d3d11 CYCLES=1 make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean
