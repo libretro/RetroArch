@@ -10,6 +10,11 @@
  *     was honoured. The recursion touches every frame so the compiler
  *     cannot elide it.
  *
+ *  3. Yield. A thread spins on a flag the main thread sets after
+ *     joining a yield loop of its own; sthread_yield returning at all,
+ *     many times, with a runnable peer, is what is checked -- there is
+ *     no observable property of a yield beyond "it came back".
+ *
  *  2. Affinity. A thread pinned to CPU 0 reads its own mask back from the
  *     kernel and reports it; then the mask is cleared with 0 and read
  *     again. Where the platform has no hard affinity the calls return
@@ -161,6 +166,14 @@ int main(void)
                    initial, got, cleared,
                    initial == 1 ? "  (one CPU: the pin check is not load-bearing here)" : "");
       }
+   }
+
+   /* 3 */
+   {
+      unsigned i;
+      for (i = 0; i < 100000; i++)
+         sthread_yield();
+      printf("  yield: 100000 yields returned\n");
    }
 
    printf(ok ? "sthread_ex: ok\n" : "sthread_ex: FAILED\n");

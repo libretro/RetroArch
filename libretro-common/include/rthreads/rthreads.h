@@ -112,6 +112,15 @@ bool sthread_set_affinity(sthread_t *thread, uint64_t mask);
 bool sthread_set_current_affinity(uint64_t mask);
 
 /**
+ * sthread_yield:
+ *
+ * Gives up the rest of this timeslice to any runnable thread. For the
+ * back-off in a bounded spin and for the one place a lock cannot be
+ * taken, a fault handler; never a substitute for a real wait.
+ */
+void sthread_yield(void);
+
+/**
  * Asks the operating system to schedule the calling thread ahead of
  * ordinary threads - a time-critical class on Windows, the audio
  * priority band on Android, real-time round-robin where the POSIX

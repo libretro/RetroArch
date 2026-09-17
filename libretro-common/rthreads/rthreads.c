@@ -278,6 +278,7 @@ typedef sys_lwcond_attr_t rthreads_ps3_lwcond_attr_t;
 #define rthreads_ps3_thread_exit        sysThreadExit
 #define rthreads_ps3_thread_get_id      sysThreadGetId
 #define rthreads_ps3_thread_get_prio    sysThreadGetPriority
+#define rthreads_ps3_thread_yield       sysThreadYield
 #define rthreads_ps3_thread_set_prio    sysThreadSetPriority
 #define rthreads_ps3_lwmutex_create     sysLwMutexCreate
 #define rthreads_ps3_lwmutex_destroy    sysLwMutexDestroy
@@ -300,6 +301,7 @@ typedef sys_lwcond_attribute_t rthreads_ps3_lwcond_attr_t;
 
 #define RTHREADS_PS3_JOINABLE           SYS_PPU_THREAD_CREATE_JOINABLE
 #define rthreads_ps3_thread_create      sys_ppu_thread_create
+#define rthreads_ps3_thread_yield       sys_ppu_thread_yield
 #define rthreads_ps3_thread_join        sys_ppu_thread_join
 #define rthreads_ps3_thread_detach      sys_ppu_thread_detach
 #define rthreads_ps3_thread_exit        sys_ppu_thread_exit
@@ -1875,6 +1877,34 @@ bool sthread_set_current_affinity(uint64_t mask)
 #else
    (void)mask;
    return false;
+#endif
+}
+
+/* Yield the rest of this timeslice to any runnable thread. What a
+ * bounded spin does when its bound is reached and it is not yet ready to
+ * park: the signal-safe alternative to a lock, for the one place a lock
+ * cannot go (a fault handler), and the backoff between polls of a
+ * condition that has no waiter list. Every backend has one. */
+void sthread_yield(void)
+{
+#if defined(USE_WIN32_THREADS)
+   SwitchToThread();
+#elif defined(USE_GX_THREADS)
+   LWP_YieldThread();
+#elif defined(USE_CTR_THREADS)
+   svcSleepThread(0);
+#elif defined(USE_PSP_THREADS) || defined(USE_VITA_THREADS)
+   sceKernelDelayThread(0);
+#elif defined(USE_WIIU_THREADS)
+   OSYieldThread();
+#elif defined(USE_SWITCH_THREADS)
+   svcSleepThread(0);
+#elif defined(USE_PS2_THREADS)
+   RotateThreadReadyQueue(0);
+#elif defined(USE_PS3_THREADS)
+   rthreads_ps3_thread_yield();
+#else
+   sched_yield();
 #endif
 }
 
