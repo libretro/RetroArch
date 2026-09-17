@@ -3608,6 +3608,15 @@ static bool input_overlay_upload_textures(input_overlay_t *ol)
    return true;
 }
 
+/* The video driver is about to go: every pack's textures, active or
+ * cached, are unloaded while it can still do so. The packs keep their
+ * decoded pixels and upload them again on the next enable. */
+void input_overlay_video_teardown(void)
+{
+   input_overlay_release_textures(input_driver_st.overlay_ptr);
+   input_overlay_release_textures(input_driver_st.overlay_cache_ptr);
+}
+
 void input_overlay_release_textures(input_overlay_t *ol)
 {
    size_t i;
@@ -6530,9 +6539,10 @@ static void input_overlay_enable_(bool enable)
 
       if (ol->iface && ol->iface->enable)
          ol->iface->enable(ol->iface_data, false);
-      /* The driver has let go of the pack's textures with the page:
-       * unload them while it is still here to do so. */
-      input_overlay_release_textures(ol);
+      /* The pack's textures stay: the driver they were made on is
+       * still here, and a pack that comes back from the cache shows
+       * its pages without an upload. Only the video teardown unloads
+       * them (input_overlay_video_teardown), the driver still there. */
       ol->iface = NULL;
 
       memset(&ol->overlay_state, 0, sizeof(input_overlay_state_t));

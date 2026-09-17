@@ -491,6 +491,11 @@ void input_overlay_auto_rotate_(
  * and forget the page lists. Safe to call with none uploaded. */
 void input_overlay_release_textures(input_overlay_t *ol);
 
+/* Unload the textures of the active and the cached pack ahead of the
+ * video driver's teardown; they are uploaded again at the next enable
+ * on whatever driver comes up. */
+void input_overlay_video_teardown(void);
+
 void input_overlay_load_active(
       enum overlay_visibility *visibility,
       input_overlay_t *ol, float opacity);

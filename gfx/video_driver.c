@@ -2314,6 +2314,11 @@ void video_driver_free_internal(void)
 #endif
 
    command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
+#ifdef HAVE_OVERLAY
+   /* The unload above parks the pack in the cache with its textures;
+    * those are this driver's, which is about to go. */
+   input_overlay_video_teardown();
+#endif
 
    if (!((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_CACHE_CONTEXT))
       video_driver_free_hw_context();
