@@ -1720,6 +1720,13 @@ void video_display_server_destroy(void)
 #endif
          current_display_server->destroy(video_st->current_display_server_data);
       }
+   /* The server's data is freed by its destroy; the pointer used to
+    * outlive it, and the next destroy - retroarch_deinit_drivers() at
+    * exit, after a reinit had already replaced the server - handed the
+    * Win32 server a freed struct. Cleared here, a second destroy is a
+    * no-op and the next init makes a new server. */
+   video_st->current_display_server_data = NULL;
+   current_display_server                = NULL;
 #if defined(HAVE_SDL2) || defined(HAVE_SDL3)
    if (sdl_display_server_data)
    {

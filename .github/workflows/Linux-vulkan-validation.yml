@@ -352,12 +352,6 @@ jobs:
     name: Threaded-video harness on d3d11 (WARP, MSYS2 MinGW64)
     runs-on: windows-latest
     timeout-minutes: 90
-    # Advisory until its first green run: the harness has run on a
-    # Windows build under Wine (null driver, every lane), and the d3d11
-    # driver comes up as far as Wine's shader compiler allows; the rest
-    # is the runner's software adapter and real d3dcompiler, which no
-    # machine before the runner had. Drop this line once it passes.
-    continue-on-error: true
 
     steps:
       - name: Checkout
