@@ -240,6 +240,11 @@ typedef struct
     * overrides the SRV component mapping (see d3d12_init_texture) */
    UINT                               srv_mapping;
    bool                               dirty;
+   /* The queue fence value the frame that last copied from the upload
+    * buffer signals when it is done (d3d12_upload_texture); 0 when
+    * nothing was ever copied. An in-place update writes the buffer
+    * only past that value. */
+   UINT64                             upload_fence;
 } d3d12_texture_t;
 
 typedef struct ALIGN(16)
@@ -304,6 +309,10 @@ typedef struct
       D3D12Fence               fence;
       HANDLE                   fenceEvent;
       UINT64                   fenceValue;
+      /* fenceValue the present signals once its frame's command list
+       * has executed: the frame in flight is done when the fence has
+       * reached it. */
+      UINT64                   frameSignal;
    } queue;
 
    struct
@@ -968,6 +977,12 @@ static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       d3d12_texture_t* texture, void *userdata)
 {
    D3D12_TEXTURE_COPY_LOCATION src, dst;
+   d3d12_video_t* d3d12_ = (d3d12_video_t*)userdata;
+
+   /* The copy goes into the command list of the frame being recorded,
+    * which signals the next fence value at its end. */
+   if (d3d12_)
+      texture->upload_fence = d3d12_->queue.fenceValue + 1;
 
    src.pResource        = texture->upload_buffer;
    src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
@@ -5275,6 +5290,13 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12)
    cmd->lpVtbl->Close(cmd);
    d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
          (ID3D12CommandList* const*)&d3d12->queue.cmd);
+   /* A signal behind the frame, not waited on here: what the frame
+    * copied from its upload buffers is known to be done when the fence
+    * reaches it, which is what an in-place texture update between
+    * frames asks (d3d12_gfx_update_texture). */
+   d3d12->queue.frameSignal = ++d3d12->queue.fenceValue;
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+         d3d12->queue.fence, d3d12->queue.frameSignal);
    DXGIPresent(d3d12->chain.handle, d3d12->chain.swap_interval, 0);
 
 }
@@ -7859,8 +7881,8 @@ static uintptr_t d3d12_gfx_load_texture(
  * the menu texture streams through. The queue is drained at the top
  * of every frame, so the buffer is not being read when this writes
  * it between frames. */
-static bool d3d12_gfx_update_texture_internal(uintptr_t handle,
-      const struct texture_image *image)
+static bool d3d12_gfx_update_texture_internal(d3d12_video_t *d3d12,
+      uintptr_t handle, const struct texture_image *image)
 {
    d3d12_texture_t *texture = (d3d12_texture_t*)handle;
    if (     !texture || !texture->upload_buffer
@@ -7868,6 +7890,15 @@ static bool d3d12_gfx_update_texture_internal(uintptr_t handle,
          || texture->desc.Height != image->height
          || texture->desc.MipLevels > 1)
       return false;
+   /* A copy from the upload buffer recorded by a frame that has not
+    * finished is still the GPU's to read: this frame is dropped and
+    * the texture keeps what it shows. A texture still marked dirty
+    * has had no copy recorded since its last write, so its buffer is
+    * free to write again. */
+   if (     !texture->dirty && texture->upload_fence && d3d12
+         && d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
+            < texture->upload_fence)
+      return true;
    d3d12_update_texture(image->width, image->height, 0,
          texture->desc.Format, image->pixels, texture);
    return true;
@@ -7877,8 +7908,8 @@ static bool d3d12_gfx_update_texture_internal(uintptr_t handle,
 static uintptr_t d3d12_texture_update_wrap(void *data)
 {
    d3d12_texture_cmd_t *cmd = (d3d12_texture_cmd_t*)data;
-   cmd->handle = d3d12_gfx_update_texture_internal(cmd->handle,
-         cmd->image) ? cmd->handle : 0;
+   cmd->handle = d3d12_gfx_update_texture_internal(cmd->d3d12,
+         cmd->handle, cmd->image) ? cmd->handle : 0;
    return 0;
 }
 #endif
@@ -7902,7 +7933,8 @@ static bool d3d12_gfx_update_texture(void *video_data, uintptr_t id,
    }
 #endif
 
-   return d3d12_gfx_update_texture_internal(id, ti);
+   return d3d12_gfx_update_texture_internal((d3d12_video_t*)video_data,
+         id, ti);
 }
 
 static void d3d12_gfx_unload_texture(void* data,
