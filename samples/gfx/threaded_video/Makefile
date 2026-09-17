@@ -41,12 +41,15 @@ check: all
 # the frontend log. Any validation error fails the run, and so does a
 # harness failure. Needs an X display; with none the target skips
 # (exit 77) rather than failing, as the vulkan_validation sample does.
+# Under a sanitizer (SAN=thread or SAN=address, matching the tree's
+# build) the uninstrumented layer and ICD are suppressed through
+# tsan-vulkan.supp / ubsan-vulkan.supp; frontend reports still fail.
 check-vulkan: all
 	@if [ -z "$$DISPLAY" ]; then echo "check-vulkan: no DISPLAY, skipping"; exit 77; fi; \
 	 HARNESS_VIDEO_DRIVER=vulkan HARNESS_VERBOSE=1 \
 	 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
-	 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
-	 TSAN_OPTIONS=halt_on_error=1:second_deadlock_stack=1 \
+	 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1:suppressions=ubsan-vulkan.supp \
+	 TSAN_OPTIONS=halt_on_error=1:second_deadlock_stack=1:suppressions=tsan-vulkan.supp \
 	 ./$(TARGET) $(CYCLES) > check.log 2>&1; rc=$$?; \
 	 grep -E '\[pass\]|FAIL|all lanes|Validation Error' check.log | grep -v 'XFree86-VidMode'; \
 	 errs=$$(grep -c 'Validation Error' check.log); \

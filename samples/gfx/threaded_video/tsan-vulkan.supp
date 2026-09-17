@@ -1,0 +1,9 @@
+# ThreadSanitizer suppressions for the Vulkan lanes (check-vulkan with
+# SAN=thread): the validation layer, the lavapipe ICD and the LLVM it
+# JITs with are not instrumented, so their internal atomics look like
+# plain accesses. None of it is frontend code; a race in RetroArch
+# itself is still reported and still fails the run.
+race:libVkLayer_khronos_validation.so
+race:libvulkan_lvp.so
+race:libLLVM
+deadlock:libVkLayer_khronos_validation.so

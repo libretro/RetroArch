@@ -1,0 +1,6 @@
+# UndefinedBehaviorSanitizer suppressions for the Vulkan lanes
+# (check-vulkan with SAN=address, which builds address,undefined): the
+# vendored SPIRV-Cross C API downcasts its opaque handle structs, which
+# the vptr check flags on the first chain the driver builds. Not
+# frontend code; anything in RetroArch itself still fails the run.
+vptr:spirv_cross_c.cpp
