@@ -17,6 +17,7 @@ SOURCES := vulkan_validation_test.c \
            $(REPO_ROOT)/gfx/common/vulkan_common.c \
            $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+           $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
            $(LIBRETRO_COMM_DIR)/lists/string_list.c \
            $(LIBRETRO_COMM_DIR)/dynamic/dylib.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
