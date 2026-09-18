@@ -82,8 +82,77 @@ extern unsigned g_joypad_cnt;
  * keyboard/mouse context (g_dinput_ctx) in dinput.c. */
 extern LPDIRECTINPUT8 g_dinput_joypad_ctx;
 
-/* True while a pad enumeration task is in flight. */
+/* True while this generation's pad enumeration is in flight: set when
+ * its job is pushed, cleared when it publishes or is abandoned. Main
+ * thread only. */
 extern volatile bool g_dinput_enum_inflight;
+
+/* One pad enumeration. EnumDevices() runs on the task queue and fills
+ * the job, never g_pads[]; the job's main-thread callback moves the
+ * pads into g_pads[] in one step. Nothing the walk touches is shared
+ * with the driver, so destroy() never has to wait for it: it marks the
+ * job abandoned and the callback, whenever the walk ends, releases
+ * what the job holds instead of publishing it. */
+struct dinput_enum_job;
+
+/* run: the walk, on the task queue. done: its main-thread completion. */
+typedef void (*dinput_enum_fn)(struct dinput_enum_job *job);
+
+struct dinput_enum_job
+{
+   struct dinput_joypad_data pads[MAX_USERS];
+   /* Hybrid driver: XInput user per pad, -1 for a DirectInput pad. */
+   int                       xuser[MAX_USERS];
+   /* Its own reference, so an abandoned walk keeps the context alive
+    * after destroy() drops the driver's. */
+   LPDIRECTINPUT8            ctx;
+   /* Captured on the main thread at push; the walk sets the
+    * cooperative level against it. */
+   HWND                      hwnd;
+   unsigned                  cnt;
+   /* Hybrid driver: snapshot of the XInput state the walk reads. */
+   unsigned                  next_xuser;
+   bool                      xinput_connected[4];
+   bool                      block_xinput;
+   dinput_enum_fn            run;
+   dinput_enum_fn            done;
+   /* Set by destroy() on the main thread; read by the walk to stop
+    * early and by the callback to discard. */
+   volatile bool             abandoned;
+};
+
+/* The in-flight job of the current generation, or NULL. */
+extern struct dinput_enum_job *g_dinput_enum_job;
+
+/* Allocates a job holding its own reference to g_dinput_joypad_ctx. */
+struct dinput_enum_job *dinput_enum_job_new(void);
+
+/* Makes the job current and queues run on the task queue with done as
+ * its main-thread callback, or runs both inline if no task can be
+ * allocated. */
+void dinput_enum_job_start(struct dinput_enum_job *job,
+      dinput_enum_fn run, dinput_enum_fn done);
+
+/* done(), first step. Returns false (and frees the job) if it was
+ * abandoned. Otherwise moves its pads into g_pads[], ends the
+ * in-flight state and returns true; the caller copies any
+ * driver-specific fields, then calls dinput_enum_job_free(). */
+bool dinput_enum_job_claim(struct dinput_enum_job *job);
+
+/* Releases whatever pads the job still holds, its context reference,
+ * and the job. */
+void dinput_enum_job_free(struct dinput_enum_job *job);
+
+/* destroy(): detach the in-flight job, if any, without waiting. */
+void dinput_enum_job_abandon(void);
+
+/* Rumble parameters point into the pad that owns them; re-aim them
+ * after the pad is copied. */
+void dinput_pad_rebind_rumble(struct dinput_joypad_data *pad);
+
+/* Stops and releases the pad's effects and device, frees its names,
+ * and zeroes it. */
+void dinput_pad_release(struct dinput_joypad_data *pad);
 
 RETRO_END_DECLS
 

@@ -827,12 +827,11 @@ void win32_hotplug_arm(void)
 }
 
 /* Called from the input driver's WM_TIMER. Returns true when the
- * joypad driver should be reinitialised now. The one thing that can
- * still make a reinit block is a DirectInput enumeration from the
- * previous one still walking the device tree, which destroy() joins
- * with no limit. Rather than park the window thread on it, re-arm
- * and look again one settle period later: the audio drivers' "skip
- * the pass, retry on a later wake" in place of an open-ended wait. */
+ * joypad driver should be reinitialised now. While a DirectInput
+ * enumeration from the previous reinit is still walking the device
+ * tree, re-arm and look again one settle period later instead:
+ * reinitialising now would discard that walk and queue a fresh one
+ * behind it, since the task queue runs one task at a time. */
 bool win32_hotplug_due(void)
 {
    if (!main_window.hwnd)
