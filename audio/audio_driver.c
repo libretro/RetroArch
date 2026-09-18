@@ -136,6 +136,11 @@ static bool audio_driver_pipeline_transport_publish(uint32_t tempo_q16,
  * throttle, the same thing a blocking driver write was; the cap only
  * exists so a device that stops draining cannot hang the frontend. */
 #define AUDIO_PIPE_WAIT_MAX_US         1000000
+/* The producer's own bound is derived from the ring rather than flat:
+ * this many of its playing times, floored so a tiny ring still leaves
+ * a usable wait. See audio_driver_pipe_wait_us(). */
+#define AUDIO_PIPE_WAIT_FILLS          4
+#define AUDIO_PIPE_WAIT_MIN_US         20000
 
 /* The policy floor on the latency setting, in milliseconds, applied
  * once here before any driver sees it. The setting's range starts at
@@ -2128,7 +2133,8 @@ static void audio_driver_ff_frame_end(audio_driver_state_t *audio_st)
          double mult = audio_driver_fastforward_ratio_mult(audio_st, frames);
          audio_st->pipe_ff_frames = 0;
          if (audio_driver_pipe_ff_waits(audio_st))
-            mult = MAX(AUDIO_MIN_RATIO, mult / audio_driver_pipe_ff_trim(audio_st));
+            mult = MIN(AUDIO_MAX_RATIO, MAX(AUDIO_MIN_RATIO,
+                     mult / audio_driver_pipe_ff_trim(audio_st)));
          retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
                (int)(mult * 65536.0));
          return;
@@ -5210,6 +5216,37 @@ static size_t audio_driver_pipe_chunk_bytes(audio_driver_state_t *audio_st)
  * shorter than a video frame at the low latency settings. That is a
  * gap at the frame rate, and it is what the threaded pipeline was
  * doing on CoreAudio at 8 ms while the inline path was clean. */
+/* How long the producer may wait for the consumer to complete a pass.
+ * That pass is paced by the device draining the source the ring holds,
+ * so the bound is the ring's own playing time at the speed it is being
+ * pulled at - shorter in fast-forward, where the pull is faster and
+ * where this wait is now reached at all. Flat, it was a second, and a
+ * device that had stopped draining cost the frontend every bit of it
+ * before the stall was latched. */
+static retro_time_t audio_driver_pipe_wait_us(audio_driver_state_t *audio_st)
+{
+   double us, mult = 1.0;
+   size_t frames;
+   if (!audio_st->pipe_frame_bytes || !(audio_st->input > 0.0f))
+      return AUDIO_PIPE_WAIT_MAX_US;
+   if (retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
+         & AUDIO_SNAP_FASTMOTION)
+   {
+      mult = (double)retro_atomic_load_acquire_int(&audio_st->pipe_ff_mult_q16)
+         / 65536.0;
+      if (!(mult > 0.0) || mult > 1.0)
+         mult = 1.0;
+   }
+   frames = audio_st->pipe_ring.capacity / audio_st->pipe_frame_bytes;
+   us     = (double)frames * mult * AUDIO_PIPE_WAIT_FILLS * 1000000.0
+      / (double)audio_st->input;
+   if (us < AUDIO_PIPE_WAIT_MIN_US)
+      return AUDIO_PIPE_WAIT_MIN_US;
+   if (us > AUDIO_PIPE_WAIT_MAX_US)
+      return AUDIO_PIPE_WAIT_MAX_US;
+   return (retro_time_t)us;
+}
+
 static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
 {
    size_t frame_bytes, target, ring_max;
@@ -5576,7 +5613,7 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
              * would be a bound on nothing: enough of them and the
              * frontend sits here for multiples of it. */
             retro_time_t deadline = cpu_features_get_time_usec()
-                  + AUDIO_PIPE_WAIT_MAX_US;
+                  + audio_driver_pipe_wait_us(audio_st);
             /* The frame-end signal cannot arrive while its producer waits
              * here. Wake a consumer parked for data before waiting for space. */
             audio_driver_pipeline_signal(audio_st);
