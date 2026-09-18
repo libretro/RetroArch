@@ -62,6 +62,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos/cheevos_menu.h"
+#include "../../gfx/gfx_surface.h"
 #endif
 
 /* Force a helper out of line even though it has a single call site.
@@ -1841,7 +1842,7 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
                   &xmb->textures.bg, gfx_display_texture_filter(),
                   NULL, NULL))
                task_push_image_load(path,
-                     (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
+                     gfx_surface_wants_rgba(), 0,
                      0,
                      menu_display_handle_wallpaper_upload, NULL);
 
@@ -1849,7 +1850,7 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
          }
          else
             task_push_image_load(path,
-                  (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
+                  gfx_surface_wants_rgba(), 0,
                   0,
                   menu_display_handle_wallpaper_upload, NULL);
 
@@ -3665,7 +3666,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
    unsigned i;
    char iconpath[PATH_MAX_LENGTH];
    char icons_path_default[PATH_MAX_LENGTH];
-   bool supports_rgba               = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   bool supports_rgba               = gfx_surface_wants_rgba();
    int depth                        = 1;
    size_t list_size                 = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL);
    uintptr_t tag                    = (uintptr_t)&xmb->x;

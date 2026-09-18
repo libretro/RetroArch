@@ -97,6 +97,14 @@ bool gfx_surface_query_requirements(unsigned width,
    return true;
 }
 
+bool gfx_surface_wants_rgba(void)
+{
+   gfx_surface_requirements_t req;
+   if (!gfx_surface_query_requirements(0, &req))
+      return false;
+   return req.rgba;
+}
+
 bool gfx_surface_supports_compressed(enum texture_gpu_format fmt)
 {
    return video_driver_supports_texture_format(fmt);

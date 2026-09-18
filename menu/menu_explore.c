@@ -27,6 +27,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
+#include "../gfx/gfx_surface.h"
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "../retroarch.h"
@@ -432,7 +433,7 @@ static void explore_load_icons(explore_state_t *state)
 {
    char path[PATH_MAX_LENGTH];
    size_t i, _len, system_count;
-   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   bool supports_rgba = gfx_surface_wants_rgba();
    if (!state)
       return;
 

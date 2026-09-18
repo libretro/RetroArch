@@ -45,6 +45,7 @@
 #endif
 
 #include "../../config.def.h"
+#include "../../gfx/gfx_surface.h"
 #include "../../driver.h"
 #include "../../file_path_special.h"
 
@@ -2433,7 +2434,7 @@ static int generic_action_ok(const char *path,
                   action_path);
 
             task_push_image_load(action_path,
-                  (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
+                  gfx_surface_wants_rgba(), 0,
                   0,
                   menu_display_handle_wallpaper_upload, NULL);
          }

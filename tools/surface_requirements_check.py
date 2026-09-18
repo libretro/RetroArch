@@ -31,17 +31,10 @@ EXEMPT_FILES = ("gfx/gfx_surface.c", "gfx/video_driver.c")
 
 # Producers that read the flags directly, each still to be migrated to
 # gfx_surface_query_requirements(). Shrinks; never grows.
+# retroarch.c clears the flag as part of tearing a driver down and
+# runloop.c answers a core's environment query with it; neither is a
+# producer deciding what to decode, so neither is migrated.
 ALLOWLIST = {
-    "gfx/gfx_display.c",
-    "gfx/gfx_widgets.c",
-    "gfx/widgets/gfx_widget_volume.c",
-    "menu/cbs/menu_cbs_ok.c",
-    "menu/drivers/materialui.c",
-    "menu/drivers/ozone.c",
-    "menu/drivers/rgui.c",
-    "menu/drivers/xmb.c",
-    "menu/menu_contentless_cores.c",
-    "menu/menu_explore.c",
     "retroarch.c",
     "runloop.c",
 }

@@ -60,6 +60,7 @@
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos/cheevos_menu.h"
 #include <compat/strl.h>
+#include "../../gfx/gfx_surface.h"
 #endif
 
 /* Force a render phase out of line even though it has a single call
@@ -5404,7 +5405,7 @@ static ozone_node_t *ozone_alloc_node(void)
 static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 {
    unsigned i;
-   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   bool supports_rgba = gfx_surface_wants_rgba();
    size_t list_size = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
 
    RHMAP_FREE(ozone->playlist_db_node_map);

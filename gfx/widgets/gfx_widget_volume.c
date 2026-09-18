@@ -22,6 +22,7 @@
 #include "../gfx_animation.h"
 #include "../gfx_display.h"
 #include "../../tasks/tasks_internal.h"
+#include "../gfx_surface.h"
 
 /* Constants */
 #define VOLUME_DURATION 3000
@@ -360,7 +361,7 @@ static void gfx_widget_volume_context_reset(bool is_threaded,
       char* widgets_png_path)
 {
    size_t i;
-   bool supports_rgba                    = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   bool supports_rgba                    = gfx_surface_wants_rgba();
    gfx_widget_volume_state_t *state      = &p_w_volume_st;
 
    volume_icon_load_gen++;

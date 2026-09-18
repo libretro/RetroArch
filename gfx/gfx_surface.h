@@ -173,6 +173,12 @@ typedef struct
 bool gfx_surface_query_requirements(unsigned width,
       gfx_surface_requirements_t *req);
 
+/* The channel order alone, for the many producers that decode 32-bit
+ * images and have no other question: true for memory-order R,G,B,A,
+ * false for ARGB words. Shorthand for the rgba field of a full query,
+ * and the same answer. */
+bool gfx_surface_wants_rgba(void);
+
 /* Whether the active driver can sample @fmt as a compressed texture,
  * so a decoder can keep the GPU-native payload instead of expanding
  * it. */
