@@ -17,6 +17,7 @@
 
 #include "cheevos.h"
 
+#include <compat/strl.h>
 #include <features/features_cpu.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
@@ -474,12 +475,10 @@ static void rcheevos_client_download_task_callback(retro_task_t* task,
    {
       CHEEVOS_LOG(RCHEEVOS_TAG "Error writing %s\n", callback_data->badge_fullpath);
    }
-#ifdef HAVE_MENU
    else
    {
-      rcheevos_menu_update_badge_references(callback_data->badge_name);
+      rcheevos_update_badge_references(callback_data->badge_name);
    }
-#endif
 
    if (callback_data->queue)
    {
@@ -779,5 +778,96 @@ void rcheevos_client_download_achievement_badges(rc_client_t* client)
 
 #undef RCHEEVOS_CONCURRENT_BADGE_DOWNLOADS
 
+static void rcheevos_client_download_user_badge(void)
+{
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
 
+   const rc_client_user_t* user = rc_client_get_user_info(rcheevos_locals->client);
+   if (user)
+   {
+      char badge_name[32];
+      snprintf(badge_name, sizeof(badge_name), "u%u", rc_djb2(user->username));
 
+      rcheevos_client_download_badge_from_url(user->avatar_url, badge_name);
+   }
+}
+
+static void rcheevos_client_download_subset_badge(const char* badge_name)
+{
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+
+   const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals->client);
+   if (game && strcmp(game->badge_name, &badge_name[1]) == 0)
+   {
+      rcheevos_client_download_badge_from_url(game->badge_url, badge_name);
+   }
+   else
+   {
+      rc_client_subset_list_t* subset_list = rc_client_create_subset_list(rcheevos_locals->client);
+      uint32_t i;
+      for (i = 0; i < subset_list->num_subsets; ++i)
+      {
+         if (strcmp(subset_list->subsets[i]->badge_name, &badge_name[1]) == 0)
+         {
+            rcheevos_client_download_badge_from_url(subset_list->subsets[i]->badge_url, badge_name);
+            break;
+         }
+      }
+      rc_client_destroy_subset_list(subset_list);
+   }
+}
+
+static void rcheevos_client_download_achievement_badge(const char* badge_name, bool locked)
+{
+   /* have to find the achievement associated to badge_name, then fetch either badge_url
+    * or badge_locked_url based on the locked parameter */
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   rc_client_achievement_list_t* list = rc_client_create_achievement_list(rcheevos_locals->client,
+      RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE_AND_UNOFFICIAL,
+      RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_PROGRESS);
+   if (list)
+   {
+      const char* url = NULL;
+      uint32_t i, j;
+      for (i = 0; i < list->num_buckets && !url; i++)
+      {
+         for (j = 0; j < list->buckets[i].num_achievements; j++)
+         {
+            const rc_client_achievement_t* achievement = list->buckets[i].achievements[j];
+            if (achievement && strcmp(achievement->badge_name, badge_name) == 0)
+            {
+               url = locked ? achievement->badge_locked_url : achievement->badge_url;
+               break;
+            }
+         }
+      }
+
+      if (url)
+      {
+         char locked_badge_name[32];
+         if (locked)
+         {
+            snprintf(locked_badge_name, sizeof(locked_badge_name), "%s_lock", badge_name);
+            badge_name = locked_badge_name;
+         }
+
+         rcheevos_client_download_badge_from_url(url, badge_name);
+      }
+
+      rc_client_destroy_achievement_list(list);
+   }
+}
+
+/* A badge file is missing locally: fetch it. Which URL depends on the
+ * kind of badge, which the name's first letter says. */
+void rcheevos_badge_request_download(const char* badge, bool locked)
+{
+   if (!badge || !badge[0])
+      return;
+   if (badge[0] == 'i')
+      rcheevos_client_download_subset_badge(badge);
+   else if (badge[0] == 'u')
+      rcheevos_client_download_user_badge();
+   else
+      rcheevos_client_download_achievement_badge(badge, locked);
+}

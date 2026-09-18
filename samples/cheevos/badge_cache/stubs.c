@@ -20,7 +20,7 @@
 /* ---- test-visible state ---- */
 int      st_on_main_thread = 1;
 char     st_badge_dir[256] = "/tmp";
-char     st_existing[8][64];          /* badge files that "exist" */
+char     st_existing[32][64];          /* badge files that "exist" */
 unsigned st_existing_count;
 unsigned st_downloads;                /* rcheevos_badge_request_download calls */
 char     st_last_download[64];
@@ -35,7 +35,7 @@ typedef struct
    retro_task_callback_t cb;
    void *user;
 } parked_t;
-parked_t st_parked[16];
+parked_t st_parked[32];
 unsigned st_parked_count;
 
 /* parked async uploads */
@@ -115,7 +115,7 @@ bool task_push_image_load(const char *fullpath, bool supports_rgba,
       retro_task_callback_t cb, void *userdata)
 {
    (void)supports_rgba; (void)upscale_threshold; (void)downscale_cap;
-   if (st_parked_count >= 16)
+   if (st_parked_count >= 32)
       return false;
    strlcpy(st_parked[st_parked_count].path, fullpath, sizeof(st_parked[0].path));
    st_parked[st_parked_count].cb   = cb;

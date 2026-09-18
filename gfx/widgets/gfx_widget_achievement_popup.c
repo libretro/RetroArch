@@ -33,7 +33,6 @@ typedef struct cheevo_popup
    char* subtitle;
    char* badge_name;
    uintptr_t badge;
-   retro_time_t badge_retry;
 } cheevo_popup;
 
 enum
@@ -228,19 +227,12 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       gfx_display_set_alpha(p_dispwidget->backdrop_orig, DEFAULT_BACKDROP);
       gfx_display_set_alpha(pure_white, 1.0f);
 
-      /* badge wasn't ready, periodically see if it's become available */
+      /* Badge wasn't ready. See if it's become available */
       if (!state->queue[state->queue_read_index].badge &&
          state->queue[state->queue_read_index].badge_name)
       {
-         const retro_time_t next_try = state->queue[state->queue_read_index].badge_retry;
-         const retro_time_t now      = cpu_features_get_time_usec();
-         if (next_try == 0 || now > next_try)
-         {
-            /* try again in 250ms */
-            state->queue[state->queue_read_index].badge_retry = now + 250000;
-            state->queue[state->queue_read_index].badge =
-               rcheevos_get_badge_texture(state->queue[state->queue_read_index].badge_name, false, false);
-         }
+         state->queue[state->queue_read_index].badge =
+            rcheevos_get_badge_texture(state->queue[state->queue_read_index].badge_name, false, false);
       }
 
       /* Default Badge */
@@ -679,7 +671,6 @@ static void gfx_widget_achievement_popup_iterate(void *user_data,
       state->queue[state->queue_write_index].title       = node->title;
       state->queue[state->queue_write_index].subtitle    = node->subtitle;
       state->queue[state->queue_write_index].badge_name  = node->badge_name;
-      state->queue[state->queue_write_index].badge_retry = 0;
       free(node);
 
       state->queue_write_index =

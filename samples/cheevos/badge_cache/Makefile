@@ -14,14 +14,15 @@ SOURCES := badge_cache_test.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
-           $(LIBRETRO_COMM_DIR)/time/rtime.c
+           $(LIBRETRO_COMM_DIR)/time/rtime.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
 OBJECTS := $(SOURCES:.c=.o)
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_MENU -DHAVE_CHEEVOS -DRARCH_INTERNAL \
+CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_MENU -DHAVE_CHEEVOS -DHAVE_THREADS -DRARCH_INTERNAL \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include \
            -I$(REPO_ROOT)/deps -I$(REPO_ROOT)/deps/rcheevos/include
-LDFLAGS += -lm
+LDFLAGS += -lm -lpthread
 
 CFLAGS  += $(EXTRA_CFLAGS)
 
