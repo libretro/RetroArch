@@ -156,4 +156,72 @@ static INLINE int64_t vblank_clock_until_line(const vblank_clock_t *c,
          / (double)total);
 }
 
+/* Vblank timestamps from scanline readings, for a display that has a
+ * cheap scanline counter and no usable vblank wait - XDDM, Windows 2000
+ * and XP, where IDirectDraw::GetScanLine is one call to the display
+ * driver but WaitForVerticalBlank blocks or spins as each driver sees
+ * fit while holding DirectDraw's process-wide lock.
+ *
+ * Each reading in the active region says how long ago the last vblank
+ * began: the blanking lines, then the lines read, at the beam's line
+ * rate. The rate is measured from pairs of readings in the same frame at
+ * least a millisecond apart, and the total line count follows from the
+ * rate and the period - XDDM has no QueryDisplayConfig to ask. A
+ * reading taken during blanking (the driver's
+ * DDERR_VERTICALBLANKINPROGRESS) says nothing about the line and is
+ * passed as -1. */
+typedef struct vblank_sampler
+{
+   int64_t  prev_us;     /* the last reading in the active region, or 0 */
+   int      prev_line;
+   double   rate;        /* lines per microsecond, smoothed */
+   unsigned rate_n;      /* readings the rate is from */
+} vblank_sampler_t;
+
+/* Readings the rate must be from before a vblank is reported. */
+#define VBLANK_SAMPLER_SETTLE 16
+
+/* A reading of @line, taken at @t_us (the middle of the call). Returns
+ * the time of the vblank it implies, or 0 while the rate is not known
+ * yet or the reading says nothing; *total_out gets the implied total
+ * line count. @period_us is the refresh period as best known. */
+static INLINE int64_t vblank_sampler_feed(vblank_sampler_t *s, int64_t t_us,
+      int line, unsigned active, double period_us, unsigned *total_out)
+{
+   double total;
+
+   if (line < 0 || line >= (int)active || period_us <= 0.0)
+   {
+      s->prev_us = 0;
+      return 0;
+   }
+   if (s->prev_us && line > s->prev_line)
+   {
+      double dt = (double)(t_us - s->prev_us);
+      /* Same frame (no wrap fits in under 0.8 of a period with the line
+       * higher than before), and far enough apart to mean something. */
+      if (dt >= 1000.0 && dt < 0.8 * period_us)
+      {
+         double r = (double)(line - s->prev_line) / dt;
+         if (!s->rate_n)
+            s->rate = r;
+         else
+            s->rate += (r - s->rate) / 16.0;
+         s->rate_n++;
+      }
+   }
+   s->prev_us   = t_us;
+   s->prev_line = line;
+
+   if (s->rate_n < VBLANK_SAMPLER_SETTLE || s->rate <= 0.0)
+      return 0;
+   total = floor(s->rate * period_us + 0.5);
+   if (total <= (double)active)
+      return 0;
+   *total_out = (unsigned)total;
+   /* Since the vblank began: the blanking lines, then @line. */
+   return t_us - (int64_t)(((total - (double)active) + (double)line)
+         / s->rate);
+}
+
 #endif

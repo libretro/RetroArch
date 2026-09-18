@@ -180,6 +180,25 @@ jobs:
           done
           echo "[pass] atomic backend portability"
 
+      - name: Build and run vblank_clock_ddraw_test (MinGW, under wine)
+        shell: bash
+        working-directory: samples/gfx/vblank_clock_ddraw
+        run: |
+          set -eu
+          # Scanline Sync's Windows 2000/XP tier against a real DirectDraw
+          # (wine's, which reports the counter as an XDDM driver does):
+          # GetScanLine readings into vblank_sampler_feed and the vblank
+          # clock, and the clock's beam checked against GetScanLine.
+          if ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1 \
+                || ! command -v wine >/dev/null 2>&1 \
+                || ! command -v xvfb-run >/dev/null 2>&1; then
+             sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine64 xvfb \
+                -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+          fi
+          make clean all
+          WINEDEBUG=-all timeout 300 xvfb-run -a -s "-screen 0 1280x1024x24" make check
+          echo "[pass] vblank_clock_ddraw_test (wine)"
+
       - name: Build and run vblank_clock_test (C89, ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/vblank_clock

@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #include "gfx/common/vblank_clock.h"
 
@@ -189,6 +190,70 @@ int main(void)
       double t = true_vblank(n - 1) + 0.9 * TRUE_US;   /* near the bottom */
       check(vblank_clock_until_line(&c, (int64_t)t, ACTIVE, TOTAL, 100) == 0,
             "wait is 0 when the beam is already past the line");
+   }
+
+   printf("scanline sampling (XDDM): readings in, vblanks out\n");
+   {
+      /* A counter read twice a frame at varying points, each read
+       * taking 2-30 us, and a driver that reports blanking as an error.
+       * The period the sampler is given starts at the mode's whole-Hz
+       * rate, as EnumDisplaySettings reports it, and follows the clock
+       * once that has settled. */
+      vblank_clock_t   k;
+      vblank_sampler_t smp;
+      double true_us = 1000000.0 / 59.94;
+      unsigned total_seen = 0;
+      int worst = 0, used = 0;
+      memset(&smp, 0, sizeof(smp));
+      vblank_clock_init(&k, 1000000.0 / 60.0);
+      srand(11);
+      for (n = 0; n < 1500; n++)
+      {
+         int r;
+         for (r = 0; r < 2; r++)
+         {
+            double frac  = 0.05 + 0.85 * rand() / (double)RAND_MAX;
+            double t0    = 1000000.0 + n * true_us + frac * true_us;
+            double cost  = 2.0 + 28.0 * rand() / (double)RAND_MAX;
+            double at    = t0 + cost * rand() / (double)RAND_MAX;
+            double since = fmod(at - 1000000.0, true_us);
+            int line     = (int)ACTIVE + (int)(since / true_us * TOTAL);
+            unsigned tot = 0;
+            int64_t vb;
+            double period = (k.good >= VBLANK_CLOCK_SETTLE) ? k.period_us : k.nominal_us;
+            if (line >= (int)TOTAL)
+               line -= (int)TOTAL;
+            if (line >= (int)ACTIVE)
+               line = -1;              /* DDERR_VERTICALBLANKINPROGRESS */
+            vb = vblank_sampler_feed(&smp, (int64_t)(t0 + cost / 2.0),
+                  line, ACTIVE, period, &tot);
+            if (vb)
+            {
+               vblank_clock_feed(&k, vb);
+               total_seen = tot;
+            }
+         }
+         if (n > 300)
+         {
+            double t = 1000000.0 + n * true_us + 0.5 * true_us;
+            int beam = total_seen ? vblank_clock_beam(&k, (int64_t)t, ACTIVE, total_seen) : -1;
+            if (beam >= 0)
+            {
+               double since = fmod(t - 1000000.0, true_us);
+               int truth    = (int)ACTIVE + (int)(since / true_us * TOTAL);
+               if (truth >= (int)TOTAL)
+                  truth -= (int)TOTAL;
+               used++;
+               if (line_err(beam, truth) > worst)
+                  worst = line_err(beam, truth);
+            }
+         }
+      }
+      printf("  (total lines implied %u of %u, worst beam error %d lines, usable %d of 1199 frames)\n",
+            total_seen, TOTAL, worst, used);
+      check(total_seen >= TOTAL - 3 && total_seen <= TOTAL + 3,
+            "the total line count comes out of the rate");
+      check(used > 1100 && worst <= 8, "the beam follows from readings alone, within 8 lines");
    }
 
    if (failures)

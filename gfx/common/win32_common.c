@@ -120,6 +120,9 @@ typedef char win32_dwm_timing_info_size_check[
 
 #include "win32_common.h"
 #include "vblank_clock.h"
+#ifdef HAVE_D3DKMT
+#include <ddraw.h>
+#endif
 
 
 #ifdef HAVE_GDI
@@ -264,151 +267,367 @@ typedef NTSTATUS (CALLBACK *D3DKMTCLOSEADAPTER_FN)(const D3DKMT_CLOSEADAPTER*);
 static D3DKMTCLOSEADAPTER_FN pD3DKMTCloseAdapter;
 
 /* ---------------------------------------------------------------------
- * The vblank clock.
+ * The vblank clock, and what feeds it.
  *
- * D3DKMTGetScanLine is a system call that looks the adapter up by
- * handle, takes its DDI lock and calls into the display miniport -
- * measured at about 223 us a call - and Scanline Sync used to call it
- * in a loop until the beam reached its line. The vblank event is the
- * better reference: measured within 30 us of the real vblank, period
- * accurate to 0.02%. So a thread waits on it and timestamps each one,
- * and the beam at any moment is arithmetic: the time since the last
- * vblank over the period, times the mode's total lines, counting from
- * the last active line, where vblank begins.
+ * Scanline Sync races the beam on arithmetic: gfx/common/vblank_clock.h
+ * keeps the phase and period of the display's vblanks, and the beam at
+ * any moment follows from the time since the last one. The frame thread
+ * never polls a counter. Three sources can feed the clock, picked per
+ * display, best first:
  *
- * The wait is bounded in the kernel (NtGdiDdDDIWaitForVerticalBlankEvent
- * passes an 80 ms timeout to KeWaitForSingleObject), so the thread
- * always comes back to see its stop flag, and a failed wait - a timeout
- * with the display asleep - is never taken for a vblank. A gap that is
- * not a whole number of periods resets the estimate; a whole number is
- * missed vblanks and only moves the phase. A period that will not
- * settle - variable refresh - keeps the clock unhealthy, and the frame
- * falls back to reading the counter.
+ * DWM (Vista and later, composition on - always from Windows 8).
+ *   DwmGetCompositionTimingInfo reports the last vblank and the refresh
+ *   period DWM already tracks; the frame thread reads it once per call,
+ *   no thread, no kernel wait. With composition on, a frame reaches the
+ *   screen at DWM's next composition, so this is the clock that
+ *   deadline runs on. Used only while its period matches the window's
+ *   monitor: DWM paces to one display, which on a mixed-rate
+ *   multi-monitor desktop need not be this one. Exclusive fullscreen
+ *   stops its timestamps advancing, and the kernel event takes over.
+ *
+ * The kernel vblank event (WDDM). A thread waits on
+ *   D3DKMTWaitForVerticalBlankEvent - read from dxgkrnl, a
+ *   KeWaitForSingleObject on the adapter's vblank event with an 80 ms
+ *   timeout, so it cannot hang - and timestamps each one. Called
+ *   directly: DXGI's WaitForVBlank resolves this same export by name,
+ *   and DirectDraw's WaitForVerticalBlank on WDDM is a busy loop over
+ *   D3DKMTGetScanLine (ddraw 6.1, DdWaitForVerticalBlank), so neither
+ *   is a better way in.
+ *
+ * DirectDraw scanline readings (XDDM: Windows 2000 and XP, where no
+ *   D3DKMT exists). IDirectDraw::GetScanLine there is one call into the
+ *   display driver; WaitForVerticalBlank is not used - its only
+ *   blocking modes block or spin in the driver as each driver sees fit,
+ *   holding DirectDraw's process-wide lock, and its event mode returns
+ *   E_NOTIMPL (ddraw 5.3.2600.5512). A reading per call becomes a
+ *   vblank timestamp through vblank_sampler_feed(), which measures the
+ *   line rate and the total line count XDDM has no API to report.
+ *
+ * Until the clock has settled - VBLANK_CLOCK_SETTLE good vblanks - the
+ * frame is told there is no scanline, and Scanline Sync idles rather
+ * than polling. Only a display none of these can serve (Vista, which
+ * has no QueryDisplayConfig for the line counts) reads the counter.
  * ------------------------------------------------------------------- */
+static vblank_clock_t d3dkmt_vc;
 #ifdef HAVE_THREADS
-typedef struct d3dkmt_clock
-{
-   sthread_t   *thread;
-   slock_t     *lock;
-   HANDLE       stop_event;
-   D3DKMT_WAITFORVERTICALBLANKEVENT vb;
-   volatile int stop;
-   /* Under lock. Started from the mode's rate as it was when the clock
-    * started - its own copy, so a mode change on the frame thread never
-    * races it. */
-   vblank_clock_t vc;
-} d3dkmt_clock_t;
-
-static d3dkmt_clock_t d3dkmt_clock;
+/* The kernel-event thread feeds the clock from its own thread. */
+static slock_t *d3dkmt_vc_lock;
+#define D3DKMT_VC_LOCK()   do { if (d3dkmt_vc_lock) slock_lock(d3dkmt_vc_lock); } while (0)
+#define D3DKMT_VC_UNLOCK() do { if (d3dkmt_vc_lock) slock_unlock(d3dkmt_vc_lock); } while (0)
+#else
+#define D3DKMT_VC_LOCK()   do { } while (0)
+#define D3DKMT_VC_UNLOCK() do { } while (0)
 #endif
 
-/* The mode's line counts, from its signal timing; 0 when unknown. */
+enum d3dkmt_source
+{
+   D3DKMT_SRC_NONE = 0,
+   D3DKMT_SRC_DWM,
+   D3DKMT_SRC_KMT,
+   D3DKMT_SRC_DDRAW
+};
+static enum d3dkmt_source d3dkmt_source;
+
+/* The mode's line counts and rate; 0 when unknown. */
 static unsigned d3dkmt_active_lines;
 static unsigned d3dkmt_total_lines;
 static double   d3dkmt_nominal_period_us;
 
-#ifdef HAVE_THREADS
-static void d3dkmt_clock_thread(void *data)
+static void d3dkmt_vc_reset(void)
 {
-   d3dkmt_clock_t *c = (d3dkmt_clock_t*)data;
+   D3DKMT_VC_LOCK();
+   vblank_clock_init(&d3dkmt_vc, d3dkmt_nominal_period_us);
+   D3DKMT_VC_UNLOCK();
+}
+
+static void d3dkmt_vc_feed(int64_t when)
+{
+   D3DKMT_VC_LOCK();
+   vblank_clock_feed(&d3dkmt_vc, when);
+   D3DKMT_VC_UNLOCK();
+}
+
+static void d3dkmt_vc_read(vblank_clock_t *out)
+{
+   D3DKMT_VC_LOCK();
+   *out = d3dkmt_vc;
+   D3DKMT_VC_UNLOCK();
+}
+
+/* ---- the kernel vblank event --------------------------------------- */
+#ifdef HAVE_THREADS
+typedef struct d3dkmt_kmt
+{
+   sthread_t   *thread;
+   HANDLE       stop_event;
+   D3DKMT_WAITFORVERTICALBLANKEVENT vb;
+   volatile int stop;
+} d3dkmt_kmt_t;
+
+static d3dkmt_kmt_t d3dkmt_kmt;
+
+static void d3dkmt_kmt_thread(void *data)
+{
+   d3dkmt_kmt_t *k = (d3dkmt_kmt_t*)data;
 
    /* Its timestamps are the beam estimate: a late wake-up is a beam
     * position off by that much. */
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
-   while (!c->stop)
+   while (!k->stop)
    {
-      retro_time_t now;
-      NTSTATUS     r = pD3DKMTWaitForVerticalBlankEvent(&c->vb);
-
-      if (c->stop)
+      NTSTATUS r = pD3DKMTWaitForVerticalBlankEvent(&k->vb);
+      if (k->stop)
          break;
       if (r != STATUS_SUCCESS)
       {
-         /* The kernel's own 80 ms timeout, or the adapter gone. An
-          * error that returns at once must not become a busy loop:
-          * back off on the stop event, which stop() also signals. */
-         slock_lock(c->lock);
-         vblank_clock_miss(&c->vc);
-         slock_unlock(c->lock);
-         WaitForSingleObject(c->stop_event, 100);
+         /* The kernel's own 80 ms timeout, or the adapter gone: never
+          * a vblank. An error that returns at once must not become a
+          * busy loop, so back off on the stop event. */
+         D3DKMT_VC_LOCK();
+         vblank_clock_miss(&d3dkmt_vc);
+         D3DKMT_VC_UNLOCK();
+         WaitForSingleObject(k->stop_event, 100);
          continue;
       }
-
-      now = cpu_features_get_time_usec();
-      slock_lock(c->lock);
-      vblank_clock_feed(&c->vc, now);
-      slock_unlock(c->lock);
+      d3dkmt_vc_feed(cpu_features_get_time_usec());
    }
 }
 
-/* Called on the thread that owns the adapter state, before the adapter
- * handle the clock waits on is closed. Bounded: the wait it joins
- * returns at the next vblank, or at the kernel's 80 ms timeout. */
-static void d3dkmt_clock_stop(void)
+/* On the thread that owns the adapter state, before the handle the
+ * thread waits on is closed. Bounded: the wait it joins returns at the
+ * next vblank or the kernel's 80 ms timeout. */
+static void d3dkmt_kmt_stop(void)
 {
-   d3dkmt_clock_t *c = &d3dkmt_clock;
-   if (!c->thread)
+   d3dkmt_kmt_t *k = &d3dkmt_kmt;
+   if (!k->thread)
       return;
-   c->stop = 1;
-   SetEvent(c->stop_event);
-   sthread_join(c->thread);
-   c->thread = NULL;
-   CloseHandle(c->stop_event);
-   slock_free(c->lock);
-   memset(c, 0, sizeof(*c));
+   k->stop = 1;
+   SetEvent(k->stop_event);
+   sthread_join(k->thread);
+   CloseHandle(k->stop_event);
+   memset(k, 0, sizeof(*k));
 }
 
-static void d3dkmt_clock_start(void)
+static bool d3dkmt_kmt_start(void)
 {
-   d3dkmt_clock_t *c = &d3dkmt_clock;
-   if (     c->thread
-         || !pD3DKMTWaitForVerticalBlankEvent
+   d3dkmt_kmt_t *k = &d3dkmt_kmt;
+   if (k->thread)
+      return true;
+   if (     !pD3DKMTWaitForVerticalBlankEvent
          || !d3dkmt_adapter.vb.hAdapter
-         || !d3dkmt_total_lines
-         || d3dkmt_nominal_period_us <= 0.0)
-      return;
-   memset(c, 0, sizeof(*c));
-   c->vb = d3dkmt_adapter.vb;
-   vblank_clock_init(&c->vc, d3dkmt_nominal_period_us);
-   if (!(c->lock = slock_new()))
-      return;
-   if (!(c->stop_event = CreateEvent(NULL, FALSE, FALSE, NULL)))
-   {
-      slock_free(c->lock);
-      c->lock = NULL;
-      return;
-   }
-   if (!(c->thread = sthread_create(d3dkmt_clock_thread, c)))
-   {
-      CloseHandle(c->stop_event);
-      slock_free(c->lock);
-      memset(c, 0, sizeof(*c));
-   }
-}
-
-/* A copy of the clock, taken under its lock; false when there is no
- * clock. */
-static bool d3dkmt_clock_read(vblank_clock_t *out)
-{
-   d3dkmt_clock_t *c = &d3dkmt_clock;
-   if (!c->thread)
+         || !d3dkmt_vc_lock)
       return false;
-   slock_lock(c->lock);
-   *out = c->vc;
-   slock_unlock(c->lock);
+   memset(k, 0, sizeof(*k));
+   k->vb = d3dkmt_adapter.vb;
+   if (!(k->stop_event = CreateEvent(NULL, FALSE, FALSE, NULL)))
+      return false;
+   if (!(k->thread = sthread_create(d3dkmt_kmt_thread, k)))
+   {
+      CloseHandle(k->stop_event);
+      memset(k, 0, sizeof(*k));
+      return false;
+   }
    return true;
 }
 #else
-static void d3dkmt_clock_stop(void) { }
-static void d3dkmt_clock_start(void) { }
-static bool d3dkmt_clock_read(vblank_clock_t *out) { return false; }
+static void d3dkmt_kmt_stop(void) { }
+static bool d3dkmt_kmt_start(void) { return false; }
 #endif
 
+/* ---- DWM ------------------------------------------------------------ */
+typedef HRESULT (WINAPI *d3dkmt_dwm_timing_fn)(HWND, win32_dwm_timing_info_t*);
+
+/* DWM's last vblank and refresh period, on cpu_features' QPC clock. */
+static bool d3dkmt_dwm_timing(retro_time_t *last, double *period_us)
+{
+   win32_dwm_timing_info_t info;
+   static d3dkmt_dwm_timing_fn get_timing;
+   static bool                 resolved;
+   static LARGE_INTEGER        freq;
+
+   if (!resolved)
+   {
+      HMODULE dwm = LoadLibrary("dwmapi.dll");
+      resolved    = true;
+      if (dwm)
+         get_timing = (d3dkmt_dwm_timing_fn)GetProcAddress(dwm,
+               "DwmGetCompositionTimingInfo");
+   }
+   if (!get_timing)
+      return false;
+   if (!freq.QuadPart && !QueryPerformanceFrequency(&freq))
+      return false;
+   memset(&info, 0, sizeof(info));
+   info.cbSize = sizeof(info);
+   if (FAILED(get_timing(NULL, &info)) || !info.qpcVBlank
+         || !info.qpcRefreshPeriod)
+      return false;
+   *last      = (retro_time_t)((info.qpcVBlank / freq.QuadPart * 1000000)
+        + (info.qpcVBlank % freq.QuadPart * 1000000 / freq.QuadPart));
+   *period_us = (double)info.qpcRefreshPeriod * 1000000.0
+      / (double)freq.QuadPart;
+   return true;
+}
+
+static retro_time_t d3dkmt_dwm_prev;
+static unsigned     d3dkmt_dwm_live;
+/* Frames DWM's timing must keep advancing before it takes over from
+ * the kernel event, so a window flicking in and out of exclusive
+ * fullscreen does not keep restarting the clock. */
+#define D3DKMT_DWM_TAKEOVER 60
+
+/* ---- DirectDraw, XDDM ----------------------------------------------- */
+typedef HRESULT (WINAPI *d3dkmt_ddcreate_fn)(GUID FAR*, LPDIRECTDRAW FAR*,
+      IUnknown FAR*);
+typedef HRESULT (WINAPI *d3dkmt_ddenumex_fn)(LPDDENUMCALLBACKEXA, LPVOID,
+      DWORD);
+static d3dkmt_ddcreate_fn d3dkmt_DirectDrawCreate;
+static d3dkmt_ddenumex_fn d3dkmt_DirectDrawEnumerateExA;
+static LPDIRECTDRAW       d3dkmt_dd;
+static vblank_sampler_t   d3dkmt_smp;
+/* Readings in a row that were neither a line nor "in blanking": a
+ * driver without GetScanLine. */
+static unsigned           d3dkmt_dd_fails;
+
+typedef struct d3dkmt_dd_find
+{
+   HMONITOR mon;
+   GUID     guid;
+   bool     found;
+} d3dkmt_dd_find_t;
+
+static BOOL WINAPI d3dkmt_dd_enum_cb(GUID FAR *guid, LPSTR desc,
+      LPSTR name, LPVOID ctx, HMONITOR mon)
+{
+   d3dkmt_dd_find_t *f = (d3dkmt_dd_find_t*)ctx;
+   (void)desc; (void)name;
+   if (guid && mon && mon == f->mon)
+   {
+      f->guid  = *guid;
+      f->found = true;
+      return FALSE;
+   }
+   return TRUE;
+}
+
+static void d3dkmt_dd_close(void)
+{
+   if (d3dkmt_dd)
+      d3dkmt_dd->lpVtbl->Release(d3dkmt_dd);
+   d3dkmt_dd       = NULL;
+   d3dkmt_dd_fails = 0;
+   memset(&d3dkmt_smp, 0, sizeof(d3dkmt_smp));
+}
+
+/* The DirectDraw object for @mon's display - by the GUID DirectDraw
+ * enumerates for it on a multi-monitor desktop, else the primary - and
+ * the mode's active lines and whole-Hz rate from EnumDisplaySettings,
+ * which is all XDDM reports; the sampler measures the rest. */
+static bool d3dkmt_dd_open(HMONITOR mon)
+{
+   MONITORINFOEX mi;
+   DEVMODE dm;
+   d3dkmt_dd_find_t f;
+
+   d3dkmt_dd_close();
+   if (!d3dkmt_DirectDrawCreate)
+   {
+      HMODULE dd = LoadLibrary("ddraw.dll");
+      if (!dd)
+         return false;
+      d3dkmt_DirectDrawCreate       = (d3dkmt_ddcreate_fn)
+         GetProcAddress(dd, "DirectDrawCreate");
+      d3dkmt_DirectDrawEnumerateExA = (d3dkmt_ddenumex_fn)
+         GetProcAddress(dd, "DirectDrawEnumerateExA");
+      if (!d3dkmt_DirectDrawCreate)
+         return false;
+   }
+
+   memset(&mi, 0, sizeof(mi));
+   mi.cbSize = sizeof(mi);
+   memset(&dm, 0, sizeof(dm));
+   dm.dmSize = sizeof(dm);
+   if (     !mon
+         || !GetMonitorInfo(mon, (LPMONITORINFO)&mi)
+         || !EnumDisplaySettings(mi.szDevice, ENUM_CURRENT_SETTINGS, &dm)
+         || !dm.dmPelsHeight)
+      return false;
+
+   memset(&f, 0, sizeof(f));
+   f.mon = mon;
+   if (d3dkmt_DirectDrawEnumerateExA)
+      d3dkmt_DirectDrawEnumerateExA(d3dkmt_dd_enum_cb, &f,
+            DDENUM_ATTACHEDSECONDARYDEVICES);
+   if (FAILED(d3dkmt_DirectDrawCreate(f.found ? &f.guid : NULL,
+               &d3dkmt_dd, NULL)))
+   {
+      d3dkmt_dd = NULL;
+      return false;
+   }
+
+   d3dkmt_monitor           = mon;
+   d3dkmt_active_lines      = dm.dmPelsHeight;
+   d3dkmt_total_lines       = 0;   /* measured by the sampler */
+   /* 0 and 1 mean "hardware default", which some drivers report for
+    * every mode: start from 60 Hz. The clock only takes vblanks within
+    * a tenth of the period it expects, so a display far from that never
+    * settles and Scanline Sync idles - it does not race a wrong beam. */
+   d3dkmt_nominal_period_us = 1000000.0 / (double)
+      ((dm.dmDisplayFrequency > 1) ? dm.dmDisplayFrequency : 60);
+   video_driver_scanline_init();
+   d3dkmt_vc_reset();
+   d3dkmt_source            = D3DKMT_SRC_DDRAW;
+   return true;
+}
+
+/* One reading, into the sampler, and the vblank it implies into the
+ * clock. */
+static void d3dkmt_dd_sample(void)
+{
+   vblank_clock_t vc;
+   DWORD line          = 0;
+   unsigned total      = 0;
+   retro_time_t t0, t1;
+   int64_t vb;
+   HRESULT hr;
+
+   t0 = cpu_features_get_time_usec();
+   hr = d3dkmt_dd->lpVtbl->GetScanLine(d3dkmt_dd, &line);
+   t1 = cpu_features_get_time_usec();
+
+   if (hr != DD_OK && hr != DDERR_VERTICALBLANKINPROGRESS)
+   {
+      /* No GetScanLine in this driver: stop asking. */
+      if (++d3dkmt_dd_fails >= 60)
+      {
+         d3dkmt_dd_close();
+         d3dkmt_source = D3DKMT_SRC_NONE;
+      }
+      return;
+   }
+   d3dkmt_dd_fails = 0;
+
+   d3dkmt_vc_read(&vc);
+   vb = vblank_sampler_feed(&d3dkmt_smp, t0 + (t1 - t0) / 2,
+         (hr == DD_OK) ? (int)line : -1, d3dkmt_active_lines,
+         (vc.good >= VBLANK_CLOCK_SETTLE) ? vc.period_us
+                                          : d3dkmt_nominal_period_us,
+         &total);
+   if (vb)
+   {
+      d3dkmt_total_lines = total;
+      d3dkmt_vc_feed(vb);
+   }
+}
+
+/* ---- the adapter and its timing (WDDM) ------------------------------- */
 static void d3dkmt_close(void)
 {
-   /* The clock waits on the adapter handle: stop it first. */
-   d3dkmt_clock_stop();
+   /* The kernel-event thread waits on the adapter handle: stop it
+    * first. */
+   d3dkmt_kmt_stop();
+   d3dkmt_dd_close();
    if (pD3DKMTCloseAdapter && d3dkmt_adapter.sl.hAdapter)
    {
       D3DKMT_CLOSEADAPTER ca;
@@ -420,10 +639,14 @@ static void d3dkmt_close(void)
    d3dkmt_active_lines      = 0;
    d3dkmt_total_lines       = 0;
    d3dkmt_nominal_period_us = 0.0;
+   d3dkmt_source            = D3DKMT_SRC_NONE;
+   d3dkmt_dwm_live          = 0;
+   d3dkmt_dwm_prev          = 0;
 }
 
-/* The line counts and rate of the mode the counter's output is
- * driving. A change restarts the tuner's calibration. */
+/* The line counts and rate of the mode the counter's output is driving,
+ * from QueryDisplayConfig (Windows 7 and later). A change restarts the
+ * tuner's calibration and the clock. */
 static void d3dkmt_read_timing(LUID luid, UINT32 source_id)
 {
    unsigned active = 0, total = 0;
@@ -432,18 +655,26 @@ static void d3dkmt_read_timing(LUID luid, UINT32 source_id)
    if (!win32_display_signal_timing(luid, source_id, &active, &total, &hz)
          || hz <= 0.0)
       active = total = 0;
-   if (active != d3dkmt_active_lines || total != d3dkmt_total_lines)
+   if (     active != d3dkmt_active_lines
+         || total  != d3dkmt_total_lines
+         || ((hz > 0.0) ? 1000000.0 / hz : 0.0) != d3dkmt_nominal_period_us)
+   {
       video_driver_scanline_init();
-   d3dkmt_active_lines      = active;
-   d3dkmt_total_lines       = total;
-   d3dkmt_nominal_period_us = (hz > 0.0) ? 1000000.0 / hz : 0.0;
+      d3dkmt_kmt_stop();
+      d3dkmt_active_lines      = active;
+      d3dkmt_total_lines       = total;
+      d3dkmt_nominal_period_us = (hz > 0.0) ? 1000000.0 / hz : 0.0;
+      d3dkmt_vc_reset();
+      d3dkmt_source            = D3DKMT_SRC_NONE;   /* picked again */
+      d3dkmt_dwm_live          = 0;
+   }
 }
 
 /* Opens the scanline counter and vblank wait on the adapter output
- * driving @mon, reads the mode's timing, and starts the clock. It used
- * to open whichever display device answered first - usually the
- * primary - whatever monitor the window was on, so on a second screen
- * scanline sync raced another display's beam. */
+ * driving @mon and reads the mode's timing. It used to open whichever
+ * display device answered first - usually the primary - whatever
+ * monitor the window was on, so on a second screen scanline sync raced
+ * another display's beam. */
 static bool d3dkmt_open_monitor(HMONITOR mon)
 {
    MONITORINFOEX mi;
@@ -478,8 +709,64 @@ static bool d3dkmt_open_monitor(HMONITOR mon)
    d3dkmt_adapter.luid             = oa.AdapterLuid;
    d3dkmt_monitor                  = mon;
    d3dkmt_read_timing(oa.AdapterLuid, oa.VidPnSourceId);
-   d3dkmt_clock_start();
    return true;
+}
+
+/* ---- per call: pick the source, feed the clock --------------------- */
+static void d3dkmt_tick(void)
+{
+   retro_time_t now, last = 0;
+   double dwm_period      = 0.0;
+   bool dwm_ok            = false;
+
+   if (d3dkmt_source == D3DKMT_SRC_DDRAW)
+   {
+      if (d3dkmt_dd)
+         d3dkmt_dd_sample();
+      return;
+   }
+   /* WDDM, with the mode's line counts (not Vista) - else the counter. */
+   if (!d3dkmt_adapter.sl.hAdapter || !d3dkmt_total_lines)
+      return;
+
+   now = cpu_features_get_time_usec();
+   if (     d3dkmt_dwm_timing(&last, &dwm_period)
+         && fabs(dwm_period - d3dkmt_nominal_period_us)
+               < 0.005 * d3dkmt_nominal_period_us
+         && now - last < (retro_time_t)(3.0 * dwm_period))
+      dwm_ok = true;
+   if (!dwm_ok)
+      d3dkmt_dwm_live = 0;
+   else if (last != d3dkmt_dwm_prev)
+      d3dkmt_dwm_live++;
+
+   if (d3dkmt_source == D3DKMT_SRC_NONE)
+   {
+      if (dwm_ok)
+         d3dkmt_source = D3DKMT_SRC_DWM;
+      else if (d3dkmt_kmt_start())
+         d3dkmt_source = D3DKMT_SRC_KMT;
+   }
+   else if (d3dkmt_source == D3DKMT_SRC_DWM && !dwm_ok)
+   {
+      /* Exclusive fullscreen, composition off, or DWM pacing another
+       * display: the kernel event. */
+      d3dkmt_vc_reset();
+      d3dkmt_source = d3dkmt_kmt_start() ? D3DKMT_SRC_KMT
+                                         : D3DKMT_SRC_NONE;
+   }
+   else if (     d3dkmt_source == D3DKMT_SRC_KMT
+              && d3dkmt_dwm_live >= D3DKMT_DWM_TAKEOVER)
+   {
+      d3dkmt_kmt_stop();
+      d3dkmt_vc_reset();
+      d3dkmt_source = D3DKMT_SRC_DWM;
+   }
+
+   if (d3dkmt_source == D3DKMT_SRC_DWM && last != d3dkmt_dwm_prev)
+      d3dkmt_vc_feed(last);
+   if (dwm_ok)
+      d3dkmt_dwm_prev = last;
 }
 
 /* Before a read, on the reading thread: follow the window to the
@@ -489,29 +776,43 @@ static void d3dkmt_follow_window(void)
 {
    HMONITOR mon;
 
-   if (!retro_atomic_load_acquire_int(&d3dkmt_rebind_pending))
-      return;
-   retro_atomic_store_release_int(&d3dkmt_rebind_pending, 0);
-   if (!main_window.hwnd || !pD3DKMTOpenAdapterFromHdc)
-      return;
-   mon = MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST);
-   if (mon && mon != d3dkmt_monitor)
-      d3dkmt_open_monitor(mon);
-   else if (mon && d3dkmt_adapter.sl.hAdapter)
+   if (retro_atomic_load_acquire_int(&d3dkmt_rebind_pending))
    {
-      /* Same monitor, perhaps a new mode: re-read the timing, and
-       * restart the clock if its line counts or rate moved. */
-      unsigned total = d3dkmt_total_lines;
-      double period  = d3dkmt_nominal_period_us;
-      d3dkmt_read_timing(d3dkmt_adapter.luid,
-            d3dkmt_adapter.sl.VidPnSourceId);
-      if (     total  != d3dkmt_total_lines
-            || period != d3dkmt_nominal_period_us)
+      retro_atomic_store_release_int(&d3dkmt_rebind_pending, 0);
+      if (main_window.hwnd)
       {
-         d3dkmt_clock_stop();
-         d3dkmt_clock_start();
+         mon = MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST);
+         if (!pD3DKMTOpenAdapterFromHdc)
+         {
+            /* XDDM: DirectDraw, re-opened for a new monitor or mode. */
+            DEVMODE dm;
+            MONITORINFOEX mi;
+            bool changed = (mon != d3dkmt_monitor);
+            memset(&mi, 0, sizeof(mi));
+            mi.cbSize = sizeof(mi);
+            memset(&dm, 0, sizeof(dm));
+            dm.dmSize = sizeof(dm);
+            if (     !changed
+                  && GetMonitorInfo(mon, (LPMONITORINFO)&mi)
+                  && EnumDisplaySettings(mi.szDevice, ENUM_CURRENT_SETTINGS, &dm)
+                  && (     dm.dmPelsHeight != d3dkmt_active_lines
+                        || 1000000.0 / (double)((dm.dmDisplayFrequency > 1)
+                              ? dm.dmDisplayFrequency : 60)
+                              != d3dkmt_nominal_period_us))
+               changed = true;
+            if (changed || !d3dkmt_dd)
+               if (!d3dkmt_dd_open(mon))
+                  d3dkmt_source = D3DKMT_SRC_NONE;
+         }
+         else if (mon && mon != d3dkmt_monitor)
+            d3dkmt_open_monitor(mon);
+         else if (mon && d3dkmt_adapter.sl.hAdapter)
+            /* Same monitor, perhaps a new mode. */
+            d3dkmt_read_timing(d3dkmt_adapter.luid,
+                  d3dkmt_adapter.sl.VidPnSourceId);
       }
    }
+   d3dkmt_tick();
 }
 
 static void d3dkmt_request_rebind(void)
@@ -523,48 +824,48 @@ static void d3dkmt_request_rebind(void)
 
 static void d3dkmt_init(void)
 {
-   if (!pD3DKMTOpenAdapterFromHdc)
+   if (!d3dkmt_wake_event)
+      d3dkmt_wake_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+#ifdef HAVE_THREADS
+   if (!d3dkmt_vc_lock)
+      d3dkmt_vc_lock = slock_new();
+#endif
+
+   if (!pD3DKMTOpenAdapterFromHdc && !d3dkmt_DirectDrawCreate)
    {
+      HMODULE gdi32 = GetModuleHandle("gdi32.dll");
       pD3DKMTOpenAdapterFromHdc = (D3DKMTOPENADAPTERFROMHDC)
-            GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTOpenAdapterFromHdc");
+            GetProcAddress(gdi32, "D3DKMTOpenAdapterFromHdc");
       pD3DKMTGetScanLine = (D3DKMTGETSCANLINE)
-            GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTGetScanLine");
-      /* Optional: the vblank clock depends on it, and without it the
-       * frame falls back to reading the counter. Not part of the guard
-       * below for that reason. */
+            GetProcAddress(gdi32, "D3DKMTGetScanLine");
       pD3DKMTWaitForVerticalBlankEvent = (D3DKMTWAITFORVERTICALBLANKEVENT)
-            GetProcAddress(GetModuleHandle("gdi32.dll"),
-                  "D3DKMTWaitForVerticalBlankEvent");
-      /* Optional too: without it an adapter handle leaks on rebind,
-       * as every one did before. */
+            GetProcAddress(gdi32, "D3DKMTWaitForVerticalBlankEvent");
+      /* Optional: without it an adapter handle leaks on rebind, as
+       * every one did before. */
       pD3DKMTCloseAdapter = (D3DKMTCLOSEADAPTER_FN)
-            GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTCloseAdapter");
+            GetProcAddress(gdi32, "D3DKMTCloseAdapter");
 
-      /* Both exports are WDDM, so they are absent under XDDM - there
-       * are no D3DKMT entry points in gdi32 before Vista at all.
-       * Leave the scanline state zeroed and let d3dkmt_scanline_get()
-       * report -1, which video_driver_scanline_before_frame() treats
-       * as unsupported. */
-      if (!pD3DKMTOpenAdapterFromHdc || !pD3DKMTGetScanLine)
-      {
-         pD3DKMTOpenAdapterFromHdc = NULL;
-         memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
-         video_driver_scanline_init();
-         return;
-      }
-
-      if (!d3dkmt_wake_event)
-         d3dkmt_wake_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-
-      /* No window yet at class registration: the primary monitor, as
-       * a start. The window's first move or show rebinds it to the
-       * monitor the window is actually on. */
       {
          POINT origin;
+         HMONITOR primary;
          origin.x = 0;
          origin.y = 0;
-         d3dkmt_open_monitor(MonitorFromPoint(origin,
-                  MONITOR_DEFAULTTOPRIMARY));
+         primary  = MonitorFromPoint(origin, MONITOR_DEFAULTTOPRIMARY);
+
+         if (!pD3DKMTOpenAdapterFromHdc || !pD3DKMTGetScanLine)
+         {
+            /* No WDDM - Windows 2000 and XP, or an XDDM driver: the
+             * DirectDraw readings. Nothing there either, and the
+             * scanline reads as unsupported. */
+            pD3DKMTOpenAdapterFromHdc = NULL;
+            memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
+            d3dkmt_dd_open(primary);
+         }
+         else
+            /* No window yet at class registration: the primary monitor,
+             * as a start. The window's first move or show rebinds it to
+             * the monitor the window is actually on. */
+            d3dkmt_open_monitor(primary);
       }
    }
    d3dkmt_request_rebind();
@@ -587,13 +888,21 @@ int d3dkmt_scanline_get(void)
    int beam;
 
    d3dkmt_follow_window();
-   /* The clock's arithmetic when it is running; the counter only when
-    * it is not. */
-   if (     d3dkmt_clock_read(&vc)
-         && (beam = vblank_clock_beam(&vc, cpu_features_get_time_usec(),
-               d3dkmt_active_lines, d3dkmt_total_lines)) >= 0)
+   if (d3dkmt_source != D3DKMT_SRC_NONE)
+   {
+      /* A clock source: the beam once it has settled, and until then
+       * nothing - Scanline Sync idles rather than polling. */
+      d3dkmt_vc_read(&vc);
+      beam = d3dkmt_total_lines
+         ? vblank_clock_beam(&vc, cpu_features_get_time_usec(),
+               d3dkmt_active_lines, d3dkmt_total_lines)
+         : -1;
       return beam;
-   if (pD3DKMTGetScanLine && d3dkmt_adapter.sl.hAdapter)
+   }
+   /* No clock can serve this display (Vista): the counter. */
+   if (     pD3DKMTGetScanLine
+         && d3dkmt_adapter.sl.hAdapter
+         && !d3dkmt_total_lines)
    {
       if (pD3DKMTGetScanLine(&d3dkmt_adapter.sl) == STATUS_SUCCESS)
          return d3dkmt_adapter.sl.ScanLine;
@@ -644,8 +953,9 @@ bool d3dkmt_scanline_wait(int target_line, unsigned max_us)
    DWORD n = 1;
 
    d3dkmt_follow_window();
-   if (!d3dkmt_clock_read(&vc))
+   if (d3dkmt_source == D3DKMT_SRC_NONE || !d3dkmt_total_lines)
       return false;
+   d3dkmt_vc_read(&vc);
    if ((wait_us = vblank_clock_until_line(&vc, cpu_features_get_time_usec(),
                d3dkmt_active_lines, d3dkmt_total_lines, target_line)) < 0)
       return false;
