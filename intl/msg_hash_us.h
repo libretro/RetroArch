@@ -7634,7 +7634,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
-   "Synchronize video presentation to scanline position. Reduces latency at the cost of a higher risk of tearing. VSync must be disabled."
+   "Synchronize video presentation to scanline position prediction based on core time. Requirements: VSync off, Frame Delay off, and display Hz near 1x core FPS."
    )
 /* GENERATED REGION: frame delay group (see settings_def_frame_delay.h). */
 #define SETTINGS_DEF_STRINGS_PASS

@@ -168,6 +168,8 @@ enum video_driver_state_flags
 enum video_driver_scanline
 {
    SCANLINE_NEXT = 0,
+   SCANLINE_PREV,
+   SCANLINE_ACTIVE,
    SCANLINE_TOTAL,
    SCANLINE_HOLD,
    SCANLINE_LAST
@@ -1366,7 +1368,7 @@ typedef struct
    char title_buf[64];
    char cached_driver_id[32];
 
-   int16_t scanline[SCANLINE_LAST];
+   uint16_t scanline[SCANLINE_LAST];
 
    uint16_t frame_drop_count;
    uint16_t frame_time_reserve;

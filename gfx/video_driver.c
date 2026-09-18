@@ -129,8 +129,8 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 #define FRAME_DELAY_AUTO_DEBUG 0
 
 /* Forward declarations */
-VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state_t *video_st, float refresh_rate, uint16_t frame_time_target, uint16_t core_run_time);
-VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_t *video_st, float refresh_rate, uint16_t frame_time_target, uint16_t core_run_time);
+VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state_t *video_st, uint16_t frame_time_target, uint16_t core_run_time);
+VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_t *video_st, uint16_t frame_time_target, uint16_t core_run_time);
 
 typedef struct
 {
@@ -5858,6 +5858,11 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 
    video_display_server_init(video_st->display_type);
 
+#ifdef HAVE_D3DKMT
+   /* The output mode may have changed with the driver */
+   video_driver_scanline_init();
+#endif
+
    if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
       video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
 
@@ -6951,8 +6956,11 @@ void video_driver_frame(const void *data, unsigned width,
 
          if (video_info.scanline_sync)
             __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                  " Scanline:   %5d\n",
-                  video_st->scanline[SCANLINE_NEXT]);
+                  " Scanline:   %5d\n"
+                  " -Total/Hold:%5d/%d\n",
+                  video_st->scanline[SCANLINE_NEXT],
+                  video_st->scanline[SCANLINE_TOTAL],
+                  video_st->scanline[SCANLINE_HOLD]);
 
          /* Which sources held the loop on the last frame, with the
           * measured rate; the same string System Information shows. */
@@ -7026,7 +7034,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    if (video_info.scanline_sync && !video_info.input_driver_nonblock_state)
       video_driver_scanline_before_frame(video_st,
-            video_info.refresh_rate, video_info.frame_time_target, runloop_st->core_run_time);
+            video_info.frame_time_target, runloop_st->core_run_time);
 
    /* The vtable and the handle have independent lifetimes:
     * driver_uninit() releases video_st->data and leaves
@@ -7184,7 +7192,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    if (video_info.scanline_sync && !video_info.input_driver_nonblock_state)
       video_driver_scanline_after_frame(video_st,
-            video_info.refresh_rate, video_info.frame_time_target, runloop_st->core_run_time);
+            video_info.frame_time_target, runloop_st->core_run_time);
 }
 
 static void video_driver_reinit_context(settings_t *settings, int flags)
@@ -7715,12 +7723,58 @@ void video_frame_delay(video_driver_state_t *video_st,
    }
 }
 
+/* Scanline Sync */
+typedef struct
+{
+   uint16_t width;
+   uint16_t height;
+   uint16_t height_total;
+} common_resolution_lut_t;
+
+static const common_resolution_lut_t resolution_lut[] = {
+   { 1280, 720,  750  },
+   { 1920, 1080, 1125 },
+   { 1920, 1200, 1235 },
+   { 2560, 1440, 1481 },
+   { 3840, 2160, 2250 },
+   { 7680, 4320, 4400 },
+};
+
+static uint16_t video_driver_scanline_get_total(
+      uint16_t video_width,
+      uint16_t video_height)
+{
+   /* Initial guesstimation for no match */
+   uint16_t scanline_total = video_height * ((double)1125 / (double)1080);
+   uint8_t res_lut_size    = ARRAY_SIZE(resolution_lut);
+   uint8_t i               = 0;
+
+   for (i = 0; i < res_lut_size; i++)
+   {
+      if (     resolution_lut[i].width  == video_width
+            && resolution_lut[i].height == video_height)
+      {
+         scanline_total = resolution_lut[i].height_total;
+         break;
+      }
+   }
+
+   return scanline_total;
+}
+
 void video_driver_scanline_init(void)
 {
-   video_driver_state_t *video_st     = video_state_get_ptr();
-   video_st->scanline[SCANLINE_NEXT]  = 1;
-   video_st->scanline[SCANLINE_HOLD]  = 1;
-   video_st->scanline[SCANLINE_TOTAL] = 0;
+   video_driver_state_t *video_st      = video_state_get_ptr();
+   unsigned dims                       = 0;
+
+   video_driver_get_video_output_size(&dims, NULL, 0);
+
+   video_st->scanline[SCANLINE_ACTIVE] = VIDEO_SCALE_H(dims);
+   video_st->scanline[SCANLINE_TOTAL]  = video_driver_scanline_get_total(
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   video_st->scanline[SCANLINE_NEXT]   = 0;
+   video_st->scanline[SCANLINE_PREV]   = 0;
+   video_st->scanline[SCANLINE_HOLD]   = 0;
 }
 
 /* The beam position through the display server; a server without
@@ -7731,152 +7785,101 @@ static INLINE int16_t video_driver_scanline_get(void)
 }
 
 VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state_t *video_st,
-      float refresh_rate,
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t video_height  = (uint16_t)VIDEO_SCALE_H(
-         VIDEO_DRIVER_OUTPUT_DIMS(video_st));
-   int16_t scanline_next  = video_st->scanline[SCANLINE_NEXT];
-   int16_t scanline_hold  = video_st->scanline[SCANLINE_HOLD];
-   int16_t scanline_blank = video_st->scanline[SCANLINE_TOTAL] - video_height;
-   int16_t scanline       = video_driver_scanline_get();
-
-   /* Minimum usage is vblank */
-   uint16_t min_run_time  = (scanline_blank > 0) ? (double)scanline_blank / (double)video_height * (double)frame_time_target : 1000;
-   core_run_time          = (core_run_time < min_run_time) ? min_run_time : core_run_time;
-
-   /* Disable if unsupported */
-   if (scanline < 0)
-   {
-      scanline_next = 0;
-      scanline_hold = refresh_rate;
-   }
-   else if (video_st->frame_count > refresh_rate)
-   {
-      /* Disable if the core and/or frame takes too long */
-      uint16_t frame_time_index = video_st->frame_time_count & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
-      uint16_t sample_index     = (uint16_t)((frame_time_index - 1) & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
-      retro_time_t frame_time   = video_st->frame_time_samples[sample_index];
-      bool frame_time_deviation = frame_time >= frame_time_target * 1.66f || frame_time <= frame_time_target * 0.33f;
-
-      if (scanline_hold && (frame_time_deviation || core_run_time >= frame_time_target - 3000))
-      {
-         scanline_next = 0;
-         scanline_hold = refresh_rate / 2;
-      }
-      else if (!scanline_hold && frame_time_deviation)
-         scanline_hold += 3;
-   }
-
-   /* Shift overflow */
-   if (scanline > (int)video_height - (scanline_blank * 4))
-      scanline -= video_height;
+   int16_t scanline_next   = video_st->scanline[SCANLINE_NEXT];
+   int16_t scanline_prev   = video_st->scanline[SCANLINE_PREV];
+   uint16_t scanline_hold  = video_st->scanline[SCANLINE_HOLD];
+   uint16_t video_height   = video_st->scanline[SCANLINE_ACTIVE];
+   uint16_t scanline_blank = (video_st->scanline[SCANLINE_TOTAL] >= video_height)
+         ? video_st->scanline[SCANLINE_TOTAL] - video_height : 0;
+   uint8_t scanline_margin = 2;
 
    /* Allow change */
-   if (!scanline_hold)
+   if (!scanline_hold && video_height)
    {
       int16_t corelines = (video_height + scanline_blank) * ((double)core_run_time / (double)frame_time_target);
+      int16_t scanline_next_real = scanline_next = video_height - corelines - scanline_blank - scanline_margin;
 
-      /* Fine-tuning */
-      if (     scanline > -scanline_blank
-            && scanline < corelines + scanline_blank)
-         scanline_next -= 2;
-      else if (scanline_next <= scanline + corelines + scanline_blank)
-         scanline_next += 4;
+      /* Use the longer frame from current and previous
+       * in order to balance half frame rate material */
+      if (scanline_prev > scanline_blank * 2 && scanline_prev < scanline_next)
+         scanline_next = scanline_prev;
 
-      if (     scanline > 0
-            && scanline < video_height - scanline_blank
-            && scanline_next >= -(scanline + corelines + scanline_blank))
-         scanline_next--;
-      else if (scanline > (video_height - scanline_blank) / 2
-            || scanline < -scanline_blank)
-         scanline_next++;
+      /* And flip the estimated next scanline as previous if usable */
+      scanline_prev = (scanline_next_real > 0) ? scanline_next_real : 0;
 
-      /* Cap to avoid visible tear in bottom */
-      if (     scanline_next > corelines
-            && scanline_next < video_height - corelines - scanline_blank)
-         scanline_next = video_height - corelines - scanline_blank;
+      /* Avoid targeting blanking period by a safe margin,
+       * because wait will fail and fall to the next frame */
+      if (scanline_next > video_height - scanline_margin)
+         scanline_next = video_height - scanline_margin;
 
-      /* Skip unsynced */
-      if (!scanline_next)
-         scanline_next--;
+      /* Negative waiting means sync must be disabled,
+       * and hold it accordingly to delay reactivation */
+      if (scanline_next <= 0)
+      {
+         if (scanline_next < -(video_height / 10))
+         {
+            scanline_hold += 1;
+            scanline_hold += -((double)video_height / (double)scanline_next * 2);
+         }
+         scanline_next = 0;
+      }
    }
    else if (scanline_hold)
       scanline_hold--;
 
-   /* Wrap overflow */
-   if (     scanline_next >= (int)video_height
-         || scanline_next <= (int)-video_height)
-      scanline_next = -1;
-
    video_st->scanline[SCANLINE_NEXT] = scanline_next;
+   video_st->scanline[SCANLINE_PREV] = scanline_prev;
    video_st->scanline[SCANLINE_HOLD] = scanline_hold;
 }
 
 VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_t *video_st,
-      float refresh_rate,
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t video_height   = (uint16_t)VIDEO_SCALE_H(
-         VIDEO_DRIVER_OUTPUT_DIMS(video_st));
-   int16_t scanline_next   = video_st->scanline[SCANLINE_NEXT];
-   int16_t scanline_total  = video_st->scanline[SCANLINE_TOTAL];
-   int16_t scanline_blank  = video_st->scanline[SCANLINE_TOTAL] - video_height;
-   int16_t scanline_target = (scanline_next < 0) ? video_height + scanline_next : scanline_next;
-   int16_t scanline        = scanline_next;
-   uint16_t min_run_time   = (scanline_blank > 0) ? (double)scanline_blank / (double)video_height * (double)frame_time_target : 1000;
-   bool init               = (!scanline_total) ? true : false;
-   bool wait               = true;
+   uint16_t scanline_next  = video_st->scanline[SCANLINE_NEXT];
+   uint16_t scanline_total = video_st->scanline[SCANLINE_TOTAL];
+   uint16_t video_height   = video_st->scanline[SCANLINE_ACTIVE];
+   int16_t scanline_count  = 0;
+   int16_t scanline        = 0;
+   bool wait               = (scanline_next) ? true : false;
 
-   if (     scanline_target <= 0
-         || scanline_target >= video_height)
-      wait = false;
+   /* Invalid target skips wait */
+   if (     !scanline_next
+         || scanline_next >= video_height
+         || !video_height
+         || !frame_time_target)
+      return;
 
-   /* Reset */
-   if (scanline_next == 1)
-      scanline_target = video_height;
-
-   /* Minimum usage is vblank */
-   core_run_time = (core_run_time < min_run_time) ? min_run_time : core_run_time;
-
-   /* Use CPU friendlier sleep as much as possible */
-   if (wait && frame_time_target > core_run_time)
+   /* Use CPU friendlier sleep as much as possible with a safe headroom,
+    * but at least 1ms is required to push next wait to the next frame */
+   if (wait)
    {
-      int8_t sleep = (frame_time_target - core_run_time) / 1000;
-      if (sleep > 1)
-      {
-         /* Sleeping too much causes problems */
-         sleep -= 4;
-         /* At least 1ms for balancing heavier loads */
-         sleep = (sleep < 1) ? 1 : sleep;
-         retro_sleep(sleep);
-      }
+      int8_t sleep = (frame_time_target > core_run_time)
+            ? ((frame_time_target - core_run_time) / 1000) - (frame_time_target / 4000)
+            : 1;
+
+      sleep = (sleep < 1) ? 1 : sleep;
+      retro_sleep(sleep);
    }
 
    while (wait)
    {
       scanline = video_driver_scanline_get();
 
-      if (scanline >= scanline_target)
-         wait = false;
-
-      if (init)
+      /* Disable if unsupported and prevent lockup if loop exceeds total lines */
+      scanline_count++;
+      if (scanline < 0 || scanline_count > scanline_total)
       {
-         if (!scanline_total)
-            scanline_total = video_height;
-
-         if (scanline)
-            wait = true;
-         else if (scanline_total > video_height)
-            init = false;
+         scanline = 0;
+         break;
       }
 
-      if (scanline >= scanline_total)
-         scanline_total = scanline + 1;
+      if (scanline >= scanline_next)
+         wait = false;
    }
 
    video_st->scanline[SCANLINE_NEXT]  = scanline;
-   video_st->scanline[SCANLINE_TOTAL] = scanline_total;
 }
