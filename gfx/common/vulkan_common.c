@@ -215,9 +215,8 @@ static void vulkan_emulated_mailbox_deinit(
       scond_signal(mailbox->cond);
       slock_unlock(mailbox->lock);
       /* Wait for the background thread to see the DEAD flag.
-       * The thread uses a finite timeout on vkAcquireNextImageKHR
-       * so it will unblock within mailbox->timeout_us
-       * and exit the loop. */
+       * Its acquire and fence waits are finite, so it will
+       * unblock and exit the loop. */
       sthread_join(mailbox->thread);
    }
 
@@ -282,8 +281,8 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
    while (!(mailbox->flags & VK_MAILBOX_FLAG_ACQUIRED))
    {
       retro_time_t now = cpu_features_get_time_usec();
-      /* A finite wait also covers a background thread that hit an
-       * error path without setting ACQUIRED. */
+      /* A finite wait also covers a background thread still
+       * waiting on its acquire or its fence. */
       if (      now >= deadline
             || !scond_wait_timeout(mailbox->cond, mailbox->lock,
                (int64_t)(deadline - now)))
@@ -354,16 +353,32 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
 
       if (mailbox->result == VK_SUCCESS)
       {
-         VkResult wait_res;
-         wait_res  = vkWaitForFences(mailbox->device, 1,
-               &fence, true, (uint64_t)mailbox->timeout_us * 1000);
-         if (wait_res == VK_TIMEOUT)
+         /* The image is already ours; VK_TIMEOUT only means the
+          * presentation engine has not released it yet. It cannot be
+          * handed back, and acquiring again with this fence pending is
+          * invalid, so keep waiting, checking DEAD between waits. */
+         bool dead = false;
+
+         while (vkWaitForFences(mailbox->device, 1, &fence, true,
+                  (uint64_t)mailbox->timeout_us * 1000) == VK_TIMEOUT)
          {
-            /* Fence not signaled in time - unlikely but handle
-             * gracefully. Loop back to retry. */
-            mailbox->result = VK_TIMEOUT;
-            continue;
+            slock_lock(mailbox->lock);
+            dead = (mailbox->flags & VK_MAILBOX_FLAG_DEAD) != 0;
+            slock_unlock(mailbox->lock);
+            if (dead)
+               break;
          }
+
+         if (dead)
+         {
+            /* A pending fence must not be destroyed, but a driver
+             * that never signals must not hang the join either. */
+            if (vkWaitForFences(mailbox->device, 1, &fence, true,
+                     (uint64_t)mailbox->timeout_us * 1000) == VK_TIMEOUT)
+               RARCH_ERR("[Vulkan] Mailbox acquire fence still pending at teardown.\n");
+            break;
+         }
+
          vkResetFences(mailbox->device, 1, &fence);
 
          slock_lock(mailbox->lock);
