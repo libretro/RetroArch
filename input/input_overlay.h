@@ -420,6 +420,16 @@ struct input_overlay
     * which overlay::textures point into. Built by the enable on a
     * driver with load_textures, unloaded and freed by the disable. */
    uintptr_t *page_textures;
+   /* An animated image's file bytes and its APNG stream, one entry per
+    * unique image, NULL for the still ones. The bytes are kept because
+    * the stream decodes from them frame by frame; a still image's
+    * bytes and pixels both go once its texture exists. */
+   void **anim_data;
+   size_t *anim_len;
+   void **anim_stream;
+   /* When the frame showing now is due to be replaced, in
+    * microseconds on the same clock as the rest of the frontend. */
+   int64_t *anim_next_us;
    /* A gfx_surface per unique image, holding that texture: the same
     * ownership the animated previews use, so an overlay asset and a
     * preview frame reach the GPU through one path. num_images of
@@ -478,6 +488,11 @@ typedef struct
    struct overlay *overlays;
    struct overlay *active;
    struct string_list *image_list;
+   /* Parallel to image_list: for an image that turned out to be an
+    * APNG, the file bytes its frames are composed from, as an
+    * overlay_anim_src_t in attr.p; NULL entries for the stills. The
+    * pack takes them over with the images. */
+   struct string_list *anim_list;
    size_t size;
    uint16_t overlay_types;
    uint8_t flags;
@@ -495,6 +510,20 @@ void input_overlay_auto_rotate_(
       unsigned video_driver_height,
       bool input_overlay_enable,
       input_overlay_t *ol);
+
+/* The file bytes of one animated overlay image, handed from the
+ * loader to the pack, which frees them with the image. */
+typedef struct
+{
+   void  *data;
+   size_t len;
+} overlay_anim_src_t;
+
+/* Advance the pack's animated images to the frame due at @now, one
+ * per poll on the main thread; a pack with none is untouched. The
+ * frames update their textures in place, so the pages' handles stand
+ * and nothing is uploaded. */
+void input_overlay_animate(input_overlay_t *ol, retro_time_t now);
 
 /* Unload the pack's textures (see video_overlay_interface::load_textures)
  * and forget the page lists. Safe to call with none uploaded. */

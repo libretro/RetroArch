@@ -24,6 +24,9 @@
 #include <file/archive_file.h>
 #endif
 #include <formats/image.h>
+#ifdef HAVE_RPNG
+#include <formats/rpng.h>
+#endif
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <lrc_hash.h>
@@ -53,6 +56,7 @@ struct overlay_loader
    struct overlay *overlays;
    struct overlay *active;
    struct string_list *image_list;
+   struct string_list *anim_list; /* APNG file bytes, parallel */
 
    size_t resolve_pos;
    unsigned size;
@@ -356,6 +360,34 @@ static bool task_overlay_load_image_texture(
 
       attr.p = (void*)image;
       string_list_append(loader->image_list, rel_path, attr);
+
+#ifdef HAVE_RPNG
+      /* An animated PNG keeps its file bytes: the pack composes the
+       * frames from them one at a time, where a still is done with
+       * the file the moment it is decoded. The decoded image above is
+       * the animation's first frame, so nothing decodes twice. */
+      {
+         union string_list_elem_attr aattr;
+         overlay_anim_src_t *src = NULL;
+         int64_t len             = 0;
+         void *buf               = NULL;
+
+         aattr.i = 0;
+         if (     !path_get_archive_delim(full_path)
+               && filestream_read_file(full_path, &buf, &len)
+               && buf && len > 0
+               && rpng_is_apng((const uint8_t*)buf, (size_t)len)
+               && (src = (overlay_anim_src_t*)calloc(1, sizeof(*src))))
+         {
+            src->data = buf;
+            src->len  = (size_t)len;
+            buf       = NULL;
+         }
+         free(buf);
+         aattr.p = (void*)src;
+         string_list_append(loader->anim_list, rel_path, aattr);
+      }
+#endif
    }
    else
       *image = *((struct texture_image*)loader->image_list->elems[img_idx].attr.p);
@@ -1303,6 +1335,20 @@ static void task_overlay_free(retro_task_t *task)
       string_list_free(loader->image_list);
    }
 
+   if (loader->anim_list)
+   {
+      /* Same shape: the elements are file buffers nobody took. */
+      for (i = 0; i < loader->anim_list->size; i++)
+      {
+         overlay_anim_src_t *src =
+            (overlay_anim_src_t*)loader->anim_list->elems[i].attr.p;
+         if (src)
+            free(src->data);
+         free(src);
+      }
+      string_list_free(loader->anim_list);
+   }
+
    if (loader->overlays)
    {
       for (i = 0; i < loader->size; i++)
@@ -1379,6 +1425,7 @@ static void task_overlay_handler(retro_task_t *task)
       data->overlay_types               = loader->overlay_types;
       data->overlay_path                = loader->overlay_path;
       data->image_list                  = loader->image_list;
+      data->anim_list                   = loader->anim_list;
 
       /* Ownership moves with the pointers, so drop the loader's
        * references to them.  task_overlay_free() below releases
@@ -1393,6 +1440,7 @@ static void task_overlay_handler(retro_task_t *task)
       loader->active                    = NULL;
       loader->overlay_path              = NULL;
       loader->image_list                = NULL;
+      loader->anim_list                 = NULL;
 
       task_set_data(task, data);
    }
@@ -1445,6 +1493,15 @@ bool task_push_overlay_load_default(
 
    if (!image_list)
    {
+      free(loader);
+      return false;
+   }
+
+   loader->anim_list        = string_list_new();
+
+   if (!loader->anim_list)
+   {
+      string_list_free(image_list);
       free(loader);
       return false;
    }

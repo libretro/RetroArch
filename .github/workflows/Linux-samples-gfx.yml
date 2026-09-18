@@ -757,6 +757,24 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 60 ./modeline_edid_parse_test
 
+      - name: Build and run overlay_apng_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/overlay_apng
+        run: |
+          set -eu
+          # An animated overlay image is a surface with slots whose
+          # texture is updated in place, so the pages' handles stand
+          # while its frames advance. The sample builds its own APNG
+          # fixture and holds that contract: distinct frames, a pass
+          # that ends and replays, one texture across the submits, and
+          # a free with a frame still in flight.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+          UBSAN_OPTIONS=print_stacktrace=1 timeout 120 ./overlay_apng_test fixtures/anim.png
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./overlay_apng_test fixtures/anim.png
+          make clean
+
       - name: Build and run gfx_thumbnail_anim_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/gfx_thumbnail_anim

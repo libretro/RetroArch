@@ -39,6 +39,9 @@
 #include "input_driver.h"
 #include "../gfx/gfx_instrument.h"
 #include "../gfx/gfx_surface.h"
+#ifdef HAVE_RPNG
+#include <formats/rpng.h>
+#endif
 #include "input_keymaps.h"
 #include "input_remapping.h"
 #include "input_osk.h"
@@ -3260,6 +3263,61 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
    desc->delta_y = 0.0f;
 }
 
+
+#ifdef HAVE_RPNG
+/* Advance every animated image of the pack whose frame is due, once
+ * per input poll on the main thread. A frame is composed by the
+ * stream into a free slot and submitted: the texture is updated in
+ * place, so the page's handles stand and a page switch is still an
+ * upload of nothing. A slot still with the video thread means the
+ * frame is skipped rather than waited for - the overlay is a control
+ * surface, and a late button image is worse than a dropped one. */
+void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
+{
+   size_t i;
+
+   if (     !ol
+         || !ol->anim_stream
+         || !(ol->flags & INPUT_OVERLAY_ENABLE)
+         || !ol->surfaces)
+      return;
+
+   for (i = 0; i < ol->num_images; i++)
+   {
+      rpng_apng_stream_t *st = (rpng_apng_stream_t*)ol->anim_stream[i];
+      gfx_surface_t *s       = (gfx_surface_t*)ol->surfaces[i];
+      const uint32_t *frame;
+      unsigned slot;
+      int duration_ms        = 0;
+
+      if (!st || !s || !s->num_slots)
+         continue;
+      if (ol->anim_next_us[i] && now < ol->anim_next_us[i])
+         continue;
+
+      slot = s->inflight ? (s->inflight_slot ^ 1) : 0;
+      if (s->inflight && slot == s->inflight_slot)
+         continue;
+
+      if (!(frame = rpng_apng_stream_next(st, &duration_ms)))
+      {
+         /* End of a pass: overlays loop, which is what an animated
+          * control surface is for. */
+         rpng_apng_stream_rewind(st);
+         if (!(frame = rpng_apng_stream_next(st, &duration_ms)))
+            continue;
+      }
+      memcpy(s->slots[slot], frame,
+            (size_t)s->width * s->height * sizeof(uint32_t));
+      if (gfx_surface_submit(s, slot, ol->images[i]->supports_rgba)
+            == GFX_SURFACE_SUBMIT_FAILED)
+         continue;
+      ol->anim_next_us[i] = now
+         + (retro_time_t)(duration_ms > 0 ? duration_ms : 100) * 1000;
+   }
+}
+#endif
+
 /**
  * input_overlay_post_poll:
  *
@@ -3582,20 +3640,42 @@ static bool input_overlay_upload_textures(input_overlay_t *ol)
       return false;
    }
 
-   /* Each unique image becomes a surface holding one texture: the
-    * pixels are the pack's and stay where they are, so the surface
-    * carries no slots of its own and the upload is the same
-    * submit-and-own path an animated preview frame takes. The
-    * driver's page then draws from the surfaces' handles. */
+   /* Each unique image becomes a surface holding one texture. A still
+    * image's pixels are the pack's and stay where they are, so its
+    * surface carries no slots of its own and the upload is the same
+    * submit-and-own path an animated preview frame takes. An animated
+    * one (APNG) gets slots instead: its stream composes each frame
+    * into a slot and the texture is updated in place, so the page's
+    * handles never change and a frame costs no upload of its own. */
    for (i = 0; i < ol->num_images; i++)
    {
-      gfx_surface_t *s = gfx_surface_new_static(ol->images[i]->width,
+      bool animated    = ol->anim_stream && ol->anim_stream[i];
+      gfx_surface_t *s = animated
+         ? gfx_surface_new(ol->images[i]->width, ol->images[i]->height,
+               2, TEXTURE_FILTER_LINEAR, NULL, NULL)
+         : gfx_surface_new_static(ol->images[i]->width,
             ol->images[i]->height, TEXTURE_FILTER_LINEAR);
       GFX_INSTR_INC(GFX_INSTR_OVERLAY_UPLOAD);
       GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
             (int)(((size_t)ol->images[i]->width * ol->images[i]->height
                   * sizeof(uint32_t)) >> 10));
       ol->surfaces[i]  = s;
+      if (animated && s)
+      {
+         /* The first frame is already composed in the decoded image:
+          * it goes into a slot, and the stream advances from the
+          * second on the tick below. */
+         memcpy(s->slots[0], ol->images[i]->pixels,
+               (size_t)s->width * s->height * sizeof(uint32_t));
+         if (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
+               == GFX_SURFACE_SUBMIT_FAILED)
+         {
+            input_overlay_release_textures(ol);
+            return false;
+         }
+         ol->anim_next_us[i] = 0;
+         continue;
+      }
       /* An asset is uploaded once and never again, so a submit that
        * the video thread has not finished with is waited out by the
        * poll below rather than dropped. */
@@ -3855,6 +3935,24 @@ static void input_overlay_free_images(input_overlay_t *ol)
 
    for (i = 0; i < ol->num_images; i++)
       image_texture_free(ol->images[i]);
+
+#ifdef HAVE_RPNG
+   if (ol->anim_stream)
+      for (i = 0; i < ol->num_images; i++)
+         if (ol->anim_stream[i])
+            rpng_apng_stream_close((rpng_apng_stream_t*)ol->anim_stream[i]);
+#endif
+   if (ol->anim_data)
+      for (i = 0; i < ol->num_images; i++)
+         free(ol->anim_data[i]);
+   free(ol->anim_stream);
+   free(ol->anim_data);
+   free(ol->anim_len);
+   free(ol->anim_next_us);
+   ol->anim_stream  = NULL;
+   ol->anim_data    = NULL;
+   ol->anim_len     = NULL;
+   ol->anim_next_us = NULL;
 
    free(ol->images);
    ol->images = NULL;
@@ -6783,7 +6881,7 @@ void input_overlay_check_mouse_cursor(void)
 }
 
 static void input_overlay_loaded_move_images(input_overlay_t *ol,
-      struct string_list *image_list)
+      struct string_list *image_list, struct string_list *anim_list)
 {
    size_t i;
 
@@ -6799,6 +6897,43 @@ static void input_overlay_loaded_move_images(input_overlay_t *ol,
 
    for (i = 0; i < ol->num_images; i++)
       ol->images[i] = (struct texture_image*)image_list->elems[i].attr.p;
+
+#ifdef HAVE_RPNG
+   /* The animated images' file bytes, and a stream over each: the
+    * pack owns both from here, and frees them with the images. A
+    * pack with no animation allocates nothing. */
+   if (anim_list && anim_list->size >= ol->num_images)
+   {
+      size_t animated = 0;
+      for (i = 0; i < ol->num_images; i++)
+         if (anim_list->elems[i].attr.p)
+            animated++;
+      if (     animated
+            && (ol->anim_data    = (void**)calloc(ol->num_images, sizeof(void*)))
+            && (ol->anim_len     = (size_t*)calloc(ol->num_images, sizeof(size_t)))
+            && (ol->anim_stream  = (void**)calloc(ol->num_images, sizeof(void*)))
+            && (ol->anim_next_us = (int64_t*)calloc(ol->num_images, sizeof(int64_t))))
+      {
+         for (i = 0; i < ol->num_images; i++)
+         {
+            overlay_anim_src_t *src =
+               (overlay_anim_src_t*)anim_list->elems[i].attr.p;
+            if (!src)
+               continue;
+            ol->anim_data[i]   = src->data;
+            ol->anim_len[i]    = src->len;
+            ol->anim_stream[i] = rpng_apng_stream_open(
+                  (const uint8_t*)src->data, src->len);
+            if (ol->anim_stream[i])
+               rpng_apng_stream_set_argb((rpng_apng_stream_t*)ol->anim_stream[i],
+                     ol->images[i]->supports_rgba ? 0 : 1);
+         }
+      }
+   }
+   if (anim_list)
+      for (i = 0; i < anim_list->size; i++)
+         free(anim_list->elems[i].attr.p);
+#endif
 }
 
 /* task_data = overlay_task_data_t* */
@@ -6861,8 +6996,10 @@ static void input_overlay_loaded(retro_task_t *task,
 #endif
 
    if (ol->num_images > 0)
-      input_overlay_loaded_move_images(ol, data->image_list);
+      input_overlay_loaded_move_images(ol, data->image_list, data->anim_list);
    string_list_free(data->image_list);
+   if (data->anim_list)
+      string_list_free(data->anim_list);
 
    free(data);
 
@@ -7754,6 +7891,9 @@ void input_driver_poll(void)
             break;
       }
 
+#ifdef HAVE_RPNG
+      input_overlay_animate(input_st->overlay_ptr, cpu_features_get_time_usec());
+#endif
       input_poll_overlay(
             !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
             settings,
