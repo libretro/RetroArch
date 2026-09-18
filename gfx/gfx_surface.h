@@ -80,6 +80,10 @@ struct gfx_surface
    struct texture_image img;       /* the frame in flight */
    gfx_surface_release_t release;
    void *user;
+   /* A producer's own pointer that outlives the submit: the image a
+    * static surface was given, for a release() that has to free it.
+    * The surface never touches it. */
+   void *user_img;
    uint32_t *slots[GFX_SURFACE_MAX_SLOTS];
    /* The texture, 0 until a submit has completed. A replacement load
     * in flight leaves the previous texture here, drawable, until the

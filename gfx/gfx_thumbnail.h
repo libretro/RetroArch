@@ -283,12 +283,7 @@ typedef struct
    uint8_t anim_read_pending; /* adopted nbio read still in flight;
                                  animation/audio held at the static
                                  frame until it completes */
-   /* Asynchronous upload bookkeeping (threaded video). upload_seq is
-    * bumped by gfx_thumbnail_reset(); a completed still upload whose
-    * seq no longer matches was superseded and is unloaded on
-    * delivery. Animation frames need none of this: their surface is
-    * freed by the reset and swallows its own completion. */
-   uint16_t upload_seq;
+
    uint8_t anim_windowed;  /* anim_dt is a sliding window fed from the
                               decoder frontier during playback, not a
                               buffer pumped to completion: residency is
@@ -338,7 +333,6 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_job_upload = 0;
    t->anim_read_pending = 0;
    t->anim_windowed   = 0;
-   t->upload_seq      = 0;
 }
 
 /* Holds all configuration parameters associated
