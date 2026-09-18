@@ -47,6 +47,9 @@
 
 #if HAVE_MENU
 
+/* rcheevos_menuitem_t::menu_badge_grayscale, besides 0 and 1 */
+#define RCHEEVOS_MENU_BADGE_PENDING 2
+
 enum rcheevos_menu_type
 {
    RCHEEVOS_MENU_ACHIEVEMENT,
@@ -219,12 +222,13 @@ void rcheevos_menu_reset_badges(void)
 
    while (menuitem < stop)
    {
-      if (menuitem->menu_badge_texture)
-      {
+      /* A pending entry's texture is the default badge, which the
+       * cache reset above has already unloaded */
+      if (     menuitem->menu_badge_texture
+            && menuitem->menu_badge_grayscale != RCHEEVOS_MENU_BADGE_PENDING)
          video_driver_texture_unload(&menuitem->menu_badge_texture);
-         menuitem->menu_badge_texture = 0;
-         menuitem->menu_badge_grayscale = 0;
-      }
+      menuitem->menu_badge_texture   = 0;
+      menuitem->menu_badge_grayscale = 0;
       ++menuitem;
    }
 }
@@ -432,33 +436,29 @@ static void rcheevos_menu_update_badge(rcheevos_menuitem_t* menuitem, bool downl
       return;
    }
 
+   /* menu_badge_grayscale is 0 or 1 while the entry owns the texture
+    * of its own badge in that rendition, and RCHEEVOS_MENU_BADGE_PENDING
+    * while it does not have it yet: the texture is then 0 or the server
+    * default badge, which is the cache's and never unloaded from here. */
    if (!menuitem->menu_badge_texture || menuitem->menu_badge_grayscale != badge_grayscale)
    {
       uintptr_t new_badge_texture =
          rcheevos_get_badge_texture(badge_name, badge_grayscale, download_if_missing);
 
+      if (     menuitem->menu_badge_grayscale != RCHEEVOS_MENU_BADGE_PENDING
+            && menuitem->menu_badge_texture
+            && (new_badge_texture || menuitem->menu_badge_grayscale != badge_grayscale))
+         video_driver_texture_unload(&menuitem->menu_badge_texture);
+
       if (new_badge_texture)
       {
-         if (menuitem->menu_badge_grayscale < 2 && menuitem->menu_badge_texture)
-            video_driver_texture_unload(&menuitem->menu_badge_texture);
-
-         menuitem->menu_badge_texture = new_badge_texture;
+         menuitem->menu_badge_texture   = new_badge_texture;
          menuitem->menu_badge_grayscale = badge_grayscale;
       }
-      /* menu_badge_grayscale is overloaded such
-       * that any value greater than 1 indicates
-       * the server default image is being used */
-      else if (menuitem->menu_badge_grayscale < 2)
+      else
       {
-         if (menuitem->menu_badge_texture)
-            video_driver_texture_unload(&menuitem->menu_badge_texture);
-
-         /* requested badge is not available, check for server default */
-         menuitem->menu_badge_texture =
-            rcheevos_get_badge_texture("00000", false, false);
-
-         if (!menuitem->menu_badge_texture)
-            menuitem->menu_badge_grayscale = 2;
+         menuitem->menu_badge_texture   = rcheevos_get_default_badge_texture();
+         menuitem->menu_badge_grayscale = RCHEEVOS_MENU_BADGE_PENDING;
       }
    }
 }
@@ -474,9 +474,10 @@ uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset)
       case RCHEEVOS_MENU_ACHIEVEMENT:
       case RCHEEVOS_MENU_SUBSET_ACHIEVEMENTS:
       case RCHEEVOS_MENU_USER:
-         /* if we're using the placeholder badge, check to see if the real badge
-            * has become available */
-         if (menuitem->menu_badge_grayscale == 2)
+         /* No badge of its own yet: see if it has become available.
+          * Only the entries a menu driver draws come through here, so
+          * only those are ever loaded. */
+         if (menuitem->menu_badge_grayscale == RCHEEVOS_MENU_BADGE_PENDING)
             rcheevos_menu_update_badge(menuitem, false);
          break;
 
@@ -657,7 +658,10 @@ static void rcheevos_menu_append_achievements(rcheevos_locals_t* rcheevos_locals
             break;
          }
 
-         rcheevos_menu_update_badge(menuitem, false);
+         /* Loaded when a menu driver first draws the entry, not here:
+          * a set has far more achievements than fit on screen or in
+          * the badge cache. */
+         menuitem->menu_badge_grayscale = RCHEEVOS_MENU_BADGE_PENDING;
       }
    }
 
