@@ -545,6 +545,46 @@ static void test_animation(void)
    companion_thumbs_free(t);
 }
 
+/* A frame's hold does not hold the thread. An APNG with 5 s frames is
+ * shown; switching to another animation and freeing must each take
+ * effect at once. The thread used to sleep a frame out
+ * before it looked, so each of these waited up to the 5 s. */
+static long long mono_ms(void)
+{
+   struct timespec ts;
+   clock_gettime(CLOCK_MONOTONIC, &ts);
+   return (long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
+
+static void test_animation_long_frames(void)
+{
+   char slow[512], fast[512];
+   companion_thumbs_t *t = companion_thumbs_new(0, 1);
+   long long t0, took;
+   fixture(slow, sizeof(slow), "slow.png");
+   fixture(fast, sizeof(fast), "fast.png");
+   CHECK(write_apng(slow, 8, 8, 5000), "wrote the 5 s APNG");
+   CHECK(write_apng(fast, 8, 8, 30),   "wrote the 30 ms APNG");
+
+   ngot = 0;
+   companion_thumbs_animate(t, slow, 16, 16, 11, 0);
+   CHECK(drain_tag(t, 11, 3000), "the slow animation shows its first frame");
+
+   /* now inside a 5 s hold */
+   t0 = mono_ms();
+   companion_thumbs_animate(t, fast, 16, 16, 12, 0);
+   CHECK(drain_tag(t, 12, 3000), "the next animation shows");
+   took = mono_ms() - t0;
+   CHECK(took < 1000, "switching does not wait out the frame (%lld ms)", took);
+
+   companion_thumbs_animate(t, slow, 16, 16, 14, 0);
+   CHECK(drain_tag(t, 14, 3000), "slow again, in its hold");
+   t0 = mono_ms();
+   companion_thumbs_free(t);
+   took = mono_ms() - t0;
+   CHECK(took < 1000, "free does not wait out the frame (%lld ms)", took);
+}
+
 /* One hover on a video, as every backend does it: request() the still
  * and animate() the same path back to back.  The still is the video's
  * first frame through a preview session; the animation must carry on
@@ -825,6 +865,7 @@ int main(int argc, char **argv)
    test_abort();
    test_double_failure_no_uaf();
    test_animation();
+   test_animation_long_frames();
    test_video_hover();
    test_apng_hover();
    test_scaler();

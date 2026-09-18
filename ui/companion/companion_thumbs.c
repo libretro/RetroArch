@@ -833,6 +833,7 @@ static void ct_anim_thread(void *ud)
       unsigned gen;
       gfx_anim_preview_t *sess;
       int loops_left;
+      retro_time_t next_at;
 
       slock_lock(t->lock);
       while (!t->quit && !t->anim.wanted)
@@ -898,6 +899,7 @@ static void ct_anim_thread(void *ud)
          continue;
       }
       loops_left = sess->loop_count; /* 0 = forever */
+      next_at    = cpu_features_get_time_usec();
 
       slock_lock(t->lock);
       t->anim_opening = false;
@@ -953,9 +955,25 @@ static void ct_anim_thread(void *ud)
             free(bits);
          else
             ct_anim_push(t, bits, gen, tag, path, w, h);
-         slock_unlock(t->lock);
 
-         retro_sleep(duration_ms);
+         /* Hold the frame for its duration, on a schedule rather than
+          * a sleep after each push, so decode and scale time does not
+          * stretch every frame. Waiting on anim_cond, which a new
+          * animation, a stop and shutdown all signal, lets any of them
+          * end it at once; it used to sleep the frame out - which for a
+          * GIF can be seconds - before it looked. */
+         {
+            retro_time_t now = cpu_features_get_time_usec();
+            next_at += (retro_time_t)duration_ms * 1000;
+            if (next_at < now)
+               next_at = now;
+            while (!t->quit && t->anim.gen == gen && now < next_at)
+            {
+               scond_wait_timeout(t->anim_cond, t->lock, next_at - now);
+               now = cpu_features_get_time_usec();
+            }
+         }
+         slock_unlock(t->lock);
       }
 
       /* Unpublish before closing: the UI thread only touches the
@@ -1031,6 +1049,9 @@ void companion_thumbs_animate_stop(companion_thumbs_t *t)
     * then. Under the lock, so the session is still published. */
    if (t->anim_sess)
       gfx_anim_preview_audio_stop(t->anim_sess);
+   /* Out of a frame's hold, or a wait for a still, at once. */
+   if (t->anim_cond)
+      scond_broadcast(t->anim_cond);
    slock_unlock(t->lock);
 #endif
 }
@@ -1216,6 +1237,12 @@ void companion_thumbs_cancel(companion_thumbs_t *t)
          j.e->refs--;
    }
    t->queued = 0;
+#ifdef HAVE_THREADS
+   /* The rings just emptied are what ct_video_still_pending() reads: an
+    * animation thread waiting for a still from them re-checks now. */
+   if (t->anim_cond)
+      scond_broadcast(t->anim_cond);
+#endif
    /* Jobs a worker already holds: release their entries' queued flag
     * too (they are from the old epoch), so those keys can be requested
     * again; when the old result lands it is cached or deduped. */
