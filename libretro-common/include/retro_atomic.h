@@ -1065,6 +1065,13 @@ typedef volatile size_t retro_atomic_size_t;
 #define retro_atomic_fetch_sub_int(p, v) retro_atomic_fetch_sub_int_fb((p), (v))
 #define retro_atomic_fetch_or_int(p, v)  retro_atomic_fetch_or_int_fb((p), (v))
 #define retro_atomic_fetch_and_int(p, v) retro_atomic_fetch_and_int_fb((p), (v))
+/* Compare-and-swap, which this backend can only offer as a plain
+ * read-compare-write: correct where the fallback itself is - one core,
+ * or a platform whose only preemption is cooperative - and no worse
+ * than the loads and stores beside it. Callers that need a real CAS
+ * are on a backend that has one. */
+#define retro_atomic_cas_int(p, expected, desired) \
+   retro_atomic_cas_int_fb((p), (expected), (desired))
 
 static INLINE int retro_atomic_fetch_add_int_fb(retro_atomic_int_t *p, int v)
 {
@@ -1092,6 +1099,15 @@ static INLINE int retro_atomic_fetch_and_int_fb(retro_atomic_int_t *p, int v)
    int old = *p;
    *p      = old & v;
    return old;
+}
+
+static INLINE bool retro_atomic_cas_int_fb(retro_atomic_int_t *p,
+      int expected, int desired)
+{
+   if (*p != expected)
+      return false;
+   *p = desired;
+   return true;
 }
 
 #define retro_atomic_load_acquire_size(p)        (*(p))
