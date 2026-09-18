@@ -4012,6 +4012,14 @@ bool video_driver_texture_update(uintptr_t id, void *data)
    return ok;
 }
 
+bool video_driver_supports_texture_format(enum texture_gpu_format fmt)
+{
+   video_driver_state_t *video_st     = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+   return poke && poke->supports_texture_format
+      && poke->supports_texture_format(video_st->data, fmt);
+}
+
 bool video_driver_texture_can_update(void)
 {
    video_driver_state_t *video_st     = &video_driver_st;

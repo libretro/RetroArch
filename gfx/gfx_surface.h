@@ -96,6 +96,45 @@ struct gfx_surface
    uint8_t can_update; /* driver updates in place */
 };
 
+/* What the active video driver wants of an image, asked once before
+ * it is decoded rather than guessed from a flag at every producer.
+ *
+ * The answers live in three places today - a display flag for channel
+ * order, a context flag for 10-bit sources, a poke for compressed
+ * formats - and every producer that cared had to know all three. A
+ * decoder asks this instead, and emits what it is told. */
+typedef struct
+{
+   /* The channel order to emit: true for memory-order R,G,B,A, false
+    * for ARGB words. A decoder that can do either should do this one;
+    * anything else costs a swizzle pass. */
+   bool rgba;
+   /* The driver samples XRGB2101010 sources, so a 10-bit decode is
+    * worth doing; false means a 10-bit image is narrowed to 8. */
+   bool pix10;
+   /* The driver can replace a texture's contents in place, so a
+    * streaming producer keeps one texture rather than loading a
+    * replacement per frame. */
+   bool can_update;
+   /* Row pitch in bytes the upload wants for @width, and the
+    * alignment the first row should start on. Both are what the
+    * current upload paths use; a producer that can honour them saves
+    * the repack. */
+   size_t pitch;
+   unsigned align;
+} gfx_surface_requirements_t;
+
+/* Fill @req for an image of @width pixels on the active driver.
+ * Safe before any surface exists; with no driver up it answers with
+ * the defaults a software path would use. */
+void gfx_surface_query_requirements(unsigned width,
+      gfx_surface_requirements_t *req);
+
+/* Whether the active driver can sample @fmt as a compressed texture,
+ * so a decoder can keep the GPU-native payload instead of expanding
+ * it. */
+bool gfx_surface_supports_compressed(enum texture_gpu_format fmt);
+
 /* A surface with no slots of its own, for an image whose pixels the
  * caller keeps: an overlay asset, a still. Submitted through
  * gfx_surface_submit_external(), which is the only submit it takes.

@@ -64,6 +64,28 @@ gfx_surface_t *gfx_surface_new(unsigned width, unsigned height,
    return s;
 }
 
+void gfx_surface_query_requirements(unsigned width,
+      gfx_surface_requirements_t *req)
+{
+   if (!req)
+      return;
+   req->rgba       = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
+         ? true : false;
+   req->pix10      = video_driver_test_all_flags(
+         GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE) ? true : false;
+   req->can_update = video_driver_texture_can_update();
+   /* Every upload path in the tree takes tightly packed 32-bit rows;
+    * the alignment is what the GL paths set (glPixelStorei) and what
+    * the others are happy with. */
+   req->pitch      = (size_t)width * sizeof(uint32_t);
+   req->align      = 4;
+}
+
+bool gfx_surface_supports_compressed(enum texture_gpu_format fmt)
+{
+   return video_driver_supports_texture_format(fmt);
+}
+
 gfx_surface_t *gfx_surface_new_static(unsigned width, unsigned height,
       enum texture_filter_type filter)
 {

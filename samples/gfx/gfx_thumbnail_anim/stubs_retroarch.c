@@ -225,3 +225,12 @@ void gfx_display_blend_begin(void *dispctx, void *data)
 { (void)dispctx; (void)data; }
 void gfx_display_blend_end(void *dispctx, void *data)
 { (void)dispctx; (void)data; }
+
+/* The surface layer asks the driver what it wants before a decode
+ * (gfx_surface_query_requirements): here there is no driver, so the
+ * answers are the software defaults - no 10-bit source, no compressed
+ * sampling. */
+bool video_driver_test_all_flags(int flags)
+{ (void)flags; return false; }
+bool video_driver_supports_texture_format(int fmt)
+{ (void)fmt; return false; }

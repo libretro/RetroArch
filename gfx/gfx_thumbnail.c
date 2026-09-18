@@ -1232,6 +1232,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    int64_t decode_start;
    int duration_ms                    = 0;
    bool sync_use_rgba                 = false;
+   gfx_surface_requirements_t req;
    bool sync_native_order             = false;
    bool sync_direct                   = false;
    gfx_surface_t *sync_surface        = NULL;
@@ -1507,8 +1508,8 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    /* Sample the upload format once and ask the stream to emit it
     * directly (every stream type honours it; the swizzle below is the
     * fallback for one that cannot). */
-   sync_use_rgba     = (video_driver_get_disp_flags()
-         & VIDEO_FLAG_USE_RGBA) ? true : false;
+   gfx_surface_query_requirements(0, &req);
+   sync_use_rgba     = req.rgba;
    sync_native_order = image_transfer_anim_stream_set_argb(
          thumbnail->anim, type, sync_use_rgba ? 0 : 1);
 

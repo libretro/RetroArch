@@ -288,3 +288,12 @@ int  config_userdata_get_int_array(void *u, const char *k, int **v,
       unsigned *n) { (void)u; (void)k; (void)v; (void)n; return 0; }
 int  config_userdata_get_string(void *u, const char *k, char **v,
       const char *d) { (void)u; (void)k; (void)v; (void)d; return 0; }
+
+/* The surface layer asks the driver what it wants before a decode
+ * (gfx_surface_query_requirements): here there is no driver, so the
+ * answers are the software defaults - no 10-bit source, no compressed
+ * sampling. */
+bool video_driver_test_all_flags(int flags)
+{ (void)flags; return false; }
+bool video_driver_supports_texture_format(int fmt)
+{ (void)fmt; return false; }
