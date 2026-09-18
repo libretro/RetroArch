@@ -141,6 +141,18 @@ void win32_sizemove_enter(HWND hwnd);
 void win32_sizemove_exit(HWND hwnd);
 void win32_sizemove_tick(void);
 void win32_sizemove_abort(void);
+
+/* HID hotplug settle timer. WM_DEVICECHANGE arrives once per HID
+ * interface, so one composite device (a headset with volume keys, a
+ * keyboard with a media collection) sends a burst, and each event
+ * used to reinitialise the joypad driver - one full DirectInput
+ * enumeration per event, back to back. The input driver arms this
+ * timer instead; re-arming restarts it, so the reinit runs once,
+ * WIN32_HOTPLUG_SETTLE_MS after the last event of the burst. */
+#define WIN32_HOTPLUG_TIMER_ID  0x5242
+#define WIN32_HOTPLUG_SETTLE_MS 250
+void win32_hotplug_arm(void);
+bool win32_hotplug_due(void);
 #endif
 
 void win32_check_window(void *data,

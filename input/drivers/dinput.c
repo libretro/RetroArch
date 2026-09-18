@@ -943,12 +943,21 @@ bool dinput_handle_message(void *data,
          {
             PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
             /* TODO/FIXME: Don't destroy everything, let's just
-             * handle new devices gracefully */
+             * handle new devices gracefully. Until then, one reinit
+             * per burst: see WIN32_HOTPLUG_TIMER_ID. */
             if (pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
-               joypad_driver_reinit(di, di->joypad_drv_name);
+               win32_hotplug_arm();
          }
 #endif
          break;
+#ifndef _XBOX
+      case WM_TIMER:
+         if (wParam != WIN32_HOTPLUG_TIMER_ID)
+            break;
+         if (win32_hotplug_due())
+            joypad_driver_reinit(di, di->joypad_drv_name);
+         return true;
+#endif
       case WM_MOUSEWHEEL:
          if (((short) HIWORD(wParam))/120 > 0)
             di->flags |= DINP_FLAG_MOUSE_WU_BTN;

@@ -810,6 +810,43 @@ void win32_sizemove_tick(void)
       video_st->current_video->alive(video_st->data);
    video_driver_cached_frame();
 }
+
+#ifdef HAVE_DINPUT
+/* dinput_joypad.c; also set and cleared by xinput_hybrid_joypad.c */
+extern volatile bool g_dinput_enum_inflight;
+#endif
+
+/* Called from the input driver's WM_DEVICECHANGE, on the thread that
+ * owns the main window - the one the device notification is
+ * registered on. */
+void win32_hotplug_arm(void)
+{
+   if (main_window.hwnd)
+      SetTimer(main_window.hwnd, WIN32_HOTPLUG_TIMER_ID,
+            WIN32_HOTPLUG_SETTLE_MS, NULL);
+}
+
+/* Called from the input driver's WM_TIMER. Returns true when the
+ * joypad driver should be reinitialised now. The one thing that can
+ * still make a reinit block is a DirectInput enumeration from the
+ * previous one still walking the device tree, which destroy() joins
+ * with no limit. Rather than park the window thread on it, re-arm
+ * and look again one settle period later: the audio drivers' "skip
+ * the pass, retry on a later wake" in place of an open-ended wait. */
+bool win32_hotplug_due(void)
+{
+   if (!main_window.hwnd)
+      return false;
+   KillTimer(main_window.hwnd, WIN32_HOTPLUG_TIMER_ID);
+#ifdef HAVE_DINPUT
+   if (g_dinput_enum_inflight)
+   {
+      win32_hotplug_arm();
+      return false;
+   }
+#endif
+   return true;
+}
 #endif
 
 static LRESULT CALLBACK wnd_proc_common(
@@ -876,6 +913,15 @@ static LRESULT CALLBACK wnd_proc_common(
          win32_sizemove_exit(hwnd);
          break;
       case WM_TIMER:
+         /* A hotplug timer reaching here was armed by an input driver
+          * this window's wndproc does not route it to. It is one-shot
+          * by intent; stop it rather than let it tick forever. */
+         if (wparam == WIN32_HOTPLUG_TIMER_ID)
+         {
+            KillTimer(hwnd, WIN32_HOTPLUG_TIMER_ID);
+            *quit = true;
+            return 0;
+         }
          /* Someone else's timer falls through to DefWindowProc. */
          if (wparam != WIN32_SIZEMOVE_TIMER_ID)
             break;
@@ -1193,11 +1239,20 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       case WM_MOVE:
       case WM_SIZE:
 #if !defined(_XBOX)
+      case WM_TIMER:
+         if (   wparam == WIN32_HOTPLUG_TIMER_ID
+             && winraw_handle_message(message, wparam, lparam))
+            return 0;
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
+#endif
+#if !defined(_XBOX)
       case WM_ENTERSIZEMOVE:
       case WM_EXITSIZEMOVE:
       case WM_ENTERMENULOOP:
       case WM_EXITMENULOOP:
-      case WM_TIMER:
 #endif
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
@@ -1411,11 +1466,24 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       case WM_MOVE:
       case WM_SIZE:
 #if !defined(_XBOX)
+      case WM_TIMER:
+         if (wparam == WIN32_HOTPLUG_TIMER_ID)
+         {
+            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
+#endif
+#if !defined(_XBOX)
       case WM_ENTERSIZEMOVE:
       case WM_EXITSIZEMOVE:
       case WM_ENTERMENULOOP:
       case WM_EXITMENULOOP:
-      case WM_TIMER:
 #endif
       case WM_GETMINMAXINFO:
       case WM_COMMAND:

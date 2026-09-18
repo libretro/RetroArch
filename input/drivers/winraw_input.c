@@ -1317,22 +1317,28 @@ bool winraw_handle_message(UINT msg,
          {
             PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lpar;
             if (pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
-            {
-               settings_t *settings = config_get_ptr();
-               /* Name the joypad driver to reinitialise. Passing NULL
-                * here makes input_joypad_init_driver() skip the branch
-                * that honours the configured driver - it is guarded by
-                * 'if (ident && *ident)' - and fall through to
-                * input_joypad_init_first(), which takes whichever entry
-                * of joypad_drivers[] initialises first. The configured
-                * driver is never tried, so a device change silently
-                * swaps it for one earlier in that list. */
-               joypad_driver_reinit(NULL,
-                     settings ? settings->arrays.input_joypad_driver : NULL);
-            }
+               win32_hotplug_arm();
          }
 #endif
          break;
+      case WM_TIMER:
+         if (wpar != WIN32_HOTPLUG_TIMER_ID)
+            break;
+         if (win32_hotplug_due())
+         {
+            settings_t *settings = config_get_ptr();
+            /* Name the joypad driver to reinitialise. Passing NULL
+             * here makes input_joypad_init_driver() skip the branch
+             * that honours the configured driver - it is guarded by
+             * 'if (ident && *ident)' - and fall through to
+             * input_joypad_init_first(), which takes whichever entry
+             * of joypad_drivers[] initialises first. The configured
+             * driver is never tried, so a device change silently
+             * swaps it for one earlier in that list. */
+            joypad_driver_reinit(NULL,
+                  settings ? settings->arrays.input_joypad_driver : NULL);
+         }
+         return true;
    }
    return false;
 }
