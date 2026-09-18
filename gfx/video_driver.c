@@ -7860,6 +7860,7 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
    uint16_t min_run_time   = (scanline_blank > 0) ? (double)scanline_blank / (double)video_height * (double)frame_time_target : 1000;
    bool init               = (!scanline_total) ? true : false;
    bool wait               = true;
+   retro_time_t spin_until = 0;
 
    if (     scanline_target <= 0
          || scanline_target >= video_height)
@@ -7886,9 +7887,28 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
       }
    }
 
+   /* Bounded: the only other way out is the beam reaching the target,
+    * and a query that starts failing mid-wait (display asleep, mode
+    * change, adapter reset) returns -1, which never does - the loop
+    * used to spin the frame thread at full CPU for good. Two frames
+    * covers the target plus the init pass measuring a whole frame. */
+   if (wait)
+      spin_until = cpu_features_get_time_usec()
+         + 2 * (retro_time_t)frame_time_target;
+
    while (wait)
    {
       scanline = video_driver_scanline_get();
+
+      if (scanline < 0)
+      {
+         /* Nothing to wait on; leave the tuner's state as it was. */
+         scanline = video_st->scanline[SCANLINE_NEXT];
+         break;
+      }
+
+      if (cpu_features_get_time_usec() >= spin_until)
+         break;
 
       if (scanline >= scanline_target)
          wait = false;

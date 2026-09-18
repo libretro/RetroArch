@@ -247,18 +247,95 @@ typedef REASON_CONTEXT POWER_REQUEST_CONTEXT, *PPOWER_REQUEST_CONTEXT, *LPPOWER_
 
 #ifdef HAVE_D3DKMT
 static d3dkmt_adapter_t d3dkmt_adapter;
+/* The monitor the scanline counter was opened on. */
+static HMONITOR d3dkmt_monitor;
+/* Set by the window procedure when the window may have changed
+ * monitor (moved, or the display layout changed); the thread that
+ * reads the counter rebinds it before its next read, so the adapter
+ * state is only ever touched by that thread. */
+static retro_atomic_int_t d3dkmt_rebind_pending =
+   RETRO_ATOMIC_INT_INITIALIZER(0);
+
+typedef NTSTATUS (CALLBACK *D3DKMTCLOSEADAPTER_FN)(const D3DKMT_CLOSEADAPTER*);
+static D3DKMTCLOSEADAPTER_FN pD3DKMTCloseAdapter;
+
+static void d3dkmt_close(void)
+{
+   if (pD3DKMTCloseAdapter && d3dkmt_adapter.sl.hAdapter)
+   {
+      D3DKMT_CLOSEADAPTER ca;
+      ca.hAdapter = d3dkmt_adapter.sl.hAdapter;
+      pD3DKMTCloseAdapter(&ca);
+   }
+   memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
+   d3dkmt_monitor = NULL;
+}
+
+/* Opens the scanline counter and vblank wait on the adapter output
+ * driving @mon. It used to open whichever display device answered
+ * first - usually the primary - whatever monitor the window was on, so
+ * on a second screen scanline sync raced another display's beam. */
+static bool d3dkmt_open_monitor(HMONITOR mon)
+{
+   MONITORINFOEX mi;
+   HDC hdc;
+   D3DKMT_OPENADAPTERFROMHDC oa;
+
+   if (!mon)
+      return false;
+   memset(&mi, 0, sizeof(mi));
+   mi.cbSize = sizeof(mi);
+   if (!GetMonitorInfo(mon, (LPMONITORINFO)&mi))
+      return false;
+   if (!(hdc = CreateDC(NULL, mi.szDevice, NULL, NULL)))
+      return false;
+
+   memset(&oa, 0, sizeof(oa));
+   oa.hDc = hdc;
+   if (pD3DKMTOpenAdapterFromHdc(&oa) != STATUS_SUCCESS)
+   {
+      DeleteDC(hdc);
+      return false;
+   }
+   DeleteDC(hdc);
+
+   d3dkmt_close();
+   d3dkmt_adapter.sl.hAdapter      = oa.hAdapter;
+   d3dkmt_adapter.sl.VidPnSourceId = oa.VidPnSourceId;
+   /* hDevice is documented optional and is not needed to wait on a
+    * VidPn source. */
+   d3dkmt_adapter.vb.hAdapter      = oa.hAdapter;
+   d3dkmt_adapter.vb.VidPnSourceId = oa.VidPnSourceId;
+   d3dkmt_monitor                  = mon;
+   return true;
+}
+
+/* Before a read, on the reading thread: follow the window to the
+ * monitor it is on now, if it may have moved. Cheap when nothing
+ * changed - one atomic load. */
+static void d3dkmt_follow_window(void)
+{
+   HMONITOR mon;
+
+   if (!retro_atomic_load_acquire_int(&d3dkmt_rebind_pending))
+      return;
+   retro_atomic_store_release_int(&d3dkmt_rebind_pending, 0);
+   if (!main_window.hwnd || !pD3DKMTOpenAdapterFromHdc)
+      return;
+   mon = MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST);
+   if (mon && mon != d3dkmt_monitor)
+      d3dkmt_open_monitor(mon);
+}
+
+static void d3dkmt_request_rebind(void)
+{
+   retro_atomic_store_release_int(&d3dkmt_rebind_pending, 1);
+}
 
 static void d3dkmt_init(void)
 {
    if (!pD3DKMTOpenAdapterFromHdc)
    {
-      unsigned d3dkmt_adapter_hAdapter = 0;
-      unsigned d3dkmt_adapter_VidPnSourceId = 0;
-      unsigned adapter_index = 0;
-      DISPLAY_DEVICE add;
-
-      add.cb = sizeof(add);
-
       pD3DKMTOpenAdapterFromHdc = (D3DKMTOPENADAPTERFROMHDC)
             GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTOpenAdapterFromHdc");
       pD3DKMTGetScanLine = (D3DKMTGETSCANLINE)
@@ -269,68 +346,43 @@ static void d3dkmt_init(void)
       pD3DKMTWaitForVerticalBlankEvent = (D3DKMTWAITFORVERTICALBLANKEVENT)
             GetProcAddress(GetModuleHandle("gdi32.dll"),
                   "D3DKMTWaitForVerticalBlankEvent");
+      /* Optional too: without it an adapter handle leaks on rebind,
+       * as every one did before. */
+      pD3DKMTCloseAdapter = (D3DKMTCLOSEADAPTER_FN)
+            GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTCloseAdapter");
 
       /* Both exports are WDDM, so they are absent under XDDM - there
        * are no D3DKMT entry points in gdi32 before Vista at all.
-       * pD3DKMTGetScanLine is null-checked at its two use sites;
-       * pD3DKMTOpenAdapterFromHdc was not, and it is called inside the
-       * loop below, so a missing export was a call through NULL on the
-       * first display device. Leave the scanline state zeroed and let
-       * d3dkmt_scanline_get() report -1, which
-       * video_driver_scanline_before_frame() already treats as
-       * unsupported. */
+       * Leave the scanline state zeroed and let d3dkmt_scanline_get()
+       * report -1, which video_driver_scanline_before_frame() treats
+       * as unsupported. */
       if (!pD3DKMTOpenAdapterFromHdc || !pD3DKMTGetScanLine)
       {
+         pD3DKMTOpenAdapterFromHdc = NULL;
          memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
          video_driver_scanline_init();
          return;
       }
 
-      while (EnumDisplayDevices(NULL, adapter_index, &add, 0))
+      /* No window yet at class registration: the primary monitor, as
+       * a start. The window's first move or show rebinds it to the
+       * monitor the window is actually on. */
       {
-         HDC hdc = CreateDC(NULL, add.DeviceName, NULL, NULL);
-         if (hdc != NULL)
-         {
-            D3DKMT_OPENADAPTERFROMHDC OpenAdapterData = {0};
-            OpenAdapterData.hDc = hdc;
-            if (pD3DKMTOpenAdapterFromHdc(&OpenAdapterData) == STATUS_SUCCESS)
-            {
-               d3dkmt_adapter_hAdapter      = OpenAdapterData.hAdapter;
-               d3dkmt_adapter_VidPnSourceId = OpenAdapterData.VidPnSourceId;
-            }
-            DeleteDC(hdc);
-
-            if (d3dkmt_adapter_hAdapter)
-               break;
-         }
-         adapter_index++;
-      }
-
-      memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
-
-      if (pD3DKMTGetScanLine)
-      {
-         D3DKMT_GETSCANLINE sl = {0};
-         sl.hAdapter           = d3dkmt_adapter_hAdapter;
-         sl.VidPnSourceId      = d3dkmt_adapter_VidPnSourceId;
-         d3dkmt_adapter.sl     = sl;
-      }
-
-      {
-         D3DKMT_WAITFORVERTICALBLANKEVENT vb = {0};
-         vb.hAdapter           = d3dkmt_adapter_hAdapter;
-         vb.VidPnSourceId      = d3dkmt_adapter_VidPnSourceId;
-         /* hDevice is documented optional and is not needed to wait on
-          * a VidPn source. */
-         d3dkmt_adapter.vb     = vb;
+         POINT origin;
+         origin.x = 0;
+         origin.y = 0;
+         d3dkmt_open_monitor(MonitorFromPoint(origin,
+                  MONITOR_DEFAULTTOPRIMARY));
       }
    }
+   d3dkmt_request_rebind();
 
    video_driver_scanline_init();
 }
 
 bool d3dkmt_wait_vblank(void)
 {
+   d3dkmt_follow_window();
    if (!pD3DKMTWaitForVerticalBlankEvent || !d3dkmt_adapter.vb.hAdapter)
       return false;
    return (pD3DKMTWaitForVerticalBlankEvent(&d3dkmt_adapter.vb)
@@ -339,7 +391,8 @@ bool d3dkmt_wait_vblank(void)
 
 int d3dkmt_scanline_get(void)
 {
-   if (pD3DKMTGetScanLine)
+   d3dkmt_follow_window();
+   if (pD3DKMTGetScanLine && d3dkmt_adapter.sl.hAdapter)
    {
       if (pD3DKMTGetScanLine(&d3dkmt_adapter.sl) == STATUS_SUCCESS)
          return d3dkmt_adapter.sl.ScanLine;
@@ -901,6 +954,9 @@ static LRESULT CALLBACK wnd_proc_common(
          /* fall-through */
       case WM_MOVE:
          win32_save_position();
+#ifdef HAVE_D3DKMT
+         d3dkmt_request_rebind();
+#endif
          break;
 #if !defined(_XBOX)
       case WM_ENTERSIZEMOVE:
@@ -1175,6 +1231,9 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
 #endif
          break;
       case WM_DISPLAYCHANGE:  /* Fix size after display mode switch when using SR */
+#ifdef HAVE_D3DKMT
+         d3dkmt_request_rebind();
+#endif
          {
             HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
             if (mon)
@@ -1284,6 +1343,9 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
 #endif
          break;
       case WM_DISPLAYCHANGE:  /* Fix size after display mode switch when using SR */
+#ifdef HAVE_D3DKMT
+         d3dkmt_request_rebind();
+#endif
          {
             HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
             if (mon)
@@ -1523,6 +1585,9 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 #endif
          break;
       case WM_DISPLAYCHANGE:  /* Fix size after display mode switch when using SR */
+#ifdef HAVE_D3DKMT
+         d3dkmt_request_rebind();
+#endif
          {
             HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
             if (mon)
