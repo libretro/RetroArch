@@ -425,6 +425,7 @@ typedef struct video_frame_menu_settings
 {
    const char *rgui_theme_preset;
    const char *dynamic_wallpapers_dir;
+   const char *ozone_color_theme;
    unsigned rgui_color_theme;
    unsigned rgui_aspect_ratio;
    unsigned rgui_aspect_ratio_lock;
@@ -446,7 +447,6 @@ typedef struct video_frame_menu_settings
    unsigned ozone_header_separator;
    unsigned input_turbo_button;
    int      input_turbo_bind;
-   unsigned ozone_color_theme;
    unsigned startup_page;
    int      xmb_title_margin;
    int      xmb_title_margin_horizontal_offset;

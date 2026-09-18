@@ -4869,6 +4869,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
       /* And what the menu drivers' frame() reads, for the same reason */
       video_info->menu.rgui_theme_preset                      = settings->paths.path_rgui_theme_preset;
       video_info->menu.dynamic_wallpapers_dir                 = settings->paths.directory_dynamic_wallpapers;
+      video_info->menu.ozone_color_theme                      = settings->arrays.menu_ozone_color_theme;
       video_info->menu.rgui_color_theme                       = settings->uints.menu_rgui_color_theme;
       video_info->menu.rgui_aspect_ratio                      = settings->uints.menu_rgui_aspect_ratio;
       video_info->menu.rgui_aspect_ratio_lock                 = settings->uints.menu_rgui_aspect_ratio_lock;
@@ -4890,7 +4891,6 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->menu.ozone_header_separator                 = settings->uints.menu_ozone_header_separator;
       video_info->menu.input_turbo_button                     = settings->uints.input_turbo_button;
       video_info->menu.input_turbo_bind                       = settings->ints.input_turbo_bind;
-      video_info->menu.ozone_color_theme                      = settings->uints.menu_ozone_color_theme;
       video_info->menu.startup_page                           = settings->uints.menu_startup_page;
 #ifdef HAVE_XMB
       video_info->menu.xmb_title_margin                       = settings->ints.menu_xmb_title_margin;
