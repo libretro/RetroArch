@@ -1472,11 +1472,15 @@ void gfx_display_init_white_texture(void)
    struct texture_image ti;
    static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
 
-   ti.width      = 1;
-   ti.height     = 1;
-   ti.pixels     = (uint32_t*)&white_data;
-   ti.compressed = NULL; /* raw pixels, not a loaded compressed texture */
-   ti.pix10      = false; /* 8-bit white; must not be read as 10-bit */
+   ti.width         = 1;
+   ti.height        = 1;
+   ti.pixels        = (uint32_t*)&white_data;
+   ti.compressed    = NULL; /* raw pixels, not a loaded compressed texture */
+   ti.pix10         = false; /* 8-bit white; must not be read as 10-bit */
+   /* Four 0xff bytes read either way, but the drivers read this field
+    * and it is the caller's to set: nothing here fills the struct
+    * beforehand, so an unset one is whatever the stack held. */
+   ti.supports_rgba = gfx_surface_wants_rgba();
 
    video_driver_texture_load(&ti,
          TEXTURE_FILTER_NEAREST, &gfx_white_texture);
