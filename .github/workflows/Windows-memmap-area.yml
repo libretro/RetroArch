@@ -1,0 +1,100 @@
+name: CI Windows (memmap area)
+
+# The fastmem window's reservation has two implementations and a Windows
+# runner only ever exercises one of them. From Windows 10 1803 the area is
+# a placeholder that mapping splits and unmapping coalesces; below that --
+# back to Windows 2000 -- it is one reservation per allocation-granularity
+# slot, released and mapped over one slot at a time. Every hosted runner is
+# far past 1803, so the legacy path never runs unless it is asked for, and
+# MEMSHM_AREA_FORCE_LEGACY is how it is asked for.
+#
+# It is worth running because its failures are quiet. A placeholder split
+# that loses a range, or a slot released and not put back, does not crash:
+# it maps the wrong memory, or maps nothing and lets a later map land
+# somewhere else. A core with a guest RAM behind that reads and writes the
+# wrong addresses.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'libretro-common/memmap/**'
+      - 'libretro-common/include/memmap.h'
+      - 'libretro-common/samples/memmap/**'
+      - '.github/workflows/Windows-memmap-area.yml'
+  pull_request:
+    paths:
+      - 'libretro-common/memmap/**'
+      - 'libretro-common/include/memmap.h'
+      - 'libretro-common/samples/memmap/**'
+      - '.github/workflows/Windows-memmap-area.yml'
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  area:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The path this runner takes on its own.
+          - name: placeholders
+            defines: ''
+          # And the one every Windows before 10 1803 takes.
+          - name: legacy
+            defines: '-DMEMSHM_AREA_FORCE_LEGACY'
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Report the runner's Windows build
+        shell: powershell
+        run: |
+          $v = [System.Environment]::OSVersion.Version
+          Write-Host "Windows $($v.Major).$($v.Minor) build $($v.Build)"
+          if ($v.Build -lt 17134) {
+            Write-Host "::notice::Runner predates 10 1803; the placeholder job tests the legacy path too"
+          }
+
+      # vcvarsall through vswhere, which ships with every Visual Studio and
+      # needs no third-party action: this repo uses only
+      # microsoft/setup-msbuild, and one job is not a reason to add
+      # another dependency to the supply chain.
+      - name: Build the area sample
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set VSPATH=%%i
+          if not defined VSPATH exit /b 1
+          call "%VSPATH%\VC\Auxiliary\Build\vcvars64.bat"
+          cd libretro-common\samples\memmap\memshm_area_test
+          cl /nologo /W3 /WX /I..\..\..\include ${{ matrix.defines }} ^
+             memshm_area_test.c ..\..\..\memmap\memmap.c ^
+             /Fe:memshm_area_test.exe
+          if errorlevel 1 exit /b 1
+
+      # The sample's own exit code covers the assertions. This also fails
+      # a run that reported no area at all: that is a pass for a platform
+      # which cannot have one, and a silent no-op on a runner that can.
+      - name: Run it, and fail if the area was skipped
+        shell: powershell
+        run: |
+          cd libretro-common\samples\memmap\memshm_area_test
+          $out = & .\memshm_area_test.exe | Out-String
+          Write-Host $out
+          if ($out -match 'skipped') {
+            Write-Error "no area on a runner that must be able to provide one"
+            exit 1
+          }
+          if ($out -notmatch 'memshm area: ok') {
+            Write-Error "the sample did not report ok"
+            exit 1
+          }
