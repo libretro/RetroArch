@@ -258,6 +258,13 @@ threads-samples:
 	$(MAKE) -C samples/memmap/memshm_test clean
 	$(MAKE) -C samples/memmap/memshm_test check SANITIZER=$(CONCURRENCY_SAN)
 	$(MAKE) -C samples/memmap/memshm_test clean
+	# and the reservation those mappings go into: three mappings of one
+	# region aliasing, the middle one unmapped with live neighbours
+	# either side, and the freed slot mapped again -- the placeholder
+	# split and coalesce, which is where Windows is easy to get wrong
+	$(MAKE) -C samples/memmap/memshm_area_test clean
+	$(MAKE) -C samples/memmap/memshm_area_test check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/memmap/memshm_area_test clean
 	# fastjmp: a jump from three frames down, eight values held across
 	# the set intact at -O2, a hundred thousand round trips; the ASan
 	# fake stack cannot follow a longjmp that is not libc's

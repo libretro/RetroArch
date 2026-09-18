@@ -206,6 +206,11 @@ void memrelease(void *addr, size_t len);
  * the process. Windows uses a pagefile-backed file mapping, Android a
  * memfd (Bionic has no shm_open), everything else shm_open.
  *
+ * Darwin caps a name at 31 characters and returns ENAMETOOLONG past it,
+ * where Linux takes one ten times longer; a name that will not fit is
+ * shortened from the front there, keeping the tail that distinguishes
+ * one process from another, so the same caller works on both.
+ *
  * Returns: a handle for memshm_map / memshm_destroy, or NULL. It is the
  * platform's own object -- the file descriptor on POSIX, the HANDLE on
  * Windows -- so a caller that must map the region a way memshm_map does
@@ -242,6 +247,89 @@ void *memshm_map(void *handle, size_t offset, void *hint, size_t len, int prot);
  * @len        : the length passed to memshm_map.
  */
 void memshm_unmap(void *addr, size_t len);
+
+/* ------------------------------------------------------------------ */
+/* A reservation that shared memory is mapped into at several places   */
+/* ------------------------------------------------------------------ */
+
+/* A fastmem window: one contiguous reservation of address space that
+ * pieces of a guest RAM are mapped into, at offsets the recompiler
+ * computes, and unmapped from again as the guest remaps. The
+ * reservation must stay reserved while individual pieces come and go,
+ * which neither mmap nor VirtualAlloc gives directly:
+ *
+ *  - POSIX: the reservation is PROT_NONE anonymous memory, a piece is
+ *    MAP_FIXED over it, and unmapping restores PROT_NONE anonymous
+ *    memory in its place. The kernel splits and merges the VMAs.
+ *  - Windows 10 1803 and later: the reservation is a placeholder, a
+ *    piece replaces part of it with MEM_REPLACE_PLACEHOLDER, and
+ *    unmapping restores the placeholder and coalesces it with its
+ *    neighbours. The area tracks the ranges itself, because the API
+ *    cannot be asked where they are.
+ *  - Windows 2000 through 10 1709: no placeholder APIs, and
+ *    MEM_RELEASE frees a whole reservation rather than part of one, so
+ *    the span is reserved one allocation-granularity slot at a time.
+ *    Mapping releases exactly the slots it covers and maps a view over
+ *    them; unmapping restores those reservations at once.
+ *
+ * Runtime is the same either way: a mapped view is a mapped view, and a
+ * load through the window is the same instruction. The legacy path
+ * costs one extra system call per map and carries a brief window where
+ * the address is free, which it retries through -- both on a path that
+ * runs at setup and when the guest remaps, not per access.
+ */
+typedef struct memshm_area memshm_area_t;
+
+/**
+ * memshm_area_create:
+ * @len        : size of the reservation in bytes.
+ *
+ * Returns: the area, or NULL where there is no address space for it, or
+ * no way to reserve one. A caller that gets NULL runs without a fastmem
+ * window rather than failing. @len must be a whole number of allocation
+ * granularity units on Windows.
+ *
+ * On Windows the base is placed above 4 GB where possible: a 4 GB
+ * window based below that either crosses the 32-bit boundary into the
+ * system's own reservations or aliases mapped pages, and a fault there
+ * cannot be told apart from a legitimate miss.
+ */
+memshm_area_t *memshm_area_create(size_t len);
+
+/**
+ * memshm_area_free:
+ * Releases the reservation and everything still mapped in it.
+ */
+void memshm_area_free(memshm_area_t *area);
+
+/**
+ * memshm_area_base / memshm_area_size:
+ */
+unsigned char *memshm_area_base(const memshm_area_t *area);
+size_t         memshm_area_size(const memshm_area_t *area);
+
+/**
+ * memshm_area_map:
+ * @area       : from memshm_area_create.
+ * @handle     : from memshm_create.
+ * @offset     : byte offset into the shared region; page-aligned.
+ * @at         : where in the area to map it, within the reservation.
+ * @len        : bytes.
+ * @prot       : PROT_READ | PROT_WRITE | PROT_EXEC.
+ *
+ * Returns: @at on success, NULL on failure.
+ */
+unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
+      size_t offset, void *at, size_t len, int prot);
+
+/**
+ * memshm_area_unmap:
+ * @at         : an address a previous memshm_area_map returned.
+ * @len        : the length it was mapped with.
+ *
+ * Restores the reservation over that range. Returns true on success.
+ */
+bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len);
 
 /**
  * memjit_write_begin / memjit_write_end:
