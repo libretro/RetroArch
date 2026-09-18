@@ -80,10 +80,12 @@ int main(int argc, char **argv)
       CHECK(seen[i] != seen[0] || nseen < 2,
             "frame %d is identical to frame 0 (%08x)", i, seen[i]);
 
-   /* The surface side: frames go into alternating slots and the
-    * handle the pages hold never changes. */
+   /* The surface side: one slot is all a frame composed here and
+    * submitted at once can use - a surface with a submit in flight
+    * refuses every slot - and the handle the pages hold never
+    * changes across the submits. */
    {
-      gfx_surface_t *s = gfx_surface_new(w, h, 2, TEXTURE_FILTER_LINEAR,
+      gfx_surface_t *s = gfx_surface_new(w, h, 1, TEXTURE_FILTER_LINEAR,
             NULL, NULL);
       uintptr_t first  = 0;
       CHECK(s != NULL, "surface allocation failed");
@@ -93,7 +95,6 @@ int main(int argc, char **argv)
          for (i = 0; i < 6; i++)
          {
             const uint32_t *f = rpng_apng_stream_next(st, &dur);
-            unsigned slot     = (unsigned)(i & 1);
             enum gfx_surface_submit_result r;
             if (!f)
             {
@@ -103,9 +104,9 @@ int main(int argc, char **argv)
             CHECK(f != NULL, "no frame at step %d", i);
             if (!f)
                break;
-            memcpy(s->slots[slot], f,
+            memcpy(s->slots[0], f,
                   (size_t)w * h * sizeof(uint32_t));
-            r = gfx_surface_submit(s, slot, false);
+            r = gfx_surface_submit(s, 0, false);
             CHECK(r != GFX_SURFACE_SUBMIT_FAILED,
                   "submit %d failed", i);
             if (!first)

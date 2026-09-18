@@ -3287,16 +3287,16 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
       rpng_apng_stream_t *st = (rpng_apng_stream_t*)ol->anim_stream[i];
       gfx_surface_t *s       = (gfx_surface_t*)ol->surfaces[i];
       const uint32_t *frame;
-      unsigned slot;
       int duration_ms        = 0;
 
       if (!st || !s || !s->num_slots)
          continue;
       if (ol->anim_next_us[i] && now < ol->anim_next_us[i])
          continue;
-
-      slot = s->inflight ? (s->inflight_slot ^ 1) : 0;
-      if (s->inflight && slot == s->inflight_slot)
+      /* The last frame is still the video thread's: this one is
+       * dropped rather than waited for, and the next poll tries
+       * again. */
+      if (s->inflight)
          continue;
 
       if (!(frame = rpng_apng_stream_next(st, &duration_ms)))
@@ -3307,9 +3307,9 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
          if (!(frame = rpng_apng_stream_next(st, &duration_ms)))
             continue;
       }
-      memcpy(s->slots[slot], frame,
+      memcpy(s->slots[0], frame,
             (size_t)s->width * s->height * sizeof(uint32_t));
-      if (gfx_surface_submit(s, slot, ol->images[i]->supports_rgba)
+      if (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
             == GFX_SURFACE_SUBMIT_FAILED)
          continue;
       ol->anim_next_us[i] = now
@@ -3650,9 +3650,13 @@ static bool input_overlay_upload_textures(input_overlay_t *ol)
    for (i = 0; i < ol->num_images; i++)
    {
       bool animated    = ol->anim_stream && ol->anim_stream[i];
+      /* One slot: a frame is composed here and submitted immediately,
+       * and a surface with a submit in flight refuses every slot, so
+       * a second one could never be reached - it would be a frame's
+       * worth of memory per animated image, for nothing. */
       gfx_surface_t *s = animated
          ? gfx_surface_new(ol->images[i]->width, ol->images[i]->height,
-               2, TEXTURE_FILTER_LINEAR, NULL, NULL)
+               1, TEXTURE_FILTER_LINEAR, NULL, NULL)
          : gfx_surface_new_static(ol->images[i]->width,
             ol->images[i]->height, TEXTURE_FILTER_LINEAR);
       GFX_INSTR_INC(GFX_INSTR_OVERLAY_UPLOAD);
