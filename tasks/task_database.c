@@ -723,12 +723,30 @@ static void task_database_iterate_m3u(
                      sizeof(first_matched_db));
                strlcpy(first_matched_crc, result->db_crc,
                      sizeof(first_matched_crc));
-               strlcpy(collapsed_title, result->entry_label,
-                     sizeof(collapsed_title));
+               {
+                  char disc_name[NAME_MAX_LENGTH];
+                  fill_pathname(disc_name,
+                        path_basename_nocompression(result->entry_path),
+                        "", sizeof(disc_name));
 
-               /* Remove disc indicator from title */
-               remove_disc_indicators(collapsed_title,
-                     sizeof(collapsed_title));
+                  /* A label that is only the disc's own file name
+                   * (no database or DAT title) says nothing the M3U's
+                   * name doesn't - and the user chose the M3U's name,
+                   * which thumbnails and saves already follow. Keep
+                   * it, as before the M3U collapse existed. A real
+                   * title has its disc indicator stripped instead. */
+                  if (string_is_equal(result->entry_label, disc_name))
+                     fill_pathname(collapsed_title,
+                           path_basename_nocompression(m3u_path),
+                           "", sizeof(collapsed_title));
+                  else
+                  {
+                     strlcpy(collapsed_title, result->entry_label,
+                           sizeof(collapsed_title));
+                     remove_disc_indicators(collapsed_title,
+                           sizeof(collapsed_title));
+                  }
+               }
             }
 
 #ifdef DEBUG
