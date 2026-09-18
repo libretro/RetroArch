@@ -141,6 +141,8 @@ enum runloop_flags
 /* Whether retroarch_main_init() has completed.  Written on the main
  * thread, readable from any thread. */
 void runloop_is_inited_set(void);
+
+void runloop_core_options_save(void);
 void runloop_is_inited_clear(void);
 bool runloop_is_inited(void);
 

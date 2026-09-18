@@ -4035,6 +4035,11 @@ bool command_event(enum event_command cmd, void *data)
 
             runloop_st->flags              &= ~RUNLOOP_FLAG_CORE_RUNNING;
 
+            /* Persist core options before anything below calls
+             * back into the core (auto save-state, unload, deinit),
+             * so a crash there cannot lose them. */
+            runloop_core_options_save();
+
             /* The platform that uses ram_state_save calls it when the content
              * ends and writes it to a file */
             ram_state_to_file();
@@ -4713,6 +4718,11 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CORE_DEINIT:
          {
+            /* Persist core options before anything below calls
+             * back into the core (auto save-state, unload, deinit),
+             * so a crash there cannot lose them. */
+            runloop_core_options_save();
+
             /* Restore unpaused state. The recursive command_event call
              * here re-enters this dispatcher; the UNPAUSE branch is
              * deliberately small (clears flags, resumes audio) and
