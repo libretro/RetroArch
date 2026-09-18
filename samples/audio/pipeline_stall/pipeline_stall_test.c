@@ -60,6 +60,9 @@ static unsigned failures = 0;
 static retro_atomic_int_t dev_stalled     = RETRO_ATOMIC_INT_INITIALIZER(0);
 static retro_atomic_int_t dev_frames_took = RETRO_ATOMIC_INT_INITIALIZER(0);
 static retro_atomic_int_t dev_waits       = RETRO_ATOMIC_INT_INITIALIZER(0);
+/* Microseconds a write costs the device, so the consumer can be made
+ * the slower of the two and the ring fills as it does on hardware. */
+static retro_atomic_int_t dev_slow_us     = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 static void *dev_init(const char *device, unsigned rate, unsigned latency,
       unsigned *new_rate)
@@ -81,6 +84,11 @@ static ssize_t dev_write_raw(void *data, const int16_t *samples,
    (void)volume;
    if (retro_atomic_load_acquire_int(&dev_stalled))
       return 0;
+   {
+      int slow = retro_atomic_load_acquire_int(&dev_slow_us);
+      if (slow > 0)
+         usleep((useconds_t)slow);
+   }
    retro_atomic_fetch_add_int(&dev_frames_took, (int)frames);
    return (ssize_t)frames;
 }
@@ -224,12 +232,57 @@ static double produce_frame(void)
    return now_ms() - t0;
 }
 
+/* --- fast-forward ---------------------------------------------------- */
+
+#define FF_FRAMES 120
+
+static double produce_ff_frame(void)
+{
+   double t0 = now_ms();
+   audio_driver_submit(&audio_driver_st, 3.0f, frame_audio,
+         sizeof(frame_audio) / sizeof(int16_t), false, false, true, true);
+   audio_driver_pipeline_signal(&audio_driver_st);
+   return now_ms() - t0;
+}
+
+/* What the runloop publishes for a hold: audio sync on, Speedup on, and
+ * the limiter's ratio - zero for unlimited. */
+static void ff_snapshot(float ratio)
+{
+   int bits;
+   memcpy(&bits, &ratio, sizeof(bits));
+   retro_atomic_store_release_int(&audio_driver_st.runloop_ffratio_bits, bits);
+   retro_atomic_store_release_int(&audio_driver_st.runloop_snapshot,
+         AUDIO_SNAP_SYNC | AUDIO_SNAP_FASTMOTION | AUDIO_SNAP_FF_SPEEDUP);
+}
+
+static void ring_drain(void)
+{
+   unsigned i;
+   for (i = 0; i < 2000 && retro_spsc_read_avail(&audio_driver_st.pipe_ring); i++)
+      usleep(1000);
+   usleep(20000);
+}
+
+/* Frames the device took over a hold, with both runs starting level. */
+static int ff_run(void)
+{
+   int before;
+   unsigned i;
+   ring_drain();
+   before = retro_atomic_load_acquire_int(&dev_frames_took);
+   for (i = 0; i < FF_FRAMES; i++)
+      produce_ff_frame();
+   ring_drain();
+   return retro_atomic_load_acquire_int(&dev_frames_took) - before;
+}
+
 int main(void)
 {
    pthread_t dog, cons;
    unsigned i;
    double   t, worst;
-   int      took_before;
+   int      took_before, limited, unlimited;
 
    pthread_create(&dog, NULL, watchdog, NULL);
 
@@ -311,12 +364,65 @@ int main(void)
    CHECK(stalled_now(), "second stall: not recorded");
    CHECK(worst < 50.0, "second stall: a frame cost %.1f ms", worst);
 
-   /* 5. A driver's reinit request is not acted on by the producer or
+   /* 5. Fast-forward. A limiter and audio sync mean the consumer pulls
+    *    at the core's speed, so the producer waits on a full ring as it
+    *    does at 1x and the hold keeps its source. Unlimited, waiting
+    *    would hold the core to the fastest tempo the audio can play, so
+    *    it drops instead. The device is made the slower of the two, or
+    *    the ring never fills and neither path is exercised. */
+   STAGE(6);
+   retro_atomic_store_release_int(&dev_stalled, 0);
+   retro_atomic_store_release_int(&dev_slow_us, 1500);
+   ff_snapshot(3.0f);
+   CHECK(audio_driver_pipe_ff_waits(&audio_driver_st),
+         "a limited hold with audio sync does not wait at a full ring");
+   limited = ff_run();
+   ff_snapshot(0.0f);
+   CHECK(!audio_driver_pipe_ff_waits(&audio_driver_st),
+         "an unlimited hold waits at a full ring");
+   unlimited = ff_run();
+   printf("   fast-forward: the device took %d frame(s) limited, %d unlimited, of %d offered\n",
+         limited, unlimited, FF_FRAMES * 800);
+   CHECK(limited > unlimited,
+         "a waiting producer delivered no more than a dropping one (%d vs %d)",
+         limited, unlimited);
+   CHECK(limited >= (FF_FRAMES * 800 * 9) / 10,
+         "a waiting producer lost %d of %d frames",
+         FF_FRAMES * 800 - limited, FF_FRAMES * 800);
+
+   /* 6. The same hold against a device that has stopped: the wait is
+    *    bounded once, the stall latches, and the frames after it are
+    *    immediate - a held key must not sit on the bound every frame. */
+   STAGE(7);
+   retro_atomic_store_release_int(&dev_slow_us, 0);
+   ff_snapshot(3.0f);
+   retro_atomic_store_release_int(&dev_stalled, 1);
+   for (i = 0; i < 60 && !stalled_now(); i++)
+      produce_ff_frame();
+   CHECK(stalled_now(), "stalled device in fast-forward: stall not recorded");
+   worst = 0.0;
+   for (i = 0; i < 60; i++)
+   {
+      t = produce_ff_frame();
+      if (t > worst)
+         worst = t;
+   }
+   CHECK(worst < 50.0,
+         "stalled device in fast-forward: a frame cost %.1f ms once stalled",
+         worst);
+
+   /* Back to 1x for what follows. */
+   retro_atomic_store_release_int(&dev_stalled, 0);
+   retro_atomic_store_release_int(&audio_driver_st.runloop_snapshot, 0);
+   for (i = 0; i < 20; i++)
+      produce_frame();
+
+   /* 7. A driver's reinit request is not acted on by the producer or
     *    the consumer: neither may run the reinit, which frees the state
     *    lock they hold and joins the thread they may be. Frames keep
     *    flowing, command_event() - which the stub aborts on - is never
     *    reached, and the request is there for the runloop to take, once. */
-   STAGE(6);
+   STAGE(8);
    retro_atomic_store_release_int(&dev_stalled, 0);
    retro_atomic_store_release_int(&audio_driver_st.reinit_request, 1);
    for (i = 0; i < 20; i++)
@@ -337,7 +443,7 @@ int main(void)
    CHECK(audio_driver_st.state_lock != NULL, "the state lock was freed under a flush");
    CHECK(audio_driver_take_reinit_request(), "the request was consumed inside flush");
 
-   STAGE(7);
+   STAGE(9);
    pipeline_down();
 
    STAGE(-1);
