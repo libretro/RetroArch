@@ -87,6 +87,7 @@
 #include "../../../configuration.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/gfx_display.h"
+#include "../../../gfx/gfx_surface.h"
 #include "../../../tasks/tasks_internal.h"
 
 /* ---- deterministic clock ----------------------------------------- */
@@ -127,6 +128,24 @@ bool video_driver_test_all_flags(enum display_flags testflag)
 {
    (void)testflag;
    return false;                 /* no 10-bit path */
+}
+
+/* The image task asks the surface layer what the driver wants before
+ * it decodes; here there is no driver, so the answer is what a
+ * software path takes: ARGB words, 8 bits a channel, no in-place
+ * texture update. */
+bool gfx_surface_query_requirements(unsigned width,
+      gfx_surface_requirements_t *req)
+{
+   if (!req)
+      return false;
+   req->rgba       = false;
+   req->formats    = GFX_SURFACE_PIXFMT_8888;
+   req->preferred  = GFX_SURFACE_PIXFMT_8888;
+   req->can_update = false;
+   req->pitch      = (size_t)width * sizeof(uint32_t);
+   req->align      = 4;
+   return true;
 }
 
 uint32_t video_driver_get_disp_flags(void)
