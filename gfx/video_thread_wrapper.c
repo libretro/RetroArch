@@ -2660,6 +2660,13 @@ static bool video_thread_frame(void *data, const void *frame_,
       if (video_info)
       {
          thr->frame.slot[slot].video_info = *video_info;
+#ifdef HAVE_OZONE
+         if (video_info->menu.ozone_color_theme)
+            thr->frame.slot[slot].video_info.menu.ozone_color_theme =
+                  memcpy(thr->frame.slot[slot].menu_ozone_color_theme,
+                        video_info->menu.ozone_color_theme,
+                        sizeof(thr->frame.slot[slot].menu_ozone_color_theme));
+#endif
          /* The text belongs to the main thread's buffer, which it
           * rewrites next frame: this frame keeps its own copy. */
          if (video_info->stat_text_len)

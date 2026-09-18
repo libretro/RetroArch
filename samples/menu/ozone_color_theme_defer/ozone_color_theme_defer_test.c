@@ -10,7 +10,7 @@
  *   for persistence rather than writing settings itself;
  *
  *   render (the driver's render vtable slot, main thread): performs
- *   the configuration_set_uint and clears the hand-off.
+ *   the configuration_set_string and clears the hand-off.
  *
  * The regression this pins: an earlier mechanical snapshot
  * conversion aimed the configuration_set_uint macro's write target
@@ -29,13 +29,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <boolean.h>
 #include <time/rtime.h>
 #include <file/config_file.h>
 #include <streams/file_stream.h>
+#include <string/stdstring.h>
 
 #include "../../../config.def.h"
 #include "../../../configuration.h"
@@ -57,10 +57,11 @@ static unsigned failures = 0;
       } \
    } while (0)
 
-/* A valid theme index that is not the system theme
+/* A valid theme identifier that is not the system theme
  * (ozone_get_system_theme() returns DEFAULT_OZONE_COLOR_THEME off
  * Switch, and the harness only runs off Switch). */
-#define WRONG_THEME ((DEFAULT_OZONE_COLOR_THEME + 1) % 2)
+#define WRONG_THEME (string_is_equal(DEFAULT_OZONE_COLOR_THEME, "basic_black") \
+      ? "basic_white" : "basic_black")
 
 static void one_frame_and_render(void)
 {
@@ -126,8 +127,8 @@ int main(int argc, char *argv[])
           * CHANGES, so the harness flips the preference after init
           * and lets the frame path discover it. */
          fprintf(cfg, "menu_use_preferred_system_color_theme = \"false\"\n");
-         fprintf(cfg, "ozone_menu_color_theme = \"%u\"\n",
-               (unsigned)WRONG_THEME);
+         fprintf(cfg, "ozone_menu_color_theme = \"%s\"\n",
+               WRONG_THEME);
          fclose(cfg);
       }
    }
@@ -148,7 +149,7 @@ int main(int argc, char *argv[])
    {
       struct menu_state *menu_st = menu_state_get_ptr();
       CHECK(   menu_st->driver_ctx && menu_st->driver_ctx->ident
-            && strcmp(menu_st->driver_ctx->ident, "ozone") == 0,
+            && string_is_equal(menu_st->driver_ctx->ident, "ozone"),
             "fixture: menu driver is %s, want ozone",
             (menu_st->driver_ctx && menu_st->driver_ctx->ident)
                ? menu_st->driver_ctx->ident : "(none)");
@@ -159,20 +160,20 @@ int main(int argc, char *argv[])
       {
          video_frame_info_t probe;
          video_driver_build_info(&probe);
-         CHECK(probe.menu.ozone_color_theme == WRONG_THEME,
-               "fixture: snapshot theme %u, want %u",
-               probe.menu.ozone_color_theme, (unsigned)WRONG_THEME);
+         CHECK(string_is_equal(probe.menu.ozone_color_theme, WRONG_THEME),
+               "fixture: snapshot theme %s, want %s",
+               probe.menu.ozone_color_theme, WRONG_THEME);
       }
    }
 
    /* Lane 1: the fixture holds - configured theme in place, and one
     * settled frame under the preference-off baseline. If this fires,
     * the fixture is wrong, not the code. */
-   CHECK(settings->uints.menu_ozone_color_theme == WRONG_THEME,
-         "fixture: expected configured theme %u before any frame, got %u",
-         (unsigned)WRONG_THEME, settings->uints.menu_ozone_color_theme);
+   CHECK(string_is_equal(settings->arrays.menu_ozone_color_theme, WRONG_THEME),
+         "fixture: expected configured theme %s before any frame, got %s",
+         WRONG_THEME, settings->arrays.menu_ozone_color_theme);
    one_frame_and_render();
-   CHECK(settings->uints.menu_ozone_color_theme == WRONG_THEME,
+   CHECK(string_is_equal(settings->arrays.menu_ozone_color_theme, WRONG_THEME),
          "fixture: theme moved with the preference still off");
 
    /* The change the block exists to catch: the person turns the
@@ -185,11 +186,11 @@ int main(int argc, char *argv[])
     * off; the render that follows persists it. */
    settings->flags &= ~SETTINGS_FLG_MODIFIED;
    one_frame_and_render();
-   CHECK(settings->uints.menu_ozone_color_theme
-            == (unsigned)DEFAULT_OZONE_COLOR_THEME,
-         "system theme not persisted: setting is %u, want %u",
-         settings->uints.menu_ozone_color_theme,
-         (unsigned)DEFAULT_OZONE_COLOR_THEME);
+   CHECK(string_is_equal(settings->arrays.menu_ozone_color_theme,
+            DEFAULT_OZONE_COLOR_THEME),
+         "system theme not persisted: setting is %s, want %s",
+         settings->arrays.menu_ozone_color_theme,
+         DEFAULT_OZONE_COLOR_THEME);
    CHECK((settings->flags & SETTINGS_FLG_MODIFIED) != 0,
          "persisting the theme must mark the configuration modified");
 
@@ -202,8 +203,8 @@ int main(int argc, char *argv[])
    one_frame_and_render();
    CHECK((settings->flags & SETTINGS_FLG_MODIFIED) == 0,
          "theme block re-fired after the setting caught up");
-   CHECK(settings->uints.menu_ozone_color_theme
-            == (unsigned)DEFAULT_OZONE_COLOR_THEME,
+   CHECK(string_is_equal(settings->arrays.menu_ozone_color_theme,
+            DEFAULT_OZONE_COLOR_THEME),
          "setting drifted after quiescing");
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
