@@ -16,11 +16,22 @@
 
 #include "../include/wiiu/hid.h"
 #include <wiiu/os/atomic.h>
+#include <wiiu/os/event.h>
+#include <wiiu/os/time.h>
 #include <string/stdstring.h>
 
 /* TODO/FIXME - static globals */
 static wiiu_event_list events;
 static wiiu_adapter_list adapters;
+/* Wakes the polling thread: a read completed, a device attached or
+ * detached, the frontend readied an adapter, or it is time to stop.
+ * Auto-reset, so a signal that lands while the thread is busy is not
+ * lost - its next wait returns at once. The thread used to spin on its
+ * loop with no wait at all. */
+static OSEvent hid_wake;
+
+/* How long shutdown waits for reads still in flight. */
+#define WIIU_HID_DRAIN_US 5000000
 
 /* Forward declarations */
 static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event);
@@ -206,6 +217,7 @@ static void wiiu_hid_init_lists(void)
    OSFastMutex_Init(&(events.lock), "attach_events");
    memset(&adapters, 0, sizeof(adapters));
    OSFastMutex_Init(&(adapters.lock), "adapters");
+   OSInitEvent(&hid_wake, FALSE, OS_EVENT_MODE_AUTO);
 }
 
 static void wiiu_hid_delete_adapter(wiiu_adapter_t *adapter)
@@ -240,7 +252,7 @@ static void wiiu_hid_delete_adapter(wiiu_adapter_t *adapter)
 static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
 {
    int incomplete          = 0;
-   int retries             = 0;
+   uint64_t waited_us      = 0;
    wiiu_adapter_t *adapter = NULL;
 
    RARCH_LOG("[HID] Waiting for in-flight reads to finish.\n");
@@ -248,7 +260,7 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
    /* We don't need to protect the adapter list here because nothing else
       will access it during this method (the HID system is shut down, and
       the only other access is the polling thread that just stopped */
-   do
+   for (;;)
    {
       incomplete = 0;
       for (adapter = adapters.list; adapter != NULL; adapter = adapter->next)
@@ -268,17 +280,25 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
             pad_connection_pad_deregister(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data);
             wiiu_hid_delete_adapter(adapter);
          }
+         return;
       }
 
-      if (incomplete)
-         usleep(5000);
-
-      if (++retries >= 1000)
+      /* Each completing read signals hid_wake, so this wakes as each
+       * one finishes rather than on a 5 ms lap. The waits add up to the
+       * old five seconds at most; past that the adapters are left, as
+       * before, rather than freed under a read still in flight. */
+      if (waited_us >= WIIU_HID_DRAIN_US)
       {
          RARCH_WARN("[HID] Timed out waiting for in-flight read to finish.\n");
-         incomplete = 0;
+         return;
       }
-   } while (incomplete);
+      {
+         OSTime start = OSGetSystemTime();
+         OSWaitEventWithTimeout(&hid_wake,
+               (OSTime)OSMicroseconds(WIIU_HID_DRAIN_US - waited_us));
+         waited_us += ticks_to_us(OSGetSystemTime() - start);
+      }
+   }
 }
 
 static OSThread *wiiu_hid_new_thread(void)
@@ -359,6 +379,10 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t err,
       if (err == 0)
          adapter->pad_driver->packet_handler(adapter->pad_driver_data, buffer, buffer_size);
    }
+
+   /* The polling thread issues the next read; shutdown also waits on
+    * this to see reads finish. */
+   OSSignalEvent(&hid_wake);
 }
 
 
@@ -405,6 +429,8 @@ static int wiiu_hid_polling_thread(int argc, const char **argv)
    {
       wiiu_handle_attach_events(hid, wiiu_hid_synchronized_get_events_list());
       wiiu_poll_adapters(hid);
+      /* Nothing to do until something signals: see hid_wake. */
+      OSWaitEvent(&hid_wake);
    }
 
    return 0;
@@ -464,8 +490,9 @@ static void wiiu_hid_stop_polling_thread(wiiu_hid_t *hid)
      hid->client = NULL;
    }
 
-   /* tell the thread it's time to stop. */
+   /* tell the thread it's time to stop, and wake it to see that. */
    hid->polling_thread_quit = true;
+   OSSignalEvent(&hid_wake);
    /* This returns once the thread runs and the cleanup method completes. */
    OSJoinThread(hid->polling_thread, &thread_result);
    free(hid->polling_thread);
@@ -576,6 +603,7 @@ static int32_t wiiu_attach_callback(HIDClient *client,
 
    event->type = attach;
    wiiu_hid_synchronized_add_event(event);
+   OSSignalEvent(&hid_wake);
 
    return DEVICE_USED;
 }
@@ -701,6 +729,9 @@ static void synchronized_process_adapters(wiiu_hid_t *hid)
       {
          case ADAPTER_STATE_NEW:
             adapter->state = wiiu_hid_try_init_driver(adapter);
+            /* READY needs its first read, DONE its retirement; both
+             * are the polling thread's. */
+            OSSignalEvent(&hid_wake);
             break;
          case ADAPTER_STATE_READY:
          case ADAPTER_STATE_READING:
