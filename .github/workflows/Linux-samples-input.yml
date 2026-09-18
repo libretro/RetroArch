@@ -118,3 +118,19 @@ jobs:
           make clean all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 60 ./libusb_hid_test
           echo "[pass] libusb_hid_test (TSan)"
+
+      - name: Build and run wii_handshake_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/wii_handshake
+        run: |
+          set -eu
+          # The Wiimote extension handshake in connect_wii.c, fed
+          # reports directly. Pins that each init write waits for the
+          # remote's acknowledgement instead of a sleep on the packet
+          # thread, that a missing acknowledgement is only overtaken by
+          # a packet after the old 100 ms, and that no packet blocks.
+          make clean all SANITIZER=address,undefined
+          test -x wii_handshake_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wii_handshake_test
+          echo "[pass] wii_handshake_test (ASan)"
