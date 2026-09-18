@@ -2306,13 +2306,21 @@ static void gl3_pass_build_commands(struct gl3_pass *pass,
    gl3_pass_get_output_size(pass, size_orig_width, size_orig_height,
          size_src_width, size_src_height, &size_width, &size_height);
 
+   /* gl3_framebuffer_new() only reserves the name; nothing is attached
+    * until a set_size. Build an unbuilt one even at the 1x1 seed size. */
    if (pass->framebuffer &&
-       (size_width  != pass->framebuffer->size_width ||
-        size_height != pass->framebuffer->size_height))
+       (      !pass->framebuffer->complete
+           || size_width  != pass->framebuffer->size_width
+           || size_height != pass->framebuffer->size_height))
       gl3_framebuffer_set_size(pass->framebuffer, size_width, size_height, 0);
 
    pass->current_framebuffer_size_width  = size_width;
    pass->current_framebuffer_size_height = size_height;
+
+   /* With no target of its own the draw below would land on the
+    * backbuffer, which every pass leaves bound when it finishes. */
+   if (!pass->final_pass && !(pass->framebuffer && pass->framebuffer->complete))
+      return;
 
    glUseProgram(pass->pipeline);
 
