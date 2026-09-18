@@ -46,6 +46,7 @@ static const char *gfx_instrument_names[GFX_INSTR_COUNT] = {
    "anim_copy",
    "anim_swizzle",
    "overlay_upload",
+   "overlay_pixel_kib",
    "overlay_page",
    "overlay_page_load"
 };

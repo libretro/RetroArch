@@ -80,6 +80,12 @@ enum gfx_instrument_counter
 
    /* Overlays */
    GFX_INSTR_OVERLAY_UPLOAD,    /* images uploaded for a pack       */
+   /* Decoded overlay pixels still held after upload, in KiB. What a
+    * pack costs in system memory once its textures exist, which is
+    * the number that decides whether releasing them is worth a
+    * re-decode on the next video reinit. KiB, because a full pack set
+    * is tens of megabytes and the counters are int. */
+   GFX_INSTR_OVERLAY_PIXEL_KIB,
    GFX_INSTR_OVERLAY_PAGE,      /* pages shown                      */
    GFX_INSTR_OVERLAY_PAGE_LOAD, /* ..that went through load()       */
 

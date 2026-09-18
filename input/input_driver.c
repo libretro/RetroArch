@@ -3586,6 +3586,9 @@ static bool input_overlay_upload_textures(input_overlay_t *ol)
       gfx_surface_t *s = gfx_surface_new_static(ol->images[i]->width,
             ol->images[i]->height, TEXTURE_FILTER_LINEAR);
       GFX_INSTR_INC(GFX_INSTR_OVERLAY_UPLOAD);
+      GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
+            (int)(((size_t)ol->images[i]->width * ol->images[i]->height
+                  * sizeof(uint32_t)) >> 10));
       ol->surfaces[i]  = s;
       /* An asset is uploaded once and never again, so a submit that
        * the video thread has not finished with is waited out by the
@@ -3659,6 +3662,12 @@ void input_overlay_release_textures(input_overlay_t *ol)
       return;
    if (ol->surfaces)
    {
+      for (i = 0; i < ol->num_images; i++)
+         if (ol->images[i])
+            GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
+                  -(int)(((size_t)ol->images[i]->width
+                        * ol->images[i]->height
+                        * sizeof(uint32_t)) >> 10));
       /* The texture goes with its surface; one still in flight frees
        * itself when the video thread is done with it. */
       for (i = 0; i < ol->num_images; i++)

@@ -2113,8 +2113,16 @@ static void lane_overlay_textures(void)
    {
       int loads   = gfx_instrument_get(GFX_INSTR_TEX_LOAD);
       int unloads = gfx_instrument_get(GFX_INSTR_TEX_UNLOAD);
+      int kib     = gfx_instrument_get(GFX_INSTR_OVERLAY_PIXEL_KIB);
       fprintf(stderr, "[baseline] overlay: %d loads, %d unloads for "
-            "4 pages over 2 passes\n", loads, unloads);
+            "4 pages over 2 passes, %d KiB of pack pixels held\n",
+            loads, unloads, kib);
+      /* What a pack holds in system memory after its textures exist
+       * is what a release-after-upload would save and a video reinit
+       * would have to decode again; the lane's own images are tiny,
+       * so this is a check that the accounting balances, not a
+       * measurement of a real pack. */
+      CHECK(kib >= 0, "pack pixel accounting went negative (%d KiB)", kib);
       /* Three images a pass, uploaded once each, and a page switch
        * adds nothing - but the menu's own textures are loaded and
        * unloaded through the same counters while these frames run,
