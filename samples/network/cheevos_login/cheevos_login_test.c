@@ -15,6 +15,8 @@
  *   4. same as 3 over TLS
  *   5. a pooled connection that dies after response bytes arrived
  *      must NOT be replayed: status -1, prompt termination
+ *   6. a TLS read that finds the server's TLS 1.3 session tickets
+ *      buffered ahead of the reply must step past them
  *
  * The mock server validates every login request byte-for-byte and
  * answers 400 on any mismatch, so a malformed request line, header
@@ -27,10 +29,14 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <errno.h>
 
 #include <net/net_http.h>
 #include <lists/string_list.h>
 #include <net/net_compat.h>
+#ifdef HAVE_SSL
+#include <net/net_socket_ssl.h>
+#endif
 
 #define LOGIN_BODY  "r=login2&u=testuser&p=testpass1234"
 #define LOGIN_TOKEN "\"Token\":\"0123456789ABCDEF\""
@@ -143,6 +149,88 @@ static int login_ok(const char *url)
    free(body);
    return ok;
 }
+
+#ifdef HAVE_SSL
+/* Mbed TLS 3.6.0 and 4.x report each TLS 1.3 session ticket from a
+ * read with MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET. Later 3.6
+ * releases drop tickets by default and BearSSL has no TLS 1.3, so there
+ * this passes trivially. errno is cleared before every read: isagain()
+ * takes any negative return for would-block when an earlier read left
+ * EAGAIN there, which is how case 1 can pass without the code being
+ * handled at all. */
+static int tls_read_past_tickets(int port)
+{
+   char port_str[16];
+   char request[512];
+   char reply[1024];
+   struct addrinfo hints;
+   struct addrinfo *addr = NULL;
+   void *ssl             = NULL;
+   int fd                = -1;
+   int ok                = 0;
+
+   memset(&hints, 0, sizeof(hints));
+   hints.ai_family   = AF_INET;
+   hints.ai_socktype = SOCK_STREAM;
+   snprintf(port_str, sizeof(port_str), "%d", port);
+   if (getaddrinfo("127.0.0.1", port_str, &hints, &addr) != 0 || !addr)
+      return 0;
+
+   if (     (fd = socket(addr->ai_family, addr->ai_socktype,
+                  addr->ai_protocol)) >= 0
+         && (ssl = ssl_socket_init(fd, "localhost"))
+         && ssl_socket_connect(ssl, addr, true, true) >= 0)
+   {
+      int len = snprintf(request, sizeof(request),
+            "POST /dorequest.php HTTP/1.1\r\n"
+            "Host: localhost:%d\r\n"
+            "User-Agent: " USER_AGENT "\r\n"
+            "Content-Type: application/x-www-form-urlencoded\r\n"
+            "Content-Length: %d\r\n"
+            "\r\n" LOGIN_BODY,
+            port, (int)strlen(LOGIN_BODY));
+
+      if (ssl_socket_send_all_blocking(ssl, request, (size_t)len, true))
+      {
+         int64_t deadline = now_us() + REQ_TIMEOUT_US;
+         /* Let the tickets and the reply land before the first read. */
+         usleep(200000);
+         while (now_us() < deadline)
+         {
+            bool err = false;
+            ssize_t n;
+            errno    = 0;
+            n        = ssl_socket_receive_all_nonblocking(ssl, &err,
+                  reply, sizeof(reply) - 1);
+            if (n < 0 || err)
+            {
+               printf("       TLS read failed before the reply\n");
+               break;
+            }
+            if (n > 0)
+            {
+               reply[n] = '\0';
+               ok       = !strncmp(reply, "HTTP/1.1 200", 12);
+               if (!ok)
+                  printf("       unexpected reply: %.60s\n", reply);
+               break;
+            }
+            usleep(1000);
+         }
+      }
+   }
+
+   if (ssl)
+   {
+      ssl_socket_close(ssl);
+      ssl_socket_free(ssl);
+   }
+   else if (fd >= 0)
+      close(fd);
+   freeaddrinfo(addr);
+   return ok;
+}
+#endif
 
 /* GET /stats and parse {"connections":N}. */
 static int stats_connections(const char *base)
@@ -303,6 +391,12 @@ int main(int argc, char **argv)
     * still works. */
    snprintf(url, sizeof(url), "%s/dorequest.php", plain_base);
    check(login_ok(url), "login still works after the failed transfer");
+
+   /* 6. TLS 1.3 session tickets buffered ahead of the reply. */
+#ifdef HAVE_SSL
+   check(tls_read_past_tickets(tls_port),
+         "TLS read steps past buffered session tickets");
+#endif
 
    pclose(srv);
 

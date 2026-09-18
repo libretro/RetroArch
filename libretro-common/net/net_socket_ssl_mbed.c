@@ -360,6 +360,11 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
          *err = true;
          return -1;
       }
+#ifdef MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET
+      /* TLS 1.3 servers send tickets after the handshake; not an error */
+      else if (ret == MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET)
+         continue;
+#endif
       else if (isagain((int)ret) || ret == MBEDTLS_ERR_SSL_WANT_READ)
       {
          /* Would block - return what we have so far */
@@ -397,6 +402,11 @@ int ssl_socket_receive_all_blocking(void *state_data,
       if (     ret == MBEDTLS_ERR_SSL_WANT_READ
             || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
          continue;
+
+#ifdef MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET
+      if (ret == MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET)
+         continue;
+#endif
 
       if (ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY)
          break;
