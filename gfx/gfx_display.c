@@ -31,6 +31,7 @@
 #include "../verbosity.h"
 
 #include "../input/input_osk.h"
+#include "gfx_surface.h"
 
 /* Standard reference DPI value, used when determining
  * DPI-aware scaling factors */
@@ -1289,7 +1290,7 @@ bool gfx_display_reset_textures_list_buffer(
    ti.width         = 0;
    ti.height        = 0;
    ti.pixels        = NULL;
-   ti.supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.supports_rgba = gfx_surface_wants_rgba();
    ti.pix10         = false;
 
    if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
@@ -1326,7 +1327,7 @@ bool gfx_display_reset_textures_list(
    ti.width                      = 0;
    ti.height                     = 0;
    ti.pixels                     = NULL;
-   ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.supports_rgba              = gfx_surface_wants_rgba();
    ti.pix10                      = false;
 
    if (!texture_path || !*texture_path)
@@ -1366,7 +1367,7 @@ bool gfx_display_reset_icon_texture(
    ti.width                      = 0;
    ti.height                     = 0;
    ti.pixels                     = NULL;
-   ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.supports_rgba              = gfx_surface_wants_rgba();
    ti.pix10                      = false;
 
    if (!texture_path || !*texture_path)

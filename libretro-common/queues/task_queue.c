@@ -100,6 +100,44 @@ static scond_t *finished_cond               = NULL;
 static sthread_t *worker_thread             = NULL;
 static bool worker_continue                 = true;
 /* use running_lock when touching it */
+
+/* Where a worker is, for deinit. Per worker rather than global: a
+ * worker deinit gave up on still owns its record after the next init
+ * has started a new one, and must not read the new worker's. */
+enum task_worker_state
+{
+   TASK_WORKER_IDLE = 0,   /* in the queue's own code */
+   TASK_WORKER_IN_HANDLER, /* inside task->handler() */
+   TASK_WORKER_ORPHANED,   /* deinit let go of it; it owns the rest */
+   TASK_WORKER_EXITED      /* left the loop; joinable */
+};
+
+struct task_worker
+{
+   retro_atomic_int_t state;
+   /* The task whose handler it is in; written under running_lock. */
+   retro_task_t      *task;
+   /* The primitives of the queue this worker was started for, so an
+    * orphan can find and free its own generation's after deinit has
+    * cleared the globals. Set at init, never changed. */
+   slock_t           *running_lock;
+   slock_t           *finished_lock;
+   slock_t           *queue_lock;
+   scond_t           *worker_cond;
+   scond_t           *finished_cond;
+};
+
+static struct task_worker *worker_self      = NULL;
+
+/* How long deinit waits for the worker before it may leave one stuck
+ * in a detachable task's handler behind. */
+#define TASK_QUEUE_DETACH_AFTER_US 1000000
+
+/* Once a worker has been left behind, its handler may still be
+ * setting task properties, which takes property_lock. The lock is
+ * then kept for the life of the process and reused by every later
+ * init instead of being freed. */
+static bool property_lock_pinned            = false;
 #endif
 
 #ifdef HAVE_GCD
@@ -742,6 +780,8 @@ static void retro_task_threaded_retrieve(task_retriever_data_t *data)
 
 static void threaded_worker(void *userdata)
 {
+   struct task_worker *self = (struct task_worker*)userdata;
+
    sthread_setname("ra-task");
 
    for (;;)
@@ -753,6 +793,10 @@ static void threaded_worker(void *userdata)
 
       if (!worker_continue)
       {
+         /* Tell deinit, which may be waiting on worker_cond with a
+          * bound, that there is nothing left to wait for. */
+         retro_atomic_store_release_int(&self->state, TASK_WORKER_EXITED);
+         scond_broadcast(worker_cond);
          slock_unlock(running_lock);
          /* No: draining is the caller's job, done while the
           * subsystems that finish callbacks reach are still alive
@@ -783,8 +827,34 @@ static void threaded_worker(void *userdata)
          }
       }
 
+      self->task = task;
+      retro_atomic_store_release_int(&self->state, TASK_WORKER_IN_HANDLER);
       slock_unlock(running_lock);
       task->handler(task);
+
+      /* Deinit gave up on this handler and is taking the task off the
+       * queue; the queue's globals may belong to a new init by now.
+       * Deinit holds this generation's running_lock until it is done
+       * letting go, so taking it once waits exactly that long. Then
+       * free this generation's primitives and the task, and leave
+       * without touching any global. The task's callback and cleanup
+       * never run. */
+      if (!retro_atomic_cas_int(&self->state,
+               TASK_WORKER_IN_HANDLER, TASK_WORKER_IDLE))
+      {
+         slock_lock(self->running_lock);
+         slock_unlock(self->running_lock);
+         scond_free(self->worker_cond);
+         scond_free(self->finished_cond);
+         slock_free(self->running_lock);
+         slock_free(self->finished_lock);
+         slock_free(self->queue_lock);
+         free(task->title);
+         free(task->error);
+         free(task);
+         free(self);
+         return;
+      }
 #if defined(__EMSCRIPTEN__) || defined(_3DS)
       /* Workaround emscripten pthread bug where not parking the
          thread will prevent other important stuff from
@@ -853,14 +923,17 @@ static void retro_task_sync_primitives_free(void)
    scond_free(finished_cond);
    slock_free(running_lock);
    slock_free(finished_lock);
-   slock_free(property_lock);
+   if (!property_lock_pinned)
+   {
+      slock_free(property_lock);
+      property_lock = NULL;
+   }
    slock_free(queue_lock);
 
    worker_cond     = NULL;
    finished_cond   = NULL;
    running_lock    = NULL;
    finished_lock   = NULL;
-   property_lock   = NULL;
    queue_lock      = NULL;
 }
 
@@ -872,7 +945,8 @@ static bool retro_task_sync_primitives_new(void)
 {
    running_lock    = slock_new();
    finished_lock   = slock_new();
-   property_lock   = slock_new();
+   if (!property_lock_pinned)
+      property_lock = slock_new();
    queue_lock      = slock_new();
    worker_cond     = scond_new();
    finished_cond   = scond_new();
@@ -894,6 +968,18 @@ static bool retro_task_threaded_init(void)
    if (!retro_task_sync_primitives_new())
       return false;
 
+   if (!(worker_self = (struct task_worker*)calloc(1, sizeof(*worker_self))))
+   {
+      retro_task_sync_primitives_free();
+      return false;
+   }
+   retro_atomic_store_release_int(&worker_self->state, TASK_WORKER_IDLE);
+   worker_self->running_lock  = running_lock;
+   worker_self->finished_lock = finished_lock;
+   worker_self->queue_lock    = queue_lock;
+   worker_self->worker_cond   = worker_cond;
+   worker_self->finished_cond = finished_cond;
+
    slock_lock(running_lock);
    worker_continue = true;
    slock_unlock(running_lock);
@@ -902,37 +988,108 @@ static bool retro_task_threaded_init(void)
     * starts.  Without a worker there is nobody to run what gets queued,
     * which is why this reports failure rather than leaving the queue
     * pointed at an implementation that cannot service it. */
-   if ((worker_thread = sthread_create(threaded_worker, NULL)))
+   if ((worker_thread = sthread_create(threaded_worker, worker_self)))
       return true;
 
    worker_continue = false;
+   free(worker_self);
+   worker_self     = NULL;
    retro_task_sync_primitives_free();
    return false;
 }
 
+/* Called with running_lock held, once the bound has passed and the
+ * worker inside a detachable task's handler has been marked orphaned.
+ * Takes the task off the queue and clears the globals; the worker,
+ * blocked on this generation's running_lock as soon as its handler
+ * returns, frees the primitives and the task after the unlock below,
+ * which is therefore the last thing done here. property_lock stays:
+ * the handler may still be setting task properties through it. */
+static void retro_task_threaded_orphan_worker(retro_task_t *task)
+{
+   slock_t *lock = running_lock;
+
+   slock_lock(queue_lock);
+   task_queue_remove(&tasks_running, task);
+   slock_unlock(queue_lock);
+   retro_atomic_fetch_sub_int(&tasks_running_count, 1);
+
+   sthread_detach(worker_thread);
+
+   worker_thread        = NULL;
+   worker_self          = NULL;
+   property_lock_pinned = true;
+   worker_cond          = NULL;
+   finished_cond        = NULL;
+   running_lock         = NULL;
+   finished_lock        = NULL;
+   queue_lock           = NULL;
+
+   slock_unlock(lock);
+}
+
+/* Stops the worker, waiting for it with a bound. A worker that is
+ * between tasks, or doing the queue's own bookkeeping, leaves as soon
+ * as it sees worker_continue, so the bound only ever runs out on one
+ * stuck inside a handler. If that task was pushed detachable, its
+ * handler promises to touch nothing but the task itself, so the
+ * worker is left to finish it alone and deinit returns. Otherwise the
+ * handler may be holding state that teardown is about to free, and
+ * the only safe thing is to keep waiting for it. */
 static void retro_task_threaded_deinit(void)
 {
+   retro_time_t deadline = cpu_features_get_time_usec()
+      + TASK_QUEUE_DETACH_AFTER_US;
+
    slock_lock(running_lock);
    worker_continue = false;
-   scond_signal(worker_cond);
-   slock_unlock(running_lock);
+   scond_broadcast(worker_cond);
 
+   for (;;)
+   {
+      int          state = retro_atomic_load_acquire_int(&worker_self->state);
+      retro_time_t left;
+
+      if (state == TASK_WORKER_EXITED)
+         break;
+
+      left = deadline - cpu_features_get_time_usec();
+      if (left > 0)
+      {
+         scond_wait_timeout(worker_cond, running_lock, left);
+         continue;
+      }
+
+      if (state == TASK_WORKER_IN_HANDLER)
+      {
+         retro_task_t *task = worker_self->task;
+         bool detachable;
+
+         slock_lock(property_lock);
+         detachable = (task->flags & RETRO_TASK_FLG_DETACHABLE) != 0;
+         slock_unlock(property_lock);
+
+         if (detachable && retro_atomic_cas_int(&worker_self->state,
+                  TASK_WORKER_IN_HANDLER, TASK_WORKER_ORPHANED))
+         {
+            retro_task_threaded_orphan_worker(task);
+            return;
+         }
+      }
+
+      /* Not in a detachable handler: it is either leaving or can only
+       * leave by returning. Wait for its signal, without a bound. */
+      scond_wait(worker_cond, running_lock);
+   }
+
+   slock_unlock(running_lock);
    sthread_join(worker_thread);
 
-   scond_free(worker_cond);
-   scond_free(finished_cond);
-   slock_free(running_lock);
-   slock_free(finished_lock);
-   slock_free(property_lock);
-   slock_free(queue_lock);
+   free(worker_self);
+   retro_task_sync_primitives_free();
 
    worker_thread   = NULL;
-   worker_cond     = NULL;
-   finished_cond   = NULL;
-   running_lock    = NULL;
-   finished_lock   = NULL;
-   property_lock   = NULL;
-   queue_lock      = NULL;
+   worker_self     = NULL;
 }
 
 static struct retro_task_impl impl_threaded = {

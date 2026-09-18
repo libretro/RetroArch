@@ -69,6 +69,27 @@ typedef struct sl
     * level 21+); blocks then hold 32-bit float frames and the frontend
     * skips its float-to-int16 pass. */
    bool use_float;
+   bool nonblock;
+   bool is_paused;
+} sl_t;
+
+/* What the callback reaches.  Android dispatches into a player after
+ * Destroy has returned (#19561), so none of this can live in the
+ * handle sl_free() releases: it is static, the driver being one
+ * instance at a time, and it is never freed.  Nothing is allocated
+ * until the driver is first initialized, and nothing grows across
+ * init/free cycles - on Android the eventcount is a bare futex word
+ * with no allocation at all. */
+typedef struct sl_shared
+{
+   /* Zero from the moment sl_free() starts, so a dispatch that
+    * arrives after it touches nothing.  Published with release: the
+    * fields below are written before it is set. */
+   retro_atomic_int_t live;
+   /* The queue whose player owns this session.  A dispatch from a
+    * player that has been replaced carries the old interface and is
+    * dropped, so it cannot spend the new player's credit. */
+   SLAndroidSimpleBufferQueueItf bq;
    /* Blocks currently enqueued on the device.  Decremented by
     * opensl_callback on the OpenSL engine thread, incremented and
     * read by the writer thread.  Android is always weakly-ordered
@@ -84,9 +105,10 @@ typedef struct sl
     * the frontend through sl_frames_consumed(). */
    retro_atomic_size_t consumed;
    unsigned frames_per_block;
-   bool nonblock;
-   bool is_paused;
-} sl_t;
+   bool park_ready;
+} sl_shared_t;
+
+static sl_shared_t sl_shared;
 
 /* Fully lock-free, no sleep, no clock: the writer parks on a
  * retro_eventcount, which on this driver's one real platform is a
@@ -102,14 +124,17 @@ typedef struct sl
  * seq_cst pairing a hand-rolled waiter flag gets subtly wrong. */
 static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
 {
-   sl_t *sl = (sl_t*)ctx;
-   retro_atomic_fetch_sub_int(&sl->buffered_blocks, 1);
+   sl_shared_t *sh = (sl_shared_t*)ctx;
+   /* A player torn down, or replaced, since this was dispatched. */
+   if (!retro_atomic_load_acquire_int(&sh->live) || bq != sh->bq)
+      return;
+   retro_atomic_fetch_sub_int(&sh->buffered_blocks, 1);
    /* A block the device has played: device time, whatever the writer
     * managed to supply. */
-   retro_atomic_fetch_add_size(&sl->consumed, sl->frames_per_block);
+   retro_atomic_fetch_add_size(&sh->consumed, sh->frames_per_block);
    /* Wake a parked writer; with none parked this is one atomic
     * bump and one load, no syscall. */
-   retro_eventcount_notify(&sl->park);
+   retro_eventcount_notify(&sh->park);
 }
 
 /* Frames the device has taken since the player started. Counting the
@@ -121,7 +146,7 @@ static size_t sl_frames_consumed(void *data)
    sl_t *sl = (sl_t*)data;
    if (!sl)
       return 0;
-   return retro_atomic_load_acquire_size(&sl->consumed);
+   return retro_atomic_load_acquire_size(&sl_shared.consumed);
 }
 
 #define GOTO_IF_FAIL(x) do { \
@@ -134,6 +159,10 @@ static void sl_free(void *data)
    sl_t *sl = (sl_t*)data;
    if (!sl)
       return;
+
+   /* Before anything is torn down, so a dispatch already on its way
+    * spends nothing and wakes nobody. */
+   retro_atomic_store_release_int(&sl_shared.live, 0);
 
    /* Teardown ordering hardened for #19561: libwilhelm's AudioTrack
     * thread crashing in pthread_mutex_lock on 0x55-poisoned memory,
@@ -178,7 +207,8 @@ static void sl_free(void *data)
    if (sl->engine_object)
       SLObjectItf_Destroy(sl->engine_object);
 
-   retro_eventcount_free(&sl->park);
+   /* sl_shared.park is not freed here: the callback that outlives the
+    * player notifies it. It is initialized once and reused. */
    free(sl->buffer);
    free(sl->buffer_chunk);
    free(sl);
@@ -209,10 +239,18 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
 
    /* calloc zero-fill is not a portable initializer for an atomic -
     * initialize it explicitly before anything can touch it. */
-   retro_atomic_int_init(&sl->buffered_blocks, 0);
-   retro_atomic_size_init(&sl->consumed, 0);
-   if (!retro_eventcount_init(&sl->park))
-      goto error;
+   retro_atomic_int_init(&sl_shared.live, 0);
+   retro_atomic_int_init(&sl_shared.buffered_blocks, 0);
+   retro_atomic_size_init(&sl_shared.consumed, 0);
+   sl_shared.bq = NULL;
+   /* Once for the process: the previous session's callback may still
+    * be parked against it, and a second init would leak the first. */
+   if (!sl_shared.park_ready)
+   {
+      if (!retro_eventcount_init(&sl_shared.park))
+         goto error;
+      sl_shared.park_ready = true;
+   }
 
    RARCH_LOG("[OpenSL] Requested audio latency: %u ms.\n", latency);
 
@@ -309,8 +347,8 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    }
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->buffer_queue_object, SL_BOOLEAN_FALSE));
 
-   sl->buf_size          = frames_per_block * frame_size;
-   sl->frames_per_block  = frames_per_block;
+   sl->buf_size               = frames_per_block * frame_size;
+   sl_shared.frames_per_block = frames_per_block;
 
    sl->buffer       = (uint8_t**)calloc(sizeof(uint8_t*), sl->buf_count);
    if (!sl->buffer)
@@ -330,11 +368,16 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
             &sl->buffer_queue));
 
 
-   (*sl->buffer_queue)->RegisterCallback(sl->buffer_queue, opensl_callback, sl);
+   (*sl->buffer_queue)->RegisterCallback(sl->buffer_queue, opensl_callback,
+         &sl_shared);
 
    /* Enqueue a bit to get stuff rolling. */
-   retro_atomic_store_release_int(&sl->buffered_blocks,
+   sl_shared.bq           = sl->buffer_queue;
+   retro_atomic_store_release_int(&sl_shared.buffered_blocks,
          (int)sl->buf_count);
+   /* Last, and before the first enqueue can be played back: a dispatch
+    * that sees this sees everything above it. */
+   retro_atomic_store_release_int(&sl_shared.live, 1);
    sl->buffer_index       = 0;
 
    for (i = 0; i < sl->buf_count; i++)
@@ -395,7 +438,7 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
 
       if (sl->nonblock)
       {
-         if (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+         if (retro_atomic_load_acquire_int(&sl_shared.buffered_blocks)
                == (int)sl->buf_count)
             break;
       }
@@ -410,17 +453,17 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
           * and an unbounded wait parked the thread the core runs on
           * for good. */
          bool stalled = false;
-         while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+         while (retro_atomic_load_acquire_int(&sl_shared.buffered_blocks)
                == (int)sl->buf_count)
          {
-            int key = retro_eventcount_prepare_wait(&sl->park);
-            if (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+            int key = retro_eventcount_prepare_wait(&sl_shared.park);
+            if (retro_atomic_load_acquire_int(&sl_shared.buffered_blocks)
                   != (int)sl->buf_count)
             {
-               retro_eventcount_cancel_wait(&sl->park);
+               retro_eventcount_cancel_wait(&sl_shared.park);
                break;
             }
-            if (!retro_eventcount_commit_wait_timeout(&sl->park, key,
+            if (!retro_eventcount_commit_wait_timeout(&sl_shared.park, key,
                      OPENSL_STALL_TIMEOUT_US))
             {
                stalled = true;
@@ -458,7 +501,7 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
             return -1;
          }
          sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
-         retro_atomic_fetch_add_int(&sl->buffered_blocks, 1);
+         retro_atomic_fetch_add_int(&sl_shared.buffered_blocks, 1);
          sl->buffer_ptr   = 0;
       }
    }
@@ -480,7 +523,7 @@ static size_t sl_wait_writable(void *data, size_t len)
 
    for (;;)
    {
-      int buffered = retro_atomic_load_acquire_int(&sl->buffered_blocks);
+      int buffered = retro_atomic_load_acquire_int(&sl_shared.buffered_blocks);
       /* Whole blocks not on the device, less the one being filled,
        * plus what is left of that one. With every block enqueued there
        * is no block to fill and the space is nil; said so, rather than
@@ -497,17 +540,17 @@ static size_t sl_wait_writable(void *data, size_t len)
        * moves off the value just sampled, stalled after the same
        * timeout, with the change-since-sample race closed by the
        * prepare/commit window. */
-      while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+      while (retro_atomic_load_acquire_int(&sl_shared.buffered_blocks)
             == buffered)
       {
-         int key = retro_eventcount_prepare_wait(&sl->park);
-         if (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+         int key = retro_eventcount_prepare_wait(&sl_shared.park);
+         if (retro_atomic_load_acquire_int(&sl_shared.buffered_blocks)
                != buffered)
          {
-            retro_eventcount_cancel_wait(&sl->park);
+            retro_eventcount_cancel_wait(&sl_shared.park);
             break;
          }
-         if (!retro_eventcount_commit_wait_timeout(&sl->park, key,
+         if (!retro_eventcount_commit_wait_timeout(&sl_shared.park, key,
                   OPENSL_STALL_TIMEOUT_US))
             return 0;
       }
@@ -517,7 +560,7 @@ static size_t sl_wait_writable(void *data, size_t len)
 static size_t sl_write_avail(void *data)
 {
    sl_t *sl     = (sl_t*)data;
-   int buffered = retro_atomic_load_acquire_int(&sl->buffered_blocks);
+   int buffered = retro_atomic_load_acquire_int(&sl_shared.buffered_blocks);
    return ((sl->buf_count - buffered - 1) * sl->buf_size + (sl->buf_size - (int)sl->buffer_ptr));
 }
 

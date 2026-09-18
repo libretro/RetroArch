@@ -726,6 +726,13 @@ void android_input_flush_pending_state(void)
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED)
       command_event(CMD_EVENT_SAVE_FILES, NULL);
 
+   /* Core options: written unconditionally on core unload, so not
+    * gated on config_save_on_exit here either. Without this, option
+    * changes are lost whenever the process is killed in the
+    * background, e.g. swiped away from Recents. No-op when no core
+    * with options is loaded. */
+   runloop_core_options_save();
+
    if (settings->bools.config_save_on_exit)
    {
       video_driver_state_t *video_st = video_state_get_ptr();

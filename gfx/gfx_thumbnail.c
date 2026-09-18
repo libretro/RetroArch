@@ -39,6 +39,7 @@
 #include <formats/data_transfer.h>
 
 #include "gfx_surface.h"
+#include "gfx_instrument.h"
 #include "gfx_thumbnail.h"
 #include "../frontend/frontend_driver.h"
 
@@ -197,6 +198,18 @@ static void gfx_thumbnail_fade_cb(void *userdata)
 }
 
 /* Initialises thumbnail 'fade in' animation */
+/* The channel order a decode should produce: what the driver that is
+ * up wants, asked through the surface layer rather than read from the
+ * display flag, so every producer has one place to ask. Main thread,
+ * beside the decode it is asked for. */
+static bool gfx_thumbnail_use_rgba(void)
+{
+   gfx_surface_requirements_t req;
+   if (!gfx_surface_query_requirements(0, &req))
+      return false;
+   return req.rgba;
+}
+
 static void gfx_thumbnail_init_fade(
       gfx_thumbnail_state_t *p_gfx_thumb,
       gfx_thumbnail_t *thumbnail)
@@ -434,6 +447,7 @@ static bool                   gfx_thumb_worker_die    = false;
  * over (Animated Thumbnail Threads). The worker alone creates, uses
  * and destroys it; the poll only publishes how many bands are wanted
  * (the setting), and the worker re-sizes the pool between frames. */
+#define GFX_THUMB_POOL_STACK (512 * 1024)
 static tpool_t               *gfx_thumb_blit_pool     = NULL;
 static unsigned               gfx_thumb_blit_bands    = 1;
 static retro_atomic_int_t     gfx_thumb_blit_wanted;
@@ -455,7 +469,12 @@ static void gfx_thumbnail_anim_blit_pool_sync(void)
    gfx_thumb_blit_bands = 1;
    if (wanted > 1)
    {
-      gfx_thumb_blit_pool = tpool_create((size_t)(wanted - 1));
+      /* The pool decodes VP9 tile columns and HEVC CTB rows as well
+       * as converting bands: a stack that holds those decoders'
+       * recursion with room to spare on every platform, rather than
+       * whatever the platform's thread default is. */
+      gfx_thumb_blit_pool = tpool_create_with_stack_size(
+            (size_t)(wanted - 1), GFX_THUMB_POOL_STACK);
       if (gfx_thumb_blit_pool)
          gfx_thumb_blit_bands = (unsigned)wanted;
    }
@@ -516,18 +535,24 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
    }
 
    n = (size_t)job->width * job->height;
+   GFX_INSTR_INC(GFX_INSTR_ANIM_FRAME);
    if (direct && frame == job->frame)
    {
       /* Decoded in place; every video stream honours the order request
        * too, so nothing is left to do. */
+      GFX_INSTR_INC(GFX_INSTR_ANIM_DIRECT);
    }
    else if (job->use_rgba || native_order)
       /* Frame is already in the upload order (RGBA requested, or the
        * stream honoured the ARGB request); the copy just decouples the
        * upload buffer from the decoder's canvas. */
+   {
+      GFX_INSTR_INC(GFX_INSTR_ANIM_COPY);
       memcpy(job->frame, frame, n * sizeof(uint32_t));
+   }
    else
    {
+      GFX_INSTR_INC(GFX_INSTR_ANIM_SWIZZLE);
       /* The stream emits memory-order R,G,B,A; swizzle to ARGB words
        * here so the main thread only has to upload. */
       for (i = 0; i < n; i++)
@@ -1219,6 +1244,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    int64_t decode_start;
    int duration_ms                    = 0;
    bool sync_use_rgba                 = false;
+   gfx_surface_requirements_t req;
    bool sync_native_order             = false;
    bool sync_direct                   = false;
    gfx_surface_t *sync_surface        = NULL;
@@ -1381,9 +1407,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          j0->height     = anim_h;
          j1->height     = anim_h;
          j0->loops_left = thumbnail->anim_loops_left;
-         j0->use_rgba   =
-               (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
-                     ? true : false;
+         j0->use_rgba   = gfx_thumbnail_use_rgba();
          retro_atomic_store_relaxed_int(&j1->status,
                GFX_THUMB_JOB_IDLE);
          thumbnail->anim_job        = j0;
@@ -1408,9 +1432,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       {
          thumbnail->anim_loops_left = ju->loops_left;
          jo->loops_left             = ju->loops_left;
-         jo->use_rgba               =
-               (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
-                     ? true : false;
+         jo->use_rgba               = gfx_thumbnail_use_rgba();
          gfx_thumbnail_anim_job_enqueue(jo);
       }
 
@@ -1464,9 +1486,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       {
          thumbnail->anim_loops_left = jo->loops_left;
          ju->loops_left             = jo->loops_left;
-         ju->use_rgba               =
-               (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
-                     ? true : false;
+         ju->use_rgba               = gfx_thumbnail_use_rgba();
          gfx_thumbnail_anim_job_enqueue(ju);
       }
       return;
@@ -1494,8 +1514,11 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    /* Sample the upload format once and ask the stream to emit it
     * directly (every stream type honours it; the swizzle below is the
     * fallback for one that cannot). */
-   sync_use_rgba     = (video_driver_get_disp_flags()
-         & VIDEO_FLAG_USE_RGBA) ? true : false;
+   /* Width is not known until the stream is read; the capability
+    * fields do not depend on it. */
+   if (!gfx_surface_query_requirements(0, &req))
+      return;
+   sync_use_rgba     = req.rgba;
    sync_native_order = image_transfer_anim_stream_set_argb(
          thumbnail->anim, type, sync_use_rgba ? 0 : 1);
 
@@ -1563,11 +1586,16 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       gfx_surface_t *s = sync_surface;
       enum gfx_surface_submit_result res;
 
+      GFX_INSTR_INC(GFX_INSTR_ANIM_FRAME);
       if (sync_direct && frame == s->slots[0])
+      {
+         GFX_INSTR_INC(GFX_INSTR_ANIM_DIRECT);
          res = gfx_surface_submit(s, 0, sync_use_rgba);
+      }
       else if (!sync_use_rgba && !sync_native_order)
       {
          size_t i, n = (size_t)s->width * s->height;
+         GFX_INSTR_INC(GFX_INSTR_ANIM_SWIZZLE);
          for (i = 0; i < n; i++)
          {
             uint32_t px    = frame[i];
@@ -1978,7 +2006,7 @@ void gfx_thumbnail_request(
                /* Would like to cancel any existing image load tasks
                 * here, but can't see how to do it... */
                if (task_push_image_load(
-                        thumbnail_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
+                        thumbnail_path, gfx_thumbnail_use_rgba(),
                         gfx_thumbnail_upscale_threshold,
                         gfx_thumbnail_downscale_cap(),
                         gfx_thumbnail_handle_upload, thumbnail_tag))
@@ -2116,7 +2144,7 @@ void gfx_thumbnail_request_file(
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */
    if (task_push_image_load(
-         file_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
+         file_path, gfx_thumbnail_use_rgba(),
          gfx_thumbnail_upscale_threshold,
          gfx_thumbnail_downscale_cap(),
          gfx_thumbnail_handle_upload, thumbnail_tag))

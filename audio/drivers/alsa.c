@@ -95,6 +95,24 @@ static void alsa_microphone_free(void *driver_context)
 
 static bool alsa_microphone_start_mic(void *driver_context, void *mic_context);
 
+/* Bounded like the playback side's, and for the same reason: a stalled
+ * capture must cost a dropped slice rather than a parked worker. */
+#define ALSA_WAIT_READABLE_LAPS 8
+
+/* How long one capture wait may block: two periods, the time the device
+ * takes to deliver what a read asks for, clamped so an unset or absurd
+ * rate still leaves a usable bound. */
+static int alsa_microphone_wait_ms(const alsa_microphone_handle_t *mic)
+{
+   int timeout_ms = (int)(((unsigned long)mic->stream_info.period_frames * 2000ul)
+         / (mic->stream_info.rate ? mic->stream_info.rate : 48000u));
+   if (timeout_ms < 20)
+      return 20;
+   if (timeout_ms > 200)
+      return 200;
+   return timeout_ms;
+}
+
 static int alsa_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
 {
    snd_pcm_sframes_t size;
@@ -159,11 +177,23 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
    else
    {
       bool eagain_retry         = true;
+      int  laps                 = ALSA_WAIT_READABLE_LAPS;
+      int  timeout_ms           = alsa_microphone_wait_ms(mic);
 
       while (size)
       {
          snd_pcm_sframes_t frames;
-         int rc = snd_pcm_wait(mic->pcm, -1);
+         int rc = snd_pcm_wait(mic->pcm, timeout_ms);
+
+         /* Nothing delivered in the time two periods take. A device that
+          * has stopped must not park the caller, so give up after a
+          * bounded number of these and return what there is. */
+         if (rc == 0)
+         {
+            if (--laps < 0)
+               break;
+            continue;
+         }
 
          if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
          {
@@ -290,10 +320,6 @@ static bool alsa_microphone_stop_mic(void *driver_context, void *mic_context)
    return alsa_stop_pcm(mic->pcm);
 }
 
-/* Bounded like the playback side's, and for the same reason: a stalled
- * capture must cost a dropped slice rather than a parked worker. */
-#define ALSA_WAIT_READABLE_LAPS 8
-
 /* Sleeps until the microphone has samples, then says how many. The
  * counterpart of alsa_wait_writable(): snd_pcm_avail() on a capture
  * stream reports frames ready to read rather than room to write, and
@@ -313,12 +339,7 @@ static size_t alsa_microphone_wait_readable(void *driver_context,
       return 0;
 
    want       = BYTES_TO_FRAMES(len, mic->stream_info.frame_bits);
-   timeout_ms = (int)(((unsigned long)mic->stream_info.period_frames * 2000ul)
-         / (mic->stream_info.rate ? mic->stream_info.rate : 48000u));
-   if (timeout_ms < 20)
-      timeout_ms = 20;
-   if (timeout_ms > 200)
-      timeout_ms = 200;
+   timeout_ms = alsa_microphone_wait_ms(mic);
 
    if (want > (snd_pcm_sframes_t)mic->stream_info.period_frames)
       want = (snd_pcm_sframes_t)mic->stream_info.period_frames;

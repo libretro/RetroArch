@@ -31,6 +31,7 @@
 
 #include "video_driver.h"
 #include "video_thread_wrapper.h"
+#include "gfx_instrument.h"
 
 /* Float <-> bits for the overlay alpha atomics. */
 static INLINE int video_thread_float_bits(float f)
@@ -377,6 +378,7 @@ static void video_thread_run_deferred(thread_video_t *thr)
 
 static void video_thread_send_and_wait_user_to_thread(thread_video_t *thr, thread_packet_t *pkt)
 {
+   GFX_INSTR_INC(GFX_INSTR_WRAPPER_CMD);
    /* On the video thread already - a wrapper entry point reached from
     * inside driver->frame(), as the menu drivers do with set_viewport -
     * the command runs here and now. Sending it would wait for a reply
@@ -1006,6 +1008,7 @@ static void video_thread_async_deliver(thread_video_t *thr)
       bool caller_owned                = n->caller_owned;
       /* done() may repost a caller-owned node at once, which rewrites
        * n->next: nothing of the node is read after the call. */
+      GFX_INSTR_INC(GFX_INSTR_ASYNC_DONE);
       if (n->done)
          n->done(n->user, n->handle);
       if (!caller_owned)
@@ -1075,6 +1078,8 @@ bool video_thread_texture_load_async(void *img,
    n->filter       = filter;
    n->kind         = VIDEO_THREAD_ASYNC_LOAD;
    n->caller_owned = 0;
+   GFX_INSTR_INC(GFX_INSTR_ASYNC_POST);
+   GFX_INSTR_INC(GFX_INSTR_ASYNC_POST_ALLOC);
 
    slock_lock(thr->lock);
    if (!retro_atomic_load_acquire_int(&thr->alive))
@@ -1108,6 +1113,7 @@ bool video_thread_async_post(video_thread_async_load_t *n)
 
    n->next         = NULL;
    n->caller_owned = 1;
+   GFX_INSTR_INC(GFX_INSTR_ASYNC_POST);
 
    slock_lock(thr->lock);
    if (!retro_atomic_load_acquire_int(&thr->alive))

@@ -6004,6 +6004,101 @@ void core_options_reset(const char* label)
    }
 }
 
+/* Writes the current core option values to whichever
+ * options file is active (game-specific, folder-specific,
+ * or the per-core/global 'default' file), without freeing
+ * anything and without user-facing notifications.
+ * Returns false only if a write was attempted and failed.
+ * If @out_path is non-NULL, receives the file path used
+ * (or NULL when there are no core options). */
+static bool runloop_core_options_write(const char **out_path)
+{
+   runloop_state_t *runloop_st     = &runloop_state;
+   core_option_manager_t *coreopts = runloop_st->core_options;
+   const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
+   bool ret                        = false;
+
+   if (out_path)
+      *out_path = NULL;
+
+   /* If there are no core options, there
+    * is nothing to do */
+   if (!coreopts || (coreopts->size < 1))
+      return true;
+
+   /* Check whether game/folder-specific options file
+    * is being used */
+   if (path_core_options && *path_core_options)
+   {
+      config_file_t *conf_tmp = NULL;
+
+      /* Attempt to load existing file */
+      if (path_is_valid(path_core_options))
+         conf_tmp = config_file_new_from_path_to_string(path_core_options);
+
+      /* Create new file if required */
+      if (!conf_tmp)
+         conf_tmp = config_file_new_alloc();
+
+      if (conf_tmp)
+      {
+         core_option_manager_flush(coreopts, conf_tmp);
+
+         ret = config_file_write(conf_tmp, path_core_options, true);
+         config_file_free(conf_tmp);
+      }
+   }
+   else
+   {
+      /* We are using the 'default' core options file */
+      path_core_options = coreopts->conf_path;
+
+      if (path_core_options && *path_core_options)
+      {
+         core_option_manager_flush(coreopts, coreopts->conf);
+
+         /* We must *guarantee* that a file gets written
+          * to disk if any options differ from the current
+          * options file contents. Must therefore handle
+          * the case where the 'default' file does not
+          * exist (e.g. if it gets deleted manually while
+          * a core is running) */
+         if (!path_is_valid(path_core_options))
+            coreopts->conf->flags |= CONF_FILE_FLG_MODIFIED;
+
+         ret = config_file_write(coreopts->conf,
+               path_core_options, true);
+      }
+   }
+
+   if (out_path)
+      *out_path = path_core_options;
+
+   return ret;
+}
+
+/* Quietly persists core options to disk.
+ *
+ * The automatic save otherwise only happens in
+ * runloop_deinit_core_options(), at the very end of core
+ * teardown - after the auto save-state, retro_unload_game(),
+ * retro_deinit() and dylib_close(). A crash or process kill
+ * anywhere in that sequence, or before it (Android can reclaim
+ * the process at any point after onPause()), loses every option
+ * change made during the session. Calling this beforehand makes
+ * those changes durable; the late save is kept, and is a no-op
+ * unless the core changed an option during teardown, since
+ * config_file_write() only writes a modified config and clears
+ * the flag once it has. */
+void runloop_core_options_save(void)
+{
+   const char *path = NULL;
+
+   if (!runloop_core_options_write(&path))
+      RARCH_ERR("[Core] Failed to save core options to \"%s\".\n",
+            path ? path : "UNKNOWN");
+}
+
 void core_options_flush(void)
 {
    size_t _len;
@@ -6012,7 +6107,7 @@ void core_options_flush(void)
                                    = MESSAGE_QUEUE_CATEGORY_INFO;
    runloop_state_t *runloop_st     = &runloop_state;
    core_option_manager_t *coreopts = runloop_st->core_options;
-   const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
+   const char *path_core_options   = NULL;
    const char *core_options_file   = NULL;
    bool ret                        = false;
 
@@ -6023,53 +6118,7 @@ void core_options_flush(void)
    if (!coreopts || (coreopts->size < 1))
       return;
 
-   /* Check whether game/folder-specific options file
-    * is being used */
-   if (path_core_options && *path_core_options)
-   {
-      config_file_t *conf_tmp = NULL;
-      bool path_valid         = path_is_valid(path_core_options);
-
-      /* Attempt to load existing file */
-      if (path_valid)
-         conf_tmp = config_file_new_from_path_to_string(path_core_options);
-
-      /* Create new file if required */
-      if (!conf_tmp)
-         conf_tmp = config_file_new_alloc();
-
-      if (conf_tmp)
-      {
-         core_option_manager_flush(runloop_st->core_options, conf_tmp);
-
-         ret = config_file_write(conf_tmp, path_core_options, true);
-         config_file_free(conf_tmp);
-      }
-   }
-   else
-   {
-      /* We are using the 'default' core options file */
-      path_core_options = runloop_st->core_options->conf_path;
-
-      if (path_core_options && *path_core_options)
-      {
-         core_option_manager_flush(
-               runloop_st->core_options,
-               runloop_st->core_options->conf);
-
-         /* We must *guarantee* that a file gets written
-          * to disk if any options differ from the current
-          * options file contents. Must therefore handle
-          * the case where the 'default' file does not
-          * exist (e.g. if it gets deleted manually while
-          * a core is running) */
-         if (!path_is_valid(path_core_options))
-            runloop_st->core_options->conf->flags |= CONF_FILE_FLG_MODIFIED;
-
-         ret = config_file_write(runloop_st->core_options->conf,
-               path_core_options, true);
-      }
-   }
+   ret = runloop_core_options_write(&path_core_options);
 
    /* Get options file name for display purposes */
    if (path_core_options && *path_core_options)
@@ -8248,6 +8297,23 @@ int runloop_iterate(void)
 #endif
 
    runloop_msg_queue_drain_deferred();
+
+   /* A video driver that lost its GPU device - a TDR on Windows, a GPU
+    * reset elsewhere - sets this from whichever thread saw it, and
+    * nothing it does on that device works from then on: every frame
+    * fails, and the window shows whatever the last good present left.
+    * Rebuilding the video driver here, on the thread that owns
+    * drivers, is the recovery: the context comes back on the
+    * recovered device, and a hardware core gets context_reset. */
+   if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags)
+         & VIDEO_FLAG_GPU_DEVICE_LOST)
+   {
+      int reinit_flags = DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK
+         | DRIVER_MENU_MASK;
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_GPU_DEVICE_LOST);
+      RARCH_ERR("[Video] The GPU device was lost; reinitialising the video driver.\n");
+      command_event(CMD_EVENT_REINIT, &reinit_flags);
+   }
 
 #ifdef HAVE_DISCORD
    if (discord_st->inited)

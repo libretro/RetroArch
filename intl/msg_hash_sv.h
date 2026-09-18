@@ -287,6 +287,7 @@ static const struct
    char s_fb84857a[10];
    char s_3943c7ae[30];
    char s_5b2d8d2f[15];
+   char s_6fd9b032[34];
    char s_affd948c[18];
    char s_d2d4c381[22];
    char s_a95aa0fc[31];
@@ -301,6 +302,8 @@ static const struct
    char s_30acd6fb[15];
    char s_35dcde4f[17];
    char s_ce7da552[28];
+   char s_6b5e88c4[42];
+   char s_79fff0ec[33];
    char s_04b30c51[18];
    char s_e5aeacf9[23];
    char s_24976a5b[20];
@@ -1986,6 +1989,7 @@ static const struct
    char s_d7fc4c9c[28];
    char s_d21c686b[22];
    char s_f465878a[17];
+   char s_3aa6b936[24];
    char s_a35a9e13[15];
    char s_64a91b83[21];
 #ifdef HAVE_MIST
@@ -2440,6 +2444,7 @@ static const struct
    char s_bdeebb68[42];
    char s_f9005edc[175];
    char s_6ade80dd[29];
+   char s_ec7aa7a0[467];
    char s_b5ccfdfa[151];
    char s_8a24406f[34];
    char s_8c6b0fea[47];
@@ -2450,6 +2455,9 @@ static const struct
    char s_3c3598a9[47];
    char s_3bac47bd[352];
    char s_90e7db40[416];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[20];
+   char s_1b3f0b9a[342];
    char s_4b78ee7f[77];
    char s_aed11d67[143];
    char s_dbe6e749[77];
@@ -2790,6 +2798,8 @@ static const struct
    char s_d9153542[61];
    char s_8e48ec69[47];
    char s_cd43c108[56];
+   char s_cd46e260[342];
+   char s_cd482ffe[365];
    char s_49336383[49];
    char s_e92351d4[114];
    char s_8e22cdce[49];
@@ -3420,6 +3430,7 @@ static const struct
 #endif
    char s_9b51352c[31];
    char s_12510638[50];
+   char s_407622a4[45];
    char s_ac067981[37];
    char s_82d064b1[27];
 #ifdef HAVE_MIST
@@ -3596,6 +3607,7 @@ static const struct
    char s_261210b3[74];
    char s_3a4b246c[106];
    char s_2ceab671[159];
+   char s_977f8e82[259];
    char s_3c679f0a[291];
    char s_5b059407[132];
    char s_36033606[181];
@@ -4715,6 +4727,7 @@ static const struct
    "Utmatning",
    "Dynamisk ljudfrekvenskontroll",
    "Ljudomsamplare",
+   "H\303\266gkvalitativ sinc-\303\266versampling",
    "Omsamplarkvalitet",
    "Respektera tyst l\303\244ge",
    "Tyst ljud vid tillbakaspolning",
@@ -4729,6 +4742,8 @@ static const struct
    "Synkronisering",
    "Tr\303\245dad pipeline",
    "H\303\266j ljudtr\303\245dens prioritet",
+   "Hastighets\303\244ndringar med bevarad tonh\303\266jd",
+   "Hastighetskopplat l\303\245gpassfilter",
    "Volym\303\266kning (dB)",
    "WASAPI Exklusivt l\303\244ge",
    "WASAPI Float-format",
@@ -6424,6 +6439,7 @@ static const struct
    "Starta fj\303\244rrstyrd RetroPad",
    "Starta videoprocessor",
    "Tillst\303\245ndsplats",
+   "D\303\266lj statistik i menyn",
    "Visa Statistik",
    "Kommandon f\303\266r stdin",
 #ifdef HAVE_MIST
@@ -6953,6 +6969,13 @@ static const struct
    ". T\303\244nk p\303\245 att korrekt synkronisering \303\244r n\303\244stan om\303\266jlig att f"
    "\303\245 till om den \303\244r inaktiverad.",
    "Ljudomsamplare att anv\303\244nda.",
+   "Anv\303\244nder ett l\303\244ngre sinc-filter n\303\244r den inst\303\244llda utmatningsfrekvens"
+   "en \303\244r minst dubbelt s\303\245 h\303\266g som inneh\303\245llsfrekvensen. \303\205sidos"
+   "\303\244tter omsamplingskvaliteten endast f\303\266r sinc. \303\226kar processoranv\303\244ndnin"
+   "g, minne och filterf\303\266rdr\303\266jning, s\303\244rskilt med flera kanaler. Anv\303\244nder"
+   " programvaruomsampling i st\303\244llet f\303\266r drivrutinsomsampling n\303\244r funktionen "
+   "\303\244r aktiv. Kr\303\244ver en h\303\266g utmatningsfrekvens; snabbspolning kan minska det fa"
+   "ktiska omsamplingsf\303\266rh\303\245llandet.",
    "S\303\244nk detta v\303\244rde f\303\266r att gynna prestanda/l\303\244gre latens \303\266ver lj"
    "udkvalitet, \303\266ka f\303\266r b\303\244ttre ljudkvalitet p\303\245 bekostnad av prestanda/l"
    "\303\244gre latens.",
@@ -6981,6 +7004,20 @@ static const struct
    "s p\303\245 system som beviljar det; om systemet avvisar det anv\303\244nds standardprioriteten "
    "och inget annat \303\244ndras. G\303\244ller ljudtr\303\245den som den tr\303\245dade pipelinefu"
    "nktionen och k\303\244rnans ljud\303\245teranrop k\303\266rs p\303\245.",
+   "Bevarar tonh\303\266jden vid slow motion och snabbspolning. Har st\303\266d f\303\266r tr\303"
+   "\245dad och bildsynkron uppspelning, inklusive f\303\266rhandlade flerkanaliga ljudformat. \303"
+   "\226kar bearbetningskostnaden, minnesanv\303\244ndningen och buffringen n\303\244r funktionen "
+   "\303\244r aktiverad. Kr\303\244ver en inneh\303\245llsfrekvens p\303\245 8\302\240000\342\200"
+   "\223192\302\240000 Hz. Hastigheter eller k\303\244llformat som inte st\303\266ds anv\303\244nder"
+   " vanlig uppspelning. \303\204ndringar av inb\303\244ddad layout \303\245terst\303\244ller buffra"
+   "t ljud. Tr\303\245dad uppspelning \303\245terupptar tonh\303\266jdsbevarandet n\303\244r k\303"
+   "\266",
+   "at ljud har t\303\266mts.",
+   "D\303\244mpar h\303\266ga frekvenser vid accelererad uppspelning, med eller utan hastighets\303"
+   "\244ndringar med bevarad tonh\303\266jd. Har st\303\266d f\303\266r samma inneh\303\245llsfrekve"
+   "nser och k\303\244llformat. \303\226kar bearbetning och f\303\266rberett minne n\303\244r funkti"
+   "onen \303\244r aktiverad; uppspelning i normal hastighet \303\244r ofiltrerad. Effekten ers\303"
+   "\244tter inte omsamplarens antialiasfilter.",
    "Ljudvolym (i dB). 0 dB \303\244r normal volym och ingen f\303\266rst\303\244rkning till\303\244m"
    "pas.",
    "Till\303\245t WASAPI-drivrutinen att ta exklusiv kontroll \303\266ver ljudenheten. Om detta \303"
@@ -7496,6 +7533,18 @@ static const struct
    "Sparar tillst\303\245ndet till den f\303\266r n\303\244rvarande valda platsen.",
    "Tar en sk\303\244rmdump av det aktuella inneh\303\245llet.",
    "H\303\245ller den valda shadern p\303\245/av vid nedtryckt tangent.",
+   "L\303\244ser in och till\303\244mpar n\303\244sta shaderf\303\266rinst\303\244llning i mappen f"
+   "\303\266r den aktuella f\303\266rinst\303\244llningen. Efter den sista flyttas du till n\303\244"
+   "sta mapp p\303\245 samma niv\303\245. N\303\244r \342\200\235Kom ih\303\245g senast anv\303\244n"
+   "da shaderkatalog\342\200\235 \303\244r avst\303\244ngt v\303\244xlas i st\303\244llet mellan f"
+   "\303\266rinst\303\244llningarna i rotkatalogen f\303\266r \342\200\235Videoshaders\342\200\235, "
+   "om den inneh\303\245ller n\303\245gra.",
+   "L\303\244ser in och till\303\244mpar f\303\266reg\303\245ende shaderf\303\266rinst\303\244llning"
+   " i mappen f\303\266r den aktuella f\303\266rinst\303\244llningen. F\303\266re den f\303\266rsta "
+   "flyttas du tillbaka till f\303\266reg\303\245ende mapp p\303\245 samma niv\303\245. N\303\244r "
+   "\342\200\235Kom ih\303\245g senast anv\303\244nda shaderkatalog\342\200\235 \303\244r avst\303"
+   "\244ngt v\303\244xlas i st\303\244llet mellan f\303\266rinst\303\244llningarna i rotkatalogen f"
+   "\303\266r \342\200\235Videoshaders\342\200\235, om den inneh\303\245ller n\303\245gra.",
    "Sl\303\245r p\303\245/av den f\303\266r n\303\244rvarande valda shadern.",
    "Till\303\244mpar 'Slow motion' n\303\244r den h\303\245lls nedtryckt. Inneh\303\245ll \303\245te"
    "rg\303\245r till normal hastighet n\303\244r knapp sl\303\244pps.",
@@ -8506,6 +8555,7 @@ static const struct
 #endif
    "Starta k\303\244rnan utan inneh\303\245ll.",
    "\303\204ndra den f\303\266r n\303\244rvarande valda status platsen.",
+   "Visa inte statistiken n\303\244r menyn \303\244r \303\266ppen.",
    "Visa teknisk statistik p\303\245 sk\303\244rmen.",
    "stdin kommandogr\303\244nssnitt.",
 #ifdef HAVE_MIST
@@ -8824,6 +8874,11 @@ static const struct
    "Spara en shader-f\303\266rinst\303\244llning som har en l\303\244nk till den ursprungliga f\303"
    "\266rinst\303\244llningen och som endast inneh\303\245ller de parameter\303\244ndringar som du h"
    "ar gjort.",
+   "\303\226ppnar filbl\303\244ddraren i den senast anv\303\244nda katalogen n\303\244r shaderf\303"
+   "\266rinst\303\244llningar och pass l\303\244ses in. Kortkommandona N\303\244sta/F\303\266reg\303"
+   "\245ende shader utg\303\245r fr\303\245n den aktuella f\303\266rinst\303\244llningen i st\303"
+   "\244llet f\303\266r att v\303\244xla i rotkatalogen f\303\266r \342\200\235Videoshaders\342\200"
+   "\235.",
    "VARNING: Snabbt flimmer kan orsaka bildbest\303\244ndighet p\303\245 vissa sk\303\244rmar. Anv"
    "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
    "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
@@ -9537,7 +9592,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (190293u
+      (sizeof(msg_hash_sv_blob) == (192766u
 #ifdef ANDROID
        + 361u
 #endif
@@ -10230,6 +10285,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
@@ -10244,6 +10300,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -11928,6 +11986,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
 #ifdef HAVE_MIST
@@ -12378,6 +12437,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
@@ -12387,6 +12447,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -12727,6 +12789,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -13357,6 +13421,7 @@ static const uint32_t msg_hash_sv_ids[] =
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
 #ifdef HAVE_MIST
@@ -13533,6 +13598,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

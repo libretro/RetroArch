@@ -416,6 +416,11 @@ struct input_overlay
     * which overlay::textures point into. Built by the enable on a
     * driver with load_textures, unloaded and freed by the disable. */
    uintptr_t *page_textures;
+   /* A gfx_surface per unique image, holding that texture: the same
+    * ownership the animated previews use, so an overlay asset and a
+    * preview frame reach the GPU through one path. num_images of
+    * them, NULL until the pack is uploaded. */
+   void **surfaces;
 
    size_t num_images;
    size_t index;

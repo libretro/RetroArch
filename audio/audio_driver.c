@@ -72,6 +72,9 @@
 #define AUDIO_TRANSPORT_UPDATE 4
 static bool audio_driver_transport_update_runloop(audio_driver_state_t *audio_st);
 static bool audio_driver_transport_recover(bool resume, uint32_t tempo);
+static bool audio_driver_pipe_ff_waits(audio_driver_state_t *audio_st);
+static bool audio_driver_pipeline_transport_publish(uint32_t tempo_q16,
+      bool active, bool reset, uint32_t cutoff, bool engage_ahead);
 #endif
 
 #ifdef HAVE_MENU
@@ -133,6 +136,11 @@ static bool audio_driver_transport_recover(bool resume, uint32_t tempo);
  * throttle, the same thing a blocking driver write was; the cap only
  * exists so a device that stops draining cannot hang the frontend. */
 #define AUDIO_PIPE_WAIT_MAX_US         1000000
+/* The producer's own bound is derived from the ring rather than flat:
+ * this many of its playing times, floored so a tiny ring still leaves
+ * a usable wait. See audio_driver_pipe_wait_us(). */
+#define AUDIO_PIPE_WAIT_FILLS          4
+#define AUDIO_PIPE_WAIT_MIN_US         20000
 
 /* The policy floor on the latency setting, in milliseconds, applied
  * once here before any driver sees it. The setting's range starts at
@@ -2068,6 +2076,17 @@ static double audio_driver_fastforward_ratio_mult(
    return mult;
 }
 
+/* The inline flush's multiplier. The first flush of a hold spans the
+ * frame before the limiter lifted, so it plays at 1.0: at the seeded
+ * ratio the device is a frame short at the edge. */
+static double audio_driver_inline_ff_mult(audio_driver_state_t *audio_st,
+      size_t input_frames)
+{
+   bool seed   = !audio_st->last_flush_time;
+   double mult = audio_driver_fastforward_ratio_mult(audio_st, input_frames);
+   return seed ? 1.0 : mult;
+}
+
 static INLINE void audio_driver_ff_mult_reset(audio_driver_state_t *audio_st)
 {
    audio_st->last_flush_time = 0;
@@ -2075,6 +2094,31 @@ static INLINE void audio_driver_ff_mult_reset(audio_driver_state_t *audio_st)
    audio_st->pipe_ff_frames = 0;
 #endif
 }
+
+#ifdef HAVE_THREADS
+#define AUDIO_PIPE_FF_TRIM_MAX  0.08
+#define AUDIO_PIPE_FF_TRIM_GAIN 0.5
+
+/* The pull rate the multiplier sets and the core's rate never agree
+ * exactly, and a core that waits on a full ring runs at the pull rate.
+ * Steer the ring toward half full: above it the consumer pulls faster,
+ * so the core it holds back speeds up and is measured faster; below it
+ * slower, so the ring is not run dry. */
+static double audio_driver_pipe_ff_trim(audio_driver_state_t *audio_st)
+{
+   double cap = (double)audio_st->pipe_ring.capacity;
+   double err;
+   if (!(cap > 0.0))
+      return 1.0;
+   err = AUDIO_PIPE_FF_TRIM_GAIN
+      * ((double)retro_spsc_read_avail(&audio_st->pipe_ring) - cap * 0.5) / cap;
+   if (err > AUDIO_PIPE_FF_TRIM_MAX)
+      err = AUDIO_PIPE_FF_TRIM_MAX;
+   else if (err < -AUDIO_PIPE_FF_TRIM_MAX)
+      err = -AUDIO_PIPE_FF_TRIM_MAX;
+   return 1.0 + err;
+}
+#endif
 
 static void audio_driver_ff_frame_end(audio_driver_state_t *audio_st)
 {
@@ -2086,9 +2130,13 @@ static void audio_driver_ff_frame_end(audio_driver_state_t *audio_st)
          audio_st->pipe_transport_follow |= AUDIO_TRANSPORT_UPDATE;
       if (frames)
       {
+         double mult = audio_driver_fastforward_ratio_mult(audio_st, frames);
          audio_st->pipe_ff_frames = 0;
+         if (audio_driver_pipe_ff_waits(audio_st))
+            mult = MIN(AUDIO_MAX_RATIO, MAX(AUDIO_MIN_RATIO,
+                     mult / audio_driver_pipe_ff_trim(audio_st)));
          retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
-               (int)(audio_driver_fastforward_ratio_mult(audio_st, frames) * 65536.0));
+               (int)(mult * 65536.0));
          return;
       }
    }
@@ -2164,6 +2212,20 @@ static INLINE bool audio_driver_ff_follows(const audio_driver_state_t *audio_st,
    return audio_st->inline_transport && !audio_st->transport_lpf_only;
 }
 
+#ifdef HAVE_THREADS
+/* Whether a fast-forward producer waits on a full ring rather than
+ * dropping: when the consumer pulls at the core's speed and a limiter
+ * bounds that speed. Unlimited, waiting would hold the core to the
+ * fastest tempo the audio can play. */
+static bool audio_driver_pipe_ff_waits(audio_driver_state_t *audio_st)
+{
+   int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+   return (snap & AUDIO_SNAP_SYNC)
+      && audio_driver_ff_follows(audio_st, (snap & AUDIO_SNAP_FF_SPEEDUP) != 0)
+      && audio_driver_snapshot_ffratio(audio_st) > 1.0;
+}
+#endif
+
 /* The speedup multiplier for a flush: measured here on the inline
  * pipeline, where the flush runs at the core's cadence; taken from the
  * producer's measurement on the threaded one. */
@@ -2182,7 +2244,7 @@ static double audio_driver_ff_mult(audio_driver_state_t *audio_st,
    if (audio_st->callback.callback)
       return (double)retro_atomic_load_acquire_int(
             &audio_st->pipe_ff_mult_q16) / 65536.0;
-   return audio_driver_fastforward_ratio_mult(audio_st, input_frames);
+   return audio_driver_inline_ff_mult(audio_st, input_frames);
 }
 
 /* Frames of headroom deliberately resampled beyond what the device
@@ -3838,7 +3900,7 @@ static bool audio_driver_inline_process(audio_driver_state_t *audio_st,
    supported = supported && !state_manager_frame_is_reversed();
 #endif
    if (supported && fastforward && follow)
-      duration *= audio_driver_fastforward_ratio_mult(audio_st, left);
+      duration *= audio_driver_inline_ff_mult(audio_st, left);
    memcpy(&bits, &duration, sizeof(bits));
    supported = supported && bits < UINT64_C(0x7ff0000000000000)
       && duration >= 1.0 / 32.0 && duration <= 4.0;
@@ -5154,6 +5216,37 @@ static size_t audio_driver_pipe_chunk_bytes(audio_driver_state_t *audio_st)
  * shorter than a video frame at the low latency settings. That is a
  * gap at the frame rate, and it is what the threaded pipeline was
  * doing on CoreAudio at 8 ms while the inline path was clean. */
+/* How long the producer may wait for the consumer to complete a pass.
+ * That pass is paced by the device draining the source the ring holds,
+ * so the bound is the ring's own playing time at the speed it is being
+ * pulled at - shorter in fast-forward, where the pull is faster and
+ * where this wait is now reached at all. Flat, it was a second, and a
+ * device that had stopped draining cost the frontend every bit of it
+ * before the stall was latched. */
+static retro_time_t audio_driver_pipe_wait_us(audio_driver_state_t *audio_st)
+{
+   double us, mult = 1.0;
+   size_t frames;
+   if (!audio_st->pipe_frame_bytes || !(audio_st->input > 0.0f))
+      return AUDIO_PIPE_WAIT_MAX_US;
+   if (retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
+         & AUDIO_SNAP_FASTMOTION)
+   {
+      mult = (double)retro_atomic_load_acquire_int(&audio_st->pipe_ff_mult_q16)
+         / 65536.0;
+      if (!(mult > 0.0) || mult > 1.0)
+         mult = 1.0;
+   }
+   frames = audio_st->pipe_ring.capacity / audio_st->pipe_frame_bytes;
+   us     = (double)frames * mult * AUDIO_PIPE_WAIT_FILLS * 1000000.0
+      / (double)audio_st->input;
+   if (us < AUDIO_PIPE_WAIT_MIN_US)
+      return AUDIO_PIPE_WAIT_MIN_US;
+   if (us > AUDIO_PIPE_WAIT_MAX_US)
+      return AUDIO_PIPE_WAIT_MAX_US;
+   return (retro_time_t)us;
+}
+
 static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
 {
    size_t frame_bytes, target, ring_max;
@@ -5226,7 +5319,8 @@ static INLINE void audio_driver_pipe_widen_stereo(void *output, const void *inpu
  * the threaded pipeline it publishes the block into pipe_ring for the
  * audio thread; otherwise it runs the pipeline inline, exactly as
  * before. When the ring is full the producer waits unless the driver
- * is in its non-blocking state (fast-forward, audio_sync off), in
+ * is in its non-blocking state (audio_sync off, or a fast-forward the
+ * consumer does not pull at a limited speed), in
  * which case the remainder is dropped - the same choice a full device
  * buffer forces on a non-blocking write. This is the only place the
  * main thread ever waits on audio, and it waits on the device draining,
@@ -5424,8 +5518,19 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
       if (is_fastforward && audio_driver_ff_follows(audio_st,
                (retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
                 & AUDIO_SNAP_FF_SPEEDUP) != 0))
+      {
+         /* The first frame of a hold publishes the seed, so the tempo
+          * lands with this frame's source rather than a frame later. */
+         if (!audio_st->last_flush_time && !audio_st->pipe_ff_frames)
+         {
+            double ratio = audio_driver_snapshot_ffratio(audio_st);
+            if (ratio > 1.0)
+               retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
+                     (int)(65536.0 / ratio));
+         }
          audio_st->pipe_ff_frames = frames > SIZE_MAX - audio_st->pipe_ff_frames
             ? SIZE_MAX : audio_st->pipe_ff_frames + frames;
+      }
       else
          audio_driver_ff_mult_reset(audio_st);
       if (len && (audio_st->pipe_transport_follow & AUDIO_TRANSPORT_UPDATE)
@@ -5468,7 +5573,8 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
          if (!len)
             break;
          /* Only wait on a consumer that can make progress: the driver
-          * is started and blocking. A driver reinit from inside
+          * is started, and blocking or, in fast-forward, pulling at the
+          * core's speed. A driver reinit from inside
           * retro_run() (SET_SYSTEM_AV_INFO) creates the wrapper thread
           * parked until the runloop starts it, and the runloop is us;
           * a wrapper whose device write failed exits its loop and will
@@ -5476,9 +5582,11 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
           * Not through the driver's alive(): the wrapper implements
           * that by parking and resuming its thread, which stops and
           * restarts the device every call. */
-         if (     is_fastforward
-               || (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
-               || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_STARTED)
+         if (is_fastforward
+               ? !audio_driver_pipe_ff_waits(audio_st)
+               : (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK) != 0)
+            break;
+         if (     !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_STARTED)
                || audio_st->pipe_consumer_gone)
             break;
          /* Sleep until the consumer has completed a pass. The
@@ -5505,7 +5613,7 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
              * would be a bound on nothing: enough of them and the
              * frontend sits here for multiples of it. */
             retro_time_t deadline = cpu_features_get_time_usec()
-                  + AUDIO_PIPE_WAIT_MAX_US;
+                  + audio_driver_pipe_wait_us(audio_st);
             /* The frame-end signal cannot arrive while its producer waits
              * here. Wake a consumer parked for data before waiting for space. */
             audio_driver_pipeline_signal(audio_st);
@@ -5804,30 +5912,48 @@ static bool audio_driver_transport_update_runloop(audio_driver_state_t *audio_st
          return true;
       }
    }
-   if (!audio_driver_pipeline_transport_request_speed(tempo,
-            !audio_st->transport_lpf_only && tempo != 65536,
-            false, (audio_st->pipe_transport_follow & AUDIO_TRANSPORT_LOWPASS) != 0))
+   if (!audio_driver_pipeline_transport_publish(tempo,
+            !audio_st->transport_lpf_only && tempo != 65536, false,
+            (audio_st->pipe_transport_follow & AUDIO_TRANSPORT_LOWPASS)
+            ? audio_speed_lpf_cutoff(audio_st->pipe_transport_rate, tempo) : 0,
+            true))
       return false;
    audio_st->pipe_transport_follow &= ~AUDIO_TRANSPORT_UPDATE;
    return true;
 }
 
-bool audio_driver_pipeline_transport_request(uint32_t tempo_q16,
-      bool active, bool reset, uint32_t cutoff)
+static bool audio_driver_pipeline_transport_publish(uint32_t tempo_q16,
+      bool active, bool reset, uint32_t cutoff, bool engage_ahead)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
    audio_pipeline_layout_t *metadata = &audio_st->pipe_layouts;
-   size_t head;
+   size_t head, position;
    bool result;
    if (!audio_st->pipe_threaded || !audio_st->pipe_transport)
       return false;
-   head = retro_atomic_load_relaxed_size(&metadata->head);
-   result = audio_pipeline_layout_publish_processing(metadata,
-         retro_atomic_load_relaxed_size(&audio_st->pipe_ring.head),
+   head     = retro_atomic_load_relaxed_size(&metadata->head);
+   position = retro_atomic_load_relaxed_size(&audio_st->pipe_ring.head);
+   /* Entering fast-forward the ring holds a few frames of 1x source.
+    * Positioned behind it, the tempo would only take effect once that
+    * played out at 1x, with the core running ahead into a full ring
+    * meanwhile; put it at the consumer's position instead, when no
+    * earlier event is pending so the queue stays in order. */
+   if (     engage_ahead && active && tempo_q16 > 65536
+         && !(metadata->published_control & AUDIO_PIPELINE_STRETCH)
+         && head == retro_atomic_load_acquire_size(&metadata->tail))
+      position = retro_atomic_load_acquire_size(&audio_st->pipe_ring.tail);
+   result = audio_pipeline_layout_publish_processing(metadata, position,
          metadata->published_layout, tempo_q16, active, reset, cutoff);
    if (retro_atomic_load_relaxed_size(&metadata->head) != head)
       audio_driver_pipeline_signal(audio_st);
    return result;
+}
+
+bool audio_driver_pipeline_transport_request(uint32_t tempo_q16,
+      bool active, bool reset, uint32_t cutoff)
+{
+   return audio_driver_pipeline_transport_publish(tempo_q16, active, reset,
+         cutoff, false);
 }
 
 static bool audio_driver_transport_discard(size_t frames, bool draining)

@@ -15,6 +15,7 @@
  */
 
 #include <retro_assert.h>
+#include <features/features_cpu.h>
 #include <dynamic/dylib.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
@@ -68,7 +69,7 @@
 #endif
 #endif
 
-#if defined(_WIN32) || defined(__APPLE__)
+#if defined(_WIN32) || defined(__APPLE__) || (defined(__linux__) && !defined(ANDROID))
 #define VULKAN_EMULATE_MAILBOX
 #endif
 
@@ -181,11 +182,28 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
 }
 #endif
 
-/* Timeout for the emulated mailbox background thread's
- * vkAcquireNextImageKHR call. Using a finite timeout instead
- * of UINT64_MAX guarantees the thread can check the DEAD flag
- * and exit promptly during swapchain teardown, preventing TDRs. */
-#define VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS  500000000  /* 500 ms */
+/* What the mailbox waits on is a swapchain image coming free, which the
+ * display paces, so its bound is in refresh periods. A finite one is
+ * also what lets the thread check the DEAD flag and exit: sthread_join
+ * cannot interrupt an acquire, so this is what teardown costs, and
+ * teardown is on the fast-forward release edge. Floored and capped so a
+ * missing or absurd reported rate still leaves a usable bound. */
+#define VULKAN_MAILBOX_ACQUIRE_FRAMES   8
+#define VULKAN_MAILBOX_TIMEOUT_MIN_US   16000
+#define VULKAN_MAILBOX_TIMEOUT_MAX_US   500000
+
+static int64_t vulkan_mailbox_timeout_us(void)
+{
+   float  hz = video_driver_get_refresh_rate();
+   double us = (hz > 1.0f)
+      ? (double)VULKAN_MAILBOX_ACQUIRE_FRAMES * 1000000.0 / (double)hz
+      : (double)VULKAN_MAILBOX_TIMEOUT_MAX_US;
+   if (us < (double)VULKAN_MAILBOX_TIMEOUT_MIN_US)
+      return VULKAN_MAILBOX_TIMEOUT_MIN_US;
+   if (us > (double)VULKAN_MAILBOX_TIMEOUT_MAX_US)
+      return VULKAN_MAILBOX_TIMEOUT_MAX_US;
+   return (int64_t)us;
+}
 
 static void vulkan_emulated_mailbox_deinit(
       struct vulkan_emulated_mailbox *mailbox)
@@ -198,7 +216,7 @@ static void vulkan_emulated_mailbox_deinit(
       slock_unlock(mailbox->lock);
       /* Wait for the background thread to see the DEAD flag.
        * The thread uses a finite timeout on vkAcquireNextImageKHR
-       * so it will unblock within VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS
+       * so it will unblock within mailbox->timeout_us
        * and exit the loop. */
       sthread_join(mailbox->thread);
    }
@@ -244,6 +262,7 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
       unsigned *index)
 {
    VkResult res = VK_SUCCESS;
+   retro_time_t deadline;
 
    slock_lock(mailbox->lock);
 
@@ -255,16 +274,20 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
 
    mailbox->flags |= VK_MAILBOX_FLAG_HAS_PENDING_REQUEST;
 
+   /* One deadline for the whole wait, not one per iteration: this
+    * condition carries the request and the dead flag as well as the
+    * acquire, so a wake that is none of ours would re-arm the full
+    * timeout, and enough of them would be a bound on nothing. */
+   deadline = cpu_features_get_time_usec() + mailbox->timeout_us;
    while (!(mailbox->flags & VK_MAILBOX_FLAG_ACQUIRED))
    {
-      /* scond_wait_timeout prevents indefinite blocking
-       * if the background thread hits an error path that
-       * doesn't set ACQUIRED. */
-      if (!scond_wait_timeout(mailbox->cond, mailbox->lock,
-                VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS / 1000000))
+      retro_time_t now = cpu_features_get_time_usec();
+      /* A finite wait also covers a background thread that hit an
+       * error path without setting ACQUIRED. */
+      if (      now >= deadline
+            || !scond_wait_timeout(mailbox->cond, mailbox->lock,
+               (int64_t)(deadline - now)))
       {
-         /* Timed out - the background thread may be stuck.
-          * Return VK_TIMEOUT to let the caller handle it. */
          slock_unlock(mailbox->lock);
          return VK_TIMEOUT;
       }
@@ -317,7 +340,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
        * in vulkan_emulated_mailbox_deinit to deadlock. */
       mailbox->result          = vkAcquireNextImageKHR(
             mailbox->device, mailbox->swapchain,
-            VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS,
+            (uint64_t)mailbox->timeout_us * 1000,
             VK_NULL_HANDLE, fence, &mailbox->index);
 
       /* VK_SUBOPTIMAL_KHR can be returned on Android 10
@@ -333,7 +356,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
       {
          VkResult wait_res;
          wait_res  = vkWaitForFences(mailbox->device, 1,
-               &fence, true, VULKAN_MAILBOX_ACQUIRE_TIMEOUT_NS);
+               &fence, true, (uint64_t)mailbox->timeout_us * 1000);
          if (wait_res == VK_TIMEOUT)
          {
             /* Fence not signaled in time - unlikely but handle
@@ -352,7 +375,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
                || mailbox->result == VK_NOT_READY)
       {
          /* No image available this round.
-          * Check DEAD flag without clearing request,
+          * Check DEAD flag, re-arm the request the loop cleared,
           * then loop back to try again. */
          slock_lock(mailbox->lock);
          if (mailbox->flags & VK_MAILBOX_FLAG_DEAD)
@@ -360,6 +383,7 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
             slock_unlock(mailbox->lock);
             break;
          }
+         mailbox->flags |= VK_MAILBOX_FLAG_REQUEST_ACQUIRE;
          slock_unlock(mailbox->lock);
       }
       else
@@ -388,6 +412,7 @@ static bool vulkan_emulated_mailbox_init(
    mailbox->cond                = NULL;
    mailbox->device              = device;
    mailbox->swapchain           = swapchain;
+   mailbox->timeout_us          = vulkan_mailbox_timeout_us();
    mailbox->index               = 0;
    mailbox->result              = VK_SUCCESS;
    mailbox->flags               = 0;
@@ -922,20 +947,20 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 #endif
 
    /* If we're emulating mailbox, stick to using fences rather than semaphores.
-    * Avoids some really weird driver bugs. */
-   if (!(vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX))
-   {
-      if (vk->context.gpu_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
-      {
-         vk->flags |= VK_DATA_FLAG_USE_WSI_SEMAPHORE;
-         RARCH_LOG("[Vulkan] Using semaphores for WSI acquire.\n");
-      }
-      else
-      {
-         vk->flags &= ~VK_DATA_FLAG_USE_WSI_SEMAPHORE;
-         RARCH_LOG("[Vulkan] Using fences for WSI acquire.\n");
-      }
-   }
+    * Avoids some really weird driver bugs. Resolved either way rather than
+    * left to the caller's zeroing: where mailbox emulation is compiled in
+    * this is the only writer. */
+   if (      (vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX)
+         || (vk->context.gpu_properties.deviceType
+            != VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU))
+      vk->flags &= ~VK_DATA_FLAG_USE_WSI_SEMAPHORE;
+   else
+      vk->flags |=  VK_DATA_FLAG_USE_WSI_SEMAPHORE;
+   RARCH_LOG("[Vulkan] Using %s for WSI acquire%s.\n",
+         (vk->flags & VK_DATA_FLAG_USE_WSI_SEMAPHORE)
+         ? "semaphores" : "fences",
+         (vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX)
+         ? ", mailbox emulation available" : "");
 
    {
       char version_str[128];
@@ -2267,6 +2292,8 @@ retry:
             vulkan_destroy_swapchain(vk);
             RARCH_ERR("[Vulkan] Failed to acquire from swapchain (err = %d).\n",
                   (int)err);
+            if (err == VK_ERROR_DEVICE_LOST)
+               video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
             if (err == VK_ERROR_SURFACE_LOST_KHR)
                RARCH_ERR("[Vulkan] Got VK_ERROR_SURFACE_LOST_KHR.\n");
             /* Force driver to reset swapchain image handles. */
@@ -3547,6 +3574,11 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    {
       RARCH_LOG("[Vulkan] QueuePresent failed (err = %d, result = %d), destroying swapchain.\n",
             (int)err, (int)result);
+      /* A lost device does not come back with a new swapchain: the
+       * whole driver has to, and the runloop does that when it sees
+       * the flag (after a TDR, a GPU reset). */
+      if (err == VK_ERROR_DEVICE_LOST || result == VK_ERROR_DEVICE_LOST)
+         video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
       vulkan_destroy_swapchain(vk);
    }
 

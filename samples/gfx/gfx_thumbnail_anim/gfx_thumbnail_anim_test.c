@@ -66,6 +66,7 @@
 #include <boolean.h>
 #include "gfx/gfx_thumbnail.h"
 #include "gfx/gfx_surface.h"
+#include "gfx/gfx_instrument.h"
 
 static const unsigned char anim_webp[] = {
    0x52, 0x49, 0x46, 0x46, 0xb4, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
@@ -266,7 +267,91 @@ int main(void)
    }
    gt_async_mode = 0;
 
-   /* 4. the surface's two routes to the driver. With in-place updates
+   /* 4. what a played animation costs, counted where it happens
+    *    rather than argued from the source (Phase 0 of the surface
+    *    plan): with threaded video the steady state must allocate no
+    *    slot per frame, copy no frame out of a canvas, create and
+    *    destroy no texture, and post one descriptor a frame. The
+    *    numbers are printed either way; the check is on the ones the
+    *    plan states as budgets. */
+   {
+      int frames, direct, copies, loads, unloads, updates, posts, allocs;
+      int news, submits;
+
+      reset_thumb(&th);
+      gt_async_mode   = 1;
+      gt_async_posted = gt_async_pending = 0;
+      gfx_instrument_reset();
+      gfx_thumbnail_anim_open(&th, path);
+      for (i = 0; i < 240 && gfx_instrument_get(GFX_INSTR_ANIM_FRAME) < 12; i++)
+      {
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+         gt_async_flush();
+         usleep(16666);
+      }
+      frames  = gfx_instrument_get(GFX_INSTR_ANIM_FRAME);
+      direct  = gfx_instrument_get(GFX_INSTR_ANIM_DIRECT);
+      copies  = gfx_instrument_get(GFX_INSTR_ANIM_COPY);
+      loads   = gfx_instrument_get(GFX_INSTR_TEX_LOAD);
+      unloads = gfx_instrument_get(GFX_INSTR_TEX_UNLOAD);
+      updates = gfx_instrument_get(GFX_INSTR_TEX_UPDATE);
+      posts   = gfx_instrument_get(GFX_INSTR_ASYNC_POST);
+      allocs  = gfx_instrument_get(GFX_INSTR_ASYNC_POST_ALLOC);
+      news    = gfx_instrument_get(GFX_INSTR_SURFACE_NEW);
+      submits = gfx_instrument_get(GFX_INSTR_SUBMIT_QUEUED)
+              + gfx_instrument_get(GFX_INSTR_SUBMIT_DONE);
+
+      printf("[baseline] %d frames: %d direct, %d canvas copies, "
+             "%d loads, %d updates, %d unloads, %d posts (%d allocated), "
+             "%d surfaces, %d submits\n",
+             frames, direct, copies, loads, updates, unloads,
+             posts, allocs, news, submits);
+
+      if (frames < 12)
+      {
+         printf("[FAIL] baseline: only %d frames decoded\n", frames);
+         bad = 1;
+      }
+      /* One surface for the animation, not one per frame. */
+      if (news != 1)
+      {
+         printf("[FAIL] baseline: %d surfaces for one animation\n", news);
+         bad = 1;
+      }
+      /* Threaded posts must carry a descriptor, never allocate. */
+      if (allocs != 0)
+      {
+         printf("[FAIL] baseline: %d of %d posts allocated a node\n",
+                allocs, posts);
+         bad = 1;
+      }
+      /* WEBP composes on a canvas, so a copy a frame is expected here
+       * and the direct count is zero; what must not happen is both. */
+      if (direct && copies)
+      {
+         printf("[FAIL] baseline: %d direct and %d copied frames\n",
+                direct, copies);
+         bad = 1;
+      }
+      /* The texture is made once and updated after that; with a driver
+       * that cannot update, a load and an unload a frame is the
+       * fallback and the stub here is that driver. */
+      if (updates && loads > 1)
+      {
+         printf("[FAIL] baseline: %d loads beside %d in-place updates\n",
+                loads, updates);
+         bad = 1;
+      }
+      if (!bad)
+         printf("[ok]   baseline: one surface, %d posts with 0 allocations\n",
+                posts);
+
+      gfx_thumbnail_reset(&th);
+      gt_async_flush();
+      gt_async_mode = 0;
+   }
+
+   /* 5. the surface's two routes to the driver. With in-place updates
     *    every frame after the first is an update of the one texture;
     *    without them (a driver with no update path) each frame is a
     *    replacement load and the previous texture is unloaded once

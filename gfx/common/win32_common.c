@@ -447,7 +447,11 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
    settings_t *settings  = config_get_ptr();
    MONITORINFOEX *mon    = (MONITORINFOEX*)data;
    HMONITOR *hm_to_use   = (HMONITOR*)hm_data;
-   unsigned fs_monitor   = settings->uints.video_monitor_index;
+   /* Reached from the display server's teardown as well as from
+    * window setup, and the settings are gone by the end of a
+    * shutdown: without one, the monitor the window is on is the
+    * only answer there is. */
+   unsigned fs_monitor   = settings ? settings->uints.video_monitor_index : 0;
    win32_common_state_t
       *g_win32           = (win32_common_state_t*)&win32_st;
 
@@ -806,6 +810,42 @@ void win32_sizemove_tick(void)
       video_st->current_video->alive(video_st->data);
    video_driver_cached_frame();
 }
+
+#ifdef HAVE_DINPUT
+/* dinput_joypad.c; also set and cleared by xinput_hybrid_joypad.c */
+extern volatile bool g_dinput_enum_inflight;
+#endif
+
+/* Called from the input driver's WM_DEVICECHANGE, on the thread that
+ * owns the main window - the one the device notification is
+ * registered on. */
+void win32_hotplug_arm(void)
+{
+   if (main_window.hwnd)
+      SetTimer(main_window.hwnd, WIN32_HOTPLUG_TIMER_ID,
+            WIN32_HOTPLUG_SETTLE_MS, NULL);
+}
+
+/* Called from the input driver's WM_TIMER. Returns true when the
+ * joypad driver should be reinitialised now. While a DirectInput
+ * enumeration from the previous reinit is still walking the device
+ * tree, re-arm and look again one settle period later instead:
+ * reinitialising now would discard that walk and queue a fresh one
+ * behind it, since the task queue runs one task at a time. */
+bool win32_hotplug_due(void)
+{
+   if (!main_window.hwnd)
+      return false;
+   KillTimer(main_window.hwnd, WIN32_HOTPLUG_TIMER_ID);
+#ifdef HAVE_DINPUT
+   if (g_dinput_enum_inflight)
+   {
+      win32_hotplug_arm();
+      return false;
+   }
+#endif
+   return true;
+}
 #endif
 
 static LRESULT CALLBACK wnd_proc_common(
@@ -872,6 +912,15 @@ static LRESULT CALLBACK wnd_proc_common(
          win32_sizemove_exit(hwnd);
          break;
       case WM_TIMER:
+         /* A hotplug timer reaching here was armed by an input driver
+          * this window's wndproc does not route it to. It is one-shot
+          * by intent; stop it rather than let it tick forever. */
+         if (wparam == WIN32_HOTPLUG_TIMER_ID)
+         {
+            KillTimer(hwnd, WIN32_HOTPLUG_TIMER_ID);
+            *quit = true;
+            return 0;
+         }
          /* Someone else's timer falls through to DefWindowProc. */
          if (wparam != WIN32_SIZEMOVE_TIMER_ID)
             break;
@@ -1189,11 +1238,20 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       case WM_MOVE:
       case WM_SIZE:
 #if !defined(_XBOX)
+      case WM_TIMER:
+         if (   wparam == WIN32_HOTPLUG_TIMER_ID
+             && winraw_handle_message(message, wparam, lparam))
+            return 0;
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
+#endif
+#if !defined(_XBOX)
       case WM_ENTERSIZEMOVE:
       case WM_EXITSIZEMOVE:
       case WM_ENTERMENULOOP:
       case WM_EXITMENULOOP:
-      case WM_TIMER:
 #endif
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
@@ -1407,11 +1465,24 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       case WM_MOVE:
       case WM_SIZE:
 #if !defined(_XBOX)
+      case WM_TIMER:
+         if (wparam == WIN32_HOTPLUG_TIMER_ID)
+         {
+            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
+#endif
+#if !defined(_XBOX)
       case WM_ENTERSIZEMOVE:
       case WM_EXITSIZEMOVE:
       case WM_ENTERMENULOOP:
       case WM_EXITMENULOOP:
-      case WM_TIMER:
 #endif
       case WM_GETMINMAXINFO:
       case WM_COMMAND:

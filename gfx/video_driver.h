@@ -1837,6 +1837,10 @@ bool video_driver_texture_update(uintptr_t id, void *data);
  * replacement load on this, once per surface rather than per frame. */
 bool video_driver_texture_can_update(void);
 
+/* Whether the active driver can sample @fmt as a compressed texture.
+ * False with no driver, no poke, or a format it declines. */
+bool video_driver_supports_texture_format(enum texture_gpu_format fmt);
+
 /* Upload without making the caller wait for the video thread. @data
  * is a struct texture_image the caller gives up: it is handed to
  * release() once uploaded (on whichever thread uploads it). The

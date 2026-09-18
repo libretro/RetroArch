@@ -330,6 +330,7 @@ OBJ += \
        gfx/video_driver.o \
        gfx/gfx_display.o \
        gfx/gfx_animation.o \
+       gfx/gfx_instrument.o \
        gfx/gfx_surface.o \
        gfx/gfx_thumbnail.o \
        gfx/gfx_anim_preview.o \
@@ -1722,6 +1723,10 @@ endif
 ifeq ($(HAVE_SDL3), 1)
    SDL3_CFLAGS = $(shell pkg-config sdl3 --cflags)
 	SDL3_LIBS = $(shell pkg-config sdl3 --libs)
+ifeq ($(strip $(SDL3_LIBS)),)
+   $(warning SDL3_LIBS is not set, falling back to -lSDL3)
+   SDL3_LIBS = -lSDL3
+endif
    DEF_FLAGS += $(SDL3_CFLAGS)
    # RetroArch supplies its own entry point and sets SDL_MAIN_HANDLED
    # (see retroarch.c), so SDL's WinMain shim library (-lSDL3main /

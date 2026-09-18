@@ -45,6 +45,7 @@
 
 #include "../configuration.h"
 #include "../gfx/video_driver.h"
+#include "../gfx/gfx_surface.h"
 #include "../gfx/gfx_display.h"
 
 enum image_status_enum
@@ -344,25 +345,33 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
       image_transfer_set_avail(image->handle, image->type, done);
    }
 
-   /* Ask video thumbnail decoders for native 10-bit output, but only when the
-    * active video driver can sample a 10-bit texture; otherwise the decoded
-    * buffer would just be narrowed again at upload for no benefit. */
-   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
-      image_transfer_set_want_10bit(image->handle, image->type, 1);
-
    /* Set image size */
    image->size                     = len;
 
    /* The decoders bake the output channel order from supports_rgba.
-    * It was captured when this load was queued, but VIDEO_FLAG_USE_RGBA
-    * is cleared on every video reinit (core start/stop), so a value
+    * It was captured when this load was queued, but the driver's
+    * wanted order is reset on every video reinit (core start/stop),
+    * so a value
     * sampled in that window can disagree with the driver's actual upload
     * format and yield R/B-swapped images.  Re-sample it here, once, at
     * decode start (after any reinit has settled) - not in the
     * per-chunk decode loop, where even the one atomic read per
     * iteration would buy nothing: the value cannot change mid-decode. */
-   image->ti.supports_rgba = (video_driver_get_disp_flags()
-         & VIDEO_FLAG_USE_RGBA) ? true : false;
+   {
+      gfx_surface_requirements_t req;
+      gfx_surface_query_requirements(0, &req);
+      image->ti.supports_rgba = req.rgba;
+      /* Native 10-bit output is worth asking the decoder for only
+       * when the driver can sample it; otherwise the buffer would be
+       * narrowed again at upload for nothing. Same answer, same
+       * moment, one place. */
+      /* The decoders emit 8-bit or 10-bit today, so a driver that
+       * takes something wider still gets 10-bit from here - asking
+       * for the widest the producer can actually emit, rather than
+       * assuming the driver's preference is reachable. */
+      if (req.formats & GFX_SURFACE_PIXFMT_2101010)
+         image_transfer_set_want_10bit(image->handle, image->type, 1);
+   }
 
    /* Hand the byte order to the transfer layer now: the JPEG fused
     * iterate+resample emits final pixels during transfer, before any

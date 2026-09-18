@@ -258,6 +258,13 @@ threads-samples:
 	$(MAKE) -C samples/memmap/memshm_test clean
 	$(MAKE) -C samples/memmap/memshm_test check SANITIZER=$(CONCURRENCY_SAN)
 	$(MAKE) -C samples/memmap/memshm_test clean
+	# and the reservation those mappings go into: three mappings of one
+	# region aliasing, the middle one unmapped with live neighbours
+	# either side, and the freed slot mapped again -- the placeholder
+	# split and coalesce, which is where Windows is easy to get wrong
+	$(MAKE) -C samples/memmap/memshm_area_test clean
+	$(MAKE) -C samples/memmap/memshm_area_test check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/memmap/memshm_area_test clean
 	# fastjmp: a jump from three frames down, eight values held across
 	# the set intact at -O2, a hundred thousand round trips; the ASan
 	# fake stack cannot follow a longjmp that is not libc's
@@ -270,6 +277,16 @@ threads-samples:
 	$(MAKE) -C samples/formats/dds clean
 	$(MAKE) -C samples/formats/dds check SANITIZER=$(CONCURRENCY_SAN)
 	$(MAKE) -C samples/formats/dds clean
+	# faulthandler: a reserved page committed from the handler and the
+	# store completing, and the three faults the filter must not claim.
+	# The sanitizers install their own SEGV handler; handle_segv=0
+	# leaves ours in place, which is the configuration a fastmem core
+	# runs in. TSan additionally reports the thread trampoline's free
+	# as signal-unsafe -- the workers fault inside their entry function
+	# by design -- and reports no data race, which is the property.
+	$(MAKE) -C samples/faulthandler/faulthandler_test clean
+	ASAN_OPTIONS=handle_segv=0 UBSAN_OPTIONS=handle_segv=0 $(MAKE) -C samples/faulthandler/faulthandler_test check SANITIZER=$(CONCURRENCY_SAN)
+	$(MAKE) -C samples/faulthandler/faulthandler_test clean
 	# same, and the only place the queue and the eventcount are
 	# exercised against each other
 	$(MAKE) -C samples/queues/retro_waitable_spsc_test clean

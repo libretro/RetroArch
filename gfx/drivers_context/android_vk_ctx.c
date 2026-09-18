@@ -151,8 +151,10 @@ static bool android_gfx_ctx_vk_set_resize(void *data,
    }
 
    if (and->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
+   {
       vulkan_acquire_next_image(&and->vk);
-   and->vk.context.flags             |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+      and->vk.context.flags          |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   }
    and->vk.flags                     &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
 
    return true;

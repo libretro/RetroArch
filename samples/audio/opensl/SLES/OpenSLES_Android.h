@@ -47,4 +47,12 @@ unsigned opensl_mock_enqueue_failures(void);
 int      opensl_mock_playing(void);
 int      opensl_mock_objects(void);           /* created less destroyed */
 
+/* Android's teardown rather than the spec's (issue #19561): the player
+ * goes without waiting for a callback already on its way, and its
+ * registration outlives it. The pump parks at the callback so a test
+ * owns the window: wait for it, tear down, then release. */
+void   opensl_mock_set_racy_teardown(int on);
+int    opensl_mock_wait_dispatching(unsigned timeout_ms); /* 0: never got there */
+void   opensl_mock_release_dispatch(void);
+
 #endif

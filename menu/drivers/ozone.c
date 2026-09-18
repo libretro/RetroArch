@@ -34,6 +34,7 @@
 #include <array/rhmap.h>
 #include <retro_math.h>
 
+#include "../../gfx/gfx_surface.h"
 #include "../menu_cbs.h"
 #include "../menu_driver.h"
 #include "../menu_str.h"
@@ -5404,7 +5405,7 @@ static ozone_node_t *ozone_alloc_node(void)
 static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 {
    unsigned i;
-   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   bool supports_rgba = gfx_surface_wants_rgba();
    size_t list_size = ozone_list_get_size(ozone, MENU_LIST_HORIZONTAL);
 
    RHMAP_FREE(ozone->playlist_db_node_map);

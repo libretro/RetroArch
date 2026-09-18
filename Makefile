@@ -160,6 +160,15 @@ ifneq ($(SANITIZER),)
    LDFLAGS  := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
+# GFX_INSTRUMENT=1 counts what the image and surface paths do - uploads,
+# in-place updates, allocations, canvas copies, overlay pages - so the
+# budgets those paths are written to can be checked instead of argued.
+# Off by default: without it the counters do not exist and no call to
+# them survives the preprocessor.
+ifeq ($(GFX_INSTRUMENT), 1)
+   DEFINES += -DHAVE_GFX_INSTRUMENT
+endif
+
 ifneq ($(findstring $(GPERFTOOLS),profiler),)
    LIBS += -lprofiler
 endif

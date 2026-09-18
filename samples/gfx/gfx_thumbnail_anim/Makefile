@@ -22,6 +22,7 @@ SURFACE_OBJ := gfx_surface_uut.o
 
 SOURCES := gfx_thumbnail_anim_test.c \
            stubs_retroarch.c \
+           $(REPO_ROOT)/gfx/gfx_instrument.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
@@ -48,8 +49,12 @@ SOURCES := gfx_thumbnail_anim_test.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
+# The counters are what lane 4 reads; a tree built without
+# HAVE_GFX_INSTRUMENT has none of them, which is the point of the
+# define, so the sample names it for itself.
 CFLAGS  += -Wall -std=gnu99 -g -O1 \
            -DHAVE_RWEBP -DHAVE_THREADS -DHAVE_MMAP -D_GNU_SOURCE \
+           -DHAVE_GFX_INSTRUMENT \
            -I$(REPO_ROOT) \
            -I$(LIBRETRO_COMM_DIR)/include
 

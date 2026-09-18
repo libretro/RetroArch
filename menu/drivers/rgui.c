@@ -47,6 +47,7 @@
 #include "../../frontend/frontend_driver.h"
 
 #include "../menu_driver.h"
+#include "../../gfx/gfx_surface.h"
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail.h"
 
@@ -2716,7 +2717,7 @@ static bool rgui_request_thumbnail(
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
          if (task_push_image_load(thumbnail->path,
-               (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
+               gfx_surface_wants_rgba(),
                0,
                0,
                (thumbnail_id == GFX_THUMBNAIL_LEFT)
@@ -3732,7 +3733,7 @@ end:
              * here - in general, wallpaper is loaded once per session
              * and then forgotten, so performance issues are not a concern */
             task_push_image_load(wallpaper_path,
-                  (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
+                  gfx_surface_wants_rgba(),
                   0,
                   0,
                   menu_display_handle_wallpaper_upload,

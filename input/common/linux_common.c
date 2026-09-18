@@ -27,23 +27,25 @@
 #include "linux_common.h"
 #include "verbosity.h"
 #include <retro_assert.h>
-#include <retro_timers.h>
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
+#include <features/features_cpu.h>
 
 #include <retro_dirent.h>
 #include <streams/file_stream.h>
 #include <string.h>
 #include <string/rstrtod.h>
 
+/* Overridable so a test can point it at a fake sysfs tree. */
+#ifndef IIO_DEVICES_DIR
 #define IIO_DEVICES_DIR "/sys/bus/iio/devices"
+#endif
 #define IIO_ILLUMINANCE_SENSOR "in_illuminance_input"
 #define DEFAULT_POLL_RATE 5
 /* The rate comes from the core, through
  * RETRO_ENVIRONMENT_SET_SENSOR_STATE, so it is whatever a core asks
- * for. Above 1000 Hz the sleep between reads would round down to zero
- * and the poll thread would read a sysfs file as fast as the CPU
- * allows; the sensor cannot answer faster than that anyway, since each
- * reading is an open/read/close of a file. */
+ * for. The sensor cannot usefully answer faster than 1000 Hz, since
+ * each reading is an open/read/close of a sysfs file. */
 #define MAX_POLL_RATE     1000
 
 /* TODO/FIXME - static globals */
@@ -53,19 +55,24 @@ static bool linux_stdin_claimed    = false;
 
 struct linux_illuminance_sensor
 {
+#ifdef HAVE_THREADS
    sthread_t *thread;
+   /* Guards poll_rate, rate_changed and done; the poll thread waits on
+    * cond between readings, so a rate change or close wakes it at
+    * once instead of after the rest of a sleep. */
+   slock_t   *lock;
+   scond_t   *cond;
+   bool       rate_changed;
+   bool       done;
+#endif
 
    /* Poll rate in Hz (i.e. in queries per second) */
-   volatile unsigned poll_rate;
+   unsigned poll_rate;
 
-   /* We store the lux reading in millilux (as an int)
-    * so that we can make the access atomic and avoid locks.
-    * A little bit of precision is lost, but not enough to matter.
-    */
-   volatile int millilux;
-
-   /* If true, the associated thread must finish its work and exit. */
-   volatile bool done;
+   /* The lux reading in millilux, so it can be published atomically
+    * to the input driver without a lock. A little precision is lost,
+    * not enough to matter. */
+   retro_atomic_int_t millilux;
 
    char path[PATH_MAX_LENGTH];
 };
@@ -164,50 +171,63 @@ bool linux_terminal_disable_input(void)
 }
 
 #ifdef HAVE_THREADS
+/* Reads the sensor once per period, on a schedule rather than by
+ * sleeping a period after each read, so the rate holds however long a
+ * read takes; a reader that falls behind skips ahead rather than
+ * bursting to catch up. Between readings it waits on the sensor's
+ * condition, which close and rate changes signal: close returns as
+ * soon as any read in progress does, and a new rate applies at once. */
 static void linux_poll_illuminance_sensor(void *data)
 {
    linux_illuminance_sensor_t *sensor = (linux_illuminance_sensor_t*)data;
+   retro_time_t next;
 
-   if (!data)
+   if (!sensor)
       return;
 
+   next = cpu_features_get_time_usec();
+
+   slock_lock(sensor->lock);
    while (!sensor->done)
-   { /* Aligned int reads are atomic on most CPUs */
-        double lux;
-        int millilux;
-        unsigned poll_rate = sensor->poll_rate;
+   {
+      double       lux;
+      retro_time_t now;
+      retro_time_t period = 1000000 / sensor->poll_rate;
 
-        if (poll_rate == 0)
-           poll_rate = DEFAULT_POLL_RATE;
-        else if (poll_rate > MAX_POLL_RATE)
-           poll_rate = MAX_POLL_RATE;
+      sensor->rate_changed = false;
+      slock_unlock(sensor->lock);
 
-        /* Don't allow cancellation inside the critical section,
-         * as it opens up a file; we don't want to leak it! */
-        sthread_set_cancel_enable(false);
-        lux = linux_read_illuminance_sensor(sensor);
-        millilux = (int)(lux * 1000.0);
-        sensor->millilux = millilux;
-        sthread_set_cancel_enable(true);
+      lux = linux_read_illuminance_sensor(sensor);
+      retro_atomic_store_release_int(&sensor->millilux,
+            (int)(lux * 1000.0));
 
-        /* Allow cancellation here so that the main thread doesn't block
-         * while waiting for this thread to wake up and exit.
-         *
-         * errno is cleared first because it is only meaningful right
-         * after a call that failed: the sensor read above goes through
-         * open/read/close and leaves its own errno behind, so testing
-         * it after a sleep that succeeded would end the thread on a
-         * stale EINTR from something else entirely. */
-        errno = 0;
-        retro_sleep(1000 / poll_rate);
-        if (errno == EINTR)
-        {
-           RARCH_ERR("Illuminance sensor thread interrupted.\n");
-           break;
-        }
+      slock_lock(sensor->lock);
+      now   = cpu_features_get_time_usec();
+      next += period;
+      if (next <= now)
+         next = now + period;
+
+      while (!sensor->done && !sensor->rate_changed && now < next)
+      {
+         scond_wait_timeout(sensor->cond, sensor->lock, next - now);
+         now = cpu_features_get_time_usec();
+      }
+
+      /* A new rate reads now and schedules from here. */
+      if (sensor->rate_changed)
+         next = now;
    }
+   slock_unlock(sensor->lock);
 
    RARCH_DBG("Illuminance sensor thread for %s exiting.\n", sensor->path);
+}
+
+static void linux_illuminance_sensor_free_sync(linux_illuminance_sensor_t *sensor)
+{
+   scond_free(sensor->cond);
+   slock_free(sensor->lock);
+   sensor->cond = NULL;
+   sensor->lock = NULL;
 }
 #endif
 
@@ -215,21 +235,29 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
 {
    RDIR *device = NULL;
    linux_illuminance_sensor_t *sensor = (linux_illuminance_sensor_t *)
-      malloc(sizeof(*sensor));
+      calloc(1, sizeof(*sensor));
 
    if (!sensor)
       goto error;
 
-   device = retro_opendir(IIO_DEVICES_DIR);
-   if (!device)
-      goto error;
-
-   sensor->millilux  = 0;
    sensor->poll_rate = rate ? rate : DEFAULT_POLL_RATE;
    if (sensor->poll_rate > MAX_POLL_RATE)
       sensor->poll_rate = MAX_POLL_RATE;
-   sensor->thread    = NULL; /* We'll spawn a thread later, once we find a sensor */
-   sensor->done      = false;
+   sensor->path[0]   = '\0';
+   retro_atomic_store_release_int(&sensor->millilux, 0);
+#ifdef HAVE_THREADS
+   sensor->thread       = NULL; /* spawned once a sensor is found */
+   sensor->rate_changed = false;
+   sensor->done         = false;
+   sensor->lock         = slock_new();
+   sensor->cond         = scond_new();
+   if (!sensor->lock || !sensor->cond)
+      goto error;
+#endif
+
+   device = retro_opendir(IIO_DEVICES_DIR);
+   if (!device)
+      goto error;
 
    while (retro_readdir(device))
    { /* For each IIO device... */
@@ -252,20 +280,19 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
       lux = linux_read_illuminance_sensor(sensor);
       if (lux >= 0)
       { /* If we found an illuminance sensor that works... */
-         sensor->millilux = (int)(lux * 1000.0); /* Set the first reading */
+         /* Set the first reading */
+         retro_atomic_store_release_int(&sensor->millilux,
+               (int)(lux * 1000.0));
 #ifdef HAVE_THREADS
-         sensor->thread = sthread_create(linux_poll_illuminance_sensor, sensor);
-#else
-         /* No thread to poll on: the first reading above is all the
-          * sensor reports. */
-         sensor->thread = NULL;
-#endif
-
-         if (!sensor->thread)
+         if (!(sensor->thread = sthread_create(
+                     linux_poll_illuminance_sensor, sensor)))
          {
             RARCH_ERR("Failed to spawn thread for illuminance sensor.\n");
             goto error;
          }
+#endif
+         /* Without threads, the first reading above is all the sensor
+          * reports. */
 
          RARCH_LOG("Opened illuminance sensor at %s, polling at %u Hz.\n", sensor->path, sensor->poll_rate);
          retro_closedir(device);
@@ -277,6 +304,10 @@ error:
    RARCH_ERR("Failed to find an illuminance sensor in " IIO_DEVICES_DIR ".\n");
    retro_closedir(device);
 
+#ifdef HAVE_THREADS
+   if (sensor)
+      linux_illuminance_sensor_free_sync(sensor);
+#endif
    free(sensor);
 
    return NULL;
@@ -290,20 +321,17 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
 #ifdef HAVE_THREADS
    if (sensor->thread)
    {
+      /* Wakes the thread out of its wait between readings; the join
+       * then lasts no longer than a read already in progress. */
+      slock_lock(sensor->lock);
       sensor->done = true;
-
-      if (!sthread_cancel(sensor->thread))
-      {
-         int err = errno;
-         char errmesg[NAME_MAX_LENGTH];
-         strerror_r(err, errmesg, sizeof(errmesg));
-         RARCH_ERR("Failed to cancel illuminance sensor thread: %s.\n", errmesg);
-         /* this doesn't happen often, it should probably be logged */
-      }
+      scond_signal(sensor->cond);
+      slock_unlock(sensor->lock);
 
       sthread_join(sensor->thread);
       /* sthread_join will free the thread */
    }
+   linux_illuminance_sensor_free_sync(sensor);
 #endif
 
    free(sensor);
@@ -315,8 +343,7 @@ float linux_get_illuminance_reading(const linux_illuminance_sensor_t *sensor)
    if (!sensor)
       return -1.0f;
 
-   /* Reading an int is atomic on most CPUs */
-   millilux = sensor->millilux;
+   millilux = retro_atomic_load_acquire_int(&sensor->millilux);
 
    return (float)millilux / 1000.0f;
 }
@@ -332,7 +359,15 @@ void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor, unsig
    if (rate > MAX_POLL_RATE)
       rate = MAX_POLL_RATE;
 
+#ifdef HAVE_THREADS
+   slock_lock(sensor->lock);
+   sensor->poll_rate    = rate;
+   sensor->rate_changed = true;
+   scond_signal(sensor->cond);
+   slock_unlock(sensor->lock);
+#else
    sensor->poll_rate = rate;
+#endif
 }
 
 static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *sensor)

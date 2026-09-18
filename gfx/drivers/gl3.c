@@ -1830,10 +1830,10 @@ static void gl3_overlay_vertex_geom(void *data,
    GLfloat *vertex = NULL;
    gl3_t       *gl = (gl3_t*)data;
 
-   if (!gl)
+   if (!gl || !gl->overlay_vertex_coord)
       return;
 
-   if (image > gl->overlays)
+   if (image >= gl->overlays)
       return;
 
    vertex          = (GLfloat*)&gl->overlay_vertex_coord[image * 8];
@@ -1860,7 +1860,10 @@ static void gl3_overlay_tex_geom(void *data,
    GLfloat *tex = NULL;
    gl3_t *gl    = (gl3_t*)data;
 
-   if (!gl)
+   if (!gl || !gl->overlay_tex_coord)
+      return;
+
+   if (image >= gl->overlays)
       return;
 
    tex          = (GLfloat*)&gl->overlay_tex_coord[image * 8];
@@ -1879,6 +1882,9 @@ static void gl3_render_overlay(gl3_t *gl,
       unsigned width, unsigned height)
 {
    size_t i;
+
+   if (!gl->overlay_tex || !gl->overlays)
+      return;
 
    glEnable(GL_BLEND);
    glDisable(GL_CULL_FACE);
@@ -1915,6 +1921,10 @@ static void gl3_render_overlay(gl3_t *gl,
 
    for (i = 0; i < gl->overlays; i++)
    {
+      /* Name 0 is black only on a core context; a GLES driver may
+       * sample whatever the unit last held. */
+      if (!gl->overlay_tex[i])
+         continue;
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
       glDrawArrays(GL_TRIANGLE_STRIP, (GLint)(4 * i), 4);

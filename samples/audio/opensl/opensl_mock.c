@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <time.h>
 #include "SLES/OpenSLES.h"
 #include "SLES/OpenSLES_Android.h"
 
@@ -37,6 +38,13 @@ static unsigned q_cb_inflight;
 static pthread_cond_t q_cb_idle = PTHREAD_COND_INITIALIZER;
 static SLAndroidSimpleBufferQueueItf q_itf;
 
+/* Issue #19561: Android reports STOPPED and returns from Destroy while
+ * the AudioTrack thread is still on its way into the callback. In this
+ * mode the pump parks at that point until released, and Destroy neither
+ * clears the registration nor waits. */
+static int mock_racy, mock_at_dispatch, mock_dispatch_gate;
+static pthread_cond_t mock_dispatch_cond = PTHREAD_COND_INITIALIZER;
+
 static int      mock_float_ok = 1, mock_frozen, mock_playing, mock_objects, mock_is_float;
 static unsigned mock_num_buffers, mock_buffer_bytes, mock_rate_milli, mock_queue_limit;
 static unsigned mock_enq_fail;
@@ -52,6 +60,39 @@ void opensl_mock_freeze(int on)
    mock_frozen = on;
    pthread_mutex_unlock(&q_lock);
 }
+void opensl_mock_set_racy_teardown(int on)
+{
+   pthread_mutex_lock(&q_lock);
+   mock_racy          = on;
+   mock_dispatch_gate = 0;
+   pthread_mutex_unlock(&q_lock);
+}
+
+int opensl_mock_wait_dispatching(unsigned timeout_ms)
+{
+   struct timespec ts;
+   int at = 0;
+   clock_gettime(CLOCK_REALTIME, &ts);
+   ts.tv_sec  += timeout_ms / 1000;
+   ts.tv_nsec += (long)(timeout_ms % 1000) * 1000000L;
+   if (ts.tv_nsec >= 1000000000L) { ts.tv_sec++; ts.tv_nsec -= 1000000000L; }
+   pthread_mutex_lock(&q_lock);
+   while (!mock_at_dispatch)
+      if (pthread_cond_timedwait(&mock_dispatch_cond, &q_lock, &ts))
+         break;
+   at = mock_at_dispatch;
+   pthread_mutex_unlock(&q_lock);
+   return at;
+}
+
+void opensl_mock_release_dispatch(void)
+{
+   pthread_mutex_lock(&q_lock);
+   mock_dispatch_gate = 1;
+   pthread_cond_broadcast(&mock_dispatch_cond);
+   pthread_mutex_unlock(&q_lock);
+}
+
 unsigned opensl_mock_num_buffers(void)       { return mock_num_buffers; }
 unsigned opensl_mock_buffer_bytes(void)      { return mock_buffer_bytes; }
 unsigned opensl_mock_rate_milli(void)        { return mock_rate_milli; }
@@ -103,6 +144,14 @@ static void *pump_thread(void *arg)
          ctx = q_cb_ctx;
          if (cb)
             q_cb_inflight++;
+         if (cb && mock_racy)
+         {
+            mock_at_dispatch = 1;
+            pthread_cond_broadcast(&mock_dispatch_cond);
+            while (!mock_dispatch_gate)
+               pthread_cond_wait(&mock_dispatch_cond, &q_lock);
+            mock_at_dispatch = 0;
+         }
          pthread_mutex_unlock(&q_lock);
 
          if (cb)
@@ -125,11 +174,14 @@ void opensl_mock_reset(void)
    if (__atomic_load_n(&pump_run, __ATOMIC_ACQUIRE))
    {
       __atomic_store_n(&pump_run, 0, __ATOMIC_RELEASE);
+      /* A pump parked at the dispatch gate would never reach the join. */
+      opensl_mock_release_dispatch();
       pthread_join(pump, NULL);
    }
    pthread_mutex_lock(&q_lock);
    memset(&q, 0, sizeof(q));
    q_cb = NULL; q_cb_ctx = NULL; q_cb_inflight = 0;
+   mock_racy = mock_at_dispatch = mock_dispatch_gate = 0;
    mock_float_ok = 1; mock_frozen = 0; mock_playing = 0; mock_objects = 0;
    mock_is_float = 0; mock_num_buffers = mock_buffer_bytes = mock_rate_milli = 0;
    mock_queue_limit = 0; mock_enq_fail = 0; mock_consumed = 0;
@@ -220,14 +272,17 @@ static void obj_destroy(SLObjectItf self)
    if (self == &player_obj_storage)
    {
       pthread_mutex_lock(&q_lock);
-      q_cb        = NULL;
-      q_cb_ctx    = NULL;
-      q.head      = q.count = 0;
+      q.head       = q.count = 0;
       mock_playing = 0;
-      /* Not until the pump has left any callback it was already
-       * inside: the driver frees its context right after this. */
-      while (q_cb_inflight)
-         pthread_cond_wait(&q_cb_idle, &q_lock);
+      if (!mock_racy)
+      {
+         q_cb     = NULL;
+         q_cb_ctx = NULL;
+         /* Not until the pump has left any callback it was already
+          * inside: the driver frees its context right after this. */
+         while (q_cb_inflight)
+            pthread_cond_wait(&q_cb_idle, &q_lock);
+      }
       pthread_mutex_unlock(&q_lock);
    }
    mock_objects--;

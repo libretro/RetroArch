@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include "gfx_surface.h"
+#include "gfx_instrument.h"
 
 /* Slots start on a cache line so a producer's row loops and the
  * driver's memcpy into staging run on aligned memory. */
@@ -58,6 +59,73 @@ gfx_surface_t *gfx_surface_new(unsigned width, unsigned height,
    s->filter     = filter;
    s->rgba       = 0xff;
    s->can_update = video_driver_texture_can_update() ? 1 : 0;
+   GFX_INSTR_INC(GFX_INSTR_SURFACE_NEW);
+   GFX_INSTR_ADD(GFX_INSTR_SURFACE_BYTES, (int)(frame_len * num_slots));
+   return s;
+}
+
+bool gfx_surface_query_requirements(unsigned width,
+      gfx_surface_requirements_t *req)
+{
+   if (!req)
+      return false;
+   if ((size_t)width > ((size_t)-1) / sizeof(uint32_t))
+      return false;
+   req->rgba       = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
+         ? true : false;
+   /* 8888 is always sampled; the wider formats are what the driver
+    * and its context say they can take. The preference is the widest
+    * of them, since a producer with a wider source loses nothing by
+    * decoding into it and everything by being narrowed twice. */
+   req->formats    = GFX_SURFACE_PIXFMT_8888;
+   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+      req->formats |= GFX_SURFACE_PIXFMT_2101010;
+   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
+      req->formats |= GFX_SURFACE_PIXFMT_FP16;
+   if (req->formats & GFX_SURFACE_PIXFMT_FP16)
+      req->preferred = GFX_SURFACE_PIXFMT_FP16;
+   else if (req->formats & GFX_SURFACE_PIXFMT_2101010)
+      req->preferred = GFX_SURFACE_PIXFMT_2101010;
+   else
+      req->preferred = GFX_SURFACE_PIXFMT_8888;
+   req->can_update = video_driver_texture_can_update();
+   /* Every upload path in the tree takes tightly packed 32-bit rows;
+    * the alignment is what the GL paths set (glPixelStorei) and what
+    * the others are happy with. */
+   req->pitch      = (size_t)width * sizeof(uint32_t);
+   req->align      = 4;
+   return true;
+}
+
+bool gfx_surface_wants_rgba(void)
+{
+   gfx_surface_requirements_t req;
+   if (!gfx_surface_query_requirements(0, &req))
+      return false;
+   return req.rgba;
+}
+
+bool gfx_surface_supports_compressed(enum texture_gpu_format fmt)
+{
+   return video_driver_supports_texture_format(fmt);
+}
+
+gfx_surface_t *gfx_surface_new_static(unsigned width, unsigned height,
+      enum texture_filter_type filter)
+{
+   gfx_surface_t *s;
+
+   if (!width || !height)
+      return NULL;
+   if (!(s = (gfx_surface_t*)calloc(1, sizeof(*s))))
+      return NULL;
+   s->width      = width;
+   s->height     = height;
+   s->num_slots  = 0;
+   s->filter     = filter;
+   s->rgba       = 0xff;
+   s->can_update = video_driver_texture_can_update() ? 1 : 0;
+   GFX_INSTR_INC(GFX_INSTR_SURFACE_NEW);
    return s;
 }
 
@@ -163,9 +231,15 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
       unsigned slot, bool rgba)
 {
    if (!s || slot >= s->num_slots)
+   {
+      GFX_INSTR_INC(GFX_INSTR_SUBMIT_FAILED);
       return GFX_SURFACE_SUBMIT_FAILED;
+   }
    if (s->inflight)
+   {
+      GFX_INSTR_INC(GFX_INSTR_SUBMIT_BUSY);
       return GFX_SURFACE_SUBMIT_BUSY;
+   }
 
    s->img.pixels        = s->slots[slot];
    s->img.width         = s->width;
@@ -173,7 +247,14 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
    s->img.supports_rgba = rgba;
    s->img.pix10         = false;
    s->img.compressed    = NULL;
-   return gfx_surface_submit_img(s, slot, rgba);
+   {
+      enum gfx_surface_submit_result r = gfx_surface_submit_img(s, slot, rgba);
+      GFX_INSTR_INC(r == GFX_SURFACE_SUBMIT_QUEUED
+            ? GFX_INSTR_SUBMIT_QUEUED
+            : (r == GFX_SURFACE_SUBMIT_DONE
+               ? GFX_INSTR_SUBMIT_DONE : GFX_INSTR_SUBMIT_FAILED));
+      return r;
+   }
 }
 
 enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
@@ -190,6 +271,7 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       /* The caller's buffer does not outlive this call for the video
        * thread's purposes; a slot does. One copy, the size of a frame,
        * against a wait of up to a present. */
+      GFX_INSTR_INC(GFX_INSTR_SUBMIT_COPY);
       memcpy(s->slots[0], pixels,
             (size_t)s->width * s->height * sizeof(uint32_t));
       return gfx_surface_submit(s, 0, rgba);
@@ -202,13 +284,48 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
    s->img.supports_rgba = rgba;
    s->img.pix10         = false;
    s->img.compressed    = NULL;
-   return gfx_surface_upload_sync(s, rgba);
+   {
+      enum gfx_surface_submit_result r = gfx_surface_upload_sync(s, rgba);
+      GFX_INSTR_INC(r == GFX_SURFACE_SUBMIT_DONE
+            ? GFX_INSTR_SUBMIT_DONE : GFX_INSTR_SUBMIT_FAILED);
+      return r;
+   }
+}
+
+enum gfx_surface_submit_result gfx_surface_submit_external(gfx_surface_t *s,
+      const uint32_t *pixels, bool rgba,
+      gfx_surface_release_t release, void *user)
+{
+   if (!s || !pixels || s->num_slots)
+      return GFX_SURFACE_SUBMIT_FAILED;
+   if (s->inflight)
+      return GFX_SURFACE_SUBMIT_BUSY;
+
+   s->release           = release;
+   s->user              = user;
+   s->img.pixels        = (uint32_t*)pixels;
+   s->img.width         = s->width;
+   s->img.height        = s->height;
+   s->img.supports_rgba = rgba;
+   s->img.pix10         = false;
+   s->img.compressed    = NULL;
+   {
+      /* inflight_slot is meaningless without slots; release() gets 0
+       * and the caller looks at the surface, not the slot. */
+      enum gfx_surface_submit_result r = gfx_surface_submit_img(s, 0, rgba);
+      GFX_INSTR_INC(r == GFX_SURFACE_SUBMIT_QUEUED
+            ? GFX_INSTR_SUBMIT_QUEUED
+            : (r == GFX_SURFACE_SUBMIT_DONE
+               ? GFX_INSTR_SUBMIT_DONE : GFX_INSTR_SUBMIT_FAILED));
+      return r;
+   }
 }
 
 void gfx_surface_free(gfx_surface_t *s)
 {
    if (!s)
       return;
+   GFX_INSTR_INC(GFX_INSTR_SURFACE_FREE);
    if (s->inflight)
    {
       /* The video thread still reads the slot and, for a load, will

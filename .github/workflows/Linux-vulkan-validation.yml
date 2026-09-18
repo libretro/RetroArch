@@ -139,7 +139,10 @@ jobs:
           export DISPLAY=:99
           export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
           # The harness build reuses the tree's own compile and link
-          # lines, so it has to name the same build: VK_DEBUG=1.
+          # lines, so it has to name the same build: VK_DEBUG=1. Its
+          # surface and overlay-page lanes run the driver's real
+          # in-place texture update and its borrowed-texture overlay
+          # page here, under the validation layer.
           SAN=none VK_DEBUG=1 CYCLES=2 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
@@ -348,16 +351,19 @@ jobs:
             make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean
 
-  d3d11-harness:
-    name: Threaded-video harness on d3d11 (WARP, MSYS2 MinGW64)
+  d3d-harness:
+    name: Threaded-video harness on ${{ matrix.driver }} (WARP, MSYS2 MinGW64)
     runs-on: windows-latest
     timeout-minutes: 90
-    # Advisory until its first green run: the harness has run on a
-    # Windows build under Wine (null driver, every lane), and the d3d11
-    # driver comes up as far as Wine's shader compiler allows; the rest
-    # is the runner's software adapter and real d3dcompiler, which no
-    # machine before the runner had. Drop this line once it passes.
-    continue-on-error: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # d3d12 runs the same lanes on the other explicit-API backend:
+        # its in-place texture update is fence-tagged against the frame
+        # that last copied from the upload buffer, which only a running
+        # driver exercises.
+        driver: [d3d11, d3d12]
 
     steps:
       - name: Checkout
@@ -380,13 +386,14 @@ jobs:
           set -eu
           ./configure --disable-qt
           grep -q '^HAVE_D3D11 = 1' config.mk
+          grep -q '^HAVE_D3D12 = 1' config.mk
           make -j"$(nproc)"
           test -x retroarch.exe
 
-      - name: Run the harness on d3d11
+      - name: Run the harness on ${{ matrix.driver }}
         shell: msys2 {0}
         run: |
           set -eu
           samples/gfx/threaded_video/build.sh
-          SAN=none DRIVER=d3d11 CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
+          SAN=none DRIVER=${{ matrix.driver }} CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean

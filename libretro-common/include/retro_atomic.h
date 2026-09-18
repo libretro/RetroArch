@@ -673,6 +673,12 @@ typedef size_t retro_atomic_size_t;
  * on the legacy x86 / Xbox 360 / Itanium paths.
  */
 
+#ifndef NOMINMAX
+#define NOMINMAX   /* MSVC defines min/max as macros in C++ too */
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 
 #if defined(_M_ARM) || defined(_M_ARM64)

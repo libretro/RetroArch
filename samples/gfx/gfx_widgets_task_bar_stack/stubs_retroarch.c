@@ -282,3 +282,11 @@ STUB_WIDGET(gfx_widget_achievement_popup);
 STUB_WIDGET(gfx_widget_leaderboard_display);
 STUB_WIDGET(gfx_widget_netplay_chat);
 STUB_WIDGET(gfx_widget_netplay_ping);
+
+/* Producers ask the surface layer what the driver wants before they
+ * decode; with no driver here the answer is what a software path
+ * takes: ARGB words. */
+bool gfx_surface_wants_rgba(void)
+{
+   return false;
+}

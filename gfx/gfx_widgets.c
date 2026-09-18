@@ -48,6 +48,7 @@
 
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
+#include "gfx_surface.h"
 
 #define BASE_FONT_SIZE      32.0f
 #define MSG_QUEUE_FONT_SIZE 20.0f
@@ -2405,7 +2406,7 @@ static void gfx_widgets_context_reset(
          "menu_achievements.png"
       };
    size_t i;
-   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   bool supports_rgba = gfx_surface_wants_rgba();
 
    /* Invalidate any in-flight async icon loads */
    widget_icon_load_gen++;

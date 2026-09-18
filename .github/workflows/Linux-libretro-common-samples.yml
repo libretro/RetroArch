@@ -147,6 +147,9 @@ jobs:
             word_wrap_overflow_test
             task_queue_title_error_test
             task_queue_init_failure_test
+            # Stops the worker with a bound when a detachable
+            # handler is stuck; waits ~1.5 s by design.
+            task_queue_detach_test
             tpool_wait_test
             data_transfer_pool_scrub_test
             retro_atomic_test
@@ -173,6 +176,8 @@ jobs:
             memshm_test
             fastjmp_test
             rdds_block_test
+            faulthandler_test
+            memshm_area_test
             msg_fifo_queue_test
             audio_mixer_loop_test
             audio_mixer_rate_guard_test
@@ -215,6 +220,10 @@ jobs:
             # fake-stack check cannot follow it; the same holds for
             # libco. The jump is what the test is for.
             [fastjmp_test]="ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=0"
+            # The filter must be the one that sees SIGSEGV: ASan installs
+            # its own, and with it the faults never reach the code under
+            # test. handle_segv=0 is how a fastmem core runs.
+            [faulthandler_test]="ASAN_OPTIONS=detect_leaks=1:handle_segv=0 UBSAN_OPTIONS=handle_segv=0"
           )
 
           # Samples that are build-only (either they require command-line

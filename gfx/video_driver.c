@@ -36,6 +36,7 @@
 #include "../config.def.h"
 
 #include "video_driver.h"
+#include "gfx_instrument.h"
 
 /* Decided here, at the top, because an #ifdef on a macro defined
  * later in the file is silently false: the first user of this gate
@@ -1720,6 +1721,13 @@ void video_display_server_destroy(void)
 #endif
          current_display_server->destroy(video_st->current_display_server_data);
       }
+   /* The server's data is freed by its destroy; the pointer used to
+    * outlive it, and the next destroy - retroarch_deinit_drivers() at
+    * exit, after a reinit had already replaced the server - handed the
+    * Win32 server a freed struct. Cleared here, a second destroy is a
+    * no-op and the next init makes a new server. */
+   video_st->current_display_server_data = NULL;
+   current_display_server                = NULL;
 #if defined(HAVE_SDL2) || defined(HAVE_SDL3)
    if (sdl_display_server_data)
    {
@@ -3552,8 +3560,9 @@ void video_driver_update_viewport(
          }
          else
          {
-            /* Fit mode: preserve aspect ratio within overlay viewport */
-            float game_aspect = VIDEO_DRIVER_ASPECT_RATIO(video_st);
+            /* Fit mode: preserve aspect ratio within overlay viewport.
+             * From the snapshot; this runs on the video thread. */
+            float game_aspect = video_driver_aspect_ratio;
             float ol_aspect   = (float)ol_w / (float)ol_h;
 
             if (game_aspect > ol_aspect)
@@ -3945,6 +3954,7 @@ bool video_driver_texture_load(void *data,
          && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
       image_texture_narrow_10bit(ti);
 
+   GFX_INSTR_INC(GFX_INSTR_TEX_LOAD);
    *id = poke->load_texture(video_st->data, data, threaded, filter_type);
    return true;
 }
@@ -3972,6 +3982,7 @@ bool video_driver_texture_load_async(void *data,
       if (     ti->pix10
             && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
          image_texture_narrow_10bit(ti);
+      GFX_INSTR_INC(GFX_INSTR_TEX_LOAD_ASYNC);
       if (video_thread_texture_load_async(ti, filter_type,
                done, user, release))
          return true;
@@ -3992,11 +4003,22 @@ bool video_driver_texture_update(uintptr_t id, void *data)
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
+   bool ok;
    if (!id || !data || !poke || !poke->update_texture)
       return false;
-   return poke->update_texture(video_st->data, id,
+   ok = poke->update_texture(video_st->data, id,
          (const struct texture_image*)data,
          video_driver_thread_wrapper_active());
+   GFX_INSTR_INC(ok ? GFX_INSTR_TEX_UPDATE : GFX_INSTR_TEX_UPDATE_REFUSED);
+   return ok;
+}
+
+bool video_driver_supports_texture_format(enum texture_gpu_format fmt)
+{
+   video_driver_state_t *video_st     = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+   return poke && poke->supports_texture_format
+      && poke->supports_texture_format(video_st->data, fmt);
 }
 
 bool video_driver_texture_can_update(void)
@@ -4018,6 +4040,7 @@ bool video_driver_texture_unload(uintptr_t *id)
    const video_poke_interface_t *poke = video_st->poke;
    if (!poke || !poke->unload_texture)
       return false;
+   GFX_INSTR_INC(GFX_INSTR_TEX_UNLOAD);
    poke->unload_texture(video_st->data,
          video_driver_thread_wrapper_active(),
          *id);
@@ -5429,12 +5452,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 #endif
 
-   /* Seed the viewport-parameter snapshot before the driver's init
-    * runs: drivers call video_driver_update_viewport() from inside
-    * init, and the reader must never spin on an unpublished seq. */
-   video_driver_publish_vp_params();
 #ifdef HAVE_VIDEO_FILTER
-
    /* Bound before any driver or wrapper exists: under threaded video
     * the OSD fonts live on the video thread, and the font driver
     * reaches ra-video state through this capture, not the getter. */
@@ -5505,6 +5523,14 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits,
             aspectratio_lut[new_aspect_idx].value);
    }
+
+   /* Seed the viewport-parameter snapshot before the driver's init
+    * runs: drivers call video_driver_update_viewport() from inside
+    * init. This must come after the aspect ratio above is stored -
+    * published any earlier, the snapshot carries the previous (on a
+    * cold start, zero) aspect, and init-time viewports come out
+    * 0 pixels wide until the first frame republishes. */
+   video_driver_publish_vp_params();
 
    if (     settings->bools.video_fullscreen
          || ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_FORCE_FULLSCREEN))

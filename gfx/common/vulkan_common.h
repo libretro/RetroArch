@@ -122,7 +122,10 @@ enum vk_flags
    /* GPU recording is on: taken from the frame the frontend hands over,
     * so this thread never reads the recording state the main thread
     * writes (video_frame_info_t::gpu_recording). */
-   VK_FLAG_GPU_RECORDING       = (1 << 19)
+   VK_FLAG_GPU_RECORDING       = (1 << 19),
+   /* VK_ERROR_DEVICE_LOST was seen and reported to the runloop once;
+    * the frames until the reinit fail quietly. */
+   VK_FLAG_DEVICE_LOST_REPORTED = (1 << 20)
 };
 
 enum vk_texture_type
@@ -294,6 +297,9 @@ struct vulkan_emulated_mailbox
    scond_t *cond;
    VkDevice device;              /* ptr alignment */
    VkSwapchainKHR swapchain;     /* ptr alignment */
+   /* Every wait this object makes, from the display's rate; sampled at
+    * init so the thread never reads video state. */
+   int64_t timeout_us;
 
    unsigned index;
    VkResult result;              /* enum alignment */

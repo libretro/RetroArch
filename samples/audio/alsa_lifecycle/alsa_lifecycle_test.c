@@ -1,4 +1,4 @@
-/* Harness for the ALSA driver's stop/start and its blocking write.
+/* Harness for the ALSA driver's stop/start and its blocking paths.
  *
  * stop() and start() are the frontend's notion, and alive() must
  * follow them on every device: one that can pause, one that cannot,
@@ -10,7 +10,10 @@
  * The blocking write is exercised the same way: writei and wait are
  * scripted so the harness can count how often the driver waits, hand
  * it EAGAIN, and hand it an XRUN, and assert that the write returns.
- * A watchdog thread turns any unbounded wait into an abort. */
+ * The capture read runs against the same scripted wait, since it is
+ * the same contract on the other stream. Every wait the driver makes
+ * passes through the wrap, which fails the run on an unbounded one,
+ * and a watchdog thread turns a hang into an abort. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,8 +28,10 @@
 #include <retro_atomic.h>
 
 #include "../../../audio/audio_driver.h"
+#include "../../../audio/microphone_driver.h"
 
 extern audio_driver_t audio_alsa;
+extern microphone_driver_t microphone_alsa;
 
 static unsigned failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { printf("      FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
@@ -95,8 +100,22 @@ int __wrap_snd_pcm_wait(snd_pcm_t *pcm, int timeout)
 {
    (void)pcm;
    n_wait++;
-   CHECK(timeout >= 0, "the blocking write waited without a bound (timeout %d)", timeout);
+   CHECK(timeout >= 0, "a blocking path waited without a bound (timeout %d)", timeout);
    return scr_wait_rc;
+}
+
+/* The capture read: what readi returns, and how often it was called. */
+static int      scr_readi_rc = -EAGAIN;
+static unsigned n_readi;
+
+snd_pcm_sframes_t __real_snd_pcm_readi(snd_pcm_t *pcm, void *buffer, snd_pcm_uframes_t size);
+snd_pcm_sframes_t __wrap_snd_pcm_readi(snd_pcm_t *pcm, void *buffer, snd_pcm_uframes_t size)
+{
+   (void)pcm; (void)buffer;
+   n_readi++;
+   if (scr_readi_rc == 0)
+      return (snd_pcm_sframes_t)size;
+   return scr_readi_rc;
 }
 
 int __real_snd_pcm_recover(snd_pcm_t *pcm, int err, int silent);
@@ -124,7 +143,8 @@ static void *watchdog(void *arg)
 static void reset_counts(void)
 {
    n_pause_on = n_pause_off = n_drop = n_prepare = 0;
-   n_writei = n_wait = n_recover = 0;
+   n_writei = n_wait = n_recover = n_readi = 0;
+   scr_readi_rc = -EAGAIN;
    scr_writei_i = scr_writei_n = 0;
    scr_wait_rc = 1;
 }
@@ -244,6 +264,57 @@ static void s_blocking_write(void)
    audio_alsa.free(ctx);
 }
 
+/* The capture counterpart. A microphone that stops delivering must cost
+ * the caller a short read, not the thread: the wait is bounded and the
+ * laps run out. #13708 is the playback side of this, long since fixed;
+ * the capture read kept the unbounded wait. */
+static void s_blocking_read(void)
+{
+   void *drv, *mic;
+   uint8_t buf[2048];
+   unsigned new_rate = 0;
+   int      got;
+
+   printf("   the blocking capture read\n");
+   reset_counts();
+   if (!(drv = microphone_alsa.init()))
+   {
+      CHECK(false, "the microphone driver did not initialize");
+      return;
+   }
+   if (!(mic = microphone_alsa.open_mic(drv, "null", 48000, 64, &new_rate)))
+   {
+      /* No capture on the null PCM here; the bound is still asserted by
+       * every other lane's wrap, so this is not a failure. */
+      printf("      no capture device; skipped\n");
+      microphone_alsa.free(drv);
+      return;
+   }
+   microphone_alsa.set_nonblock_state(drv, false);
+   microphone_alsa.start_mic(drv, mic);
+
+   /* The device never delivers: wait reports a timeout and readi keeps
+    * saying EAGAIN. The read has to come back anyway. */
+   reset_counts();
+   scr_wait_rc  = 0;
+   scr_readi_rc = -EAGAIN;
+   got = microphone_alsa.read(drv, mic, buf, sizeof(buf));
+   CHECK(got >= 0 && got < (int)sizeof(buf),
+         "a microphone that never delivers: read returned %d", got);
+   CHECK(n_wait >= 1 && n_wait <= 16,
+         "a microphone that never delivers was waited on %u times", n_wait);
+
+   /* Delivering again: the read fills and does not wait its laps out. */
+   reset_counts();
+   scr_wait_rc  = 1;
+   scr_readi_rc = 0;
+   got = microphone_alsa.read(drv, mic, buf, sizeof(buf));
+   CHECK(got > 0, "a delivering microphone: read returned %d", got);
+
+   microphone_alsa.close_mic(drv, mic);
+   microphone_alsa.free(drv);
+}
+
 int main(void)
 {
    pthread_t wd;
@@ -256,12 +327,13 @@ int main(void)
    s_stop_start(1, -EIO,  "a device that says it can pause and refuses: stop drops",      1, 1, 0, 1);
    s_repeated();
    s_blocking_write();
+   s_blocking_read();
 
    if (failures)
    {
       printf("%u failure(s)\n", failures);
       return 1;
    }
-   printf("alsa lifecycle: alive() follows stop and start on every device, and the blocking write waits only when told to, and never without a bound\n");
+   printf("alsa lifecycle: alive() follows stop and start on every device, and neither blocking path waits without a bound\n");
    return 0;
 }

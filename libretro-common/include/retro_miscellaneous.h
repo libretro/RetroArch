@@ -41,6 +41,16 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+/* MSVC's minwindef.h defines min and max as macros in C++ as well as C
+ * -- MinGW's is guarded by #ifndef __cplusplus -- and they then break
+ * every std::numeric_limits<>::max() in any C++ file that reaches this
+ * header. A public header must not leak them. */
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #endif
 

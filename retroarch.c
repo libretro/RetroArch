@@ -4035,6 +4035,11 @@ bool command_event(enum event_command cmd, void *data)
 
             runloop_st->flags              &= ~RUNLOOP_FLAG_CORE_RUNNING;
 
+            /* Persist core options before anything below calls
+             * back into the core (auto save-state, unload, deinit),
+             * so a crash there cannot lose them. */
+            runloop_core_options_save();
+
             /* The platform that uses ram_state_save calls it when the content
              * ends and writes it to a file */
             ram_state_to_file();
@@ -4713,6 +4718,11 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CORE_DEINIT:
          {
+            /* Persist core options before anything below calls
+             * back into the core (auto save-state, unload, deinit),
+             * so a crash there cannot lose them. */
+            runloop_core_options_save();
+
             /* Restore unpaused state. The recursive command_event call
              * here re-enters this dispatcher; the UNPAUSE branch is
              * deliberately small (clears flags, resumes audio) and
@@ -6477,11 +6487,17 @@ void main_exit(void *args)
 #endif
 
    ui_companion_driver_deinit();
-   retroarch_config_deinit();
 
    frontend_driver_shutdown(false);
 
    retroarch_deinit_drivers(&runloop_st->retro_ctx);
+   /* After the drivers: tearing them down reads settings - the Win32
+    * display server restores the original display mode through
+    * win32_monitor_info(), which asks for the monitor index - and a
+    * freed settings object is a crash on the way out, seen on Windows
+    * as a segfault in win32_display_server_destroy() once a run had
+    * changed the mode. */
+   retroarch_config_deinit();
    uico_state_get_ptr()->drv = NULL;
    frontend_driver_free();
 

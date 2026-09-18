@@ -37,6 +37,7 @@
 #include "../../config.h"
 #endif
 
+#include "../../gfx/gfx_surface.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../ui/ui_companion_driver.h"
 
@@ -2329,7 +2330,7 @@ static void materialui_context_reset_playlist_icons(
       materialui_handle_t *mui)
 {
    size_t i;
-   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   bool supports_rgba = gfx_surface_wants_rgba();
    if (!*mui->sysicons_path)
       return;
 
@@ -10731,7 +10732,7 @@ static void materialui_context_reset(void *data, bool is_threaded)
 
    if (path_is_valid(path_menu_wallpaper))
       task_push_image_load(path_menu_wallpaper,
-            (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
+            gfx_surface_wants_rgba(), 0,
             0,
             menu_display_handle_wallpaper_upload, NULL);
 

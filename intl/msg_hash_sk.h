@@ -568,7 +568,7 @@ static const struct
    char s_d1dc5a72[36];
    char s_1d9a045d[32];
    char s_9ada0438[43];
-   char s_eb66d46b[19];
+   char s_eb66d46b[24];
    char s_145f5880[18];
    char s_b1b9fd35[33];
    char s_0cc72b4d[32];
@@ -2032,17 +2032,17 @@ static const struct
    char s_91887598[9];
    char s_1b88da11[13];
    char s_a685766d[26];
-   char s_95cbebbd[21];
+   char s_95cbebbd[22];
    char s_6b80a1bc[35];
-   char s_eb0d7f1d[25];
+   char s_eb0d7f1d[26];
    char s_99a77122[22];
    char s_51cbf8f0[35];
    char s_4a5b7672[23];
-   char s_8fa79de5[27];
+   char s_8fa79de5[28];
    char s_5eee10e5[34];
    char s_79a4338e[20];
-   char s_eb3c8b7f[35];
-   char s_6ae93e68[28];
+   char s_eb3c8b7f[36];
+   char s_6ae93e68[29];
    char s_e2f9cd07[14];
    char s_7277e127[26];
    char s_8203db0a[6];
@@ -2518,7 +2518,7 @@ static const struct
    char s_89c3a7db[30];
    char s_35f2309a[39];
    char s_a607c53c[29];
-   char s_35f24807[239];
+   char s_35f24807[247];
    char s_c8781974[118];
 #ifdef HAVE_MIST
    char s_c9c04b6d[66];
@@ -4902,8 +4902,8 @@ static const struct
    "Z\303\241lohova\305\245 cores pri aktualiz\303\241cii",
    "Ve\304\276kos\305\245 hist\303\263rie z\303\241loh core",
    "Automaticky extrahova\305\245 stiahnut\303\275 arch\303\255v",
-   "URL Buildbot Cores",
-   "Stiahnutie Jadier",
+   "URL jadier na buildbote",
+   "Stiahnutie jadier",
    "Nastavenia aktualiz\303\241tora jadier",
    "Zobrazi\305\245 experiment\303\241lne cores",
    "Architekt\303\272ra CPU",
@@ -5808,7 +5808,7 @@ static const struct
    "Pou\305\276i\305\245 n\303\241zvy s\303\272borov pre zhodu n\303\241h\304\276adov",
    "Ulo\305\276i\305\245 zoznamy skladieb v starom form\303\241te",
    "Prehra\305\245 opakovanie",
-   "Aktualiz\303\241cia Zoznamu Miniat\303\272r",
+   "Aktualiz\303\241cia zoznamu miniat\303\272r",
    "Podpora dotyku",
    "Zobrazen\303\275 n\303\241zov zariadenia: %s\nKonfigura\304\215n\303\275 n\303\241zov zariadenia"
    ": %s\nVID/PID zariadenia: %d/%d",
@@ -6381,17 +6381,17 @@ static const struct
    "Nezn\303\241me",
    "Nezn\303\241ma hra",
    "Nastavenia aktualiz\303\241tora",
-   "Aktualiz\303\241cia Assets",
-   "Aktualiz\303\241cia Profilov Ovl\303\241da\304\215ov",
-   "Aktualiz\303\241cia Cg Shaders",
-   "Aktualiz\303\241cia Cheatov",
+   "Aktualiz\303\241cia assetov",
+   "Aktualiz\303\241cia profilov ovl\303\241da\304\215ov",
+   "Aktualiz\303\241cia Cg shaderov",
+   "Aktualiz\303\241cia cheatov",
    "Aktualiz\303\241cia info s\303\272borov jadier",
-   "Aktualiz\303\241cia Datab\303\241z",
-   "Aktualiz\303\241cia GLSL Shaders",
-   "Aktualiz\303\241cia Stiahnut\303\275ch Jadier",
+   "Aktualiz\303\241cia datab\303\241z",
+   "Aktualiz\303\241cia GLSL shaderov",
+   "Aktualiz\303\241cia stiahnut\303\275ch jadier",
    "Aktualizova\305\245 Lakka",
-   "Aktualiz\303\241cia Prekr\303\255vacich Prvkov",
-   "Aktualiz\303\241cia Slang Shaders",
+   "Aktualiz\303\241cia prekr\303\275vac\303\255ch prvkov",
+   "Aktualiz\303\241cia Slang shaderov",
    "Pou\305\276\303\255vate\304\276",
    "U\305\276\303\255vate\304\276sk\303\251 rozhranie",
    "Jazyk",
@@ -7013,10 +7013,10 @@ static const struct
    "Zmeni\305\245 ovl\303\241da\304\215e pre obsah.",
    "Vyberte jadro, ktor\303\251 chcete pou\305\276i\305\245.",
    "Uvo\304\276ni\305\245 na\304\215\303\255tan\303\251 jadro.",
-   "Zabr\303\241ni\305\245 \303\272prav\303\241m aktu\303\241lne nain\305\241talovan\303\251ho core."
-   " Mo\305\276no pou\305\276i\305\245 na zabr\303\241nenie nechcen\303\275m aktualiz\303\241ci\303"
-   "\241m, ke\304\217 obsah vy\305\276aduje konkr\303\251tnu verziu core (napr. sady Arcade ROM) ale"
-   "bo ke\304\217 sa zmen\303\255 form\303\241t save state samotn\303\251ho core.",
+   "Zabr\303\241ni\305\245 \303\272prav\303\241m aktu\303\241lne nain\305\241talovan\303\251ho jadra"
+   ". Mo\305\276no pou\305\276i\305\245 na zabr\303\241nenie nechcen\303\275m aktualiz\303\241ci\303"
+   "\241m, ke\304\217 obsah vy\305\276aduje konkr\303\251tnu verziu jadra (napr. sady Arcade ROM) al"
+   "ebo ke\304\217 sa zmen\303\255 form\303\241t stavu ulo\305\276enia samotn\303\251ho jadra.",
    "Vykona\305\245 offline \303\272dr\305\276bu na nain\305\241talovan\303\275ch cores (z\303\241loh"
    "a, obnova, mazanie at\304\217.) a zobrazi\305\245 inform\303\241cie o core.",
 #ifdef HAVE_MIST
@@ -9415,7 +9415,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (178947u
+      (sizeof(msg_hash_sk_blob) == (178965u
 #ifdef ANDROID
        + 389u
 #endif
