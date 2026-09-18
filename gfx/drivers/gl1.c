@@ -1254,10 +1254,10 @@ static void gl1_overlay_vertex_geom(void *data,
    GLfloat *vertex = NULL;
    gl1_t *gl        = (gl1_t*)data;
 
-   if (!gl)
+   if (!gl || !gl->overlay_vertex_coord)
       return;
 
-   if (image > gl->overlays)
+   if (image >= gl->overlays)
    {
       RARCH_ERR("[GL1] Invalid overlay id: %u.\n", image);
       return;
@@ -1287,7 +1287,10 @@ static void gl1_overlay_tex_geom(void *data,
    GLfloat *tex = NULL;
    gl1_t *gl     = (gl1_t*)data;
 
-   if (!gl)
+   if (!gl || !gl->overlay_tex_coord)
+      return;
+
+   if (image >= gl->overlays)
       return;
 
    tex          = (GLfloat*)&gl->overlay_tex_coord[image * 8];

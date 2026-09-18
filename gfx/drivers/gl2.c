@@ -2993,10 +2993,10 @@ static void gl2_overlay_vertex_geom(void *data,
    GLfloat *vertex = NULL;
    gl2_t *gl       = (gl2_t*)data;
 
-   if (!gl)
+   if (!gl || !gl->overlay_vertex_coord)
       return;
 
-   if (image > gl->overlays)
+   if (image >= gl->overlays)
    {
       RARCH_ERR("[GL] Invalid overlay id: %u\n", image);
       return;
@@ -3026,7 +3026,10 @@ static void gl2_overlay_tex_geom(void *data,
    GLfloat *tex = NULL;
    gl2_t *gl    = (gl2_t*)data;
 
-   if (!gl)
+   if (!gl || !gl->overlay_tex_coord)
+      return;
+
+   if (image >= gl->overlays)
       return;
 
    tex          = (GLfloat*)&gl->overlay_tex_coord[image * 8];
