@@ -37,7 +37,6 @@ size_t rcheevos_menu_get_submenu_title(char* s, size_t len);
 void rcheevos_menu_populate_submenu(void* data);
 uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset);
 void rcheevos_menu_reset_badges(void);
-void rcheevos_menu_update_badge_references(const char* badge_name);
 
 RETRO_END_DECLS
 

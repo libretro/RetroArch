@@ -474,12 +474,10 @@ static void rcheevos_client_download_task_callback(retro_task_t* task,
    {
       CHEEVOS_LOG(RCHEEVOS_TAG "Error writing %s\n", callback_data->badge_fullpath);
    }
-#ifdef HAVE_MENU
    else
    {
-      rcheevos_menu_update_badge_references(callback_data->badge_name);
+      rcheevos_update_badge_references(callback_data->badge_name);
    }
-#endif
 
    if (callback_data->queue)
    {

@@ -44,7 +44,6 @@ struct challenge_display_info
    unsigned id;
    uintptr_t image;
    char badge_name[8];
-   retro_time_t badge_retry;
 };
 
 struct progress_tracker_info
@@ -53,7 +52,6 @@ struct progress_tracker_info
    unsigned width;
    char display[32];
    char badge_name[8];
-   retro_time_t badge_retry;
    retro_time_t show_until;
 };
 
@@ -274,15 +272,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                }
 
                /* see if real icon is available for next frame */
-               {
-                  const retro_time_t next_try = state->challenge_info[i].badge_retry;
-                  const retro_time_t now = cpu_features_get_time_usec();
-                  if (next_try == 0 || now > next_try)
-                  {
-                     state->challenge_info[i].badge_retry = now + 250000;
-                     state->challenge_info[i].image = rcheevos_get_badge_texture(state->challenge_info[i].badge_name, false, false);
-                  }
-               }
+               state->challenge_info[i].image = rcheevos_get_badge_texture(state->challenge_info[i].badge_name, false, false);
             }
             else
             {
@@ -367,14 +357,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                }
 
                /* see if real icon is available for next frame */
-               {
-                  const retro_time_t next_try = state->challenge_info[i].badge_retry;
-                  if (next_try == 0 || now > next_try)
-                  {
-                     state->progress_tracker.badge_retry = now + 250000;
-                     state->progress_tracker.image = rcheevos_get_badge_texture(state->progress_tracker.badge_name, true, false);
-                  }
-               }
+               state->progress_tracker.image = rcheevos_get_badge_texture(state->progress_tracker.badge_name, true, false);
             }
             else
             {
@@ -588,7 +571,6 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
 
    /* Draw-thread applier: the badge texture fetch runs here, on the
     * thread the video driver expects it from. */
-   uintptr_t badge_id     = badge ? rcheevos_get_badge_texture(badge, false, true) : 0;
    uintptr_t old_badge_id = 0;
 
 
@@ -625,17 +607,24 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
          if (i == state->challenge_count)
          {
             /* new indicator, assign id */
+            state->challenge_info[i].image = NULL;
             state->challenge_info[state->challenge_count++].id = id;
          }
          else if (state->challenge_info[i].image)
          {
-            /* existing indicator, free old image */
-            old_badge_id = state->challenge_info[i].image;
+            if (!string_is_equal(state->challenge_info[i].badge_name, badge))
+            {
+               /* existing indicator, different image. discard and replace */
+               old_badge_id = state->challenge_info[i].image;
+               state->challenge_info[i].image = NULL;
+            }
          }
 
-         state->challenge_info[i].image = badge_id;
-         strlcpy(state->challenge_info[i].badge_name, badge, sizeof(state->challenge_info[i].badge_name));
-         state->challenge_info[i].badge_retry = 0;
+         if (!state->challenge_info[i].image)
+         {
+            state->challenge_info[i].image = rcheevos_get_badge_texture(badge, false, true);
+            strlcpy(state->challenge_info[i].badge_name, badge, sizeof(state->challenge_info[i].badge_name));
+         }
       }
    }
 
@@ -667,9 +656,16 @@ static void gfx_widget_set_achievement_progress_state(const char* badge, const c
       /* show indicator */
       const retro_time_t now = cpu_features_get_time_usec();
       state->progress_tracker.show_until = now + CHEEVO_PROGRESS_TRACKER_DURATION * 1000;
-      state->progress_tracker.image = rcheevos_get_badge_texture(badge, true, true);
-      strlcpy(state->progress_tracker.badge_name, badge, sizeof(state->progress_tracker.badge_name));
-      state->progress_tracker.badge_retry = now + 100000;
+
+      if (string_is_equal(state->progress_tracker.badge_name, badge))
+      {
+         old_badge_id = 0; /* reuse the existing badge */
+      }
+      else
+      {
+         state->progress_tracker.image = rcheevos_get_badge_texture(badge, true, true);
+         strlcpy(state->progress_tracker.badge_name, badge, sizeof(state->progress_tracker.badge_name));
+      }
 
       snprintf(state->progress_tracker.display, sizeof(state->progress_tracker.display), "%s", progress);
       state->progress_tracker.width = (uint16_t)font_driver_get_message_width(
