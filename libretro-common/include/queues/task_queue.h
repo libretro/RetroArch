@@ -138,7 +138,25 @@ enum retro_task_flags
     * If set, the task queue will not call \c progress_cb
     * and will not display any messages from this task.
     */
-   RETRO_TASK_FLG_MUTE             = (1 << 3)
+   RETRO_TASK_FLG_MUTE             = (1 << 3),
+   /**
+    * Set by the pusher to promise that \c handler touches nothing
+    * but the task itself - its own state, and the task_set_* and
+    * task_get_* accessors - and nothing that outlives the queue or
+    * is torn down with it: no logging, no pushing other tasks, no
+    * subsystem the frontend frees on the way out.
+    *
+    * In exchange, if \c task_queue_deinit() finds the worker still
+    * inside this task's handler after its bound, it stops waiting:
+    * the task is taken off the queue and the worker is left to
+    * finish the handler on its own. \c callback and \c cleanup never
+    * run, so whatever they would have released stays allocated; the
+    * task itself is freed when the handler returns. Meant for
+    * handlers that can
+    * block in an OS call for arbitrarily long, such as a device
+    * enumeration.
+    */
+   RETRO_TASK_FLG_DETACHABLE       = (1 << 4)
 };
 
 /**

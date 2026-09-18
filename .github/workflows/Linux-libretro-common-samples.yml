@@ -147,6 +147,9 @@ jobs:
             word_wrap_overflow_test
             task_queue_title_error_test
             task_queue_init_failure_test
+            # Stops the worker with a bound when a detachable
+            # handler is stuck; waits ~1.5 s by design.
+            task_queue_detach_test
             tpool_wait_test
             data_transfer_pool_scrub_test
             retro_atomic_test
