@@ -607,7 +607,7 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
          if (i == state->challenge_count)
          {
             /* new indicator, assign id */
-            state->challenge_info[i].image = NULL;
+            state->challenge_info[i].image = 0;
             state->challenge_info[state->challenge_count++].id = id;
          }
          else if (state->challenge_info[i].image)
@@ -616,7 +616,7 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
             {
                /* existing indicator, different image. discard and replace */
                old_badge_id = state->challenge_info[i].image;
-               state->challenge_info[i].image = NULL;
+               state->challenge_info[i].image = 0;
             }
          }
 

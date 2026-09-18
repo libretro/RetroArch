@@ -23,6 +23,8 @@
 #include <queues/task_queue.h>
 
 #include "cheevos.h"
+#include "cheevos_client.h"
+#include "cheevos_locals.h"
 
 #include "../gfx/gfx_display.h"
 #include "../gfx/video_driver.h"
