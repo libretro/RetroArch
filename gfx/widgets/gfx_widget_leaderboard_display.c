@@ -44,16 +44,51 @@ struct challenge_display_info
    unsigned id;
    uintptr_t image;
    char badge_name[8];
+   uint8_t hold;      /* see CHEEVO_BADGE_HOLD_FRAMES */
+};
+
+/* The tracker is shared by every achievement with measured progress,
+ * and a game that advances two of them at once has it change hands
+ * every few frames. The badges it has shown are therefore kept, a few
+ * of them, so that going back to one costs nothing. */
+#define CHEEVO_PROGRESS_TRACKER_BADGES 4
+
+struct progress_tracker_badge
+{
+   uintptr_t image;   /* the tracker's to unload; 0: entry unused */
+   unsigned last_used;
+   char badge_name[8];
 };
 
 struct progress_tracker_info
 {
-   uintptr_t image;
+   uintptr_t image;   /* one of badges[].image, or 0: draw the placeholder */
    unsigned width;
    char display[32];
    char badge_name[8];
    retro_time_t show_until;
+   /* An update whose badge is not here yet. What is on screen - the
+    * previous progress, or nothing - stays as it is until the badge
+    * arrives, so neither the placeholder nor a gap is ever drawn for
+    * a badge that is a few frames away. */
+   unsigned next_width;
+   char next_display[32];
+   char next_badge_name[8];
+   uint8_t hold;      /* see CHEEVO_BADGE_HOLD_FRAMES; non-zero: an update waits */
+   unsigned badge_tick;
+   struct progress_tracker_badge badges[CHEEVO_PROGRESS_TRACKER_BADGES];
 };
+
+/* A badge on disk reaches the widget a few frames after it is asked
+ * for: decoded by a task, uploaded by the video thread, never waited
+ * on. Drawing the placeholder icon for those frames reads as a
+ * flicker, so a challenge indicator that has just asked for its badge
+ * is not drawn until the badge arrives, and a progress update whose
+ * badge is new is not applied until it does - for at most this many
+ * frames, and not at all when the badge is not coming soon (it is
+ * being downloaded, or failed to load): then the placeholder is drawn
+ * at once, as before. */
+#define CHEEVO_BADGE_HOLD_FRAMES 30
 
 #define CHEEVO_LBOARD_FIRST_FIXED_CHAR 0x2C /* ,-./0123456789: */
 #define CHEEVO_LBOARD_LAST_FIXED_CHAR 0x3A
@@ -125,6 +160,21 @@ static bool gfx_widget_leaderboard_display_init(
    return true;
 }
 
+static void gfx_widget_leaderboard_display_drop_tracker_badges(
+      gfx_widget_leaderboard_display_state_t *state)
+{
+   unsigned i;
+   for (i = 0; i < CHEEVO_PROGRESS_TRACKER_BADGES; i++)
+   {
+      if (state->progress_tracker.badges[i].image)
+         video_driver_texture_unload(&state->progress_tracker.badges[i].image);
+      state->progress_tracker.badges[i].badge_name[0] = '\0';
+   }
+   state->progress_tracker.image      = 0;
+   state->progress_tracker.hold       = 0;
+   state->progress_tracker.show_until = 0;
+}
+
 static void gfx_widget_leaderboard_display_free(void)
 {
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
@@ -136,6 +186,7 @@ static void gfx_widget_leaderboard_display_free(void)
       link = link->next;
       free(cmd);
    }
+   gfx_widget_leaderboard_display_drop_tracker_badges(state);
    state->tracker_count   = 0;
    state->challenge_count = 0;
    state->dispwidget_ptr  = NULL;
@@ -144,8 +195,113 @@ static void gfx_widget_leaderboard_display_free(void)
 static void gfx_widget_leaderboard_display_context_destroy(void)
 {
    gfx_widget_leaderboard_display_state_t *state = &p_w_leaderboard_display_st;
+   gfx_widget_leaderboard_display_drop_tracker_badges(state);
    state->tracker_count   = 0;
    state->challenge_count = 0;
+}
+
+/* Ask for a badge the indicator does not have yet, and count its
+ * hold down: to nothing when there is no point in waiting any more. */
+static void gfx_widget_leaderboard_display_poll_badge(uintptr_t *image,
+      uint8_t *hold, const char *badge_name, bool locked,
+      bool download_if_missing)
+{
+   bool pending = false;
+   *image = rcheevos_get_badge_texture_ex(badge_name, locked,
+         download_if_missing, &pending);
+   if (*image || !pending)
+      *hold = 0;
+   else if (*hold)
+      (*hold)--;
+}
+
+static uintptr_t gfx_widget_progress_tracker_find_badge(
+      struct progress_tracker_info *tracker, const char *badge_name)
+{
+   unsigned i;
+   for (i = 0; i < CHEEVO_PROGRESS_TRACKER_BADGES; i++)
+   {
+      struct progress_tracker_badge *entry = &tracker->badges[i];
+      if (entry->image && string_is_equal(entry->badge_name, badge_name))
+      {
+         entry->last_used = ++tracker->badge_tick;
+         return entry->image;
+      }
+   }
+   return 0;
+}
+
+/* @image is the tracker's from here on. The least recently shown
+ * badge makes room, never the one on screen. */
+static void gfx_widget_progress_tracker_keep_badge(
+      struct progress_tracker_info *tracker, const char *badge_name,
+      uintptr_t image)
+{
+   unsigned i;
+   struct progress_tracker_badge *victim = NULL;
+   for (i = 0; i < CHEEVO_PROGRESS_TRACKER_BADGES; i++)
+   {
+      struct progress_tracker_badge *entry = &tracker->badges[i];
+      if (!entry->image)
+      {
+         victim = entry;
+         break;
+      }
+      if (entry->image == tracker->image)
+         continue;
+      if (!victim || entry->last_used < victim->last_used)
+         victim = entry;
+   }
+   if (victim->image)
+      video_driver_texture_unload(&victim->image);
+   victim->image     = image;
+   victim->last_used = ++tracker->badge_tick;
+   strlcpy(victim->badge_name, badge_name, sizeof(victim->badge_name));
+}
+
+/* The waiting update goes on screen, with @image or the placeholder. */
+static void gfx_widget_progress_tracker_commit(
+      struct progress_tracker_info *tracker, uintptr_t image,
+      retro_time_t now)
+{
+   tracker->image      = image;
+   tracker->width      = tracker->next_width;
+   tracker->hold       = 0;
+   tracker->show_until = now + CHEEVO_PROGRESS_TRACKER_DURATION * 1000;
+   strlcpy(tracker->display, tracker->next_display, sizeof(tracker->display));
+   strlcpy(tracker->badge_name, tracker->next_badge_name, sizeof(tracker->badge_name));
+}
+
+/* Ask for the badge of whichever the tracker is short of: the waiting
+ * update's, else the one on screen with the placeholder. */
+static void gfx_widget_progress_tracker_poll(
+      struct progress_tracker_info *tracker, retro_time_t now,
+      bool download_if_missing)
+{
+   uintptr_t image = 0;
+
+   if (tracker->hold)
+   {
+      gfx_widget_leaderboard_display_poll_badge(&image, &tracker->hold,
+            tracker->next_badge_name, true, download_if_missing);
+      if (image)
+         gfx_widget_progress_tracker_keep_badge(tracker,
+               tracker->next_badge_name, image);
+      if (!tracker->hold)
+         gfx_widget_progress_tracker_commit(tracker, image, now);
+   }
+   else if (tracker->show_until && !tracker->image)
+   {
+      uint8_t hold = 0;
+      gfx_widget_leaderboard_display_poll_badge(&image, &hold,
+            tracker->badge_name, true, false);
+      if (image)
+      {
+         gfx_widget_progress_tracker_keep_badge(tracker,
+               tracker->badge_name, image);
+         tracker->image = image;
+      }
+   }
 }
 
 static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
@@ -156,6 +312,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
    if (state->tracker_count == 0 &&
        state->challenge_count == 0 &&
        state->progress_tracker.show_until == 0 &&
+       state->progress_tracker.hold == 0 &&
        !state->loading &&
        !state->disconnected)
       return;
@@ -245,6 +402,17 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 
             if (!state->challenge_info[i].image)
             {
+               gfx_widget_leaderboard_display_poll_badge(
+                     &state->challenge_info[i].image,
+                     &state->challenge_info[i].hold,
+                     state->challenge_info[i].badge_name, false, false);
+               /* its place is kept, so its neighbours do not move */
+               if (state->challenge_info[i].hold)
+                  continue;
+            }
+
+            if (!state->challenge_info[i].image)
+            {
                /* default icon */
                if (p_dispwidget->gfx_widgets_icons_textures[
                      MENU_WIDGETS_ICON_ACHIEVEMENT])
@@ -270,9 +438,6 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 
                   gfx_display_blend_end(dispctx, video_info->userdata);
                }
-
-               /* see if real icon is available for next frame */
-               state->challenge_info[i].image = rcheevos_get_badge_texture(state->challenge_info[i].badge_name, false, false);
             }
             else
             {
@@ -300,10 +465,20 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
          }
       }
 
-      if (state->progress_tracker.show_until)
+      if (     state->progress_tracker.show_until
+            || state->progress_tracker.hold)
       {
          retro_time_t now = cpu_features_get_time_usec();
-         if (now >= state->progress_tracker.show_until)
+
+         gfx_widget_progress_tracker_poll(&state->progress_tracker, now, false);
+
+         if (!state->progress_tracker.show_until)
+         {
+            /* first update, its badge a few frames away: nothing yet */
+         }
+         else if (  now >= state->progress_tracker.show_until
+               /* not while an update waits: it restarts the clock */
+               && !state->progress_tracker.hold)
          {
             gfx_widget_set_achievement_progress(NULL, NULL);
          }
@@ -355,9 +530,6 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 
                   gfx_display_blend_end(dispctx, video_info->userdata);
                }
-
-               /* see if real icon is available for next frame */
-               state->progress_tracker.image = rcheevos_get_badge_texture(state->progress_tracker.badge_name, true, false);
             }
             else
             {
@@ -622,8 +794,12 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
 
          if (!state->challenge_info[i].image)
          {
-            state->challenge_info[i].image = rcheevos_get_badge_texture(badge, false, true);
             strlcpy(state->challenge_info[i].badge_name, badge, sizeof(state->challenge_info[i].badge_name));
+            state->challenge_info[i].hold = CHEEVO_BADGE_HOLD_FRAMES;
+            gfx_widget_leaderboard_display_poll_badge(
+                  &state->challenge_info[i].image,
+                  &state->challenge_info[i].hold,
+                  state->challenge_info[i].badge_name, false, true);
          }
       }
    }
@@ -638,43 +814,41 @@ void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
    lbd_push(LBD_CMD_SET_CHALLENGE, id, badge, NULL, false);
 }
 
-/* Applier, draw thread: the badge fetch, the font width and the old
- * texture's unload all belong to this thread. */
+/* Applier, draw thread: the badge fetch, the font width and the
+ * texture unloads all belong to this thread. */
 static void gfx_widget_set_achievement_progress_state(const char* badge, const char* progress)
 {
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
-   uintptr_t old_badge_id = state->progress_tracker.image;
+   struct progress_tracker_info *tracker         = &state->progress_tracker;
 
    if (badge == NULL)
    {
-      /* hide indicator */
-      state->progress_tracker.image = 0;
-      state->progress_tracker.show_until = 0;
+      /* hide indicator; its badges are kept for the next time */
+      tracker->image      = 0;
+      tracker->hold       = 0;
+      tracker->show_until = 0;
    }
    else
    {
       /* show indicator */
       const retro_time_t now = cpu_features_get_time_usec();
-      state->progress_tracker.show_until = now + CHEEVO_PROGRESS_TRACKER_DURATION * 1000;
+      uintptr_t image        = gfx_widget_progress_tracker_find_badge(tracker, badge);
 
-      if (string_is_equal(state->progress_tracker.badge_name, badge))
-      {
-         old_badge_id = 0; /* reuse the existing badge */
-      }
-      else
-      {
-         state->progress_tracker.image = rcheevos_get_badge_texture(badge, true, true);
-         strlcpy(state->progress_tracker.badge_name, badge, sizeof(state->progress_tracker.badge_name));
-      }
-
-      snprintf(state->progress_tracker.display, sizeof(state->progress_tracker.display), "%s", progress);
-      state->progress_tracker.width = (uint16_t)font_driver_get_message_width(
+      snprintf(tracker->next_display, sizeof(tracker->next_display), "%s", progress);
+      strlcpy(tracker->next_badge_name, badge, sizeof(tracker->next_badge_name));
+      tracker->next_width = (uint16_t)font_driver_get_message_width(
             state->dispwidget_ptr->gfx_widget_fonts.regular.font,
             progress, strlen(progress), 1);
-   }
 
-   if (old_badge_id)
-      video_driver_texture_unload(&old_badge_id);
+      if (image)
+         gfx_widget_progress_tracker_commit(tracker, image, now);
+      else
+      {
+         /* what is on screen stays until the badge is here */
+         tracker->hold = CHEEVO_BADGE_HOLD_FRAMES;
+         gfx_widget_progress_tracker_poll(tracker, now, true);
+      }
+   }
 }
 
 void gfx_widget_set_achievement_progress(const char* badge, const char* progress)
@@ -756,6 +930,7 @@ static bool gfx_widget_leaderboard_display_visible(void)
    return state->tracker_count != 0
       || state->challenge_count != 0
       || state->progress_tracker.show_until != 0
+      || state->progress_tracker.hold != 0
       || state->loading
       || state->disconnected;
 }

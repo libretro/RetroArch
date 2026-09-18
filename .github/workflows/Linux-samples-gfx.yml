@@ -849,7 +849,9 @@ jobs:
           # unloaded, never handed to whatever reused the slot), an
           # off-main-thread ask only recorded until the main thread's
           # service starts it, the default badge lent rather than
-          # given, and a refused async upload treated as a failure.
+          # given, a 0 reported as a short wait only while a file on
+          # disk is loading, and a refused async upload treated as a
+          # failure.
           make clean all SANITIZER=address,undefined
           test -x badge_cache_test
           ASAN_OPTIONS=detect_leaks=1 timeout 60 ./badge_cache_test

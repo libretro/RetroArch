@@ -247,7 +247,31 @@ int main(void)
    rcheevos_badge_cache_reset();
    CHECK(st_unloads == 1 && st_last_unloaded == h, "default badge unloads: %u", st_unloads);
 
-   /* 14. no async uploader (no wrapper, driver refuses): treated as a
+   /* 14. a 0 says whether it is worth sitting out: yes while a file
+    *     on disk is loading, no once it is handed over, while it is
+    *     being downloaded, and after a failure */
+   {
+      bool pending = false;
+      h = rcheevos_get_badge_texture_ex("12345", false, true, &pending);
+      CHECK(h == 0 && pending, "local load not reported pending");
+      st_finish_decode(0, true);
+      h = rcheevos_get_badge_texture_ex("12345", false, true, &pending);
+      CHECK(h == 0 && pending, "upload in flight not reported pending");
+      st_finish_upload(0, true);
+      h = rcheevos_get_badge_texture_ex("12345", false, true, &pending);
+      CHECK(h != 0 && !pending, "handed over, still pending");
+      h = rcheevos_get_badge_texture_ex("44444", false, true, &pending);
+      CHECK(h == 0 && !pending, "a download reported as a short wait");
+      h = rcheevos_get_badge_texture_ex("33333", false, false, &pending);
+      CHECK(h == 0 && !pending, "a missing file reported as a short wait");
+      st_on_main_thread = 0;
+      h = rcheevos_get_badge_texture_ex("12345", true, false, &pending);
+      st_on_main_thread = 1;
+      CHECK(h == 0 && pending, "off-thread request not reported pending");
+      rcheevos_badge_cache_reset();
+   }
+
+   /* 15. no async uploader (no wrapper, driver refuses): treated as a
     *     failed load, not a hang */
    st_async_available = 0;
    h = rcheevos_get_badge_texture("00000", false, false);

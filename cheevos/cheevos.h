@@ -67,6 +67,12 @@ void rcheevos_get_local_badge_filename(char badge_file[], size_t badge_file_size
  * so any thread may ask. The handle belongs to the caller, who unloads
  * it. */
 uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing);
+/* Same, and says why a 0 is a 0: @pending is true while the file is
+ * on disk and being loaded, which takes a few frames - a caller about
+ * to draw a placeholder can sit those out - and false when the badge
+ * is being downloaded, has failed, or was handed over. */
+uintptr_t rcheevos_get_badge_texture_ex(const char* badge, bool locked,
+      bool download_if_missing, bool *pending);
 /* The server default badge ("00000"), same rules, except the handle is
  * lent: it stays the cache's, is good until the next
  * rcheevos_badge_cache_reset(), and the caller never unloads it. */

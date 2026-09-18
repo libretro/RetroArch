@@ -390,12 +390,15 @@ void rcheevos_badge_cache_service(void)
 /* @shared: the default badge's own slot, whose handle is lent rather
  * than given. */
 static uintptr_t rcheevos_badge_ask(const char* badge, bool locked,
-      bool download_if_missing, bool shared)
+      bool download_if_missing, bool shared, bool *pending)
 {
    rcheevos_badge_slot_t *slot;
    uintptr_t tex     = 0;
    uintptr_t evicted = 0;
    bool requested    = false;
+
+   if (pending)
+      *pending = false;
 
    if (!badge || !badge[0] || strlen(badge) >= RCHEEVOS_BADGE_KEY_LEN)
       return 0;
@@ -453,6 +456,11 @@ static uintptr_t rcheevos_badge_ask(const char* badge, bool locked,
          /* On its way */
          break;
    }
+   /* A local load is a few frames; a download or a failure is not
+    * something to wait for */
+   if (pending)
+      *pending = (   slot->state == RCHEEVOS_BADGE_SLOT_REQUESTED
+                  || slot->state == RCHEEVOS_BADGE_SLOT_LOADING);
    RCHEEVOS_BADGE_UNLOCK();
 
    if (evicted)
@@ -463,6 +471,19 @@ static uintptr_t rcheevos_badge_ask(const char* badge, bool locked,
       RCHEEVOS_BADGE_REQUESTS_SET(1);
       /* Off the main thread the runloop picks the request up */
       rcheevos_badge_cache_service();
+
+      /* On it, the file check has just been made: say what it found */
+      if (pending)
+      {
+         RCHEEVOS_BADGE_LOCK();
+         slot = shared
+            ? &rcheevos_badge_slots[RCHEEVOS_BADGE_DEFAULT_SLOT]
+            : rcheevos_badge_slot_find(badge, locked);
+         *pending = slot
+            && (   slot->state == RCHEEVOS_BADGE_SLOT_REQUESTED
+                || slot->state == RCHEEVOS_BADGE_SLOT_LOADING);
+         RCHEEVOS_BADGE_UNLOCK();
+      }
    }
 
    return tex;
@@ -470,12 +491,18 @@ static uintptr_t rcheevos_badge_ask(const char* badge, bool locked,
 
 uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing)
 {
-   return rcheevos_badge_ask(badge, locked, download_if_missing, false);
+   return rcheevos_badge_ask(badge, locked, download_if_missing, false, NULL);
+}
+
+uintptr_t rcheevos_get_badge_texture_ex(const char* badge, bool locked,
+      bool download_if_missing, bool *pending)
+{
+   return rcheevos_badge_ask(badge, locked, download_if_missing, false, pending);
 }
 
 uintptr_t rcheevos_get_default_badge_texture(void)
 {
-   return rcheevos_badge_ask(RCHEEVOS_BADGE_DEFAULT_NAME, false, false, true);
+   return rcheevos_badge_ask(RCHEEVOS_BADGE_DEFAULT_NAME, false, false, true, NULL);
 }
 
 /* Main thread: @badge_name ("NNNNN" or "NNNNN_lock") has just been
