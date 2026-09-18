@@ -182,6 +182,33 @@ int main(void)
       audio_opensl.free(h);
    }
 
+   /* Issue #19561: a callback already on its way when the driver is
+    * freed. Android reports STOPPED and returns from Destroy without
+    * waiting for it, so anything the callback still reaches has to
+    * have outlived the free - or not be reachable from it at all. */
+   printf("   teardown with a callback already on its way\n");
+   opensl_mock_reset();
+   h = audio_opensl.init(NULL, 48000, 64, &new_rate);
+   CHECK(h != NULL, "init failed");
+   if (h)
+   {
+      size_t total = audio_opensl.buffer_size(h);
+      audio_opensl.set_nonblock_state(h, true);
+      audio_opensl.start(h, false);
+      audio_opensl.write(h, pcm, total);
+      opensl_mock_set_racy_teardown(1);
+      CHECK(opensl_mock_wait_dispatching(5000),
+            "the pump never reached a callback");
+      printf("      the pump is at the callback; freeing the driver under it\n");
+      audio_opensl.free(h);
+      opensl_mock_release_dispatch();
+      /* Let the released callback run against whatever it still holds. */
+      usleep(200000);
+      CHECK(opensl_mock_objects() == 0,
+            "%d object(s) left alive", opensl_mock_objects());
+      printf("      the callback ran after the free without reaching it\n");
+   }
+
    if (failures) { printf("%u failure(s)\n", failures); return 1; }
    printf("opensl: the block count has a floor, the queue accounts, and no wait is unbounded\n");
    return 0;
