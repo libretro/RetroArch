@@ -145,6 +145,10 @@ enum image_type_enum image_texture_get_type(const char *path);
 bool image_texture_load_buffer(struct texture_image *img,
    enum image_type_enum type, void *s, size_t len);
 
+/* ->pix10 is an ask on the way in and an answer on the way out: set
+ * it before the call to have a decoder that can emit XRGB2101010 do
+ * so, and read it after to find out whether it did. Clear on entry
+ * means the ordinary 8-bit image, as before. */
 bool image_texture_load(struct texture_image *img, const char *path);
 
 /* image_texture_load with an abort hook: both decode stages are

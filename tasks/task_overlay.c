@@ -315,6 +315,11 @@ static bool task_overlay_load_image_texture(
 
       image->supports_rgba =
             (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT) ? true : false;
+      /* An ask, answered by the decode: a 16-bit PNG comes back at
+       * ten bits a channel where the driver can sample it, anything
+       * else comes back eight. */
+      image->pix10         =
+            (loader->flags & OVERLAY_LOADER_10BIT) ? true : false;
 
 #ifdef HAVE_COMPRESSION
       if (path_get_archive_delim(full_path))
@@ -1544,9 +1549,13 @@ bool task_push_overlay_load_default(
 #ifdef RARCH_INTERNAL
    {
       gfx_surface_requirements_t req;
-      if (     gfx_surface_query_requirements(0, &req)
-            && req.rgba)
-         loader->flags     |= OVERLAY_LOADER_RGBA_SUPPORT;
+      if (gfx_surface_query_requirements(0, &req))
+      {
+         if (req.rgba)
+            loader->flags  |= OVERLAY_LOADER_RGBA_SUPPORT;
+         if (req.formats & GFX_SURFACE_PIXFMT_2101010)
+            loader->flags  |= OVERLAY_LOADER_10BIT;
+      }
    }
 #endif
 
