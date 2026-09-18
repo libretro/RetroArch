@@ -28,7 +28,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c
 
 CFLAGS += -Wall $(INCDIRS)
-CFLAGS += -DHAVE_ALSA -DHAVE_THREADS -D_GNU_SOURCE
+CFLAGS += -DHAVE_ALSA -DHAVE_THREADS -DHAVE_MICROPHONE -D_GNU_SOURCE
 LDFLAGS += -lasound -lm -lpthread
 LDFLAGS += -Wl,--wrap=snd_pcm_hw_params_can_pause \
            -Wl,--wrap=snd_pcm_pause \
@@ -36,6 +36,7 @@ LDFLAGS += -Wl,--wrap=snd_pcm_hw_params_can_pause \
            -Wl,--wrap=snd_pcm_prepare \
            -Wl,--wrap=snd_pcm_writei \
            -Wl,--wrap=snd_pcm_wait \
+           -Wl,--wrap=snd_pcm_readi \
            -Wl,--wrap=snd_pcm_recover
 
 ifneq ($(SAN),)
