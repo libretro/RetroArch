@@ -6904,8 +6904,13 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_THREADS
       /* Under the threaded video wrapper the worker animates and
        * iterates the widgets (gfx_widgets_worker_step()); the layout,
-       * which owns fonts, stays here */
+       * which owns fonts, stays here - and so do the badge loads
+       * the achievement widgets ask for from over there */
       if (p_dispwidget->worker)
+      {
+#ifdef HAVE_CHEEVOS
+         rcheevos_badge_cache_service();
+#endif
          gfx_widgets_iterate_layout(
                p_disp,
                settings,
@@ -6915,6 +6920,7 @@ static enum runloop_state_enum runloop_check_state(
                settings->paths.directory_assets,
                settings->paths.path_font,
                true);
+      }
       else
 #endif
          gfx_widgets_iterate(

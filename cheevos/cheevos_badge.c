@@ -21,10 +21,9 @@
 #include <file/file_path.h>
 #include <formats/image.h>
 #include <queues/task_queue.h>
+#include <retro_atomic.h>
 
 #include "cheevos.h"
-#include "cheevos_client.h"
-#include "cheevos_locals.h"
 
 #include "../gfx/gfx_display.h"
 #include "../gfx/video_driver.h"
@@ -41,43 +40,60 @@ void rcheevos_get_local_badge_filename(char badge_file[], size_t badge_file_size
 }
 
 /* --- Badge textures ---------------------------------------------------
- * A badge used to be read, decoded and uploaded inline in
- * rcheevos_get_badge_texture(): a file read plus a PNG decode on the
- * thread that called, and under threaded video a present's worth of
- * waiting for the upload, all at the moment an achievement popped
- * during gameplay. Every caller already copes with 0 - the menu
- * re-asks after MENU_BADGE_RETRY_RELOAD_FRAMES frames, the widgets
- * every 250 ms, both written for badges still downloading - so the
- * load now happens off this thread: the first call for a badge posts
- * an image task (decode on a worker) whose completion posts the
- * upload (asynchronous under threaded video), and the call that finds
- * the handle ready takes it. Handles keep the old ownership: each one
- * handed out belongs to the caller, who unloads it.
+ * Nothing here reads a file, decodes or uploads on the thread that
+ * asks. rcheevos_get_badge_texture() only looks a badge up in a small
+ * table: a handle that is ready is handed over, anything else answers
+ * 0 and the caller asks again on a later frame, which every caller
+ * already does for a badge that is still downloading. A badge that is
+ * not in the table is written into it as a request, and that is all an
+ * asking thread ever does - so any thread may ask. Under the threaded
+ * video wrapper the achievement widgets are iterated and drawn on the
+ * video thread and ask from there; the menu asks from the main thread.
  *
- * The table is small and round-robin; a slot evicted while loading
- * has its sequence bumped so the late delivery is discarded, and a
- * ready handle evicted unused is unloaded. Main thread only, as the
- * callers already are when they can accept a handle. */
-#define RCHEEVOS_BADGE_SLOTS 16
+ * The main thread does the work (rcheevos_badge_cache_service(), at
+ * once when the asker is the main thread, else from the runloop): the
+ * file check, the download request for a missing file, and the image
+ * task (decode on a worker) whose completion posts the upload
+ * (asynchronous under threaded video). Nothing waits on anything.
+ *
+ * Handles keep the old ownership: each one handed out belongs to the
+ * caller, who unloads it. The server default badge, which many menu
+ * entries show at once while their own is on its way, can also be
+ * borrowed (rcheevos_get_default_badge_texture()): that one has a slot
+ * of its own, is loaded once, and its handle stays the cache's.
+ *
+ * The table is small and round-robin. A slot evicted or reset while
+ * its load is in flight has its sequence bumped, so the late delivery
+ * is unloaded instead of landing in whatever reuses the slot. A failed
+ * load stays failed until the slot is reused or the file is downloaded
+ * again, so a bad file is not decoded once a frame.
+ *
+ * The lock word guards the table only. No file, task, driver or
+ * allocator call is made holding it. */
+#define RCHEEVOS_BADGE_SLOTS        16
+#define RCHEEVOS_BADGE_DEFAULT_SLOT RCHEEVOS_BADGE_SLOTS
+#define RCHEEVOS_BADGE_DEFAULT_NAME "00000"
+#define RCHEEVOS_BADGE_KEY_LEN      16
 
 enum rcheevos_badge_slot_state
 {
    RCHEEVOS_BADGE_SLOT_EMPTY = 0,  /* slot not in use */
+   RCHEEVOS_BADGE_SLOT_REQUESTED,  /* asked for; the main thread has not looked yet */
    RCHEEVOS_BADGE_SLOT_FETCHING,   /* badge being downloaded */
-   RCHEEVOS_BADGE_SLOT_LOADING,    /* badge being loaded into memory */
-   RCHEEVOS_BADGE_SLOT_READY,      /* badge is ready */
-   RCHEEVOS_BADGE_SLOT_FAILED      /* download or load into memory failed */
+   RCHEEVOS_BADGE_SLOT_LOADING,    /* badge being decoded and uploaded */
+   RCHEEVOS_BADGE_SLOT_READY,      /* handle waiting to be taken */
+   RCHEEVOS_BADGE_SLOT_FAILED      /* missing, or download or load failed */
 };
-
-#define RCHEEVOS_BADGE_KEY_LEN 16
 
 typedef struct
 {
    char key[RCHEEVOS_BADGE_KEY_LEN]; /* badge name: "NNNNN" */
    uintptr_t handle;                 /* texture handle */
-   uint32_t seq;                     /* secondary key to match against load_tag in case in-flight request gets overwritten */
-   uint8_t state;                    /* state of badge request */
-   uint8_t locked;                   /* non-zero if associated to _lock version of badge */
+   uint32_t seq;                     /* matched against the load tag, so a load
+                                      * outlived by its slot is not delivered */
+   uint8_t state;                    /* enum rcheevos_badge_slot_state */
+   uint8_t locked;                   /* non-zero for the _lock version of the badge */
+   uint8_t download;                 /* REQUESTED: fetch the file if it is missing */
 } rcheevos_badge_slot_t;
 
 typedef struct
@@ -87,7 +103,30 @@ typedef struct
 } rcheevos_badge_load_tag_t;
 
 static rcheevos_badge_slot_t rcheevos_badge_slots[RCHEEVOS_BADGE_SLOTS + 1];
-static unsigned              rcheevos_badge_slots_next = RCHEEVOS_BADGE_SLOTS;
+static unsigned              rcheevos_badge_slots_next;
+
+/* Same gate as the font file list (gfx/font_driver.c): a target with
+ * no lock-free compare-and-swap must not spin, and has no second
+ * thread asking for badges either. */
+#if defined(HAVE_THREADS) && defined(retro_atomic_cas_int) \
+ && defined(RETRO_ATOMIC_LOCK_FREE)
+static retro_atomic_int_t rcheevos_badge_lock_word;
+static retro_atomic_int_t rcheevos_badge_requests;
+#define RCHEEVOS_BADGE_LOCK() \
+   do { while (!retro_atomic_cas_int(&rcheevos_badge_lock_word, 0, 1)) { } } while (0)
+#define RCHEEVOS_BADGE_UNLOCK() \
+   retro_atomic_store_release_int(&rcheevos_badge_lock_word, 0)
+#define RCHEEVOS_BADGE_REQUESTS_SET(v) \
+   retro_atomic_store_release_int(&rcheevos_badge_requests, (v))
+#define RCHEEVOS_BADGE_REQUESTS_GET() \
+   retro_atomic_load_acquire_int(&rcheevos_badge_requests)
+#else
+static int rcheevos_badge_requests;
+#define RCHEEVOS_BADGE_LOCK()            do { } while (0)
+#define RCHEEVOS_BADGE_UNLOCK()          do { } while (0)
+#define RCHEEVOS_BADGE_REQUESTS_SET(v)   (rcheevos_badge_requests = (v))
+#define RCHEEVOS_BADGE_REQUESTS_GET()    (rcheevos_badge_requests)
+#endif
 
 static void rcheevos_badge_image_release(void* img)
 {
@@ -99,7 +138,23 @@ static void rcheevos_badge_image_release(void* img)
    }
 }
 
-/* Main thread: the load finished (handle) or failed (0). */
+/* Caller holds the lock. Returns the handle the slot was holding, for
+ * the caller to unload once the lock is dropped. */
+static uintptr_t rcheevos_badge_slot_clear(rcheevos_badge_slot_t* slot)
+{
+   uintptr_t handle = (slot->state == RCHEEVOS_BADGE_SLOT_READY)
+      ? slot->handle : 0;
+
+   slot->handle   = 0;
+   slot->state    = RCHEEVOS_BADGE_SLOT_EMPTY;
+   slot->download = 0;
+   slot->key[0]   = '\0';
+   slot->seq++; /* orphans any load still in flight */
+   return handle;
+}
+
+/* A load is over: @handle, or 0 if it failed. If the slot no longer
+ * waits for this load the handle is nobody's, and is unloaded. */
 static void rcheevos_badge_load_done(void *user, uintptr_t handle)
 {
    rcheevos_badge_load_tag_t *tag = (rcheevos_badge_load_tag_t*)user;
@@ -108,16 +163,18 @@ static void rcheevos_badge_load_done(void *user, uintptr_t handle)
       return;
 
    slot = &rcheevos_badge_slots[tag->slot];
+
+   RCHEEVOS_BADGE_LOCK();
    if (slot->seq == tag->seq && slot->state == RCHEEVOS_BADGE_SLOT_LOADING)
    {
       slot->handle = handle;
       slot->state  = handle ? RCHEEVOS_BADGE_SLOT_READY : RCHEEVOS_BADGE_SLOT_FAILED;
+      handle       = 0;
    }
-   else if (handle)
-   {
-      /* evicted while in flight */
+   RCHEEVOS_BADGE_UNLOCK();
+
+   if (handle)
       video_driver_texture_unload(&handle);
-   }
 
    free(tag);
 }
@@ -152,95 +209,108 @@ static void rcheevos_badge_decode_done(retro_task_t *task,
    }
 }
 
-static void rcheevos_badge_slot_clear(rcheevos_badge_slot_t* slot)
-{
-   if (slot->state == RCHEEVOS_BADGE_SLOT_READY && slot->handle)
-      video_driver_texture_unload(&slot->handle);
-
-   slot->handle = 0;
-   slot->state = RCHEEVOS_BADGE_SLOT_EMPTY;
-   slot->key[0] = '\0';
-   slot->seq++; /* orphans any load still in flight */
-}
-
-static rcheevos_badge_slot_t* rcheevos_badge_slot_alloc(const char* key, bool locked)
-{
-   rcheevos_badge_slot_t* slot;
-
-   if (rcheevos_badge_slots_next >= RCHEEVOS_BADGE_SLOTS)
-   {
-      memset(&rcheevos_badge_slots, 0, sizeof(rcheevos_badge_slots));
-      rcheevos_badge_slots_next = 0;
-   }
-
-   slot = &rcheevos_badge_slots[rcheevos_badge_slots_next];
-   if (slot->state != RCHEEVOS_BADGE_SLOT_EMPTY)
-   {
-      unsigned rcheevos_badge_slots_override = rcheevos_badge_slots_next;
-      do {
-         rcheevos_badge_slots_next = (rcheevos_badge_slots_next + 1) % RCHEEVOS_BADGE_SLOTS;
-         slot = &rcheevos_badge_slots[rcheevos_badge_slots_next];
-
-         if (rcheevos_badge_slots_next == rcheevos_badge_slots_override) {
-            /* all slots full, just claim the one marked as next */
-            rcheevos_badge_slot_clear(slot);
-            break;
-         }
-      } while (slot->state != RCHEEVOS_BADGE_SLOT_EMPTY);
-   }
-   rcheevos_badge_slots_next = (rcheevos_badge_slots_next + 1) % RCHEEVOS_BADGE_SLOTS;
-
-   strlcpy(slot->key, key, sizeof(slot->key));
-   slot->locked = locked;
-   slot->state = RCHEEVOS_BADGE_SLOT_LOADING;
-   return slot;
-}
-
+/* Caller holds the lock. */
 static rcheevos_badge_slot_t *rcheevos_badge_slot_find(const char *key, bool locked)
 {
-   if (rcheevos_badge_slots_next < RCHEEVOS_BADGE_SLOTS)
-   {
-      const size_t key_len = strlen(key) + 1;
-      rcheevos_badge_slot_t* slot = rcheevos_badge_slots;
-      const rcheevos_badge_slot_t* stop = slot + RCHEEVOS_BADGE_SLOTS;
+   rcheevos_badge_slot_t* slot       = rcheevos_badge_slots;
+   const rcheevos_badge_slot_t* stop = slot + RCHEEVOS_BADGE_SLOTS;
 
-      for (; slot < stop; ++slot)
-      {
-         if (slot->state != RCHEEVOS_BADGE_SLOT_EMPTY && slot->locked == locked
-               && memcmp(slot->key, key, key_len) == 0)
-            return slot;
-      }
+   for (; slot < stop; ++slot)
+   {
+      if (     slot->state != RCHEEVOS_BADGE_SLOT_EMPTY
+            && slot->locked == (uint8_t)locked
+            && string_is_equal(slot->key, key))
+         return slot;
    }
 
    return NULL;
 }
 
-/* Drop every cached or in-flight badge: video context gone, or the
- * game unloaded. Ready handles are unloaded, loading ones orphaned. */
-void rcheevos_badge_cache_reset(void)
+/* Caller holds the lock. The first empty slot from the cursor on; with
+ * none empty a failed one, else the one at the cursor, whose handle (if
+ * it held one) comes back in @evicted. Returned EMPTY, with its key. */
+static rcheevos_badge_slot_t* rcheevos_badge_slot_alloc(const char* key,
+      bool locked, uintptr_t *evicted)
 {
-   if (rcheevos_badge_slots_next < RCHEEVOS_BADGE_SLOTS)
+   unsigned i;
+   rcheevos_badge_slot_t* slot = NULL;
+
+   for (i = 0; i < RCHEEVOS_BADGE_SLOTS; i++)
    {
-      rcheevos_badge_slot_t* slot = rcheevos_badge_slots;
-      const rcheevos_badge_slot_t* stop = slot + RCHEEVOS_BADGE_SLOTS + 1;
-      for (; slot < stop; ++slot)
+      unsigned idx = (rcheevos_badge_slots_next + i) % RCHEEVOS_BADGE_SLOTS;
+      if (rcheevos_badge_slots[idx].state == RCHEEVOS_BADGE_SLOT_EMPTY)
       {
-         if (slot->state == RCHEEVOS_BADGE_SLOT_READY && slot->handle)
-            video_driver_texture_unload(&slot->handle);
+         slot = &rcheevos_badge_slots[idx];
+         break;
       }
    }
 
-   memset(rcheevos_badge_slots, 0, sizeof(rcheevos_badge_slots));
+   /* Full: a failed load is the cheapest thing to forget */
+   for (i = 0; !slot && i < RCHEEVOS_BADGE_SLOTS; i++)
+   {
+      unsigned idx = (rcheevos_badge_slots_next + i) % RCHEEVOS_BADGE_SLOTS;
+      if (rcheevos_badge_slots[idx].state == RCHEEVOS_BADGE_SLOT_FAILED)
+         slot = &rcheevos_badge_slots[idx];
+   }
+
+   if (!slot)
+      slot = &rcheevos_badge_slots[rcheevos_badge_slots_next];
+
+   if (slot->state != RCHEEVOS_BADGE_SLOT_EMPTY)
+      *evicted = rcheevos_badge_slot_clear(slot);
+
+   rcheevos_badge_slots_next =
+      ((unsigned)(slot - rcheevos_badge_slots) + 1) % RCHEEVOS_BADGE_SLOTS;
+
+   strlcpy(slot->key, key, sizeof(slot->key));
+   slot->locked = locked ? 1 : 0;
+   return slot;
 }
 
-static int rcheevos_load_badge_texture(rcheevos_badge_slot_t* slot, const char* badge, bool locked, bool download_if_missing)
+/* Drop every cached or in-flight badge: the menu list is being
+ * rebuilt, or the game unloaded. Ready handles are unloaded, loads in
+ * flight orphaned. */
+void rcheevos_badge_cache_reset(void)
+{
+   unsigned i;
+   unsigned count = 0;
+   uintptr_t handles[RCHEEVOS_BADGE_SLOTS + 1];
+
+   RCHEEVOS_BADGE_LOCK();
+   for (i = 0; i < RCHEEVOS_BADGE_SLOTS + 1; i++)
+   {
+      uintptr_t handle = rcheevos_badge_slot_clear(&rcheevos_badge_slots[i]);
+      if (handle)
+         handles[count++] = handle;
+   }
+   RCHEEVOS_BADGE_UNLOCK();
+
+   for (i = 0; i < count; i++)
+      video_driver_texture_unload(&handles[i]);
+}
+
+/* Move slot @idx from LOADING to @state, unless it was reused since. */
+static void rcheevos_badge_slot_settle(unsigned idx, uint32_t seq, uint8_t state)
+{
+   rcheevos_badge_slot_t* slot = &rcheevos_badge_slots[idx];
+
+   RCHEEVOS_BADGE_LOCK();
+   if (slot->seq == seq && slot->state == RCHEEVOS_BADGE_SLOT_LOADING)
+      slot->state = state;
+   RCHEEVOS_BADGE_UNLOCK();
+}
+
+/* Main thread: start the load of one requested badge. The slot is
+ * LOADING by now; every exit leaves it LOADING with a task on the way,
+ * FETCHING with a download on the way, or FAILED. */
+static void rcheevos_badge_start_load(unsigned idx, uint32_t seq,
+      const char* badge, bool locked, bool download_if_missing)
 {
    gfx_surface_requirements_t req;
-   char badge_file[RCHEEVOS_BADGE_KEY_LEN];
+   char badge_file[RCHEEVOS_BADGE_KEY_LEN + 16];
    char fullpath[PATH_MAX_LENGTH];
    rcheevos_badge_load_tag_t* tag;
 
-   /* Check to see if the badge is available on disk */
    fill_pathname_application_special(fullpath, sizeof(fullpath),
       APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
    rcheevos_get_local_badge_filename(badge_file, sizeof(badge_file), badge, locked);
@@ -248,212 +318,205 @@ static int rcheevos_load_badge_texture(rcheevos_badge_slot_t* slot, const char* 
 
    if (!path_is_valid(fullpath))
    {
-      /* Not available on disk */
       if (download_if_missing)
       {
-         /* Fetch it */
-         if (!slot)
-            slot = rcheevos_badge_slot_alloc(badge, locked);
-         slot->state = RCHEEVOS_BADGE_SLOT_FETCHING;
-
+         /* FETCHING before the request: the download's completion
+          * looks for a slot in that state. */
+         rcheevos_badge_slot_settle(idx, seq, RCHEEVOS_BADGE_SLOT_FETCHING);
          rcheevos_badge_request_download(badge, locked);
       }
-
-      return 0;
+      else
+         rcheevos_badge_slot_settle(idx, seq, RCHEEVOS_BADGE_SLOT_FAILED);
+      return;
    }
 
    if (!(tag = (rcheevos_badge_load_tag_t*)malloc(sizeof(*tag))))
-      return 0;
+   {
+      rcheevos_badge_slot_settle(idx, seq, RCHEEVOS_BADGE_SLOT_FAILED);
+      return;
+   }
 
-   if (!slot)
-      slot = rcheevos_badge_slot_alloc(badge, locked);
-   slot->state = RCHEEVOS_BADGE_SLOT_LOADING;
-
-   tag->slot = (unsigned)(slot - rcheevos_badge_slots);
-   tag->seq = slot->seq;
+   tag->slot = idx;
+   tag->seq  = seq;
 
    gfx_surface_query_requirements(0, &req);
    if (!task_push_image_load(fullpath, req.rgba,
          0, 0, rcheevos_badge_decode_done, tag))
    {
       free(tag);
-      rcheevos_badge_slot_clear(slot);
+      rcheevos_badge_slot_settle(idx, seq, RCHEEVOS_BADGE_SLOT_FAILED);
+   }
+}
+
+/* Main thread: start the load of every badge asked for since the last
+ * call. With nothing asked for this is one atomic load. */
+void rcheevos_badge_cache_service(void)
+{
+   if (!RCHEEVOS_BADGE_REQUESTS_GET() || !task_is_on_main_thread())
+      return;
+
+   RCHEEVOS_BADGE_REQUESTS_SET(0);
+
+   for (;;)
+   {
+      unsigned i;
+      uint32_t seq  = 0;
+      bool locked   = false;
+      bool download = false;
+      char key[RCHEEVOS_BADGE_KEY_LEN];
+
+      RCHEEVOS_BADGE_LOCK();
+      for (i = 0; i < RCHEEVOS_BADGE_SLOTS + 1; i++)
+      {
+         rcheevos_badge_slot_t* slot = &rcheevos_badge_slots[i];
+         if (slot->state != RCHEEVOS_BADGE_SLOT_REQUESTED)
+            continue;
+         slot->state = RCHEEVOS_BADGE_SLOT_LOADING;
+         seq         = slot->seq;
+         locked      = slot->locked != 0;
+         download    = slot->download != 0;
+         strlcpy(key, slot->key, sizeof(key));
+         break;
+      }
+      RCHEEVOS_BADGE_UNLOCK();
+
+      if (i == RCHEEVOS_BADGE_SLOTS + 1)
+         break;
+
+      rcheevos_badge_start_load(i, seq, key, locked, download);
+   }
+}
+
+/* @shared: the default badge's own slot, whose handle is lent rather
+ * than given. */
+static uintptr_t rcheevos_badge_ask(const char* badge, bool locked,
+      bool download_if_missing, bool shared)
+{
+   rcheevos_badge_slot_t *slot;
+   uintptr_t tex     = 0;
+   uintptr_t evicted = 0;
+   bool requested    = false;
+
+   if (!badge || !badge[0] || strlen(badge) >= RCHEEVOS_BADGE_KEY_LEN)
       return 0;
+
+   RCHEEVOS_BADGE_LOCK();
+   if (shared)
+   {
+      /* Never evicted */
+      slot = &rcheevos_badge_slots[RCHEEVOS_BADGE_DEFAULT_SLOT];
+      if (slot->state == RCHEEVOS_BADGE_SLOT_EMPTY)
+      {
+         strlcpy(slot->key, badge, sizeof(slot->key));
+         slot->locked = locked ? 1 : 0;
+      }
+   }
+   else if (!(slot = rcheevos_badge_slot_find(badge, locked)))
+      slot = rcheevos_badge_slot_alloc(badge, locked, &evicted);
+
+   switch (slot->state)
+   {
+      case RCHEEVOS_BADGE_SLOT_READY:
+         tex = slot->handle;
+         if (!shared)
+         {
+            /* the caller's from here on; the slot is free again */
+            slot->handle = 0;
+            slot->state  = RCHEEVOS_BADGE_SLOT_EMPTY;
+            slot->key[0] = '\0';
+         }
+         break;
+
+      case RCHEEVOS_BADGE_SLOT_EMPTY:
+         slot->state    = RCHEEVOS_BADGE_SLOT_REQUESTED;
+         slot->download = download_if_missing ? 1 : 0;
+         requested      = true;
+         break;
+
+      case RCHEEVOS_BADGE_SLOT_REQUESTED:
+         if (download_if_missing)
+            slot->download = 1;
+         break;
+
+      case RCHEEVOS_BADGE_SLOT_FAILED:
+         /* Failed for an asker that did not want a download; this
+          * one does, once */
+         if (download_if_missing && !slot->download)
+         {
+            slot->state    = RCHEEVOS_BADGE_SLOT_REQUESTED;
+            slot->download = 1;
+            requested      = true;
+         }
+         break;
+
+      default:
+         /* On its way */
+         break;
+   }
+   RCHEEVOS_BADGE_UNLOCK();
+
+   if (evicted)
+      video_driver_texture_unload(&evicted);
+
+   if (requested)
+   {
+      RCHEEVOS_BADGE_REQUESTS_SET(1);
+      /* Off the main thread the runloop picks the request up */
+      rcheevos_badge_cache_service();
    }
 
-   return 0;   /* ready on a later call */
+   return tex;
 }
 
 uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing)
 {
-   rcheevos_badge_slot_t *slot;
-   uintptr_t tex;
-
-   if (!badge || !badge[0])
-      return 0;
-
-#ifdef HAVE_THREADS
-   /* The OpenGL driver crashes if gfx_display_reset_textures_list is not called on the video thread.
-    * If threaded video is enabled, it'll automatically dispatch the request to the video thread.
-    * If threaded video is not enabled, just return null. The video thread should assume the image
-    * wasn't downloaded and check again in a few frames.
-    */
-   if (!video_driver_is_threaded() && !task_is_on_main_thread())
-      return 0;
-#endif
-
-   /* Check to see if we're already processing this badge */
-   if ((slot = rcheevos_badge_slot_find(badge, locked)))
-   {
-      switch (slot->state)
-      {
-         case RCHEEVOS_BADGE_SLOT_READY:
-            tex          = slot->handle;
-            slot->handle = 0;
-            slot->state  = RCHEEVOS_BADGE_SLOT_EMPTY;
-            slot->key[0] = '\0';
-            return tex;    /* the caller is responsible for it now */
-
-         default:
-            /* Not ready yet, or failed to load. If not ready yet, state will eventually change */
-            return 0;
-      }
-   }
-
-   if (string_is_equal(badge, "00000"))
-   {
-      slot = &rcheevos_badge_slots[RCHEEVOS_BADGE_SLOTS];
-      if (slot->state == RCHEEVOS_BADGE_SLOT_READY)
-         return slot->handle;
-
-      if (slot->state != RCHEEVOS_BADGE_SLOT_EMPTY) /* Not ready yet or failed to load */
-         return 0;
-
-      locked = false; /* Default badge is never locked */
-   }
-
-   return rcheevos_load_badge_texture(slot, badge, locked, download_if_missing);
+   return rcheevos_badge_ask(badge, locked, download_if_missing, false);
 }
 
+uintptr_t rcheevos_get_default_badge_texture(void)
+{
+   return rcheevos_badge_ask(RCHEEVOS_BADGE_DEFAULT_NAME, false, false, true);
+}
+
+/* Main thread: @badge_name ("NNNNN" or "NNNNN_lock") has just been
+ * written to disk. If the cache was waiting for it, load it. */
 void rcheevos_update_badge_references(const char* badge_name)
 {
    rcheevos_badge_slot_t* slot;
+   char unlocked_badge_name[RCHEEVOS_BADGE_KEY_LEN];
+   bool locked                 = false;
+   bool requested              = false;
+   const size_t badge_name_len = badge_name ? strlen(badge_name) : 0;
 
-   bool locked = false;
-   char unlocked_badge_name[8];
-   const size_t badge_name_len = strlen(badge_name);
-   if (badge_name_len > 6 && badge_name_len < sizeof(unlocked_badge_name) + 5 &&
-      strcmp(&badge_name[badge_name_len - 5], "_lock") == 0)
+   if (!badge_name_len)
+      return;
+
+   if (     badge_name_len > 5
+         && badge_name_len < sizeof(unlocked_badge_name) + 5
+         && string_is_equal(&badge_name[badge_name_len - 5], "_lock"))
    {
       memcpy(unlocked_badge_name, badge_name, badge_name_len - 5);
       unlocked_badge_name[badge_name_len - 5] = '\0';
       badge_name = unlocked_badge_name;
-      locked = true;
+      locked     = true;
    }
 
+   RCHEEVOS_BADGE_LOCK();
    slot = rcheevos_badge_slot_find(badge_name, locked);
-   if (slot != NULL)
+   if (slot && (   slot->state == RCHEEVOS_BADGE_SLOT_FETCHING
+                || slot->state == RCHEEVOS_BADGE_SLOT_FAILED))
    {
-      rcheevos_load_badge_texture(slot, badge_name, locked, false);
-
-      /* If state was not updated, change to failed. */
-      if (slot->state == RCHEEVOS_BADGE_SLOT_FETCHING)
-         slot->state = RCHEEVOS_BADGE_SLOT_FAILED;
+      slot->state    = RCHEEVOS_BADGE_SLOT_REQUESTED;
+      slot->download = 0;
+      requested      = true;
    }
-}
+   RCHEEVOS_BADGE_UNLOCK();
 
-static void rcheevos_client_download_user_badge()
-{
-   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-
-   const rc_client_user_t* user = rc_client_get_user_info(rcheevos_locals->client);
-   if (user)
+   if (requested)
    {
-      char badge_name[32];
-      snprintf(badge_name, sizeof(badge_name), "u%u", rc_djb2(user->username));
-
-      rcheevos_client_download_badge_from_url(user->avatar_url, badge_name);
+      RCHEEVOS_BADGE_REQUESTS_SET(1);
+      rcheevos_badge_cache_service();
    }
-}
-
-static void rcheevos_client_download_subset_badge(const char* badge_name)
-{
-   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-
-   const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals->client);
-   if (game && strcmp(game->badge_name, &badge_name[1]) == 0)
-   {
-      rcheevos_client_download_badge_from_url(game->badge_url, badge_name);
-   }
-   else
-   {
-      rc_client_subset_list_t* subset_list = rc_client_create_subset_list(rcheevos_locals->client);
-      uint32_t i;
-      for (i = 0; i < subset_list->num_subsets; ++i)
-      {
-         if (strcmp(subset_list->subsets[i]->badge_name, &badge_name[1]) == 0)
-         {
-            rcheevos_client_download_badge_from_url(subset_list->subsets[i]->badge_url, badge_name);
-            break;
-         }
-      }
-      rc_client_destroy_subset_list(subset_list);
-   }
-}
-
-static void rcheevos_client_download_achievement_badge(const char* badge_name, bool locked)
-{
-   /* have to find the achievement associated to badge_name, then fetch either badge_url
-    * or badge_locked_url based on the locked parameter */
-   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
-   rc_client_achievement_list_t* list = rc_client_create_achievement_list(rcheevos_locals->client,
-      RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE_AND_UNOFFICIAL,
-      RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_PROGRESS);
-   if (list)
-   {
-      const char* url = NULL;
-      uint32_t i, j;
-      for (i = 0; i < list->num_buckets && !url; i++)
-      {
-         for (j = 0; j < list->buckets[i].num_achievements; j++)
-         {
-            const rc_client_achievement_t* achievement = list->buckets[i].achievements[j];
-            if (achievement && strcmp(achievement->badge_name, badge_name) == 0)
-            {
-               url = locked ? achievement->badge_locked_url : achievement->badge_url;
-               break;
-            }
-         }
-      }
-
-      if (url)
-      {
-         char locked_badge_name[32];
-         if (locked)
-         {
-            snprintf(locked_badge_name, sizeof(locked_badge_name), "%s_lock", badge_name);
-            badge_name = locked_badge_name;
-         }
-
-         rcheevos_client_download_badge_from_url(url, badge_name);
-      }
-
-      rc_client_destroy_achievement_list(list);
-   }
-}
-
-/* A badge file is missing locally: fetch it. Which URL depends on the
- * kind of badge, which the name's first letter says. */
-void rcheevos_badge_request_download(const char* badge, bool locked)
-{
-   if (!badge || !badge[0])
-      return;
-   if (badge[0] == 'i')
-      rcheevos_client_download_subset_badge(badge);
-   else if (badge[0] == 'u')
-      rcheevos_client_download_user_badge();
-   else
-      rcheevos_client_download_achievement_badge(badge, locked);
 }
 
 bool rcheevos_is_badge_available(const char* badge, bool locked)

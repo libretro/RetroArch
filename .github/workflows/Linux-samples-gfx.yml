@@ -816,23 +816,22 @@ jobs:
         working-directory: samples/cheevos/badge_cache
         run: |
           set -eu
-          # rcheevos_get_badge_texture() used to read, decode and
-          # upload a badge inline on the calling thread, at the moment
-          # an achievement popped during gameplay. It now posts the
-          # decode to the image task and the upload to the video
-          # thread, and hands the handle to the first caller after it
-          # lands. The test links the real cheevos/cheevos_badge.c
-          # with the task and upload stubbed as steppable queues and
-          # checks: nothing synchronous on the first ask, one decode
-          # per badge, the upload posted only from the decode's
-          # completion, the handle handed out exactly once and owned
-          # by the taker, locked and unlocked as separate keys, a
-          # missing file requesting a download only when asked, a
-          # failed decode or upload forgotten rather than stuck, a
-          # reset unloading ready handles and orphaning in-flight
-          # ones (their late delivery unloaded, never handed out),
-          # off-main-thread calls with no side effects, and a refused
-          # async upload treated as a failure.
+          # rcheevos_get_badge_texture() never reads, decodes or
+          # uploads on the calling thread, so the achievement widgets
+          # can ask from the video thread. The test links the real
+          # cheevos/cheevos_badge.c with the task and upload stubbed
+          # as steppable queues and checks: nothing synchronous on
+          # the first ask, one decode per badge, the upload posted
+          # only from the decode's completion, the handle handed out
+          # exactly once and owned by the taker, locked and unlocked
+          # as separate keys, a missing file requesting a download
+          # only when asked and loading when the download lands, a
+          # failed load not retried per ask, a reset unloading ready
+          # handles and orphaning in-flight ones (their late delivery
+          # unloaded, never handed to whatever reused the slot), an
+          # off-main-thread ask only recorded until the main thread's
+          # service starts it, the default badge lent rather than
+          # given, and a refused async upload treated as a failure.
           make clean all SANITIZER=address,undefined
           test -x badge_cache_test
           ASAN_OPTIONS=detect_leaks=1 timeout 60 ./badge_cache_test
