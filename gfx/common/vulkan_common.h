@@ -297,6 +297,9 @@ struct vulkan_emulated_mailbox
    scond_t *cond;
    VkDevice device;              /* ptr alignment */
    VkSwapchainKHR swapchain;     /* ptr alignment */
+   /* Every wait this object makes, from the display's rate; sampled at
+    * init so the thread never reads video state. */
+   int64_t timeout_us;
 
    unsigned index;
    VkResult result;              /* enum alignment */
