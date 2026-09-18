@@ -237,7 +237,7 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad,
    if (IDirectInputDevice8_CreateEffect(dev, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
 #endif
-      RARCH_WARN("[DInput] Strong rumble unavailable.\n");
+      pad->rumble_iface[0] = NULL;
 
    /* --- weak motor (Y axis) --- */
    pad->rumble_axis = DIJOFS_Y;
@@ -248,7 +248,7 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad,
    if (IDirectInputDevice8_CreateEffect(dev, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
 #endif
-      RARCH_WARN("[DInput] Weak rumble unavailable.\n");
+      pad->rumble_iface[1] = NULL;
 }
 
 static BOOL CALLBACK enum_axes_cb(
@@ -637,16 +637,18 @@ static int16_t xinput_joypad_axis_state(
 
 #endif
 
-/* Per-enumeration snapshot of RAWINPUT HID devices, built in
- * dinput_joypad_init_hybrid() before IDirectInput8_EnumDevices() and
- * freed after it returns. The old code re-fetched the entire raw
- * device list and re-queried RIDI_DEVICEINFO for every device once
- * per enumerated pad - O(pads x devices) queries against the device
- * stack. The snapshot reduces that to one RIDI_DEVICEINFO query per
- * HID device per enumeration; the RIDI_DEVICENAME / "IG_" check is
- * resolved lazily and memoized, so name queries keep the old
- * behavior (only VID/PID-matched devices) but now happen at most
- * once per device across all pads. */
+/* Per-enumeration snapshot of RAWINPUT HID devices, built by the walk
+ * before IDirectInput8_EnumDevices() and freed after it returns, and
+ * kept in the job rather than a global: a walk the task queue let go
+ * of may still be running when the next one starts. The old code
+ * re-fetched the entire raw device list and re-queried
+ * RIDI_DEVICEINFO for every device once per enumerated pad -
+ * O(pads x devices) queries against the device stack. The snapshot
+ * reduces that to one RIDI_DEVICEINFO query per HID device per
+ * enumeration; the RIDI_DEVICENAME / "IG_" check is resolved lazily
+ * and memoized, so name queries keep the old behavior (only
+ * VID/PID-matched devices) but now happen at most once per device
+ * across all pads. */
 typedef struct
 {
    HANDLE hDevice;
@@ -654,17 +656,15 @@ typedef struct
    int8_t is_ig;   /* -1 = not yet checked, 0 = no, 1 = yes */
 } dinput_hid_dev_cache_entry_t;
 
-static dinput_hid_dev_cache_entry_t *g_hid_dev_cache = NULL;
-static unsigned g_hid_dev_cache_cnt                  = 0;
-
-static void dinput_hid_dev_cache_build(void)
+static void dinput_hid_dev_cache_build(struct dinput_enum_job *job)
 {
    unsigned i;
-   unsigned num_raw_devs        = 0;
-   PRAWINPUTDEVICELIST raw_devs = NULL;
+   unsigned num_raw_devs              = 0;
+   PRAWINPUTDEVICELIST raw_devs       = NULL;
+   dinput_hid_dev_cache_entry_t *hid  = NULL;
 
-   g_hid_dev_cache     = NULL;
-   g_hid_dev_cache_cnt = 0;
+   job->hid_cache     = NULL;
+   job->hid_cache_cnt = 0;
 
    /* Go through RAWINPUT (WinXP and later) to find HID devices. */
    if ((GetRawInputDeviceList(NULL, &num_raw_devs,
@@ -682,8 +682,8 @@ static void dinput_hid_dev_cache_build(void)
       return;
    }
 
-   if (!(g_hid_dev_cache = (dinput_hid_dev_cache_entry_t*)
-         malloc(sizeof(*g_hid_dev_cache) * num_raw_devs)))
+   if (!(hid = (dinput_hid_dev_cache_entry_t*)
+         malloc(sizeof(*hid) * num_raw_devs)))
    {
       free(raw_devs);
       return;
@@ -700,8 +700,7 @@ static void dinput_hid_dev_cache_build(void)
           && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
               RIDI_DEVICEINFO, &rdi, &rdi_size) != ((UINT)-1)))
       {
-         dinput_hid_dev_cache_entry_t *e =
-            &g_hid_dev_cache[g_hid_dev_cache_cnt++];
+         dinput_hid_dev_cache_entry_t *e = &hid[job->hid_cache_cnt++];
          e->hDevice = raw_devs[i].hDevice;
          e->vidpid  = MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId);
          e->is_ig   = -1;
@@ -709,13 +708,14 @@ static void dinput_hid_dev_cache_build(void)
    }
 
    free(raw_devs);
+   job->hid_cache = hid;
 }
 
-static void dinput_hid_dev_cache_free(void)
+static void dinput_hid_dev_cache_free(struct dinput_enum_job *job)
 {
-   free(g_hid_dev_cache);
-   g_hid_dev_cache     = NULL;
-   g_hid_dev_cache_cnt = 0;
+   free(job->hid_cache);
+   job->hid_cache     = NULL;
+   job->hid_cache_cnt = 0;
 }
 
 /* Lazily resolves and memoizes whether the device ID of a cached
@@ -744,7 +744,8 @@ static bool dinput_hid_dev_cache_is_ig(dinput_hid_dev_cache_entry_t *e)
 }
 
 /* Based on SDL2's implementation. */
-static bool guid_is_xinput_device(const GUID* product_guid)
+static bool guid_is_xinput_device(struct dinput_enum_job *job,
+      const GUID* product_guid)
 {
    static const GUID common_xinput_guids[] = {
       {MAKELONG(0x28DE, 0x11FF),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}, /* Valve streaming pad */
@@ -771,9 +772,10 @@ static bool guid_is_xinput_device(const GUID* product_guid)
     * snapshot could not be built, this reports 'not XInput' - the
     * same result the old per-pad code produced when the raw device
     * list queries failed. */
-   for (i = 0; i < g_hid_dev_cache_cnt; i++)
+   for (i = 0; i < job->hid_cache_cnt; i++)
    {
-      dinput_hid_dev_cache_entry_t *e = &g_hid_dev_cache[i];
+      dinput_hid_dev_cache_entry_t *e =
+         &((dinput_hid_dev_cache_entry_t*)job->hid_cache)[i];
       if (e->vidpid != (LONG)product_guid->Data1)
          continue;
       if (dinput_hid_dev_cache_is_ig(e))
@@ -795,7 +797,7 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
    struct dinput_joypad_data *pad = NULL;
    unsigned idx;
 
-   if (job->abandoned || job->cnt == MAX_USERS)
+   if (retro_atomic_load_acquire_int(&job->abandoned) || job->cnt == MAX_USERS)
       return DIENUM_STOP;
 
    while (!job->xinput_connected[job->next_xuser] && job->next_xuser < 3)
@@ -822,7 +824,7 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
    pad->pid = inst->guidProduct.Data1 >> 16;
 
    is_xinput_pad            =    job->block_xinput
-                              && guid_is_xinput_device(&inst->guidProduct);
+                              && guid_is_xinput_device(job, &inst->guidProduct);
 
    if (is_xinput_pad)
    {
@@ -854,15 +856,13 @@ static void dinput_enum_hybrid_run(struct dinput_enum_job *job)
     * EnumDevices() walks the whole HID/PnP tree synchronously and
     * can stall for seconds if a device driver stack (e.g. Bluetooth)
     * is still coming up after a fresh boot - which is exactly why
-    * this runs on the task queue instead of blocking startup. The
-    * task queue runs one task at a time, so the snapshot is never
-    * shared between two walks. */
-   dinput_hid_dev_cache_build();
+    * this runs on the task queue instead of blocking startup. */
+   dinput_hid_dev_cache_build(job);
 
    IDirectInput8_EnumDevices(job->ctx, DI8DEVCLASS_GAMECTRL,
          enum_joypad_cb_hybrid, job, DIEDFL_ATTACHEDONLY);
 
-   dinput_hid_dev_cache_free();
+   dinput_hid_dev_cache_free(job);
 }
 
 /* Main thread: fire autoconfiguration for the published pads (both
@@ -907,10 +907,11 @@ static void dinput_enum_hybrid_autoconf_flush(void)
 
 static void dinput_enum_hybrid_done(struct dinput_enum_job *job)
 {
-   if (!dinput_enum_job_claim(job))
-      return;
+   unsigned i;
    memcpy(g_xinput_pad_indexes, job->xuser, sizeof(g_xinput_pad_indexes));
-   dinput_enum_job_free(job);
+   for (i = 0; i < g_joypad_cnt; i++)
+      if (g_xinput_pad_indexes[i] < 0)
+         dinput_pad_report_rumble(i, &g_pads[i]);
    dinput_enum_hybrid_autoconf_flush();
 }
 
@@ -1150,6 +1151,9 @@ static void xinput_joypad_poll(void)
 #ifdef __WINRT__
    bool has_active_ports = false;
 #endif
+
+   /* Publishes the pads of a walk that has ended since last frame. */
+   dinput_enum_job_poll();
    
    /* Hotplugging detection: scanning one port at a time every few frames,
     * to avoid polling overload and framerate drops. */
@@ -1158,8 +1162,8 @@ static void xinput_joypad_poll(void)
    {
       xinput_poll_counter = 0;
       /* Defer hotplug detection while the initial enumeration task
-       * is still running: active-port marking happens in its
-       * callback, and probing before that would autoconfigure the
+       * is still running: active-port marking happens when it is
+       * published, and probing before that would autoconfigure the
        * same port twice. */
       if (g_dinput_enum_inflight)
          return;

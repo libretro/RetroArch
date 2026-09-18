@@ -99,6 +99,17 @@ void dinput_pad_release(struct dinput_joypad_data *pad)
    memset(pad, 0, sizeof(*pad));
 }
 
+void dinput_pad_report_rumble(unsigned port,
+      const struct dinput_joypad_data *pad)
+{
+   if (!pad->joypad)
+      return;
+   if (!pad->rumble_iface[0])
+      RARCH_WARN("[DInput] Pad %u: strong rumble unavailable.\n", port);
+   if (!pad->rumble_iface[1])
+      RARCH_WARN("[DInput] Pad %u: weak rumble unavailable.\n", port);
+}
+
 struct dinput_enum_job *dinput_enum_job_new(void)
 {
    unsigned i;
@@ -114,14 +125,20 @@ struct dinput_enum_job *dinput_enum_job_new(void)
    job->hwnd = (HWND)video_driver_window_get();
    for (i = 0; i < MAX_USERS; i++)
       job->xuser[i] = -1;
+   retro_atomic_store_release_int(&job->walk_done, 0);
+   retro_atomic_store_release_int(&job->abandoned, 0);
+   retro_atomic_store_release_int(&job->refs, 2);
    return job;
 }
 
-void dinput_enum_job_free(struct dinput_enum_job *job)
+/* Frees the job and whatever pads it still holds. From whichever
+ * thread drops the last reference: the walk's, if it outlived the
+ * driver, which releases the COM objects it created itself. */
+static void dinput_enum_job_unref(struct dinput_enum_job *job)
 {
    unsigned i;
 
-   if (!job)
+   if (retro_atomic_fetch_sub_int(&job->refs, 1) != 1)
       return;
    for (i = 0; i < MAX_USERS; i++)
       dinput_pad_release(&job->pads[i]);
@@ -130,17 +147,13 @@ void dinput_enum_job_free(struct dinput_enum_job *job)
    free(job);
 }
 
-bool dinput_enum_job_claim(struct dinput_enum_job *job)
+void dinput_enum_job_poll(void)
 {
    unsigned i;
+   struct dinput_enum_job *job = g_dinput_enum_job;
 
-   /* destroy() let go of it while it walked: nothing it found is
-    * wanted, and this is the first moment it is safe to release. */
-   if (job->abandoned)
-   {
-      dinput_enum_job_free(job);
-      return false;
-   }
+   if (!job || !retro_atomic_load_acquire_int(&job->walk_done))
+      return;
 
    g_dinput_enum_job      = NULL;
    g_dinput_enum_inflight = false;
@@ -151,37 +164,39 @@ bool dinput_enum_job_claim(struct dinput_enum_job *job)
    for (i = 0; i < MAX_USERS; i++)
       dinput_pad_rebind_rumble(&g_pads[i]);
    g_joypad_cnt = job->cnt;
-
    memset(job->pads, 0, sizeof(job->pads));
-   job->cnt = 0;
-   return true;
+   job->cnt     = 0;
+
+   job->done(job);
+   dinput_enum_job_unref(job);
 }
 
 void dinput_enum_job_abandon(void)
 {
-   /* No wait. The walk holds its own context reference and writes
-    * only into the job, so the driver can be torn down while it is
-    * still running; the job's callback releases it when it ends. */
-   if (g_dinput_enum_job)
-   {
-      g_dinput_enum_job->abandoned = true;
-      g_dinput_enum_job            = NULL;
-   }
+   /* No wait. The walk holds its own references and writes only into
+    * the job; it stops at its next device and frees the job itself. */
+   struct dinput_enum_job *job = g_dinput_enum_job;
+
+   g_dinput_enum_job      = NULL;
    g_dinput_enum_inflight = false;
+   if (!job)
+      return;
+   retro_atomic_store_release_int(&job->abandoned, 1);
+   dinput_enum_job_unref(job);
+}
+
+static void dinput_enum_job_walk(struct dinput_enum_job *job)
+{
+   job->run(job);
+   retro_atomic_store_release_int(&job->walk_done, 1);
+   dinput_enum_job_unref(job);
 }
 
 static void dinput_enum_job_task_handler(retro_task_t *task)
 {
    struct dinput_enum_job *job = (struct dinput_enum_job*)task->user_data;
-   job->run(job);
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
-}
-
-static void dinput_enum_job_task_cb(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   struct dinput_enum_job *job = (struct dinput_enum_job*)user_data;
-   job->done(job);
+   dinput_enum_job_walk(job);
 }
 
 void dinput_enum_job_start(struct dinput_enum_job *job,
@@ -198,18 +213,17 @@ void dinput_enum_job_start(struct dinput_enum_job *job,
    {
       /* Allocation failure: walk synchronously, as before the task
        * queue took this over. */
-      run(job);
-      done(job);
+      dinput_enum_job_walk(job);
+      dinput_enum_job_poll();
       return;
    }
 
+   /* Detachable: EnumDevices() can block in the device stack for as
+    * long as it likes, and the walk touches nothing but the job and
+    * this task's flags, so the task queue may stop waiting for it. */
    task->handler   = dinput_enum_job_task_handler;
-   task->state     = NULL;
-   task->title     = NULL;
    task->user_data = job;
-   task->callback  = dinput_enum_job_task_cb;
-   task->cleanup   = NULL;
-   task->flags    |= RETRO_TASK_FLG_MUTE;
+   task->flags    |= RETRO_TASK_FLG_MUTE | RETRO_TASK_FLG_DETACHABLE;
    task_queue_push(task);
 }
 
@@ -271,7 +285,7 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad,
    if (IDirectInputDevice8_CreateEffect(dev, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
 #endif
-      RARCH_WARN("[DInput] Strong rumble unavailable.\n");
+      pad->rumble_iface[0] = NULL;
 
    /* --- weak motor (Y axis) --- */
    pad->rumble_axis = DIJOFS_Y;
@@ -282,7 +296,7 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad,
    if (IDirectInputDevice8_CreateEffect(dev, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
 #endif
-      RARCH_WARN("[DInput] Weak rumble unavailable.\n");
+      pad->rumble_iface[1] = NULL;
 }
 
 static BOOL CALLBACK enum_axes_cb(
@@ -591,6 +605,9 @@ static void dinput_joypad_cleanup_pad(unsigned idx)
 static void dinput_joypad_poll(void)
 {
    unsigned i;
+
+   /* Publishes the pads of a walk that has ended since last frame. */
+   dinput_enum_job_poll();
    /* Only iterate connected pad slots — avoids touching empty entries.
     * Note: disconnect via cleanup_pad zeroes the slot but does not compact
     * the array, so mid-array gaps have pad->joypad == NULL and are skipped
@@ -686,7 +703,7 @@ static BOOL CALLBACK enum_joypad_cb(const DIDEVICEINSTANCE *inst, void *p)
    LPDIRECTINPUTDEVICE8 dev       = NULL;
    struct dinput_joypad_data *pad = NULL;
 
-   if (job->abandoned || job->cnt == MAX_USERS)
+   if (retro_atomic_load_acquire_int(&job->abandoned) || job->cnt == MAX_USERS)
       return DIENUM_STOP;
 
    pad = &job->pads[job->cnt];
@@ -769,9 +786,9 @@ static void dinput_joypad_enum_run(struct dinput_enum_job *job)
 
 static void dinput_joypad_enum_done(struct dinput_enum_job *job)
 {
-   if (!dinput_enum_job_claim(job))
-      return;
-   dinput_enum_job_free(job);
+   unsigned i;
+   for (i = 0; i < g_joypad_cnt; i++)
+      dinput_pad_report_rumble(i, &g_pads[i]);
    dinput_joypad_autoconf_flush();
 }
 
