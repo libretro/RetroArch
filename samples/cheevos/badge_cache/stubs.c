@@ -15,6 +15,7 @@
 #include "../../../file_path_special.h"
 #include "../../../tasks/tasks_internal.h"
 #include "../../../cheevos/cheevos.h"
+#include "../../../gfx/gfx_surface.h"
 
 /* ---- test-visible state ---- */
 int      st_on_main_thread = 1;
@@ -90,6 +91,24 @@ void rcheevos_badge_request_download(const char* badge, bool locked)
 enum texture_filter_type gfx_display_texture_filter(void) { return TEXTURE_FILTER_LINEAR; }
 enum texture_filter_type gfx_display_texture_filter_latched(void) { return TEXTURE_FILTER_LINEAR; }
 uint32_t video_driver_get_disp_flags(void) { return 0; }
+
+/* The badge loader asks the surface layer what the driver wants
+ * before it queues a decode; there is no driver here, so the answer
+ * is what a software path takes: ARGB words, 8 bits a channel, no
+ * in-place texture update. */
+bool gfx_surface_query_requirements(unsigned width,
+      gfx_surface_requirements_t *req)
+{
+   if (!req)
+      return false;
+   req->rgba       = false;
+   req->formats    = GFX_SURFACE_PIXFMT_8888;
+   req->preferred  = GFX_SURFACE_PIXFMT_8888;
+   req->can_update = false;
+   req->pitch      = (size_t)width * sizeof(uint32_t);
+   req->align      = 4;
+   return true;
+}
 
 bool task_push_image_load(const char *fullpath, bool supports_rgba,
       unsigned upscale_threshold, unsigned downscale_cap,

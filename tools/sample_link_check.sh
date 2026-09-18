@@ -10,12 +10,44 @@
 #
 # Usage: tools/sample_link_check.sh [rev]
 #   rev defaults to HEAD, so an uncommitted tree checks its own diff.
+#   tools/sample_link_check.sh --all builds every sample there is, for
+#   when a change is wide enough that guessing which ones matter is
+#   the wrong move.
 set -eu
 
 rev=${1:-HEAD}
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root"
 
+if [ "${1:-}" = "--all" ]; then
+   rev=""
+   changed="--all"
+else
+   changed=$(git diff --name-only "$rev" ; git diff --cached --name-only "$rev")
+fi
+if [ "$changed" = "--all" ]; then
+   todo=""
+   for mk in $(find samples libretro-common/samples -name 'Makefile*' 2>/dev/null | sort); do
+      todo="$todo $(dirname "$mk"):$(basename "$mk")"
+   done
+   rc=0
+   for entry in $todo; do
+      dir=${entry%%:*}
+      name=${entry#*:}
+      printf '== %s (%s)\n' "$dir" "$name"
+      log=$(mktemp)
+      if (cd "$root/$dir" && make -f "$name" clean >/dev/null 2>&1 \
+          && make -f "$name" >"$log" 2>&1); then
+         echo "   ok"
+      else
+         tail -10 "$log"
+         echo "FAIL $dir"
+         rc=1
+      fi
+      rm -f "$log"
+   done
+   exit $rc
+fi
 changed=$(git diff --name-only "$rev" ; git diff --cached --name-only "$rev")
 changed=$(printf '%s\n' $changed | sort -u | grep -E '\.(c|m|cpp)$' || true)
 if [ -z "$changed" ]; then
