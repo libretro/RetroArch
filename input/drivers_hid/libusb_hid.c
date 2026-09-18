@@ -38,6 +38,17 @@
 #define LIBUSB_CAP_HAS_HOTPLUG 0x0001
 #endif
 
+/* libusb 1.0.21 added libusb_interrupt_event_handler(), which wakes a
+ * thread blocked handling events. With it the poll thread can block
+ * until there is work and still be stopped at once; without it, it has
+ * to come up every 100 ms to look at its quit flag. FreeBSD's own
+ * libusb is kept on the old path: its API version does not track
+ * upstream's feature set. */
+#if defined(LIBUSB_API_VERSION) && LIBUSB_API_VERSION >= 0x01000105 \
+      && !defined(__FreeBSD__)
+#define LIBUSB_HID_CAN_INTERRUPT 1
+#endif
+
 typedef struct libusb_hid
 {
    libusb_context *ctx;
@@ -574,6 +585,12 @@ static void libusb_hid_free(const void *data)
    if (hid->poll_thread)
    {
       hid->quit = 1;
+#ifdef LIBUSB_HID_CAN_INTERRUPT
+      /* Wakes the poll thread out of its wait for events, so the join
+       * below returns as soon as it has seen the flag. If it is not in
+       * the wait yet, its next call returns at once instead. */
+      libusb_interrupt_event_handler(hid->ctx);
+#endif
       sthread_join(hid->poll_thread);
    }
 
@@ -605,16 +622,23 @@ static void poll_thread(void *data)
 
    while (!hid->quit)
    {
-      /* Block in libusb for up to 100 ms per lap.  The timeout used
-       * to be zero, so this thread returned immediately every call
-       * and spun a core for as long as the driver was loaded.  The
-       * completed flag is hid->quit, which libusb checks when it
-       * wakes, so shutdown is not held for the whole timeout. */
+#ifdef LIBUSB_HID_CAN_INTERRUPT
+      /* Block until there are events to handle - transfers, hotplug -
+       * with no timeout to wake for. libusb_hid_free() sets hid->quit
+       * and interrupts this wait, and libusb checks the completed flag
+       * on the way out. */
+      libusb_handle_events_completed(hid->ctx, &hid->quit);
+#else
+      /* No way to interrupt the wait: block for up to 100 ms per lap
+       * and look at the flag in between. The timeout used to be zero,
+       * so this thread returned immediately every call and spun a
+       * core for as long as the driver was loaded. */
       struct timeval timeout;
       timeout.tv_sec  = 0;
       timeout.tv_usec = 100000;
       libusb_handle_events_timeout_completed(hid->ctx,
             &timeout, &hid->quit);
+#endif
    }
 }
 
