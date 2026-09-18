@@ -26,6 +26,7 @@
 
 #include "../gfx/gfx_display.h"
 #include "../gfx/video_driver.h"
+#include "../gfx/gfx_surface.h"
 #include "../tasks/tasks_internal.h"
 #include "../file_path_special.h"
 
@@ -169,6 +170,7 @@ void rcheevos_badge_cache_reset(void)
 
 uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing)
 {
+   gfx_surface_requirements_t req;
    char badge_file[24];
    char fullpath[PATH_MAX_LENGTH];
    badge_slot_t *slot;
@@ -226,8 +228,8 @@ uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool downlo
    tag->slot   = (unsigned)(slot - badge_slots);
    tag->seq    = slot->seq;
 
-   if (!task_push_image_load(fullpath,
-            (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) != 0,
+   gfx_surface_query_requirements(0, &req);
+   if (!task_push_image_load(fullpath, req.rgba,
             0, 0, badge_decode_done, tag))
    {
       free(tag);

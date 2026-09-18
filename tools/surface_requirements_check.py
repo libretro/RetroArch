@@ -32,8 +32,6 @@ EXEMPT_FILES = ("gfx/gfx_surface.c", "gfx/video_driver.c")
 # Producers that read the flags directly, each still to be migrated to
 # gfx_surface_query_requirements(). Shrinks; never grows.
 ALLOWLIST = {
-    "cheevos/cheevos_badge.c",
-    "cores/libretro-imageviewer/image_core.c",
     "gfx/gfx_display.c",
     "gfx/gfx_widgets.c",
     "gfx/widgets/gfx_widget_volume.c",
@@ -46,8 +44,6 @@ ALLOWLIST = {
     "menu/menu_explore.c",
     "retroarch.c",
     "runloop.c",
-    "tasks/task_image.c",
-    "tasks/task_overlay.c",
 }
 
 def sources(root):

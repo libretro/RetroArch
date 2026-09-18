@@ -31,6 +31,7 @@
 #include "tasks_internal.h"
 
 #include "../gfx/video_driver.h"
+#include "../gfx/gfx_surface.h"
 #include "../input/input_driver.h"
 #include "../input/input_overlay.h"
 #include "../input/input_remapping.h"
@@ -1541,8 +1542,12 @@ bool task_push_overlay_load_default(
    if (is_osk)
       loader->flags        |= OVERLAY_LOADER_IS_OSK;
 #ifdef RARCH_INTERNAL
-   if ((video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA))
-      loader->flags        |= OVERLAY_LOADER_RGBA_SUPPORT;
+   {
+      gfx_surface_requirements_t req;
+      if (     gfx_surface_query_requirements(0, &req)
+            && req.rgba)
+         loader->flags     |= OVERLAY_LOADER_RGBA_SUPPORT;
+   }
 #endif
 
    t                        = task_init();

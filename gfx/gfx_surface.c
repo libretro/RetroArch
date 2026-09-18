@@ -73,8 +73,21 @@ bool gfx_surface_query_requirements(unsigned width,
       return false;
    req->rgba       = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
          ? true : false;
-   req->pix10      = video_driver_test_all_flags(
-         GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE) ? true : false;
+   /* 8888 is always sampled; the wider formats are what the driver
+    * and its context say they can take. The preference is the widest
+    * of them, since a producer with a wider source loses nothing by
+    * decoding into it and everything by being narrowed twice. */
+   req->formats    = GFX_SURFACE_PIXFMT_8888;
+   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+      req->formats |= GFX_SURFACE_PIXFMT_2101010;
+   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
+      req->formats |= GFX_SURFACE_PIXFMT_FP16;
+   if (req->formats & GFX_SURFACE_PIXFMT_FP16)
+      req->preferred = GFX_SURFACE_PIXFMT_FP16;
+   else if (req->formats & GFX_SURFACE_PIXFMT_2101010)
+      req->preferred = GFX_SURFACE_PIXFMT_2101010;
+   else
+      req->preferred = GFX_SURFACE_PIXFMT_8888;
    req->can_update = video_driver_texture_can_update();
    /* Every upload path in the tree takes tightly packed 32-bit rows;
     * the alignment is what the GL paths set (glPixelStorei) and what

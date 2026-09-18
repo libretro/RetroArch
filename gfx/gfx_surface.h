@@ -103,15 +103,45 @@ struct gfx_surface
  * order, a context flag for 10-bit sources, a poke for compressed
  * formats - and every producer that cared had to know all three. A
  * decoder asks this instead, and emits what it is told. */
+/* Pixel formats a producer may be asked for, as a bit per format so
+ * a driver can accept several and a producer can pick the best one it
+ * can actually emit. A name here is a promise about the layout, not
+ * about any driver supporting it: the ones the tree can answer for
+ * today are the first three, and the rest are listed so that adding
+ * one is a driver change rather than an API change - scRGB content
+ * in particular is why this is a set and not a bit depth. */
+enum gfx_surface_pixfmt
+{
+   /* 8 bits a channel in a 32-bit word, the order req.rgba names. */
+   GFX_SURFACE_PIXFMT_8888     = (1 << 0),
+   /* XRGB2101010: 10 bits a channel, bits [29:20]=R [19:10]=G [9:0]=B. */
+   GFX_SURFACE_PIXFMT_2101010  = (1 << 1),
+   /* Half-float per channel, linear scRGB (1.0 = 80 nits), the format
+    * an HDR framebuffer wants without an encode pass. */
+   GFX_SURFACE_PIXFMT_FP16     = (1 << 2),
+   /* Reserved names for layouts a driver may come to accept; a
+    * producer that cannot emit one simply never sets it. */
+   GFX_SURFACE_PIXFMT_FP32     = (1 << 3),
+   GFX_SURFACE_PIXFMT_565      = (1 << 4),
+   GFX_SURFACE_PIXFMT_4444     = (1 << 5)
+};
+
 typedef struct
 {
    /* The channel order to emit: true for memory-order R,G,B,A, false
     * for ARGB words. A decoder that can do either should do this one;
-    * anything else costs a swizzle pass. */
+    * anything else costs a swizzle pass. Applies to the 8-bit
+    * formats; the wider ones have their layout fixed by the format. */
    bool rgba;
-   /* The driver samples XRGB2101010 sources, so a 10-bit decode is
-    * worth doing; false means a 10-bit image is narrowed to 8. */
-   bool pix10;
+   /* Every format the driver samples without the frontend converting
+    * first, as gfx_surface_pixfmt bits. Always has at least
+    * GFX_SURFACE_PIXFMT_8888. */
+   uint32_t formats;
+   /* The one of @formats worth decoding into when the producer has a
+    * choice: the widest the driver takes that its source can fill.
+    * A producer that cannot emit it falls back to any other bit in
+    * @formats, 8888 at worst. */
+   uint32_t preferred;
    /* The driver can replace a texture's contents in place, so a
     * streaming producer keeps one texture rather than loading a
     * replacement per frame. */
@@ -129,6 +159,11 @@ typedef struct
  * the defaults a software path would use. A producer that does not
  * know its width yet may pass 0 and read the capability fields; the
  * layout fields are then 0 as well.
+ *
+ * Formats: a producer asks whether a bit is in @formats rather than
+ * assuming a bit depth, so a driver that starts taking FP16 scRGB, or
+ * anything else added to gfx_surface_pixfmt, is picked up by every
+ * producer that can emit it without this contract changing again.
  *
  * False when @width has no row that size_t can express - reachable
  * only on a 32-bit size_t, and then only for a width no image has,
