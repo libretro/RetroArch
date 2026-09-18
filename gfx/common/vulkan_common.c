@@ -923,20 +923,20 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 #endif
 
    /* If we're emulating mailbox, stick to using fences rather than semaphores.
-    * Avoids some really weird driver bugs. */
-   if (!(vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX))
-   {
-      if (vk->context.gpu_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
-      {
-         vk->flags |= VK_DATA_FLAG_USE_WSI_SEMAPHORE;
-         RARCH_LOG("[Vulkan] Using semaphores for WSI acquire.\n");
-      }
-      else
-      {
-         vk->flags &= ~VK_DATA_FLAG_USE_WSI_SEMAPHORE;
-         RARCH_LOG("[Vulkan] Using fences for WSI acquire.\n");
-      }
-   }
+    * Avoids some really weird driver bugs. Resolved either way rather than
+    * left to the caller's zeroing: where mailbox emulation is compiled in
+    * this is the only writer. */
+   if (      (vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX)
+         || (vk->context.gpu_properties.deviceType
+            != VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU))
+      vk->flags &= ~VK_DATA_FLAG_USE_WSI_SEMAPHORE;
+   else
+      vk->flags |=  VK_DATA_FLAG_USE_WSI_SEMAPHORE;
+   RARCH_LOG("[Vulkan] Using %s for WSI acquire%s.\n",
+         (vk->flags & VK_DATA_FLAG_USE_WSI_SEMAPHORE)
+         ? "semaphores" : "fences",
+         (vk->flags & VK_DATA_FLAG_EMULATE_MAILBOX)
+         ? ", mailbox emulation available" : "");
 
    {
       char version_str[128];
