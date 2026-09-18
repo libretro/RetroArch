@@ -40,9 +40,14 @@
 #endif
 #if defined(__APPLE__)
 #include <sys/ucontext.h>
+#include <TargetConditionals.h>
+/* tvOS marks the mach task API unavailable, and the SDK does not ship
+ * the headers for it. Nothing below needs them there. */
+#if !defined(TARGET_OS_TV) || !TARGET_OS_TV
 #include <mach/mach_init.h>
 #include <mach/mach_port.h>
 #include <mach/task.h>
+#endif
 #endif
 #endif
 
@@ -323,9 +328,15 @@ bool retro_faulthandler_install(retro_fault_handler_t handler)
       if (ok && sigaction(SIGSEGV, &sa, &s_old_sigsegv) != 0)
          ok = false;
 #endif
-#if defined(__APPLE__) && defined(__aarch64__)
+/* Not && !TARGET_OS_TV: on a platform that never includes
+ * TargetConditionals.h the name is undefined, and an undefined name in
+ * a preprocessor expression is a warning under -Wundef and a silent
+ * zero otherwise. Ask whether it is defined first. */
+#if defined(__APPLE__) && defined(__aarch64__) \
+ && (!defined(TARGET_OS_TV) || !TARGET_OS_TV)
       /* Keeps a debugger out of an EXC_BAD_ACCESS loop when the fault
-       * is one we are going to handle. */
+       * is one we are going to handle; tvOS has neither the API nor a
+       * debugger to keep out. */
       if (ok)
          task_set_exception_ports(mach_task_self(), EXC_MASK_BAD_ACCESS,
                MACH_PORT_NULL, EXCEPTION_DEFAULT, 0);
