@@ -64,6 +64,25 @@ gfx_surface_t *gfx_surface_new(unsigned width, unsigned height,
    return s;
 }
 
+gfx_surface_t *gfx_surface_new_static(unsigned width, unsigned height,
+      enum texture_filter_type filter)
+{
+   gfx_surface_t *s;
+
+   if (!width || !height)
+      return NULL;
+   if (!(s = (gfx_surface_t*)calloc(1, sizeof(*s))))
+      return NULL;
+   s->width      = width;
+   s->height     = height;
+   s->num_slots  = 0;
+   s->filter     = filter;
+   s->rgba       = 0xff;
+   s->can_update = video_driver_texture_can_update() ? 1 : 0;
+   GFX_INSTR_INC(GFX_INSTR_SURFACE_NEW);
+   return s;
+}
+
 /* The synchronous upload of s->img: a replacement texture when there
  * is none yet, the order changed, or the driver has no in-place path,
  * else an update. Direct video runs the driver here; under the wrapper
@@ -223,6 +242,35 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       enum gfx_surface_submit_result r = gfx_surface_upload_sync(s, rgba);
       GFX_INSTR_INC(r == GFX_SURFACE_SUBMIT_DONE
             ? GFX_INSTR_SUBMIT_DONE : GFX_INSTR_SUBMIT_FAILED);
+      return r;
+   }
+}
+
+enum gfx_surface_submit_result gfx_surface_submit_external(gfx_surface_t *s,
+      const uint32_t *pixels, bool rgba,
+      gfx_surface_release_t release, void *user)
+{
+   if (!s || !pixels || s->num_slots)
+      return GFX_SURFACE_SUBMIT_FAILED;
+   if (s->inflight)
+      return GFX_SURFACE_SUBMIT_BUSY;
+
+   s->release           = release;
+   s->user              = user;
+   s->img.pixels        = (uint32_t*)pixels;
+   s->img.width         = s->width;
+   s->img.height        = s->height;
+   s->img.supports_rgba = rgba;
+   s->img.pix10         = false;
+   s->img.compressed    = NULL;
+   {
+      /* inflight_slot is meaningless without slots; release() gets 0
+       * and the caller looks at the surface, not the slot. */
+      enum gfx_surface_submit_result r = gfx_surface_submit_img(s, 0, rgba);
+      GFX_INSTR_INC(r == GFX_SURFACE_SUBMIT_QUEUED
+            ? GFX_INSTR_SUBMIT_QUEUED
+            : (r == GFX_SURFACE_SUBMIT_DONE
+               ? GFX_INSTR_SUBMIT_DONE : GFX_INSTR_SUBMIT_FAILED));
       return r;
    }
 }

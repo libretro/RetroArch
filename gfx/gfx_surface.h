@@ -96,6 +96,21 @@ struct gfx_surface
    uint8_t can_update; /* driver updates in place */
 };
 
+/* A surface with no slots of its own, for an image whose pixels the
+ * caller keeps: an overlay asset, a still. Submitted through
+ * gfx_surface_submit_external(), which is the only submit it takes.
+ * NULL when out of memory. */
+gfx_surface_t *gfx_surface_new_static(unsigned width, unsigned height,
+      enum texture_filter_type filter);
+
+/* Upload @pixels, which the caller owns and must keep valid until the
+ * surface's release() has run (QUEUED) or the call has returned
+ * (DONE). For a surface made by gfx_surface_new_static; @rgba is the
+ * order the pixels are in. Main thread. */
+enum gfx_surface_submit_result gfx_surface_submit_external(gfx_surface_t *s,
+      const uint32_t *pixels, bool rgba,
+      gfx_surface_release_t release, void *user);
+
 /* A surface of @num_slots frames of @width x @height 32-bit pixels
  * (1..GFX_SURFACE_MAX_SLOTS), one allocation. NULL when out of memory
  * or the arguments are out of range. */

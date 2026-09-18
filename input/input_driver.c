@@ -38,6 +38,7 @@
 
 #include "input_driver.h"
 #include "../gfx/gfx_instrument.h"
+#include "../gfx/gfx_surface.h"
 #include "input_keymaps.h"
 #include "input_remapping.h"
 #include "input_osk.h"
@@ -3569,17 +3570,49 @@ static bool input_overlay_upload_textures(input_overlay_t *ol)
    if (!(tex = (uintptr_t*)calloc(total, sizeof(*tex))))
       return false;
    ol->page_textures = tex;
+   if (!(ol->surfaces = (void**)calloc(ol->num_images, sizeof(void*))))
+   {
+      input_overlay_release_textures(ol);
+      return false;
+   }
 
+   /* Each unique image becomes a surface holding one texture: the
+    * pixels are the pack's and stay where they are, so the surface
+    * carries no slots of its own and the upload is the same
+    * submit-and-own path an animated preview frame takes. The
+    * driver's page then draws from the surfaces' handles. */
    for (i = 0; i < ol->num_images; i++)
    {
+      gfx_surface_t *s = gfx_surface_new_static(ol->images[i]->width,
+            ol->images[i]->height, TEXTURE_FILTER_LINEAR);
       GFX_INSTR_INC(GFX_INSTR_OVERLAY_UPLOAD);
-      if (     !video_driver_texture_load(ol->images[i],
-               TEXTURE_FILTER_LINEAR, &tex[i])
-            || !tex[i])
+      ol->surfaces[i]  = s;
+      /* An asset is uploaded once and never again, so a submit that
+       * the video thread has not finished with is waited out by the
+       * poll below rather than dropped. */
+      if (     !s
+            || gfx_surface_submit_external(s, ol->images[i]->pixels,
+                  ol->images[i]->supports_rgba, NULL, NULL)
+               == GFX_SURFACE_SUBMIT_FAILED)
       {
          input_overlay_release_textures(ol);
          return false;
       }
+   }
+#ifdef HAVE_THREADS
+   /* Under threaded video the handles land through the wrapper's
+    * completion list; the page needs them now. */
+   video_thread_async_poll();
+#endif
+   for (i = 0; i < ol->num_images; i++)
+   {
+      gfx_surface_t *s = (gfx_surface_t*)ol->surfaces[i];
+      if (!s->handle)
+      {
+         input_overlay_release_textures(ol);
+         return false;
+      }
+      tex[i] = s->handle;
    }
 
    /* The loader deduplicated by path, so a page's entry shares its
@@ -3622,11 +3655,17 @@ void input_overlay_video_teardown(void)
 void input_overlay_release_textures(input_overlay_t *ol)
 {
    size_t i;
-   if (!ol || !ol->page_textures)
+   if (!ol)
       return;
-   for (i = 0; i < ol->num_images; i++)
-      if (ol->page_textures[i])
-         video_driver_texture_unload(&ol->page_textures[i]);
+   if (ol->surfaces)
+   {
+      /* The texture goes with its surface; one still in flight frees
+       * itself when the video thread is done with it. */
+      for (i = 0; i < ol->num_images; i++)
+         gfx_surface_free((gfx_surface_t*)ol->surfaces[i]);
+      free(ol->surfaces);
+      ol->surfaces = NULL;
+   }
    for (i = 0; i < ol->size; i++)
       ol->overlays[i].textures = NULL;
    free(ol->page_textures);
