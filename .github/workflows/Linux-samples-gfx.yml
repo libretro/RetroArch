@@ -199,7 +199,7 @@ jobs:
           WINEDEBUG=-all timeout 300 xvfb-run -a -s "-screen 0 1280x1024x24" make check
           echo "[pass] vblank_clock_ddraw_test (wine)"
 
-      - name: Build and run vblank_clock_test (C89, ASan + UBSan)
+      - name: Build and run vblank_clock_test and vblank_clock_pub_test (C89, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/vblank_clock
         run: |
@@ -215,6 +215,15 @@ jobs:
           make clean all SANITIZER=address,undefined
           UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 60 ./vblank_clock_test
           echo "[pass] vblank_clock_test"
+          # The seqlock handing the clock from the kernel-event thread to
+          # the frame thread: one writer publishing flat out, three
+          # readers checking every snapshot is one whole publish and
+          # none goes backwards - under ASan+UBSan, then TSan, which
+          # also checks the pattern is free of formal data races.
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 ./vblank_clock_pub_test
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./vblank_clock_pub_test
+          echo "[pass] vblank_clock_pub_test (ASan, TSan)"
 
       - name: Build and run vulkan_extension_count_test (ASan)
         shell: bash

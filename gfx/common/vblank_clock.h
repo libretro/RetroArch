@@ -36,6 +36,8 @@
 
 #include <boolean.h>
 #include <retro_inline.h>
+#include <retro_atomic.h>
+#include <retro_miscellaneous.h>   /* retro_cpu_relax */
 
 /* Vblanks that must fit the period before the beam is reported: how
  * long the phase and period take to converge from the mode's nominal
@@ -223,5 +225,89 @@ static INLINE int64_t vblank_sampler_feed(vblank_sampler_t *s, int64_t t_us,
    return t_us - (int64_t)(((total - (double)active) + (double)line)
          / s->rate);
 }
+
+/* Publishing a clock from its one writer thread to a reader on another,
+ * as a seqlock: the writer never waits, and a reader retries a bounded
+ * number of times against a publish in progress. Available where the
+ * atomics are lock-free and 64 bits wide; elsewhere a caller keeps a
+ * lock. The writer's own vblank_clock_t stays plain memory - this is
+ * only the copy the reader sees. */
+#if defined(RETRO_ATOMIC_LOCK_FREE) && defined(RETRO_ATOMIC_HAS_64)
+#define VBLANK_CLOCK_HAS_PUB 1
+
+typedef struct vblank_clock_pub
+{
+   retro_atomic_size_t seq;
+   retro_atomic_64_t   last_us;
+   retro_atomic_64_t   period;    /* double, as its bits */
+   retro_atomic_64_t   nominal;   /* double, as its bits */
+   retro_atomic_int_t  good;
+} vblank_clock_pub_t;
+
+/* A publish is four relaxed stores, so a reader that lands mid-write is
+ * one relax away from a clean sample; the bound keeps it from spinning
+ * behind a writer descheduled mid-publish. */
+#define VBLANK_CLOCK_PUB_TRIES 64
+
+static INLINE int64_t vblank_clock_dbits_(double d)
+{
+   int64_t i;
+   memcpy(&i, &d, sizeof(i));
+   return i;
+}
+
+static INLINE double vblank_clock_bitsd_(int64_t i)
+{
+   double d;
+   memcpy(&d, &i, sizeof(d));
+   return d;
+}
+
+/* One writer only. */
+static INLINE void vblank_clock_publish(vblank_clock_pub_t *p,
+      const vblank_clock_t *c)
+{
+   size_t seq = retro_atomic_load_relaxed_size(&p->seq);
+
+   retro_atomic_store_release_size(&p->seq, seq + 1);
+   /* Keeps the field stores below from being hoisted above the odd
+    * stamp, which is what tells a reader the snapshot is in flux. */
+   retro_atomic_thread_fence_release();
+   retro_atomic_store_relaxed_64(&p->last_us, c->last_us);
+   retro_atomic_store_relaxed_64(&p->period,  vblank_clock_dbits_(c->period_us));
+   retro_atomic_store_relaxed_64(&p->nominal, vblank_clock_dbits_(c->nominal_us));
+   retro_atomic_store_relaxed_int(&p->good, (int)c->good);
+   retro_atomic_store_release_size(&p->seq, seq + 2);
+}
+
+/* Any thread. false when every try landed on a publish in progress: the
+ * caller has no clock this once. */
+static INLINE bool vblank_clock_snapshot(vblank_clock_pub_t *p,
+      vblank_clock_t *out)
+{
+   unsigned tries;
+
+   for (tries = 0; tries < VBLANK_CLOCK_PUB_TRIES; tries++)
+   {
+      size_t s2;
+      size_t s1 = retro_atomic_load_acquire_size(&p->seq);
+
+      if (s1 & 1)
+      {
+         retro_cpu_relax();
+         continue;
+      }
+      out->last_us    = retro_atomic_load_relaxed_64(&p->last_us);
+      out->period_us  = vblank_clock_bitsd_(retro_atomic_load_relaxed_64(&p->period));
+      out->nominal_us = vblank_clock_bitsd_(retro_atomic_load_relaxed_64(&p->nominal));
+      out->good       = (unsigned)retro_atomic_load_relaxed_int(&p->good);
+      retro_atomic_thread_fence_acquire();
+      s2 = retro_atomic_load_acquire_size(&p->seq);
+      if (s1 == s2)
+         return true;
+   }
+   return false;
+}
+#endif
 
 #endif

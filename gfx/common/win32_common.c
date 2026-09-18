@@ -308,15 +308,61 @@ static D3DKMTCLOSEADAPTER_FN pD3DKMTCloseAdapter;
  * than polling. Only a display none of these can serve (Vista, which
  * has no QueryDisplayConfig for the line counts) reads the counter.
  * ------------------------------------------------------------------- */
-static vblank_clock_t d3dkmt_vc;
-#ifdef HAVE_THREADS
-/* The kernel-event thread feeds the clock from its own thread. */
-static slock_t *d3dkmt_vc_lock;
-#define D3DKMT_VC_LOCK()   do { if (d3dkmt_vc_lock) slock_lock(d3dkmt_vc_lock); } while (0)
-#define D3DKMT_VC_UNLOCK() do { if (d3dkmt_vc_lock) slock_unlock(d3dkmt_vc_lock); } while (0)
+/* One writer at a time: the kernel-event thread while it runs, the
+ * frame thread otherwise (DWM, DirectDraw, and every reset). Every
+ * switch stops the thread before the frame thread writes and starts it
+ * after, and thread start and join order that handover, so the writer's
+ * copy is plain memory. The frame thread reads a published snapshot,
+ * through a seqlock where the atomics allow - the writer never waits,
+ * and the frame thread never waits behind the time-critical clock
+ * thread - else through a lock, as video_driver.c's frame cache does. */
+static vblank_clock_t d3dkmt_vc_w;
+
+#if defined(HAVE_THREADS) && defined(VBLANK_CLOCK_HAS_PUB)
+#define D3DKMT_VC_SEQLOCK 1
+static vblank_clock_pub_t d3dkmt_vc_pub;
+
+static void d3dkmt_vc_publish(void)
+{
+   vblank_clock_publish(&d3dkmt_vc_pub, &d3dkmt_vc_w);
+}
+
+static bool d3dkmt_vc_read(vblank_clock_t *out)
+{
+   return vblank_clock_snapshot(&d3dkmt_vc_pub, out);
+}
 #else
-#define D3DKMT_VC_LOCK()   do { } while (0)
-#define D3DKMT_VC_UNLOCK() do { } while (0)
+#ifdef HAVE_THREADS
+static slock_t *d3dkmt_vc_lock;
+#endif
+static vblank_clock_t d3dkmt_vc_pub;
+
+static void d3dkmt_vc_publish(void)
+{
+#ifdef HAVE_THREADS
+   if (d3dkmt_vc_lock)
+      slock_lock(d3dkmt_vc_lock);
+#endif
+   d3dkmt_vc_pub = d3dkmt_vc_w;
+#ifdef HAVE_THREADS
+   if (d3dkmt_vc_lock)
+      slock_unlock(d3dkmt_vc_lock);
+#endif
+}
+
+static bool d3dkmt_vc_read(vblank_clock_t *out)
+{
+#ifdef HAVE_THREADS
+   if (d3dkmt_vc_lock)
+      slock_lock(d3dkmt_vc_lock);
+#endif
+   *out = d3dkmt_vc_pub;
+#ifdef HAVE_THREADS
+   if (d3dkmt_vc_lock)
+      slock_unlock(d3dkmt_vc_lock);
+#endif
+   return true;
+}
 #endif
 
 enum d3dkmt_source
@@ -333,25 +379,23 @@ static unsigned d3dkmt_active_lines;
 static unsigned d3dkmt_total_lines;
 static double   d3dkmt_nominal_period_us;
 
+/* The writer's operations - only ever on the current writer's thread. */
 static void d3dkmt_vc_reset(void)
 {
-   D3DKMT_VC_LOCK();
-   vblank_clock_init(&d3dkmt_vc, d3dkmt_nominal_period_us);
-   D3DKMT_VC_UNLOCK();
+   vblank_clock_init(&d3dkmt_vc_w, d3dkmt_nominal_period_us);
+   d3dkmt_vc_publish();
 }
 
 static void d3dkmt_vc_feed(int64_t when)
 {
-   D3DKMT_VC_LOCK();
-   vblank_clock_feed(&d3dkmt_vc, when);
-   D3DKMT_VC_UNLOCK();
+   vblank_clock_feed(&d3dkmt_vc_w, when);
+   d3dkmt_vc_publish();
 }
 
-static void d3dkmt_vc_read(vblank_clock_t *out)
+static void d3dkmt_vc_miss(void)
 {
-   D3DKMT_VC_LOCK();
-   *out = d3dkmt_vc;
-   D3DKMT_VC_UNLOCK();
+   vblank_clock_miss(&d3dkmt_vc_w);
+   d3dkmt_vc_publish();
 }
 
 /* ---- the kernel vblank event --------------------------------------- */
@@ -384,9 +428,7 @@ static void d3dkmt_kmt_thread(void *data)
          /* The kernel's own 80 ms timeout, or the adapter gone: never
           * a vblank. An error that returns at once must not become a
           * busy loop, so back off on the stop event. */
-         D3DKMT_VC_LOCK();
-         vblank_clock_miss(&d3dkmt_vc);
-         D3DKMT_VC_UNLOCK();
+         d3dkmt_vc_miss();
          WaitForSingleObject(k->stop_event, 100);
          continue;
       }
@@ -415,8 +457,7 @@ static bool d3dkmt_kmt_start(void)
    if (k->thread)
       return true;
    if (     !pD3DKMTWaitForVerticalBlankEvent
-         || !d3dkmt_adapter.vb.hAdapter
-         || !d3dkmt_vc_lock)
+         || !d3dkmt_adapter.vb.hAdapter)
       return false;
    memset(k, 0, sizeof(*k));
    k->vb = d3dkmt_adapter.vb;
@@ -608,7 +649,8 @@ static void d3dkmt_dd_sample(void)
    }
    d3dkmt_dd_fails = 0;
 
-   d3dkmt_vc_read(&vc);
+   /* The frame thread is this source's writer: its own copy. */
+   vc = d3dkmt_vc_w;
    vb = vblank_sampler_feed(&d3dkmt_smp, t0 + (t1 - t0) / 2,
          (hr == DD_OK) ? (int)line : -1, d3dkmt_active_lines,
          (vc.good >= VBLANK_CLOCK_SETTLE) ? vc.period_us
@@ -826,7 +868,7 @@ static void d3dkmt_init(void)
 {
    if (!d3dkmt_wake_event)
       d3dkmt_wake_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(D3DKMT_VC_SEQLOCK)
    if (!d3dkmt_vc_lock)
       d3dkmt_vc_lock = slock_new();
 #endif
@@ -892,11 +934,10 @@ int d3dkmt_scanline_get(void)
    {
       /* A clock source: the beam once it has settled, and until then
        * nothing - Scanline Sync idles rather than polling. */
-      d3dkmt_vc_read(&vc);
-      beam = d3dkmt_total_lines
-         ? vblank_clock_beam(&vc, cpu_features_get_time_usec(),
-               d3dkmt_active_lines, d3dkmt_total_lines)
-         : -1;
+      if (!d3dkmt_total_lines || !d3dkmt_vc_read(&vc))
+         return -1;
+      beam = vblank_clock_beam(&vc, cpu_features_get_time_usec(),
+            d3dkmt_active_lines, d3dkmt_total_lines);
       return beam;
    }
    /* No clock can serve this display (Vista): the counter. */
@@ -953,9 +994,10 @@ bool d3dkmt_scanline_wait(int target_line, unsigned max_us)
    DWORD n = 1;
 
    d3dkmt_follow_window();
-   if (d3dkmt_source == D3DKMT_SRC_NONE || !d3dkmt_total_lines)
+   if (     d3dkmt_source == D3DKMT_SRC_NONE
+         || !d3dkmt_total_lines
+         || !d3dkmt_vc_read(&vc))
       return false;
-   d3dkmt_vc_read(&vc);
    if ((wait_us = vblank_clock_until_line(&vc, cpu_features_get_time_usec(),
                d3dkmt_active_lines, d3dkmt_total_lines, target_line)) < 0)
       return false;

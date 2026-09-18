@@ -1,4 +1,5 @@
 TARGET := vblank_clock_test
+PUB     := vblank_clock_pub_test
 
 RARCH_DIR         := ../../..
 LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
@@ -19,15 +20,21 @@ ifneq ($(SAN),)
    LDFLAGS := -fsanitize=$(SAN) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGET) $(PUB)
 
 $(TARGET): $(SOURCES)
 	$(CC) $(CFLAGS) -o $@ $(SOURCES) $(LDFLAGS)
 
+# The seqlock between two threads: gnu99 for pthreads, run under
+# SANITIZER=thread in CI.
+$(PUB): vblank_clock_pub_test.c $(RARCH_DIR)/gfx/common/vblank_clock.h
+	$(CC) $(subst -std=c89 -pedantic,-std=gnu99,$(CFLAGS)) -o $@ vblank_clock_pub_test.c $(LDFLAGS) -lpthread
+
 check: all
 	./$(TARGET)
+	./$(PUB)
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(PUB)
 
 .PHONY: all check clean
