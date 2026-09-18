@@ -7754,6 +7754,22 @@ void video_driver_scanline_init(void)
    video_st->scanline[SCANLINE_TOTAL] = 0;
 }
 
+/* Scanlines are counted in lines of the display's current mode. The
+ * tuner used to measure them against RetroArch's viewport height,
+ * which is only the same thing fullscreen at the desktop resolution:
+ * in a window its targets and its estimate of the blanking interval
+ * came out in the wrong units. The viewport height stays the fallback
+ * where the mode's timing is not known. */
+static INLINE uint16_t video_driver_scanline_height(video_driver_state_t *video_st)
+{
+#ifdef HAVE_D3DKMT
+   int height = d3dkmt_scanline_height();
+   if (height > 0)
+      return (uint16_t)height;
+#endif
+   return (uint16_t)VIDEO_DRIVER_OUTPUT_HEIGHT(VIDEO_DRIVER_OUTPUT_SIZE(video_st));
+}
+
 /* The beam position through the display server; a server without
  * get_scanline() reports -1 and the tuner disables itself below. */
 static INLINE int16_t video_driver_scanline_get(void)
@@ -7766,8 +7782,7 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t video_height  = (uint16_t)VIDEO_DRIVER_OUTPUT_HEIGHT(
-         VIDEO_DRIVER_OUTPUT_SIZE(video_st));
+   uint16_t video_height  = video_driver_scanline_height(video_st);
    int16_t scanline_next  = video_st->scanline[SCANLINE_NEXT];
    int16_t scanline_hold  = video_st->scanline[SCANLINE_HOLD];
    int16_t scanline_blank = video_st->scanline[SCANLINE_TOTAL] - video_height;
@@ -7850,8 +7865,7 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t video_height   = (uint16_t)VIDEO_DRIVER_OUTPUT_HEIGHT(
-         VIDEO_DRIVER_OUTPUT_SIZE(video_st));
+   uint16_t video_height   = video_driver_scanline_height(video_st);
    int16_t scanline_next   = video_st->scanline[SCANLINE_NEXT];
    int16_t scanline_total  = video_st->scanline[SCANLINE_TOTAL];
    int16_t scanline_blank  = video_st->scanline[SCANLINE_TOTAL] - video_height;
@@ -7861,6 +7875,19 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
    bool init               = (!scanline_total) ? true : false;
    bool wait               = true;
    retro_time_t spin_until = 0;
+
+#ifdef HAVE_D3DKMT
+   /* The mode's timing gives the total line count outright; the
+    * calibration pass below measured it by watching a whole frame. */
+   if (init && d3dkmt_scanline_total() > video_height)
+   {
+      scanline_total = (int16_t)d3dkmt_scanline_total();
+      scanline_blank = scanline_total - video_height;
+      min_run_time   = (double)scanline_blank / (double)video_height
+         * (double)frame_time_target;
+      init           = false;
+   }
+#endif
 
    if (     scanline_target <= 0
          || scanline_target >= video_height)
@@ -7873,7 +7900,24 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
    /* Minimum usage is vblank */
    core_run_time = (core_run_time < min_run_time) ? min_run_time : core_run_time;
 
-   /* Use CPU friendlier sleep as much as possible */
+#ifdef HAVE_D3DKMT
+   /* The vblank clock: one timer aimed at the moment the beam reaches
+    * the target line, no reads of the counter while waiting and no
+    * sleep. It declines - and the counter loop below runs as before -
+    * when there is no clock: no vblank event, unknown or interlaced
+    * timing, or a period that will not settle (variable refresh). */
+   if (     wait && !init
+         && d3dkmt_scanline_wait(scanline_target,
+               2 * (unsigned)frame_time_target))
+   {
+      int16_t landed = video_driver_scanline_get();
+      video_st->scanline[SCANLINE_NEXT]  = (landed >= 0) ? landed : scanline_next;
+      video_st->scanline[SCANLINE_TOTAL] = scanline_total;
+      return;
+   }
+#endif
+
+   /* No clock: the counter itself, as before. */
    if (wait && frame_time_target > core_run_time)
    {
       int8_t sleep = (frame_time_target - core_run_time) / 1000;

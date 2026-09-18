@@ -837,6 +837,87 @@ static float win32_display_server_get_refresh_rate(void *data)
 #endif
 }
 
+/* The signal timing of the display path driven by one adapter output,
+ * identified the way D3DKMTOpenAdapterFromHdc() reports it: the
+ * adapter LUID and the VidPn source ID, which are the adapterId and
+ * source id QueryDisplayConfig() uses. Scanline Sync needs the active
+ * and total line counts to turn a vblank timestamp into a beam
+ * position. Progressive modes only: an interlaced beam is not a
+ * single line count per refresh. */
+bool win32_display_signal_timing(LUID adapter, UINT32 source_id,
+      unsigned *active_lines, unsigned *total_lines, double *refresh_hz)
+{
+#if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
+   UINT32 i;
+   UINT32 num_paths                          = 0;
+   UINT32 num_modes                          = 0;
+   bool found                                = false;
+   DISPLAYCONFIG_PATH_INFO_CUSTOM *paths     = NULL;
+   DISPLAYCONFIG_MODE_INFO_CUSTOM *modes     = NULL;
+#ifdef HAVE_DYLIB
+   static QUERYDISPLAYCONFIG          pQDC;
+   static GETDISPLAYCONFIGBUFFERSIZES pGDCBS;
+
+   if (!pQDC || !pGDCBS)
+   {
+      HMODULE user32 = GetModuleHandle("user32.dll");
+      pQDC   = (QUERYDISPLAYCONFIG)GetProcAddress(user32, "QueryDisplayConfig");
+      pGDCBS = (GETDISPLAYCONFIGBUFFERSIZES)GetProcAddress(user32,
+            "GetDisplayConfigBufferSizes");
+   }
+#else
+   static QUERYDISPLAYCONFIG          pQDC   = QueryDisplayConfig;
+   static GETDISPLAYCONFIGBUFFERSIZES pGDCBS = GetDisplayConfigBufferSizes;
+#endif
+
+   if (!pQDC || !pGDCBS)
+      return false;
+   /* QDC_ONLY_ACTIVE_PATHS: the timing on the wire now. */
+   if (pGDCBS(0x2, &num_paths, &num_modes) != ERROR_SUCCESS
+         || !num_paths || !num_modes)
+      return false;
+   paths = (DISPLAYCONFIG_PATH_INFO_CUSTOM*)calloc(num_paths, sizeof(*paths));
+   modes = (DISPLAYCONFIG_MODE_INFO_CUSTOM*)calloc(num_modes, sizeof(*modes));
+   if (     paths && modes
+         && pQDC(0x2, &num_paths, paths, &num_modes, modes, NULL)
+               == ERROR_SUCCESS)
+   {
+      for (i = 0; i < num_paths && !found; i++)
+      {
+         const DISPLAYCONFIG_PATH_INFO_CUSTOM *p = &paths[i];
+         UINT32 m = p->targetInfo.dummyunionname.modeInfoIdx;
+         const DISPLAYCONFIG_VIDEO_SIGNAL_INFO_CUSTOM *sig;
+
+         if (     p->sourceInfo.adapterId.LowPart  != adapter.LowPart
+               || p->sourceInfo.adapterId.HighPart != adapter.HighPart
+               || p->sourceInfo.id                 != source_id)
+            continue;
+         /* DISPLAYCONFIG_MODE_INFO_TYPE_TARGET */
+         if (m >= num_modes || modes[m].infoType != 2)
+            continue;
+         sig = &modes[m].dummyunionname.targetMode.targetVideoSignalInfo;
+         /* DISPLAYCONFIG_SCANLINE_ORDERING_PROGRESSIVE */
+         if (     sig->scanLineOrdering != 1
+               || !sig->activeSize.cy
+               || sig->totalSize.cy <= sig->activeSize.cy
+               || !sig->vSyncFreq.Denominator
+               || !sig->vSyncFreq.Numerator)
+            continue;
+         *active_lines = sig->activeSize.cy;
+         *total_lines  = sig->totalSize.cy;
+         *refresh_hz   = (double)sig->vSyncFreq.Numerator
+            / (double)sig->vSyncFreq.Denominator;
+         found         = true;
+      }
+   }
+   free(paths);
+   free(modes);
+   return found;
+#else
+   return false;
+#endif
+}
+
 static void win32_display_server_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *s, size_t len)
 {

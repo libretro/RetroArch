@@ -279,9 +279,32 @@ typedef struct d3dkmt_adapter
 {
    D3DKMT_GETSCANLINE sl;
    D3DKMT_WAITFORVERTICALBLANKEVENT vb;
+   /* The adapter's LUID, which with the VidPn source ID identifies the
+    * display path to QueryDisplayConfig(). */
+   LUID luid;
 } d3dkmt_adapter_t;
 
 extern int d3dkmt_scanline_get(void);
+
+/* Active and total lines of the display mode the scanline counter is
+ * on, from its signal timing, or 0 when not known. These, not the
+ * window or viewport height, are the units get_scanline() counts in. */
+extern int d3dkmt_scanline_height(void);
+extern int d3dkmt_scanline_total(void);
+
+/* Blocks until the beam reaches @target_line of the display the counter
+ * is on, or @max_us passes, on a high-resolution timer aimed from the
+ * vblank clock - no polling, no sleep. Returns false when the clock is
+ * not running (no vblank event, unknown timing, an interlaced or
+ * variable-rate display), and the caller falls back to reading the
+ * counter. */
+extern bool d3dkmt_scanline_wait(int target_line, unsigned max_us);
+
+/* In dispserv_win32.c: the progressive signal timing of the display
+ * path an adapter output drives, by the LUID and VidPn source ID that
+ * D3DKMTOpenAdapterFromHdc() reports. */
+extern bool win32_display_signal_timing(LUID adapter, UINT32 source_id,
+      unsigned *active_lines, unsigned *total_lines, double *refresh_hz);
 
 /* Block until the display signals vertical blank. Returns false when
  * the entry point is unavailable or the wait fails, in which case the

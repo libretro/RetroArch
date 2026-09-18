@@ -180,6 +180,23 @@ jobs:
           done
           echo "[pass] atomic backend portability"
 
+      - name: Build and run vblank_clock_test (C89, ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/vblank_clock
+        run: |
+          set -eu
+          # gfx/common/vblank_clock.h: the arithmetic Scanline Sync on
+          # Windows uses in place of polling D3DKMTGetScanLine - a clock
+          # fed vblank timestamps from a waiter that only ever wakes
+          # late, and the beam position it implies. Against 50 simulated
+          # displays up to 600 ppm off their nominal rate: no beam
+          # before it settles, beam and wait landing within 6 lines,
+          # missed and duplicate vblanks, a stale clock, and variable
+          # refresh never reported.
+          make clean all SANITIZER=address,undefined
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 60 ./vblank_clock_test
+          echo "[pass] vblank_clock_test"
+
       - name: Build and run vulkan_extension_count_test (ASan)
         shell: bash
         working-directory: samples/gfx/vulkan_extension_count
