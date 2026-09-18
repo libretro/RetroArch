@@ -3560,8 +3560,9 @@ void video_driver_update_viewport(
          }
          else
          {
-            /* Fit mode: preserve aspect ratio within overlay viewport */
-            float game_aspect = VIDEO_DRIVER_ASPECT_RATIO(video_st);
+            /* Fit mode: preserve aspect ratio within overlay viewport.
+             * From the snapshot; this runs on the video thread. */
+            float game_aspect = video_driver_aspect_ratio;
             float ol_aspect   = (float)ol_w / (float)ol_h;
 
             if (game_aspect > ol_aspect)
