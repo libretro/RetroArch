@@ -651,8 +651,20 @@ void memjit_write_end(void)   { }
 /* A reservation that shared memory is mapped into at several places   */
 /* ------------------------------------------------------------------ */
 
+/* The placeholder path needs the flags as well as the entry points, and
+ * an SDK older than the Windows 10 1803 one does not define them --
+ * MXE's mingw-w64 among them. Without them only the legacy path is
+ * compiled, which reaches every Windows this file supports anyway; with
+ * them the runtime check decides. */
+#if defined(_WIN32) && !defined(_XBOX) && defined(MEM_RESERVE_PLACEHOLDER) \
+ && defined(MEM_PRESERVE_PLACEHOLDER) && defined(MEM_REPLACE_PLACEHOLDER) \
+ && defined(MEM_COALESCE_PLACEHOLDERS)
+#define MEMSHM_HAVE_PLACEHOLDERS 1
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX)
 
+#if defined(MEMSHM_HAVE_PLACEHOLDERS)
 /* The placeholder APIs are Windows 10 1803. Resolved once at first use;
  * a system without them gets no area, and its caller runs without a
  * fastmem window. */
@@ -695,6 +707,10 @@ static bool memshm_placeholder_apis(void)
    s_placeholder_state = (s_VirtualAlloc2 && s_MapViewOfFile3 && s_UnmapViewOfFile2) ? 1 : -1;
    return s_placeholder_state > 0;
 }
+#else
+/* No placeholder flags in this SDK: the legacy path is the only one. */
+#define memshm_placeholder_apis() (0)
+#endif   /* MEMSHM_HAVE_PLACEHOLDERS */
 
 /* The placeholder ranges, as [start, end) offsets into the area, kept
  * sorted. The API cannot be asked where its placeholders are, so the
@@ -843,10 +859,14 @@ static void memshm_legacy_release(memshm_area_t *a, size_t first, size_t count)
 
 memshm_area_t *memshm_area_create(size_t len)
 {
+#if (defined(_WIN32) && !defined(_XBOX)) || (defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_ANONYMOUS))
    memshm_area_t *a;
+#endif
 #if defined(_WIN32) && !defined(_XBOX)
+#if defined(MEMSHM_HAVE_PLACEHOLDERS)
    void *alloc = NULL;
    uintptr_t floor;
+#endif
 
    if (!memshm_placeholder_apis())
    {
@@ -893,6 +913,7 @@ memshm_area_t *memshm_area_create(size_t len)
       return a;
    }
 
+#if defined(MEMSHM_HAVE_PLACEHOLDERS)
    /* Ask for a base above 4 GB. Below that, a 4 GB window either
     * crosses the 32-bit boundary into the system's own reservations
     * around KUSER_SHARED_DATA, or on a fragmented address space starts
@@ -953,6 +974,9 @@ memshm_area_t *memshm_area_create(size_t len)
    a->ranges[0].end   = len;
    a->range_count     = 1;
    return a;
+#else
+   return NULL;   /* no placeholders in this SDK, and legacy handled above */
+#endif
 #elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_ANONYMOUS)
    void *alloc = mmap(NULL, len, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
    if (alloc == MAP_FAILED)
@@ -995,7 +1019,7 @@ void memshm_area_free(memshm_area_t *area)
    }
    /* Every placeholder and every mapping goes with the reservation. */
    VirtualFree(area->base, 0, MEM_RELEASE);
-#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__)
+#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_FIXED) && defined(MAP_ANONYMOUS)
    munmap(area->base, area->len);
 #endif
    free(area);
@@ -1016,9 +1040,11 @@ unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
 {
 #if defined(_WIN32) && !defined(_XBOX)
    size_t map_off;
+#if defined(MEMSHM_HAVE_PLACEHOLDERS)
    size_t old_end;
    int    idx;
    DWORD  page_prot;
+#endif
 
    if (!area || !at || !len)
       return NULL;
@@ -1060,6 +1086,7 @@ unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
       return NULL;
    }
 
+#if defined(MEMSHM_HAVE_PLACEHOLDERS)
    idx     = memshm_find_range(area, map_off);
    if (idx < 0)
       return NULL;   /* not a placeholder: something is still mapped there */
@@ -1104,6 +1131,9 @@ unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
    }
    area->mappings++;
    return (unsigned char*)at;
+#else
+   return NULL;
+#endif
 #elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_FIXED) && defined(MAP_ANONYMOUS)
    void *p;
    if (!area || !at || !len)
@@ -1124,7 +1154,9 @@ bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len)
 {
 #if defined(_WIN32) && !defined(_XBOX)
    size_t map_off;
+#if defined(MEMSHM_HAVE_PLACEHOLDERS)
    int    left, right;
+#endif
 
    if (!area || !at || !len)
       return false;
@@ -1147,6 +1179,7 @@ bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len)
       return true;
    }
 
+#if defined(MEMSHM_HAVE_PLACEHOLDERS)
    if (!s_UnmapViewOfFile2(GetCurrentProcess(), at, MEM_PRESERVE_PLACEHOLDER))
       return false;
 
@@ -1190,6 +1223,9 @@ bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len)
  * memshm_area_create's guard requires both, so a platform with only one
  * of them must reach the stub in every one of these functions rather
  * than compile a body that names a macro it does not have. */
+#else
+   return false;
+#endif
 #elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_FIXED) && defined(MAP_ANONYMOUS)
    if (!area || !at || !len)
       return false;
