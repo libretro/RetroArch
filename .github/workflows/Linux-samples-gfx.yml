@@ -20,6 +20,36 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
+  surface-requirements:
+    name: Producers ask the surface layer
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Self-test
+        shell: bash
+        run: |
+          set -eu
+          # A producer outside the allowlist that reads the video flags
+          # directly must be caught, and so must an entry whose file has
+          # stopped reading them - the second is what makes the list
+          # shrink as producers migrate instead of sitting there.
+          python3 tools/surface_requirements_check.py --selftest
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          # What a producer should emit is the surface layer's answer
+          # (gfx_surface_query_requirements), so a decoder has one place
+          # to ask rather than three unrelated flags to know about. The
+          # files still asking directly are listed in the checker and
+          # are migrated one at a time; a new one may not join them.
+          python3 tools/surface_requirements_check.py
+
   samples-gfx:
     name: Build and run samples/gfx
     runs-on: ubuntu-latest

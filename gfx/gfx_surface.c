@@ -64,11 +64,13 @@ gfx_surface_t *gfx_surface_new(unsigned width, unsigned height,
    return s;
 }
 
-void gfx_surface_query_requirements(unsigned width,
+bool gfx_surface_query_requirements(unsigned width,
       gfx_surface_requirements_t *req)
 {
    if (!req)
-      return;
+      return false;
+   if ((size_t)width > ((size_t)-1) / sizeof(uint32_t))
+      return false;
    req->rgba       = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
          ? true : false;
    req->pix10      = video_driver_test_all_flags(
@@ -79,6 +81,7 @@ void gfx_surface_query_requirements(unsigned width,
     * the others are happy with. */
    req->pitch      = (size_t)width * sizeof(uint32_t);
    req->align      = 4;
+   return true;
 }
 
 bool gfx_surface_supports_compressed(enum texture_gpu_format fmt)

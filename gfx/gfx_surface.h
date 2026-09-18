@@ -126,8 +126,16 @@ typedef struct
 
 /* Fill @req for an image of @width pixels on the active driver.
  * Safe before any surface exists; with no driver up it answers with
- * the defaults a software path would use. */
-void gfx_surface_query_requirements(unsigned width,
+ * the defaults a software path would use. A producer that does not
+ * know its width yet may pass 0 and read the capability fields; the
+ * layout fields are then 0 as well.
+ *
+ * False when @width has no row that size_t can express - reachable
+ * only on a 32-bit size_t, and then only for a width no image has,
+ * but this is the contract every producer's layout comes through and
+ * it does not get to begin with an unchecked multiply. @req is
+ * untouched on false. */
+bool gfx_surface_query_requirements(unsigned width,
       gfx_surface_requirements_t *req);
 
 /* Whether the active driver can sample @fmt as a compressed texture,

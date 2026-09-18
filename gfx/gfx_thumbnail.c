@@ -1508,7 +1508,10 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    /* Sample the upload format once and ask the stream to emit it
     * directly (every stream type honours it; the swizzle below is the
     * fallback for one that cannot). */
-   gfx_surface_query_requirements(0, &req);
+   /* Width is not known until the stream is read; the capability
+    * fields do not depend on it. */
+   if (!gfx_surface_query_requirements(0, &req))
+      return;
    sync_use_rgba     = req.rgba;
    sync_native_order = image_transfer_anim_stream_set_argb(
          thumbnail->anim, type, sync_use_rgba ? 0 : 1);
