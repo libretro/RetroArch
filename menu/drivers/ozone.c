@@ -34,6 +34,7 @@
 #include <array/rhmap.h>
 #include <retro_math.h>
 
+#include "../../gfx/gfx_surface.h"
 #include "../menu_cbs.h"
 #include "../menu_driver.h"
 #include "../menu_str.h"
@@ -60,7 +61,6 @@
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos/cheevos_menu.h"
 #include <compat/strl.h>
-#include "../../gfx/gfx_surface.h"
 #endif
 
 /* Force a render phase out of line even though it has a single call

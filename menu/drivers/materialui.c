@@ -37,6 +37,7 @@
 #include "../../config.h"
 #endif
 
+#include "../../gfx/gfx_surface.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../ui/ui_companion_driver.h"
 
@@ -61,7 +62,6 @@
 
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos/cheevos_menu.h"
-#include "../../gfx/gfx_surface.h"
 #endif
 
 /* Defines the 'device independent pixel' base
