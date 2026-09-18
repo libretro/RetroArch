@@ -24,6 +24,8 @@ typedef struct
    unsigned bluetoothctl_counter[256];
    struct string_list* lines;
    char command[256];
+   /* The running "scan on", between scan_begin and scan_end. */
+   FILE *scan_pipe;
 } bluetoothctl_t;
 
 static void *bluetoothctl_init(void)
@@ -33,11 +35,28 @@ static void *bluetoothctl_init(void)
 
 static void bluetoothctl_free(void *data)
 {
+   bluetoothctl_t *btctl = (bluetoothctl_t*)data;
+   if (btctl && btctl->scan_pipe)
+      pclose(btctl->scan_pipe);
    if (data)
       free(data);
 }
 
-static void bluetoothctl_scan(void *data)
+/* Starts "scan on" for the scan window and returns: bluetoothctl
+ * stops by itself when its timeout runs out, and scan_end collects it.
+ * The pclose() of it used to be here, blocking for the whole window. */
+static void bluetoothctl_scan_begin(void *data)
+{
+   bluetoothctl_t *btctl = (bluetoothctl_t*) data;
+
+   pclose(popen("bluetoothctl -- power on", "r"));
+
+   if (btctl->scan_pipe)
+      pclose(btctl->scan_pipe);
+   btctl->scan_pipe = popen("bluetoothctl --timeout 10 scan on", "r");
+}
+
+static void bluetoothctl_scan_end(void *data)
 {
    char line[512];
    const char *msg;
@@ -45,14 +64,18 @@ static void bluetoothctl_scan(void *data)
    FILE *dev_file                   = NULL;
    bluetoothctl_t *btctl            = (bluetoothctl_t*) data;
 
+   /* At the end of the window its timeout has run out, so this returns
+    * at once; on a cancel it waits out what is left of it. */
+   if (btctl->scan_pipe)
+   {
+      pclose(btctl->scan_pipe);
+      btctl->scan_pipe = NULL;
+   }
+
    attr.i = 0;
    if (btctl->lines)
       free(btctl->lines);
    btctl->lines = string_list_new();
-
-   pclose(popen("bluetoothctl -- power on", "r"));
-
-   pclose(popen("bluetoothctl --timeout 10 scan on", "r"));
 
    msg = msg_hash_to_str(MSG_BLUETOOTH_SCAN_COMPLETE);
 
@@ -261,7 +284,8 @@ static void bluetoothctl_device_get_sublabel(
 bluetooth_driver_t bluetooth_bluetoothctl = {
    bluetoothctl_init,
    bluetoothctl_free,
-   bluetoothctl_scan,
+   bluetoothctl_scan_begin,
+   bluetoothctl_scan_end,
    bluetoothctl_get_devices,
    bluetoothctl_device_is_connected,
    bluetoothctl_device_get_sublabel,

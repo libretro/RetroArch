@@ -31,7 +31,8 @@
 static bluetooth_driver_t bluetooth_null = {
    NULL, /* init */
    NULL, /* free */
-   NULL, /* scan */
+   NULL, /* scan_begin */
+   NULL, /* scan_end */
    NULL, /* get_devices */
    NULL, /* device_is_connected */
    NULL, /* device_get_sublabel */
@@ -72,13 +73,22 @@ const char* config_get_bluetooth_driver_options(void)
    return char_list_new_special(STRING_LIST_BLUETOOTH_DRIVERS, NULL);
 }
 
-void driver_bluetooth_scan(void)
+void driver_bluetooth_scan_begin(void)
 {
    bluetooth_driver_state_t *bt_st = &bluetooth_driver_st;
    if (     bt_st
         &&  bt_st->active
-        &&  bt_st->drv->scan )
-      bt_st->drv->scan(bt_st->data);
+        &&  bt_st->drv->scan_begin )
+      bt_st->drv->scan_begin(bt_st->data);
+}
+
+void driver_bluetooth_scan_end(void)
+{
+   bluetooth_driver_state_t *bt_st = &bluetooth_driver_st;
+   if (     bt_st
+        &&  bt_st->active
+        &&  bt_st->drv->scan_end )
+      bt_st->drv->scan_end(bt_st->data);
 }
 
 void driver_bluetooth_get_devices(struct string_list* devices)

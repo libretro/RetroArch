@@ -12,19 +12,41 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdint.h>
 #include <string.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <features/features_cpu.h>
 
 #include "tasks_internal.h"
 
 #include "../msg_hash.h"
 #include "../bluetooth/bluetooth_driver.h"
 
+/* Two steps, BLUETOOTH_SCAN_WINDOW_US apart. The first starts
+ * discovery and reschedules the task for the end of the window; the
+ * task queue keeps a scheduled task behind the ready ones, so other
+ * tasks run in the meantime. The scan used to sleep through the window
+ * inside one call, holding the task thread - and every download,
+ * thumbnail and sync queued behind it - for ten seconds. A cancel ends
+ * the window early. */
 static void task_bluetooth_scan_handler(retro_task_t *task)
 {
-   driver_bluetooth_scan();
+   if (!task->state)
+   {
+      driver_bluetooth_scan_begin();
+      task->state = (void*)(uintptr_t)1;
+      task->when  = cpu_features_get_time_usec() + BLUETOOTH_SCAN_WINDOW_US;
+      return;
+   }
+
+   if (     !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+         && cpu_features_get_time_usec() < task->when)
+      return;
+
+   driver_bluetooth_scan_end();
+   task->state = NULL;
 
    task_set_progress(task, 100);
    task_free_title(task);
