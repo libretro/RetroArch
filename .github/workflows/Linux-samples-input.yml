@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 5
         run: |
-          pkgs="build-essential"
+          pkgs="build-essential libusb-1.0-0-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -90,3 +90,31 @@ jobs:
           make clean all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 60 ./illuminance_sensor_test
           echo "[pass] illuminance_sensor_test (TSan)"
+
+      - name: Build and run libusb_hid_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/libusb_hid
+        run: |
+          set -eu
+          # The libusb HID driver against a fake libusb: reads and
+          # commands run on asynchronous transfers completed by the poll
+          # thread, with no thread per pad. Pins that a command goes out
+          # at once even while the pad sends nothing, that commands stay
+          # in order one at a time, that unplugging frees the adapter,
+          # and that freeing the driver returns at once with a send
+          # still pending, releasing every transfer and handle.
+          make clean all SANITIZER=address,undefined
+          test -x libusb_hid_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./libusb_hid_test
+          echo "[pass] libusb_hid_test (ASan)"
+
+      - name: Build and run libusb_hid_test (TSan)
+        shell: bash
+        working-directory: samples/input/libusb_hid
+        run: |
+          set -eu
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 ./libusb_hid_test
+          echo "[pass] libusb_hid_test (TSan)"
