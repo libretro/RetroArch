@@ -994,19 +994,14 @@ static bool gfx_thumbnail_try_video_open(gfx_thumbnail_t *thumbnail,
    return true;
 }
 
-/* --- Asynchronous still uploads ------------------------------------
- * Under threaded video video_driver_texture_load() is a round trip to
- * the video thread that the main thread waits out - up to one present
- * per upload. Thumbnails are the most frequent upload the menu makes
- * (one per row while scrolling), so stills go through
- * video_driver_texture_load_async(): the image is handed over, the
- * handle comes back through a done() callback on the main thread at a
- * later frame. The ticket below is what done() gets. It is validated
- * against the list generation and the thumbnail's own upload
- * sequence, both bumped by the same events that would have made the
- * synchronous write wrong. Without the wrapper the same calls complete
- * synchronously and behave exactly as before. Animation frames take a
- * different route, the surface below. */
+/* --- Uploads -------------------------------------------------------
+ * A still and an animation frame both reach the GPU through the one
+ * surface the thumbnail owns. Under threaded video a submit hands the
+ * pixels to the video thread and the handle arrives with the release
+ * on a later frame - a round trip the main thread does not wait out,
+ * which matters because thumbnails are the most frequent upload the
+ * menu makes, one per row while scrolling. Without the wrapper the
+ * same submit uploads on the spot. */
 
 
 /* --- Animation frames: the streaming surface -----------------------
@@ -1645,38 +1640,15 @@ static void gfx_thumbnail_handle_upload(
          gfx_thumbnail_anim_shown(thumbnail_tag->thumbnail, s);
          goto open_anim;
       }
+      /* No surface, or the driver refused the upload: the thumbnail
+       * has nothing to show, and the fade below reports that. The
+       * image is still the task's and is freed at the end. */
       if (s)
          s->user_img = NULL;
+      GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
+            GFX_THUMBNAIL_STATUS_MISSING);
+      fade_enabled = true;
    }
-
-   /* Set thumbnail 'missing' status by default
-    * (saves a number of checks later)
-    * > Release-store ensures prior texture reset is
-    *   visible before status change */
-   GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
-         GFX_THUMBNAIL_STATUS_MISSING);
-
-   /* If we reach this stage, thumbnail 'fade in'
-    * animations should be applied (based on current
-    * thumbnail status and global configuration) */
-   fade_enabled = true;
-
-   /* Upload texture to GPU */
-   if (!video_driver_texture_load(
-            img, gfx_display_texture_filter(),
-            &thumbnail_tag->thumbnail->texture))
-      goto end;
-
-   /* Cache dimensions */
-   thumbnail_tag->thumbnail->width  = img->width;
-   thumbnail_tag->thumbnail->height = img->height;
-
-   /* Update thumbnail status
-    * > Release-store ensures texture/width/height writes
-    *   are visible to the video thread before it sees
-    *   AVAILABLE via acquire-load in gfx_thumbnail_draw() */
-   GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
-         GFX_THUMBNAIL_STATUS_AVAILABLE);
 
 open_anim:
 
