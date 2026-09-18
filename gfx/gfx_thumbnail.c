@@ -198,6 +198,18 @@ static void gfx_thumbnail_fade_cb(void *userdata)
 }
 
 /* Initialises thumbnail 'fade in' animation */
+/* The channel order a decode should produce: what the driver that is
+ * up wants, asked through the surface layer rather than read from the
+ * display flag, so every producer has one place to ask. Main thread,
+ * beside the decode it is asked for. */
+static bool gfx_thumbnail_use_rgba(void)
+{
+   gfx_surface_requirements_t req;
+   if (!gfx_surface_query_requirements(0, &req))
+      return false;
+   return req.rgba;
+}
+
 static void gfx_thumbnail_init_fade(
       gfx_thumbnail_state_t *p_gfx_thumb,
       gfx_thumbnail_t *thumbnail)
@@ -1395,9 +1407,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          j0->height     = anim_h;
          j1->height     = anim_h;
          j0->loops_left = thumbnail->anim_loops_left;
-         j0->use_rgba   =
-               (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
-                     ? true : false;
+         j0->use_rgba   = gfx_thumbnail_use_rgba();
          retro_atomic_store_relaxed_int(&j1->status,
                GFX_THUMB_JOB_IDLE);
          thumbnail->anim_job        = j0;
@@ -1422,9 +1432,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       {
          thumbnail->anim_loops_left = ju->loops_left;
          jo->loops_left             = ju->loops_left;
-         jo->use_rgba               =
-               (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
-                     ? true : false;
+         jo->use_rgba               = gfx_thumbnail_use_rgba();
          gfx_thumbnail_anim_job_enqueue(jo);
       }
 
@@ -1478,9 +1486,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       {
          thumbnail->anim_loops_left = jo->loops_left;
          ju->loops_left             = jo->loops_left;
-         ju->use_rgba               =
-               (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
-                     ? true : false;
+         ju->use_rgba               = gfx_thumbnail_use_rgba();
          gfx_thumbnail_anim_job_enqueue(ju);
       }
       return;
@@ -2000,7 +2006,7 @@ void gfx_thumbnail_request(
                /* Would like to cancel any existing image load tasks
                 * here, but can't see how to do it... */
                if (task_push_image_load(
-                        thumbnail_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
+                        thumbnail_path, gfx_thumbnail_use_rgba(),
                         gfx_thumbnail_upscale_threshold,
                         gfx_thumbnail_downscale_cap(),
                         gfx_thumbnail_handle_upload, thumbnail_tag))
@@ -2138,7 +2144,7 @@ void gfx_thumbnail_request_file(
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */
    if (task_push_image_load(
-         file_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
+         file_path, gfx_thumbnail_use_rgba(),
          gfx_thumbnail_upscale_threshold,
          gfx_thumbnail_downscale_cap(),
          gfx_thumbnail_handle_upload, thumbnail_tag))

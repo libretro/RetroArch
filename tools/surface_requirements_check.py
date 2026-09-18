@@ -35,7 +35,6 @@ ALLOWLIST = {
     "cheevos/cheevos_badge.c",
     "cores/libretro-imageviewer/image_core.c",
     "gfx/gfx_display.c",
-    "gfx/gfx_thumbnail.c",
     "gfx/gfx_widgets.c",
     "gfx/widgets/gfx_widget_volume.c",
     "menu/cbs/menu_cbs_ok.c",
