@@ -720,6 +720,29 @@ jobs:
              ./asio_ring_test
           echo "[pass] asio_ring_test (ASan)"
 
+      - name: Build and run dsound_pump_test (MinGW, under wine)
+        shell: bash
+        working-directory: samples/audio/dsound_pump
+        run: |
+          set -eu
+          # audio/drivers/dsound.c end to end on wine's DirectSound, fed
+          # by an ALSA null PCM, which plays at real-time pace on a
+          # runner with no sound card. Pins that the pump - which now
+          # waits for the play cursor to move the distance it needs,
+          # worked out from the rate, instead of retrying every
+          # millisecond - still moves audio through blocking writes,
+          # fills silence when the writer stops, and lets free() return
+          # at once while it waits.
+          if ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1 \
+                || ! command -v wine >/dev/null 2>&1; then
+             sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine64 \
+                -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+          fi
+          printf 'pcm.!default { type null }\nctl.!default { type hw card 0 }\n' > ~/.asoundrc
+          make clean all
+          WINEDEBUG=-all timeout 300 make check
+          echo "[pass] dsound_pump_test (wine)"
+
       - name: Build and run wasapi_exclusive_pacing_test (ASan + UBSan, then TSan)
         shell: bash
         working-directory: samples/audio/wasapi_exclusive_pacing
