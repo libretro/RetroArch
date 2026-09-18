@@ -434,8 +434,8 @@ error:
 
 /* The device may have gone (a disconnected default device, a lost
  * context), in which case AL_BUFFERS_PROCESSED is never delivered.
- * Bound the sleep-poll in al_get_buffer() so a write against such a
- * device returns short rather than never. */
+ * Bound the wait in al_get_buffer() so a write against such a device
+ * returns short rather than never. */
 #define OPENAL_GET_BUFFER_WAIT_MS 200
 /* Granularity of the event wait: an event ends it early, so this is
  * only how often a device that sends none is re-checked. */
@@ -480,7 +480,9 @@ static bool al_unqueue_buffers(al_t *al)
  * disconnected device, or at once in non-blocking mode. */
 static bool al_wait_free(al_t *al, size_t want)
 {
+#ifdef HAVE_THREADS
    int waited_ms = 0;
+#endif
 
    if (al->res_ptr >= want)
       return true;
@@ -525,15 +527,38 @@ static bool al_wait_free(al_t *al, size_t want)
    }
 #endif
 
-   /* No events: sleep-poll. A device that processes nothing within
-    * the bound has stopped, and the caller gets what it managed. */
-   while (al->res_ptr < want)
+   /* No events to wait on. What frees a buffer is the source reaching
+    * the end of the one it is playing, and how far it has to go is
+    * known: the offset into that buffer against its length, at the
+    * rate. Sleep exactly that long, then look - instead of looking
+    * every millisecond. A device that processes nothing within the
+    * bound has stopped, and the caller gets what it managed. */
    {
-      if (waited_ms >= OPENAL_GET_BUFFER_WAIT_MS)
-         return false;
-      retro_sleep(1);
-      waited_ms++;
-      al_unqueue_buffers(al);
+      ALint   buf_frames = (ALint)(OPENAL_BUFSIZE / al->frame_size);
+      int64_t waited_us  = 0;
+
+      while (al->res_ptr < want)
+      {
+         ALint   offset = 0;
+         int64_t wait_us;
+
+         if (waited_us >= (int64_t)OPENAL_GET_BUFFER_WAIT_MS * 1000)
+            return false;
+
+         alGetSourcei(al->source, AL_SAMPLE_OFFSET, &offset);
+         if (offset < 0 || offset >= buf_frames)
+            offset = 0;
+         wait_us = ((int64_t)(buf_frames - offset) * 1000000)
+            / (al->rate ? al->rate : 48000);
+         if (wait_us < 1)
+            wait_us = 1;
+         if (waited_us + wait_us > (int64_t)OPENAL_GET_BUFFER_WAIT_MS * 1000)
+            wait_us = (int64_t)OPENAL_GET_BUFFER_WAIT_MS * 1000 - waited_us;
+
+         retro_sleep_us((unsigned)wait_us);
+         waited_us += wait_us;
+         al_unqueue_buffers(al);
+      }
    }
    return true;
 }
