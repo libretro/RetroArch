@@ -3564,6 +3564,12 @@ static bool input_overlay_upload_textures(input_overlay_t *ol)
 
    if (ol->page_textures || !ol->images || !ol->num_images)
       return ol->page_textures != NULL;
+   /* Nothing to upload from: the pixels went when the textures were
+    * made and the textures went with the driver. The caller declines
+    * the pack, and the next input_overlay_init() reloads it from its
+    * path. */
+   if (!ol->images[0]->pixels)
+      return false;
 
    for (i = 0; i < ol->size; i++)
       total += ol->overlays[i].load_images_size;
@@ -3618,6 +3624,24 @@ static bool input_overlay_upload_textures(input_overlay_t *ol)
       tex[i] = s->handle;
    }
 
+   /* The pixels have reached the GPU and nothing reads them again: a
+    * pack is anything from a megabyte of button sprites to forty of
+    * 4K border, held for the whole session against the one event that
+    * would want them - a video reinit, which reloads the overlay from
+    * its path anyway (video_driver_init_internal) and stalls far
+    * longer than the decode does. The width and height stay, because
+    * the layout and the reload check read them. */
+   for (i = 0; i < ol->num_images; i++)
+   {
+      if (!ol->images[i]->pixels)
+         continue;
+      GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
+            -(int)(((size_t)ol->images[i]->width * ol->images[i]->height
+                  * sizeof(uint32_t)) >> 10));
+      image_texture_free(ol->images[i]);
+      ol->images[i]->pixels = NULL;
+   }
+
    /* The loader deduplicated by path, so a page's entry shares its
     * pixels with exactly one unique image. */
    k = ol->num_images;
@@ -3663,7 +3687,7 @@ void input_overlay_release_textures(input_overlay_t *ol)
    if (ol->surfaces)
    {
       for (i = 0; i < ol->num_images; i++)
-         if (ol->images[i])
+         if (ol->images[i] && ol->images[i]->pixels)
             GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
                   -(int)(((size_t)ol->images[i]->width
                         * ol->images[i]->height
@@ -7000,9 +7024,16 @@ void input_overlay_init(void)
    bool overlay_shown             = ol
          && (ol->flags & INPUT_OVERLAY_ENABLE)
          && string_is_equal(path_overlay, ol->path);
+   /* A cached pack is reusable only while it still has something to
+    * upload from: the pixels are released once they are on the GPU,
+    * so a pack whose textures went with a video reinit is reloaded
+    * from its path instead. */
    bool overlay_cached            = ol_cache
          && (ol_cache->flags & INPUT_OVERLAY_ALIVE)
-         && string_is_equal(path_overlay, ol_cache->path);
+         && string_is_equal(path_overlay, ol_cache->path)
+         && (ol_cache->page_textures
+            || (ol_cache->num_images && ol_cache->images
+               && ol_cache->images[0]->pixels));
    bool overlay_hidden            = !ol && overlay_cached;
 
 #if defined(GEKKO)
