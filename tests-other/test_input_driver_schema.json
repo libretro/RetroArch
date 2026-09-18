@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.libretro.com/development/input-api/test_input_driver_schema.json",
+  "title": "RetroArch_input_driver",
+  "description": "Definition for driving RetroArch's test input driver.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "description": "Action to do",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295
+      },
+      "param_str": {
+        "description": "String parameter for the action",
+        "type": "string",
+        "maxLength": 255
+      },
+      "param_num": {
+        "description": "Numeric parameter for the action",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295
+      },
+      "frame": {
+        "description": "Timing for the action using RetroArch's internal frame counter, default 60 fps",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295
+      }
+    },
+    "required": [ "action" ]
+  }
+}
+
