@@ -4522,6 +4522,11 @@ static void d3d11_hw_v2_set_texture(void *data, ID3D11Texture2D *texture)
    d3d11->hw_v2.texture = texture;
 }
 
+/* The repeat of the last frame waits for the display exactly as the
+ * frame does, and with a core slower than the display it runs on every
+ * refresh the frame does not: at 120 Hz under a 60 fps core that is
+ * every other one. It gives the lock up around its waits as the frame
+ * does (d3d11_hw_v2_yield_begin). */
 static unsigned d3d11_present_last_body(void *data);
 
 static unsigned d3d11_present_last(void *data)
@@ -4557,7 +4562,11 @@ static unsigned d3d11_present_last_body(void *data)
       D3D11_TEXTURE2D_DESC desc;
 
       if (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
+      {
+         d3d11_hw_v2_yield_begin(d3d11);
          WaitForSingleObjectEx(d3d11->frameLatencyWaitableObject, 1000, true);
+         d3d11_hw_v2_yield_end(d3d11);
+      }
 
       d3d11->swapChain->lpVtbl->GetBuffer(d3d11->swapChain, 0,
             uuidof(ID3D11Texture2D), (void**)&back_buffer);
@@ -4573,7 +4582,11 @@ static unsigned d3d11_present_last_body(void *data)
       context->lpVtbl->CopyResource(context,
             (D3D11Resource)back_buffer, (D3D11Resource)d3d11->retained);
       Release(back_buffer);
+      if (d3d11->hw_v2.present_unlocked)
+         d3d11_hw_v2_yield_begin(d3d11);
       DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
+      if (d3d11->hw_v2.present_unlocked)
+         d3d11_hw_v2_yield_end(d3d11);
       done++;
    }
 
@@ -4583,7 +4596,11 @@ static unsigned d3d11_present_last_body(void *data)
       D3D11RenderTargetView rtv   = NULL;
 
       if (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
+      {
+         d3d11_hw_v2_yield_begin(d3d11);
          WaitForSingleObjectEx(d3d11->frameLatencyWaitableObject, 1000, true);
+         d3d11_hw_v2_yield_end(d3d11);
+      }
 
       d3d11->swapChain->lpVtbl->GetBuffer(d3d11->swapChain, 0,
             uuidof(ID3D11Texture2D), (void**)&back_buffer);
@@ -4596,7 +4613,11 @@ static unsigned d3d11_present_last_body(void *data)
          return done;
       context->lpVtbl->OMSetRenderTargets(context, 1, &rtv, NULL);
       context->lpVtbl->ClearRenderTargetView(context, rtv, d3d11->clearcolor);
+      if (d3d11->hw_v2.present_unlocked)
+         d3d11_hw_v2_yield_begin(d3d11);
       DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
+      if (d3d11->hw_v2.present_unlocked)
+         d3d11_hw_v2_yield_end(d3d11);
       Release(rtv);
       done++;
    }
