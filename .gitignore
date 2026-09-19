@@ -86,7 +86,7 @@ apple/RetroArch_iOS.xcodeproj/project.xcworkspace/*
 .cproject
 .settings
 libretro-super
-run.sh
+/run.sh
 convert_rumble.awk
 *~
 assets
