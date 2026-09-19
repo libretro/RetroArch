@@ -358,9 +358,10 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
           * handed back, and acquiring again with this fence pending is
           * invalid, so keep waiting, checking DEAD between waits. */
          bool dead = false;
+         VkResult wait_res;
 
-         while (vkWaitForFences(mailbox->device, 1, &fence, true,
-                  (uint64_t)mailbox->timeout_us * 1000) == VK_TIMEOUT)
+         while ((wait_res = vkWaitForFences(mailbox->device, 1, &fence, true,
+                  (uint64_t)mailbox->timeout_us * 1000)) == VK_TIMEOUT)
          {
             slock_lock(mailbox->lock);
             dead = (mailbox->flags & VK_MAILBOX_FLAG_DEAD) != 0;
@@ -379,6 +380,8 @@ static void vulkan_emulated_mailbox_loop(void *userdata)
             break;
          }
 
+         /* A lost device reaches the main thread as an error, not an image. */
+         mailbox->result = wait_res;
          vkResetFences(mailbox->device, 1, &fence);
 
          slock_lock(mailbox->lock);
