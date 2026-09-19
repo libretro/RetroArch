@@ -420,11 +420,32 @@ void video_thread_main_pump(void)
  * the window in which the video thread exists. */
 static thread_video_t *video_thread_thr_capture;
 
+/* The instance video_thread_free() is tearing down, for the length of
+ * its CMD_FREE. The capture is cleared before that command is sent,
+ * but the command is where the driver and the hardware ring are freed,
+ * and both hand work back to the main thread from inside it - the ring
+ * gives up the core's GL context there, which only the thread holding
+ * it can do. With only the capture to go by, that call found no
+ * wrapper and was dropped without a word: the context stayed current
+ * on the main thread, and the video thread's own teardown then tried
+ * to take it - fatal on GLX (BadAccess), a failed wglMakeCurrent and a
+ * context that cannot be deleted on WGL. */
+static thread_video_t *video_thread_thr_freeing;
+
 void video_thread_call_on_waiter(void (*fn)(void *data), void *data)
 {
    thread_video_t *thr = video_thread_thr_capture;
-   if (!thr || !fn)
+   if (!fn)
       return;
+   if (!thr)
+      thr = video_thread_thr_freeing;
+   /* No wrapper at all: the call is the caller's to make, as it is in
+    * a build without threads. Never dropped. */
+   if (!thr)
+   {
+      fn(data);
+      return;
+   }
    if (!video_driver_thread_wrapper_active() || !video_thread_is_self(thr))
    {
       fn(data);
@@ -2771,7 +2792,9 @@ static void video_thread_free(void *data)
          thread_packet_t pkt;
          pkt.type = CMD_FREE;
 
+         video_thread_thr_freeing = thr;
          video_thread_send_and_wait_user_to_thread(thr, &pkt);
+         video_thread_thr_freeing = NULL;
 
          sthread_join(thr->thread);
       }
