@@ -695,6 +695,17 @@ check_val '' X11 -lX11 '' x11 '' '' false
 
 if [ "$HAVE_X11" != 'no' ]; then
    check_val '' XCB -lxcb '' xcb '' '' false
+
+   # XCB support needs X11/Xlib-xcb.h and libX11-xcb (XGetXCBConnection),
+   # which ship separately from libxcb on many distros.
+   if [ "$HAVE_XCB" != 'no' ]; then
+      check_val '' X11_XCB -lX11-xcb '' x11-xcb '' '' false
+      if [ "$HAVE_X11_XCB" = 'no' ]; then
+         die : 'Notice: x11-xcb not present. Skipping XCB code paths.'
+         HAVE_XCB=no
+      fi
+   fi
+
    check_val '' XEXT -lXext '' xext '' '' false
    check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
    check_val '' XSCRNSAVER -lXss '' xscrnsaver '' '' false

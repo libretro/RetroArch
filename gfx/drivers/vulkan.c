@@ -3977,7 +3977,7 @@ static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
 #if defined(HAVE_WAYLAND)
    &gfx_ctx_vk_wayland,
 #endif
-#if defined(HAVE_X11)
+#if defined(HAVE_X11) && defined(HAVE_XCB)
    &gfx_ctx_vk_x,
 #endif
 #if defined(HAVE_VULKAN_DISPLAY)

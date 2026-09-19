@@ -1408,7 +1408,7 @@ ifeq ($(HAVE_X11), 1)
    DEFINES += -DHAVE_X11
    DEF_FLAGS += $(X11_CFLAGS) $(XEXT_CFLAGS) $(XF86VM_CFLAGS) $(XINERAMA_CFLAGS)
    ifeq ($(HAVE_XCB),1)
-      LIBS += -lX11-xcb
+      LIBS += $(X11_XCB_LIBS)
    endif
    ifeq ($(HAVE_XI2),1)
       LIBS += -lXi
@@ -1421,7 +1421,10 @@ ifeq ($(HAVE_X11), 1)
       OBJ += gfx/drivers_context/x_ctx.o
    endif
    ifeq ($(HAVE_VULKAN), 1)
-      OBJ += gfx/drivers_context/x_vk_ctx.o
+      # The X11 Vulkan context creates an XCB surface.
+      ifeq ($(HAVE_XCB), 1)
+         OBJ += gfx/drivers_context/x_vk_ctx.o
+      endif
    endif
 endif
 

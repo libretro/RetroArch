@@ -390,7 +390,7 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/x_ctx.c"
 #endif
 
-#ifdef HAVE_VULKAN
+#if defined(HAVE_VULKAN) && defined(HAVE_XCB)
 #include "../gfx/drivers_context/x_vk_ctx.c"
 #endif
 
