@@ -134,3 +134,27 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./wii_handshake_test
           echo "[pass] wii_handshake_test (ASan)"
+
+      - name: Build and run overlay_textures_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/overlay_textures
+        run: |
+          set -eu
+          # input/input_overlay_textures.c as it is, against a stub
+          # driver that reads every pixel it is handed. Pins every
+          # route a page takes to the driver: as textures (each page
+          # gets its own images' textures, a switch uploads nothing,
+          # the pixels go once the driver has them and the sizes
+          # stay), and as pixels through load() for a driver that
+          # declines the textures, has no such path, or fails an
+          # upload - live pixels on every page. 86fbf34e01 freed the
+          # pixels before the page lists were matched by them, so
+          # with threaded video off the fallback showed freed memory;
+          # under ASan that is a use-after-free here.
+          make clean all
+          timeout 60 ./overlay_textures_test
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./overlay_textures_test
+          make clean
+          echo "[pass] overlay_textures_test (plain, ASan)"
