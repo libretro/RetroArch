@@ -772,8 +772,16 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 /* Staging for a streaming update: the pixels go here and the GPU
  * copies them into the texture, so the copy is ordered against the
  * draws that sample it (see metal_update_texture). Made on the first
- * update and kept, since a streaming texture updates every frame. */
+ * update and kept, since a streaming texture updates every frame.
+ *
+ * stagingBusy is set when a blit that reads the buffer is committed
+ * and cleared when that command buffer completes. Hazard tracking
+ * orders one GPU access against another; it says nothing about the
+ * CPU writing the buffer while the GPU still reads it, so a frame
+ * arriving while the flag is set is dropped. Atomic: the handler runs
+ * on whatever thread Metal finishes on. */
 @property (nonatomic, readwrite, strong) id<MTLBuffer> staging;
+@property (atomic, readwrite) BOOL stagingBusy;
 @end
 
 @interface Context()
@@ -6744,6 +6752,12 @@ static bool metal_update_texture(void *video_data, uintptr_t handle,
          id<MTLCommandBuffer> cb;
          id<MTLBlitCommandEncoder> bce;
 
+         /* The last copy out of this buffer has not finished: the
+          * frame is dropped rather than written over the GPU's
+          * shoulder, which is the policy the other backends keep.
+          * The next frame finds the buffer free. */
+         if (t.stagingBusy)
+            return true;
          if (t.staging.length < len)
          {
             id<MTLBuffer> buf = [tex.device newBufferWithLength:len
@@ -6770,6 +6784,17 @@ static bool metal_update_texture(void *video_data, uintptr_t handle,
             destinationLevel:0
            destinationOrigin:MTLOriginMake(0, 0, 0)];
          [bce endEncoding];
+         t.stagingBusy = YES;
+         {
+            /* The buffer is free again when this command buffer is
+             * done with it. The handler holds the Texture so the
+             * flag it clears is still there to clear. */
+            Texture *held = t;
+            [cb addCompletedHandler:^(id<MTLCommandBuffer> done) {
+               (void)done;
+               held.stagingBusy = NO;
+            }];
+         }
       }
    }
    return true;
