@@ -5242,6 +5242,23 @@ static const gfx_ctx_driver_t *gl2_get_context(gl2_t *gl)
          && (hwr->context_type != RETRO_HW_CONTEXT_NONE))
       gl->flags                        |=  GL2_FLAG_SHARED_CONTEXT_USE;
 
+#ifdef HAVE_THREADS
+   /* Under the threaded wrapper a hardware core renders on the main
+    * thread while this driver draws on the video thread, so the core
+    * cannot borrow this driver's context the way it does unthreaded:
+    * it needs one of its own, shared with this one. That is the
+    * shared context, and gl2_hw_ring_context_new() refuses without
+    * it. It was only ever made when the setting or the core asked,
+    * so a core that did neither - the ffmpeg core is one - was sent
+    * into context_reset with no context at all: every GL function it
+    * looked up came back NULL on WGL, and it called the first one.
+    * glcore has always forced it for hardware cores. */
+   if (     (hwr->context_type != RETRO_HW_CONTEXT_NONE)
+         && video_driver_thread_wrapper_active()
+         && video_thread_hw_allowed())
+      gl->flags                        |=  GL2_FLAG_SHARED_CONTEXT_USE;
+#endif
+
    gfx_ctx = video_context_driver_init_first(gl,
          settings->arrays.video_context_driver,
          api, major, minor,
