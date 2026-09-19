@@ -283,8 +283,7 @@ static void video_buffer_return_open_slot(
    if (video_buffer->status[context->index] == KB_IN_PROGRESS)
    {
       video_buffer->status[context->index] = KB_OPEN;
-      video_buffer->head--;
-      video_buffer->head %= video_buffer->capacity;
+      video_buffer->head = (video_buffer->head + video_buffer->capacity - 1) % video_buffer->capacity;
    }
 
    slock_unlock(video_buffer->lock);
@@ -1767,6 +1766,25 @@ static void hwfft_render(hwfft_t *fft, GLuint backbuffer, unsigned width, unsign
 
 #endif /* HAVE_FFMPEG_FFT */
 
+static const AVCodec *retro_find_decoder(enum AVCodecID codec_id)
+{
+   const AVCodec *codec = NULL;
+
+   if (codec_id == AV_CODEC_ID_AV1)
+   {
+      if ((codec = avcodec_find_decoder_by_name("libdav1d")))
+         return codec;
+
+      if ((codec = avcodec_find_decoder_by_name("libaom-av1")))
+      {
+         log_cb(RETRO_LOG_WARN, "[FFMPEG] libdav1d is not available; falling back to libaom-av1.\n");
+         return codec;
+      }
+   }
+
+   return avcodec_find_decoder(codec_id);
+}
+
 #ifdef HAVE_SSA
 static void render_ass_img(AVFrame *conv_frame, ASS_Image *img);
 #endif
@@ -2091,7 +2109,11 @@ static void seek_frame(int seek_frames)
    /* Handle resets + attempts to seek to a location
     * before the start of the video */
    if ((seek_frames < 0 && (unsigned)-seek_frames > g_ctx.decoded_frame_cnt) || RESET_TRIGGERED_STR)
+   {
       g_ctx.decoded_frame_cnt = 0;
+      SEEK_L2_STR = 0;
+      SEEK_R2_STR = 0;
+   }
    /* Handle backwards seeking */
    else if (seek_frames < 0)
       g_ctx.decoded_frame_cnt += seek_frames;
@@ -2112,7 +2134,10 @@ static void seek_frame(int seek_frames)
       {
          seek_step_time = seek_time_max - current_time;
 
-         /* If seek would have taken us to the
+         SEEK_L2_STR = 0;
+         SEEK_R2_STR = 0;
+
+         /* If seek would have taken us to thestrength without using
           * end of the file, restart it instead
           * (less jarring for the user in case of
           * accidental seeking...) */
@@ -2194,12 +2219,12 @@ static int seek_adjust(int target)
       case  10: return  30; /* silly on the face of */
       case  30: return  60; /* it, but we needed a */
       case  60: return  90; /* strong seek to get to */
-      case  90: return 300; /* the middle or end of */
-      case 300: return 310; /* a long film; the result */
-      case 310: return 330; /* is this block which is */
-      case 330: return 360; /* used to adjust the seek */
-      case 360: return 390; /* strength without using */
-      case 390: return  10; /* multiple variables. */
+      case  90: return 298; /* the middle or end of */
+      case 298: return 299; /* a long film; the result */
+      case 299: return 300; /* is this block which is */
+      case 300: return 301; /* used to adjust the seek */
+      case 301: return 302; /* strength without using */
+      case 302: return  10; /* multiple variables. */
    }
    return 0;
 }
@@ -2274,21 +2299,25 @@ void CORE_PREFIX(retro_run)(void)
    {
       seek_frames -= 30 * MEDIA_STR.interpolate_fps;
       SEEK_L2_STR = 0;
+      SEEK_R2_STR = 0;
    }
    if (r1 && !LAST_R1_STR)
    {
       seek_frames += 30 * MEDIA_STR.interpolate_fps;
       SEEK_L2_STR = 0;
+      SEEK_R2_STR = 0;
    }
 
    if (l2 && !LAST_L2_STR)
    {
       SEEK_L2_STR = seek_adjust(SEEK_L2_STR);
+      SEEK_R2_STR = 0;
       seek_frames -= SEEK_L2_STR * MEDIA_STR.interpolate_fps;
    }
 
    if (r2 && !LAST_R2_STR)
    {
+      SEEK_L2_STR = 0;
       SEEK_R2_STR = seek_adjust(SEEK_R2_STR);
       seek_frames += SEEK_R2_STR * MEDIA_STR.interpolate_fps;
    }
@@ -2300,6 +2329,7 @@ void CORE_PREFIX(retro_run)(void)
       int adjustment = (up) ? (+1) : ((down) ? (-1) : (0));
 
       SEEK_L2_STR = 0;
+      SEEK_R2_STR = 0;
 
       msg[0] = '\0';
 
@@ -2326,6 +2356,7 @@ void CORE_PREFIX(retro_run)(void)
       int adjustment = (right) ? (+1) : ((left) ? (-1) : (0));
 
       SEEK_L2_STR = 0;
+      SEEK_R2_STR = 0;
 
       msg[0] = '\0';
 
@@ -2657,7 +2688,7 @@ static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
 #endif
    int ret = 0;
    enum AVPixelFormat decoder_pix_fmt = AV_PIX_FMT_NONE;
-   const AVCodec *codec = avcodec_find_decoder(FCTX_STR->streams[VIDEO_STREAM_INDEX_STR]->codecpar->codec_id);
+   const AVCodec *codec = retro_find_decoder(FCTX_STR->streams[VIDEO_STREAM_INDEX_STR]->codecpar->codec_id);
 
 #if !FFMPEG3
    for (i = 0;; i++)
@@ -2766,7 +2797,17 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
 
       ctx->thread_type       = FF_THREAD_FRAME;
       ctx->thread_count      = SW_DECODER_THREADS_STR;
+
+      if (ctx->codec)
+      {
+         if ((ctx->codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) == 0)
+            ctx->thread_type ^= FF_THREAD_FRAME;
+         if ((ctx->codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) != 0)
+            ctx->thread_type |= FF_THREAD_SLICE;
+      }
+
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured software decoding threads: %d\n", SW_DECODER_THREADS_STR);
+      log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured software decoding type: %d\n", ctx->thread_type);
 
       format                 = (enum AVPixelFormat)FCTX_STR->streams[VIDEO_STREAM_INDEX_STR]->codecpar->format;
 
@@ -2801,7 +2842,7 @@ static enum AVPixelFormat get_format(AVCodecContext *ctx,
 static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned index)
 {
    int ret              = 0;
-   const AVCodec *codec = avcodec_find_decoder(FCTX_STR->streams[index]->codecpar->codec_id);
+   const AVCodec *codec = retro_find_decoder(FCTX_STR->streams[index]->codecpar->codec_id);
    if (!codec)
    {
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] Couldn't find suitable decoder\n");
@@ -3134,7 +3175,7 @@ static void sws_worker_thread(void *arg)
       tmp_frame = ctx->source;
 
    ctx->sws = sws_getCachedContext(ctx->sws,
-         MEDIA_STR.width, MEDIA_STR.height, (enum AVPixelFormat)tmp_frame->format,
+         tmp_frame->width, tmp_frame->height, (enum AVPixelFormat)tmp_frame->format,
          MEDIA_STR.width, MEDIA_STR.height, AV_PIX_FMT_RGB32,
          SWS_POINT, NULL, NULL, NULL);
 
@@ -3143,7 +3184,7 @@ static void sws_worker_thread(void *arg)
          tmp_frame->color_range);
 
    if ((ret = sws_scale(ctx->sws, (const uint8_t *const*)tmp_frame->data,
-         tmp_frame->linesize, 0, MEDIA_STR.height,
+         tmp_frame->linesize, 0, tmp_frame->height,
          (uint8_t * const*)ctx->target->data, ctx->target->linesize)) < 0)
    {
 #ifdef __cplusplus
@@ -3163,21 +3204,10 @@ static void sws_worker_thread(void *arg)
    video_buffer_finish_slot(VIDEO_BUFFER_STR, ctx);
 }
 
-#ifdef HAVE_SSA
-static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size, ASS_Track *ass_track_active)
-#else
-static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
-#endif
+/* Sleep decoding thread until video_buffer is not full again.
+ * Five milliseconds is well inside a frame at any rate the core plays. */
+static bool decode_video_frames_slot_wait(void)
 {
-   int ret = 0;
-   video_decoder_context_t *decoder_ctx = NULL;
-
-   /* Stop decoding thread until video_buffer is not full again. The
-    * wait is on the condition a released slot signals, with a bound
-    * so the escape below is still reached: the main thread going to
-    * sleep with the buffer full is what this calls a deadlock, and
-    * nothing signals that. Five milliseconds is well inside a frame
-    * at any rate the core plays. */
    while (!DECODE_THREAD_DEAD_STR
          && !video_buffer_wait_for_open_slot(VIDEO_BUFFER_STR, 5000))
    {
@@ -3187,52 +3217,69 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
             log_cb(RETRO_LOG_ERROR, "[FFMPEG] Thread: Video deadlock detected.\n");
          tpool_wait(TPOOL_STR);
          video_buffer_clear(VIDEO_BUFFER_STR);
-         return;
+         return false;
       }
    }
 
-   if ((ret = avcodec_send_packet(ctx, pkt)) < 0)
-   {
-#ifdef __cplusplus
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode video packet: %d\n", ret);
-#else
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode video packet: %s\n", av_err2str(ret));
-#endif
-      return;
-   }
+   return !DECODE_THREAD_DEAD_STR;
+}
 
-   while (!DECODE_THREAD_DEAD_STR && video_buffer_has_open_slot(VIDEO_BUFFER_STR))
+#ifdef HAVE_SSA
+static int decode_video_frames(AVCodecContext *ctx, ASS_Track *ass_track_active)
+#else
+static int decode_video_frames(AVCodecContext *ctx)
+#endif
+{
+   int frames = 0;
+
+   for (;;)
    {
+      int ret;
+      video_decoder_context_t *decoder_ctx = NULL;
+
+      if (!decode_video_frames_slot_wait())
+         return -1;
+
       video_buffer_get_open_slot(VIDEO_BUFFER_STR, &decoder_ctx);
 
+      if (!decoder_ctx)
+         return -1;
+
       ret = avcodec_receive_frame(ctx, decoder_ctx->source);
+
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
       {
-         ret = DECODE_NO_FRAME;
-         goto end;
+         video_buffer_return_open_slot(VIDEO_BUFFER_STR, decoder_ctx);
+         return frames;
       }
-      else if (ret < 0)
+
+      if (ret < 0)
       {
 #ifdef __cplusplus
          log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while reading video frame: %d\n", ret);
 #else
          log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while reading video frame: %s\n", av_err2str(ret));
 #endif
-         goto end;
+         video_buffer_return_open_slot(VIDEO_BUFFER_STR, decoder_ctx);
+         return -1;
       }
 
 #if ENABLE_HW_ACCEL
       if (HW_DECODING_ENABLED_STR)
+      {
          /* Copy data from VRAM to RAM */
          if ((ret = av_hwframe_transfer_data(decoder_ctx->hw_source, decoder_ctx->source, 0)) < 0)
          {
 #ifdef __cplusplus
-               log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error transferring the data to system memory: %d\n", ret);
+            log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error transferring the data to system memory: %d\n", ret);
 #else
-               log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error transferring the data to system memory: %s\n", av_err2str(ret));
+            log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error transferring the data to system memory: %s\n", av_err2str(ret));
 #endif
-               goto end;
+            av_frame_unref(decoder_ctx->source);
+            video_buffer_return_open_slot(VIDEO_BUFFER_STR, decoder_ctx);
+            return -1;
          }
+      }
 #endif
 
 #ifdef HAVE_SSA
@@ -3240,16 +3287,54 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
 #endif
 
       tpool_add_work(TPOOL_STR, sws_worker_thread, decoder_ctx);
+      frames++;
+   }
+}
 
-   end:
+#ifdef HAVE_SSA
+static void decode_video(AVCodecContext *ctx, AVPacket *pkt, ASS_Track *ass_track_active)
+#else
+static void decode_video(AVCodecContext *ctx, AVPacket *pkt)
+#endif
+{
+   int ret = 0;
+
+   for (;;)
+   {
+      ret = avcodec_send_packet(ctx, pkt);
+
+      if (ret == AVERROR(EAGAIN))
+      {
+#ifdef HAVE_SSA
+         if (decode_video_frames(ctx, ass_track_active) <= 0)
+#else
+         if (decode_video_frames(ctx) <= 0)
+#endif
+            return;
+         continue;
+      }
+
+      if (ret == AVERROR_EOF)
+         break;
+
       if (ret < 0)
       {
-         video_buffer_return_open_slot(VIDEO_BUFFER_STR, decoder_ctx);
-         break;
+#ifdef __cplusplus
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode video packet: %d\n", ret);
+#else
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode video packet: %s\n", av_err2str(ret));
+#endif
+         return;
       }
+
+      break;
    }
 
-   return;
+#ifdef HAVE_SSA
+   decode_video_frames(ctx, ass_track_active);
+#else
+   decode_video_frames(ctx);
+#endif
 }
 
 static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
@@ -3536,9 +3621,9 @@ static void decode_thread(void *data)
          packet_buffer_get_packet(video_packet_buffer, pkt);
 
          #ifdef HAVE_SSA
-         decode_video(VCTX_STR, pkt, frame_size, ass_track_active);
+         decode_video(VCTX_STR, pkt, ass_track_active);
          #else
-         decode_video(VCTX_STR, pkt, frame_size);
+         decode_video(VCTX_STR, pkt);
          #endif
 
          av_packet_unref(pkt);
@@ -3885,10 +3970,10 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Increment Subtitle Index" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "Increment Audio Index" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "Decrement Audio Index" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "Seek -60 seconds" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "Seek +60 seconds" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,     "Seek Decrementally" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,     "Seek Incrementally" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "Seek -30 seconds" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "Seek +30 seconds" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,    "Seek Decrementally" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,    "Seek Incrementally" },
 
       { 0 },
    };
