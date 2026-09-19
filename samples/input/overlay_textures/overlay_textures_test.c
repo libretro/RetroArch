@@ -31,6 +31,9 @@
  *                   whose pixels went before them shows nothing
  *                   rather than something freed, and says it has
  *                   nothing to come back from;
+ *   load fails      a page the driver could not load is reported
+ *                   as not there, so nobody sets its alpha and
+ *                   geometry on whatever the driver held before;
  *   no images       a pack of hitboxes alone is always reusable.
  *
  * Built with THREADS=1 the threaded wrapper's stub is in, and the race
@@ -88,6 +91,7 @@ static unsigned drv_null_pixels;   /* load() entries with no pixels */
 static unsigned drv_shown;         /* entries of the page shown     */
 static uint32_t drv_sum[2];        /* what each entry looked like   */
 static bool     drv_decline;       /* load_textures answers false   */
+static bool     drv_load_fails;    /* load() answers false          */
 
 static bool drv_load(void *data, const void *images, unsigned num)
 {
@@ -95,6 +99,8 @@ static bool drv_load(void *data, const void *images, unsigned num)
    const struct texture_image *img = (const struct texture_image*)images;
    (void)data;
    drv_loads++;
+   if (drv_load_fails)
+      return false;
    drv_shown = num;
    for (i = 0; i < num && i < 2; i++)
    {
@@ -136,7 +142,7 @@ static void drv_reset(void)
 {
    drv_loads = drv_load_textures = drv_null_pixels = drv_shown = 0;
    drv_sum[0] = drv_sum[1] = 0;
-   drv_decline = false;
+   drv_decline = drv_load_fails = false;
    stub_reset();
 }
 
@@ -224,7 +230,7 @@ static void lane_textures(void)
    drv_reset();
    ol = pack_new(&iface_textures, NUM_IMAGES);
 
-   CHECK(input_overlay_load_page(ol), "textures: page 0 did not go as textures");
+   CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_TEXTURES, "textures: page 0 did not go as textures");
    CHECK(drv_loads == 0, "textures: load() was reached (%u)", drv_loads);
    CHECK(stub_tex_loads == NUM_IMAGES,
          "textures: %u uploads for %u unique images", stub_tex_loads, NUM_IMAGES);
@@ -241,7 +247,7 @@ static void lane_textures(void)
    CHECK(input_overlay_has_source(ol), "pixels go: an uploaded pack is not reusable");
 
    pack_show(ol, 1);
-   CHECK(input_overlay_load_page(ol), "page switch: page 1 did not go as textures");
+   CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_TEXTURES, "page switch: page 1 did not go as textures");
    CHECK(stub_tex_loads == NUM_IMAGES,
          "page switch: uploaded again (%u)", stub_tex_loads);
    CHECK(drv_loads == 0, "page switch: load() was reached");
@@ -254,7 +260,7 @@ static void lane_textures(void)
          stub_tex_live);
    CHECK(!input_overlay_has_source(ol), "spent pack: reported as reusable");
    ol->flags &= ~INPUT_OVERLAY_TEXTURES_DECLINED;
-   CHECK(!input_overlay_load_page(ol), "spent pack: went as textures");
+   CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_NONE, "spent pack: went as textures");
    CHECK(drv_loads == 0 && drv_null_pixels == 0,
          "spent pack: load() was handed a pack with no pixels");
 
@@ -276,7 +282,7 @@ static void lane_pixels(const char *lane,
    for (i = 0; i < NUM_PAGES; i++)
    {
       pack_show(ol, i);
-      CHECK(!input_overlay_load_page(ol), "%s: page %u went as textures", lane, i);
+      CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_PIXELS, "%s: page %u went as textures", lane, i);
       CHECK(drv_loads == i + 1, "%s: page %u did not reach load()", lane, i);
       CHECK(drv_null_pixels == 0, "%s: page %u had no pixels", lane, i);
       check_page(lane, i);
@@ -296,6 +302,23 @@ static void lane_pixels(const char *lane,
    printf("[%s] %s lane\n", failures == before ? "pass" : "fail", lane);
 }
 
+/* The driver could not load the page. It is reported as not there, so
+ * that the caller does not go on to set this page's alpha and geometry
+ * on whatever the driver held before - fewer images, or none. */
+static void lane_load_fails(void)
+{
+   unsigned before = failures;
+   input_overlay_t *ol;
+   drv_reset();
+   drv_load_fails = true;
+   ol = pack_new(&iface_pixels, NUM_IMAGES);
+   CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_NONE,
+         "load fails: the page was reported as loaded");
+   CHECK(drv_loads == 1, "load fails: load() was not tried");
+   pack_free(ol);
+   printf("[%s] load fails lane\n", failures == before ? "pass" : "fail");
+}
+
 static void lane_no_images(void)
 {
    unsigned before = failures;
@@ -303,7 +326,7 @@ static void lane_no_images(void)
    drv_reset();
    ol = pack_new(&iface_textures, 0);
    CHECK(input_overlay_has_source(ol), "no images: pack is not reusable");
-   CHECK(!input_overlay_load_page(ol), "no images: went as textures");
+   CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_PIXELS, "no images: went as textures");
    CHECK(stub_tex_loads == 0, "no images: uploaded something");
    pack_free(ol);
    printf("[%s] no images lane\n", failures == before ? "pass" : "fail");
@@ -326,7 +349,7 @@ static void lane_threaded_prompt(void)
    for (i = 0; i < NUM_PAGES; i++)
    {
       pack_show(ol, i);
-      CHECK(input_overlay_load_page(ol),
+      CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_TEXTURES,
             "threaded, prompt: page %u did not go as textures", i);
       check_page("threaded, prompt", i);
    }
@@ -360,7 +383,7 @@ static void lane_threaded_late(void)
    for (i = 0; i < NUM_PAGES; i++)
    {
       pack_show(ol, i);
-      CHECK(!input_overlay_load_page(ol),
+      CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_PIXELS,
             "threaded, late: page %u went as textures", i);
       CHECK(drv_loads == i + 1 && drv_null_pixels == 0,
             "threaded, late: page %u did not reach load() with pixels", i);
@@ -386,7 +409,7 @@ static void lane_threaded_late(void)
             "threaded, late: image %u kept its pixels", i);
 
    pack_show(ol, 0);
-   CHECK(input_overlay_load_page(ol), "threaded, late: page 0 not as textures");
+   CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_TEXTURES, "threaded, late: page 0 not as textures");
    check_page("threaded, late (switch)", 0);
    CHECK(stub_tex_loads == NUM_IMAGES && drv_loads == NUM_PAGES,
          "threaded, late: %u uploads, %u load() calls",
@@ -414,7 +437,7 @@ static void lane_threaded_late_refused(const char *lane,
    drv_decline           = decline;
    ol = pack_new(&iface_textures, NUM_IMAGES);
 
-   CHECK(!input_overlay_load_page(ol), "%s: went as textures", lane);
+   CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_PIXELS, "%s: went as textures", lane);
    stub_tex_load_fails = upload_fails;
    stub_video_thread_run();
    video_thread_async_poll();
@@ -426,7 +449,7 @@ static void lane_threaded_late_refused(const char *lane,
       CHECK(ol->images[i]->pixels != NULL, "%s: image %u lost its pixels",
             lane, i);
    pack_show(ol, 1);
-   CHECK(!input_overlay_load_page(ol), "%s: page 1 went as textures", lane);
+   CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_PIXELS, "%s: page 1 went as textures", lane);
    CHECK(drv_null_pixels == 0, "%s: page 1 had no pixels", lane);
    check_page(lane, 1);
 
@@ -466,7 +489,7 @@ static void lane_threaded_freed_in_flight(void)
          "released in flight: reported as reusable");
    drv_loads = 0;
    ol->flags &= ~INPUT_OVERLAY_TEXTURES_DECLINED;
-   CHECK(!input_overlay_load_page(ol), "released in flight: went as textures");
+   CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_NONE, "released in flight: went as textures");
    CHECK(drv_loads == 0 && drv_null_pixels == 0,
          "released in flight: load() was handed a pack with no pixels");
    pack_free(ol);
@@ -485,6 +508,7 @@ int main(void)
    lane_pixels("declined",     &iface_textures, true,  false);
    lane_pixels("no such path", &iface_pixels,   false, false);
    lane_pixels("upload fails", &iface_textures, false, true);
+   lane_load_fails();
    lane_no_images();
 #ifdef HAVE_THREADS
    lane_threaded_prompt();

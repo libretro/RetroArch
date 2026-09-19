@@ -10807,7 +10807,10 @@ static void vulkan_overlay_set_alpha(void *data,
    struct vk_vertex *pv;
    vk_t *vk = (vk_t*)data;
 
-   if (!vk)
+   /* Called whenever the frontend likes, not only after a load that
+    * worked: no page is a NULL array, and an index off the end of the
+    * page is off the end of the allocation. */
+   if (!vk || !vk->overlay.vertex || image >= vk->overlay.count)
       return;
 
    pv = &vk->overlay.vertex[image * 4];
@@ -11001,7 +11004,10 @@ static void vulkan_overlay_vertex_geom(void *data, unsigned image,
 {
    struct vk_vertex *pv = NULL;
    vk_t             *vk = (vk_t*)data;
-   if (!vk)
+   /* Called whenever the frontend likes, not only after a load that
+    * worked: no page is a NULL array, and an index off the end of the
+    * page is off the end of the allocation. */
+   if (!vk || !vk->overlay.vertex || image >= vk->overlay.count)
       return;
 
    pv      = &vk->overlay.vertex[4 * image];
@@ -11022,7 +11028,10 @@ static void vulkan_overlay_tex_geom(void *data, unsigned image,
 {
    struct vk_vertex *pv = NULL;
    vk_t *vk             = (vk_t*)data;
-   if (!vk)
+   /* Called whenever the frontend likes, not only after a load that
+    * worked: no page is a NULL array, and an index off the end of the
+    * page is off the end of the allocation. */
+   if (!vk || !vk->overlay.vertex || image >= vk->overlay.count)
       return;
 
    pv          = &vk->overlay.vertex[4 * image];

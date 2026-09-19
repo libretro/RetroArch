@@ -6332,7 +6332,9 @@ static void gl2_overlay_set_alpha(void *data, unsigned image, float mod)
    GLfloat *color;
    gl2_t *gl = (gl2_t*)data;
 
-   if (!gl)
+   /* As the geometry setters: no page loaded is a NULL array, and an
+    * index off the end of the page is the neighbouring block. */
+   if (!gl || !gl->overlay_color_coord || image >= gl->overlays)
       return;
 
    color         = (GLfloat*)&gl->overlay_color_coord[image * 16];

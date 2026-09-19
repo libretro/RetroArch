@@ -1766,7 +1766,11 @@ static uint32_t d3d11_get_flags(void *data)
 }
 
 #ifdef HAVE_OVERLAY
-static void d3d11_free_overlays(d3d11_video_t* d3d11)
+/* The page goes, the sprite buffer stays: d3d11_overlay_sprites_begin()
+ * reuses it for the next page while it is big enough. Releasing it
+ * here, at the top of every page load, left that reuse with nothing
+ * to reuse and made a page switch a CreateBuffer. */
+static void d3d11_free_overlay_page(d3d11_video_t* d3d11)
 {
    int i;
    if (!d3d11->overlays.borrowed)
@@ -1776,10 +1780,38 @@ static void d3d11_free_overlays(d3d11_video_t* d3d11)
    d3d11->overlays.textures     = NULL;
    d3d11->overlays.count        = 0;
    d3d11->overlays.borrowed     = false;
+}
 
+static void d3d11_free_overlays(d3d11_video_t* d3d11)
+{
+   d3d11_free_overlay_page(d3d11);
    Release(d3d11->overlays.vbo);
    d3d11->overlays.vbo          = NULL;
    d3d11->overlays.vbo_capacity = 0;
+}
+
+/* The sprite buffer mapped to write sprite @index - or NULL when
+ * there is no such sprite: no page loaded, a page whose load failed,
+ * an index off the end of it, a device that will not map. The setters
+ * below are called whenever the frontend likes, not only after a load
+ * that worked, and a failed Map leaves pData as it found it. */
+static d3d11_sprite_t *d3d11_overlay_sprite_map(d3d11_video_t *d3d11,
+      unsigned index)
+{
+   D3D11_MAPPED_SUBRESOURCE mapped_vbo;
+   if (     !d3d11
+         || !d3d11->overlays.vbo
+         || (int)index >= d3d11->overlays.count)
+      return NULL;
+   mapped_vbo.pData = NULL;
+   if (FAILED(d3d11->context->lpVtbl->Map(d3d11->context,
+               (D3D11Resource)d3d11->overlays.vbo, 0,
+               D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo)))
+      return NULL;
+   if (!mapped_vbo.pData)
+      d3d11->context->lpVtbl->Unmap(d3d11->context,
+            (D3D11Resource)d3d11->overlays.vbo, 0);
+   return (d3d11_sprite_t*)mapped_vbo.pData;
 }
 
 /* A page's sprite buffer, reused across pages while it is big enough,
@@ -1840,21 +1872,16 @@ static void d3d11_overlay_vertex_geom(
       void* data, unsigned index,
       float x, float y, float w, float h)
 {
-   D3D11_MAPPED_SUBRESOURCE mapped_vbo;
-   d3d11_video_t*           d3d11 = (d3d11_video_t*)data;
+   d3d11_video_t*  d3d11   = (d3d11_video_t*)data;
+   d3d11_sprite_t* sprites = d3d11_overlay_sprite_map(d3d11, index);
 
-   if (!d3d11)
+   if (!sprites)
       return;
 
-   d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
-   {
-      d3d11_sprite_t* sprites = (d3d11_sprite_t*)mapped_vbo.pData;
-      sprites[index].pos.x    = x;
-      sprites[index].pos.y    = y;
-      sprites[index].pos.w    = w;
-      sprites[index].pos.h    = h;
-   }
+   sprites[index].pos.x    = x;
+   sprites[index].pos.y    = y;
+   sprites[index].pos.w    = w;
+   sprites[index].pos.h    = h;
    d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0);
 }
 
@@ -1862,41 +1889,31 @@ static void d3d11_overlay_tex_geom(
       void* data, unsigned index,
       float u, float v, float w, float h)
 {
-   D3D11_MAPPED_SUBRESOURCE mapped_vbo;
-   d3d11_video_t*           d3d11 = (d3d11_video_t*)data;
+   d3d11_video_t*  d3d11   = (d3d11_video_t*)data;
+   d3d11_sprite_t* sprites = d3d11_overlay_sprite_map(d3d11, index);
 
-   if (!d3d11)
+   if (!sprites)
       return;
 
-   d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
-   {
-      d3d11_sprite_t* sprites = (d3d11_sprite_t*)mapped_vbo.pData;
-      sprites[index].coords.u = u;
-      sprites[index].coords.v = v;
-      sprites[index].coords.w = w;
-      sprites[index].coords.h = h;
-   }
+   sprites[index].coords.u = u;
+   sprites[index].coords.v = v;
+   sprites[index].coords.w = w;
+   sprites[index].coords.h = h;
    d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0);
 }
 
 static void d3d11_overlay_set_alpha(void* data, unsigned index, float mod)
 {
-   D3D11_MAPPED_SUBRESOURCE mapped_vbo;
-   d3d11_video_t*           d3d11 = (d3d11_video_t*)data;
+   d3d11_video_t*  d3d11   = (d3d11_video_t*)data;
+   d3d11_sprite_t* sprites = d3d11_overlay_sprite_map(d3d11, index);
 
-   if (!d3d11)
+   if (!sprites)
       return;
 
-   d3d11->context->lpVtbl->Map(
-         d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &mapped_vbo);
-   {
-      d3d11_sprite_t* sprites  = (d3d11_sprite_t*)mapped_vbo.pData;
-      sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, mod * 0xFF);
-      sprites[index].colors[1] = sprites[index].colors[0];
-      sprites[index].colors[2] = sprites[index].colors[0];
-      sprites[index].colors[3] = sprites[index].colors[0];
-   }
+   sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, mod * 0xFF);
+   sprites[index].colors[1] = sprites[index].colors[0];
+   sprites[index].colors[2] = sprites[index].colors[0];
+   sprites[index].colors[3] = sprites[index].colors[0];
    d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0);
 }
 
@@ -1910,15 +1927,22 @@ static bool d3d11_overlay_load(void* data, const void* image_data, unsigned num_
    if (!d3d11)
       return false;
 
-   d3d11_free_overlays(d3d11);
+   d3d11_free_overlay_page(d3d11);
+   if (!num_images)
+      return true;
    d3d11->overlays.textures = (d3d11_texture_t*)calloc(
          num_images, sizeof(d3d11_texture_t));
    if (!d3d11->overlays.textures)
       return false;
    d3d11->overlays.count    = num_images;
 
+   /* No sprites, no page: not a count the draw and the setters would
+    * take at its word against a buffer that is not there. */
    if (!d3d11_overlay_sprites_begin(d3d11, num_images, &mapped_vbo))
+   {
+      d3d11_free_overlay_page(d3d11);
       return false;
+   }
 
    for (i = 0; i < num_images; i++)
    {
@@ -1953,7 +1977,9 @@ static bool d3d11_overlay_load_textures(void* data,
    if (!d3d11)
       return false;
 
-   d3d11_free_overlays(d3d11);
+   d3d11_free_overlay_page(d3d11);
+   if (!num_textures)
+      return true;
    d3d11->overlays.textures = (d3d11_texture_t*)calloc(
          num_textures, sizeof(d3d11_texture_t));
    if (!d3d11->overlays.textures)
@@ -1962,7 +1988,10 @@ static bool d3d11_overlay_load_textures(void* data,
    d3d11->overlays.borrowed = true;
 
    if (!d3d11_overlay_sprites_begin(d3d11, num_textures, &mapped_vbo))
+   {
+      d3d11_free_overlay_page(d3d11);
       return false;
+   }
    for (i = 0; i < num_textures; i++)
       d3d11->overlays.textures[i] = *(const d3d11_texture_t*)textures[i];
    d3d11->context->lpVtbl->Unmap(d3d11->context, (D3D11Resource)d3d11->overlays.vbo, 0);

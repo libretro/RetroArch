@@ -346,7 +346,7 @@ static void input_overlay_drop_pixels(input_overlay_t *ol)
          ol->overlays[i].load_images[j].pixels = NULL;
 }
 
-bool input_overlay_load_page(input_overlay_t *ol)
+enum input_overlay_page input_overlay_load_page(input_overlay_t *ol)
 {
    if (     ol->iface->load_textures
          && !(ol->flags & INPUT_OVERLAY_TEXTURES_DECLINED)
@@ -357,7 +357,7 @@ bool input_overlay_load_page(input_overlay_t *ol)
       {
          GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE);
          input_overlay_drop_pixels(ol);
-         return true;
+         return INPUT_OVERLAY_PAGE_TEXTURES;
       }
       /* The wrapper's table answers for any driver; the one beneath
        * it may have no such path. */
@@ -367,13 +367,16 @@ bool input_overlay_load_page(input_overlay_t *ol)
     * must not show what its pages used to point at; it is on its way
     * to being reloaded (input_overlay_init). */
    if (!input_overlay_has_source(ol))
-      return false;
+      return INPUT_OVERLAY_PAGE_NONE;
    GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE);
    GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE_LOAD);
-   if (ol->iface->load)
-      ol->iface->load(ol->iface_data, ol->active->load_images,
-            ol->active->load_images_size);
-   return false;
+   /* The driver's own answer counts: a page it could not load is not
+    * there, whatever the pack meant to show. */
+   if (     !ol->iface->load
+         || !ol->iface->load(ol->iface_data, ol->active->load_images,
+               ol->active->load_images_size))
+      return INPUT_OVERLAY_PAGE_NONE;
+   return INPUT_OVERLAY_PAGE_PIXELS;
 }
 
 bool input_overlay_promote_textures(input_overlay_t *ol)

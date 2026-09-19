@@ -3626,8 +3626,10 @@ void input_overlay_load_active(
       enum overlay_visibility *visibility,
       input_overlay_t *ol, float opacity)
 {
-   input_overlay_load_page(ol);
-   input_overlay_load_active_geom(visibility, ol, opacity);
+   /* No page in the driver, no per-image state to set on it: the
+    * setters would index whatever the driver held before. */
+   if (input_overlay_load_page(ol) != INPUT_OVERLAY_PAGE_NONE)
+      input_overlay_load_active_geom(visibility, ol, opacity);
 }
 
 /* The per-page state that follows either load: alpha, geometry,

@@ -539,10 +539,22 @@ bool input_overlay_upload_textures(input_overlay_t *ol);
  * pixels to make them from. */
 bool input_overlay_has_source(const input_overlay_t *ol);
 
+/* What the driver holds after input_overlay_load_page(). */
+enum input_overlay_page
+{
+   /* Nothing of this page: the pack had nothing to show it from, or
+    * the driver could not load it. Whatever the driver held before -
+    * no page, or an older one with fewer images - is what the per-image
+    * setters (set_alpha, vertex_geom, tex_geom) would now write to,
+    * with this page's indices: the caller leaves them alone. */
+   INPUT_OVERLAY_PAGE_NONE = 0,
+   INPUT_OVERLAY_PAGE_PIXELS,    /* through load()          */
+   INPUT_OVERLAY_PAGE_TEXTURES   /* through load_textures() */
+};
+
 /* Hand the active page to the driver: as textures when the driver
- * takes them, as pixels through load() otherwise. True when it went
- * as textures. */
-bool input_overlay_load_page(input_overlay_t *ol);
+ * takes them, as pixels through load() otherwise. */
+enum input_overlay_page input_overlay_load_page(input_overlay_t *ol);
 
 /* Under threaded video the pack's uploads finish after the page was
  * shown through load(). Once per poll: when the last handle is in,

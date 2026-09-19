@@ -6136,7 +6136,13 @@ typedef struct MTLALIGN(16)
 
    for (i = 0; i < count; i++)
    {
-      _images[i] = RARCH_AUTORELEASE_R([_context newTexture:images[i] mipmapped:NO]);
+      /* nil into an NSMutableArray is an exception, not an empty
+       * slot: a texture that could not be made ends the page here,
+       * with the images before it and nothing after. */
+      id<MTLTexture> tex = RARCH_AUTORELEASE_R([_context newTexture:images[i] mipmapped:NO]);
+      if (!tex)
+         return NO;
+      _images[i] = tex;
       [self updateVertexX:0 y:0 w:1 h:1 index:i];
       [self updateTextureCoordsX:0 y:0 w:1 h:1 index:i];
       [self _updateColorRed:1.0 green:1.0 blue:1.0 alpha:1.0 index:i];
@@ -6196,9 +6202,15 @@ typedef struct MTLALIGN(16)
    }
 }
 
+/* The four vertices of sprite @index, or NULL when the buffer has no
+ * such sprite: no page loaded, a buffer that could not be made, an
+ * index off the end. The setters are called whenever the frontend
+ * likes, not only after a load that worked. */
 - (SpriteVertex *)_getForIndex:(NSUInteger)index
 {
    SpriteVertex *pv = (SpriteVertex *)_vert.contents;
+   if (!pv || (index + 1) * 4 * sizeof(SpriteVertex) > _vert.length)
+      return NULL;
    return &pv[index * 4];
 }
 
@@ -6206,6 +6218,8 @@ typedef struct MTLALIGN(16)
 {
    simd_float4 color = simd_make_float4(r, g, b, a);
    SpriteVertex *pv  = [self _getForIndex:index];
+   if (!pv)
+      return;
    pv[0].color       = color;
    pv[1].color       = color;
    pv[2].color       = color;
@@ -6221,6 +6235,8 @@ typedef struct MTLALIGN(16)
 - (void)updateVertexX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index
 {
    SpriteVertex *pv = [self _getForIndex:index];
+   if (!pv)
+      return;
    pv[0].position   = simd_make_float2(x, y);
    pv[1].position   = simd_make_float2(x + w, y);
    pv[2].position   = simd_make_float2(x, y + h);
@@ -6231,6 +6247,8 @@ typedef struct MTLALIGN(16)
 - (void)updateTextureCoordsX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index
 {
    SpriteVertex *pv = [self _getForIndex:index];
+   if (!pv)
+      return;
    pv[0].texCoord   = simd_make_float2(x, y);
    pv[1].texCoord   = simd_make_float2(x + w, y);
    pv[2].texCoord   = simd_make_float2(x, y + h);

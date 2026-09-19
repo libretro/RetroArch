@@ -137,6 +137,20 @@ jobs:
           # sets, tests and clears its borrowed marker.
           python3 tools/overlay_texture_ownership.py
 
+      - name: Check overlay setters refuse an image the driver does not hold
+        shell: bash
+        run: |
+          set -eu
+          # set_alpha, vertex_geom and tex_geom are called whenever the
+          # layout, opacity or page changes, not only after a load()
+          # that worked: with no page the driver's arrays are NULL, and
+          # after a smaller page or a failed load the index is off the
+          # end. 7661ab06e7 bounded the GL geometry setters and missed
+          # set_alpha; D3D, Vulkan and Metal had no check at all. No
+          # runner can run these drivers, so this is the check at
+          # source level for the ones that have been audited.
+          python3 tools/overlay_setter_bounds.py
+
       - name: Check companion backend feature parity
         shell: bash
         working-directory: ${{ github.workspace }}
