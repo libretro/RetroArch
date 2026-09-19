@@ -6330,7 +6330,20 @@ static bool d3d12_gfx_frame(
    /* Copy over back buffer to swap chain render targets */
    if ((d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) && use_back_buffer)
    {
-      cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_HDR]);
+      /* Opaque. This is the core's frame going onto a swapchain image
+       * that was cleared a few lines down; there is nothing under it to
+       * blend with, and the alpha it carries is whatever the core left
+       * in its texture. STOCK_HDR blends with source alpha, and the HDR
+       * shader passes the sampled alpha through, so a hardware core
+       * whose render target holds the guest's alpha - the PS2 core's
+       * is the PS2's, zero or half for most of a frame - was composited
+       * at that alpha over the clear colour: a black picture with HDR
+       * on, with the widgets and overlay drawn over it as usual. A
+       * software frame is XRGB and reads as opaque, which is why only
+       * hardware cores showed it, and only once something (a menu, an
+       * overlay) had put the frame through the back buffer. The SDR
+       * path has always drawn the frame with blending off. */
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_NOBLEND_HDR]);
 
       D3D12_RESOURCE_TRANSITION(
             cmd,
