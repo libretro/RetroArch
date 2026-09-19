@@ -3823,6 +3823,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                iface->interface_version = 1;
             else
 #endif
+#ifdef HAVE_D3D11
+            /* Version 1 of the D3D11 negotiation, as for D3D12 above
+             * (libretro_d3d11.h). */
+            if (iface->interface_type == RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D11)
+               iface->interface_version = 1;
+            else
+#endif
             {
                iface->interface_version = 0;
             }

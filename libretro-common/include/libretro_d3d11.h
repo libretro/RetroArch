@@ -106,7 +106,12 @@ struct retro_hw_render_interface_d3d11
    * whatever it relies on before it draws - shaders, input layout,
    * buffers, views, samplers, render targets, viewport, scissor, blend,
    * depth-stencil and rasterizer state. Returns false if the context is
-   * exactly as the core left it. */
+   * exactly as the core left it.
+   *
+   * video_refresh is the frontend's too: a frontend that draws on the
+   * core's thread draws its whole frame inside it. A core that goes on
+   * using the context after video_refresh, within the same lock, treats
+   * it as it would a lock_context that returned true. */
   bool (*lock_context)(void* handle);
 
   /* Gives the context back. The core must not touch it again until it

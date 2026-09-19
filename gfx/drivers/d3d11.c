@@ -69,6 +69,7 @@
 #include <libretro_d3d11.h>
 #include "../common/d3dcompiler_common.h"
 #include "../common/d3d11_deferred_proxy.h"
+#include "../common/d3d11_hw_interface.h"
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
  * sites remain guarded with HAVE_SLANG+HAVE_SPIRV_CROSS. */
@@ -335,6 +336,19 @@ typedef struct
       D3D11Texture2D present;
       DXGI_FORMAT    present_format;
    } hw_ring;
+   /* libretro_d3d11.h version 2: the core and this driver take turns on
+    * the immediate context. `lock` is what they take; `frontend_used` is
+    * set whenever the driver has had the context and is what
+    * lock_context reports to the core; `texture` is the frame the core
+    * named with set_texture when the driver runs on the core's thread. */
+   struct
+   {
+      CRITICAL_SECTION lock;
+      bool             lock_ready;
+      bool             active;
+      bool             frontend_used;
+      D3D11Texture2D   texture;
+   } hw_v2;
    unsigned              retained_width;
    unsigned              retained_height;
    unsigned              retained_light;
@@ -3097,6 +3111,9 @@ error:
 }
 
 static void d3d11_hw_ring_free(d3d11_video_t *d3d11);
+static bool d3d11_hw_v2_lock_context(void *data);
+static void d3d11_hw_v2_unlock_context(void *data);
+static void d3d11_hw_v2_set_texture(void *data, ID3D11Texture2D *texture);
 
 static void d3d11_gfx_free(void* data)
 {
@@ -4102,6 +4119,26 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11->hw_iface.context           = d3d11->context;
       d3d11->hw_iface.featureLevel      = d3d11->supportedFeatureLevel;
       d3d11->hw_iface.D3DCompile        = D3DCompile;
+      /* Version 2 only for a core that asked for it; every other core
+       * compares interface_version against 1 and refuses anything else. */
+      if (d3d11_hw_interface_negotiated_version()
+            >= RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_2)
+      {
+         if (!d3d11->hw_v2.lock_ready)
+         {
+            InitializeCriticalSection(&d3d11->hw_v2.lock);
+            d3d11->hw_v2.lock_ready = true;
+         }
+         /* A fresh context is nobody's: the core's first lock_context
+          * says so, and it binds everything. */
+         d3d11->hw_v2.frontend_used         = true;
+         d3d11->hw_v2.active                = true;
+         d3d11->hw_iface.interface_version  = RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_2;
+         d3d11->hw_iface.lock_context       = d3d11_hw_v2_lock_context;
+         d3d11->hw_iface.unlock_context     = d3d11_hw_v2_unlock_context;
+         d3d11->hw_iface.set_texture        = d3d11_hw_v2_set_texture;
+         RARCH_LOG("[D3D11] Hardware render interface version 2.\n");
+      }
    }
 
    {
@@ -4369,7 +4406,72 @@ static void d3d11_retain_backbuffer(d3d11_video_t *d3d11)
  * its dark ones, so BFI keeps its strobe pattern through a repeat. Each
  * present waits on the frame latency object as frame() does, so the
  * cadence comes from the swapchain when it can. Returns swaps made. */
+/* --- libretro_d3d11.h version 2 ----------------------------------------
+ *
+ * The immediate context is shared with the core by taking turns. Only
+ * two of this driver's entry points can run while the core is running:
+ * the frame, and the repeat of the last one. Everything else reaches the
+ * video thread as a command the main thread waits for, and the main
+ * thread is not inside the core while it waits - the core may not hold
+ * the lock across a return from retro_run. So those two take the lock,
+ * and nothing else needs to. */
+
+static void d3d11_hw_v2_enter(d3d11_video_t *d3d11)
+{
+   if (!d3d11->hw_v2.active)
+      return;
+   EnterCriticalSection(&d3d11->hw_v2.lock);
+   d3d11->hw_v2.frontend_used = true;
+}
+
+static void d3d11_hw_v2_leave(d3d11_video_t *d3d11)
+{
+   if (d3d11->hw_v2.active)
+      LeaveCriticalSection(&d3d11->hw_v2.lock);
+}
+
+static bool d3d11_hw_v2_lock_context(void *data)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   bool used;
+   EnterCriticalSection(&d3d11->hw_v2.lock);
+   used                       = d3d11->hw_v2.frontend_used;
+   d3d11->hw_v2.frontend_used = false;
+   return used;
+}
+
+static void d3d11_hw_v2_unlock_context(void *data)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   LeaveCriticalSection(&d3d11->hw_v2.lock);
+}
+
+/* No threaded wrapper in front: the frame that follows, inside
+ * video_refresh, reads this. The reference is dropped there. */
+static void d3d11_hw_v2_set_texture(void *data, ID3D11Texture2D *texture)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   if (texture)
+      texture->lpVtbl->AddRef(texture);
+   Release(d3d11->hw_v2.texture);
+   d3d11->hw_v2.texture = texture;
+}
+
+static unsigned d3d11_present_last_body(void *data);
+
 static unsigned d3d11_present_last(void *data)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   unsigned ret;
+   if (!d3d11)
+      return 0;
+   d3d11_hw_v2_enter(d3d11);
+   ret = d3d11_present_last_body(data);
+   d3d11_hw_v2_leave(d3d11);
+   return ret;
+}
+
+static unsigned d3d11_present_last_body(void *data)
 {
    unsigned i;
    unsigned done          = 0;
@@ -4459,7 +4561,35 @@ static retro_time_t d3d11_get_last_present_time(void *data)
         + (stats.SyncQPCTime.QuadPart % freq.QuadPart * 1000000 / freq.QuadPart);
 }
 
+static bool d3d11_gfx_frame_body(void *data, const void *frame,
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info);
+
+/* The lock is recursive: the frame calls itself for black frame
+ * insertion, and with no wrapper in front it runs inside video_refresh,
+ * where the core already holds the lock. */
 static bool d3d11_gfx_frame(
+      void*               data,
+      const void*         frame,
+      unsigned            width,
+      unsigned            height,
+      uint64_t            frame_count,
+      unsigned            pitch,
+      const char*         msg,
+      video_frame_info_t* video_info)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   bool ret;
+   if (!d3d11)
+      return false;
+   d3d11_hw_v2_enter(d3d11);
+   ret = d3d11_gfx_frame_body(data, frame, width, height, frame_count,
+         pitch, msg, video_info);
+   d3d11_hw_v2_leave(d3d11);
+   return ret;
+}
+
+static bool d3d11_gfx_frame_body(
       void*               data,
       const void*         frame,
       unsigned            width,
@@ -4678,9 +4808,23 @@ static bool d3d11_gfx_frame(
               * deferred context; PS slot 0 on this context has nothing
               * to do with it. */
              hw_texture             = d3d11->hw_ring.present;
-             hw_texture->lpVtbl->AddRef(hw_texture);
+             /* Version 2's present_slot already took this frame's
+              * reference. */
+             if (!d3d11->hw_v2.active)
+                hw_texture->lpVtbl->AddRef(hw_texture);
              hw_desc.Format         = d3d11->hw_ring.present_format;
              d3d11->hw_ring.present = NULL;
+          }
+          else if (d3d11->hw_v2.texture)
+          {
+             /* Version 2, no wrapper in front: the texture the core
+              * named. The reference set_texture took becomes this
+              * frame's. */
+             D3D11_TEXTURE2D_DESC v2_desc;
+             hw_texture           = d3d11->hw_v2.texture;
+             d3d11->hw_v2.texture = NULL;
+             hw_texture->lpVtbl->GetDesc(hw_texture, &v2_desc);
+             hw_desc.Format       = v2_desc.Format;
           }
           else
              context->lpVtbl->PSGetShaderResources(context, 0, 1, &hw_view);
@@ -6567,10 +6711,65 @@ static bool d3d11_hw_ring_capture(void *data, unsigned slot,
    D3D11Texture2D texture       = NULL;
    ID3D11CommandList *list      = NULL;
    D3D11_SHADER_RESOURCE_VIEW_DESC desc;
-   (void)format;
 
-   if (!d3d11 || !deferred || slot >= 3)
+   if (!d3d11 || !source || slot >= 3)
       return false;
+
+   if (format == D3D11_HW_RING_CAPTURE_TEXTURE)
+   {
+      /* Version 2. `source` is the texture the core named, and the core
+       * draws into it again as soon as video_refresh returns, so the
+       * slot gets a copy of its own: one call on the immediate context,
+       * which the core's thread holds the lock for (it is recursive),
+       * ahead of anything the core does next. No command list, and
+       * nothing for the video thread to replay. */
+      D3D11Texture2D core = (D3D11Texture2D)source;
+      D3D11Texture2D own;
+      D3D11_TEXTURE2D_DESC want, have;
+
+      /* Under the lock from here: present_slot takes its reference to
+       * the slot's texture under it too, so a slot being replaced
+       * because the frame changed size cannot go from under the video
+       * thread. */
+      EnterCriticalSection(&d3d11->hw_v2.lock);
+      own = d3d11->hw_ring.slot[slot].list
+         ? NULL : d3d11->hw_ring.slot[slot].texture;
+      core->lpVtbl->GetDesc(core, &want);
+      if (own)
+      {
+         own->lpVtbl->GetDesc(own, &have);
+         if (     have.Width  != want.Width
+               || have.Height != want.Height
+               || have.Format != want.Format)
+            own = NULL;
+      }
+      if (!own)
+      {
+         D3D11_TEXTURE2D_DESC make = want;
+         make.MipLevels      = 1;
+         make.ArraySize      = 1;
+         make.Usage          = D3D11_USAGE_DEFAULT;
+         make.BindFlags      = D3D11_BIND_SHADER_RESOURCE;
+         make.CPUAccessFlags = 0;
+         make.MiscFlags      = 0;
+         if (FAILED(d3d11->device->lpVtbl->CreateTexture2D(d3d11->device,
+                     &make, NULL, &own)))
+         {
+            LeaveCriticalSection(&d3d11->hw_v2.lock);
+            return false;
+         }
+         Release(d3d11->hw_ring.slot[slot].list);
+         Release(d3d11->hw_ring.slot[slot].texture);
+         d3d11->hw_ring.slot[slot].list    = NULL;
+         d3d11->hw_ring.slot[slot].texture = own;
+      }
+      d3d11->hw_ring.slot[slot].format = want.Format;
+
+      d3d11->context->lpVtbl->CopySubresourceRegion(d3d11->context,
+            (D3D11Resource)own, 0, 0, 0, 0, (D3D11Resource)core, 0, NULL);
+      LeaveCriticalSection(&d3d11->hw_v2.lock);
+      return true;
+   }
 
    deferred->lpVtbl->PSGetShaderResources(deferred, 0, 1, &view);
    if (view)
@@ -6607,6 +6806,20 @@ static bool d3d11_hw_ring_present_slot(void *data, unsigned slot)
             d3d11->hw_ring.slot[slot].list, TRUE);
       Release(d3d11->hw_ring.slot[slot].list);
       d3d11->hw_ring.slot[slot].list = NULL;
+   }
+   if (d3d11->hw_v2.active)
+   {
+      /* Version 2: the reference is taken here, under the lock the
+       * capture replaces the slot's texture under, and becomes the
+       * frame's. One left over from a frame that never came is dropped. */
+      EnterCriticalSection(&d3d11->hw_v2.lock);
+      Release(d3d11->hw_ring.present);
+      d3d11->hw_ring.present        = d3d11->hw_ring.slot[slot].texture;
+      d3d11->hw_ring.present_format = d3d11->hw_ring.slot[slot].format;
+      if (d3d11->hw_ring.present)
+         d3d11->hw_ring.present->lpVtbl->AddRef(d3d11->hw_ring.present);
+      LeaveCriticalSection(&d3d11->hw_v2.lock);
+      return d3d11->hw_ring.present != NULL;
    }
    d3d11->hw_ring.present        = d3d11->hw_ring.slot[slot].texture;
    d3d11->hw_ring.present_format = d3d11->hw_ring.slot[slot].format;
@@ -6662,7 +6875,19 @@ static void d3d11_hw_ring_free(d3d11_video_t *d3d11)
       d3d11->hw_ring.slot[i].list    = NULL;
       d3d11->hw_ring.slot[i].texture = NULL;
    }
+   if (d3d11->hw_v2.active)
+      Release(d3d11->hw_ring.present);
    d3d11->hw_ring.present = NULL;
+
+   /* Version 2's state goes with the rest of the hardware handoff. */
+   Release(d3d11->hw_v2.texture);
+   d3d11->hw_v2.texture = NULL;
+   d3d11->hw_v2.active  = false;
+   if (d3d11->hw_v2.lock_ready)
+   {
+      DeleteCriticalSection(&d3d11->hw_v2.lock);
+      d3d11->hw_v2.lock_ready = false;
+   }
 }
 
 static bool d3d11_get_hw_render_interface(
