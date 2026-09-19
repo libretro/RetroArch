@@ -716,6 +716,21 @@ jobs:
           sudo apt-get install -y -qq xvfb > /dev/null
           samples/gfx/d3d11_hw_ring/run.sh
 
+      - name: libretro_d3d11.h version 2, the contract run (mingw + Wine, headless)
+        shell: bash
+        run: |
+          set -o pipefail
+          # Version 2 of the D3D11 hardware render interface lets a core
+          # and a frontend that presents from another thread share the
+          # device's one immediate context by taking turns, so the core
+          # keeps everything a deferred context cannot do - reading back
+          # above all. This runs the two against each other on a real
+          # D3D11 device (wined3d), and requires every frame and every
+          # readback to be right, and a core that ignores what
+          # lock_context tells it to be caught.
+          sudo apt-get install -y -qq xvfb > /dev/null
+          REQUIRE_D3D11=1 samples/gfx/d3d11_hw_interface_v2/run.sh
+
       - name: libretro_d3d12.h version 2, the contract run (mingw + Wine + vkd3d, headless)
         shell: bash
         run: |
