@@ -4033,6 +4033,13 @@ enum retro_hw_render_context_negotiation_interface_type
    RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN = 0,
 
    /**
+    * Denotes a context negotiation interface for Direct3D 12.
+    * Carries the highest hardware render interface version the core can use.
+    * @see retro_hw_render_context_negotiation_interface_d3d12
+    */
+   RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D12 = 1,
+
+   /**
     * @private Defined to ensure <tt>sizeof(retro_hw_render_context_negotiation_interface_type) == sizeof(int)</tt>.
     * Do not use.
     */

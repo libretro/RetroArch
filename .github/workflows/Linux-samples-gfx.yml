@@ -716,6 +716,20 @@ jobs:
           sudo apt-get install -y -qq xvfb > /dev/null
           samples/gfx/d3d11_hw_ring/run.sh
 
+      - name: libretro_d3d12.h version 2, the contract run (mingw + Wine + vkd3d, headless)
+        shell: bash
+        run: |
+          set -o pipefail
+          # Version 2 of the D3D12 hardware render interface lets a core
+          # hand a frame to a frontend that presents from another thread
+          # without the copy version 1 forces. This runs a core and such a
+          # frontend against each other on a real D3D12 device - vkd3d
+          # over Mesa's software Vulkan driver - and requires every frame
+          # to arrive intact, and a core that ignores wait_sync_index to
+          # be caught.
+          sudo apt-get install -y -qq xvfb libvkd3d1 mesa-vulkan-drivers > /dev/null
+          REQUIRE_D3D12=1 samples/gfx/d3d12_hw_interface_v2/run.sh
+
       - name: Build and run display_servers_kms_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/display_servers_kms
