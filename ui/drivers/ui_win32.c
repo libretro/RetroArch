@@ -138,13 +138,27 @@ static void ui_window_win32_set_visible(void *data,
 
 static void ui_window_win32_set_title(void *data, char *buf)
 {
+   /* SetWindowText sends WM_SETTEXT, and a send does not return until the
+    * window's own thread takes it off its queue. The title is updated from
+    * inside the frame callback, which a core driving a hardware context
+    * calls from whichever thread it renders on -- and the thread owning
+    * the window is then inside retro_run, not pumping messages. It waits
+    * for the core, the core waits for it, and neither returns.
+    *
+    * The same message, sent with a deadline: the title is cosmetic and a
+    * frame that cannot set it loses nothing. ABORTIFHUNG returns at once
+    * when the target is already known to be stuck rather than waiting out
+    * the timeout. Both predate NT 4, so the oldest target still builds. */
    ui_window_win32_t *window = (ui_window_win32_t*)data;
+   DWORD_PTR         result  = 0;
 #ifdef LEGACY_WIN32
    char         *title_local = utf8_to_local_string_alloc(buf);
-   SetWindowText(window->hwnd, title_local);
+   SendMessageTimeoutA(window->hwnd, WM_SETTEXT, 0, (LPARAM)title_local,
+         SMTO_ABORTIFHUNG | SMTO_NORMAL, 100, &result);
 #else
    wchar_t      *title_local = utf8_to_utf16_string_alloc(buf);
-   SetWindowTextW(window->hwnd, title_local);
+   SendMessageTimeoutW(window->hwnd, WM_SETTEXT, 0, (LPARAM)title_local,
+         SMTO_ABORTIFHUNG | SMTO_NORMAL, 100, &result);
 #endif
    free(title_local);
 }
