@@ -531,7 +531,8 @@ void input_overlay_release_textures(input_overlay_t *ol);
 
 /* Upload every unique image of the pack and build each page's list of
  * handles. True when the pack has its textures, already or as of this
- * call; false when it cannot be uploaded this way. */
+ * call; false when it cannot be uploaded this way, or when the uploads
+ * are still with the video thread (input_overlay_promote_textures). */
 bool input_overlay_upload_textures(input_overlay_t *ol);
 
 /* Whether the pack can still be shown: it has its textures, or the
@@ -542,6 +543,14 @@ bool input_overlay_has_source(const input_overlay_t *ol);
  * takes them, as pixels through load() otherwise. True when it went
  * as textures. */
 bool input_overlay_load_page(input_overlay_t *ol);
+
+/* Under threaded video the pack's uploads finish after the page was
+ * shown through load(). Once per poll: when the last handle is in,
+ * the active page is handed to the driver again as textures and the
+ * pixels go. True on the poll that happens, and the caller applies
+ * the page's alpha and geometry again, as after any load; false, at
+ * the cost of a few tests, on every other. */
+bool input_overlay_promote_textures(input_overlay_t *ol);
 
 /* Unload the textures of the active and the cached pack ahead of the
  * video driver's teardown; they are uploaded again at the next enable

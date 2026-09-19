@@ -187,6 +187,7 @@ static void gfx_surface_done(void *user, uintptr_t handle)
    {
       if (s->handle)
          video_driver_texture_unload(&s->handle);
+      free(s->adopted);
       free(s);
       return;
    }
@@ -336,4 +337,17 @@ void gfx_surface_free(gfx_surface_t *s)
    if (s->handle)
       video_driver_texture_unload(&s->handle);
    free(s);
+}
+
+bool gfx_surface_free_adopt(gfx_surface_t *s, void *pixels)
+{
+   if (s && s->inflight && !s->num_slots && pixels)
+   {
+      GFX_INSTR_INC(GFX_INSTR_SURFACE_FREE);
+      s->adopted = pixels;
+      s->dying   = 1;
+      return true;
+   }
+   gfx_surface_free(s);
+   return false;
 }

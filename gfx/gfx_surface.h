@@ -96,6 +96,9 @@ struct gfx_surface
    enum texture_filter_type filter;
    uint8_t inflight;
    uint8_t dying;      /* freed while in flight; the completion frees */
+   /* External pixels adopted by gfx_surface_free_adopt(): freed with
+    * the surface, once the video thread is done reading them. */
+   void *adopted;
    uint8_t rgba;       /* channel order of the texture; 0xff = none */
    uint8_t can_update; /* driver updates in place */
 };
@@ -227,6 +230,15 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
 /* Unload the texture and free the surface. A submit in flight keeps
  * the slots alive until it completes, without a release() call. */
 void gfx_surface_free(gfx_surface_t *s);
+
+/* gfx_surface_free() for a surface whose submit was given pixels the
+ * caller owns (gfx_surface_submit_external) and is about to free. With
+ * that submit still in flight the video thread has yet to read them,
+ * so the surface takes @pixels and frees them at the completion, with
+ * itself: true, and the caller must forget the pointer. Otherwise the
+ * surface is freed as usual and the pixels stay the caller's: false.
+ * @pixels must be a malloc() block. */
+bool gfx_surface_free_adopt(gfx_surface_t *s, void *pixels);
 
 RETRO_END_DECLS
 

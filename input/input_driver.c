@@ -7715,6 +7715,11 @@ void input_driver_poll(void)
             break;
       }
 
+      /* Under threaded video the pack's textures arrive after the
+       * page was first shown; the page moves over to them here. */
+      if (input_overlay_promote_textures(input_st->overlay_ptr))
+         input_overlay_load_active_geom(input_st->overlay_visibility,
+               input_st->overlay_ptr, input_overlay_opacity);
 #ifdef HAVE_RPNG
       input_overlay_animate(input_st->overlay_ptr, cpu_features_get_time_usec());
 #endif
