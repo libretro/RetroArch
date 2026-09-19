@@ -534,6 +534,10 @@ void input_overlay_release_textures(input_overlay_t *ol);
  * call; false when it cannot be uploaded this way. */
 bool input_overlay_upload_textures(input_overlay_t *ol);
 
+/* Whether the pack can still be shown: it has its textures, or the
+ * pixels to make them from. */
+bool input_overlay_has_source(const input_overlay_t *ol);
+
 /* Hand the active page to the driver: as textures when the driver
  * takes them, as pixels through load() otherwise. True when it went
  * as textures. */

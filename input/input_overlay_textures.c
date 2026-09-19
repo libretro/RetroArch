@@ -79,10 +79,8 @@ bool input_overlay_upload_textures(input_overlay_t *ol)
 
    if (ol->page_textures || !ol->images || !ol->num_images)
       return ol->page_textures != NULL;
-   /* Nothing to upload from: the pixels went when the textures were
-    * made and the textures went with the driver. The caller declines
-    * the pack, and the next input_overlay_init() reloads it from its
-    * path. */
+   /* Nothing to upload from: the pixels went once the driver had the
+    * textures, and the textures went with the driver. */
    if (!ol->images[0]->pixels)
       return false;
 
@@ -165,24 +163,6 @@ bool input_overlay_upload_textures(input_overlay_t *ol)
       tex[i] = s->handle;
    }
 
-   /* The pixels have reached the GPU and nothing reads them again: a
-    * pack is anything from a megabyte of button sprites to forty of
-    * 4K border, held for the whole session against the one event that
-    * would want them - a video reinit, which reloads the overlay from
-    * its path anyway (video_driver_init_internal) and stalls far
-    * longer than the decode does. The width and height stay, because
-    * the layout and the reload check read them. */
-   for (i = 0; i < ol->num_images; i++)
-   {
-      if (!ol->images[i]->pixels)
-         continue;
-      GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
-            -(int)(((size_t)ol->images[i]->width * ol->images[i]->height
-                  * sizeof(uint32_t)) >> 10));
-      image_texture_free(ol->images[i]);
-      ol->images[i]->pixels = NULL;
-   }
-
    /* The loader deduplicated by path, so a page's entry shares its
     * pixels with exactly one unique image. */
    k = ol->num_images;
@@ -211,6 +191,52 @@ bool input_overlay_upload_textures(input_overlay_t *ol)
    return true;
 }
 
+bool input_overlay_has_source(const input_overlay_t *ol)
+{
+   /* A pack of hitboxes alone has nothing to lose. */
+   if (!ol->num_images || !ol->images)
+      return true;
+   return ol->page_textures || ol->images[0]->pixels;
+}
+
+/* The driver has the pack's textures and nothing reads the pixels
+ * again: a pack is anything from a megabyte of button sprites to forty
+ * of 4K border, held for the whole session against the one event that
+ * would want them - a video reinit, which reloads the overlay from
+ * its path anyway (video_driver_init_internal).
+ *
+ * Only here, after load_textures() has answered true. The page lists
+ * are built by matching each page's pixels to a unique image's, so
+ * the pixels must outlive input_overlay_upload_textures(); and a
+ * driver that declines the textures is shown the pages through
+ * load(), which reads them.
+ *
+ * The sizes stay (image_texture_free() clears them), and the pages'
+ * copies of the pointers are cleared with the pixels they pointed at:
+ * nothing is left that looks like an image and is not one. The copies
+ * in overlay::image and overlay_desc::image are only ever tested, as
+ * "this has an image", and are left to say so. */
+static void input_overlay_drop_pixels(input_overlay_t *ol)
+{
+   size_t i, j;
+
+   for (i = 0; i < ol->num_images; i++)
+   {
+      unsigned width  = ol->images[i]->width;
+      unsigned height = ol->images[i]->height;
+      if (!ol->images[i]->pixels)
+         continue;
+      GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
+            -(int)(((size_t)width * height * sizeof(uint32_t)) >> 10));
+      image_texture_free(ol->images[i]);
+      ol->images[i]->width  = width;
+      ol->images[i]->height = height;
+   }
+   for (i = 0; i < ol->size; i++)
+      for (j = 0; j < ol->overlays[i].load_images_size; j++)
+         ol->overlays[i].load_images[j].pixels = NULL;
+}
+
 bool input_overlay_load_page(input_overlay_t *ol)
 {
    if (     ol->iface->load_textures
@@ -221,6 +247,7 @@ bool input_overlay_load_page(input_overlay_t *ol)
                ol->active->textures, ol->active->load_images_size))
       {
          GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE);
+         input_overlay_drop_pixels(ol);
          return true;
       }
       /* The wrapper's table answers for any driver; the one beneath
@@ -228,6 +255,11 @@ bool input_overlay_load_page(input_overlay_t *ol)
       input_overlay_release_textures(ol);
       ol->flags |= INPUT_OVERLAY_TEXTURES_DECLINED;
    }
+   /* A pack with neither textures nor pixels has nothing to show and
+    * must not show what its pages used to point at; it is on its way
+    * to being reloaded (input_overlay_init). */
+   if (!input_overlay_has_source(ol))
+      return false;
    GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE);
    GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE_LOAD);
    if (ol->iface->load)

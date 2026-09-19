@@ -3609,8 +3609,9 @@ void input_overlay_set_scale_factor(
 }
 
 /* The video driver is about to go: every pack's textures, active or
- * cached, are unloaded while it can still do so. The packs keep their
- * decoded pixels and upload them again on the next enable. */
+ * cached, are unloaded while it can still do so. A pack whose pixels
+ * went to the driver it is losing has nothing to upload again and is
+ * reloaded from its path (input_overlay_has_source). */
 void input_overlay_video_teardown(void)
 {
    input_overlay_release_textures(input_driver_st.overlay_ptr);
@@ -6980,9 +6981,7 @@ void input_overlay_init(void)
    bool overlay_cached            = ol_cache
          && (ol_cache->flags & INPUT_OVERLAY_ALIVE)
          && string_is_equal(path_overlay, ol_cache->path)
-         && (ol_cache->page_textures
-            || (ol_cache->num_images && ol_cache->images
-               && ol_cache->images[0]->pixels));
+         && input_overlay_has_source(ol_cache);
    bool overlay_hidden            = !ol && overlay_cached;
 
 #if defined(GEKKO)
