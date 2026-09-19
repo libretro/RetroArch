@@ -15486,12 +15486,11 @@ static void settings_build_onscreen_notifications(
                      ADD_DESC(osn_desc_1);
 #else
             ADD_DESC(widget_fs_desc);
-      /* The fullscreen variant is an LV row and the LV float grammar
-       * has no range or handler slots yet; until it grows them, the
-       * customization stays here. The windowed row carries its own. */
+#endif
+      /* Neither row above carries its range or handler; the windowed
+       * row carries its own. */
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
       menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
-#endif
 
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
                      ADD_DESC(osn_desc_2);
