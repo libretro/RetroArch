@@ -318,6 +318,13 @@ static bool pipeline_up(unsigned latency_ms)
 static void pipeline_down(void)
 {
    audio_driver_state_t *st = &audio_driver_st;
+   /* The resampler is built per run by retro_resampler_realloc and is
+    * the driver's to release, the way audio_driver_deinit releases
+    * it; seven runs of this oracle left seven of them behind. */
+   if (st->resampler && st->resampler_data)
+      st->resampler->free(st->resampler_data);
+   st->resampler      = NULL;
+   st->resampler_data = NULL;
    retro_spsc_free(&st->pipe_ring);
    retro_eventcount_free(&st->pipe_space);
    retro_eventcount_free(&st->pipe_data);

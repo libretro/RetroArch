@@ -228,9 +228,16 @@ static enum overlay_textures_state input_overlay_collect_textures(
       for (j = 0; j < o->load_images_size; j++, k++)
       {
          size_t u;
+         /* The page's entry is matched to the pack's unique image by
+          * the buffer they share. A released buffer is NULL in both,
+          * and NULL matches everything, so a page built after the
+          * pixels went would take the first image's texture for every
+          * entry - the caller declines the pack instead, and the next
+          * init reloads it from its path. */
          for (u = 0; u < ol->num_images; u++)
          {
-            if (ol->images[u]->pixels == o->load_images[j].pixels)
+            if (     o->load_images[j].pixels
+                  && ol->images[u]->pixels == o->load_images[j].pixels)
             {
                tex[k] = tex[u];
                break;

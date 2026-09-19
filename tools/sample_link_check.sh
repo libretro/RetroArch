@@ -19,6 +19,47 @@ rev=${1:-HEAD}
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root"
 
+
+# Build one sample and, where it has a check target, run it the way its
+# CI job does: under the address and undefined sanitizers with leak
+# detection on. Linking alone proved too little - a sample that builds
+# and passes plain can still hold a leak or a use-after-free that only
+# the sanitized run reports.
+build_one() {
+   dir=$1
+   name=$2
+   printf '== %s (%s)\n' "$dir" "$name"
+   log=$(mktemp)
+   if ! (cd "$root/$dir" && make -f "$name" clean >/dev/null 2>&1 \
+         && make -f "$name" >"$log" 2>&1); then
+      tail -20 "$log"
+      echo "FAIL $dir"
+      rm -f "$log"
+      return 1
+   fi
+   # A sample that cross-builds a Windows target cannot be run here;
+   # building it is the whole check this host can do.
+   if     grep -qE '^check:' "$root/$dir/$name" \
+      && ! grep -qE '\.exe|mingw|MINGW' "$root/$dir/$name"; then
+      if (cd "$root/$dir" && make -f "$name" clean >/dev/null 2>&1 \
+          && ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 300 make -f "$name" SANITIZER=address,undefined check \
+             >>"$log" 2>&1); then
+         echo "   ok (checked)"
+      else
+         tail -25 "$log"
+         echo "FAIL $dir (check)"
+         rm -f "$log"
+         return 1
+      fi
+   else
+      echo "   ok"
+   fi
+   rm -f "$log"
+   return 0
+}
+
 if [ "${1:-}" = "--all" ]; then
    rev=""
    changed="--all"
@@ -34,17 +75,7 @@ if [ "$changed" = "--all" ]; then
    for entry in $todo; do
       dir=${entry%%:*}
       name=${entry#*:}
-      printf '== %s (%s)\n' "$dir" "$name"
-      log=$(mktemp)
-      if (cd "$root/$dir" && make -f "$name" clean >/dev/null 2>&1 \
-          && make -f "$name" >"$log" 2>&1); then
-         echo "   ok"
-      else
-         tail -10 "$log"
-         echo "FAIL $dir"
-         rc=1
-      fi
-      rm -f "$log"
+      build_one "$dir" "$name" || rc=1
    done
    exit $rc
 fi
@@ -79,18 +110,6 @@ rc=0
 for entry in $todo; do
    dir=${entry%%:*}
    mk=${entry#*:}
-   name=$(basename "$mk")
-   printf '== %s (%s)\n' "$dir" "$name"
-   log=$(mktemp)
-   if (cd "$root/$dir" && make -f "$name" clean >/dev/null 2>&1 \
-       && make -f "$name" >"$log" 2>&1); then
-      echo "   ok"
-   else
-      tail -20 "$log"
-      echo "FAIL $dir"
-      rc=1
-   fi
-   rm -f "$log"
-
+   build_one "$dir" "$(basename "$mk")" || rc=1
 done
 exit $rc
