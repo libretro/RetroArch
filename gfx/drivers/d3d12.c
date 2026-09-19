@@ -310,6 +310,29 @@ typedef struct
       UINT64     done_value;     /* last value queued for signal    */
       bool       frame_took_texture;
    } hw_v2;
+   /* Interface version 2, no shader preset: the frame is drawn straight
+    * from the core's texture, where the driver used to copy it into
+    * frame.texture[0] first and draw from that. A version 2 core keeps a
+    * texture per sync index and leaves one alone until the frontend is
+    * done with it, which is what makes this safe. A descriptor per
+    * texture is made once and found again; four are kept, with the
+    * resources they are of, until another wants the place. `eligible` is
+    * set by whoever handed the frame's texture over; `current` is what
+    * the frame on screen is drawn from, repeats of it included, until a
+    * frame arrives another way. */
+   struct
+   {
+      struct
+      {
+         D3D12Resource               resource;
+         D3D12_CPU_DESCRIPTOR_HANDLE cpu;
+         D3D12_GPU_DESCRIPTOR_HANDLE gpu;
+      } cache[4];
+      unsigned                    next;
+      D3D12Resource               current;
+      D3D12_GPU_DESCRIPTOR_HANDLE current_gpu;
+      bool                        eligible;
+   } hw_direct;
 
    IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
    struct string_list *gpu_list;
@@ -4754,6 +4777,87 @@ static void d3d12_set_hw_render_texture(void* data, ID3D12Resource* texture, DXG
    d3d12->hw_render_texture_format = format;
 }
 
+/* --- drawing a version 2 core's texture without copying it ------------ */
+
+static void d3d12_hw_direct_slot_free(d3d12_video_t *d3d12, unsigned i)
+{
+   d3d12_descriptor_heap_t *heap = &d3d12->desc.srv_heap;
+   if (d3d12->hw_direct.cache[i].cpu.ptr)
+   {
+      unsigned slot   = (unsigned)((d3d12->hw_direct.cache[i].cpu.ptr
+               - heap->cpu.ptr) / heap->stride);
+      heap->map[slot] = false;
+      if (heap->start > (int)slot)
+         heap->start  = (int)slot;
+   }
+   if (d3d12->hw_direct.current == d3d12->hw_direct.cache[i].resource)
+   {
+      d3d12->hw_direct.current         = NULL;
+      d3d12->hw_direct.current_gpu.ptr = 0;
+   }
+   Release(d3d12->hw_direct.cache[i].resource);
+   memset(&d3d12->hw_direct.cache[i], 0, sizeof(d3d12->hw_direct.cache[i]));
+}
+
+/* The descriptor to draw the core's texture through, in the driver's
+ * own heap. False if there is none to be had; the frame is copied then. */
+static bool d3d12_hw_direct_lookup(d3d12_video_t *d3d12,
+      D3D12Resource resource, DXGI_FORMAT format,
+      D3D12_GPU_DESCRIPTOR_HANDLE *gpu)
+{
+   unsigned i;
+   D3D12_SHADER_RESOURCE_VIEW_DESC desc;
+   D3D12_CPU_DESCRIPTOR_HANDLE cpu;
+   d3d12_descriptor_heap_t *heap = &d3d12->desc.srv_heap;
+
+   for (i = 0; i < countof(d3d12->hw_direct.cache); i++)
+   {
+      if (d3d12->hw_direct.cache[i].resource == resource)
+      {
+         *gpu = d3d12->hw_direct.cache[i].gpu;
+         return true;
+      }
+   }
+
+   i = d3d12->hw_direct.next;
+   if (d3d12->hw_direct.cache[i].resource)
+   {
+      /* The place is taken: a core's textures changed, which is a change
+       * of resolution. Work recorded with the old descriptor may still be
+       * on the queue, and it is about to be written over. */
+      d3d12_queue_drain(d3d12);
+      d3d12_hw_direct_slot_free(d3d12, i);
+   }
+
+   cpu = d3d12_descriptor_heap_slot_alloc(heap);
+   if (!cpu.ptr)
+      return false;
+
+   memset(&desc, 0, sizeof(desc));
+   desc.Format                  = format;
+   desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+   desc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
+   desc.Texture2D.MipLevels     = 1;
+   d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device,
+         resource, &desc, cpu);
+
+   resource->lpVtbl->AddRef(resource);
+   d3d12->hw_direct.cache[i].resource = resource;
+   d3d12->hw_direct.cache[i].cpu      = cpu;
+   d3d12->hw_direct.cache[i].gpu.ptr  = cpu.ptr - heap->cpu.ptr + heap->gpu.ptr;
+   d3d12->hw_direct.next              = (i + 1) % countof(d3d12->hw_direct.cache);
+   *gpu = d3d12->hw_direct.cache[i].gpu;
+   return true;
+}
+
+static void d3d12_hw_direct_free(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   for (i = 0; i < countof(d3d12->hw_direct.cache); i++)
+      d3d12_hw_direct_slot_free(d3d12, i);
+   memset(&d3d12->hw_direct, 0, sizeof(d3d12->hw_direct));
+}
+
 /* --- libretro_d3d12.h version 2, without the threaded wrapper ---------
  *
  * The driver's frame runs inside video_refresh and reads the core's
@@ -4800,6 +4904,7 @@ static void d3d12_hw_v2_set_texture_fenced(void *data, ID3D12Resource *texture,
       return;
    d3d12->hw_render_texture        = texture;
    d3d12->hw_render_texture_format = format;
+   d3d12->hw_direct.eligible       = texture != NULL;
    if (texture && fence)
       d3d12->queue.handle->lpVtbl->Wait(d3d12->queue.handle, fence, value);
 }
@@ -5483,6 +5588,7 @@ static bool d3d12_gfx_frame(
    bool overlay_behind_menu       = video_info->overlay_behind_menu;
    D3D12GraphicsCommandList cmd;
    bool message_visible;
+   bool draw_direct               = false;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_visible;
 #endif
@@ -5887,7 +5993,29 @@ static bool d3d12_gfx_frame(
          }
       }
 
-      if (frame == RETRO_HW_FRAME_BUFFER_VALID)
+      /* A frame that arrives any other way is drawn from
+       * frame.texture[0] as always. */
+      d3d12->hw_direct.current         = NULL;
+      d3d12->hw_direct.current_gpu.ptr = 0;
+      if (     frame == RETRO_HW_FRAME_BUFFER_VALID
+            && d3d12->hw_direct.eligible
+            && d3d12->hw_render_texture
+            && !(d3d12->shader_preset && video_info->shader_active)
+            && d3d12_hw_direct_lookup(d3d12, d3d12->hw_render_texture,
+               d3d12->hw_render_texture_format,
+               &d3d12->hw_direct.current_gpu))
+         d3d12->hw_direct.current      = d3d12->hw_render_texture;
+      d3d12->hw_direct.eligible        = false;
+
+      if (frame == RETRO_HW_FRAME_BUFFER_VALID && d3d12->hw_direct.current)
+      {
+         /* Version 2, nothing between the core's texture and the screen
+          * but the draw further down: no copy. The draw is what reads
+          * the texture, so it is what the core waits for. */
+         d3d12->hw_v2.frame_took_texture = true;
+         d3d12->hw_render_texture        = NULL;
+      }
+      else if (frame == RETRO_HW_FRAME_BUFFER_VALID)
       {
          D3D12_BOX src_box;
          D3D12_TEXTURE_COPY_LOCATION src, dst;
@@ -6331,9 +6459,16 @@ static bool d3d12_gfx_frame(
                d3d12->frame.ubo_view.BufferLocation);
       }
 
+      /* The core's own texture when the frame was handed over that way
+       * and no shader pass has put another in its place; SDR and HDR
+       * draw the frame through this one binding alike. */
+      draw_direct = d3d12->hw_direct.current
+         && texture == d3d12->frame.texture;
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd,
             ROOT_ID_TEXTURE_T,
-            d3d12->frame.texture[0].gpu_descriptor[0]);
+            draw_direct
+            ? d3d12->hw_direct.current_gpu
+            : d3d12->frame.texture[0].gpu_descriptor[0]);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd,
             ROOT_ID_SAMPLER_T,
             d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
@@ -6408,7 +6543,25 @@ static bool d3d12_gfx_frame(
       cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->frame.scissorRect);
    }
 
+   /* The core leaves its texture in required_state, which is
+    * COPY_SOURCE, and expects to find it there. It is made readable for
+    * this one draw and put back, on every frame that draws from it,
+    * repeats included. */
+   if (draw_direct)
+      D3D12_RESOURCE_TRANSITION(
+            cmd,
+            d3d12->hw_direct.current,
+            D3D12_RESOURCE_STATE_COPY_SOURCE,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
    cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
+
+   if (draw_direct)
+      D3D12_RESOURCE_TRANSITION(
+            cmd,
+            d3d12->hw_direct.current,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            D3D12_RESOURCE_STATE_COPY_SOURCE);
 
 #ifdef HAVE_DXGI_HDR
    /* Copy over back buffer to swap chain render targets */
@@ -8369,6 +8522,7 @@ static bool d3d12_hw_ring_install(void *data, const void *image,
       return false;
    d3d12->hw_render_texture        = frame->texture;
    d3d12->hw_render_texture_format = frame->format;
+   d3d12->hw_direct.eligible       = true;
    if (frame->fence)
       d3d12->queue.handle->lpVtbl->Wait(d3d12->queue.handle,
             frame->fence, frame->value);
@@ -8402,6 +8556,8 @@ static void d3d12_hw_ring_free(d3d12_video_t *d3d12)
    if (d3d12->hw_ring.capture_event)
       CloseHandle(d3d12->hw_ring.capture_event);
    memset(&d3d12->hw_ring, 0, sizeof(d3d12->hw_ring));
+
+   d3d12_hw_direct_free(d3d12);
 
    /* Version 2's done-fence goes with the rest of the hardware handoff.
     * The caller has drained the queue, so nothing is left to signal it. */
