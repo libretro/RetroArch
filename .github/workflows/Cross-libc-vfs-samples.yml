@@ -35,6 +35,9 @@ on:
       - 'libretro-common/include/vfs/**'
       - 'libretro-common/include/streams/file_stream.h'
       - 'libretro-common/samples/file/vfs/**'
+      - 'libretro-common/fastjmp/**'
+      - 'libretro-common/include/fastjmp.h'
+      - 'libretro-common/samples/fastjmp/**'
       - '.github/workflows/Cross-libc-vfs-samples.yml'
   pull_request:
     paths:
@@ -43,6 +46,9 @@ on:
       - 'libretro-common/include/vfs/**'
       - 'libretro-common/include/streams/file_stream.h'
       - 'libretro-common/samples/file/vfs/**'
+      - 'libretro-common/fastjmp/**'
+      - 'libretro-common/include/fastjmp.h'
+      - 'libretro-common/samples/fastjmp/**'
       - '.github/workflows/Cross-libc-vfs-samples.yml'
   workflow_dispatch:
 
@@ -169,3 +175,15 @@ jobs:
           # Exercises the Win32 CreateFileMapping/MapViewOfFile
           # backend, which no other job in the tree reaches.
           ./vfs_mapped_ptr_test.exe
+
+      # The Win64 fastjmp_set stores xmm6-xmm15 with movaps and faults
+      # on a misaligned buffer. Linux has no such stores, so the Linux
+      # samples job cannot see a fastjmp_buf that lost its alignment;
+      # this is the only lane that can. Under a second to build and run.
+      - name: fastjmp on Win64
+        working-directory: libretro-common/samples/fastjmp/fastjmp_test
+        run: |
+          set -euo pipefail
+          make clean
+          make
+          ./fastjmp_test.exe

@@ -69,11 +69,26 @@
 RETRO_BEGIN_DECLS
 
 /* Sized for the widest of the three layouts: Win64's rip, rsp, eight
- * GPRs and ten xmm registers. 16-byte aligned for the movaps stores. */
+ * GPRs and ten xmm registers.
+ *
+ * Win64 stores xmm6-xmm15 with movaps, which faults on an address that
+ * is not a multiple of 16, so the type has to carry that alignment
+ * itself: a byte array asks for none, and a fastjmp_buf that is a
+ * member after a char, or a static the linker packs, lands wherever it
+ * fits. Both compilers that build the native Win64 form have a
+ * spelling for it that is valid in C89. */
+#if defined(_MSC_VER)
+#define FASTJMP_ALIGN16 __declspec(align(16))
+#elif defined(__GNUC__) || defined(__clang__)
+#define FASTJMP_ALIGN16 __attribute__((aligned(16)))
+#else
+#define FASTJMP_ALIGN16
+#endif
+
 typedef struct fastjmp_buf
 {
 #if defined(FASTJMP_X86_64) && defined(_WIN32)
-   unsigned char buf[240];
+   FASTJMP_ALIGN16 unsigned char buf[240];
 #elif defined(FASTJMP_AARCH64)
    unsigned char buf[176];
 #else

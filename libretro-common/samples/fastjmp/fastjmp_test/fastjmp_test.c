@@ -13,6 +13,7 @@
  */
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <fastjmp.h>
 
@@ -98,6 +99,29 @@ int main(void)
             break;
       }
       printf("  loop: %d set/jump round trips\n", (int)n);
+   }
+
+   /* 4: a buffer the compiler is free to misplace. Win64 stores
+    * xmm6-xmm15 with movaps, so the type itself has to ask for 16-byte
+    * alignment; as the member after a char it otherwise sits at +1 and
+    * the first fastjmp_set faults. A static on its own is no test of
+    * this: compilers put large statics on a 16-byte boundary anyway. */
+   {
+      static struct { char pad; fastjmp_buf jb; } odd;
+      volatile int hops = 0;
+#if defined(FASTJMP_NATIVE) && defined(FASTJMP_X86_64) && defined(_WIN32)
+      unsigned mis = (unsigned)((size_t)&odd.jb % 16);
+      printf("  %s: a member after a char is at %u mod 16\n", mis ? "FAIL" : "aligned", mis);
+      if (mis) ok = 0;
+#endif
+      r = fastjmp_set(&odd.jb);
+      if (r == 0)
+      {
+         hops = 1;
+         fastjmp_jmp(&odd.jb, 5);
+      }
+      printf("  %s: set and jump through a struct member\n", (r == 5 && hops == 1) ? "member" : "FAIL");
+      if (r != 5 || hops != 1) ok = 0;
    }
 
    printf(ok ? "fastjmp: ok\n" : "fastjmp: FAILED\n");
