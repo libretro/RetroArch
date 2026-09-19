@@ -2315,40 +2315,52 @@ static int16_t input_state_device(
                         if (     (input_st->overlay_ptr)
                               && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
                               && (port == 0)
-                              && (idx != RETRO_DEVICE_INDEX_ANALOG_BUTTON)
-                              && !(    (  input_analog_dpad_mode == ANALOG_DPAD_LSTICK
-                                       && idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)
-                                    || (  input_analog_dpad_mode == ANALOG_DPAD_RSTICK
-                                       && idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-                                    || (  (  input_analog_dpad_mode == ANALOG_DPAD_LRSTICK
-                                          || input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK)
-                                       && (  idx == RETRO_DEVICE_INDEX_ANALOG_LEFT
-                                          || idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT))
-                                 )
                            )
                         {
                            input_overlay_state_t *ol_state =
                               &input_st->overlay_ptr->overlay_state;
-                           int16_t ol_analog               =
-                                 ol_state->analog[base];
 
-                           /* Analog values are an integer corresponding
-                            * to the extent of the analog motion; these
-                            * cannot be OR'd together, we must instead
-                            * keep the value with the largest magnitude */
-                           if (ol_analog)
+                           if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
                            {
-                              if (res == 0)
-                                 res = ol_analog;
-                              else
-                              {
-                                 int16_t ol_analog_abs = (ol_analog >= 0) ?
-                                       ol_analog : -ol_analog;
-                                 int16_t res_abs       = (res >= 0) ?
-                                       res : -res;
+                              uint16_t ol_analog_button =
+                                 (id < 16) ? ol_state->analog_buttons[id] : 0;
 
-                                 res = (ol_analog_abs > res_abs) ?
-                                       ol_analog : res;
+                              if (ol_analog_button)
+                              {
+                                 if (res == 0 || ol_analog_button > (uint16_t)abs(res))
+                                    res = ol_analog_button;
+                              }
+                           }
+                           else if (!(    (  input_analog_dpad_mode == ANALOG_DPAD_LSTICK
+                                          && idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)
+                                       || (  input_analog_dpad_mode == ANALOG_DPAD_RSTICK
+                                          && idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                                       || (  (  input_analog_dpad_mode == ANALOG_DPAD_LRSTICK
+                                             || input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK)
+                                          && (  idx == RETRO_DEVICE_INDEX_ANALOG_LEFT
+                                             || idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT))
+                                    ))
+                           {
+                              int16_t ol_analog = ol_state->analog[base];
+
+                              /* Analog values are an integer corresponding
+                               * to the extent of the analog motion; these
+                               * cannot be OR'd together, we must instead
+                               * keep the value with the largest magnitude */
+                              if (ol_analog)
+                              {
+                                 if (res == 0)
+                                    res = ol_analog;
+                                 else
+                                 {
+                                    int16_t ol_analog_abs = (ol_analog >= 0) ?
+                                          ol_analog : -ol_analog;
+                                    int16_t res_abs       = (res >= 0) ?
+                                          res : -res;
+
+                                    res = (ol_analog_abs > res_abs) ?
+                                          ol_analog : res;
+                                 }
                               }
                            }
                         }
@@ -2726,6 +2738,13 @@ static int16_t input_state_internal(
 
 
 #ifdef HAVE_OVERLAY
+static void input_overlay_set_analog_desc_delta(
+      struct overlay_desc *desc,
+      float analog_x, float analog_y);
+static void input_overlay_apply_sticky_state(
+      input_overlay_t *ol,
+      input_overlay_state_t *ol_state);
+
 /**
  * input_overlay_add_inputs:
  * @desc : pointer to overlay description
@@ -2793,28 +2812,81 @@ static bool input_overlay_add_inputs_inner(overlay_desc_t *desc,
 
       case OVERLAY_TYPE_ANALOG_LEFT:
       case OVERLAY_TYPE_ANALOG_RIGHT:
+      case OVERLAY_TYPE_ANALOG_L2:
+      case OVERLAY_TYPE_ANALOG_R2:
          if (ol_state)
          {
-            unsigned index_offset = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT) ? 2 : 0;
-            desc->touch_mask     |= (
-                   ol_state->analog[index_offset]
-                 | ol_state->analog[index_offset + 1]) << OVERLAY_MAX_TOUCH;
+            switch (desc->type)
+            {
+               case OVERLAY_TYPE_ANALOG_RIGHT:
+                  desc->touch_mask     |= (
+                         ol_state->analog[2]
+                       | ol_state->analog[3]) << OVERLAY_MAX_TOUCH;
+                  break;
+               case OVERLAY_TYPE_ANALOG_L2:
+                  desc->touch_mask     |=
+                        ol_state->analog_buttons[RETRO_DEVICE_ID_JOYPAD_L2]
+                        << OVERLAY_MAX_TOUCH;
+                  break;
+               case OVERLAY_TYPE_ANALOG_R2:
+                  desc->touch_mask     |=
+                        ol_state->analog_buttons[RETRO_DEVICE_ID_JOYPAD_R2]
+                        << OVERLAY_MAX_TOUCH;
+                  break;
+               case OVERLAY_TYPE_ANALOG_LEFT:
+               default:
+                  desc->touch_mask     |= (
+                         ol_state->analog[0]
+                       | ol_state->analog[1]) << OVERLAY_MAX_TOUCH;
+                  break;
+            }
          }
          else
          {
-            unsigned index        = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
-               ? RETRO_DEVICE_INDEX_ANALOG_RIGHT
-               : RETRO_DEVICE_INDEX_ANALOG_LEFT;
-            int16_t analog_x      = input_state_internal(input_st, settings, port, RETRO_DEVICE_ANALOG,
-                  index, RETRO_DEVICE_ID_ANALOG_X);
-            int16_t analog_y      = input_state_internal(input_st, settings, port, RETRO_DEVICE_ANALOG,
-                  index, RETRO_DEVICE_ID_ANALOG_Y);
+            float analog_x = 0.0f;
+            float analog_y = 0.0f;
+
+            switch (desc->type)
+            {
+               case OVERLAY_TYPE_ANALOG_RIGHT:
+               case OVERLAY_TYPE_ANALOG_LEFT:
+                  {
+                     unsigned index = (desc->type == OVERLAY_TYPE_ANALOG_RIGHT)
+                        ? RETRO_DEVICE_INDEX_ANALOG_RIGHT
+                        : RETRO_DEVICE_INDEX_ANALOG_LEFT;
+
+                     analog_x = input_state_internal(input_st, settings, port,
+                           RETRO_DEVICE_ANALOG, index,
+                           RETRO_DEVICE_ID_ANALOG_X) / (float)0x8000;
+                     analog_y = input_state_internal(input_st, settings, port,
+                           RETRO_DEVICE_ANALOG, index,
+                           RETRO_DEVICE_ID_ANALOG_Y) / (float)0x8000;
+                  }
+                  break;
+               case OVERLAY_TYPE_ANALOG_L2:
+               case OVERLAY_TYPE_ANALOG_R2:
+                  {
+                     float analog_button = input_state_internal(input_st,
+                           settings, port, RETRO_DEVICE_ANALOG,
+                           RETRO_DEVICE_INDEX_ANALOG_BUTTON,
+                           (desc->type == OVERLAY_TYPE_ANALOG_L2)
+                           ? RETRO_DEVICE_ID_JOYPAD_L2
+                           : RETRO_DEVICE_ID_JOYPAD_R2) / (float)0x7fff;
+
+                     if (desc->analog_axis == OVERLAY_ANALOG_AXIS_HORIZONTAL)
+                        analog_x = analog_button;
+                     else
+                        analog_y = analog_button;
+                  }
+                  break;
+               default:
+                  break;
+            }
 
             /* Only modify overlay delta_x/delta_y values
              * if we are monitoring input from a physical
              * controller */
-            desc->delta_x         = (analog_x / (float)0x8000) * (desc->range_x / 2.0f);
-            desc->delta_y         = (analog_y / (float)0x8000) * (desc->range_y / 2.0f);
+            input_overlay_set_analog_desc_delta(desc, analog_x, analog_y);
          }
 
          /* fall-through */
@@ -2994,11 +3066,194 @@ static INLINE void input_overlay_get_eightway_state(
    bits_or_bits(out->data, data, CUSTOM_BINDS_U32_COUNT);
 }
 
+static unsigned input_overlay_get_analog_desc_slot(enum overlay_type type)
+{
+   switch (type)
+   {
+      case OVERLAY_TYPE_ANALOG_RIGHT:
+         return 1;
+      case OVERLAY_TYPE_ANALOG_L2:
+         return 2;
+      case OVERLAY_TYPE_ANALOG_R2:
+         return 3;
+      case OVERLAY_TYPE_ANALOG_LEFT:
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+static void input_overlay_apply_analog_axis_lock(
+      const struct overlay_desc *desc,
+      float *x_dist, float *y_dist)
+{
+   switch (desc->analog_axis)
+   {
+      case OVERLAY_ANALOG_AXIS_HORIZONTAL:
+         *y_dist = 0.0f;
+         break;
+      case OVERLAY_ANALOG_AXIS_VERTICAL:
+         *x_dist = 0.0f;
+         break;
+      case OVERLAY_ANALOG_AXIS_BOTH:
+      default:
+         break;
+   }
+}
+
+static void input_overlay_apply_analog_invert(
+      const struct overlay_desc *desc,
+      float *x_dist, float *y_dist)
+{
+   if (!(desc->analog_flags & OVERLAY_ANALOG_FLAG_INVERT))
+      return;
+
+   switch (desc->analog_axis)
+   {
+      case OVERLAY_ANALOG_AXIS_HORIZONTAL:
+         *x_dist = -*x_dist;
+         break;
+      case OVERLAY_ANALOG_AXIS_VERTICAL:
+         *y_dist = -*y_dist;
+         break;
+      case OVERLAY_ANALOG_AXIS_BOTH:
+      default:
+         *x_dist = -*x_dist;
+         *y_dist = -*y_dist;
+         break;
+   }
+}
+
+static void input_overlay_set_analog_desc_delta(
+      struct overlay_desc *desc,
+      float analog_x, float analog_y)
+{
+   switch (desc->analog_axis)
+   {
+      case OVERLAY_ANALOG_AXIS_HORIZONTAL:
+         analog_y = 0.0f;
+         break;
+      case OVERLAY_ANALOG_AXIS_VERTICAL:
+         analog_x = 0.0f;
+         break;
+      case OVERLAY_ANALOG_AXIS_BOTH:
+      default:
+         break;
+   }
+
+   if (desc->analog_flags & OVERLAY_ANALOG_FLAG_INVERT)
+   {
+      switch (desc->analog_axis)
+      {
+         case OVERLAY_ANALOG_AXIS_HORIZONTAL:
+            analog_x = -analog_x;
+            break;
+         case OVERLAY_ANALOG_AXIS_VERTICAL:
+            analog_y = -analog_y;
+            break;
+         case OVERLAY_ANALOG_AXIS_BOTH:
+         default:
+            analog_x = -analog_x;
+            analog_y = -analog_y;
+            break;
+      }
+   }
+
+   switch (desc->type)
+   {
+      case OVERLAY_TYPE_ANALOG_L2:
+      case OVERLAY_TYPE_ANALOG_R2:
+         if (desc->analog_axis == OVERLAY_ANALOG_AXIS_HORIZONTAL)
+         {
+            if (desc->analog_flags & OVERLAY_ANALOG_FLAG_INVERT)
+               analog_x = -analog_x;
+            desc->delta_x = clamp_float(analog_x, -1.0f, 1.0f) * desc->range_x;
+            desc->delta_y = 0.0f;
+         }
+         else
+         {
+            if (desc->analog_flags & OVERLAY_ANALOG_FLAG_INVERT)
+               analog_y = -analog_y;
+            desc->delta_x = 0.0f;
+            desc->delta_y = clamp_float(analog_y, -1.0f, 1.0f) * desc->range_y;
+         }
+         break;
+      case OVERLAY_TYPE_ANALOG_LEFT:
+      case OVERLAY_TYPE_ANALOG_RIGHT:
+      default:
+         desc->delta_x = analog_x * (desc->range_x / 2.0f);
+         desc->delta_y = analog_y * (desc->range_y / 2.0f);
+         break;
+   }
+}
+
+static void input_overlay_apply_sticky_state(
+      input_overlay_t *ol,
+      input_overlay_state_t *ol_state)
+{
+   size_t i;
+
+   for (i = 0; i < ol->active->size; i++)
+   {
+      struct overlay_desc *desc = &ol->active->descs[i];
+
+      if (!(desc->analog_flags & OVERLAY_ANALOG_FLAG_STICKY))
+         continue;
+
+      switch (desc->type)
+      {
+         case OVERLAY_TYPE_ANALOG_RIGHT:
+            if (!desc->touch_mask)
+               input_overlay_set_analog_desc_delta(desc,
+                     desc->analog_x_value / (float)0x7fff,
+                     desc->analog_y_value / (float)0x7fff);
+            if (!ol_state->analog[2])
+               ol_state->analog[2] = desc->analog_x_value;
+            if (!ol_state->analog[3])
+               ol_state->analog[3] = desc->analog_y_value;
+            break;
+         case OVERLAY_TYPE_ANALOG_L2:
+         case OVERLAY_TYPE_ANALOG_R2:
+            {
+               unsigned bind_id = (desc->type == OVERLAY_TYPE_ANALOG_L2)
+                  ? RETRO_DEVICE_ID_JOYPAD_L2 : RETRO_DEVICE_ID_JOYPAD_R2;
+               float analog_button = desc->analog_button_value / (float)0x7fff;
+
+               if (!desc->touch_mask)
+               {
+                  if (desc->analog_axis == OVERLAY_ANALOG_AXIS_HORIZONTAL)
+                     input_overlay_set_analog_desc_delta(desc,
+                           analog_button, 0.0f);
+                  else
+                     input_overlay_set_analog_desc_delta(desc,
+                           0.0f, analog_button);
+               }
+
+               if (!ol_state->analog_buttons[bind_id])
+                  ol_state->analog_buttons[bind_id] = desc->analog_button_value;
+            }
+            break;
+         case OVERLAY_TYPE_ANALOG_LEFT:
+            if (!desc->touch_mask)
+               input_overlay_set_analog_desc_delta(desc,
+                     desc->analog_x_value / (float)0x7fff,
+                     desc->analog_y_value / (float)0x7fff);
+            if (!ol_state->analog[0])
+               ol_state->analog[0] = desc->analog_x_value;
+            if (!ol_state->analog[1])
+               ol_state->analog[1] = desc->analog_y_value;
+            break;
+         default:
+            break;
+      }
+   }
+}
+
 /**
  * input_overlay_get_analog_state:
  * @out : Overlay input state to be modified
  * @desc : Overlay descriptor handle
- * @base : 0 or 2 for analog_left or analog_right
  * @x : X coordinate
  * @y : Y coordinate
  * @x_dist : X offset from analog center
@@ -3009,15 +3264,16 @@ static INLINE void input_overlay_get_eightway_state(
  */
 static void input_overlay_get_analog_state(
       input_overlay_state_t *out, struct overlay_desc *desc,
-      unsigned base, float x, float y, float *x_dist, float *y_dist,
+      float x, float y, float *x_dist, float *y_dist,
       bool first_touch)
 {
-   float x_val, y_val;
-   float x_val_sat, y_val_sat;
-   const int b = base / 2;
-
-   static float x_center[2];
-   static float y_center[2];
+   float x_val;
+   float y_val;
+   float x_val_sat;
+   float y_val_sat;
+   unsigned slot = input_overlay_get_analog_desc_slot(desc->type);
+   static float x_center[4];
+   static float y_center[4];
 
    if (first_touch)
    {
@@ -3026,38 +3282,109 @@ static void input_overlay_get_analog_state(
 
       if (recenter_zone != 0)
       {
-         float touch_dist, w;
+         float touch_dist;
+         float w;
 
-         x_val      = (x - desc->x_shift) / desc->range_x;
-         y_val      = (y - desc->y_shift) / desc->range_y;
-         touch_dist = sqrt((x_val * x_val + y_val * y_val) * 1e4);
+         switch (desc->analog_axis)
+         {
+            case OVERLAY_ANALOG_AXIS_HORIZONTAL:
+               x_val      = (x - desc->x_shift) / desc->range_x;
+               touch_dist = fabs(x_val) * 100.0f;
 
-         /* Inside zone, recenter to first touch.
-          * Outside zone, recenter to zone perimeter. */
-         if (touch_dist <= recenter_zone || recenter_zone >= 100)
-            w = 0.0f;
-         else
-            w = (touch_dist - recenter_zone) / touch_dist;
+               if (touch_dist <= recenter_zone || recenter_zone >= 100)
+                  w = 0.0f;
+               else
+                  w = (touch_dist - recenter_zone) / touch_dist;
 
-         x_center[b] = x * (1.0f - w) + desc->x_shift * w;
-         y_center[b] = y * (1.0f - w) + desc->y_shift * w;
+               x_center[slot] = x * (1.0f - w) + desc->x_shift * w;
+               y_center[slot] = desc->y_shift;
+               break;
+            case OVERLAY_ANALOG_AXIS_VERTICAL:
+               y_val      = (y - desc->y_shift) / desc->range_y;
+               touch_dist = fabs(y_val) * 100.0f;
+
+               if (touch_dist <= recenter_zone || recenter_zone >= 100)
+                  w = 0.0f;
+               else
+                  w = (touch_dist - recenter_zone) / touch_dist;
+
+               x_center[slot] = desc->x_shift;
+               y_center[slot] = y * (1.0f - w) + desc->y_shift * w;
+               break;
+            case OVERLAY_ANALOG_AXIS_BOTH:
+            default:
+               x_val      = (x - desc->x_shift) / desc->range_x;
+               y_val      = (y - desc->y_shift) / desc->range_y;
+               touch_dist = sqrt((x_val * x_val + y_val * y_val) * 1e4);
+
+               /* Inside zone, recenter to first touch.
+                * Outside zone, recenter to zone perimeter. */
+               if (touch_dist <= recenter_zone || recenter_zone >= 100)
+                  w = 0.0f;
+               else
+                  w = (touch_dist - recenter_zone) / touch_dist;
+
+               x_center[slot] = x * (1.0f - w) + desc->x_shift * w;
+               y_center[slot] = y * (1.0f - w) + desc->y_shift * w;
+               break;
+         }
       }
       else
       {
-         x_center[b] = desc->x_shift;
-         y_center[b] = desc->y_shift;
+         x_center[slot] = desc->x_shift;
+         y_center[slot] = desc->y_shift;
       }
    }
 
-   *x_dist   = x - x_center[b];
-   *y_dist   = y - y_center[b];
+   *x_dist   = x - x_center[slot];
+   *y_dist   = y - y_center[slot];
+   input_overlay_apply_analog_axis_lock(desc, x_dist, y_dist);
+   input_overlay_apply_analog_invert(desc, x_dist, y_dist);
    x_val     = *x_dist / desc->range_x;
    y_val     = *y_dist / desc->range_y;
    x_val_sat = x_val   / desc->analog_saturate_pct;
    y_val_sat = y_val   / desc->analog_saturate_pct;
 
-   out->analog[base + 0] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
-   out->analog[base + 1] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;
+   switch (desc->type)
+   {
+      case OVERLAY_TYPE_ANALOG_RIGHT:
+         out->analog[2] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
+         out->analog[3] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;
+         if (desc->analog_flags & OVERLAY_ANALOG_FLAG_STICKY)
+         {
+            desc->analog_x_value = out->analog[2];
+            desc->analog_y_value = out->analog[3];
+         }
+         break;
+      case OVERLAY_TYPE_ANALOG_L2:
+      case OVERLAY_TYPE_ANALOG_R2:
+         {
+            float analog_button = 0.0f;
+            unsigned bind_id    = (desc->type == OVERLAY_TYPE_ANALOG_L2)
+               ? RETRO_DEVICE_ID_JOYPAD_L2 : RETRO_DEVICE_ID_JOYPAD_R2;
+
+            if (desc->analog_axis == OVERLAY_ANALOG_AXIS_HORIZONTAL)
+               analog_button = x_val_sat;
+            else if (desc->analog_axis == OVERLAY_ANALOG_AXIS_VERTICAL)
+               analog_button = y_val_sat;
+
+            out->analog_buttons[bind_id] =
+               (uint16_t)(clamp_float(analog_button, 0.0f, 1.0f) * 32767.0f);
+            if (desc->analog_flags & OVERLAY_ANALOG_FLAG_STICKY)
+               desc->analog_button_value = out->analog_buttons[bind_id];
+         }
+         break;
+      case OVERLAY_TYPE_ANALOG_LEFT:
+      default:
+         out->analog[0] = clamp_float(x_val_sat, -1.0f, 1.0f) * 32767.0f;
+         out->analog[1] = clamp_float(y_val_sat, -1.0f, 1.0f) * 32767.0f;
+         if (desc->analog_flags & OVERLAY_ANALOG_FLAG_STICKY)
+         {
+            desc->analog_x_value = out->analog[0];
+            desc->analog_y_value = out->analog[1];
+         }
+         break;
+   }
 }
 
 /**
@@ -3153,7 +3480,6 @@ static bool input_overlay_poll(
    for (i = 0; i < ol->active->size; i++)
    {
       float x_dist, y_dist;
-      unsigned int base         = 0;
       unsigned int desc_prio    = 0;
       struct overlay_desc *desc = &descs[i];
 
@@ -3215,11 +3541,11 @@ static bool input_overlay_poll(
                      &out->buttons, x_dist, y_dist);
             break;
          case OVERLAY_TYPE_ANALOG_RIGHT:
-            base = 2;
-            /* fall-through */
+         case OVERLAY_TYPE_ANALOG_L2:
+         case OVERLAY_TYPE_ANALOG_R2:
          default:
             input_overlay_get_analog_state(
-                  out, desc, base, x, y,
+                  out, desc, x, y,
                   &x_dist, &y_dist, !use_range_mod);
             break;
       }
@@ -4489,6 +4815,10 @@ INPUT_NOINLINE static void input_poll_overlay(
                if (polled_data.analog[j])
                   ol_state->analog[j] = polled_data.analog[j];
 
+            for (j = 0; j < 16; j++)
+               if (polled_data.analog_buttons[j])
+                  ol_state->analog_buttons[j] = polled_data.analog_buttons[j];
+
             hitbox_touch_mask |= (1 << i);
          }
          else if (   ol_ptr_enable
@@ -4510,6 +4840,8 @@ INPUT_NOINLINE static void input_poll_overlay(
          input_overlay_poll_mouse(settings, &ptr_state->mouse, ol,
                ptr_state->count, old_ptr_count);
    }
+
+   input_overlay_apply_sticky_state(ol, ol_state);
 
    if (     OVERLAY_GET_KEY(ol_state, RETROK_LSHIFT)
          || OVERLAY_GET_KEY(ol_state, RETROK_RSHIFT))

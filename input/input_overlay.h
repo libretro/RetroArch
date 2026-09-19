@@ -51,10 +51,25 @@ enum overlay_type
    OVERLAY_TYPE_BUTTONS = 0,
    OVERLAY_TYPE_ANALOG_LEFT,
    OVERLAY_TYPE_ANALOG_RIGHT,
+   OVERLAY_TYPE_ANALOG_L2,
+   OVERLAY_TYPE_ANALOG_R2,
    OVERLAY_TYPE_DPAD_AREA,
    OVERLAY_TYPE_ABXY_AREA,
    OVERLAY_TYPE_KEYBOARD,
    OVERLAY_TYPE_LAST
+};
+
+enum overlay_analog_axis
+{
+   OVERLAY_ANALOG_AXIS_BOTH = 0,
+   OVERLAY_ANALOG_AXIS_HORIZONTAL,
+   OVERLAY_ANALOG_AXIS_VERTICAL
+};
+
+enum overlay_analog_flags
+{
+   OVERLAY_ANALOG_FLAG_INVERT = (1 << 0),
+   OVERLAY_ANALOG_FLAG_STICKY = (1 << 1)
 };
 
 /* Superset of overlay_type for menu entries */
@@ -276,7 +291,12 @@ struct overlay_desc
    /* Nonzero if pressed. Lower bits used for pointer indexes */
    uint32_t touch_mask;
    uint32_t old_touch_mask;
+   int16_t analog_x_value;
+   int16_t analog_y_value;
+   uint16_t analog_button_value;
 
+   uint8_t analog_axis;
+   uint8_t analog_flags;
    uint8_t flags;
 };
 
@@ -352,6 +372,7 @@ typedef struct input_overlay_state
    uint32_t keys[RETROK_LAST / 32 + 1];
    /* Left X, Left Y, Right X, Right Y */
    int16_t analog[4];
+   uint16_t analog_buttons[16];
    /* This is a bitmask of (1 << key_bind_id). */
    input_bits_t buttons;
 
