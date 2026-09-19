@@ -3814,6 +3814,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                iface->interface_version = RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION;
             else
 #endif
+#ifdef HAVE_D3D12
+            /* Version 1 of the D3D12 negotiation: the core names the
+             * highest hardware render interface version it can use
+             * (libretro_d3d12.h). The literal, not the header's macro:
+             * that header is Windows' d3d12.h and this file is not. */
+            if (iface->interface_type == RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D12)
+               iface->interface_version = 1;
+            else
+#endif
             {
                iface->interface_version = 0;
             }

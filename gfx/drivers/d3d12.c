@@ -70,6 +70,7 @@
 #include "../common/dxgi_common.h"
 #include <libretro.h>
 #include <libretro_d3d12.h>
+#include "../common/d3d12_hw_interface.h"
 #include "../common/d3dcompiler_common.h"
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
@@ -297,6 +298,18 @@ typedef struct
       HANDLE                   capture_event;
       UINT64                   capture_value;
    } hw_ring;
+   /* libretro_d3d12.h version 2, served by the driver itself (no
+    * threaded wrapper in front). The frame is consumed inside
+    * video_refresh, so there is one sync index; `done` is signalled
+    * behind the frame that read the core's texture, and is what
+    * wait_sync_index waits. */
+   struct
+   {
+      D3D12Fence done;
+      HANDLE     done_event;
+      UINT64     done_value;     /* last value queued for signal    */
+      bool       frame_took_texture;
+   } hw_v2;
 
    IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
    struct string_list *gpu_list;
@@ -4741,6 +4754,56 @@ static void d3d12_set_hw_render_texture(void* data, ID3D12Resource* texture, DXG
    d3d12->hw_render_texture_format = format;
 }
 
+/* --- libretro_d3d12.h version 2, without the threaded wrapper ---------
+ *
+ * The driver's frame runs inside video_refresh and reads the core's
+ * texture there, so one sync index is all there is, and the texture is
+ * the core's again once the frame that read it has executed. */
+
+static unsigned d3d12_hw_v2_get_sync_index(void *data)
+{
+   (void)data;
+   return 0;
+}
+
+static unsigned d3d12_hw_v2_get_sync_index_mask(void *data)
+{
+   (void)data;
+   return 1;
+}
+
+static void d3d12_hw_v2_wait_sync_index(void *data)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   D3D12Fence fence;
+   if (!d3d12 || !(fence = d3d12->hw_v2.done) || !d3d12->hw_v2.done_value)
+      return;
+   if (fence->lpVtbl->GetCompletedValue(fence) >= d3d12->hw_v2.done_value)
+      return;
+   fence->lpVtbl->SetEventOnCompletion(fence, d3d12->hw_v2.done_value,
+         d3d12->hw_v2.done_event);
+   if (WaitForSingleObject(d3d12->hw_v2.done_event, D3D12_FENCE_WAIT_MS)
+         != WAIT_OBJECT_0)
+      RARCH_ERR("[D3D12] The frame that read the core's texture did not"
+            " finish within %u ms; the device is most likely lost.\n",
+            (unsigned)D3D12_FENCE_WAIT_MS);
+}
+
+/* The wait for the core's work goes onto the queue here, ahead of the
+ * frame's command list, which is submitted later in this same
+ * video_refresh: a wait on the GPU's timeline, none on this thread. */
+static void d3d12_hw_v2_set_texture_fenced(void *data, ID3D12Resource *texture,
+      DXGI_FORMAT format, ID3D12Fence *fence, UINT64 value)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12)
+      return;
+   d3d12->hw_render_texture        = texture;
+   d3d12->hw_render_texture_format = format;
+   if (texture && fence)
+      d3d12->queue.handle->lpVtbl->Wait(d3d12->queue.handle, fence, value);
+}
+
 static void *d3d12_gfx_init(const video_info_t* video,
       input_driver_t** input, void** input_data)
 {
@@ -4989,6 +5052,26 @@ static void *d3d12_gfx_init(const video_info_t* video,
       d3d12->hw_iface.required_state    = D3D12_RESOURCE_STATE_COPY_SOURCE;
       d3d12->hw_iface.set_texture       = d3d12_set_hw_render_texture;
       d3d12->hw_iface.D3DCompile        = D3DCompile;
+      /* Version 2 only for a core that asked for it; every other core
+       * compares interface_version against 1 and refuses anything else. */
+      if (d3d12_hw_interface_negotiated_version()
+            >= RETRO_HW_RENDER_INTERFACE_D3D12_VERSION_2)
+      {
+         if (     !d3d12->hw_v2.done
+               && SUCCEEDED(d3d12->device->lpVtbl->CreateFence(d3d12->device, 0,
+                     D3D12_FENCE_FLAG_NONE, uuidof(ID3D12Fence),
+                     (void**)&d3d12->hw_v2.done)))
+            d3d12->hw_v2.done_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+         if (d3d12->hw_v2.done && d3d12->hw_v2.done_event)
+         {
+            d3d12->hw_iface.interface_version   = RETRO_HW_RENDER_INTERFACE_D3D12_VERSION_2;
+            d3d12->hw_iface.get_sync_index      = d3d12_hw_v2_get_sync_index;
+            d3d12->hw_iface.get_sync_index_mask = d3d12_hw_v2_get_sync_index_mask;
+            d3d12->hw_iface.wait_sync_index     = d3d12_hw_v2_wait_sync_index;
+            d3d12->hw_iface.set_texture_fenced  = d3d12_hw_v2_set_texture_fenced;
+            RARCH_LOG("[D3D12] Hardware render interface version 2.\n");
+         }
+      }
    }
 
    return d3d12;
@@ -5832,6 +5915,7 @@ static bool d3d12_gfx_frame(
 
          cmd->lpVtbl->CopyTextureRegion(
                cmd, &dst, 0, 0, 0, &src, &src_box);
+         d3d12->hw_v2.frame_took_texture = true;
 
          D3D12_RESOURCE_TRANSITION(
                cmd,
@@ -6764,6 +6848,17 @@ static bool d3d12_gfx_frame(
    cmd->lpVtbl->Close(cmd);
    d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
          (ID3D12CommandList* const*)&d3d12->queue.cmd);
+
+   /* Version 2: the core's texture is the core's again once this list,
+    * which copied from it, has executed. Signalled on the queue, behind
+    * the list; wait_sync_index is what waits. */
+   if (d3d12->hw_v2.frame_took_texture)
+   {
+      d3d12->hw_v2.frame_took_texture = false;
+      if (d3d12->hw_v2.done)
+         d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+               d3d12->hw_v2.done, ++d3d12->hw_v2.done_value);
+   }
 
    if (vsync && d3d12->wait_for_vblank < 0)
    {
@@ -8257,6 +8352,29 @@ static bool d3d12_hw_ring_present_slot(void *data, unsigned slot)
    return true;
 }
 
+/* Video thread, version 2: the frame reads the core's own texture. The
+ * wait for the core's work is queued here, ahead of the frame's list;
+ * the wrapper signals the slot's fence behind that list, and that is
+ * what the core waits before it draws into this texture again. Nothing
+ * was copied on the core's thread to get here, which is the point. */
+static bool d3d12_hw_ring_install(void *data, const void *image,
+      const void *semaphores, unsigned num_semaphores,
+      unsigned src_queue_family, const void *cmd, unsigned num_cmd)
+{
+   d3d12_video_t *d3d12               = (d3d12_video_t*)data;
+   const d3d12_hw_ring_frame_t *frame = (const d3d12_hw_ring_frame_t*)image;
+   (void)semaphores; (void)num_semaphores; (void)src_queue_family;
+   (void)cmd; (void)num_cmd;
+   if (!d3d12 || !frame || !frame->texture)
+      return false;
+   d3d12->hw_render_texture        = frame->texture;
+   d3d12->hw_render_texture_format = frame->format;
+   if (frame->fence)
+      d3d12->queue.handle->lpVtbl->Wait(d3d12->queue.handle,
+            frame->fence, frame->value);
+   return true;
+}
+
 static void d3d12_hw_ring_free(d3d12_video_t *d3d12)
 {
    unsigned i;
@@ -8284,6 +8402,13 @@ static void d3d12_hw_ring_free(d3d12_video_t *d3d12)
    if (d3d12->hw_ring.capture_event)
       CloseHandle(d3d12->hw_ring.capture_event);
    memset(&d3d12->hw_ring, 0, sizeof(d3d12->hw_ring));
+
+   /* Version 2's done-fence goes with the rest of the hardware handoff.
+    * The caller has drained the queue, so nothing is left to signal it. */
+   Release(d3d12->hw_v2.done);
+   if (d3d12->hw_v2.done_event)
+      CloseHandle(d3d12->hw_v2.done_event);
+   memset(&d3d12->hw_v2, 0, sizeof(d3d12->hw_v2));
 }
 
 static bool d3d12_get_hw_render_interface(
@@ -8742,7 +8867,7 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_gfx_load_texture_compressed,
    d3d12_present_last,
    d3d12_get_last_present_time,
-   NULL, /* hw_ring_install: Vulkan-shaped */
+   d3d12_hw_ring_install, /* version 2 frames; see d3d12_hw_ring_frame_t */
    d3d12_hw_ring_fence_new,
    d3d12_hw_ring_fence_free,
    d3d12_hw_ring_fence_signal,
