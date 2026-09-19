@@ -150,13 +150,11 @@ int main(int argc, char *argv[])
    if (ta) sthread_join(ta);
    if (tb) sthread_join(tb);
 
-   /* Flush-policy lane: an error line is durable the moment the
-    * call returns - readable from the file before any deinit -
-    * while informational lines may ride stdio's buffer until the
-    * next flush point (their presence mid-run is therefore not
-    * asserted either way; the whole-file scan below still counts
-    * every line after deinit's fclose flushes the tail). */
-   RARCH_ERR("flush-lane error line\n");
+   /* Flush-policy lane: every line, whatever its tag, is durable the
+    * moment the call returns - readable from the file before any
+    * deinit. The informational line is the one that matters: it is
+    * what a crash log's tail and a live follower both depend on. */
+   RARCH_LOG("flush-lane info line\n");
    {
       FILE *ef;
       int   found = 0;
@@ -166,13 +164,13 @@ int main(int argc, char *argv[])
          size_t  ecap     = 0;
          ssize_t elen;
          while ((elen = getline(&eline, &ecap, ef)) != -1)
-            if (strstr(eline, "flush-lane error line"))
+            if (strstr(eline, "flush-lane info line"))
                found = 1;
          free(eline);
          fclose(ef);
       }
       CHECK(found,
-            "RARCH_ERR line not durable before deinit (flush policy)");
+            "RARCH_LOG line not durable before deinit (flush policy)");
    }
 
    retro_main_log_file_deinit();
@@ -188,7 +186,7 @@ int main(int argc, char *argv[])
       while ((n = getline(&line, &line_cap, f)) > 0)
       {
          /* The flush-policy lane's marker line has its own shape. */
-         if (strstr(line, "flush-lane error line"))
+         if (strstr(line, "flush-lane info line"))
             continue;
          size_t len = (size_t)n;
          char which;

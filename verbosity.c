@@ -305,28 +305,15 @@ static const char *rarch_log_line_format(char *line, size_t line_size,
    return line;
 }
 
-/* Errors and warnings must survive a crash whose report they may be,
- * so their lines reach the OS before this returns. Informational
- * traffic rides stdio's buffer - the per-line flush was the file
- * sink's dominant cost - and becomes durable at the flush points:
- * rarch_log_file_deinit()'s fclose, and any later flushed line on
- * the same stream. The cost of that ride is the documented one: a
- * hard crash can lose the buffered tail of INFO/DEBUG lines written
- * after the last error or warning. Tags are matched by exact label;
- * a core-supplied custom tag rides the buffer like INFO. */
-static bool rarch_log_tag_wants_flush(const char *tag_v)
-{
-   /* strcmp, not memcmp with the pattern's sizeof: the tag can be a
-    * shorter string than the pattern ("[WARN]" against "[ERROR]"'s
-    * eight bytes), and a sized compare reads past its terminator -
-    * a one-byte overread AddressSanitizer stops the process for. */
-   return strcmp(tag_v, FILE_PATH_LOG_ERROR) == 0
-       || strcmp(tag_v, FILE_PATH_LOG_WARN)  == 0;
-}
-
-/* One write - and, for lines that must not wait, one flush - under
- * the LibNX mutex where it exists. */
-static void rarch_log_line_emit(FILE *fp, const char *out, bool flush)
+/* One write, one flush, under the LibNX mutex where it exists.
+ *
+ * The flush is unconditional, for every tag. Buffering informational
+ * lines was tried and taken back out: a log is read after a crash, and
+ * the lines that explain it are usually the INFO/DEBUG ones written
+ * just before it - exactly the tail a buffer loses - and anything
+ * following the log live (tail -f, a monitoring script) sees nothing
+ * until the buffer happens to fill. */
+static void rarch_log_line_emit(FILE *fp, const char *out)
 {
 #if defined(HAVE_LIBNX)
    /* Around exactly one write and its flush; libnx newlib's stdio
@@ -334,8 +321,7 @@ static void rarch_log_line_emit(FILE *fp, const char *out, bool flush)
    mutexLock(&main_verbosity_st.mtx);
 #endif
    fputs(out, fp);
-   if (flush)
-      fflush(fp);
+   fflush(fp);
 #if defined(HAVE_LIBNX)
    mutexUnlock(&main_verbosity_st.mtx);
 #endif
@@ -353,7 +339,7 @@ static void rarch_log_line_write(FILE *fp, const char *tag_v,
    const char *out = rarch_log_line_format(line, sizeof(line), &heap,
          tag_v, fmt, ap);
 
-   rarch_log_line_emit(fp, out, rarch_log_tag_wants_flush(tag_v));
+   rarch_log_line_emit(fp, out);
    free(heap);
 }
 #endif
@@ -401,8 +387,8 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          int prio = ANDROID_LOG_INFO;
          if (tag)
          {
-            /* strcmp for the same reason as rarch_log_tag_wants_flush:
-             * a sized memcmp reads past a shorter tag's terminator. */
+            /* strcmp, not memcmp with the pattern's sizeof: a sized
+             * compare reads past a shorter tag's terminator. */
             if (strcmp(tag, FILE_PATH_LOG_WARN) == 0)
                prio = ANDROID_LOG_WARN;
             else if (strcmp(tag, FILE_PATH_LOG_ERROR) == 0)
@@ -444,8 +430,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
           * guard, every line would print twice in the no-file case. */
          printf("%s", out);
          if (main_verbosity_st.initialized && fp)
-            rarch_log_line_emit(fp, out,
-                  rarch_log_tag_wants_flush(tag_v));
+            rarch_log_line_emit(fp, out);
 
 #else
          {
@@ -477,8 +462,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #endif
 
             if (main_verbosity_st.initialized && fp)
-               rarch_log_line_emit(fp, out,
-                     rarch_log_tag_wants_flush(tag_v));
+               rarch_log_line_emit(fp, out);
          }
 #endif
       }
@@ -488,8 +472,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
          /* stdio's per-call lock keeps the single write whole under
           * concurrent writers; the format above already took the
           * heap detour for wide lines. */
-         rarch_log_line_emit(fp, out,
-               rarch_log_tag_wants_flush(tag_v));
+         rarch_log_line_emit(fp, out);
 #endif
 
       free(heap);
