@@ -701,6 +701,21 @@ jobs:
           pkill openbox || true
           sudo kill "$XORG_PID" || true
 
+      - name: D3D11 hardware ring under threaded video (mingw + Wine, headless)
+        shell: bash
+        run: |
+          set -o pipefail
+          # The threaded wrapper hands a D3D11 hardware core a deferred
+          # context and replays its frames on the video thread. Nothing
+          # on Linux exercises that, and it shipped showing one frame
+          # and then black. The real proxy and the driver's own
+          # FinishCommandList argument, run under Wine, where wined3d
+          # implements deferred contexts over OpenGL. Requires the ring
+          # and the immediate context to show every frame, and the ring
+          # as it used to be to fail.
+          sudo apt-get install -y -qq xvfb > /dev/null
+          samples/gfx/d3d11_hw_ring/run.sh
+
       - name: Build and run display_servers_kms_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/display_servers_kms

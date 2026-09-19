@@ -6573,7 +6573,8 @@ static bool d3d11_hw_ring_capture(void *data, unsigned slot,
       view->lpVtbl->GetResource(view, (D3D11Resource*)&texture);
       Release(view);
    }
-   if (FAILED(deferred->lpVtbl->FinishCommandList(deferred, FALSE, &list)))
+   if (FAILED(deferred->lpVtbl->FinishCommandList(deferred,
+               D3D11_HW_RING_KEEP_CONTEXT_STATE, &list)))
    {
       Release(texture);
       return false;
