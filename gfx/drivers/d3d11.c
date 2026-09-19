@@ -5936,7 +5936,7 @@ static bool d3d11_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
       bool is_idle, struct rpng_hdr_metadata *out_meta)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
-   ID3D11Texture2D* BackBuffer;
+   ID3D11Texture2D* BackBuffer = NULL;
    DXGISwapChain m_SwapChain;
    ID3D11Texture2D* BackBufferStagingTexture = NULL;
    ID3D11Resource* BackBufferStaging = NULL;
@@ -5980,6 +5980,7 @@ static bool d3d11_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
    StagingDesc.Usage          = D3D11_USAGE_STAGING;
    StagingDesc.BindFlags      = 0;
    StagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+   StagingDesc.MiscFlags      = 0;
 
    d3d11->device->lpVtbl->CreateTexture2D(d3d11->device, &StagingDesc, NULL, &BackBufferStagingTexture);
    if (!BackBufferStagingTexture)
