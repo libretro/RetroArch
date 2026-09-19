@@ -127,6 +127,11 @@ typedef struct
     * Version 3 on top of that: frames are not copied into the slots. */
    bool  d3d11_v2;
    bool  d3d11_v3;
+   /* The interface version last reported in the log. A core may ask for
+    * the interface more than once - when it first needs the context, and
+    * again when it builds its device - and gets the same answer each
+    * time; the log says it once per ring, or again if it ever changed. */
+   unsigned logged_version;
    const struct retro_hw_render_interface *real;
    hw_slot_t slot[VIDEO_THREAD_HW_RING];
    /* The core's current sync index: the slot it is rendering into.
@@ -603,7 +608,11 @@ bool video_thread_get_hw_render_interface(void *data,
             ring->iface.d3d12.get_sync_index_mask = hw_d3d12_get_sync_index_mask;
             ring->iface.d3d12.wait_sync_index     = hw_d3d12_wait_sync_index;
             ring->iface.d3d12.set_texture_fenced  = hw_d3d12_set_texture_fenced;
-            RARCH_LOG("[Video] Threaded video: D3D12 hardware render interface version 2, no frame copy.\n");
+            if (ring->logged_version != RETRO_HW_RENDER_INTERFACE_D3D12_VERSION_2)
+            {
+               ring->logged_version = RETRO_HW_RENDER_INTERFACE_D3D12_VERSION_2;
+               RARCH_LOG("[Video] Threaded video: D3D12 hardware render interface version 2, no frame copy.\n");
+            }
          }
          *iface = (const struct retro_hw_render_interface*)&ring->iface.d3d12;
          return true;
@@ -650,9 +659,13 @@ bool video_thread_get_hw_render_interface(void *data,
                ring->iface.d3d11.wait_sync_index     = hw_d3d11_wait_sync_index;
             }
             *iface = (const struct retro_hw_render_interface*)&ring->iface.d3d11;
-            RARCH_LOG("[Video] Threaded video: D3D11 hardware render interface version %u, the core keeps the immediate context%s.\n",
-                  ring->iface.d3d11.interface_version,
-                  ring->d3d11_v3 ? ", no frame copy" : "");
+            if (ring->logged_version != ring->iface.d3d11.interface_version)
+            {
+               ring->logged_version = ring->iface.d3d11.interface_version;
+               RARCH_LOG("[Video] Threaded video: D3D11 hardware render interface version %u, the core keeps the immediate context%s.\n",
+                     ring->iface.d3d11.interface_version,
+                     ring->d3d11_v3 ? ", no frame copy" : "");
+            }
             return true;
          }
          if (!ring->core_ctx
