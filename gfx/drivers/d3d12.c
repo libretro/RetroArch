@@ -2419,7 +2419,21 @@ static void d3d12_render_overlay(d3d12_video_t *d3d12)
    }
 
    cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->overlays.vbo_view);
-   cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
+   /* The overlay is drawn onto the swapchain's back buffer, which under
+    * HDR is R10G10B10A2 or R16G16B16A16_FLOAT. pipe_blend is built for
+    * an R8G8B8A8 target, and a draw whose pipeline disagrees with the
+    * bound render target is invalid: the debug layer reports
+    * RENDER_TARGET_FORMAT_MISMATCH_PIPELINE_STATE for every overlay
+    * image of every frame, and without it the result is undefined.
+    * Every other sprite draw in this file already picks the _hdr
+    * pipeline by the same test. */
+#ifdef HAVE_DXGI_HDR
+   if (     (d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+         || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend_hdr);
+   else
+#endif
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
 
    cmd->lpVtbl->SetGraphicsRootDescriptorTable(
          cmd, ROOT_ID_SAMPLER_T,
