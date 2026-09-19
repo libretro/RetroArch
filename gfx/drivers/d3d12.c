@@ -6335,8 +6335,7 @@ static bool d3d12_gfx_frame(
        * blend with, and the alpha it carries is whatever the core left
        * in its texture. STOCK_HDR blends with source alpha, and the HDR
        * shader passes the sampled alpha through, so a hardware core
-       * whose render target holds the guest's alpha - the PS2 core's
-       * is the PS2's, zero or half for most of a frame - was composited
+       * whose render target holds the guest's alpha was composited
        * at that alpha over the clear colour: a black picture with HDR
        * on, with the widgets and overlay drawn over it as usual. A
        * software frame is XRGB and reads as opaque, which is why only
