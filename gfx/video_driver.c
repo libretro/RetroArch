@@ -440,15 +440,28 @@ static void *video_null_init(const video_info_t *video,
    return (void*)-1;
 }
 
+/* The black frame insertion count of the last frame this driver was
+ * given. present_last runs on the video thread under the threaded
+ * wrapper, and a live read of the setting there races the main thread
+ * writing it (ThreadSanitizer, threaded_video harness, present-repeat
+ * lane). The frame info is the snapshot the main thread took for the
+ * frame, and frame and present_last run on the same thread, wrapper or
+ * not - which is how every real driver learns the value too. */
+static unsigned video_null_bfi;
+
 static bool video_null_frame(void *a, const void *b, unsigned c, unsigned d,
-uint64_t e, unsigned f, const char *g, video_frame_info_t *h) { return true; }
+uint64_t e, unsigned f, const char *g, video_frame_info_t *h)
+{
+   if (h)
+      video_null_bfi = h->black_frame_insertion;
+   return true;
+}
 static void video_null_free(void *a) { }
 static unsigned video_null_present_last(void *a)
 {
    /* Nothing to show, but the wrapper paces on what a repeat would
-    * have been: the group the settings describe. */
-   settings_t *settings = config_get_ptr();
-   return settings ? settings->uints.video_black_frame_insertion + 1 : 1;
+    * have been: the light frame and the dark ones after it. */
+   return video_null_bfi + 1;
 }
 static const video_poke_interface_t video_null_poke_interface = {
    NULL, /* get_flags */
