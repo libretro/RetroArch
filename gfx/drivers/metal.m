@@ -769,6 +769,11 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 @interface Texture()
 @property (nonatomic, readwrite, strong) id<MTLTexture> texture;
 @property (nonatomic, readwrite, strong) id<MTLSamplerState> sampler;
+/* Staging for a streaming update: the pixels go here and the GPU
+ * copies them into the texture, so the copy is ordered against the
+ * draws that sample it (see metal_update_texture). Made on the first
+ * update and kept, since a streaming texture updates every frame. */
+@property (nonatomic, readwrite, strong) id<MTLBuffer> staging;
 @end
 
 @interface Context()
@@ -2707,6 +2712,7 @@ static float metal_hdr_pq_to_nits(float pq)
 {
    [(id)_texture release];
    [(id)_sampler release];
+   [(id)_staging release];
    [super dealloc];
 }
 #endif
@@ -6699,18 +6705,29 @@ static void metal_unload_texture(void *data,
    }
 }
 
-/* Same-size contents into a texture metal_load_texture made:
- * replaceRegion on the one MTLTexture, the way the menu frame streams
- * into its TexturedView every frame. Metal resources are safe to
- * write from any thread and command buffers retain what they sample,
- * so this runs inline whether or not the wrapper is up, as the
- * non-mipmapped loads do. A mipmapped texture would need the shared
- * blit command buffer to regenerate its levels: refused, so the
- * caller loads a replacement. */
+/* Same-size contents into a texture metal_load_texture made, the way
+ * the menu frame and an animated preview stream into the one texture
+ * every frame.
+ *
+ * The pixels go through a staging buffer and a GPU blit rather than
+ * replaceRegion:. replaceRegion: writes from the CPU the moment it is
+ * called, while the command buffers already committed may still be
+ * sampling that texture - a command buffer retains what it samples,
+ * which keeps the object alive but says nothing about its contents.
+ * The other backends each refuse that: Vulkan checks its fences,
+ * D3D11 maps with DO_NOT_WAIT, D3D12 compares a fence tag, and each
+ * drops the frame. A blit on the shared blit command buffer needs no
+ * such rule - it executes in commit order with the draws around it,
+ * and Metal's hazard tracking orders the write against the reads - so
+ * the frame is neither raced nor dropped.
+ *
+ * A mipmapped texture would need its levels regenerated after the
+ * copy: refused, so the caller loads a replacement. */
 static bool metal_update_texture(void *video_data, uintptr_t handle,
       const struct texture_image *ti, bool threaded)
 {
-   if (!handle || !ti || !ti->pixels)
+   MetalDriver *md = (__bridge MetalDriver *)video_data;
+   if (!md || !handle || !ti || !ti->pixels)
       return false;
 
    @autoreleasepool
@@ -6722,10 +6739,38 @@ static bool metal_update_texture(void *video_data, uintptr_t handle,
             || tex.width  != ti->width
             || tex.height != ti->height)
          return false;
-      [tex replaceRegion:MTLRegionMake2D(0, 0, ti->width, ti->height)
-              mipmapLevel:0
-                withBytes:ti->pixels
-              bytesPerRow:4 * ti->width];
+      {
+         NSUInteger len = (NSUInteger)ti->width * ti->height * 4;
+         id<MTLCommandBuffer> cb;
+         id<MTLBlitCommandEncoder> bce;
+
+         if (t.staging.length < len)
+         {
+            id<MTLBuffer> buf = [tex.device newBufferWithLength:len
+                  options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
+            if (!buf)
+               return false;
+            t.staging = RARCH_AUTORELEASE_R(buf);
+         }
+         memcpy(t.staging.contents, ti->pixels, len);
+#if TARGET_OS_OSX
+         if (t.staging.storageMode == MTLStorageModeManaged)
+            [t.staging didModifyRange:NSMakeRange(0, len)];
+#endif
+         if (!(cb = md.context.blitCommandBuffer))
+            return false;
+         bce = [cb blitCommandEncoder];
+         [bce copyFromBuffer:t.staging
+                sourceOffset:0
+           sourceBytesPerRow:4 * ti->width
+         sourceBytesPerImage:len
+                  sourceSize:MTLSizeMake(ti->width, ti->height, 1)
+                   toTexture:tex
+            destinationSlice:0
+            destinationLevel:0
+           destinationOrigin:MTLOriginMake(0, 0, 0)];
+         [bce endEncoding];
+      }
    }
    return true;
 }
