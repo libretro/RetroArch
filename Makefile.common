@@ -325,6 +325,7 @@ OBJ += \
        audio/audio_pipeline_stretch.o \
        audio/audio_binaural.o \
        input/input_driver.o \
+       input/input_overlay_textures.o \
        input/common/input_hid_common.o \
        led/led_driver.o \
        gfx/video_driver.o \

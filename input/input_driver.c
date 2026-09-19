@@ -3608,152 +3608,6 @@ void input_overlay_set_scale_factor(
    input_overlay_set_vertex_geom(ol);
 }
 
-/* Every unique image of the pack becomes one texture, and every page
- * a list of handles into that set, so that switching pages uploads
- * nothing. Only for a driver with load_textures; others keep taking
- * the pixels through load() on each switch. The handles live until
- * input_overlay_release_textures(), which the disable runs while the
- * driver is still there to unload them. Returns false when the pack
- * cannot be uploaded this way, in which case load() is used. */
-static bool input_overlay_upload_textures(input_overlay_t *ol)
-{
-   uintptr_t *tex;
-   size_t i, j, k, total = ol->num_images;
-
-   if (ol->page_textures || !ol->images || !ol->num_images)
-      return ol->page_textures != NULL;
-   /* Nothing to upload from: the pixels went when the textures were
-    * made and the textures went with the driver. The caller declines
-    * the pack, and the next input_overlay_init() reloads it from its
-    * path. */
-   if (!ol->images[0]->pixels)
-      return false;
-
-   for (i = 0; i < ol->size; i++)
-      total += ol->overlays[i].load_images_size;
-   if (!(tex = (uintptr_t*)calloc(total, sizeof(*tex))))
-      return false;
-   ol->page_textures = tex;
-   if (!(ol->surfaces = (void**)calloc(ol->num_images, sizeof(void*))))
-   {
-      input_overlay_release_textures(ol);
-      return false;
-   }
-
-   /* Each unique image becomes a surface holding one texture. A still
-    * image's pixels are the pack's and stay where they are, so its
-    * surface carries no slots of its own and the upload is the same
-    * submit-and-own path an animated preview frame takes. An animated
-    * one (APNG) gets slots instead: its stream composes each frame
-    * into a slot and the texture is updated in place, so the page's
-    * handles never change and a frame costs no upload of its own. */
-   for (i = 0; i < ol->num_images; i++)
-   {
-      bool animated    = ol->anim_stream && ol->anim_stream[i];
-      /* One slot: a frame is composed here and submitted immediately,
-       * and a surface with a submit in flight refuses every slot, so
-       * a second one could never be reached - it would be a frame's
-       * worth of memory per animated image, for nothing. */
-      gfx_surface_t *s = animated
-         ? gfx_surface_new(ol->images[i]->width, ol->images[i]->height,
-               1, TEXTURE_FILTER_LINEAR, NULL, NULL)
-         : gfx_surface_new_static(ol->images[i]->width,
-            ol->images[i]->height, TEXTURE_FILTER_LINEAR);
-      GFX_INSTR_INC(GFX_INSTR_OVERLAY_UPLOAD);
-      GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
-            (int)(((size_t)ol->images[i]->width * ol->images[i]->height
-                  * sizeof(uint32_t)) >> 10));
-      ol->surfaces[i]  = s;
-      if (animated && s)
-      {
-         /* The first frame is already composed in the decoded image:
-          * it goes into a slot, and the stream advances from the
-          * second on the tick below. */
-         memcpy(s->slots[0], ol->images[i]->pixels,
-               (size_t)s->width * s->height * sizeof(uint32_t));
-         if (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
-               == GFX_SURFACE_SUBMIT_FAILED)
-         {
-            input_overlay_release_textures(ol);
-            return false;
-         }
-         ol->anim_next_us[i] = 0;
-         continue;
-      }
-      /* An asset is uploaded once and never again, so a submit that
-       * the video thread has not finished with is waited out by the
-       * poll below rather than dropped. */
-      if (     !s
-            || gfx_surface_submit_external(s, ol->images[i]->pixels,
-                  ol->images[i]->supports_rgba, NULL, NULL)
-               == GFX_SURFACE_SUBMIT_FAILED)
-      {
-         input_overlay_release_textures(ol);
-         return false;
-      }
-   }
-#ifdef HAVE_THREADS
-   /* Under threaded video the handles land through the wrapper's
-    * completion list; the page needs them now. */
-   video_thread_async_poll();
-#endif
-   for (i = 0; i < ol->num_images; i++)
-   {
-      gfx_surface_t *s = (gfx_surface_t*)ol->surfaces[i];
-      if (!s->handle)
-      {
-         input_overlay_release_textures(ol);
-         return false;
-      }
-      tex[i] = s->handle;
-   }
-
-   /* The pixels have reached the GPU and nothing reads them again: a
-    * pack is anything from a megabyte of button sprites to forty of
-    * 4K border, held for the whole session against the one event that
-    * would want them - a video reinit, which reloads the overlay from
-    * its path anyway (video_driver_init_internal) and stalls far
-    * longer than the decode does. The width and height stay, because
-    * the layout and the reload check read them. */
-   for (i = 0; i < ol->num_images; i++)
-   {
-      if (!ol->images[i]->pixels)
-         continue;
-      GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
-            -(int)(((size_t)ol->images[i]->width * ol->images[i]->height
-                  * sizeof(uint32_t)) >> 10));
-      image_texture_free(ol->images[i]);
-      ol->images[i]->pixels = NULL;
-   }
-
-   /* The loader deduplicated by path, so a page's entry shares its
-    * pixels with exactly one unique image. */
-   k = ol->num_images;
-   for (i = 0; i < ol->size; i++)
-   {
-      struct overlay *o = &ol->overlays[i];
-      o->textures       = &tex[k];
-      for (j = 0; j < o->load_images_size; j++, k++)
-      {
-         size_t u;
-         for (u = 0; u < ol->num_images; u++)
-         {
-            if (ol->images[u]->pixels == o->load_images[j].pixels)
-            {
-               tex[k] = tex[u];
-               break;
-            }
-         }
-         if (u == ol->num_images)
-         {
-            input_overlay_release_textures(ol);
-            return false;
-         }
-      }
-   }
-   return true;
-}
-
 /* The video driver is about to go: every pack's textures, active or
  * cached, are unloaded while it can still do so. The packs keep their
  * decoded pixels and upload them again on the next enable. */
@@ -3761,32 +3615,6 @@ void input_overlay_video_teardown(void)
 {
    input_overlay_release_textures(input_driver_st.overlay_ptr);
    input_overlay_release_textures(input_driver_st.overlay_cache_ptr);
-}
-
-void input_overlay_release_textures(input_overlay_t *ol)
-{
-   size_t i;
-   if (!ol)
-      return;
-   if (ol->surfaces)
-   {
-      for (i = 0; i < ol->num_images; i++)
-         if (ol->images[i] && ol->images[i]->pixels)
-            GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
-                  -(int)(((size_t)ol->images[i]->width
-                        * ol->images[i]->height
-                        * sizeof(uint32_t)) >> 10));
-      /* The texture goes with its surface; one still in flight frees
-       * itself when the video thread is done with it. */
-      for (i = 0; i < ol->num_images; i++)
-         gfx_surface_free((gfx_surface_t*)ol->surfaces[i]);
-      free(ol->surfaces);
-      ol->surfaces = NULL;
-   }
-   for (i = 0; i < ol->size; i++)
-      ol->overlays[i].textures = NULL;
-   free(ol->page_textures);
-   ol->page_textures = NULL;
 }
 
 static void input_overlay_load_active_geom(
@@ -3797,27 +3625,7 @@ void input_overlay_load_active(
       enum overlay_visibility *visibility,
       input_overlay_t *ol, float opacity)
 {
-   if (     ol->iface->load_textures
-         && !(ol->flags & INPUT_OVERLAY_TEXTURES_DECLINED)
-         && input_overlay_upload_textures(ol))
-   {
-      if (ol->iface->load_textures(ol->iface_data,
-               ol->active->textures, ol->active->load_images_size))
-      {
-         GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE);
-         input_overlay_load_active_geom(visibility, ol, opacity);
-         return;
-      }
-      /* The wrapper's table answers for any driver; the one beneath
-       * it may have no such path. Not held for nothing. */
-      input_overlay_release_textures(ol);
-      ol->flags |= INPUT_OVERLAY_TEXTURES_DECLINED;
-   }
-   GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE);
-   GFX_INSTR_INC(GFX_INSTR_OVERLAY_PAGE_LOAD);
-   if (ol->iface->load)
-      ol->iface->load(ol->iface_data, ol->active->load_images,
-            ol->active->load_images_size);
+   input_overlay_load_page(ol);
    input_overlay_load_active_geom(visibility, ol, opacity);
 }
 

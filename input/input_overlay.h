@@ -529,6 +529,16 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now);
  * and forget the page lists. Safe to call with none uploaded. */
 void input_overlay_release_textures(input_overlay_t *ol);
 
+/* Upload every unique image of the pack and build each page's list of
+ * handles. True when the pack has its textures, already or as of this
+ * call; false when it cannot be uploaded this way. */
+bool input_overlay_upload_textures(input_overlay_t *ol);
+
+/* Hand the active page to the driver: as textures when the driver
+ * takes them, as pixels through load() otherwise. True when it went
+ * as textures. */
+bool input_overlay_load_page(input_overlay_t *ol);
+
 /* Unload the textures of the active and the cached pack ahead of the
  * video driver's teardown; they are uploaded again at the next enable
  * on whatever driver comes up. */
