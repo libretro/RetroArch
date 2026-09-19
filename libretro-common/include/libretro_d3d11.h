@@ -42,14 +42,20 @@
  * retro_hw_render_context_negotiation_interface_d3d11. */
 #define RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_2 2
 
+/* Version 3 is version 2 with a sync index, so that the frame is handed
+ * over without being copied. See "Version 3" below. Negotiated the same
+ * way, by naming 3 as the highest version the core can use. */
+#define RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_3 3
+
 struct retro_hw_render_interface_d3d11
 {
   /* Must be set to RETRO_HW_RENDER_INTERFACE_D3D11. */
   enum retro_hw_render_interface_type interface_type;
   /* RETRO_HW_RENDER_INTERFACE_D3D11_VERSION, or
-   * RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_2 if the core negotiated it.
-   * The members from lock_context on exist only from version 2; a core
-   * must not read them on a lower version. */
+   * RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_2 or _3 if the core
+   * negotiated it. The members from lock_context on exist only from
+   * version 2, and those from get_sync_index on only from version 3; a
+   * core must not read them on a lower version. */
   unsigned interface_version;
 
   /* Opaque handle to the d3d11 backend in the frontend
@@ -132,6 +138,44 @@ struct retro_hw_render_interface_d3d11
    * Replaces the pixel shader slot 0 convention, which a version 2 core
    * need not follow. NULL withdraws a texture handed over earlier. */
   void (*set_texture)(void* handle, ID3D11Texture2D* texture);
+
+  /* --- Version 3 ------------------------------------------------------
+   *
+   * In version 2 the frontend is finished with the frame's texture when
+   * video_refresh returns, which a frontend that presents from another
+   * thread can only honour by copying the texture there. Version 3 takes
+   * that copy away, the way libretro_d3d12.h version 2 and the Vulkan
+   * interface do: the core keeps one present texture per sync index, the
+   * frontend reads the texture itself, whenever its own thread gets to
+   * it, and says when it is done.
+   *
+   *   i = get_sync_index(handle);
+   *   wait_sync_index(handle);          NOT with the lock held
+   *   lock_context ... draw into texture[i] ... set_texture(texture[i]);
+   *   unlock_context(handle);
+   *   video_refresh(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
+   *
+   * From set_texture until wait_sync_index next returns for the same
+   * index, the texture is the frontend's: the core must not draw into
+   * it, and must keep it alive. There is no fence, as there is in D3D12:
+   * the device has one context, and what the frontend has issued on it
+   * is ahead of whatever the core issues next.
+   */
+
+  /* The sync index the next frame belongs to. It changes only inside
+   * video_refresh(RETRO_HW_FRAME_BUFFER_VALID) and is always a bit set in
+   * get_sync_index_mask(). */
+  unsigned (*get_sync_index)(void* handle);
+
+  /* Bit i set: i is an index get_sync_index() can return. The core needs
+   * one present texture per set bit. */
+  unsigned (*get_sync_index_mask)(void* handle);
+
+  /* Blocks until the frontend has finished with the texture last handed
+   * over for the current sync index. Returns at once if there is none.
+   * Must not be called with the lock held: the frontend's thread needs
+   * the lock to finish. */
+  void (*wait_sync_index)(void* handle);
 };
 
 /* How a core asks for version 2.

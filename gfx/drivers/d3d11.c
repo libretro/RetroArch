@@ -3128,6 +3128,9 @@ static bool d3d11_hw_v2_lock_context(void *data);
 static void d3d11_hw_v2_unlock_context(void *data);
 static void d3d11_hw_v2_set_texture(void *data, ID3D11Texture2D *texture);
 static void d3d11_hw_v2_protect_context(d3d11_video_t *d3d11);
+static unsigned d3d11_hw_v3_get_sync_index(void *data);
+static unsigned d3d11_hw_v3_get_sync_index_mask(void *data);
+static void d3d11_hw_v3_wait_sync_index(void *data);
 
 static void d3d11_gfx_free(void* data)
 {
@@ -4152,7 +4155,16 @@ static void *d3d11_gfx_init(const video_info_t* video,
          d3d11->hw_iface.lock_context       = d3d11_hw_v2_lock_context;
          d3d11->hw_iface.unlock_context     = d3d11_hw_v2_unlock_context;
          d3d11->hw_iface.set_texture        = d3d11_hw_v2_set_texture;
-         RARCH_LOG("[D3D11] Hardware render interface version 2.\n");
+         if (d3d11_hw_interface_negotiated_version()
+               >= RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_3)
+         {
+            d3d11->hw_iface.interface_version   = RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_3;
+            d3d11->hw_iface.get_sync_index      = d3d11_hw_v3_get_sync_index;
+            d3d11->hw_iface.get_sync_index_mask = d3d11_hw_v3_get_sync_index_mask;
+            d3d11->hw_iface.wait_sync_index     = d3d11_hw_v3_wait_sync_index;
+         }
+         RARCH_LOG("[D3D11] Hardware render interface version %u.\n",
+               d3d11->hw_iface.interface_version);
       }
    }
 
@@ -4546,6 +4558,12 @@ static void d3d11_hw_v2_set_texture(void *data, ID3D11Texture2D *texture)
    Release(d3d11->hw_v2.texture);
    d3d11->hw_v2.texture = texture;
 }
+
+/* Version 3 with no wrapper in front: the frame reads the texture inside
+ * video_refresh, so there is one sync index and nothing to wait for. */
+static unsigned d3d11_hw_v3_get_sync_index(void *data)      { (void)data; return 0; }
+static unsigned d3d11_hw_v3_get_sync_index_mask(void *data) { (void)data; return 1; }
+static void     d3d11_hw_v3_wait_sync_index(void *data)     { (void)data; }
 
 /* The repeat of the last frame waits for the display exactly as the
  * frame does, and with a core slower than the display it runs on every
@@ -6959,6 +6977,31 @@ static bool d3d11_hw_ring_present_slot(void *data, unsigned slot)
  * the immediate context, which is the only place anything executes.
  * What the ring waits for is the video thread having replayed a slot,
  * a CPU event. Fences here are Win32 auto-reset events. */
+/* Video thread, version 3: the frame reads the core's own texture. The
+ * wrapper holds a reference to it for as long as the slot does; this
+ * takes the frame's own, under the lock, as present_slot does for
+ * version 2's copies. Nothing was copied on the core's thread. */
+static bool d3d11_hw_ring_install(void *data, const void *image,
+      const void *semaphores, unsigned num_semaphores,
+      unsigned src_queue_family, const void *cmd, unsigned num_cmd)
+{
+   d3d11_video_t *d3d11   = (d3d11_video_t*)data;
+   D3D11Texture2D texture = (D3D11Texture2D)image;
+   D3D11_TEXTURE2D_DESC desc;
+   (void)semaphores; (void)num_semaphores; (void)src_queue_family;
+   (void)cmd; (void)num_cmd;
+   if (!d3d11 || !texture || !d3d11->hw_v2.active)
+      return false;
+   texture->lpVtbl->GetDesc(texture, &desc);
+   EnterCriticalSection(&d3d11->hw_v2.lock);
+   Release(d3d11->hw_ring.present);
+   texture->lpVtbl->AddRef(texture);
+   d3d11->hw_ring.present        = texture;
+   d3d11->hw_ring.present_format = desc.Format;
+   LeaveCriticalSection(&d3d11->hw_v2.lock);
+   return true;
+}
+
 static bool d3d11_hw_ring_fence_new(void *data, void **fence)
 {
    HANDLE ev;
@@ -7177,7 +7220,7 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_gfx_load_texture_compressed,
    d3d11_present_last,
    d3d11_get_last_present_time,
-   NULL, /* hw_ring_install: Vulkan-shaped */
+   d3d11_hw_ring_install, /* version 3 frames: the core's own texture */
    d3d11_hw_ring_fence_new,
    d3d11_hw_ring_fence_free,
    d3d11_hw_ring_fence_signal,

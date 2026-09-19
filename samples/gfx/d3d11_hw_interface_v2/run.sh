@@ -53,3 +53,20 @@ case "$out" in
       echo "FAIL: it passed; the frontend in the test no longer disturbs the context"; exit 1 ;;
 esac
 echo "   fails, as it should"
+
+echo "== version 3: no copy at video_refresh, a texture per sync index"
+out=$(timeout 300 "$WINE" ./d3d11_hw_interface_v2_test.exe v3 | tr -d '\r') || true
+echo "$out"
+case "$out" in
+   *"d3d11_hw_interface_v2: ok"*) ;;
+   *) echo "FAIL"; exit 1 ;;
+esac
+
+echo "== version 3, a core that skips wait_sync_index (must fail)"
+out=$(timeout 300 "$WINE" ./d3d11_hw_interface_v2_test.exe v3-nowait | tr -d '\r') || true
+echo "$out"
+case "$out" in
+   *"d3d11_hw_interface_v2: ok"*)
+      echo "FAIL: it passed; the frontend in the test is no longer being lapped"; exit 1 ;;
+esac
+echo "   fails, as it should"

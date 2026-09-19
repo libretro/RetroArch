@@ -24,7 +24,7 @@
 
 /* The highest retro_hw_render_interface_d3d11 version this frontend
  * implements. */
-#define RARCH_D3D11_HW_INTERFACE_VERSION RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_2
+#define RARCH_D3D11_HW_INTERFACE_VERSION RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_3
 
 /* What the ring passes as hw_ring_capture's format argument for a
  * version 2 frame: the source is then the core's texture, to be copied
