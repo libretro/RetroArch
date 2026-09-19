@@ -362,6 +362,26 @@ typedef struct
       bool             present_unlocked;
       D3D11Texture2D   texture;
    } hw_v2;
+   /* Interface version 3, no shader preset: the frame is drawn straight
+    * from the core's texture, where the driver used to copy it into
+    * frame.texture[0] first and draw from that. A version 3 core keeps a
+    * texture per sync index and leaves one alone until the frontend is
+    * done with it, which is what makes this safe; the handful of views
+    * that takes are kept, with the textures they are of, until another
+    * texture wants the place. `eligible` is set by whoever handed the
+    * frame's texture over; `view` is what the frame on screen is drawn
+    * from, repeats of it included, until a frame arrives another way. */
+   struct
+   {
+      struct
+      {
+         D3D11Texture2D          texture;
+         D3D11ShaderResourceView view;
+      } cache[4];
+      unsigned                next;
+      D3D11ShaderResourceView view;
+      bool                    eligible;
+   } hw_direct;
    unsigned              retained_width;
    unsigned              retained_height;
    unsigned              retained_light;
@@ -4690,6 +4710,46 @@ static retro_time_t d3d11_get_last_present_time(void *data)
         + (stats.SyncQPCTime.QuadPart % freq.QuadPart * 1000000 / freq.QuadPart);
 }
 
+/* The view to draw a version 3 core's texture through. A core rotates a
+ * few textures, so a view per texture is made once and found again. */
+static D3D11ShaderResourceView d3d11_hw_direct_view(d3d11_video_t *d3d11,
+      D3D11Texture2D texture)
+{
+   unsigned i;
+   D3D11ShaderResourceView view = NULL;
+   unsigned n = sizeof(d3d11->hw_direct.cache) / sizeof(d3d11->hw_direct.cache[0]);
+
+   for (i = 0; i < n; i++)
+      if (d3d11->hw_direct.cache[i].texture == texture)
+         return d3d11->hw_direct.cache[i].view;
+
+   if (FAILED(d3d11->device->lpVtbl->CreateShaderResourceView(d3d11->device,
+               (D3D11Resource)texture, NULL, &view)) || !view)
+      return NULL;
+
+   i = d3d11->hw_direct.next;
+   d3d11->hw_direct.next = (i + 1) % n;
+   if (d3d11->hw_direct.view == d3d11->hw_direct.cache[i].view)
+      d3d11->hw_direct.view = NULL;
+   Release(d3d11->hw_direct.cache[i].view);
+   Release(d3d11->hw_direct.cache[i].texture);
+   texture->lpVtbl->AddRef(texture);
+   d3d11->hw_direct.cache[i].texture = texture;
+   d3d11->hw_direct.cache[i].view    = view;
+   return view;
+}
+
+static void d3d11_hw_direct_free(d3d11_video_t *d3d11)
+{
+   unsigned i;
+   for (i = 0; i < sizeof(d3d11->hw_direct.cache) / sizeof(d3d11->hw_direct.cache[0]); i++)
+   {
+      Release(d3d11->hw_direct.cache[i].view);
+      Release(d3d11->hw_direct.cache[i].texture);
+   }
+   memset(&d3d11->hw_direct, 0, sizeof(d3d11->hw_direct));
+}
+
 static bool d3d11_gfx_frame_body(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info);
@@ -4956,6 +5016,9 @@ static bool d3d11_gfx_frame_body(
              D3D11_TEXTURE2D_DESC v2_desc;
              hw_texture           = d3d11->hw_v2.texture;
              d3d11->hw_v2.texture = NULL;
+             if (d3d11->hw_iface.interface_version
+                   >= RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_3)
+                d3d11->hw_direct.eligible = true;
              hw_texture->lpVtbl->GetDesc(hw_texture, &v2_desc);
              hw_desc.Format       = v2_desc.Format;
           }
@@ -5035,7 +5098,23 @@ static bool d3d11_gfx_frame_body(
       if (d3d11->flags & D3D11_ST_FLAG_RESIZE_RTS)
          d3d11_init_render_targets(d3d11, width, height);
 
-      if (hw_texture)
+      /* A frame that arrives any other way is drawn from
+       * frame.texture[0] as always. */
+      if (!hw_texture || !d3d11->hw_direct.eligible
+            || (d3d11->shader_preset && video_info->shader_active))
+         d3d11->hw_direct.view = NULL;
+      else
+         d3d11->hw_direct.view = d3d11_hw_direct_view(d3d11, hw_texture);
+      d3d11->hw_direct.eligible = false;
+
+      if (hw_texture && d3d11->hw_direct.view)
+      {
+         /* Version 3, nothing between the core's texture and the screen
+          * but the draw below: no copy. The cache holds the texture. */
+         Release(hw_texture);
+         hw_texture = NULL;
+      }
+      else if (hw_texture)
       {
           D3D11_BOX frame_box;
           frame_box.left   = 0;
@@ -5382,9 +5461,17 @@ static bool d3d11_gfx_frame_body(
          context->lpVtbl->VSSetConstantBuffers(context, 0, 1, &d3d11->frame.ubo);
       }
 
-      context->lpVtbl->PSSetShaderResources(
-            context, 0, 1,
-            &texture->view);
+      /* The core's own texture when the frame was handed over that way
+       * and nothing - no shader pass - has put another in its place;
+       * SDR and HDR draw it through this one binding alike. */
+      if (d3d11->hw_direct.view && texture == d3d11->frame.texture)
+         context->lpVtbl->PSSetShaderResources(
+               context, 0, 1,
+               &d3d11->hw_direct.view);
+      else
+         context->lpVtbl->PSSetShaderResources(
+               context, 0, 1,
+               &texture->view);
       context->lpVtbl->PSSetSamplers(
             context, 0, 1,
             &d3d11->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
@@ -6998,6 +7085,7 @@ static bool d3d11_hw_ring_install(void *data, const void *image,
    texture->lpVtbl->AddRef(texture);
    d3d11->hw_ring.present        = texture;
    d3d11->hw_ring.present_format = desc.Format;
+   d3d11->hw_direct.eligible     = true;
    LeaveCriticalSection(&d3d11->hw_v2.lock);
    return true;
 }
@@ -7050,6 +7138,8 @@ static void d3d11_hw_ring_free(d3d11_video_t *d3d11)
    if (d3d11->hw_v2.active)
       Release(d3d11->hw_ring.present);
    d3d11->hw_ring.present = NULL;
+
+   d3d11_hw_direct_free(d3d11);
 
    /* Version 2's state goes with the rest of the hardware handoff. */
    Release(d3d11->hw_v2.texture);
