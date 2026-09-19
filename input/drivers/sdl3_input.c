@@ -88,6 +88,9 @@ typedef struct sdl3_input
    /* Pen/stylus state, handled through SDL_EVENT_PEN_*. */
    bool pen_in_proximity;
    bool pen_down;
+   /* Barrel buttons, ORed into the right/middle mouse buttons. */
+   bool pen_b1;
+   bool pen_b2;
    /* Last reported position in window coordinates (points). */
    float pen_raw_x;
    float pen_raw_y;
@@ -794,6 +797,8 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
          case SDL_EVENT_PEN_PROXIMITY_OUT:
             sdl->pen_in_proximity = false;
             sdl->pen_down = false;
+            sdl->pen_b1 = false;
+            sdl->pen_b2 = false;
             break;
          case SDL_EVENT_PEN_DOWN:
          case SDL_EVENT_PEN_UP:
@@ -807,8 +812,22 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
             sdl->pen_raw_x = event.pmotion.x;
             sdl->pen_raw_y = event.pmotion.y;
             break;
+         case SDL_EVENT_PEN_BUTTON_DOWN:
+         case SDL_EVENT_PEN_BUTTON_UP:
+            sdl->pen_in_proximity = true;
+            if (event.pbutton.button == 1)
+               sdl->pen_b1 = event.pbutton.down;
+            else if (event.pbutton.button == 2)
+               sdl->pen_b2 = event.pbutton.down;
+            break;
       }
    }
+
+   /* Barrel buttons act as the right/middle mouse buttons (the
+    * usual OS mapping). sdl3_poll_mouse has already run, so this
+    * ORs on top of the polled state. */
+   sdl->mouse_r |= sdl->pen_b1;
+   sdl->mouse_m |= sdl->pen_b2;
 
    /* If the pen isn't in proximity, skip calculating its position. */
    if (!sdl->pen_in_proximity)
