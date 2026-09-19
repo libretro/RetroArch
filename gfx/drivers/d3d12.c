@@ -7434,6 +7434,7 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    unsigned                  vp_x, vp_y, vp_w, vp_h, y, x;
    enum { READBACK_RGBA8, READBACK_BGRA8, READBACK_HDR10, READBACK_SCRGB }
                              readback_mode;
+   bool                      ret = true;
 
    if (!d3d12)
       return false;
@@ -7654,12 +7655,13 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
          /* HDR10 PQ or scRGB: hand off to the CPU HDR decoder.
           * It undoes the forward HDR encoding using paper_white_nits
           * and writes sRGB-encoded BGR24 bottom-up. */
-         dxgi_hdr_readback_to_bgr24(
+         if (!dxgi_hdr_readback_to_bgr24(
                tex_desc.Format,
                src_pixels, (unsigned)footprint.Footprint.RowPitch,
                vp_x, vp_y, vp_w, vp_h,
                d3d12->hdr.ubo_values.paper_white_nits,
-               buffer);
+               buffer))
+            ret = false;
          break;
 #endif
    }
@@ -7670,7 +7672,7 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    }
 
    Release(readback);
-   return true;
+   return ret;
 }
 
 static void d3d12_gfx_viewport_info(void* data, struct video_viewport* vp)
