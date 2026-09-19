@@ -1,0 +1,123 @@
+name: CI Linux overlay on screen
+
+# The one overlay test that looks at the screen. It builds a real
+# retroarch with X11 and OpenGL, runs it under Xvfb on Mesa's software
+# rasteriser with an input overlay enabled, threaded video off and then
+# on, grabs the screen and checks the overlay is where its config puts
+# it and nowhere else.
+#
+# Every stubbed overlay test passed while an enabled overlay covered the
+# whole screen (2026-09-19). Nothing that stubs the driver, or builds
+# the pack by hand, can see that; this can.
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'input/input_driver.c'
+      - 'input/input_overlay*'
+      - 'tasks/task_overlay.c'
+      - 'gfx/gfx_surface.*'
+      - 'gfx/video_driver.c'
+      - 'gfx/video_thread_wrapper.*'
+      - 'gfx/drivers/gl2.c'
+      - 'samples/input/overlay_on_screen/**'
+      - '.github/workflows/Linux-overlay-on-screen.yml'
+  pull_request:
+    paths:
+      - 'input/input_driver.c'
+      - 'input/input_overlay*'
+      - 'tasks/task_overlay.c'
+      - 'gfx/gfx_surface.*'
+      - 'gfx/video_driver.c'
+      - 'gfx/video_thread_wrapper.*'
+      - 'gfx/drivers/gl2.c'
+      - 'samples/input/overlay_on_screen/**'
+      - '.github/workflows/Linux-overlay-on-screen.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  overlay-on-screen:
+    name: Run retroarch under Xvfb and look at the overlay
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential zlib1g-dev ccache python3 \
+            xvfb x11-apps libgl1-mesa-dri \
+            libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev \
+            libxxf86vm-dev libxrandr-dev libxinerama-dev \
+            libgl-dev libegl-dev
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
+
+      - name: Build RetroArch (X11 + OpenGL, the rest off)
+        shell: bash
+        run: |
+          set -eu
+          # What draws the overlay has to be real: X11, the gl driver,
+          # the menu, threads. Everything else is build time.
+          ./configure --disable-qt --disable-wayland --disable-sdl \
+                      --disable-sdl2 --disable-ffmpeg --disable-vulkan \
+                      --disable-pulse --disable-discord \
+                      --disable-networking --disable-cheevos \
+                      --disable-glslang --disable-slang \
+                      --disable-spirv_cross --disable-xmb \
+                      --disable-materialui --disable-ozone \
+                      --disable-7zip --disable-flac \
+                      --disable-audiomixer --disable-translate \
+                      --disable-accessibility --disable-crtswitchres \
+                      --disable-langextra --disable-libretrodb \
+                      --disable-video_filter --disable-dsp_filter
+          make -j$(nproc)
+          ccache -s
+
+      - name: Run overlay_on_screen_test (threaded video off, then on)
+        shell: bash
+        run: |
+          set -eu
+          # Two solid magenta squares on a full-screen page. Each must
+          # be where the config puts it, the middle of the screen must
+          # not be overlay, and the overlay must cover about the area of
+          # its two squares. With "does this desc have an image" asked
+          # of pixels that had just been released, no desc's geometry
+          # was set and the overlay covered 100% of the screen, in both
+          # modes.
+          timeout 180 python3 samples/input/overlay_on_screen/overlay_on_screen_test.py ./retroarch
