@@ -373,20 +373,6 @@ static bool video_buffer_wait_for_open_slot(video_buffer_t *video_buffer,
    return ret;
 }
 
-static bool video_buffer_has_open_slot(video_buffer_t *video_buffer)
-{
-   bool ret = false;
-
-   slock_lock(video_buffer->lock);
-
-   if (video_buffer->status[video_buffer->head] == KB_OPEN)
-      ret = true;
-
-   slock_unlock(video_buffer->lock);
-
-   return ret;
-}
-
 bool video_buffer_has_finished_slot(video_buffer_t *video_buffer)
 {
    bool ret = false;
@@ -2137,7 +2123,7 @@ static void seek_frame(int seek_frames)
          SEEK_L2_STR = 0;
          SEEK_R2_STR = 0;
 
-         /* If seek would have taken us to thestrength without using
+         /* If seek would have taken us to the
           * end of the file, restart it instead
           * (less jarring for the user in case of
           * accidental seeking...) */
@@ -2801,7 +2787,7 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
       if (ctx->codec)
       {
          if ((ctx->codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) == 0)
-            ctx->thread_type ^= FF_THREAD_FRAME;
+            ctx->thread_type &= ~FF_THREAD_FRAME;
          if ((ctx->codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) != 0)
             ctx->thread_type |= FF_THREAD_SLICE;
       }
@@ -3179,6 +3165,18 @@ static void sws_worker_thread(void *arg)
          MEDIA_STR.width, MEDIA_STR.height, AV_PIX_FMT_RGB32,
          SWS_POINT, NULL, NULL, NULL);
 
+   /* Now that the source size and format come from the frame, a frame
+    * a broken file decodes to nonsense can be one swscale refuses.
+    * The slot is still finished, so the ring keeps its order and the
+    * main thread is not left waiting on it; it shows whatever the
+    * slot held before. */
+   if (!ctx->sws)
+   {
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] No scaler for a %dx%d frame of format %d.\n",
+            tmp_frame->width, tmp_frame->height, tmp_frame->format);
+      goto finish;
+   }
+
    set_colorspace(ctx->sws, MEDIA_STR.width, MEDIA_STR.height,
          tmp_frame->colorspace,
          tmp_frame->color_range);
@@ -3194,6 +3192,7 @@ static void sws_worker_thread(void *arg)
 #endif
    }
 
+finish:
    ctx->pts = ctx->source->best_effort_timestamp;
 
    av_frame_unref(ctx->source);
@@ -3469,7 +3468,6 @@ static void decode_thread(void *data)
    bool eof                = false;
    struct SwrContext *swr[(AUDIO_STREAMS_NUM_STR > 0) ? AUDIO_STREAMS_NUM_STR : 1];
    AVFrame *aud_frame      = NULL;
-   size_t frame_size       = 0;
    int16_t *audio_buffer   = NULL;
    size_t audio_buffer_cap = 0;
    packet_buffer_t *audio_packet_buffer;
@@ -3508,9 +3506,6 @@ static void decode_thread(void *data)
     * with no audio to pace the main thread was a NULL dereference on
     * the first frame. Made before the thread starts, the thread's own
     * creation orders them and there is nothing to publish. */
-   if (VIDEO_STREAM_INDEX_STR >= 0)
-      frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32,
-            MEDIA_STR.width, MEDIA_STR.height, 1);
 
    while (!DECODE_THREAD_DEAD_STR)
    {
