@@ -123,6 +123,20 @@ jobs:
           # free, on Linux.
           python3 tools/vfs_backend_parity.py
 
+      - name: Check no video driver deletes overlay textures it was lent
+        shell: bash
+        run: |
+          set -eu
+          # load_textures lends a driver the overlay pack's handles for
+          # one page; they are on the pack's other pages too and are
+          # the pack's to delete. gl2 marked them as borrowed and then
+          # deleted them anyway at the next page, so rotating an
+          # Android device blacked the overlay out until the core was
+          # restarted. No runner can run a GL driver, so this is the
+          # check at source level: every driver with load_textures
+          # sets, tests and clears its borrowed marker.
+          python3 tools/overlay_texture_ownership.py
+
       - name: Check companion backend feature parity
         shell: bash
         working-directory: ${{ github.workspace }}
