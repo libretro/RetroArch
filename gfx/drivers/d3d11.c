@@ -347,6 +347,9 @@ typedef struct
       bool             lock_ready;
       bool             active;
       bool             frontend_used;
+      /* The runtime's own multithread protection is on for the
+       * context, so Present may run while the core has the lock. */
+      bool             present_unlocked;
       D3D11Texture2D   texture;
    } hw_v2;
    unsigned              retained_width;
@@ -3114,6 +3117,7 @@ static void d3d11_hw_ring_free(d3d11_video_t *d3d11);
 static bool d3d11_hw_v2_lock_context(void *data);
 static void d3d11_hw_v2_unlock_context(void *data);
 static void d3d11_hw_v2_set_texture(void *data, ID3D11Texture2D *texture);
+static void d3d11_hw_v2_protect_context(d3d11_video_t *d3d11);
 
 static void d3d11_gfx_free(void* data)
 {
@@ -4133,6 +4137,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
           * says so, and it binds everything. */
          d3d11->hw_v2.frontend_used         = true;
          d3d11->hw_v2.active                = true;
+         d3d11_hw_v2_protect_context(d3d11);
          d3d11->hw_iface.interface_version  = RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_2;
          d3d11->hw_iface.lock_context       = d3d11_hw_v2_lock_context;
          d3d11->hw_iface.unlock_context     = d3d11_hw_v2_unlock_context;
@@ -4430,6 +4435,66 @@ static void d3d11_hw_v2_leave(d3d11_video_t *d3d11)
       LeaveCriticalSection(&d3d11->hw_v2.lock);
 }
 
+/* The frame blocks in places that do not touch the context at all -
+ * the waitable swapchain's latency wait, the wait for vertical blank -
+ * and holding the lock through those keeps the core off the context for
+ * most of a refresh, every refresh: a core that needs six milliseconds
+ * of a sixteen millisecond frame was held to 48 fps by them. The lock is
+ * given up around such a wait and taken again after it. What the core
+ * does to the pipeline state meanwhile does not matter where these are
+ * used: before the frame has bound anything, or after it has issued its
+ * last draw. With no wrapper in front the frame runs on the core's
+ * thread inside the core's own lock, and giving up one level of a
+ * recursive lock there changes nothing, as it should. */
+static void d3d11_hw_v2_yield_begin(d3d11_video_t *d3d11)
+{
+   if (d3d11->hw_v2.active)
+      LeaveCriticalSection(&d3d11->hw_v2.lock);
+}
+
+static void d3d11_hw_v2_yield_end(d3d11_video_t *d3d11)
+{
+   if (!d3d11->hw_v2.active)
+      return;
+   EnterCriticalSection(&d3d11->hw_v2.lock);
+   d3d11->hw_v2.frontend_used = true;
+}
+
+/* ID3D10Multithread, which a D3D11 immediate context has answered for
+ * since Windows 7. Declared here to the extent it is used. */
+typedef struct d3d11_mt d3d11_mt_t;
+typedef struct
+{
+   HRESULT (STDMETHODCALLTYPE *QueryInterface)(d3d11_mt_t*, REFIID, void**);
+   ULONG   (STDMETHODCALLTYPE *AddRef)(d3d11_mt_t*);
+   ULONG   (STDMETHODCALLTYPE *Release)(d3d11_mt_t*);
+   void    (STDMETHODCALLTYPE *Enter)(d3d11_mt_t*);
+   void    (STDMETHODCALLTYPE *Leave)(d3d11_mt_t*);
+   BOOL    (STDMETHODCALLTYPE *SetMultithreadProtected)(d3d11_mt_t*, BOOL);
+   BOOL    (STDMETHODCALLTYPE *GetMultithreadProtected)(d3d11_mt_t*);
+} d3d11_mt_vtbl_t;
+struct d3d11_mt { const d3d11_mt_vtbl_t *lpVtbl; };
+
+/* Present is the one blocking call in the frame that does touch the
+ * context. With the runtime's multithread protection on, the runtime
+ * serialises it against the core's calls itself, for as long as it
+ * actually needs the context and no longer, and the lock can be given up
+ * around it too. Without it, Present stays under the lock. */
+static void d3d11_hw_v2_protect_context(d3d11_video_t *d3d11)
+{
+   static const GUID iid_mt = { 0x9b7e4e00, 0x342c, 0x4106,
+      { 0xa1, 0x9f, 0x4f, 0x27, 0x04, 0xf6, 0x89, 0xf0 } };
+   d3d11_mt_t *mt = NULL;
+   d3d11->hw_v2.present_unlocked = false;
+   if (     FAILED(d3d11->context->lpVtbl->QueryInterface(d3d11->context,
+               &iid_mt, (void**)&mt))
+         || !mt)
+      return;
+   mt->lpVtbl->SetMultithreadProtected(mt, TRUE);
+   d3d11->hw_v2.present_unlocked = mt->lpVtbl->GetMultithreadProtected(mt) ? true : false;
+   mt->lpVtbl->Release(mt);
+}
+
 static bool d3d11_hw_v2_lock_context(void *data)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
@@ -4638,10 +4703,14 @@ static bool d3d11_gfx_frame_body(
 #endif
 
    if (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
+   {
+      d3d11_hw_v2_yield_begin(d3d11);
       WaitForSingleObjectEx(
             d3d11->frameLatencyWaitableObject,
             1000,
             true);
+      d3d11_hw_v2_yield_end(d3d11);
+   }
 
 #ifdef HAVE_DXGI_HDR
    {
@@ -5679,16 +5748,30 @@ static bool d3d11_gfx_frame_body(
    if (vsync && d3d11->wait_for_vblank < 0)
    {
       d3d11->context->lpVtbl->Flush(d3d11->context);
+      d3d11_hw_v2_yield_begin(d3d11);
       d3d11_wait_for_vblank(d3d11);
+      d3d11_hw_v2_yield_end(d3d11);
       DXGIPresent(d3d11->swapChain, 0,
             present_flags | ((d3d11->flags & D3D11_ST_FLAG_HAS_ALLOW_TEARING) ? DXGI_PRESENT_ALLOW_TEARING : 0)
       );
    }
    else
+   {
+      /* A present that waits for the display does its waiting inside
+       * the call. */
+      if (d3d11->hw_v2.present_unlocked)
+         d3d11_hw_v2_yield_begin(d3d11);
       DXGIPresent(d3d11->swapChain, d3d11->swap_interval, present_flags);
+      if (d3d11->hw_v2.present_unlocked)
+         d3d11_hw_v2_yield_end(d3d11);
+   }
 
    if (vsync && d3d11->wait_for_vblank > 0)
+   {
+      d3d11_hw_v2_yield_begin(d3d11);
       d3d11_wait_for_vblank(d3d11);
+      d3d11_hw_v2_yield_end(d3d11);
+   }
 
    if (
            black_frame_insertion
