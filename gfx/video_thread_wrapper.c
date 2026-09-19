@@ -1778,15 +1778,18 @@ static void video_thread_loop(void *data)
                }
                else
                {
-                  const void *fdata = thr->frame.slot[slot].buffer;
+                  /* A dupe goes to the driver as the NULL the core
+                   * sent, exactly as it does without the wrapper. */
+                  const void *fdata = thr->frame.slot[slot].dupe
+                     ? NULL : thr->frame.slot[slot].buffer;
                   unsigned fwidth   = thr->frame.slot[slot].width;
                   unsigned fheight  = thr->frame.slot[slot].height;
                   unsigned fpitch   = thr->frame.slot[slot].pitch;
-                  if (thr->frame.slot[slot].convert)
+                  if (fdata && thr->frame.slot[slot].convert)
                      video_thread_convert(thr, thr->frame.slot[slot].convert,
                            &fdata, fwidth, fheight, &fpitch);
 #ifdef HAVE_VIDEO_FILTER
-                  if (thr->frame.slot[slot].filter_bpp)
+                  if (fdata && thr->frame.slot[slot].filter_bpp)
                      video_thread_filter(thr, &fdata, &fwidth, &fheight, &fpitch);
 #endif
                   ret = thr->driver->frame(thr->driver_data,
@@ -2468,6 +2471,11 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->frame.slot[slot].count  = frame_count;
       thr->frame.slot[slot].pushed_at = now;
       thr->frame.slot[slot].hw_slot = hw_slot;
+      /* Nothing was put in the slot: not a lent slot the core filled,
+       * not a copy, not a hardware frame. What the buffer holds is the
+       * frame from some earlier push, and must not be shown as this
+       * one. */
+      thr->frame.slot[slot].dupe    = !zero_copy && !src && hw_slot < 0;
       /* Textures released since the last handoff ride with this frame */
       if (thr->tex_retire)
       {

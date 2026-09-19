@@ -505,6 +505,10 @@ typedef struct thread_video
          /* Hardware-rendered frame: the HW ring slot it lives in, -1
           * for a software frame. See hw_ring below. */
          int hw_slot;
+         /* The push carried no pixels (the core duped): the driver is
+          * given NULL and repeats what it has, never this buffer -
+          * which holds whatever frame was last put in it, an old one. */
+         bool dupe;
          uint8_t *buffer;
          unsigned width;
          unsigned height;

@@ -1395,6 +1395,117 @@ static void lane_resize_under_wrapper(void)
             rslane_seen_w, rslane_seen_h);
 }
 
+/* A duped frame under the wrapper.
+ *
+ * A core that has nothing new calls video_refresh with NULL, and the
+ * driver repeats what it has. The wrapper's push picked a ring slot for
+ * that push like any other, put nothing in it, and the video thread
+ * then handed the driver the slot's buffer as the frame: whatever frame
+ * had last been copied there, two or more pushes old, or the 0x80 the
+ * slots are born with. A core that dupes every other frame - the ffmpeg
+ * core playing 30 fps at 60 Hz does - alternated each new frame with an
+ * old one: ghosting on Vulkan and D3D12, fades to grey on D3D11.
+ *
+ * So: real frame, dupe, real frame, dupe, and the driver must see
+ * exactly that - pixels, NULL, pixels, NULL. */
+#define DUPLANE_PUSHES 6
+static video_driver_t        duplane_driver;
+static const video_driver_t *duplane_inner;
+static int                   duplane_seen[DUPLANE_PUSHES * 4];
+static retro_atomic_size_t   duplane_count;
+static retro_atomic_size_t   duplane_on;
+
+static bool duplane_frame(void *data, const void *frame,
+      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   if (retro_atomic_load_acquire_size(&duplane_on))
+   {
+      size_t n = retro_atomic_load_acquire_size(&duplane_count);
+      if (n < sizeof(duplane_seen) / sizeof(duplane_seen[0]))
+      {
+         duplane_seen[n] = frame ? (int)*(const uint8_t*)frame : -1;
+         retro_atomic_store_release_size(&duplane_count, n + 1);
+      }
+   }
+   /* The inner driver is not given the test pattern to draw. */
+   return duplane_inner->frame(data, NULL, width, height, frame_count,
+         pitch, msg, video_info);
+}
+
+static void lane_dupe_under_wrapper(void)
+{
+   unsigned had = failures;
+   unsigned i;
+   size_t seen;
+   thread_video_t *thr;
+   uint8_t *pix;
+   const unsigned w = 32, h = 32;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "dupe lane");
+   thr = (thread_video_t*)video_state_get_ptr()->data;
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "dupe lane: menu still up");
+   run_frames(2);
+   video_thread_wait_idle();
+
+   pix = (uint8_t*)malloc(w * h * sizeof(uint32_t));
+   CHECK(pix != NULL, "dupe lane: no memory");
+   if (!pix)
+      return;
+
+   duplane_inner        = thr->driver;
+   duplane_driver       = *thr->driver;
+   duplane_driver.frame = duplane_frame;
+   thr->driver          = &duplane_driver;
+   retro_atomic_store_release_size(&duplane_count, 0);
+   retro_atomic_store_release_size(&duplane_on, 1);
+
+   for (i = 0; i < DUPLANE_PUSHES; i++)
+   {
+      if (i & 1)
+         video_driver_frame(NULL, w, h, w * sizeof(uint32_t));
+      else
+      {
+         /* 0x10, 0x20, 0x30: never 0x80, never each other. */
+         memset(pix, 0x10 * (int)(i / 2 + 1), w * h * sizeof(uint32_t));
+         video_driver_frame(pix, w, h, w * sizeof(uint32_t));
+      }
+      /* One at a time, so no push replaces another in the ring. */
+      video_thread_wait_idle();
+   }
+
+   retro_atomic_store_release_size(&duplane_on, 0);
+   video_thread_wait_idle();
+   thr->driver = duplane_inner;
+
+   seen = retro_atomic_load_acquire_size(&duplane_count);
+   CHECK(seen == DUPLANE_PUSHES,
+         "dupe lane: %u pushes reached the driver as %u frames",
+         (unsigned)DUPLANE_PUSHES, (unsigned)seen);
+   for (i = 0; i < DUPLANE_PUSHES && i < seen; i++)
+   {
+      if (i & 1)
+         CHECK(duplane_seen[i] == -1,
+               "push %u was a dupe (NULL) and the driver was given pixels (0x%02x): "
+               "a stale ring slot shown as a new frame", i, duplane_seen[i]);
+      else
+         CHECK(duplane_seen[i] == 0x10 * (int)(i / 2 + 1),
+               "push %u: the driver saw 0x%02x, the core sent 0x%02x",
+               i, duplane_seen[i], 0x10 * (int)(i / 2 + 1));
+   }
+
+   free(pix);
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] dupe lane (NULL reaches the driver as NULL)\n");
+}
+
 /* Heap traffic on the frame path.
  *
  * The emulation frame path makes no general-purpose heap calls today -
@@ -2278,6 +2389,7 @@ int main(int argc, char *argv[])
       lane_waiter_call();
       lane_frame_path_heap();
       lane_resize_under_wrapper();
+      lane_dupe_under_wrapper();
    }
    else
       fprintf(stderr, "[skip] null-driver instrumented lanes (real driver: %s)\n",
