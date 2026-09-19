@@ -248,7 +248,7 @@ typedef struct gl3
    math_matrix_4x4 mvp_no_rot;
    math_matrix_4x4 mvp_no_rot_yflip;
 
-   uint16_t flags;
+   uint32_t flags;
 
    bool pbo_readback_valid[GL_CORE_NUM_PBOS];
    bool menu_texture_rgb32;
