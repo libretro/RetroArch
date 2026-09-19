@@ -272,6 +272,21 @@ static void overlay_cb(retro_task_t *task, void *task_data,
     * this oracle could not see a second release of the same list
     * in the loader's cleanup. */
    string_list_free(data->image_list);
+   /* And the animated images' list with it (dac760d996): the loader
+    * hands that over too and forgets it, so whoever takes the payload
+    * frees the file bytes nobody moved into a pack, then the list. */
+   if (data->anim_list)
+   {
+      for (i = 0; i < data->anim_list->size; i++)
+      {
+         overlay_anim_src_t *src =
+            (overlay_anim_src_t*)data->anim_list->elems[i].attr.p;
+         if (src)
+            free(src->data);
+         free(src);
+      }
+      string_list_free(data->anim_list);
+   }
    free(data);
 }
 

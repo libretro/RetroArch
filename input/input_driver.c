@@ -6792,6 +6792,19 @@ static void input_overlay_loaded(retro_task_t *task,
             image_texture_free((struct texture_image*)data->image_list->elems[i].attr.p);
          string_list_free(data->image_list);
       }
+      if (data->anim_list)
+      {
+         size_t i;
+         for (i = 0; i < data->anim_list->size; i++)
+         {
+            overlay_anim_src_t *src =
+               (overlay_anim_src_t*)data->anim_list->elems[i].attr.p;
+            if (src)
+               free(src->data);
+            free(src);
+         }
+         string_list_free(data->anim_list);
+      }
       free(data);
       return;
    }
