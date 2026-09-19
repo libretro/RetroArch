@@ -88,12 +88,16 @@ struct retro_hw_render_interface_d3d11
    *      ... the frontend has had the context: rebind everything ...
    *   ... draw, read back, whatever the frame needs ...
    *   set_texture(handle, texture);
-   *   video_refresh(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
    *   unlock_context(handle);
+   *   video_refresh(RETRO_HW_FRAME_BUFFER_VALID, width, height, 0);
    *
    * A core is free to lock and unlock as often as it likes within a
-   * frame; holding the lock for less time lets the frontend's thread in
-   * sooner. It must not hold it across a return from retro_run.
+   * frame, and should hold the lock only around the work that uses the
+   * context: the frontend's thread cannot start its frame while the core
+   * has it. It must not hold it across a return from retro_run, and it
+   * must not hold it across video_refresh: video_refresh may wait for
+   * the frontend's other thread, and that thread may be waiting for the
+   * lock.
    */
 
   /* Takes the context. Blocks while the frontend is using it. Recursive:
@@ -109,21 +113,21 @@ struct retro_hw_render_interface_d3d11
    * exactly as the core left it.
    *
    * video_refresh is the frontend's too: a frontend that draws on the
-   * core's thread draws its whole frame inside it. A core that goes on
-   * using the context after video_refresh, within the same lock, treats
-   * it as it would a lock_context that returned true. */
+   * core's thread draws its whole frame inside it, and the core's next
+   * lock_context says so. */
   bool (*lock_context)(void* handle);
 
   /* Gives the context back. The core must not touch it again until it
    * has taken the lock again. */
   void (*unlock_context)(void* handle);
 
-  /* The frame, called before video_refresh(RETRO_HW_FRAME_BUFFER_VALID)
-   * with the lock held. The frontend is finished with the texture by the
-   * time video_refresh returns - it takes what it needs of it there, on
-   * the context, ahead of anything the core does next - so the core may
-   * draw into it again straight away; no sync index is needed, because
-   * one context orders everything.
+  /* The frame, called with the lock held, before the core releases it
+   * and calls video_refresh(RETRO_HW_FRAME_BUFFER_VALID). The frontend
+   * takes the lock itself inside video_refresh for as long as it needs
+   * the texture, and is finished with it by the time video_refresh
+   * returns - so the core may draw into it again straight away; no sync
+   * index is needed, because one context orders everything and the core
+   * cannot draw while it is inside video_refresh.
    *
    * Replaces the pixel shader slot 0 convention, which a version 2 core
    * need not follow. NULL withdraws a texture handed over earlier. */

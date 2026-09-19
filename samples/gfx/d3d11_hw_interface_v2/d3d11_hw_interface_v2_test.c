@@ -8,7 +8,7 @@
  *             bound; READS ITS OWN RENDER TARGET BACK and checks it -
  *             the thing a core cannot do at all on the deferred context
  *             version 1 leaves a threaded frontend to hand out; names
- *             the texture, calls video_refresh, releases the lock
+ *             the texture, releases the lock, calls video_refresh
  *   frontend  on its own thread: takes the lock, binds its own render
  *             target, shaders and viewport and draws with them - which
  *             is what a real frontend's frame does to the context - then
@@ -80,9 +80,10 @@ static bool fe_lock_context(void *h)
 static void fe_unlock_context(void *h) { LeaveCriticalSection(&((frontend_t*)h)->lock); }
 static void fe_set_texture(void *h, ID3D11Texture2D *t) { ((frontend_t*)h)->handed = t; }
 
-/* video_refresh(RETRO_HW_FRAME_BUFFER_VALID), on the core's thread with
- * the lock held (it is recursive): take the frame now, on the context,
- * ahead of whatever the core does next. One call, no submission. */
+/* video_refresh(RETRO_HW_FRAME_BUFFER_VALID), on the core's thread, which
+ * does not hold the lock: take it, take the frame on the context - ahead
+ * of whatever the core does next, since the core is in here - and give
+ * it back. One call, no submission. */
 static void fe_video_refresh(frontend_t *fe)
 {
    unsigned k = fe->next_slot;
@@ -231,8 +232,8 @@ int main(int argc, char **argv)
       }
 
       d3d11->set_texture(d3d11->handle, rt_tex);
-      fe_video_refresh(&fe);
       d3d11->unlock_context(d3d11->handle);
+      fe_video_refresh(&fe);      /* not with the lock held: see the header */
       if ((n % 3) == 0)
          Sleep(1);               /* let the other thread in */
    }
