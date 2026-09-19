@@ -268,6 +268,7 @@ static const struct
    char s_daead8a5[13];
    char s_48c208ee[11];
    char s_a38cafbb[21];
+   char s_cf4d4f28[47];
    char s_f4740f16[35];
    char s_d95f1db1[44];
    char s_3c9950ad[39];
@@ -840,6 +841,7 @@ static const struct
    char s_d458f013[30];
    char s_56e1b31e[17];
    char s_56e1b31f[16];
+   char s_267cbe7d[34];
    char s_597c4715[18];
    char s_56e1b329[24];
    char s_3318187b[19];
@@ -1223,6 +1225,7 @@ static const struct
    char s_ac60056b[11];
    char s_1ad09b45[26];
    char s_774e2332[39];
+   char s_1c9e1ceb[38];
    char s_87064238[36];
    char s_2a273dd7[25];
    char s_5e5fc0ee[25];
@@ -2302,7 +2305,7 @@ static const struct
    char s_a9711945[33];
    char s_bdaa2cfe[51];
    char s_ec9ccdc3[26];
-   char s_8bf6ccd4[49];
+   char s_8bf6ccd4[46];
    char s_2cb6ab5c[19];
    char s_552163d9[40];
    char s_ef3d53d8[20];
@@ -2453,6 +2456,7 @@ static const struct
    char s_a95c1929[45];
    char s_23b8ca2e[25];
    char s_daf6d7e2[57];
+   char s_708c69d6[335];
    char s_042502c4[55];
    char s_90ae9a9f[102];
    char s_81b79d5b_0[500];
@@ -2782,6 +2786,7 @@ static const struct
    char s_6da9b571[277];
    char s_c2827177[133];
    char s_09f2837b[244];
+   char s_2c4c27eb[238];
    char s_85147d5c[86];
    char s_0b56ad4c[65];
    char s_c312b1ca[39];
@@ -2830,6 +2835,8 @@ static const struct
    char s_d9153542[57];
    char s_8e48ec69[43];
    char s_cd43c108[81];
+   char s_cd46e260[412];
+   char s_cd482ffe[412];
    char s_49336383[51];
    char s_e92351d4[113];
    char s_8e22cdce[54];
@@ -3052,6 +3059,7 @@ static const struct
    char s_5aa622cc[254];
    char s_2b908073[300];
    char s_64bea160[226];
+   char s_2826de99[404];
    char s_97c62766[167];
    char s_6f458a85[128];
    char s_41702fdc[62];
@@ -3640,6 +3648,7 @@ static const struct
    char s_261210b3[78];
    char s_3a4b246c[102];
    char s_2ceab671[153];
+   char s_977f8e82[301];
    char s_3c679f0a[336];
    char s_5b059407[144];
    char s_36033606[199];
@@ -4730,6 +4739,7 @@ static const struct
    "Audiotreiber",
    "DSP-Plugin",
    "DSP-Plugin entfernen",
+   "Schnellvorspulen ver\303\244ndert das Callback-Audio",
    "Auto-stumm bei schnellem Vorspulen",
    "Audiobeschleunigung bei schnellem Vorspulen",
    "Auf feste Ganzzahl resamplen (Hinweis)",
@@ -5303,6 +5313,7 @@ static const struct
    "Tastatur-Controller-Zuordnung",
    "A-Knopf (rechts)",
    "B-Knopf (unten)",
+   "Controller-Eingabe im Hintergrund",
    "Steuerkreuz unten",
    "L-Knopf (Schultertaste)",
    "L2-Knopf (Trigger)",
@@ -5686,6 +5697,7 @@ static const struct
    "Startseite",
    "Vorschaubildhintergr\303\274nde",
    "Audio von animierten Miniaturansichten",
+   "Threads f\303\274r animierte Miniaturbilder",
    "Vorschaubildskalierungs-Schwellwert",
    "Gleichm\303\244\303\237iger Lauftext",
    "Lauftext-Geschwindigkeit",
@@ -6775,7 +6787,7 @@ static const struct
    "Globale Voreinstellung speichern",
    "Voreinstellung des Inhaltsverzeichnisses speichern",
    "Einfache Voreinstellungen",
-   "Das zuletzt verwendete Shader-Verzeichnis merken",
+   "Zuletzt verwendetes Shader-Verzeichnis merken",
    "Shader-Unterbilder",
    "Gemeinsamen Hardware-Kontext aktivieren",
    "Bilineare Filterung",
@@ -6948,6 +6960,10 @@ static const struct
    "Alle aktiven Audio-DSP-Plugins deaktivieren.",
    "Audioausgabe aktivieren.",
    "Gleichzeitige Wiedergabe von Audiostreams auch im Men\303\274.",
+   "Schnellvorlauf-Audioverarbeitung auf Cores anwenden, die Audio \303\274ber einen eigenen Callbac"
+   "k wiedergeben. Diese Cores erzeugen Audio in Echtzeit, daher wird die Geschwindigkeit anhand der"
+   " erreichten Bildrate des Videos ermittelt. Bei \342\200\236Aus\342\200\234 bleibt das Audio in E"
+   "chtzeit, wie es bei der stabilen RetroArch-Version stets der Fall war.",
    "Audio automatisch stummschalten, wenn vorgespult wird.",
    "Audio beim schnellen Vorlauf beschleunigen. Verhindert Knackger\303\244usche, ver\303\244ndert a"
    "ber die Tonh\303\266he.",
@@ -7469,6 +7485,9 @@ static const struct
    "Hotkeys sind an Core-Port 1 gebunden, auch wenn Core-Port 1 einem anderen Benutzer zugewiesen wu"
    "rde. Hinweis: Tastatur-Hotkeys funktionieren nicht, wenn Core-Port 1 einem Benutzer > 1 zugewies"
    "en wurde (Tastatureingaben stammen von Benutzer 1).",
+   "Controller-Eingaben akzeptieren, auch wenn RetroArch nicht das aktive Fenster ist. Wenn deaktivi"
+   "ert, werden Controller ignoriert, solange sie nicht im Fokus sind: Men\303\274, Tastenkombinatio"
+   "nen und der laufende Inhalt reagieren nicht darauf.",
    "Maximale Benutzeranzahl, die von RetroArch unterst\303\274tzt wird. (Neustart erforderlich)",
    "Controller-Tastenkombination, mit der das Men\303\274 aufgerufen wird.",
    "Men\303\274-Steuerungseinstellungen \303\244ndern.",
@@ -7534,6 +7553,16 @@ static const struct
    "Fertigt ein Foto des aktuellen Inhalts an.",
    "H\303\244lt den aktuell ausgew\303\244hlten Shader an/aus, solange die Taste gedr\303\274ckt wir"
    "d.",
+   "L\303\244dt und wendet die n\303\244chste Shader-Voreinstellung aus dem Ordner der aktuellen Vor"
+   "einstellung an. Wechselt nach der letzten Voreinstellung zum n\303\244chsten Ordner auf derselbe"
+   "n Ebene. Wenn die Option \342\200\236Zuletzt verwendetes Shader-Verzeichnis merken\342\200\234 d"
+   "eaktiviert ist, werden stattdessen die Voreinstellungen im Stammverzeichnis des Ordners \342\200"
+   "\236Video Shaders\342\200\234 durchgewechselt, sofern dort welche vorhanden sind.",
+   "L\303\244dt und wendet die vorherige Shader-Voreinstellung aus dem Ordner der aktuellen Voreinst"
+   "ellung an. Wechselt vor der ersten Voreinstellung zum vorherigen Ordner auf derselben Ebene. Wen"
+   "n die Option \342\200\236Zuletzt verwendetes Shader-Verzeichnis merken\342\200\234 deaktiviert i"
+   "st, werden stattdessen die Voreinstellungen im Stammverzeichnis des Ordners \342\200\236Video Sh"
+   "aders\342\200\234 durchgewechselt, sofern dort welche vorhanden sind.",
    "Schaltet den aktuell ausgew\303\244hlten Shader ein/aus.",
    "Aktiviert Zeitlupe, solange gedr\303\274ckt. Inhalte laufen mit normaler Geschwindigkeit, wenn T"
    "aste losgelassen wird.",
@@ -7878,6 +7907,11 @@ static const struct
    "Spielt die Audiospur von animierten WebM-Thumbnails ab, w\303\244hrend sie angezeigt werden. Vor"
    "bis- und Opus-Audio werden unterst\303\274tzt. Das Audio l\303\244uft mit der Animation in Schle"
    "ife und stoppt beim Schlie\303\237en der Miniaturansicht.",
+   "Die Anzahl der Threads, die jedes Einzelbild eines animierten WebM- oder MP4-Miniaturbilds in Pi"
+   "xel umwandeln. Bei nur einem Thread erfolgt die gesamte Umwandlung im Dekodierungs-Thread. Bei e"
+   "iner h\303\266heren Anzahl wird sie auf die Kerne verteilt, was bei Rechnern mit freien Kernen d"
+   "ie Darstellung gro\303\237er Vorschaubilder erleichtert, bei Rechnern ohne freie Kerne jedoch zu"
+   " Lasten der aktiven Kerne geht.",
    "Skaliert automatisch Vorschaubilder mit einer Breite/H\303\266he, die kleiner als der angegebene"
    " Wert ist. Verbessert die Bildqualit\303\244t. Bringt moderate Leistungseinbu\303\237en.",
    "Eine fl\303\274ssige Bildlaufanimation verwenden, wenn langer Men\303\274text angezeigt wird. Ha"
@@ -8805,6 +8839,10 @@ static const struct
    " speichern.",
    "Eine Shader-Voreinstellung speichern, die nur die von Dir vorgenommenen Parameter\303\244nderung"
    "en und einen Link zur urspr\303\274nglichen Voreinstellung enth\303\244lt.",
+   "Den Dateibrowser beim Laden von Shader-Voreinstellungen und -Durchl\303\244ufe im zuletzt verwen"
+   "deten Verzeichnis \303\266ffnen. Die Tastenkombinationen N\303\244chster/Vorheriger Shader start"
+   "en von der aktuellen Voreinstellung aus weiter, anstatt innerhalb des Stammverzeichnisses \342"
+   "\200\236Video-Shaders\342\200\234 durchzuwechseln.",
    "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
    "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
    "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
@@ -9503,7 +9541,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (207848u
+      (sizeof(msg_hash_de_blob) == (210066u
 #ifdef ANDROID
        + 358u
 #endif
@@ -10183,6 +10221,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
@@ -10755,6 +10794,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
@@ -11138,6 +11178,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -12367,6 +12408,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
@@ -12688,6 +12730,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -12736,6 +12779,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -12958,6 +13003,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -13543,6 +13589,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

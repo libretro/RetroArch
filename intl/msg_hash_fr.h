@@ -277,6 +277,7 @@ static const struct
    char s_a38cafbb[22];
    char s_dcf2e800[4];
    char s_f7e668f4[7];
+   char s_cf4d4f28[53];
    char s_f4740f16[35];
    char s_d95f1db1[40];
    char s_3c9950ad[47];
@@ -870,6 +871,7 @@ static const struct
    char s_d458f013[24];
    char s_56e1b31e[18];
    char s_56e1b31f[15];
+   char s_267cbe7d[39];
    char s_597c4715[10];
    char s_56e1b329[19];
    char s_3318187b[22];
@@ -1264,6 +1266,7 @@ static const struct
    char s_54d6b95e[12];
    char s_1ad09b45[35];
    char s_774e2332[35];
+   char s_1c9e1ceb[42];
    char s_87064238[42];
    char s_2a273dd7[34];
    char s_5e5fc0ee[33];
@@ -2533,6 +2536,7 @@ static const struct
    char s_a95c1929[39];
    char s_23b8ca2e[25];
    char s_daf6d7e2[52];
+   char s_708c69d6[348];
    char s_042502c4[55];
    char s_90ae9a9f[101];
    char s_81b79d5b_0[500];
@@ -2867,6 +2871,7 @@ static const struct
    char s_6da9b571[282];
    char s_c2827177[162];
    char s_09f2837b[311];
+   char s_2c4c27eb[303];
    char s_85147d5c[82];
    char s_0b56ad4c[68];
    char s_c312b1ca[44];
@@ -3139,6 +3144,7 @@ static const struct
    char s_5aa622cc[284];
    char s_2b908073[283];
    char s_64bea160[220];
+   char s_2826de99[481];
    char s_97c62766[178];
    char s_6f458a85[120];
    char s_41702fdc[73];
@@ -4877,6 +4883,7 @@ static const struct
    "Retirer le module DSP",
    "Son",
    "Mixeur",
+   "L'avance rapide affecte l'audio du rappel (callback)",
    "Couper le son pour l'avance rapide",
    "Acc\303\251l\303\251rer le son pour l'avance rapide",
    "R\303\251\303\251chantillonner \303\240 l'entier fixe (requ\303\252te)",
@@ -5477,6 +5484,7 @@ static const struct
    "Mappage clavier manette",
    "Bouton A (droite)",
    "Bouton B (bas)",
+   "Entr\303\251e de la manette en arri\303\250re-plan",
    "Croix Bas",
    "Bouton L (\303\251paule)",
    "Bouton L2 (g\303\242chette)",
@@ -5872,6 +5880,7 @@ static const struct
    "MIP mapping",
    "Arri\303\250re-plans pour les miniatures",
    "Audio dans les miniatures anim\303\251es",
+   "Fils d'ex\303\251cution des miniatures anim\303\251es",
    "Seuil de l'agrandissement des miniatures ",
    "Animation du d\303\251filement de texte",
    "Vitesse de d\303\251filement du texte ",
@@ -7184,6 +7193,11 @@ static const struct
    "D\303\251charge tout module audio DSP actif.",
    "Activer la sortie audio.",
    "Lire des flux audio simultan\303\251s m\303\252me dans le menu.",
+   "Appliquer la gestion audio de l'avance rapide aux c\305\223urs qui g\303\251n\303\250rent l'audi"
+   "o via leur propre fonction de rappel (callback). Ces c\305\223urs produisant l'audio en temps r"
+   "\303\251el, la vitesse est cal\303\251e sur le d\303\251bit effectif de la vid\303\251o. D\303"
+   "\251sactiver cette option maintient l'audio en temps r\303\251el, de mani\303\250re aussi stable"
+   " que RetroArch a toujours \303\251t\303\251.",
    "Couper automatiquement le son lors de l'avance rapide.",
    "Acc\303\251l\303\251rer l'audio lors de l'avance rapide. Emp\303\252che les cr\303\251pitents au"
    "dio mais r\303\251hausse le pitch.",
@@ -7771,6 +7785,10 @@ static const struct
    "u c\305\223ur est remapp\303\251 vers un autre utilisateur. Remarque : les touches de raccourcis"
    " clavier ne fonctionneront pas si le port 1 du c\305\223ur est remapp\303\251 \303\240 n'importe"
    " quel utilisateur > 1 (la saisie clavier provient de l'utilisateur 1).",
+   "Accepter les entr\303\251es de la manette lorsque RetroArch n'est pas la fen\303\252tre active. "
+   "Si cette option est d\303\251sactiv\303\251e, les manettes sont ignor\303\251es lorsque l'applic"
+   "ation n'est pas au premier plan : le menu, les raccourcis clavier et le contenu en cours d'ex"
+   "\303\251cution ne r\303\251agissent pas \303\240 leurs commandes.",
    "Nombre maximum d'utilisateurs pris en charge par RetroArch. (Red\303\251marrage requis)",
    "Combinaison de touches de la manette pour afficher/masquer le menu.",
    "Modifier les r\303\251glages des touches du menu.",
@@ -8245,6 +8263,13 @@ static const struct
    "Lit la piste audio des miniatures WebM anim\303\251es pendant leur affichage. Compatible avec le"
    "s formats audio Vorbis et Opus. La lecture audio est synchronis\303\251e avec l'animation et s'a"
    "rr\303\252te \303\240 la fermeture de la miniature.",
+   "Combien de fils d'ex\303\251cution sont utilis\303\251s pour convertir en pixels chaque image d'"
+   "une miniature anim\303\251e au format WebM ou MP4. Une valeur de 1 maintient l'int\303\251gralit"
+   "\303\251 de la conversion sur le fil d'ex\303\251cution de d\303\251codage. Une valeur plus \303"
+   "\251lev\303\251e r\303\251partit la t\303\242che entre plusieurs c\305\223urs, ce qui acc\303"
+   "\251l\303\250re la g\303\251n\303\251ration de grandes pr\303\251visualisations sur les machines"
+   " disposant de c\305\223urs inutilis\303\251s, mais monopolise ces fils d'ex\303\251cution sur le"
+   "s machines qui en manquent.",
    "Agrandit automatiquement les miniatures \303\240 une largeur/hauteur inf\303\251rieure \303\240 "
    "la valeur sp\303\251cifi\303\251e. Am\303\251liore la qualit\303\251 de l'image. A un impact mod"
    "\303\251r\303\251 sur les performances.",
@@ -10030,7 +10055,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (234783u
+      (sizeof(msg_hash_fr_blob) == (236049u
 #ifdef ANDROID
        + 373u
 #endif
@@ -10707,6 +10732,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
@@ -11300,6 +11326,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
@@ -11694,6 +11721,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -12962,6 +12990,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
@@ -13284,6 +13313,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -13556,6 +13586,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,

@@ -272,6 +272,7 @@ static const struct
    char s_a38cafbb[22];
    char s_dcf2e800[7];
    char s_f7e668f4[10];
+   char s_cf4d4f28[50];
    char s_f4740f16[42];
    char s_d95f1db1[47];
    char s_3c9950ad[36];
@@ -869,6 +870,7 @@ static const struct
    char s_d458f013[46];
    char s_56e1b31e[16];
    char s_56e1b31f[16];
+   char s_267cbe7d[37];
    char s_597c4715[14];
    char s_56e1b329[18];
    char s_3318187b[18];
@@ -1252,6 +1254,7 @@ static const struct
    char s_ac60056b[16];
    char s_1ad09b45[23];
    char s_774e2332[30];
+   char s_1c9e1ceb[31];
    char s_87064238[32];
    char s_2a273dd7[31];
    char s_5e5fc0ee[33];
@@ -2844,6 +2847,7 @@ static const struct
    char s_6da9b571[281];
    char s_c2827177[153];
    char s_09f2837b[304];
+   char s_2c4c27eb[257];
    char s_85147d5c[63];
    char s_0b56ad4c[62];
    char s_c312b1ca[41];
@@ -4805,6 +4809,7 @@ static const struct
    "Treu el connector DSP",
    "\303\200udio",
    "Mesclador",
+   "L'avan\303\247ament r\303\240pid afecta les trucades d'\303\240udio",
    "Silencia l'\303\240udio en l'avan\303\247ament r\303\240pid",
    "Accelerar l'\303\240udio durant l'avan\303\247ament r\303\240pid",
    "Remostreja a un valor enter (Ajuda)",
@@ -5404,6 +5409,7 @@ static const struct
    "Configuraci\303\263 del mode teclat del controlador",
    "Bot\303\263 A (dreta)",
    "Bot\303\263 B (avall)",
+   "Entrada del controlador en segon pla",
    "Creueta avall",
    "Bot\303\263 L (lateral)",
    "Bot\303\263 L2 (gallet)",
@@ -5787,6 +5793,7 @@ static const struct
    "P\303\240gina d'inici",
    "Fons de les miniatures",
    "So de les miniatures animades",
+   "Fil de les miniatures animades",
    "Llindar d'escalat de miniatures",
    "Suavitza el textos en moviment",
    "Velocitat dels texts en moviment",
@@ -7624,6 +7631,9 @@ static const struct
    "el nucli del port 1 siguin reassignades a un usuari diferent. Nota: Les dreceres de teclat no fu"
    "ncionaran si el nucli del port 1 es reassigna a qualsevol usuari > 1 (L'entrada del teclat \303"
    "\251s per l'usuari 1).",
+   "Accepta l'entrada del controlador quan RetroArch no sigui la finestra activa. Si est\303\240 des"
+   "activat, no es far\303\240 cas dels controladors mentre no sigui la finestra activa: el men\303"
+   "\272, dreceres de teclat i contingut en execuci\303\263 no reaccionar\303\240 als controladors.",
    "Nombre m\303\240xim d'usuaris suportat per RetroArch (cal reiniciar)",
    "Combinaci\303\263 de botons del controlador per a activar el men\303\272.",
    "Canvia les opcions de control del men\303\272.",
@@ -9736,7 +9746,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (216067u
+      (sizeof(msg_hash_ca_blob) == (216442u
 #ifdef ANDROID
        + 281u
 #endif
@@ -10415,6 +10425,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
@@ -11012,6 +11023,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
@@ -11395,6 +11407,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -12980,6 +12993,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,

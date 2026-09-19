@@ -284,6 +284,7 @@ static const struct
    char s_a38cafbb[16];
    char s_dcf2e800[10];
    char s_f7e668f4[22];
+   char s_cf4d4f28[58];
    char s_f4740f16[34];
    char s_d95f1db1[32];
    char s_3c9950ad[70];
@@ -888,6 +889,7 @@ static const struct
    char s_d458f013[44];
    char s_56e1b31e[8];
    char s_56e1b31f[8];
+   char s_267cbe7d[43];
    char s_597c4715[14];
    char s_56e1b329[9];
    char s_3318187b[9];
@@ -1279,6 +1281,7 @@ static const struct
    char s_ac60056b[21];
    char s_1ad09b45[22];
    char s_774e2332[34];
+   char s_1c9e1ceb[49];
    char s_87064238[36];
    char s_2a273dd7[39];
    char s_5e5fc0ee[36];
@@ -2578,6 +2581,7 @@ static const struct
    char s_a95c1929[69];
    char s_23b8ca2e[27];
    char s_daf6d7e2[65];
+   char s_708c69d6[453];
    char s_042502c4[70];
    char s_90ae9a9f[85];
    char s_81b79d5b_0[500];
@@ -2910,6 +2914,7 @@ static const struct
    char s_6da9b571[339];
    char s_c2827177[166];
    char s_09f2837b[413];
+   char s_2c4c27eb[288];
    char s_85147d5c[99];
    char s_0b56ad4c[57];
    char s_c312b1ca[46];
@@ -3183,6 +3188,8 @@ static const struct
    char s_5aa622cc[258];
    char s_2b908073[315];
    char s_64bea160[224];
+   char s_2826de99_0[500];
+   char s_2826de99_1[28];
    char s_97c62766[205];
    char s_6f458a85[124];
    char s_41702fdc[59];
@@ -5341,6 +5348,8 @@ static const struct
    "X\303\263a plugin DSP",
    "\303\202m thanh",
    "B\341\273\231 tr\341\273\231n \303\242m thanh",
+   "T\303\241c \304\221\341\273\231ng c\341\273\247a tua nhanh \304\221\341\272\277n \303\242m thanh"
+   " g\341\273\215i l\341\272\241i",
    "T\341\272\257t ti\341\272\277ng \303\242m thanh tua nhanh",
    "T\304\203ng t\341\273\221c \303\242m thanh tua nhanh",
    "D\303\271ng b\341\273\231 l\341\272\245y m\341\272\253u \303\242m thanh s\341\273\221 nguy\303"
@@ -6033,6 +6042,7 @@ static const struct
    "\255m",
    "Ph\303\255m A",
    "Ph\303\255m B",
+   "Nh\341\272\255n t\303\255n hi\341\273\207u tay c\341\272\247m khi \341\273\237 n\341\273\201n",
    "D-Pad Xu\341\273\221ng",
    "Ph\303\255m L1",
    "Ph\303\255m L2",
@@ -6461,6 +6471,8 @@ static const struct
    "Trang kh\341\273\237i \304\221\341\273\231ng",
    "N\341\273\201n h\303\254nh thu nh\341\273\217",
    "\303\202m thanh h\303\254nh thu nh\341\273\217 \304\221\341\273\231ng",
+   "S\341\273\221 lu\341\273\223ng x\341\273\255 l\303\275 xem tr\306\260\341\273\233c \341\272\243n"
+   "h \304\221\341\273\231ng",
    "Ng\306\260\341\273\241ng ph\303\263ng to h\303\254nh thu nh\341\273\217",
    "Cu\341\273\231n m\306\260\341\273\243t v\304\203n b\341\272\243n ch\341\272\241y ngang",
    "T\341\273\221c \304\221\341\273\231 v\304\203n b\341\272\243n ch\341\272\241y ngang",
@@ -8070,6 +8082,17 @@ static const struct
    "B\341\272\255t \304\221\341\272\247u ra \303\242m thanh.",
    "Ph\303\241t nhi\341\273\201u lu\341\273\223ng \303\242m thanh c\303\271ng l\303\272c ngay c\341"
    "\272\243 trong menu.",
+   "\303\201p d\341\273\245ng c\303\241ch x\341\273\255 l\303\275 \303\242m thanh khi tua nhanh cho "
+   "c\303\241c l\303\265i t\341\273\261 t\341\272\241o \303\242m thanh th\303\264ng qua h\303\240m g"
+   "\341\273\215i l\341\272\241i c\341\273\247a ri\303\252ng ch\303\272ng. C\303\241c l\303\265i n"
+   "\303\240y t\341\272\241o \303\242m thanh theo th\341\273\235i gian th\341\273\261c, v\303\254 v"
+   "\341\272\255y t\341\273\221c \304\221\341\273\231 ph\303\241t \304\221\306\260\341\273\243c l"
+   "\341\272\245y theo t\341\273\221c \304\221\341\273\231 th\341\273\261c t\341\272\277 m\303\240 v"
+   "ideo \304\221\341\272\241t \304\221\306\260\341\273\243c. Khi t\341\272\257t, \303\242m thanh c"
+   "\341\273\247a c\303\241c l\303\265i n\303\240y v\341\272\253n ph\303\241t theo th\341\273\235i g"
+   "ian th\341\273\261c, gi\341\273\221ng nh\306\260 c\303\241ch RetroArch v\341\272\253n lu\303\264"
+   "n ho\341\272\241t \304\221\341\273\231ng \341\273\225n \304\221\341\273\213nh tr\306\260\341\273"
+   "\233c \304\221\303\242y.",
    "T\341\273\261 \304\221\341\273\231ng t\341\272\257t ti\341\272\277ng khi s\341\273\255 d\341\273"
    "\245ng ch\341\272\277 \304\221\341\273\231 tua \304\221i nhanh.",
    "T\304\203ng t\341\273\221c \303\242m thanh khi tua nhanh. Ng\304\203n ti\341\272\277ng r\303\250"
@@ -9138,6 +9161,13 @@ static const struct
    "\272\255p \304\221\306\260\341\273\243c g\303\241n l\341\272\241i cho b\341\272\245t k\341\273"
    "\263 ng\306\260\341\273\235i d\303\271ng n\303\240o > 1 (b\303\240n ph\303\255m nh\341\272\255n "
    "l\341\273\207nh t\341\273\253 ng\306\260\341\273\235i d\303\271ng 1).",
+   "Nh\341\272\255n t\303\255n hi\341\273\207u t\341\273\253 tay c\341\272\247m khi RetroArch kh\303"
+   "\264ng ph\341\272\243i l\303\240 c\341\273\255a s\341\273\225 \304\221ang \304\221\306\260\341"
+   "\273\243c s\341\273\255 d\341\273\245ng. Khi t\341\272\257t, tay c\341\272\247m s\341\272\275 b"
+   "\341\273\213 b\341\273\217 qua khi RetroArch kh\303\264ng \304\221\306\260\341\273\243c ch\341"
+   "\273\215n: menu, ph\303\255m t\341\272\257t v\303\240 n\341\273\231i dung \304\221ang ch\341\272"
+   "\241y s\341\272\275 kh\303\264ng ph\341\272\243n h\341\273\223i v\341\273\233i t\303\255n hi\341"
+   "\273\207u t\341\273\253 tay c\341\272\247m.",
    "S\341\273\221 l\306\260\341\273\243ng ng\306\260\341\273\235i d\303\271ng t\341\273\221i \304"
    "\221a \304\221\306\260\341\273\243c RetroArch h\341\273\227 tr\341\273\243. (C\341\272\247n kh"
    "\341\273\237i \304\221\341\273\231ng l\341\272\241i)",
@@ -9946,6 +9976,19 @@ static const struct
    "\273\213. H\341\273\227 tr\341\273\243 \303\242m thanh Vorbis v\303\240 Opus. \303\202m thanh s"
    "\341\272\275 l\341\272\267p l\341\272\241i c\303\271ng v\341\273\233i \341\272\243nh \304\221"
    "\341\273\231ng v\303\240 d\341\273\253ng khi \304\221\303\263ng h\303\254nh thu nh\341\273\217.",
+   "S\341\273\221 lu\341\273\223ng d\303\271ng \304\221\341\273\203 chuy\341\273\203n \304\221\341"
+   "\273\225i t\341\273\253ng khung h\303\254nh c\341\273\247a xem tr\306\260\341\273\233c \341\272"
+   "\243nh \304\221\341\273\231ng WebM ho\341\272\267c MP4 th\303\240nh \304\221i\341\273\203m \341"
+   "\272\243nh. Ch\341\273\215n m\341\273\231t s\341\272\275 th\341\273\261c hi\341\273\207n to\303"
+   "\240n b\341\273\231 qu\303\241 tr\303\254nh chuy\341\273\203n \304\221\341\273\225i tr\303\252n "
+   "lu\341\273\223ng gi\341\272\243i m\303\243. Ch\341\273\215n nhi\341\273\201u h\306\241n s\341"
+   "\272\275 ph\303\242n chia qu\303\241 tr\303\254nh n\303\240y cho nhi\341\273\201u l\303\265i x"
+   "\341\273\255 l\303\275, gi\303\272p hi\341\273\203n th\341\273\213 c\303\241c \341\272\243nh xem"
+   " tr\306\260\341\273\233c l\341\273\233n nhanh h\306\241n tr\303\252n m\303\241y c\303\263 d\306"
+   "\260 l\303\265i x\341\273\255 l\303\275, nh\306\260ng s\341\272\275 chi\341\272\277m c\303\241c "
+   "lu\341\273\223ng \304\221\303\263 thay v\303\254 d\303\240nh cho l\303\265i gi\341\272\243 l\341"
+   "\272\255p tr\303\252n nh\341\273\257ng m\303\241y kh\303\264n",
+   "g c\303\263 nhi\341\273\201u t\303\240i nguy\303\252n.",
    "T\341\273\261 \304\221\341\273\231ng ph\303\263ng to h\303\254nh thu nh\341\273\217 c\303\263 ch"
    "i\341\273\201u r\341\273\231ng/chi\341\273\201u cao nh\341\273\217 h\306\241n gi\303\241 tr\341"
    "\273\213 ch\341\273\211 \304\221\341\273\213nh. C\341\272\243i thi\341\273\207n ch\341\272\245t "
@@ -12898,7 +12941,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (249969u
+      (sizeof(msg_hash_vn_blob) == (251388u
 #ifdef ANDROID
        + 373u
 #endif
@@ -13585,6 +13628,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
@@ -14189,6 +14233,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
@@ -14580,6 +14625,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -15877,6 +15923,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
@@ -16198,6 +16245,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -16470,6 +16518,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,

@@ -619,6 +619,8 @@ static const struct
    char s_15f24ff4[13];
    char s_ec7e8026[7];
    char s_5d29b870[20];
+   char s_558faf3a[12];
+   char s_5fb85af7[12];
    char s_6996339b[5];
    char s_08e9410c[22];
    char s_d95824aa[22];
@@ -800,6 +802,7 @@ static const struct
    char s_56e1b336[21];
    char s_313d15c0[11];
    char s_e9f0dd82[37];
+   char s_0bebb490[15];
    char s_72765a06[18];
    char s_72765a07[18];
    char s_72765a08[18];
@@ -1936,7 +1939,9 @@ static const struct
    char s_52e94a24[22];
    char s_d748f469[36];
    char s_9f006f5c[20];
+   char s_773482e7[14];
    char s_7fec5ca7[12];
+   char s_f05bb3b5[12];
    char s_9374b989[19];
    char s_7943e750[31];
    char s_cec8f66d[25];
@@ -2107,6 +2112,8 @@ static const struct
    char s_44e1c38f[29];
    char s_57047267[11];
    char s_6665b7fc[44];
+   char s_2e6ad26e[11];
+   char s_7fbf0860[11];
    char s_f417f6f1[23];
    char s_020e2bc5[26];
    char s_59f183c8[27];
@@ -2267,6 +2274,8 @@ static const struct
    char s_de3874f9[14];
    char s_650f496e[13];
    char s_226e4c6c[12];
+   char s_565fbcfe[8];
+   char s_88ddcfc3[10];
    char s_3e3caa7d[26];
    char s_8d5d41b3[15];
    char s_988f5574[18];
@@ -4953,6 +4962,8 @@ static const struct
    "Pozastaven\303\251",
    "Hranie",
    "Inform\303\241cie o disku",
+   "Syst\303\251m: %s",
+   "Titulok: %s",
    "Zvuk",
    "Na\304\215\303\255ta\305\245 nov\303\275 disk",
    "Aktu\303\241lny index disku",
@@ -5134,6 +5145,7 @@ static const struct
    "Tla\304\215idlo Y (v\304\276avo)",
    "Kl\303\241ves %s",
    "Typ mapovania ovl\303\241da\304\215a kl\303\241vesnice",
+   "Kl\303\241vesnica %s",
    "Pomocn\303\241 zbra\305\210 A",
    "Pomocn\303\241 zbra\305\210 B",
    "Pomocn\303\241 zbra\305\210 C",
@@ -6285,7 +6297,9 @@ static const struct
    "URL adresa vysielania",
    "Vlastn\303\241 konfigur\303\241cia streamovania",
    "Aktu\303\241lny obsah: %s",
+   "Na\304\215\303\255ta\305\245 %s",
    "Podsyst\303\251my",
+   "Spusti\305\245 %s",
    "Navrhovan\303\251 jadr\303\241",
    "Pozastavi\305\245 \305\241etri\304\215 obrazovky",
    "Re\305\276im trval\303\251ho v\303\275konu",
@@ -6459,6 +6473,8 @@ static const struct
    "Automatick\303\251 trvanie sn\303\255mky",
    "efekt\303\255vne",
    "Vzorkova\305\245 frame time len v stabilnom stave",
+   "Vyn\303\272ten\303\251",
+   "Uvo\304\276nen\303\251",
    "Re\305\276im celej obrazovky",
    "Re\305\276im na cel\303\272 obrazovku",
    "\305\240\303\255rka na cel\303\272 obrazovku",
@@ -6620,6 +6636,8 @@ static const struct
    "Retro syst\303\251m",
    "Systematicky",
    "Rozlo\305\276enie",
+   "Konzola",
+   "Prenosn\303\251",
    "Povoli\305\245 kartu Nastavenia",
    "Farebn\303\241 t\303\251ma",
    "Jablkov\303\241 zelen\303\241",
@@ -9415,7 +9433,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (178965u
+      (sizeof(msg_hash_sk_blob) == (179070u
 #ifdef ANDROID
        + 389u
 #endif
@@ -10437,6 +10455,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -10618,6 +10638,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -11753,7 +11774,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
@@ -11924,6 +11947,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -12084,6 +12109,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_CONSOLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_HANDHELD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
