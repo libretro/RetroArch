@@ -2451,9 +2451,10 @@ static void d3d12_set_hdr_paper_white_nits(void* data, float paper_white_nits)
 
    d3d12->hdr.ubo_values.paper_white_nits = paper_white_nits;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].paper_white_nits     = paper_white_nits;
       }
@@ -2466,9 +2467,10 @@ static void d3d12_set_hdr_expand_gamut(void* data, unsigned expand_gamut)
 
    d3d12->hdr.ubo_values.expand_gamut     = expand_gamut;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].expand_gamut     = expand_gamut;
       }
@@ -2481,9 +2483,10 @@ static void d3d12_set_hdr_scanlines(void* data, bool scanlines)
 
    d3d12->hdr.ubo_values.scanlines        = scanlines ? 1.0f : 0.0f;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].scanlines     = scanlines ? 1.0f : 0.0f;
       }
@@ -2496,9 +2499,10 @@ static void d3d12_set_hdr_subpixel_layout(void* data, unsigned subpixel_layout)
 
    d3d12->hdr.ubo_values.subpixel_layout  = subpixel_layout;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].subpixel_layout     = subpixel_layout;
       }
@@ -2509,9 +2513,10 @@ static void d3d12_set_hdr_inverse_tonemap(d3d12_video_t* d3d12, bool inverse_ton
 {
    d3d12->hdr.ubo_values.inverse_tonemap  = inverse_tonemap ? 1.0f : 0.0f;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].inverse_tonemap     = inverse_tonemap ? 1.0f : 0.0f;
       }
@@ -2522,9 +2527,10 @@ static void d3d12_set_hdr10(d3d12_video_t* d3d12, bool hdr10)
 {
    d3d12->hdr.ubo_values.hdr10            = hdr10 ? 1.0f : 0.0f;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].hdr10             = hdr10 ? 1.0f : 0.0f;
       }
