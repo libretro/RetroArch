@@ -6036,9 +6036,9 @@ static bool d3d11_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
 static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
-   ID3D11Texture2D* BackBuffer;
+   ID3D11Texture2D* BackBuffer = NULL;
    DXGISwapChain m_SwapChain;
-   ID3D11Texture2D* BackBufferStagingTexture;
+   ID3D11Texture2D* BackBufferStagingTexture = NULL;
    ID3D11Resource* BackBufferStaging = NULL;
    ID3D11Resource* BackBufferResource = NULL;
    D3D11_TEXTURE2D_DESC StagingDesc;
@@ -6047,7 +6047,8 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    uint8_t* bufferRow;
    uint32_t y;
    uint32_t x;
-   bool ret;
+   bool ret = false;
+   HRESULT hr;
 
    if (!d3d11)
       return false;
@@ -6073,9 +6074,15 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    StagingDesc.Usage = D3D11_USAGE_STAGING;
    StagingDesc.BindFlags = 0;
    StagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+   StagingDesc.MiscFlags = 0;
 
    /* Create the back buffer staging texture. */
-   d3d11->device->lpVtbl->CreateTexture2D(d3d11->device, &StagingDesc, NULL, &BackBufferStagingTexture);
+   hr = d3d11->device->lpVtbl->CreateTexture2D(d3d11->device, &StagingDesc, NULL, &BackBufferStagingTexture);
+   if (FAILED(hr) || !BackBufferStagingTexture)
+   {
+      RARCH_ERR("[D3D11] Screenshot staging texture failed: 0x%08lx.\n", (unsigned long)hr);
+      goto cleanup;
+   }
 
 #ifdef __cplusplus
    BackBufferStagingTexture->lpVtbl->QueryInterface(BackBufferStagingTexture, IID_ID3D11Resource, (void**)&BackBufferStaging);
@@ -6085,11 +6092,19 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    BackBuffer->lpVtbl->QueryInterface(BackBuffer, &IID_ID3D11Resource, (void**)&BackBufferResource);
 #endif
 
+   if (!BackBufferStaging || !BackBufferResource)
+      goto cleanup;
+
    /* Copy back buffer to back buffer staging. */
    d3d11->context->lpVtbl->CopyResource(d3d11->context, BackBufferStaging, BackBufferResource);
 
    /* Map the staging texture for CPU read. */
-   d3d11->context->lpVtbl->Map(d3d11->context, BackBufferStaging, 0, D3D11_MAP_READ, 0, &Map);
+   hr = d3d11->context->lpVtbl->Map(d3d11->context, BackBufferStaging, 0, D3D11_MAP_READ, 0, &Map);
+   if (FAILED(hr))
+   {
+      RARCH_ERR("[D3D11] Screenshot staging map failed: 0x%08lx.\n", (unsigned long)hr);
+      goto cleanup;
+   }
    BackBufferData = (const uint8_t*)Map.pData;
 
    {
@@ -6169,10 +6184,15 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    d3d11->context->lpVtbl->Unmap(d3d11->context, BackBufferStaging, 0);
 
    /* Release the backbuffer staging. */
-   BackBufferStaging->lpVtbl->Release(BackBufferStaging);
-   BackBufferResource->lpVtbl->Release(BackBufferResource);
-   BackBufferStagingTexture->lpVtbl->Release(BackBufferStagingTexture);
-   BackBuffer->lpVtbl->Release(BackBuffer);
+cleanup:
+   if (BackBufferStaging)
+      BackBufferStaging->lpVtbl->Release(BackBufferStaging);
+   if (BackBufferResource)
+      BackBufferResource->lpVtbl->Release(BackBufferResource);
+   if (BackBufferStagingTexture)
+      BackBufferStagingTexture->lpVtbl->Release(BackBufferStagingTexture);
+   if (BackBuffer)
+      BackBuffer->lpVtbl->Release(BackBuffer);
 
    return ret;
 }
