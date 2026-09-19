@@ -3265,6 +3265,59 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
 
 
 #ifdef HAVE_RPNG
+/* Compose a specific frame of an animated image into its surface.
+ * Used for two-frame APNGs, where the frame is chosen by press state
+ * instead of elapsed time. */
+static void input_overlay_update_apng_frame(input_overlay_t *ol,
+      size_t i, int target_frame)
+{
+   rpng_apng_stream_t *st = (rpng_apng_stream_t*)ol->anim_stream[i];
+   gfx_surface_t *s       = (gfx_surface_t*)ol->surfaces[i];
+   const uint32_t *frame;
+   int duration_ms        = 0;
+
+   if (!st || !s || !s->num_slots || s->inflight)
+      return;
+
+   rpng_apng_stream_rewind(st);
+   if (!(frame = rpng_apng_stream_next(st, &duration_ms)))
+      return;
+   if (target_frame == 1)
+      if (!(frame = rpng_apng_stream_next(st, &duration_ms)))
+         return;
+
+   memcpy(s->slots[0], frame,
+         (size_t)s->width * s->height * sizeof(uint32_t));
+   if (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
+         == GFX_SURFACE_SUBMIT_FAILED)
+      return;
+}
+
+/* Update every two-frame APNG to the frame matching its aggregated
+ * press state. Called after desc press state has been collected. */
+static void input_overlay_update_2frame(input_overlay_t *ol)
+{
+   size_t i;
+
+   if (!ol->anim_2frame || !ol->surfaces)
+      return;
+
+   for (i = 0; i < ol->num_images; i++)
+   {
+      int target;
+      if (!ol->anim_2frame[i])
+         continue;
+
+      target = ol->anim_2frame_pressed[i] ? 1 : 0;
+      if (ol->anim_2frame_cur[i] != (uint8_t)target)
+      {
+         input_overlay_update_apng_frame(ol, i, target);
+         ol->anim_2frame_cur[i] = (uint8_t)target;
+      }
+      ol->anim_2frame_pressed[i] = 0;
+   }
+}
+
 /* Advance every animated image of the pack whose frame is due, once
  * per input poll on the main thread. A frame is composed by the
  * stream into a free slot and submitted: the texture is updated in
@@ -3290,6 +3343,9 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
       int duration_ms        = 0;
 
       if (!st || !s || !s->num_slots)
+         continue;
+      /* Two-frame APNGs are driven by desc press state, not time. */
+      if (ol->anim_2frame && ol->anim_2frame[i])
          continue;
       if (ol->anim_next_us[i] && now < ol->anim_next_us[i])
          continue;
@@ -3343,11 +3399,22 @@ static void input_overlay_post_poll(
          ol->iface->set_alpha(ol->iface_data, desc->image_index,
                desc->alpha_mod * opacity);
 
+      /* A two-frame APNG shares its press state across every desc
+       * that uses the same image. */
+      if (     ol->anim_2frame
+            && ol->anim_2frame[desc->image_index]
+            && desc->touch_mask != 0)
+         ol->anim_2frame_pressed[desc->image_index] = 1;
+
       input_overlay_update_desc_geom(ol, desc);
 
       desc->old_touch_mask = desc->touch_mask;
       desc->touch_mask     = 0;
    }
+
+#ifdef HAVE_RPNG
+   input_overlay_update_2frame(ol);
+#endif
 }
 
 static void input_overlay_desc_init_hitbox(struct overlay_desc *desc)
@@ -3706,6 +3773,10 @@ static void input_overlay_poll_clear(
 
       input_overlay_update_desc_geom(ol, desc);
    }
+
+#ifdef HAVE_RPNG
+   input_overlay_update_2frame(ol);
+#endif
 }
 
 static enum overlay_visibility input_overlay_get_visibility(
@@ -3764,10 +3835,16 @@ static void input_overlay_free_images(input_overlay_t *ol)
    free(ol->anim_data);
    free(ol->anim_len);
    free(ol->anim_next_us);
-   ol->anim_stream  = NULL;
-   ol->anim_data    = NULL;
-   ol->anim_len     = NULL;
-   ol->anim_next_us = NULL;
+   free(ol->anim_2frame);
+   free(ol->anim_2frame_pressed);
+   free(ol->anim_2frame_cur);
+   ol->anim_stream         = NULL;
+   ol->anim_data           = NULL;
+   ol->anim_len            = NULL;
+   ol->anim_next_us        = NULL;
+   ol->anim_2frame         = NULL;
+   ol->anim_2frame_pressed = NULL;
+   ol->anim_2frame_cur     = NULL;
 
    free(ol->images);
    ol->images = NULL;
@@ -6727,7 +6804,10 @@ static void input_overlay_loaded_move_images(input_overlay_t *ol,
             && (ol->anim_data    = (void**)calloc(ol->num_images, sizeof(void*)))
             && (ol->anim_len     = (size_t*)calloc(ol->num_images, sizeof(size_t)))
             && (ol->anim_stream  = (void**)calloc(ol->num_images, sizeof(void*)))
-            && (ol->anim_next_us = (int64_t*)calloc(ol->num_images, sizeof(int64_t))))
+            && (ol->anim_next_us = (int64_t*)calloc(ol->num_images, sizeof(int64_t)))
+            && (ol->anim_2frame  = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))
+            && (ol->anim_2frame_pressed = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))
+            && (ol->anim_2frame_cur     = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t))))
       {
          for (i = 0; i < ol->num_images; i++)
          {
@@ -6740,8 +6820,15 @@ static void input_overlay_loaded_move_images(input_overlay_t *ol,
             ol->anim_stream[i] = rpng_apng_stream_open(
                   (const uint8_t*)src->data, src->len);
             if (ol->anim_stream[i])
+            {
+               int num_frames = 0;
                rpng_apng_stream_set_argb((rpng_apng_stream_t*)ol->anim_stream[i],
                      ol->images[i]->supports_rgba ? 0 : 1);
+               rpng_apng_stream_get_info((rpng_apng_stream_t*)ol->anim_stream[i],
+                     NULL, NULL, &num_frames, NULL);
+               if (num_frames == 2)
+                  ol->anim_2frame[i] = 1;
+            }
          }
       }
    }

@@ -436,6 +436,13 @@ struct input_overlay
     * them, NULL until the pack is uploaded. */
    void **surfaces;
 
+   /* Two-frame APNGs are treated as a pressed/unpressed pair rather
+    * than a looping animation. One entry per unique image; only valid
+    * when the corresponding anim_stream entry is non-NULL. */
+   uint8_t *anim_2frame;
+   uint8_t *anim_2frame_pressed;
+   uint8_t *anim_2frame_cur;
+
    size_t num_images;
    size_t index;
    size_t size;
