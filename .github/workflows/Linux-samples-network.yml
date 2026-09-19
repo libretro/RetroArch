@@ -121,3 +121,27 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
              make check SSL_BACKEND=mbed
           echo "[pass] cheevos_login_test (mbedTLS, ASan)"
+          # The runner's libmbedtls-dev is 2.28, which has no TLS 1.3,
+          # so the leg above cannot see either TLS 1.3 failure.  Mbed
+          # TLS 3.6.0 is the one release that shows both: it fails
+          # every handshake unless psa_crypto_init() was called, and it
+          # reports session tickets from mbedtls_ssl_read().  Library
+          # only, ~20 s to build.  A download that still fails after
+          # the retries skips the leg rather than failing the job.
+          mbed_ver=3.6.0
+          mbed_sha=3ecf94fcfdaacafb757786a01b7538a61750ebd85c4b024f56ff8ba1490fcd38
+          mbed_tar="$RUNNER_TEMP/mbedtls-$mbed_ver.tar.bz2"
+          if curl -fsSL --retry 3 --retry-delay 5 --max-time 120 -o "$mbed_tar" \
+             "https://github.com/Mbed-TLS/mbedtls/releases/download/v$mbed_ver/mbedtls-$mbed_ver.tar.bz2"; then
+             echo "$mbed_sha  $mbed_tar" | sha256sum -c -
+             tar -xjf "$mbed_tar" -C "$RUNNER_TEMP"
+             make -C "$RUNNER_TEMP/mbedtls-$mbed_ver" -j"$(nproc)" lib >/dev/null
+             make clean all SSL_BACKEND=mbed SANITIZER=address,undefined \
+                MBEDTLS_DIR="$RUNNER_TEMP/mbedtls-$mbed_ver"
+             ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+                UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
+                make check SSL_BACKEND=mbed
+             echo "[pass] cheevos_login_test (mbedTLS $mbed_ver TLS 1.3, ASan)"
+          else
+             echo "::warning::Mbed TLS $mbed_ver download failed; TLS 1.3 leg skipped"
+          fi

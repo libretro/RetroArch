@@ -44,8 +44,15 @@ ifeq ($(SSL_BACKEND),bear)
    CFLAGS    += -DHAVE_BEARSSL -DTEST_SSL_BEAR
    CFLAGS    += -I$(BEAR_DIR)/src -I$(BEAR_DIR)/inc
 else
-   SOURCES_C += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_mbed.c
+   # mbed_seed.c #includes the real backend (see the file).
+   SOURCES_C += mbed_seed.c
    CFLAGS    += -DHAVE_MBEDTLS
+   # MBEDTLS_DIR=<built source tree> tests against that Mbed TLS instead
+   # of the system one; CI uses it for a TLS 1.3 capable 3.6.0.
+   ifneq ($(MBEDTLS_DIR),)
+      CFLAGS  += -I$(MBEDTLS_DIR)/include
+      LDFLAGS += -L$(MBEDTLS_DIR)/library
+   endif
    LDFLAGS   += -lmbedtls -lmbedx509 -lmbedcrypto
 endif
 
@@ -88,7 +95,10 @@ check: $(TARGET) fixtures/server.crt
 	   fixtures/server.crt fixtures/server.key
 
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) bear_seed.o mbed_seed.o
 	rm -f $(TARGET)
 
 .PHONY: clean all check
+
+mbed_seed.o: $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_mbed.c
+bear_seed.o: $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_bear.c
