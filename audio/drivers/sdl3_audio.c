@@ -89,10 +89,16 @@ typedef struct sdl3_audio
     * reading of it, which is the same standing as the ALSA position
     * and unlike a real device clock. */
    retro_atomic_size_t consumed_frames;
-   /* Device iterations SDL asked this driver to top up and got
-    * nothing for. The get-callback is a wake, never a put, so an
-    * additional_amount still outstanding when it runs is what SDL is
-    * about to make up as silence. */
+   /* Get callbacks that found the queue short of the device's
+    * request, so SDL zero-filled the difference. Counted from init
+    * rather than from the stream, the way the frontend reads it: a
+    * reopen keeps the count, since a count that went backwards would
+    * read as fresh silence to the pipeline and cost it a pass.
+    *
+    * additional_amount pads the request a little for safety, so a
+    * callback landing exactly on the boundary may count without
+    * silence played - an upper bound at the edge, on the same
+    * estimate standing as consumed_frames. */
    retro_atomic_size_t underruns;
 } sdl3_audio_t;
 
@@ -288,14 +294,32 @@ static void SDLCALL sdl3_audio_stream_cb(void *userdata,
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)userdata;
 
+   (void)additional_amount;
    (void)total_amount;
-   if (additional_amount > 0)
-      retro_atomic_fetch_add_size(&sdl->underruns, 1);
 
    SDL_LockMutex(sdl->lock);
    sdl->data_moved = true;
    SDL_SignalCondition(sdl->cond);
    SDL_UnlockMutex(sdl->lock);
+}
+
+/**
+ * Get callback for the output stream: counts the periods the device
+ * zero-filled for want of audio, then wakes blocked writers.
+ *
+ * The count belongs here rather than in the wake itself, which the
+ * capture stream shares: a put callback carries the data the device
+ * just delivered in additional_amount, and a microphone delivering
+ * audio is the opposite of the device going short.
+ */
+static void SDLCALL sdl3_audio_out_stream_cb(void *userdata,
+      SDL_AudioStream *stream, int additional_amount, int total_amount)
+{
+   sdl3_audio_t *sdl = (sdl3_audio_t*)userdata;
+
+   if (additional_amount > 0)
+      retro_atomic_fetch_add_size(&sdl->underruns, 1);
+   sdl3_audio_stream_cb(userdata, stream, additional_amount, total_amount);
 }
 
 /**
@@ -364,14 +388,13 @@ static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
    void *tmp;
 
    SDL_SetAtomicU32(&sdl->devid, SDL_GetAudioStreamDevice(sdl->stream));
-   SDL_SetAudioStreamGetCallback(sdl->stream, sdl3_audio_stream_cb, sdl);
+   SDL_SetAudioStreamGetCallback(sdl->stream, sdl3_audio_out_stream_cb, sdl);
 
    sdl->raw_rate = 0;
    sdl->in_cap = sdl->buffer_size;
    sdl->ratio = 1.0f;
    sdl->gain = 1.0f;
    retro_atomic_size_init(&sdl->consumed_frames, 0);
-   retro_atomic_size_init(&sdl->underruns, 0);
 
    if ((tmp = calloc(1, sdl->buffer_size)))
    {
@@ -482,6 +505,9 @@ static void *sdl3_audio_init(const char *device,
          latency,
          (int)((sdl->buffer_size / frame_size + device_sample_frames)
             * 1000 / sdl->spec.freq));
+
+   /* Since init, not since the stream: a reopen keeps the count. */
+   retro_atomic_size_init(&sdl->underruns, 0);
 
    /* Publish the device id and register the watch before priming
     * so an unplug during setup is caught. */
