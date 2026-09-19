@@ -86,6 +86,13 @@ typedef struct sdl3_audio
     * reading of it, which is the same standing as the ALSA position
     * and unlike a real device clock. */
    retro_atomic_size_t consumed_frames;
+
+   /* Get callbacks that found the queue short of the device's request,
+    * so SDL zero-filled the difference. additional_amount pads the
+    * request a little for safety, so a callback landing exactly on the
+    * boundary may count without silence played - an upper bound at the
+    * edge, on the same estimate standing as consumed_frames. */
+   retro_atomic_size_t underruns;
 } sdl3_audio_t;
 
 /**
@@ -287,6 +294,20 @@ static void SDLCALL sdl3_audio_stream_cb(void *userdata,
 }
 
 /**
+ * Get callback for the output stream: counts the periods the device
+ * zero-filled for want of audio, then wakes blocked writers.
+ */
+static void SDLCALL sdl3_audio_out_stream_cb(void *userdata,
+      SDL_AudioStream *stream, int additional_amount, int total_amount)
+{
+   sdl3_audio_t *sdl = (sdl3_audio_t*)userdata;
+
+   if (additional_amount > 0)
+      retro_atomic_fetch_add_size(&sdl->underruns, 1);
+   sdl3_audio_stream_cb(userdata, stream, additional_amount, total_amount);
+}
+
+/**
  * Blocks until the stream callback signals device data movement.
  *
  * Callers test the stream's queue level without holding the lock, so
@@ -352,7 +373,7 @@ static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
    void *tmp;
 
    SDL_SetAtomicU32(&sdl->devid, SDL_GetAudioStreamDevice(sdl->stream));
-   SDL_SetAudioStreamGetCallback(sdl->stream, sdl3_audio_stream_cb, sdl);
+   SDL_SetAudioStreamGetCallback(sdl->stream, sdl3_audio_out_stream_cb, sdl);
 
    sdl->raw_rate = 0;
    sdl->in_cap = sdl->buffer_size;
@@ -468,6 +489,9 @@ static void *sdl3_audio_init(const char *device,
          latency,
          (int)((sdl->buffer_size / frame_size + device_sample_frames)
             * 1000 / sdl->spec.freq));
+
+   /* Since init, not since the stream: a reopen keeps the count. */
+   retro_atomic_size_init(&sdl->underruns, 0);
 
    /* Publish the device id and register the watch before priming
     * so an unplug during setup is caught. */
@@ -831,6 +855,12 @@ static uint32_t sdl3_audio_layout(void *data)
    return sdl ? sdl->layout : AUDIO_LAYOUT_STEREO;
 }
 
+static size_t sdl3_audio_underruns(void *data)
+{
+   sdl3_audio_t *sdl = (sdl3_audio_t*)data;
+   return sdl ? retro_atomic_load_acquire_size(&sdl->underruns) : 0;
+}
+
 static bool sdl3_audio_use_float(void *data)
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
@@ -877,7 +907,7 @@ audio_driver_t audio_sdl3 = {
    sdl3_audio_write_raw,
    sdl3_audio_wait_writable,
    sdl3_audio_frames_consumed,
-   NULL, /* underruns */
+   sdl3_audio_underruns,
    sdl3_audio_layout
 };
 
