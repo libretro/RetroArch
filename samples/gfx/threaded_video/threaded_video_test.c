@@ -1439,7 +1439,12 @@ static void lane_dupe_under_wrapper(void)
    unsigned i;
    size_t seen;
    thread_video_t *thr;
-   uint8_t *pix;
+   /* Static, and never freed: video_driver_frame() keeps the pointer
+    * it is given as the cached frame, borrowed, the way it keeps a
+    * core's - and the menu comes back for it on the next frame it
+    * draws. A buffer freed at the end of this lane was read after it
+    * was freed by the run_frames() that follows. */
+   static uint8_t pix[32 * 32 * sizeof(uint32_t)];
    const unsigned w = 32, h = 32;
 
    set_threaded_via_setting(true);
@@ -1451,11 +1456,6 @@ static void lane_dupe_under_wrapper(void)
    CHECK(!menu_is_up(), "dupe lane: menu still up");
    run_frames(2);
    video_thread_wait_idle();
-
-   pix = (uint8_t*)malloc(w * h * sizeof(uint32_t));
-   CHECK(pix != NULL, "dupe lane: no memory");
-   if (!pix)
-      return;
 
    duplane_inner        = thr->driver;
    duplane_driver       = *thr->driver;
@@ -1471,7 +1471,7 @@ static void lane_dupe_under_wrapper(void)
       else
       {
          /* 0x10, 0x20, 0x30: never 0x80, never each other. */
-         memset(pix, 0x10 * (int)(i / 2 + 1), w * h * sizeof(uint32_t));
+         memset(pix, 0x10 * (int)(i / 2 + 1), sizeof(pix));
          video_driver_frame(pix, w, h, w * sizeof(uint32_t));
       }
       /* One at a time, so no push replaces another in the ring. */
@@ -1498,7 +1498,9 @@ static void lane_dupe_under_wrapper(void)
                i, duplane_seen[i], 0x10 * (int)(i / 2 + 1));
    }
 
-   free(pix);
+   /* The test pattern is not a frame the lanes after this one should
+    * find in the cache. */
+   video_driver_cached_frame_invalidate();
    if (!menu_is_up())
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    run_frames(2);
