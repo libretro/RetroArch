@@ -6007,6 +6007,9 @@ static bool d3d11_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
       unsigned vp_width  = (d3d11->vp.width  > d3d11->vp.full_width)  ? d3d11->vp.full_width  : d3d11->vp.width;
       unsigned vp_height = (d3d11->vp.height > d3d11->vp.full_height) ? d3d11->vp.full_height : d3d11->vp.height;
 
+      dxgi_readback_clamp_window(StagingDesc.Width, StagingDesc.Height,
+            &vp_x, &vp_y, &vp_width, &vp_height);
+
       ret = dxgi_hdr_readback_to_rgb16(StagingDesc.Format,
             Map.pData, Map.RowPitch, vp_x, vp_y, vp_width, vp_height,
             buffer, &max_cll, &max_fall);
@@ -6113,6 +6116,9 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
       unsigned vp_y      = (d3d11->vp.y > 0) ? d3d11->vp.y : 0;
       unsigned vp_width  = (d3d11->vp.width  > d3d11->vp.full_width)  ? d3d11->vp.full_width  : d3d11->vp.width;
       unsigned vp_height = (d3d11->vp.height > d3d11->vp.full_height) ? d3d11->vp.full_height : d3d11->vp.height;
+
+      dxgi_readback_clamp_window(StagingDesc.Width, StagingDesc.Height,
+            &vp_x, &vp_y, &vp_width, &vp_height);
 
       ret = true;
 

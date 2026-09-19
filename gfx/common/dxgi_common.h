@@ -315,6 +315,32 @@ static INLINE ULONG Release(void* object)
 #if !defined(__cplusplus) || defined(CINTERFACE)
 #ifndef COM_ADDREF_DECLARED
 #define COM_ADDREF_DECLARED
+/* Keep a screenshot read window inside the source surface.
+ *
+ * read_viewport copies a (w x h) window starting at (x, y) out of a
+ * mapped copy of the backbuffer.  The viewport comes from user settings
+ * (custom aspect ratio) and can hang off the right or bottom edge, in
+ * which case the copy loops would read past the end of each row and,
+ * on the last rows, past the end of the mapping.
+ *
+ * w / h are also the stride and row count of the caller's output
+ * buffer, so they must not shrink here any further than the caller
+ * already expects (it clamps to the output size the same way).  The
+ * window is slid back inside the surface instead. */
+static INLINE void dxgi_readback_clamp_window(
+      unsigned src_w, unsigned src_h,
+      unsigned *x, unsigned *y, unsigned *w, unsigned *h)
+{
+   if (*w > src_w)
+      *w = src_w;
+   if (*h > src_h)
+      *h = src_h;
+   if (*x > src_w - *w)
+      *x = src_w - *w;
+   if (*y > src_h - *h)
+      *y = src_h - *h;
+}
+
 static INLINE ULONG AddRef(void* object)
 {
    if (object)

@@ -7387,6 +7387,9 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
          ? d3d12->vp.full_width  : d3d12->vp.width;
    vp_h = (d3d12->vp.height > d3d12->vp.full_height)
          ? d3d12->vp.full_height : d3d12->vp.height;
+   dxgi_readback_clamp_window(
+         (unsigned)tex_desc.Width, (unsigned)tex_desc.Height,
+         &vp_x, &vp_y, &vp_w, &vp_h);
 
    if (!dxgi_hdr_readback_to_rgb16(fmt, src_pixels,
             footprint.Footprint.RowPitch, vp_x, vp_y, vp_w, vp_h,
@@ -7509,6 +7512,9 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
          ? d3d12->vp.full_width  : d3d12->vp.width;
    vp_h = (d3d12->vp.height > d3d12->vp.full_height)
          ? d3d12->vp.full_height : d3d12->vp.height;
+   dxgi_readback_clamp_window(
+         (unsigned)tex_desc.Width, (unsigned)tex_desc.Height,
+         &vp_x, &vp_y, &vp_w, &vp_h);
 
 #ifdef HAVE_DXGI_HDR
    /* HDR fast path: try the GPU tonemap.  On success we're done and
