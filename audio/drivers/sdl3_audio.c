@@ -1051,9 +1051,10 @@ static void sdl3_microphone_set_nonblock_state(void *driver_context, bool nonblo
 }
 
 /* Sleeps until the capture stream holds len bytes, then says how many it
- * holds. SDL3 gives no event to wait on, so this polls its stream with
- * the same short sleep the read loop uses, bounded so a removed device
- * returns nothing rather than holding the caller. */
+ * holds. Parks on the condition the put callback signals, as the read
+ * loop does; each wait is bounded so a removed or stalled device returns
+ * what there is rather than holding the caller. The lap cap ends the
+ * loop when the device keeps capturing but never accumulates enough. */
 static size_t sdl3_microphone_wait_readable(void *driver_context,
       void *mic_context, size_t len)
 {
@@ -1074,7 +1075,8 @@ static size_t sdl3_microphone_wait_readable(void *driver_context,
          return (size_t)avail;
       if (--laps < 0)
          return avail > 0 ? (size_t)avail : 0;
-      SDL_Delay(1);
+      if (!sdl3_audio_wait_for_device(mic))
+         return avail > 0 ? (size_t)avail : 0;
    }
 }
 
