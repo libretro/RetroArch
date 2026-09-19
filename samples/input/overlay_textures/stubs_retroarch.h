@@ -24,4 +24,11 @@ uint32_t stub_checksum(const struct texture_image *img);
 void stub_reset(void);
 const struct stub_texture *stub_texture_get(uintptr_t id);
 
+#ifdef HAVE_THREADS
+extern bool stub_thread_active;    /* the wrapper is there            */
+extern bool stub_thread_wins_race; /* it uploads before the poll      */
+/* The video thread gets round to its queue; returns how many nodes. */
+unsigned stub_video_thread_run(void);
+#endif
+
 #endif

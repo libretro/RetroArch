@@ -135,7 +135,7 @@ jobs:
              timeout 60 ./wii_handshake_test
           echo "[pass] wii_handshake_test (ASan)"
 
-      - name: Build and run overlay_textures_test (plain, ASan + UBSan)
+      - name: Build and run overlay_textures_test (plain, ASan + UBSan, threaded)
         shell: bash
         working-directory: samples/input/overlay_textures
         run: |
@@ -156,5 +156,13 @@ jobs:
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./overlay_textures_test
+          # THREADS=1: the threaded wrapper as a stub whose video
+          # thread runs when the test says so, so both outcomes of
+          # the race between the uploads and the poll are lanes. The
+          # quick thread is 86fbf34e01's bug again under threaded
+          # video; the slow one must find the pack's pixels alive.
+          make clean all THREADS=1 SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./overlay_textures_test
           make clean
-          echo "[pass] overlay_textures_test (plain, ASan)"
+          echo "[pass] overlay_textures_test (plain, ASan, threaded ASan)"

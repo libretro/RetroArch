@@ -21,6 +21,12 @@ CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_OVERLAY -ffunction-sections \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -Wl,--gc-sections -lm
 
+# THREADS=1 puts the threaded wrapper's stub in (stubs_retroarch.c) and
+# adds the lanes that decide the race between the posts and the poll.
+ifeq ($(THREADS),1)
+   CFLAGS += -DHAVE_THREADS
+endif
+
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)

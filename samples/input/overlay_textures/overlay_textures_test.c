@@ -33,6 +33,17 @@
  *                   nothing to come back from;
  *   no images       a pack of hitboxes alone is always reusable.
  *
+ * Built with THREADS=1 the threaded wrapper's stub is in, and the race
+ * between the posts and the poll is the test's to decide:
+ *
+ *   prompt handles  the video thread uploads before the poll: the
+ *                   unthreaded sequence by another road, and one
+ *                   86fbf34e01 broke as well, whenever the thread
+ *                   was quick;
+ *   late handles    it has not: the page goes through load() with
+ *                   live pixels, the pack keeps them, and when the
+ *                   thread does run it reads pixels still there.
+ *
  * load() and the texture upload read every pixel they are given, so
  * under ASan a stale pointer is a report, not a picture nobody sees.
  */
@@ -44,6 +55,10 @@
 #include "../../../input/input_overlay.h"
 
 #include "stubs_retroarch.h"
+
+#ifdef HAVE_THREADS
+#include "../../../gfx/video_thread_wrapper.h"
+#endif
 
 static unsigned failures;
 #define CHECK(cond, ...) do { \
@@ -288,6 +303,76 @@ static void lane_no_images(void)
    printf("[%s] no images lane\n", failures == before ? "pass" : "fail");
 }
 
+#ifdef HAVE_THREADS
+/* The wrapper is there and the video thread wins the race: the
+ * handles are in at the poll, which is the unthreaded sequence by
+ * another road - and the one 86fbf34e01 broke under threaded video
+ * too, whenever the thread was quick. */
+static void lane_threaded_prompt(void)
+{
+   unsigned i, before = failures;
+   input_overlay_t *ol;
+   drv_reset();
+   stub_thread_active    = true;
+   stub_thread_wins_race = true;
+   ol = pack_new(&iface_textures, NUM_IMAGES);
+
+   for (i = 0; i < NUM_PAGES; i++)
+   {
+      pack_show(ol, i);
+      CHECK(input_overlay_load_page(ol),
+            "threaded, prompt: page %u did not go as textures", i);
+      check_page("threaded, prompt", i);
+   }
+   CHECK(drv_loads == 0, "threaded, prompt: load() was reached");
+   CHECK(stub_tex_loads == NUM_IMAGES,
+         "threaded, prompt: %u uploads", stub_tex_loads);
+   for (i = 0; i < NUM_IMAGES; i++)
+      CHECK(!ol->images[i]->pixels,
+            "threaded, prompt: image %u kept its pixels", i);
+
+   pack_free(ol);
+   stub_thread_active = stub_thread_wins_race = false;
+   printf("[%s] threaded, prompt handles lane\n",
+         failures == before ? "pass" : "fail");
+}
+
+/* The video thread has not got round to the uploads by the poll,
+ * which is the usual case: the poll follows the posts at once. The
+ * page goes through load() with live pixels, the pack keeps them, and
+ * when the thread does run it reads pixels that are still there. */
+static void lane_threaded_late(void)
+{
+   unsigned i, before = failures;
+   input_overlay_t *ol;
+   drv_reset();
+   stub_thread_active    = true;
+   stub_thread_wins_race = false;
+   ol = pack_new(&iface_textures, NUM_IMAGES);
+
+   CHECK(!input_overlay_load_page(ol), "threaded, late: went as textures");
+   CHECK(drv_loads == 1 && drv_null_pixels == 0,
+         "threaded, late: page 0 did not reach load() with pixels");
+   check_page("threaded, late", 0);
+   for (i = 0; i < NUM_IMAGES; i++)
+      CHECK(ol->images[i]->pixels != NULL,
+            "threaded, late: image %u lost its pixels", i);
+
+   /* Now the thread runs, and the completions come back. */
+   stub_video_thread_run();
+   video_thread_async_poll();
+
+   pack_free(ol);
+   stub_video_thread_run();
+   video_thread_async_poll();
+   CHECK(stub_tex_live == 0, "threaded, late: %u textures outlived the pack",
+         stub_tex_live);
+   stub_thread_active = false;
+   printf("[%s] threaded, late handles lane\n",
+         failures == before ? "pass" : "fail");
+}
+#endif
+
 int main(void)
 {
    lane_textures();
@@ -295,6 +380,10 @@ int main(void)
    lane_pixels("no such path", &iface_pixels,   false, false);
    lane_pixels("upload fails", &iface_textures, false, true);
    lane_no_images();
+#ifdef HAVE_THREADS
+   lane_threaded_prompt();
+   lane_threaded_late();
+#endif
 
    if (failures)
    {
