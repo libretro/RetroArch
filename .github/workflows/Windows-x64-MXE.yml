@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
-      image: reallibretroretroarch/libretro-build-mxe-win64-cross:gcc10
+      image: reallibretroretroarch/libretro-build-mxe-win64-cross:gcc16
       options: --user root
 
     steps:

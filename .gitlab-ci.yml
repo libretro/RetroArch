@@ -7,7 +7,7 @@ stages:
   - trigger-static-cores
 
 build-retroarch-windows-x64:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-mxe-win64-cross:gcc10
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-mxe-win64-cross:gcc16
   stage: build
   variables:
     MEDIA_PATH: .media
@@ -51,7 +51,7 @@ build-retroarch-windows-x64:
     - "rm -f ${MEDIA_PATH}/${CI_PROJECT_NAME}/redist/opengl32.dll"
 
 build-retroarch-windows-i686:
-  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-mxe-win32-cross:gcc10
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-mxe-win32-cross:gcc16
   stage: build
   variables:
     MEDIA_PATH: .media
