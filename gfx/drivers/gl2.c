@@ -2974,7 +2974,12 @@ bool gl2_load_luts(
 #ifdef HAVE_OVERLAY
 static void gl2_free_overlay(gl2_t *gl)
 {
-   glDeleteTextures(gl->overlays, gl->overlay_tex);
+   /* A page shown through load_textures holds the pack's names, which
+    * are the pack's to delete (input_overlay_release_textures) and are
+    * on the pack's other pages as well. */
+   if (gl->overlay_tex && !(gl->flags & GL2_FLAG_OVERLAY_BORROWED))
+      glDeleteTextures(gl->overlays, gl->overlay_tex);
+   gl->flags &= ~GL2_FLAG_OVERLAY_BORROWED;
 
    /* The three coordinate arrays are views into the overlay_tex block. */
    free(gl->overlay_tex);
