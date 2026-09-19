@@ -374,9 +374,13 @@ int main(void)
       test_language = 0;
       font_driver_free(hinted);
 
-      /* No hint - the OSD font's case - must not marshal. Both
-       * callers of font_driver_init_osd() already run on the thread
-       * that owns the context. */
+      /* No hint either: a rebuild marshals whenever the wrapper is up,
+       * whatever thread made the font. The OSD font is made on the
+       * thread that owns the context and carries no hint, but a font
+       * size change rebuilds it from the settings path on the main
+       * thread, and a GL backend making its context current there
+       * while the video thread holds it is an X BadAccess. The hint
+       * decides where a font is CREATED, not where it is rebuilt. */
       plain = font_driver_init_first(NULL, "/tmp/san/plain.ttf", 16.0f,
             false, true, &fake_font);
       CHECK(plain != NULL, "unhinted font created");
@@ -385,8 +389,8 @@ int main(void)
             "/tmp/san/plain.ttf");
       test_language = TEST_LANG_KOREAN;
       font_driver_reload_fonts();
-      CHECK(video_thread_font_init_calls == n0,
-            "unhinted rebuild stays on the calling thread");
+      CHECK(video_thread_font_init_calls > n0,
+            "unhinted rebuild marshals too, because the wrapper is up");
       test_language = 0;
       font_driver_free(plain);
    }

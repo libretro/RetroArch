@@ -39,7 +39,12 @@ build_one() {
    fi
    # A sample that cross-builds a Windows target cannot be run here;
    # building it is the whole check this host can do.
-   if     grep -qE '^check:' "$root/$dir/$name" \
+   # make itself says whether the target exists, which a grep for
+   # "check:" does not - a comment mentioning it is not a rule, and a
+   # sample whose runnable target is called something else has none.
+   # A sample that cross-builds a Windows target is built and not
+   # run, since this host cannot run it.
+   if     (cd "$root/$dir" && make -f "$name" -n check >/dev/null 2>&1) \
       && ! grep -qE '\.exe|mingw|MINGW' "$root/$dir/$name"; then
       if (cd "$root/$dir" && make -f "$name" clean >/dev/null 2>&1 \
           && ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \

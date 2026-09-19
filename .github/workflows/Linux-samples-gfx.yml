@@ -772,6 +772,22 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 60 ./modeline_edid_parse_test
 
+      - name: Build and run font_lifecycle_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/font_lifecycle
+        run: |
+          set -eu
+          # Where a font is created follows the threading hint; where
+          # it is REBUILT does not - a rebuild marshals whenever the
+          # wrapper is up, because a GL backend making its context
+          # current on the main thread while the video thread holds it
+          # is an X BadAccess. Nothing ran this sample, and it had the
+          # older rule written into it.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+          UBSAN_OPTIONS=print_stacktrace=1 timeout 120 make check SANITIZER=address,undefined
+          make clean
+
       - name: Build and run overlay_apng_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/overlay_apng
