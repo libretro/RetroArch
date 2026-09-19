@@ -144,6 +144,10 @@ struct video_buffer
    scond_t *open_cond;
    scond_t *finished_cond;
    size_t capacity;
+   /* Counts video_buffer_clear() calls. A slot held across a clear
+    * is no longer the holder's to give back - see
+    * video_buffer_release_held_slot(). */
+   unsigned generation;
 };
 typedef struct video_buffer video_buffer_t;
 
@@ -190,6 +194,7 @@ static video_buffer_t *video_buffer_create(
    b->finished_cond = NULL;
    b->head          = 0;
    b->tail          = 0;
+   b->generation    = 0;
    b->status        = (enum kb_status*)malloc(sizeof(enum kb_status) * capacity);
 
    if (!b->status)
@@ -253,6 +258,7 @@ static void video_buffer_clear(video_buffer_t *video_buffer)
 
    video_buffer->head = 0;
    video_buffer->tail = 0;
+   video_buffer->generation++;
    for (i = 0; i < video_buffer->capacity; i++)
       video_buffer->status[i] = KB_OPEN;
 
@@ -283,8 +289,7 @@ static void video_buffer_return_open_slot(
    if (video_buffer->status[context->index] == KB_IN_PROGRESS)
    {
       video_buffer->status[context->index] = KB_OPEN;
-      video_buffer->head--;
-      video_buffer->head %= video_buffer->capacity;
+      video_buffer->head = (video_buffer->head + video_buffer->capacity - 1) % video_buffer->capacity;
    }
 
    slock_unlock(video_buffer->lock);
@@ -315,6 +320,57 @@ static void video_buffer_get_finished_slot(
 
    if (video_buffer->status[video_buffer->tail] == KB_FINISHED)
       *context = &video_buffer->buffer[video_buffer->tail];
+
+   slock_unlock(video_buffer->lock);
+}
+
+/* The software video path shows a frame straight out of its slot
+ * instead of copying it somewhere first, so it has to keep the slot
+ * until the frame after it is on the screen: the frontend is entitled
+ * to come back for the last frame it was given (a paused menu redraws
+ * it), and a slot that went back to the decoder would be half the next
+ * picture by then.
+ *
+ * Holding is just not opening: the slot stays KB_FINISHED at the tail,
+ * which is the one place the decoder cannot go. What is returned with
+ * it is the generation it was taken in. */
+static video_decoder_context_t *video_buffer_hold_finished_slot(
+      video_buffer_t *video_buffer, unsigned *generation)
+{
+   video_decoder_context_t *context = NULL;
+
+   slock_lock(video_buffer->lock);
+
+   if (video_buffer->status[video_buffer->tail] == KB_FINISHED)
+   {
+      context     = &video_buffer->buffer[video_buffer->tail];
+      *generation = video_buffer->generation;
+   }
+
+   slock_unlock(video_buffer->lock);
+
+   return context;
+}
+
+/* Gives a held slot back. If the buffer was cleared in the meantime
+ * (a seek) the slot was already taken back, and the same index may
+ * well be finished again with a frame nobody has shown - opening it
+ * on the strength of its status alone would drop that frame and move
+ * the tail past it. The generation says which it is. */
+static void video_buffer_release_held_slot(
+      video_buffer_t *video_buffer,
+      video_decoder_context_t *context, unsigned generation)
+{
+   slock_lock(video_buffer->lock);
+
+   if (     video_buffer->generation == generation
+         && video_buffer->status[context->index] == KB_FINISHED)
+   {
+      video_buffer->status[context->index] = KB_OPEN;
+      video_buffer->tail++;
+      video_buffer->tail %= (video_buffer->capacity);
+      scond_signal(video_buffer->open_cond);
+   }
 
    slock_unlock(video_buffer->lock);
 }
@@ -368,20 +424,6 @@ static bool video_buffer_wait_for_open_slot(video_buffer_t *video_buffer,
       scond_wait_timeout(video_buffer->open_cond, video_buffer->lock,
             timeout_us);
    ret = video_buffer->status[video_buffer->head] == KB_OPEN;
-
-   slock_unlock(video_buffer->lock);
-
-   return ret;
-}
-
-static bool video_buffer_has_open_slot(video_buffer_t *video_buffer)
-{
-   bool ret = false;
-
-   slock_lock(video_buffer->lock);
-
-   if (video_buffer->status[video_buffer->head] == KB_OPEN)
-      ret = true;
 
    slock_unlock(video_buffer->lock);
 
@@ -757,7 +799,15 @@ typedef struct ffmpeg_core_ctx
    double decode_last_audio_time;
    retro_atomic_int_t main_sleeping;
 
+#ifdef HAVE_OPENGLES
+   /* GLES has no pixel unpack buffer to map, so the GL path stages
+    * the frame here for glTexImage2D. Nothing else uses it. */
    uint32_t *video_frame_temp_buffer;
+#endif
+
+   /* Software video path: the slot the frame on screen lives in. */
+   video_decoder_context_t *held_slot;
+   unsigned held_generation;
 
    /* Seeking */
    /* Atomic for the same reason as main_sleeping: decode_video reads
@@ -848,7 +898,9 @@ static ffmpeg_core_ctx_t g_ctx;
 #define DECODE_LAST_AUDIO_TIME_STR (g_ctx.decode_last_audio_time)
 #define MAIN_SLEEPING_STR          retro_atomic_load_acquire_int(&g_ctx.main_sleeping)
 #define MAIN_SLEEPING_SET(v)       retro_atomic_store_release_int(&g_ctx.main_sleeping, (v))
+#ifdef HAVE_OPENGLES
 #define VIDEO_FRAME_TEMP_BUFFER_STR (g_ctx.video_frame_temp_buffer)
+#endif
 #define DO_SEEK_STR                retro_atomic_load_acquire_int(&g_ctx.do_seek)
 #define DO_SEEK_SET(v)             retro_atomic_store_release_int(&g_ctx.do_seek, (v))
 #define SEEK_TIME_STR              (g_ctx.seek_time)
@@ -1767,6 +1819,25 @@ static void hwfft_render(hwfft_t *fft, GLuint backbuffer, unsigned width, unsign
 
 #endif /* HAVE_FFMPEG_FFT */
 
+static const AVCodec *retro_find_decoder(enum AVCodecID codec_id)
+{
+   const AVCodec *codec = NULL;
+
+   if (codec_id == AV_CODEC_ID_AV1)
+   {
+      if ((codec = avcodec_find_decoder_by_name("libdav1d")))
+         return codec;
+
+      if ((codec = avcodec_find_decoder_by_name("libaom-av1")))
+      {
+         log_cb(RETRO_LOG_WARN, "[FFMPEG] libdav1d is not available; falling back to libaom-av1.\n");
+         return codec;
+      }
+   }
+
+   return avcodec_find_decoder(codec_id);
+}
+
 #ifdef HAVE_SSA
 static void render_ass_img(AVFrame *conv_frame, ASS_Image *img);
 #endif
@@ -2091,7 +2162,11 @@ static void seek_frame(int seek_frames)
    /* Handle resets + attempts to seek to a location
     * before the start of the video */
    if ((seek_frames < 0 && (unsigned)-seek_frames > g_ctx.decoded_frame_cnt) || RESET_TRIGGERED_STR)
+   {
       g_ctx.decoded_frame_cnt = 0;
+      SEEK_L2_STR = 0;
+      SEEK_R2_STR = 0;
+   }
    /* Handle backwards seeking */
    else if (seek_frames < 0)
       g_ctx.decoded_frame_cnt += seek_frames;
@@ -2111,6 +2186,9 @@ static void seek_frame(int seek_frames)
       if (seek_target_time > seek_time_max)
       {
          seek_step_time = seek_time_max - current_time;
+
+         SEEK_L2_STR = 0;
+         SEEK_R2_STR = 0;
 
          /* If seek would have taken us to the
           * end of the file, restart it instead
@@ -2194,12 +2272,12 @@ static int seek_adjust(int target)
       case  10: return  30; /* silly on the face of */
       case  30: return  60; /* it, but we needed a */
       case  60: return  90; /* strong seek to get to */
-      case  90: return 300; /* the middle or end of */
-      case 300: return 310; /* a long film; the result */
-      case 310: return 330; /* is this block which is */
-      case 330: return 360; /* used to adjust the seek */
-      case 360: return 390; /* strength without using */
-      case 390: return  10; /* multiple variables. */
+      case  90: return 298; /* the middle or end of */
+      case 298: return 299; /* a long film; the result */
+      case 299: return 300; /* is this block which is */
+      case 300: return 301; /* used to adjust the seek */
+      case 301: return 302; /* strength without using */
+      case 302: return  10; /* multiple variables. */
    }
    return 0;
 }
@@ -2274,21 +2352,25 @@ void CORE_PREFIX(retro_run)(void)
    {
       seek_frames -= 30 * MEDIA_STR.interpolate_fps;
       SEEK_L2_STR = 0;
+      SEEK_R2_STR = 0;
    }
    if (r1 && !LAST_R1_STR)
    {
       seek_frames += 30 * MEDIA_STR.interpolate_fps;
       SEEK_L2_STR = 0;
+      SEEK_R2_STR = 0;
    }
 
    if (l2 && !LAST_L2_STR)
    {
       SEEK_L2_STR = seek_adjust(SEEK_L2_STR);
+      SEEK_R2_STR = 0;
       seek_frames -= SEEK_L2_STR * MEDIA_STR.interpolate_fps;
    }
 
    if (r2 && !LAST_R2_STR)
    {
+      SEEK_L2_STR = 0;
       SEEK_R2_STR = seek_adjust(SEEK_R2_STR);
       seek_frames += SEEK_R2_STR * MEDIA_STR.interpolate_fps;
    }
@@ -2300,6 +2382,7 @@ void CORE_PREFIX(retro_run)(void)
       int adjustment = (up) ? (+1) : ((down) ? (-1) : (0));
 
       SEEK_L2_STR = 0;
+      SEEK_R2_STR = 0;
 
       msg[0] = '\0';
 
@@ -2326,6 +2409,7 @@ void CORE_PREFIX(retro_run)(void)
       int adjustment = (right) ? (+1) : ((left) ? (-1) : (0));
 
       SEEK_L2_STR = 0;
+      SEEK_R2_STR = 0;
 
       msg[0] = '\0';
 
@@ -2582,34 +2666,83 @@ void CORE_PREFIX(retro_run)(void)
             if (!VIDEO_BUFFER_STR)
                break;
 
+            /* The frame on screen is about to be replaced (or, when
+             * several are due at once, skipped), so its slot can go
+             * back. It has to: the tail does not move until it does. */
+            if (g_ctx.held_slot)
+            {
+               video_buffer_release_held_slot(VIDEO_BUFFER_STR,
+                     g_ctx.held_slot, g_ctx.held_generation);
+               g_ctx.held_slot = NULL;
+               dupe            = true;
+            }
+
             if (!DECODE_THREAD_DEAD_STR)
                video_buffer_wait_for_finished_slot(VIDEO_BUFFER_STR);
 
             if (!DECODE_THREAD_DEAD_STR)
             {
-               unsigned y;
-               const uint8_t *src;
-               int stride, width;
-               uint32_t *data               = VIDEO_FRAME_TEMP_BUFFER_STR;
-               video_decoder_context_t *ctx = NULL;
+               /* NULL if a clear got in between the wait and here. */
+               g_ctx.held_slot = video_buffer_hold_finished_slot(
+                     VIDEO_BUFFER_STR, &g_ctx.held_generation);
+               if (!g_ctx.held_slot)
+                  break;
 
-               video_buffer_get_finished_slot(VIDEO_BUFFER_STR, &ctx);
-               pts                          = ctx->pts;
-               src                          = ctx->target->data[0];
-               stride                       = ctx->target->linesize[0];
-               width                        = MEDIA_STR.width * sizeof(uint32_t);
-               for (y = 0; y < MEDIA_STR.height; y++, src += stride, data += width/4)
-                  memcpy(data, src, width);
-
-               dupe                         = false;
-               video_buffer_open_slot(VIDEO_BUFFER_STR, ctx);
+               pts             = g_ctx.held_slot->pts;
+               dupe            = false;
             }
 
             FRAMES_STR[1].pts = av_q2d(FCTX_STR->streams[VIDEO_STREAM_INDEX_STR]->time_base) * pts;
          }
 
-         CORE_PREFIX(video_cb)(dupe ? NULL : VIDEO_FRAME_TEMP_BUFFER_STR,
-               MEDIA_STR.width, MEDIA_STR.height, MEDIA_STR.width * sizeof(uint32_t));
+         if (dupe || !g_ctx.held_slot)
+            CORE_PREFIX(video_cb)(NULL,
+                  MEDIA_STR.width, MEDIA_STR.height, MEDIA_STR.width * sizeof(uint32_t));
+         else
+         {
+            struct retro_framebuffer fb;
+            const uint8_t *src = g_ctx.held_slot->target->data[0];
+            size_t stride      = (size_t)g_ctx.held_slot->target->linesize[0];
+            size_t row_bytes   = MEDIA_STR.width * sizeof(uint32_t);
+
+            /* Ask the frontend for its own framebuffer. A driver that
+             * has one (Vulkan, D3D12) hands out the mapped texture the
+             * frame is drawn from, so the one copy below is the only
+             * one the frame takes from the scaler to the GPU. It has
+             * to be asked for every frame, and the answer can change. */
+            memset(&fb, 0, sizeof(fb));
+            fb.width        = MEDIA_STR.width;
+            fb.height       = MEDIA_STR.height;
+            fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+
+            if (     CORE_PREFIX(environ_cb)(
+                        RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
+                  && fb.data
+                  && fb.format == RETRO_PIXEL_FORMAT_XRGB8888
+                  && fb.pitch  >= row_bytes)
+            {
+               uint8_t *dst = (uint8_t*)fb.data;
+
+               if (fb.pitch == stride)
+                  memcpy(dst, src, stride * (MEDIA_STR.height - 1) + row_bytes);
+               else
+               {
+                  unsigned y;
+                  for (y = 0; y < MEDIA_STR.height; y++, src += stride, dst += fb.pitch)
+                     memcpy(dst, src, row_bytes);
+               }
+
+               CORE_PREFIX(video_cb)(fb.data,
+                     MEDIA_STR.width, MEDIA_STR.height, fb.pitch);
+            }
+            /* No framebuffer on offer: the frontend copies out of
+             * whatever it is given, so give it the slot itself. The
+             * copy into a buffer of the core's own, which is what
+             * this used to do first, bought nothing. */
+            else
+               CORE_PREFIX(video_cb)(src,
+                     MEDIA_STR.width, MEDIA_STR.height, stride);
+         }
       }
    }
 #ifdef HAVE_FFMPEG_FFT
@@ -2657,7 +2790,7 @@ static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
 #endif
    int ret = 0;
    enum AVPixelFormat decoder_pix_fmt = AV_PIX_FMT_NONE;
-   const AVCodec *codec = avcodec_find_decoder(FCTX_STR->streams[VIDEO_STREAM_INDEX_STR]->codecpar->codec_id);
+   const AVCodec *codec = retro_find_decoder(FCTX_STR->streams[VIDEO_STREAM_INDEX_STR]->codecpar->codec_id);
 
 #if !FFMPEG3
    for (i = 0;; i++)
@@ -2766,7 +2899,17 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
 
       ctx->thread_type       = FF_THREAD_FRAME;
       ctx->thread_count      = SW_DECODER_THREADS_STR;
+
+      if (ctx->codec)
+      {
+         if ((ctx->codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) == 0)
+            ctx->thread_type &= ~FF_THREAD_FRAME;
+         if ((ctx->codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) != 0)
+            ctx->thread_type |= FF_THREAD_SLICE;
+      }
+
       log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured software decoding threads: %d\n", SW_DECODER_THREADS_STR);
+      log_cb(RETRO_LOG_INFO, "[FFMPEG] Configured software decoding type: %d\n", ctx->thread_type);
 
       format                 = (enum AVPixelFormat)FCTX_STR->streams[VIDEO_STREAM_INDEX_STR]->codecpar->format;
 
@@ -2801,7 +2944,7 @@ static enum AVPixelFormat get_format(AVCodecContext *ctx,
 static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned index)
 {
    int ret              = 0;
-   const AVCodec *codec = avcodec_find_decoder(FCTX_STR->streams[index]->codecpar->codec_id);
+   const AVCodec *codec = retro_find_decoder(FCTX_STR->streams[index]->codecpar->codec_id);
    if (!codec)
    {
       log_cb(RETRO_LOG_ERROR, "[FFMPEG] Couldn't find suitable decoder\n");
@@ -3134,16 +3277,28 @@ static void sws_worker_thread(void *arg)
       tmp_frame = ctx->source;
 
    ctx->sws = sws_getCachedContext(ctx->sws,
-         MEDIA_STR.width, MEDIA_STR.height, (enum AVPixelFormat)tmp_frame->format,
+         tmp_frame->width, tmp_frame->height, (enum AVPixelFormat)tmp_frame->format,
          MEDIA_STR.width, MEDIA_STR.height, AV_PIX_FMT_RGB32,
          SWS_POINT, NULL, NULL, NULL);
+
+   /* Now that the source size and format come from the frame, a frame
+    * a broken file decodes to nonsense can be one swscale refuses.
+    * The slot is still finished, so the ring keeps its order and the
+    * main thread is not left waiting on it; it shows whatever the
+    * slot held before. */
+   if (!ctx->sws)
+   {
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] No scaler for a %dx%d frame of format %d.\n",
+            tmp_frame->width, tmp_frame->height, tmp_frame->format);
+      goto finish;
+   }
 
    set_colorspace(ctx->sws, MEDIA_STR.width, MEDIA_STR.height,
          tmp_frame->colorspace,
          tmp_frame->color_range);
 
    if ((ret = sws_scale(ctx->sws, (const uint8_t *const*)tmp_frame->data,
-         tmp_frame->linesize, 0, MEDIA_STR.height,
+         tmp_frame->linesize, 0, tmp_frame->height,
          (uint8_t * const*)ctx->target->data, ctx->target->linesize)) < 0)
    {
 #ifdef __cplusplus
@@ -3153,6 +3308,7 @@ static void sws_worker_thread(void *arg)
 #endif
    }
 
+finish:
    ctx->pts = ctx->source->best_effort_timestamp;
 
    av_frame_unref(ctx->source);
@@ -3163,21 +3319,10 @@ static void sws_worker_thread(void *arg)
    video_buffer_finish_slot(VIDEO_BUFFER_STR, ctx);
 }
 
-#ifdef HAVE_SSA
-static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size, ASS_Track *ass_track_active)
-#else
-static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
-#endif
+/* Sleep decoding thread until video_buffer is not full again.
+ * Five milliseconds is well inside a frame at any rate the core plays. */
+static bool decode_video_frames_slot_wait(void)
 {
-   int ret = 0;
-   video_decoder_context_t *decoder_ctx = NULL;
-
-   /* Stop decoding thread until video_buffer is not full again. The
-    * wait is on the condition a released slot signals, with a bound
-    * so the escape below is still reached: the main thread going to
-    * sleep with the buffer full is what this calls a deadlock, and
-    * nothing signals that. Five milliseconds is well inside a frame
-    * at any rate the core plays. */
    while (!DECODE_THREAD_DEAD_STR
          && !video_buffer_wait_for_open_slot(VIDEO_BUFFER_STR, 5000))
    {
@@ -3187,52 +3332,69 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
             log_cb(RETRO_LOG_ERROR, "[FFMPEG] Thread: Video deadlock detected.\n");
          tpool_wait(TPOOL_STR);
          video_buffer_clear(VIDEO_BUFFER_STR);
-         return;
+         return false;
       }
    }
 
-   if ((ret = avcodec_send_packet(ctx, pkt)) < 0)
-   {
-#ifdef __cplusplus
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode video packet: %d\n", ret);
-#else
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode video packet: %s\n", av_err2str(ret));
-#endif
-      return;
-   }
+   return !DECODE_THREAD_DEAD_STR;
+}
 
-   while (!DECODE_THREAD_DEAD_STR && video_buffer_has_open_slot(VIDEO_BUFFER_STR))
+#ifdef HAVE_SSA
+static int decode_video_frames(AVCodecContext *ctx, ASS_Track *ass_track_active)
+#else
+static int decode_video_frames(AVCodecContext *ctx)
+#endif
+{
+   int frames = 0;
+
+   for (;;)
    {
+      int ret;
+      video_decoder_context_t *decoder_ctx = NULL;
+
+      if (!decode_video_frames_slot_wait())
+         return -1;
+
       video_buffer_get_open_slot(VIDEO_BUFFER_STR, &decoder_ctx);
 
+      if (!decoder_ctx)
+         return -1;
+
       ret = avcodec_receive_frame(ctx, decoder_ctx->source);
+
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
       {
-         ret = DECODE_NO_FRAME;
-         goto end;
+         video_buffer_return_open_slot(VIDEO_BUFFER_STR, decoder_ctx);
+         return frames;
       }
-      else if (ret < 0)
+
+      if (ret < 0)
       {
 #ifdef __cplusplus
          log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while reading video frame: %d\n", ret);
 #else
          log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error while reading video frame: %s\n", av_err2str(ret));
 #endif
-         goto end;
+         video_buffer_return_open_slot(VIDEO_BUFFER_STR, decoder_ctx);
+         return -1;
       }
 
 #if ENABLE_HW_ACCEL
       if (HW_DECODING_ENABLED_STR)
+      {
          /* Copy data from VRAM to RAM */
          if ((ret = av_hwframe_transfer_data(decoder_ctx->hw_source, decoder_ctx->source, 0)) < 0)
          {
 #ifdef __cplusplus
-               log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error transferring the data to system memory: %d\n", ret);
+            log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error transferring the data to system memory: %d\n", ret);
 #else
-               log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error transferring the data to system memory: %s\n", av_err2str(ret));
+            log_cb(RETRO_LOG_ERROR, "[FFMPEG] Error transferring the data to system memory: %s\n", av_err2str(ret));
 #endif
-               goto end;
+            av_frame_unref(decoder_ctx->source);
+            video_buffer_return_open_slot(VIDEO_BUFFER_STR, decoder_ctx);
+            return -1;
          }
+      }
 #endif
 
 #ifdef HAVE_SSA
@@ -3240,16 +3402,54 @@ static void decode_video(AVCodecContext *ctx, AVPacket *pkt, size_t frame_size)
 #endif
 
       tpool_add_work(TPOOL_STR, sws_worker_thread, decoder_ctx);
+      frames++;
+   }
+}
 
-   end:
+#ifdef HAVE_SSA
+static void decode_video(AVCodecContext *ctx, AVPacket *pkt, ASS_Track *ass_track_active)
+#else
+static void decode_video(AVCodecContext *ctx, AVPacket *pkt)
+#endif
+{
+   int ret = 0;
+
+   for (;;)
+   {
+      ret = avcodec_send_packet(ctx, pkt);
+
+      if (ret == AVERROR(EAGAIN))
+      {
+#ifdef HAVE_SSA
+         if (decode_video_frames(ctx, ass_track_active) <= 0)
+#else
+         if (decode_video_frames(ctx) <= 0)
+#endif
+            return;
+         continue;
+      }
+
+      if (ret == AVERROR_EOF)
+         break;
+
       if (ret < 0)
       {
-         video_buffer_return_open_slot(VIDEO_BUFFER_STR, decoder_ctx);
-         break;
+#ifdef __cplusplus
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode video packet: %d\n", ret);
+#else
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Can't decode video packet: %s\n", av_err2str(ret));
+#endif
+         return;
       }
+
+      break;
    }
 
-   return;
+#ifdef HAVE_SSA
+   decode_video_frames(ctx, ass_track_active);
+#else
+   decode_video_frames(ctx);
+#endif
 }
 
 static int16_t *decode_audio(AVCodecContext *ctx, AVPacket *pkt,
@@ -3384,7 +3584,6 @@ static void decode_thread(void *data)
    bool eof                = false;
    struct SwrContext *swr[(AUDIO_STREAMS_NUM_STR > 0) ? AUDIO_STREAMS_NUM_STR : 1];
    AVFrame *aud_frame      = NULL;
-   size_t frame_size       = 0;
    int16_t *audio_buffer   = NULL;
    size_t audio_buffer_cap = 0;
    packet_buffer_t *audio_packet_buffer;
@@ -3423,9 +3622,6 @@ static void decode_thread(void *data)
     * with no audio to pace the main thread was a NULL dereference on
     * the first frame. Made before the thread starts, the thread's own
     * creation orders them and there is nothing to publish. */
-   if (VIDEO_STREAM_INDEX_STR >= 0)
-      frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32,
-            MEDIA_STR.width, MEDIA_STR.height, 1);
 
    while (!DECODE_THREAD_DEAD_STR)
    {
@@ -3536,9 +3732,9 @@ static void decode_thread(void *data)
          packet_buffer_get_packet(video_packet_buffer, pkt);
 
          #ifdef HAVE_SSA
-         decode_video(VCTX_STR, pkt, frame_size, ass_track_active);
+         decode_video(VCTX_STR, pkt, ass_track_active);
          #else
-         decode_video(VCTX_STR, pkt, frame_size);
+         decode_video(VCTX_STR, pkt);
          #endif
 
          av_packet_unref(pkt);
@@ -3871,7 +4067,10 @@ void CORE_PREFIX(retro_unload_game)(void)
    g_ctx.ass_lib = NULL;
 #endif
 
+#ifdef HAVE_OPENGLES
    av_freep(&VIDEO_FRAME_TEMP_BUFFER_STR);
+#endif
+   g_ctx.held_slot = NULL;
 }
 
 bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
@@ -3885,10 +4084,10 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT, "Increment Subtitle Index" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP,    "Increment Audio Index" },
       { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN,  "Decrement Audio Index" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "Seek -60 seconds" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "Seek +60 seconds" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,     "Seek Decrementally" },
-      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,     "Seek Incrementally" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,     "Seek -30 seconds" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R,     "Seek +30 seconds" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2,    "Seek Decrementally" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2,    "Seek Incrementally" },
 
       { 0 },
    };
@@ -3992,7 +4191,15 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    {
       size_t vb_frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32,
             MEDIA_STR.width, MEDIA_STR.height, 1);
-      VIDEO_BUFFER_STR = video_buffer_create(4, (int)vb_frame_size,
+      /* The software path keeps the slot of the frame on screen, so
+       * it gets one more to leave the decoder the four it had. That
+       * slot is the frame the temporary buffer used to be. */
+      size_t vb_slots      = 5;
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+      if (USE_GL_STR)
+         vb_slots          = 4;
+#endif
+      VIDEO_BUFFER_STR = video_buffer_create(vb_slots, (int)vb_frame_size,
             MEDIA_STR.width, MEDIA_STR.height);
       TPOOL_STR        = tpool_create(SW_SWS_THREADS_STR);
       if (!VIDEO_BUFFER_STR || !TPOOL_STR)
@@ -4003,8 +4210,11 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    DECODE_THREAD_HANDLE_STR = sthread_create(decode_thread, NULL);
 
-   VIDEO_FRAME_TEMP_BUFFER_STR = (uint32_t*)
-      av_malloc(MEDIA_STR.width * MEDIA_STR.height * sizeof(uint32_t));
+#ifdef HAVE_OPENGLES
+   if (USE_GL_STR)
+      VIDEO_FRAME_TEMP_BUFFER_STR = (uint32_t*)
+         av_malloc(MEDIA_STR.width * MEDIA_STR.height * sizeof(uint32_t));
+#endif
 
    PTS_BIAS_STR = 0.0;
 
