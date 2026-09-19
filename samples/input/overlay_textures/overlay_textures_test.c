@@ -40,12 +40,18 @@
  *                   unthreaded sequence by another road, and one
  *                   86fbf34e01 broke as well, whenever the thread
  *                   was quick;
- *   late handles    it has not: the page goes through load() with
- *                   live pixels, the pack keeps them, and when the
- *                   thread does run it reads pixels still there.
- *
- * load() and the texture upload read every pixel they are given, so
- * under ASan a stale pointer is a report, not a picture nobody sees.
+ *   late handles    it has not, which is the usual case: the page
+ *                   goes through load() with live pixels, the uploads
+ *                   are kept rather than posted again at every page,
+ *                   and once the handles are in the page on screen
+ *                   moves over to them and the pixels go;
+ *   late, refused   the same, and then the driver declines them or
+ *                   the thread could not make them: load() from then
+ *                   on, pixels kept, no texture held for nothing;
+ *   freed in flight the pack is freed, or the driver goes, with the
+ *                   uploads still queued: the video thread reads
+ *                   pixels that went with the surfaces, not pixels
+ *                   freed under it.
  */
 
 #include <stdio.h>
@@ -339,8 +345,9 @@ static void lane_threaded_prompt(void)
 
 /* The video thread has not got round to the uploads by the poll,
  * which is the usual case: the poll follows the posts at once. The
- * page goes through load() with live pixels, the pack keeps them, and
- * when the thread does run it reads pixels that are still there. */
+ * page goes through load() with live pixels and the uploads are kept,
+ * not thrown away and posted again at the next page; when the handles
+ * are in, the page on screen moves over to them and the pixels go. */
 static void lane_threaded_late(void)
 {
    unsigned i, before = failures;
@@ -350,25 +357,124 @@ static void lane_threaded_late(void)
    stub_thread_wins_race = false;
    ol = pack_new(&iface_textures, NUM_IMAGES);
 
-   CHECK(!input_overlay_load_page(ol), "threaded, late: went as textures");
-   CHECK(drv_loads == 1 && drv_null_pixels == 0,
-         "threaded, late: page 0 did not reach load() with pixels");
-   check_page("threaded, late", 0);
+   for (i = 0; i < NUM_PAGES; i++)
+   {
+      pack_show(ol, i);
+      CHECK(!input_overlay_load_page(ol),
+            "threaded, late: page %u went as textures", i);
+      CHECK(drv_loads == i + 1 && drv_null_pixels == 0,
+            "threaded, late: page %u did not reach load() with pixels", i);
+      check_page("threaded, late", i);
+      CHECK(!input_overlay_promote_textures(ol),
+            "threaded, late: promoted with nothing uploaded");
+   }
    for (i = 0; i < NUM_IMAGES; i++)
       CHECK(ol->images[i]->pixels != NULL,
             "threaded, late: image %u lost its pixels", i);
 
-   /* Now the thread runs, and the completions come back. */
-   stub_video_thread_run();
+   /* The thread runs, the frame's poll delivers, the input poll
+    * promotes: page 1, the one on screen. */
+   CHECK(stub_video_thread_run() == NUM_IMAGES,
+         "threaded, late: the uploads were posted more than once");
    video_thread_async_poll();
+   drv_shown = 0;
+   CHECK(input_overlay_promote_textures(ol), "threaded, late: not promoted");
+   check_page("threaded, late (promoted)", 1);
+   CHECK(!input_overlay_promote_textures(ol), "threaded, late: promoted twice");
+   for (i = 0; i < NUM_IMAGES; i++)
+      CHECK(!ol->images[i]->pixels,
+            "threaded, late: image %u kept its pixels", i);
+
+   pack_show(ol, 0);
+   CHECK(input_overlay_load_page(ol), "threaded, late: page 0 not as textures");
+   check_page("threaded, late (switch)", 0);
+   CHECK(stub_tex_loads == NUM_IMAGES && drv_loads == NUM_PAGES,
+         "threaded, late: %u uploads, %u load() calls",
+         stub_tex_loads, drv_loads);
 
    pack_free(ol);
-   stub_video_thread_run();
-   video_thread_async_poll();
    CHECK(stub_tex_live == 0, "threaded, late: %u textures outlived the pack",
          stub_tex_live);
    stub_thread_active = false;
    printf("[%s] threaded, late handles lane\n",
+         failures == before ? "pass" : "fail");
+}
+
+/* The handles come in late and then the driver beneath the wrapper
+ * declines them, or the thread could not make them: the pack stays
+ * on load() with its pixels and holds no texture for nothing. */
+static void lane_threaded_late_refused(const char *lane,
+      bool decline, bool upload_fails)
+{
+   unsigned i, before = failures;
+   input_overlay_t *ol;
+   drv_reset();
+   stub_thread_active    = true;
+   stub_thread_wins_race = false;
+   drv_decline           = decline;
+   ol = pack_new(&iface_textures, NUM_IMAGES);
+
+   CHECK(!input_overlay_load_page(ol), "%s: went as textures", lane);
+   stub_tex_load_fails = upload_fails;
+   stub_video_thread_run();
+   video_thread_async_poll();
+   CHECK(!input_overlay_promote_textures(ol), "%s: promoted", lane);
+   CHECK(ol->flags & INPUT_OVERLAY_TEXTURES_DECLINED, "%s: not remembered", lane);
+   CHECK(stub_tex_live == 0, "%s: %u textures held for nothing", lane,
+         stub_tex_live);
+   for (i = 0; i < NUM_IMAGES; i++)
+      CHECK(ol->images[i]->pixels != NULL, "%s: image %u lost its pixels",
+            lane, i);
+   pack_show(ol, 1);
+   CHECK(!input_overlay_load_page(ol), "%s: page 1 went as textures", lane);
+   CHECK(drv_null_pixels == 0, "%s: page 1 had no pixels", lane);
+   check_page(lane, 1);
+
+   pack_free(ol);
+   stub_thread_active = false;
+   printf("[%s] %s lane\n", failures == before ? "pass" : "fail", lane);
+}
+
+/* The pack is freed, or the driver goes, with the uploads still
+ * queued, and the video thread gets to them afterwards: it reads
+ * pixels that went with the surfaces, not pixels that were freed
+ * under it, and nothing is left behind. A pack that lost its pixels
+ * this way and lives on says it has nothing to come back from. */
+static void lane_threaded_freed_in_flight(void)
+{
+   unsigned before = failures;
+   input_overlay_t *ol;
+   drv_reset();
+   stub_thread_active    = true;
+   stub_thread_wins_race = false;
+
+   ol = pack_new(&iface_textures, NUM_IMAGES);
+   input_overlay_load_page(ol);
+   pack_free(ol);
+   CHECK(stub_video_thread_run() == NUM_IMAGES,
+         "freed in flight: the uploads were not in flight");
+   video_thread_async_poll();
+   CHECK(stub_tex_live == 0, "freed in flight: %u textures outlived the pack",
+         stub_tex_live);
+
+   ol = pack_new(&iface_textures, NUM_IMAGES);
+   input_overlay_load_page(ol);
+   input_overlay_release_textures(ol);      /* video teardown */
+   stub_video_thread_run();
+   video_thread_async_poll();
+   CHECK(!input_overlay_has_source(ol),
+         "released in flight: reported as reusable");
+   drv_loads = 0;
+   ol->flags &= ~INPUT_OVERLAY_TEXTURES_DECLINED;
+   CHECK(!input_overlay_load_page(ol), "released in flight: went as textures");
+   CHECK(drv_loads == 0 && drv_null_pixels == 0,
+         "released in flight: load() was handed a pack with no pixels");
+   pack_free(ol);
+   CHECK(stub_tex_live == 0, "released in flight: %u textures left",
+         stub_tex_live);
+
+   stub_thread_active = false;
+   printf("[%s] threaded, freed in flight lane\n",
          failures == before ? "pass" : "fail");
 }
 #endif
@@ -383,6 +489,9 @@ int main(void)
 #ifdef HAVE_THREADS
    lane_threaded_prompt();
    lane_threaded_late();
+   lane_threaded_late_refused("threaded, late and declined", true,  false);
+   lane_threaded_late_refused("threaded, late and failed",   false, true);
+   lane_threaded_freed_in_flight();
 #endif
 
    if (failures)
