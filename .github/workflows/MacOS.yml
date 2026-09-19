@@ -32,6 +32,27 @@ jobs:
         # companion, the grid, the tables, the dialogs - as AppKit does them.
         tools/companion_cocoa_test_macos.sh 2>&1 | grep -v "^$"
 
+    - name: Metal texture behaviour the surface and overlay paths assume
+      run: |
+        set -o pipefail
+        # The driver's Metal paths have only ever been compiled. This
+        # asserts the two behaviours they are built on, on the runner's
+        # real device: a texture replaced in place while GPU work that
+        # samples it is in flight - the animated preview's steady
+        # state, and the one path with no fence check or DO_NOT_WAIT to
+        # drop a frame with - and an overlay page holding textures the
+        # pack owns, where a page switch must not take them with it.
+        #
+        # 77 means the runner exposed no Metal device; the sample says
+        # so rather than passing quietly.
+        cd samples/gfx/metal_texture_update
+        make check; rc=$?
+        if [ "$rc" = 77 ]; then
+          echo "::warning::no Metal device on this runner; the check did not run"
+          exit 0
+        fi
+        exit "$rc"
+
     - name: Compile RA
       run: |
         set -o pipefail
