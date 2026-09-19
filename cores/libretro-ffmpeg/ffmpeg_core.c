@@ -144,6 +144,10 @@ struct video_buffer
    scond_t *open_cond;
    scond_t *finished_cond;
    size_t capacity;
+   /* Counts video_buffer_clear() calls. A slot held across a clear
+    * is no longer the holder's to give back - see
+    * video_buffer_release_held_slot(). */
+   unsigned generation;
 };
 typedef struct video_buffer video_buffer_t;
 
@@ -190,6 +194,7 @@ static video_buffer_t *video_buffer_create(
    b->finished_cond = NULL;
    b->head          = 0;
    b->tail          = 0;
+   b->generation    = 0;
    b->status        = (enum kb_status*)malloc(sizeof(enum kb_status) * capacity);
 
    if (!b->status)
@@ -253,6 +258,7 @@ static void video_buffer_clear(video_buffer_t *video_buffer)
 
    video_buffer->head = 0;
    video_buffer->tail = 0;
+   video_buffer->generation++;
    for (i = 0; i < video_buffer->capacity; i++)
       video_buffer->status[i] = KB_OPEN;
 
@@ -314,6 +320,57 @@ static void video_buffer_get_finished_slot(
 
    if (video_buffer->status[video_buffer->tail] == KB_FINISHED)
       *context = &video_buffer->buffer[video_buffer->tail];
+
+   slock_unlock(video_buffer->lock);
+}
+
+/* The software video path shows a frame straight out of its slot
+ * instead of copying it somewhere first, so it has to keep the slot
+ * until the frame after it is on the screen: the frontend is entitled
+ * to come back for the last frame it was given (a paused menu redraws
+ * it), and a slot that went back to the decoder would be half the next
+ * picture by then.
+ *
+ * Holding is just not opening: the slot stays KB_FINISHED at the tail,
+ * which is the one place the decoder cannot go. What is returned with
+ * it is the generation it was taken in. */
+static video_decoder_context_t *video_buffer_hold_finished_slot(
+      video_buffer_t *video_buffer, unsigned *generation)
+{
+   video_decoder_context_t *context = NULL;
+
+   slock_lock(video_buffer->lock);
+
+   if (video_buffer->status[video_buffer->tail] == KB_FINISHED)
+   {
+      context     = &video_buffer->buffer[video_buffer->tail];
+      *generation = video_buffer->generation;
+   }
+
+   slock_unlock(video_buffer->lock);
+
+   return context;
+}
+
+/* Gives a held slot back. If the buffer was cleared in the meantime
+ * (a seek) the slot was already taken back, and the same index may
+ * well be finished again with a frame nobody has shown - opening it
+ * on the strength of its status alone would drop that frame and move
+ * the tail past it. The generation says which it is. */
+static void video_buffer_release_held_slot(
+      video_buffer_t *video_buffer,
+      video_decoder_context_t *context, unsigned generation)
+{
+   slock_lock(video_buffer->lock);
+
+   if (     video_buffer->generation == generation
+         && video_buffer->status[context->index] == KB_FINISHED)
+   {
+      video_buffer->status[context->index] = KB_OPEN;
+      video_buffer->tail++;
+      video_buffer->tail %= (video_buffer->capacity);
+      scond_signal(video_buffer->open_cond);
+   }
 
    slock_unlock(video_buffer->lock);
 }
@@ -742,7 +799,15 @@ typedef struct ffmpeg_core_ctx
    double decode_last_audio_time;
    retro_atomic_int_t main_sleeping;
 
+#ifdef HAVE_OPENGLES
+   /* GLES has no pixel unpack buffer to map, so the GL path stages
+    * the frame here for glTexImage2D. Nothing else uses it. */
    uint32_t *video_frame_temp_buffer;
+#endif
+
+   /* Software video path: the slot the frame on screen lives in. */
+   video_decoder_context_t *held_slot;
+   unsigned held_generation;
 
    /* Seeking */
    /* Atomic for the same reason as main_sleeping: decode_video reads
@@ -833,7 +898,9 @@ static ffmpeg_core_ctx_t g_ctx;
 #define DECODE_LAST_AUDIO_TIME_STR (g_ctx.decode_last_audio_time)
 #define MAIN_SLEEPING_STR          retro_atomic_load_acquire_int(&g_ctx.main_sleeping)
 #define MAIN_SLEEPING_SET(v)       retro_atomic_store_release_int(&g_ctx.main_sleeping, (v))
+#ifdef HAVE_OPENGLES
 #define VIDEO_FRAME_TEMP_BUFFER_STR (g_ctx.video_frame_temp_buffer)
+#endif
 #define DO_SEEK_STR                retro_atomic_load_acquire_int(&g_ctx.do_seek)
 #define DO_SEEK_SET(v)             retro_atomic_store_release_int(&g_ctx.do_seek, (v))
 #define SEEK_TIME_STR              (g_ctx.seek_time)
@@ -2599,34 +2666,83 @@ void CORE_PREFIX(retro_run)(void)
             if (!VIDEO_BUFFER_STR)
                break;
 
+            /* The frame on screen is about to be replaced (or, when
+             * several are due at once, skipped), so its slot can go
+             * back. It has to: the tail does not move until it does. */
+            if (g_ctx.held_slot)
+            {
+               video_buffer_release_held_slot(VIDEO_BUFFER_STR,
+                     g_ctx.held_slot, g_ctx.held_generation);
+               g_ctx.held_slot = NULL;
+               dupe            = true;
+            }
+
             if (!DECODE_THREAD_DEAD_STR)
                video_buffer_wait_for_finished_slot(VIDEO_BUFFER_STR);
 
             if (!DECODE_THREAD_DEAD_STR)
             {
-               unsigned y;
-               const uint8_t *src;
-               int stride, width;
-               uint32_t *data               = VIDEO_FRAME_TEMP_BUFFER_STR;
-               video_decoder_context_t *ctx = NULL;
+               /* NULL if a clear got in between the wait and here. */
+               g_ctx.held_slot = video_buffer_hold_finished_slot(
+                     VIDEO_BUFFER_STR, &g_ctx.held_generation);
+               if (!g_ctx.held_slot)
+                  break;
 
-               video_buffer_get_finished_slot(VIDEO_BUFFER_STR, &ctx);
-               pts                          = ctx->pts;
-               src                          = ctx->target->data[0];
-               stride                       = ctx->target->linesize[0];
-               width                        = MEDIA_STR.width * sizeof(uint32_t);
-               for (y = 0; y < MEDIA_STR.height; y++, src += stride, data += width/4)
-                  memcpy(data, src, width);
-
-               dupe                         = false;
-               video_buffer_open_slot(VIDEO_BUFFER_STR, ctx);
+               pts             = g_ctx.held_slot->pts;
+               dupe            = false;
             }
 
             FRAMES_STR[1].pts = av_q2d(FCTX_STR->streams[VIDEO_STREAM_INDEX_STR]->time_base) * pts;
          }
 
-         CORE_PREFIX(video_cb)(dupe ? NULL : VIDEO_FRAME_TEMP_BUFFER_STR,
-               MEDIA_STR.width, MEDIA_STR.height, MEDIA_STR.width * sizeof(uint32_t));
+         if (dupe || !g_ctx.held_slot)
+            CORE_PREFIX(video_cb)(NULL,
+                  MEDIA_STR.width, MEDIA_STR.height, MEDIA_STR.width * sizeof(uint32_t));
+         else
+         {
+            struct retro_framebuffer fb;
+            const uint8_t *src = g_ctx.held_slot->target->data[0];
+            size_t stride      = (size_t)g_ctx.held_slot->target->linesize[0];
+            size_t row_bytes   = MEDIA_STR.width * sizeof(uint32_t);
+
+            /* Ask the frontend for its own framebuffer. A driver that
+             * has one (Vulkan, D3D12) hands out the mapped texture the
+             * frame is drawn from, so the one copy below is the only
+             * one the frame takes from the scaler to the GPU. It has
+             * to be asked for every frame, and the answer can change. */
+            memset(&fb, 0, sizeof(fb));
+            fb.width        = MEDIA_STR.width;
+            fb.height       = MEDIA_STR.height;
+            fb.access_flags = RETRO_MEMORY_ACCESS_WRITE;
+
+            if (     CORE_PREFIX(environ_cb)(
+                        RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
+                  && fb.data
+                  && fb.format == RETRO_PIXEL_FORMAT_XRGB8888
+                  && fb.pitch  >= row_bytes)
+            {
+               uint8_t *dst = (uint8_t*)fb.data;
+
+               if (fb.pitch == stride)
+                  memcpy(dst, src, stride * (MEDIA_STR.height - 1) + row_bytes);
+               else
+               {
+                  unsigned y;
+                  for (y = 0; y < MEDIA_STR.height; y++, src += stride, dst += fb.pitch)
+                     memcpy(dst, src, row_bytes);
+               }
+
+               CORE_PREFIX(video_cb)(fb.data,
+                     MEDIA_STR.width, MEDIA_STR.height, fb.pitch);
+            }
+            /* No framebuffer on offer: the frontend copies out of
+             * whatever it is given, so give it the slot itself. The
+             * copy into a buffer of the core's own, which is what
+             * this used to do first, bought nothing. */
+            else
+               CORE_PREFIX(video_cb)(src,
+                     MEDIA_STR.width, MEDIA_STR.height, stride);
+         }
       }
    }
 #ifdef HAVE_FFMPEG_FFT
@@ -3951,7 +4067,10 @@ void CORE_PREFIX(retro_unload_game)(void)
    g_ctx.ass_lib = NULL;
 #endif
 
+#ifdef HAVE_OPENGLES
    av_freep(&VIDEO_FRAME_TEMP_BUFFER_STR);
+#endif
+   g_ctx.held_slot = NULL;
 }
 
 bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
@@ -4072,7 +4191,15 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    {
       size_t vb_frame_size = av_image_get_buffer_size(AV_PIX_FMT_RGB32,
             MEDIA_STR.width, MEDIA_STR.height, 1);
-      VIDEO_BUFFER_STR = video_buffer_create(4, (int)vb_frame_size,
+      /* The software path keeps the slot of the frame on screen, so
+       * it gets one more to leave the decoder the four it had. That
+       * slot is the frame the temporary buffer used to be. */
+      size_t vb_slots      = 5;
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+      if (USE_GL_STR)
+         vb_slots          = 4;
+#endif
+      VIDEO_BUFFER_STR = video_buffer_create(vb_slots, (int)vb_frame_size,
             MEDIA_STR.width, MEDIA_STR.height);
       TPOOL_STR        = tpool_create(SW_SWS_THREADS_STR);
       if (!VIDEO_BUFFER_STR || !TPOOL_STR)
@@ -4083,8 +4210,11 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    DECODE_THREAD_HANDLE_STR = sthread_create(decode_thread, NULL);
 
-   VIDEO_FRAME_TEMP_BUFFER_STR = (uint32_t*)
-      av_malloc(MEDIA_STR.width * MEDIA_STR.height * sizeof(uint32_t));
+#ifdef HAVE_OPENGLES
+   if (USE_GL_STR)
+      VIDEO_FRAME_TEMP_BUFFER_STR = (uint32_t*)
+         av_malloc(MEDIA_STR.width * MEDIA_STR.height * sizeof(uint32_t));
+#endif
 
    PTS_BIAS_STR = 0.0;
 
