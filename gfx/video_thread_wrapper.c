@@ -3586,8 +3586,16 @@ static void video_thread_get_poke_interface(void *data,
    if (thr && thr->driver_data &&
          thr->driver && thr->driver->poke_interface)
    {
-      thr->driver->poke_interface(thr->driver_data, &thr->poke);
-      *iface = &thread_poke;
+      /* The main thread asks for this while the video thread is
+       * already running and reading thr->poke - the asynchronous
+       * upload list takes it under the lock every time it drains.
+       * The driver fills a local, and the lock publishes it. */
+      const video_poke_interface_t *poke = NULL;
+      thr->driver->poke_interface(thr->driver_data, &poke);
+      slock_lock(thr->lock);
+      thr->poke = poke;
+      slock_unlock(thr->lock);
+      *iface    = &thread_poke;
    }
    else
       *iface = NULL;
