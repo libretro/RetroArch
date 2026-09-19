@@ -73,6 +73,22 @@
 #define SSL_MBED_LEGACY_RNG 1
 #endif
 
+/* Mbed TLS 3.x keeps the legacy RNG but runs TLS 1.3 (and everything
+ * else once MBEDTLS_USE_PSA_CRYPTO is set) on top of PSA, and leaves
+ * psa_crypto_init() to the application.  Without it the client cannot
+ * even build its ClientHello key share and every handshake fails with
+ * MBEDTLS_ERR_SSL_INTERNAL_ERROR.  3.6 compiles TLS 1.3 in by default,
+ * so a system 3.6 build hits this on every connection. */
+#if SSL_MBED_LEGACY_RNG && !defined(HAVE_BUILTINMBEDTLS) \
+ && defined(MBEDTLS_VERSION_MAJOR) && MBEDTLS_VERSION_MAJOR == 3 \
+ && defined(MBEDTLS_PSA_CRYPTO_C) \
+ && (defined(MBEDTLS_SSL_PROTO_TLS1_3) || defined(MBEDTLS_USE_PSA_CRYPTO))
+#include <psa/crypto.h>
+#define SSL_MBED_LEGACY_PSA_INIT 1
+#else
+#define SSL_MBED_LEGACY_PSA_INIT 0
+#endif
+
 #if defined(VITA)
 #include <psp2/kernel/rng.h>
 #endif
@@ -181,6 +197,11 @@ void* ssl_socket_init(int fd, const char *domain)
 #endif
       &state->entropy, (const unsigned char*)pers, strlen(pers)) != 0)
       goto error;
+#if SSL_MBED_LEGACY_PSA_INIT
+   /* Idempotent - safe to call once per socket. */
+   if (psa_crypto_init() != PSA_SUCCESS)
+      goto error;
+#endif
 #else
    /* Idempotent - safe to call once per socket. */
    if (psa_crypto_init() != PSA_SUCCESS)
