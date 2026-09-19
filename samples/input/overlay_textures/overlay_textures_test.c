@@ -21,6 +21,11 @@
  *   page switch     the second page uploads nothing;
  *   pixels go       once the driver has the textures the pixels are
  *                   released, and the sizes stay;
+ *   has image       and every desc still says it has an image, which
+ *                   is what gets its geometry set. The pack is laid
+ *                   out as the loader lays it out - images[] pointing
+ *                   INTO the descs - because a pack with private
+ *                   image structs cannot see this go wrong;
  *   declined        a driver that answers load_textures with false
  *                   (the wrapper over a driver with no such path)
  *                   gets live pixels through load(), on every page;
@@ -162,19 +167,38 @@ static input_overlay_t *pack_new(const video_overlay_interface_t *iface,
       ol->images  = (struct texture_image**)
          calloc(num_images, sizeof(*ol->images));
 
+   /* As the loader leaves it (task_overlay_load_image_texture): every
+    * desc with an image has a texture_image of its own, and the pack's
+    * unique image is not a struct apart but the ADDRESS of the first
+    * desc's that named the file - so images[] points into the pages,
+    * and whatever is done to images[u] is done to that desc. A pack
+    * built any other way hides exactly the bug the "has image" lane
+    * below is for. */
+   for (i = 0; i < NUM_PAGES && num_images; i++)
+   {
+      struct overlay *o = &ol->overlays[i];
+      o->size           = 2;
+      o->descs          = (struct overlay_desc*)calloc(2, sizeof(*o->descs));
+   }
    for (i = 0; i < num_images; i++)
    {
-      size_t p, n   = (size_t)img_w[i] * img_h[i];
-      ol->images[i] = (struct texture_image*)calloc(1, sizeof(**ol->images));
-      ol->images[i]->width  = img_w[i];
-      ol->images[i]->height = img_h[i];
-      ol->images[i]->pixels = (uint32_t*)malloc(n * sizeof(uint32_t));
+      size_t p, n = (size_t)img_w[i] * img_h[i];
+      struct texture_image *img = NULL;
+      /* the first page entry that uses image i owns it */
+      for (j = 0; j < NUM_PAGES * 2 && !img; j++)
+         if (page_map[j / 2][j % 2] == i)
+            img = &ol->overlays[j / 2].descs[j % 2].image;
+      img->width  = img_w[i];
+      img->height = img_h[i];
+      img->pixels = (uint32_t*)malloc(n * sizeof(uint32_t));
       for (p = 0; p < n; p++)
-         ol->images[i]->pixels[p] = 0xff000000u | (uint32_t)((i + 1) * 7919u * (p + 1));
-      img_sum[i] = stub_checksum(ol->images[i]);
+         img->pixels[p] = 0xff000000u | (uint32_t)((i + 1) * 7919u * (p + 1));
+      ol->images[i] = img;
+      img_sum[i]    = stub_checksum(img);
    }
-   /* A page's entry is a copy of the unique image's struct: the same
-    * pixels by another name, which is what the loader produces. */
+   /* A page's entry, and the image of every later desc that shares a
+    * file, is a copy of the unique image's struct: the same pixels by
+    * another name. */
    for (i = 0; i < NUM_PAGES && num_images; i++)
    {
       struct overlay *o   = &ol->overlays[i];
@@ -182,7 +206,11 @@ static input_overlay_t *pack_new(const video_overlay_interface_t *iface,
       o->load_images      = (struct texture_image*)
          calloc(2, sizeof(*o->load_images));
       for (j = 0; j < 2; j++)
-         o->load_images[j] = *ol->images[page_map[i][j]];
+      {
+         o->descs[j].image       = *ol->images[page_map[i][j]];
+         o->descs[j].image_index = j;
+         o->load_images[j]       = *ol->images[page_map[i][j]];
+      }
    }
    ol->active = &ol->overlays[0];
    ol->flags  = INPUT_OVERLAY_ALIVE;
@@ -194,13 +222,13 @@ static void pack_free(input_overlay_t *ol)
    size_t i;
    input_overlay_release_textures(ol);
    for (i = 0; i < ol->num_images; i++)
-   {
-      image_texture_free(ol->images[i]);
-      free(ol->images[i]);
-   }
+      image_texture_free(ol->images[i]);   /* a desc's: not freed itself */
    free(ol->images);
    for (i = 0; i < ol->size; i++)
+   {
       free(ol->overlays[i].load_images);
+      free(ol->overlays[i].descs);
+   }
    free(ol->overlays);
    free(ol);
 }
@@ -245,6 +273,24 @@ static void lane_textures(void)
             ol->images[i]->width, ol->images[i]->height);
    }
    CHECK(input_overlay_has_source(ol), "pixels go: an uploaded pack is not reusable");
+
+   /* has image: the pixels went, and the struct they went from is the
+    * desc's own. Every desc must still say it has an image - that is
+    * what decides whether its geometry is ever set; when it said no,
+    * every image of the page was drawn over the whole screen - and
+    * none may be left pointing at what was freed. */
+   {
+      unsigned pg, d;
+      for (pg = 0; pg < NUM_PAGES; pg++)
+         for (d = 0; d < 2; d++)
+         {
+            struct overlay_desc *desc = &ol->overlays[pg].descs[d];
+            CHECK(OVERLAY_HAS_IMAGE(&desc->image),
+                  "has image: page %u desc %u no longer has one", pg, d);
+            CHECK(!desc->image.pixels,
+                  "has image: page %u desc %u points at freed pixels", pg, d);
+         }
+   }
 
    pack_show(ol, 1);
    CHECK(input_overlay_load_page(ol) == INPUT_OVERLAY_PAGE_TEXTURES, "page switch: page 1 did not go as textures");

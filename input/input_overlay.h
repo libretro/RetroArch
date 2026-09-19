@@ -525,6 +525,21 @@ typedef struct
  * and nothing is uploaded. */
 void input_overlay_animate(input_overlay_t *ol, retro_time_t now);
 
+/* Whether a page or a desc has an image, asked of its texture_image.
+ *
+ * By its size, never by its pixels. The pixels are released once the
+ * driver has the pack's textures (input_overlay_load_page), and the
+ * struct that release clears is not some private copy: the loader
+ * registers the address of the first overlay::image or
+ * overlay_desc::image to name a file as the pack's unique image
+ * (task_overlay_load_image_texture), so input_overlay::images[] points
+ * INTO the pages. A test on .pixels therefore turned false for exactly
+ * the descs that had just been given textures; their geometry was
+ * never set, and every image of the page was drawn over the whole
+ * screen. A desc or page without an image is calloc()ed and has no
+ * width; one with an image keeps its width for good. */
+#define OVERLAY_HAS_IMAGE(img) ((img)->width != 0)
+
 /* Unload the pack's textures (see video_overlay_interface::load_textures)
  * and forget the page lists. Safe to call with none uploaded. */
 void input_overlay_release_textures(input_overlay_t *ol);

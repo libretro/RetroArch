@@ -3251,7 +3251,7 @@ static bool input_overlay_poll(
 static void input_overlay_update_desc_geom(input_overlay_t *ol,
       struct overlay_desc *desc)
 {
-   if (!desc->image.pixels || !(desc->flags & OVERLAY_DESC_MOVABLE))
+   if (!OVERLAY_HAS_IMAGE(&desc->image) || !(desc->flags & OVERLAY_DESC_MOVABLE))
       return;
 
    if (ol->iface->vertex_geom)
@@ -3338,7 +3338,7 @@ static void input_overlay_post_poll(
       struct overlay_desc *desc = &ol->active->descs[i];
 
       if (     desc->touch_mask != 0
-            && show_input && desc->image.pixels
+            && show_input && OVERLAY_HAS_IMAGE(&desc->image)
             && ol->iface->set_alpha)
          ol->iface->set_alpha(ol->iface_data, desc->image_index,
                desc->alpha_mod * opacity);
@@ -3557,7 +3557,7 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
    if (!ol->iface->vertex_geom)
       return;
 
-   if (ol->active->image.pixels)
+   if (OVERLAY_HAS_IMAGE(&ol->active->image))
       ol->iface->vertex_geom(ol->iface_data, 0,
             ol->active->mod_x, ol->active->mod_y,
             ol->active->mod_w, ol->active->mod_h);
@@ -3565,7 +3565,7 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
    for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
-      if (desc->image.pixels)
+      if (OVERLAY_HAS_IMAGE(&desc->image))
          ol->iface->vertex_geom(ol->iface_data, desc->image_index,
                desc->mod_x, desc->mod_y, desc->mod_w, desc->mod_h);
    }

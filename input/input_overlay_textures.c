@@ -57,9 +57,17 @@ static void input_overlay_forget_pixels(input_overlay_t *ol,
 {
    size_t i, j;
    for (i = 0; i < ol->size; i++)
-      for (j = 0; j < ol->overlays[i].load_images_size; j++)
-         if (ol->overlays[i].load_images[j].pixels == pixels)
-            ol->overlays[i].load_images[j].pixels = NULL;
+   {
+      struct overlay *o = &ol->overlays[i];
+      for (j = 0; j < o->load_images_size; j++)
+         if (o->load_images[j].pixels == pixels)
+            o->load_images[j].pixels = NULL;
+      if (o->image.pixels == pixels)
+         o->image.pixels = NULL;
+      for (j = 0; j < o->size; j++)
+         if (o->descs[j].image.pixels == pixels)
+            o->descs[j].image.pixels = NULL;
+   }
 }
 
 void input_overlay_release_textures(input_overlay_t *ol)
@@ -320,11 +328,14 @@ bool input_overlay_has_source(const input_overlay_t *ol)
  * driver that declines the textures is shown the pages through
  * load(), which reads them.
  *
- * The sizes stay (image_texture_free() clears them), and the pages'
- * copies of the pointers are cleared with the pixels they pointed at:
- * nothing is left that looks like an image and is not one. The copies
- * in overlay::image and overlay_desc::image are only ever tested, as
- * "this has an image", and are left to say so. */
+ * The sizes stay (image_texture_free() clears them): they are how
+ * anyone asks whether a page or a desc has an image
+ * (OVERLAY_HAS_IMAGE), because images[i] is not a private struct but
+ * the first overlay::image or overlay_desc::image that named the file,
+ * and clearing its pixels here clears them there. Every other copy of
+ * the pointer - the pages' load_images, and the image structs of the
+ * descs and pages that share the file - is cleared with it, so nothing
+ * is left that points at freed memory. */
 static void input_overlay_drop_pixels(input_overlay_t *ol)
 {
    size_t i, j;
@@ -342,8 +353,14 @@ static void input_overlay_drop_pixels(input_overlay_t *ol)
       ol->images[i]->height = height;
    }
    for (i = 0; i < ol->size; i++)
-      for (j = 0; j < ol->overlays[i].load_images_size; j++)
-         ol->overlays[i].load_images[j].pixels = NULL;
+   {
+      struct overlay *o = &ol->overlays[i];
+      for (j = 0; j < o->load_images_size; j++)
+         o->load_images[j].pixels = NULL;
+      o->image.pixels = NULL;
+      for (j = 0; j < o->size; j++)
+         o->descs[j].image.pixels = NULL;
+   }
 }
 
 enum input_overlay_page input_overlay_load_page(input_overlay_t *ol)
