@@ -153,12 +153,17 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
    SDL_FreeSurface(tmp);
 }
 
-static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
+/* The caller supplies the message position: frame() takes it from the
+ * snapshot it was handed, because it runs on the video thread while
+ * the main thread may be writing the setting; the OSD poke reads the
+ * setting directly, since the wrapper holds the main thread inside
+ * the command while it runs. */
+static void sdl2_render_msg(sdl2_video_t *vid, const char *msg,
+      float msg_pos_x, float msg_pos_y)
 {
    int delta_x, delta_y, x, y;
    unsigned width, height;
-   settings_t *settings;
-   float msg_pos_x, msg_pos_y;
+
 
    /* Legacy bitmap OSD font path.  Used as a fallback for the
     * yellow-text OSD output when widgets are disabled, and as the
@@ -173,9 +178,6 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg)
    delta_y   = 0;
    width     = vid->vp.width;
    height    = vid->vp.height;
-   settings  = config_get_ptr();
-   msg_pos_x = settings->floats.video_msg_pos_x;
-   msg_pos_y = settings->floats.video_msg_pos_y;
    x         = (int)(msg_pos_x * width);
    y         = (int)((1.0f - msg_pos_y) * height);
 
@@ -738,7 +740,8 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 #endif
 
    if (msg)
-      sdl2_render_msg(vid, msg);
+      sdl2_render_msg(vid, msg, video_info->font_msg_pos_x,
+            video_info->font_msg_pos_y);
 
    SDL_RenderPresent(vid->renderer);
 
@@ -939,7 +942,11 @@ static void sdl2_poke_set_osd_msg(void *data, const char *msg, size_t msg_len,
       }
    }
 
-   sdl2_render_msg(vid, msg);
+   {
+      settings_t *settings = config_get_ptr();
+      sdl2_render_msg(vid, msg, settings->floats.video_msg_pos_x,
+            settings->floats.video_msg_pos_y);
+   }
 }
 
 static void sdl2_show_mouse(void *data, bool state) { SDL_ShowCursor(state); }

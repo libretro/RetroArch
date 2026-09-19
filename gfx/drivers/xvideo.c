@@ -864,13 +864,15 @@ static bool xv_check_resize(xv_t *xv, unsigned width, unsigned height)
 /* TODO: Is there some way to render directly like GL?
  * Hacky C code is hacky. */
 static void xv_render_msg(xv_t *xv, const char *msg,
-      unsigned width, unsigned height)
+      unsigned width, unsigned height,
+      const video_frame_info_t *video_info)
 {
    int msg_base_x, msg_base_y;
    const struct font_atlas *atlas = NULL;
-   settings_t           *settings = config_get_ptr();
-   float video_msg_pos_x          = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y          = settings->floats.video_msg_pos_y;
+   /* The frame's snapshot, not the live setting: this runs on the
+    * video thread, where the main thread may be changing it. */
+   float video_msg_pos_x          = video_info->font_msg_pos_x;
+   float video_msg_pos_y          = video_info->font_msg_pos_y;
 
    if (!xv->font)
       return;
@@ -973,7 +975,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
    xv->vp.full_height = target.height;
 
    if (msg)
-      xv_render_msg(xv, msg, width << 1, height << 1);
+      xv_render_msg(xv, msg, width << 1, height << 1, video_info);
 
    XvShmPutImage(g_x11_dpy, xv->port, g_x11_win, xv->gc, xv->image,
          0, 0, width << 1, height << 1,

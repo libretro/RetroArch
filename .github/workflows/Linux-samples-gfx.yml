@@ -20,6 +20,31 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
+  video-thread-state:
+    name: The video thread reads its snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          # The main thread builds a video_frame_info_t and hands it
+          # over; a driver that reaches back into config_get_ptr() from
+          # frame() or present_last() reads settings the main thread
+          # may be writing. TSan found one of those in the null driver
+          # rather than anyone noticing it by reading, so this looks
+          # for the rest: it walks what those two entry points call
+          # and fails on live-state access it can reach. The drivers
+          # for platforms with no video thread are listed in the
+          # checker with that reason, and the list has to shrink when
+          # one of them stops doing it.
+          python3 tools/video_thread_state_check.py
+
   surface-requirements:
     name: Producers ask the surface layer
     runs-on: ubuntu-latest
