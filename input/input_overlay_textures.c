@@ -158,6 +158,11 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
                == GFX_SURFACE_SUBMIT_FAILED)
             return false;
          ol->anim_next_us[i] = 0;
+         /* The new texture shows the first (unpressed) frame, so a
+          * two-frame APNG held down across a reupload gets its
+          * pressed frame back on the next poll. */
+         if (ol->anim_2frame_cur)
+            ol->anim_2frame_cur[i] = 0;
          continue;
       }
       if (gfx_surface_submit_external(s, ol->images[i]->pixels,

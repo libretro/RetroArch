@@ -3265,32 +3265,25 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
 
 
 #ifdef HAVE_RPNG
-/* Compose a specific frame of an animated image into its surface.
- * Used for two-frame APNGs, where the frame is chosen by press state
- * instead of elapsed time. */
-static void input_overlay_update_apng_frame(input_overlay_t *ol,
+/* Show one frame of a two-frame APNG, from the pair composed at load.
+ * False when the surface is still the video thread's or the submit
+ * failed: the caller keeps its current state, so the next poll tries
+ * again instead of the press or release being lost. */
+static bool input_overlay_update_apng_frame(input_overlay_t *ol,
       size_t i, int target_frame)
 {
-   rpng_apng_stream_t *st = (rpng_apng_stream_t*)ol->anim_stream[i];
-   gfx_surface_t *s       = (gfx_surface_t*)ol->surfaces[i];
-   const uint32_t *frame;
-   int duration_ms        = 0;
+   gfx_surface_t *s    = (gfx_surface_t*)ol->surfaces[i];
+   const uint32_t *pix = ol->anim_2frame_pix[i];
+   size_t frame_len;
 
-   if (!st || !s || !s->num_slots || s->inflight)
-      return;
+   if (!pix || !s || !s->num_slots || s->inflight)
+      return false;
 
-   rpng_apng_stream_rewind(st);
-   if (!(frame = rpng_apng_stream_next(st, &duration_ms)))
-      return;
-   if (target_frame == 1)
-      if (!(frame = rpng_apng_stream_next(st, &duration_ms)))
-         return;
-
-   memcpy(s->slots[0], frame,
-         (size_t)s->width * s->height * sizeof(uint32_t));
-   if (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
-         == GFX_SURFACE_SUBMIT_FAILED)
-      return;
+   frame_len = (size_t)s->width * s->height;
+   memcpy(s->slots[0], pix + (target_frame ? frame_len : 0),
+         frame_len * sizeof(uint32_t));
+   return gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
+         != GFX_SURFACE_SUBMIT_FAILED;
 }
 
 /* Update every two-frame APNG to the frame matching its aggregated
@@ -3304,16 +3297,14 @@ static void input_overlay_update_2frame(input_overlay_t *ol)
 
    for (i = 0; i < ol->num_images; i++)
    {
-      int target;
+      uint8_t target;
       if (!ol->anim_2frame[i])
          continue;
 
       target = ol->anim_2frame_pressed[i] ? 1 : 0;
-      if (ol->anim_2frame_cur[i] != (uint8_t)target)
-      {
-         input_overlay_update_apng_frame(ol, i, target);
-         ol->anim_2frame_cur[i] = (uint8_t)target;
-      }
+      if (     ol->anim_2frame_cur[i] != target
+            && input_overlay_update_apng_frame(ol, i, target))
+         ol->anim_2frame_cur[i] = target;
       ol->anim_2frame_pressed[i] = 0;
    }
 }
@@ -3841,9 +3832,13 @@ static void input_overlay_free_images(input_overlay_t *ol)
    free(ol->anim_data);
    free(ol->anim_len);
    free(ol->anim_next_us);
+   if (ol->anim_2frame_pix)
+      for (i = 0; i < ol->num_images; i++)
+         free(ol->anim_2frame_pix[i]);
    free(ol->anim_2frame);
    free(ol->anim_2frame_pressed);
    free(ol->anim_2frame_cur);
+   free(ol->anim_2frame_pix);
    ol->anim_stream         = NULL;
    ol->anim_data           = NULL;
    ol->anim_len            = NULL;
@@ -3851,6 +3846,7 @@ static void input_overlay_free_images(input_overlay_t *ol)
    ol->anim_2frame         = NULL;
    ol->anim_2frame_pressed = NULL;
    ol->anim_2frame_cur     = NULL;
+   ol->anim_2frame_pix     = NULL;
 
    free(ol->images);
    ol->images = NULL;
@@ -6813,7 +6809,8 @@ static void input_overlay_loaded_move_images(input_overlay_t *ol,
             && (ol->anim_next_us = (int64_t*)calloc(ol->num_images, sizeof(int64_t)))
             && (ol->anim_2frame  = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))
             && (ol->anim_2frame_pressed = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))
-            && (ol->anim_2frame_cur     = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t))))
+            && (ol->anim_2frame_cur     = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))
+            && (ol->anim_2frame_pix     = (uint32_t**)calloc(ol->num_images, sizeof(uint32_t*))))
       {
          for (i = 0; i < ol->num_images; i++)
          {
@@ -6827,13 +6824,44 @@ static void input_overlay_loaded_move_images(input_overlay_t *ol,
                   (const uint8_t*)src->data, src->len);
             if (ol->anim_stream[i])
             {
-               int num_frames = 0;
-               rpng_apng_stream_set_argb((rpng_apng_stream_t*)ol->anim_stream[i],
+               rpng_apng_stream_t *st = (rpng_apng_stream_t*)ol->anim_stream[i];
+               unsigned w             = 0;
+               unsigned h             = 0;
+               int num_frames         = 0;
+               rpng_apng_stream_set_argb(st,
                      ol->images[i]->supports_rgba ? 0 : 1);
-               rpng_apng_stream_get_info((rpng_apng_stream_t*)ol->anim_stream[i],
-                     NULL, NULL, &num_frames, NULL);
-               if (num_frames == 2)
-                  ol->anim_2frame[i] = 1;
+               rpng_apng_stream_get_info(st, &w, &h, &num_frames, NULL);
+               /* A two-frame APNG is an unpressed/pressed pair. Both
+                * frames are composed here, once: the second depends
+                * on the first, so composing on demand would decode
+                * both on every press. Anything that goes wrong leaves
+                * it an ordinary looping animation. */
+               if (     num_frames == 2
+                     && w == ol->images[i]->width
+                     && h == ol->images[i]->height)
+               {
+                  size_t frame_len = (size_t)w * h;
+                  uint32_t *pix    = (uint32_t*)malloc(
+                        frame_len * 2 * sizeof(uint32_t));
+                  const uint32_t *frame;
+                  int duration_ms  = 0;
+
+                  if (     pix
+                        && (frame = rpng_apng_stream_next(st, &duration_ms)))
+                  {
+                     memcpy(pix, frame, frame_len * sizeof(uint32_t));
+                     if ((frame = rpng_apng_stream_next(st, &duration_ms)))
+                     {
+                        memcpy(pix + frame_len, frame,
+                              frame_len * sizeof(uint32_t));
+                        ol->anim_2frame_pix[i] = pix;
+                        ol->anim_2frame[i]     = 1;
+                        pix                    = NULL;
+                     }
+                  }
+                  free(pix);
+                  rpng_apng_stream_rewind(st);
+               }
             }
          }
       }
