@@ -564,7 +564,9 @@ bool crt_switch_write_edid(char *s, size_t len)
 {
    uint8_t block[MODELINE_EDID_SIZE];
    char dir[DIR_MAX_LENGTH];
-   video_output_info_t outputs[4];
+   video_output_info_t outputs[8];
+   const char *conn          = NULL;
+   unsigned idx;
    int nout;
    settings_t *settings      = config_get_ptr();
    video_modeline_gen_t *gen = modeline_gen_new();
@@ -600,13 +602,25 @@ bool crt_switch_write_edid(char *s, size_t len)
    {
       RARCH_LOG("[CRT] EDID for preset %s (%u-%u kHz, %u-%u Hz) written to \"%s\".\n",
             gen->monitor, block[97], block[98], block[95], block[96], s);
-      nout = video_display_server_list_outputs(outputs, 4);
-      if (nout > 0 && outputs[0].name[0])
-         RARCH_LOG("[CRT] Linux: copy it to /lib/firmware/edid/ and boot with drm.edid_firmware=%s:edid/%s.bin\n",
-               outputs[0].name, gen->monitor);
-      else
-         RARCH_LOG("[CRT] Linux: copy it to /lib/firmware/edid/ and boot with drm.edid_firmware=<connector>:edid/%s.bin\n",
-               gen->monitor);
+      /* The head the monitor index lands on, named the way the
+       * setting names it; "auto" is only unambiguous on one head */
+      idx  = settings->uints.video_monitor_index;
+      nout = video_display_server_list_outputs(outputs,
+            (int)(sizeof(outputs) / sizeof(outputs[0])));
+      if (nout > 0)
+      {
+         if (idx >= 1 && (int)idx <= nout && outputs[idx - 1].name[0])
+            conn = outputs[idx - 1].name;
+         else if (!idx && nout == 1 && outputs[0].name[0])
+            conn = outputs[0].name;
+      }
+      if (!conn)
+         conn = "<connector>";
+
+      RARCH_LOG("[CRT] Linux: copy it to /lib/firmware/edid/ and boot with drm.edid_firmware=%s:edid/%s.bin\n",
+            conn, gen->monitor);
+      RARCH_LOG("[CRT] Linux: to try it without rebooting, write it as root to /sys/kernel/debug/dri/<card>/%s/edid_override, then 1 to trigger_hotplug beside it; not every driver has trigger_hotplug.\n",
+            conn);
       RARCH_LOG("[CRT] Windows: load it as an EDID override for the CRT's monitor entry (CRU or a monitor INF), then restart the display driver.\n");
    }
    else
