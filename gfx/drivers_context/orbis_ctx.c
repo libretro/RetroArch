@@ -69,12 +69,6 @@ typedef struct
     float refresh_rate;
 } orbis_ctx_data_t;
 
-/* TODO/FIXME - static globals */
-static enum gfx_ctx_api ctx_orbis_api = GFX_CTX_OPENGL_API;
-
-/* TODO/FIXME - global reference */
-extern bool platform_orbis_has_focus;
-
 void orbis_ctx_destroy(void *data)
 {
    orbis_ctx_data_t *ctx_orbis = (orbis_ctx_data_t *)data;
@@ -251,13 +245,11 @@ static void orbis_ctx_input_driver(void *data,
     *input_data = NULL;
 }
 
-static enum gfx_ctx_api orbis_ctx_get_api(void *data) { return ctx_orbis_api; }
+static enum gfx_ctx_api orbis_ctx_get_api(void *data) { return GFX_CTX_OPENGL_API; }
 
 static bool orbis_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
 {
-    ctx_orbis_api = api;
-
 #ifdef HAVE_EGL
     if (api == GFX_CTX_OPENGL_ES_API)
         if (egl_bind_api(EGL_OPENGL_ES_API))

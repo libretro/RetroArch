@@ -44,9 +44,6 @@ typedef struct gfx_ctx_sdl1_data
    bool subsystem_inited;
 } gfx_ctx_sdl1_data_t;
 
-/* TODO/FIXME - static global */
-static enum gfx_ctx_api sdl1_api = GFX_CTX_OPENGL_API;
-
 static void sdl1_ctx_destroy_resources(gfx_ctx_sdl1_data_t *sdl)
 {
    if (!sdl)
@@ -110,14 +107,12 @@ error:
    return NULL;
 }
 
-static enum gfx_ctx_api sdl1_ctx_get_api(void *data) { return sdl1_api; }
+static enum gfx_ctx_api sdl1_ctx_get_api(void *data) { return GFX_CTX_OPENGL_API; }
 
 static bool sdl1_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major,
       unsigned minor)
 {
-   sdl1_api = api;
-
    if (api != GFX_CTX_OPENGL_API)
       return false;
    return true;
