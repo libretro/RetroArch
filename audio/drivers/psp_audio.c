@@ -42,6 +42,11 @@ typedef struct psp_audio
     * signal-every-iteration took cond_lock each time. */
    retro_eventcount_t park;
 
+   /* For the sink rate estimate and the statistics overlay.
+    * Only the worker writes either. */
+   retro_atomic_size_t consumed;
+   retro_atomic_size_t underruns;
+
    SceUID thread;
 
    int port;
@@ -71,6 +76,11 @@ typedef struct psp_audio
  * handed to the output syscall crosses into it. */
 #define AUDIO_SILENCE_OFFSET AUDIO_BUFFER_SIZE
 #define AUDIO_ARENA_COUNT    (AUDIO_BUFFER_SIZE + AUDIO_OUT_COUNT)
+
+/* The period the output call holds while the device plays it.
+ * It is buffering the driver controls, so buffer_size() counts
+ * it with the ring. */
+#define AUDIO_DEVICE_FRAMES  AUDIO_OUT_COUNT
 
 /* Bound on any wait for the audio thread to consume: one wait, and how
  * many of them before the caller gets the pass back. The thread
@@ -121,12 +131,16 @@ static void psp_audio_mainloop(void *data)
           * the writer cannot touch until it sees the new index. */
          retro_atomic_store_release_int(&psp->read_pos, read_pos);
       }
+      else
+         retro_atomic_fetch_add_size(&psp->underruns, 1);
 
       retro_eventcount_notify(&psp->park);
 
       sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX,
             psp->buffer_u32
             + (cond ? AUDIO_SILENCE_OFFSET : read_pos));
+
+      retro_atomic_fetch_add_size(&psp->consumed, AUDIO_OUT_COUNT);
    }
 
    return;
@@ -151,6 +165,8 @@ static void *psp_audio_init(const char *device,
    /* Cache aligned, not necessary but helpful. */
    psp->buffer_u32    = (uint32_t*)calloc(AUDIO_ARENA_COUNT, sizeof(uint32_t));
 
+   retro_atomic_size_init(&psp->consumed, 0);
+   retro_atomic_size_init(&psp->underruns, 0);
    retro_atomic_int_init(&psp->read_pos, 0);
    retro_atomic_int_init(&psp->write_pos, 0);
    psp->port          = port;
@@ -390,9 +406,29 @@ static size_t psp_wait_writable(void *data, size_t len)
 static bool psp_audio_use_float(void *data) { return false; }
 static size_t psp_buffer_size(void *data)
 {
-   /* In bytes: the ring holds AUDIO_BUFFER_SIZE uint32_t frames of int16
-    * stereo. */
-   return AUDIO_BUFFER_SIZE * sizeof(uint32_t);
+   /* In bytes: the ring plus the period the device holds, in
+    * uint32_t frames of int16 stereo. */
+   return (AUDIO_BUFFER_SIZE + AUDIO_DEVICE_FRAMES) * sizeof(uint32_t);
+}
+
+/* Frames the device has taken since init: the output call returns
+ * when it has taken the one before, so the worker counts a period
+ * per completed call. */
+static size_t psp_frames_consumed(void *data)
+{
+   psp_audio_t* psp = (psp_audio_t*)data;
+   if (!psp)
+      return 0;
+   return retro_atomic_load_acquire_size(&psp->consumed);
+}
+
+/* Periods played as silence for want of audio. */
+static size_t psp_underruns(void *data)
+{
+   psp_audio_t* psp = (psp_audio_t*)data;
+   if (!psp)
+      return 0;
+   return retro_atomic_load_acquire_size(&psp->underruns);
 }
 
 audio_driver_t audio_psp = {
@@ -410,5 +446,7 @@ audio_driver_t audio_psp = {
    psp_write_avail,
    psp_buffer_size,
    NULL, /* write_raw */
-   psp_wait_writable
+   psp_wait_writable,
+   psp_frames_consumed,
+   psp_underruns
 };
