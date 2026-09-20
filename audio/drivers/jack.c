@@ -43,6 +43,11 @@ typedef struct jack
    unsigned channels;   /* ports, and samples a frame in the ring */
    uint32_t layout;     /* the frontend's mask, one port a position */
    jack_ringbuffer_t *buffer;
+   /* The frontend's reinit latch, taken on the main thread at init:
+    * the server's callbacks run on its threads, where reaching for a
+    * frontend singleton is the thing the worker-read audit exists to
+    * catch. wasapi does the same at sthread_create. */
+   retro_atomic_int_t *reinit_request;
 #ifdef HAVE_THREADS
    /* Parked on by the writer; notified from JACK's process and
     * shutdown callbacks. An eventcount, not a lock and condition
@@ -287,8 +292,8 @@ static int ja_sample_rate_cb(jack_nframes_t nframes, void *data)
    if (jd)
    {
       retro_atomic_store_release_int(&jd->reconfigure, 1);
-      retro_atomic_store_release_int(
-            &audio_state_get_ptr()->reinit_request, 1);
+      if (jd->reinit_request)
+         retro_atomic_store_release_int(jd->reinit_request, 1);
    }
    return 0;
 }
@@ -299,8 +304,8 @@ static int ja_buffer_size_cb(jack_nframes_t nframes, void *data)
    if (jd)
    {
       retro_atomic_store_release_int(&jd->reconfigure, 1);
-      retro_atomic_store_release_int(
-            &audio_state_get_ptr()->reinit_request, 1);
+      if (jd->reinit_request)
+         retro_atomic_store_release_int(jd->reinit_request, 1);
    }
    return 0;
 }
@@ -440,6 +445,8 @@ static void *ja_init(const char *device,
    if (!retro_eventcount_init(&jd->park))
       goto error;
 #endif
+
+   jd->reinit_request = &audio_state_get_ptr()->reinit_request;
 
    jd->client = jack_client_open("RetroArch", JackNullOption, NULL);
    if (!jd->client)

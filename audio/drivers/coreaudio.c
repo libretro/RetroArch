@@ -328,6 +328,12 @@ typedef struct coreaudio
     * on that path, read by the frontend's overlay, and by it once at
     * teardown for the log. Never logged from here. */
    retro_atomic_size_t underruns;
+   /* The frontend's reinit latch, taken on the main thread at init:
+    * the default-device listeners run on HAL threads, where reaching
+    * for a frontend singleton is the thing the worker-read audit
+    * exists to catch. wasapi captures the same pointer at
+    * sthread_create. */
+   retro_atomic_int_t *reinit_request;
 
    /* The largest number_frames the callback may be handed, as the
     * device and the unit describe themselves, and the largest it was
@@ -1376,6 +1382,8 @@ static void *coreaudio_init(const char *device,
    retro_atomic_int_init(&dev->ct_scalar_ppm, 0);
    retro_atomic_int_init(&dev->ct_scalar_valid, 0);
    retro_atomic_size_init(&dev->underruns, 0);
+   /* Taken here, on the main thread, for the HAL's listeners. */
+   dev->reinit_request = &audio_state_get_ptr()->reinit_request;
    /* What coreaudio_run() waits for before starting; the HAL's pull on
     * macOS, and on iOS the ring's own quarter, which is what the unit
     * was asked to use. */
@@ -1896,9 +1904,8 @@ audio_driver_t audio_coreaudio = {
  * built again against whatever the default now is. */
 static void coreaudio_output_default_moved(coreaudio_t *dev)
 {
-   if (dev && dev->follows_default)
-      retro_atomic_store_release_int(
-            &audio_state_get_ptr()->reinit_request, 1);
+   if (dev && dev->follows_default && dev->reinit_request)
+      retro_atomic_store_release_int(dev->reinit_request, 1);
 }
 
 static OSStatus coreaudio_output_default_listener(ca_obj_id_t obj,

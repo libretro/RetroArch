@@ -811,6 +811,12 @@ typedef struct ra_asio
     * - and the underrun counter beside it is already atomic for the
     * same reason. */
    retro_atomic_size_t consumed;
+   /* The frontend's reinit latch, taken on the main thread at init.
+    * The ASIO callbacks run on the driver's own thread, where reaching
+    * for a frontend singleton is the thing the worker-read audit
+    * exists to catch; wasapi captures the same pointer at
+    * sthread_create. */
+   retro_atomic_int_t *reinit_request;
    /* Set by the message callback on kAsioResetRequest or
     * kAsioBufferSizeChange: the buffers are to be disposed and created
     * anew - the driver's preferred size may have changed - when the
@@ -1050,8 +1056,11 @@ static void asio_cb_sample_rate_changed(ASIOSampleRate rate)
    RARCH_WARN("[ASIO] The device changed its sample rate to %.0f Hz; audio will reinitialise.\n",
          (double)rate);
    if (g_asio)
+   {
       retro_atomic_store_release_int(&g_asio->rebuild_pending, 1);
-   retro_atomic_store_release_int(&audio_state_get_ptr()->reinit_request, 1);
+      if (g_asio->reinit_request)
+         retro_atomic_store_release_int(g_asio->reinit_request, 1);
+   }
 }
 
 static long asio_cb_message(long selector, long value,
@@ -1085,8 +1094,11 @@ static long asio_cb_message(long selector, long value,
          RARCH_WARN("[ASIO] Driver requests %s; audio will reinitialise.\n",
                selector == kAsioResetRequest ? "a reset" : "a buffer size change");
          if (g_asio)
+         {
             retro_atomic_store_release_int(&g_asio->rebuild_pending, 1);
-         retro_atomic_store_release_int(&audio_state_get_ptr()->reinit_request, 1);
+            if (g_asio->reinit_request)
+               retro_atomic_store_release_int(g_asio->reinit_request, 1);
+         }
          return 1L;
       case kAsioResyncRequest:
          /* The driver lost its place - a system pause, a clock that
@@ -1603,6 +1615,8 @@ static void *ra_asio_init(const char *device, unsigned rate,
       bool rate_moved   = false;
       g_asio_persistent = NULL;
 
+      ad->reinit_request = &audio_state_get_ptr()->reinit_request;
+
       /* Nothing was freed when this was parked, so a callback still
        * in flight from then was harmless - it read a cleared g_asio
        * and left. What follows here is not harmless: the ring is
@@ -1727,6 +1741,8 @@ static void *ra_asio_init(const char *device, unsigned rate,
    ad = (ra_asio_t *)calloc(1, sizeof(ra_asio_t));
    if (!ad)
       return NULL;
+   /* Taken here, on the main thread, for the driver's callbacks. */
+   ad->reinit_request = &audio_state_get_ptr()->reinit_request;
    retro_atomic_size_init(&ad->underruns, 0);
    retro_atomic_int_init(&ad->clk_ppm, 0);
    retro_atomic_int_init(&ad->clk_valid, 0);
