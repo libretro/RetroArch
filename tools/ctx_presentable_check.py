@@ -45,6 +45,28 @@ RE_DEF = re.compile(
 # <type> *<var> = (<type>*)data;   - the first cast of data in a body
 RE_CAST = re.compile(
     r"\(\s*([A-Za-z_0-9]+_t)\s*\*\s*\)\s*data")
+# A string literal, a character literal, a block comment or a line
+# comment - whichever starts first, so a quote inside a comment and a
+# slash inside a string are each taken by the construct that owns them.
+RE_NONCODE = re.compile(
+    r'"(?:\\.|[^"\\\n])*"'
+    r"|'(?:\\.|[^'\\\n])*'"
+    r"|/\*.*?\*/"
+    r"|//[^\n]*", re.DOTALL)
+
+
+def _code(text):
+    """The file with comments and literal contents blanked out.
+
+    Every check here is textual, and the tree spells an unimplemented
+    vtable slot `NULL, /* presentable */` - the slot's name, in a
+    comment, inside the initializer.  Read as code that is a vtable
+    naming a function nobody defines, which is what the SDL 1.2 GL
+    context was reported as the moment it got a file of its own.
+    Blanking keeps every offset, so the brace walks below still line
+    up with the text they were handed.
+    """
+    return RE_NONCODE.sub(lambda m: re.sub(r"\S", " ", m.group(0)), text)
 
 
 def _body(text, start):
@@ -100,7 +122,8 @@ def _declared_elsewhere(name, root="."):
                     continue
                 with open(os.path.join(d, fn), "r", errors="replace") as f:
                     for m in re.finditer(
-                            r"\bbool\s+([A-Za-z_0-9]*presentable)\s*\(", f.read()):
+                            r"\bbool\s+([A-Za-z_0-9]*presentable)\s*\(",
+                            _code(f.read())):
                         _SHARED.add(m.group(1))
     return name in _SHARED
 
@@ -108,6 +131,7 @@ def _declared_elsewhere(name, root="."):
 def check_text(path, text):
     """Problems with one file's presentable() usage, as strings."""
     out = []
+    text = _code(text)
     defined = [m.group(1) for m in RE_DEF.finditer(text)
                if m.group(1).endswith("presentable")]
     # Names referenced from a gfx_ctx_driver_t initializer in this file.
@@ -191,12 +215,40 @@ WRONG_TYPE = GOOD.replace("my_ctx_data_t *c = (my_ctx_data_t*)data;\n   return",
 NOT_WIRED = GOOD.replace("   my_swap_buffers,\n   my_presentable\n",
                          "   my_swap_buffers\n")
 
+# The slot left NULL, named in a comment the way the tree names every
+# other unimplemented slot.  Nothing is defined and nothing is wired.
+NULL_SLOT = """
+typedef struct { int vk; } my_ctx_data_t;
+static void my_swap_buffers(void *data)
+{
+   my_ctx_data_t *c = (my_ctx_data_t*)data;
+   (void)c;
+}
+const gfx_ctx_driver_t gfx_ctx_my = {
+   my_swap_buffers,
+   NULL  /* presentable - this driver has no way to ask */
+};
+"""
+# A wired hook with a comment beside it that names the one this driver
+# is not using.  The slot is right; only the comment mentions the name.
+COMMENTED_SLOT = GOOD.replace(
+    "   my_presentable\n",
+    "   /* not shared_presentable(): this one asks its own window */\n"
+    "   my_presentable\n")
+# The ident string is part of the initializer, so a driver named after
+# the hook must not read as a reference to it.
+IDENT_STRING = GOOD.replace("   my_presentable\n",
+                            '   "presentable_gl",\n   my_presentable\n')
+
 
 def selftest():
     cases = [
         ("a correct driver", GOOD, 0),
         ("the wrong driver's context type", WRONG_TYPE, 1),
         ("defined but not wired", NOT_WIRED, 1),
+        ("a NULL slot named in a comment", NULL_SLOT, 0),
+        ("a comment beside a wired hook", COMMENTED_SLOT, 0),
+        ("the hook's name inside the ident string", IDENT_STRING, 0),
     ]
     bad = 0
     for name, text, want in cases:
@@ -229,7 +281,7 @@ def main(argv):
     for fn in os.listdir(d):
         if fn.endswith((".c", ".m")):
             with open(os.path.join(d, fn), "r", errors="replace") as f:
-                if "presentable" in f.read():
+                if "presentable" in _code(f.read()):
                     n += 1
     print("ctx presentable: %d context drivers implement the hook, all "
           "wired once and casting the type their own swap_buffers() does"
