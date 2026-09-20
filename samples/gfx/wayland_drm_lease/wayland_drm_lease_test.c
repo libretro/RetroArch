@@ -401,6 +401,8 @@ static void test_two_connectors(void)
    check("the device was released", comp.released);
    check("the non-master fd was closed", client_closed_the_fd());
    check("the client is still connected", !comp.client_gone);
+   check("and the route out of here is named",
+         log_saw("video_context_driver") && log_saw("\"kms\""));
 
    finish(serv);
 }
@@ -415,6 +417,8 @@ static void test_global_without_connectors(void)
    check("the display server came up", serv != NULL);
    check("says the compositor offers no connector",
          log_saw("no connector"));
+   check("and does not name a route that is not there",
+         !log_saw("video_context_driver"));
    check("the device was released", comp.released);
    check("the client is still connected", !comp.client_gone);
 

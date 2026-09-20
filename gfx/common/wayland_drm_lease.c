@@ -276,6 +276,8 @@ void wayland_drm_lease_report(struct wl_display *dpy)
 
    if (offered < 1)
       RARCH_LOG("[Lease] The compositor offers DRM leases, but no connector.\n");
+   else
+      RARCH_LOG("[Lease] Set video_context_driver to \"kms\" to drive one of these directly; a modeline cannot be put on the wire any other way here.\n");
 
    lease_teardown(&l);
 }
