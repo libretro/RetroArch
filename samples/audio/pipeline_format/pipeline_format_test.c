@@ -185,6 +185,67 @@ static void wide_then_float_case(void)
    }
    audio_driver_set_core_multi(false);
    audio_driver_set_core_float(false);
+   audio_driver_deinit();
+}
+
+/* Rate control against a driver that reports a size but not a fill.
+ *
+ * write_avail() is optional: a driver that cannot measure its fill
+ * leaves it NULL rather than reporting a constant. buffer_size() is
+ * separate, and a driver may well have one and not the other - audioio
+ * does, on the platforms whose audio_prinfo carries no seek. The gate
+ * checked only buffer_size, so such a driver took the rate control
+ * flag anyway - and that flag is the only thing standing between
+ * audio_driver_compute_rate_adjust() and a null write_avail(), so the
+ * first batch past the DRC threshold called it. */
+static void control_gate_case(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings     = config_get_ptr();
+   size_t (*saved_avail)(void*) = audio_null.write_avail;
+   unsigned pass;
+
+   /* pass 0: no write_avail, the flag must stay clear.
+    * pass 1: both present, it must still be set - a gate that refuses
+    * everything would pass the first half on its own. */
+   for (pass = 0; pass < 2; pass++)
+   {
+      audio_null.write_avail = pass ? saved_avail : NULL;
+
+      memset(settings, 0, sizeof(*settings));
+      settings->bools.audio_enable             = true;
+      settings->bools.audio_sync               = true;
+      settings->bools.audio_rate_control       = true;
+      settings->uints.audio_output_sample_rate = 48000;
+      settings->uints.audio_latency            = 64;
+      settings->floats.slowmotion_ratio        = 1.0f;
+      strcpy(settings->arrays.audio_resampler, "sinc");
+      settings->uints.audio_resampler_quality  = RESAMPLER_QUALITY_NORMAL;
+
+      st->input       = 48000;
+      st->volume_gain = 1.0f;
+      audio_driver_set_core_float(true);
+      video_state_get_ptr()->av_info.timing.fps         = 60.0;
+      video_state_get_ptr()->av_info.timing.sample_rate = 48000;
+      if (!audio_driver_init_internal(settings, false))
+         abort();
+
+      if (!!(AUDIO_FLAGS_GET(st) & AUDIO_FLAG_CONTROL) != !!pass)
+      {
+         printf("control gate: write_avail %s, rate control %s\n",
+               pass ? "present" : "absent",
+               (AUDIO_FLAGS_GET(st) & AUDIO_FLAG_CONTROL) ? "on" : "off");
+         failures++;
+      }
+
+      /* Past the DRC threshold, which is where the null call was. */
+      captured_samples = 0;
+      audio_driver_sample_batch_float(source_f, FRAMES);
+      audio_driver_deinit();
+   }
+
+   audio_null.write_avail = saved_avail;
+   printf("control gate: a driver without write_avail does not take rate control\n");
 }
 
 int main(void)
@@ -209,6 +270,8 @@ int main(void)
          for (i = 0; i < sizeof(latencies) / sizeof(latencies[0]); i++)
             run_case(format != 0, threaded != 0, latencies[i]);
    wide_then_float_case();
-   printf("36 cases plus the wide-then-float one, %u failures\n", failures);
+   control_gate_case();
+   printf("36 cases plus the wide-then-float and control-gate ones, %u failures\n",
+         failures);
    return failures ? 1 : 0;
 }

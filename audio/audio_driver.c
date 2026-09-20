@@ -4615,7 +4615,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
        * SIGFPE" workaround for the same hazard. Check it once, centrally,
        * and fall back to no rate control rather than making every driver
        * defend itself. */
-      if (!audio_driver_st.current_audio->buffer_size)
+      if (    !audio_driver_st.current_audio->write_avail
+           || !audio_driver_st.current_audio->buffer_size)
          RARCH_WARN("[Audio] Rate control was desired, but driver does not support needed features.\n");
       else if (audio_driver_st.buffer_size == 0)
          RARCH_WARN("[Audio] Rate control was desired, but the driver "
