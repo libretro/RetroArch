@@ -125,9 +125,12 @@ struct comp
    int                  nconn;
    int                  leases_made;
    int                  leases_gone;
+   struct wl_resource  *lease_res;
+   struct wl_event_source *revoke_timer;
    bool                 released;
    bool                 client_gone;
    bool                 grant;      /* answer a request, or refuse it */
+   bool                 revoke;     /* ...then take it back again */
    char                 requested[64];
 };
 
@@ -170,6 +173,15 @@ static void request_handle_request_connector(struct wl_client *client,
       strlcpy(comp.requested, name, sizeof(comp.requested));
 }
 
+/* Runs on the compositor's own thread, which is the only one that
+ * may touch its resources. */
+static int revoke_timer_fired(void *data)
+{
+   if (comp.lease_res)
+      wp_drm_lease_v1_send_finished(comp.lease_res);
+   return 0;
+}
+
 static void request_handle_submit(struct wl_client *client,
       struct wl_resource *resource, uint32_t id)
 {
@@ -182,6 +194,8 @@ static void request_handle_submit(struct wl_client *client,
       return;
    wl_resource_set_implementation(lease, &lease_impl, NULL,
          lease_resource_destroyed);
+
+   comp.lease_res = lease;
 
    if (!comp.grant)
    {
@@ -197,6 +211,14 @@ static void request_handle_submit(struct wl_client *client,
       close(pipefd[0]);
       comp.lease_write = pipefd[1];
       comp.leases_made++;
+   }
+
+   if (comp.revoke)
+   {
+      comp.revoke_timer = wl_event_loop_add_timer(
+            wl_display_get_event_loop(comp.dpy), revoke_timer_fired, NULL);
+      if (comp.revoke_timer)
+         wl_event_source_timer_update(comp.revoke_timer, 20);
    }
 }
 
@@ -288,6 +310,7 @@ static bool comp_start(int nconn, bool offer_global)
    comp.fd_write    = -1;
    comp.lease_write = -1;
    comp.grant       = true;
+   comp.revoke      = false;
 
    if (!(comp.dpy = wl_display_create()))
       return false;
@@ -527,6 +550,36 @@ static void test_lease_refused(void)
    lease_comp_stop();
 }
 
+/* The compositor wants the connector back. A client that only looks
+ * when a DRM call has failed still has to see it. */
+static void test_lease_revoked(void)
+{
+   int i;
+   bool seen = false;
+
+   printf("\n-- the compositor takes the lease back --\n");
+   lease_comp_start(1, true);
+   comp.revoke = true;   /* armed on its own thread, once granted */
+
+   check("a descriptor came back", wayland_drm_lease_acquire(0) >= 0);
+
+   /* Each call is non-blocking, so the wait is the test's, not the
+    * client's: a caller that only looks when a DRM call failed has
+    * to see it without ever blocking on the socket. */
+   for (i = 0; i < 200 && !seen; i++)
+   {
+      seen = wayland_drm_lease_revoked();
+      if (!seen)
+         usleep(10000);
+   }
+
+   check("the revoke is seen without blocking", seen);
+   check("and stays seen", wayland_drm_lease_revoked());
+
+   wayland_drm_lease_release();
+   lease_comp_stop();
+}
+
 static void test_lease_without_a_session(void)
 {
    char saved[256];
@@ -569,6 +622,7 @@ int main(int argc, char **argv)
    test_lease_monitor_index();
    test_lease_index_past_the_end();
    test_lease_refused();
+   test_lease_revoked();
    test_lease_without_a_session();
 
    printf("\n%s\n", fails ? "FAILED" : "all checks passed");

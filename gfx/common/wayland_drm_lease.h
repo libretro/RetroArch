@@ -45,13 +45,11 @@ RETRO_BEGIN_DECLS
  * the DRM one and the display server is the KMS one. It also has to
  * outlive a video re-init, or the connector goes back mid-session.
  *
- * REVOCATION IS NOT HANDLED YET. A compositor may take the lease
- * back, and its wp_drm_lease_v1.finished arrives on this connection.
- * Noticing it needs the connection's file descriptor in the poll the
- * DRM context already runs for flip events (drm_wait_flip), which is
- * frame-path work and is deliberately not in this first landing;
- * until then a revoked lease shows up as DRM calls failing on
- * objects that are no longer ours. */
+ * A compositor may take the lease back. That arrives as
+ * wp_drm_lease_v1.finished on this connection, and what the caller
+ * sees first is a DRM call failing on objects that are no longer
+ * ours, so the question is asked there rather than on every frame -
+ * see wayland_drm_lease_revoked(). */
 
 /* Lease a connector and return a DRM file descriptor for it, or -1.
  *
@@ -73,6 +71,13 @@ void wayland_drm_lease_release(void);
 
 /* The name of the leased connector ("DP-1"), or NULL. */
 const char *wayland_drm_lease_connector(void);
+
+/* Whether the compositor has taken the lease back, answered from
+ * whatever has already arrived on the connection plus one
+ * non-blocking read. Meant for the moment a DRM call has just
+ * failed: it tells a revoked lease apart from a real error, and
+ * costs a poll that only happens then. */
+bool wayland_drm_lease_revoked(void);
 
 RETRO_END_DECLS
 

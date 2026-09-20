@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
@@ -326,6 +327,35 @@ void wayland_drm_lease_release(void)
    if (l->picked >= 0 && l->name[l->picked][0])
       RARCH_LOG("[Lease] Giving connector \"%s\" back.\n", l->name[l->picked]);
    lease_teardown(l);
+}
+
+bool wayland_drm_lease_revoked(void)
+{
+   wl_lease_t *l = &wl_lease;
+   struct pollfd pfd;
+
+   if (!l->dpy || l->fd < 0)
+      return false;
+   if (l->refused)
+      return true;
+
+   /* The prepare/read pairing is what makes this safe to do without
+    * blocking: everything already queued is dispatched, and the
+    * socket is only read when it has something. */
+   while (wl_display_prepare_read(l->dpy) != 0)
+      wl_display_dispatch_pending(l->dpy);
+   wl_display_flush(l->dpy);
+
+   pfd.fd      = wl_display_get_fd(l->dpy);
+   pfd.events  = POLLIN;
+   pfd.revents = 0;
+   if (poll(&pfd, 1, 0) > 0 && (pfd.revents & POLLIN))
+      wl_display_read_events(l->dpy);
+   else
+      wl_display_cancel_read(l->dpy);
+
+   wl_display_dispatch_pending(l->dpy);
+   return l->refused;
 }
 
 const char *wayland_drm_lease_connector(void)

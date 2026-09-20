@@ -84,6 +84,7 @@ typedef struct gfx_ctx_drm_data
    bool core_hw_context_enable;
    bool waiting_for_flip;
    bool leased;
+   bool lease_lost;
 } gfx_ctx_drm_data_t;
 
 struct drm_fb
@@ -630,6 +631,16 @@ static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
    if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
          DRM_MODE_PAGE_FLIP_EVENT, &drm->waiting_for_flip) == 0)
       return true;
+
+#ifdef HAVE_WAYLAND
+   /* A lease the compositor has taken back fails here first, and
+    * looks like any other flip failure until it is asked. Once. */
+   if (drm->leased && !drm->lease_lost && wayland_drm_lease_revoked())
+   {
+      drm->lease_lost = true;
+      RARCH_ERR("[KMS] The compositor took the leased connector back.\n");
+   }
+#endif
 
    /* Failed to queue page flip. */
    return false;
