@@ -24,6 +24,12 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
+/* The rate the channel is set to and the rate the frontend is told,
+ * which have to be the one number: the channel interpolates with
+ * NDSP_INTERP_NONE, so anything the frontend resamples to that the
+ * channel is not playing at is error with nothing to correct it. */
+#define CTR_DSP_AUDIO_RATE 32728
+
 typedef struct
 {
    ndspWaveBuf dsp_buf; /* TODO/FIXME - find out alignment */
@@ -97,10 +103,7 @@ static void *ctr_dsp_audio_init(const char *device, unsigned rate, unsigned late
    LightEvent_Init(&ctr->frame_event, RESET_ONESHOT);
    ndspSetCallback(ctr_dsp_audio_frame_cb, ctr);
 
-   if (!ctr)
-      return NULL;
-
-   *new_rate    = 32730;
+   *new_rate    = CTR_DSP_AUDIO_RATE;
 
    ctr->channel = 0;
 
@@ -110,7 +113,7 @@ static void *ctr_dsp_audio_init(const char *device, unsigned rate, unsigned late
    ndspChnReset(ctr->channel);
    ndspChnSetFormat(ctr->channel, NDSP_FORMAT_STEREO_PCM16);
    ndspChnSetInterp(ctr->channel, NDSP_INTERP_NONE);
-   ndspChnSetRate(ctr->channel, 32728.0f);
+   ndspChnSetRate(ctr->channel, (float)CTR_DSP_AUDIO_RATE);
    ndspChnWaveBufClear(ctr->channel);
 
    ctr->dsp_buf.data_pcm16 = linearAlloc(CTR_DSP_AUDIO_SIZE);
