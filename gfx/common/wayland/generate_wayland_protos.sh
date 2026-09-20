@@ -65,6 +65,12 @@ generate_source () {
    PROTO_NAME="$2"
    PROTO_FILE="$WAYLAND_PROTOS/$PROTO_DIR/$PROTO_NAME.xml"
 
+   # A protocol newer than the installed wayland-protocols comes from
+   # the bundled copy rather than failing the build.
+   if [ ! -f "$PROTO_FILE" ]; then
+      PROTO_FILE="../../../deps/wayland-protocols/$PROTO_DIR/$PROTO_NAME.xml"
+   fi
+
    "$WAYSCAN" client-header "$PROTO_FILE" "./$PROTO_NAME.h"
    "$WAYSCAN" $CODEGEN "$PROTO_FILE" "./$PROTO_NAME.c"
 }
@@ -85,6 +91,7 @@ generate_source 'staging/single-pixel-buffer' 'single-pixel-buffer-v1'
 generate_source 'staging/tearing-control' 'tearing-control-v1'
 generate_source 'staging/xdg-toplevel-icon' 'xdg-toplevel-icon-v1'
 generate_source 'staging/xdg-toplevel-tag' 'xdg-toplevel-tag-v1'
+generate_source 'staging/drm-lease' 'drm-lease-v1'
 
 if [ -n "${CROSS_COMPILE:-}" ] && echo "${CROSS_COMPILE:-}" | grep -q "webos"; then
    if [ -z "${STAGING_DIR:-}" ]; then

@@ -16,6 +16,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <boolean.h>
 #include <compat/strl.h>
 
@@ -23,23 +24,39 @@
 
 #include "../video_display_server.h"
 #include "edid_sysfs.h"
+#include "../common/wayland/drm-lease-v1.h"
+
+#include "../../verbosity.h"
+
+/* Enough for any head count a CRT user has; the rest are counted
+ * but not named. */
+#define MAX_LEASE_CONNECTORS 8
 
 typedef struct
 {
    struct wl_display    *dpy;
    struct wl_registry   *registry;
    struct wl_output     *output;
+   /* DRM leases: a connector the compositor will hand over whole,
+    * which is the only route to a modeline here - wl_output carries
+    * width, height and a refresh rate and nothing that can express a
+    * porch. Discovery only; the lease itself is not taken. A
+    * compositor that offers none is the answer a 15 kHz user needs
+    * before anything else is tried. */
+   struct wp_drm_lease_device_v1 *lease_dev;
    int      width;
    int      height;
    int      physical_width;   /* mm */
    int      physical_height;  /* mm */
    int      refresh;          /* mHz */
+   int      lease_nconn;
    bool     have_mode;
    bool     have_geometry;
    /* wl_output v4 name: the DRM connector ("HDMI-A-1"), which is the
     * sysfs node the EDID lives under; Wayland itself has no
     * protocol for the EDID */
    char     name[32];
+   char     lease_conn[MAX_LEASE_CONNECTORS][64];
 } dispserv_wl_t;
 
 /* wl_output listener callbacks */
@@ -101,6 +118,82 @@ static const struct wl_output_listener output_listener = {
 #endif
 };
 
+/* wp_drm_lease_connector_v1: name, then done. The connector object
+ * belongs to us until we destroy it. */
+static void lease_connector_name(void *data,
+      struct wp_drm_lease_connector_v1 *conn, const char *name)
+{
+   dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   if (serv->lease_nconn < MAX_LEASE_CONNECTORS)
+      strlcpy(serv->lease_conn[serv->lease_nconn], name,
+            sizeof(serv->lease_conn[0]));
+}
+
+static void lease_connector_description(void *data,
+      struct wp_drm_lease_connector_v1 *conn, const char *desc) { }
+
+static void lease_connector_id(void *data,
+      struct wp_drm_lease_connector_v1 *conn, uint32_t id) { }
+
+static void lease_connector_done(void *data,
+      struct wp_drm_lease_connector_v1 *conn)
+{
+   dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   serv->lease_nconn++;
+   wp_drm_lease_connector_v1_destroy(conn);
+}
+
+static void lease_connector_withdrawn(void *data,
+      struct wp_drm_lease_connector_v1 *conn) { }
+
+static const struct wp_drm_lease_connector_v1_listener lease_connector_listener = {
+   lease_connector_name,
+   lease_connector_description,
+   lease_connector_id,
+   lease_connector_done,
+   lease_connector_withdrawn,
+};
+
+/* wp_drm_lease_device_v1. The fd is a non-master handle offered for
+ * picking a device; discovery reads the connector names off the
+ * protocol instead, so it is closed as soon as it arrives. Leaving it
+ * open would hold a DRM node per display server init. */
+static void lease_device_drm_fd(void *data,
+      struct wp_drm_lease_device_v1 *dev, int32_t fd)
+{
+   close(fd);
+}
+
+static void lease_device_connector(void *data,
+      struct wp_drm_lease_device_v1 *dev,
+      struct wp_drm_lease_connector_v1 *conn)
+{
+   dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   wp_drm_lease_connector_v1_add_listener(conn,
+         &lease_connector_listener, serv);
+}
+
+static void lease_device_done(void *data,
+      struct wp_drm_lease_device_v1 *dev) { }
+
+/* Sent in answer to release(), and the compositor destroys its side
+ * with it; ours goes here and nowhere else. */
+static void lease_device_released(void *data,
+      struct wp_drm_lease_device_v1 *dev)
+{
+   dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   wp_drm_lease_device_v1_destroy(dev);
+   if (serv->lease_dev == dev)
+      serv->lease_dev = NULL;
+}
+
+static const struct wp_drm_lease_device_v1_listener lease_device_listener = {
+   lease_device_drm_fd,
+   lease_device_connector,
+   lease_device_done,
+   lease_device_released,
+};
+
 /* wl_registry listener */
 static void registry_handle_global(void *data,
       struct wl_registry *registry,
@@ -122,6 +215,15 @@ static void registry_handle_global(void *data,
          wl_registry_bind(registry, name, &wl_output_interface, want);
       wl_output_add_listener(serv->output, &output_listener, serv);
    }
+   else if (!serv->lease_dev
+         && strcmp(interface, "wp_drm_lease_device_v1") == 0)
+   {
+      serv->lease_dev = (struct wp_drm_lease_device_v1*)
+         wl_registry_bind(registry, name,
+               &wp_drm_lease_device_v1_interface, 1);
+      wp_drm_lease_device_v1_add_listener(serv->lease_dev,
+            &lease_device_listener, serv);
+   }
 }
 
 static void registry_handle_global_remove(void *data,
@@ -131,6 +233,37 @@ static const struct wl_registry_listener registry_listener = {
    registry_handle_global,
    registry_handle_global_remove,
 };
+
+/* What the compositor is willing to give up, said once at init. A
+ * modeline needs the connector itself: a lease is the protocol that
+ * hands one over, and nothing else here can carry a timing. */
+static void wl_display_server_report_leases(dispserv_wl_t *serv)
+{
+   int i;
+
+   if (!serv->lease_dev)
+   {
+      RARCH_LOG("[Wayland] The compositor offers no DRM leases.\n");
+      return;
+   }
+
+   if (serv->lease_nconn < 1)
+      RARCH_LOG("[Wayland] The compositor offers DRM leases, but no connector.\n");
+   else
+   {
+      for (i = 0; i < serv->lease_nconn && i < MAX_LEASE_CONNECTORS; i++)
+         RARCH_LOG("[Wayland] Connector \"%s\" is offered for DRM lease.\n",
+               serv->lease_conn[i]);
+      if (serv->lease_nconn > MAX_LEASE_CONNECTORS)
+         RARCH_LOG("[Wayland] %d more connector(s) offered.\n",
+               serv->lease_nconn - MAX_LEASE_CONNECTORS);
+   }
+
+   /* Discovery is all this does: hand the device back. No request may
+    * follow release on this object. */
+   wp_drm_lease_device_v1_release(serv->lease_dev);
+   wl_display_roundtrip(serv->dpy);
+}
 
 static void *wl_display_server_init(void)
 {
@@ -150,8 +283,15 @@ static void *wl_display_server_init(void)
 
    /* First roundtrip: discover globals (binds wl_output) */
    wl_display_roundtrip(serv->dpy);
-   /* Second roundtrip: receive wl_output events (mode, geometry) */
+   /* Second roundtrip: receive wl_output events (mode, geometry),
+    * and the lease device's fd, connectors and done */
    wl_display_roundtrip(serv->dpy);
+   /* Third: the connector objects the second created report their
+    * own name and done */
+   if (serv->lease_dev)
+      wl_display_roundtrip(serv->dpy);
+
+   wl_display_server_report_leases(serv);
 
    return serv;
 }
@@ -161,6 +301,9 @@ static void wl_display_server_destroy(void *data)
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
    if (!serv)
       return;
+   /* Set only when the compositor never answered release() */
+   if (serv->lease_dev)
+      wp_drm_lease_device_v1_destroy(serv->lease_dev);
    if (serv->output)
       wl_output_destroy(serv->output);
    if (serv->registry)
