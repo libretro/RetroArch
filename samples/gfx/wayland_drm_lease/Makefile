@@ -21,6 +21,7 @@ GENERATED := drm-lease-v1-client-protocol.h \
 SOURCES := wayland_drm_lease_test.c \
            drm-lease-v1-protocol.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_wl.c \
+           $(REPO_ROOT)/gfx/common/wayland_drm_lease.c \
            $(LRC)/compat/compat_strl.c
 
 CFLAGS  += -Wall -std=gnu99 -g -O0 \

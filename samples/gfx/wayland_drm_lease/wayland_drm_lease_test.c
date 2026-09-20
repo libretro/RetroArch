@@ -69,6 +69,7 @@
 #include "drm-lease-v1-server-protocol.h"
 
 #include "../../../gfx/video_display_server.h"
+#include "../../../gfx/common/wayland_drm_lease.h"
 
 /* ---- the log, captured ---- */
 
@@ -120,9 +121,14 @@ struct comp
    struct wl_listener   client_destroyed;
    const char          *socket;
    int                  fd_write;   /* our end of the pipe sent as drm_fd */
+   int                  lease_write;/* ...and the one sent as lease_fd */
    int                  nconn;
+   int                  leases_made;
+   int                  leases_gone;
    bool                 released;
    bool                 client_gone;
+   bool                 grant;      /* answer a request, or refuse it */
+   char                 requested[64];
 };
 
 static struct comp comp;
@@ -139,12 +145,73 @@ static const struct wp_drm_lease_connector_v1_interface connector_impl = {
    connector_handle_destroy,
 };
 
+/* ---- the lease request, and the lease ---- */
+
+static void lease_handle_destroy(struct wl_client *client,
+      struct wl_resource *resource)
+{
+   wl_resource_destroy(resource);
+}
+
+static void lease_resource_destroyed(struct wl_resource *resource)
+{
+   comp.leases_gone++;
+}
+
+static const struct wp_drm_lease_v1_interface lease_impl = {
+   lease_handle_destroy,
+};
+
+static void request_handle_request_connector(struct wl_client *client,
+      struct wl_resource *resource, struct wl_resource *connector)
+{
+   const char *name = (const char*)wl_resource_get_user_data(connector);
+   if (name)
+      strlcpy(comp.requested, name, sizeof(comp.requested));
+}
+
+static void request_handle_submit(struct wl_client *client,
+      struct wl_resource *resource, uint32_t id)
+{
+   int pipefd[2];
+   struct wl_resource *lease = wl_resource_create(client,
+         &wp_drm_lease_v1_interface, 1, id);
+
+   wl_resource_destroy(resource);          /* submit destroys the request */
+   if (!lease)
+      return;
+   wl_resource_set_implementation(lease, &lease_impl, NULL,
+         lease_resource_destroyed);
+
+   if (!comp.grant)
+   {
+      wp_drm_lease_v1_send_finished(lease);
+      return;
+   }
+
+   /* A real compositor sends a DRM descriptor for the leased objects;
+    * a pipe stands in, so the test can see it closed again. */
+   if (pipe(pipefd) == 0)
+   {
+      wp_drm_lease_v1_send_lease_fd(lease, pipefd[0]);
+      close(pipefd[0]);
+      comp.lease_write = pipefd[1];
+      comp.leases_made++;
+   }
+}
+
+static const struct wp_drm_lease_request_v1_interface request_impl = {
+   request_handle_request_connector,
+   request_handle_submit,
+};
+
 static void device_handle_create_lease_request(struct wl_client *client,
       struct wl_resource *resource, uint32_t id)
 {
-   /* Discovery never reaches here; a lease is not taken */
-   wl_client_post_implementation_error(client,
-         "the test compositor grants no leases");
+   struct wl_resource *req = wl_resource_create(client,
+         &wp_drm_lease_request_v1_interface, 1, id);
+   if (req)
+      wl_resource_set_implementation(req, &request_impl, NULL, NULL);
 }
 
 static void device_handle_release(struct wl_client *client,
@@ -196,7 +263,8 @@ static void device_bind(struct wl_client *client, void *data,
             &wp_drm_lease_connector_v1_interface, 1, 0);
       if (!c)
          continue;
-      wl_resource_set_implementation(c, &connector_impl, NULL, NULL);
+      wl_resource_set_implementation(c, &connector_impl,
+            (void*)conn_names[i], NULL);
       wp_drm_lease_device_v1_send_connector(res, c);
       wp_drm_lease_connector_v1_send_name(c, conn_names[i]);
       wp_drm_lease_connector_v1_send_description(c, "test connector");
@@ -216,8 +284,10 @@ static void *comp_thread(void *arg)
 static bool comp_start(int nconn, bool offer_global)
 {
    memset(&comp, 0, sizeof(comp));
-   comp.nconn    = nconn;
-   comp.fd_write = -1;
+   comp.nconn       = nconn;
+   comp.fd_write    = -1;
+   comp.lease_write = -1;
+   comp.grant       = true;
 
    if (!(comp.dpy = wl_display_create()))
       return false;
@@ -236,17 +306,22 @@ static void comp_stop(void)
    wl_display_terminate(comp.dpy);
 }
 
-/* The client's copy of the drm_fd is gone when a write to the other
- * end raises EPIPE, which a pipe does once every read end is closed. */
-static bool client_closed_the_fd(void)
+/* A descriptor the client held is gone when a write to the pipe's
+ * other end raises EPIPE, which it does once every read end closes. */
+static bool closed_by_client(int write_end)
 {
    char c = 'x';
    ssize_t n;
 
-   if (comp.fd_write < 0)
+   if (write_end < 0)
       return false;
-   n = write(comp.fd_write, &c, 1);
+   n = write(write_end, &c, 1);
    return (n < 0 && errno == EPIPE);
+}
+
+static bool client_closed_the_fd(void)
+{
+   return closed_by_client(comp.fd_write);
 }
 
 /* ---- checks ---- */
@@ -271,6 +346,8 @@ static void finish(void *serv)
    wl_display_destroy(comp.dpy);
    if (comp.fd_write >= 0)
       close(comp.fd_write);
+   if (comp.lease_write >= 0)
+      close(comp.lease_write);
 }
 
 static void *start(int nconn, bool offer_global)
@@ -336,6 +413,138 @@ static void test_no_global(void)
    finish(serv);
 }
 
+/* ---- the lease itself ---- */
+
+/* Bring the compositor up without the display server: the lease
+ * module opens its own connection, which is the point of it. */
+static void lease_comp_start(int nconn, bool grant)
+{
+   log_count = 0;
+   if (!comp_start(nconn, true))
+   {
+      printf("[FAIL] could not start the test compositor\n");
+      exit(1);
+   }
+   comp.grant = grant;
+   pthread_create(&comp_tid, NULL, comp_thread, NULL);
+}
+
+static void lease_comp_stop(void)
+{
+   /* Defensive: a case that failed to release would otherwise leave
+    * the module holding a descriptor from a compositor that is about
+    * to go away, and the next case would wait on it. */
+   wayland_drm_lease_release();
+   comp_stop();
+   pthread_join(comp_tid, NULL);
+   wl_display_destroy(comp.dpy);
+   if (comp.fd_write >= 0)
+      close(comp.fd_write);
+   if (comp.lease_write >= 0)
+      close(comp.lease_write);
+}
+
+static void test_lease_acquire_and_release(void)
+{
+   int fd;
+
+   printf("\n-- leasing the first offered connector --\n");
+   lease_comp_start(2, true);
+
+   fd = wayland_drm_lease_acquire(0);
+
+   check("a descriptor came back", fd >= 0);
+   check("the compositor granted one lease", comp.leases_made == 1);
+   check("the first connector was the one asked for",
+         !strcmp(comp.requested, "DP-1"));
+   check("and it is the one reported",
+         wayland_drm_lease_connector() != NULL
+         && !strcmp(wayland_drm_lease_connector(), "DP-1"));
+   check("the device's non-master fd was closed", client_closed_the_fd());
+
+   wayland_drm_lease_release();
+
+   check("release closed the leased descriptor",
+         closed_by_client(comp.lease_write));
+   check("and dropped the lease object", comp.leases_gone >= 1);
+   check("nothing is reported as leased now",
+         wayland_drm_lease_connector() == NULL);
+   check("the client is gone, not killed mid-protocol", !fails);
+
+   lease_comp_stop();
+}
+
+static void test_lease_monitor_index(void)
+{
+   int fd;
+
+   printf("\n-- the monitor index picks the head --\n");
+   lease_comp_start(2, true);
+
+   fd = wayland_drm_lease_acquire(2);
+
+   check("a descriptor came back", fd >= 0);
+   check("the second connector was asked for",
+         !strcmp(comp.requested, "VGA-1"));
+   check("and it is the one reported",
+         wayland_drm_lease_connector() != NULL
+         && !strcmp(wayland_drm_lease_connector(), "VGA-1"));
+
+   wayland_drm_lease_release();
+   lease_comp_stop();
+}
+
+static void test_lease_index_past_the_end(void)
+{
+   printf("\n-- an index past the offer --\n");
+   lease_comp_start(2, true);
+
+   check("no descriptor", wayland_drm_lease_acquire(5) < 0);
+   check("and no lease was asked for", comp.leases_made == 0);
+   check("nothing is reported as leased",
+         wayland_drm_lease_connector() == NULL);
+
+   lease_comp_stop();
+}
+
+static void test_lease_refused(void)
+{
+   printf("\n-- a compositor that refuses --\n");
+   lease_comp_start(1, false);
+
+   check("no descriptor", wayland_drm_lease_acquire(0) < 0);
+   check("the refusal was said out loud", log_saw("refused a lease"));
+   check("nothing is reported as leased",
+         wayland_drm_lease_connector() == NULL);
+
+   /* A second attempt on a fresh compositor must still work: the
+    * refusal must not have left the module holding anything. */
+   lease_comp_stop();
+   lease_comp_start(1, true);
+   check("a later attempt still succeeds",
+         wayland_drm_lease_acquire(0) >= 0);
+   wayland_drm_lease_release();
+   lease_comp_stop();
+}
+
+static void test_lease_without_a_session(void)
+{
+   char saved[256];
+   const char *cur = getenv("WAYLAND_DISPLAY");
+
+   printf("\n-- no Wayland session at all --\n");
+   strlcpy(saved, cur ? cur : "", sizeof(saved));
+   unsetenv("WAYLAND_DISPLAY");
+   log_count = 0;
+
+   check("no descriptor", wayland_drm_lease_acquire(0) < 0);
+   check("and it is not reported as a failure",
+         !log_saw("refused") && !log_saw("past the"));
+
+   if (saved[0])
+      setenv("WAYLAND_DISPLAY", saved, 1);
+}
+
 int main(int argc, char **argv)
 {
    int i;
@@ -355,6 +564,12 @@ int main(int argc, char **argv)
    test_two_connectors();
    test_global_without_connectors();
    test_no_global();
+
+   test_lease_acquire_and_release();
+   test_lease_monitor_index();
+   test_lease_index_past_the_end();
+   test_lease_refused();
+   test_lease_without_a_session();
 
    printf("\n%s\n", fails ? "FAILED" : "all checks passed");
    return fails ? 1 : 0;
