@@ -7151,7 +7151,7 @@ static size_t setting_get_string_representation_uint_crt_switch_resolutions(
          case CRT_SWITCH_EDID:
             return strlcpy_lit(s, "Match Display (EDID)", len);
          case CRT_SWITCH_LCD:
-            return strlcpy_lit(s, "Match Refresh Only (LCD)", len);
+            return strlcpy_lit(s, "Match Refresh Only", len);
       }
    }
    return 0;
