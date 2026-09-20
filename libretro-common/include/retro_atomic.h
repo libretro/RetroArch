@@ -23,6 +23,7 @@
 #ifndef __LIBRETRO_SDK_ATOMIC_H
 #define __LIBRETRO_SDK_ATOMIC_H
 
+#include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_inline.h>
 
