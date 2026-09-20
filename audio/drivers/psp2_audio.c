@@ -33,8 +33,9 @@
 
 typedef struct psp2_audio
 {
-   uint32_t* buffer;
-   uint32_t* zeroBuffer;
+   /* The ring, followed by one period of silence for the worker
+    * to output when the ring runs short. */
+   uint32_t* buffer_u32;
 
    sthread_t *worker_thread;
    /* The writer's park; the worker notifies after every period it
@@ -49,7 +50,7 @@ typedef struct psp2_audio
    int rate;
 
    /* The ring's index pair, the SPSC discipline by hand because the
-    * worker consumes in place - psp->buffer + read_pos goes straight
+    * worker consumes in place - psp->buffer_u32 + read_pos goes straight
     * into the output syscall, and a retro_spsc would add a bounce
     * copy per period. Producer publishes write_pos with release
     * after the samples land; consumer publishes read_pos with
@@ -66,6 +67,12 @@ typedef struct psp2_audio
 #define AUDIO_OUT_COUNT 512u
 #define AUDIO_BUFFER_SIZE (1u<<13u)
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
+
+/* The silence sits past the ring. read_pos only ever advances by
+ * AUDIO_OUT_COUNT, which divides AUDIO_BUFFER_SIZE, so no window
+ * handed to the output syscall crosses into it. */
+#define AUDIO_SILENCE_OFFSET AUDIO_BUFFER_SIZE
+#define AUDIO_ARENA_COUNT    (AUDIO_BUFFER_SIZE + AUDIO_OUT_COUNT)
 
 /* Bound on any wait for the audio thread to consume: one wait, and how
  * many of them before the caller gets the pass back. The thread
@@ -118,8 +125,8 @@ static void psp2_audio_mainloop(void *data)
       retro_eventcount_notify(&psp->park);
 
       sceAudioOutOutput(psp->port,
-        cond ? (psp->zeroBuffer)
-              : (psp->buffer + read_pos_2));
+            psp->buffer_u32
+            + (cond ? AUDIO_SILENCE_OFFSET : read_pos_2));
    }
 
    return;
@@ -142,20 +149,17 @@ static void *psp2_audio_init(const char *device,
    }
 
    /* Cache aligned, not necessary but helpful. */
-   psp->buffer        = (uint32_t*)calloc(AUDIO_BUFFER_SIZE, sizeof(uint32_t));
-   psp->zeroBuffer    = (uint32_t*)calloc(AUDIO_OUT_COUNT,   sizeof(uint32_t));
+   psp->buffer_u32    = (uint32_t*)calloc(AUDIO_ARENA_COUNT, sizeof(uint32_t));
 
    retro_atomic_int_init(&psp->read_pos, 0);
    retro_atomic_int_init(&psp->write_pos, 0);
    psp->port          = port;
 
-   if (   !psp->buffer
-       || !psp->zeroBuffer
+   if (   !psp->buffer_u32
        || !retro_eventcount_init(&psp->park))
    {
       sceAudioOutReleasePort(port);
-      free(psp->buffer);
-      free(psp->zeroBuffer);
+      free(psp->buffer_u32);
       free(psp);
       return NULL;
    }
@@ -182,9 +186,8 @@ static void psp2_audio_free(void *data)
       }
    }
    retro_eventcount_free(&psp->park);
-   free(psp->buffer);
+   free(psp->buffer_u32);
    psp->worker_thread = NULL;
-   free(psp->zeroBuffer);
 
    sceAudioOutReleasePort(psp->port);
 
@@ -251,14 +254,14 @@ static ssize_t psp2_audio_write(void *data, const void *s, size_t len)
 
    if ((write_pos + sample_count) > AUDIO_BUFFER_SIZE)
    {
-      memcpy(psp->buffer + write_pos, s,
+      memcpy(psp->buffer_u32 + write_pos, s,
             (AUDIO_BUFFER_SIZE - write_pos) * sizeof(uint32_t));
-      memcpy(psp->buffer, (uint32_t*)s +
+      memcpy(psp->buffer_u32, (uint32_t*)s +
             (AUDIO_BUFFER_SIZE - write_pos),
             (write_pos + sample_count - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
    }
    else
-      memcpy(psp->buffer + write_pos, s, len);
+      memcpy(psp->buffer_u32 + write_pos, s, len);
 
    write_pos      += sample_count;
    write_pos      &= AUDIO_BUFFER_SIZE_MASK;
