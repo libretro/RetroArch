@@ -766,22 +766,34 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 static void buffer_chain_commit_ranges(buffer_chain_t *chain);
 static void buffer_chain_discard(buffer_chain_t *chain);
 
+/* Staging slots per streaming texture: one per frame the GPU can
+ * have in flight, so a texture updated every frame finds a free slot
+ * rather than dropping every frame whose predecessor's blit has not
+ * finished yet. */
+#define METAL_STAGING_SLOTS MAX_INFLIGHT
+
 @interface Texture()
+{
+@public
+   /* Slot i of the staging buffer is busy from the commit of a blit
+    * that reads it until that command buffer completes. Hazard
+    * tracking orders one GPU access against another; it says nothing
+    * about the CPU writing a slot the GPU still reads, so a frame
+    * whose next slot is busy is dropped. Set by the updating thread
+    * only when clear and cleared by the completed handler only when
+    * set, each through __atomic stores: the handler runs on whatever
+    * thread Metal finishes on. */
+   int      _stagingBusy[METAL_STAGING_SLOTS];
+   unsigned _stagingNext;
+}
 @property (nonatomic, readwrite, strong) id<MTLTexture> texture;
 @property (nonatomic, readwrite, strong) id<MTLSamplerState> sampler;
 /* Staging for a streaming update: the pixels go here and the GPU
  * copies them into the texture, so the copy is ordered against the
- * draws that sample it (see metal_update_texture). Made on the first
- * update and kept, since a streaming texture updates every frame.
- *
- * stagingBusy is set when a blit that reads the buffer is committed
- * and cleared when that command buffer completes. Hazard tracking
- * orders one GPU access against another; it says nothing about the
- * CPU writing the buffer while the GPU still reads it, so a frame
- * arriving while the flag is set is dropped. Atomic: the handler runs
- * on whatever thread Metal finishes on. */
+ * draws that sample it (see metal_update_texture). One buffer of
+ * METAL_STAGING_SLOTS frame-sized slots, made on the first update and
+ * kept, since a streaming texture updates every frame. */
 @property (nonatomic, readwrite, strong) id<MTLBuffer> staging;
-@property (atomic, readwrite) BOOL stagingBusy;
 @end
 
 @interface Context()
@@ -6753,33 +6765,36 @@ static bool metal_update_texture_internal(void *video_data,
          return false;
       {
          NSUInteger len = (NSUInteger)ti->width * ti->height * 4;
+         unsigned slot  = t->_stagingNext;
+         NSUInteger off = (NSUInteger)slot * len;
          id<MTLCommandBuffer> cb;
          id<MTLBlitCommandEncoder> bce;
 
-         /* The last copy out of this buffer has not finished: the
-          * frame is dropped rather than written over the GPU's
-          * shoulder, which is the policy the other backends keep.
-          * The next frame finds the buffer free. */
-         if (t.stagingBusy)
+         /* The copy out of this slot from METAL_STAGING_SLOTS frames
+          * ago has not finished: the frame is dropped rather than
+          * written over the GPU's shoulder, which is the policy the
+          * other backends keep. */
+         if (__atomic_load_n(&t->_stagingBusy[slot], __ATOMIC_ACQUIRE))
             return true;
-         if (t.staging.length < len)
+         if (t.staging.length < len * METAL_STAGING_SLOTS)
          {
-            id<MTLBuffer> buf = [tex.device newBufferWithLength:len
+            id<MTLBuffer> buf = [tex.device
+                  newBufferWithLength:len * METAL_STAGING_SLOTS
                   options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
             if (!buf)
                return false;
             t.staging = RARCH_AUTORELEASE_R(buf);
          }
-         memcpy(t.staging.contents, ti->pixels, len);
-#if TARGET_OS_OSX
-         if (t.staging.storageMode == MTLStorageModeManaged)
-            [t.staging didModifyRange:NSMakeRange(0, len)];
-#endif
          if (!(cb = md.context.blitCommandBuffer))
             return false;
+         memcpy((uint8_t *)t.staging.contents + off, ti->pixels, len);
+#if TARGET_OS_OSX
+         if (t.staging.storageMode == MTLStorageModeManaged)
+            [t.staging didModifyRange:NSMakeRange(off, len)];
+#endif
          bce = [cb blitCommandEncoder];
          [bce copyFromBuffer:t.staging
-                sourceOffset:0
+                sourceOffset:off
            sourceBytesPerRow:4 * ti->width
          sourceBytesPerImage:len
                   sourceSize:MTLSizeMake(ti->width, ti->height, 1)
@@ -6788,15 +6803,17 @@ static bool metal_update_texture_internal(void *video_data,
             destinationLevel:0
            destinationOrigin:MTLOriginMake(0, 0, 0)];
          [bce endEncoding];
-         t.stagingBusy = YES;
+         __atomic_store_n(&t->_stagingBusy[slot], 1, __ATOMIC_RELEASE);
+         t->_stagingNext = (slot + 1) % METAL_STAGING_SLOTS;
          {
-            /* The buffer is free again when this command buffer is
-             * done with it. The handler holds the Texture so the
-             * flag it clears is still there to clear. */
+            /* The slot is free again when this command buffer is done
+             * with it. The handler holds the Texture so the flag it
+             * clears is still there to clear. */
             Texture *held = t;
             [cb addCompletedHandler:^(id<MTLCommandBuffer> done) {
                (void)done;
-               held.stagingBusy = NO;
+               __atomic_store_n(&held->_stagingBusy[slot], 0,
+                     __ATOMIC_RELEASE);
             }];
          }
       }
