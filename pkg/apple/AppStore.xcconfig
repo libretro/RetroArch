@@ -13,4 +13,7 @@ OTHER_CFLAGS = $(inherited) -DHAVE_ONLINE_UPDATER
 INFOPLIST_FILE = $(SRCROOT)/OSX/Info_AppStore.plist
 DEVELOPMENT_TEAM=UK699V5ZS8
 CODE_SIGN_ENTITLEMENTS = RetroArchAppStore.entitlements
-MACOSX_DEPLOYMENT_TARGET = 11.0
+// Xcode 27 accepts macOS deployment targets from 12.0 upwards. Override with
+// RA_MACOSX_DEPLOYMENT_TARGET to build the store package against a lower floor
+// on a machine with an older Xcode.
+MACOSX_DEPLOYMENT_TARGET = $(RA_MACOSX_DEPLOYMENT_TARGET:default=12.0)
