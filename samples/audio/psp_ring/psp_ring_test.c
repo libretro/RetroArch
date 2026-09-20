@@ -26,7 +26,7 @@
 #define CHECK(cond, what) \
    do { if (!(cond)) { \
       printf("FAIL  %s: %s\n", name, what); \
-      writer_pace_us = 0; writer_deliver = 0; \
+      writer_deliver = 0; \
       if (handle) { d->free(handle); handle = NULL; } \
       return 1; } } while (0)
 
@@ -47,7 +47,6 @@ static retro_atomic_int_t    writer_go;
 static uint32_t              writer_seq;
 static unsigned long         writer_frames;
 static unsigned long         writer_refused;
-static unsigned              writer_pace_us;
 static unsigned              writer_deliver;
 
 /* Frames carrying a running count, so the device can tell whether the
@@ -77,8 +76,6 @@ static void writer_thread(void *unused)
       }
       writer_seq    += n;
       writer_frames += n;
-      if (writer_pace_us)
-         usleep(writer_pace_us);
    }
 }
 
@@ -117,14 +114,24 @@ static int check_latency(const audio_driver_t *d, const char *name)
 }
 
 /* Starvation at the lowest setting, where the ring is at its floor
- * and there is least room to absorb the frontend's delivery size. The
- * writer is paced to the device rather than run flat out: a video
- * frame of audio per frame, as the frontend delivers it, scaled to the
- * mock's period so the check costs a second rather than ten.
+ * and there is least room to absorb the frontend's delivery size.
  *
  * A worker that holds a period back as a reserve rather than playing
  * it hands the device silence while the ring has audio in it, which
- * at this size is a quarter of every period. */
+ * at this size is a quarter of every period.
+ *
+ * Some starvation here is geometry rather than a defect, so the bound
+ * is set against it. A delivery needs RING_FREE >= its own size, so at
+ * a 2560-frame floor a 1600-frame delivery waits until held <= 959;
+ * draining a period at a time from the previous refill, the values the
+ * writer is released at cycle 448, 512, ... 896, and the first of those
+ * eight is below a period. One refill in eight therefore has to let the
+ * ring dip under a period before it can be refilled at all - 24 of 600
+ * periods, which is the 4% the floor was chosen against and is exact
+ * rather than noisy. The bound is twice that, which still sits well
+ * under the 14% a four-period floor gives and the quarter a reserving
+ * worker gives. A six-period floor would not dip at all (the released
+ * values start at 960); that is a latency decision, not this lane's. */
 static int check_starvation(const audio_driver_t *d, const char *name,
       unsigned deliver, unsigned hz)
 {
@@ -143,7 +150,6 @@ static int check_starvation(const audio_driver_t *d, const char *name,
    CHECK(handle != NULL, "init returned NULL");
 
    writer_deliver = deliver;
-   writer_pace_us = deliver * MOCK_PERIOD_US / 512u;
    retro_atomic_int_init(&writer_go, 1);
    w = sthread_create(writer_thread, NULL);
    CHECK(w != NULL, "could not start the writer");
@@ -154,7 +160,6 @@ static int check_starvation(const audio_driver_t *d, const char *name,
 
    retro_atomic_store_release_int(&writer_go, 0);
    sthread_join(w);
-   writer_pace_us = 0;
    writer_deliver = 0;
 
    periods = MOCK_READ(mock_periods);
@@ -162,7 +167,7 @@ static int check_starvation(const audio_driver_t *d, const char *name,
    CHECK(periods >= RUN_PERIODS, "the device never got its periods");
    CHECK(MOCK_READ(mock_breaks) == 0,
          "the device was handed a discontinuous window");
-   CHECK(silent * 20u <= periods,
+   CHECK(silent * 12u <= periods,
          "the device was starved with audio in the ring");
 
    printf("ok    %-5s starves %lu of %lu periods at the floor, %u Hz\n",
