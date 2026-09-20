@@ -859,7 +859,10 @@ static void android_input_poll_main_cmd(void)
          slock_unlock(android_app->mutex);
 
          if (cmd == APP_CMD_PAUSE)
+         {
             android_state_flush_pending = true;
+            android_app->keypress_vibrate_pending = false;
+         }
          else
          {
             android_state_flush_pending = false;
@@ -878,6 +881,8 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_STOP:
       {
          video_driver_state_t *state = video_state_get_ptr();
+
+         android_app->keypress_vibrate_pending = false;
 
          slock_lock(android_app->mutex);
          android_app->activityState = cmd;
@@ -901,6 +906,8 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_TERM_WINDOW:
       {
          video_driver_state_t *state = video_state_get_ptr();
+
+         android_app->keypress_vibrate_pending = false;
 
          android_input_destroy_surface(state);
 
@@ -1017,6 +1024,7 @@ static void android_input_poll_main_cmd(void)
          retro_atomic_store_release_int(&android_app->unfocused, 0);
          break;
       case APP_CMD_LOST_FOCUS:
+         android_app->keypress_vibrate_pending = false;
          {
             runloop_state_t *runloop_st = runloop_state_get_ptr();
             bool disable_accelerometer  = (android_app->sensor_state_mask &
@@ -1048,6 +1056,7 @@ static void android_input_poll_main_cmd(void)
          break;
 
       case APP_CMD_DESTROY:
+         android_app->keypress_vibrate_pending = false;
          android_app->destroyRequested = 1;
          break;
    }
@@ -3116,16 +3125,38 @@ static void android_input_grab_mouse(void *data, bool state)
             g_android->inputGrabMouse, state);
 }
 
-static void android_input_keypress_vibrate()
+static void android_input_keypress_vibrate(void)
+{
+   /* Late polling can reach this on a core's libco stack. Even entering
+    * Java to post a Runnable is unsafe there: ART only knows the OS stack. */
+   if (g_android)
+      g_android->keypress_vibrate_pending = true;
+}
+
+void android_input_flush_pending_haptics(void)
 {
    static const int keyboard_press = 3;
-   JNIEnv *env = (JNIEnv*)jni_thread_getenv();
+   struct android_app *android_app = g_android;
+   JNIEnv *env;
 
-   if (!env)
+   if (!android_app || !android_app->keypress_vibrate_pending)
       return;
 
-   CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
-         g_android->doHapticFeedback, (jint)keyboard_press);
+   android_app->keypress_vibrate_pending = false;
+
+   /* Feedback belongs to the current interaction, not a later resume. */
+   if (     android_app->destroyRequested
+         || android_app->activityState != APP_CMD_RESUME
+         || !android_app->window
+         || retro_atomic_load_relaxed_int(&android_app->unfocused)
+         || !android_app->doHapticFeedback)
+      return;
+
+   if (!(env = jni_thread_getenv()))
+      return;
+
+   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
+         android_app->doHapticFeedback, (jint)keyboard_press);
 }
 
 input_driver_t input_android = {
