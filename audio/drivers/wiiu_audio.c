@@ -381,7 +381,7 @@ static size_t ax_audio_wait_writable(void* data, size_t len)
    for (;;)
    {
       if (!AXIsMultiVoiceRunning(ax->mvoice))
-         return 0;
+         break;
       avail = (ax->written > AX_AUDIO_MAX_FREE)
             ? 0 : (AX_AUDIO_MAX_FREE - ax->written);
       if (avail >= want)
@@ -391,8 +391,9 @@ static size_t ax_audio_wait_writable(void* data, size_t len)
       OSWaitEventWithTimeout(&ax->frame_event,
             (OSTime)OSMicroseconds(AX_AUDIO_WAIT_US));
       if (--laps < 0)
-         return 0;
+         break;
    }
+   return 0;
 }
 
 /* Both in bytes of int16 stereo, as the interface asks: written counts
