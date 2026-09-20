@@ -79,9 +79,11 @@ video_thread_hw_allowed|video_state_get_ptr
 
 # A note on the counts: how many entries this audits depends on how wide
 # the build is, because an entry it cannot see in the binary is not a
-# finding. A default Linux build audits about 42 of them; adding Vulkan,
-# Qt, ffmpeg, HID and Bluetooth takes it to 59 and is what surfaced the
-# five gfx_display pairs and the two above. Windows, Apple, Android,
-# emscripten and console entries cannot be reached from a Linux build at
-# all - --list-unaudited names them. A narrow build reporting no
-# findings is not the same as a clean tree.
+# finding. A default Linux build audits about 42 of them; Vulkan, Qt,
+# ffmpeg, HID and Bluetooth take it to 59, which is what surfaced the
+# five gfx_display pairs and the two above, and the audio device
+# callbacks with JACK, PipeWire and PulseAudio built take it to 76.
+# Windows, Apple, Android, emscripten and console entries cannot be
+# reached from a Linux build at all, which is most of what is left -
+# --list-unaudited names them. A narrow build reporting no findings is
+# not the same as a clean tree.
