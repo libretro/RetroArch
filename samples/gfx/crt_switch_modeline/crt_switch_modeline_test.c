@@ -161,17 +161,25 @@ static bool srv_open(void *data, const video_modeline_disp_t *ds)
    return true;
 }
 
+static int srv_adds;
+static int srv_sets;
+
 static bool srv_add(void *data, video_modeline_t *mode)
 {
    (void)data;
    (void)mode;
+   srv_adds++;
    return true;
 }
+
+static video_modeline_t srv_last_set;
 
 static bool srv_set(void *data, video_modeline_t *mode)
 {
    (void)data;
-   (void)mode;
+   srv_sets++;
+   if (mode)
+      srv_last_set = *mode;
    return srv_set_ok;
 }
 
@@ -394,6 +402,58 @@ static void test_context_lines_are_said_once(void)
    ctx_ident = "wl";
 }
 
+/* Loading content tears the display server down and builds it again
+ * (content_load is MAIN_DEINIT plus retroarch_main_init), and the
+ * engine is kept alive across it. The rebind does not re-enumerate,
+ * and a mode already flushed is not flushed again, so the new
+ * instance is asked to switch to a mode it was never handed.
+ *
+ * That holds today because no backend needs the handover: X11 looks
+ * the mode up in the X server, which still has the RRMode; KMS reads
+ * the timing straight out of the struct; the Win32 backends registered
+ * it with the driver. What every one of them relies on is the mode
+ * carrying its whole timing at set() time, so that is what is pinned
+ * here - a backend that started needing its own add() first, or a
+ * mode that arrived at the new instance hollow, would both show up.
+ */
+static void test_rebind_after_display_server_rebuild(void)
+{
+   videocrt_switch_t sw;
+
+   printf("\n-- the display server is rebuilt underneath the engine --\n");
+   memset(&sw, 0, sizeof(sw));
+   srv_has_ops = true;
+   srv_set_ok  = true;
+   srv_ident   = "x11";
+   ctx_ident   = "x11";
+   log_reset();
+
+   srv_adds = srv_sets = 0;
+   run_switches(&sw, 0);
+   check("the first instance was given a mode", srv_adds > 0);
+   check("...and asked to switch to it", srv_sets > 0);
+
+   /* The instance goes away and a new one comes up */
+   crt_switch_display_server_lost(&sw, (void*)&srv_has_ops);
+
+   srv_adds = srv_sets = 0;
+   memset(&srv_last_set, 0, sizeof(srv_last_set));
+   log_reset();
+   run_switches(&sw, 0);
+
+   check("the engine rebound", log_hits("Rebound to display server") >= 1);
+   check("the new instance was asked to switch", srv_sets > 0);
+   check("the timing it got is whole, not a handle into the old one",
+         srv_last_set.pclock > 0 && srv_last_set.htotal > 0
+         && srv_last_set.vtotal > 0 && srv_last_set.hactive > 0
+         && srv_last_set.vactive > 0);
+   check_eq("and the switch went through",
+         log_hits("Engine failed to switch mode"), 0);
+
+   crt_destroy_modes(&sw);
+   ctx_ident = "wl";
+}
+
 static void test_failing_set_still_reports(void)
 {
    videocrt_switch_t sw;
@@ -480,6 +540,7 @@ int main(int argc, char **argv)
    test_no_modeline_path();
    test_khr_display();
    test_context_lines_are_said_once();
+   test_rebind_after_display_server_rebuild();
    test_failing_set_still_reports();
    test_edid_hint_names_the_selected_head();
 
