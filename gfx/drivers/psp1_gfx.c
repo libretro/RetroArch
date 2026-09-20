@@ -614,11 +614,18 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
 {
    psp1_video_t *psp = (psp1_video_t*)data;
 
+   if (!psp || !frame)
+      return;
+
    psp_set_screen_coords(psp->menu.frame_coords, 0, 0,
          SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, 0);
    psp_set_tex_coords(psp->menu.frame_coords, width, height);
 
    sceKernelDcacheWritebackRange(frame, width * height * 2);
+
+   /* The menu pushes a texture between frames, so the GE may still be
+    * on the list psp_frame() left it. */
+   sceGuSync(0, 0);
 
    sceGuStart(GU_DIRECT, psp->main_dList);
    sceGuCopyImage(GU_PSM_4444, 0, 0, width, height, width,
