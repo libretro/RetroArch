@@ -327,8 +327,14 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
     * OpenAL Soft extension, so asked for rather than assumed: core
     * OpenAL has nothing of the kind and Apple's does not carry it. */
    if (alcIsExtensionPresent(al->handle, "ALC_SOFT_device_clock"))
-      al->clk_get = (al_get_integer64v_t)alcGetProcAddress(
-            al->handle, "alcGetInteger64vSOFT");
+   {
+      /* Through a union, as al_init_events() resolves its own: an
+       * object pointer cast to a function pointer is not legal C. */
+      union { void *p; al_get_integer64v_t f; } clk;
+      clk.p = alcGetProcAddress(al->handle, "alcGetInteger64vSOFT");
+      if (clk.p)
+         al->clk_get = clk.f;
+   }
    RARCH_LOG("[OpenAL] Device clock: %s.\n",
          al->clk_get ? "reported by the implementation (ALC_SOFT_device_clock)"
                      : "not offered by this implementation");
