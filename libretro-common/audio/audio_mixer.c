@@ -1130,17 +1130,13 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, size_t size,
    /* Build the pipeline the caller asked for now, so that triggering
     * the sound later allocates nothing. The other one is built only
     * if a mode flip actually asks for it. */
-   if (!(want_s16 ? wav_build_s16(sound, quality)
-                  : wav_build_float(sound, resampler_ident, quality)))
-   {
-      audio_mixer_destroy(sound);
-      return NULL;
-   }
+   if (want_s16 ? wav_build_s16(sound, quality)
+                : wav_build_float(sound, resampler_ident, quality))
+      return sound;
 
-   return sound;
-#else
-   return NULL;
+   audio_mixer_destroy(sound);
 #endif
+   return NULL;
 }
 
 audio_mixer_sound_t* audio_mixer_load_wav_stream(void *buffer, size_t size)
@@ -1151,21 +1147,17 @@ audio_mixer_sound_t* audio_mixer_load_wav_stream(void *buffer, size_t size)
    if (!buffer || size <= 0)
       return NULL;
 
-   if (!(sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound))))
-      return NULL;
-
-   /* nothing is decoded here: the voice reads frames out of these
-    * bytes as it mixes them */
-   sound->type              = AUDIO_MIXER_TYPE_WAV_STREAM;
-   sound->types.stream.size = size;
-   sound->types.stream.data = buffer;
-
-   return sound;
-#else
-   (void)buffer;
-   (void)size;
-   return NULL;
+   if ((sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound))))
+   {
+      /* nothing is decoded here: the voice reads frames out of these
+       * bytes as it mixes them */
+      sound->type              = AUDIO_MIXER_TYPE_WAV_STREAM;
+      sound->types.stream.size = size;
+      sound->types.stream.data = buffer;
+      return sound;
+   }
 #endif
+   return NULL;
 }
 
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, size_t size)
@@ -1198,17 +1190,15 @@ audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, size_t size)
 
    sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
-   if (!sound)
-      return NULL;
-
-   sound->type           = mt;
-   sound->types.stream.size = size;
-   sound->types.stream.data = buffer;
-
-   return sound;
-#else
-   return NULL;
+   if (sound)
+   {
+      sound->type              = mt;
+      sound->types.stream.size = size;
+      sound->types.stream.data = buffer;
+      return sound;
+   }
 #endif
+   return NULL;
 }
 
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, size_t size)
@@ -1216,17 +1206,15 @@ audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, size_t size)
 #ifdef HAVE_RFLAC
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
-   if (!sound)
-      return NULL;
-
-   sound->type           = AUDIO_MIXER_TYPE_FLAC;
-   sound->types.stream.size = size;
-   sound->types.stream.data = buffer;
-
-   return sound;
-#else
-   return NULL;
+   if (sound)
+   {
+      sound->type              = AUDIO_MIXER_TYPE_FLAC;
+      sound->types.stream.size = size;
+      sound->types.stream.data = buffer;
+      return sound;
+   }
 #endif
+   return NULL;
 }
 
 audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, size_t size)
@@ -1234,17 +1222,15 @@ audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, size_t size)
 #ifdef HAVE_RMP3
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
-   if (!sound)
-      return NULL;
-
-   sound->type           = AUDIO_MIXER_TYPE_MP3;
-   sound->types.stream.size = size;
-   sound->types.stream.data = buffer;
-
-   return sound;
-#else
-   return NULL;
+   if (sound)
+   {
+      sound->type              = AUDIO_MIXER_TYPE_MP3;
+      sound->types.stream.size = size;
+      sound->types.stream.data = buffer;
+      return sound;
+   }
 #endif
+   return NULL;
 }
 
 audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size)
@@ -1252,17 +1238,15 @@ audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size)
 #ifdef HAVE_RAAC
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
-   if (!sound)
-      return NULL;
-
-   sound->type           = AUDIO_MIXER_TYPE_M4A;
-   sound->types.stream.size = size;
-   sound->types.stream.data = buffer;
-
-   return sound;
-#else
-   return NULL;
+   if (sound)
+   {
+      sound->type              = AUDIO_MIXER_TYPE_M4A;
+      sound->types.stream.size = size;
+      sound->types.stream.data = buffer;
+      return sound;
+   }
 #endif
+   return NULL;
 }
 
 audio_mixer_sound_t* audio_mixer_load_ac3(void *buffer, size_t size)
@@ -1270,17 +1254,15 @@ audio_mixer_sound_t* audio_mixer_load_ac3(void *buffer, size_t size)
 #ifdef HAVE_RAC3
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
-   if (!sound)
-      return NULL;
-
-   sound->type           = AUDIO_MIXER_TYPE_AC3;
-   sound->types.stream.size = size;
-   sound->types.stream.data = buffer;
-
-   return sound;
-#else
-   return NULL;
+   if (sound)
+   {
+      sound->type              = AUDIO_MIXER_TYPE_AC3;
+      sound->types.stream.size = size;
+      sound->types.stream.data = buffer;
+      return sound;
+   }
 #endif
+   return NULL;
 }
 
 audio_mixer_sound_t* audio_mixer_load_lpcm(void *buffer, size_t size)
@@ -1288,19 +1270,15 @@ audio_mixer_sound_t* audio_mixer_load_lpcm(void *buffer, size_t size)
 #ifdef HAVE_RLPCM
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
-   if (!sound)
-      return NULL;
-
-   sound->type              = AUDIO_MIXER_TYPE_LPCM;
-   sound->types.stream.size = size;
-   sound->types.stream.data = buffer;
-
-   return sound;
-#else
-   (void)buffer;
-   (void)size;
-   return NULL;
+   if (sound)
+   {
+      sound->type              = AUDIO_MIXER_TYPE_LPCM;
+      sound->types.stream.size = size;
+      sound->types.stream.data = buffer;
+      return sound;
+   }
 #endif
+   return NULL;
 }
 
 audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, size_t size)
@@ -1308,17 +1286,15 @@ audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, size_t size)
 #ifdef HAVE_ROPUS
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
-   if (!sound)
-      return NULL;
-
-   sound->type           = AUDIO_MIXER_TYPE_OPUS;
-   sound->types.stream.size = size;
-   sound->types.stream.data = buffer;
-
-   return sound;
-#else
-   return NULL;
+   if (sound)
+   {
+      sound->type              = AUDIO_MIXER_TYPE_OPUS;
+      sound->types.stream.size = size;
+      sound->types.stream.data = buffer;
+      return sound;
+   }
 #endif
+   return NULL;
 }
 
 audio_mixer_sound_t* audio_mixer_load_weba_avail(void *buffer, size_t size,
@@ -1375,17 +1351,15 @@ audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, size_t size)
 #ifdef HAVE_RMODTRACKER
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
-   if (!sound)
-      return NULL;
-
-   sound->type              = AUDIO_MIXER_TYPE_MOD;
-   sound->types.stream.size = size;
-   sound->types.stream.data = buffer;
-
-   return sound;
-#else
-   return NULL;
+   if (sound)
+   {
+      sound->type              = AUDIO_MIXER_TYPE_MOD;
+      sound->types.stream.size = size;
+      sound->types.stream.data = buffer;
+      return sound;
+   }
 #endif
+   return NULL;
 }
 
 void audio_mixer_sound_set_data_owner(audio_mixer_sound_t *sound,
