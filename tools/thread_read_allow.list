@@ -82,8 +82,20 @@ video_thread_hw_allowed|video_state_get_ptr
 # finding. A default Linux build audits about 42 of them; Vulkan, Qt,
 # ffmpeg, HID and Bluetooth take it to 59, which is what surfaced the
 # five gfx_display pairs and the two above, and the audio device
-# callbacks with JACK, PipeWire and PulseAudio built take it to 76.
-# Windows, Apple, Android, emscripten and console entries cannot be
-# reached from a Linux build at all, which is most of what is left -
-# --list-unaudited names them. A narrow build reporting no findings is
-# not the same as a clean tree.
+# callbacks with JACK, PipeWire and PulseAudio built take it to 76. A
+# narrow build reporting no findings is not the same as a clean tree.
+#
+# The Windows entries are reachable too, which is worth knowing because
+# they are a good part of what a Linux build cannot see - WASAPI, WDM-KS,
+# DirectSound, XAudio, ASIO, raw input, DirectInput enumeration, the
+# modeline resync and the D3D11 and D3D12 frame contexts:
+#
+#   ./configure --host=x86_64-w64-mingw32 --disable-qt && make
+#   tools/thread_read_audit.py --binary ./retroarch.exe \
+#      --objdump x86_64-w64-mingw32-objdump
+#
+# That audits 62, also clean. Between the two, 27 entries are left that
+# neither build contains - Apple, Android, emscripten, the consoles,
+# Steam, and a few drivers whose library is not packaged. Those need
+# their own toolchain; --list-unaudited names them for whichever binary
+# it is given.
