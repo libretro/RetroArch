@@ -77,12 +77,13 @@ typedef struct psp2_audio
 
 /* The ring is what the latency setting asks for, so it is a whole
  * number of periods rather than a power of two and the wrap is a
- * compare. Four periods is the floor: the frontend delivers a video
- * frame of audio at a time - 800 frames at 60 Hz and 48 kHz - and the
- * ring has to hold one of those beside the period in flight without
- * running dry. Three starves a quarter of the time, two almost
- * always. */
-#define AUDIO_RING_MIN  (AUDIO_OUT_COUNT * 4u)
+ * compare. Five periods is the floor, which is the default latency
+ * setting: the ring has to hold a delivery beside the period the
+ * worker is playing, and a delivery is a video frame of audio - 1600
+ * frames for 30 Hz content at 48 kHz. Four starves 14% of periods on
+ * that content through the threaded pipeline and 93% inline, five
+ * 0.3% and 4%. Anything at or above the default is unaffected. */
+#define AUDIO_RING_MIN  (AUDIO_OUT_COUNT * 5u)
 #define AUDIO_RING_MAX  (AUDIO_OUT_COUNT * 64u)
 
 /* The period the output call holds while the device plays it. It is
