@@ -151,7 +151,8 @@ platform_video "switch video" \
 # The PSP driver folds its VRAM and cache-alias addresses into pointers,
 # which a 64-bit host narrows; the arithmetic is 32-bit on the target.
 platform_video "psp1 video" "-DPSP" \
-   "-Itools/platform_stubs/psp -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast" \
+   "-Itools/platform_stubs/psp -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast \
+    -Wdeclaration-after-statement -Werror=declaration-after-statement" \
    gfx/drivers/psp1_gfx.c ""
 platform_video "dingux video"   "-DDINGUX" "-I/usr/include/SDL" \
    gfx/drivers/sdl_dingux_gfx.c /usr/include/SDL/SDL.h

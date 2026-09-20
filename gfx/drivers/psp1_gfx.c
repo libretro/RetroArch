@@ -268,8 +268,12 @@ static void psp_update_viewport(psp1_video_t* psp)
 }
 
 
-static void psp_on_vblank(u32 sub, psp1_video_t *psp)
+static void psp_on_vblank(int sub, void *arg)
 {
+   psp1_video_t *psp = (psp1_video_t*)arg;
+
+   (void)sub;
+
    if (psp)
       psp->vblank_not_reached = false;
 }
@@ -499,7 +503,8 @@ static void *psp_init(const video_info_t *video,
    }
 
    psp->vblank_not_reached = true;
-   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0, psp_on_vblank, psp);
+   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0,
+         (void*)psp_on_vblank, psp);
    sceKernelEnableSubIntr(PSP_VBLANK_INT, 0);
 
    psp->keep_aspect        = true;
@@ -709,9 +714,9 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
 
 static void psp_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   (void) full_screen;
-
    psp1_video_t *psp = (psp1_video_t*)data;
+
+   (void)full_screen;
 
    if (psp)
       psp->menu.active = state;
