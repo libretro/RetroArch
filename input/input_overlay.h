@@ -236,7 +236,14 @@ struct overlay_desc
    enum overlay_type type;
 
    unsigned next_index;
+   /* Index into the page's own image list (load_images / the page's
+    * textures). Every desc with an image gets its own entry, even when
+    * several share one file. */
    unsigned image_index;
+   /* Index into the pack's unique images (ol->images and the anim_*
+    * arrays), which are deduplicated by path. Only meaningful when the
+    * desc has an image. */
+   unsigned pack_image_index;
 
    float alpha_mod;
    float range_mod;

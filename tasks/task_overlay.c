@@ -308,7 +308,8 @@ static bool task_overlay_load_image_texture(
       struct overlay *overlay,
       struct texture_image *image,
       const char *full_path,
-      const char *rel_path)
+      const char *rel_path,
+      unsigned *pack_idx)
 {
    int img_idx = string_list_find_elem(loader->image_list, rel_path) - 1;
 
@@ -360,6 +361,8 @@ static bool task_overlay_load_image_texture(
 
       attr.p = (void*)image;
       string_list_append(loader->image_list, rel_path, attr);
+      if (pack_idx)
+         *pack_idx = (unsigned)(loader->image_list->size - 1);
 
 #ifdef HAVE_RPNG
       /* An animated PNG keeps its file bytes: the pack composes the
@@ -390,7 +393,11 @@ static bool task_overlay_load_image_texture(
 #endif
    }
    else
+   {
       *image = *((struct texture_image*)loader->image_list->elems[img_idx].attr.p);
+      if (pack_idx)
+         *pack_idx = (unsigned)img_idx;
+   }
 
    overlay->load_images[overlay->load_images_size++] = *image;
 
@@ -421,7 +428,7 @@ static void task_overlay_load_desc_image(
             image_path, sizeof(path));
 
       if (task_overlay_load_image_texture(loader, overlay, &desc->image,
-               path, image_path))
+               path, image_path, &desc->pack_image_index))
          desc->image_index = overlay->load_images_size - 1;
    }
 
@@ -1116,7 +1123,7 @@ static void task_overlay_deferred_load(retro_task_t *task, void *budget)
                overlay->config.paths.path, sizeof(overlay_resolved_path));
 
          if (!task_overlay_load_image_texture(loader, overlay, &overlay->image,
-               overlay_resolved_path, overlay->config.paths.path))
+               overlay_resolved_path, overlay->config.paths.path, NULL))
          {
             RARCH_ERR("[Overlay] Failed to load image: \"%s\".\n",
                   overlay_resolved_path);
