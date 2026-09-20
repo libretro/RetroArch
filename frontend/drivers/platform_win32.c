@@ -1313,9 +1313,6 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_detach_console,   /* detach_console           */
    NULL,                            /* get_lakka_version        */
    NULL,                            /* set_screen_brightness    */
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-#else
-#endif
    NULL,                            /* set_sustained_performance_mode */
    frontend_win32_get_cpu_model_name,
    frontend_win32_get_user_language,

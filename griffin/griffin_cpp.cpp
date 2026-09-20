@@ -113,9 +113,6 @@ VIDEO DRIVER
 #endif
 #include "../deps/SPIRV-Cross/spirv_cross_c.cpp"
 #include "../deps/SPIRV-Cross/spirv_cross_parsed_ir.cpp"
-#ifdef HAVE_SLANG
-
-#endif
 #endif
 
 #ifdef WANT_GLSLANG

@@ -1099,8 +1099,6 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_ACHIEVEMENTS_SUBMENU_LIST,
          action_get_title_achievements_submenu_list},
 #endif
-#if defined(HAVE_LIBNX)
-#endif
 #if defined(HAVE_GAME_AI)
       {MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS,
          action_get_core_game_ai_options_list},

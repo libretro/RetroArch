@@ -1430,8 +1430,6 @@ extern audio_driver_t audio_ps4;
 extern audio_driver_t audio_ps2;
 extern audio_driver_t audio_ctr_csnd;
 extern audio_driver_t audio_ctr_dsp;
-#ifdef HAVE_THREADS
-#endif
 extern audio_driver_t audio_switch;
 extern audio_driver_t audio_switch_libnx_audren;
 extern audio_driver_t audio_rwebaudio;

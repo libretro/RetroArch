@@ -717,9 +717,6 @@ FONTS
 
 #include "../gfx/bitmapfont.c"
 
-#ifdef HAVE_LANGEXTRA
-#endif
-
 #include "../gfx/font_driver.c"
 
 #include "../gfx/drivers_font_renderer/stb.c"
@@ -1303,12 +1300,6 @@ FILE
 
 #include "../libretro-common/string/rstrtod.c"
 #include "../libretro-common/string/stdstring.c"
-#if defined(__linux__)
-#endif
-#if defined(HAVE_MMAP) && defined(BSD)
-#endif
-#if defined(HAVE_MMAP_WIN32)
-#endif
 
 /*============================================================
 MESSAGE

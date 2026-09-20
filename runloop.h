@@ -274,8 +274,6 @@ struct runloop
    struct retro_callbacks secondary_callbacks;           /* ptr alignment */
 #endif
 #endif
-#ifdef HAVE_THREADS
-#endif
 
    content_state_t            content_st;                /* ptr alignment */
    struct retro_subsystem_rom_info

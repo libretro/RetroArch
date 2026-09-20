@@ -17484,9 +17484,6 @@ static void settings_build_manual_content_scan(
    }
 }
 
-#ifdef HAVE_MIST
-#endif
-
 #ifdef HAVE_SMBCLIENT
 static void settings_build_smbclient(
       settings_t *settings, global_t *global,

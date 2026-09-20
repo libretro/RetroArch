@@ -248,8 +248,6 @@ audio_driver_t audio_null = {
 audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
    &audio_alsa,
-#if !defined(__QNX__) && !defined(MIYOO) && defined(HAVE_THREADS)
-#endif
 #endif
 #ifdef HAVE_TINYALSA
    &audio_tinyalsa,
@@ -367,8 +365,6 @@ microphone_driver_t microphone_null = {
 microphone_driver_t *microphone_drivers[] = {
 #ifdef HAVE_ALSA
       &microphone_alsa,
-#if !defined(__QNX__) && !defined(MIYOO) && defined(HAVE_THREADS)
-#endif
 #endif
 #ifdef HAVE_WASAPI
       &microphone_wasapi,

@@ -1916,9 +1916,6 @@ static bool win32_window_create(void *data, unsigned style,
 }
 #endif
 
-#if !defined(_XBOX) && !defined(__WINRT__)
-#endif
-
 void win32_monitor_init(void)
 {
 #if !defined(_XBOX)

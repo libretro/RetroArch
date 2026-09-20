@@ -1041,10 +1041,6 @@ static void gl3_ubo_ring_free(struct gl3_ubo_ring *ring)
 struct gl3_pass
 {
 
-#ifdef GL3_ROLLING_SCANLINE_SIMULATION
-
-#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
-
    bool final_pass;
 
    GLuint pipeline;

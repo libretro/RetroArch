@@ -8887,9 +8887,6 @@ void runloop_msg_queue_deinit(void)
 
    msg_queue_deinitialize(&runloop_st->msg_queue);
 
-#ifdef HAVE_THREADS
-#endif
-
    runloop_st->msg_queue_size = 0;
 }
 
