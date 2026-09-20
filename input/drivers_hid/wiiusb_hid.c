@@ -20,6 +20,7 @@
 
 #include <gccore.h>
 #include <ogc/machine/processor.h>
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
 
 #include "../input_defines.h"
@@ -41,7 +42,10 @@ typedef struct wiiusb_hid
    struct wiiusb_adapter *adapters_head;
 
    sthread_t *poll_thread;
-   volatile bool poll_thread_quit;
+   /* Set by the thread tearing the driver down, read by the poll
+    * thread's loop. An atomic and not a volatile bool: volatile orders
+    * nothing between two threads. */
+   retro_atomic_int_t poll_thread_quit;
 
    /* Wakes the poll thread: a read completed, a device arrived or left,
     * a control message was queued, or it is time to stop. It used to
@@ -55,7 +59,12 @@ typedef struct wiiusb_hid
    bool wake_queue_inited;
 
    /* helps on knowing if a new device has been inserted */
-   bool device_detected;
+   /* Raised by wiiusb_hid_change_cb, which libogc runs in interrupt
+    * context, and cleared by the poll thread. volatile rather than an
+    * atomic for the same reason the rest of this file's interrupt-shared
+    * state is: the writer is not a thread. It was a plain bool, which
+    * left the poll thread free to keep it in a register. */
+   volatile bool device_detected;
    /* helps on detecting that a device has just been removed */
    bool removal_cb;
 
@@ -476,7 +485,7 @@ static void wiiusb_hid_poll_thread(void *data)
    if (!hid)
       return;
 
-   while (!hid->poll_thread_quit)
+   while (!retro_atomic_load_acquire_int(&hid->poll_thread_quit))
    {
 
       /* first check for new devices */
@@ -644,7 +653,7 @@ static void wiiusb_hid_free(const void *data)
    if (!hid)
       return;
 
-   hid->poll_thread_quit = true;
+   retro_atomic_store_release_int(&hid->poll_thread_quit, 1);
    wiiusb_hid_wake(hid);
 
    if (hid->poll_thread)
@@ -674,6 +683,9 @@ static void *wiiusb_hid_init(void)
    if (!hid)
       goto error;
 
+   /* Before the first goto error: free() stores through it. */
+   retro_atomic_int_init(&hid->poll_thread_quit, 0);
+
    connections = pad_connection_init(MAX_USERS);
 
    if (!connections)
@@ -684,7 +696,6 @@ static void *wiiusb_hid_init(void)
    hid->adapters_head    = NULL;
    hid->removal_cb       = FALSE;
    hid->manual_removal   = FALSE;
-   hid->poll_thread_quit = FALSE;
    /* we set it initially to TRUE so we force
     * to add the already connected pads */
    hid->device_detected  = TRUE;

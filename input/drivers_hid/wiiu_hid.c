@@ -425,7 +425,7 @@ static int wiiu_hid_polling_thread(int argc, const char **argv)
 {
    wiiu_hid_t *hid = (wiiu_hid_t *)argv;
 
-   while (!hid->polling_thread_quit)
+   while (!retro_atomic_load_acquire_int(&hid->polling_thread_quit))
    {
       wiiu_handle_attach_events(hid, wiiu_hid_synchronized_get_events_list());
       wiiu_poll_adapters(hid);
@@ -448,6 +448,8 @@ static void wiiu_hid_start_polling_thread(wiiu_hid_t *hid)
 
    if (!thread || !stack)
       goto error;
+
+   retro_atomic_int_init(&hid->polling_thread_quit, 0);
 
    if (!OSCreateThread(thread,
             wiiu_hid_polling_thread,
@@ -491,7 +493,7 @@ static void wiiu_hid_stop_polling_thread(wiiu_hid_t *hid)
    }
 
    /* tell the thread it's time to stop, and wake it to see that. */
-   hid->polling_thread_quit = true;
+   retro_atomic_store_release_int(&hid->polling_thread_quit, 1);
    OSSignalEvent(&hid_wake);
    /* This returns once the thread runs and the cleanup method completes. */
    OSJoinThread(hid->polling_thread, &thread_result);
