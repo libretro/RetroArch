@@ -148,6 +148,11 @@ platform_video "gx video" "-DGEKKO -DHW_RVL" "-I$STUBS/gx" \
 platform_video "switch video" \
    "-DHAVE_LIBNX -DSWITCH -D__SWITCH__" "-I$STUBS/libnx" \
    gfx/drivers/switch_nx_gfx.c ""
+# The PSP driver folds its VRAM and cache-alias addresses into pointers,
+# which a 64-bit host narrows; the arithmetic is 32-bit on the target.
+platform_video "psp1 video" "-DPSP" \
+   "-Itools/platform_stubs/psp -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast" \
+   gfx/drivers/psp1_gfx.c ""
 platform_video "dingux video"   "-DDINGUX" "-I/usr/include/SDL" \
    gfx/drivers/sdl_dingux_gfx.c /usr/include/SDL/SDL.h
 platform_video "rs90 video"     "-DDINGUX -DRS90" "-I/usr/include/SDL" \
