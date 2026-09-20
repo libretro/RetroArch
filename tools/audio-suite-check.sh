@@ -11,7 +11,15 @@ for d in samples/audio/*/; do
    [ -f "$d/Makefile" ] || continue
    if grep -rqs "$base" "$d"Makefile "$d"*.c "$d"*.h 2>/dev/null; then
       found=1
-      ( cd "$d" && for san in "" address,undefined thread; do
+      ( cd "$d" &&
+        # A suite ships tsan.supp when its reports come from an
+        # uninstrumented dependency rather than from the code under test.
+        # The workflow passes it; so does this.
+        if [ -f tsan.supp ]; then
+           TSAN_OPTIONS=halt_on_error=1:suppressions=$PWD/tsan.supp
+           export TSAN_OPTIONS
+        fi
+        for san in "" address,undefined thread; do
            [ -n "$san" ] && ! grep -q SANITIZER Makefile && continue
            make clean >/dev/null 2>&1
            if ! timeout 240 make SANITIZER=$san >/tmp/asc.log 2>&1; then
