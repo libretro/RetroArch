@@ -825,9 +825,9 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          for (i = src_x; i < src_x_max; i++)
          {
 
-            *(dst++) = ((*src) >> 11) << 3;
-            *(dst++) = (((*src) >> 5) << 2) &0xFF;
             *(dst++) = ((*src) & 0x1F) << 3;
+            *(dst++) = (((*src) >> 5) << 2) &0xFF;
+            *(dst++) = ((*src) >> 11) << 3;
             src++;
          }
       }
@@ -840,9 +840,9 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          for (i = src_x; i < src_x_max; i++)
          {
 
-            *(dst++) = (((*src) >> 10) << 3) &0xFF;
-            *(dst++) = (((*src) >> 5) << 3) &0xFF;
             *(dst++) = ((*src) & 0x1F) << 3;
+            *(dst++) = (((*src) >> 5) << 3) &0xFF;
+            *(dst++) = (((*src) >> 10) << 3) &0xFF;
             src++;
          }
       }
