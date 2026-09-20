@@ -24,6 +24,7 @@
 #include <retro_atomic.h>
 
 #include "../audio_driver.h"
+#include "../../verbosity.h"
 #include "rsound.h"
 
 typedef struct rsd
