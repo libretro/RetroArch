@@ -204,9 +204,6 @@ struct android_app
    bool     gravity_calibrated;
    char current_ime[NAME_MAX_LENGTH];
    bool input_alive;
-   /* App-thread only, including core coroutines. Coalesce feedback within
-    * one runloop iteration; never carry a keypress across focus loss. */
-   bool keypress_vibrate_pending;
    int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];
    int8_t hat_state[DEFAULT_MAX_PADS][2];
    jmethodID getIntent;
@@ -521,7 +518,9 @@ void android_display_server_reapply_mode(void);
  * retro_run(). No-op when nothing is pending. */
 void android_input_flush_pending_state(void);
 
-/* Call only from the outer app loop, on its original OS stack. */
+/* Dispatches an outstanding keypress haptic. Called from the runloop for
+ * the same reason as the flush above, and only from there: entering Java
+ * is only safe on the OS stack. No-op when nothing is pending. */
 void android_input_flush_pending_haptics(void);
 
 bool android_app_write_cmd(struct android_app *android_app, int8_t cmd);

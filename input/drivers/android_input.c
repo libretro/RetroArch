@@ -680,6 +680,13 @@ static bool android_state_flushed = false;
  * iteration. */
 static bool android_state_flush_pending = false;
 
+/* Set by the keypress haptic callback, consumed by
+ * android_input_flush_pending_haptics() at the top of the next runloop
+ * iteration. Cleared by the lifecycle handlers: the runloop blocks in the
+ * poll while backgrounded, so a press left pending would otherwise be
+ * delivered on the resume that follows. */
+static bool android_keypress_vibrate_pending = false;
+
 /* Android may reclaim the process at any point after onPause() has
  * returned. onDestroy() is not guaranteed to run at all - in particular,
  * swiping the task away from Recents never delivers it - so onPause() is
@@ -861,7 +868,7 @@ static void android_input_poll_main_cmd(void)
          if (cmd == APP_CMD_PAUSE)
          {
             android_state_flush_pending = true;
-            android_app->keypress_vibrate_pending = false;
+            android_keypress_vibrate_pending = false;
          }
          else
          {
@@ -882,7 +889,7 @@ static void android_input_poll_main_cmd(void)
       {
          video_driver_state_t *state = video_state_get_ptr();
 
-         android_app->keypress_vibrate_pending = false;
+         android_keypress_vibrate_pending = false;
 
          slock_lock(android_app->mutex);
          android_app->activityState = cmd;
@@ -907,7 +914,7 @@ static void android_input_poll_main_cmd(void)
       {
          video_driver_state_t *state = video_state_get_ptr();
 
-         android_app->keypress_vibrate_pending = false;
+         android_keypress_vibrate_pending = false;
 
          android_input_destroy_surface(state);
 
@@ -1024,7 +1031,7 @@ static void android_input_poll_main_cmd(void)
          retro_atomic_store_release_int(&android_app->unfocused, 0);
          break;
       case APP_CMD_LOST_FOCUS:
-         android_app->keypress_vibrate_pending = false;
+         android_keypress_vibrate_pending = false;
          {
             runloop_state_t *runloop_st = runloop_state_get_ptr();
             bool disable_accelerometer  = (android_app->sensor_state_mask &
@@ -1056,7 +1063,7 @@ static void android_input_poll_main_cmd(void)
          break;
 
       case APP_CMD_DESTROY:
-         android_app->keypress_vibrate_pending = false;
+         android_keypress_vibrate_pending = false;
          android_app->destroyRequested = 1;
          break;
    }
@@ -3128,9 +3135,9 @@ static void android_input_grab_mouse(void *data, bool state)
 static void android_input_keypress_vibrate(void)
 {
    /* Late polling can reach this on a core's libco stack. Even entering
-    * Java to post a Runnable is unsafe there: ART only knows the OS stack. */
-   if (g_android)
-      g_android->keypress_vibrate_pending = true;
+    * Java to post a Runnable is unsafe there: ART only knows the OS stack.
+    * Repeats within one iteration coalesce into a single buzz. */
+   android_keypress_vibrate_pending = true;
 }
 
 void android_input_flush_pending_haptics(void)
@@ -3139,10 +3146,13 @@ void android_input_flush_pending_haptics(void)
    struct android_app *android_app = g_android;
    JNIEnv *env;
 
-   if (!android_app || !android_app->keypress_vibrate_pending)
+   if (!android_keypress_vibrate_pending)
       return;
 
-   android_app->keypress_vibrate_pending = false;
+   android_keypress_vibrate_pending = false;
+
+   if (!android_app)
+      return;
 
    /* Feedback belongs to the current interaction, not a later resume. */
    if (     android_app->destroyRequested
