@@ -11,7 +11,7 @@ S_UINT_EX(crt_switch_resolution, CRT_SWITCH_RESOLUTION,
       "Generate a video mode matching the content's resolution and refresh rate. 15/31 KHz are for CRTs; Match Display and Match Refresh Only take their limits from the display's EDID.")
 S_UINT_EX(crt_switch_resolution_super, CRT_SWITCH_RESOLUTION_SUPER,
       "crt_switch_resolution_super",
-      DEFAULT_CRT_SWITCH_RESOLUTION_SUPER, SD_FLAG_ADVANCED, 0, 0, 0, 0, 0, 0, NULL, setting_get_string_representation_crt_switch_resolution_super, NULL, NULL, setting_uint_action_left_crt_switch_resolution_super, setting_uint_action_right_crt_switch_resolution_super, 0,
+      DEFAULT_CRT_SWITCH_RESOLUTION_SUPER, SD_FLAG_ADVANCED, 0, 0, 0, 0, 0, 0, setting_action_ok_crt_switch_resolution_super, setting_get_string_representation_crt_switch_resolution_super, NULL, NULL, setting_uint_action_left_crt_switch_resolution_super, setting_uint_action_right_crt_switch_resolution_super, 0,
       "CRT Super Resolution",
       "Switch among native and ultrawide super resolutions.")
 /* config key "crt_switch_center_adjust" differs from the label string; the

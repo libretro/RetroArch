@@ -2876,6 +2876,17 @@ static int setting_action_ok_uint_special(
    return 0;
 }
 
+static int setting_action_ok_crt_switch_resolution_super(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   if (!setting)
+      return -1;
+   generic_action_ok_displaylist_push(
+         NULL, NULL, NULL, 0, idx, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_CRT_SUPER_RESOLUTION);
+   return 0;
+}
+
 static int setting_action_ok_uint(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {

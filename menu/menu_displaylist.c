@@ -9978,6 +9978,39 @@ unsigned menu_displaylist_build_list(
 
          break;
 #endif
+      case DISPLAYLIST_DROPDOWN_LIST_CRT_SUPER_RESOLUTION:
+         menu_entries_clear(list);
+         {
+            unsigned i;
+            settings_t *settings           = config_get_ptr();
+            unsigned current               = settings->uints.crt_switch_resolution_super;
+            static const unsigned values[] = { 0, 1, 1920, 2560, 3840 };
+            static const char * const names[] =
+               { "NATIVE", "DYNAMIC", "1920", "2560", "3840" };
+
+            for (i = 0; i < sizeof(values) / sizeof(values[0]); i++)
+            {
+               char val_d[16];
+               snprintf(val_d, sizeof(val_d), "%u", values[i]);
+               if (menu_entries_append(list,
+                        names[i],
+                        val_d,
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_DROPDOWN_ITEM_CRT_SUPER_RESOLUTION,
+                        i, 0, NULL))
+                  count++;
+
+               if (values[i] == current)
+               {
+                  menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+                     list->list[i].actiondata;
+                  if (cbs)
+                     cbs->checked           = true;
+                  menu_st->selection_ptr    = i;
+               }
+            }
+         }
+         break;
       case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
          menu_entries_clear(list);
          {
@@ -16074,6 +16107,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_OPTIONS_CHEATS:
          case DISPLAYLIST_NETWORK_INFO:
          case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
+         case DISPLAYLIST_DROPDOWN_LIST_CRT_SUPER_RESOLUTION:
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
@@ -16163,6 +16197,7 @@ static bool menu_displaylist_ctl_internal(
 #endif
                   case DISPLAYLIST_ADD_CONTENT_LIST:
                   case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
+                  case DISPLAYLIST_DROPDOWN_LIST_CRT_SUPER_RESOLUTION:
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
