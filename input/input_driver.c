@@ -3399,12 +3399,18 @@ static void input_overlay_post_poll(
          ol->iface->set_alpha(ol->iface_data, desc->image_index,
                desc->alpha_mod * opacity);
 
+#ifdef HAVE_RPNG
       /* A two-frame APNG shares its press state across every desc
-       * that uses the same image. */
-      if (     ol->anim_2frame
-            && ol->anim_2frame[desc->image_index]
-            && desc->touch_mask != 0)
-         ol->anim_2frame_pressed[desc->image_index] = 1;
+       * that uses the same image. The anim arrays are per unique
+       * image of the pack, not per page entry, so they are indexed
+       * by pack_image_index rather than image_index. */
+      if (     desc->touch_mask != 0
+            && ol->anim_2frame
+            && OVERLAY_HAS_IMAGE(&desc->image)
+            && desc->pack_image_index < ol->num_images
+            && ol->anim_2frame[desc->pack_image_index])
+         ol->anim_2frame_pressed[desc->pack_image_index] = 1;
+#endif
 
       input_overlay_update_desc_geom(ol, desc);
 
