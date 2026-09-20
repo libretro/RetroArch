@@ -126,6 +126,71 @@ int main(void)
          memshm_area_unmap(area, (void*)d, shm_len);
    }
 
+   /* Addresses and lengths the area does not cover. The contract says
+    * @at is within the reservation, and on POSIX the map is MAP_FIXED,
+    * which replaces whatever is already mapped over the range -- so an
+    * unchecked address does not fail, it destroys an unrelated mapping.
+    * Every one of these has to be refused at the API. */
+   {
+      struct { const char *what; unsigned char *at; size_t len; } bad[] = {
+         { "an address below the base",            NULL, 0 },
+         { "the first address past the end",       NULL, 0 },
+         { "a length crossing the end",            NULL, 0 },
+         { "a length that would wrap",             NULL, 0 }
+      };
+      unsigned i;
+      bad[0].at  = base - page;        bad[0].len = shm_len;
+      bad[1].at  = base + area_len;    bad[1].len = shm_len;
+      bad[2].at  = base + area_len - page; bad[2].len = page * 2;
+      bad[3].at  = base;               bad[3].len = (size_t)-1;
+      for (i = 0; i < sizeof(bad) / sizeof(bad[0]); i++)
+      {
+         void *r  = memshm_area_map(area, h, 0, bad[i].at, bad[i].len,
+               PROT_READ | PROT_WRITE);
+         int good = (r == NULL);
+         printf("  %s: map refuses %s\n", good ? "ok" : "FAIL", bad[i].what);
+         ok &= good;
+      }
+      /* And unmap, which trusts the same two arguments. */
+      {
+         int good = !memshm_area_unmap(area, base - page, shm_len);
+         printf("  %s: unmap refuses an address below the base\n",
+               good ? "ok" : "FAIL");
+         ok &= good;
+      }
+      {
+         int good = !memshm_area_unmap(area, base + slot * 1, area_len * 2);
+         printf("  %s: unmap refuses a length past the end\n",
+               good ? "ok" : "FAIL");
+         ok &= good;
+      }
+   }
+
+#if defined(HAVE_MMAN) && !defined(_WIN32)
+   /* The same thing observed rather than inferred: a mapping made
+    * outside the area, handed to map as @at. Unchecked, MAP_FIXED
+    * replaces it and the byte pattern below is gone. */
+   {
+      unsigned char *victim = (unsigned char*)mmap(NULL, page,
+            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      if (victim == MAP_FAILED)
+         printf("  ok: (no anonymous page for the outside-the-area check)\n");
+      else
+      {
+         void *r;
+         int good;
+         memset(victim, 0xAB, page);
+         r    = memshm_area_map(area, h, 0, victim, page,
+               PROT_READ | PROT_WRITE);
+         good = (r == NULL) && (victim[0] == 0xAB);
+         printf("  %s: a mapping outside the area is left alone\n",
+               good ? "ok" : "FAIL");
+         ok &= good;
+         munmap(victim, page);
+      }
+   }
+#endif
+
    /* A name longer than Darwin's 31-character shm limit must still
     * work: Linux takes it as given, Darwin shortens it from the front.
     * A caller that works on one platform should work on the other. */
@@ -147,6 +212,19 @@ int main(void)
 
    memshm_area_unmap(area, (void*)a, shm_len);
    memshm_area_unmap(area, (void*)c, shm_len);
+
+   /* Nothing is mapped now, so one more unmap has nothing to answer to.
+    * Taken at face value it wraps the mapping count, and the area's own
+    * teardown is what reads it. (An unbalanced unmap while other
+    * mappings are live is not distinguishable here -- the count is the
+    * only thing to check it against.) */
+   {
+      int good = !memshm_area_unmap(area, base + slot * 1, shm_len);
+      printf("  %s: an unmap with nothing mapped is refused\n",
+            good ? "ok" : "FAIL");
+      ok &= good;
+   }
+
    memshm_destroy(h);
    memshm_area_free(area);
    printf(ok ? "memshm area: ok\n" : "memshm area: FAILED\n");

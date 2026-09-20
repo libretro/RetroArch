@@ -1035,6 +1035,33 @@ size_t memshm_area_size(const memshm_area_t *area)
    return area ? area->len : 0;
 }
 
+#if (defined(_WIN32) && !defined(_XBOX)) || (defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_FIXED) && defined(MAP_ANONYMOUS))
+/* Offset of [at, at + len) within the reservation, or false if any part
+ * of it falls outside. The address is only known to belong to the area
+ * once this says so, so it is carried as uintptr_t: subtracting an
+ * unrelated pointer from base is undefined, and the map is destructive
+ * enough - MAP_FIXED replaces whatever is already there - that the
+ * check cannot be left to the caller. Ordered so neither the addition
+ * nor the subtraction can wrap. */
+static bool memshm_area_offset(const memshm_area_t *area, const void *at,
+      size_t len, size_t *off)
+{
+   uintptr_t base;
+   uintptr_t addr;
+
+   if (!area || !at || !len)
+      return false;
+   base = (uintptr_t)area->base;
+   addr = (uintptr_t)at;
+   if (     addr < base
+       ||   len > area->len
+       ||  (addr - base) > (area->len - len))
+      return false;
+   *off = (size_t)(addr - base);
+   return true;
+}
+#endif
+
 unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
       size_t offset, void *at, size_t len, int prot)
 {
@@ -1042,13 +1069,14 @@ unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
    size_t map_off;
 #if defined(MEMSHM_HAVE_PLACEHOLDERS)
    size_t old_end;
+   size_t range_start;
    int    idx;
+   int    need;
    DWORD  page_prot;
 #endif
 
-   if (!area || !at || !len)
+   if (!memshm_area_offset(area, at, len, &map_off))
       return NULL;
-   map_off = (unsigned char*)at - area->base;
 
    if (area->legacy)
    {
@@ -1087,36 +1115,60 @@ unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
    }
 
 #if defined(MEMSHM_HAVE_PLACEHOLDERS)
-   idx     = memshm_find_range(area, map_off);
+   idx         = memshm_find_range(area, map_off);
    if (idx < 0)
       return NULL;   /* not a placeholder: something is still mapped there */
-   old_end = area->ranges[idx].end;
+   range_start = area->ranges[idx].start;
+   old_end     = area->ranges[idx].end;
+   /* The whole range has to be inside that placeholder, not just its
+    * first byte: a len reaching past the end would split at an offset
+    * the kernel does not have a placeholder for, and record a range
+    * running backwards. */
+   if (len > old_end - map_off)
+      return NULL;
 
-   /* Split off anything to the left of this range, then anything to
-    * the right; what is left is exactly the range being replaced. */
-   if (map_off != area->ranges[idx].start)
+   /* Each split the kernel makes has to be recordable, so refuse a full
+    * table before touching the OS rather than after. */
+   need = 0;
+   if (map_off != range_start)
+      need++;
+   if ((map_off + len) != old_end)
+      need++;
+   if ((area->range_count + need) > MEMSHM_MAX_PLACEHOLDERS)
+      return NULL;
+
+   /* Split off anything to the left of this range, then anything to the
+    * right; what is left is exactly the range being replaced. The OS
+    * call comes first in each step and the table records the split only
+    * once the kernel has made it, so every failure here returns with
+    * the two still describing the same thing. */
+   if (map_off != range_start)
    {
-      area->ranges[idx].end = map_off;
-      if (!VirtualFree(area->base + area->ranges[idx].start,
-               map_off - area->ranges[idx].start,
+      if (!VirtualFree(area->base + range_start, map_off - range_start,
                MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER))
          return NULL;
+      area->ranges[idx].end = map_off;
+      if (    !memshm_insert_range(area, map_off, old_end)
+          || ((idx = memshm_find_range(area, map_off)) < 0))
+         return NULL;
    }
-   else
-      memshm_erase_range(area, idx);
 
    if ((map_off + len) != old_end)
    {
-      if (!memshm_insert_range(area, map_off + len, old_end))
-         return NULL;
       if (!VirtualFree(area->base + map_off, len,
                MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER))
          return NULL;
+      area->ranges[idx].start = map_off + len;
+      if (    !memshm_insert_range(area, map_off, map_off + len)
+          || ((idx = memshm_find_range(area, map_off)) < 0))
+         return NULL;
    }
 
+   /* ranges[idx] is now exactly the placeholder being replaced. */
    if (!s_MapViewOfFile3((HANDLE)handle, GetCurrentProcess(), at,
             (ULONG64)offset, len, MEM_REPLACE_PLACEHOLDER, PAGE_READWRITE, NULL, 0))
-      return NULL;
+      return NULL;   /* still a free placeholder, and still recorded as one */
+   memshm_erase_range(area, idx);
 
    if (prot & PROT_READ)
       page_prot = (prot & PROT_EXEC)
@@ -1135,8 +1187,21 @@ unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
    return NULL;
 #endif
 #elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_FIXED) && defined(MAP_ANONYMOUS)
-   void *p;
-   if (!area || !at || !len)
+   void  *p;
+   size_t map_off;
+   size_t span = len;
+   size_t page = mempagesize();
+
+   /* mmap rounds the length up to a page and MAP_FIXED replaces
+    * whatever is mapped over the whole of it, so the rounded span is
+    * what has to fit inside the reservation. */
+   if (page && (span % page))
+   {
+      if (span > (((size_t)-1) - page))
+         return NULL;
+      span += page - (span % page);
+   }
+   if (!memshm_area_offset(area, at, span, &map_off))
       return NULL;
    p = mmap(at, len, prot, MAP_SHARED | MAP_FIXED,
          MEMSHM_FD(handle), (off_t)offset);
@@ -1155,12 +1220,16 @@ bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len)
 #if defined(_WIN32) && !defined(_XBOX)
    size_t map_off;
 #if defined(MEMSHM_HAVE_PLACEHOLDERS)
-   int    left, right;
+   int    cur, left, right;
 #endif
 
-   if (!area || !at || !len)
+   if (!memshm_area_offset(area, at, len, &map_off))
       return false;
-   map_off = (unsigned char*)at - area->base;
+   /* Nothing is mapped, so this address cannot be one this returned:
+    * an unbalanced unmap would otherwise wrap the count and take the
+    * area's own teardown with it. */
+   if (!area->mappings)
+      return false;
 
    if (area->legacy)
    {
@@ -1182,42 +1251,49 @@ bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len)
 #if defined(MEMSHM_HAVE_PLACEHOLDERS)
    if (!s_UnmapViewOfFile2(GetCurrentProcess(), at, MEM_PRESERVE_PLACEHOLDER))
       return false;
+   area->mappings--;
+
+   /* The range is a free placeholder of its own now, whether or not it
+    * goes on to coalesce with a neighbour, so record that before either
+    * attempt: each VirtualFree below can fail, and the table has to
+    * describe the kernel either way. */
+   if (    !memshm_insert_range(area, map_off, map_off + len)
+       || ((cur = memshm_find_range(area, map_off)) < 0))
+      return false;
 
    /* Coalesce with the placeholder on the left, if the range that ends
     * where this one starts is one. */
    left = (map_off > 0) ? memshm_find_range(area, map_off - 1) : -1;
-   if (left >= 0)
+   if (left >= 0 && left != cur)
    {
-      area->ranges[left].end = map_off + len;
       /* Checked: KernelBase validates the flags and forwards, so the
        * kernel is what decides whether this really is two adjacent
        * placeholders. A disagreement between these ranges and the VADs
        * comes back here, and silently ignoring it would let the two
        * drift apart until a later map fails for no visible reason. */
       if (!VirtualFree(area->base + area->ranges[left].start,
-            area->ranges[left].end - area->ranges[left].start,
+            area->ranges[cur].end - area->ranges[left].start,
             MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS))
          return false;
-   }
-   else
-   {
-      if (!memshm_insert_range(area, map_off, map_off + len))
-         return false;
-      left = memshm_find_range(area, map_off);
+      area->ranges[left].end = area->ranges[cur].end;
+      memshm_erase_range(area, cur);
+      /* left sorts below cur, so erasing cur leaves its index alone. */
+      cur = left;
    }
 
-   /* And with the one on the right. */
-   right = ((map_off + len) < area->len) ? memshm_find_range(area, map_off + len) : -1;
-   if (right >= 0 && right != left)
+   /* And with the one on the right, re-found because the merge above
+    * shifts every index past it down by one. */
+   right = ((map_off + len) < area->len)
+      ? memshm_find_range(area, map_off + len) : -1;
+   if (right >= 0 && right != cur)
    {
-      area->ranges[left].end = area->ranges[right].end;
-      memshm_erase_range(area, right);
-      if (!VirtualFree(area->base + area->ranges[left].start,
-            area->ranges[left].end - area->ranges[left].start,
+      if (!VirtualFree(area->base + area->ranges[cur].start,
+            area->ranges[right].end - area->ranges[cur].start,
             MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS))
          return false;
+      area->ranges[cur].end = area->ranges[right].end;
+      memshm_erase_range(area, right);
    }
-   area->mappings--;
    return true;
 /* MAP_ANONYMOUS as well as MAP_FIXED: the body below needs both, and
  * memshm_area_create's guard requires both, so a platform with only one
@@ -1227,7 +1303,19 @@ bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len)
    return false;
 #endif
 #elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_FIXED) && defined(MAP_ANONYMOUS)
-   if (!area || !at || !len)
+   size_t map_off;
+   size_t span = len;
+   size_t page = mempagesize();
+
+   if (page && (span % page))
+   {
+      if (span > (((size_t)-1) - page))
+         return false;
+      span += page - (span % page);
+   }
+   if (!memshm_area_offset(area, at, span, &map_off))
+      return false;
+   if (!area->mappings)
       return false;
    /* Anonymous PROT_NONE back over the range: the reservation is whole
     * again and the kernel merges the VMAs. */
