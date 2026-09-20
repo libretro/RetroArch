@@ -805,79 +805,105 @@ static void psp_get_poke_interface(void *data,
 static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    void* src_buffer;
-   int i, j, src_bufferwidth, src_pixelformat, src_x, src_y, src_x_max, src_y_max;
+   int i, j, src_bufferwidth, src_pixelformat, x0, x1, y0, y1, width, height;
    uint8_t      *dst = buffer;
    psp1_video_t *psp = (psp1_video_t*)data;
 
+   if (!psp || !buffer)
+      return false;
+
    sceDisplayGetFrameBuf(&src_buffer, &src_bufferwidth, &src_pixelformat, PSP_DISPLAY_SETBUF_NEXTFRAME);
 
-   src_x     = (psp->vp.x > 0)? psp->vp.x : 0;
-   src_y     = (psp->vp.y > 0)? psp->vp.y : 0;
-   src_x_max = ((psp->vp.x + psp->vp.width) < src_bufferwidth)? (psp->vp.x + psp->vp.width): src_bufferwidth;
-   src_y_max = ((psp->vp.y + psp->vp.height) < SCEGU_SCR_HEIGHT)? (psp->vp.y + psp->vp.height): SCEGU_SCR_HEIGHT;
+   if (!src_buffer)
+      return false;
+
+   /* The GE wrote this buffer, so read it through the uncached alias. */
+   src_buffer = TO_UNCACHED_PTR(src_buffer);
+
+   width     = psp->vp.width;
+   height    = psp->vp.height;
+
+   /* The caller sizes its buffer from the viewport and encodes all of
+    * it, so anything the framebuffer does not cover reads as black. */
+   memset(buffer, 0, (size_t)width * height * 3);
+
+   x0        = (psp->vp.x > 0)? psp->vp.x : 0;
+   y0        = (psp->vp.y > 0)? psp->vp.y : 0;
+   x1        = ((psp->vp.x + width)  < src_bufferwidth)? (psp->vp.x + width): src_bufferwidth;
+   y1        = ((psp->vp.y + height) < SCEGU_SCR_HEIGHT)? (psp->vp.y + height): SCEGU_SCR_HEIGHT;
+
+/* Bottom-up, from the start of the row the viewport puts this line on. */
+#define PSP_VP_ROW(row) (buffer + ((size_t)(psp->vp.y + height - 1 - (row)) \
+      * width + (size_t)(x0 - psp->vp.x)) * 3)
 
    switch(src_pixelformat)
    {
    case PSP_DISPLAY_PIXEL_FORMAT_565:
-      for (j = (src_y_max - 1); j >= src_y; j--)
+      for (j = y0; j < y1; j++)
       {
-         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + src_x;
-         for (i = src_x; i < src_x_max; i++)
+         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + x0;
+         dst           = PSP_VP_ROW(j);
+         for (i = x0; i < x1; i++)
          {
+            uint16_t s = *(src++);
 
-            *(dst++) = ((*src) & 0x1F) << 3;
-            *(dst++) = (((*src) >> 5) << 2) &0xFF;
-            *(dst++) = ((*src) >> 11) << 3;
-            src++;
+            *(dst++) = (s & 0x1F) << 3;
+            *(dst++) = ((s >> 5) << 2) &0xFF;
+            *(dst++) = (s >> 11) << 3;
          }
       }
       return true;
 
    case PSP_DISPLAY_PIXEL_FORMAT_5551:
-      for (j = (src_y_max - 1); j >= src_y; j--)
+      for (j = y0; j < y1; j++)
       {
-         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + src_x;
-         for (i = src_x; i < src_x_max; i++)
+         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + x0;
+         dst           = PSP_VP_ROW(j);
+         for (i = x0; i < x1; i++)
          {
+            uint16_t s = *(src++);
 
-            *(dst++) = ((*src) & 0x1F) << 3;
-            *(dst++) = (((*src) >> 5) << 3) &0xFF;
-            *(dst++) = (((*src) >> 10) << 3) &0xFF;
-            src++;
+            *(dst++) = (s & 0x1F) << 3;
+            *(dst++) = ((s >> 5) << 3) &0xFF;
+            *(dst++) = ((s >> 10) << 3) &0xFF;
          }
       }
       return true;
 
    case PSP_DISPLAY_PIXEL_FORMAT_4444:
-      for (j = (src_y_max - 1); j >= src_y; j--)
+      for (j = y0; j < y1; j++)
       {
-         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + src_x;
-         for (i = src_x; i < src_x_max; i++)
+         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + x0;
+         dst           = PSP_VP_ROW(j);
+         for (i = x0; i < x1; i++)
          {
+            uint16_t s = *(src++);
 
-            *(dst++) = ((*src) >> 4) & 0xF0;
-            *(dst++) = (*src)        & 0xF0;
-            *(dst++) = ((*src) << 4) & 0xF0;
-            src++;
+            *(dst++) = (s >> 4) & 0xF0;
+            *(dst++) = s        & 0xF0;
+            *(dst++) = (s << 4) & 0xF0;
          }
       }
       return true;
 
    case PSP_DISPLAY_PIXEL_FORMAT_8888:
-      for (j = (src_y_max - 1); j >= src_y; j--)
+      for (j = y0; j < y1; j++)
       {
-         uint32_t* src = (uint32_t*)src_buffer + src_bufferwidth * j + src_x;
-         for (i = src_x; i < src_x_max; i++)
+         uint32_t* src = (uint32_t*)src_buffer + src_bufferwidth * j + x0;
+         dst           = PSP_VP_ROW(j);
+         for (i = x0; i < x1; i++)
          {
+            uint32_t s = *(src++);
 
-            *(dst++) = ((*src) >> 16) & 0xFF;
-            *(dst++) = ((*src) >> 8 ) & 0xFF;
-            *(dst++) = (*src) & 0xFF;
-            src++;
+            *(dst++) = (s >> 16) & 0xFF;
+            *(dst++) = (s >> 8 ) & 0xFF;
+            *(dst++) = s & 0xFF;
          }
       }
       return true;
    }
+
+#undef PSP_VP_ROW
 
    return false;
 }
