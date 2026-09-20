@@ -71,6 +71,12 @@ typedef struct ps4_audio
 #define AUDIO_BUFFER_SIZE (1u<<13u)
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
+/* What the writer may fill. One frame short of the ring, so that a
+ * full ring and an empty one do not both read as write_pos ==
+ * read_pos - which let the writer lap and overwrite the window the
+ * device was reading. */
+#define AUDIO_BUFFER_USABLE  (AUDIO_BUFFER_SIZE - 1u)
+
 /* The silence sits past the ring. read_pos only ever advances by
  * AUDIO_OUT_COUNT, which divides AUDIO_BUFFER_SIZE, so no window
  * handed to the output syscall crosses into it. */
@@ -234,7 +240,7 @@ static ssize_t ps4_audio_write(void *data, const void *s, size_t len)
     * frames here too. */
    if (ps4->nonblock)
    {
-      if (AUDIO_BUFFER_SIZE - ((uint16_t)(write_pos - (uint16_t)
+      if (AUDIO_BUFFER_USABLE - ((uint16_t)(write_pos - (uint16_t)
                retro_atomic_load_acquire_int(&ps4->read_pos))
                & AUDIO_BUFFER_SIZE_MASK) < sample_count)
          return 0;
@@ -249,7 +255,7 @@ static ssize_t ps4_audio_write(void *data, const void *s, size_t len)
        * are re-checked inside the eventcount's window, so a period
        * freed between the check and the park costs nothing. */
       int laps = PS4_AUDIO_WAIT_LAPS;
-      while (AUDIO_BUFFER_SIZE - ((uint16_t)(write_pos - (uint16_t)
+      while (AUDIO_BUFFER_USABLE - ((uint16_t)(write_pos - (uint16_t)
          retro_atomic_load_acquire_int(&ps4->read_pos))
          & AUDIO_BUFFER_SIZE_MASK) < sample_count)
       {
@@ -257,7 +263,7 @@ static ssize_t ps4_audio_write(void *data, const void *s, size_t len)
          if (--laps < 0 || !retro_atomic_load_acquire_int(&ps4->running))
             return 0;
          key = retro_eventcount_prepare_wait(&ps4->park);
-         if (   (AUDIO_BUFFER_SIZE - ((uint16_t)(write_pos - (uint16_t)
+         if (   (AUDIO_BUFFER_USABLE - ((uint16_t)(write_pos - (uint16_t)
                   retro_atomic_load_acquire_int(&ps4->read_pos))
                   & AUDIO_BUFFER_SIZE_MASK) >= sample_count)
              || !retro_atomic_load_acquire_int(&ps4->running))
@@ -348,7 +354,7 @@ static size_t ps4_write_avail(void *data)
 
    if (!ps4 || !retro_atomic_load_acquire_int(&ps4->running))
       return 0;
-   _len = AUDIO_BUFFER_SIZE - ((uint16_t)((uint16_t)
+   _len = AUDIO_BUFFER_USABLE - ((uint16_t)((uint16_t)
          retro_atomic_load_relaxed_int(&ps4->write_pos) - (uint16_t)
          retro_atomic_load_acquire_int(&ps4->read_pos))
          & AUDIO_BUFFER_SIZE_MASK);
@@ -376,7 +382,7 @@ static size_t ps4_wait_writable(void *data, size_t len)
       int key;
       if (!retro_atomic_load_acquire_int(&ps4->running))
          return 0;
-      avail = AUDIO_BUFFER_SIZE - ((uint16_t)((uint16_t)
+      avail = AUDIO_BUFFER_USABLE - ((uint16_t)((uint16_t)
             retro_atomic_load_relaxed_int(&ps4->write_pos) - (uint16_t)
             retro_atomic_load_acquire_int(&ps4->read_pos))
             & AUDIO_BUFFER_SIZE_MASK);
@@ -388,7 +394,7 @@ static size_t ps4_wait_writable(void *data, size_t len)
       if (--laps < 0)
          return 0;
       key = retro_eventcount_prepare_wait(&ps4->park);
-      if ((AUDIO_BUFFER_SIZE - ((uint16_t)((uint16_t)
+      if ((AUDIO_BUFFER_USABLE - ((uint16_t)((uint16_t)
                retro_atomic_load_relaxed_int(&ps4->write_pos) - (uint16_t)
                retro_atomic_load_acquire_int(&ps4->read_pos))
                & AUDIO_BUFFER_SIZE_MASK)) >= want
