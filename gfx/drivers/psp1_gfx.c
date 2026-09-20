@@ -576,8 +576,13 @@ static void psp_free(void *data)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
 
-   if (!(psp) || !(psp->main_dList))
+   if (!psp)
       return;
+
+   /* psp_on_vblank() writes through its own copy of @psp, so it has to
+    * be gone before anything it touches is. */
+   sceKernelDisableSubIntr(PSP_VBLANK_INT, 0);
+   sceKernelReleaseSubIntrHandler(PSP_VBLANK_INT, 0);
 
    sceDisplayWaitVblankStart();
    sceGuDisplay(GU_FALSE);
@@ -596,10 +601,7 @@ static void psp_free(void *data)
    if (psp->menu.frame)
       free(psp->menu.frame);
 
-   free(data);
-
-   sceKernelDisableSubIntr(PSP_VBLANK_INT, 0);
-   sceKernelReleaseSubIntrHandler(PSP_VBLANK_INT,0);
+   free(psp);
 }
 
 static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
