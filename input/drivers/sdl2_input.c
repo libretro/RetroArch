@@ -28,14 +28,10 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
-#include "../../tasks/tasks_internal.h"
+#include "../../gfx/common/sdl2_common.h"
 
 #ifdef __linux__
 #include "../common/linux_common.h"
-#endif
-
-#ifdef HAVE_SDL2
-#include "../../gfx/common/sdl2_common.h"
 #endif
 
 #ifdef WEBOS
@@ -43,8 +39,12 @@
 #include <dlfcn.h>
 #endif
 
-typedef struct sdl_input
+typedef struct sdl2_input
 {
+#ifdef __linux__
+   /* Light sensors aren't exposed through SDL, and they're not usually part of controllers */
+   linux_illuminance_sensor_t *illuminance_sensor;
+#endif
    int mouse_x;
    int mouse_y;
    int mouse_abs_x;
@@ -58,44 +58,40 @@ typedef struct sdl_input
    int mouse_wd;
    int mouse_wl;
    int mouse_wr;
-#ifdef __linux__
-   /* Light sensors aren't exposed through SDL, and they're not usually part of controllers */
-   linux_illuminance_sensor_t *illuminance_sensor;
-#endif
-} sdl_input_t;
+} sdl2_input_t;
 
 #ifdef WEBOS
-enum sdl_webos_special_key
+enum sdl2_webos_special_key
 {
-   sdl_webos_spkey_back,
-   sdl_webos_spkey_return,
-   sdl_webos_spkey_up,
-   sdl_webos_spkey_down,
-   sdl_webos_spkey_left,
-   sdl_webos_spkey_right,
-   sdl_webos_spkey_size,
+   sdl2_webos_spkey_back,
+   sdl2_webos_spkey_return,
+   sdl2_webos_spkey_up,
+   sdl2_webos_spkey_down,
+   sdl2_webos_spkey_left,
+   sdl2_webos_spkey_right,
+   sdl2_webos_spkey_size,
 };
 
-static uint8_t sdl_webos_special_keymap[sdl_webos_spkey_size] = {0};
+static uint8_t sdl2_webos_special_keymap[sdl2_webos_spkey_size] = {0};
 
 /* Set after a real typing key while the OSK/line editor is open. Magic
  * Remote arrows/OK/digits must leave this false so the OSK grid stays
  * under remote control. */
-static bool sdl_webos_phys_kbd_typing = false;
+static bool sdl2_webos_phys_kbd_typing = false;
 
 /* One-shot sticky keys: webOS often delivers KEYDOWN+KEYUP in the same
  * poll, so SDL_GetKeyboardState is already clear when the menu reads input. */
-static bool sdl_webos_sticky_pressed(enum sdl_webos_special_key slot)
+static bool sdl2_webos_sticky_pressed(enum sdl2_webos_special_key slot)
 {
-   if (sdl_webos_special_keymap[slot])
+   if (sdl2_webos_special_keymap[slot])
    {
-      sdl_webos_special_keymap[slot] = 0;
+      sdl2_webos_special_keymap[slot] = 0;
       return true;
    }
    return false;
 }
 
-static bool sdl_webos_is_remote_nav_scancode(SDL_Scancode scancode)
+static bool sdl2_webos_is_remote_nav_scancode(SDL_Scancode scancode)
 {
    switch ((int)scancode)
    {
@@ -120,9 +116,9 @@ static bool sdl_webos_is_remote_nav_scancode(SDL_Scancode scancode)
 }
 
 /* Keys that mean a physical BT keyboard is in use (not Magic Remote). */
-static bool sdl_webos_scancode_enables_phys_kbd(SDL_Scancode scancode)
+static bool sdl2_webos_scancode_enables_phys_kbd(SDL_Scancode scancode)
 {
-   if (sdl_webos_is_remote_nav_scancode(scancode))
+   if (sdl2_webos_is_remote_nav_scancode(scancode))
       return false;
 
    /* Remote digit row inserts text but must not switch to caret mode. */
@@ -133,9 +129,9 @@ static bool sdl_webos_scancode_enables_phys_kbd(SDL_Scancode scancode)
 }
 #endif
 
-static void *sdl_input_init(const char *joypad_driver)
+static void *sdl2_input_init(const char *joypad_driver)
 {
-   sdl_input_t     *sdl = (sdl_input_t*)calloc(1, sizeof(*sdl));
+   sdl2_input_t    *sdl = (sdl2_input_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
 
@@ -144,23 +140,18 @@ static void *sdl_input_init(const char *joypad_driver)
    return sdl;
 }
 
-static bool sdl_key_pressed(int key)
+static bool sdl2_key_pressed(int key)
 {
    int num_keys;
-#ifdef HAVE_SDL2
    const uint8_t *keymap = SDL_GetKeyboardState(&num_keys);
    unsigned sym          = SDL_GetScancodeFromKey(rarch_keysym_lut[(enum retro_key)key]);
-#else
-   const uint8_t *keymap = SDL_GetKeyState(&num_keys);
-   unsigned sym          = rarch_keysym_lut[(enum retro_key)key];
-#endif
 
    if (!key)
       return false;
 
 #ifdef WEBOS
    if (key == RETROK_BACKSPACE
-         && sdl_webos_sticky_pressed(sdl_webos_spkey_back))
+         && sdl2_webos_sticky_pressed(sdl2_webos_spkey_back))
       return true;
    /* Sticky pulse (Magic Remote) → OSK grid / OK. Held BT keys must not
     * also report as menu joypad while the line editor owns them. */
@@ -170,18 +161,18 @@ static bool sdl_key_pressed(int key)
          || key == RETROK_LEFT
          || key == RETROK_RIGHT)
    {
-      enum sdl_webos_special_key slot = sdl_webos_spkey_return;
+      enum sdl2_webos_special_key slot = sdl2_webos_spkey_return;
 
       if (key == RETROK_UP)
-         slot = sdl_webos_spkey_up;
+         slot = sdl2_webos_spkey_up;
       else if (key == RETROK_DOWN)
-         slot = sdl_webos_spkey_down;
+         slot = sdl2_webos_spkey_down;
       else if (key == RETROK_LEFT)
-         slot = sdl_webos_spkey_left;
+         slot = sdl2_webos_spkey_left;
       else if (key == RETROK_RIGHT)
-         slot = sdl_webos_spkey_right;
+         slot = sdl2_webos_spkey_right;
 
-      if (sdl_webos_sticky_pressed(slot))
+      if (sdl2_webos_sticky_pressed(slot))
          return true;
 
       if (input_state_get_ptr()
@@ -206,7 +197,7 @@ static bool sdl_key_pressed(int key)
    return keymap[sym];
 }
 
-static int16_t sdl_input_state(
+static int16_t sdl2_input_state(
       void *data,
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
@@ -218,8 +209,8 @@ static int16_t sdl_input_state(
       unsigned idx,
       unsigned id)
 {
-   int16_t      ret = 0;
-   sdl_input_t *sdl = (sdl_input_t*)data;
+   int16_t       ret = 0;
+   sdl2_input_t *sdl = (sdl2_input_t*)data;
 
    switch (device)
    {
@@ -235,7 +226,7 @@ static int16_t sdl_input_state(
                   if (RETRO_KEYBIND_VALID(&binds[port][i]))
                   {
                      if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                           && sdl_key_pressed(RETRO_KEYBIND_KEY(&binds[port][i])))
+                           && sdl2_key_pressed(RETRO_KEYBIND_KEY(&binds[port][i])))
                         ret |= (1 << i);
                   }
                }
@@ -249,7 +240,7 @@ static int16_t sdl_input_state(
             if (RETRO_KEYBIND_VALID(&binds[port][id]))
             {
                if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                     && sdl_key_pressed(RETRO_KEYBIND_KEY(&binds[port][id]))
+                     && sdl2_key_pressed(RETRO_KEYBIND_KEY(&binds[port][id]))
                      && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                   )
                   return 1;
@@ -274,12 +265,12 @@ static int16_t sdl_input_state(
 
             if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
-               if (sdl_key_pressed(id_plus_key))
+               if (sdl2_key_pressed(id_plus_key))
                   ret = 0x7fff;
             }
             if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
-               if (sdl_key_pressed(id_minus_key))
+               if (sdl2_key_pressed(id_minus_key))
                   ret += -0x7fff;
             }
          }
@@ -374,7 +365,7 @@ static int16_t sdl_input_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return (id && id < RETROK_LAST) && sdl_key_pressed(id);
+         return (id && id < RETROK_LAST) && sdl2_key_pressed(id);
       /* TODO: update button binds to match other input drivers */
       case RETRO_DEVICE_LIGHTGUN:
       {
@@ -416,22 +407,15 @@ static int16_t sdl_input_state(
    return 0;
 }
 
-static void sdl_input_free(void *data)
+static void sdl2_input_free(void *data)
 {
-#ifndef HAVE_SDL2
-   SDL_Event event;
-#endif
-   sdl_input_t *sdl = (sdl_input_t*)data;
+   sdl2_input_t *sdl = (sdl2_input_t*)data;
 
    if (!sdl)
       return;
 
    /* Flush out all pending events. */
-#ifdef HAVE_SDL2
    SDL_FlushEvents(SDL_FIRSTEVENT, SDL_LASTEVENT);
-#else
-   while (SDL_PollEvent(&event));
-#endif
 
 #ifdef __linux__
    linux_close_illuminance_sensor(sdl->illuminance_sensor); /* noop if NULL */
@@ -440,9 +424,9 @@ static void sdl_input_free(void *data)
    free(data);
 }
 
-static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned rate)
+static bool sdl2_set_sensor_state(void *data, unsigned port, enum retro_sensor_action action, unsigned rate)
 {
-   sdl_input_t *sdl = (sdl_input_t*)data;
+   sdl2_input_t *sdl = (sdl2_input_t*)data;
 
    if (!sdl)
       return false;
@@ -478,9 +462,9 @@ static bool sdl_set_sensor_state(void *data, unsigned port, enum retro_sensor_ac
    return false;
 }
 
-static float sdl_get_sensor_input(void *data, unsigned port, unsigned id)
+static float sdl2_get_sensor_input(void *data, unsigned port, unsigned id)
 {
-   sdl_input_t *sdl = (sdl_input_t*)data;
+   sdl2_input_t *sdl = (sdl2_input_t*)data;
 
    if (!sdl)
       return 0.0f;
@@ -500,8 +484,7 @@ static float sdl_get_sensor_input(void *data, unsigned port, unsigned id)
    return 0.0f;
 }
 
-#ifdef HAVE_SDL2
-static void sdl2_grab_mouse(void *data, bool state)
+static void sdl2_input_grab_mouse(void *data, bool state)
 {
    sdl2_video_t *video_ptr = NULL;
 
@@ -513,9 +496,8 @@ static void sdl2_grab_mouse(void *data, bool state)
    if (video_ptr)
       SDL_SetWindowGrab(video_ptr->window, state ? SDL_TRUE : SDL_FALSE);
 }
-#endif
 
-static void sdl_poll_mouse(sdl_input_t *sdl)
+static void sdl2_poll_mouse(sdl2_input_t *sdl)
 {
    Uint8 btn     = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
 
@@ -526,28 +508,19 @@ static void sdl_poll_mouse(sdl_input_t *sdl)
    sdl->mouse_m  = (SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn) ? 1 : 0;
    sdl->mouse_b4 = (SDL_BUTTON(SDL_BUTTON_X1)        & btn) ? 1 : 0;
    sdl->mouse_b5 = (SDL_BUTTON(SDL_BUTTON_X2)        & btn) ? 1 : 0;
-#ifndef HAVE_SDL2
-   sdl->mouse_wu = (SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn) ? 1 : 0;
-   sdl->mouse_wd = (SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn) ? 1 : 0;
-#endif
 }
 
-static void sdl_input_poll(void *data)
+static void sdl2_input_poll(void *data)
 {
    SDL_Event event;
-   sdl_input_t *sdl = (sdl_input_t*)data;
+   sdl2_input_t *sdl = (sdl2_input_t*)data;
 
    SDL_PumpEvents();
 
-   sdl_poll_mouse(sdl);
+   sdl2_poll_mouse(sdl);
 
-#ifdef HAVE_SDL2
    while (SDL_PeepEvents(&event, 1,
             SDL_GETEVENT, SDL_KEYDOWN, SDL_MOUSEWHEEL) > 0)
-#else
-   while (SDL_PeepEvents(&event, 1,
-            SDL_GETEVENT, SDL_KEYEVENTMASK) > 0)
-#endif
    {
       if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
       {
@@ -559,14 +532,14 @@ static void sdl_input_poll(void *data)
          bool osk_active = input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
 
          if (!osk_active)
-            sdl_webos_phys_kbd_typing = false;
+            sdl2_webos_phys_kbd_typing = false;
 
          switch ((int) event.key.keysym.scancode)
          {
             case SDL_WEBOS_SCANCODE_BACK:
                /* Because webOS is sending DOWN/UP at the same time,
                   we save this flag for later */
-               sdl_webos_special_keymap[sdl_webos_spkey_back] |= event.type == SDL_KEYDOWN;
+               sdl2_webos_special_keymap[sdl2_webos_spkey_back] |= event.type == SDL_KEYDOWN;
                code = RETROK_BACKSPACE;
                break;
             case SDL_WEBOS_SCANCODE_RED:
@@ -590,28 +563,28 @@ static void sdl_input_poll(void *data)
             case SDL_SCANCODE_RIGHT:
                /* Default: Magic Remote → OSK grid. After BT typing keys,
                 * ←/→ move the caret and ↑/↓ act as home/end. */
-               if (osk_active && !sdl_webos_phys_kbd_typing)
+               if (osk_active && !sdl2_webos_phys_kbd_typing)
                {
                   if (event.type == SDL_KEYDOWN)
                   {
                      if (event.key.keysym.scancode == SDL_SCANCODE_UP)
-                        sdl_webos_special_keymap[sdl_webos_spkey_up] = 1;
+                        sdl2_webos_special_keymap[sdl2_webos_spkey_up] = 1;
                      else if (event.key.keysym.scancode == SDL_SCANCODE_DOWN)
-                        sdl_webos_special_keymap[sdl_webos_spkey_down] = 1;
+                        sdl2_webos_special_keymap[sdl2_webos_spkey_down] = 1;
                      else if (event.key.keysym.scancode == SDL_SCANCODE_LEFT)
-                        sdl_webos_special_keymap[sdl_webos_spkey_left] = 1;
+                        sdl2_webos_special_keymap[sdl2_webos_spkey_left] = 1;
                      else
-                        sdl_webos_special_keymap[sdl_webos_spkey_right] = 1;
+                        sdl2_webos_special_keymap[sdl2_webos_spkey_right] = 1;
                   }
                   continue;
                }
                break;
             case SDL_SCANCODE_RETURN:
                /* Default: remote OK → OSK select. After BT typing → save. */
-               if (osk_active && !sdl_webos_phys_kbd_typing)
+               if (osk_active && !sdl2_webos_phys_kbd_typing)
                {
                   if (event.type == SDL_KEYDOWN)
-                     sdl_webos_special_keymap[sdl_webos_spkey_return] = 1;
+                     sdl2_webos_special_keymap[sdl2_webos_spkey_return] = 1;
                   continue;
                }
                break;
@@ -620,11 +593,11 @@ static void sdl_input_poll(void *data)
          }
 
          /* Letters / numpad / backspace / punctuation ⇒ BT keyboard session.
-          * Remote digit row is excluded (see sdl_webos_scancode_enables_phys_kbd). */
+          * Remote digit row is excluded (see sdl2_webos_scancode_enables_phys_kbd). */
          if (osk_active
                && event.type == SDL_KEYDOWN
-               && sdl_webos_scancode_enables_phys_kbd(event.key.keysym.scancode))
-            sdl_webos_phys_kbd_typing = true;
+               && sdl2_webos_scancode_enables_phys_kbd(event.key.keysym.scancode))
+            sdl2_webos_phys_kbd_typing = true;
 
          /* Disable cursor when using the buttons */
          if (code && code != RETROK_RETURN)
@@ -668,14 +641,13 @@ static void sdl_input_poll(void *data)
 
             /* Numpad Enter is never sent by the Magic Remote; always save. */
             if (code == RETROK_KP_ENTER)
-               sdl_webos_phys_kbd_typing = true;
+               sdl2_webos_phys_kbd_typing = true;
 #endif
 
             input_keyboard_event(event.type == SDL_KEYDOWN, code,
                   character, mod, RETRO_DEVICE_KEYBOARD);
          }
       }
-#ifdef HAVE_SDL2
       else if (event.type == SDL_MOUSEWHEEL)
       {
          sdl->mouse_wu = event.wheel.y < 0;
@@ -684,11 +656,10 @@ static void sdl_input_poll(void *data)
          sdl->mouse_wr = event.wheel.x > 0;
          break;
       }
-#endif
    }
 }
 
-static uint64_t sdl_get_capabilities(void *data)
+static uint64_t sdl2_get_capabilities(void *data)
 {
    return
            (1 << RETRO_DEVICE_JOYPAD)
@@ -699,21 +670,16 @@ static uint64_t sdl_get_capabilities(void *data)
          | (1 << RETRO_DEVICE_ANALOG);
 }
 
-input_driver_t input_sdl = {
-   sdl_input_init,
-   sdl_input_poll,
-   sdl_input_state,
-   sdl_input_free,
-   sdl_set_sensor_state,
-   sdl_get_sensor_input,
-   sdl_get_capabilities,
-#ifdef HAVE_SDL2
+input_driver_t input_sdl2 = {
+   sdl2_input_init,
+   sdl2_input_poll,
+   sdl2_input_state,
+   sdl2_input_free,
+   sdl2_set_sensor_state,
+   sdl2_get_sensor_input,
+   sdl2_get_capabilities,
    "sdl2",
-   sdl2_grab_mouse,
-#else
-   "sdl",
-   NULL,                   /* grab_mouse */
-#endif
+   sdl2_input_grab_mouse,
    NULL,
    NULL
 };

@@ -751,11 +751,16 @@ static void sdl_rs90_input_driver_init(
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
    if (string_is_equal(input_drv_name, "sdl"))
    {
-      *input_data = input_driver_init_wrap(&input_sdl,
+#ifdef HAVE_SDL2
+      input_driver_t *sdl_drv = &input_sdl2;
+#else
+      input_driver_t *sdl_drv = &input_sdl1;
+#endif
+      *input_data = input_driver_init_wrap(sdl_drv,
             joypad_drv_name);
 
       if (*input_data)
-         *input = &input_sdl;
+         *input = sdl_drv;
 
       return;
    }

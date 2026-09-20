@@ -1361,7 +1361,8 @@ extern hid_driver_t *hid_drivers[];
 #endif
 
 extern input_driver_t input_android;
-extern input_driver_t input_sdl;
+extern input_driver_t input_sdl1;
+extern input_driver_t input_sdl2;
 extern input_driver_t input_sdl3;
 extern input_driver_t input_sdl_dingux;
 extern input_driver_t input_dinput;

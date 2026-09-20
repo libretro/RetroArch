@@ -460,8 +460,10 @@ input_driver_t *input_drivers[] = {
 #ifdef HAVE_DINPUT
    &input_dinput,
 #endif
-#if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && !defined(HAVE_COCOA)
-   &input_sdl,
+#if defined(HAVE_SDL2) && !defined(HAVE_COCOA)
+   &input_sdl2,
+#elif defined(HAVE_SDL) && !defined(HAVE_COCOA)
+   &input_sdl1,
 #endif
 #if defined(HAVE_SDL3) && !defined(HAVE_COCOA)
    &input_sdl3,

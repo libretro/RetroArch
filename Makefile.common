@@ -1791,8 +1791,13 @@ else ifeq ($(HAVE_SDL_DINGUX), 1)
 endif
 
 ifeq ($(HAVE_SDL_COMMON), 1)
-   OBJ += input/drivers/sdl_input.o \
-          input/drivers_joypad/sdl_joypad.o
+   ifeq ($(HAVE_SDL2), 1)
+      OBJ += input/drivers/sdl2_input.o
+   else
+      OBJ += input/drivers/sdl1_input.o
+   endif
+
+   OBJ += input/drivers_joypad/sdl_joypad.o
 
    ifeq ($(HAVE_GL_CONTEXT), 1)
       OBJ += gfx/drivers_context/sdl_gl_ctx.o
