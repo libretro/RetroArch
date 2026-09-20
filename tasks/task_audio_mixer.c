@@ -30,6 +30,7 @@
 #include <audio/audio_mixer.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <queues/task_queue.h>
 
@@ -1105,7 +1106,11 @@ struct audio_mixer_wfeed
    size_t punch_hi;      /*  head after the decoder skips it       */
    int64_t end_granule;  /* windowed Opus: last-page granule, or 0 */
    size_t  avail;        /* windowed WebM: resident prefix, or 0    */
-   volatile bool dead;   /* set by the sound's release: wrap up    */
+   /* Set by the sound's release, which audio_mixer runs on the mixer
+    * thread as well as the caller's, and read by this task's handler on
+    * the task thread. An atomic and not a volatile bool: volatile
+    * orders nothing between the two. */
+   retro_atomic_int_t dead;
 };
 
 #ifdef HAVE_RFLAC
@@ -1221,7 +1226,8 @@ done:
 static void task_audio_mixer_wfeed_release(void *owner)
 {
    /* runs when the sound is destroyed; the feeder task frees */
-   ((struct audio_mixer_wfeed*)owner)->dead = true;
+   retro_atomic_store_release_int(
+         &((struct audio_mixer_wfeed*)owner)->dead, 1);
 }
 
 static void task_audio_mixer_wfeed_free(retro_task_t *task)
@@ -1261,7 +1267,7 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
          (struct audio_mixer_wfeed*)task->state;
    int64_t tell;
 
-   if (w->dead)
+   if (retro_atomic_load_acquire_int(&w->dead))
    {
       /* the borrowing sound is gone: the window with it */
       data_transfer_free(w->dt);
@@ -1642,6 +1648,7 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
       return false;
    if (!(w = (struct audio_mixer_wfeed*)calloc(1, sizeof(*w))))
       goto error;
+   retro_atomic_int_init(&w->dead, 0);
    if (!(w->user = (struct audio_mixer_userdata*)
          calloc(1, sizeof(*w->user))))
       goto error;

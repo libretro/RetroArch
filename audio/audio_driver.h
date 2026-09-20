@@ -546,8 +546,10 @@ typedef struct
    /* Written once by the wrapper thread as it leaves its loop, read by
     * the producer's wait. Its own field, not a bit in flags: the main
     * thread read-modify-writes flags and a second writer would lose
-    * bits. */
-   volatile bool pipe_consumer_gone;
+    * bits. An atomic and not a volatile bool: volatile orders nothing
+    * between the two, so the producer had no guarantee of seeing the
+    * consumer's last word at all. */
+   retro_atomic_int_t pipe_consumer_gone;
    /* Throttle channel for audio_sync without vsync: the consumer bumps
     * pipe_gen after every pass and notifies pipe_space; a producer that
     * found the ring full waits for the generation to change. No lock:

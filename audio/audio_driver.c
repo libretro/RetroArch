@@ -4273,7 +4273,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       audio_driver_st.pipe_park_ready     = true;
       AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_PIPELINE_THREADED);
       audio_driver_st.pipe_threaded       = true;
-      audio_driver_st.pipe_consumer_gone  = false;
+      retro_atomic_int_init(&audio_driver_st.pipe_consumer_gone, 0);
       RARCH_LOG("[Audio] Threaded pipeline: ring holds %u frames of %s core audio.\n",
             (unsigned)(audio_driver_st.pipe_ring.capacity / audio_driver_st.pipe_frame_bytes),
             audio_driver_st.pipe_float ? "float" : "int16");
@@ -4673,7 +4673,8 @@ error:
 
 void audio_driver_pipeline_consumer_exit(void)
 {
-   audio_driver_st.pipe_consumer_gone = true;
+   /* Release: the consumer's loop is done before the word that says so. */
+   retro_atomic_store_release_int(&audio_driver_st.pipe_consumer_gone, 1);
 }
 
 void audio_driver_publish_runloop(void)
@@ -5592,7 +5593,8 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
                : (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK) != 0)
             break;
          if (     !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_STARTED)
-               || audio_st->pipe_consumer_gone)
+               || retro_atomic_load_acquire_int(
+                     &audio_st->pipe_consumer_gone))
             break;
          /* Sleep until the consumer has completed a pass. The
           * generation is taken first, then the wait window is opened
