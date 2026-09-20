@@ -276,7 +276,9 @@ static void crt_bind_display_server(videocrt_switch_t *p_switch)
    memset(&p_switch->ops, 0, sizeof(p_switch->ops));
    p_switch->ops_valid = false;
    p_switch->ops_lost  = false;
-   if (!p_switch->khr_ctx && video_display_server_get_modeline_ops(&p_switch->ops))
+   if (p_switch->khr_ctx)
+      RARCH_WARN("[CRT] Vulkan direct-to-display cannot modeswitch; modes are generated but not applied.\n");
+   else if (video_display_server_get_modeline_ops(&p_switch->ops))
    {
       if (p_switch->ops.open && !p_switch->ops.open(p_switch->ops.data, &gen->disp))
       {
@@ -286,7 +288,7 @@ static void crt_bind_display_server(videocrt_switch_t *p_switch)
       else
          p_switch->ops_valid = true;
    }
-   else if (!p_switch->khr_ctx)
+   else
       RARCH_WARN("[CRT] Display server \"%s\" has no modeline path; modes are generated but not applied.\n",
             video_display_server_get_ident());
    p_switch->ops.name = p_switch->ops_valid ? video_display_server_get_ident() : "dummy";
@@ -319,6 +321,7 @@ static bool crt_engine_init(videocrt_switch_t *p_switch,
 {
    char index[10];
    gfx_ctx_ident_t gfxctx;
+   bool starting = !p_switch->active;
 
    if (monitor_index+1 >= 0 && monitor_index+1 < 10)
       snprintf(index, sizeof(index), "%d", monitor_index);
@@ -330,7 +333,8 @@ static bool crt_engine_init(videocrt_switch_t *p_switch,
    p_switch->kms_ctx = (gfxctx.ident && strncmp(gfxctx.ident, "kms", 3) == 0);
    p_switch->khr_ctx = (gfxctx.ident && strncmp(gfxctx.ident, "khr_display", 11) == 0);
 
-   RARCH_LOG("[CRT] Video context is: %s.\n", gfxctx.ident);
+   if (starting)
+      RARCH_LOG("[CRT] Video context is: %s.\n", gfxctx.ident);
 
    if (!p_switch->active)
    {
@@ -426,6 +430,8 @@ static bool crt_engine_init(videocrt_switch_t *p_switch,
    if (p_switch->rtn >= 0)
    {
       p_switch->active = true;
+      if (!starting)
+         return true;
       if (p_switch->kms_ctx)
          RARCH_LOG("[CRT] KMS context detected, keeping the engine alive.\n");
       else if (p_switch->khr_ctx)
@@ -535,10 +541,7 @@ static void switch_res_crt(
       }
       modeline_flush(gen, &p_switch->ops);
 
-      if (p_switch->khr_ctx)
-         RARCH_WARN("[CRT] Vulkan -> Can't modeswitch for now.\n");
-      else if (p_switch->ops_valid
-            && !modeline_set(gen, &p_switch->ops, mode))
+      if (p_switch->ops_valid && !modeline_set(gen, &p_switch->ops, mode))
          RARCH_ERR("[CRT] Engine failed to switch mode.\n");
 
       crt_publish_timing(p_switch, mode->vfreq);

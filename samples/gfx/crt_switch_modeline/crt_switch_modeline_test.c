@@ -53,7 +53,12 @@
  *    no-ops case by skipping the call is only correct if a real
  *    failure still speaks.
  *
- * 4. The EDID install hint names the head the monitor index selects,
+ * 4. The lines that describe the context, not the switch, are said
+ *    once when the engine starts. crt_engine_init() runs on every
+ *    geometry change, so anything logged unguarded there repeats for
+ *    as long as a core keeps changing mode.
+ *
+ * 5. The EDID install hint names the head the monitor index selects,
  *    not the first output in the list.
  */
 
@@ -246,10 +251,12 @@ void video_driver_get_output_size(unsigned *width, unsigned *height)
       *height = 480;
 }
 
+static const char *ctx_ident = "wl";
+
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)
 {
    if (ident)
-      ident->ident = "wl";
+      ident->ident = ctx_ident;
    return true;
 }
 
@@ -337,6 +344,56 @@ static void test_no_modeline_path(void)
    crt_destroy_modes(&sw);
 }
 
+static void test_khr_display(void)
+{
+   videocrt_switch_t sw;
+
+   printf("\n-- the Vulkan direct-to-display context --\n");
+   memset(&sw, 0, sizeof(sw));
+   srv_has_ops = true;   /* a server is up; khr still cannot use it */
+   srv_set_ok  = true;
+   srv_ident   = "x11";
+   ctx_ident   = "khr_display";
+   log_reset();
+
+   run_switches(&sw, 0);
+
+   check_eq("says so once, at bind",
+         log_hits("Vulkan direct-to-display cannot modeswitch"), 1);
+   check_eq("the context line is not repeated either",
+         log_hits("Vulkan context detected"), 1);
+   check_eq("and does not claim an apply failure",
+         log_hits("Engine failed to switch mode"), 0);
+
+   crt_destroy_modes(&sw);
+   ctx_ident = "wl";
+}
+
+static void test_context_lines_are_said_once(void)
+{
+   videocrt_switch_t sw;
+
+   printf("\n-- the KMS context, three geometry changes --\n");
+   memset(&sw, 0, sizeof(sw));
+   srv_has_ops = true;
+   srv_set_ok  = true;
+   srv_ident   = "kms";
+   ctx_ident   = "kms";
+   log_reset();
+
+   run_switches(&sw, 0);
+
+   check_eq("the context is named once, not per switch",
+         log_hits("[CRT] Video context is:"), 1);
+   check_eq("so is the engine-alive line",
+         log_hits("KMS context detected"), 1);
+   check("and each switch still reports its own resolution",
+         log_hits("[CRT] Requested resolution:") == 3);
+
+   crt_destroy_modes(&sw);
+   ctx_ident = "wl";
+}
+
 static void test_failing_set_still_reports(void)
 {
    videocrt_switch_t sw;
@@ -421,6 +478,8 @@ int main(int argc, char **argv)
    stub_settings.uints.video_aspect_ratio_idx = ASPECT_RATIO_CORE;
 
    test_no_modeline_path();
+   test_khr_display();
+   test_context_lines_are_said_once();
    test_failing_set_still_reports();
    test_edid_hint_names_the_selected_head();
 
