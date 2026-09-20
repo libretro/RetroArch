@@ -69,6 +69,44 @@ static size_t sdl2_ring_room(const retro_spsc_t *ring, size_t ring_size)
    return room > excess ? room - excess : 0;
 }
 
+
+/* The frontend builds the device list whether or not the driver came
+ * up, so enumeration cannot assume SDL_INIT_AUDIO is already on: bring
+ * the subsystem up for the query and put it back down. SDL refcounts
+ * it, so a running driver is left alone. */
+static struct string_list *sdl2_audio_enumerate(bool capture)
+{
+   int i, num;
+   union string_list_elem_attr attr;
+   struct string_list *sl;
+   bool inited = (SDL_WasInit(SDL_INIT_AUDIO) & SDL_INIT_AUDIO) != 0;
+
+   if (!inited && SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
+   {
+      RARCH_WARN("[SDL audio] Could not start the audio subsystem to list devices: %s.\n",
+            SDL_GetError());
+      return NULL;
+   }
+
+   if ((sl = string_list_new()))
+   {
+      attr.i = 0;
+      num    = SDL_GetNumAudioDevices(capture);
+
+      for (i = 0; i < num; i++)
+      {
+         const char *name = SDL_GetAudioDeviceName(i, capture);
+         if (name)
+            string_list_append(sl, name, attr);
+      }
+   }
+
+   if (!inited)
+      SDL_QuitSubSystem(SDL_INIT_AUDIO);
+
+   return sl;
+}
+
 #ifdef HAVE_MICROPHONE
 #include "../microphone_driver.h"
 
@@ -235,13 +273,28 @@ static void *sdl2_microphone_open_mic(void *driver_context, const char *device,
    desired_spec.userdata = mic;
    desired_spec.callback = sdl2_microphone_record_cb;
 
-   mic->device_id = SDL_OpenAudioDevice(
-         NULL,
-         true,
-         &desired_spec,
-         &mic->device_spec,
-           SDL_AUDIO_ALLOW_FREQUENCY_CHANGE
-         | SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+   if (!string_is_empty(device))
+   {
+      mic->device_id = SDL_OpenAudioDevice(
+            device,
+            true,
+            &desired_spec,
+            &mic->device_spec,
+              SDL_AUDIO_ALLOW_FREQUENCY_CHANGE
+            | SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+      if (mic->device_id == 0)
+         RARCH_WARN("[SDL mic] Could not open input device \"%s\": %s. Using the default device.\n",
+               device, SDL_GetError());
+   }
+
+   if (mic->device_id == 0)
+      mic->device_id = SDL_OpenAudioDevice(
+            NULL,
+            true,
+            &desired_spec,
+            &mic->device_spec,
+              SDL_AUDIO_ALLOW_FREQUENCY_CHANGE
+            | SDL_AUDIO_ALLOW_FORMAT_CHANGE);
 
    if (mic->device_id == 0)
    {
@@ -508,14 +561,27 @@ static bool sdl2_microphone_mic_use_float(const void *driver_context, const void
    return SDL_AUDIO_ISFLOAT(mic->device_spec.format);
 }
 
+static struct string_list *sdl2_microphone_device_list_new(
+      const void *driver_context)
+{
+   return sdl2_audio_enumerate(true);
+}
+
+static void sdl2_microphone_device_list_free(const void *driver_context,
+      struct string_list *devices)
+{
+   if (devices)
+      string_list_free(devices);
+}
+
 microphone_driver_t microphone_sdl = {
       sdl2_microphone_init,
       sdl2_microphone_free,
       sdl2_microphone_read,
       sdl2_microphone_set_nonblock_state,
       "sdl2",
-      NULL,
-      NULL,
+      sdl2_microphone_device_list_new,
+      sdl2_microphone_device_list_free,
       sdl2_microphone_open_mic,
       sdl2_microphone_close_mic,
       sdl2_microphone_mic_alive,
@@ -587,21 +653,7 @@ static void sdl2_audio_playback_cb(void *data, Uint8 *stream, int len)
 
 static void *sdl2_audio_list_new(void *u)
 {
-   int i, num = 0;
-   union string_list_elem_attr attr;
-   struct string_list *sl = string_list_new();
-
-   if (sl)
-   {
-      attr.i = 0;
-      num    = SDL_GetNumAudioDevices(false);
-
-      for (i = 0; i < num; i++)
-         string_list_append(sl, SDL_GetAudioDeviceName(i, false), attr);
-
-      return sl;
-   }
-   return NULL;
+   return sdl2_audio_enumerate(false);
 }
 
 static void sdl2_audio_free(void *data);
@@ -663,7 +715,21 @@ static void *sdl2_audio_init(const char *device,
    spec.callback = sdl2_audio_playback_cb;
    spec.userdata = sdl;
 
-   sdl->speaker_device = SDL_OpenAudioDevice(NULL, false, &spec, &sdl->device_spec, 0);
+   /* The device the user picked out of device_list_new(), if it is
+    * still there; the default when the name has gone with the hardware
+    * it named. */
+   if (!string_is_empty(device))
+   {
+      sdl->speaker_device = SDL_OpenAudioDevice(device, false, &spec,
+            &sdl->device_spec, 0);
+      if (sdl->speaker_device == 0)
+         RARCH_WARN("[SDL audio] Could not open output device \"%s\": %s. Using the default device.\n",
+               device, SDL_GetError());
+   }
+
+   if (sdl->speaker_device == 0)
+      sdl->speaker_device = SDL_OpenAudioDevice(NULL, false, &spec,
+            &sdl->device_spec, 0);
 
    if (sdl->speaker_device == 0)
    {
