@@ -118,6 +118,54 @@ def magenta(px):
     return r > 200 and b > 200 and g < 60
 
 
+def shapes(w, h, rows):
+    """The overlay on the screen, as rectangles.
+
+    A run of rows with the same magenta spans is one band of the
+    picture, so two squares side by side print as two bands of two
+    spans. That is the whole diagnosis of a geometry failure: where
+    the driver actually put the images, against where the config
+    puts them, without anyone having to reproduce the run.
+    """
+    out  = []
+    last = None
+    for y in range(h):
+        spans = []
+        x0    = None
+        for x in range(w):
+            if magenta(rows[y][x]):
+                if x0 is None:
+                    x0 = x
+            elif x0 is not None:
+                spans.append((x0, x - 1))
+                x0 = None
+        if x0 is not None:
+            spans.append((x0, w - 1))
+        if not spans:
+            last = None
+            continue
+        if last is not None and out[-1][2] == spans:
+            out[-1][1] = y
+        else:
+            out.append([y, y, spans])
+        last = spans
+    return ["rows %d-%d: %s" % (a, b, ", ".join("x %d-%d" % s for s in sp))
+            for a, b, sp in out]
+
+
+def interesting(log_path):
+    """The lines of the log that say what drew, and the last few."""
+    marks = ("[Overlay]", "[GL]", "[GLX]", "[EGL]", "[X11]", "[Video]",
+             "ERR", "resolution", "Threaded")
+    try:
+        with open(log_path, "r", errors="replace") as f:
+            lines = f.read().splitlines()
+    except IOError:
+        return []
+    hits = [ln for ln in lines if any(m in ln for m in marks)][:30]
+    return hits + ["..."] + lines[-10:]
+
+
 def run(retroarch, threaded):
     label = "threaded %s" % ("on" if threaded else "off")
     d     = tempfile.mkdtemp(prefix="overlay_screen_")
@@ -155,6 +203,18 @@ def run(retroarch, threaded):
                          "squares are %.1f%%" % (label, 100 * covered, 100 * expected))
         print("[%s] %s (overlay covers %.1f%% of the screen, expected %.1f%%)"
               % ("fail" if fails else "pass", label, 100 * covered, 100 * expected))
+        if fails:
+            print("  screen is %dx%d, the config puts the squares at:" % (w, h))
+            for i, (x, y, hw, hh) in enumerate(SQUARES):
+                print("    square %d: rows %d-%d, x %d-%d"
+                      % (i, int((y - hh) * h), int((y + hh) * h) - 1,
+                         int((x - hw) * w), int((x + hw) * w) - 1))
+            print("  what is on it:")
+            for line in shapes(w, h, rows) or ["nothing magenta"]:
+                print("    " + line)
+            print("  log:")
+            for line in interesting(os.path.join(d, "log.txt")):
+                print("    " + line)
     finally:
         if ra and ra.poll() is None:
             ra.kill()
