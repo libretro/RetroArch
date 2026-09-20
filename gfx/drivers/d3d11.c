@@ -3148,9 +3148,9 @@ static bool d3d11_hw_v2_lock_context(void *data);
 static void d3d11_hw_v2_unlock_context(void *data);
 static void d3d11_hw_v2_set_texture(void *data, ID3D11Texture2D *texture);
 static void d3d11_hw_v2_protect_context(d3d11_video_t *d3d11);
-static unsigned d3d11_hw_v3_get_sync_index(void *data);
-static unsigned d3d11_hw_v3_get_sync_index_mask(void *data);
-static void d3d11_hw_v3_wait_sync_index(void *data);
+static unsigned d3d11_hw_v2_get_sync_index(void *data);
+static unsigned d3d11_hw_v2_get_sync_index_mask(void *data);
+static void d3d11_hw_v2_wait_sync_index(void *data);
 
 static void d3d11_gfx_free(void* data)
 {
@@ -4175,14 +4175,9 @@ static void *d3d11_gfx_init(const video_info_t* video,
          d3d11->hw_iface.lock_context       = d3d11_hw_v2_lock_context;
          d3d11->hw_iface.unlock_context     = d3d11_hw_v2_unlock_context;
          d3d11->hw_iface.set_texture        = d3d11_hw_v2_set_texture;
-         if (d3d11_hw_interface_negotiated_version()
-               >= RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_3)
-         {
-            d3d11->hw_iface.interface_version   = RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_3;
-            d3d11->hw_iface.get_sync_index      = d3d11_hw_v3_get_sync_index;
-            d3d11->hw_iface.get_sync_index_mask = d3d11_hw_v3_get_sync_index_mask;
-            d3d11->hw_iface.wait_sync_index     = d3d11_hw_v3_wait_sync_index;
-         }
+         d3d11->hw_iface.get_sync_index      = d3d11_hw_v2_get_sync_index;
+         d3d11->hw_iface.get_sync_index_mask = d3d11_hw_v2_get_sync_index_mask;
+         d3d11->hw_iface.wait_sync_index     = d3d11_hw_v2_wait_sync_index;
          RARCH_LOG("[D3D11] Hardware render interface version %u.\n",
                d3d11->hw_iface.interface_version);
       }
@@ -4581,9 +4576,9 @@ static void d3d11_hw_v2_set_texture(void *data, ID3D11Texture2D *texture)
 
 /* Version 3 with no wrapper in front: the frame reads the texture inside
  * video_refresh, so there is one sync index and nothing to wait for. */
-static unsigned d3d11_hw_v3_get_sync_index(void *data)      { (void)data; return 0; }
-static unsigned d3d11_hw_v3_get_sync_index_mask(void *data) { (void)data; return 1; }
-static void     d3d11_hw_v3_wait_sync_index(void *data)     { (void)data; }
+static unsigned d3d11_hw_v2_get_sync_index(void *data)      { (void)data; return 0; }
+static unsigned d3d11_hw_v2_get_sync_index_mask(void *data) { (void)data; return 1; }
+static void     d3d11_hw_v2_wait_sync_index(void *data)     { (void)data; }
 
 /* The repeat of the last frame waits for the display exactly as the
  * frame does, and with a core slower than the display it runs on every
@@ -5017,7 +5012,7 @@ static bool d3d11_gfx_frame_body(
              hw_texture           = d3d11->hw_v2.texture;
              d3d11->hw_v2.texture = NULL;
              if (d3d11->hw_iface.interface_version
-                   >= RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_3)
+                   >= RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_2)
                 d3d11->hw_direct.eligible = true;
              hw_texture->lpVtbl->GetDesc(hw_texture, &v2_desc);
              hw_desc.Format       = v2_desc.Format;
@@ -6949,61 +6944,6 @@ static bool d3d11_hw_ring_capture(void *data, unsigned slot,
    if (!d3d11 || !source || slot >= 3)
       return false;
 
-   if (format == D3D11_HW_RING_CAPTURE_TEXTURE)
-   {
-      /* Version 2. `source` is the texture the core named, and the core
-       * draws into it again as soon as video_refresh returns, so the
-       * slot gets a copy of its own: one call on the immediate context,
-       * which the core's thread holds the lock for (it is recursive),
-       * ahead of anything the core does next. No command list, and
-       * nothing for the video thread to replay. */
-      D3D11Texture2D core = (D3D11Texture2D)source;
-      D3D11Texture2D own;
-      D3D11_TEXTURE2D_DESC want, have;
-
-      /* Under the lock from here: present_slot takes its reference to
-       * the slot's texture under it too, so a slot being replaced
-       * because the frame changed size cannot go from under the video
-       * thread. */
-      EnterCriticalSection(&d3d11->hw_v2.lock);
-      own = d3d11->hw_ring.slot[slot].list
-         ? NULL : d3d11->hw_ring.slot[slot].texture;
-      core->lpVtbl->GetDesc(core, &want);
-      if (own)
-      {
-         own->lpVtbl->GetDesc(own, &have);
-         if (     have.Width  != want.Width
-               || have.Height != want.Height
-               || have.Format != want.Format)
-            own = NULL;
-      }
-      if (!own)
-      {
-         D3D11_TEXTURE2D_DESC make = want;
-         make.MipLevels      = 1;
-         make.ArraySize      = 1;
-         make.Usage          = D3D11_USAGE_DEFAULT;
-         make.BindFlags      = D3D11_BIND_SHADER_RESOURCE;
-         make.CPUAccessFlags = 0;
-         make.MiscFlags      = 0;
-         if (FAILED(d3d11->device->lpVtbl->CreateTexture2D(d3d11->device,
-                     &make, NULL, &own)))
-         {
-            LeaveCriticalSection(&d3d11->hw_v2.lock);
-            return false;
-         }
-         Release(d3d11->hw_ring.slot[slot].list);
-         Release(d3d11->hw_ring.slot[slot].texture);
-         d3d11->hw_ring.slot[slot].list    = NULL;
-         d3d11->hw_ring.slot[slot].texture = own;
-      }
-      d3d11->hw_ring.slot[slot].format = want.Format;
-
-      d3d11->context->lpVtbl->CopySubresourceRegion(d3d11->context,
-            (D3D11Resource)own, 0, 0, 0, 0, (D3D11Resource)core, 0, NULL);
-      LeaveCriticalSection(&d3d11->hw_v2.lock);
-      return true;
-   }
 
    deferred->lpVtbl->PSGetShaderResources(deferred, 0, 1, &view);
    if (view)

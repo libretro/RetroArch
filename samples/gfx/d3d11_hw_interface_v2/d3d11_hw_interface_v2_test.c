@@ -21,11 +21,11 @@
  * value. Its next draw goes through whatever the frontend left bound, and
  * its readback catches it. run.sh requires that to fail.
  *
- * "v3" runs version 3 of the interface: the frontend copies nothing at
+ * "v2" runs version 3 of the interface: the frontend copies nothing at
  * video_refresh, reads the core's own texture when its thread gets to
  * it, and the core keeps a texture per sync index and waits before it
  * draws into one again. The frontend is slowed down so the core laps it.
- * "v3-nowait" is its control: a core that skips wait_sync_index draws
+ * "v2-nowait" is its control: a core that skips wait_sync_index draws
  * over a texture the frontend has yet to read. That must fail too.
  *
  * The frontend below is the smallest thing that honours the contract; it
@@ -73,7 +73,7 @@ typedef struct
    ID3D11VertexShader *vs; ID3D11PixelShader *ps_grey;
    volatile LONG bad, shown, quit; unsigned frame_no;
    /* version 3: the core's own textures, read directly */
-   int v3; unsigned index; ID3D11Texture2D *direct[SLOTS];
+   int v2; unsigned index; ID3D11Texture2D *direct[SLOTS];
    HANDLE slot_done[SLOTS]; bool slot_out[SLOTS];
    struct retro_hw_render_interface_d3d11 iface;
 } frontend_t;
@@ -109,7 +109,7 @@ static void fe_wait_sync_index(void *h)
 static void fe_video_refresh(frontend_t *fe)
 {
    unsigned k = fe->next_slot;
-   if (fe->v3)
+   if (fe->v2)
    {
       /* nothing is copied: remember whose texture this index is */
       k                 = fe->index;
@@ -166,7 +166,7 @@ static DWORD WINAPI frontend_thread(void *p)
       LeaveCriticalSection(&fe->qlock);
       k = item & 0xff; want = item >> 8;
 
-      if (fe->v3)
+      if (fe->v2)
          Sleep((fe->shown % 5) == 0 ? 12 : 4);   /* slower than the core */
       EnterCriticalSection(&fe->lock);
       fe->disturbed = true;
@@ -177,9 +177,9 @@ static DWORD WINAPI frontend_thread(void *p)
       ID3D11DeviceContext_PSSetShader(fe->ctx, fe->ps_grey, NULL, 0);
       ID3D11DeviceContext_IASetPrimitiveTopology(fe->ctx, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
       ID3D11DeviceContext_Draw(fe->ctx, 3, 0);
-      got = read_frame_no(fe, fe->v3 ? fe->direct[k] : fe->slot[k]);
+      got = read_frame_no(fe, fe->v2 ? fe->direct[k] : fe->slot[k]);
       LeaveCriticalSection(&fe->lock);
-      if (fe->v3)
+      if (fe->v2)
       {
          /* the read is issued: the core may have the texture back */
          if (got != want)
@@ -208,9 +208,9 @@ static DWORD WINAPI frontend_thread(void *p)
 int main(int argc, char **argv)
 {
    int norebind = argc > 1 && !strcmp(argv[1], "norebind");
-   int v3       = argc > 1 && !strncmp(argv[1], "v3", 2);
-   int nowait   = argc > 1 && !strcmp(argv[1], "v3-nowait");
-   ID3D11Texture2D *rt_v3[SLOTS]; ID3D11RenderTargetView *rtv_v3[SLOTS];
+   int v2       = 1; /* version 2 is the sync-index path; there is no other */
+   int nowait   = argc > 1 && !strcmp(argv[1], "v2-nowait");
+   ID3D11Texture2D *rt_v2[SLOTS]; ID3D11RenderTargetView *rtv_v2[SLOTS];
    frontend_t fe; const struct retro_hw_render_interface_d3d11 *d3d11;
    ID3D11Texture2D *rt_tex; ID3D11RenderTargetView *rtv; ID3D11PixelShader *ps; ID3D11Buffer *cb;
    ID3DBlob *b_vs = NULL, *b_ps = NULL, *b_grey = NULL, *err = NULL;
@@ -237,7 +237,7 @@ int main(int argc, char **argv)
    td.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
    ID3D11Device_CreateTexture2D(fe.dev, &td, NULL, &rt_tex);
    for (i = 0; i < SLOTS; i++)
-      ID3D11Device_CreateTexture2D(fe.dev, &td, NULL, &rt_v3[i]);
+      ID3D11Device_CreateTexture2D(fe.dev, &td, NULL, &rt_v2[i]);
    ID3D11Device_CreateTexture2D(fe.dev, &td, NULL, &fe.fe_rt_tex);
    for (i = 0; i < SLOTS; i++)
       ID3D11Device_CreateTexture2D(fe.dev, &td, NULL, &fe.slot[i]);
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
    ID3D11Device_CreateRenderTargetView(fe.dev, (ID3D11Resource*)rt_tex, NULL, &rtv);
    for (i = 0; i < SLOTS; i++)
    {
-      ID3D11Device_CreateRenderTargetView(fe.dev, (ID3D11Resource*)rt_v3[i], NULL, &rtv_v3[i]);
+      ID3D11Device_CreateRenderTargetView(fe.dev, (ID3D11Resource*)rt_v2[i], NULL, &rtv_v2[i]);
       fe.slot_done[i] = CreateEvent(NULL, FALSE, FALSE, NULL);
    }
    ID3D11Device_CreateRenderTargetView(fe.dev, (ID3D11Resource*)fe.fe_rt_tex, NULL, &fe.fe_rtv);
@@ -261,10 +261,10 @@ int main(int argc, char **argv)
    fe.iface.lock_context      = fe_lock_context;
    fe.iface.unlock_context    = fe_unlock_context;
    fe.iface.set_texture       = fe_set_texture;
-   if (v3)
+   if (v2)
    {
-      fe.v3                        = 1;
-      fe.iface.interface_version   = RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_3;
+      fe.v2                        = 1;
+      fe.iface.interface_version   = RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_2;
       fe.iface.get_sync_index      = fe_get_sync_index;
       fe.iface.get_sync_index_mask = fe_get_sync_index_mask;
       fe.iface.wait_sync_index     = fe_wait_sync_index;
@@ -276,19 +276,19 @@ int main(int argc, char **argv)
    for (n = 0; n < FRAMES; n++)
    {
       float col[4]; unsigned got; ID3D11Texture2D *target = rt_tex; bool rebind;
-      if (v3)
+      if (v2)
       {
          /* not with the lock held */
          unsigned idx = d3d11->get_sync_index(d3d11->handle);
          if (!nowait)
             d3d11->wait_sync_index(d3d11->handle);
-         target = rt_v3[idx];
-         rtv    = rtv_v3[idx];
+         target = rt_v2[idx];
+         rtv    = rtv_v2[idx];
       }
       col[0] = (float)(n & 0xff) / 255.0f; col[1] = (float)((n >> 8) & 0xff) / 255.0f; col[2] = 0.0f; col[3] = 1.0f;
 
       rebind = d3d11->lock_context(d3d11->handle) && (!norebind || n == 0);
-      if (rebind || v3)
+      if (rebind || v2)
       {
          /* the frontend has had the context: everything, again */
          ID3D11DeviceContext_IASetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
