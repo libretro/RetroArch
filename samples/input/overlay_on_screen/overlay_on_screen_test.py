@@ -21,6 +21,14 @@ colour the menu draws. For video_threaded off and on:
   - the middle of the screen is not               (it is not stretched)
   - magenta covers about the area of two squares  (nor anything between)
 
+The screen is looked at once it has stopped changing, never after a
+fixed wait. A frontend that is still starting has drawn nothing, or
+has drawn into a window that has not reached its final size, and a
+grab of either is a picture of the startup rather than of the
+overlay - a slow runner failed this way twice, once with a black
+screen and once with both squares squeezed into the top three
+quarters of it.
+
 Usage: overlay_on_screen_test.py /path/to/retroarch
 Needs Xvfb, xwd (x11-apps) and a software GL (Mesa llvmpipe).
 """
@@ -34,10 +42,12 @@ import tempfile
 import time
 import zlib
 
-W, H     = 640, 480
+W, H       = 640, 480
 # centre x, centre y, half width, half height - normalised, as in the cfg
-SQUARES  = [(0.15, 0.20, 0.10, 0.10), (0.85, 0.80, 0.10, 0.10)]
-SETTLE_S = 8
+SQUARES    = [(0.15, 0.20, 0.10, 0.10), (0.85, 0.80, 0.10, 0.10)]
+SETTLE_S   = 3     # nothing is looked at before this
+DEADLINE_S = 40    # and a slow runner has this long to stop changing
+POLL_S     = 1.5   # holding the same picture across one of these is settled
 
 
 def png_solid(path, rgba, size=16):
@@ -118,6 +128,59 @@ def magenta(px):
     return r > 200 and b > 200 and g < 60
 
 
+def picture(w, h, rows):
+    """What is on the screen, coarsely: (drawn anything, magenta, bbox).
+
+    Two of these taken a poll apart and equal is the frontend having
+    stopped changing. The first field keeps a screen nobody has drawn
+    to yet from counting as settled, which is what a black grab of a
+    starting frontend would otherwise be.
+    """
+    drawn = False
+    n     = 0
+    x0, x1, y0, y1 = w, -1, h, -1
+    for y in range(h):
+        row = rows[y]
+        for x in range(w):
+            px = row[x]
+            if px != (0, 0, 0):
+                drawn = True
+            if magenta(px):
+                n += 1
+                if x < x0:
+                    x0 = x
+                if x > x1:
+                    x1 = x
+                if y < y0:
+                    y0 = y
+                if y > y1:
+                    y1 = y
+    return drawn, n, (x0, x1, y0, y1)
+
+
+def settle(disp, xwd_path, ra):
+    """Grab until the screen holds still, then hand back that grab.
+
+    Returns (width, height, rows, settled). Not settled means the
+    deadline passed with the picture still moving, or with nothing
+    drawn at all: the caller checks the last grab anyway and says so,
+    so an overlay that never arrives is still a failure rather than a
+    wait that ends quietly.
+    """
+    time.sleep(SETTLE_S)
+    deadline = time.time() + DEADLINE_S
+    prev     = None
+    while True:
+        w, h, rows = grab(disp, xwd_path)
+        cur        = picture(w, h, rows)
+        if cur[0] and cur == prev:
+            return w, h, rows, True
+        if time.time() >= deadline or ra.poll() is not None:
+            return w, h, rows, False
+        prev = cur
+        time.sleep(POLL_S)
+
+
 def shapes(w, h, rows):
     """The overlay on the screen, as rectangles.
 
@@ -182,11 +245,14 @@ def run(retroarch, threaded):
         log = open(os.path.join(d, "log.txt"), "w")
         ra  = subprocess.Popen([retroarch, "--menu", "-c", cfg, "-v"],
                                env=env, stdout=log, stderr=subprocess.STDOUT)
-        time.sleep(SETTLE_S)
+        w, h, rows, ok = settle(disp, os.path.join(d, "screen.xwd"), ra)
         if ra.poll() is not None:
             return ["%s: retroarch exited early (%s), log:\n%s"
                     % (label, ra.returncode, open(os.path.join(d, "log.txt")).read()[-2000:])]
-        w, h, rows = grab(disp, os.path.join(d, "screen.xwd"))
+        if not ok:
+            fails.append("%s: the screen was still changing after %ds - "
+                         "the frontend never finished starting"
+                         % (label, SETTLE_S + DEADLINE_S))
 
         for i, (x, y, hw, hh) in enumerate(SQUARES):
             if not magenta(rows[int(y * h)][int(x * w)]):
