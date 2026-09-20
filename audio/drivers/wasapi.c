@@ -3024,41 +3024,37 @@ static size_t wasapi_frames_consumed(void *wh)
 {
 #ifdef HAVE_THREADS
    wasapi_t *w = (wasapi_t*)wh;
-   size_t n;
-   UINT64  pos = 0, qpc = 0;
 
-   if (!w)
-      return 0;
-
-   /* The hardware's position, in frames, where the endpoint reports
-    * it. Nothing to convert and nothing to infer. */
-   if (w->clock2 && SUCCEEDED(
-            _IAudioClock2_GetDevicePosition(w->clock2, &pos, &qpc)))
+   if (w)
    {
-      wasapi_clock_fit(w, pos - w->clock2_start, qpc);
-      return (size_t)(pos - w->clock2_start);
-   }
+      UINT64  pos = 0, qpc = 0;
+      /* The hardware's position, in frames, where the endpoint reports
+       * it. Nothing to convert and nothing to infer. */
+      if (w->clock2 && SUCCEEDED(
+               _IAudioClock2_GetDevicePosition(w->clock2, &pos, &qpc)))
+      {
+         wasapi_clock_fit(w, pos - w->clock2_start, qpc);
+         return (size_t)(pos - w->clock2_start);
+      }
 
-   /* Otherwise the stream's position, which is in units of the
-    * clock's own frequency rather than in frames - the documentation
-    * is explicit that they are not to be assumed the same - so it is
-    * converted through that frequency and the rate the stream runs
-    * at. */
-   if (w->clock && w->clock_frequency && w->rate && SUCCEEDED(
-            _IAudioClock_GetPosition(w->clock, &pos, &qpc)))
-   {
-      UINT64 frames = ((pos - w->clock_start) * (UINT64)w->rate)
+      /* Otherwise the stream's position, which is in units of the
+       * clock's own frequency rather than in frames - the documentation
+       * is explicit that they are not to be assumed the same - so it is
+       * converted through that frequency and the rate the stream runs
+       * at. */
+      if (w->clock && w->clock_frequency && w->rate && SUCCEEDED(
+               _IAudioClock_GetPosition(w->clock, &pos, &qpc)))
+      {
+         UINT64 frames = ((pos - w->clock_start) * (UINT64)w->rate)
             / w->clock_frequency;
-      wasapi_clock_fit(w, frames, qpc);
-      return (size_t)frames;
-   }
+         wasapi_clock_fit(w, frames, qpc);
+         return (size_t)frames;
+      }
 
-   n = (size_t)retro_atomic_load_acquire_64(&w->consumed);
-   return n;
-#else
-   (void)wh;
-   return 0;
+      return (size_t)retro_atomic_load_acquire_64(&w->consumed);
+   }
 #endif
+   return 0;
 }
 
 /* The service events counted and multiplied by a period, which is
@@ -3068,15 +3064,10 @@ static size_t wasapi_frames_consumed_fallback(void *wh)
 {
 #ifdef HAVE_THREADS
    wasapi_t *w = (wasapi_t*)wh;
-   size_t n;
-   if (!w)
-      return 0;
-   n = (size_t)retro_atomic_load_acquire_64(&w->consumed);
-   return n;
-#else
-   (void)wh;
-   return 0;
+   if (w)
+      return (size_t)retro_atomic_load_acquire_64(&w->consumed);
 #endif
+   return 0;
 }
 
 audio_driver_t audio_wasapi = {
