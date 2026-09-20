@@ -33,8 +33,7 @@
  * callback before giving up and reporting a short count.  Never
  * reached in normal operation - the callback notifies every period -
  * so the exact value only decides how long a stalled device takes to
- * be noticed.  coreaudio.c already uses a flat 300ms for the same
- * purpose on iOS. */
+ * be noticed. */
 #define SDL_AUDIO_STALL_TIMEOUT_US 256000
 #include "SDL_audio.h"
 
