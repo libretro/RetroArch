@@ -9832,9 +9832,23 @@ static void microphone_driver_capture_thread(void *data)
          continue;
       }
 
-      if (!mic_st->driver->wait_readable(mic_st->driver_context,
-               microphone->microphone_context, slice * sample_size))
-         continue;
+      /* What the device has now, which can be less than was asked for:
+       * a driver returns short whenever its bounded wait expires with
+       * something in hand, and alsa returns a period even when the
+       * slice spans several. read() blocks until it has everything it
+       * was asked for, so reading the whole slice on a short count
+       * parks the worker inside the driver - and teardown joins this
+       * thread unconditionally. Read what is there. */
+      {
+         size_t want = slice * sample_size;
+         size_t got  = mic_st->driver->wait_readable(mic_st->driver_context,
+               microphone->microphone_context, want);
+
+         if (got < sample_size)
+            continue;
+         if (got < want)
+            slice = got / sample_size;
+      }
 
       /* The flush - device read, up-channel, resample, ring write -
        * runs without the lock: SPSC, this thread is the producer.  The

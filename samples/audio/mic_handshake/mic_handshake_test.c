@@ -66,6 +66,7 @@
 #include <math.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <signal.h>
 #include <time.h>
 
 #include <boolean.h>
@@ -179,11 +180,56 @@ static void *mdev_open(void *d, const char *dev, unsigned rate,
    return &h;
 }
 
+/* Set by the teardown case: read() then honours the header's "all reads
+ * should block until all requested frames are provided" instead of
+ * returning what is there. The measurement runs above leave it off, so
+ * their numbers are unchanged. */
+static bool mdev_blocking;
+
+/* The contract's read: it returns only once it has everything it was
+ * asked for, so the only thing that ends the wait is more samples. */
+static int mdev_read_blocking(void *buf, size_t size)
+{
+   size_t done = 0;
+   int16_t *out = (int16_t*)buf;
+
+   size -= size % sizeof(int16_t);
+   while (done < size)
+   {
+      size_t i;
+      size_t have = retro_atomic_load_acquire_size(&dev_avail);
+      size_t take = (have < size - done) ? have : size - done;
+
+      take -= take % sizeof(int16_t);
+      if (!take)
+      {
+         pthread_mutex_lock(&dev_lock);
+         pthread_cond_wait(&dev_cond, &dev_lock);
+         pthread_mutex_unlock(&dev_lock);
+         continue;
+      }
+      retro_atomic_fetch_sub_size(&dev_avail, take);
+      for (i = 0; i < take / sizeof(int16_t); i++)
+      {
+         if (++dev_pattern == 0)
+            dev_pattern = 1;
+         out[done / sizeof(int16_t) + i] = dev_pattern;
+      }
+      done += take;
+   }
+   retro_atomic_fetch_add_size(&cnt_reads, 1);
+   retro_atomic_fetch_add_size(&cnt_read_bytes, done);
+   return (int)done;
+}
+
 static int mdev_read(void *d, void *m, void *buf, size_t size)
 {
    size_t have, take, i;
    int16_t *out = (int16_t*)buf;
    (void)d; (void)m;
+
+   if (mdev_blocking)
+      return mdev_read_blocking(buf, size);
 
    have = retro_atomic_load_acquire_size(&dev_avail);
    take = (have < size) ? have : size;
@@ -399,6 +445,60 @@ static void run_one(unsigned latency_ms, double seconds)
    mic_down();
 }
 
+/* Teardown while the worker is inside the device read.
+ *
+ * wait_readable() reports what the device has now, which is regularly
+ * less than the slice asked for - this device cannot hold a whole one,
+ * and alsa returns a period for the same reason. The worker used to
+ * take the report as a yes/no and read the full slice anyway, so it sat
+ * in a read that only more samples could end. Teardown joins the worker
+ * unconditionally, so a device that stopped delivering hung the join,
+ * and with it mic close, driver switch and shutdown. */
+static unsigned failures;
+
+static void teardown_alarm(int sig)
+{
+   /* Async-signal-safe, and the join it is firing on will not return. */
+   static const char msg[] = "FAIL mic teardown: join did not return;"
+         " the worker is blocked in read()\n";
+   (void)sig;
+   if (write(2, msg, sizeof(msg) - 1)) {}
+   _exit(1);
+}
+
+static void teardown_case(void)
+{
+   pthread_t dev;
+
+   mdev_blocking = true;
+   if (!mic_up(32))
+   {
+      printf("FAIL mic teardown: could not bring the microphone up\n");
+      failures++;
+      mdev_blocking = false;
+      return;
+   }
+
+   retro_atomic_store_release_int(&dev_running, 1);
+   pthread_create(&dev, NULL, dev_thread, NULL);
+   usleep(200 * 1000);
+
+   /* The device goes quiet first, so nothing can complete a read that
+    * asked for more than it had. */
+   retro_atomic_store_release_int(&dev_running, 0);
+   pthread_join(dev, NULL);
+   usleep(50 * 1000);
+
+   signal(SIGALRM, teardown_alarm);
+   alarm(5);
+   mic_down();
+   alarm(0);
+   signal(SIGALRM, SIG_DFL);
+
+   mdev_blocking = false;
+   printf("mic teardown: the worker leaves the device read and joins\n");
+}
+
 int main(int argc, char **argv)
 {
    static const unsigned sweep[] = { 8, 16, 32, 64 };
@@ -418,6 +518,7 @@ int main(int argc, char **argv)
       run_one(sweep[i], seconds);
 
    free(lat_us);
+   teardown_case();
    printf("mic handshake: baseline taken\n");
-   return 0;
+   return failures ? 1 : 0;
 }
