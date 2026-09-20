@@ -7136,9 +7136,11 @@ static size_t setting_get_string_representation_uint_crt_switch_resolutions(
          case CRT_SWITCH_32_120:
             return strlcpy_lit(s, "31 KHz, 120Hz", len);
          case CRT_SWITCH_INI:
-            return strlcpy_lit(s, "INI", len);
+            return strlcpy_lit(s, "Custom (switchres.ini)", len);
          case CRT_SWITCH_EDID:
-            return strlcpy_lit(s, "EDID", len);
+            return strlcpy_lit(s, "Match Display (EDID)", len);
+         case CRT_SWITCH_LCD:
+            return strlcpy_lit(s, "Match Refresh Only (LCD)", len);
       }
    }
    return 0;

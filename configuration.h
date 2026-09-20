@@ -81,7 +81,8 @@ enum crt_switch_type
    CRT_SWITCH_31KHZ,
    CRT_SWITCH_32_120,
    CRT_SWITCH_INI,
-   CRT_SWITCH_EDID
+   CRT_SWITCH_EDID,
+   CRT_SWITCH_LCD
 };
 
 enum video_sdl_display_server_mode

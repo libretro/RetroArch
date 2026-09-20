@@ -199,6 +199,13 @@ static void crt_apply_menu_preset(videocrt_switch_t *p_switch,
          modeline_set_monitor(p_switch->gen, "edid");
          RARCH_LOG("[CRT] CRT mode: %d - edid.\n", crt_mode);
          break;
+      case 6:
+         /* The panel's own line count is kept and only the rate
+          * moves; the band it may move within is seeded from the
+          * EDID once the display server is bound */
+         modeline_set_monitor(p_switch->gen, "lcd");
+         RARCH_LOG("[CRT] CRT mode: %d - lcd.\n", crt_mode);
+         break;
       default:
          break;
    }
@@ -403,6 +410,36 @@ static bool crt_engine_init(videocrt_switch_t *p_switch,
             }
             else
                RARCH_WARN("[CRT] The display server could not read the display's EDID; the edid preset falls back to generic_15.\n");
+         }
+         else if (crt_mode == CRT_SWITCH_LCD
+               && !strcmp(gen->lcd_range, "auto"))
+         {
+            /* Without a band the lcd preset takes the desktop rate
+             * plus or minus one, which switches nothing. The band the
+             * display states is the one it will accept. */
+            video_edid_info_t *info = gen->edid_len
+               ? (video_edid_info_t*)calloc(1, sizeof(*info)) : NULL;
+            bool seeded = false;
+            if (info)
+            {
+               if (     modeline_edid_parse(gen->edid, gen->edid_len, info)
+                     && info->has_range
+                     && info->vfreq_max > info->vfreq_min)
+               {
+                  snprintf(gen->lcd_range, sizeof(gen->lcd_range), "%u-%u",
+                        info->vfreq_min, info->vfreq_max);
+                  /* The preset filled its range from the old band
+                   * when the monitor was set; it has to be filled
+                   * again from this one */
+                  modeline_set_monitor(gen, "lcd");
+                  RARCH_LOG("[CRT] Refresh band %s Hz, from the display's EDID.\n",
+                        gen->lcd_range);
+                  seeded = true;
+               }
+               free(info);
+            }
+            if (!seeded)
+               RARCH_WARN("[CRT] The display states no refresh band; the lcd preset holds the desktop rate. Set lcd_range in switchres.ini to widen it.\n");
          }
       }
 

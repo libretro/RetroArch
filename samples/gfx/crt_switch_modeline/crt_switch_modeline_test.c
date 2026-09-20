@@ -184,6 +184,37 @@ static bool srv_set(void *data, video_modeline_t *mode)
    return srv_set_ok;
 }
 
+/* One desktop mode, the way a real server enumerates. The lcd preset
+ * derives its line count from it, so without one that path cannot be
+ * reached at all. */
+static bool srv_have_desktop;
+
+static int srv_enum(void *data, video_modeline_t *modes, int max)
+{
+   (void)data;
+   if (!srv_have_desktop || max < 1)
+      return 0;
+   memset(&modes[0], 0, sizeof(modes[0]));
+   modes[0].pclock  = 148500000;
+   modes[0].vfreq   = 60.0;
+   modes[0].hfreq   = 67500.0;
+   modes[0].width   = 1920;
+   modes[0].height  = 1080;
+   modes[0].refresh = 60;
+   modes[0].hactive = 1920;
+   modes[0].hbegin  = 2008;
+   modes[0].hend    = 2052;
+   modes[0].htotal  = 2200;
+   modes[0].vactive = 1080;
+   modes[0].vbegin  = 1084;
+   modes[0].vend    = 1089;
+   modes[0].vtotal  = 1125;
+   modes[0].hsync   = 1;
+   modes[0].vsync   = 1;
+   modes[0].type    = MODELINE_DESKTOP;
+   return 1;
+}
+
 bool video_display_server_get_modeline_ops(struct video_modeline_ops *ops)
 {
    if (!srv_has_ops)
@@ -192,6 +223,7 @@ bool video_display_server_get_modeline_ops(struct video_modeline_ops *ops)
    ops->data = (void*)&srv_has_ops;
    ops->open = srv_open;
    ops->add  = srv_add;
+   ops->enum_modes = srv_enum;
    ops->set  = srv_set;
    ops->name = srv_ident;
    return true;
@@ -529,6 +561,43 @@ static void test_edid_preset_matches_content_refresh(void)
    ctx_ident     = "wl";
 }
 
+/* The other half of the same idea: keep the panel's own line count
+ * and move only the rate. The band it may move within is seeded from
+ * the display's EDID, because the preset's own default is the desktop
+ * rate plus or minus one, which switches nothing. */
+static void test_lcd_preset_keeps_native_lines(void)
+{
+   videocrt_switch_t sw;
+
+   printf("\n-- 70 Hz content, refresh only, on a 1080p panel --\n");
+   memset(&sw, 0, sizeof(sw));
+   srv_has_ops      = true;
+   srv_set_ok       = true;
+   srv_have_edid    = true;
+   srv_have_desktop = true;
+   srv_ident        = "x11";
+   ctx_ident        = "x11";
+   log_reset();
+   srv_sets = 0;
+   memset(&srv_last_set, 0, sizeof(srv_last_set));
+
+   crt_switch_res_core(&sw, 640, 640, 400, 70.086f, false,
+         CRT_SWITCH_LCD, 0, 0, 0, false, 0, false, ASPECT_RATIO_CORE, 0);
+
+   check("the refresh band came off the EDID",
+         log_hits("Refresh band 50-75 Hz") >= 1);
+   check("a mode was applied", srv_sets > 0);
+   check("at the content's rate",
+         srv_last_set.vfreq > 69.5 && srv_last_set.vfreq < 70.5);
+   check("keeping the panel's line count",
+         srv_last_set.vactive == 1080);
+
+   crt_destroy_modes(&sw);
+   srv_have_edid    = false;
+   srv_have_desktop = false;
+   ctx_ident        = "wl";
+}
+
 static void test_failing_set_still_reports(void)
 {
    videocrt_switch_t sw;
@@ -617,6 +686,7 @@ int main(int argc, char **argv)
    test_context_lines_are_said_once();
    test_rebind_after_display_server_rebuild();
    test_edid_preset_matches_content_refresh();
+   test_lcd_preset_keeps_native_lines();
    test_failing_set_still_reports();
    test_edid_hint_names_the_selected_head();
 
