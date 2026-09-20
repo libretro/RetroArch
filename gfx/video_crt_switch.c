@@ -64,11 +64,6 @@ static char content_dir[DIR_MAX_LENGTH];
 static char current_content_name[256];
 static char content_name[256];
 
-#if defined(HAVE_VIDEOCORE) /* Pi VIDEOCORE keeps its own tvservice path */
-#include <interface/vmcs_host/vc_vchi_gencmd.h>
-static void crt_rpi_switch(videocrt_switch_t *p_switch,int width, int height, float hz, int xoffset, int native_width);
-#endif
-
 static bool crt_check_for_changes(videocrt_switch_t *p_switch)
 {
    if (   (p_switch->ra_core_height != p_switch->ra_tmp_height)
@@ -149,7 +144,6 @@ static void crt_switch_set_aspect(
       patched_height           = height;
    }
 
-#if !defined(HAVE_VIDEOCORE)
    if (p_switch->gen)
    {
       if ((int)srm_width >= p_switch->gen->super_width && !srm_isstretched)
@@ -157,7 +151,6 @@ static void crt_switch_set_aspect(
       else if (srm_isstretched && srm_width > 0 )
          RARCH_LOG("[CRT] Resolution is stretched. Fractal scaling @ X:%f Y:%f.\n", srm_xscale, srm_yscale);
    }
-#endif
 
    scaled_width  = (int)floor(patched_width  * srm_xscale + 0.5f);
    scaled_height = (int)floor(patched_height * srm_yscale + 0.5f);
@@ -167,7 +160,6 @@ static void crt_switch_set_aspect(
          config_get_ptr()->uints.video_aspect_ratio_idx);
 }
 
-#if !defined(HAVE_VIDEOCORE)
 /* After a mode is on the wire the runloop observes the new timing:
  * the field rate, and the scanline / auto frame delay calibrations
  * that depended on the previous vtotal. */
@@ -224,12 +216,28 @@ static void crt_apply_menu_preset(videocrt_switch_t *p_switch,
  * engine's default lock on modes without a known timing would leave
  * it nothing but the desktop. That choice unlocks them; every other
  * path keeps the ini-controlled default, which protects a 15 kHz CRT
- * from a stock driver's VESA timings. */
+ * from a stock driver's VESA timings.
+ *
+ * The VideoCore firmware takes its timing as hdmi_timings, which has
+ * no doublescan, and drives an HDMI link whose pixel clock cannot go
+ * as low as a native 15 kHz width needs; the mode is widened to a
+ * 1920 super resolution unless the user picked a width of their own,
+ * as that path always did. */
 static void crt_apply_server_policy(videocrt_switch_t *p_switch)
 {
    settings_t *settings = config_get_ptr();
    if (!p_switch->gen)
       return;
+   if (string_is_equal(p_switch->ops.name, "videocore"))
+   {
+      p_switch->gen->doublescan = 0;
+      if (!p_switch->gen->user_mode.width)
+      {
+         RARCH_LOG("[CRT] VideoCore: 1920 super resolution.\n");
+         modeline_set_user_mode(p_switch->gen, 1920, 0, 0);
+         p_switch->gen->super_width = 1920;
+      }
+   }
    if (string_is_equal(p_switch->ops.name, "sdl")
          && settings->uints.video_sdl_display_server == VIDEO_SDL_DISPLAY_SERVER_ALWAYS
          && p_switch->gen->lock_system_modes)
@@ -551,9 +559,7 @@ static void switch_res_crt(
       command_event(CMD_EVENT_VIDEO_APPLY_STATE_CHANGES, NULL);
    }
 }
-#endif
 
-#if !defined(HAVE_VIDEOCORE)
 bool crt_switch_write_edid(char *s, size_t len)
 {
    uint8_t block[MODELINE_EDID_SIZE];
@@ -609,13 +615,6 @@ bool crt_switch_write_edid(char *s, size_t len)
    modeline_gen_free(gen);
    return ok;
 }
-#else
-bool crt_switch_write_edid(char *s, size_t len)
-{
-   (void)s; (void)len;
-   return false;
-}
-#endif
 
 void crt_destroy_modes(videocrt_switch_t *p_switch)
 {
@@ -682,10 +681,6 @@ void crt_switch_res_core(
       {
          RARCH_LOG("[CRT] Requested resolution: %dx%d@%f, orientation: %s.\n",
                   native_width, height, hz, rotated? "rotated" : "normal");
-#if defined(HAVE_VIDEOCORE)
-         crt_rpi_switch(p_switch, width, height, hz, 0, native_width);
-         video_monitor_set_refresh_rate(p_switch->sr_core_hz);
-#else
          if (p_switch->hh_core)
          {
             int corrected_width  = 320;
@@ -700,7 +695,6 @@ void crt_switch_res_core(
             switch_res_crt(p_switch, p_switch->ra_core_width,
                   p_switch->ra_core_height, crt_mode,
                   native_width, monitor_index-1, super_width);
-#endif
          crt_store_temp_changes(p_switch);
       }
 
@@ -738,7 +732,6 @@ static char *get_game_name(char *full_path)
    return rom_filename;
 }
 
-#if !defined(HAVE_VIDEOCORE)
 static void crt_load_overlay(videocrt_switch_t *p_switch,
       const char *config_directory, const char *name, const char *what)
 {
@@ -757,7 +750,6 @@ static void crt_load_overlay(videocrt_switch_t *p_switch,
    modeline_parse_options(p_switch->gen);
    ini_overrides_loaded = true;
 }
-#endif
 
 static void crt_adjust_ini(videocrt_switch_t *p_switch)
 {
@@ -767,7 +759,6 @@ static void crt_adjust_ini(videocrt_switch_t *p_switch)
 
    RARCH_LOG("[CRT] Game info \"%s\".\n", rom_filename);
 
-#if !defined(HAVE_VIDEOCORE)
    if (!p_switch->active || !p_switch->gen)
       return;
 
@@ -802,136 +793,4 @@ static void crt_adjust_ini(videocrt_switch_t *p_switch)
       crt_load_overlay(p_switch, config_directory, content_name, "game");
       crt_apply_server_policy(p_switch);
    }
-#endif
 }
-
-/* only used for RPi3 */
-#if defined(HAVE_VIDEOCORE)
-static void crt_rpi_switch(videocrt_switch_t *p_switch,
-      int width, int height, float hz,
-      int xoffset, int native_width)
-{
-   int w;
-   char buffer[1024];
-   VCHI_INSTANCE_T vchi_instance;
-   VCHI_CONNECTION_T *vchi_connection  = NULL;
-   static char output1[250]            = {0};
-   static char output2[250]            = {0};
-   static char set_hdmi[250]           = {0};
-   static char set_hdmi_timing[250]    = {0};
-   int i                               = 0;
-   int hfp                             = 0;
-   int hsp                             = 0;
-   int hbp                             = 0;
-   int vfp                             = 0;
-   int vsp                             = 0;
-   int vbp                             = 0;
-   int hmax                            = 0;
-   int vmax                            = 0;
-   int pdefault                        = 8;
-   int pwidth                          = 0;
-   int ip_flag                         = 0;
-   float roundw                        = 0.0f;
-   float roundh                        = 0.0f;
-   float pixel_clock                   = 0.0f;
-   int xscale                          = 1;
-   int yscale                          = 1;
-
-   if (height > 300)
-      height /= 2;
-
-   /* set core refresh from hz */
-   video_monitor_set_refresh_rate(hz);
-
-   crt_switch_set_aspect(p_switch, width,
-      height, width, height,
-      (float)1, (float)1, false);
-
-   w = width;
-   while (w < 1920)
-      w = w+width;
-
-   if (w > 2000)
-      w = w - width;
-
-   width = w;
-
-   crt_aspect_ratio_switch(p_switch, width, height, width, height,
-         config_get_ptr()->uints.video_aspect_ratio_idx);
-
-   /* following code is the mode line generator */
-   hfp      = ((width * 0.044f) + (width / 112));
-   hbp      = ((width * 0.172f) + (width /64));
-
-   hsp      = (width * 0.117f);
-
-   if (height < 241)
-      vmax = 261;
-   if (height < 241 && hz > 56 && hz < 58)
-      vmax = 280;
-   if (height < 241 && hz < 55)
-      vmax = 313;
-   if (height > 250 && height < 260 && hz > 54)
-      vmax = 296;
-   if (height > 250 && height < 260 && hz > 52 && hz < 54)
-      vmax = 285;
-   if (height > 250 && height < 260 && hz < 52)
-      vmax = 313;
-   if (height > 260 && height < 300)
-      vmax = 318;
-
-   if (height > 400 && hz > 56)
-      vmax = 533;
-   if (height > 520 && hz < 57)
-      vmax = 580;
-
-   if (height > 300 && hz < 56)
-      vmax = 615;
-   if (height > 500 && hz < 56)
-      vmax = 624;
-   if (height > 300)
-      pdefault = pdefault * 2;
-
-   vfp = (height + ((vmax - height) / 2) - pdefault) - height;
-
-   if (height < 300)
-      vsp = vfp + 3; /* needs to be 3 for progressive */
-   if (height > 300)
-      vsp = vfp + 6; /* needs to be 6 for interlaced */
-
-   vsp  = 3;
-   vbp  = (vmax - height) - vsp - vfp;
-   hmax = width + hfp + hsp + hbp;
-
-   if (height < 300)
-      pixel_clock = (hmax * vmax * hz);
-
-   if (height > 300)
-   {
-      pixel_clock = (hmax * vmax * (hz/2)) / 2;
-      ip_flag     = 1;
-   }
-
-   /* above code is the modeline generator */
-   snprintf(set_hdmi_timing, sizeof(set_hdmi_timing),
-         "hdmi_timings %d 1 %d %d %d %d 1 %d %d %d 0 0 0 %f %d %f 1 ",
-         width, hfp, hsp, hbp, height, vfp,vsp, vbp,
-         hz, ip_flag, pixel_clock);
-
-   vcos_init();
-   vchi_initialise(&vchi_instance);
-   vchi_connect(NULL, 0, vchi_instance);
-   vc_vchi_gencmd_init(vchi_instance, &vchi_connection, 1);
-   vc_gencmd(buffer, sizeof(buffer), set_hdmi_timing);
-   vc_gencmd_stop();
-   vchi_disconnect(vchi_instance);
-   snprintf(output1,  sizeof(output1),
-         "tvservice -e \"DMT 87\" > /dev/null");
-   system(output1);
-   snprintf(output2,  sizeof(output2),
-         "fbset -g %d %d %d %d 24 > /dev/null",
-         width, height, width, height);
-   system(output2);
-   video_driver_reinit(DRIVER_VIDEO_MASK);
-}
-#endif

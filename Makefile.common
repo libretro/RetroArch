@@ -1876,6 +1876,10 @@ ifeq ($(HAVE_DISPMANX), 1)
    HAVE_VIDEOCORE = 1
 endif
 
+ifeq ($(HAVE_VIDEOCORE), 1)
+   OBJ += gfx/display_servers/dispserv_videocore.o
+endif
+
 ifeq ($(HAVE_SUNXI), 1)
    OBJ += gfx/drivers/sunxi_gfx.o \
           gfx/include/pixman/pixman-arm-neon-asm.o

@@ -360,6 +360,10 @@ VIDEO CONTEXT
 #include "../gfx/display_servers/dispserv_kms.c"
 #endif
 
+#if defined(HAVE_VIDEOCORE)
+#include "../gfx/display_servers/dispserv_videocore.c"
+#endif
+
 #if defined(HAVE_EGL)
 #include "../gfx/common/egl_common.c"
 

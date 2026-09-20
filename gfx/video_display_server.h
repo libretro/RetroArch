@@ -238,6 +238,7 @@ extern const video_display_server_t dispserv_uwp;
 extern const video_display_server_t dispserv_x11;
 extern const video_display_server_t dispserv_wl;
 extern const video_display_server_t dispserv_kms;
+extern const video_display_server_t dispserv_videocore;
 extern const video_display_server_t dispserv_android;
 extern const video_display_server_t dispserv_apple;
 extern const video_display_server_t dispserv_sdl2;

@@ -433,6 +433,8 @@ static void *gfx_ctx_vc_init(void *video_driver)
       vc->vsync_callback_set = true;
    }
 
+   video_driver_display_type_set(RARCH_DISPLAY_VIDEOCORE);
+
    return vc;
 
 error:

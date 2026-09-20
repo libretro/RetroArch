@@ -452,6 +452,9 @@ static void *dispmanx_init(const video_info_t *video,
    dispmanx_set_scaling(video->smooth);
 
    dispmanx_blank_console(_dispvars);
+
+   video_driver_display_type_set(RARCH_DISPLAY_VIDEOCORE);
+
    return _dispvars;
 }
 

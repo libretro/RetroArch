@@ -146,7 +146,10 @@ enum rarch_display_type
    RARCH_DISPLAY_WIN32,
    RARCH_DISPLAY_WAYLAND,
    RARCH_DISPLAY_OSX,
-   RARCH_DISPLAY_KMS
+   RARCH_DISPLAY_KMS,
+   /* Legacy Raspberry Pi firmware stack: no window, modes through
+    * the firmware's gencmd interface */
+   RARCH_DISPLAY_VIDEOCORE
 };
 
 

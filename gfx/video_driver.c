@@ -1680,6 +1680,11 @@ void* video_display_server_init(enum rarch_display_type type)
          current_display_server = &dispserv_kms;
 #endif
          break;
+      case RARCH_DISPLAY_VIDEOCORE:
+#if defined(HAVE_VIDEOCORE)
+         current_display_server = &dispserv_videocore;
+#endif
+         break;
       case RARCH_DISPLAY_OSX:
 #if defined(__APPLE__)
          current_display_server = &dispserv_apple;
@@ -1728,7 +1733,7 @@ void video_display_server_destroy(void)
    if (current_display_server && (current_display_server != &dispserv_null))
       if (video_st->current_display_server_data)
       {
-#if defined(HAVE_MODELINE) && !defined(HAVE_VIDEOCORE)
+#if defined(HAVE_MODELINE)
          crt_switch_display_server_lost(&video_st->crt_switch_st,
                video_st->current_display_server_data);
 #endif
