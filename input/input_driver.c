@@ -381,8 +381,10 @@ input_device_driver_t *joypad_drivers[] = {
 #endif
 #if defined(HAVE_SDL3)
    &sdl3_joypad,
-#elif defined(HAVE_SDL) || defined(HAVE_SDL2)
-   &sdl_joypad,
+#elif defined(HAVE_SDL2)
+   &sdl2_joypad,
+#elif defined(HAVE_SDL)
+   &sdl1_joypad,
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
    &sdl_dingux_joypad,
