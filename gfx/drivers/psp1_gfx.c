@@ -106,6 +106,9 @@ typedef struct psp1_video
    /* VRAM left for the core frame, after the display buffers and the
     * colour tables. */
    unsigned texture_size;
+   /* Source geometry the texture coordinates were built for,
+    * (width << 16) | height. */
+   unsigned tex_geom;
    bool vsync;
    bool rgb32;
    /* Cleared from interrupt context by psp_on_vblank(). */
@@ -554,7 +557,12 @@ static bool psp_frame(void *data, const void *frame,
    if (psp->should_resize)
       psp_update_viewport(psp);
 
-   psp_set_tex_coords(psp->frame_coords, width, height);
+   /* frame_coords is uncached, so every store here goes to memory. */
+   if (psp->tex_geom != ((width << 16) | height))
+   {
+      psp_set_tex_coords(psp->frame_coords, width, height);
+      psp->tex_geom = (width << 16) | height;
+   }
 
    sceGuStart(GU_DIRECT, psp->main_dList);
 
