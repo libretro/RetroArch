@@ -126,21 +126,23 @@ static void psp2_audio_mainloop(void *data)
       {
          read_pos      += AUDIO_OUT_COUNT;
          read_pos      &= AUDIO_BUFFER_SIZE_MASK;
-         /* Release: the period is free for the writer only after
-          * this store; the syscall below reads the old window, which
-          * the writer cannot touch until it sees the new index. */
-         retro_atomic_store_release_int(&psp->read_pos, read_pos);
       }
       else
          retro_atomic_fetch_add_size(&psp->underruns, 1);
-
-      retro_eventcount_notify(&psp->park);
 
       sceAudioOutOutput(psp->port,
             psp->buffer_u32
             + (cond ? AUDIO_SILENCE_OFFSET : read_pos_2));
 
       retro_atomic_fetch_add_size(&psp->consumed, AUDIO_OUT_COUNT);
+
+      /* Release only now: the call returns once the device has
+       * taken the window, so the period is the writer's from
+       * here and not before. */
+      if (!cond)
+         retro_atomic_store_release_int(&psp->read_pos, read_pos);
+
+      retro_eventcount_notify(&psp->park);
    }
 
    return;

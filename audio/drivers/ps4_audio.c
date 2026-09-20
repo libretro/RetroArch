@@ -124,21 +124,23 @@ static void ps4_audio_mainloop(void *data)
       {
          read_pos      += AUDIO_OUT_COUNT;
          read_pos      &= AUDIO_BUFFER_SIZE_MASK;
-         /* Release: the period is free for the writer only after
-          * this store; the syscall below reads the old window, which
-          * the writer cannot touch until it sees the new index. */
-         retro_atomic_store_release_int(&ps4->read_pos, read_pos);
       }
       else
          retro_atomic_fetch_add_size(&ps4->underruns, 1);
-
-      retro_eventcount_notify(&ps4->park);
 
       sceAudioOutOutput(ps4->port,
             ps4->buffer_u32
             + (cond ? AUDIO_SILENCE_OFFSET : read_pos_2));
 
       retro_atomic_fetch_add_size(&ps4->consumed, AUDIO_OUT_COUNT);
+
+      /* Release only now: the call returns once the device has
+       * taken the window, so the period is the writer's from
+       * here and not before. */
+      if (!cond)
+         retro_atomic_store_release_int(&ps4->read_pos, read_pos);
+
+      retro_eventcount_notify(&ps4->park);
    }
 
    return;
