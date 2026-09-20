@@ -449,6 +449,10 @@ struct input_overlay
    uint8_t *anim_2frame;
    uint8_t *anim_2frame_pressed;
    uint8_t *anim_2frame_cur;
+   /* Both frames of each two-frame APNG, composed once at load and
+    * laid out back to back (width * height pixels each), so a press
+    * is a copy rather than a decode. NULL for every other image. */
+   uint32_t **anim_2frame_pix;
 
    size_t num_images;
    size_t index;
