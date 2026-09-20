@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <retro_atomic.h>
+#include <features/features_cpu.h>
 #include <malloc.h>
 
 #include "../audio_driver.h"
@@ -54,10 +55,13 @@ typedef struct
     * than the DSP's. Accumulated in the callback, which owns all of
     * it, and published as one int in ppm.
     *
-    * The tick and not cpu_features_get_time_usec(): that is
-    * osGetTime() on this platform, which resolves in milliseconds -
-    * a hundred parts per million of quantisation on a ten second
-    * window, against a figure measured in single parts.
+    * cpu_features_get_perf_counter() and not
+    * cpu_features_get_time_usec(): the counter is svcGetSystemTick()
+    * here, the ARM11's own tick; the clock is osGetTime(), which
+    * resolves in milliseconds - a hundred parts per million of
+    * quantisation on a ten second window, against a figure measured
+    * in single parts. SYSCLOCK_ARM11 is the counter's scale, since
+    * features_cpu.h offers no frequency beside it.
     *
     * A measurement. Nothing acts on it. */
    uint64_t clk_pos;
@@ -79,7 +83,7 @@ typedef struct
  * own thread, which owns every field it touches here. */
 static void ctr_dsp_audio_clock_sample(ctr_dsp_audio_t *ctr, uint32_t frames)
 {
-   uint64_t tick = svcGetSystemTick();
+   uint64_t tick = (uint64_t)cpu_features_get_perf_counter();
    double   x, y, denom;
 
    ctr->clk_pos += frames;

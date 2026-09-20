@@ -27,6 +27,7 @@
 #endif
 
 #include <boolean.h>
+#include <features/features_cpu.h>
 #include <retro_inline.h>
 
 #include <defines/gx_defines.h>
@@ -69,7 +70,12 @@ typedef struct
     *
     * The fit itself is done in device_clock_ppm(), on the frontend's
     * thread. This callback is a DMA interrupt, and floating point
-    * there is not a thing to be doing. */
+    * there is not a thing to be doing.
+    *
+    * clk_tb is the PPC timebase, which is what
+    * cpu_features_get_perf_counter() reads here - a counter, not a
+    * clock. ticks_to_microsecs() is its scale; features_cpu.h offers
+    * the counter and no frequency beside it. */
    volatile uint32_t clk_pos;
    volatile uint32_t clk_tb;
    volatile uint32_t clk_seq;
@@ -125,7 +131,7 @@ static void gx_audio_dma_callback(void)
     * sequence so a reader can tell a torn one. */
    wa->clk_seq++;
    wa->clk_pos = wa->consumed;
-   wa->clk_tb  = (uint32_t)gettime();
+   wa->clk_tb  = (uint32_t)cpu_features_get_perf_counter();
    wa->clk_seq++;
    OSSignalCond(wa->dma_cond);
 }
