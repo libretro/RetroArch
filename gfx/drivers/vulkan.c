@@ -3930,8 +3930,7 @@ static void vulkan_destroy_descriptor_manager(
    {
       struct vk_descriptor_pool *next = node->next;
 
-      vkFreeDescriptorSets(device, node->pool,
-            VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS, node->sets);
+      /* Destroying the pool releases every set allocated from it. */
       vkDestroyDescriptorPool(device, node->pool, NULL);
 
       free(node);
@@ -5055,6 +5054,12 @@ static void vulkan_deinit_command_buffers(vk_t *vk)
 
       vkDestroyCommandPool(vk->context->device,
             vk->swapchain[i].cmd_pool, NULL);
+
+      /* Cleared, like the descriptor managers and the buffer chains,
+       * so a pass over a shorter swapchain finds nothing to destroy
+       * a second time. */
+      vk->swapchain[i].cmd      = VK_NULL_HANDLE;
+      vk->swapchain[i].cmd_pool = VK_NULL_HANDLE;
    }
 }
 
@@ -5757,12 +5762,20 @@ static void vulkan_free(void *data)
       vulkan_deferred_textures_flush(vk);
       vulkan_deferred_cmds_flush(vk);
       vulkan_stream_states_flush(vk);
+
+      /* Innermost first: a command buffer references the descriptor
+       * sets and the pipelines it was recorded with, and a set
+       * references the layout it was allocated from, so the command
+       * pools go before the descriptor pools, and both before the
+       * pipelines that own the set layout. A driver that keeps its
+       * own back references along that chain - MoltenVK does - walks
+       * them as each pool is destroyed. */
+      vulkan_deinit_command_buffers(vk);
+      vulkan_deinit_descriptor_pool(vk);
       vulkan_deinit_pipelines(vk);
       vulkan_deinit_framebuffers(vk);
-      vulkan_deinit_descriptor_pool(vk);
       vulkan_deinit_textures(vk);
       vulkan_deinit_buffers(vk);
-      vulkan_deinit_command_buffers(vk);
 
       /* No need to init this since textures are create on-demand. */
       vulkan_deinit_menu(vk);
@@ -6414,12 +6427,13 @@ static void vulkan_check_swapchain(vk_t *vk)
     * list. */
    vulkan_deferred_textures_flush(vk);
    vulkan_deferred_cmds_flush(vk);
+   /* Retired in the same order as vulkan_free(). */
+   vulkan_deinit_command_buffers(vk);
+   vulkan_deinit_descriptor_pool(vk);
    vulkan_deinit_pipelines(vk);
    vulkan_deinit_framebuffers(vk);
-   vulkan_deinit_descriptor_pool(vk);
    vulkan_deinit_textures(vk);
    vulkan_deinit_buffers(vk);
-   vulkan_deinit_command_buffers(vk);
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
       vulkan_deinit_hdr_readback_render_pass(vk);
