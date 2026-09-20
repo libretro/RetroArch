@@ -63,6 +63,9 @@ typedef struct
     * lowers it at once. */
    retro_atomic_size_t writable_cached;
    retro_atomic_size_t sink_frames_cached;
+   /* Times the server ran out of audio for this stream, from its own
+    * underflow callback. One atomic add there, read by the frontend. */
+   retro_atomic_size_t underruns;
 } pa_t;
 
 /* A note for the eventcount census: this driver stays off it, on
@@ -231,17 +234,17 @@ static void pulse_stream_latency_update_cb(pa_stream *s, void *data)
    pa_threaded_mainloop_signal(pa->mainloop, 0);
 }
 
+/* The server telling us this stream ran dry. Counted, not logged: it
+ * arrives on the mainloop's thread while audio is playing, which is
+ * the one place a log line costs what it is reporting on. */
 static void pulse_underrun_update_cb(pa_stream *s, void *data)
 {
-#if 0
    pa_t *pa = (pa_t*)data;
 
    (void)s;
 
-   RARCH_LOG("[PulseAudio] Underrun (Buffer: %u, Writable size: %u).\n",
-         (unsigned)pa->buffer_size,
-         (unsigned)pa_stream_writable_size(pa->stream));
-#endif
+   if (pa)
+      retro_atomic_fetch_add_size(&pa->underruns, 1);
 }
 
 static void pulse_buffer_attr_cb(pa_stream *s, void *data)
@@ -299,6 +302,7 @@ static void *pulse_init(const char *device, unsigned rate,
       return NULL;
    retro_atomic_size_init(&pa->writable_cached, 0);
    retro_atomic_size_init(&pa->sink_frames_cached, 0);
+   retro_atomic_size_init(&pa->underruns, 0);
 
    memset(&spec, 0, sizeof(spec));
 
@@ -778,6 +782,12 @@ static void pulse_device_list_free(void *data, void *array_list_data)
    string_list_free(s);
 }
 
+static size_t pulse_underruns(void *data)
+{
+   pa_t *pa = (pa_t*)data;
+   return pa ? retro_atomic_load_acquire_size(&pa->underruns) : 0;
+}
+
 audio_driver_t audio_pulse = {
    pulse_init,
    pulse_write,
@@ -795,6 +805,6 @@ audio_driver_t audio_pulse = {
    NULL, /* write_raw */
    pulse_wait_writable,
    pulse_frames_consumed,
-   NULL, /* underruns */
+   pulse_underruns,
    pulse_layout
 };

@@ -137,6 +137,10 @@ typedef struct al
    /* Frames the source has finished playing, for the sink rate
     * estimate; see al_frames_consumed(). */
    retro_atomic_size_t consumed;
+   /* Times the source was found STOPPED with a write to make: it had
+    * played its queue out and the device went quiet for want of
+    * audio. INITIAL is the first write, which has not started it. */
+   retro_atomic_size_t underruns;
 } al_t;
 
 static void al_free(void *data)
@@ -610,7 +614,11 @@ static ssize_t al_write(void *data, const void *s, size_t len)
       ALint val;
       alGetSourcei(al->source, AL_SOURCE_STATE, &val);
       if (val != AL_PLAYING)
+      {
+         if (val == AL_STOPPED)
+            retro_atomic_fetch_add_size(&al->underruns, 1);
          alSourcePlay(al->source);
+      }
    }
 
    return _len;
@@ -790,6 +798,12 @@ static void al_device_list_free(void *u, void *slp)
       string_list_free(sl);
 }
 
+static size_t al_underruns(void *data)
+{
+   al_t *al = (al_t*)data;
+   return al ? retro_atomic_load_acquire_size(&al->underruns) : 0;
+}
+
 audio_driver_t audio_openal = {
    al_init,
    al_write,
@@ -807,7 +821,7 @@ audio_driver_t audio_openal = {
    NULL, /* write_raw */
    al_wait_writable,
    al_frames_consumed,
-   NULL, /* underruns */
+   al_underruns,
    al_layout,
    NULL, /* frames_consumed_fallback */
    al_device_clock_ppm

@@ -61,6 +61,10 @@ typedef struct pipewire_audio
     * way. Written only by the callback, read by the frontend through
     * pwire_frames_consumed(). */
    retro_atomic_size_t consumed;
+   /* Quanta the graph asked for and this driver had nothing at all
+    * for, so the whole buffer went out as silence. A short read is
+    * not one: that hands the graph fewer frames, not silence. */
+   retro_atomic_size_t underruns;
 
    /* The device clock, fitted from the time report the graph already
     * hands over.
@@ -661,8 +665,11 @@ static void pwire_playback_process_cb(void *data)
    avail = spa_ringbuffer_get_read_index(&audio->ring, &idx);
 
    if (avail <= 0)
+   {
       /* fill rest buffer with silence */
       memset(p, 0x00, n_bytes);
+      retro_atomic_fetch_add_size(&audio->underruns, 1);
+   }
    else
    {
       if (avail < (int32_t)n_bytes)
@@ -1263,6 +1270,12 @@ static size_t pwire_wait_writable(void *data, size_t len)
    return (size_t)avail;
 }
 
+static size_t pwire_underruns(void *data)
+{
+   pipewire_audio_t *audio = (pipewire_audio_t*)data;
+   return audio ? retro_atomic_load_acquire_size(&audio->underruns) : 0;
+}
+
 audio_driver_t audio_pipewire = {
       pwire_init,
       pwire_write,
@@ -1280,7 +1293,7 @@ audio_driver_t audio_pipewire = {
       NULL, /* write_raw */
       pwire_wait_writable,
       pwire_frames_consumed,
-      NULL, /* underruns */
+      pwire_underruns,
       pwire_layout,
       NULL, /* frames_consumed_fallback */
       pwire_device_clock_ppm

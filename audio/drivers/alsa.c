@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include <lists/string_list.h>
+#include <retro_atomic.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -422,6 +423,10 @@ typedef struct alsa
    /* Frames snd_pcm_writei() accepted since open; less what the device
     * still holds, it is what the device has consumed. */
    uint64_t frames_written;
+   /* Xruns the device reported on the write path: -EPIPE is the
+    * device having run out of audio, which -EINTR and -ESTRPIPE
+    * beside it are not. */
+   retro_atomic_size_t underruns;
    bool nonblock;
    /* Stopped, as the frontend sees it: alive() is its inverse. Held
     * says how: the stream paused with its buffer kept, or dropped,
@@ -573,6 +578,8 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
 
          if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
          {
+            if (frames == -EPIPE)
+               retro_atomic_fetch_add_size(&alsa->underruns, 1);
             if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
                return -1;
 
@@ -611,6 +618,8 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
 
          if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
          {
+            if (frames == -EPIPE)
+               retro_atomic_fetch_add_size(&alsa->underruns, 1);
             if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
                return -1;
             break;
@@ -990,6 +999,12 @@ static size_t alsa_frames_consumed(void *data)
    return (size_t)(alsa->frames_written - (uint64_t)delay);
 }
 
+static size_t alsa_underruns(void *data)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   return alsa ? retro_atomic_load_acquire_size(&alsa->underruns) : 0;
+}
+
 audio_driver_t audio_alsa = {
    alsa_init,
    alsa_write,
@@ -1007,7 +1022,7 @@ audio_driver_t audio_alsa = {
    NULL, /* write_raw */
    alsa_wait_writable,
    alsa_frames_consumed,
-   NULL, /* underruns */
+   alsa_underruns,
    alsa_layout,
    NULL, /* frames_consumed_fallback */
    alsa_device_clock_ppm

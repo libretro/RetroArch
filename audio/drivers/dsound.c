@@ -151,6 +151,9 @@ typedef struct dsound
     * 48 kHz it holds twelve hours, and the estimate treats a wrap as a
     * restart. */
    retro_atomic_int_t frames_played;
+   /* Blocks the mixer thread had room for and nothing to put in, so
+    * the device played the silence written into them instead. */
+   retro_atomic_size_t underruns;
    DWORD              last_read_ptr;
 } dsound_t;
 
@@ -382,6 +385,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
           * fill block with silence. */
          memset(region.chunk1, 0, region.size1);
          memset(region.chunk2, 0, region.size2);
+         retro_atomic_fetch_add_size(&ds->underruns, 1);
       }
       else
       {
@@ -982,6 +986,12 @@ static uint32_t dsound_layout(void *data)
    return ds ? ds->layout : AUDIO_LAYOUT_STEREO;
 }
 
+static size_t dsound_underruns(void *data)
+{
+   dsound_t *ds = (dsound_t*)data;
+   return ds ? retro_atomic_load_acquire_size(&ds->underruns) : 0;
+}
+
 audio_driver_t audio_dsound = {
    dsound_init,
    dsound_write,
@@ -999,6 +1009,6 @@ audio_driver_t audio_dsound = {
    NULL, /* write_raw */
    dsound_wait_writable,
    dsound_frames_consumed,
-   NULL, /* underruns */
+   dsound_underruns,
    dsound_layout
 };

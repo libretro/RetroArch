@@ -20,7 +20,10 @@ typedef void           ALvoid;
 #define AL_TRUE                  1
 #define AL_NO_ERROR              0
 #define AL_SOURCE_STATE          0x1010
+#define AL_INITIAL               0x1011
 #define AL_PLAYING               0x1012
+#define AL_PAUSED                0x1013
+#define AL_STOPPED               0x1014
 #define AL_LOOPING               0x1007
 #define AL_SAMPLE_OFFSET         0x1025
 #define AL_BUFFERS_PROCESSED     0x1016
