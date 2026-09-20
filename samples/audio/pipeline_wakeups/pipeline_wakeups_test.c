@@ -188,6 +188,10 @@ static bool                notify_per_publish;
  * are run: the first is the configuration people use, the second is the
  * one that can see the handshake at all. */
 static bool                dev_backpressure = true;
+/* Set to make the device refuse every further write, which is how the
+ * wrapper is made to leave its loop on its own rather than because the
+ * main thread tore it down. */
+static retro_atomic_int_t  dev_fail_now = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 /* Whether the frame's publishes arrive in a burst or spread across the
  * frame. A core's retro_run emits the whole frame's audio inside one
@@ -358,6 +362,9 @@ static ssize_t cdev_write(void *data, const void *buf, size_t len)
    size_t written = 0;
    int    laps    = 8;
    (void)data;
+
+   if (retro_atomic_load_acquire_int(&dev_fail_now))
+      return -1;
 
    note_write();
    tap_samples(buf, samples);
@@ -671,6 +678,8 @@ static void discard_parked(void *userdata)
 static void submit_frame(size_t per_frame, unsigned publishes);
 static void pause_boundary_run(void);
 static bool pause_boundary_mode;
+static void consumer_exit_run(void);
+static bool consumer_exit_mode;
 
 struct live_control_check
 {
@@ -988,6 +997,11 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
       pause_boundary_run();
       frames = 0;
    }
+   if (consumer_exit_mode)
+   {
+      consumer_exit_run();
+      frames = 0;
+   }
    clock_gettime(CLOCK_MONOTONIC, &next);
    for (i = 0; i < frames; i++)
    {
@@ -1196,6 +1210,57 @@ static void pause_boundary_case(void)
       fixture_failures++;
 }
 
+/* The consumer leaving its loop while the producer is parked in the
+ * wait for it. audio_thread_write() clears alive under thr->lock when
+ * the device refuses, and the loop reads alive under the same lock -
+ * but what the wrapper publishes on its way out, pipe_consumer_gone,
+ * is under no lock, and the parked producer reads it under none
+ * either. Nothing joins between the two, because the producer is
+ * waiting rather than tearing the driver down, so there is no edge to
+ * order them. That pair is what this lane exists to put in front of
+ * ThreadSanitizer. */
+static void consumer_exit_case(void)
+{
+   size_t   per_frame = (size_t)(CORE_RATE / FPS);
+   unsigned frame;
+   int64_t  began, spent;
+
+   /* Enough in flight that the producer has to wait on the consumer
+    * rather than sail through. */
+   for (frame = 0; frame < 16; frame++)
+      submit_frame(per_frame, 1);
+
+   /* From here the device refuses, so the wrapper clears alive and
+    * leaves its loop under its own steam. */
+   retro_atomic_store_release_int(&dev_fail_now, 1);
+
+   began = (int64_t)cpu_features_get_time_usec();
+   for (frame = 0; frame < 64; frame++)
+      submit_frame(per_frame, 1);
+   spent = (int64_t)cpu_features_get_time_usec() - began;
+
+   /* A consumer that has gone is one the producer must stop waiting
+    * for. Each wait is lap bounded, so sitting through even one full
+    * set of laps for every frame here would take far longer than this;
+    * the bound is loose on purpose, since it is the race and not the
+    * timing this lane is for. */
+   if (spent > 4000000)
+   {
+      fprintf(stderr,
+            "the producer waited %lld us on a consumer that had gone\n",
+            (long long)spent);
+      fixture_failures++;
+   }
+}
+
+static void consumer_exit_run(void)
+{
+   unsigned f0 = fixture_failures;
+   consumer_exit_case();
+   printf("consumer exit: the producer stops waiting on a departed consumer, %u failures\n",
+         fixture_failures - f0);
+}
+
 static void pause_boundary_run(void)
 {
    unsigned f0 = fixture_failures;
@@ -1227,6 +1292,7 @@ int main(int argc, char **argv)
    runloop_policy = getenv("RUNLOOP_POLICY") != NULL;
    auto_runloop = getenv("AUTO_RUNLOOP") != NULL;
    pause_boundary_mode = getenv("PAUSE_BOUNDARY") != NULL;
+   consumer_exit_mode  = getenv("CONSUMER_EXIT") != NULL;
    if (pause_boundary_mode && (!use_wrapper || !transport))
    {
       fprintf(stderr, "PAUSE_BOUNDARY requires WRAPPER and a TRANSPORT\n");

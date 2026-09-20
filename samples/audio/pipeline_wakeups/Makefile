@@ -143,7 +143,11 @@ clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
-.PHONY: clean all check check-transport check-wrapper check-tempo check-live check-wide check-layout check-speed-lpf check-runloop check-auto
+.PHONY: clean all check check-consumer-exit check-transport check-wrapper check-tempo check-live check-wide check-layout check-speed-lpf check-runloop check-auto
+
+check-consumer-exit: $(TARGET)
+	CONSUMER_EXIT=1 WRAPPER=1 TRANSPORT=dry ./$(TARGET) 0.25
+	CONSUMER_EXIT=1 WRAPPER=1 TRANSPORT=dry SOURCE_FLOAT=1 ./$(TARGET) 0.25
 
 check-pause: $(TARGET)
 	PAUSE_BOUNDARY=1 WRAPPER=1 TRANSPORT=stretch DEVICE_INT16=1 ./$(TARGET) 0.25
