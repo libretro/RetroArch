@@ -1825,8 +1825,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
                                             (float)_viewport.y,
                                             (float)_viewport.width,
                                             (float)_viewport.height);
-      /* Core content rotation.  Nonzero only for the no-shader source;
-       * the slang path pre-rotates via mvp_last_pass. */
+      /* Core content rotation.  Both sources arrive unrotated. */
       local.Rotation     = rotation & 3u;
 
       id<MTLRenderCommandEncoder> cre = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
@@ -4807,16 +4806,14 @@ static void metal_pull_cached_frame_cb(void *userdata,
       if (hdrOn)
       {
          const HDRUniforms *u  = _context.currentHDRUniforms;
-         unsigned          rot = 0;
+         /* Both sources hold unrotated content, so the composite rotates
+          * the sampling.  Under HDR the last slang pass always owns an RT
+          * (it is the composite's input), and a pass that owns an RT
+          * renders with the unrotated mvp_last_pass. */
+         unsigned          rot = retroarch_get_rotation() & 3;
          id<MTLTexture>    src = _frameView.shaderOutputTexture;
          if (!src)
-         {
-            /* Raw frame texture: unrotated content, so the composite
-             * rotates the sampling.  The slang last pass (src != nil)
-             * already rendered rotated via mvp_last_pass. */
             src = _frameView.frameTexture;
-            rot = retroarch_get_rotation() & 3;
-         }
          [_context hdrComposite:u fromSource:src rotation:rot];
       }
 

@@ -867,8 +867,7 @@ fragment float4 hdr_composite_fragment(
       return float4(0.0f, 0.0f, 0.0f, 0.0f);
 
    /* Rotate sampling coordinates for rotated content (TATE / vertical
-    * games).  Nonzero only on the core pass of the no-shader path: the
-    * slang path pre-rotates via mvp_last_pass and the menu pass is never
+    * games).  Nonzero only on the core pass; the menu pass is never
     * rotated.  The rect test above stays in screen space (the viewport
     * already has the rotated aspect); only the sampling rotates.
     * Mapping is corner-exact with what the SDR blit's rotated MVP
