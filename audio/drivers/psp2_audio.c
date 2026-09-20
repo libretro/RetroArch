@@ -73,12 +73,20 @@ typedef struct psp2_audio
 #define PSP2_AUDIO_WAIT_US   100000
 #define PSP2_AUDIO_WAIT_LAPS 8
 
+/* The only rate the main port opens at. */
+#define PSP2_AUDIO_RATE 48000
+
 /* Return port used */
-static int psp2_configure_audio(unsigned rate)
+static int psp2_configure_audio(unsigned rate, unsigned *new_rate)
 {
+   /* The main port refuses every other rate, which leaves the session
+    * with no audio at all; open at the one it takes and tell the
+    * frontend to resample to it. */
+   if (rate != PSP2_AUDIO_RATE)
+      *new_rate = PSP2_AUDIO_RATE;
    return sceAudioOutOpenPort(
          SCE_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
-         rate, SCE_AUDIO_OUT_MODE_STEREO);
+         PSP2_AUDIO_RATE, SCE_AUDIO_OUT_MODE_STEREO);
 }
 
 static void psp2_audio_mainloop(void *data)
@@ -127,25 +135,25 @@ static void *psp2_audio_init(const char *device,
    if (!psp)
       return NULL;
 
-   if ((port = psp2_configure_audio(rate)) < 0)
+   if ((port = psp2_configure_audio(rate, new_rate)) < 0)
    {
       free(psp);
       return NULL;
    }
 
    /* Cache aligned, not necessary but helpful. */
-   psp->buffer        = (uint32_t*)malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
-   memset(psp->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
-
-   psp->zeroBuffer    = (uint32_t*)malloc(AUDIO_OUT_COUNT   * sizeof(uint32_t));
-   memset(psp->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
+   psp->buffer        = (uint32_t*)calloc(AUDIO_BUFFER_SIZE, sizeof(uint32_t));
+   psp->zeroBuffer    = (uint32_t*)calloc(AUDIO_OUT_COUNT,   sizeof(uint32_t));
 
    retro_atomic_int_init(&psp->read_pos, 0);
    retro_atomic_int_init(&psp->write_pos, 0);
    psp->port          = port;
 
-   if (!retro_eventcount_init(&psp->park))
+   if (   !psp->buffer
+       || !psp->zeroBuffer
+       || !retro_eventcount_init(&psp->park))
    {
+      sceAudioOutReleasePort(port);
       free(psp->buffer);
       free(psp->zeroBuffer);
       free(psp);

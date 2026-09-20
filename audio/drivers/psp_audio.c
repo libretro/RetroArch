@@ -71,10 +71,23 @@ typedef struct psp_audio
 #define PSP_AUDIO_WAIT_US   100000
 #define PSP_AUDIO_WAIT_LAPS 8
 
+/* The rate the SRC always takes, for a setting it will not. */
+#define PSP_AUDIO_RATE_FALLBACK 48000
+
 /* Return port used */
-static int psp_configure_audio(unsigned rate)
+static int psp_configure_audio(unsigned rate, unsigned *new_rate)
 {
-   return sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
+   int port = sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
+   /* The SRC takes a fixed set of rates and refuses the rest outright,
+    * which leaves the session with no audio at all. Open at a rate it
+    * takes and tell the frontend to resample to that instead. */
+   if (port < 0)
+   {
+      if ((port = sceAudioSRCChReserve(AUDIO_OUT_COUNT,
+                  PSP_AUDIO_RATE_FALLBACK, 2)) >= 0)
+         *new_rate = PSP_AUDIO_RATE_FALLBACK;
+   }
+   return port;
 }
 
 static void psp_audio_mainloop(void *data)
@@ -123,25 +136,25 @@ static void *psp_audio_init(const char *device,
    if (!psp)
       return NULL;
 
-   if ((port = psp_configure_audio(rate)) < 0)
+   if ((port = psp_configure_audio(rate, new_rate)) < 0)
    {
       free(psp);
       return NULL;
    }
 
    /* Cache aligned, not necessary but helpful. */
-   psp->buffer        = (uint32_t*)malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
-   memset(psp->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
-
-   psp->zeroBuffer    = (uint32_t*)malloc(AUDIO_OUT_COUNT   * sizeof(uint32_t));
-   memset(psp->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
+   psp->buffer        = (uint32_t*)calloc(AUDIO_BUFFER_SIZE, sizeof(uint32_t));
+   psp->zeroBuffer    = (uint32_t*)calloc(AUDIO_OUT_COUNT,   sizeof(uint32_t));
 
    retro_atomic_int_init(&psp->read_pos, 0);
    retro_atomic_int_init(&psp->write_pos, 0);
    psp->port          = port;
 
-   if (!retro_eventcount_init(&psp->park))
+   if (   !psp->buffer
+       || !psp->zeroBuffer
+       || !retro_eventcount_init(&psp->park))
    {
+      sceAudioSRCChRelease();
       free(psp->buffer);
       free(psp->zeroBuffer);
       free(psp);

@@ -71,12 +71,20 @@ typedef struct ps4_audio
 #define PS4_AUDIO_WAIT_US   100000
 #define PS4_AUDIO_WAIT_LAPS 8
 
+/* The only rate sceAudioOut opens at. */
+#define PS4_AUDIO_RATE 48000
+
 /* Return port used */
-static int ps4_configure_audio(unsigned rate)
+static int ps4_configure_audio(unsigned rate, unsigned *new_rate)
 {
+   /* Every other rate is refused, which leaves the session with no
+    * audio at all; open at the one it takes and tell the frontend to
+    * resample to it. */
+   if (rate != PS4_AUDIO_RATE)
+      *new_rate = PS4_AUDIO_RATE;
    return sceAudioOutOpen(0xff,
          SCE_AUDIO_OUT_PORT_TYPE_MAIN, 0, AUDIO_OUT_COUNT,
-         rate, SCE_AUDIO_OUT_MODE_STEREO);
+         PS4_AUDIO_RATE, SCE_AUDIO_OUT_MODE_STEREO);
 }
 
 static void ps4_audio_mainloop(void *data)
@@ -125,27 +133,28 @@ static void *ps4_audio_init(const char *device,
    if (!ps4)
       return NULL;
 
-   if ((port = ps4_configure_audio(rate)) < 0)
+   /* The library is what opens the port, so it comes up first. */
+   sceAudioOutInit();
+
+   if ((port = ps4_configure_audio(rate, new_rate)) < 0)
    {
       free(ps4);
       return NULL;
    }
 
-   sceAudioOutInit();
-
    /* Cache aligned, not necessary but helpful. */
-   ps4->buffer        = (uint32_t*)malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
-   memset(ps4->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
-
-   ps4->zeroBuffer    = (uint32_t*)malloc(AUDIO_OUT_COUNT   * sizeof(uint32_t));
-   memset(ps4->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
+   ps4->buffer        = (uint32_t*)calloc(AUDIO_BUFFER_SIZE, sizeof(uint32_t));
+   ps4->zeroBuffer    = (uint32_t*)calloc(AUDIO_OUT_COUNT,   sizeof(uint32_t));
 
    retro_atomic_int_init(&ps4->read_pos, 0);
    retro_atomic_int_init(&ps4->write_pos, 0);
    ps4->port          = port;
 
-   if (!retro_eventcount_init(&ps4->park))
+   if (   !ps4->buffer
+       || !ps4->zeroBuffer
+       || !retro_eventcount_init(&ps4->park))
    {
+      sceAudioOutClose(port);
       free(ps4->buffer);
       free(ps4->zeroBuffer);
       free(ps4);
@@ -270,7 +279,22 @@ static bool ps4_audio_alive(void *data)
 
 static bool ps4_audio_stop(void *data)
 {
-   return false;
+   ps4_audio_t* ps4 = (ps4_audio_t*)data;
+
+   if (ps4)
+   {
+      retro_atomic_store_release_int(&ps4->running, 0);
+      /* A writer parked on the ring must see the flag drop; the
+       * worker may already be gone and notify nothing further. */
+      retro_eventcount_notify(&ps4->park);
+
+      if (ps4->worker_thread)
+      {
+         sthread_join(ps4->worker_thread);
+         ps4->worker_thread = NULL;
+      }
+   }
+   return true;
 }
 
 static bool ps4_audio_start(void *data, bool is_shutdown)
