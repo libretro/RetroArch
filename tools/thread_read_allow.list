@@ -44,3 +44,44 @@ gfx_widgets_frame|disp_get_ptr
 # dispatch is reading init-stable pointers.
 gfx_widgets_frame|video_state_get_ptr
 gfx_display_draw_text|video_state_get_ptr
+
+# The same batch and vtable arguments as the five pairs above, reached
+# from the frame roots themselves rather than through the menu and
+# widgets stack. All five touch gfx_display_flush_as - the batch_*
+# fields - and past it only blend_on, which is the same render-thread
+# bookkeeping, and dispctx, which changes at display-driver init.
+# Keyed on the reading function, so one line covers gl2_frame,
+# gl3_frame and vulkan_frame alike.
+gfx_display_blend_begin|disp_get_ptr
+gfx_display_blend_end|disp_get_ptr
+gfx_display_draw|disp_get_ptr
+gfx_display_scissor_begin|disp_get_ptr
+gfx_display_draw_text|disp_get_ptr
+
+# video_thread_hw_allowed() decides whether a hardware core may run
+# under the wrapper, from the core's context type and the configured
+# video driver's name. Both are settled before the video thread exists:
+# the context type is the core's, taken at content load, and changing
+# the driver goes through a reinit that joins and frees the thread. The
+# settings pointer itself is stable for the process (config_st is
+# assigned only at init and deinit).
+#
+# The one transient: the menu writes arrays.video_driver when the driver
+# is picked, before the reinit it queues, so a frame in that window can
+# compare against a name mid-copy. It is bounded - the comparison is
+# against a fixed literal in a fixed-size array that already held a
+# terminator, so it reads no further than the literal's length - and the
+# reinit that follows settles it. Latching instead is not free: the
+# macro that calls this is evaluated from inside gl2 and gl3 init,
+# before the active driver or a latch would be set.
+video_thread_hw_allowed|config_get_ptr
+video_thread_hw_allowed|video_state_get_ptr
+
+# A note on the counts: how many entries this audits depends on how wide
+# the build is, because an entry it cannot see in the binary is not a
+# finding. A default Linux build audits about 42 of them; adding Vulkan,
+# Qt, ffmpeg, HID and Bluetooth takes it to 59 and is what surfaced the
+# five gfx_display pairs and the two above. Windows, Apple, Android,
+# emscripten and console entries cannot be reached from a Linux build at
+# all - --list-unaudited names them. A narrow build reporting no
+# findings is not the same as a clean tree.
