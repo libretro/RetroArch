@@ -77,8 +77,11 @@ typedef struct psp2_audio
 
 /* The ring is what the latency setting asks for, so it is a whole
  * number of periods rather than a power of two and the wrap is a
- * compare. Four periods is the floor: the worker wants two held
- * before it hands one over, and the writer needs room past that. */
+ * compare. Four periods is the floor: the frontend delivers a video
+ * frame of audio at a time - 800 frames at 60 Hz and 48 kHz - and the
+ * ring has to hold one of those beside the period in flight without
+ * running dry. Three starves a quarter of the time, two almost
+ * always. */
 #define AUDIO_RING_MIN  (AUDIO_OUT_COUNT * 4u)
 #define AUDIO_RING_MAX  (AUDIO_OUT_COUNT * 64u)
 
@@ -148,8 +151,11 @@ static void psp2_audio_mainloop(void *data)
       uint16_t write_pos  = (uint16_t)
             retro_atomic_load_acquire_int(&psp->write_pos);
 
+      /* A period in hand is a period to play. Holding one back
+       * as a reserve only hands the device silence while the
+       * ring has audio in it. */
       cond                = RING_HELD(write_pos, read_pos, psp->ring)
-            < (AUDIO_OUT_COUNT * 2);
+            < AUDIO_OUT_COUNT;
 
       if (!cond)
       {

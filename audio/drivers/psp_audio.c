@@ -75,8 +75,11 @@ typedef struct psp_audio
 
 /* The ring is what the latency setting asks for, so it is a whole
  * number of periods rather than a power of two and the wrap is a
- * compare. Four periods is the floor: the worker wants two held
- * before it hands one over, and the writer needs room past that. */
+ * compare. Four periods is the floor: the frontend delivers a video
+ * frame of audio at a time - 800 frames at 60 Hz and 48 kHz - and the
+ * ring has to hold one of those beside the period in flight without
+ * running dry. Three starves a quarter of the time, two almost
+ * always. */
 #define AUDIO_RING_MIN  (AUDIO_OUT_COUNT * 4u)
 #define AUDIO_RING_MAX  (AUDIO_OUT_COUNT * 64u)
 
@@ -145,32 +148,38 @@ static void psp_audio_mainloop(void *data)
       bool cond           = false;
       uint16_t read_pos   = (uint16_t)
             retro_atomic_load_relaxed_int(&psp->read_pos);
+      uint16_t read_pos_2 = read_pos;
       uint16_t write_pos  = (uint16_t)
             retro_atomic_load_acquire_int(&psp->write_pos);
 
+      /* A period in hand is a period to play. Holding one back
+       * as a reserve only hands the device silence while the
+       * ring has audio in it. */
       cond                = RING_HELD(write_pos, read_pos, psp->ring)
-            < (AUDIO_OUT_COUNT * 2);
+            < AUDIO_OUT_COUNT;
 
       if (!cond)
       {
          read_pos      += AUDIO_OUT_COUNT;
          if (read_pos  >= psp->ring)
             read_pos    = 0;
-         /* Release: the period is free for the writer only after
-          * this store; the syscall below reads the old window, which
-          * the writer cannot touch until it sees the new index. */
-         retro_atomic_store_release_int(&psp->read_pos, read_pos);
       }
       else
          retro_atomic_fetch_add_size(&psp->underruns, 1);
 
-      retro_eventcount_notify(&psp->park);
-
       sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX,
             psp->buffer_u32
-            + (cond ? psp->ring : read_pos));
+            + (cond ? psp->ring : read_pos_2));
 
       retro_atomic_fetch_add_size(&psp->consumed, AUDIO_OUT_COUNT);
+
+      /* Release only now: the call returns once the device has
+       * taken the window, so the period is the writer's from
+       * here and not before. */
+      if (!cond)
+         retro_atomic_store_release_int(&psp->read_pos, read_pos);
+
+      retro_eventcount_notify(&psp->park);
    }
 
    return;

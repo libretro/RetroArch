@@ -21,11 +21,21 @@
 #include "../../../audio/audio_driver.h"
 #include "device_mock.h"
 
+/* A failed check releases the driver: a worker left running would
+ * hand the device windows while the next one is being measured. */
 #define CHECK(cond, what) \
-   do { if (!(cond)) { printf("FAIL  %s: %s\n", name, what); return 1; } } while (0)
+   do { if (!(cond)) { \
+      printf("FAIL  %s: %s\n", name, what); \
+      writer_pace_us = 0; \
+      if (handle) { d->free(handle); handle = NULL; } \
+      return 1; } } while (0)
 
-#define WRITE_FRAMES 384u
-#define RUN_PERIODS  600u
+#define WRITE_FRAMES   384u
+#define RUN_PERIODS    600u
+/* One video frame of audio at 60 Hz and 48 kHz, and the period the
+ * mock device takes over a window. */
+#define FRAME_DELIVERY 800u
+#define MOCK_PERIOD_US 1000u
 
 static const audio_driver_t *drv;
 static void                 *handle;
@@ -33,22 +43,24 @@ static retro_atomic_int_t    writer_go;
 static uint32_t              writer_seq;
 static unsigned long         writer_frames;
 static unsigned long         writer_refused;
+static unsigned              writer_pace_us;
 
 /* Frames carrying a running count, so the device can tell whether the
  * window it was handed continues the last one. */
 static void writer_thread(void *unused)
 {
-   uint32_t chunk[WRITE_FRAMES];
+   uint32_t chunk[FRAME_DELIVERY];
    (void)unused;
 
    while (retro_atomic_load_acquire_int(&writer_go))
    {
       unsigned i;
       ssize_t  wrote;
-      for (i = 0; i < WRITE_FRAMES; i++)
+      unsigned n = writer_pace_us ? FRAME_DELIVERY : WRITE_FRAMES;
+      for (i = 0; i < n; i++)
          chunk[i] = writer_seq + i;
 
-      wrote = drv->write(handle, chunk, WRITE_FRAMES * sizeof(uint32_t));
+      wrote = drv->write(handle, chunk, n * sizeof(uint32_t));
       if (wrote < 0)
          break;
       if (wrote == 0)
@@ -58,8 +70,10 @@ static void writer_thread(void *unused)
          writer_refused++;
          continue;
       }
-      writer_seq    += WRITE_FRAMES;
-      writer_frames += WRITE_FRAMES;
+      writer_seq    += n;
+      writer_frames += n;
+      if (writer_pace_us)
+         usleep(writer_pace_us);
    }
 }
 
@@ -76,10 +90,10 @@ static int check_latency(const audio_driver_t *d, const char *name)
    for (i = 0; i < sizeof(ms) / sizeof(ms[0]); i++)
    {
       unsigned new_rate = 0;
-      void    *h        = d->init(NULL, 48000, ms[i], &new_rate);
       size_t   frames, got_ms;
-      CHECK(h != NULL, "init returned NULL while sizing");
-      frames = d->buffer_size(h) / sizeof(uint32_t);
+      handle = d->init(NULL, 48000, ms[i], &new_rate);
+      CHECK(handle != NULL, "init returned NULL while sizing");
+      frames = d->buffer_size(handle) / sizeof(uint32_t);
       got_ms = frames * 1000u / 48000u;
       /* Never under the asked-for latency, and never wildly over:
        * the floor is four periods, the rounding one period. */
@@ -89,9 +103,64 @@ static int check_latency(const audio_driver_t *d, const char *name)
             "buffer_size overshot the latency asked for");
       CHECK(frames >= last, "buffer_size did not grow with the setting");
       last = frames;
-      d->free(h);
+      d->free(handle);
+      handle = NULL;
    }
    printf("ok    %-5s buffer_size tracks the latency setting\n", name);
+   return 0;
+}
+
+/* Starvation at the lowest setting, where the ring is at its floor
+ * and there is least room to absorb the frontend's delivery size. The
+ * writer is paced to the device rather than run flat out: a video
+ * frame of audio per frame, as the frontend delivers it, scaled to the
+ * mock's period so the check costs a second rather than ten.
+ *
+ * A worker that holds a period back as a reserve rather than playing
+ * it hands the device silence while the ring has audio in it, which
+ * at this size is a quarter of every period. */
+static int check_starvation(const audio_driver_t *d, const char *name)
+{
+   unsigned   new_rate = 0;
+   sthread_t *w;
+   unsigned   spins;
+   size_t     silent, periods;
+
+   drv            = d;
+   writer_seq     = 0;
+   writer_frames  = 0;
+   writer_refused = 0;
+   mock_device_reset();
+
+   handle = d->init(NULL, 48000, 8, &new_rate);
+   CHECK(handle != NULL, "init returned NULL");
+
+   writer_pace_us = FRAME_DELIVERY * MOCK_PERIOD_US / 512u;
+   retro_atomic_int_init(&writer_go, 1);
+   w = sthread_create(writer_thread, NULL);
+   CHECK(w != NULL, "could not start the writer");
+
+   for (spins = 0; spins < 20000u && MOCK_READ(mock_periods) < RUN_PERIODS;
+         spins++)
+      usleep(1000);
+
+   retro_atomic_store_release_int(&writer_go, 0);
+   sthread_join(w);
+   writer_pace_us = 0;
+
+   periods = MOCK_READ(mock_periods);
+   silent  = MOCK_READ(mock_silent);
+   CHECK(periods >= RUN_PERIODS, "the device never got its periods");
+   CHECK(MOCK_READ(mock_breaks) == 0,
+         "the device was handed a discontinuous window");
+   CHECK(silent * 20u <= periods,
+         "the device was starved with audio in the ring");
+
+   printf("ok    %-5s starves %lu of %lu periods at the floor\n",
+         name, (unsigned long)silent, (unsigned long)periods);
+
+   d->free(handle);
+   handle = NULL;
    return 0;
 }
 
@@ -157,8 +226,11 @@ int main(void)
 {
    int bad = 0;
    printf("psp_ring: the console drivers' SPSC ring against a device\n");
+   bad |= check_starvation(&audio_psp,   "psp");
    bad |= check_latency(&audio_psp,  "psp");
+   bad |= check_starvation(&audio_psp2,  "vita");
    bad |= check_latency(&audio_psp2, "vita");
+   bad |= check_starvation(&audio_ps4,   "ps4");
    bad |= check_latency(&audio_ps4,  "ps4");
    bad |= exercise(&audio_psp,  "psp");
    bad |= exercise(&audio_psp2, "vita");
