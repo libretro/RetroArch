@@ -325,6 +325,10 @@ static int16_t sdl2_input_state(
                   return sdl->mouse_b4;
                case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
                   return sdl->mouse_b5;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+                  return sdl->mouse_wr;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+                  return sdl->mouse_wl;
             }
          }
          break;
