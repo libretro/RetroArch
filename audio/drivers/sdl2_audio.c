@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
 #include <rthreads/retro_eventcount.h>
 #include <retro_spsc.h>
@@ -554,6 +555,11 @@ typedef struct sdl2_audio
     * size asked for; see sdl2_ring_room. */
    retro_spsc_t speaker_ring;
    size_t       speaker_ring_size;
+   /* Bytes the callback has handed the device, and the periods it had
+    * to zero-fill for want of audio. Both are bumped on the device's
+    * own thread and read by the frontend. */
+   retro_atomic_size_t consumed_bytes;
+   retro_atomic_size_t underruns;
    bool         speaker_ring_init;
    bool nonblock;
    bool is_paused;
@@ -569,8 +575,14 @@ static void sdl2_audio_playback_cb(void *data, Uint8 *stream, int len)
 #ifdef HAVE_THREADS
    retro_eventcount_notify(&sdl->park);
 #endif
+   /* Device time, silence included: the period elapsed either way. */
+   retro_atomic_fetch_add_size(&sdl->consumed_bytes, (size_t)len);
    /* If underrun, fill rest with silence. */
-   memset(stream + _len, 0, len - _len);
+   if (_len < (size_t)len)
+   {
+      retro_atomic_fetch_add_size(&sdl->underruns, 1);
+      memset(stream + _len, 0, (size_t)len - _len);
+   }
 }
 
 static void *sdl2_audio_list_new(void *u)
@@ -620,6 +632,10 @@ static void *sdl2_audio_init(const char *device,
    sdl = (sdl2_audio_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
+
+   /* Before the device can call back. */
+   retro_atomic_size_init(&sdl->consumed_bytes, 0);
+   retro_atomic_size_init(&sdl->underruns, 0);
 
    /* We have to buffer up some data ourselves, so we let SDL
     * carry approximately half of the latency.
@@ -875,7 +891,6 @@ static bool sdl2_audio_use_float(void *data)
    return SDL_AUDIO_ISFLOAT(sdl->device_spec.format) ? true : false;
 }
 
-/* TODO/FIXME - implement */
 static size_t sdl2_audio_write_avail(void *data)
 {
    sdl2_audio_t *sdl = (sdl2_audio_t*)data;
@@ -937,6 +952,33 @@ static size_t sdl2_audio_wait_writable(void *data, size_t len)
    return 0;
 }
 
+/* Frames the device has taken since the device was opened. The
+ * callback is the device asking for exactly one period, so what it
+ * asks for is device time - the same way coreaudio and the WASAPI
+ * pump count it. Bytes are counted on that path and turned into
+ * frames here, off it. */
+static size_t sdl2_audio_frames_consumed(void *data)
+{
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
+   size_t frame_bytes;
+
+   if (!sdl)
+      return 0;
+
+   frame_bytes = (size_t)sdl->device_spec.channels
+         * (SDL_AUDIO_BITSIZE(sdl->device_spec.format) / 8);
+   if (!frame_bytes)
+      return 0;
+
+   return retro_atomic_load_acquire_size(&sdl->consumed_bytes) / frame_bytes;
+}
+
+static size_t sdl2_audio_underruns(void *data)
+{
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
+   return sdl ? retro_atomic_load_acquire_size(&sdl->underruns) : 0;
+}
+
 static void sdl2_audio_list_free(void *u, void *slp)
 {
    struct string_list *sl = (struct string_list*)slp;
@@ -961,7 +1003,7 @@ audio_driver_t audio_sdl2 = {
    sdl2_audio_buffer_size,
    NULL, /* write_raw */
    sdl2_audio_wait_writable,
-   NULL, /* consumed */
-   NULL, /* underruns */
+   sdl2_audio_frames_consumed,
+   sdl2_audio_underruns,
    sdl2_audio_layout
 };
