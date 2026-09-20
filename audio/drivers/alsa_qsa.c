@@ -16,6 +16,12 @@
 
 #define ALSA_PCM_NEW_HW_PARAMS_API
 #define ALSA_PCM_NEW_SW_PARAMS_API
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <retro_atomic.h>
+
 #include <sys/asoundlib.h>
 #include <retro_math.h>
 
@@ -38,6 +44,12 @@ typedef struct alsa
    unsigned buf_size;
    unsigned buf_count;
    unsigned rate;
+   /* Times the device reported it had run out of audio. Counted where
+    * the status says so, on the write path, which is why it is counted
+    * and not said: a log line there costs part of the margin it is
+    * reporting on. The frontend shows it and logs the total once at
+    * teardown. */
+   retro_atomic_size_t underruns;
    bool nonblock;
    bool has_float;
    bool can_pause;
@@ -170,6 +182,7 @@ static void *alsa_qsa_init(const char *device,
       alsa->buffer[i] = alsa->buffer_chunk + i * alsa->buf_size;
 
    alsa->has_float = false;
+   retro_atomic_size_init(&alsa->underruns, 0);
    alsa->can_pause = true;
    RARCH_LOG("[ALSA QSA] Can pause: %s.\n",
          alsa->can_pause ? "yes" : "no");
@@ -206,7 +219,7 @@ static int check_pcm_status(void *data, int channel_type)
       }
       else if (status.status == SND_PCM_STATUS_UNDERRUN)
       {
-         RARCH_LOG("[ALSA QSA] check_pcm_status: SNDP_CM_STATUS_UNDERRUN.\n");
+         retro_atomic_fetch_add_size(&alsa->underruns, 1);
          if ((ret = snd_pcm_channel_prepare(alsa->pcm, channel_type)) < 0)
          {
             RARCH_ERR("[ALSA QSA] Invalid state detected for underrun on snd_pcm_channel_prepare: %s.\n",
@@ -422,6 +435,12 @@ static size_t alsa_qsa_buffer_size(void *data)
    return alsa->buf_size * alsa->buf_count;
 }
 
+static size_t alsa_qsa_underruns(void *data)
+{
+   alsa_qsa_t *alsa = (alsa_qsa_t*)data;
+   return alsa ? retro_atomic_load_acquire_size(&alsa->underruns) : 0;
+}
+
 audio_driver_t audio_alsa = {
    alsa_qsa_init,
    alsa_qsa_write,
@@ -436,5 +455,8 @@ audio_driver_t audio_alsa = {
    NULL,
    alsa_qsa_write_avail,
    alsa_qsa_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   NULL, /* wait_writable */
+   NULL, /* frames_consumed */
+   alsa_qsa_underruns
 };
