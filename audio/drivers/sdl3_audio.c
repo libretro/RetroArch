@@ -545,8 +545,8 @@ static size_t sdl3_audio_write_avail(void *data)
  * the device has been removed or has stopped moving data. */
 static size_t sdl3_audio_wait_writable(void *data, size_t len)
 {
-   sdl3_audio_t *sdl = (sdl3_audio_t*)data;
    size_t avail;
+   sdl3_audio_t *sdl = (sdl3_audio_t*)data;
    /* Each wait ends on a timeout; this ends the loop when the device
     * keeps moving data but never frees enough. */
    int laps = 8;
@@ -557,15 +557,16 @@ static size_t sdl3_audio_wait_writable(void *data, size_t len)
    for (;;)
    {
       if (SDL_GetAtomicInt(&sdl->device_removed))
-         return 0;
+         break;
       if (laps-- < 0)
-         return 0;
+         break;
       avail = sdl3_audio_write_avail(sdl);
       if (avail >= len)
          return avail;
       if (!sdl3_audio_wait_for_device(sdl))
-         return 0;
+         break;
    }
+   return 0;
 }
 
 /**

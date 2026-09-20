@@ -407,8 +407,8 @@ static size_t sdl1_audio_buffer_size(void *data)
  * or there is no thread to wait on. */
 static size_t sdl1_audio_wait_writable(void *data, size_t len)
 {
-   sdl1_audio_t *sdl = (sdl1_audio_t*)data;
    size_t avail;
+   sdl1_audio_t *sdl = (sdl1_audio_t*)data;
    /* Each wait ends on a timeout; this ends the loop when the device
     * keeps calling back but never frees enough. */
    int laps = 8;
@@ -422,7 +422,7 @@ static size_t sdl1_audio_wait_writable(void *data, size_t len)
       bool signalled;
 #endif
       if (laps-- < 0)
-         return 0;
+         break;
       avail = sdl1_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
       if (avail >= len)
          return avail;
@@ -439,11 +439,12 @@ static size_t sdl1_audio_wait_writable(void *data, size_t len)
                   key, SDL_AUDIO_STALL_TIMEOUT_US);
       }
       if (!signalled)
-         return 0;
+         break;
 #else
-      return 0;
+      break;
 #endif
    }
+   return 0;
 }
 
 audio_driver_t audio_sdl1 = {
