@@ -1575,13 +1575,13 @@ bool sthread_raise_current_priority(void)
    int lo  = sched_get_priority_min(SCHED_RR);
    int hi  = sched_get_priority_max(SCHED_RR);
    memset(&sp, 0, sizeof(sp));
-   if (lo < 0 || hi < lo)
-      return false;
-   sp.sched_priority = lo + (hi - lo) / 2;
-   return pthread_setschedparam(pthread_self(), SCHED_RR, &sp) == 0;
-#else
-   return false;
+   if (lo >= 0 && hi >= lo)
+   {
+      sp.sched_priority = lo + (hi - lo) / 2;
+      return pthread_setschedparam(pthread_self(), SCHED_RR, &sp) == 0;
+   }
 #endif
+   return false;
 }
 
 void sthread_setname(const char *name)
@@ -1849,14 +1849,15 @@ bool sthread_set_affinity(sthread_t *thread, uint64_t mask)
    && !defined(USE_PSP_THREADS) && !defined(USE_PS2_THREADS) && !defined(USE_PS3_THREADS) \
    && !defined(USE_SWITCH_THREADS) && !defined(USE_WIIU_THREADS) && !defined(USE_VITA_THREADS)
    cpu_set_t set;
-   if (!thread)
-      return false;
-   sthread_mask_to_set(mask, &set);
-   return pthread_setaffinity_np(thread->id, sizeof(set), &set) == 0;
+   if (thread)
+   {
+      sthread_mask_to_set(mask, &set);
+      return pthread_setaffinity_np(thread->id, sizeof(set), &set) == 0;
+   }
 #else
    (void)thread; (void)mask;
-   return false;
 #endif
+   return false;
 }
 
 bool sthread_set_current_affinity(uint64_t mask)
