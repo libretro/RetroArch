@@ -262,7 +262,16 @@ static void *sdl1_audio_init(const char *device,
 
    RARCH_DBG("[SDL audio] Initialized speaker sample queue with %u bytes.\n", bufsize);
 
+   /* SDL 1.2 opens the device with its thread already running and
+    * unpauses with a plain flag write, so the ring and the park set up
+    * above reach that thread with nothing ordering them. Its own lock,
+    * which the thread takes around every period, is the edge: a period
+    * that sees the device unpaused ran after this unlock. SDL2 does
+    * this itself; 1.2 does not, and the handhelds this driver serves
+    * are not x86. */
+   SDL_LockAudio();
    SDL_PauseAudio(false);
+   SDL_UnlockAudio();
 
    return sdl;
 }
