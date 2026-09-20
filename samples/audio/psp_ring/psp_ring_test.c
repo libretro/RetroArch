@@ -63,6 +63,38 @@ static void writer_thread(void *unused)
    }
 }
 
+/* buffer_size() is what the frontend reads the driver's latency off,
+ * and half of it is the rate control's setpoint. It has to track the
+ * setting rather than a constant, within the period the sizing
+ * rounds to and the floor it will not go under. */
+static int check_latency(const audio_driver_t *d, const char *name)
+{
+   static const unsigned ms[] = { 8, 16, 32, 64, 128, 256 };
+   unsigned i;
+   size_t   last = 0;
+
+   for (i = 0; i < sizeof(ms) / sizeof(ms[0]); i++)
+   {
+      unsigned new_rate = 0;
+      void    *h        = d->init(NULL, 48000, ms[i], &new_rate);
+      size_t   frames, got_ms;
+      CHECK(h != NULL, "init returned NULL while sizing");
+      frames = d->buffer_size(h) / sizeof(uint32_t);
+      got_ms = frames * 1000u / 48000u;
+      /* Never under the asked-for latency, and never wildly over:
+       * the floor is four periods, the rounding one period. */
+      CHECK(got_ms + 1 >= ms[i] || frames <= 512u * 5u,
+            "buffer_size came in under the latency asked for");
+      CHECK(frames <= (size_t)ms[i] * 48u + 512u * 5u,
+            "buffer_size overshot the latency asked for");
+      CHECK(frames >= last, "buffer_size did not grow with the setting");
+      last = frames;
+      d->free(h);
+   }
+   printf("ok    %-5s buffer_size tracks the latency setting\n", name);
+   return 0;
+}
+
 static int exercise(const audio_driver_t *d, const char *name)
 {
    unsigned   new_rate = 0;
@@ -125,6 +157,9 @@ int main(void)
 {
    int bad = 0;
    printf("psp_ring: the console drivers' SPSC ring against a device\n");
+   bad |= check_latency(&audio_psp,  "psp");
+   bad |= check_latency(&audio_psp2, "vita");
+   bad |= check_latency(&audio_ps4,  "ps4");
    bad |= exercise(&audio_psp,  "psp");
    bad |= exercise(&audio_psp2, "vita");
    bad |= exercise(&audio_ps4,  "ps4");
