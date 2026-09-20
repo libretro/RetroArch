@@ -1673,15 +1673,16 @@ static INLINE void android_input_poll_event_type_key(
       return;
    buf           = android_key_state[port];
 
-   /* Handle 'duplicate' inputs that correspond
-    * to the same RETROK_* key */
-   switch (keycode)
-   {
-      case AKEYCODE_DPAD_CENTER:
-         keysym = AKEYCODE_ENTER;
-      default:
-         break;
-   }
+   /* Handle 'duplicate' inputs that correspond to the same RETROK_*
+    * key. rarch_key_map_android can only map RETROK_RETURN to one
+    * keycode, so DPAD_CENTER is folded into ENTER - but only on the
+    * keyboard row, which is read through rarch_keysym_lut. Pad rows
+    * are read by raw keycode against joypad binds, and remotes/pads
+    * autoconfigure their OK/Center button as "23" (e.g. Amazon Fire
+    * TV Remote), so rewriting it there makes that bind dead. */
+   if (     port    == ANDROID_KEYBOARD_PORT
+         && keycode == AKEYCODE_DPAD_CENTER)
+      keysym = AKEYCODE_ENTER;
    /* Rows are MAX_KEYS bytes wide and readers bound their lookups at
     * LAST_KEYCODE (android_joypad_button_state). Keycodes arrive
     * straight from the platform and are not confined to that range:
