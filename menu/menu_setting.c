@@ -3738,19 +3738,14 @@ static size_t setting_get_string_representation_uint_menu_thumbnails(
       default:
       case 0:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
       case 1:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS), len);
-         break;
       case 2:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS), len);
-         break;
       case 3:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
-         break;
       case 4:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS), len);
-         break;
    }
 }
 

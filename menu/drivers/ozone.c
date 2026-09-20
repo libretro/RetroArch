@@ -9023,7 +9023,6 @@ static bool ozone_is_current_entry_settings(size_t current_selection)
                break;
             default:
                return true;
-               break;
          }
       }
    }

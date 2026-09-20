@@ -105,7 +105,6 @@ static size_t pwire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannel
       case SPA_AUDIO_FORMAT_F32_BE:
       case SPA_AUDIO_FORMAT_F32_LE:
          return 4 * nchannels;
-         break;
       default:
          RARCH_ERR("[PipeWire] Bad spa_audio_format %d.\n", fmt);
          break;

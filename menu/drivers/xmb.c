@@ -3196,7 +3196,6 @@ static void xmb_set_title(xmb_handle_t *xmb)
                   texture = xmb->textures.list[XMB_TEXTURE_FILE];
             }
             goto end;
-            break;
          }
 #ifdef HAVE_LIBRETRODB
       case MENU_ENUM_LABEL_EXPLORE_TAB:

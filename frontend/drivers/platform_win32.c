@@ -724,13 +724,10 @@ enum frontend_architecture frontend_win32_get_arch(void)
    {
       case PROCESSOR_ARCHITECTURE_AMD64:
          return FRONTEND_ARCH_X86_64;
-         break;
       case PROCESSOR_ARCHITECTURE_INTEL:
          return FRONTEND_ARCH_X86;
-         break;
       case PROCESSOR_ARCHITECTURE_ARM:
          return FRONTEND_ARCH_ARM;
-         break;
       default:
          break;
    }

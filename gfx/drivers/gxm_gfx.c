@@ -476,7 +476,6 @@ static int gxm_switch_video_mode(gxm_video_mode_t video_mode)
 
       default:
          return -1;
-         break;
    }
 
    clip_rect_x_max = video_mode_data.width;

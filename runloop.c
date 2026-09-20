@@ -4116,7 +4116,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   /* The frontend driver supports power status queries,
                    * but it still gave us bad information for whatever reason. */
                   return false;
-                  break;
             }
          }
          break;
