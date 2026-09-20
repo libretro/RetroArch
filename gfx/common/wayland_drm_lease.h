@@ -19,6 +19,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+struct wl_display;
+
 RETRO_BEGIN_DECLS
 
 /* A DRM connector leased from a Wayland compositor.
@@ -71,6 +73,13 @@ void wayland_drm_lease_release(void);
 
 /* The name of the leased connector ("DP-1"), or NULL. */
 const char *wayland_drm_lease_connector(void);
+
+/* Say what the compositor is willing to lease, on a connection the
+ * caller already has - the display server's, which is up on an
+ * ordinary Wayland session where no lease is taken. Nothing is
+ * leased and the connection is left as it was found; this only
+ * answers whether a CRT could be driven here at all. */
+void wayland_drm_lease_report(struct wl_display *dpy);
 
 /* Whether the compositor has taken the lease back, answered from
  * whatever has already arrived on the connection plus one

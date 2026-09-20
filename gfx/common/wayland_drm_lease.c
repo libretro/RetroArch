@@ -42,6 +42,7 @@ typedef struct
    int      picked;         /* index into conn[], -1 before the pick */
    bool     done;           /* the device finished advertising */
    bool     refused;        /* the compositor said no */
+   bool     borrowed;       /* the connection is someone else's */
    char     name[LEASE_MAX_CONNECTORS][64];
 } wl_lease_t;
 
@@ -49,7 +50,7 @@ static wl_lease_t wl_lease =
 {
    NULL, NULL, NULL, NULL,
    { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
-   -1, 0, -1, false, false, { { 0 } }
+   -1, 0, -1, false, false, false, { { 0 } }
 };
 
 /* ---- connector ---- */
@@ -221,7 +222,7 @@ static void lease_teardown(wl_lease_t *l)
    }
    if (l->registry)
       wl_registry_destroy(l->registry);
-   if (l->dpy)
+   if (l->dpy && !l->borrowed)
       wl_display_disconnect(l->dpy);
 
    /* The descriptor is the caller's reason for being here; closing it
@@ -232,6 +233,51 @@ static void lease_teardown(wl_lease_t *l)
    memset(l, 0, sizeof(*l));
    l->fd     = -1;
    l->picked = -1;
+}
+
+void wayland_drm_lease_report(struct wl_display *dpy)
+{
+   wl_lease_t l;
+   int i;
+   int offered = 0;
+
+   if (!dpy)
+      return;
+
+   memset(&l, 0, sizeof(l));
+   l.fd       = -1;
+   l.picked   = -1;
+   l.dpy      = dpy;
+   l.borrowed = true;
+
+   l.registry = wl_display_get_registry(dpy);
+   wl_registry_add_listener(l.registry, &registry_listener, &l);
+   wl_display_roundtrip(dpy);
+
+   if (!l.dev)
+   {
+      RARCH_LOG("[Lease] The compositor offers no DRM leases.\n");
+      lease_teardown(&l);
+      return;
+   }
+
+   /* the device's fd, connectors and done, then their own names */
+   wl_display_roundtrip(dpy);
+   wl_display_roundtrip(dpy);
+
+   for (i = 0; i < l.nconn; i++)
+   {
+      if (!l.conn[i])
+         continue;
+      offered++;
+      RARCH_LOG("[Lease] Connector \"%s\" is offered for DRM lease.\n",
+            l.name[i]);
+   }
+
+   if (offered < 1)
+      RARCH_LOG("[Lease] The compositor offers DRM leases, but no connector.\n");
+
+   lease_teardown(&l);
 }
 
 int wayland_drm_lease_acquire(int monitor_index)
