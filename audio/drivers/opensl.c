@@ -104,6 +104,9 @@ typedef struct sl_shared
     * and the ASIO callback count. Written only by the callback, read by
     * the frontend through sl_frames_consumed(). */
    retro_atomic_size_t consumed;
+   /* Callbacks that left the queue empty: the device has nothing to
+    * play next and goes quiet until the writer enqueues again. */
+   retro_atomic_size_t underruns;
    unsigned frames_per_block;
    bool park_ready;
 } sl_shared_t;
@@ -128,7 +131,8 @@ static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
    /* A player torn down, or replaced, since this was dispatched. */
    if (!retro_atomic_load_acquire_int(&sh->live) || bq != sh->bq)
       return;
-   retro_atomic_fetch_sub_int(&sh->buffered_blocks, 1);
+   if (retro_atomic_fetch_sub_int(&sh->buffered_blocks, 1) == 1)
+      retro_atomic_fetch_add_size(&sh->underruns, 1);
    /* A block the device has played: device time, whatever the writer
     * managed to supply. */
    retro_atomic_fetch_add_size(&sh->consumed, sh->frames_per_block);
@@ -579,6 +583,14 @@ static bool sl_use_float(void *data)
    return sl->use_float;
 }
 
+static size_t sl_underruns(void *data)
+{
+   sl_t *sl = (sl_t*)data;
+   if (!sl)
+      return 0;
+   return retro_atomic_load_acquire_size(&sl_shared.underruns);
+}
+
 audio_driver_t audio_opensl = {
    sl_init,
    sl_write,
@@ -595,5 +607,6 @@ audio_driver_t audio_opensl = {
    sl_buffer_size,
    NULL, /* write_raw */
    sl_wait_writable,
-   sl_frames_consumed
+   sl_frames_consumed,
+   sl_underruns
 };

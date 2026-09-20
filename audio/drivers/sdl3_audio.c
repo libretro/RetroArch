@@ -86,6 +86,11 @@ typedef struct sdl3_audio
     * reading of it, which is the same standing as the ALSA position
     * and unlike a real device clock. */
    retro_atomic_size_t consumed_frames;
+   /* Device iterations SDL asked this driver to top up and got
+    * nothing for. The get-callback is a wake, never a put, so an
+    * additional_amount still outstanding when it runs is what SDL is
+    * about to make up as silence. */
+   retro_atomic_size_t underruns;
 } sdl3_audio_t;
 
 /**
@@ -280,6 +285,10 @@ static void SDLCALL sdl3_audio_stream_cb(void *userdata,
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)userdata;
 
+   (void)total_amount;
+   if (additional_amount > 0)
+      retro_atomic_fetch_add_size(&sdl->underruns, 1);
+
    SDL_LockMutex(sdl->lock);
    sdl->data_moved = true;
    SDL_SignalCondition(sdl->cond);
@@ -359,6 +368,7 @@ static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
    sdl->ratio = 1.0f;
    sdl->gain = 1.0f;
    retro_atomic_size_init(&sdl->consumed_frames, 0);
+   retro_atomic_size_init(&sdl->underruns, 0);
 
    if ((tmp = calloc(1, sdl->buffer_size)))
    {
@@ -861,6 +871,12 @@ static void sdl3_audio_list_free(void *u, void *slp)
       string_list_free(sl);
 }
 
+static size_t sdl3_audio_underruns(void *data)
+{
+   sdl3_audio_t *sdl = (sdl3_audio_t*)data;
+   return sdl ? retro_atomic_load_acquire_size(&sdl->underruns) : 0;
+}
+
 audio_driver_t audio_sdl3 = {
    sdl3_audio_init,
    sdl3_audio_write,
@@ -878,7 +894,7 @@ audio_driver_t audio_sdl3 = {
    sdl3_audio_write_raw,
    sdl3_audio_wait_writable,
    sdl3_audio_frames_consumed,
-   NULL, /* underruns */
+   sdl3_audio_underruns,
    sdl3_audio_layout
 };
 

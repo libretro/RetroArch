@@ -55,6 +55,8 @@ typedef struct
     * thread's loop. An atomic and not a volatile bool: volatile orders
     * nothing between the two. */
    retro_atomic_int_t quit_thread;
+   /* Blocks the output thread had nothing for and sent as silence. */
+   retro_atomic_size_t underruns;
 } ps3_audio_t;
 
 
@@ -81,7 +83,10 @@ static void ps3_event_loop(uint64_t data)
       if (retro_spsc_read_avail(&aud->ring) >= sizeof(out_tmp))
          retro_spsc_read(&aud->ring, out_tmp, sizeof(out_tmp));
       else
+      {
          memset(out_tmp, 0, sizeof(out_tmp));
+         retro_atomic_fetch_add_size(&aud->underruns, 1);
+      }
       sysLwCondSignal(&aud->cond);
 
       audioAddData(aud->audio_port, out_tmp,
@@ -150,6 +155,7 @@ static void *ps3_audio_init(const char *device,
    audioPortStart(data->audio_port);
    data->started = true;
    retro_atomic_int_init(&data->quit_thread, 0);
+   retro_atomic_size_init(&data->underruns, 0);
    sysThreadCreate(&data->thread, ps3_event_loop,
 #ifdef __PSL1GHT__
    data,
@@ -314,6 +320,12 @@ static size_t ps3_audio_wait_writable(void *data, size_t len)
    }
 }
 
+static size_t ps3_audio_underruns(void *data)
+{
+   ps3_audio_t *aud = (ps3_audio_t*)data;
+   return aud ? retro_atomic_load_acquire_size(&aud->underruns) : 0;
+}
+
 audio_driver_t audio_ps3 = {
    ps3_audio_init,
    ps3_audio_write,
@@ -329,5 +341,7 @@ audio_driver_t audio_ps3 = {
    ps3_audio_write_avail,
    ps3_audio_buffer_size,
    NULL, /* write_raw */
-   ps3_audio_wait_writable
+   ps3_audio_wait_writable,
+   NULL, /* frames_consumed */
+   ps3_audio_underruns
 };

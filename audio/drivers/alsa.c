@@ -1193,6 +1193,10 @@ typedef struct ealsa
    size_t   period_frames;
    size_t   buffer_frames;
    uint64_t frames_written;   /* handed to the device since it opened */
+   /* Xruns the device reported on the write path: EPIPE is the device
+    * having run out of audio, which the ESTRPIPE beside it - a resume
+    * after a suspend - is not. */
+   retro_atomic_size_t underruns;
    bool     nonblock;
    bool     has_float;
    bool     can_pause;
@@ -1614,6 +1618,8 @@ static ssize_t tinyalsa_write(void *data, const void *buf, size_t len)
          {
             /* An underrun, or a resume after a suspend: prepared
              * again and the frames go out on the next turn. */
+            if (errno == EPIPE)
+               retro_atomic_fetch_add_size(&ea->underruns, 1);
             if (!ealsa_recover(ea))
                return -1;
             continue;
@@ -1797,6 +1803,12 @@ static void tinyalsa_device_list_free(void *data, void *array_list_data)
       string_list_free(s);
 }
 
+static size_t tinyalsa_underruns(void *data)
+{
+   tinyalsa_t *ea = (tinyalsa_t*)data;
+   return ea ? retro_atomic_load_acquire_size(&ea->underruns) : 0;
+}
+
 audio_driver_t audio_tinyalsa = {
    tinyalsa_init,
    tinyalsa_write,
@@ -1814,7 +1826,7 @@ audio_driver_t audio_tinyalsa = {
    NULL, /* write_raw */
    tinyalsa_wait_writable,
    tinyalsa_frames_consumed,
-   NULL, /* underruns */
+   tinyalsa_underruns,
    tinyalsa_layout
 };
 

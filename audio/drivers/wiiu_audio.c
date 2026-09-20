@@ -42,6 +42,10 @@ typedef struct
     * written and under the same spinlock, so it needs no atomics of its
     * own and cannot disagree with what was actually consumed. */
    uint64_t consumed;
+   /* Frames the voice was stopped on for want of audio: the callback
+    * already finds the buffer short and parks the voice. Under the
+    * same spinlock as consumed. */
+   uint64_t underruns;
    bool nonblock;
 } ax_audio_t;
 
@@ -80,7 +84,10 @@ void wiiu_ax_callback(void)
       {
          /* Buffer underrun, stop playback to let it fill up */
          if (ax->written < AX_AUDIO_SAMPLE_MIN)
+         {
             AXSetMultiVoiceState(ax->mvoice, AX_VOICE_STATE_STOPPED);
+            ax->underruns++;
+         }
          ax->written  -= AX_AUDIO_SAMPLE_COUNT;
          /* Only here, where the voice is running and a frame of our
           * audio has actually gone: a stopped voice is not taking
@@ -403,6 +410,21 @@ static size_t ax_audio_buffer_size(void* data)
    return AX_AUDIO_COUNT * 2 * sizeof(int16_t);
 }
 
+static size_t ax_audio_underruns(void *data)
+{
+   ax_audio_t *ax = (ax_audio_t*)data;
+   size_t out     = 0;
+
+   if (!ax)
+      return 0;
+   if (OSUninterruptibleSpinLock_Acquire(&ax->spinlock))
+   {
+      out = (size_t)ax->underruns;
+      OSUninterruptibleSpinLock_Release(&ax->spinlock);
+   }
+   return out;
+}
+
 audio_driver_t audio_ax =
 {
    ax_audio_init,
@@ -420,5 +442,6 @@ audio_driver_t audio_ax =
    ax_audio_buffer_size,
    NULL, /* write_raw */
    ax_audio_wait_writable,
-   ax_audio_frames_consumed
+   ax_audio_frames_consumed,
+   ax_audio_underruns
 };

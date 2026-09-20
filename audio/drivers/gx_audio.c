@@ -55,6 +55,10 @@ typedef struct
     * way. 32-bit so the read cannot tear: at 48 kHz it wraps in about
     * a day, which the estimator's differences handle. */
    volatile uint32_t consumed;
+   /* Chunks the DMA started on that the writer had not reached: the
+    * callback zeroes each chunk as it retires it, so what goes out is
+    * silence. Volatile rather than atomic for the reason consumed is. */
+   volatile uint32_t underruns;
    bool nonblock;
    bool is_paused;
 } gx_audio_t;
@@ -79,6 +83,11 @@ static void gx_audio_dma_callback(void)
 
    wa->dma_busy = wa->dma_next;
    wa->dma_next = (wa->dma_next + 1) & (BLOCKS - 1);
+
+   /* The chunk the DMA is about to take is one the writer has not
+    * filled, and the callback erased it as it retired. */
+   if (wa->dma_next == wa->dma_write)
+      wa->underruns++;
 
    DCFlushRange(wa->data[wa->dma_next], CHUNK_SIZE);
 
@@ -312,6 +321,12 @@ static size_t gx_audio_wait_writable(void *data, size_t len)
  * so the slot cannot be NULL either. */
 static bool gx_audio_use_float(void *data) { return false; }
 
+static size_t gx_audio_underruns(void *data)
+{
+   gx_audio_t *wa = (gx_audio_t*)data;
+   return wa ? (size_t)wa->underruns : 0;
+}
+
 audio_driver_t audio_gx = {
    gx_audio_init,
    gx_audio_write,
@@ -328,5 +343,6 @@ audio_driver_t audio_gx = {
    gx_audio_buffer_size,
    NULL, /* write_raw */
    gx_audio_wait_writable,
-   gx_audio_frames_consumed
+   gx_audio_frames_consumed,
+   gx_audio_underruns
 };

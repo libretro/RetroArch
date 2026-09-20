@@ -66,6 +66,10 @@ typedef struct rsd
     * volatile orders nothing between threads and the re-check below
     * has to see the store that came before the notify. */
    retro_atomic_int_t has_error;
+   /* Callbacks librsound asked to fill and the ring came up short
+    * for; librsound zero-fills the shortfall, so what goes out is
+    * silence the device played for want of audio. */
+   retro_atomic_size_t underruns;
 } rsd_t;
 
 /* Room in the ring against the size asked for: the physical room less
@@ -83,6 +87,9 @@ static ssize_t rsound_audio_cb(void *data, size_t bytes, void *userdata)
    rsd_t *rsd        = (rsd_t*)userdata;
    size_t write_size = retro_spsc_read(&rsd->ring, data, bytes);
    retro_eventcount_notify(&rsd->park);
+
+   if (write_size < bytes)
+      retro_atomic_fetch_add_size(&rsd->underruns, 1);
 
    return write_size;
 }
@@ -110,6 +117,7 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
       goto error;
 
    retro_atomic_int_init(&rsd->has_error, 0);
+   retro_atomic_size_init(&rsd->underruns, 0);
    /* Checked: on a backend that parks through a condition variable the
     * init allocates, and a failure leaves an object whose commit_wait
     * would hand scond_wait a NULL cond. */
@@ -366,6 +374,12 @@ static size_t rs_wait_writable(void *data, size_t len)
 }
 static bool rs_use_float(void *data) { return false; }
 
+static size_t rs_underruns(void *data)
+{
+   rsd_t *rsd = (rsd_t*)data;
+   return rsd ? retro_atomic_load_acquire_size(&rsd->underruns) : 0;
+}
+
 audio_driver_t audio_rsound = {
    rs_init,
    rs_write,
@@ -381,5 +395,7 @@ audio_driver_t audio_rsound = {
    rs_write_avail,
    rs_buffer_size,
    NULL, /* write_raw */
-   rs_wait_writable
+   rs_wait_writable,
+   NULL, /* frames_consumed */
+   rs_underruns
 };
