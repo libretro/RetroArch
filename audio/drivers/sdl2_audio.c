@@ -144,14 +144,14 @@ typedef struct sdl2_microphone_handle
    SDL_AudioSpec device_spec;
 } sdl2_microphone_handle_t;
 
-typedef struct sdl2_microphone
-{
-   bool nonblock;
-} sdl2_microphone_t;
+/* The microphone driver context carries nothing of its own: what
+ * init() and free() set up and tear down is SDL's audio subsystem,
+ * and the frontend only needs a handle to hand back. The driver
+ * itself is that handle. */
+extern microphone_driver_t microphone_sdl;
 
 static void *sdl2_microphone_init(void)
 {
-   sdl2_microphone_t *sdl        = NULL;
    uint32_t sdl_subsystem_flags = SDL_WasInit(0);
    /* Initialise audio subsystem, if required */
    if (sdl_subsystem_flags == 0)
@@ -164,9 +164,7 @@ static void *sdl2_microphone_init(void)
       if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
          return NULL;
    }
-   if (!(sdl = (sdl2_microphone_t*)calloc(1, sizeof(*sdl))))
-      return NULL;
-   return sdl;
+   return (void*)&microphone_sdl;
 }
 
 static void sdl2_microphone_close_mic(void *driver_context, void *mic_context)
@@ -193,12 +191,9 @@ static void sdl2_microphone_close_mic(void *driver_context, void *mic_context)
 
 static void sdl2_microphone_free(void *data)
 {
-   sdl2_microphone_t *sdl = (sdl2_microphone_t*)data;
-
-   if (sdl)
-      SDL_QuitSubSystem(SDL_INIT_AUDIO);
-   free(sdl);
    /* NOTE: The microphone frontend should've closed the mics by now */
+   if (data)
+      SDL_QuitSubSystem(SDL_INIT_AUDIO);
 }
 
 static void sdl2_microphone_record_cb(void *data, Uint8 *stream, int len)
@@ -413,10 +408,9 @@ static bool sdl2_microphone_start_mic(void *driver_context, void *mic_context)
 
 static bool sdl2_microphone_stop_mic(void *driver_context, void *mic_context)
 {
-   sdl2_microphone_t        *sdl = (sdl2_microphone_t*)driver_context;
    sdl2_microphone_handle_t *mic = (sdl2_microphone_handle_t*)mic_context;
 
-   if (!sdl || !mic)
+   if (!driver_context || !mic)
       return false;
 
    SDL_PauseAudioDevice(mic->device_id, true);
@@ -476,76 +470,62 @@ static size_t sdl2_microphone_wait_readable(void *driver_context,
 
 static int sdl2_microphone_read(void *driver_context, void *mic_context, void *sv, size_t len)
 {
-   int ret    = 0;
-   uint8_t *s = (uint8_t*)sv;
-   sdl2_microphone_t        *sdl = (sdl2_microphone_t*)driver_context;
+   uint8_t *s   = (uint8_t*)sv;
+   size_t  read = 0;
    sdl2_microphone_handle_t *mic = (sdl2_microphone_handle_t*)mic_context;
 
-   if (!sdl || !mic || !s)
+   if (!driver_context || !mic || !s)
       return -1;
 
-   /* If we shouldn't block on an empty queue... */
-   if (sdl->nonblock)
+   /* Until we've given the caller as much data as they've asked for... */
+   while (read < len)
    {
-      /* Read as much data as will fit in buf; the ring is SPSC so the
-       * SDL capture thread can keep pushing while we pull. */
-      ret = (int)retro_spsc_read(&mic->ring, s, len);
-   }
-   else
-   {
-      size_t read = 0;
-
-      /* Until we've given the caller as much data as they've asked for... */
-      while (read < len)
-      {
-         size_t avail;
+      size_t avail;
 #ifdef HAVE_THREADS
-         bool signalled;
+      bool signalled;
 #endif
 
-         avail = retro_spsc_read_avail(&mic->ring);
+      avail = retro_spsc_read_avail(&mic->ring);
 
-         if (avail == 0)
-         { /* If the incoming sample queue is empty... */
-            /* Wait for the SDL microphone thread to
-             * push some incoming samples */
+      if (avail == 0)
+      { /* If the incoming sample queue is empty... */
+         /* Wait for the SDL microphone thread to
+          * push some incoming samples */
 #ifdef HAVE_THREADS
-            /* Registered before the ring is read again, so a callback
-             * that lands from here on cannot be slept through.  Still
-             * bounded for the reason the playback path is: the capture
-             * callback is the only thing that ever notifies this, so
-             * once the device stops calling back an unbounded park
-             * would never return. */
-            int key  = retro_eventcount_prepare_wait(&mic->park);
-            if (retro_spsc_read_avail(&mic->ring))
-            {
-               retro_eventcount_cancel_wait(&mic->park);
-               signalled = true;
-            }
-            else
-               signalled = retro_eventcount_commit_wait_timeout(&mic->park,
-                     key, SDL_AUDIO_STALL_TIMEOUT_US);
-            /* Allow this thread to access the incoming sample queue,
-             * which we'll do next iteration */
-            if (!signalled)
-               break;   /* Report what we managed to capture */
-#else
-            break;
-#endif
+         /* Registered before the ring is read again, so a callback
+          * that lands from here on cannot be slept through.  Still
+          * bounded for the reason the playback path is: the capture
+          * callback is the only thing that ever notifies this, so
+          * once the device stops calling back an unbounded park
+          * would never return. */
+         int key  = retro_eventcount_prepare_wait(&mic->park);
+         if (retro_spsc_read_avail(&mic->ring))
+         {
+            retro_eventcount_cancel_wait(&mic->park);
+            signalled = true;
          }
          else
-         {
-            size_t read_amt = MIN(len - read, avail);
-            retro_spsc_read(&mic->ring, s + read, read_amt);
-            /* Read as many samples as we have available without
-             * underflowing the queue */
-            read += read_amt;
-         }
+            signalled = retro_eventcount_commit_wait_timeout(&mic->park,
+                  key, SDL_AUDIO_STALL_TIMEOUT_US);
+         /* Allow this thread to access the incoming sample queue,
+          * which we'll do next iteration */
+         if (!signalled)
+            break;   /* Report what we managed to capture */
+#else
+         break;
+#endif
       }
-      ret = (int)read;
+      else
+      {
+         size_t read_amt = MIN(len - read, avail);
+         retro_spsc_read(&mic->ring, s + read, read_amt);
+         /* Read as many samples as we have available without
+          * underflowing the queue */
+         read += read_amt;
+      }
    }
 
-   return ret;
+   return (int)read;
 }
 
 static bool sdl2_microphone_mic_use_float(const void *driver_context, const void *mic_context)

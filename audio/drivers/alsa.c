@@ -61,37 +61,25 @@ typedef struct alsa_microphone_handle
    alsa_stream_info_t stream_info;
 } alsa_microphone_handle_t;
 
-typedef struct alsa_microphone
-{
-   bool nonblock;
-} alsa_microphone_t;
+/* The microphone driver context carries nothing of its own: what
+ * init() and free() set up and tear down is ALSA's global state, and
+ * the frontend only needs a handle to hand back. The driver itself is
+ * that handle. */
+extern microphone_driver_t microphone_alsa;
 
 static void *alsa_microphone_init(void)
 {
-   alsa_microphone_t *alsa = (alsa_microphone_t*)calloc(1, sizeof(alsa_microphone_t));
-
-   if (!alsa)
-   {
-      RARCH_ERR("[ALSA] Failed to allocate driver context.\n");
-      return NULL;
-   }
-
    RARCH_LOG("[ALSA] Using ALSA version %s.\n", snd_asoundlib_version());
 
-   return alsa;
+   return (void*)&microphone_alsa;
 }
 
 static void alsa_microphone_close_mic(void *driver_context, void *mic_context);
 static void alsa_microphone_free(void *driver_context)
 {
-   alsa_microphone_t *alsa = (alsa_microphone_t*)driver_context;
    /* The mic frontend should've closed all mics before calling free(). */
-
-   if (alsa)
-   {
+   if (driver_context)
       snd_config_update_free_global();
-      free(alsa);
-   }
 }
 
 static bool alsa_microphone_start_mic(void *driver_context, void *mic_context);
@@ -118,13 +106,15 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
 {
    snd_pcm_sframes_t size;
    snd_pcm_state_t state;
-   alsa_microphone_t       *alsa = (alsa_microphone_t*)driver_context;
    alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
    uint8_t *buf                  = (uint8_t*)s;
    snd_pcm_sframes_t read        = 0;
    int errnum                    = 0;
+   bool eagain_retry             = true;
+   int  laps                     = ALSA_WAIT_READABLE_LAPS;
+   int  timeout_ms;
 
-   if (!alsa || !mic || !buf)
+   if (!driver_context || !mic || !buf)
       return -1;
 
    size        = BYTES_TO_FRAMES(len, mic->stream_info.frame_bits);
@@ -147,88 +137,55 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
       }
    }
 
-   if (alsa->nonblock)
+   timeout_ms = alsa_microphone_wait_ms(mic);
+
+   while (size)
    {
-      while (size)
+      snd_pcm_sframes_t frames;
+      int rc = snd_pcm_wait(mic->pcm, timeout_ms);
+
+      /* Nothing delivered in the time two periods take. A device that
+       * has stopped must not park the caller, so give up after a
+       * bounded number of these and return what there is. */
+      if (rc == 0)
       {
-         snd_pcm_sframes_t frames = snd_pcm_readi(mic->pcm, buf, size);
-
-         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
-         {
-            errnum = snd_pcm_recover(mic->pcm, frames, 0);
-            if (errnum < 0)
-            {
-               RARCH_ERR("[ALSA] Failed to read from microphone: %s.\n", snd_strerror(frames));
-               RARCH_ERR("[ALSA] Additionally, recovery failed with: %s.\n", snd_strerror(errnum));
-               return -1;
-            }
-
+         if (--laps < 0)
             break;
-         }
-         else if (frames == -EAGAIN)
-            break;
-         else if (frames < 0)
+         continue;
+      }
+
+      if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
+      {
+         if (snd_pcm_recover(mic->pcm, rc, 1) < 0)
+            return -1;
+         continue;
+      }
+
+      frames = snd_pcm_readi(mic->pcm, buf, size);
+
+      if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
+      {
+         if (snd_pcm_recover(mic->pcm, frames, 1) < 0)
             return -1;
 
-         read += frames;
-         buf  += FRAMES_TO_BYTES(frames, mic->stream_info.frame_bits);
-         size -= frames;
+         break;
       }
-   }
-   else
-   {
-      bool eagain_retry         = true;
-      int  laps                 = ALSA_WAIT_READABLE_LAPS;
-      int  timeout_ms           = alsa_microphone_wait_ms(mic);
-
-      while (size)
+      else if (frames == -EAGAIN)
       {
-         snd_pcm_sframes_t frames;
-         int rc = snd_pcm_wait(mic->pcm, timeout_ms);
-
-         /* Nothing delivered in the time two periods take. A device that
-          * has stopped must not park the caller, so give up after a
-          * bounded number of these and return what there is. */
-         if (rc == 0)
+         /* Definitely not supposed to happen. */
+         if (eagain_retry)
          {
-            if (--laps < 0)
-               break;
+            eagain_retry = false;
             continue;
          }
-
-         if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
-         {
-            if (snd_pcm_recover(mic->pcm, rc, 1) < 0)
-               return -1;
-            continue;
-         }
-
-         frames = snd_pcm_readi(mic->pcm, buf, size);
-
-         if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
-         {
-            if (snd_pcm_recover(mic->pcm, frames, 1) < 0)
-               return -1;
-
-            break;
-         }
-         else if (frames == -EAGAIN)
-         {
-            /* Definitely not supposed to happen. */
-            if (eagain_retry)
-            {
-               eagain_retry = false;
-               continue;
-            }
-            break;
-         }
-         else if (frames < 0)
-            return -1;
-
-         read += frames;
-         buf  += FRAMES_TO_BYTES(frames, mic->stream_info.frame_bits);
-         size -= frames;
+         break;
       }
+      else if (frames < 0)
+         return -1;
+
+      read += frames;
+      buf  += FRAMES_TO_BYTES(frames, mic->stream_info.frame_bits);
+      size -= frames;
    }
 
    return FRAMES_TO_BYTES(read, mic->stream_info.frame_bits);
@@ -262,10 +219,9 @@ static void *alsa_microphone_open_mic(void *driver_context,
    unsigned latency,
    unsigned *new_rate)
 {
-   alsa_microphone_t       *alsa = (alsa_microphone_t*)driver_context;
    alsa_microphone_handle_t *mic = NULL;
 
-   if (!alsa) /* If we weren't given a valid ALSA context... */
+   if (!driver_context) /* If we weren't given a valid ALSA context... */
       return NULL;
 
    /* If the microphone context couldn't be allocated... */
@@ -282,7 +238,7 @@ static void *alsa_microphone_open_mic(void *driver_context,
 error:
    RARCH_ERR("[ALSA] Failed to initialize microphone.\n");
 
-   alsa_microphone_close_mic(alsa, mic);
+   alsa_microphone_close_mic(driver_context, mic);
 
    return NULL;
 

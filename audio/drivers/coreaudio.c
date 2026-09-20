@@ -2017,7 +2017,6 @@ typedef struct coreaudio_mic
    void *cb_buf;
    size_t cb_buf_size;
    unsigned sample_rate;
-   bool nonblock;
    bool use_float;
 #if !TARGET_OS_IPHONE
    AudioDeviceID device;
@@ -2029,12 +2028,10 @@ typedef struct coreaudio_mic
 /* Driver-wide context: created by init(), destroyed by free(). The
  * frontend holds it for as long as the driver is selected, longer than
  * any microphone opened through it, so it is never the same allocation
- * as one. It latches the non-blocking state so a mic opened later
- * inherits it. */
+ * as one. It tracks the one microphone open through it. */
 typedef struct coreaudio_mic_driver
 {
    coreaudio_mic_t *mic;
-   bool nonblock;
 } coreaudio_mic_driver_t;
 
 static void coreaudio_mic_close(void *driver_context, void *mic_context);
@@ -2363,7 +2360,7 @@ static int coreaudio_mic_read(void *driver_context, void *mic_context,
 
    avail = retro_spsc_read_avail(&mic->ring);
    n     = avail < len ? avail : len;
-   if (!n && !mic->nonblock)
+   if (!n)
    {
       /* Blocking: one slice's worth of wait for the callback, timed,
        * with the ring re-checked inside the window. */
@@ -2470,7 +2467,6 @@ static void *coreaudio_mic_open(void *driver_context, const char *device,
    retro_atomic_int_init(&mic->running, 0);
    retro_atomic_int_init(&mic->initialized, 0);
    mic->sample_rate = rate;
-   mic->nonblock    = drv->nonblock;
    if (!retro_eventcount_init(&mic->park))
       goto error;
 

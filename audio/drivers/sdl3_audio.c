@@ -1158,10 +1158,9 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
       void *s, size_t len)
 {
    size_t size = 0;
-   sdl3_audio_t *sdl = (sdl3_audio_t*)driver_context;
    sdl3_audio_t *mic = (sdl3_audio_t*)mic_context;
 
-   if (!sdl || !mic || !s)
+   if (!driver_context || !mic || !s)
       return -1;
 
    /* Avoid using a recording device that doesn't exist. */
@@ -1186,16 +1185,10 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
       }
       if (got > 0)
          size += (size_t)got;
-      else
-      {
-         if (sdl->nonblock)
-            break;
-
-         /* Wait until the put callback signals that the device
-          * can capture more samples. */
-         if (!sdl3_audio_wait_for_device(mic, sdl3_microphone_wait_ms(mic)))
-            break;
-      }
+      /* Wait until the put callback signals that the device
+       * can capture more samples. */
+      else if (!sdl3_audio_wait_for_device(mic, sdl3_microphone_wait_ms(mic)))
+         break;
    }
 
    return (int)size;
