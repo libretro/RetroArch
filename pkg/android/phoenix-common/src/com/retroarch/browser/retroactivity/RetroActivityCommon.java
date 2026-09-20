@@ -978,11 +978,17 @@ public class RetroActivityCommon extends NativeActivity
     return result == report.length;
   }
 
-  public void doHapticFeedback(int effect)
+  public void doHapticFeedback(final int effect)
   {
-    getWindow().getDecorView().performHapticFeedback(effect,
-        HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING | HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-    Log.i("RetroActivity", "Haptic Feedback effect " + effect);
+    // Called from the native app thread. View.performHapticFeedback is not
+    // documented as thread safe, so hand it to the UI thread.
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        getWindow().getDecorView().performHapticFeedback(effect,
+            HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING | HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+      }
+    });
   }
 
   // Exiting cleanly from NDK seems to be nearly impossible.
