@@ -96,6 +96,7 @@ typedef struct
    size_t          copy_dest_bytes;
    int             copy_past_vram;
    int             copy_past_dest;
+   int             bad_blit_geometry;
    void           *ge_context;
    void           *draw_vertices;      /* last sceGuDrawArray() array       */
    void           *init_vertices;      /* first one, i.e. psp->frame_coords */

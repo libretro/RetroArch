@@ -471,6 +471,85 @@ static void test_screen_coords_tile_the_viewport(void)
    }
 }
 
+/* The GE's block transfer has hard limits - each side at most 1023, both
+ * strides a multiple of 8 and no wider than 1024 - and shipping cores
+ * sit outside them: vecx hands over 330-pixel rows, o2em 340-wide ones.
+ * The frame has to arrive in the texture whatever the core's stride. */
+static void test_blit_geometry_and_content(void)
+{
+   struct { unsigned w, h, pitch_px; const char *who; } cases[] = {
+      { 256, 224, 256, "snes9x2010 256x224" },
+      { 320, 240, 320, "prboom 320x240" },
+      { 340, 250, 400, "o2em 340x250, stride 400" },
+      { 330, 410, 330, "vecx 330x410" },
+      { 660, 410, 660, "vecx 2x, 660x410" },
+      { 1320, 410, 1320, "vecx 4x, 1320x410" }
+   };
+   unsigned c;
+
+   for (c = 0; c < sizeof(cases) / sizeof(cases[0]); c++)
+   {
+      void           *psp;
+      unsigned short *src;
+      unsigned        x, y, mismatches = 0, checked, kept_w;
+
+      begin("every blit is a legal GE transfer that lands the frame");
+      psp = driver_init();
+      CHECK(psp != NULL, "init failed");
+      if (!psp)
+         return;
+
+      src = (unsigned short*)psp1_fake_ram_alloc(
+            (size_t)cases[c].pitch_px * cases[c].h * 2);
+      CHECK(src != NULL, "%s: no source buffer", cases[c].who);
+      if (!src)
+         return;
+
+      for (y = 0; y < cases[c].h; y++)
+         for (x = 0; x < cases[c].pitch_px; x++)
+            src[y * cases[c].pitch_px + x] =
+               (unsigned short)((y * 7919u + x * 31u) | 1u);
+
+      driver_frame(psp, src, cases[c].w, cases[c].h,
+            cases[c].pitch_px * 2, NULL);
+
+      CHECK(psp1_fake.bad_blit_geometry == 0,
+            "%s: %d malformed transfer(s)",
+            cases[c].who, psp1_fake.bad_blit_geometry);
+      CHECK(psp1_fake.tex_image != NULL,
+            "%s: no texture was bound", cases[c].who);
+      if (!psp1_fake.tex_image)
+         return;
+
+      /* Whatever the driver kept of the frame has to be the frame:
+       * the GE's limits crop it at 1023 a side, but must not shear or
+       * shift what is kept. */
+      kept_w  = (cases[c].w < 1023) ? cases[c].w : 1023;
+      checked = 0;
+      for (y = 0; y < (unsigned)psp1_fake.tex_image_h
+            && y < cases[c].h; y++)
+      {
+         const unsigned short *drow = (const unsigned short*)
+            psp1_fake.tex_image + (size_t)y * psp1_fake.tex_image_bw;
+         const unsigned short *srow = src + (size_t)y * cases[c].pitch_px;
+
+         for (x = 0; x < kept_w && x < cases[c].pitch_px; x++)
+         {
+            checked++;
+            if (drow[x] != srow[x])
+               mismatches++;
+         }
+      }
+      CHECK(checked > 0, "%s: nothing was copied", cases[c].who);
+      CHECK(mismatches == 0,
+            "%s: %u of %u texels differ from the source",
+            cases[c].who, mismatches, checked);
+
+      video_psp1.free(psp);
+      done();
+   }
+}
+
 /* Pacing: a vsync frame waits for a vblank unless one already went by
  * while it was being drawn. psp_on_vblank() reports that from interrupt
  * context, which is the only writer the main thread races. */
@@ -554,6 +633,7 @@ int main(void)
    test_menu_texture_stays_in_its_buffer();
    test_tex_coords_follow_the_geometry();
    test_screen_coords_tile_the_viewport();
+   test_blit_geometry_and_content();
    test_vsync_waits_for_one_vblank();
    test_osd_does_not_race_the_ge();
    test_teardown_after_failed_alloc();

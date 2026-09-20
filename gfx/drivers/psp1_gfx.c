@@ -97,6 +97,7 @@ typedef struct psp1_video
    video_viewport_t vp;
    void* main_dList;
    void* frame_dList;
+   void* blit_dList;
    void* draw_buffer;
    void* texture;
    psp1_sprite_t *frame_coords;
@@ -109,6 +110,8 @@ typedef struct psp1_video
    /* Source geometry the texture coordinates were built for,
     * (width << 16) | height. */
    unsigned tex_geom;
+   /* Capacity of blit_dList, in command words. */
+   unsigned blit_dList_words;
    bool vsync;
    bool rgb32;
    /* Cleared from interrupt context by psp_on_vblank(). */
@@ -285,6 +288,49 @@ static void psp_on_vblank(int sub, void *arg)
 }
 
 static void psp_free(void *data);
+
+/* The GE's block transfer takes a source stride that is a multiple of 8
+ * and no wider than 1024. A core outside that is copied a row at a
+ * time, where the stride is not read. */
+static bool psp_build_row_blit(psp1_video_t *psp, const void *frame,
+      unsigned width, unsigned height, unsigned pitch, unsigned dest_stride,
+      void *dest, int psm)
+{
+   unsigned y;
+   unsigned words = height * 8 + 16;
+
+   if (psp->blit_dList_words < words)
+   {
+      void *list;
+
+      sceGuSync(0, 0);
+      if (psp->blit_dList)
+         free(psp->blit_dList);
+      psp->blit_dList       = NULL;
+      psp->blit_dList_words = 0;
+
+      if (!(list = memalign(64, ((words * 4) + 63) & ~63)))
+         return false;
+
+      psp->blit_dList       = list;
+      psp->blit_dList_words = words;
+   }
+
+   sceGuStart(GU_CALL, psp->blit_dList);
+
+   for (y = 0; y < height; y++)
+   {
+      const u8 *row = (const u8*)frame + y * pitch;
+
+      sceGuCopyImage(psm, ((u32)row & 0xF) >> psp->bpp_log2, 0,
+            width, 1, dest_stride, (void*)((u32)row & ~0xF),
+            0, y, dest_stride, dest);
+   }
+
+   sceGuFinish();
+
+   return true;
+}
 
 static void *psp_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
@@ -524,6 +570,8 @@ static bool psp_frame(void *data, const void *frame,
       unsigned width, unsigned height, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned dest_stride    = 0;
+   bool     rows_at_a_time  = false;
    psp1_video_t *psp  = (psp1_video_t*)data;
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
@@ -539,14 +587,34 @@ static bool psp_frame(void *data, const void *frame,
 
    if (!psp->hw_render)
    {
+      unsigned max_height;
+
+      /* No side of a GE transfer reaches past 1023. */
+      if (width > 1023)
+         width = 1023;
+      if (height > 1023)
+         height = 1023;
+
+      /* The destination stride is ours, and has to be a multiple of 8. */
+      dest_stride = (width + 7) & ~7u;
+
       /* The blit below runs to the end of VRAM if the core frame is
        * larger than what is left for it. */
-      unsigned max_height = (psp->texture_size >> psp->bpp_log2) / width;
-
+      max_height  = (psp->texture_size >> psp->bpp_log2) / dest_stride;
       if (height > max_height)
          height = max_height;
       if (!height)
          return false;
+
+      if (frame && ((pitch >> psp->bpp_log2) > 1024
+               || ((pitch >> psp->bpp_log2) & 0x7)))
+      {
+         if (!psp_build_row_blit(psp, frame, width, height, pitch,
+                  dest_stride, psp->texture,
+                  psp->rgb32? GU_PSM_8888 : GU_PSM_5650))
+            return false;
+         rows_at_a_time = true;
+      }
 
       sceGuSync(0, 0); /* let the core decide when to sync when HW_RENDER */
    }
@@ -596,12 +664,18 @@ static bool psp_frame(void *data, const void *frame,
       if (frame)
       {
          sceKernelDcacheWritebackRange(frame,pitch * height);
-         sceGuCopyImage(psp->rgb32? GU_PSM_8888 : GU_PSM_5650,
-               ((u32)frame & 0xF) >> psp->bpp_log2,
-               0, width, height, pitch >> psp->bpp_log2,
-               (void*)((u32)frame & ~0xF), 0, 0, width, psp->texture);
+
+         if (rows_at_a_time)
+            sceGuCallList(psp->blit_dList);
+         else
+            sceGuCopyImage(psp->rgb32? GU_PSM_8888 : GU_PSM_5650,
+                  ((u32)frame & 0xF) >> psp->bpp_log2,
+                  0, width, height, pitch >> psp->bpp_log2,
+                  (void*)((u32)frame & ~0xF), 0, 0, dest_stride,
+                  psp->texture);
       }
-      sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->texture);
+      sceGuTexImage(0, next_pow2(width), next_pow2(height), dest_stride,
+            psp->texture);
       sceGuCallList(psp->frame_dList);
    }
 
@@ -653,6 +727,8 @@ static void psp_free(void *data)
       free(psp->main_dList);
    if (psp->frame_dList)
       free(psp->frame_dList);
+   if (psp->blit_dList)
+      free(psp->blit_dList);
    if (psp->frame_coords)
       free(TO_CACHED_PTR(psp->frame_coords));
    if (psp->menu.frame_coords)
@@ -670,14 +746,24 @@ static void psp_free(void *data)
 static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
                                unsigned width, unsigned height, float alpha)
 {
-   unsigned max_height;
+   unsigned max_height, dest_stride, src_stride;
+   bool     rows_at_a_time = false;
    psp1_video_t *psp = (psp1_video_t*)data;
 
    if (!psp || !frame || !width || !height)
       return;
 
+   /* No side of a GE transfer reaches past 1023. */
+   if (width > 1023)
+      width = 1023;
+   if (height > 1023)
+      height = 1023;
+
+   dest_stride = (width + 7) & ~7u;
+   src_stride  = width;
+
    /* psp->menu.frame holds one screen of 4444. */
-   max_height = (SCEGU_SCR_WIDTH * SCEGU_SCR_HEIGHT) / width;
+   max_height  = (SCEGU_SCR_WIDTH * SCEGU_SCR_HEIGHT) / dest_stride;
    if (height > max_height)
       height = max_height;
    if (!height)
@@ -687,22 +773,34 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
          SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, 0);
    psp_set_tex_coords(psp->menu.frame_coords, width, height);
 
-   sceKernelDcacheWritebackRange(frame, width * height * 2);
+   sceKernelDcacheWritebackRange(frame, src_stride * height * 2);
 
    /* The menu pushes a texture between frames, so the GE may still be
     * on the list psp_frame() left it. */
    sceGuSync(0, 0);
 
+   if (src_stride > 1024 || (src_stride & 0x7))
+   {
+      if (!psp_build_row_blit(psp, frame, width, height, src_stride * 2,
+               dest_stride, psp->menu.frame, GU_PSM_4444))
+         return;
+      rows_at_a_time = true;
+   }
+
    sceGuStart(GU_DIRECT, psp->main_dList);
-   sceGuCopyImage(GU_PSM_4444, 0, 0, width, height, width,
-         (void*)frame, 0, 0, width, psp->menu.frame);
+   if (rows_at_a_time)
+      sceGuCallList(psp->blit_dList);
+   else
+      sceGuCopyImage(GU_PSM_4444, 0, 0, width, height, src_stride,
+            (void*)frame, 0, 0, dest_stride, psp->menu.frame);
    sceGuFinish();
 
    sceGuStart(GU_SEND, psp->menu.dList);
    sceGuTexMode(GU_PSM_4444, 0, 0, GU_FALSE);
    sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
    sceGuTexFilter(GU_LINEAR, GU_LINEAR);
-   sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->menu.frame);
+   sceGuTexImage(0, next_pow2(width), next_pow2(height), dest_stride,
+         psp->menu.frame);
    sceGuEnable(GU_BLEND);
 
 #if 0

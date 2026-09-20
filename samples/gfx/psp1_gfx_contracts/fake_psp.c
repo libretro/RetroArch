@@ -37,6 +37,7 @@ static int      display_format = PSP_DISPLAY_PIXEL_FORMAT_565;
 static int      core_is_565    = 1;
 static int      vp_x, vp_y, vp_w = 480, vp_h = 272;
 static int      fire_on_free;
+static int      filling_cid;
 static uintptr_t scratch;
 
 #define MAX_BLOCKS 64
@@ -364,15 +365,16 @@ void sceGuStart(int cid, void *list)
    if (psp1_fake.busy == list)
       psp1_fake.refilled_busy_list++;
    psp1_fake.filling = list;
-   (void)cid;
+   filling_cid       = cid;
 }
 
 int sceGuFinish(void)
 {
    record(PSP1_EV_GU_FINISH, psp1_fake.filling);
    /* A finished GU_DIRECT list is handed to the GE and stays busy until
-    * it is waited on. */
-   psp1_fake.busy    = psp1_fake.filling;
+    * it is waited on; a GU_CALL list is only closed. */
+   if (filling_cid == GU_DIRECT)
+      psp1_fake.busy = psp1_fake.filling;
    psp1_fake.filling = NULL;
    return 0;
 }
@@ -475,11 +477,22 @@ void sceGuCopyImage(int psm, int sx, int sy, int width, int height,
       int srcw, void *src, int dx, int dy, int destw, void *dest)
 {
    int    bpp   = (psm == GU_PSM_8888) ? 4 : 2;
-   size_t bytes = (size_t)destw * (size_t)height * (size_t)bpp;
+   size_t bytes = (size_t)destw * (size_t)(dy + height) * (size_t)bpp;
    uintptr_t lo = (uintptr_t)dest & ~PSP1_FAKE_UNCACHED;
    int    row;
 
-   (void)sx; (void)sy; (void)dx; (void)dy;
+   /* pspsdk asserts these; the GE transfer is malformed outside them. */
+   if (     srcw  <= 8 || srcw  > 1024 || (srcw  & 0x7)
+         || destw <= 8 || destw > 1024 || (destw & 0x7)
+         || width  <= 0 || width  > 1023
+         || height <= 0 || height > 1023
+         || dx < 0 || dx >= 1023 || dy < 0 || dy >= 1023)
+   {
+      psp1_fake.bad_blit_geometry++;
+      fprintf(stderr,
+            "  [ge] malformed transfer: %dx%d srcw=%d destw=%d at %d,%d\n",
+            width, height, srcw, destw, dx, dy);
+   }
 
    record(PSP1_EV_GU_COPYIMAGE, dest);
    psp1_fake.copy_dest       = dest;
@@ -511,8 +524,8 @@ void sceGuCopyImage(int psm, int sx, int sy, int width, int height,
    }
 
    for (row = 0; row < height; row++)
-      memcpy((unsigned char*)dest + (size_t)row * destw * bpp,
-             (unsigned char*)src  + (size_t)row * srcw  * bpp,
+      memcpy((unsigned char*)dest + ((size_t)(dy + row) * destw + dx) * bpp,
+             (unsigned char*)src  + ((size_t)(sy + row) * srcw  + sx) * bpp,
              (size_t)width * bpp);
 }
 
