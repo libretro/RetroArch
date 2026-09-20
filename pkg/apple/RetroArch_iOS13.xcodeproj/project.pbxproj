@@ -1645,7 +1645,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 13.0;
+				TVOS_DEPLOYMENT_TARGET = "$(RA_TVOS_DEPLOYMENT_TARGET:default=13.0)";
 			};
 			name = Debug;
 		};
@@ -1673,7 +1673,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 13.0;
+				TVOS_DEPLOYMENT_TARGET = "$(RA_TVOS_DEPLOYMENT_TARGET:default=13.0)";
 			};
 			name = Release;
 		};
@@ -1869,7 +1869,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArch;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				IOS_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=12.0)";
 				LIBRARY_SEARCH_PATHS = "";
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = 1.22.2;
@@ -1882,7 +1882,7 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TVOS_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
 				TVOS_CODE_SIGN_ENTITLEMENTS = "";
-				TVOS_DEPLOYMENT_TARGET = 11.0;
+				TVOS_DEPLOYMENT_TARGET = "$(RA_TVOS_DEPLOYMENT_TARGET:default=11.0)";
 			};
 			name = Debug;
 		};
@@ -1928,7 +1928,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = RetroArch;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				IOS_BUNDLE_IDENTIFIER = com.libretro.RetroArchiOS11;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = "$(RA_IPHONEOS_DEPLOYMENT_TARGET:default=12.0)";
 				LIBRARY_SEARCH_PATHS = "";
 				LLVM_LTO = YES_THIN;
 				MARKETING_VERSION = 1.22.2;
@@ -1941,7 +1941,7 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TVOS_BUNDLE_IDENTIFIER = com.libretro.dist.tvos.RetroArch;
 				TVOS_CODE_SIGN_ENTITLEMENTS = "";
-				TVOS_DEPLOYMENT_TARGET = 11.0;
+				TVOS_DEPLOYMENT_TARGET = "$(RA_TVOS_DEPLOYMENT_TARGET:default=11.0)";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
