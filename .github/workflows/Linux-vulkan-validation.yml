@@ -46,6 +46,16 @@ name: CI Vulkan/GL/D3D11 [idle waits + driver harness]
 #    frontend does against the driver from the wrong thread is an X
 #    BadAccess here rather than a corruption elsewhere; the first run
 #    caught the OSD font rebuild doing exactly that.
+#
+# 6. Teardown-order check: tools/vulkan_teardown_order_check.py holds
+#    the order the driver retires a frame's objects in - command
+#    pools, then descriptor pools, then the pipelines that own the set
+#    layout - and the rule that destroying a descriptor pool is what
+#    frees its sets. The other order is legal Vulkan and the
+#    validation layer passes it, so the harness lanes above cannot see
+#    it; a driver that walks its own back references as a pool is
+#    destroyed faults inside vkDestroyDescriptorPool at exit, which is
+#    what MoltenVK did.
 
 on:
   push:
@@ -84,6 +94,27 @@ jobs:
         run: |
           set -eu
           python3 tools/vulkan_idle_wait_check.py
+
+  vulkan-teardown-order:
+    name: Vulkan teardown order
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Checker self-test
+        shell: bash
+        run: |
+          set -eu
+          python3 tools/vulkan_teardown_order_check.py --selftest
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          python3 tools/vulkan_teardown_order_check.py
 
   vulkan-validation-harness:
     name: Threaded-video harness on Vulkan (lavapipe, validation layer)
