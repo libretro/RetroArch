@@ -9,6 +9,7 @@ SOURCES_C := \
 	opensl_mock.c \
 	stubs_retroarch.c \
 	../../../audio/drivers/opensl.c \
+	../../../audio/audio_upmix.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
