@@ -842,6 +842,10 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    x1        = ((psp->vp.x + width)  < src_bufferwidth)? (psp->vp.x + width): src_bufferwidth;
    y1        = ((psp->vp.y + height) < SCEGU_SCR_HEIGHT)? (psp->vp.y + height): SCEGU_SCR_HEIGHT;
 
+/* Red is in the low bits of every display format, which is why the
+ * frame is drawn through the CLUT passes psp_init() builds: blue comes
+ * out of the high bits here. */
+
 /* Bottom-up, from the start of the row the viewport puts this line on. */
 #define PSP_VP_ROW(row) (buffer + ((size_t)(psp->vp.y + height - 1 - (row)) \
       * width + (size_t)(x0 - psp->vp.x)) * 3)
@@ -857,9 +861,9 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          {
             uint16_t s = *(src++);
 
-            *(dst++) = (s & 0x1F) << 3;
-            *(dst++) = ((s >> 5) << 2) &0xFF;
             *(dst++) = (s >> 11) << 3;
+            *(dst++) = ((s >> 5) << 2) &0xFF;
+            *(dst++) = (s & 0x1F) << 3;
          }
       }
       return true;
@@ -873,9 +877,9 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          {
             uint16_t s = *(src++);
 
-            *(dst++) = (s & 0x1F) << 3;
-            *(dst++) = ((s >> 5) << 3) &0xFF;
             *(dst++) = ((s >> 10) << 3) &0xFF;
+            *(dst++) = ((s >> 5) << 3) &0xFF;
+            *(dst++) = (s & 0x1F) << 3;
          }
       }
       return true;

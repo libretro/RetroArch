@@ -74,15 +74,22 @@ static const video_poke_interface_t *poke(void *psp)
 
 /* video_driver.h: read_viewport "Reads out in BGR byte order (24bpp)".
  * Every display format the PSP can be in has to answer in that order;
- * the 16-bit ones are what RetroArch actually boots into. */
+ * the 16-bit ones are what RetroArch actually boots into.
+ *
+ * Every display format carries red in its low bits - 565 is
+ * B[15:11] G[10:5] R[4:0], 5551 is A B[14:10] G[9:5] R[4:0], 4444 is
+ * A B[11:8] G[7:4] R[3:0], 8888 is A B[23:16] G[15:8] R[7:0] - so the
+ * expected bytes below all take blue from the top of the pixel. That
+ * layout is what the CLUT passes in psp_init() convert the core's
+ * frame into, and the four cases here have to agree on it. */
 static void test_readback_byte_order(void)
 {
    struct { int fmt; const char *name; unsigned pixel; int bpp;
             unsigned char want[3]; } cases[] = {
       { PSP_DISPLAY_PIXEL_FORMAT_565,  "565",  0xFC05,     2,
-        { 0x28, 0x80, 0xF8 } },
+        { 0xF8, 0x80, 0x28 } },
       { PSP_DISPLAY_PIXEL_FORMAT_5551, "5551", 0x7E85,     2,
-        { 0x28, 0xA0, 0xF8 } },
+        { 0xF8, 0xA0, 0x28 } },
       { PSP_DISPLAY_PIXEL_FORMAT_4444, "4444", 0x028F,     2,
         { 0x20, 0x80, 0xF0 } },
       { PSP_DISPLAY_PIXEL_FORMAT_8888, "8888", 0x002880F8, 4,
