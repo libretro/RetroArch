@@ -152,8 +152,14 @@ jobs:
         # debug messenger that reports through RARCH_ERR. It is a
         # tree-wide define: vulkan_context_t carries a member under it,
         # so every TU that includes vulkan_common.h must see it.
+        # GFX_INSTRUMENT counts what the image and surface paths do -
+        # uploads, in-place updates, allocating posts, copies - so the
+        # harness lanes below can hold the budgets the paths are
+        # written to and print what a run cost. This is the one leg
+        # that carries it: under a sanitizer the timings mean nothing,
+        # and the counters change no behaviour.
         run: |
-          make -j$(getconf _NPROCESSORS_ONLN) VULKAN_DEBUG=1
+          make -j$(getconf _NPROCESSORS_ONLN) VULKAN_DEBUG=1 GFX_INSTRUMENT=1
           test -x retroarch
 
       - name: Run the harness on Vulkan under the validation layer
@@ -173,8 +179,12 @@ jobs:
           # lines, so it has to name the same build: VK_DEBUG=1. Its
           # surface and overlay-page lanes run the driver's real
           # in-place texture update and its borrowed-texture overlay
-          # page here, under the validation layer.
-          SAN=none VK_DEBUG=1 CYCLES=2 make -C samples/gfx/threaded_video check-vulkan
+          # page here, under the validation layer, and with the tree
+          # built GFX_INSTRUMENT=1 they print their baselines and hold
+          # the budgets: one texture per streaming surface, no
+          # allocation per post, no copy, a 4K submit that stays a
+          # descriptor hand-off.
+          SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=2 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
   vulkan-validation-sample:
