@@ -14,7 +14,7 @@ SOURCES_C := \
 	stubs_retroarch.c \
 	$(CORE_DIR)/audio/drivers/alsa.c \
 	$(CORE_DIR)/audio/common/alsa.c \
-	$(CORE_DIR)/audio/drivers/sdl_audio.c \
+	$(CORE_DIR)/audio/drivers/sdl2_audio.c \
 	$(CORE_DIR)/audio/drivers/openal.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \

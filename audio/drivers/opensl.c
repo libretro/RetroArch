@@ -34,7 +34,7 @@
  * reached in normal operation - the callback fires as each enqueued
  * block finishes - so the value only decides how long a device that
  * has stopped consuming takes to be noticed.  Matches the flat
- * bail-out timeouts in sdl_audio.c and wasapi.c. */
+ * bail-out timeouts in sdl2_audio.c and wasapi.c. */
 #define OPENSL_STALL_TIMEOUT_US 256000
 
 /* Helper macros, COM-style. */

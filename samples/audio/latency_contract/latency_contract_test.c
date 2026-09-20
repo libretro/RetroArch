@@ -30,7 +30,7 @@
 #include "../../../audio/audio_driver.h"
 
 extern audio_driver_t audio_alsa;
-extern audio_driver_t audio_sdl;
+extern audio_driver_t audio_sdl2;
 extern audio_driver_t audio_openal;
 
 static unsigned failures = 0;
@@ -167,7 +167,7 @@ int main(void)
    static const case_t cases[] = {
       { &audio_alsa,   "null", 0.05, false },
       { &audio_openal, NULL,   0.10, true  },
-      { &audio_sdl,    NULL,   0.05, true  },
+      { &audio_sdl2,   NULL,   0.05, true  },
    };
    unsigned i;
 

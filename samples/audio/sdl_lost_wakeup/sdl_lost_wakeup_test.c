@@ -1,7 +1,7 @@
 /* The SDL audio driver's producer-side waits, against SDL's own dummy
  * device.
  *
- * sdl_audio.c carries its audio in a lock-free retro_spsc, so sdl->lock
+ * sdl2_audio.c carries its audio in a lock-free retro_spsc, so sdl->lock
  * guarded no data - only the waits a full ring puts the producer into.
  * The playback callback announced its pull without holding that lock,
  * and the driver's own comment said what that cost:
@@ -16,8 +16,8 @@
  * device period when it happens. That is worth stating plainly because
  * the obvious reading of the code says otherwise. The wait is bounded
  * at SDL_AUDIO_STALL_TIMEOUT_US, a quarter of a second, and a timeout
- * is acted on - sdl_audio_write() breaks out and reports a short write,
- * sdl_audio_wait_writable() returns 0 - so a lost signal looks like it
+ * is acted on - sdl2_audio_write() breaks out and reports a short write,
+ * sdl2_audio_wait_writable() returns 0 - so a lost signal looks like it
  * should cost a quarter second and some dropped audio. It does not,
  * because a device that is still running calls back again a period
  * later and that callback ends the park. The bound is only reachable
@@ -39,7 +39,7 @@
  *   room at        of those, how many had room by the time the wait
  *   timeout        gave up - the signature of a wake that was raised
  *                  and reached nobody.
- *   dropped        frames sdl_audio_write() refused to enqueue.
+ *   dropped        frames sdl2_audio_write() refused to enqueue.
  *   wait us        how long a park lasted, p50/p99/max. A device period
  *                  is the honest figure.
  *
@@ -47,7 +47,7 @@
  * offers, so the full-ring path is taken on nearly every frame at the
  * low latency settings rather than occasionally.
  *
- * Builds audio/drivers/sdl_audio.c itself and drives it through its own
+ * Builds audio/drivers/sdl2_audio.c itself and drives it through its own
  * audio_driver_t and microphone_driver_t vtables, so the handshakes
  * under test are the shipping ones. SDL_AUDIODRIVER=dummy gives a
  * device that calls back on a clock without needing a sound card, which
@@ -72,7 +72,7 @@
 #include <retro_atomic.h>
 #include <features/features_cpu.h>
 
-#include "../../../audio/drivers/sdl_audio.c"
+#include "../../../audio/drivers/sdl2_audio.c"
 
 #define OUT_RATE     48000
 #define CHANNELS     2
@@ -91,7 +91,7 @@ static int cmp_time(const void *a, const void *b)
 
 static void run_one(unsigned latency_ms, double seconds)
 {
-   const audio_driver_t *drv = &audio_sdl;
+   const audio_driver_t *drv = &audio_sdl2;
    void        *ctx;
    unsigned     out_rate     = OUT_RATE;
    size_t       per_frame    = (size_t)(OUT_RATE / FPS);
@@ -119,7 +119,7 @@ static void run_one(unsigned latency_ms, double seconds)
    clock_gettime(CLOCK_MONOTONIC, &next);
    for (i = 0; i < frames; i++)
    {
-      sdl_audio_t *sdl = (sdl_audio_t*)ctx;
+      sdl2_audio_t *sdl = (sdl2_audio_t*)ctx;
       retro_time_t t0, t1;
       ssize_t      wrote;
       size_t       before;
@@ -129,7 +129,7 @@ static void run_one(unsigned latency_ms, double seconds)
       next.tv_nsec %= 1000000000L;
       clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
 
-      before = sdl_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
+      before = sdl2_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
       t0     = cpu_features_get_time_usec();
       wrote  = drv->write(ctx, buf, block);
       t1     = cpu_features_get_time_usec();
@@ -148,7 +148,7 @@ static void run_one(unsigned latency_ms, double seconds)
          if (t1 - t0 >= SDL_AUDIO_STALL_TIMEOUT_US * 3 / 4)
          {
             timeouts++;
-            if (sdl_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size))
+            if (sdl2_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size))
                room_at_timeout++;
          }
       }
@@ -181,7 +181,7 @@ static void run_one(unsigned latency_ms, double seconds)
  * empty, and the bound is the same quarter second. The core is not
  * handed a pattern it can check here - SDL's dummy capture device
  * delivers silence - so the short-read count is what stands in for it:
- * sdl_microphone_read() returns what it managed to capture, and
+ * sdl2_microphone_read() returns what it managed to capture, and
  * anything less than what was asked for is a park that ran out. */
 static void run_capture(unsigned latency_ms, double seconds)
 {
@@ -217,7 +217,7 @@ static void run_capture(unsigned latency_ms, double seconds)
    clock_gettime(CLOCK_MONOTONIC, &next);
    for (i = 0; i < frames; i++)
    {
-      sdl_microphone_handle_t *h = (sdl_microphone_handle_t*)mic;
+      sdl2_microphone_handle_t *h = (sdl2_microphone_handle_t*)mic;
       retro_time_t t0, t1;
       size_t       before;
       int          got;
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
    if (!(wait_us = (retro_time_t*)malloc(MAX_SAMPLES * sizeof(retro_time_t))))
       return 1;
 
-   printf("sdl_audio producer waits against SDL's dummy device,"
+   printf("sdl2_audio producer waits against SDL's dummy device,"
          " %.0f s per setting, %g fps\n", seconds, FPS);
    printf("-- playback: the core writes, SDL's callback pulls --\n");
    printf("   lat     waits  t/out   room | dropped  |     p50     p99      max\n");

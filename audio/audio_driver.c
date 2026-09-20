@@ -291,8 +291,11 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_DSOUND
    &audio_dsound,
 #endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   &audio_sdl,
+#ifdef HAVE_SDL
+   &audio_sdl1,
+#endif
+#ifdef HAVE_SDL2
+   &audio_sdl2,
 #endif
 #ifdef HAVE_SDL3
    &audio_sdl3,

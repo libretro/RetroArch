@@ -1,5 +1,5 @@
 # The SDL audio driver's producer-side waits, against SDL's own dummy
-# device. Builds audio/drivers/sdl_audio.c itself - the subject is its
+# device. Builds audio/drivers/sdl2_audio.c itself - the subject is its
 # handshake, so a copy of the arithmetic would prove nothing.
 
 CORE_DIR          := ../../..

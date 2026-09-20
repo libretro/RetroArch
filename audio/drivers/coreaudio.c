@@ -1998,7 +1998,7 @@ typedef struct coreaudio_mic
    /* The reader's park, notified by the capture callback after each
     * slice it writes (and on the ones it cannot: a full ring still
     * moves the epoch, so a parked reader re-checks). An eventcount,
-    * as in sdl_audio's mic: the callback's notify is an atomic bump
+    * as in sdl2_audio's mic: the callback's notify is an atomic bump
     * and a load with no reader parked - no lock ever on the capture
     * thread - and the reader's timed waits re-check the ring inside
     * the prepare/commit window, so a slice landing between the check

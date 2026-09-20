@@ -50,7 +50,7 @@
  * a power of two, as SDL prefers, rounded down so the device stage
  * never exceeds its share, with a floor a device will accept. Rounding
  * up put a 16 ms share at 21.3 ms on a 48 kHz device. */
-static INLINE int sdl_audio_find_num_frames(int rate, int latency)
+static INLINE int sdl2_audio_find_num_frames(int rate, int latency)
 {
    int frames = (rate * latency) / 1000;
    int pow2   = (int)prev_pow2((uint32_t)frames);
@@ -62,18 +62,17 @@ static INLINE int sdl_audio_find_num_frames(int rate, int latency)
 /* Room in a ring against its logical size: the physical room less the
  * capacity that lies beyond the size asked for (retro_spsc rounds up
  * to a power of two). */
-static size_t sdl_ring_room(const retro_spsc_t *ring, size_t ring_size)
+static size_t sdl2_ring_room(const retro_spsc_t *ring, size_t ring_size)
 {
    size_t room   = retro_spsc_write_avail(ring);
    size_t excess = ring->capacity - ring_size;
    return room > excess ? room - excess : 0;
 }
 
-#ifdef HAVE_SDL2
 #ifdef HAVE_MICROPHONE
 #include "../microphone_driver.h"
 
-typedef struct sdl_microphone_handle
+typedef struct sdl2_microphone_handle
 {
 #ifdef HAVE_THREADS
    /* Only the bounded waits a short or full ring puts the other side
@@ -92,8 +91,8 @@ typedef struct sdl_microphone_handle
 
    /**
     * The queue used to store incoming samples from the driver.
-    * Single producer (SDL's capture thread in sdl_audio_record_cb),
-    * single consumer (the core thread in sdl_microphone_read), so it
+    * Single producer (SDL's capture thread in sdl2_microphone_record_cb),
+    * single consumer (the core thread in sdl2_microphone_read), so it
     * is a lock-free retro_spsc ring and neither side needs
     * SDL_LockAudioDevice() to touch it.  retro_spsc rounds the
     * capacity up to a power of two; ring_size is the size asked for
@@ -105,16 +104,16 @@ typedef struct sdl_microphone_handle
    bool              ring_init;
    SDL_AudioDeviceID device_id;
    SDL_AudioSpec device_spec;
-} sdl_microphone_handle_t;
+} sdl2_microphone_handle_t;
 
-typedef struct sdl_microphone
+typedef struct sdl2_microphone
 {
    bool nonblock;
-} sdl_microphone_t;
+} sdl2_microphone_t;
 
-static void *sdl_microphone_init(void)
+static void *sdl2_microphone_init(void)
 {
-   sdl_microphone_t *sdl        = NULL;
+   sdl2_microphone_t *sdl        = NULL;
    uint32_t sdl_subsystem_flags = SDL_WasInit(0);
    /* Initialise audio subsystem, if required */
    if (sdl_subsystem_flags == 0)
@@ -127,14 +126,14 @@ static void *sdl_microphone_init(void)
       if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
          return NULL;
    }
-   if (!(sdl = (sdl_microphone_t*)calloc(1, sizeof(*sdl))))
+   if (!(sdl = (sdl2_microphone_t*)calloc(1, sizeof(*sdl))))
       return NULL;
    return sdl;
 }
 
-static void sdl_microphone_close_mic(void *driver_context, void *mic_context)
+static void sdl2_microphone_close_mic(void *driver_context, void *mic_context)
 {
-   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t *)mic_context;
+   sdl2_microphone_handle_t *mic = (sdl2_microphone_handle_t *)mic_context;
 
    if (mic)
    {
@@ -154,9 +153,9 @@ static void sdl_microphone_close_mic(void *driver_context, void *mic_context)
    }
 }
 
-static void sdl_microphone_free(void *data)
+static void sdl2_microphone_free(void *data)
 {
-   sdl_microphone_t *sdl = (sdl_microphone_t*)data;
+   sdl2_microphone_t *sdl = (sdl2_microphone_t*)data;
 
    if (sdl)
       SDL_QuitSubSystem(SDL_INIT_AUDIO);
@@ -164,10 +163,10 @@ static void sdl_microphone_free(void *data)
    /* NOTE: The microphone frontend should've closed the mics by now */
 }
 
-static void sdl_audio_record_cb(void *data, Uint8 *stream, int len)
+static void sdl2_microphone_record_cb(void *data, Uint8 *stream, int len)
 {
-   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)data;
-   size_t                 avail = sdl_ring_room(&mic->ring, mic->ring_size);
+   sdl2_microphone_handle_t *mic = (sdl2_microphone_handle_t*)data;
+   size_t                 avail = sdl2_ring_room(&mic->ring, mic->ring_size);
    size_t             read_size = MIN(len, (int)avail);
    /* If the sample buffer is almost full, just write as much as we can into it*/
    retro_spsc_write(&mic->ring, stream, read_size);
@@ -176,13 +175,13 @@ static void sdl_audio_record_cb(void *data, Uint8 *stream, int len)
 #endif
 }
 
-static void *sdl_microphone_open_mic(void *driver_context, const char *device,
+static void *sdl2_microphone_open_mic(void *driver_context, const char *device,
       unsigned rate, unsigned latency, unsigned *new_rate)
 {
    int frames;
    size_t bufsize;
    void *tmp                    = NULL;
-   sdl_microphone_handle_t *mic = NULL;
+   sdl2_microphone_handle_t *mic = NULL;
    SDL_AudioSpec desired_spec   = {0};
 
 #if __APPLE__
@@ -203,8 +202,8 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
       return NULL;
    }
 
-   if (!(mic = (sdl_microphone_handle_t *)
-            calloc(1, sizeof(sdl_microphone_handle_t))))
+   if (!(mic = (sdl2_microphone_handle_t *)
+            calloc(1, sizeof(sdl2_microphone_handle_t))))
       return NULL;
 
    /* Only print SDL audio devices if verbose logging is enabled */
@@ -221,25 +220,20 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
     * carry approximately half of the latency.
     *
     * SDL double buffers audio and we do as well. */
-   frames                = sdl_audio_find_num_frames(rate, latency / 4);
+   frames                = sdl2_audio_find_num_frames(rate, latency / 4);
 
    desired_spec.freq     = rate;
-#ifdef HAVE_SDL2
-   /* Same negotiation hint the output device honours above. The libretro
+   /* Same negotiation hint the output device honours. The libretro
     * microphone interface is int16 only, so 'Int16' here keeps the whole
     * capture path integer instead of converting a float stream back down.
-    * SDL converts transparently if the device's native format differs.
-    * SDL1.2 capture is int16 only. */
+    * SDL converts transparently if the device's native format differs. */
    desired_spec.format   = (config_get_ptr()->uints.audio_format_negotiation
          == AUDIO_FORMAT_NEGOTIATION_INT16)
          ? AUDIO_S16SYS : AUDIO_F32SYS;
-#else
-   desired_spec.format   = AUDIO_S16SYS;
-#endif
    desired_spec.channels = 1; /* Microphones only usually provide input in mono */
    desired_spec.samples  = frames;
    desired_spec.userdata = mic;
-   desired_spec.callback = sdl_audio_record_cb;
+   desired_spec.callback = sdl2_microphone_record_cb;
 
    mic->device_id = SDL_OpenAudioDevice(
          NULL,
@@ -340,18 +334,18 @@ error:
    return NULL;
 }
 
-static bool sdl_microphone_mic_alive(const void *data, const void *mic_context)
+static bool sdl2_microphone_mic_alive(const void *data, const void *mic_context)
 {
-   const sdl_microphone_handle_t *mic = (const sdl_microphone_handle_t*)mic_context;
+   const sdl2_microphone_handle_t *mic = (const sdl2_microphone_handle_t*)mic_context;
    if (!mic)
       return false;
    /* Both params must be non-null */
    return SDL_GetAudioDeviceStatus(mic->device_id) == SDL_AUDIO_PLAYING;
 }
 
-static bool sdl_microphone_start_mic(void *driver_context, void *mic_context)
+static bool sdl2_microphone_start_mic(void *driver_context, void *mic_context)
 {
-   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
+   sdl2_microphone_handle_t *mic = (sdl2_microphone_handle_t*)mic_context;
    if (!mic)
       return false;
    SDL_PauseAudioDevice(mic->device_id, false);
@@ -364,10 +358,10 @@ static bool sdl_microphone_start_mic(void *driver_context, void *mic_context)
    return true;
 }
 
-static bool sdl_microphone_stop_mic(void *driver_context, void *mic_context)
+static bool sdl2_microphone_stop_mic(void *driver_context, void *mic_context)
 {
-   sdl_microphone_t        *sdl = (sdl_microphone_t*)driver_context;
-   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
+   sdl2_microphone_t        *sdl = (sdl2_microphone_t*)driver_context;
+   sdl2_microphone_handle_t *mic = (sdl2_microphone_handle_t*)mic_context;
 
    if (!sdl || !mic)
       return false;
@@ -394,22 +388,22 @@ static bool sdl_microphone_stop_mic(void *driver_context, void *mic_context)
    return true;
 }
 
-static void sdl_microphone_set_nonblock_state(void *driver_context, bool state)
+static void sdl2_microphone_set_nonblock_state(void *driver_context, bool state)
 {
-   sdl_microphone_t *sdl = (sdl_microphone_t*)driver_context;
+   sdl2_microphone_t *sdl = (sdl2_microphone_t*)driver_context;
    if (sdl)
       sdl->nonblock = state;
 }
 
 /* Sleeps until the capture queue holds len bytes, then says how many it
- * holds. The same bounded wait sdl_microphone_read() does - the SDL
+ * holds. The same bounded wait sdl2_microphone_read() does - the SDL
  * capture callback is the only thing that ever notifies this park, so
  * an untimed wait never returns once the device stops calling back -
  * without the copy out. */
-static size_t sdl_microphone_wait_readable(void *driver_context,
+static size_t sdl2_microphone_wait_readable(void *driver_context,
       void *mic_context, size_t len)
 {
-   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
+   sdl2_microphone_handle_t *mic = (sdl2_microphone_handle_t*)mic_context;
    size_t avail;
 
    if (!mic || !mic->ring_init)
@@ -434,12 +428,12 @@ static size_t sdl_microphone_wait_readable(void *driver_context,
    return retro_spsc_read_avail(&mic->ring);
 }
 
-static int sdl_microphone_read(void *driver_context, void *mic_context, void *sv, size_t len)
+static int sdl2_microphone_read(void *driver_context, void *mic_context, void *sv, size_t len)
 {
    int ret    = 0;
    uint8_t *s = (uint8_t*)sv;
-   sdl_microphone_t        *sdl = (sdl_microphone_t*)driver_context;
-   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
+   sdl2_microphone_t        *sdl = (sdl2_microphone_t*)driver_context;
+   sdl2_microphone_handle_t *mic = (sdl2_microphone_handle_t*)mic_context;
 
    if (!sdl || !mic || !s)
       return -1;
@@ -508,59 +502,31 @@ static int sdl_microphone_read(void *driver_context, void *mic_context, void *sv
    return ret;
 }
 
-static bool sdl_microphone_mic_use_float(const void *driver_context, const void *mic_context)
+static bool sdl2_microphone_mic_use_float(const void *driver_context, const void *mic_context)
 {
-   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
+   sdl2_microphone_handle_t *mic = (sdl2_microphone_handle_t*)mic_context;
    return SDL_AUDIO_ISFLOAT(mic->device_spec.format);
 }
 
 microphone_driver_t microphone_sdl = {
-      sdl_microphone_init,
-      sdl_microphone_free,
-      sdl_microphone_read,
-      sdl_microphone_set_nonblock_state,
+      sdl2_microphone_init,
+      sdl2_microphone_free,
+      sdl2_microphone_read,
+      sdl2_microphone_set_nonblock_state,
       "sdl2",
       NULL,
       NULL,
-      sdl_microphone_open_mic,
-      sdl_microphone_close_mic,
-      sdl_microphone_mic_alive,
-      sdl_microphone_start_mic,
-      sdl_microphone_stop_mic,
-      sdl_microphone_mic_use_float,
-      sdl_microphone_wait_readable
+      sdl2_microphone_open_mic,
+      sdl2_microphone_close_mic,
+      sdl2_microphone_mic_alive,
+      sdl2_microphone_start_mic,
+      sdl2_microphone_stop_mic,
+      sdl2_microphone_mic_use_float,
+      sdl2_microphone_wait_readable
 };
 #endif
-#else
-typedef Uint32 SDL_AudioDeviceID;
 
-/** Compatibility stub that defers to SDL_PauseAudio. */
-#define SDL_PauseAudioDevice(dev, pause_on) SDL_PauseAudio(pause_on)
-
-/** Compatibility stub that defers to SDL_LockAudio. */
-#define SDL_LockAudioDevice(dev) SDL_LockAudio()
-
-/** Compatibility stub that defers to SDL_UnlockAudio. */
-#define SDL_UnlockAudioDevice(dev) SDL_UnlockAudio()
-
-/** Compatibility stub that defers to SDL_CloseAudio. */
-#define SDL_CloseAudioDevice(dev) SDL_CloseAudio()
-
-/* Macros for checking audio format bits that were introduced in SDL 2 */
-#define SDL_AUDIO_MASK_BITSIZE       (0xFF)
-#define SDL_AUDIO_MASK_DATATYPE      (1<<8)
-#define SDL_AUDIO_MASK_ENDIAN        (1<<12)
-#define SDL_AUDIO_MASK_SIGNED        (1<<15)
-#define SDL_AUDIO_BITSIZE(x)         (x & SDL_AUDIO_MASK_BITSIZE)
-#define SDL_AUDIO_ISFLOAT(x)         (x & SDL_AUDIO_MASK_DATATYPE)
-#define SDL_AUDIO_ISBIGENDIAN(x)     (x & SDL_AUDIO_MASK_ENDIAN)
-#define SDL_AUDIO_ISSIGNED(x)        (x & SDL_AUDIO_MASK_SIGNED)
-#define SDL_AUDIO_ISINT(x)           (!SDL_AUDIO_ISFLOAT(x))
-#define SDL_AUDIO_ISLITTLEENDIAN(x)  (!SDL_AUDIO_ISBIGENDIAN(x))
-#define SDL_AUDIO_ISUNSIGNED(x)      (!SDL_AUDIO_ISSIGNED(x))
-#endif
-
-typedef struct sdl_audio
+typedef struct sdl2_audio
 {
 #ifdef HAVE_THREADS
    /* Only the bounded waits a short or full ring puts the other side
@@ -582,11 +548,11 @@ typedef struct sdl_audio
     * the last stop before the driver plays it.
     */
    /* Outgoing samples.  Single producer (the core thread in
-    * sdl_audio_write), single consumer (SDL's playback thread in
-    * sdl_audio_playback_cb): a lock-free retro_spsc ring, so the
+    * sdl2_audio_write), single consumer (SDL's playback thread in
+    * sdl2_audio_playback_cb): a lock-free retro_spsc ring, so the
     * writer no longer has to SDL_LockAudioDevice() - i.e. stall the
     * playback callback - to push samples.  speaker_ring_size is the
-    * size asked for; see sdl_ring_room. */
+    * size asked for; see sdl2_ring_room. */
    retro_spsc_t speaker_ring;
    size_t       speaker_ring_size;
    bool         speaker_ring_init;
@@ -595,11 +561,11 @@ typedef struct sdl_audio
    SDL_AudioSpec device_spec;
    uint32_t      layout;   /* the layout asked for, reported when the count matched */
    SDL_AudioDeviceID speaker_device;
-} sdl_audio_t;
+} sdl2_audio_t;
 
-static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
+static void sdl2_audio_playback_cb(void *data, Uint8 *stream, int len)
 {
-   sdl_audio_t  *sdl = (sdl_audio_t*)data;
+   sdl2_audio_t  *sdl = (sdl2_audio_t*)data;
    size_t       _len = retro_spsc_read(&sdl->speaker_ring, stream, (size_t)len);
 #ifdef HAVE_THREADS
    retro_eventcount_notify(&sdl->park);
@@ -608,9 +574,8 @@ static void sdl_audio_playback_cb(void *data, Uint8 *stream, int len)
    memset(stream + _len, 0, len - _len);
 }
 
-static void *sdl_audio_list_new(void *u)
+static void *sdl2_audio_list_new(void *u)
 {
-#ifdef HAVE_SDL2
    int i, num = 0;
    union string_list_elem_attr attr;
    struct string_list *sl = string_list_new();
@@ -625,17 +590,12 @@ static void *sdl_audio_list_new(void *u)
 
       return sl;
    }
-#else
-   /* TODO/FIXME - Any possible SDL1 implementation here, or
-    * do we have to piggyback off OS-specific audio device
-    * enumeration here? */
-#endif
    return NULL;
 }
 
-static void sdl_audio_free(void *data);
+static void sdl2_audio_free(void *data);
 
-static void *sdl_audio_init(const char *device,
+static void *sdl2_audio_init(const char *device,
       unsigned rate, unsigned latency,
        unsigned *new_rate)
 {
@@ -643,7 +603,7 @@ static void *sdl_audio_init(const char *device,
    size_t bufsize;
    SDL_AudioSpec spec           = {0};
    void *tmp                    = NULL;
-   sdl_audio_t *sdl             = NULL;
+   sdl2_audio_t *sdl             = NULL;
    uint32_t sdl_subsystem_flags = SDL_WasInit(0);
 
    /* Initialise audio subsystem, if required */
@@ -658,7 +618,7 @@ static void *sdl_audio_init(const char *device,
          return NULL;
    }
 
-   sdl = (sdl_audio_t*)calloc(1, sizeof(*sdl));
+   sdl = (sdl2_audio_t*)calloc(1, sizeof(*sdl));
    if (!sdl)
       return NULL;
 
@@ -666,20 +626,15 @@ static void *sdl_audio_init(const char *device,
     * carry approximately half of the latency.
     *
     * SDL double buffers audio and we do as well. */
-   frames        = sdl_audio_find_num_frames(rate, latency / 4);
+   frames        = sdl2_audio_find_num_frames(rate, latency / 4);
 
    /* First, let's initialize the output device. */
    spec.freq     = rate;
-#ifdef HAVE_SDL2
    /* SDL2 can open either format; honour the negotiation hint (SDL converts
-    * transparently if the device's native format differs). SDL1.2 output is
-    * int16 only. */
+    * transparently if the device's native format differs). */
    spec.format   = (config_get_ptr()->uints.audio_format_negotiation
          == AUDIO_FORMAT_NEGOTIATION_INT16)
          ? AUDIO_S16SYS : AUDIO_F32SYS;
-#else
-   spec.format   = AUDIO_S16SYS;
-#endif
    /* The channels of the layout the frontend wants; SDL converts if
     * the device lacks them, so what it grants is what the frontend
     * gets, in SDL's fixed interleaved order for the count - which is
@@ -690,20 +645,12 @@ static void *sdl_audio_init(const char *device,
    sdl->layout   = audio_driver_requested_layout();
    spec.channels = (Uint8)audio_layout_channels(sdl->layout);
    spec.samples  = frames; /* This is in audio frames, not samples ... :( */
-   spec.callback = sdl_audio_playback_cb;
+   spec.callback = sdl2_audio_playback_cb;
    spec.userdata = sdl;
 
-   /* No compatibility stub for SDL_OpenAudioDevice because its return value
-    * is different from that of SDL_OpenAudio. */
-#ifdef HAVE_SDL2
    sdl->speaker_device = SDL_OpenAudioDevice(NULL, false, &spec, &sdl->device_spec, 0);
 
    if (sdl->speaker_device == 0)
-#else
-   sdl->speaker_device = SDL_OpenAudio(&spec, &sdl->device_spec);
-
-   if (sdl->speaker_device < 0)
-#endif
    {
       RARCH_ERR("[SDL audio] Failed to open SDL audio output device: %s.\n", SDL_GetError());
       free(sdl);
@@ -737,7 +684,7 @@ static void *sdl_audio_init(const char *device,
    if (!retro_eventcount_init(&sdl->park))
    {
       RARCH_ERR("[SDL audio] Could not create the speaker's park.\n");
-      sdl_audio_free(sdl);
+      sdl2_audio_free(sdl);
       return NULL;
    }
 #endif
@@ -773,7 +720,7 @@ static void *sdl_audio_init(const char *device,
    if (!sdl->speaker_ring_init)
    {
       free(tmp);
-      sdl_audio_free(sdl);
+      sdl2_audio_free(sdl);
       return NULL;
    }
 
@@ -790,15 +737,15 @@ static void *sdl_audio_init(const char *device,
    return sdl;
 }
 
-static ssize_t sdl_audio_write(void *data, const void *s, size_t len)
+static ssize_t sdl2_audio_write(void *data, const void *s, size_t len)
 {
    size_t _len      = 0;
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
 
    /* If we shouldn't wait for space in a full outgoing sample queue... */
    if (sdl->nonblock)
    {
-      size_t avail     = sdl_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
+      size_t avail     = sdl2_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
       size_t write_amt = (avail > len) ? len : avail; /* Enqueue as much data as we can */
       retro_spsc_write(&sdl->speaker_ring, s, write_amt);
       _len             = write_amt; /* If the queue was full...well, too bad. */
@@ -813,7 +760,7 @@ static ssize_t sdl_audio_write(void *data, const void *s, size_t len)
          bool signalled;
 #endif
 
-         avail = sdl_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
+         avail = sdl2_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
 
          /* If the outgoing sample queue is full... */
          if (avail == 0)
@@ -831,7 +778,7 @@ static ssize_t sdl_audio_write(void *data, const void *s, size_t len)
              * has stopped calling back has no next callback and an
              * unbounded park here held the core's thread for good. */
             int key   = retro_eventcount_prepare_wait(&sdl->park);
-            if (sdl_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size))
+            if (sdl2_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size))
             {
                retro_eventcount_cancel_wait(&sdl->park);
                signalled = true;
@@ -861,40 +808,40 @@ static ssize_t sdl_audio_write(void *data, const void *s, size_t len)
    return _len;
 }
 
-static bool sdl_audio_stop(void *data)
+static bool sdl2_audio_stop(void *data)
 {
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
    sdl->is_paused   = true;
    SDL_PauseAudioDevice(sdl->speaker_device, true);
    return true;
 }
 
-static bool sdl_audio_alive(void *data)
+static bool sdl2_audio_alive(void *data)
 {
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
    if (!sdl)
       return false;
    return !sdl->is_paused;
 }
 
-static bool sdl_audio_start(void *data, bool is_shutdown)
+static bool sdl2_audio_start(void *data, bool is_shutdown)
 {
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
    sdl->is_paused   = false;
    SDL_PauseAudioDevice(sdl->speaker_device, false);
    return true;
 }
 
-static void sdl_audio_set_nonblock_state(void *data, bool state)
+static void sdl2_audio_set_nonblock_state(void *data, bool state)
 {
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
    if (sdl)
       sdl->nonblock = state;
 }
 
-static void sdl_audio_free(void *data)
+static void sdl2_audio_free(void *data)
 {
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
 
    if (sdl)
    {
@@ -915,30 +862,30 @@ static void sdl_audio_free(void *data)
    free(sdl);
 }
 
-static uint32_t sdl_audio_layout(void *data)
+static uint32_t sdl2_audio_layout(void *data)
 {
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
    if (!sdl || sdl->device_spec.channels != audio_layout_channels(sdl->layout))
       return AUDIO_LAYOUT_STEREO;
    return sdl->layout;
 }
 
-static bool sdl_audio_use_float(void *data)
+static bool sdl2_audio_use_float(void *data)
 {
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
    return SDL_AUDIO_ISFLOAT(sdl->device_spec.format) ? true : false;
 }
 
 /* TODO/FIXME - implement */
-static size_t sdl_audio_write_avail(void *data)
+static size_t sdl2_audio_write_avail(void *data)
 {
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
-   return sdl_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
+   return sdl2_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
 }
 
-static size_t sdl_audio_buffer_size(void *data)
+static size_t sdl2_audio_buffer_size(void *data)
 {
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
    /* The size asked for, which is what write_avail() can reach; the
     * ring's physical capacity may be larger (power of two). */
    return sdl->speaker_ring_size;
@@ -949,9 +896,9 @@ static size_t sdl_audio_buffer_size(void *data)
  * half of it so the wait always ends. Returns the free space then, or 0
  * when the thread has gone quiet for the stall timeout (device lost)
  * or there is no thread to wait on. */
-static size_t sdl_audio_wait_writable(void *data, size_t len)
+static size_t sdl2_audio_wait_writable(void *data, size_t len)
 {
-   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
    size_t avail;
    /* Each wait ends on a timeout; this ends the loop when the device
     * keeps calling back but never frees enough. */
@@ -967,13 +914,13 @@ static size_t sdl_audio_wait_writable(void *data, size_t len)
 #endif
       if (laps-- < 0)
          return 0;
-      avail = sdl_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
+      avail = sdl2_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
       if (avail >= len)
          return avail;
 #ifdef HAVE_THREADS
       {
          int key = retro_eventcount_prepare_wait(&sdl->park);
-         if (sdl_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size) >= len)
+         if (sdl2_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size) >= len)
          {
             retro_eventcount_cancel_wait(&sdl->park);
             signalled = true;
@@ -990,7 +937,7 @@ static size_t sdl_audio_wait_writable(void *data, size_t len)
    }
 }
 
-static void sdl_audio_list_free(void *u, void *slp)
+static void sdl2_audio_list_free(void *u, void *slp)
 {
    struct string_list *sl = (struct string_list*)slp;
 
@@ -998,27 +945,23 @@ static void sdl_audio_list_free(void *u, void *slp)
       string_list_free(sl);
 }
 
-audio_driver_t audio_sdl = {
-   sdl_audio_init,
-   sdl_audio_write,
-   sdl_audio_stop,
-   sdl_audio_start,
-   sdl_audio_alive,
-   sdl_audio_set_nonblock_state,
-   sdl_audio_free,
-   sdl_audio_use_float,
-#ifdef HAVE_SDL2
+audio_driver_t audio_sdl2 = {
+   sdl2_audio_init,
+   sdl2_audio_write,
+   sdl2_audio_stop,
+   sdl2_audio_start,
+   sdl2_audio_alive,
+   sdl2_audio_set_nonblock_state,
+   sdl2_audio_free,
+   sdl2_audio_use_float,
    "sdl2",
-#else
-   "sdl",
-#endif
-   sdl_audio_list_new,
-   sdl_audio_list_free,
-   sdl_audio_write_avail,
-   sdl_audio_buffer_size,
+   sdl2_audio_list_new,
+   sdl2_audio_list_free,
+   sdl2_audio_write_avail,
+   sdl2_audio_buffer_size,
    NULL, /* write_raw */
-   sdl_audio_wait_writable,
+   sdl2_audio_wait_writable,
    NULL, /* consumed */
    NULL, /* underruns */
-   sdl_audio_layout
+   sdl2_audio_layout
 };

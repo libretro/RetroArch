@@ -1062,10 +1062,12 @@ AUDIO
 #include "../gfx/drivers_context/sdl3_vk_ctx.c"
 #endif
 #elif defined(HAVE_SDL2)
-#include "../audio/drivers/sdl_audio.c"
+#include "../audio/drivers/sdl2_audio.c"
 #include "../input/drivers/sdl_input.c"
 #include "../input/drivers_joypad/sdl_joypad.c"
 #include "../gfx/drivers_context/sdl_gl_ctx.c"
+#elif defined(HAVE_SDL)
+#include "../audio/drivers/sdl1_audio.c"
 #endif
 
 #ifdef HAVE_DSOUND
