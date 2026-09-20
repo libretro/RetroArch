@@ -17,6 +17,7 @@
 #include <bcm_host.h>
 
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -34,10 +35,12 @@ struct dispmanx_page
    /* Each page contains it's own resource handler
     * instead of pointing to in by page number */
    DISPMANX_RESOURCE_HANDLE_T resource;
-   bool used;
-   /* Each page has it's own mutex for
-    * isolating it's used flag access. */
-   slock_t *page_used_mutex;
+   /* Whether the flip that put this page on screen is still in flight.
+    * The frame thread sets it when it takes the page and the vsync
+    * callback clears it for the page that was visible until then, so a
+    * release store and an acquire load carry the handoff on their own -
+    * the free-page scan below has always read this without a lock. */
+   retro_atomic_int_t used;
 
    /* This field will allow us to access the
     * main _dispvars struct from the vsync CB function */
@@ -138,7 +141,7 @@ static struct dispmanx_page *dispmanx_get_free_page(struct dispmanx_video *_disp
       /* Try to find a free page */
       for (i = 0; i < surface->numpages; ++i)
       {
-         if (!surface->pages[i].used)
+         if (!retro_atomic_load_acquire_int(&surface->pages[i].used))
          {
             page = (surface->pages) + i;
             break;
@@ -157,9 +160,7 @@ static struct dispmanx_page *dispmanx_get_free_page(struct dispmanx_video *_disp
    }
 
    /* We mark the chosen page as used */
-   slock_lock(page->page_used_mutex);
-   page->used = true;
-   slock_unlock(page->page_used_mutex);
+   retro_atomic_store_release_int(&page->used, 1);
 
    return page;
 }
@@ -174,11 +175,8 @@ static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
     * we can chose this page as free */
    if (surface->current_page)
    {
-      slock_lock(surface->current_page->page_used_mutex);
-
       /* We mark as free the page that was visible until now */
-      surface->current_page->used = false;
-      slock_unlock(surface->current_page->page_used_mutex);
+      retro_atomic_store_release_int(&surface->current_page->used, 0);
    }
 
    /* The page on which we issued the flip that
@@ -212,8 +210,7 @@ static void dispmanx_surface_free(struct dispmanx_video *_dispvars,
    for (i = 0; i < surface->numpages; i++)
    {
       vc_dispmanx_resource_delete(surface->pages[i].resource);
-      surface->pages[i].used = false;
-      slock_free(surface->pages[i].page_used_mutex);
+      retro_atomic_store_release_int(&surface->pages[i].used, 0);
    }
 
    free(surface->pages);
@@ -281,16 +278,15 @@ static void dispmanx_surface_setup(struct dispmanx_video *_dispvars,
 
    for (i = 0; i < surface->numpages; i++)
    {
-      surface->pages[i].used = false;
+      retro_atomic_store_release_int(&surface->pages[i].used, 0);
       surface->pages[i].surface = surface;
       surface->pages[i].dispvars = _dispvars;
-      surface->pages[i].page_used_mutex = slock_new();
    }
 
-   /* No need to mutex this access to the "used" member because
-    * the flipping/callbacks are not still running */
+   /* The flipping/callbacks are not still running, so nothing races
+    * this first claim */
    surface->next_page = &(surface->pages[0]);
-   surface->next_page->used = true;
+   retro_atomic_store_release_int(&surface->next_page->used, 1);
 
    /* The "visible" width obtained from the core pitch. We blit based on
     * the "visible" width, for cores with things between scanlines. */

@@ -92,7 +92,6 @@ static uintptr_t main_thread_id             = 0;
 static slock_t *running_lock                = NULL;
 static slock_t *finished_lock               = NULL;
 static slock_t *property_lock               = NULL;
-static slock_t *queue_lock                  = NULL;
 static scond_t *worker_cond                 = NULL;
 /* Signalled by a worker each time it moves a task onto the finished
  * queue.  The blocking waiters sleep on it instead of spinning. */
@@ -122,7 +121,6 @@ struct task_worker
     * cleared the globals. Set at init, never changed. */
    slock_t           *running_lock;
    slock_t           *finished_lock;
-   slock_t           *queue_lock;
    scond_t           *worker_cond;
    scond_t           *finished_cond;
 };
@@ -476,7 +474,7 @@ static struct retro_task_impl impl_regular = {
 
 #ifdef HAVE_THREADS
 
-/* 'queue_lock' must be held for the duration of this function */
+/* 'running_lock' must be held for the duration of this function */
 static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
 {
    retro_task_t     *t = NULL;
@@ -517,11 +515,9 @@ static void task_queue_remove(task_queue_t *queue, retro_task_t *task)
 static void retro_task_threaded_push_running(retro_task_t *task)
 {
    slock_lock(running_lock);
-   slock_lock(queue_lock);
    task_queue_put(&tasks_running, task);
    retro_atomic_fetch_add_int(&tasks_running_count, 1);
    scond_signal(worker_cond);
-   slock_unlock(queue_lock);
    slock_unlock(running_lock);
 }
 
@@ -848,7 +844,6 @@ static void threaded_worker(void *userdata)
          scond_free(self->finished_cond);
          slock_free(self->running_lock);
          slock_free(self->finished_lock);
-         slock_free(self->queue_lock);
          free(task->title);
          free(task->error);
          free(task);
@@ -874,7 +869,6 @@ static void threaded_worker(void *userdata)
          /* mimics retro_task_threaded_push_running,
           * but also includes a task_queue_remove */
          slock_lock(running_lock);
-         slock_lock(queue_lock);
 
          /* do nothing if only item in queue */
          if (task->next)
@@ -883,7 +877,6 @@ static void threaded_worker(void *userdata)
             task_queue_put(&tasks_running, task);
             scond_signal(worker_cond);
          }
-         slock_unlock(queue_lock);
          slock_unlock(running_lock);
       }
       else
@@ -898,9 +891,7 @@ static void threaded_worker(void *userdata)
           * running_lock -> finished_lock, matching the find
           * function; no other path nests these locks. */
          slock_lock(running_lock);
-         slock_lock(queue_lock);
          task_queue_remove(&tasks_running, task);
-         slock_unlock(queue_lock);
 
          /* Add task to finished queue */
          slock_lock(finished_lock);
@@ -928,13 +919,11 @@ static void retro_task_sync_primitives_free(void)
       slock_free(property_lock);
       property_lock = NULL;
    }
-   slock_free(queue_lock);
 
    worker_cond     = NULL;
    finished_cond   = NULL;
    running_lock    = NULL;
    finished_lock   = NULL;
-   queue_lock      = NULL;
 }
 
 /* slock_new() and scond_new() return NULL when the allocation or the
@@ -947,14 +936,12 @@ static bool retro_task_sync_primitives_new(void)
    finished_lock   = slock_new();
    if (!property_lock_pinned)
       property_lock = slock_new();
-   queue_lock      = slock_new();
    worker_cond     = scond_new();
    finished_cond   = scond_new();
 
    if (     running_lock
          && finished_lock
          && property_lock
-         && queue_lock
          && worker_cond
          && finished_cond)
       return true;
@@ -976,7 +963,6 @@ static bool retro_task_threaded_init(void)
    retro_atomic_store_release_int(&worker_self->state, TASK_WORKER_IDLE);
    worker_self->running_lock  = running_lock;
    worker_self->finished_lock = finished_lock;
-   worker_self->queue_lock    = queue_lock;
    worker_self->worker_cond   = worker_cond;
    worker_self->finished_cond = finished_cond;
 
@@ -1009,9 +995,7 @@ static void retro_task_threaded_orphan_worker(retro_task_t *task)
 {
    slock_t *lock = running_lock;
 
-   slock_lock(queue_lock);
    task_queue_remove(&tasks_running, task);
-   slock_unlock(queue_lock);
    retro_atomic_fetch_sub_int(&tasks_running_count, 1);
 
    sthread_detach(worker_thread);
@@ -1023,7 +1007,6 @@ static void retro_task_threaded_orphan_worker(retro_task_t *task)
    finished_cond        = NULL;
    running_lock         = NULL;
    finished_lock        = NULL;
-   queue_lock           = NULL;
 
    slock_unlock(lock);
 }
@@ -1151,12 +1134,10 @@ static void gcd_worker(retro_task_t *task)
    {
       /* Remove task from running queue */
       slock_lock(running_lock);
-      slock_lock(queue_lock);
       gcd_queue_count--;
       if (!gcd_queue_count)
          scond_signal(worker_cond);
       task_queue_remove(&tasks_running, task);
-      slock_unlock(queue_lock);
       slock_unlock(running_lock);
 
       /* Add task to finished queue */
@@ -1172,13 +1153,11 @@ static void gcd_worker(retro_task_t *task)
 static void retro_task_gcd_push_running(retro_task_t *task)
 {
    slock_lock(running_lock);
-   slock_lock(queue_lock);
    task_queue_put(&tasks_running, task);
    retro_atomic_fetch_add_int(&tasks_running_count, 1);
    gcd_queue_count++;
    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
                   ^{ gcd_worker(task); });
-   slock_unlock(queue_lock);
    slock_unlock(running_lock);
 }
 
@@ -1244,14 +1223,12 @@ static void retro_task_gcd_deinit(void)
    slock_free(running_lock);
    slock_free(finished_lock);
    slock_free(property_lock);
-   slock_free(queue_lock);
 
    worker_cond     = NULL;
    finished_cond   = NULL;
    running_lock    = NULL;
    finished_lock   = NULL;
    property_lock   = NULL;
-   queue_lock      = NULL;
 }
 
 static struct retro_task_impl impl_gcd = {
@@ -1357,14 +1334,19 @@ void task_queue_check(void)
 
 bool task_queue_push(retro_task_t *task)
 {
-   /* Ignore this task if a related one is already running */
+   /* Ignore this task if a related one is already running.
+    *
+    * The scan walks tasks_running, so it takes the lock that guards
+    * that queue's structure. push_running() below takes the same lock,
+    * so a caller must not hold it either way - a task handler or
+    * callback pushing a follow-up runs outside it. */
    if (task->type == TASK_TYPE_BLOCKING)
    {
       retro_task_t *running = NULL;
       bool            found = false;
 
 #ifdef HAVE_THREADS
-      slock_lock(queue_lock);
+      slock_lock(running_lock);
 #endif
       running = tasks_running.front;
 
@@ -1378,7 +1360,7 @@ bool task_queue_push(retro_task_t *task)
       }
 
 #ifdef HAVE_THREADS
-      slock_unlock(queue_lock);
+      slock_unlock(running_lock);
 #endif
 
       /* skip this task, user must try again later */

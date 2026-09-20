@@ -1274,9 +1274,7 @@ static void rsnd_cb_thread(void *thread_data)
          size_t  will_read = read_size < chunk_size - has_read
             ? read_size : chunk_size - has_read;
 
-         rsd_callback_lock(rd);
          cb_ret = rd->audio_callback(buffer + has_read, will_read, rd->cb_data);
-         rsd_callback_unlock(rd);
 
          if (cb_ret < 0)
          {
@@ -1606,7 +1604,6 @@ int rsd_init(rsound_t** rsound)
 
    (*rsound)->thread.mutex      = slock_new();
    (*rsound)->thread.cond_mutex = slock_new();
-   (*rsound)->cb_lock           = slock_new();
    (*rsound)->thread.cond       = scond_new();
 
    /* Assumes default of S16_LE samples. */
@@ -1668,9 +1665,6 @@ void rsd_set_callback(rsound_t *rsound, rsd_audio_callback_t audio_cb,
    rsound->cb_data        = userdata;
 }
 
-void rsd_callback_lock(rsound_t *rsound) { slock_lock(rsound->cb_lock); }
-void rsd_callback_unlock(rsound_t *rsound) { slock_unlock(rsound->cb_lock); }
-
 int rsd_free(rsound_t *rsound)
 {
    if (rsound->fifo_buffer)
@@ -1682,7 +1676,6 @@ int rsd_free(rsound_t *rsound)
 
    slock_free(rsound->thread.mutex);
    slock_free(rsound->thread.cond_mutex);
-   slock_free(rsound->cb_lock);
    scond_free(rsound->thread.cond);
 
    free(rsound);

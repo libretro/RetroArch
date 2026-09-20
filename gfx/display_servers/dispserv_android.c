@@ -537,16 +537,15 @@ dpi_fallback:
 
 bool android_display_has_focus(void *data)
 {
-   bool                    focused = false;
    struct android_app *android_app = (struct android_app*)g_android;
    if (!android_app)
       return true;
 
-   slock_lock(android_app->mutex);
-   focused = !retro_atomic_load_acquire_int(&android_app->unfocused);
-   slock_unlock(android_app->mutex);
-
-   return focused;
+   /* The focus commands publish this with a release store
+    * (android_input_poll_main_cmd), so the acquire load carries the
+    * ordering by itself and there is no second field here to read
+    * with it. The input poll reaches this every frame. */
+   return !retro_atomic_load_acquire_int(&android_app->unfocused);
 }
 
 /* The thread's looper is ident-based - prepared with
