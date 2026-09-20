@@ -3243,6 +3243,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
+      case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS_2:
       {
          uint64_t *quirks = (uint64_t *) data;
 
