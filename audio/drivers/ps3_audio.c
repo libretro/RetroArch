@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_atomic.h>
 #include <retro_spsc.h>
 
 #include <defines/ps3_defines.h>
@@ -50,7 +51,10 @@ typedef struct
    uint32_t audio_port;
    bool nonblock;
    bool started;
-   volatile bool quit_thread;
+   /* Set by the thread tearing the driver down, read by the output
+    * thread's loop. An atomic and not a volatile bool: volatile orders
+    * nothing between the two. */
+   retro_atomic_int_t quit_thread;
 } ps3_audio_t;
 
 
@@ -70,7 +74,7 @@ static void ps3_event_loop(uint64_t data)
    audioCreateNotifyEventQueue(&id, &key);
    audioSetNotifyEventQueue(key);
 
-   while (!aud->quit_thread)
+   while (!retro_atomic_load_acquire_int(&aud->quit_thread))
    {
       sysEventQueueReceive(id, &event, PS3_SYS_NO_TIMEOUT);
 
@@ -145,6 +149,7 @@ static void *ps3_audio_init(const char *device,
 
    audioPortStart(data->audio_port);
    data->started = true;
+   retro_atomic_int_init(&data->quit_thread, 0);
    sysThreadCreate(&data->thread, ps3_event_loop,
 #ifdef __PSL1GHT__
    data,
@@ -190,7 +195,8 @@ static ssize_t ps3_audio_write(void *data, const void *s, size_t len)
       int laps = PS3_AUDIO_WAIT_LAPS;
       while (ps3_audio_write_avail(aud) < len)
       {
-         if (!aud->started || aud->quit_thread)
+         if (      !aud->started
+               || retro_atomic_load_acquire_int(&aud->quit_thread))
             return 0;
          ps3_audio_wait_block(aud);
          if (--laps < 0)
@@ -244,7 +250,7 @@ static void ps3_audio_free(void *data)
    uint64_t val;
    ps3_audio_t *aud = data;
 
-   aud->quit_thread = true;
+   retro_atomic_store_release_int(&aud->quit_thread, 1);
    ps3_audio_start(aud, false);
    sysThreadJoin(aud->thread, &val);
 
@@ -293,7 +299,8 @@ static size_t ps3_audio_wait_writable(void *data, size_t len)
 
    for (;;)
    {
-      if (!aud->started || aud->quit_thread)
+      if (      !aud->started
+            || retro_atomic_load_acquire_int(&aud->quit_thread))
          return 0;
       avail = ps3_audio_write_avail(aud);
       if (avail >= len)
