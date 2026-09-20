@@ -278,6 +278,11 @@ libretro-common/samples/**/*_test
 # committed as a built binary, which made any make clean in that
 # directory show up as a deletion.
 samples/audio/embedded_alsa/abi_check
+# The driver's text with its Windows includes swapped, produced by each
+# suite's Makefile from audio/drivers/wasapi.c. Committed copies went
+# stale against the driver they are generated from.
+samples/audio/wasapi_exclusive_pacing/wasapi_sim.c
+samples/audio/discrete_multichannel/wasapi_sim.c
 samples/gfx/font_lifecycle/lifecycle
 samples/gfx/font_lifecycle/lifecycle-threaded
 samples/gfx/font_lifecycle/create

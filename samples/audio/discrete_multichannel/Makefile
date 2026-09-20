@@ -105,5 +105,6 @@ check: $(TARGET)
 clean:
 	rm -f $(OBJS)
 	rm -f $(TARGET)
+	rm -f $(GEN)
 
 .PHONY: clean all check
