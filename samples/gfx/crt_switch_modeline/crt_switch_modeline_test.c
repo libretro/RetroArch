@@ -71,6 +71,7 @@
 
 #include "../../../gfx/video_crt_switch.h"
 #include "../../../gfx/video_display_server.h"
+#include "../../../gfx/modeline/modeline_edid.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../configuration.h"
 #include "../../../runloop.h"
@@ -217,11 +218,49 @@ int video_display_server_list_outputs(video_output_info_t *out, int max)
    return i;
 }
 
+/* A panel reporting 50-75 Hz over 30-85 kHz in its range
+ * descriptor, which is what any modern display carries. Built with
+ * the tree's own generator so the block the parser sees is the one
+ * the writer emits. */
+static bool srv_have_edid;
+
 int video_display_server_get_edid(uint8_t *out, size_t max)
 {
-   (void)out;
-   (void)max;
-   return -1;
+   video_modeline_t mode;
+   video_modeline_range_t range;
+
+   if (!srv_have_edid || max < MODELINE_EDID_SIZE)
+      return -1;
+
+   memset(&mode, 0, sizeof(mode));
+   mode.pclock  = 148500000;
+   mode.vfreq   = 60.0;
+   mode.hfreq   = 67500.0;
+   mode.width   = 1920;
+   mode.height  = 1080;
+   mode.refresh = 60;
+   mode.hactive = 1920;
+   mode.hbegin  = 2008;
+   mode.hend    = 2052;
+   mode.htotal  = 2200;
+   mode.vactive = 1080;
+   mode.vbegin  = 1084;
+   mode.vend    = 1089;
+   mode.vtotal  = 1125;
+   mode.hsync   = 1;
+   mode.vsync   = 1;
+
+   memset(&range, 0, sizeof(range));
+   range.hfreq_min = 30000.0;
+   range.hfreq_max = 85000.0;
+   range.vfreq_min = 50.0;
+   range.vfreq_max = 75.0;
+   range.progressive_lines_min = 200;
+   range.progressive_lines_max = 1200;
+
+   if (!modeline_edid_build(&mode, &range, "panel", out))
+      return -1;
+   return MODELINE_EDID_SIZE;
 }
 
 /* ---- the rest of the RetroArch side ---- */
@@ -454,6 +493,42 @@ static void test_rebind_after_display_server_rebuild(void)
    ctx_ident = "wl";
 }
 
+/* The engine is display-agnostic, and the EDID preset takes its
+ * limits from whatever the display reports - so a display that says
+ * it syncs to 75 Hz gets the content's rate, not the desktop's. That
+ * is the whole of "70 Hz DOS content shown at 70 Hz" on a modern
+ * panel, and it needs no CRT and no switchres.ini. Nobody would
+ * notice it breaking, because nothing in the menu says it is there.
+ */
+static void test_edid_preset_matches_content_refresh(void)
+{
+   videocrt_switch_t sw;
+
+   printf("\n-- 70 Hz content on a panel that reports 50-75 Hz --\n");
+   memset(&sw, 0, sizeof(sw));
+   srv_has_ops   = true;
+   srv_set_ok    = true;
+   srv_have_edid = true;
+   srv_ident     = "x11";
+   ctx_ident     = "x11";
+   log_reset();
+   srv_sets = 0;
+   memset(&srv_last_set, 0, sizeof(srv_last_set));
+
+   crt_switch_res_core(&sw, 640, 640, 400, 70.086f, false,
+         CRT_SWITCH_EDID, 0, 0, 0, false, 0, false, ASPECT_RATIO_CORE, 0);
+
+   check("the display's own ranges were used",
+         log_hits("range(s) from the display's EDID") >= 1);
+   check("a mode was applied", srv_sets > 0);
+   check("at the content's rate, not the desktop's",
+         srv_last_set.vfreq > 69.5 && srv_last_set.vfreq < 70.5);
+
+   crt_destroy_modes(&sw);
+   srv_have_edid = false;
+   ctx_ident     = "wl";
+}
+
 static void test_failing_set_still_reports(void)
 {
    videocrt_switch_t sw;
@@ -541,6 +616,7 @@ int main(int argc, char **argv)
    test_khr_display();
    test_context_lines_are_said_once();
    test_rebind_after_display_server_rebuild();
+   test_edid_preset_matches_content_refresh();
    test_failing_set_still_reports();
    test_edid_hint_names_the_selected_head();
 
