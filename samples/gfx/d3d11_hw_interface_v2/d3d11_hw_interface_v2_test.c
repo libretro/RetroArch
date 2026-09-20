@@ -288,7 +288,7 @@ int main(int argc, char **argv)
       col[0] = (float)(n & 0xff) / 255.0f; col[1] = (float)((n >> 8) & 0xff) / 255.0f; col[2] = 0.0f; col[3] = 1.0f;
 
       rebind = d3d11->lock_context(d3d11->handle) && (!norebind || n == 0);
-      if (rebind || v2)
+      if (rebind)
       {
          /* the frontend has had the context: everything, again */
          ID3D11DeviceContext_IASetPrimitiveTopology(d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -296,8 +296,14 @@ int main(int argc, char **argv)
          ID3D11DeviceContext_PSSetShader(d3d11->context, ps, NULL, 0);
          ID3D11DeviceContext_PSSetConstantBuffers(d3d11->context, 0, 1, &cb);
          ID3D11DeviceContext_RSSetViewports(d3d11->context, 1, &vp);
-         ID3D11DeviceContext_OMSetRenderTargets(d3d11->context, 1, &rtv, NULL);
       }
+      /* The target belongs to this frame's sync index, so it is bound
+       * every frame whatever the context has been doing. Binding it is
+       * not what lock_context is about, and doing it here is what keeps
+       * the norebind run below a real control: a core that ignores
+       * lock_context still draws into the right texture, and still
+       * draws it wrong. */
+      ID3D11DeviceContext_OMSetRenderTargets(d3d11->context, 1, &rtv, NULL);
       ID3D11DeviceContext_UpdateSubresource(d3d11->context, (ID3D11Resource*)cb, 0, NULL, col, 0, 0);
       ID3D11DeviceContext_Draw(d3d11->context, 3, 0);
 

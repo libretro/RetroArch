@@ -3,10 +3,11 @@
 # where wined3d implements D3D11 over OpenGL (Mesa's llvmpipe will do: no
 # GPU is needed). See the test for what it checks.
 #
-# Two runs. The contract as libretro_d3d11.h version 2 states it must
-# pass. A core that ignores what lock_context tells it must FAIL: if it
-# passes, the frontend in the test has stopped disturbing the context,
-# and the first run proves nothing.
+# Three runs. The contract as libretro_d3d11.h version 2 states it must
+# pass. Two controls must FAIL: a core that ignores what lock_context
+# tells it, and a core that skips wait_sync_index. If either passes, the
+# frontend in the test has stopped disturbing the context or stopped
+# lapping the core, and the first run proves nothing.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
@@ -54,16 +55,8 @@ case "$out" in
 esac
 echo "   fails, as it should"
 
-echo "== version 3: no copy at video_refresh, a texture per sync index"
-out=$(timeout 300 "$WINE" ./d3d11_hw_interface_v2_test.exe v3 | tr -d '\r') || true
-echo "$out"
-case "$out" in
-   *"d3d11_hw_interface_v2: ok"*) ;;
-   *) echo "FAIL"; exit 1 ;;
-esac
-
-echo "== version 3, a core that skips wait_sync_index (must fail)"
-out=$(timeout 300 "$WINE" ./d3d11_hw_interface_v2_test.exe v3-nowait | tr -d '\r') || true
+echo "== a core that skips wait_sync_index (must fail)"
+out=$(timeout 300 "$WINE" ./d3d11_hw_interface_v2_test.exe v2-nowait | tr -d '\r') || true
 echo "$out"
 case "$out" in
    *"d3d11_hw_interface_v2: ok"*)
