@@ -927,7 +927,3 @@ void rcheevos_menu_populate_submenu(void* data)
 }
 
 #endif /* HAVE_MENU */
-
-
-
-
