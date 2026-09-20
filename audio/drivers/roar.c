@@ -143,7 +143,6 @@ static void ra_free(void *data)
  * float PCM codec in the versions this driver has been built against;
  * revisit only if one appears. */
 static bool ra_use_float(void *data) { return false; }
-static size_t ra_write_avail(void *data) { return 0; }
 
 audio_driver_t audio_roar = {
    ra_init,
@@ -157,7 +156,10 @@ audio_driver_t audio_roar = {
    "roar",
    NULL,
    NULL,
-   ra_write_avail,
+   /* write_avail - the VS API reports neither the room in the stream
+    * nor what the server still holds. NULL disables rate control;
+    * a constant would instead feed it a fill that never changes. */
+   NULL,
    NULL, /* buffer_size */
    NULL  /* write_raw */
 };

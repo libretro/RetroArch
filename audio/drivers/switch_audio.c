@@ -357,14 +357,20 @@ static void switch_audio_free(void *data)
  * refuses anything else. Float is not something this service offers. */
 static bool switch_audio_use_float(void *data) { return false; }
 
+/* Room left in the buffer being filled. Without one in hand there is
+ * no room to report: acquiring one may block, which this may not. */
 static size_t switch_audio_write_avail(void *data)
 {
-   switch_audio_t *swa = (switch_audio_t*) data;
+   size_t size;
+   switch_audio_t *swa = (switch_audio_t*)data;
 
    if (!swa || !swa->current_buffer)
       return 0;
 
-   return swa->current_buffer->buffer_size;
+   size = switch_audio_buffer_size(NULL);
+   if (swa->current_buffer->data_size >= size)
+      return 0;
+   return size - swa->current_buffer->data_size;
 }
 
 static void switch_audio_set_nonblock_state(void *data, bool state)
