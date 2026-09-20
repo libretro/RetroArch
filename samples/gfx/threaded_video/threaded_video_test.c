@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 #include <unistd.h>
 #include <file/file_path.h>
@@ -2066,9 +2067,35 @@ static void lane_surface_update(void)
    gfx_surface_free(s);
    run_frames(3);
 
+#ifdef HAVE_GFX_INSTRUMENT
+   /* The threaded half on its own: one texture, then an update per
+    * frame, each posted as a descriptor. Counted before the mode
+    * switch below, whose video reinit loads the menu's own textures
+    * through the same counters. */
+   {
+      int loads   = gfx_instrument_get(GFX_INSTR_TEX_LOAD);
+      int updates = gfx_instrument_get(GFX_INSTR_TEX_UPDATE);
+      int posts   = gfx_instrument_get(GFX_INSTR_ASYNC_POST);
+      int allocs  = gfx_instrument_get(GFX_INSTR_ASYNC_POST_ALLOC);
+      int copies  = gfx_instrument_get(GFX_INSTR_SUBMIT_COPY);
+      fprintf(stderr, "[baseline] surface, threaded: %d loads, %d updates, "
+            "%d posts (%d allocated), %d copies\n",
+            loads, updates, posts, allocs, copies);
+      CHECK(allocs == 0, "%d of %d posts allocated a node", allocs, posts);
+      CHECK(copies == 0, "%d submits copied into a slot", copies);
+      if (video_driver_texture_can_update())
+      {
+         CHECK(loads == 1, "%d texture loads for one streaming surface", loads);
+         CHECK(updates > 0, "no in-place update in 32 threaded submits");
+      }
+   }
+#endif
    /* Direct: the submit runs the driver here and now. */
    set_threaded_via_setting(false);
    run_frames(2);
+#ifdef HAVE_GFX_INSTRUMENT
+   gfx_instrument_reset();
+#endif
    expect_wrapper(false, "surface lane, direct");
    s = gfx_surface_new(64, 48, 1, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
    CHECK(s != NULL, "direct surface allocation failed");
@@ -2103,16 +2130,16 @@ static void lane_surface_update(void)
       int posts   = gfx_instrument_get(GFX_INSTR_ASYNC_POST);
       int allocs  = gfx_instrument_get(GFX_INSTR_ASYNC_POST_ALLOC);
       int copies  = gfx_instrument_get(GFX_INSTR_SUBMIT_COPY);
-      fprintf(stderr, "[baseline] surface: %d loads, %d updates, "
+      fprintf(stderr, "[baseline] surface, direct: %d loads, %d updates, "
             "%d unloads, %d posts (%d allocated), %d copies\n",
             loads, updates, unloads, posts, allocs, copies);
       CHECK(allocs == 0, "%d of %d posts allocated a node", allocs, posts);
       CHECK(copies == 0, "%d submits copied into a slot", copies);
       if (video_driver_texture_can_update())
       {
-         /* One texture per surface, kept for every frame of it: this
-          * is the budget the whole streaming path exists for. */
-         CHECK(loads <= 2, "%d texture loads for two streaming surfaces",
+         /* One texture for the surface, kept for every frame of it:
+          * this is the budget the whole streaming path exists for. */
+         CHECK(loads == 1, "%d texture loads for one direct surface",
                loads);
          /* Every accepted submit updates in place; a submit the
           * driver drops because its own staging is still in flight
@@ -2250,6 +2277,147 @@ static void lane_overlay_textures(void)
       fprintf(stderr, "[pass] overlay page lane\n");
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Lane: a 4K surface streamed for sixty frames                        */
+/*   Section 15 of the surface plan asks for the numbers, not the      */
+/*   argument: a 3840x2160 surface under the wrapper, sixty submits,   */
+/*   the time each submit takes on the main thread and the frames it   */
+/*   takes for the slot to come back. The submit must stay a          */
+/*   descriptor hand-off - microseconds, not a 33 MB copy - and the    */
+/*   counters must show no allocation per post, no copy, and one       */
+/*   texture for the run. Latencies are printed as p50/p95/p99 for     */
+/*   the record; the check is on the budgets, since the clock here    */
+/*   is a software rasteriser's.                                       */
+/* ------------------------------------------------------------------ */
+
+/* The time this thread spent, not the time that passed: on a host
+ * with one core the video thread's 33 MB upload preempts the main
+ * thread in the middle of a submit, and wall clock would charge that
+ * to the hand-off. Thread CPU time charges only what the submit
+ * itself did. */
+static int64_t thread_cpu_usec(void)
+{
+#if defined(CLOCK_THREAD_CPUTIME_ID)
+   struct timespec ts;
+   if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) == 0)
+      return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+#endif
+   return cpu_features_get_time_usec();
+}
+
+static int cmp_i64(const void *a, const void *b)
+{
+   int64_t x = *(const int64_t*)a, y = *(const int64_t*)b;
+   return (x > y) - (x < y);
+}
+
+static void lane_surface_4k(void)
+{
+   unsigned had = failures;
+   gfx_surface_t *s;
+   bool rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) != 0;
+   int64_t submit_us[60];
+   int64_t release_frames[60];
+   unsigned i, n_sub = 0, n_rel = 0;
+   unsigned frame_now = 0;
+   uintptr_t first    = 0;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "4k surface lane");
+
+   s = gfx_surface_new(3840, 2160, 2, TEXTURE_FILTER_LINEAR,
+         surf_release_cb, NULL);
+   CHECK(s != NULL, "4K surface allocation failed");
+   if (!s)
+      return;
+   surf_releases = 0;
+#ifdef HAVE_GFX_INSTRUMENT
+   gfx_instrument_reset();
+#endif
+
+   for (i = 0; i < 60; i++)
+   {
+      unsigned slot = i & 1;
+      int64_t t0, t1;
+      unsigned before = surf_releases;
+      unsigned waited = 0;
+      enum gfx_surface_submit_result r;
+
+      /* Only the top-left tile is touched: what is measured is the
+       * hand-off, not the fill. */
+      s->slots[slot][0] = 0xff000000u | i;
+      t0 = thread_cpu_usec();
+      r  = gfx_surface_submit(s, slot, rgba);
+      t1 = thread_cpu_usec();
+      if (r == GFX_SURFACE_SUBMIT_BUSY)
+      {
+         run_frames(1);
+         frame_now++;
+         continue;
+      }
+      CHECK(r == GFX_SURFACE_SUBMIT_QUEUED, "4K frame %u: submit returned %d", i, r);
+      submit_us[n_sub++] = t1 - t0;
+      while (surf_releases == before && waited < 8)
+      {
+         run_frames(1);
+         frame_now++;
+         waited++;
+      }
+      CHECK(waited < 8, "4K frame %u: slot not released within 8 frames", i);
+      release_frames[n_rel++] = waited;
+      if (!first)
+         first = s->handle;
+   }
+   run_frames(2);
+
+   if (n_sub)
+   {
+      qsort(submit_us, n_sub, sizeof(submit_us[0]), cmp_i64);
+      qsort(release_frames, n_rel, sizeof(release_frames[0]), cmp_i64);
+      fprintf(stderr, "[baseline] 4k surface: %u submits, submit us "
+            "p50 %lld p95 %lld p99 %lld; slot back in frames "
+            "p50 %lld p95 %lld p99 %lld\n", n_sub,
+            (long long)submit_us[n_sub / 2],
+            (long long)submit_us[(n_sub * 95) / 100],
+            (long long)submit_us[(n_sub * 99) / 100],
+            (long long)release_frames[n_rel / 2],
+            (long long)release_frames[(n_rel * 95) / 100],
+            (long long)release_frames[(n_rel * 99) / 100]);
+      /* A submit hands over a descriptor. A 4K copy on this thread
+       * would be milliseconds of its own CPU time; the budget leaves
+       * room for a slow host and none for a copy. */
+      CHECK(submit_us[(n_sub * 99) / 100] < 2000,
+            "4K submit p99 is %lld us: that is a copy, not a hand-off",
+            (long long)submit_us[(n_sub * 99) / 100]);
+   }
+   CHECK(n_sub >= 30, "only %u of 60 4K submits were accepted", n_sub);
+   if (s->handle && video_driver_texture_can_update())
+      CHECK(s->handle == first, "4K in-place driver replaced the texture");
+
+#ifdef HAVE_GFX_INSTRUMENT
+   {
+      int allocs = gfx_instrument_get(GFX_INSTR_ASYNC_POST_ALLOC);
+      int copies = gfx_instrument_get(GFX_INSTR_SUBMIT_COPY);
+      int loads  = gfx_instrument_get(GFX_INSTR_TEX_LOAD);
+      fprintf(stderr, "[baseline] 4k surface: %d loads, %d allocating "
+            "posts, %d copies\n", loads, allocs, copies);
+      CHECK(allocs == 0, "4K: %d posts allocated", allocs);
+      CHECK(copies == 0, "4K: %d submits copied", copies);
+      if (video_driver_texture_can_update())
+         CHECK(loads <= 1, "4K: %d texture loads for one streaming surface", loads);
+   }
+#endif
+
+   gfx_surface_free(s);
+   run_frames(3);
+   set_threaded_via_setting(false);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] 4k surface lane (%u submits)\n", n_sub);
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -2384,6 +2552,8 @@ int main(int argc, char *argv[])
    }
    lane_zero_copy();
    lane_surface_update();
+   if (real_driver())
+      lane_surface_4k();
    lane_overlay_textures();
    lane_driver_reloads();
    if (!real_driver())

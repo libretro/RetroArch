@@ -979,10 +979,19 @@ static void video_thread_async_run(thread_video_t *thr)
          if (     !driver_data || !poke || !poke->update_texture
                || !poke->update_texture(driver_data, n->handle,
                      (const struct texture_image*)n->img, false))
+         {
+            GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_REFUSED);
             n->handle = 0;
+         }
+         else
+            GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE);
       }
       else
       {
+         /* Counted here, on the thread that runs it: the synchronous
+          * entry point counts its own, and a load posted through the
+          * list never passes through it. */
+         GFX_INSTR_INC(GFX_INSTR_TEX_LOAD);
          n->handle = 0;
          if (driver_data && poke && poke->load_texture)
             n->handle = poke->load_texture(driver_data,
