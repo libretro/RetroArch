@@ -2519,6 +2519,7 @@ static const struct
    char s_a95c1929[54];
    char s_23b8ca2e[32];
    char s_daf6d7e2[59];
+   char s_708c69d6[370];
    char s_042502c4[68];
    char s_90ae9a9f[115];
    char s_81b79d5b_0[500];
@@ -2896,6 +2897,8 @@ static const struct
    char s_d9153542[53];
    char s_8e48ec69[41];
    char s_cd43c108[79];
+   char s_cd46e260[336];
+   char s_cd482ffe[359];
    char s_49336383[42];
    char s_e92351d4[106];
    char s_8e22cdce[47];
@@ -3118,6 +3121,7 @@ static const struct
    char s_5aa622cc[217];
    char s_2b908073[217];
    char s_64bea160[173];
+   char s_2826de99[392];
    char s_97c62766[170];
    char s_6f458a85[125];
    char s_41702fdc[61];
@@ -3704,6 +3708,7 @@ static const struct
    char s_261210b3[83];
    char s_3a4b246c[119];
    char s_2ceab671[136];
+   char s_977f8e82[278];
    char s_3c679f0a[313];
    char s_5b059407[137];
    char s_36033606[174];
@@ -7099,6 +7104,11 @@ static const struct
    "Desactiva qualsevol connector DSP d\342\200\231\303\240udio activat.",
    "Habilita la sortida d\342\200\231\303\240udio.",
    "Reprodueix fluxos d'\303\240udio simultanis fins i tot al men\303\272.",
+   "Aplica la gesti\303\263 d'\303\240udio d'avan\303\247 r\303\240pid als nuclis que generen \303"
+   "\240udio mitjan\303\247ant la seva pr\303\262pia funci\303\263 de retorn (*callback*). Aquests n"
+   "uclis produeixen \303\240udio en temps real, de manera que la velocitat es determina a partir de"
+   " la taxa assolida pel v\303\255deo. L'opci\303\263 \302\253Desactivat\302\273 mant\303\251 l'"
+   "\303\240udio en temps real, tal com feia sempre la versi\303\263 estable de RetroArch.",
    "Silencia autom\303\240ticament el so quan s\342\200\231usa l\342\200\231avan\303\247ament r\303"
    "\240pid.",
    "Accelera l'\303\240udio a l'emprar l'avan\303\247ament r\303\240pid. Defugir\303\241 sorolls en "
@@ -7698,6 +7708,16 @@ static const struct
    "Desa un estat a la posici\303\263 actualment seleccionada.",
    "Captura una imatge del contingut actual.",
    "Mant\303\251 el shader seleccionat activat o desactivat mentre la tecla \303\251s clicada.",
+   "Carrega i aplica el seg\303\274ent preajust de shader de la carpeta del preajust actual. Un cop "
+   "arribat a l'\303\272ltim, passa a la carpeta seg\303\274ent del mateix nivell. Si l'opci\303\263"
+   " \302\253Recorda l'\303\272ltim directori de shaders utilitzat\302\273 est\303\240 desactivada, "
+   "en canvi, recorre els preajustos situats a l'arrel del directori \302\253Video Shaders\302\273, "
+   "si n'hi ha.",
+   "Carrega i aplica la configuraci\303\263 de shader anterior dins la carpeta de la configuraci\303"
+   "\263 actual. En arribar a la primera, retrocedeix a la carpeta anterior del mateix nivell. Si l'"
+   "opci\303\263 \302\253Recorda l'\303\272ltim directori de shaders utilitzat\302\273 est\303\240 d"
+   "esactivada, en canvi, recorre les configuracions situades a l'arrel del directori \302\253Video "
+   "Shaders\302\273, si n'hi ha.",
    "Activa o desactiva el shader seleccionat.",
    "Activa la c\303\240mera lenta quan es mant\303\251. El contingut s'executa a velocitat normal qu"
    "an s'amolla la tecla.",
@@ -8062,6 +8082,11 @@ static const struct
    "res de continguts i mides diferents.",
    "Reprodueix un so de les miniatures animades WebM quan es mostrin. Els formats Vorbis i Opus func"
    "ionen correctament. El so i l'animaci\303\263 s'aturen quan es tanca la miniatura.",
+   "Determina quants fils s'utilitzen per convertir a p\303\255xels cada fotograma d'una miniatura a"
+   "nimada en format WebM o MP4. Una opci\303\263 mant\303\251 tota la conversi\303\263 al fil de de"
+   "scodificaci\303\263; l'altra la distribueix entre diversos nuclis, fet que agilitza les previsua"
+   "litzacions grans en equips amb nuclis de sobres, per\303\262 que consumeix recursos del nucli en"
+   " execuci\303\263 en equips que no en tenen tants.",
    "Escala autom\303\240ticament les imatges amb una amplada/al\303\247ada m\303\251s petita que el "
    "valor especificat. Millora la qualitat de la imatge. T\303\251 un efecte moderat en el rendiment"
    ".",
@@ -9017,6 +9042,10 @@ static const struct
    "arpeta de continguts actual.",
    "Desa una predefinici\303\263 de shader que t\303\251 un enlla\303\247 a la predefinici\303\263 c"
    "arregada originalment i inclou nom\303\251s els par\303\240metres canviats.",
+   "Obre el navegador de fitxers a l'\303\272ltim directori utilitzat en carregar preajustos i passa"
+   "des de shaders. Les dreceres de teclat per passar al shader seg\303\274ent o anterior avancen de"
+   "s del preajust actual, en lloc de rec\303\263rrer c\303\255clicament l'arrel del directori \302"
+   "\253Video Shaders\302\273.",
    "AV\303\215S: El parpelleig r\303\240pid pot causar errors gr\303\240fics en algunes pantalles. F"
    "es servir aquesta opci\303\263 sota la teva responsabilitat // Simula una l\303\255nia d'escanei"
    "g en moviment b\303\240sica sobre m\303\272ltiples subfotogrames dividint la pantalla en vertica"
@@ -9746,7 +9775,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (216442u
+      (sizeof(msg_hash_ca_blob) == (218177u
 #ifdef ANDROID
        + 281u
 #endif
@@ -12671,6 +12700,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
@@ -13042,6 +13072,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -13264,6 +13296,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -13849,6 +13882,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,

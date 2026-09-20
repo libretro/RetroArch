@@ -275,6 +275,7 @@ static const struct
    char s_a38cafbb[19];
    char s_dcf2e800[6];
    char s_f7e668f4[12];
+   char s_cf4d4f28[66];
    char s_f4740f16[29];
    char s_d95f1db1[31];
    char s_3c9950ad[44];
@@ -884,6 +885,7 @@ static const struct
    char s_d458f013[34];
    char s_56e1b31e[20];
    char s_56e1b31f[17];
+   char s_267cbe7d[32];
    char s_597c4715[12];
    char s_56e1b329[20];
    char s_3318187b[25];
@@ -1275,6 +1277,7 @@ static const struct
    char s_ac60056b[20];
    char s_1ad09b45[23];
    char s_774e2332[26];
+   char s_1c9e1ceb[34];
    char s_87064238[33];
    char s_2a273dd7[22];
    char s_5e5fc0ee[20];
@@ -2563,6 +2566,7 @@ static const struct
    char s_a95c1929[51];
    char s_23b8ca2e[25];
    char s_daf6d7e2[57];
+   char s_708c69d6[369];
    char s_042502c4[83];
    char s_90ae9a9f[110];
    char s_81b79d5b_0[500];
@@ -2891,6 +2895,7 @@ static const struct
    char s_6da9b571[295];
    char s_c2827177[148];
    char s_09f2837b[279];
+   char s_2c4c27eb[285];
    char s_85147d5c[77];
    char s_0b56ad4c[56];
    char s_c312b1ca[42];
@@ -3163,6 +3168,7 @@ static const struct
    char s_5aa622cc[232];
    char s_2b908073[292];
    char s_64bea160[205];
+   char s_2826de99[406];
    char s_97c62766[199];
    char s_6f458a85[129];
    char s_41702fdc[59];
@@ -4959,6 +4965,7 @@ static const struct
    "Bain Breise\303\241n DSP",
    "Fuaim",
    "Meascth\303\263ir",
+   "B\303\255onn tionchar ag an bhfeidhm sciobtha ar fhuaim an ghlao ar ais",
    "Fuaim Mh\303\251adaithe Ar Aghaidh",
    "Luasgh\303\251ar\303\272 Fuaime Ar Aghaidh",
    "Athshampl\303\241il go Sl\303\241nuimhir Sheasta (Leid)",
@@ -5573,6 +5580,7 @@ static const struct
    "Map\303\241il Rialaitheora M\303\251archl\303\241ir",
    "Cnaipe A (Ar Dheis)",
    "Cnaipe B (S\303\255os)",
+   "Ionchur Rialaitheora sa Ch\303\272lra",
    "D-Pad S\303\255os",
    "Cnaipe L (Gualainn)",
    "Cnaipe L2 (Spreagth\303\263ir)",
@@ -5965,6 +5973,7 @@ static const struct
    "Leathanach Tosaithe",
    "C\303\272lra\303\255 Mionsamhlacha",
    "Fuaime Mionsamhail Beoite",
+   "Sn\303\241itheanna Mionsamhlacha Beoite",
    "Tairseach Uas-sc\303\241la Mionsamhail",
    "T\303\251acs Tic\303\251id R\303\251idh",
    "Luas T\303\251acs Tic\303\251id",
@@ -7315,6 +7324,12 @@ static const struct
    "D\303\255luchtaigh aon bhreise\303\241n DSP fuaime gn\303\255omhach.",
    "Cumasaigh aschur fuaime.",
    "Seinn sruthanna fuaime comhuaineacha fi\303\272 sa roghchl\303\241r.",
+   "Cuir l\303\241imhse\303\241il fuaime ar luas tapa i bhfeidhm ar chro\303\255leac\303\241in a dh"
+   "\303\251anann fuaim a rindre\303\241il tr\303\255na nglaoch-ais f\303\251in. Gineann na cro\303"
+   "\255leac\303\241in seo fuaim i bhf\303\255or-am, mar sin baintear an luas as an r\303\241ta a bh"
+   "aineann an f\303\255se\303\241n amach. M\303\241 roghna\303\255tear As, coime\303\241dtar a gcui"
+   "d fuaime i bhf\303\255or-am, d\303\255reach mar a dh\303\251anadh leagan cobhsa\303\255 de Retro"
+   "Arch i gc\303\263na\303\255.",
    "Balbhaigh an fhuaim go huathoibr\303\255och agus t\303\272 ag \303\272s\303\241id luasgh\303\251"
    "ar\303\272 ar aghaidh.",
    "Luasaigh an fhuaim agus t\303\272 ag luasgh\303\251ar\303\272 ar aghaidh. Coscann s\303\251 scoi"
@@ -7955,6 +7970,11 @@ static const struct
    "\303\255 oibreoidh eochracha te m\303\251archl\303\241ir m\303\241 athmhap\303\241iltear cro\303"
    "\255-phort 1 chuig aon \303\272s\303\241ideoir > 1 (t\303\241 ionchur m\303\251archl\303\241ir "
    "\303\263 \303\272s\303\241ideoir 1).",
+   "Glac le hionchur \303\263n rialt\303\241n nuair nach \303\251 RetroArch an fhuinneog ghn\303\255"
+   "omhach. Nuair a bh\303\255onn an ghn\303\251 seo d\303\255chumasaithe, d\303\251antar neamhaird "
+   "de rialt\303\241in nuair nach bhfuil an aip d\303\255rithe: n\303\255 fhreagra\303\255onn an rog"
+   "hchl\303\241r, na heochracha aicearra n\303\241 an t-\303\241bhar at\303\241 ag rith d\303\263ib"
+   "h.",
    "Uasmh\303\251id \303\272s\303\241ideoir\303\255 a dtaca\303\255tear leo le RetroArch. (Atos\303"
    "\272 riachtanach)",
    "Teaglaim cnaip\303\255 rialt\303\263ra chun an roghchl\303\241r a athr\303\272.",
@@ -8490,6 +8510,13 @@ static const struct
    "Seinneann s\303\251 rian fuaime mionsamhlacha beoite WebM agus iad \303\241 thaispe\303\241int. "
    "Taca\303\255tear le fuaim Vorbis agus Opus. L\303\272ba\303\255onn an fhuaim leis an mbeochan ag"
    "us stopann s\303\251 nuair a dh\303\272nann an mionsamhlach.",
+   "C\303\251 mh\303\251ad sn\303\241ithe a thionta\303\255onn gach fr\303\241ma de mhionsamhail Web"
+   "M n\303\263 MP4 beoite go picteil\303\255n\303\255. Coinn\303\255onn ceann amh\303\241in an tion"
+   "t\303\272 ioml\303\241n ar an sn\303\241ithe d\303\255ch\303\263daithe. Scaipeann n\303\255os m"
+   "\303\263 \303\251 trasna cro\303\255leac\303\241in, rud a chabhra\303\255onn le r\303\251amhamha"
+   "irc mh\303\263ra ar mheais\303\255n\303\255 le cro\303\255leac\303\241in chun na sn\303\241ithea"
+   "nna sin a sp\303\241r\303\241il agus a chosna\303\255onn an cro\303\255 at\303\241 ag rith ar mh"
+   "eais\303\255n\303\255 gan cro\303\255leac\303\241in.",
    "D\303\251anann s\303\251 mionsamhlacha a uasghr\303\241d\303\272 go huathoibr\303\255och le leit"
    "head/airde n\303\255os l\303\272 n\303\241 an luach sonraithe. Feabhsa\303\255onn s\303\251 c"
    "\303\241il\303\255ocht na picti\303\272r. T\303\241 tionchar measartha aige ar fheidhm\303\255oc"
@@ -10406,7 +10433,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (220942u
+      (sizeof(msg_hash_ga_blob) == (222134u
 #ifdef ANDROID
        + 390u
 #endif
@@ -11085,6 +11112,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
@@ -11694,6 +11722,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
@@ -12085,6 +12114,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -13372,6 +13402,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
@@ -13694,6 +13725,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -13966,6 +13998,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
