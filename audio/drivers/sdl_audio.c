@@ -615,22 +615,22 @@ static void *sdl_audio_list_new(void *u)
    union string_list_elem_attr attr;
    struct string_list *sl = string_list_new();
 
-   if (!sl)
-      return NULL;
+   if (sl)
+   {
+      attr.i = 0;
+      num    = SDL_GetNumAudioDevices(false);
 
-   attr.i = 0;
-   num    = SDL_GetNumAudioDevices(false);
+      for (i = 0; i < num; i++)
+         string_list_append(sl, SDL_GetAudioDeviceName(i, false), attr);
 
-   for (i = 0; i < num; i++)
-      string_list_append(sl, SDL_GetAudioDeviceName(i, false), attr);
-
-   return sl;
+      return sl;
+   }
 #else
    /* TODO/FIXME - Any possible SDL1 implementation here, or
     * do we have to piggyback off OS-specific audio device
     * enumeration here? */
-   return NULL;
 #endif
+   return NULL;
 }
 
 static void sdl_audio_free(void *data);
