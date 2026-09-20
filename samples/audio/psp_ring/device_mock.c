@@ -12,6 +12,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <rthreads/rthreads.h>
+
 #include <psp2/audioout.h>
 #include <libSceAudioOut.h>
 
@@ -121,3 +123,17 @@ int sceAudioOutOpen(unsigned user, int type, int index, unsigned len,
    return freq == 48000 ? 3 : -1;
 }
 int sceAudioOutClose(int port) { (void)port; return 0; }
+
+/* Thread-creation failure, for the lane that checks a driver whose
+ * worker never starts reports the failure rather than a live driver
+ * with nothing consuming its ring. The three driver units are compiled
+ * with sthread_create renamed to this; this unit is not, so the real
+ * one is still reachable. */
+int mock_thread_fail;
+
+sthread_t *mock_sthread_create(void (*thread_func)(void*), void *userdata)
+{
+   if (mock_thread_fail)
+      return NULL;
+   return sthread_create(thread_func, userdata);
+}

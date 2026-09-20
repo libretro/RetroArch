@@ -231,6 +231,106 @@ static int exercise(const audio_driver_t *d, const char *name)
    return 0;
 }
 
+/* A driver whose worker never starts has nothing consuming its ring, so
+ * init has to report that rather than hand back something that says it
+ * is alive: writes would wait out their laps and return zero, and free
+ * would act on a state that never held. */
+static int check_worker_failure(const audio_driver_t *d, const char *name)
+{
+   unsigned new_rate = 0;
+   void    *h;
+
+   mock_device_reset();
+   mock_thread_fail = 1;
+   h                = d->init(NULL, 48000, 64, &new_rate);
+   mock_thread_fail = 0;
+
+   if (h)
+   {
+      printf("FAIL  %s: init succeeded with no worker (alive=%d)\n",
+            name, (int)d->alive(h));
+      d->free(h);
+      return 1;
+   }
+   printf("ok    %-5s init fails when the worker cannot start\n", name);
+   return 0;
+}
+
+/* Writes the frontend's output scratch can hold but the ring cannot
+ * describe. The scratch is sized at max_buffer_samples * AUDIO_MAX_RATIO
+ * * slowmotion_ratio, so a byte length whose frame count does not fit a
+ * uint16_t is reachable; narrowed, the count wrapped small, the room
+ * check waved it through and the copy took the full byte length. Every
+ * write here must report no more than it was given, and never more
+ * frames than the ring holds. */
+static int check_write_bounds(const audio_driver_t *d, const char *name)
+{
+   unsigned  new_rate = 0;
+   void     *h;
+   size_t    bufsz;
+   uint32_t *big;
+   int       bad      = 0;
+   unsigned  i;
+   /* One past the ring, one past what a uint16_t frame count holds, and
+    * a length that is not whole frames. */
+   static const size_t frames[] = { 0, 1, 65535, 65536, 65537, 131072 };
+
+   mock_device_reset();
+   h = d->init(NULL, 48000, 64, &new_rate);
+   if (!h)
+   {
+      printf("FAIL  %s: init returned NULL\n", name);
+      return 1;
+   }
+   bufsz = d->buffer_size(h);
+
+   /* Heap, not stack: the tree's frame budget is 4 KiB. */
+   big = (uint32_t*)calloc(frames[sizeof(frames)/sizeof(frames[0]) - 1] + 1,
+         sizeof(uint32_t));
+   if (!big)
+   {
+      printf("ok    %-5s (no memory for the oversized-write check)\n", name);
+      d->free(h);
+      return 0;
+   }
+
+   for (i = 0; i < sizeof(frames) / sizeof(frames[0]); i++)
+   {
+      size_t  len = frames[i] * sizeof(uint32_t);
+      ssize_t w   = d->write(h, big, len);
+      if (w < 0 || (size_t)w > len)
+      {
+         printf("FAIL  %s: write of %u frames returned %ld for %u bytes\n",
+               name, (unsigned)frames[i], (long)w, (unsigned)len);
+         bad = 1;
+      }
+      else if ((size_t)w / sizeof(uint32_t) >= bufsz)
+      {
+         printf("FAIL  %s: write of %u frames took %u, past the ring\n",
+               name, (unsigned)frames[i],
+               (unsigned)((size_t)w / sizeof(uint32_t)));
+         bad = 1;
+      }
+   }
+
+   /* A length that is not whole frames must not publish a frame it did
+    * not copy, so what it reports back is whole frames too. */
+   {
+      ssize_t w = d->write(h, big, 6);
+      if (w < 0 || (w % (ssize_t)sizeof(uint32_t)) != 0)
+      {
+         printf("FAIL  %s: a 6-byte write reported %ld\n", name, (long)w);
+         bad = 1;
+      }
+   }
+
+   if (!bad)
+      printf("ok    %-5s write refuses what the ring cannot describe\n", name);
+   free(big);
+   d->free(h);
+   return bad;
+}
+
 int main(void)
 {
    int bad = 0;
@@ -247,6 +347,12 @@ int main(void)
    bad |= exercise(&audio_psp,  "psp");
    bad |= exercise(&audio_psp2, "vita");
    bad |= exercise(&audio_ps4,  "ps4");
+   bad |= check_worker_failure(&audio_psp,  "psp");
+   bad |= check_worker_failure(&audio_psp2, "vita");
+   bad |= check_worker_failure(&audio_ps4,  "ps4");
+   bad |= check_write_bounds(&audio_psp,  "psp");
+   bad |= check_write_bounds(&audio_psp2, "vita");
+   bad |= check_write_bounds(&audio_ps4,  "ps4");
    if (bad)
       printf("psp_ring: FAILED\n");
    else

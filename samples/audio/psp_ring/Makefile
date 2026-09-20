@@ -24,14 +24,19 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+# The drivers take their sthread_create from device_mock, which can be
+# told to refuse one; this unit is compiled without the rename, so the
+# real one is still there to delegate to.
+DRVFLAGS := -Dsthread_create=mock_sthread_create
+
 psp_audio.o: ../../../audio/drivers/psp_audio.c
-	$(CC) $(CFLAGS) -I$(STUBS)/psp -DPSP -c -o $@ $<
+	$(CC) $(CFLAGS) $(DRVFLAGS) -I$(STUBS)/psp -DPSP -c -o $@ $<
 
 psp2_audio.o: ../../../audio/drivers/psp2_audio.c
-	$(CC) $(CFLAGS) -I$(STUBS)/vita -DVITA -c -o $@ $<
+	$(CC) $(CFLAGS) $(DRVFLAGS) -I$(STUBS)/vita -DVITA -c -o $@ $<
 
 ps4_audio.o: ../../../audio/drivers/ps4_audio.c
-	$(CC) $(CFLAGS) -I$(STUBS)/orbis -DORBIS -c -o $@ $<
+	$(CC) $(CFLAGS) $(DRVFLAGS) -I$(STUBS)/orbis -DORBIS -c -o $@ $<
 
 device_mock.o: device_mock.c
 	$(CC) $(CFLAGS) -I$(STUBS)/vita -I$(STUBS)/orbis -c -o $@ $<

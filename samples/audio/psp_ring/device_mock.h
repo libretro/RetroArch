@@ -14,4 +14,7 @@ extern retro_atomic_size_t mock_breaks;
 
 #define MOCK_READ(c) retro_atomic_load_acquire_size(&(c))
 
+/* Set to refuse the drivers' next sthread_create. */
+extern int mock_thread_fail;
+
 #endif

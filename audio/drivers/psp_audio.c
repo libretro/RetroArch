@@ -223,8 +223,19 @@ static void *psp_audio_init(const char *device,
    }
 
    psp->nonblock      = false;
+   /* running has to be set before the worker starts, so a worker that
+    * never starts leaves a driver reporting itself alive with nothing
+    * consuming the ring: writes wait out their laps and return zero,
+    * and teardown acts on a state that was never true. */
    retro_atomic_int_init(&psp->running, 1);
-   psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
+   if (!(psp->worker_thread = sthread_create(psp_audio_mainloop, psp)))
+   {
+      retro_eventcount_free(&psp->park);
+      sceAudioSRCChRelease();
+      free(psp->buffer_u32);
+      free(psp);
+      return NULL;
+   }
 
    return psp;
 }
@@ -258,10 +269,22 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
    psp_audio_t* psp      = (psp_audio_t*)data;
    uint16_t write_pos    = (uint16_t)
          retro_atomic_load_relaxed_int(&psp->write_pos);
-   uint16_t sample_count = len / sizeof(uint32_t);
+   /* Frames, and wide enough for them: narrowed to uint16_t, a write of
+    * more than 65535 frames wrapped to a small count that the room check
+    * then waved through, and the copy below took len bytes for it. The
+    * ring holds one frame short of its length, so no wait can free room
+    * for more than that at once - take what fits and report the short
+    * write rather than spending the laps on room that will not come. A
+    * len that is not whole frames carries the frames it has. */
+   size_t   sample_count = len / sizeof(uint32_t);
 
    if (!retro_atomic_load_acquire_int(&psp->running))
       return -1;
+   if (!sample_count)
+      return 0;
+   if (sample_count > (size_t)(psp->ring - 1u))
+      sample_count = psp->ring - 1u;
+   len = sample_count * sizeof(uint32_t);
 
    /* The ring is counted in uint32_t frames (write_pos, read_pos,
     * ring); len is bytes.  Both room checks below used to
@@ -321,7 +344,7 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
    else
       memcpy(psp->buffer_u32 + write_pos, s, len);
 
-   write_pos      += sample_count;
+   write_pos       = (uint16_t)(write_pos + sample_count);
    if (write_pos  >= psp->ring)
       write_pos   -= psp->ring;
    /* Release: the samples land before the index that publishes
@@ -367,7 +390,11 @@ static bool psp_audio_start(void *data, bool is_shutdown)
       if (!psp->worker_thread)
       {
          retro_atomic_store_release_int(&psp->running, 1);
-         psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
+         if (!(psp->worker_thread = sthread_create(psp_audio_mainloop, psp)))
+         {
+            retro_atomic_store_release_int(&psp->running, 0);
+            return false;
+         }
       }
    }
 
