@@ -2106,7 +2106,8 @@ extern video_driver_t video_oga;
 extern video_driver_t video_null;
 
 extern const gfx_ctx_driver_t gfx_ctx_osmesa;
-extern const gfx_ctx_driver_t gfx_ctx_sdl_gl;
+extern const gfx_ctx_driver_t gfx_ctx_sdl1_gl;
+extern const gfx_ctx_driver_t gfx_ctx_sdl2_gl;
 extern const gfx_ctx_driver_t gfx_ctx_sdl3_gl;
 extern const gfx_ctx_driver_t gfx_ctx_sdl3_vk;
 extern const gfx_ctx_driver_t gfx_ctx_x_egl;
