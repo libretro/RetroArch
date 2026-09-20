@@ -85,6 +85,53 @@ CALLBACK_ENTRIES = ("audio_driver_callback",)
 # and reasoned allowlist entries for the batch-confined and
 # vtable-dispatch reads. --frame-context is accepted as a no-op for
 # compatibility.
+# Audio device callbacks: the function an audio backend calls on its
+# own thread - SDL's device thread, libpulse's and PipeWire's loop, the
+# CoreAudio render thread, JACK's process thread, the ASIO driver
+# thread, the DSP and AX frame interrupts. The backend owns the thread,
+# so no sthread_create in this tree names them and the binary walk has
+# no edge to follow; they are listed here for the same reason the frame
+# context functions are. A driver's init, open and free run on the main
+# thread and are not entries - only what the device calls back into.
+# Symbols absent from a given build are skipped like any other entry.
+DEVICE_CALLBACK_ENTRIES = (
+    "sdl1_audio_playback_cb",
+    "sdl2_audio_playback_cb",
+    "sdl2_microphone_record_cb",
+    "sdl3_audio_stream_cb",
+    "coreaudio_audio_write_cb",
+    "coreaudio_mic_input_cb",
+    "ja_process_cb",
+    "ja_sample_rate_cb",
+    "ja_buffer_size_cb",
+    "ja_xrun_cb",
+    "ja_shutdown_cb",
+    "coreaudio_output_default_listener",
+    "coreaudio_output_default_listener_old",
+    "coreaudio_mic_default_listener",
+    "coreaudio_mic_default_listener_old",
+    "opensl_callback",
+    "ctr_dsp_audio_frame_cb",
+    "gx_audio_dma_callback",
+    "wiiu_ax_callback",
+    "audioworklet_process_cb",
+    "pulse_stream_state_cb",
+    "pulse_stream_request_cb",
+    "pulse_stream_latency_update_cb",
+    "pulse_underrun_update_cb",
+    "pulse_buffer_attr_cb",
+    "pwire_playback_process_cb",
+    "pwire_capture_process_cb",
+    "pwire_stream_state_changed_cb",
+    "pwire_mic_stream_state_changed_cb",
+    "pwire_stream_destroy_cb",
+    "asio_cb_buffer_switch",
+    "asio_cb_buffer_switch_time_info",
+    "asio_cb_sample_rate_changed",
+    "asio_cb_message",
+    "xa_voice_on_buffer_end",
+)
+
 INCLUDE_FRAME_CONTEXT = True
 FRAME_CONTEXT_ENTRIES = (
     "gl2_frame",
@@ -134,6 +181,8 @@ def source_entries(root):
             entries.setdefault(m.group(1), rel)
     for name in CALLBACK_ENTRIES:
         entries.setdefault(name, "(pipeline callback)")
+    for name in DEVICE_CALLBACK_ENTRIES:
+        entries.setdefault(name, "(audio device callback)")
     if INCLUDE_FRAME_CONTEXT:
         for name in FRAME_CONTEXT_ENTRIES:
             entries.setdefault(name, "(threaded frame context)")
