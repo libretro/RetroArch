@@ -24,9 +24,6 @@
 #include <rthreads/retro_eventcount.h>
 #include <retro_atomic.h>
 
-#include <psp2/kernel/processmgr.h>
-#include <psp2/kernel/threadmgr.h>
-#include <psp2/kernel/sysmem.h>
 #include <psp2/audioout.h>
 
 #include "../audio_driver.h"
@@ -48,8 +45,6 @@ typedef struct psp2_audio
     * Only the worker writes either. */
    retro_atomic_size_t consumed;
    retro_atomic_size_t underruns;
-
-   SceUID thread;
 
    int port;
    int rate;

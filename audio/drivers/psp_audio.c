@@ -47,8 +47,6 @@ typedef struct psp_audio
    retro_atomic_size_t consumed;
    retro_atomic_size_t underruns;
 
-   SceUID thread;
-
    int port;
    int rate;
 
