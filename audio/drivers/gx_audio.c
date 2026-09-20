@@ -21,6 +21,7 @@
 #ifdef GEKKO
 #include <gccore.h>
 #include <ogcsys.h>
+#include <ogc/lwp_watchdog.h>
 #else
 #include <cafe/ai.h>
 #endif
@@ -59,6 +60,31 @@ typedef struct
     * callback zeroes each chunk as it retires it, so what goes out is
     * silence. Volatile rather than atomic for the reason consumed is. */
    volatile uint32_t underruns;
+   /* One (position, time) pair per chunk for the device clock, taken
+    * in the callback because that is where the position is exact:
+    * sampling consumed from the frontend would be a chunk out, which
+    * over any usable window is more error than the figure being
+    * measured. clk_seq brackets the pair so the reader can tell it
+    * was not caught mid-write.
+    *
+    * The fit itself is done in device_clock_ppm(), on the frontend's
+    * thread. This callback is a DMA interrupt, and floating point
+    * there is not a thing to be doing. */
+   volatile uint32_t clk_pos;
+   volatile uint32_t clk_tb;
+   volatile uint32_t clk_seq;
+   /* The fit, touched only by device_clock_ppm(). Sums in seconds and
+    * frames from the anchor, because a fit on raw values loses its
+    * answer to cancellation. The anchor is retaken well inside the
+    * 32-bit timebase's wrap. */
+   uint32_t clk_last_seq;
+   uint32_t clk_anchor_pos;
+   uint32_t clk_anchor_tb;
+   int      clk_have_anchor;
+   int      clk_valid;
+   int      clk_ppm;
+   double   clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
+   unsigned rate;
    bool nonblock;
    bool is_paused;
 } gx_audio_t;
@@ -94,6 +120,13 @@ static void gx_audio_dma_callback(void)
    AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
    /* A chunk the DMA has finished with: device time. */
    wa->consumed += CHUNK_FRAMES;
+
+   /* The pair the clock fit reads, published between two bumps of the
+    * sequence so a reader can tell a torn one. */
+   wa->clk_seq++;
+   wa->clk_pos = wa->consumed;
+   wa->clk_tb  = (uint32_t)gettime();
+   wa->clk_seq++;
    OSSignalCond(wa->dma_cond);
 }
 
@@ -128,11 +161,13 @@ static void *gx_audio_init(const char *device,
    {
       AISetDSPSampleRate(AI_SAMPLERATE_32KHZ);
       *new_rate = 32000;
+      wa->rate  = 32000;
    }
    else /* Ranges 32001-39999 (in settings going up from 32000) and 48000-max (default high) -> set to 48000 hz */
    {
       AISetDSPSampleRate(AI_SAMPLERATE_48KHZ);
       *new_rate = 48000;
+      wa->rate  = 48000;
    }
 
    wa->dma_write = BLOCKS - 1;
@@ -327,6 +362,88 @@ static size_t gx_audio_underruns(void *data)
    return wa ? (size_t)wa->underruns : 0;
 }
 
+/* The AI's own clock against the rate this driver reports, in parts
+ * per million. What the hardware does with the rate it was asked for
+ * is not the rate it was asked for: the AI divides its source clock by
+ * a figure that does not land on 48000, and nothing downstream has
+ * ever been told. A measurement; nothing acts on it. */
+static bool gx_audio_device_clock_ppm(void *data, double *ppm)
+{
+   gx_audio_t *wa = (gx_audio_t*)data;
+   uint32_t s1 = 0, s2 = 0, pos = 0, tb = 0;
+   int tries      = 4;
+
+   if (!wa || !wa->rate)
+      return false;
+
+   /* A pair the callback was not in the middle of writing. */
+   do
+   {
+      s1  = wa->clk_seq;
+      pos = wa->clk_pos;
+      tb  = wa->clk_tb;
+      s2  = wa->clk_seq;
+   } while ((s1 != s2 || (s1 & 1u)) && --tries > 0);
+
+   if (s1 == s2 && !(s1 & 1u) && s1 != wa->clk_last_seq)
+   {
+      wa->clk_last_seq = s1;
+
+      /* Retaken on the first pair, when the DMA has restarted and the
+       * position went backwards, and well inside the wrap of the
+       * 32-bit timebase this samples. The frame bound catches the
+       * case the tick bound cannot: nothing reads this while the
+       * statistics are off, and a gap long enough to wrap the
+       * timebase comes back looking like a short interval. */
+      if (     !wa->clk_have_anchor
+            || pos - wa->clk_anchor_pos > 0x80000000u
+            || (uint32_t)(pos - wa->clk_anchor_pos) > wa->rate * 31u
+            || (uint64_t)ticks_to_microsecs(
+                  (uint64_t)(uint32_t)(tb - wa->clk_anchor_tb)) > 30000000ull)
+      {
+         wa->clk_anchor_pos  = pos;
+         wa->clk_anchor_tb   = tb;
+         wa->clk_have_anchor = 1;
+         wa->clk_valid       = 0;
+         wa->clk_sx = wa->clk_sy = wa->clk_sxx = wa->clk_sxy = wa->clk_n = 0.0;
+      }
+      else
+      {
+         double x = (double)(uint64_t)ticks_to_microsecs(
+               (uint64_t)(uint32_t)(tb - wa->clk_anchor_tb)) / 1000000.0;
+         double y = (double)(uint32_t)(pos - wa->clk_anchor_pos);
+
+         wa->clk_sx  += x;
+         wa->clk_sy  += y;
+         wa->clk_sxx += x * x;
+         wa->clk_sxy += x * y;
+         wa->clk_n   += 1.0;
+
+         /* A second of window at least, as the interface asks. */
+         if (wa->clk_n >= 4.0 && x >= 1.0)
+         {
+            double denom = wa->clk_n * wa->clk_sxx - wa->clk_sx * wa->clk_sx;
+            if (denom > 0.0)
+            {
+               double slope = (wa->clk_n * wa->clk_sxy
+                     - wa->clk_sx * wa->clk_sy) / denom;
+               double est   = (slope / (double)wa->rate - 1.0) * 1000000.0;
+               if (est > -100000.0 && est < 100000.0)
+               {
+                  wa->clk_ppm   = (int)est;
+                  wa->clk_valid = 1;
+               }
+            }
+         }
+      }
+   }
+
+   if (!wa->clk_valid)
+      return false;
+   *ppm = (double)wa->clk_ppm;
+   return true;
+}
+
 audio_driver_t audio_gx = {
    gx_audio_init,
    gx_audio_write,
@@ -344,5 +461,8 @@ audio_driver_t audio_gx = {
    NULL, /* write_raw */
    gx_audio_wait_writable,
    gx_audio_frames_consumed,
-   gx_audio_underruns
+   gx_audio_underruns,
+   NULL, /* layout */
+   NULL, /* frames_consumed_fallback */
+   gx_audio_device_clock_ppm
 };
