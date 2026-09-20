@@ -965,7 +965,8 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
 
    pool_info.sType                 = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
    pool_info.pNext                 = NULL;
-   pool_info.flags                 = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+   /* No per-set free, so no per-set allocator. */
+   pool_info.flags                 = 0;
    pool_info.maxSets               = VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS;
    pool_info.poolSizeCount         = manager->num_sizes;
    pool_info.pPoolSizes            = manager->sizes;
