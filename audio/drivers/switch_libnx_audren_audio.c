@@ -23,10 +23,27 @@
 
 #include <switch.h>
 
+#include <retro_inline.h>
+
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #define BUFFER_COUNT 5
+
+/* audrenWaitFrame() is eventWait() with no timeout, so a renderer that
+ * has stopped signalling its frame event never returns from it. The
+ * waits here take the event themselves and bound it: never reached
+ * while the renderer runs - it signals every frame - so the value only
+ * decides how long a stopped one takes to be noticed. */
+#define AUDREN_STALL_TIMEOUT_NS 256000000ULL
+#define AUDREN_WAIT_LAPS        8
+
+/* Zero while the renderer keeps signalling, non-zero once it has gone
+ * quiet for the timeout. */
+static INLINE int libnx_audren_wait_frame_timeout(void)
+{
+   return R_FAILED(eventWait(audrenGetFrameEvent(), AUDREN_STALL_TIMEOUT_NS));
+}
 
 static const int sample_rate           = 48000;
 static const int num_channels          = 2;
@@ -303,6 +320,7 @@ static ssize_t libnx_audren_audio_write(void *data,
    }
    else
    {
+      int laps = AUDREN_WAIT_LAPS;
       while (_len < len)
       {
          _len += libnx_audren_audio_append(
@@ -312,7 +330,10 @@ static ssize_t libnx_audren_audio_write(void *data,
             mutexLock(&aud->update_lock);
             audrvUpdate(&aud->drv);
             mutexUnlock(&aud->update_lock);
-            audrenWaitFrame();
+            if (--laps < 0)
+               break;   /* Report what was taken */
+            if (libnx_audren_wait_frame_timeout())
+               break;
          }
       }
    }
@@ -391,6 +412,9 @@ static bool libnx_audren_audio_use_float(void *data)
 static size_t libnx_audren_audio_wait_writable(void *data, size_t len)
 {
    libnx_audren_t *aud = (libnx_audren_t*)data;
+   /* Each wait ends on a timeout; this ends the loop when the renderer
+    * keeps running but never frees enough. */
+   int laps            = AUDREN_WAIT_LAPS;
 
    if (!aud)
       return 0;
@@ -404,8 +428,12 @@ static size_t libnx_audren_audio_wait_writable(void *data, size_t len)
       size_t room = libnx_audren_audio_room(aud);
       if (room >= len)
          return room;
-      audrenWaitFrame();
+      if (--laps < 0)
+         break;
+      if (libnx_audren_wait_frame_timeout())
+         break;
    }
+   return 0;
 }
 
 static size_t libnx_audren_audio_write_avail(void *data)

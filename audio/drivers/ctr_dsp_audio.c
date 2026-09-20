@@ -144,6 +144,14 @@ static void ctr_dsp_audio_free(void *data)
  * advance before giving up on it. */
 #define CTR_DSP_AUDIO_WAIT_LAPS 20
 
+/* LightEvent_Wait() has no timeout, so a DSP that has stopped
+ * signalling its frame event - reset, or the channel dropped coming
+ * back from sleep - never returns from it. Never reached while the DSP
+ * runs: it signals every frame, so this only decides how long a
+ * stopped one takes to be noticed. */
+#define CTR_DSP_AUDIO_STALL_TIMEOUT_NS 256000000LL
+#define CTR_DSP_AUDIO_WAIT_WRITABLE_LAPS 8
+
 static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
 {
    u32 pos;
@@ -265,6 +273,9 @@ static size_t ctr_dsp_audio_wait_writable(void *data, size_t len)
 {
    ctr_dsp_audio_t *ctr = (ctr_dsp_audio_t*)data;
    uint32_t want        = (uint32_t)(len >> 2);
+   /* Each wait ends on a timeout; this ends the loop when the DSP
+    * keeps calling back but never frees enough. */
+   int laps             = CTR_DSP_AUDIO_WAIT_WRITABLE_LAPS;
 
    if (want > (CTR_DSP_AUDIO_COUNT >> 1))
       want = CTR_DSP_AUDIO_COUNT >> 1;
@@ -273,13 +284,19 @@ static size_t ctr_dsp_audio_wait_writable(void *data, size_t len)
    {
       uint32_t avail;
       if (!ctr->playing)
-         return 0;
+         break;
       avail = (ndspChnGetSamplePos(ctr->channel) - ctr->pos)
             & CTR_DSP_AUDIO_COUNT_MASK;
       if (avail >= want)
          return avail * 2 * sizeof(int16_t);
-      LightEvent_Wait(&ctr->frame_event);
+      if (--laps < 0)
+         break;
+      /* Non-zero is the timeout. */
+      if (LightEvent_WaitTimeout(&ctr->frame_event,
+               CTR_DSP_AUDIO_STALL_TIMEOUT_NS))
+         break;
    }
+   return 0;
 }
 
 /* Both in bytes of int16 stereo, as the interface asks: the ring is
