@@ -83,10 +83,11 @@ typedef struct psp1_menu_frame
    void* dList;
    void* frame;
    psp1_sprite_t* frame_coords;
+   /* The GE writes this, so it owns its cache lines rather than
+    * sharing them with fields the CPU touches every frame. */
+   PspGeContext* context_storage;
 
    bool active;
-
-   PspGeContext context_storage;
 } psp1_menu_frame_t;
 
 typedef struct psp1_video
@@ -303,7 +304,9 @@ static void *psp_init(const video_info_t *video,
 
    psp->frame_dList         = memalign(64, 256);
    psp->menu.dList          = memalign(64, 256);
-   psp->menu.frame          = memalign(16,  2 * 480 * 272);
+   psp->menu.frame          = memalign(64,  2 * 480 * 272);
+   psp->menu.context_storage = (PspGeContext*)memalign(64,
+         sizeof(PspGeContext));
    psp->frame_coords        = memalign(64,
          (((PSP_FRAME_SLICE_COUNT * sizeof(psp1_sprite_t)) + 63) & ~63));
    psp->menu.frame_coords   = memalign(64,
@@ -552,7 +555,7 @@ static bool psp_frame(void *data, const void *frame,
 
    if (psp->menu.active)
    {
-      sceGuSendList(GU_TAIL, psp->menu.dList, &(psp->menu.context_storage));
+      sceGuSendList(GU_TAIL, psp->menu.dList, psp->menu.context_storage);
       sceGuSync(0, 0);
    }
 
@@ -600,6 +603,8 @@ static void psp_free(void *data)
       free(psp->menu.dList);
    if (psp->menu.frame)
       free(psp->menu.frame);
+   if (psp->menu.context_storage)
+      free(psp->menu.context_storage);
 
    free(psp);
 }
