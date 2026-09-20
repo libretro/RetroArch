@@ -144,7 +144,7 @@ typedef struct video_display_server
     * reads the connector's EDID property, X11 the XRandR output
     * property with the DRM sysfs node as fallback, Wayland the sysfs
     * node for the wl_output name, Win32 the PnP monitor's registry
-    * key. Optional; the menu shows "not available" for NULL. */
+    * key, VideoCore the HDMI DDC through tvservice. Optional; the menu shows "not available" for NULL. */
    int      (*get_edid)(void *data, uint8_t *out, size_t max);
    /* Block the calling thread until the windowing system's event
     * transport has something readable, or @ms milliseconds pass,

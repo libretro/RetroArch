@@ -22,6 +22,9 @@
  * tvservice, fbset for the framebuffer - and then rebuilds the video
  * driver, whose dispmanx surface was sized for the old mode.
  *
+ * get_edid reads the display's EDID over HDMI DDC, which gives the
+ * edid CRT preset its ranges.
+ *
  * The firmware has no mode list to enumerate and no way to hand back
  * the timing it is running, so the engine generates freely; and it
  * cannot restore a desktop mode on close, so, as before this server
@@ -33,6 +36,7 @@
 
 #include <bcm_host.h>
 #include <interface/vmcs_host/vc_vchi_gencmd.h>
+#include <interface/vmcs_host/vc_tvservice.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -52,10 +56,14 @@ typedef struct
    int unused;
 } dispserv_videocore_t;
 
+/* bcm_host_init() connects the gencmd and tvservice clients this
+ * server talks through; it returns at once when the video driver
+ * already made that call */
 static void *videocore_display_server_init(void)
 {
    dispserv_videocore_t *dispserv = (dispserv_videocore_t*)
       calloc(1, sizeof(*dispserv));
+   bcm_host_init();
    return dispserv;
 }
 
@@ -106,23 +114,15 @@ static bool videocore_display_server_modeline_flush(void *data)
    return true;
 }
 
+/* Through the gencmd client bcm_host_init() connected. A client of
+ * our own, stopped afterwards, would tear down that shared one. */
 static bool videocore_display_server_gencmd(const char *cmd)
 {
    char reply[1024];
    int ret;
-   VCHI_INSTANCE_T vchi_instance;
-   VCHI_CONNECTION_T *vchi_connection = NULL;
 
-   vcos_init();
-   if (vchi_initialise(&vchi_instance) != 0)
-      return false;
-   if (vchi_connect(NULL, 0, vchi_instance) != 0)
-      return false;
-   vc_vchi_gencmd_init(vchi_instance, &vchi_connection, 1);
    reply[0] = '\0';
    ret      = vc_gencmd(reply, sizeof(reply), "%s", cmd);
-   vc_gencmd_stop();
-   vchi_disconnect(vchi_instance);
 
    if (ret != 0 || strncmp(reply, "error=", 6) == 0)
    {
@@ -198,6 +198,30 @@ static bool videocore_display_server_modeline_set(void *data,
 }
 #endif
 
+/* The EDID over the HDMI DDC line, the way tvservice -d reads it:
+ * the base block, then as many extension blocks as it announces and
+ * out has room for. Composite and DPI outputs have no DDC, so the
+ * first read fails there. */
+static int videocore_display_server_get_edid(void *data,
+      uint8_t *out, size_t max)
+{
+   int i;
+   int ext;
+   size_t len = 128;
+
+   if (!out || max < 128)
+      return -1;
+   if (vc_tv_hdmi_ddc_read(0, 128, out) != 128)
+      return -1;
+
+   ext = out[0x7e];
+   for (i = 0; i < ext && len + 128 <= max; i++, len += 128)
+      if (vc_tv_hdmi_ddc_read((uint32_t)len, 128, out + len) != 128)
+         break;
+
+   return (int)len;
+}
+
 const video_display_server_t dispserv_videocore = {
    videocore_display_server_init,
    videocore_display_server_destroy,
@@ -231,7 +255,7 @@ const video_display_server_t dispserv_videocore = {
 #else
    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 #endif
-   NULL, /* get_edid */
+   videocore_display_server_get_edid,
    NULL, /* idle_wait */
    "videocore"
 };
