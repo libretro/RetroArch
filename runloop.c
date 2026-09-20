@@ -3574,11 +3574,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
-#if RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS != 44
-      /* Older libretro-common headers assigned 44 to this environment
-       * before it was moved to make room for SET_HW_SHARED_CONTEXT. */
-      case 44:
-#endif
+      case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS_2:
       {
          uint64_t *quirks = (uint64_t *) data;
 
