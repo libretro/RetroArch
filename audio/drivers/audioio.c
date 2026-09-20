@@ -178,15 +178,35 @@ static size_t audioio_buffer_size(void *data)
    int *fd = (int*)data;
 
    if (ioctl(*fd, AUDIO_GETINFO, &info) < 0)
-      return false;
+      return 0;
 
    return info.play.buffer_size;
 }
 
+#ifdef AUDIO_GETBUFINFO
+/* audio(4)'s play.seek is the count of bytes pending, so what the
+ * device will take is its buffer less what is still queued in it.
+ *
+ * AUDIO_GETBUFINFO is NetBSD's, and so is seek: the Solaris
+ * audio_prinfo carries buffer_size and samples and no seek, which is
+ * why this is not offered there. Reporting the whole buffer instead -
+ * which is what happened before - reads to rate control as a device
+ * that never drains, and it answers a device that is always empty
+ * with its full upward correction, for as long as it is on. The
+ * interface asks for nothing rather than a constant, and nothing is
+ * what the other branch gives. */
 static size_t audioio_write_avail(void *data)
 {
-   return audioio_buffer_size(data);
+   struct audio_info info;
+   int *fd = (int*)data;
+
+   if (ioctl(*fd, AUDIO_GETBUFINFO, &info) < 0)
+      return 0;
+   if (info.play.seek >= info.play.buffer_size)
+      return 0;
+   return info.play.buffer_size - info.play.seek;
 }
+#endif
 
 /* The device is opened with AUDIO_ENCODING_SLINEAR at 16 bits; the
  * audio(4) encodings are integer PCM, mu-law and A-law, none float. */
@@ -204,7 +224,11 @@ audio_driver_t audio_audioio = {
    "audioio",
    NULL,
    NULL,
+#ifdef AUDIO_GETBUFINFO
    audioio_write_avail,
+#else
+   NULL, /* write_avail - no way to measure the fill here */
+#endif
    audioio_buffer_size,
    NULL /* write_raw */
 };
