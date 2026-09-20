@@ -118,9 +118,15 @@ typedef struct psp1_video
    bool hw_render;
 } psp1_video_t;
 
-/* Both row and column count need to be a power of 2 */
+/* Both row and column count need to be a power of 2. The split decides
+ * the shape of each slice, which is what the GE's texture cache sees;
+ * a build can pick another one to compare against. */
+#ifndef PSP_FRAME_ROWS_COUNT
 #define PSP_FRAME_ROWS_COUNT     4
+#endif
+#ifndef PSP_FRAME_COLUMNS_COUNT
 #define PSP_FRAME_COLUMNS_COUNT  16
+#endif
 #define PSP_FRAME_SLICE_COUNT    (PSP_FRAME_ROWS_COUNT * PSP_FRAME_COLUMNS_COUNT)
 #define PSP_FRAME_VERTEX_COUNT   (PSP_FRAME_SLICE_COUNT * 2)
 

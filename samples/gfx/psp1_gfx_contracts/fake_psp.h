@@ -130,11 +130,17 @@ void psp1_fake_fire_vblank(void);
  * teardown leaves open for the handler. */
 void psp1_fake_fire_vblank_on_free(int on);
 
-/* Mirrors the driver's vertex grid so a test can read the arrays the GE
- * is pointed at. A mismatch here shows up as a failing coordinate
- * test, which is the intent. */
-#define PSP1_FAKE_ROWS      4
-#define PSP1_FAKE_COLUMNS   16
+/* The driver's vertex grid, so a test can read the arrays the GE is
+ * pointed at. Both TUs take the same -D, so a build comparing another
+ * split checks that split. */
+#ifndef PSP_FRAME_ROWS_COUNT
+#define PSP_FRAME_ROWS_COUNT     4
+#endif
+#ifndef PSP_FRAME_COLUMNS_COUNT
+#define PSP_FRAME_COLUMNS_COUNT  16
+#endif
+#define PSP1_FAKE_ROWS      PSP_FRAME_ROWS_COUNT
+#define PSP1_FAKE_COLUMNS   PSP_FRAME_COLUMNS_COUNT
 #define PSP1_FAKE_SLICES    (PSP1_FAKE_ROWS * PSP1_FAKE_COLUMNS)
 
 typedef struct { float u, v, x, y, z; } psp1_fake_vertex_t;
