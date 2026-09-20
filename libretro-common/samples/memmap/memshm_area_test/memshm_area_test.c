@@ -48,9 +48,11 @@ int main(void)
    printf("memshm area\n");
 
 #if defined(_WIN32)
-   sprintf(name, "memshm_area_test_%lu", (unsigned long)GetCurrentProcessId());
+   snprintf(name, sizeof(name), "memshm_area_test_%lu",
+         (unsigned long)GetCurrentProcessId());
 #else
-   sprintf(name, "/memshm_area_test_%lu", (unsigned long)getpid());
+   snprintf(name, sizeof(name), "/memshm_area_test_%lu",
+         (unsigned long)getpid());
 #endif
 
    area = memshm_area_create(area_len);
@@ -199,9 +201,13 @@ int main(void)
       void *h2;
       memset(longname, 'x', sizeof(longname));
 #if defined(_WIN32)
-      sprintf(longname, "memshm_area_test_a_very_long_name_indeed_%lu", (unsigned long)GetCurrentProcessId());
+      snprintf(longname, sizeof(longname),
+            "memshm_area_test_a_very_long_name_indeed_%lu",
+            (unsigned long)GetCurrentProcessId());
 #else
-      sprintf(longname, "/memshm_area_test_a_very_long_name_indeed_%lu", (unsigned long)getpid());
+      snprintf(longname, sizeof(longname),
+            "/memshm_area_test_a_very_long_name_indeed_%lu",
+            (unsigned long)getpid());
 #endif
       h2 = memshm_create(longname, shm_len);
       printf("  %s: a %u-character region name is accepted\n", h2 ? "ok" : "FAIL", (unsigned)strlen(longname));
