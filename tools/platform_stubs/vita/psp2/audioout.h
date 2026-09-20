@@ -1,4 +1,4 @@
-/* Compile-only Vita stub for the matrix's vita psp_audio lane. */
+/* Compile-only Vita stub for the matrix's vita psp2_audio lane. */
 #ifndef STUB_PSP2_AUDIOOUT_H
 #define STUB_PSP2_AUDIOOUT_H
 #define SCE_AUDIO_OUT_PORT_TYPE_MAIN 0

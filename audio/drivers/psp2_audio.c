@@ -24,12 +24,14 @@
 #include <rthreads/retro_eventcount.h>
 #include <retro_atomic.h>
 
-#include <pspkernel.h>
-#include <pspaudio.h>
+#include <psp2/kernel/processmgr.h>
+#include <psp2/kernel/threadmgr.h>
+#include <psp2/kernel/sysmem.h>
+#include <psp2/audioout.h>
 
 #include "../audio_driver.h"
 
-typedef struct psp_audio
+typedef struct psp2_audio
 {
    uint32_t* buffer;
    uint32_t* zeroBuffer;
@@ -59,7 +61,7 @@ typedef struct psp_audio
 
    retro_atomic_int_t running;
    bool nonblock;
-} psp_audio_t;
+} psp2_audio_t;
 
 #define AUDIO_OUT_COUNT 512u
 #define AUDIO_BUFFER_SIZE (1u<<13u)
@@ -68,24 +70,27 @@ typedef struct psp_audio
 /* Bound on any wait for the audio thread to consume: one wait, and how
  * many of them before the caller gets the pass back. The thread
  * consumes a period every period while the device runs. */
-#define PSP_AUDIO_WAIT_US   100000
-#define PSP_AUDIO_WAIT_LAPS 8
+#define PSP2_AUDIO_WAIT_US   100000
+#define PSP2_AUDIO_WAIT_LAPS 8
 
 /* Return port used */
-static int psp_configure_audio(unsigned rate)
+static int psp2_configure_audio(unsigned rate)
 {
-   return sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
+   return sceAudioOutOpenPort(
+         SCE_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
+         rate, SCE_AUDIO_OUT_MODE_STEREO);
 }
 
-static void psp_audio_mainloop(void *data)
+static void psp2_audio_mainloop(void *data)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
+   psp2_audio_t* psp = (psp2_audio_t*)data;
 
    while (retro_atomic_load_acquire_int(&psp->running))
    {
       bool cond           = false;
       uint16_t read_pos   = (uint16_t)
             retro_atomic_load_relaxed_int(&psp->read_pos);
+      uint16_t read_pos_2 = read_pos;
       uint16_t write_pos  = (uint16_t)
             retro_atomic_load_acquire_int(&psp->write_pos);
 
@@ -104,26 +109,25 @@ static void psp_audio_mainloop(void *data)
 
       retro_eventcount_notify(&psp->park);
 
-      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX,
-              cond
-            ? (psp->zeroBuffer)
-            : (psp->buffer + read_pos));
+      sceAudioOutOutput(psp->port,
+        cond ? (psp->zeroBuffer)
+              : (psp->buffer + read_pos_2));
    }
 
    return;
 }
 
-static void *psp_audio_init(const char *device,
+static void *psp2_audio_init(const char *device,
       unsigned rate, unsigned latency,
       unsigned *new_rate)
 {
    int port;
-   psp_audio_t *psp = (psp_audio_t*)calloc(1, sizeof(psp_audio_t));
+   psp2_audio_t *psp = (psp2_audio_t*)calloc(1, sizeof(psp2_audio_t));
 
    if (!psp)
       return NULL;
 
-   if ((port = psp_configure_audio(rate)) < 0)
+   if ((port = psp2_configure_audio(rate)) < 0)
    {
       free(psp);
       return NULL;
@@ -150,14 +154,14 @@ static void *psp_audio_init(const char *device,
 
    psp->nonblock      = false;
    retro_atomic_int_init(&psp->running, 1);
-   psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
+   psp->worker_thread = sthread_create(psp2_audio_mainloop, psp);
 
    return psp;
 }
 
-static void psp_audio_free(void *data)
+static void psp2_audio_free(void *data)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
+   psp2_audio_t* psp = (psp2_audio_t*)data;
    if (!psp)
       return;
 
@@ -174,15 +178,15 @@ static void psp_audio_free(void *data)
    psp->worker_thread = NULL;
    free(psp->zeroBuffer);
 
-   sceAudioSRCChRelease();
+   sceAudioOutReleasePort(psp->port);
 
    free(psp);
 
 }
 
-static ssize_t psp_audio_write(void *data, const void *s, size_t len)
+static ssize_t psp2_audio_write(void *data, const void *s, size_t len)
 {
-   psp_audio_t* psp      = (psp_audio_t*)data;
+   psp2_audio_t* psp     = (psp2_audio_t*)data;
    uint16_t write_pos    = (uint16_t)
          retro_atomic_load_relaxed_int(&psp->write_pos);
    uint16_t sample_count = len / sizeof(uint32_t);
@@ -195,8 +199,8 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
     * compare the frame count against len, i.e. demanded four times the
     * room actually needed: non-blocking writes were refused - the audio
     * dropped - with plenty of space free, and blocking ones waited for
-    * space that rate control was not trying to free.  psp_write_avail()
-    * and psp_wait_writable() already convert; compare frames to
+    * space that rate control was not trying to free.  psp2_write_avail()
+    * and psp2_wait_writable() already convert; compare frames to
     * frames here too. */
    if (psp->nonblock)
    {
@@ -214,7 +218,7 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
        * nothing rather than holding the caller. Room and liveness
        * are re-checked inside the eventcount's window, so a period
        * freed between the check and the park costs nothing. */
-      int laps = PSP_AUDIO_WAIT_LAPS;
+      int laps = PSP2_AUDIO_WAIT_LAPS;
       while (AUDIO_BUFFER_SIZE - ((uint16_t)(write_pos - (uint16_t)
          retro_atomic_load_acquire_int(&psp->read_pos))
          & AUDIO_BUFFER_SIZE_MASK) < sample_count)
@@ -232,7 +236,7 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
             continue;
          }
          if (!retro_eventcount_commit_wait_timeout(&psp->park, key,
-                  PSP_AUDIO_WAIT_US))
+                  PSP2_AUDIO_WAIT_US))
             continue;
       }
    }
@@ -256,17 +260,17 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
    return len;
 }
 
-static bool psp_audio_alive(void *data)
+static bool psp2_audio_alive(void *data)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
+   psp2_audio_t* psp = (psp2_audio_t*)data;
    if (!psp)
       return false;
    return retro_atomic_load_acquire_int(&psp->running) != 0;
 }
 
-static bool psp_audio_stop(void *data)
+static bool psp2_audio_stop(void *data)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
+   psp2_audio_t* psp = (psp2_audio_t*)data;
 
    if (psp)
    {
@@ -284,33 +288,33 @@ static bool psp_audio_stop(void *data)
    return true;
 }
 
-static bool psp_audio_start(void *data, bool is_shutdown)
+static bool psp2_audio_start(void *data, bool is_shutdown)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
+   psp2_audio_t* psp = (psp2_audio_t*)data;
 
    if (psp && !retro_atomic_load_acquire_int(&psp->running))
    {
       if (!psp->worker_thread)
       {
          retro_atomic_store_release_int(&psp->running, 1);
-         psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
+         psp->worker_thread = sthread_create(psp2_audio_mainloop, psp);
       }
    }
 
    return true;
 }
 
-static void psp_audio_set_nonblock_state(void *data, bool toggle)
+static void psp2_audio_set_nonblock_state(void *data, bool toggle)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
+   psp2_audio_t* psp = (psp2_audio_t*)data;
    if (psp)
       psp->nonblock = toggle;
 }
 
-static size_t psp_write_avail(void *data)
+static size_t psp2_write_avail(void *data)
 {
    size_t _len;
-   psp_audio_t* psp = (psp_audio_t*)data;
+   psp2_audio_t* psp = (psp2_audio_t*)data;
 
    if (!psp || !retro_atomic_load_acquire_int(&psp->running))
       return 0;
@@ -322,15 +326,15 @@ static size_t psp_write_avail(void *data)
 }
 
 /* Sleep on the condition the output thread signals after every block
- * until the fifo has room for len, in the same units psp_audio_write()
+ * until the fifo has room for len, in the same units psp2_audio_write()
  * compares against, capped at half the fifo so the wait always ends.
- * Returns the free space as psp_write_avail() reports it, or 0 when
+ * Returns the free space as psp2_write_avail() reports it, or 0 when
  * the output thread is not running. */
-static size_t psp_wait_writable(void *data, size_t len)
+static size_t psp2_wait_writable(void *data, size_t len)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
+   psp2_audio_t* psp = (psp2_audio_t*)data;
    size_t avail;
-   int laps         = PSP_AUDIO_WAIT_LAPS;
+   int laps         = PSP2_AUDIO_WAIT_LAPS;
    /* len arrives in bytes; the ring is counted in uint32_t frames. */
    size_t want      = len / sizeof(uint32_t);
 
@@ -364,36 +368,36 @@ static size_t psp_wait_writable(void *data, size_t len)
          continue;
       }
       if (!retro_eventcount_commit_wait_timeout(&psp->park, key,
-               PSP_AUDIO_WAIT_US))
+               PSP2_AUDIO_WAIT_US))
          continue;
    }
    return avail * sizeof(uint32_t);
 }
 
-/* sceAudio takes 16-bit PCM only; there is no float output on the
- * PSP hardware or in the kernel API. */
-static bool psp_audio_use_float(void *data) { return false; }
-static size_t psp_buffer_size(void *data)
+/* sceAudioOut takes 16-bit PCM only; there is no float output on the
+ * Vita hardware or in the kernel API. */
+static bool psp2_audio_use_float(void *data) { return false; }
+static size_t psp2_buffer_size(void *data)
 {
    /* In bytes: the ring holds AUDIO_BUFFER_SIZE uint32_t frames of int16
     * stereo. */
    return AUDIO_BUFFER_SIZE * sizeof(uint32_t);
 }
 
-audio_driver_t audio_psp = {
-   psp_audio_init,
-   psp_audio_write,
-   psp_audio_stop,
-   psp_audio_start,
-   psp_audio_alive,
-   psp_audio_set_nonblock_state,
-   psp_audio_free,
-   psp_audio_use_float,
-   "psp",
+audio_driver_t audio_psp2 = {
+   psp2_audio_init,
+   psp2_audio_write,
+   psp2_audio_stop,
+   psp2_audio_start,
+   psp2_audio_alive,
+   psp2_audio_set_nonblock_state,
+   psp2_audio_free,
+   psp2_audio_use_float,
+   "vita",
    NULL,
    NULL,
-   psp_write_avail,
-   psp_buffer_size,
+   psp2_write_avail,
+   psp2_buffer_size,
    NULL, /* write_raw */
-   psp_wait_writable
+   psp2_wait_writable
 };

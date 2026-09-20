@@ -19,7 +19,7 @@ AUTH_INFO = 000000000000000000000000001C004000FF00000000008000000000000000000000
 OBJ += deps/xxHash/xxhash.o \
 # 	input/drivers/ps4_input.o \
 # 	input/drivers_joypad/ps4_joypad.o \
-# 	audio/drivers/psp_audio.o \
+# 	audio/drivers/ps4_audio.o \
 # 	gfx/drivers_context/orbis_ctx.o \
 # 	frontend/drivers/platform_orbis.o
 

@@ -235,10 +235,10 @@ check_nothreads() {
 # eventcount park path (threads on).
 check "audio: openal" "-Itools/platform_stubs/openal -DHAVE_AL -DHAVE_THREADS -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/openal.c
 
-# psp_audio: index-pair SPSC + eventcount park; compile-only sce
-# stubs, PSP and Vita arms.
+# psp/psp2 audio: index-pair SPSC + eventcount park, one driver per
+# platform; compile-only sce stubs.
 check "psp: psp_audio" "-Itools/platform_stubs/psp -DPSP -DHAVE_THREADS -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/psp_audio.c
-check "vita: psp_audio" "-Itools/platform_stubs/vita -DVITA -DHAVE_THREADS -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/psp_audio.c
+check "vita: psp2_audio" "-Itools/platform_stubs/vita -DVITA -DHAVE_THREADS -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/psp2_audio.c
 
 # features_cpu.c on every statically linked platform. It owns
 # cpu_features_get_time_usec() and retro_sleep_until_us(); the wait's

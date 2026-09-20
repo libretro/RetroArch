@@ -1030,8 +1030,12 @@ AUDIO
 #include "../audio/drivers/wiiu_audio.c"
 #elif defined(HAVE_RWEBAUDIO)
 #include "../audio/drivers/rwebaudio.c"
-#elif defined(PSP) || defined(VITA) || defined(ORBIS)
+#elif defined(PSP)
 #include "../audio/drivers/psp_audio.c"
+#elif defined(VITA)
+#include "../audio/drivers/psp2_audio.c"
+#elif defined(ORBIS)
+#include "../audio/drivers/ps4_audio.c"
 #elif defined(PS2)
 #include "../audio/drivers/ps2_audio.c"
 #elif defined(_3DS)

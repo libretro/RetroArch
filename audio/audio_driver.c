@@ -323,8 +323,14 @@ audio_driver_t *audio_drivers[] = {
 #if defined(HAVE_AUDIOWORKLET)
    &audio_audioworklet,
 #endif
-#if defined(PSP) || defined(VITA) || defined(ORBIS)
+#if defined(PSP)
   &audio_psp,
+#endif
+#if defined(VITA)
+  &audio_psp2,
+#endif
+#if defined(ORBIS)
+  &audio_ps4,
 #endif
 #if defined(PS2)
   &audio_ps2,

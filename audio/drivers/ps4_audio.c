@@ -16,7 +16,7 @@
  */
 
 #include <stdint.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -24,12 +24,12 @@
 #include <rthreads/retro_eventcount.h>
 #include <retro_atomic.h>
 
-#include <pspkernel.h>
-#include <pspaudio.h>
+#include <libSceAudioOut.h>
+#include <defines/ps4_defines.h>
 
 #include "../audio_driver.h"
 
-typedef struct psp_audio
+typedef struct ps4_audio
 {
    uint32_t* buffer;
    uint32_t* zeroBuffer;
@@ -47,7 +47,7 @@ typedef struct psp_audio
    int rate;
 
    /* The ring's index pair, the SPSC discipline by hand because the
-    * worker consumes in place - psp->buffer + read_pos goes straight
+    * worker consumes in place - ps4->buffer + read_pos goes straight
     * into the output syscall, and a retro_spsc would add a bounce
     * copy per period. Producer publishes write_pos with release
     * after the samples land; consumer publishes read_pos with
@@ -59,7 +59,7 @@ typedef struct psp_audio
 
    retro_atomic_int_t running;
    bool nonblock;
-} psp_audio_t;
+} ps4_audio_t;
 
 #define AUDIO_OUT_COUNT 512u
 #define AUDIO_BUFFER_SIZE (1u<<13u)
@@ -68,26 +68,29 @@ typedef struct psp_audio
 /* Bound on any wait for the audio thread to consume: one wait, and how
  * many of them before the caller gets the pass back. The thread
  * consumes a period every period while the device runs. */
-#define PSP_AUDIO_WAIT_US   100000
-#define PSP_AUDIO_WAIT_LAPS 8
+#define PS4_AUDIO_WAIT_US   100000
+#define PS4_AUDIO_WAIT_LAPS 8
 
 /* Return port used */
-static int psp_configure_audio(unsigned rate)
+static int ps4_configure_audio(unsigned rate)
 {
-   return sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
+   return sceAudioOutOpen(0xff,
+         SCE_AUDIO_OUT_PORT_TYPE_MAIN, 0, AUDIO_OUT_COUNT,
+         rate, SCE_AUDIO_OUT_MODE_STEREO);
 }
 
-static void psp_audio_mainloop(void *data)
+static void ps4_audio_mainloop(void *data)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
+   ps4_audio_t* ps4 = (ps4_audio_t*)data;
 
-   while (retro_atomic_load_acquire_int(&psp->running))
+   while (retro_atomic_load_acquire_int(&ps4->running))
    {
       bool cond           = false;
       uint16_t read_pos   = (uint16_t)
-            retro_atomic_load_relaxed_int(&psp->read_pos);
+            retro_atomic_load_relaxed_int(&ps4->read_pos);
+      uint16_t read_pos_2 = read_pos;
       uint16_t write_pos  = (uint16_t)
-            retro_atomic_load_acquire_int(&psp->write_pos);
+            retro_atomic_load_acquire_int(&ps4->write_pos);
 
       cond                = ((uint16_t)(write_pos - read_pos) & AUDIO_BUFFER_SIZE_MASK)
             < (AUDIO_OUT_COUNT * 2);
@@ -99,95 +102,96 @@ static void psp_audio_mainloop(void *data)
          /* Release: the period is free for the writer only after
           * this store; the syscall below reads the old window, which
           * the writer cannot touch until it sees the new index. */
-         retro_atomic_store_release_int(&psp->read_pos, read_pos);
+         retro_atomic_store_release_int(&ps4->read_pos, read_pos);
       }
 
-      retro_eventcount_notify(&psp->park);
+      retro_eventcount_notify(&ps4->park);
 
-      sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX,
-              cond
-            ? (psp->zeroBuffer)
-            : (psp->buffer + read_pos));
+      sceAudioOutOutput(ps4->port,
+        cond ? (ps4->zeroBuffer)
+              : (ps4->buffer + read_pos_2));
    }
 
    return;
 }
 
-static void *psp_audio_init(const char *device,
+static void *ps4_audio_init(const char *device,
       unsigned rate, unsigned latency,
       unsigned *new_rate)
 {
    int port;
-   psp_audio_t *psp = (psp_audio_t*)calloc(1, sizeof(psp_audio_t));
+   ps4_audio_t *ps4 = (ps4_audio_t*)calloc(1, sizeof(ps4_audio_t));
 
-   if (!psp)
+   if (!ps4)
       return NULL;
 
-   if ((port = psp_configure_audio(rate)) < 0)
+   if ((port = ps4_configure_audio(rate)) < 0)
    {
-      free(psp);
+      free(ps4);
       return NULL;
    }
+
+   sceAudioOutInit();
 
    /* Cache aligned, not necessary but helpful. */
-   psp->buffer        = (uint32_t*)malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
-   memset(psp->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+   ps4->buffer        = (uint32_t*)malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+   memset(ps4->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
 
-   psp->zeroBuffer    = (uint32_t*)malloc(AUDIO_OUT_COUNT   * sizeof(uint32_t));
-   memset(psp->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
+   ps4->zeroBuffer    = (uint32_t*)malloc(AUDIO_OUT_COUNT   * sizeof(uint32_t));
+   memset(ps4->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
 
-   retro_atomic_int_init(&psp->read_pos, 0);
-   retro_atomic_int_init(&psp->write_pos, 0);
-   psp->port          = port;
+   retro_atomic_int_init(&ps4->read_pos, 0);
+   retro_atomic_int_init(&ps4->write_pos, 0);
+   ps4->port          = port;
 
-   if (!retro_eventcount_init(&psp->park))
+   if (!retro_eventcount_init(&ps4->park))
    {
-      free(psp->buffer);
-      free(psp->zeroBuffer);
-      free(psp);
+      free(ps4->buffer);
+      free(ps4->zeroBuffer);
+      free(ps4);
       return NULL;
    }
 
-   psp->nonblock      = false;
-   retro_atomic_int_init(&psp->running, 1);
-   psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
+   ps4->nonblock      = false;
+   retro_atomic_int_init(&ps4->running, 1);
+   ps4->worker_thread = sthread_create(ps4_audio_mainloop, ps4);
 
-   return psp;
+   return ps4;
 }
 
-static void psp_audio_free(void *data)
+static void ps4_audio_free(void *data)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
-   if (!psp)
+   ps4_audio_t* ps4 = (ps4_audio_t*)data;
+   if (!ps4)
       return;
 
-   if (retro_atomic_load_acquire_int(&psp->running))
+   if (retro_atomic_load_acquire_int(&ps4->running))
    {
-      if (psp->worker_thread)
+      if (ps4->worker_thread)
       {
-         retro_atomic_store_release_int(&psp->running, 0);
-         sthread_join(psp->worker_thread);
+         retro_atomic_store_release_int(&ps4->running, 0);
+         sthread_join(ps4->worker_thread);
       }
    }
-   retro_eventcount_free(&psp->park);
-   free(psp->buffer);
-   psp->worker_thread = NULL;
-   free(psp->zeroBuffer);
+   retro_eventcount_free(&ps4->park);
+   free(ps4->buffer);
+   ps4->worker_thread = NULL;
+   free(ps4->zeroBuffer);
 
-   sceAudioSRCChRelease();
+   sceAudioOutClose(ps4->port);
 
-   free(psp);
+   free(ps4);
 
 }
 
-static ssize_t psp_audio_write(void *data, const void *s, size_t len)
+static ssize_t ps4_audio_write(void *data, const void *s, size_t len)
 {
-   psp_audio_t* psp      = (psp_audio_t*)data;
+   ps4_audio_t* ps4      = (ps4_audio_t*)data;
    uint16_t write_pos    = (uint16_t)
-         retro_atomic_load_relaxed_int(&psp->write_pos);
+         retro_atomic_load_relaxed_int(&ps4->write_pos);
    uint16_t sample_count = len / sizeof(uint32_t);
 
-   if (!retro_atomic_load_acquire_int(&psp->running))
+   if (!retro_atomic_load_acquire_int(&ps4->running))
       return -1;
 
    /* The ring is counted in uint32_t frames (write_pos, read_pos,
@@ -195,13 +199,13 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
     * compare the frame count against len, i.e. demanded four times the
     * room actually needed: non-blocking writes were refused - the audio
     * dropped - with plenty of space free, and blocking ones waited for
-    * space that rate control was not trying to free.  psp_write_avail()
-    * and psp_wait_writable() already convert; compare frames to
+    * space that rate control was not trying to free.  ps4_write_avail()
+    * and ps4_wait_writable() already convert; compare frames to
     * frames here too. */
-   if (psp->nonblock)
+   if (ps4->nonblock)
    {
       if (AUDIO_BUFFER_SIZE - ((uint16_t)(write_pos - (uint16_t)
-               retro_atomic_load_acquire_int(&psp->read_pos))
+               retro_atomic_load_acquire_int(&ps4->read_pos))
                & AUDIO_BUFFER_SIZE_MASK) < sample_count)
          return 0;
    }
@@ -214,123 +218,108 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
        * nothing rather than holding the caller. Room and liveness
        * are re-checked inside the eventcount's window, so a period
        * freed between the check and the park costs nothing. */
-      int laps = PSP_AUDIO_WAIT_LAPS;
+      int laps = PS4_AUDIO_WAIT_LAPS;
       while (AUDIO_BUFFER_SIZE - ((uint16_t)(write_pos - (uint16_t)
-         retro_atomic_load_acquire_int(&psp->read_pos))
+         retro_atomic_load_acquire_int(&ps4->read_pos))
          & AUDIO_BUFFER_SIZE_MASK) < sample_count)
       {
          int key;
-         if (--laps < 0 || !retro_atomic_load_acquire_int(&psp->running))
+         if (--laps < 0 || !retro_atomic_load_acquire_int(&ps4->running))
             return 0;
-         key = retro_eventcount_prepare_wait(&psp->park);
+         key = retro_eventcount_prepare_wait(&ps4->park);
          if (   (AUDIO_BUFFER_SIZE - ((uint16_t)(write_pos - (uint16_t)
-                  retro_atomic_load_acquire_int(&psp->read_pos))
+                  retro_atomic_load_acquire_int(&ps4->read_pos))
                   & AUDIO_BUFFER_SIZE_MASK) >= sample_count)
-             || !retro_atomic_load_acquire_int(&psp->running))
+             || !retro_atomic_load_acquire_int(&ps4->running))
          {
-            retro_eventcount_cancel_wait(&psp->park);
+            retro_eventcount_cancel_wait(&ps4->park);
             continue;
          }
-         if (!retro_eventcount_commit_wait_timeout(&psp->park, key,
-                  PSP_AUDIO_WAIT_US))
+         if (!retro_eventcount_commit_wait_timeout(&ps4->park, key,
+                  PS4_AUDIO_WAIT_US))
             continue;
       }
    }
 
    if ((write_pos + sample_count) > AUDIO_BUFFER_SIZE)
    {
-      memcpy(psp->buffer + write_pos, s,
+      memcpy(ps4->buffer + write_pos, s,
             (AUDIO_BUFFER_SIZE - write_pos) * sizeof(uint32_t));
-      memcpy(psp->buffer, (uint32_t*)s +
+      memcpy(ps4->buffer, (uint32_t*)s +
             (AUDIO_BUFFER_SIZE - write_pos),
             (write_pos + sample_count - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
    }
    else
-      memcpy(psp->buffer + write_pos, s, len);
+      memcpy(ps4->buffer + write_pos, s, len);
 
    write_pos      += sample_count;
    write_pos      &= AUDIO_BUFFER_SIZE_MASK;
    /* Release: the samples land before the index that publishes
     * them. */
-   retro_atomic_store_release_int(&psp->write_pos, write_pos);
+   retro_atomic_store_release_int(&ps4->write_pos, write_pos);
    return len;
 }
 
-static bool psp_audio_alive(void *data)
+static bool ps4_audio_alive(void *data)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
-   if (!psp)
+   ps4_audio_t* ps4 = (ps4_audio_t*)data;
+   if (!ps4)
       return false;
-   return retro_atomic_load_acquire_int(&psp->running) != 0;
+   return retro_atomic_load_acquire_int(&ps4->running) != 0;
 }
 
-static bool psp_audio_stop(void *data)
+static bool ps4_audio_stop(void *data)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
-
-   if (psp)
-   {
-      retro_atomic_store_release_int(&psp->running, 0);
-      /* A writer parked on the ring must see the flag drop; the
-       * worker may already be gone and notify nothing further. */
-      retro_eventcount_notify(&psp->park);
-
-      if (psp->worker_thread)
-      {
-         sthread_join(psp->worker_thread);
-         psp->worker_thread = NULL;
-      }
-   }
-   return true;
+   return false;
 }
 
-static bool psp_audio_start(void *data, bool is_shutdown)
+static bool ps4_audio_start(void *data, bool is_shutdown)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
+   ps4_audio_t* ps4 = (ps4_audio_t*)data;
 
-   if (psp && !retro_atomic_load_acquire_int(&psp->running))
+   if (ps4 && !retro_atomic_load_acquire_int(&ps4->running))
    {
-      if (!psp->worker_thread)
+      if (!ps4->worker_thread)
       {
-         retro_atomic_store_release_int(&psp->running, 1);
-         psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
+         retro_atomic_store_release_int(&ps4->running, 1);
+         ps4->worker_thread = sthread_create(ps4_audio_mainloop, ps4);
       }
    }
 
    return true;
 }
 
-static void psp_audio_set_nonblock_state(void *data, bool toggle)
+static void ps4_audio_set_nonblock_state(void *data, bool toggle)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
-   if (psp)
-      psp->nonblock = toggle;
+   ps4_audio_t* ps4 = (ps4_audio_t*)data;
+   if (ps4)
+      ps4->nonblock = toggle;
 }
 
-static size_t psp_write_avail(void *data)
+static size_t ps4_write_avail(void *data)
 {
    size_t _len;
-   psp_audio_t* psp = (psp_audio_t*)data;
+   ps4_audio_t* ps4 = (ps4_audio_t*)data;
 
-   if (!psp || !retro_atomic_load_acquire_int(&psp->running))
+   if (!ps4 || !retro_atomic_load_acquire_int(&ps4->running))
       return 0;
    _len = AUDIO_BUFFER_SIZE - ((uint16_t)((uint16_t)
-         retro_atomic_load_relaxed_int(&psp->write_pos) - (uint16_t)
-         retro_atomic_load_acquire_int(&psp->read_pos))
+         retro_atomic_load_relaxed_int(&ps4->write_pos) - (uint16_t)
+         retro_atomic_load_acquire_int(&ps4->read_pos))
          & AUDIO_BUFFER_SIZE_MASK);
    return _len * sizeof(uint32_t);
 }
 
 /* Sleep on the condition the output thread signals after every block
- * until the fifo has room for len, in the same units psp_audio_write()
+ * until the fifo has room for len, in the same units ps4_audio_write()
  * compares against, capped at half the fifo so the wait always ends.
- * Returns the free space as psp_write_avail() reports it, or 0 when
+ * Returns the free space as ps4_write_avail() reports it, or 0 when
  * the output thread is not running. */
-static size_t psp_wait_writable(void *data, size_t len)
+static size_t ps4_wait_writable(void *data, size_t len)
 {
-   psp_audio_t* psp = (psp_audio_t*)data;
+   ps4_audio_t* ps4 = (ps4_audio_t*)data;
    size_t avail;
-   int laps         = PSP_AUDIO_WAIT_LAPS;
+   int laps         = PS4_AUDIO_WAIT_LAPS;
    /* len arrives in bytes; the ring is counted in uint32_t frames. */
    size_t want      = len / sizeof(uint32_t);
 
@@ -340,11 +329,11 @@ static size_t psp_wait_writable(void *data, size_t len)
    for (;;)
    {
       int key;
-      if (!retro_atomic_load_acquire_int(&psp->running))
+      if (!retro_atomic_load_acquire_int(&ps4->running))
          return 0;
       avail = AUDIO_BUFFER_SIZE - ((uint16_t)((uint16_t)
-            retro_atomic_load_relaxed_int(&psp->write_pos) - (uint16_t)
-            retro_atomic_load_acquire_int(&psp->read_pos))
+            retro_atomic_load_relaxed_int(&ps4->write_pos) - (uint16_t)
+            retro_atomic_load_acquire_int(&ps4->read_pos))
             & AUDIO_BUFFER_SIZE_MASK);
       if (avail >= want)
          break;
@@ -353,47 +342,47 @@ static size_t psp_wait_writable(void *data, size_t len)
        * call. The room is re-checked inside the window. */
       if (--laps < 0)
          return 0;
-      key = retro_eventcount_prepare_wait(&psp->park);
+      key = retro_eventcount_prepare_wait(&ps4->park);
       if ((AUDIO_BUFFER_SIZE - ((uint16_t)((uint16_t)
-               retro_atomic_load_relaxed_int(&psp->write_pos) - (uint16_t)
-               retro_atomic_load_acquire_int(&psp->read_pos))
+               retro_atomic_load_relaxed_int(&ps4->write_pos) - (uint16_t)
+               retro_atomic_load_acquire_int(&ps4->read_pos))
                & AUDIO_BUFFER_SIZE_MASK)) >= want
-            || !retro_atomic_load_acquire_int(&psp->running))
+            || !retro_atomic_load_acquire_int(&ps4->running))
       {
-         retro_eventcount_cancel_wait(&psp->park);
+         retro_eventcount_cancel_wait(&ps4->park);
          continue;
       }
-      if (!retro_eventcount_commit_wait_timeout(&psp->park, key,
-               PSP_AUDIO_WAIT_US))
+      if (!retro_eventcount_commit_wait_timeout(&ps4->park, key,
+               PS4_AUDIO_WAIT_US))
          continue;
    }
    return avail * sizeof(uint32_t);
 }
 
-/* sceAudio takes 16-bit PCM only; there is no float output on the
- * PSP hardware or in the kernel API. */
-static bool psp_audio_use_float(void *data) { return false; }
-static size_t psp_buffer_size(void *data)
+/* sceAudioOut is opened in SCE_AUDIO_OUT_MODE_STEREO, which is 16-bit
+ * PCM; float output would need a different port mode. */
+static bool ps4_audio_use_float(void *data) { return false; }
+static size_t ps4_buffer_size(void *data)
 {
    /* In bytes: the ring holds AUDIO_BUFFER_SIZE uint32_t frames of int16
     * stereo. */
    return AUDIO_BUFFER_SIZE * sizeof(uint32_t);
 }
 
-audio_driver_t audio_psp = {
-   psp_audio_init,
-   psp_audio_write,
-   psp_audio_stop,
-   psp_audio_start,
-   psp_audio_alive,
-   psp_audio_set_nonblock_state,
-   psp_audio_free,
-   psp_audio_use_float,
-   "psp",
+audio_driver_t audio_ps4 = {
+   ps4_audio_init,
+   ps4_audio_write,
+   ps4_audio_stop,
+   ps4_audio_start,
+   ps4_audio_alive,
+   ps4_audio_set_nonblock_state,
+   ps4_audio_free,
+   ps4_audio_use_float,
+   "orbis",
    NULL,
    NULL,
-   psp_write_avail,
-   psp_buffer_size,
+   ps4_write_avail,
+   ps4_buffer_size,
    NULL, /* write_raw */
-   psp_wait_writable
+   ps4_wait_writable
 };
