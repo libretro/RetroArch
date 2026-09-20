@@ -104,7 +104,8 @@ typedef struct psp1_video
    unsigned rotation;
    bool vsync;
    bool rgb32;
-   bool vblank_not_reached;
+   /* Cleared from interrupt context by psp_on_vblank(). */
+   volatile bool vblank_not_reached;
    bool keep_aspect;
    bool should_resize;
    bool hw_render;
