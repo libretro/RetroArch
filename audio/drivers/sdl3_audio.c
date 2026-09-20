@@ -36,9 +36,11 @@
 
 /* SDL3 Audio Driver */
 
-/* Timeout in milliseconds for a blocked read/write to detect a stalled
- * audio device.  Applied per wait; each wake from the stream callback
- * re-arms it, so it bounds continuous silence from the device side. */
+/* Timeout in milliseconds for a blocked playback write to detect a
+ * stalled audio device.  Applied per wait; each wake from the stream
+ * callback re-arms it, so it bounds continuous silence from the device
+ * side.  The capture waits are bounded by the recording device's own
+ * period instead - see sdl3_microphone_wait_ms(). */
 #define SDL3_AUDIO_STALL_TIMEOUT_MS 256
 
 /* Context for an audio device. Covered by three different states:
@@ -56,6 +58,7 @@ typedef struct sdl3_audio
    size_t buffer_size; /**< Cap in bytes on queued audio: writes block past it, capture backlog is dropped past it. */
    size_t in_cap; /**< buffer_size converted into input-format bytes; equal to buffer_size outside the write_raw fast path. */
    int raw_rate; /**< Core rate the write_raw fast path set as the stream's input side (int16 stereo); 0 while the input side matches the device spec. */
+   int period_frames; /**< Frames the device moves per iteration, as SDL reported at open. The unit the capture waits are bounded in. */
    unsigned latency; /**< The amount of requested latency in milliseconds. */
    float ratio; /**< Frequency ratio currently set on the stream, to skip redundant sets. */
    float gain; /**< Gain currently set on the stream, to skip redundant sets. */
@@ -303,16 +306,16 @@ static void SDLCALL sdl3_audio_stream_cb(void *userdata,
  * token covers it: a signal with no waiter leaves the token set and
  * the wait returns immediately.
  *
+ * @param timeout_ms How long this one wait may block, in milliseconds.
  * @return False if the device stalls/stops moving data (to report short count).
  */
-static bool sdl3_audio_wait_for_device(sdl3_audio_t *ctx)
+static bool sdl3_audio_wait_for_device(sdl3_audio_t *ctx, int timeout_ms)
 {
    bool signalled = true;
 
    SDL_LockMutex(ctx->lock);
    if (!ctx->data_moved && !SDL_GetAtomicInt(&ctx->device_removed))
-      signalled = SDL_WaitConditionTimeout(ctx->cond, ctx->lock,
-            SDL3_AUDIO_STALL_TIMEOUT_MS);
+      signalled = SDL_WaitConditionTimeout(ctx->cond, ctx->lock, timeout_ms);
    ctx->data_moved = false;
    SDL_UnlockMutex(ctx->lock);
 
@@ -463,7 +466,8 @@ static void *sdl3_audio_init(const char *device,
          RARCH_LOG("[SDL3 audio] Opened %u channels, layout 0x%03x.\n", channels, sdl->layout);
    }
 
-   sdl->latency = latency;
+   sdl->latency       = latency;
+   sdl->period_frames = device_sample_frames;
 
    /* Buffer the requested latency's worth of audio. */
    frame_size = SDL_AUDIO_FRAMESIZE(sdl->spec);
@@ -573,7 +577,7 @@ static size_t sdl3_audio_wait_writable(void *data, size_t len)
       avail = sdl3_audio_write_avail(sdl);
       if (avail >= len)
          return avail;
-      if (!sdl3_audio_wait_for_device(sdl))
+      if (!sdl3_audio_wait_for_device(sdl, SDL3_AUDIO_STALL_TIMEOUT_MS))
          break;
    }
    return 0;
@@ -608,7 +612,8 @@ static bool sdl3_audio_reopen_default(sdl3_audio_t *sdl)
    }
 
    SDL_DestroyAudioStream(sdl->stream);
-   sdl->stream = stream;
+   sdl->stream        = stream;
+   sdl->period_frames = device_sample_frames;
    sdl3_audio_prime_stream(sdl);
 
    /* Re-arm removal tracking now that prime published the new
@@ -679,7 +684,7 @@ static ssize_t sdl3_audio_queue(sdl3_audio_t *sdl, const void *s,
 
          /* Wait until the get callback is hit and there is space
           * available in the buffer to write. */
-         if (!sdl3_audio_wait_for_device(sdl))
+         if (!sdl3_audio_wait_for_device(sdl, SDL3_AUDIO_STALL_TIMEOUT_MS))
             break;
       }
       else
@@ -1002,6 +1007,8 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
    SDL_SetAtomicU32(&mic->devid, SDL_GetAudioStreamDevice(mic->stream));
    SDL_AddEventWatch(sdl3_audio_device_removed_watch, mic);
 
+   mic->period_frames = device_sample_frames;
+
    /* Buffer up to double the latency budget. */
    frame_size = SDL_AUDIO_FRAMESIZE(mic->spec);
    mic->buffer_size = (size_t)((uint64_t)mic->spec.freq * latency / 1000) * frame_size * 2;
@@ -1067,20 +1074,51 @@ static void sdl3_microphone_set_nonblock_state(void *driver_context, bool nonblo
       sdl->nonblock = nonblock;
 }
 
-/* Sleeps until the capture stream holds len bytes, then says how many it
- * holds. Parks on the condition the put callback signals, as the read
- * loop does; each wait is bounded so a removed or stalled device returns
- * what there is rather than holding the caller. The lap cap ends the
- * loop when the device keeps capturing but never accumulates enough. */
+/* How long one capture wait may block: two periods, the time the device
+ * takes to put what a read asks for, clamped so an unset or absurd rate
+ * still leaves a usable bound.  The capture worker comes back to its
+ * exit flag between waits, so this is also how long a close waits for
+ * it - the playback stall timeout is far too long to hold that. */
+static int sdl3_microphone_wait_ms(const sdl3_audio_t *mic)
+{
+   int timeout_ms = (int)(((unsigned long)mic->period_frames * 2000ul)
+         / (mic->spec.freq > 0 ? (unsigned long)mic->spec.freq : 48000ul));
+   if (timeout_ms < 20)
+      return 20;
+   if (timeout_ms > 200)
+      return 200;
+   return timeout_ms;
+}
+
+/* Sleeps until the capture stream holds a period, then says how many
+ * bytes it holds. Parks on the condition the put callback signals, as
+ * the read loop does; each wait is bounded so a removed or stalled
+ * device returns what there is rather than holding the caller.
+ *
+ * The target is capped at one device period, the largest amount a wait
+ * can be sure of seeing: the callback drops the backlog past
+ * buffer_size, so a caller asking for more than the stream will ever
+ * hold would wait out every lap and still come back short. */
 static size_t sdl3_microphone_wait_readable(void *driver_context,
       void *mic_context, size_t len)
 {
    sdl3_audio_t *mic = (sdl3_audio_t*)mic_context;
    int laps          = 8;
+   int timeout_ms;
+   int want;
    int avail;
 
    if (!mic || !mic->stream)
       return 0;
+
+   timeout_ms = sdl3_microphone_wait_ms(mic);
+   want       = (int)len;
+   if (mic->period_frames > 0)
+   {
+      int period_bytes = mic->period_frames * SDL_AUDIO_FRAMESIZE(mic->spec);
+      if (period_bytes > 0 && want > period_bytes)
+         want = period_bytes;
+   }
 
    for (;;)
    {
@@ -1088,11 +1126,11 @@ static size_t sdl3_microphone_wait_readable(void *driver_context,
          return 0;
       if ((avail = SDL_GetAudioStreamAvailable(mic->stream)) < 0)
          return 0;
-      if (avail >= (int)len)
+      if (avail >= want)
          return (size_t)avail;
       if (--laps < 0)
          return avail > 0 ? (size_t)avail : 0;
-      if (!sdl3_audio_wait_for_device(mic))
+      if (!sdl3_audio_wait_for_device(mic, timeout_ms))
          return avail > 0 ? (size_t)avail : 0;
    }
 }
@@ -1136,7 +1174,7 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
 
          /* Wait until the put callback signals that the device
           * can capture more samples. */
-         if (!sdl3_audio_wait_for_device(mic))
+         if (!sdl3_audio_wait_for_device(mic, sdl3_microphone_wait_ms(mic)))
             break;
       }
    }
