@@ -48,6 +48,7 @@
 
 /* Frame buffer */
 #define SCEGU_VRAM_TOP        (0x44000000)
+#define SCEGU_VRAM_SIZE       (2 * 1024 * 1024)
 /* 16bit mode */
 #define SCEGU_VRAM_BUFSIZE    (SCEGU_VRAM_WIDTH*SCEGU_SCR_HEIGHT*2)
 #define SCEGU_VRAM_BP_0       ((void *)(SCEGU_VRAM_TOP))
@@ -102,6 +103,9 @@ typedef struct psp1_video
    int tex_filter;
    int bpp_log2;
    unsigned rotation;
+   /* VRAM left for the core frame, after the display buffers and the
+    * colour tables. */
+   unsigned texture_size;
    bool vsync;
    bool rgb32;
    /* Cleared from interrupt context by psp_on_vblank(). */
@@ -307,7 +311,8 @@ static void *psp_init(const video_info_t *video,
 
    psp->frame_dList         = memalign(64, 256);
    psp->menu.dList          = memalign(64, 256);
-   psp->menu.frame          = memalign(64,  2 * 480 * 272);
+   psp->menu.frame          = memalign(64,
+         2 * SCEGU_SCR_WIDTH * SCEGU_SCR_HEIGHT);
    psp->menu.context_storage = (PspGeContext*)memalign(64,
          sizeof(PspGeContext));
    psp->frame_coords        = memalign(64,
@@ -411,6 +416,9 @@ static void *psp_init(const video_info_t *video,
       LUT_b                 = (void*)LUT_b_local;
 
    }
+
+   psp->texture_size = (SCEGU_VRAM_TOP + SCEGU_VRAM_SIZE)
+      - (uint32_t)psp->texture;
 
    psp->tex_filter = video->smooth? GU_LINEAR : GU_NEAREST;
 
@@ -516,7 +524,18 @@ static bool psp_frame(void *data, const void *frame,
       psp->hw_render = false;
 
    if (!psp->hw_render)
+   {
+      /* The blit below runs to the end of VRAM if the core frame is
+       * larger than what is left for it. */
+      unsigned max_height = (psp->texture_size >> psp->bpp_log2) / width;
+
+      if (height > max_height)
+         height = max_height;
+      if (!height)
+         return false;
+
       sceGuSync(0, 0); /* let the core decide when to sync when HW_RENDER */
+   }
 
    if (msg)
    {
@@ -627,9 +646,17 @@ static void psp_free(void *data)
 static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
                                unsigned width, unsigned height, float alpha)
 {
+   unsigned max_height;
    psp1_video_t *psp = (psp1_video_t*)data;
 
-   if (!psp || !frame)
+   if (!psp || !frame || !width || !height)
+      return;
+
+   /* psp->menu.frame holds one screen of 4444. */
+   max_height = (SCEGU_SCR_WIDTH * SCEGU_SCR_HEIGHT) / width;
+   if (height > max_height)
+      height = max_height;
+   if (!height)
       return;
 
    psp_set_screen_coords(psp->menu.frame_coords, 0, 0,
