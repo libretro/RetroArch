@@ -40,9 +40,12 @@ on:
 permissions:
   contents: read
 
+# Only pull requests cancel a superseded run.  On master every push
+# gets its own group (keyed by the commit), so a burst of pushes queues
+# instead of cancelling the run for the commit before it.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   overlay-on-screen:
