@@ -542,6 +542,11 @@ static bool psp_frame(void *data, const void *frame,
 
    if (msg)
    {
+      /* The CPU writes the framebuffer here, so the GE has to be off
+       * it even where the core drives its own rendering. */
+      if (psp->hw_render)
+         sceGuSync(0, 0);
+
       pspDebugScreenSetBase(psp->draw_buffer);
       pspDebugScreenSetXY(0,0);
       pspDebugScreenPuts(msg);
