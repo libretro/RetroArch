@@ -3768,7 +3768,16 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 #endif
 
    desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
-   desc.RTVFormats[0]              = DXGI_FORMAT_R8G8B8A8_UNORM;
+   /* The format these draw into, not an assumption about it. Every
+    * pipeline below targets the swapchain, and the swapchain is not
+    * always 8-bit: with HDR off and video_swapchain_bit_depth set to
+    * 10, chain.bit_depth is DXGI_SWAPCHAIN_BIT_DEPTH_10 and the back
+    * buffer is R10G10B10A2. Hardcoding R8G8B8A8 here made every stock
+    * draw disagree with its render target, which D3D12 rejects - the
+    * frame is dropped and the screen stays black while audio and input
+    * carry on. The HDR pipes have always been built from the real
+    * format a few lines down; these now are too. */
+   desc.RTVFormats[0]              = d3d12->chain.formats[d3d12->chain.bit_depth];
 
    {
       static const char shader[] =
