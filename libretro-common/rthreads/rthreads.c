@@ -1442,17 +1442,15 @@ bool sthread_prefer_fast_cores(void)
 #if defined(RTHREADS_HAVE_AFFINITY)
    if (!rthreads_fast_state)
       rthreads_find_fast_cores();
-   if (rthreads_fast_state < 0)
-      return false;
-   return syscall(__NR_sched_setaffinity, 0,
-         sizeof(rthreads_fast_mask), rthreads_fast_mask) == 0;
+   if (rthreads_fast_state >= 0)
+      return syscall(__NR_sched_setaffinity, 0,
+            sizeof(rthreads_fast_mask), rthreads_fast_mask) == 0;
 #elif defined(USE_WIN32_THREADS)
    if (!rthreads_fast_state)
       rthreads_find_fast_cores();
-   if (rthreads_fast_state < 0)
-      return false;
-   return rthreads_set_cpusets(GetCurrentThread(),
-         rthreads_fast_ids, rthreads_fast_count) != 0;
+   if (rthreads_fast_state >= 0)
+      return rthreads_set_cpusets(GetCurrentThread(),
+            rthreads_fast_ids, rthreads_fast_count) != 0;
 #elif defined(RTHREADS_HAVE_QOS_OVERRIDE)
    /* Apple silicon offers no affinity; quality of service is what
     * steers a thread onto the performance cores. */
@@ -1463,9 +1461,8 @@ bool sthread_prefer_fast_cores(void)
     * application thread there. */
    return OSSetThreadAffinity(OSGetCurrentThread(),
          OS_THREAD_ATTRIB_AFFINITY_CPU1) != FALSE;
-#else
-   return false;
 #endif
+   return false;
 }
 
 bool sthread_raise_current_priority(void)

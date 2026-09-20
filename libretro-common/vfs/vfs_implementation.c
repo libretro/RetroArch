@@ -1477,14 +1477,11 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
 
       if (fstat(fd, &st) != 0)
          return 0;
-      if (st.st_blksize <= 0)
-         return 0;
-
-      return (int64_t)st.st_blksize;
+      if (st.st_blksize > 0)
+         return (int64_t)st.st_blksize;
    }
-#else
-   return 0;
 #endif
+   return 0;
 }
 
 int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,

@@ -396,14 +396,12 @@ bool ui_companion_driver_log_active(void)
 #ifdef HAVE_COMPANION_WIMP
    uico_driver_state_t *uico_st    = &uico_driver_st;
    const ui_companion_driver_t *ui = uico_st->wimp;
-   if (!retro_atomic_load_relaxed_int(&uico_driver_st.desktop_menu_enable))
-      return false;
-   return ui && ui->log_msg && uico_st->wimp_data
-      && (uico_st->flags & UICO_ST_FLAG_WIMP_IS_INITED)
-      && ui->is_active && ui->is_active(uico_st->wimp_data);
-#else
-   return false;
+   if (retro_atomic_load_relaxed_int(&uico_driver_st.desktop_menu_enable))
+      return ui && ui->log_msg && uico_st->wimp_data
+         && (uico_st->flags & UICO_ST_FLAG_WIMP_IS_INITED)
+         && ui->is_active && ui->is_active(uico_st->wimp_data);
 #endif
+   return false;
 }
 
 void ui_companion_driver_log_msg(const char *msg)
