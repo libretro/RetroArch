@@ -8353,6 +8353,10 @@ int runloop_iterate(void)
     * which a core enters from within retro_run(), so the save it asks for
     * is performed here instead of where the command arrives. */
    android_input_flush_pending_state();
+
+   /* Same poll, same reason: entering Java is only safe on the OS
+    * stack, and a libco core reaches the poll on its own. */
+   android_input_flush_pending_haptics();
 #endif
 
 #if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)

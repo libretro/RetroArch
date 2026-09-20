@@ -106,7 +106,6 @@
 
 #if defined(ANDROID)
 #include <android/api-level.h>
-#include "frontend/drivers/platform_unix.h"
 #include "play_feature_delivery/play_feature_delivery.h"
 #endif
 
@@ -6734,11 +6733,6 @@ int rarch_main(int argc, char *argv[], void *data)
       bool app_exit     = false;
       ui_companion_driver_wimp_iterate();
       ret = runloop_iterate();
-
-#ifdef ANDROID
-      /* Core callbacks (including runahead) have returned to the OS stack. */
-      android_input_flush_pending_haptics();
-#endif
 
       task_queue_check();
 
