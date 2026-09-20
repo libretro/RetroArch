@@ -6730,9 +6730,13 @@ static void metal_unload_texture(void *data,
  * the frame is neither raced nor dropped.
  *
  * A mipmapped texture would need its levels regenerated after the
- * copy: refused, so the caller loads a replacement. */
-static bool metal_update_texture(void *video_data, uintptr_t handle,
-      const struct texture_image *ti, bool threaded)
+ * copy: refused, so the caller loads a replacement.
+ *
+ * Must run on the thread that owns Context.blitCommandBuffer (see
+ * metal_load_texture_internal): metal_update_texture routes it to
+ * the video thread when threaded video is up. */
+static bool metal_update_texture_internal(void *video_data,
+      uintptr_t handle, const struct texture_image *ti)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_data;
    if (!md || !handle || !ti || !ti->pixels)
@@ -6798,6 +6802,45 @@ static bool metal_update_texture(void *video_data, uintptr_t handle,
       }
    }
    return true;
+}
+
+#ifdef HAVE_THREADS
+/* Runs on the video thread via CMD_CUSTOM_COMMAND; the result goes
+ * back through cmd->handle (0 = refused), as metal_texture_load_wrap
+ * does, since the int return channel is not wide enough for it. */
+static uintptr_t metal_texture_update_wrap(void *data)
+{
+   metal_texture_cmd_t *cmd = (metal_texture_cmd_t*)data;
+   cmd->handle = metal_update_texture_internal(cmd->video_data,
+         cmd->handle, cmd->image) ? cmd->handle : 0;
+   return 0;
+}
+#endif
+
+static bool metal_update_texture(void *video_data, uintptr_t handle,
+      const struct texture_image *ti, bool threaded)
+{
+   if (!handle || !ti)
+      return false;
+
+#ifdef HAVE_THREADS
+   /* The update encodes a blit into Context.blitCommandBuffer, which
+    * the video thread commits at frame end: the same single-thread
+    * rule metal_load_texture follows for mipmapped loads, so under
+    * threaded video it runs there too. */
+   if (threaded)
+   {
+      metal_texture_cmd_t cmd;
+      cmd.video_data  = video_data;
+      cmd.image       = (struct texture_image *)ti;
+      cmd.filter_type = TEXTURE_FILTER_LINEAR;
+      cmd.handle      = handle;
+      video_thread_texture_handle(&cmd, metal_texture_update_wrap);
+      return cmd.handle != 0;
+   }
+#endif
+
+   return metal_update_texture_internal(video_data, handle, ti);
 }
 
 /* TODO/FIXME - implement */
