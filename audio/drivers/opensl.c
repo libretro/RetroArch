@@ -69,6 +69,10 @@ typedef struct sl
     * level 21+); blocks then hold 32-bit float frames and the frontend
     * skips its float-to-int16 pass. */
    bool use_float;
+   /* The layout asked for, and the channels the player was created
+    * with. They agree unless the wider format was refused. */
+   uint32_t layout;
+   unsigned channels;
    bool nonblock;
    bool is_paused;
 } sl_t;
@@ -223,6 +227,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
 {
    unsigned i;
    unsigned frames_per_block;
+   unsigned channels;
    unsigned frame_size                             = 2 * sizeof(int16_t);
    SLDataFormat_PCM fmt_pcm                        = {0};
 #if defined(ANDROID) && defined(__ANDROID_API__) && (__ANDROID_API__ >= 21)
@@ -257,6 +262,14 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    }
 
    RARCH_LOG("[OpenSL] Requested audio latency: %u ms.\n", latency);
+
+   /* Anything wider than stereo needs the PCM_EX format below, which
+    * is API level 21 and up; without it the count is not one this
+    * driver can ask for and the stereo path is what runs. */
+   sl->layout = audio_driver_requested_layout();
+   channels   = audio_layout_channels(sl->layout);
+   if (channels < 2 || channels > 8)
+      channels = 2;
 
    GOTO_IF_FAIL(slCreateEngine(&sl->engine_object, 0, NULL, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->engine_object, SL_BOOLEAN_FALSE));
@@ -303,10 +316,46 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    audio_sink.pLocator    = &loc_outmix;
 
 #if defined(ANDROID) && defined(__ANDROID_API__) && (__ANDROID_API__ >= 21)
+   /* The layout the frontend wants, where the player takes it. The
+    * frontend's mask is the channel mask OpenSL asks for - both are
+    * the WAVEFORMATEXTENSIBLE bits - so it goes across as it is, and
+    * the frames arrive in its ascending-bit order either way. Refused,
+    * this falls through to the stereo attempts below unchanged. */
+   if (channels > 2)
+   {
+      fmt_pcm_ex.formatType     = SL_ANDROID_DATAFORMAT_PCM_EX;
+      fmt_pcm_ex.numChannels    = channels;
+      fmt_pcm_ex.sampleRate     = rate * 1000; /* milli-Hz */
+      fmt_pcm_ex.bitsPerSample  = 32;
+      fmt_pcm_ex.containerSize  = 32;
+      fmt_pcm_ex.channelMask    = sl->layout;
+      fmt_pcm_ex.endianness     = SL_BYTEORDER_LITTLEENDIAN;
+      fmt_pcm_ex.representation = SL_ANDROID_PCM_REPRESENTATION_FLOAT;
+      audio_src.pFormat         = &fmt_pcm_ex;
+
+      res = SLEngineItf_CreateAudioPlayer(sl->engine, &sl->buffer_queue_object,
+            &audio_src, &audio_sink, 1, &id, &req);
+      if (res == SL_RESULT_SUCCESS)
+      {
+         sl->use_float = true;
+         sl->channels  = channels;
+         frame_size    = channels * sizeof(float);
+         RARCH_LOG("[OpenSL] Float output, %u channels.\n", channels);
+      }
+      else
+      {
+         sl->buffer_queue_object = NULL;
+         RARCH_LOG("[OpenSL] %u channels refused (0x%x), using stereo.\n",
+               channels, (unsigned)res);
+      }
+   }
+
    /* Float first. API level 21 added SLAndroidDataFormat_PCM_EX; a
     * runtime that refuses it (older device, or a libOpenSLES built
     * without it) fails player creation, and the 16-bit format below is
     * tried in that case. */
+   if (!sl->use_float)
+   {
    fmt_pcm_ex.formatType     = SL_ANDROID_DATAFORMAT_PCM_EX;
    fmt_pcm_ex.numChannels    = 2;
    fmt_pcm_ex.sampleRate     = rate * 1000; /* milli-Hz */
@@ -322,6 +371,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    if (res == SL_RESULT_SUCCESS)
    {
       sl->use_float = true;
+      sl->channels  = 2;
       frame_size    = 2 * sizeof(float);
       RARCH_LOG("[OpenSL] Float output.\n");
    }
@@ -330,6 +380,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
       sl->buffer_queue_object = NULL;
       RARCH_LOG("[OpenSL] Float output refused (0x%x), using 16-bit.\n",
             (unsigned)res);
+   }
    }
 #endif
 
@@ -347,6 +398,7 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
       GOTO_IF_FAIL(SLEngineItf_CreateAudioPlayer(sl->engine, &sl->buffer_queue_object,
                &audio_src, &audio_sink,
                1, &id, &req));
+      sl->channels           = 2;
       frame_size             = 2 * sizeof(int16_t);
    }
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->buffer_queue_object, SL_BOOLEAN_FALSE));
@@ -591,6 +643,14 @@ static size_t sl_underruns(void *data)
    return retro_atomic_load_acquire_size(&sl_shared.underruns);
 }
 
+static uint32_t sl_layout(void *data)
+{
+   sl_t *sl = (sl_t*)data;
+   if (!sl || sl->channels != audio_layout_channels(sl->layout))
+      return AUDIO_LAYOUT_STEREO;
+   return sl->layout;
+}
+
 audio_driver_t audio_opensl = {
    sl_init,
    sl_write,
@@ -608,5 +668,6 @@ audio_driver_t audio_opensl = {
    NULL, /* write_raw */
    sl_wait_writable,
    sl_frames_consumed,
-   sl_underruns
+   sl_underruns,
+   sl_layout
 };
