@@ -267,6 +267,8 @@ static void psp_on_vblank(u32 sub, psp1_video_t *psp)
       psp->vblank_not_reached = false;
 }
 
+static void psp_free(void *data);
+
 static void *psp_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
@@ -312,6 +314,18 @@ static void *psp_init(const video_info_t *video,
          (((PSP_FRAME_SLICE_COUNT * sizeof(psp1_sprite_t)) + 63) & ~63));
    psp->menu.frame_coords   = memalign(64,
          (((PSP_FRAME_SLICE_COUNT * sizeof(psp1_sprite_t)) + 63) & ~63));
+
+   if (     !psp->main_dList
+         || !psp->frame_dList
+         || !psp->menu.dList
+         || !psp->menu.frame
+         || !psp->menu.context_storage
+         || !psp->frame_coords
+         || !psp->menu.frame_coords)
+   {
+      psp_free(psp);
+      return NULL;
+   }
 
    memset(psp->frame_coords, 0,
          PSP_FRAME_SLICE_COUNT * sizeof(psp1_sprite_t));
