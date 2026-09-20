@@ -409,13 +409,6 @@ static bool pwire_microphone_mic_alive(const void *driver_context, const void *m
    return pw_stream_get_state(mic->stream, &error) == PW_STREAM_STATE_STREAMING;
 }
 
-static void pwire_microphone_set_nonblock_state(void *driver_context, bool nonblock)
-{
-   pipewire_core_t *pw = (pipewire_core_t*)driver_context;
-   if (pw)
-      pw->nonblock = nonblock;
-}
-
 static struct string_list *pwire_microphone_device_list_new(const void *driver_context)
 {
    pipewire_core_t *pw = (pipewire_core_t*)driver_context;
@@ -611,7 +604,6 @@ microphone_driver_t microphone_pipewire = {
       pwire_microphone_init,
       pwire_microphone_free,
       pwire_microphone_read,
-      pwire_microphone_set_nonblock_state,
       "pipewire",
       pwire_microphone_device_list_new,
       pwire_microphone_device_list_free,

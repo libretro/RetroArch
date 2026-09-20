@@ -290,7 +290,6 @@ static void s_blocking_read(void)
       microphone_alsa.free(drv);
       return;
    }
-   microphone_alsa.set_nonblock_state(drv, false);
    microphone_alsa.start_mic(drv, mic);
 
    /* The device never delivers: wait reports a timeout and readi keeps

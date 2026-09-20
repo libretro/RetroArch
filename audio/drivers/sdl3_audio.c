@@ -1093,13 +1093,6 @@ static bool sdl3_microphone_stop_mic(void *driver_context, void *mic_context)
    return true;
 }
 
-static void sdl3_microphone_set_nonblock_state(void *driver_context, bool nonblock)
-{
-   sdl3_audio_t *sdl = (sdl3_audio_t*)driver_context;
-   if (sdl)
-      sdl->nonblock = nonblock;
-}
-
 /* How long one capture wait may block: two periods, the time the device
  * takes to put what a read asks for, clamped so an unset or absurd rate
  * still leaves a usable bound.  The capture worker comes back to its
@@ -1232,7 +1225,6 @@ microphone_driver_t microphone_sdl3 = {
    sdl3_microphone_init,
    sdl3_microphone_free,
    sdl3_microphone_read,
-   sdl3_microphone_set_nonblock_state,
    "sdl3",
    sdl3_microphone_device_list_new,
    sdl3_microphone_device_list_free,

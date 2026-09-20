@@ -245,12 +245,6 @@ static bool alsa_microphone_mic_alive(const void *driver_context, const void *mi
    return snd_pcm_state(mic->pcm) == SND_PCM_STATE_RUNNING;
 }
 
-static void alsa_microphone_set_nonblock_state(void *driver_context, bool nonblock)
-{
-   alsa_microphone_t *alsa = (alsa_microphone_t*)driver_context;
-   alsa->nonblock = nonblock;
-}
-
 static struct string_list *alsa_microphone_device_list_new(const void *data)
 {
    return alsa_device_list_type_new("Input");
@@ -401,7 +395,6 @@ microphone_driver_t microphone_alsa = {
         alsa_microphone_init,
         alsa_microphone_free,
         alsa_microphone_read,
-        alsa_microphone_set_nonblock_state,
         "alsa",
         alsa_microphone_device_list_new,
         alsa_microphone_device_list_free,

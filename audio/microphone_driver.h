@@ -306,8 +306,7 @@ typedef struct microphone_driver
     * Otherwise, samples will be in signed 16-bit integer format.
     * Data will be in native byte order either way.
     *
-    * All reads should block until all requested frames are provided,
-    * unless set otherwise with set_nonblock_state().
+    * All reads should block until all requested frames are provided.
     *
     * @param[in] driver_context Pointer to the driver context.
     * Will be the value that was returned by \c ::init().
@@ -318,9 +317,6 @@ typedef struct microphone_driver
     * \em not samples or frames.
     * @return The number of bytes that were successfully read,
     * or \c -1 if there was an error.
-    * May be less than \c buffer_size if this microphone is non-blocking.
-    * If this microphone is in non-blocking mode and no new data is available,
-    * the driver should return 0 rather than -1.
     *
     * @note Do not apply resampling or up-channeling;
     * the microphone frontend will do so.
@@ -333,24 +329,6 @@ typedef struct microphone_driver
     * @see microphone_driver_read
     */
    int (*read)(void *driver_context, void *mic_context, void *buffer, size_t buffer_size);
-
-   /**
-    * Sets the nonblocking state of the driver.
-    * If the driver is in blocking mode (the default),
-    * \c ::read() will block the current thread
-    * until all requested samples are provided.
-    * Otherwise, \c ::read() will return as many samples as it can (which may be none)
-    * and return without waiting.
-    *
-    * If a driver does not support nonblocking mode,
-    * leave this function pointer as \c NULL.
-    *
-    * @param driver_context Pointer to the driver context.
-    * Will be the value that was returned by \c ::init().
-    * @param[in] nonblock \c true if the driver should be in nonblocking mode,
-    * \c false if it should be in blocking mode.
-    * */
-   void (*set_nonblock_state)(void *driver_context, bool nonblock);
 
    /**
     * A human-readable name for this driver.

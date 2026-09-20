@@ -2380,16 +2380,6 @@ static int coreaudio_mic_read(void *driver_context, void *mic_context,
    return (int)n;
 }
 
-static void coreaudio_mic_set_nonblock_state(void *driver_context, bool state)
-{
-   coreaudio_mic_driver_t *drv = (coreaudio_mic_driver_t*)driver_context;
-   if (!drv)
-      return;
-   drv->nonblock = state;
-   if (drv->mic)
-      drv->mic->nonblock = state;
-}
-
 static struct string_list *coreaudio_mic_device_list_new(const void *driver_context)
 {
 #if TARGET_OS_IPHONE
@@ -2694,7 +2684,6 @@ microphone_driver_t microphone_coreaudio = {
    coreaudio_mic_init,
    coreaudio_mic_free,
    coreaudio_mic_read,
-   coreaudio_mic_set_nonblock_state,
    "coreaudio",
    coreaudio_mic_device_list_new,
    coreaudio_mic_device_list_free,

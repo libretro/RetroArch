@@ -441,13 +441,6 @@ static bool sdl2_microphone_stop_mic(void *driver_context, void *mic_context)
    return true;
 }
 
-static void sdl2_microphone_set_nonblock_state(void *driver_context, bool state)
-{
-   sdl2_microphone_t *sdl = (sdl2_microphone_t*)driver_context;
-   if (sdl)
-      sdl->nonblock = state;
-}
-
 /* Sleeps until the capture queue holds len bytes, then says how many it
  * holds. The same bounded wait sdl2_microphone_read() does - the SDL
  * capture callback is the only thing that ever notifies this park, so
@@ -578,7 +571,6 @@ microphone_driver_t microphone_sdl = {
       sdl2_microphone_init,
       sdl2_microphone_free,
       sdl2_microphone_read,
-      sdl2_microphone_set_nonblock_state,
       "sdl2",
       sdl2_microphone_device_list_new,
       sdl2_microphone_device_list_free,

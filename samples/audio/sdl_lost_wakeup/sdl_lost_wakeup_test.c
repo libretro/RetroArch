@@ -208,7 +208,6 @@ static void run_capture(unsigned latency_ms, double seconds)
       drv->free(ctx);
       return;
    }
-   drv->set_nonblock_state(ctx, false);
    drv->start_mic(ctx, mic);
 
    buf    = (int16_t*)calloc(per_frame, sizeof(int16_t));

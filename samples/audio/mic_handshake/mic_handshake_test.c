@@ -163,7 +163,6 @@ static void *dev_thread(void *arg)
 
 static void *mdev_init(void)                 { static int h = 1; return &h; }
 static void  mdev_free(void *d)              { (void)d; }
-static void  mdev_set_nonblock(void *d, bool s) { (void)d; (void)s; }
 static bool  mdev_alive(const void *d, const void *m) { (void)d; (void)m; return true; }
 static bool  mdev_start(void *d, void *m)    { (void)d; (void)m; return true; }
 static bool  mdev_stop(void *d, void *m)     { (void)d; (void)m; return true; }
@@ -240,7 +239,7 @@ static size_t mdev_wait_readable(void *d, void *m, size_t len)
 }
 
 static microphone_driver_t clocked_mic = {
-   mdev_init, mdev_free, mdev_read, mdev_set_nonblock, "clocked",
+   mdev_init, mdev_free, mdev_read, "clocked",
    NULL /* device_list_new */, NULL /* device_list_free */,
    mdev_open, mdev_close, mdev_alive, mdev_start, mdev_stop,
    mdev_use_float, mdev_wait_readable

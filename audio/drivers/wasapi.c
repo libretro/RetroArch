@@ -1484,12 +1484,6 @@ static int wasapi_microphone_read(void *driver_context, void *mic_context, void 
    return bytes_read;
 }
 
-static void wasapi_microphone_set_nonblock_state(void *driver_context, bool nonblock)
-{
-   wasapi_microphone_t *wasapi = (wasapi_microphone_t*)driver_context;
-   wasapi->nonblock = nonblock;
-}
-
 static void *wasapi_microphone_open_mic(void *driver_context, const char *device, unsigned rate,
       unsigned latency, unsigned *new_rate)
 {
@@ -1715,7 +1709,6 @@ microphone_driver_t microphone_wasapi = {
       wasapi_microphone_init,
       wasapi_microphone_free,
       wasapi_microphone_read,
-      wasapi_microphone_set_nonblock_state,
       "wasapi",
       wasapi_microphone_device_list_new,
       wasapi_microphone_device_list_free,
