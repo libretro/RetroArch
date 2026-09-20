@@ -943,6 +943,41 @@ jobs:
           echo "[pass] badge_cache_test (ASan)"
           make clean
 
+      - name: Build and run psp1_gfx_contracts_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/psp1_gfx_contracts
+        run: |
+          set -eu
+          # gfx/drivers/psp1_gfx.c is reached only by the griffin unity
+          # build for PSP, so nothing else here compiles it, let alone
+          # runs it. This links the real driver against a stand-in for
+          # the parts of the machine its correctness turns on: main RAM
+          # and VRAM each mapped twice so the cached and uncached
+          # aliases genuinely alias, a no-access page after VRAM so a
+          # blit off the end faults, display lists that stay the GE's
+          # until they are waited on, and a vblank sub-interrupt that
+          # can be fired from inside free().
+          #
+          # What it holds: the 24bpp BGR byte order video_driver.h
+          # specifies for read_viewport, filling the whole buffer the
+          # screenshot task hands over, releasing the interrupt handler
+          # before the driver struct it writes through, keeping the GE
+          # off a display list or framebuffer that is in use, both blits
+          # staying inside the buffers they target, cache-line ownership
+          # of everything the GE writes, and init failing cleanly when
+          # an allocation does.
+          make clean all SANITIZER=address,undefined
+          rc=0
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./psp1_gfx_contracts_test || rc=$?
+          # 77: the runner would not hand over the PSP address windows.
+          if [ "$rc" = 77 ]; then
+             echo "[skip] PSP address windows unavailable"
+             exit 0
+          fi
+          [ "$rc" = 0 ]
+          make clean
+
       - name: Build and run gfx_thumbnail_preview_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/gfx_thumbnail_preview
