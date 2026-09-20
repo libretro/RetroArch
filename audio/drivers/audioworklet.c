@@ -16,7 +16,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <malloc.h>
 #include <boolean.h>
+#include <retro_atomic.h>
 
 #include <emscripten/wasm_worker.h>
 #include <emscripten/webaudio.h>
@@ -65,6 +67,11 @@ typedef struct audioworklet_data
     * ring_init false and the driver does not come up. */
    retro_spsc_t ring;
    size_t ring_size;
+   /* Quanta the worklet had to fill with silence because the ring came
+    * up short, or because it could not get at the ring at all. Counted
+    * here and not said: this is the render callback, and a line from
+    * it costs part of the quantum it is reporting on. */
+   retro_atomic_size_t underruns;
    bool ring_init;
    unsigned rate;
    unsigned latency;
@@ -112,7 +119,9 @@ static bool audioworklet_process_cb(int numInputs, const AudioSampleFrame *input
       /* busyspin is safe as of emscripten 4.0.4 */
       if (!emscripten_lock_busyspin_wait_acquire(&audioworklet->buffer_lock, 2.5))
       {
-         printf("[WARN] [AudioWorklet] Worklet: could not acquire lock\n");
+         /* The output arrays arrive zeroed, so this quantum goes out
+          * as silence. */
+         retro_atomic_fetch_add_size(&audioworklet->underruns, 1);
          return true;
       }
 
@@ -136,6 +145,10 @@ static bool audioworklet_process_cb(int numInputs, const AudioSampleFrame *input
    if (writing_frames < outputs[0].samplesPerChannel)
    {
       int zero_frames = outputs[0].samplesPerChannel - writing_frames;
+      /* Only where audio was expected: a driver that is not running is
+       * not being starved. */
+      if (audioworklet->driver_running)
+         retro_atomic_fetch_add_size(&audioworklet->underruns, 1);
       memset(outputs[0].data + writing_frames,                                0, zero_frames * sizeof(float));
       memset(outputs[0].data + writing_frames + outputs[0].samplesPerChannel, 0, zero_frames * sizeof(float));
    }
@@ -301,6 +314,7 @@ static void *audioworklet_init(const char *device, unsigned rate,
     * below take their existing error exits. */
    if (!audioworklet->ring_init)
       audioworklet->init_error = true;
+   retro_atomic_size_init(&audioworklet->underruns, 0);
    emscripten_lock_init(&audioworklet->buffer_lock);
 #ifdef PROXY_TO_PTHREAD
    emscripten_lock_init(&audioworklet->trywrite_lock);
@@ -607,6 +621,13 @@ static size_t audioworklet_buffer_size(void *data)
 
 static bool audioworklet_use_float(void *data) { return true; }
 
+static size_t audioworklet_underruns(void *data)
+{
+   audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
+   return audioworklet
+      ? retro_atomic_load_acquire_size(&audioworklet->underruns) : 0;
+}
+
 audio_driver_t audio_audioworklet = {
    audioworklet_init,
    audioworklet_write,
@@ -621,5 +642,8 @@ audio_driver_t audio_audioworklet = {
    NULL,
    audioworklet_write_avail,
    audioworklet_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   NULL, /* wait_writable */
+   NULL, /* frames_consumed */
+   audioworklet_underruns
 };
