@@ -1134,6 +1134,7 @@ jobs:
              ./preview_blit_bands_test fixtures/vp9_tiles.webm
              ./preview_blit_bands_test fixtures/hevc_wpp.mp4
              ./preview_blit_bands_test fixtures/bframes_hevc.mp4
+             ./preview_blit_bands_test fixtures/hevc_nowpp.mp4 fixtures/mbaff_h264.mp4
              RH265_PUBLISH_DELAY=200 ./preview_blit_bands_test fixtures/hevc_wpp.mp4 fixtures/bframes_hevc.mp4 fixtures/hevc_nowpp.mp4'
           echo "[pass] preview_blit_bands_test (ASan)"
           # clean keeps fixtures/ by design; regenerate anyway so the
@@ -1156,6 +1157,7 @@ jobs:
              ./preview_blit_bands_test fixtures/vp9_tiles.webm
              ./preview_blit_bands_test fixtures/hevc_wpp.mp4
              ./preview_blit_bands_test fixtures/bframes_hevc.mp4
+             ./preview_blit_bands_test fixtures/hevc_nowpp.mp4 fixtures/mbaff_h264.mp4
              RH265_PUBLISH_DELAY=200 ./preview_blit_bands_test fixtures/hevc_wpp.mp4 fixtures/bframes_hevc.mp4 fixtures/hevc_nowpp.mp4'
           echo "[pass] preview_blit_bands_test (TSan)"
           TSAN_OPTIONS=halt_on_error=1 timeout 600 bash -c '

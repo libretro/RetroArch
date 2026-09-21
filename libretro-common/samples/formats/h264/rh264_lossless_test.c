@@ -708,6 +708,16 @@ int main(void)
     * that eight slices are eight rows of macroblocks. */
    oracle_case("slices8_ipb",    "mandelbrot=s=176x256:r=10", 8, "yuv420p", "-qp 0",
          "-preset medium -x264-params slices=8:bframes=2");
+   /* Interlaced, macroblock-adaptive frame/field (x264's interlaced
+    * coding): pair scanning, field motion compensation and the
+    * per-pair deblocking; and with pictures in flight, the rows of a
+    * MBAFF picture published only at its completion. */
+   oracle_case("mbaff_cavlc",    "mandelbrot=s=176x144:r=10", 8, "yuv420p", "-crf 20",
+         "-preset medium -x264-params tff=1:cabac=0:bframes=2");
+   oracle_case("mbaff_cabac_b",  "mandelbrot=s=176x144:r=10", 8, "yuv420p", "-crf 20",
+         "-preset medium -x264-params tff=1:cabac=1:bframes=2:b-pyramid=normal");
+   oracle_case("mbaff_wp",       "mandelbrot=s=176x144:r=10", 8, "yuv420p", "-crf 20",
+         "-preset medium -x264-params tff=1:cabac=1:bframes=2:weightp=2");
 
    run("rm -rf '%s'", dir);
    /* The row counter every reference read consults: on one thread a

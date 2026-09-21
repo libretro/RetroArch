@@ -551,12 +551,6 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
       if(!sh->field_pic_flag&&sps->mb_adaptive_frame_field_flag)
          sh->first_mb_in_slice*=2;
 
-      /* B field pictures are still refused: their second list and the
-       * direct modes need field machinery this does not have.  So are
-       * CABAC ones: the significance maps of a field-coded block are
-       * built from their own context offsets (Table 9-11), which is
-       * not implemented. */
-
    }
    if(sh->is_idr) sh->idr_pic_id=rh264_ue(b);
    if(sps->pic_order_cnt_type==0){

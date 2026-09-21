@@ -259,7 +259,7 @@ def main():
             'anim_dispose_prev.png', 'trailing_large.mp4',
             'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4',
             'vp9_tiles.webm', 'hevc_wpp.mp4', 'bframes_h264.mp4',
-            'bframes_hevc.mp4', 'hevc_nowpp.mp4')):
+            'bframes_hevc.mp4', 'hevc_nowpp.mp4', 'mbaff_h264.mp4')):
         print('fixtures present, not rebuilt')
         return
 
@@ -335,6 +335,16 @@ def main():
         'wpp=0:frame-threads=1:sao=1:deblock=1:bframes=3:b-pyramid=1:keyint=30:log-level=none',
         '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', '-an',
         j('hevc_nowpp.mp4')])
+    # Interlaced H.264 (x264's MBAFF), B-frames and CABAC: pair
+    # scanning in the decoder, and with pictures in flight the rows of
+    # a MBAFF picture published only at its completion.
+    subprocess.check_call([
+        'ffmpeg', '-v', 'error', '-y',
+        '-f', 'lavfi', '-i', 'testsrc2=s=320x240:r=30', '-t', '2',
+        '-c:v', 'libx264', '-preset', 'veryfast', '-bf', '3', '-g', '30',
+        '-x264-params', 'tff=1:b-adapt=0',
+        '-pix_fmt', 'yuv420p', '-an',
+        j('mbaff_h264.mp4')])
     seed(j('seed_small.mp4'), 3, 640, 360, '300k')
     seed(j('seed_4k.mp4'), 3, 3840, 2160, '400k')
 
