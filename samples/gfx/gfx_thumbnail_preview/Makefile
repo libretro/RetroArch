@@ -321,7 +321,8 @@ endif
 # left the following run globbing nothing.  Use distclean to drop them.
 clean:
 	rm -f $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) \
-	      $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET) \
+	      $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(BENCH_TARGET) \
+	      $(TARGET).exe $(CATCHUP_TARGET).exe $(BENCH_TARGET).exe $(BLIT_BANDS_TARGET).exe \
 	      $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 
 distclean: clean
