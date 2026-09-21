@@ -151,6 +151,9 @@ jobs:
             # handler is stuck; waits ~1.5 s by design.
             task_queue_detach_test
             tpool_wait_test
+            # Four CPU-burning jobs on a pool of four must overlap;
+            # on a one-core runner it notes that and still passes.
+            tpool_parallel_test
             data_transfer_pool_scrub_test
             retro_atomic_test
             retro_atomic_extern_c_linkage_test
