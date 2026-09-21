@@ -1,3 +1,5 @@
+#include <retro_posix_source.h>
+
 #include <formats/cdfs.h>
 
 #include <retro_miscellaneous.h>

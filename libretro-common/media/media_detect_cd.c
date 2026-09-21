@@ -20,6 +20,8 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <retro_posix_source.h>
+
 #include <media/media_detect_cd.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>

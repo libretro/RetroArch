@@ -36,6 +36,8 @@
  * (paths are treated as filesystem paths), and duplicate detection.
  */
 
+#include <retro_posix_source.h>
+
 #include <retro_miscellaneous.h>
 
 #include <string/stdstring.h>

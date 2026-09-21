@@ -10,6 +10,8 @@
  * around the 1024 predictor and small AC -- as well as 1180's own uniform
  * ranges, because an IDCT can be accurate on one and not the other.
  */
+#include <retro_posix_source.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

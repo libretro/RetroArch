@@ -48,6 +48,8 @@
  *                      kick_process(), which is an IPI.
  */
 
+#include <retro_posix_source.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
