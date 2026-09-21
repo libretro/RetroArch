@@ -91,6 +91,7 @@ jobs:
         run: |
           pkgs="build-essential libx11-dev libxrandr-dev libdrm-dev"
           pkgs="$pkgs xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev"
+          pkgs="$pkgs libwayland-dev"
           pkgs="$pkgs gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
@@ -805,6 +806,28 @@ jobs:
           test -x display_servers_kms_test
           timeout 60 ./display_servers_kms_test
           echo "[pass] display_servers_kms_test"
+
+      - name: Build and run wayland_drm_lease_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/wayland_drm_lease
+        run: |
+          set -eu
+          # The DRM lease path in gfx/common/wayland_drm_lease.c and
+          # gfx/display_servers/dispserv_wl.c, driven by a test
+          # compositor on libwayland-server: what is offered, which
+          # connector an index picks, an index past the offer, a
+          # refusal, a revoke arriving while the client is idle, and
+          # no Wayland session at all. The leased descriptor and the
+          # device's non-master fd are the ones a mistake leaks, so
+          # the lane runs under ASan. Both protocol halves are
+          # generated here from deps/wayland-protocols, which needs
+          # wayland-scanner and the client and server libraries -
+          # libwayland-dev carries all three.
+          make clean all SANITIZER=address,undefined
+          test -x wayland_drm_lease_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 60 ./wayland_drm_lease_test
+          echo "[pass] wayland_drm_lease_test"
 
       - name: Build and run modeline_edid_parse_test (ASan + UBSan)
         shell: bash
