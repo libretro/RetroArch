@@ -4947,7 +4947,8 @@ typedef struct {
 typedef struct rh264_slice_job
 {
    struct rh264_slice_job *next;
-   uint8_t  *rbsp;
+   uint8_t  *rbsp;       /* the buffer the slice was unescaped into */
+   size_t    rbsp_cap;   /* its capacity, for its return to the pool */
    size_t    rbsp_len;
    size_t    bitpos;
    rh264_slice_hdr sh;
@@ -5020,11 +5021,13 @@ typedef struct rh264_pic_ctx
    int         job_rc;
    int         completed;     /* rh264_ctx_complete_picture has run */
    int         posted;        /* the queue went to the pool */
+   struct rh264_video *owner; /* the decoder, for the pool of buffers */
    retro_atomic_int_t busy;   /* a pool thread is still on this picture */
    const struct rh264_vlc_set *vlc;
 } rh264_pic_ctx;
 
 #define RH264_MAX_CTX 8
+#define RH264_RBSP_POOL 32   /* unescape buffers kept between slices */
 
 struct rh264_video
 {
@@ -5047,6 +5050,15 @@ struct rh264_video
     * one because the queue was full. */
    int            st_posted, st_inflight_sum, st_inflight_max;
    int            st_join_waits, st_pop_held, st_pop_waits;
+   /* Unescape buffers between uses: a slice is unescaped into the
+    * context's buffer and the queued job takes that very buffer, the
+    * context drawing its next from here; a finished job returns it.
+    * So a slice is unescaped once, into memory that is neither made
+    * nor copied per slice. Workers return, the submitter draws: under
+    * the blocks lock when there is a pool. */
+   uint8_t       *rbsp_free[RH264_RBSP_POOL];
+   size_t         rbsp_free_cap[RH264_RBSP_POOL];
+   int            rbsp_free_n;
 
    /* unescaped-RBSP scratch for slice NALs, grown on demand and kept
     * for the decoder's lifetime */
@@ -5715,6 +5727,11 @@ rh264_video *rh264_video_open(void)
    if (!v) return NULL;
    v->cur  = &v->ctx[0];
    v->nctx = 1;
+   {
+      int k;
+      for (k = 0; k < RH264_MAX_CTX; k++)
+         v->ctx[k].owner = v;
+   }
    /* Invert the CAVLC tables for this instance; on failure the decoder
     * runs on the serial matchers instead. */
    v->vlc_ready = rh264_vlc_init(&v->vlc) == 0;
@@ -5750,6 +5767,7 @@ void rh264_video_close(rh264_video *v)
       }
       for (i = 0; i < RH264_MAX_REFS; i++) rh264_frame_free(&v->dpb[i]);
       for (i = 0; i < RH264_OUT_SLOTS; i++) rh264_frame_free(&v->out[i]);
+      for (i = 0; i < v->rbsp_free_n; i++) free(v->rbsp_free[i]);
    }
    rh264_vlc_free(&v->vlc);
    free(v);
@@ -9315,9 +9333,9 @@ static int rh264_video_next_ctx(rh264_video *v, int *got_pic)
    return rh264_ctx_prepare(v, v->cur);
 }
 
-static rh264_slice_job *rh264_ctx_queue_slice(rh264_pic_ctx *c,
+static rh264_slice_job *rh264_ctx_queue_slice(struct rh264_video *v, rh264_pic_ctx *c,
       const rh264_bits *b, const rh264_slice_hdr *sh, int kind, int cabac);
-static void rh264_ctx_run_slices(rh264_pic_ctx *c, const struct rh264_vlc_set *vlc);
+static void rh264_ctx_run_slices(struct rh264_video *v, rh264_pic_ctx *c, const struct rh264_vlc_set *vlc);
 
 static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len, int *got_pic)
 {
@@ -9378,11 +9396,11 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
    { v->cur->pic_open = 0; return -1; }
    /* Main/High-profile streams use CABAC entropy coding; baseline uses CAVLC.
     * Dispatch on the PPS entropy_coding_mode_flag. Both paths are intra-only. */
-   if (!rh264_ctx_queue_slice(v->cur, &b, &sh, 0, v->pps.entropy_coding_mode_flag))
+   if (!rh264_ctx_queue_slice(v, v->cur, &b, &sh, 0, v->pps.entropy_coding_mode_flag))
    { v->cur->pic_open = 0; return -1; }
    v->cur->vlc = v->vlc_ready ? &v->vlc : NULL;
    if (!v->threaded)
-      rh264_ctx_run_slices(v->cur, v->cur->vlc);
+      rh264_ctx_run_slices(v, v->cur, v->cur->vlc);
    rc = v->cur->job_rc;
    if (rc != 0)
       v->cur->pic_open = 0;
@@ -9710,11 +9728,11 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
        * with normal inter-picture bookkeeping -- the reference buffer stays,
        * the counters keep running, and the picture is stored like any other
        * reference. */
-      if (!rh264_ctx_queue_slice(v->cur, &b, sh, 0, v->pps.entropy_coding_mode_flag))
+      if (!rh264_ctx_queue_slice(v, v->cur, &b, sh, 0, v->pps.entropy_coding_mode_flag))
       { v->cur->pic_open = 0; return -1; }
       v->cur->vlc = v->vlc_ready ? &v->vlc : NULL;
       if (!v->threaded)
-         rh264_ctx_run_slices(v->cur, v->cur->vlc);
+         rh264_ctx_run_slices(v, v->cur, v->cur->vlc);
       rc = v->cur->job_rc;
       if (rc != 0) v->cur->pic_open = 0;
       v->last_picnum = sh->frame_num_val;
@@ -9870,14 +9888,14 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       if (!bc->colg) { return -1; }
       rh264_b_setup_scales(bc);
       {
-         rh264_slice_job *j = rh264_ctx_queue_slice(v->cur, &b, sh, 2,
+         rh264_slice_job *j = rh264_ctx_queue_slice(v, v->cur, &b, sh, 2,
                v->pps.entropy_coding_mode_flag);
          if (!j) { return -1; }
          j->bc = *bc;
       }
       v->cur->vlc = v->vlc_ready ? &v->vlc : NULL;
       if (!v->threaded)
-         rh264_ctx_run_slices(v->cur, v->cur->vlc);
+         rh264_ctx_run_slices(v, v->cur, v->cur->vlc);
       rc = v->cur->job_rc;
       (void)end;
       if (rc != 0) v->cur->pic_open = 0;
@@ -9950,7 +9968,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       (void)lpn;
       rh264_ctx_snapshot_list(v->cur, l0, nref);
       {
-         rh264_slice_job *j = rh264_ctx_queue_slice(v->cur, &b, sh, 1,
+         rh264_slice_job *j = rh264_ctx_queue_slice(v, v->cur, &b, sh, 1,
                v->pps.entropy_coding_mode_flag);
          if (!j) { v->cur->pic_open = 0; return -1; }
          j->nref = nref;
@@ -9960,7 +9978,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       }
       v->cur->vlc = v->vlc_ready ? &v->vlc : NULL;
       if (!v->threaded)
-         rh264_ctx_run_slices(v->cur, v->cur->vlc);
+         rh264_ctx_run_slices(v, v->cur, v->cur->vlc);
       rc = v->cur->job_rc;
    }
    (void)end;
@@ -10075,20 +10093,55 @@ static void rh264_ctx_complete_picture(rh264_pic_ctx *c)
 /* Queue one slice's data decode on the picture's context. Takes its
  * own copy of the RBSP; the lists point at the context's snapshots,
  * which outlive the queue. */
-static rh264_slice_job *rh264_ctx_queue_slice(rh264_pic_ctx *c,
+static rh264_slice_job *rh264_ctx_queue_slice(rh264_video *v, rh264_pic_ctx *c,
       const rh264_bits *b, const rh264_slice_hdr *sh, int kind, int cabac)
 {
    rh264_slice_job *j = (rh264_slice_job*)calloc(1, sizeof(*j));
    if (!j)
       return NULL;
-   j->rbsp = (uint8_t*)malloc(b->size ? b->size : 1);
-   if (!j->rbsp)
+   /* The slice was unescaped into the buffer of whichever context was
+    * current at the time - the one before the rotation, when this
+    * slice opened a picture - and the job takes that very buffer;
+    * its owner draws another from the pool. */
    {
-      free(j);
-      return NULL;
+      rh264_pic_ctx *o = NULL;
+      int k;
+      for (k = 0; k < RH264_MAX_CTX; k++)
+         if (v->ctx[k].rbsp_scratch == b->buf)
+         {
+            o = &v->ctx[k];
+            break;
+         }
+      if (!o)
+      {
+         /* not a context's buffer: copy, as a stranger's must be */
+         j->rbsp = (uint8_t*)malloc(b->size ? b->size : 1);
+         if (!j->rbsp)
+         {
+            free(j);
+            return NULL;
+         }
+         memcpy(j->rbsp, b->buf, b->size);
+         j->rbsp_cap = b->size ? b->size : 1;
+      }
+      else
+      {
+         j->rbsp     = o->rbsp_scratch;
+         j->rbsp_cap = o->rbsp_scratch_cap;
+         o->rbsp_scratch     = NULL;
+         o->rbsp_scratch_cap = 0;
+         rh264_blocks_lock_take();
+         if (v->rbsp_free_n > 0)
+         {
+            v->rbsp_free_n--;
+            o->rbsp_scratch     = v->rbsp_free[v->rbsp_free_n];
+            o->rbsp_scratch_cap = v->rbsp_free_cap[v->rbsp_free_n];
+         }
+         rh264_blocks_lock_drop();
+      }
    }
-   memcpy(j->rbsp, b->buf, b->size);
    j->rbsp_len = b->size;
+   (void)c;
    j->bitpos   = b->bitpos;
    j->sh       = *sh;
    j->kind     = kind;
@@ -10108,7 +10161,7 @@ static rh264_slice_job *rh264_ctx_queue_slice(rh264_pic_ctx *c,
  * inverse VLC tables, which are read-only for the decoder's life.
  * Runs on the submitting thread today; on a pool thread once pictures
  * decode concurrently. */
-static void rh264_ctx_run_slices(rh264_pic_ctx *c, const struct rh264_vlc_set *vlc)
+static void rh264_ctx_run_slices(rh264_video *v, rh264_pic_ctx *c, const struct rh264_vlc_set *vlc)
 {
    int total = c->f.mbw * c->f.mbh;
    while (c->jobs)
@@ -10155,6 +10208,15 @@ static void rh264_ctx_run_slices(rh264_pic_ctx *c, const struct rh264_vlc_set *v
          else
             c->job_rc = rc;
       }
+      rh264_blocks_lock_take();
+      if (v->rbsp_free_n < RH264_RBSP_POOL)
+      {
+         v->rbsp_free[v->rbsp_free_n]     = j->rbsp;
+         v->rbsp_free_cap[v->rbsp_free_n] = j->rbsp_cap;
+         v->rbsp_free_n++;
+         j->rbsp = NULL;
+      }
+      rh264_blocks_lock_drop();
       free(j->rbsp);
       free(j);
    }
@@ -10182,7 +10244,7 @@ static void rh264_ctx_job(void *arg)
             break;
       } while (!retro_atomic_cas_int(&rh264_jobs_running_max, m, now));
    }
-   rh264_ctx_run_slices(c, c->vlc);
+   rh264_ctx_run_slices(c->owner, c, c->vlc);
    retro_atomic_fetch_sub_int(&rh264_jobs_running, 1);
    if (c->job_rc != 0 && c->f.planes)
       rh264_block_publish_rows(c->f.planes, c->f.mbh); /* nobody waits on a refusal */
@@ -10241,7 +10303,7 @@ static void rh264_video_post_picture(rh264_video *v)
       retro_atomic_store_release_int(&c->busy, 0);
    }
 #endif
-   rh264_ctx_run_slices(c, c->vlc);
+   rh264_ctx_run_slices(c->owner, c, c->vlc);
 }
 
 /* The sequence's side of a finished picture: an IDR empties the DPB,
