@@ -1525,7 +1525,8 @@ typedef struct
    uint8_t *skipm;            /* cu_skip_flag per 4x4 */
    int w4, h4;
 
-   int8_t *qpy;               /* QpY per 8x8 (luma coords >> 3) */
+   int8_t *qpy;
+   uint8_t *bypm;             /* per 8x8: the CU codes its residual as is (transquant bypass) */               /* QpY per 8x8 (luma coords >> 3) */
    int w8, h8;
 
    rh265_sao_params *sao;     /* per CTB */
@@ -1573,7 +1574,7 @@ typedef struct
    int first_qg;
    int cu_qp_delta;           /* pending delta for the current quant group */
    int is_cu_qp_delta_coded;
-   int cu_transquant_bypass;  /* always 0: transquant bypass is refused */
+   int cu_transquant_bypass;  /* the CU being decoded codes its residual as is */
    int intra_split;           /* PartMode == PART_NxN */
    int intra_pred_mode[4];    /* luma modes of the (up to 4) PUs */
    int intra_pred_mode_c;
@@ -1961,7 +1962,8 @@ static int rh265_residual_coding(rh265_dec *d, int x0, int y0,
       }
    }
 
-   if (pps->transform_skip_enabled && log2_size <= 2)
+   if (pps->transform_skip_enabled && !d->cu_transquant_bypass
+         && log2_size <= 2)
       transform_skip_flag = rh265_cabac_decode(cb,
             RH265_CTX_TRANSFORM_SKIP_FLAG + (c_idx ? 1 : 0));
 
@@ -2168,7 +2170,7 @@ static int rh265_residual_coding(rh265_dec *d, int x0, int y0,
                greater1_ctx++;
          }
          first_nz = sig_idx[n_end - 1];
-         sign_hidden = (last_nz - first_nz >= 4);
+         sign_hidden = (last_nz - first_nz >= 4) && !d->cu_transquant_bypass;
          if (first_gt1_idx != -1)
             gt1[first_gt1_idx] = (uint8_t)(gt1[first_gt1_idx]
                   + rh265_cabac_decode(cb,
@@ -2213,6 +2215,10 @@ static int rh265_residual_coding(rh265_dec *d, int x0, int y0,
             if (sign_flags & 0x80000000u)
                level = -level;
             sign_flags <<= 1;
+            if (d->cu_transquant_bypass)
+               /* 8.6.2: the residual is the level itself */
+               coeffs[y_c * trafo_size + x_c] = (int16_t)level;
+            else
             {
                int m = 16;
                int64_t t;
@@ -2236,7 +2242,9 @@ static int rh265_residual_coding(rh265_dec *d, int x0, int y0,
       }
    }
 
-   if (transform_skip_flag)
+   if (d->cu_transquant_bypass)
+      ;                                /* the levels are the residual */
+   else if (transform_skip_flag)
       rh265_tskip_rescale(coeffs, log2_size, d->bd);
    else if (c_idx == 0 && log2_size == 2 && intra_mode >= 0)
       rh265_idst4(coeffs, d->bd);
@@ -3377,6 +3385,20 @@ static int rh265_coding_unit(rh265_dec *d, int x0, int y0, int log2_cb)
    d->cu_y = y0;
    d->cu_log2 = log2_cb;
 
+   /* cu_transquant_bypass_flag (7.3.8.5): the CU's residual is its
+    * coded levels, no scaling, no transform, and the loop filters
+    * leave its samples as they are */
+   d->cu_transquant_bypass = 0;
+   if (d->pps->transquant_bypass_enabled)
+      d->cu_transquant_bypass = rh265_cabac_decode(&d->cb,
+            RH265_CTX_CU_TRANSQUANT_BYPASS_FLAG);
+   {
+      int n8 = cb_size >> 3, y8 = y0 >> 3, x8 = x0 >> 3;
+      for (i = 0; i < n8; i++)
+         for (j = 0; j < n8; j++)
+            if (y8 + i < d->h8 && x8 + j < d->w8)
+               d->bypm[(y8 + i) * d->w8 + x8 + j] = (uint8_t)d->cu_transquant_bypass;
+   }
    if (is_pb)
    {
       int cur = rh265_zaddr(d, x0, y0);
@@ -3914,6 +3936,7 @@ static void rh265_dec_free_meta(rh265_dec *d)
    d->meta  = NULL;
    d->ipm   = d->ctd = d->vedge = d->hedge = d->nzc = d->skipm = NULL;
    d->qpy   = NULL;
+   d->bypm  = NULL;
    d->sao   = NULL;
    d->ctb_slice     = NULL;
    d->ctb_lf_across = NULL;
@@ -3948,7 +3971,7 @@ static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
 {
    rh265_dec *d = v->cur;
    size_t n4, o_ctd, o_vedge, o_hedge, o_nzc, o_skipm, o_qpy, o_sao,
-          o_slice, o_lfa, len;
+          o_slice, o_lfa, o_byp, len;
    d->bd        = s->bit_depth_luma;
    d->pel_bytes = 1 + (d->bd > 8);
    d->fns       = rh265_get_fns(d->bd);
@@ -3988,7 +4011,8 @@ static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
          (size_t)s->pic_size_ctbs * sizeof(rh265_sao_params));
    o_lfa   = RH265_ARENA_NEXT(o_slice,
          (size_t)s->pic_size_ctbs * sizeof(uint16_t));
-   len     = RH265_ARENA_NEXT(o_lfa,   (size_t)s->pic_size_ctbs);
+   o_byp   = RH265_ARENA_NEXT(o_lfa,   (size_t)s->pic_size_ctbs);
+   len     = RH265_ARENA_NEXT(o_byp,   (size_t)d->w8 * d->h8);
    if (!(d->meta = (uint8_t*)malloc(len)))
       goto fail;
    d->ipm   = d->meta;
@@ -4001,6 +4025,7 @@ static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
    d->sao   = (rh265_sao_params*)(d->meta + o_sao);
    d->ctb_slice     = (uint16_t*)(d->meta + o_slice);
    d->ctb_lf_across = d->meta + o_lfa;
+   d->bypm          = d->meta + o_byp;
    v->alloc_w = s->width;
    v->alloc_h = s->height;
    v->out_pic = -1;
@@ -5170,11 +5195,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
       ret = rh265_parse_pps(rbsp, rbsp_size, pp, &id);
       if (ret == 0)
       {
-         if (pp->transquant_bypass_enabled ||
-             pp->constrained_intra_pred)
-            ret = -2;
-         else
-            memcpy(&v->pps[id], pp, sizeof(*pp));
+         memcpy(&v->pps[id], pp, sizeof(*pp));
       }
    }
    else
@@ -5299,6 +5320,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                   memset(v->cur->hedge, 0, (size_t)v->cur->w4 * v->cur->h4);
                   memset(v->cur->nzc, 0, (size_t)v->cur->w4 * v->cur->h4);
                   memset(v->cur->skipm, 0, (size_t)v->cur->w4 * v->cur->h4);
+                  memset(v->cur->bypm, 0, (size_t)v->cur->w8 * v->cur->h8);
                   memset(v->cur->qpy, (uint8_t)shp->slice_qp,
                         (size_t)v->cur->w8 * v->cur->h8);
                   memset(v->cur->sao, 0,

@@ -406,14 +406,24 @@ int main(void)
    if (!g_pool)
       printf("no thread pool: the concurrent decodes are skipped\n");
    printf("rh265 byte-exact vs ffmpeg - one thread, four contexts, four pictures concurrently, rows held back:\n");
-   /* Lossless: transquant bypass. The decoder refuses the PPS that
-    * enables it, out of its profile, and must keep refusing rather
-    * than decode wrong - when bypass is implemented these become
-    * byte-exact cases like the rest. */
-   refused_case("ll_420",        "mandelbrot=s=176x144:r=10", 3, "yuv420p",
+   /* Lossless: transquant bypass, the residual the coded levels and
+    * the loop filters leaving the CU alone; every sample the source's.
+    * The last mixes bypass CUs with coded ones, so that the filters
+    * run against a bypass side. */
+   oracle_case("ll_420",        "mandelbrot=s=176x144:r=10", 3, "yuv420p",
          "-x265-params lossless=1:wpp=0:frame-threads=1");
-   refused_case("ll_420_10",     "mandelbrot=s=176x144:r=10", 3, "yuv420p10le",
+   oracle_case("ll_420_wpp",    "mandelbrot=s=176x144:r=10", 3, "yuv420p",
+         "-x265-params lossless=1:wpp=1:frame-threads=1");
+   oracle_case("ll_420_10",     "mandelbrot=s=176x144:r=10", 3, "yuv420p10le",
          "-x265-params lossless=1:wpp=0:frame-threads=1");
+   oracle_case("ll_420_b",      "mandelbrot=s=176x144:r=10", 6, "yuv420p",
+         "-x265-params lossless=1:bframes=2:wpp=0:frame-threads=1");
+   oracle_case("mixed_bypass",  "mandelbrot=s=176x144:r=10", 4, "yuv420p",
+         "-x265-params cu-lossless=1:crf=22:sao=1:deblock=1:wpp=0:frame-threads=1");
+   /* constrained intra prediction: intra CUs in P and B pictures take
+    * no reference sample from an inter-coded neighbour */
+   oracle_case("cip_pb",        "mandelbrot=s=176x144:r=10", 8, "yuv420p",
+         "-x265-params constrained-intra=1:crf=22:sao=1:deblock=1:bframes=2:wpp=0:frame-threads=1");
    /* Lossy: deblocking and SAO on, B-frames and a B-pyramid, the
     * temporal predictor; the decode is specified to the sample and
     * must match ffmpeg's. */
