@@ -116,7 +116,7 @@ platform_video() {
    if ! out=$($CC $WARN $extra $INC $BASE $defs -fsyntax-only "$tu" 2>&1); then
       echo "FAIL  $name"
       echo "      $tu"
-      printf '%s\n' "$out" | sed 's/^/      /' | head -10
+      show_out "$out"
       fail=1
    else
       echo "ok    $name"
@@ -169,6 +169,11 @@ platform_video "dingux video"   "-DDINGUX" "-I/usr/include/SDL" \
    gfx/drivers/sdl_dingux_gfx.c /usr/include/SDL/SDL.h
 platform_video "rs90 video"     "-DDINGUX -DRS90" "-I/usr/include/SDL" \
    gfx/drivers/sdl_rs90_gfx.c /usr/include/SDL/SDL.h
+# libdrm's exynos module and its G2D headers, which distros ship only
+# where the hardware exists. A runner building libdrm with -Dexynos=true
+# turns this on.
+platform_video "exynos video"   "-DHAVE_EXYNOS" "-I/usr/include/libdrm" \
+   gfx/drivers/exynos_gfx.c /usr/include/exynos/exynos_fimg2d.h
 
 # The Direct3D drivers, against the DirectX headers the tree vendors in
 # gfx/include/dxsdk. Six drivers no other lane compiles, and they read
