@@ -818,8 +818,8 @@ static void gfx_display_gl3_draw_pipeline(
          case VIDEO_SHADER_MENU_6:
             uniform_param.type              = UNIFORM_2F;
             uniform_param.lookup.ident      = "OutputSize";
-            uniform_param.result.f.v0       = draw->width;
-            uniform_param.result.f.v1       = draw->height;
+            uniform_param.result.f.v0       = VIDEO_SCALE_W(draw->dims);
+            uniform_param.result.f.v1       = VIDEO_SCALE_H(draw->dims);
 
             gl->chain.shader->set_uniform_parameter(gl->chain.shader_data,
                   &uniform_param, NULL);
@@ -914,7 +914,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
    if (!coords.color)
       coords.color                  = &gl3_colors[0];
 
-   glViewport(draw->x, draw->y, draw->width, draw->height);
+   glViewport(draw->x, draw->y, VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
 
    if (gl->chain.active)
    {

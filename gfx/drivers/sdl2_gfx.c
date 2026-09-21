@@ -1156,8 +1156,8 @@ static void gfx_display_sdl2_scissor_end(void *data,
  *
  * 1. gfx_display_draw_quad - used by widgets and most menu chrome.
  *    Sets coords->vertex = NULL and coords->tex_coord = NULL, and
- *    encodes the quad rectangle in draw->x / draw->y / draw->width /
- *    draw->height (pixel coords, Y already flipped to top-left
+ *    encodes the quad rectangle in draw->x / draw->y / VIDEO_SCALE_W(draw->dims) /
+ *    VIDEO_SCALE_H(draw->dims) (pixel coords, Y already flipped to top-left
  *    origin by the caller). gl1 handles this by substituting a
  *    static 0..1 vertex array and calling glViewport with the rect,
  *    but per-quad viewport changes don't make sense for SDL_Renderer
@@ -1241,7 +1241,7 @@ static void gfx_display_sdl2_draw(gfx_display_ctx_draw_t *draw,
     *   (gfx_display_draw_quad pre-flips: draw.y = height - y - h).
     *   To put the rect at the right spot in SDL's top-down pixel
     *   space, re-flip:
-    *      dst_y = video_height - draw->height - draw->y
+    *      dst_y = video_height - VIDEO_SCALE_H(draw->dims) - draw->y
     *
     * - coords->tex_coord (when non-NULL): 0..1 normalised, TOP-DOWN
     *   (yes, opposite to the bottom-up vertex convention; this is
@@ -1267,15 +1267,15 @@ static void gfx_display_sdl2_draw(gfx_display_ctx_draw_t *draw,
        * reasonable floating point coord. */
       if (   draw->x < -65536 || draw->x > 65536
           || draw->y < -65536 || draw->y > 65536
-          || draw->width  > 65536
-          || draw->height > 65536)
+          || VIDEO_SCALE_W(draw->dims)  > 65536
+          || VIDEO_SCALE_H(draw->dims) > 65536)
          return;
 
       x0 = (float)draw->x;
-      x1 = (float)draw->x + (float)draw->width;
+      x1 = (float)draw->x + (float)VIDEO_SCALE_W(draw->dims);
       /* Re-flip Y from bottom-up to SDL top-down. */
-      y0 = (float)video_height - (float)draw->height - (float)draw->y;
-      y1 = y0 + (float)draw->height;
+      y0 = (float)video_height - (float)VIDEO_SCALE_H(draw->dims) - (float)draw->y;
+      y1 = y0 + (float)VIDEO_SCALE_H(draw->dims);
 
       /* Apply draw->scale_factor (centred scaling around the quad's
        * midpoint).  XMB sets this on icon draws (node->zoom) to grow

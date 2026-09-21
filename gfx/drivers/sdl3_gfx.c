@@ -986,7 +986,7 @@ static void gfx_display_sdl3_scissor_end(void *data,
  *
  * 1. gfx_display_draw_quad - used by widgets and most menu chrome.
  *    Sets coords->vertex = NULL and encodes the quad rectangle in
- *    draw->x / draw->y / draw->width / draw->height (pixel coords,
+ *    draw->x / draw->y / VIDEO_SCALE_W(draw->dims) / VIDEO_SCALE_H(draw->dims) (pixel coords,
  *    y bottom-up). We synthesize the four corners in pixel space.
  *
  * 2. The general path - menu drivers that build their own vertex
@@ -1049,7 +1049,7 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
     *   (gfx_display_draw_quad pre-flips: draw.y = height - y - h).
     *   To put the rect at the right spot in SDL's top-down pixel
     *   space, re-flip:
-    *      dst_y = video_height - draw->height - draw->y
+    *      dst_y = video_height - VIDEO_SCALE_H(draw->dims) - draw->y
     *
     * - coords->tex_coord (when non-NULL): 0..1 normalised, TOP-DOWN
     *   (opposite to the bottom-up vertex convention; documented in
@@ -1066,15 +1066,15 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
        * the renderer state for subsequent draws. */
       if (   draw->x < -SDL3_DRAW_COORD_LIMIT || draw->x > SDL3_DRAW_COORD_LIMIT
           || draw->y < -SDL3_DRAW_COORD_LIMIT || draw->y > SDL3_DRAW_COORD_LIMIT
-          || draw->width  > SDL3_DRAW_COORD_LIMIT
-          || draw->height > SDL3_DRAW_COORD_LIMIT)
+          || VIDEO_SCALE_W(draw->dims)  > SDL3_DRAW_COORD_LIMIT
+          || VIDEO_SCALE_H(draw->dims) > SDL3_DRAW_COORD_LIMIT)
          return;
 
       x0 = (float)draw->x;
-      x1 = (float)draw->x + (float)draw->width;
+      x1 = (float)draw->x + (float)VIDEO_SCALE_W(draw->dims);
       /* Re-flip Y from bottom-up to SDL top-down. */
-      y0 = (float)video_height - (float)draw->height - (float)draw->y;
-      y1 = y0 + (float)draw->height;
+      y0 = (float)video_height - (float)VIDEO_SCALE_H(draw->dims) - (float)draw->y;
+      y1 = y0 + (float)VIDEO_SCALE_H(draw->dims);
 
       /* Apply draw->scale_factor (centred scaling around the quad's
        * midpoint). XMB sets this on icon draws (node->zoom) to grow

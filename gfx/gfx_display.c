@@ -685,8 +685,7 @@ static void gfx_display_flush_impl(gfx_display_t *p_disp)
       coords.color         = p_disp->batch_color;
       draw.x               = p_disp->batch_first_x;
       draw.y               = p_disp->batch_first_y;
-      draw.width           = p_disp->batch_first_w;
-      draw.height          = p_disp->batch_first_h;
+      draw.dims            = VIDEO_SCALE_PACK(p_disp->batch_first_w, p_disp->batch_first_h);
    }
    else
    {
@@ -696,8 +695,7 @@ static void gfx_display_flush_impl(gfx_display_t *p_disp)
       coords.color         = p_disp->batch_color;
       draw.x               = 0;
       draw.y               = 0;
-      draw.width           = p_disp->batch_video_width;
-      draw.height          = p_disp->batch_video_height;
+      draw.dims            = VIDEO_SCALE_PACK(p_disp->batch_video_width, p_disp->batch_video_height);
    }
    draw.coords             = &coords;
    draw.matrix_data        = NULL;
@@ -819,8 +817,7 @@ void gfx_display_draw_quad(
 
    draw.x               = x;
    draw.y               = (int)height - y - (int)h;
-   draw.width           = w;
-   draw.height          = h;
+   draw.dims            = VIDEO_SCALE_PACK(w, h);
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
    draw.texture         = (texture && *texture)
@@ -840,7 +837,7 @@ void gfx_display_draw_quad(
             (float)(x + (int)w) / (float)width,
             (float)draw.y / (float)height,
             (float)(draw.y + (int)h) / (float)height,
-            draw.x, draw.y, draw.width, draw.height))
+            draw.x, draw.y, VIDEO_SCALE_W(draw.dims), VIDEO_SCALE_H(draw.dims)))
       return;
 
    gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
@@ -962,8 +959,7 @@ void gfx_display_draw_texture_slice(
    coords.vertex            = vert_coord;
    coords.tex_coord         = tex_coord;
    coords.lut_tex_coord     = NULL;
-   draw.width               = width;
-   draw.height              = height;
+   draw.dims                = VIDEO_SCALE_PACK(width, height);
    draw.coords              = &coords;
    draw.matrix_data         = mymat;
    draw.pipeline_id         = 0;
@@ -1142,8 +1138,8 @@ void gfx_display_draw_cursor(
 
    draw.x               = x - (cursor_size / 2);
    draw.y               = (int)height - y - (cursor_size / 2);
-   draw.width           = cursor_size;
-   draw.height          = cursor_size;
+   draw.dims            = VIDEO_SCALE_PACK((unsigned)cursor_size,
+         (unsigned)cursor_size);
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
    draw.texture         = texture;

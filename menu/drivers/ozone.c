@@ -3208,8 +3208,7 @@ static void ozone_draw_icon(
 
    draw.x               = x;
    draw.y               = height - y - icon_height;
-   draw.width           = icon_width;
-   draw.height          = icon_height;
+   draw.dims            = VIDEO_SCALE_PACK(icon_width, icon_height);
    draw.scale_factor    = scale_factor;
    draw.rotation        = rotation;
    draw.coords          = &coords;
@@ -3217,7 +3216,7 @@ static void ozone_draw_icon(
    draw.texture         = texture;
    draw.pipeline_id     = 0;
 
-   if (draw.height > 0 && draw.width > 0)
+   if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
    {
       gfx_display_draw(dispctx, &draw, userdata,
             video_width, video_height);

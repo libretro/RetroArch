@@ -152,13 +152,28 @@ void gfx_display_draw_text(const font_data_t *font, const char *text,
 
 /* gfx_widgets_draw_icon() reaches this through the display driver's
  * own draw entry point, which the widget layer calls directly rather
- * than through one of the helpers above - so it needs its own stub
- * even though nothing here draws. */
+ * than through one of the helpers above.
+ *
+ * The size a draw asks for is recorded here: it travels to every
+ * display driver as one packed word, and a store and a load that
+ * disagree on which half holds which axis give every backend a
+ * transposed quad. Nothing renders in this suite, so the descriptor
+ * itself is what gets checked. */
+unsigned stub_draw_dims;
+unsigned stub_draw_count;
+
 void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *data,
       unsigned video_width, unsigned video_height)
-{ (void)dispctx; (void)draw; (void)data;
-  (void)video_width; (void)video_height; }
+{
+   if (draw)
+   {
+      stub_draw_dims = draw->dims;
+      stub_draw_count++;
+   }
+   (void)dispctx; (void)data;
+   (void)video_width; (void)video_height;
+}
 
 /* The widgets turn blending on and off through gfx_display now, and
  * send its batch out at the end of their frame. None of that draws

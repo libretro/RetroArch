@@ -2691,8 +2691,7 @@ static void materialui_draw_icon(
 
    draw.x               = x;
    draw.y               = video_height - y - icon_size;
-   draw.width           = icon_size;
-   draw.height          = icon_size;
+   draw.dims            = VIDEO_SCALE_PACK(icon_size, icon_size);
    draw.scale_factor    = scale_factor;
    draw.rotation        = rotation;
    draw.coords          = &coords;
@@ -2703,7 +2702,7 @@ static void materialui_draw_icon(
    if (dispctx)
    {
       if (dispctx->draw)
-         if (draw.height > 0 && draw.width > 0)
+         if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
             gfx_display_draw(dispctx, &draw, userdata,
                   video_width, video_height);
       gfx_display_blend_end(dispctx, userdata);
@@ -6791,8 +6790,7 @@ MUI_NOINLINE static void materialui_render_background(
    /* Configure draw object */
    draw.x                     = 0;
    draw.y                     = 0;
-   draw.width                 = video_width;
-   draw.height                = video_height;
+   draw.dims                  = VIDEO_SCALE_PACK(video_width, video_height);
    draw.coords                = NULL;
    draw.matrix_data           = NULL;
    draw.vertex                = NULL;
@@ -6835,7 +6833,7 @@ MUI_NOINLINE static void materialui_render_background(
       gfx_display_draw_bg(p_disp, &draw, &coords, userdata,
             add_opacity, opacity_override);
       if (dispctx->draw)
-         if (draw.height > 0 && draw.width > 0)
+         if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
             gfx_display_draw(dispctx, &draw, userdata,
                   video_width, video_height);
       gfx_display_blend_end(dispctx, userdata);

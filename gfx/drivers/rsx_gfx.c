@@ -354,9 +354,9 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
       return;
 
    vp.x                     = fabs(draw->x);
-   vp.y                     = fabs(rsx->height - draw->y - draw->height);
-   vp.w                     = MIN(draw->width, rsx->width);
-   vp.h                     = MIN(draw->height, rsx->height);
+   vp.y                     = fabs(rsx->height - draw->y - VIDEO_SCALE_H(draw->dims));
+   vp.w                     = MIN(VIDEO_SCALE_W(draw->dims), rsx->width);
+   vp.h                     = MIN(VIDEO_SCALE_H(draw->dims), rsx->height);
    vp.min                   = 0.0f;
    vp.max                   = 1.0f;
    vp.scale[0]              = vp.w *  0.5f;

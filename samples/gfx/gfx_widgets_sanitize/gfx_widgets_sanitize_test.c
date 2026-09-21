@@ -237,12 +237,47 @@ static void test_init_deinit_cycles(void)
    }
 }
 
+/* An icon draw carries its size to the display driver as one packed
+ * word. Asymmetric dimensions, so a transposition cannot pass. */
+extern unsigned stub_draw_dims;
+extern unsigned stub_draw_count;
+
+static void test_icon_draw_size(void)
+{
+   gfx_display_ctx_driver_t dispctx;
+   unsigned before;
+
+   if (!widgets_up())
+      return;
+
+   memset(&dispctx, 0, sizeof(dispctx));
+   dispctx.handles_transform = true;
+   s_disp.dispctx            = &dispctx;
+
+   before          = stub_draw_count;
+   stub_draw_dims  = 0;
+   /* A texture handle of 0 is the one early return; any non-zero
+    * value reaches the descriptor. */
+   gfx_widgets_draw_icon(NULL, &s_disp, 640, 480, 64, 16,
+         (uintptr_t)1, 8.0f, 8.0f, 0.0f, 1.0f, 0.0f, NULL);
+
+   CHECK(stub_draw_count > before, "the icon draw never reached the driver");
+   CHECK(VIDEO_SCALE_W(stub_draw_dims) == 64,
+         "the icon draw's width did not survive the packed word");
+   CHECK(VIDEO_SCALE_H(stub_draw_dims) == 16,
+         "the icon draw's height did not survive the packed word");
+
+   s_disp.dispctx = NULL;
+   gfx_widgets_deinit(false);
+}
+
 int main(void)
 {
    test_push_and_expire();
    test_titles();
    test_queue_overflow();
    test_init_deinit_cycles();
+   test_icon_draw_size();
 
    printf("pushes=%d frames=%d\n", pushes, iterations);
 

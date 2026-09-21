@@ -635,8 +635,8 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
     * This is intentional.
     */
    return scissor_is_outside_rectangle(
-         draw->x, draw->x + draw->width - 1,
-         draw->y, draw->y + draw->height - 1);
+         draw->x, draw->x + VIDEO_SCALE_W(draw->dims) - 1,
+         draw->y, draw->y + VIDEO_SCALE_H(draw->dims) - 1);
 }
 #endif
 
@@ -654,7 +654,7 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
             video_height))
    {
       /*RARCH_WARN("discarded draw rect: %.4i %.4i %.4i %.4i\n",
-        (int)draw->x, (int)draw->y, (int)draw->width, (int)draw->height);*/
+        (int)draw->x, (int)draw->y, (int)VIDEO_SCALE_W(draw->dims), (int)VIDEO_SCALE_H(draw->dims));*/
       return;
    }
 #endif
@@ -677,7 +677,7 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    if (!coords.lut_tex_coord)
       coords.lut_tex_coord = &gl2_tex_coords[0];
 
-   glViewport(draw->x, draw->y, draw->width, draw->height);
+   glViewport(draw->x, draw->y, VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
    gl->shader->set_coords(gl->shader_data, &coords);
@@ -768,8 +768,8 @@ static void gfx_display_gl2_draw_pipeline(
 #ifndef HAVE_PSGL
          uniform_param.type              = UNIFORM_2F;
          uniform_param.lookup.ident      = "OutputSize";
-         uniform_param.result.f.v0       = draw->width;
-         uniform_param.result.f.v1       = draw->height;
+         uniform_param.result.f.v0       = VIDEO_SCALE_W(draw->dims);
+         uniform_param.result.f.v1       = VIDEO_SCALE_H(draw->dims);
 
          gl->shader->set_uniform_parameter(gl->shader_data,
                &uniform_param, NULL);

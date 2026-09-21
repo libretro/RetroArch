@@ -3173,9 +3173,10 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 
    MTLViewport vp = {
       .originX = draw->x,
-      .originY = _context.viewport->full_height - draw->y - draw->height,
-      .width   = draw->width,
-      .height  = draw->height,
+      .originY = _context.viewport->full_height - draw->y
+               - VIDEO_SCALE_H(draw->dims),
+      .width   = VIDEO_SCALE_W(draw->dims),
+      .height  = VIDEO_SCALE_H(draw->dims),
       .znear   = 0,
       .zfar    = 1,
    };

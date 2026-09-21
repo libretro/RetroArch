@@ -777,9 +777,9 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
           * a local UV copy in place, then fall through to the
           * normal rendering code with the clipped values. */
          int qx_left  = draw->x;
-         int qx_right = draw->x + (int)draw->width;
+         int qx_right = draw->x + (int)VIDEO_SCALE_W(draw->dims);
          int qy_bot   = (int)video_height - draw->y;             /* top-down */
-         int qy_top   = qy_bot - (int)draw->height;              /* top-down */
+         int qy_top   = qy_bot - (int)VIDEO_SCALE_H(draw->dims);              /* top-down */
          int new_left  = qx_left  > sx  ? qx_left  : sx;
          int new_right = qx_right < sx2 ? qx_right : sx2;
          int new_top   = qy_top   > sy  ? qy_top   : sy;
@@ -797,8 +797,8 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
             const float *src_uv = draw->coords->tex_coord
                ? draw->coords->tex_coord
                : &d3d8_tex_coords[0];
-            float w_orig = (float)draw->width;
-            float h_orig = (float)draw->height;
+            float w_orig = (float)VIDEO_SCALE_W(draw->dims);
+            float h_orig = (float)VIDEO_SCALE_H(draw->dims);
             float fx_l   = (float)(new_left  - qx_left) / w_orig;
             float fx_r   = (float)(new_right - qx_left) / w_orig;
             float fy_t   = (float)(new_top   - qy_top)  / h_orig;
@@ -838,8 +838,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
              * Convert new_bot back to bottom-up Y for draw->y. */
             draw->x      = new_left;
             draw->y      = (int)video_height - new_bot;
-            draw->width  = (unsigned)(new_right - new_left);
-            draw->height = (unsigned)(new_bot - new_top);
+            draw->dims   = VIDEO_SCALE_PACK((unsigned)(new_right - new_left), (unsigned)(new_bot - new_top));
          }
       }
    }
@@ -916,12 +915,12 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
    matrix_4x4_multiply(m1,
          *((math_matrix_4x4*)draw->matrix_data), m2);
    matrix_4x4_scale(mop,
-         (draw->width  / 2.0) / video_width,
-         (draw->height / 2.0) / video_height, 0);
+         (VIDEO_SCALE_W(draw->dims)  / 2.0) / video_width,
+         (VIDEO_SCALE_H(draw->dims) / 2.0) / video_height, 0);
    matrix_4x4_multiply(m2, mop, m1);
    matrix_4x4_translate(mop,
-         (draw->x + (draw->width  / 2.0)) / video_width,
-         (draw->y + (draw->height / 2.0)) / video_height,
+         (draw->x + (VIDEO_SCALE_W(draw->dims)  / 2.0)) / video_width,
+         (draw->y + (VIDEO_SCALE_H(draw->dims) / 2.0)) / video_height,
          0);
    matrix_4x4_multiply(m1, mop, m2);
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);

@@ -1174,13 +1174,12 @@ static void xmb_draw_icon(
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
 
-   draw.width           = icon_size_x;
-   draw.height          = icon_size_y;
+   draw.dims            = VIDEO_SCALE_PACK(icon_size_x, icon_size_y);
    draw.rotation        = rotation;
    draw.scale_factor    = scale_factor;
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
-   draw.width          *= scale_factor;
-   draw.height         *= scale_factor;
+   VIDEO_SCALE_W(draw.dims)          *= scale_factor;
+   VIDEO_SCALE_H(draw.dims)         *= scale_factor;
 #endif
    draw.coords          = &coords;
    draw.matrix_data     = &mymat_tmp;
@@ -1204,11 +1203,11 @@ static void xmb_draw_icon(
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
       if (scale_factor < 1)
       {
-         draw.x         = draw.x + (icon_size_x-draw.width)/2;
-         draw.y         = draw.y + (icon_size_y-draw.width)/2;
+         draw.x         = draw.x + (icon_size_x-VIDEO_SCALE_W(draw.dims))/2;
+         draw.y         = draw.y + (icon_size_y-VIDEO_SCALE_W(draw.dims))/2;
       }
 #endif
-      if (draw.height > 0 && draw.width > 0)
+      if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
          gfx_display_draw(dispctx, &draw, userdata,
                video_width, video_height);
    }
@@ -1220,11 +1219,11 @@ static void xmb_draw_icon(
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
    if (scale_factor < 1)
    {
-      draw.x            = draw.x + (icon_size_x-draw.width)/2;
-      draw.y            = draw.y + (icon_size_y-draw.width)/2;
+      draw.x            = draw.x + (icon_size_x-VIDEO_SCALE_W(draw.dims))/2;
+      draw.y            = draw.y + (icon_size_y-VIDEO_SCALE_W(draw.dims))/2;
    }
 #endif
-   if (draw.height > 0 && draw.width > 0)
+   if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
       gfx_display_draw(dispctx, &draw, userdata,
             video_width, video_height);
 }
@@ -8617,8 +8616,7 @@ XMB_NOINLINE static void xmb_draw_bg(
    draw.x                    = 0;
    draw.y                    = 0;
    draw.texture              = texture_id;
-   draw.width                = video_width;
-   draw.height               = video_height;
+   draw.dims                 = VIDEO_SCALE_PACK(video_width, video_height);
    draw.color                = &coord_black[0];
    draw.vertex               = NULL;
    draw.tex_coord            = NULL;
@@ -8720,8 +8718,7 @@ XMB_NOINLINE static void xmb_draw_dark_layer(
 
    draw.x               = 0;
    draw.y               = 0;
-   draw.width           = width;
-   draw.height          = height;
+   draw.dims            = VIDEO_SCALE_PACK(width, height);
    draw.color           = &black[0];
    draw.vertex          = NULL;
    draw.matrix_data     = NULL;
@@ -8732,7 +8729,7 @@ XMB_NOINLINE static void xmb_draw_dark_layer(
 
    gfx_display_blend_begin(dispctx, userdata);
    gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, MIN(xmb->alpha, alpha));
-   if (draw.height > 0 && draw.width > 0)
+   if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
       gfx_display_draw(dispctx, &draw, userdata, width, height);
    gfx_display_blend_end(dispctx, userdata);
 }

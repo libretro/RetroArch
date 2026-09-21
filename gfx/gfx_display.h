@@ -160,8 +160,8 @@ struct gfx_display_ctx_draw
    uintptr_t texture;
    size_t vertex_count;
    size_t backend_data_size;
-   unsigned width;
-   unsigned height;
+   /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
+   unsigned dims;
    unsigned pipeline_id;
    float x;
    float y;

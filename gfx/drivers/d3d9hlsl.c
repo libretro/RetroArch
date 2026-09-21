@@ -909,8 +909,8 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
        * (draw.y = height - y - h). The Y-flip here undoes that,
        * then topdown_ortho applies the correct top-down mapping. */
       x1 = draw->x / (float)video_width;
-      y1 = ((float)video_height - draw->y - draw->height) / (float)video_height;
-      x2 = (draw->x + draw->width)  / (float)video_width;
+      y1 = ((float)video_height - draw->y - VIDEO_SCALE_H(draw->dims)) / (float)video_height;
+      x2 = (draw->x + VIDEO_SCALE_W(draw->dims))  / (float)video_width;
       y2 = ((float)video_height - draw->y) / (float)video_height;
 
       /* Apply scale_factor: scale the quad around its center,
@@ -928,7 +928,7 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
       }
 
       /* Apply draw->rotation around the quad center.  Rotation is
-       * computed in pixel space (using draw->width / draw->height as
+       * computed in pixel space (using VIDEO_SCALE_W(draw->dims) / VIDEO_SCALE_H(draw->dims) as
        * the icon's true square extents) and then converted back to
        * normalised [0,1], so a non-square viewport does not skew the
        * rotated icon. */
@@ -936,8 +936,8 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
       {
          float cx     = (x1 + x2) * 0.5f;
          float cy     = (y1 + y2) * 0.5f;
-         float half_w = draw->width  * 0.5f;
-         float half_h = draw->height * 0.5f;
+         float half_w = VIDEO_SCALE_W(draw->dims)  * 0.5f;
+         float half_h = VIDEO_SCALE_H(draw->dims) * 0.5f;
          if (draw->scale_factor && draw->scale_factor != 1.0f)
          {
             half_w *= draw->scale_factor;

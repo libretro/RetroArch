@@ -2868,13 +2868,12 @@ void gfx_thumbnail_draw(
 
             /* Apply shadow draw object configuration */
             coords.color = (const float*)shadow_color;
-            draw.width   = (unsigned)shadow_width;
-            draw.height  = (unsigned)shadow_height;
+            draw.dims    = VIDEO_SCALE_PACK((unsigned)shadow_width, (unsigned)shadow_height);
             draw.x       = shadow_x;
             draw.y       = shadow_y;
 
             /* Draw shadow */
-            if (draw.height > 0 && draw.width > 0)
+            if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
                gfx_display_draw(dispctx, &draw, userdata,
                         video_width, video_height);
          }
@@ -2882,13 +2881,12 @@ void gfx_thumbnail_draw(
 
       /* Final thumbnail draw object configuration */
       coords.color = (const float*)thumbnail_color;
-      draw.width   = (unsigned)draw_width;
-      draw.height  = (unsigned)draw_height;
+      draw.dims    = VIDEO_SCALE_PACK((unsigned)draw_width, (unsigned)draw_height);
       draw.x       = draw_x;
       draw.y       = draw_y;
 
       /* Draw thumbnail */
-      if (draw.height > 0 && draw.width > 0)
+      if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
          gfx_display_draw(dispctx, &draw, userdata,
                video_width, video_height);
 

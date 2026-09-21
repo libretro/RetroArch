@@ -501,7 +501,7 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
    if (!draw->texture)
       return;
 
-   glViewport(draw->x, draw->y, draw->width, draw->height);
+   glViewport(draw->x, draw->y, VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
 
    glEnable(GL_TEXTURE_2D);
 
