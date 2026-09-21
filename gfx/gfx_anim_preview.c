@@ -28,6 +28,7 @@
 #include <streams/file_stream.h>
 #include <formats/image.h>
 #include <formats/data_transfer.h>
+#include <retro_atomic.h>
 #include <memory/mem_stats.h>
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>
@@ -389,13 +390,17 @@ static void gfx_anim_preview_size_feed(gfx_anim_preview_t *p)
 
 /* --- feeding --------------------------------------------------------------- */
 
+/* The feeder is the decode's thread; this is anyone's. The window's
+ * extent is read by the feeder after each feed and kept where any
+ * thread may read it, rather than the window's own bookkeeping being
+ * read while the feeder moves it. */
 size_t gfx_anim_preview_resident_bytes(const gfx_anim_preview_t *p)
 {
    if (!p)
       return 0;
    if (!p->windowed || !p->dt)
       return p->len;
-   return data_transfer_window_resident(p->dt);
+   return (size_t)retro_atomic_load_acquire_int(&p->resident_seen);
 }
 
 bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
@@ -482,6 +487,11 @@ bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
                ahead, margin, budget, &res_hi))
          return false;
       p->feed_res_hi = res_hi;
+      {
+         size_t r = data_transfer_window_resident(p->dt);
+         retro_atomic_store_release_int(&p->resident_seen,
+               r > (size_t)0x7fffffff ? 0x7fffffff : (int)r);
+      }
       /* The demuxer's bound follows what the feed made resident, both
        * ways (a loop's rewind drops the frontier back to the head). */
       if (hi > res_hi)

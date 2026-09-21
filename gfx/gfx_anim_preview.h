@@ -39,6 +39,7 @@
  * time (gfx_thumbnail runs them on its worker; a companion on its
  * animation thread). audio_* run on the main thread (the mixer). */
 
+#include <retro_atomic.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <boolean.h>
@@ -89,6 +90,8 @@ typedef struct gfx_anim_preview
    /* Where the resident window ended after the last feed: how far
     * ahead of the decoder the feed still is, before this tick's. */
    size_t feed_res_hi;
+   /* bytes the window holds, as of the last feed; any thread reads it */
+   retro_atomic_int_t resident_seen;
    size_t feed_tell;    /* the decoder's position at the last feed */
    /* Whether the stream emits ARGB words (asked once at open; a stream
     * that honours it keeps that order for the whole animation, and

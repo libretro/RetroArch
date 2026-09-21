@@ -84,6 +84,10 @@ static void vs_pool(vstream *v, void *pool, unsigned bands)
       void *h265 = rmp4_video_stream_h265(v->mp4);
       if (h265)
          rh265_video_set_contexts((rh265_video*)h265, 4);
+      /* and, RH265_PUBLISH_DELAY set, every row's publication held
+       * back at random so the readers wait for their rows */
+      if (getenv("RH265_PUBLISH_DELAY"))
+         rh265_video_set_publish_delay(atoi(getenv("RH265_PUBLISH_DELAY")));
    }
 }
 static const uint32_t *vs_next(vstream *v, int *dur)

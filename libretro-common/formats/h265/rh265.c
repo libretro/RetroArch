@@ -127,6 +127,12 @@
 #include <rthreads/tpool.h>
 #include <rthreads/retro_eventcount.h>
 #endif
+#ifdef HAVE_THREADS
+static slock_t *rh265_rows_lock;
+static scond_t *rh265_rows_cond;
+static slock_t *rh265_pool_lock;
+#endif
+
 
 /* CTB rows decoded side by side at most. */
 #define RH265_WPP_THREADS_MAX 8
@@ -1444,6 +1450,7 @@ typedef struct
 
 #define RH265_MAX_DPB  18
 #define RH265_MAX_CTX  8
+#define RH265_NAL_POOL 32
 
 typedef struct
 {
@@ -1462,6 +1469,9 @@ typedef struct
     * read reaches and no more; on one thread it is complete before
     * anyone asks. */
    retro_atomic_int_t rows_final;
+   /* pictures in flight predicting from this one: a slot with readers
+    * is nobody's to take, whatever the DPB says of it */
+   retro_atomic_int_t readers;
 } rh265_pic;
 
 #define RH265_MAX_PB 64
@@ -1483,6 +1493,17 @@ typedef struct
    int    rows_deblocked;
    int    rows_sao;
    int    sao_wanted;         /* any CTB of the picture asked for SAO */
+   /* the picture's queued slices, how their run ended, and the
+    * pictures this one holds as a reader while it decodes */
+   struct rh265_slice_job *jobs, *jobs_tail;
+   int    job_rc;
+   int    completed;
+   int    posted;
+   int    ctb_end;            /* CTBs decoded so far, in order */
+   retro_atomic_int_t busy;
+   struct rh265_video *owner;
+   rh265_pic *pinned[2 * RH265_MAX_REFS + 2];
+   int    npinned;
    int pw[3], ph[3];
 
    /* current picture and its reference lists */
@@ -1566,6 +1587,25 @@ typedef struct
    int max_merge;             /* MaxNumMergeCand */
    int slice_tmvp;            /* slice_temporal_mvp_enabled_flag */
 } rh265_dec;
+
+/* One slice's data decode, queued on its picture's context: the
+ * unescape buffer it was parsed from (the job takes the buffer; the
+ * decoder draws another from a pool), the slice header and the lists
+ * as the submitter built them. Drained on the submitting thread this
+ * is the decoder as it was; on a pool thread it is a picture in
+ * flight. */
+typedef struct rh265_slice_job
+{
+   struct rh265_slice_job *next;
+   uint8_t   *buf;
+   size_t     cap;
+   size_t     rbsp_off, rbsp_size, data_bit, esc_off;
+   int        esc_count;
+   int        slice_seq;
+   rh265_shdr sh;
+   rh265_pic *ref_list[2][RH265_MAX_REFS];
+   rh265_pic *col_ref;
+} rh265_slice_job;
 
 /* A reference read waits for the rows it reaches (defined with the
  * row hook below). */
@@ -3745,6 +3785,15 @@ struct rh265_video
     * the unescaped RBSP followed by the escape-position list. */
    uint8_t  *nal_scratch;
    size_t    nal_scratch_cap;
+   /* pictures decode concurrently on the pool (frame threading); the
+    * wavefront stays off then, the pool being the pictures' */
+   int       threaded;
+   /* unescape buffers and slice jobs between uses */
+   uint8_t  *nal_free[RH265_NAL_POOL];
+   size_t    nal_free_cap[RH265_NAL_POOL];
+   int       nal_free_n;
+   struct rh265_slice_job *job_free;
+   int       job_free_n;
    rh265_sps sps[RH265_MAX_SPS];
    rh265_pps pps[RH265_MAX_PPS];
    /* One decode state per picture that can be in flight; a new picture
@@ -3772,7 +3821,7 @@ struct rh265_video
     * sub-layer is consumed without being decoded: nothing can
     * reference it, so what follows decodes unchanged and only its
     * own output is missing. For a caller behind its clock. */
-   int skip_nonref;
+   retro_atomic_int_t skip_nonref;  /* set from the caller's thread, read by the decode's */
    int skip_pic;              /* the picture being passed over, all slices */
    int dropped;               /* the last decode call passed a picture over */
 
@@ -4253,11 +4302,10 @@ static void rh265_wpp_worker(void *arg)
  * substream located up front from the entry points, then the rows
  * dealt to the pool and the calling thread. Returns the CTB count
  * (the picture is complete) or -1. */
-static int rh265_decode_slice_data_wpp(rh265_video *v, const uint8_t *rbsp,
+static int rh265_decode_slice_data_wpp(rh265_video *v, rh265_dec *d, const uint8_t *rbsp,
       size_t size, size_t esc_base, int esc_idx, const uint32_t *esc_pos,
       int esc_count)
 {
-   rh265_dec *d         = v->cur;
    const rh265_sps *sps = d->sps;
    int rows             = sps->ctb_h;
    int workers          = (int)v->threads;
@@ -4358,18 +4406,31 @@ void rh265_video_set_contexts(rh265_video *v, int n)
    v->nctx = n;
 }
 
+#ifdef HAVE_THREADS
+static void rh265_ctx_join(rh265_video *v, rh265_dec *d);
+#endif
+
 void rh265_video_set_thread_pool(rh265_video *v, void *pool,
       unsigned threads)
 {
    if (!v)
       return;
 #ifdef HAVE_THREADS
+   /* the pool and the mode are read by every picture in flight:
+    * they all land first */
+   if (v->threaded)
+   {
+      int k;
+      for (k = 0; k < v->nctx; k++)
+         rh265_ctx_join(v, &v->ctx[k]);
+   }
    if (threads > RH265_WPP_THREADS_MAX)
       threads = RH265_WPP_THREADS_MAX;
    if (!pool || threads <= 1)
    {
-      v->pool    = NULL;
-      v->threads = 1;
+      v->pool     = NULL;
+      v->threads  = 1;
+      v->threaded = 0;
       return;
    }
    if (v->num_shadows < threads - 1)
@@ -4387,6 +4448,26 @@ void rh265_video_set_thread_pool(rh265_video *v, void *pool,
    }
    v->pool    = pool;
    v->threads = threads;
+   /* Pictures decode concurrently on the pool: one context per thread
+    * that may be decoding and one being built. The wavefront stays
+    * off then - the pool is the pictures', and a picture waits on the
+    * rows of the ones it predicts from instead. */
+   if (!rh265_rows_lock)
+   {
+      rh265_rows_lock = slock_new();
+      rh265_rows_cond = scond_new();
+      rh265_pool_lock = slock_new();
+      if (!rh265_rows_lock || !rh265_rows_cond || !rh265_pool_lock)
+      {
+         if (rh265_rows_lock) slock_free(rh265_rows_lock);
+         if (rh265_rows_cond) scond_free(rh265_rows_cond);
+         if (rh265_pool_lock) slock_free(rh265_pool_lock);
+         rh265_rows_lock = NULL; rh265_rows_cond = NULL; rh265_pool_lock = NULL;
+         return;
+      }
+   }
+   rh265_video_set_contexts(v, (int)threads + 1);
+   v->threaded = v->nctx > 1;
 #else
    (void)pool; (void)threads;
 #endif
@@ -4409,9 +4490,69 @@ int rh265_video_ref_wait_misses(void)
    return retro_atomic_load_acquire_int(&rh265_ref_wait_misses);
 }
 
+/* rh265_rows_lock / rh265_rows_cond / rh265_pool_lock: one lock and
+ * condition for every row publication, every wait on one, and the
+ * join of a picture, shared by the decoders in the process; and a
+ * lock for the pools of buffers and jobs. Made by the first decoder
+ * given a pool for its pictures; declared with the pool includes. */
+
+static void rh265_pool_lock_take(void)
+{
+#ifdef HAVE_THREADS
+   if (rh265_pool_lock)
+      slock_lock(rh265_pool_lock);
+#endif
+}
+
+static void rh265_pool_lock_drop(void)
+{
+#ifdef HAVE_THREADS
+   if (rh265_pool_lock)
+      slock_unlock(rh265_pool_lock);
+#endif
+}
+
+#ifdef HAVE_THREADS
+/* A test knob: hold each row's publication for a random number of
+ * thread yields, so that a picture reading from this one finds its
+ * rows missing far more often than real content arranges, and the
+ * wait is what decodes the picture rather than luck. Output must be
+ * byte-exact under it, or the wait is wrong. 0 (the default) is off. */
+static int rh265_publish_delay;
+static retro_atomic_int_t rh265_publish_seed;
+#endif
+
+void rh265_video_set_publish_delay(int max_yields)
+{
+#ifdef HAVE_THREADS
+   rh265_publish_delay = max_yields > 0 ? max_yields : 0;
+#else
+   (void)max_yields;
+#endif
+}
+
 /* Publish that @rows CTB rows of @pic are final. */
 static void rh265_pic_publish_rows(rh265_pic *pic, int rows)
 {
+#ifdef HAVE_THREADS
+   if (rh265_publish_delay > 0 && rows > 0)
+   {
+      unsigned r = (unsigned)retro_atomic_fetch_add_int(&rh265_publish_seed, 0x9E3779B1);
+      unsigned n;
+      r = r * 1103515245u + 12345u;
+      n = (r >> 16) % (unsigned)rh265_publish_delay;
+      while (n--)
+         sthread_yield();
+   }
+   if (rh265_rows_lock)
+   {
+      slock_lock(rh265_rows_lock);
+      retro_atomic_store_release_int(&pic->rows_final, rows);
+      scond_broadcast(rh265_rows_cond);
+      slock_unlock(rh265_rows_lock);
+      return;
+   }
+#endif
    retro_atomic_store_release_int(&pic->rows_final, rows);
 }
 
@@ -4427,12 +4568,25 @@ static void rh265_ref_wait_rows(const rh265_dec *d, const rh265_pic *ref,
    if (rows > d->sps->ctb_h)
       rows = d->sps->ctb_h;
    if (retro_atomic_load_acquire_int(&ref->rows_final) < rows)
+   {
+#ifdef HAVE_THREADS
+      if (rh265_rows_lock)
+      {
+         /* another thread is still on the reference: sleep until it
+          * has published the row */
+         slock_lock(rh265_rows_lock);
+         while (retro_atomic_load_acquire_int(&ref->rows_final) < rows)
+            scond_wait(rh265_rows_cond, rh265_rows_lock);
+         slock_unlock(rh265_rows_lock);
+         return;
+      }
+#endif
       retro_atomic_fetch_add_int(&rh265_ref_wait_misses, 1);
+   }
 }
 
-static void rh265_row_done(rh265_video *v, int ry)
+static void rh265_row_done(rh265_video *v, rh265_dec *d, int ry)
 {
-   rh265_dec *d = v->cur;
    const rh265_sps *sps = d->sps;
    int ctb = 1 << sps->log2_ctb;
    if (d->rows_deblocked != ry)
@@ -4459,9 +4613,8 @@ static void rh265_row_done(rh265_video *v, int ry)
 
 /* The finish: whatever the hook left - the last row's SAO, or the
  * whole picture when the hook could not run. */
-static int rh265_filters_finish(rh265_video *v)
+static int rh265_filters_finish(rh265_video *v, rh265_dec *d)
 {
-   rh265_dec *d = v->cur;
    const rh265_sps *sps = d->sps;
    int ctb = 1 << sps->log2_ctb;
    if (d->rows_deblocked < sps->ctb_h)
@@ -4480,10 +4633,9 @@ static int rh265_filters_finish(rh265_video *v)
    return 0;
 }
 
-static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
+static int rh265_decode_slice_data(rh265_video *v, rh265_dec *d, const uint8_t *rbsp,
       size_t size, size_t data_bit, const uint32_t *esc_pos, int esc_count)
 {
-   rh265_dec *d = v->cur;
    const rh265_sps *sps = d->sps;
    int ctb_addr = d->sh.slice_segment_address;
    int end_of_slice = 0;
@@ -4537,11 +4689,11 @@ static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
       d->sao_wanted = 1;
    /* One slice covering the picture, an entry point per row: the
     * shape the wavefront threads take. */
-   if (     wpp && v->pool && v->threads > 1 && ctb_addr == 0
+   if (     wpp && v->pool && v->threads > 1 && !v->threaded && ctb_addr == 0
          && d->sh.first_slice_in_pic && sps->ctb_h > 1
          && d->sh.num_entry_points == sps->ctb_h - 1)
    {
-      int r = rh265_decode_slice_data_wpp(v, rbsp, size, esc_base, esc_idx,
+      int r = rh265_decode_slice_data_wpp(v, d, rbsp, size, esc_base, esc_idx,
             esc_pos, esc_count);
       if (r != -2)
          return r;
@@ -4617,7 +4769,7 @@ static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
       /* the row is reconstructed: a single-slice picture decoding in
        * order filters it now, a CTB row behind the decode */
       if (!wpp && d->slice_seq == 0 && rx == sps->ctb_w - 1)
-         rh265_row_done(v, ry);
+         rh265_row_done(v, d, ry);
       end_of_slice = rh265_cabac_terminate(&d->cb);
       if (end_of_slice)
          break;
@@ -4635,6 +4787,172 @@ static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
    if (ctb_addr >= sps->pic_size_ctbs && !end_of_slice)
       return -1;
    return ctb_addr;
+}
+
+
+/* Queue the slice just parsed on @d: the job takes the decoder's
+ * unescape buffer, the one the slice was parsed from, and the decoder
+ * draws another from the pool. */
+static rh265_slice_job *rh265_ctx_queue_slice(rh265_video *v, rh265_dec *d,
+      const uint8_t *rbsp, size_t rbsp_size, size_t data_bit,
+      const uint32_t *esc_pos, int esc_count)
+{
+   rh265_slice_job *j;
+   rh265_pool_lock_take();
+   if ((j = v->job_free))
+   {
+      v->job_free = j->next;
+      v->job_free_n--;
+   }
+   rh265_pool_lock_drop();
+   if (j)
+      memset(j, 0, sizeof(*j));
+   else if (!(j = (rh265_slice_job*)calloc(1, sizeof(*j))))
+      return NULL;
+   j->buf       = v->nal_scratch;
+   j->cap       = v->nal_scratch_cap;
+   j->rbsp_off  = (size_t)(rbsp - v->nal_scratch);
+   j->rbsp_size = rbsp_size;
+   j->data_bit  = data_bit;
+   j->esc_off   = esc_pos ? (size_t)((const uint8_t*)esc_pos - v->nal_scratch) : 0;
+   j->esc_count = esc_pos ? esc_count : 0;
+   j->slice_seq = d->slice_seq;
+   j->sh        = d->sh;
+   memcpy(j->ref_list, d->ref_list, sizeof(j->ref_list));
+   j->col_ref   = d->col_ref;
+   v->nal_scratch     = NULL;
+   v->nal_scratch_cap = 0;
+   rh265_pool_lock_take();
+   if (v->nal_free_n > 0)
+   {
+      v->nal_free_n--;
+      v->nal_scratch     = v->nal_free[v->nal_free_n];
+      v->nal_scratch_cap = v->nal_free_cap[v->nal_free_n];
+   }
+   rh265_pool_lock_drop();
+   if (d->jobs_tail)
+      d->jobs_tail->next = j;
+   else
+      d->jobs = j;
+   d->jobs_tail = j;
+   return j;
+}
+
+/* A picture done with its references lets them go. */
+static void rh265_ctx_unpin(rh265_dec *d)
+{
+   int i;
+   for (i = 0; i < d->npinned; i++)
+      retro_atomic_fetch_sub_int(&d->pinned[i]->readers, 1);
+   d->npinned = 0;
+}
+
+/* Drain the context's slice queue in order, then complete the picture
+ * once the slices cover it: the picture's own work, reading nothing
+ * of the sequence. Runs on the submitting thread today and on a pool
+ * thread when pictures decode concurrently. */
+static void rh265_ctx_run_slices(rh265_video *v, rh265_dec *d)
+{
+   while (d->jobs)
+   {
+      rh265_slice_job *j = d->jobs;
+      d->jobs = j->next;
+      if (!d->jobs)
+         d->jobs_tail = NULL;
+      if (d->job_rc == 0)
+      {
+         int r;
+         d->sh        = j->sh;
+         d->slice_seq = j->slice_seq;
+         memcpy(d->ref_list, j->ref_list, sizeof(d->ref_list));
+         d->col_ref   = j->col_ref;
+         r = rh265_decode_slice_data(v, d, j->buf + j->rbsp_off, j->rbsp_size,
+               j->data_bit, j->esc_count ? (const uint32_t*)(j->buf + j->esc_off) : NULL,
+               j->esc_count);
+         if (r < 0)
+            d->job_rc = -1;
+         else
+            d->ctb_end = r;
+      }
+      /* the buffer and the job back to their pools, the buffer first */
+      rh265_pool_lock_take();
+      if (v->nal_free_n < RH265_NAL_POOL)
+      {
+         v->nal_free[v->nal_free_n]     = j->buf;
+         v->nal_free_cap[v->nal_free_n] = j->cap;
+         v->nal_free_n++;
+      }
+      else
+         free(j->buf);
+      j->buf = NULL;
+      if (v->job_free_n < RH265_NAL_POOL)
+      {
+         j->next     = v->job_free;
+         v->job_free = j;
+         v->job_free_n++;
+         j = NULL;
+      }
+      rh265_pool_lock_drop();
+      free(j);
+   }
+   if (d->job_rc == 0 && d->cur && d->ctb_end >= d->sps->pic_size_ctbs
+         && !d->completed)
+   {
+      if (rh265_filters_finish(v, d) < 0)
+         d->job_rc = -1;
+      d->completed = 1;
+   }
+   if (d->cur && !d->completed)
+      /* refused or short: nobody may wait on it; the caller learns */
+      rh265_pic_publish_rows(d->cur, d->sps->ctb_h);
+   rh265_ctx_unpin(d);
+}
+
+#ifdef HAVE_THREADS
+static void rh265_ctx_job(void *arg)
+{
+   rh265_dec *d = (rh265_dec*)arg;
+   rh265_ctx_run_slices(d->owner, d);
+   slock_lock(rh265_rows_lock);
+   retro_atomic_store_release_int(&d->busy, 0);
+   scond_broadcast(rh265_rows_cond);
+   slock_unlock(rh265_rows_lock);
+}
+
+/* Wait for the context's picture; take queued pictures from the pool
+ * meanwhile rather than sit idle. */
+static void rh265_ctx_join(rh265_video *v, rh265_dec *d)
+{
+   if (!rh265_rows_lock)
+      return;
+   while (retro_atomic_load_acquire_int(&d->busy))
+   {
+      if (v->pool && tpool_help((tpool_t*)v->pool))
+         continue;
+      slock_lock(rh265_rows_lock);
+      if (retro_atomic_load_acquire_int(&d->busy))
+         scond_wait(rh265_rows_cond, rh265_rows_lock);
+      slock_unlock(rh265_rows_lock);
+   }
+}
+#endif
+
+/* Hand the context's queued slices to the pool, or run them here. */
+static void rh265_ctx_post(rh265_video *v, rh265_dec *d)
+{
+   if (d->posted || !d->cur)
+      return;
+   d->posted = 1;
+#ifdef HAVE_THREADS
+   if (v->threaded && v->pool)
+   {
+      retro_atomic_store_release_int(&d->busy, 1);
+      if (tpool_add_work((tpool_t*)v->pool, rh265_ctx_job, d))
+         return;
+      retro_atomic_store_release_int(&d->busy, 0);
+   }
+#endif
+   rh265_ctx_run_slices(v, d);
 }
 
 /* 8.3.1 picture order count.  An IRAP with NoRaslOutputFlag equal to 1
@@ -4766,6 +5084,25 @@ static int rh265_build_ref_lists(rh265_video *v)
          return -1;
       d->col_ref = d->ref_list[cl][d->sh.collocated_ref_idx];
    }
+   if (d->npinned == 0)
+   {
+      /* the pictures this one reads, held for the length of its
+       * decode: a slot with a reader is nobody's to take */
+      int l, r, k;
+      for (l = 0; l < 2; l++)
+         for (r = 0; r < RH265_MAX_REFS; r++)
+         {
+            rh265_pic *q = d->ref_list[l][r];
+            if (!q) continue;
+            for (k = 0; k < d->npinned; k++)
+               if (d->pinned[k] == q) break;
+            if (k == d->npinned && d->npinned < (int)(sizeof(d->pinned) / sizeof(d->pinned[0])))
+            {
+               d->pinned[d->npinned++] = q;
+               retro_atomic_fetch_add_int(&q->readers, 1);
+            }
+         }
+   }
    return 0;
 }
 
@@ -4855,7 +5192,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
           * in the highest sub-layer, which nothing can reference. It
           * is passed over here, before any of the picture's state is
           * taken on, so the decoder is exactly as it was. */
-         if (v->skip_nonref && shp->first_slice_in_pic
+         if (retro_atomic_load_acquire_int(&v->skip_nonref) && shp->first_slice_in_pic
                && nal_type < RH265_NAL_BLA_W_LP && !(nal_type & 1)
                && tid >= sps->max_sub_layers_minus1)
          {
@@ -4872,8 +5209,29 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
           * leaves keeps its maps for when it comes round again, and
           * its picture is in the DPB. Its parameters are set below
           * as every picture's are. */
-         if (shp->first_slice_in_pic && v->nctx > 1)
-            v->cur = &v->ctx[((int)(v->cur - v->ctx) + 1) % v->nctx];
+         if (shp->first_slice_in_pic)
+         {
+            /* With pictures in flight the picture leaving goes to the
+             * pool from here and its place in the sequence is settled
+             * now - out of the decoding slot, into the output order -
+             * with its rows still counting up. */
+            if (v->threaded && v->cur->cur && !v->cur->posted)
+            {
+               rh265_ctx_post(v, v->cur);
+               v->cur_slot = -1;
+               rh265_dpb_bump(v, v->cur->sps->max_num_reorder_pics);
+            }
+            if (v->nctx > 1)
+               v->cur = &v->ctx[((int)(v->cur - v->ctx) + 1) % v->nctx];
+#ifdef HAVE_THREADS
+            rh265_ctx_join(v, v->cur);
+#endif
+            v->cur->posted    = 0;
+            v->cur->completed = 0;
+            v->cur->job_rc    = 0;
+            v->cur->ctb_end   = 0;
+            v->cur->cur       = NULL;
+         }
          v->cur->sps = sps;
          v->cur->pps = pps;
          memcpy(&v->cur->sh, shp, sizeof(*shp));
@@ -4909,7 +5267,8 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                v->first_pic_decoded = 1;
                slot = -1;
                for (p = 0; p < RH265_MAX_DPB; p++)
-                  if (!v->dpb[p].in_use && p != v->out_pic)
+                  if (!v->dpb[p].in_use && p != v->out_pic
+                        && !retro_atomic_load_acquire_int(&v->dpb[p].readers))
                   {
                      slot = p;
                      break;
@@ -4962,21 +5321,23 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
             {
                if (!shp->first_slice_in_pic)
                   v->cur->slice_seq++;
-               ret = rh265_decode_slice_data(v, rbsp, rbsp_size,
-                     b.bitpos, esc_pos, esc_count);
-               if (ret >= 0)
+               if (!rh265_ctx_queue_slice(v, v->cur, rbsp, rbsp_size,
+                        b.bitpos, esc_pos, esc_count))
+                  return -1;
+               if (!v->threaded)
                {
-                  if (ret >= sps->pic_size_ctbs)
+                  /* one after the other: the slice runs now, and the
+                   * picture is sequenced the moment it is complete */
+                  rh265_ctx_run_slices(v, v->cur);
+                  if (v->cur->job_rc < 0)
+                     return -1;
+                  if (v->cur->completed)
                   {
-                     /* picture complete: the loop filters, or what
-                      * the row hook left of them */
-                     if (rh265_filters_finish(v) < 0)
-                        return -1;
                      v->cur_slot = -1;
                      rh265_dpb_bump(v, sps->max_num_reorder_pics);
                   }
-                  ret = 0;
                }
+               ret = 0;
             }
          }
          }
@@ -4994,6 +5355,11 @@ rh265_video *rh265_video_open(void)
    {
       v->cur      = &v->ctx[0];
       v->nctx     = 1;
+      {
+         int k;
+         for (k = 0; k < RH265_MAX_CTX; k++)
+            v->ctx[k].owner = v;
+      }
       v->cur_slot = -1;
       v->out_pic  = -1;
    }
@@ -5004,6 +5370,30 @@ void rh265_video_close(rh265_video *v)
 {
    if (!v)
       return;
+   {
+      int k;
+#ifdef HAVE_THREADS
+      /* every picture in flight lands before anything of it is freed */
+      for (k = 0; k < RH265_MAX_CTX; k++)
+         rh265_ctx_join(v, &v->ctx[k]);
+#endif
+      for (k = 0; k < RH265_MAX_CTX; k++)
+         while (v->ctx[k].jobs)
+         {
+            rh265_slice_job *j = v->ctx[k].jobs;
+            v->ctx[k].jobs = j->next;
+            free(j->buf);
+            free(j);
+         }
+      for (k = 0; k < v->nal_free_n; k++)
+         free(v->nal_free[k]);
+      while (v->job_free)
+      {
+         rh265_slice_job *j = v->job_free;
+         v->job_free = j->next;
+         free(j);
+      }
+   }
    rh265_free_frame(v);
    free(v->nal_scratch);
    {
@@ -5070,6 +5460,25 @@ static int rh265_pop_output(rh265_video *v)
    int i;
    if (v->out_count == 0)
       return 0;
+#ifdef HAVE_THREADS
+   /* A picture still decoding leaves only once complete; held
+    * otherwise, the next call asks again. With the queue full it
+    * must leave, and the wait is on its last row. */
+   if (v->threaded)
+   {
+      rh265_pic *pic = &v->dpb[v->out_fifo[0]];
+      int rows = v->cur->sps ? v->cur->sps->ctb_h : 0;
+      if (rows && retro_atomic_load_acquire_int(&pic->rows_final) < rows)
+      {
+         if (v->out_count < RH265_MAX_DPB - 1)
+            return 0;
+         slock_lock(rh265_rows_lock);
+         while (retro_atomic_load_acquire_int(&pic->rows_final) < rows)
+            scond_wait(rh265_rows_cond, rh265_rows_lock);
+         slock_unlock(rh265_rows_lock);
+      }
+   }
+#endif
    v->out_pic = v->out_fifo[0];
    for (i = 1; i < v->out_count; i++)
       v->out_fifo[i - 1] = v->out_fifo[i];
@@ -5155,6 +5564,22 @@ int rh265_video_drain(rh265_video *v)
 {
    if (!v)
       return -1;
+   if (v->threaded)
+   {
+      int k;
+      /* the last picture never saw a next one open: to the pool and
+       * into the order now; then everything in flight lands */
+      if (v->cur->cur && !v->cur->posted)
+      {
+         rh265_ctx_post(v, v->cur);
+         v->cur_slot = -1;
+      }
+#ifdef HAVE_THREADS
+      for (k = 0; k < v->nctx; k++)
+         rh265_ctx_join(v, &v->ctx[k]);
+#endif
+      (void)k;
+   }
    /* everything still waiting can now leave in POC order */
    rh265_dpb_bump(v, 0);
    return rh265_pop_output(v) ? 0 : -1;
@@ -5191,7 +5616,7 @@ const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
 void rh265_video_set_skip_nonref(rh265_video *v, int skip)
 {
    if (v)
-      v->skip_nonref = skip ? 1 : 0;
+      retro_atomic_store_release_int(&v->skip_nonref, skip ? 1 : 0);
 }
 
 int rh265_video_dropped(const rh265_video *v)

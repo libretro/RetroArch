@@ -5080,7 +5080,7 @@ struct rh264_video
     * after it decode exactly as they would have; only its own output
     * is missing, which is what a caller that has fallen behind the
     * clock wants. */
-   int       skip_nonref;
+   retro_atomic_int_t skip_nonref;  /* set from the caller's thread, read by the decode's */
    int       dropped;           /* the last decode call passed a picture over */
    /* DPB slot the pair's first field opened, so the second can fill it */
    int       pair_slot;
@@ -10442,7 +10442,7 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
        * and empties the pool; a preview that fell behind would stay
        * behind, on the pictures it has left. Threaded, the drops are
        * declined. */
-      if (v->skip_nonref && !v->threaded && type == 1 && ((nal[0] >> 5) & 3) == 0
+      if (retro_atomic_load_acquire_int(&v->skip_nonref) && !v->threaded && type == 1 && ((nal[0] >> 5) & 3) == 0
             && !v->cur->pic_open)
       {
          v->dropped = 1;
@@ -10537,7 +10537,7 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
 void rh264_video_set_skip_nonref(rh264_video *v, int skip)
 {
    if (v)
-      v->skip_nonref = skip ? 1 : 0;
+      retro_atomic_store_release_int(&v->skip_nonref, skip ? 1 : 0);
 }
 
 int rh264_video_dropped(const rh264_video *v)

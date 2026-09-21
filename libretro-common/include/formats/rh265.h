@@ -108,6 +108,12 @@ int rh265_video_ref_wait_misses(void);
  * concurrently. */
 void rh265_video_set_contexts(rh265_video *v, int n);
 
+/* Test knob: hold each row's publication for up to @max_yields thread
+ * yields, drawn at random, so that pictures reading from a picture in
+ * flight wait for their rows rather than nearly always finding them.
+ * Output must be byte-exact under it. 0 is off. Debug only. */
+void rh265_video_set_publish_delay(int max_yields);
+
 void rh265_video_set_thread_pool(rh265_video *v, void *pool,
       unsigned threads);
 
