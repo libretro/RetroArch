@@ -438,10 +438,26 @@ bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
          ahead  = span_hi - anchor;
          budget = 0;
       }
+      /* The paced budget is sized for a decoder that takes one sample
+       * a tick. One catching up takes three or four - it passes the
+       * pictures nothing references over - and a fast one takes them
+       * at whatever rate it decodes; either can eat through the
+       * lookahead faster than half a megabyte a tick refills it, and
+       * then it stands at the wall for the forty ticks the refill
+       * takes. So the pacing holds only while the feed is comfortably
+       * ahead: once the resident lookahead is below half its target,
+       * the tick extends unpaced, the burst a lap or an open already
+       * pays, and the decoder never sees the wall. */
+      else if (p->feed_res_hi > anchor
+            && p->feed_res_hi - anchor < ahead / 2)
+         budget = 0;
+      else if (p->feed_res_hi <= anchor)
+         budget = 0;
       hi = anchor + ahead;
       if (!data_transfer_window_feed_budget(p->dt, anchor,
                ahead, margin, budget, &res_hi))
          return false;
+      p->feed_res_hi = res_hi;
       /* The demuxer's bound follows what the feed made resident, both
        * ways (a loop's rewind drops the frontier back to the head). */
       if (hi > res_hi)

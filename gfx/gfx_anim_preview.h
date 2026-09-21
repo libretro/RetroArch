@@ -86,6 +86,9 @@ typedef struct gfx_anim_preview
     * the frame-indexed types keep the fixed constants. */
    size_t feed_ahead;
    size_t feed_back;
+   /* Where the resident window ended after the last feed: how far
+    * ahead of the decoder the feed still is, before this tick's. */
+   size_t feed_res_hi;
    /* Whether the stream emits ARGB words (asked once at open; a stream
     * that honours it keeps that order for the whole animation, and
     * some - APNG - report "no" to a repeat request after the first

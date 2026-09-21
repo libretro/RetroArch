@@ -307,6 +307,7 @@ ifneq ($(OS),Windows_NT)
 	./$(ANIM_WINDOW_TARGET) fixtures
 endif
 	./$(CATCHUP_TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
+	FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=500 NOAUDIO=1 ./$(TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	./$(BLIT_BANDS_TARGET) fixtures/long_video.mp4
 	./$(BLIT_BANDS_TARGET) fixtures/vp9_tiles.webm
 	./$(BLIT_BANDS_TARGET) fixtures/hevc_wpp.mp4

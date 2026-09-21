@@ -65,9 +65,19 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
       image_transfer_anim_stream_set_catchup(s, type, 1);
 
    t0 = cpu_features_get_time_usec();
-   while ((px = image_transfer_anim_stream_next(s, type, &dur)))
+   while (1)
    {
+      int64_t f0 = cpu_features_get_time_usec(), f1;
+      px = image_transfer_anim_stream_next(s, type, &dur);
+      f1 = cpu_features_get_time_usec();
+      if (!px)
+         break;
       n++;
+      /* BENCH_LOG: name the frames that took longer than a third of a
+       * second, which is what a viewer sees as a stall. */
+      if (getenv("BENCH_LOG") && f1 - f0 > 300000)
+         fprintf(stderr, "      frame %d took %.0f ms\n", n,
+               (double)(f1 - f0) / 1000.0);
       if (n > 100000)
          break;
    }

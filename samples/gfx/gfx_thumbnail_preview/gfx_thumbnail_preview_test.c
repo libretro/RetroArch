@@ -121,14 +121,26 @@ static void run(const char *path, const char *label, int expect_video)
             int64_t gap = now - last_change_us;
             if (gap > worst_gap_us)
                worst_gap_us = gap;
+            if (getenv("PACE_LOG") && gap > 150000)
+               fprintf(stderr, "      stall %6.0f ms before picture %d\n",
+                     (double)gap / 1000.0, hp.texture_uploads);
             last_change_us = now;
             last_frames = hp.texture_uploads;
          }
       }
       if (pace_hz > 0)
+      {
+         const char *ms = getenv("PACE_MAX_STALL_MS");
          printf("      paced at %d Hz: %d picture changes in %d polls, "
                "longest stall %.0f ms\n", pace_hz, last_frames, nf,
                (double)worst_gap_us / 1000.0);
+         /* With a bound, the stall is a check: a small fixture decodes
+          * in well under a frame, so a run of polls with the picture
+          * unchanged is the scheduler's doing, not the decoder's. */
+         if (ms)
+            check(label, "P1 no stall past the bound",
+                  worst_gap_us <= (int64_t)atoi(ms) * 1000);
+      }
       /* The frames above are the measurement window; whether the
        * first picture has landed by then is a matter of how loaded
        * the worker is - under a sanitizer, with other fixtures' jobs
@@ -209,10 +221,11 @@ static void run(const char *path, const char *label, int expect_video)
          check(label, "A6 no preview audio for an animated WEBP",
                hp.audio_streams == 0);
       }
-      else
+      else if (hp.force_preview_audio)
       {
          /* No cap: the window costs its slide, not the file, so even
-          * a 7 GB recording gets audio. */
+          * a 7 GB recording gets audio. Not asked for under NOAUDIO,
+          * which the paced runs use: they are about the pictures. */
          check(label, "A6 preview audio started", hp.audio_streams > 0);
          check(label, "A7 mixer got the whole container",
                hp.last_audio_bytes == (size_t)file_len(path));
