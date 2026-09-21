@@ -654,6 +654,8 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
       }
       else
       {
+         int i = 0;
+
          fclose(command_file);
 
          RARCH_LOG("[CONNMANCTL] Tether start stop: config \"%s\" exists, reading it\n",
@@ -665,8 +667,6 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
                configfile, configfile);
 
          command_file = popen(connman->command, "r");
-
-         int i = 0;
 
          RARCH_LOG("[CONNMANCTL] Tether start stop: parsing command: \"%s\"\n",
                connman->command);

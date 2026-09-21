@@ -23,6 +23,17 @@ BASE="-DRARCH_INTERNAL -DHAVE_AUDIOMIXER -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE
 
 fail=0
 
+# A failing compile's output, errors first: a file with a page of
+# warnings ahead of its one error pushed the error past the cut, which
+# left a failing lane reporting nothing to act on.
+show_out() {
+   if echo "$1" | grep -q ": error: "; then
+      echo "$1" | grep ": error: " | sed 's/^/      /' | head -8
+   else
+      echo "$1" | sed 's/^/      /' | head -12
+   fi
+}
+
 check() {
    name="$1"; shift
    defs="$1"; shift
@@ -31,7 +42,7 @@ check() {
       if ! out=$($CC $WARN $INC $BASE $defs -fsyntax-only "$tu" 2>&1); then
          echo "FAIL  $name"
          echo "      $tu"
-         echo "$out" | sed 's/^/      /' | head -12
+         show_out "$out"
          fail=1; bad=1
       fi
    done
@@ -222,7 +233,7 @@ check_nothreads() {
       if ! out=$($CC $WARN $INC $NOTHREADS $defs -fsyntax-only "$tu" 2>&1); then
          echo "FAIL  $name"
          echo "      $tu"
-         echo "$out" | sed 's/^/      /' | head -12
+         show_out "$out"
          fail=1; bad=1
       fi
    done
@@ -303,6 +314,15 @@ check "android: play delivery" "$HOSTOFF -Itools/platform_stubs/android -DANDROI
 check "emscripten: rwebaudio"  "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN -DHAVE_RWEBAUDIO $CDECL" audio/drivers/rwebaudio.c
 check "emscripten: rwebcam"    "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN $CDECL" camera/drivers/rwebcam.c
 
+# Two more that no job here compiles: the S3 cloud-sync backend, which
+# only griffin includes and which nothing defines HAVE_S3 for, and the
+# Lakka wifi driver, which needs HAVE_LAKKA. Both had a mixed
+# declaration. The C89 build cannot see either, because neither is in
+# its object list.
+NETDEFS="-DHAVE_NETWORKING -DHAVE_CONFIGFILE -DHAVE_OVERLAY -DHAVE_CHEATS"
+check "cloudsync: s3"          "$NETDEFS -DHAVE_CLOUDSYNC -DHAVE_S3 $CDECL" network/cloud_sync/s3.c
+check "lakka: connmanctl"      "$NETDEFS -DHAVE_LAKKA -DHAVE_WIFI $CDECL" network/drivers_wifi/connmanctl.c
+
 # The salamander launchers link a hand-picked subset of libretro-common
 # with -DIS_SALAMANDER: rtime.c for rtime_localtime, no features_cpu.c.
 # A syntax pass cannot see the link error that a symbol from an
@@ -314,7 +334,7 @@ salamander_link() {
    if ! out=$($CC $WARN $INC $BASE $defs -o /tmp/salamander_link_check \
          tools/platform_stubs/salamander_main.c "$@" 2>&1); then
       echo "FAIL  $name"
-      echo "$out" | sed 's/^/      /' | head -12
+      show_out "$out"
       fail=1
    else
       echo "ok    $name"
@@ -391,7 +411,7 @@ check_gates() {
       if ! out=$($CC $WARN $INC $NOMENU $defs -fsyntax-only "$tu" 2>&1); then
          echo "FAIL  $name"
          echo "      $tu"
-         echo "$out" | sed 's/^/      /' | head -12
+         show_out "$out"
          fail=1; bad=1
       fi
    done

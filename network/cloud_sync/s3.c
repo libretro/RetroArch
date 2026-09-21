@@ -325,8 +325,9 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
 
       if (s3pos && !b2_path_style_host)
       {
+         size_t bucket_len;
          RARCH_LOG(S3_PFX "Backblaze B2 style: virtual-hosted\n");
-         size_t bucket_len = s3pos - host;
+         bucket_len = s3pos - host;
          if (bucket_len > 0 && bucket_len < NAME_MAX_LENGTH)
             strlcpy(bucket, host, bucket_len + 1);
          s3pos += 4; /* skip ".s3." */
