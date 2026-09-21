@@ -169,6 +169,40 @@ platform_video "dingux video"   "-DDINGUX" "-I/usr/include/SDL" \
    gfx/drivers/sdl_dingux_gfx.c /usr/include/SDL/SDL.h
 platform_video "rs90 video"     "-DDINGUX -DRS90" "-I/usr/include/SDL" \
    gfx/drivers/sdl_rs90_gfx.c /usr/include/SDL/SDL.h
+
+# The Direct3D drivers, against the DirectX headers the tree vendors in
+# gfx/include/dxsdk. Six drivers no other lane compiles, and they read
+# the same frame and draw descriptors every other video driver does.
+#
+# A mingw-w64 cross compiler is all these need beyond the tree; where
+# there is none the lanes say so rather than fail.
+MINGW_CC=${MINGW_CC:-x86_64-w64-mingw32-gcc}
+d3d_video() {
+   name="$1"; defs="$2"; tu="$3"
+   if ! command -v "$MINGW_CC" > /dev/null 2>&1; then
+      echo "skip  $name (no $MINGW_CC)"
+      return
+   fi
+   if ! out=$($MINGW_CC $WARN -isystemgfx/include/dxsdk $INC $BASE $defs \
+         -fsyntax-only "$tu" 2>&1); then
+      echo "FAIL  $name"
+      echo "      $tu"
+      show_out "$out"
+      fail=1
+   else
+      echo "ok    $name"
+   fi
+}
+
+D3DDEFS="-DHAVE_D3D -DHAVE_RGUI -DHAVE_OVERLAY"
+d3d_video "d3d8 video"    "$D3DDEFS -DHAVE_D3D8"  gfx/drivers/d3d8.c
+d3d_video "d3d9 video, Cg"   "$D3DDEFS -DHAVE_D3D9"  gfx/drivers/d3d9cg.c
+d3d_video "d3d9 video, HLSL" "$D3DDEFS -DHAVE_D3D9"  gfx/drivers/d3d9hlsl.c
+d3d_video "d3d10 video"   "$D3DDEFS -DHAVE_D3D10" gfx/drivers/d3d10.c
+d3d_video "d3d11 video"   "$D3DDEFS -DHAVE_D3D11" gfx/drivers/d3d11.c
+d3d_video "d3d12 video"   "$D3DDEFS -DHAVE_D3D12" gfx/drivers/d3d12.c
+d3d_video "gdi video"     "-DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_GDI" \
+   gfx/drivers/gdi_gfx.c
 arm "win32"      win32      "-D_WIN32 -D_WIN32_WINNT=0x0600"
 arm "win32-old"  win32      "-D_WIN32 -D_WIN32_WINNT=0x0400"
 arm "macos"      apple      "-D__APPLE__"
