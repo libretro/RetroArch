@@ -27,6 +27,14 @@
 
 #include <defines/psp_defines.h>
 
+#if defined(PSP)
+/* The SDK header this driver's PSP path takes SceCtrlData, the button
+ * bits and the sceCtrl calls from. The VITA path includes its own
+ * below; without this one the file compiled only because griffin
+ * happens to include psp_input.c, which does, before it. */
+#include <pspctrl.h>
+#endif
+
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif

@@ -273,7 +273,11 @@ check "features_cpu: emscripten" "$HOSTOFF -Itools/platform_stubs/emscripten -D_
 # it - so a C89 slip or a missing declaration in one sits until the
 # console job runs, which is how a mixed declaration lived in
 # gx_joypad.c. These are the ones the stubs already in the tree can
-# reach; the rest need headers no stub here supplies. psp1_gfx and
+# reach, with one stub added for the pair of PSP input drivers - the
+# 3ds audio drivers want fifteen more symbols whose libctru signatures
+# cannot be checked from here, and a stub that guessed one would let a
+# lane pass what the real SDK rejects, so they are left out.
+# The rest need headers no stub here supplies. psp1_gfx and
 # dispserv_android already have lanes of their own - the latter gains
 # the C89 declaration check below rather than a second lane.
 #
@@ -287,6 +291,9 @@ check "gekko: gx_input"        "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CON
 check "gekko: gx_joypad"       "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" input/drivers_joypad/gx_joypad.c
 check "gekko: mem2_manager"    "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" libretro-common/memory/mem2_manager.c
 check "3ds: ctr_input"         "$HOSTOFF -Itools/platform_stubs/ctr -D_3DS -D__3DS__ -DARM11 -DRARCH_CONSOLE $CDECL" input/drivers/ctr_input.c
+PSP_DEFS="$HOSTOFF -Itools/platform_stubs/psp -DPSP -D_POSIX_C_SOURCE=199309L -DRARCH_CONSOLE"
+check "psp: psp_input"         "$PSP_DEFS $CDECL" input/drivers/psp_input.c
+check "psp: psp_joypad"        "$PSP_DEFS $CDECL" input/drivers_joypad/psp_joypad.c
 check "orbis: ps4_audio"       "$HOSTOFF -Itools/platform_stubs/orbis -DORBIS $CDECL" audio/drivers/ps4_audio.c
 check "qnx: alsa_qsa"          "$HOSTOFF -Itools/platform_stubs/qnx -D__QNX__ $CDECL" audio/drivers/alsa_qsa.c
 check "android: vfs saf"       "$HOSTOFF -Itools/platform_stubs/android -DANDROID $CDECL" libretro-common/vfs/vfs_implementation_saf.c
