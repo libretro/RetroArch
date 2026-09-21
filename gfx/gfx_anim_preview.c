@@ -693,10 +693,14 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
       p->audio_dt   = w->dt;
       p->audio_slot = out_slot;
       if (island_hi)
-      {
          p->audio_hi = (keep < blen) ? keep : blen;
-         audio_driver_mixer_stream_set_avail((unsigned)out_slot, p->audio_hi);
-      }
+      /* Every windowed stream decodes under a bound from its first
+       * read: without one the decoder trusts the demuxer's offsets
+       * outright, and the first lap's end shows why that cannot be -
+       * it loops and reads the head at once, before the feeder's next
+       * tick has brought the head back, into pages given up long ago.
+       * The bound is what makes it stand at the wall instead. */
+      audio_driver_mixer_stream_set_avail((unsigned)out_slot, p->audio_hi);
    }
 #else
    (void)p;
