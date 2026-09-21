@@ -25,6 +25,11 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
+/* libctru defines this from 1.5 on; it is the SoC clock by sixteen. */
+#ifndef SYSCLOCK_ARM11
+#define SYSCLOCK_ARM11 (16756991u * 8u * 2u)
+#endif
+
 /* The rate the channel is set to and the rate the frontend is told,
  * which have to be the one number: the channel interpolates with
  * NDSP_INTERP_NONE, so anything the frontend resamples to that the
@@ -236,6 +241,30 @@ static void ctr_dsp_audio_free(void *data)
 #define CTR_DSP_AUDIO_STALL_TIMEOUT_NS 256000000LL
 #define CTR_DSP_AUDIO_WAIT_WRITABLE_LAPS 8
 
+/* LightEvent_WaitTimeout() is libctru 2's; on 1.x the wait is the
+ * try-wait polled in slices short against the DSP's frame. Non-zero is
+ * the timeout either way. */
+#ifdef USE_CTRULIB_2
+#define ctr_dsp_audio_frame_wait(ctr, ns) \
+   LightEvent_WaitTimeout(&(ctr)->frame_event, (ns))
+#else
+#define CTR_DSP_AUDIO_POLL_SLICE_NS 500000LL
+
+static int ctr_dsp_audio_frame_wait(ctr_dsp_audio_t *ctr, s64 timeout_ns)
+{
+   s64 left = timeout_ns;
+
+   while (left > 0)
+   {
+      if (LightEvent_TryWait(&ctr->frame_event))
+         return 0;
+      svcSleepThread(CTR_DSP_AUDIO_POLL_SLICE_NS);
+      left -= CTR_DSP_AUDIO_POLL_SLICE_NS;
+   }
+   return 1;
+}
+#endif
+
 static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
 {
    u32 pos;
@@ -376,8 +405,7 @@ static size_t ctr_dsp_audio_wait_writable(void *data, size_t len)
       if (--laps < 0)
          break;
       /* Non-zero is the timeout. */
-      if (LightEvent_WaitTimeout(&ctr->frame_event,
-               CTR_DSP_AUDIO_STALL_TIMEOUT_NS))
+      if (ctr_dsp_audio_frame_wait(ctr, CTR_DSP_AUDIO_STALL_TIMEOUT_NS))
          break;
    }
    return 0;
