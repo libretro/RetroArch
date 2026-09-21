@@ -1009,7 +1009,19 @@ static void *resampler_sinc_new(const struct resampler_config *config,
  * process() invocation (per chunk, not per sample) - no measurable cost. */
 static void resampler_sinc_process(void *re_, struct resampler_data *data)
 {
-   ((rarch_sinc_resampler_t*)re_)->process(re_, data);
+   rarch_sinc_resampler_t *re = (rarch_sinc_resampler_t*)re_;
+   /* init refuses a nominal ratio the phase clock cannot advance on.
+    * The ratio each call carries is a different number - rate control
+    * and slow motion move it - and phases / data->ratio is taken from
+    * it, so an unusable one leaves a zero step and a loop that emits
+    * past data_out. */
+   if (!sinc_resampler_ratio_valid(data->ratio,
+            re->phase_bits, re->subphase_bits))
+   {
+      data->output_frames = 0;
+      return;
+   }
+   re->process(re_, data);
 }
 
 retro_resampler_t sinc_resampler = {

@@ -32,6 +32,7 @@
  * accumulation is pure integer so the output timing is bit-identical across
  * platforms.  Signed, so heavy downsampling (step > 1.0) can drive the
  * fraction negative without the unsigned wrap that would corrupt the loop. */
+#define NEAREST_I16_RATIO_MAX 65536.0
 #define NEAREST_I16_FRAC_BITS 32
 
 typedef struct nearest_resampler_int16
@@ -59,8 +60,16 @@ void nearest_resampler_int16_process(void *re_,
    int16_t       *outp_first     = outp;
    const int64_t  one            = (int64_t)1 << NEAREST_I16_FRAC_BITS;
    /* step = (1.0 / ratio) in Q32, i.e. input frames consumed per output. */
-   int64_t        step           = (int64_t)
-      ((1.0 / data->ratio) * (double)one + 0.5);
+   int64_t        step;
+
+   /* A ratio outside this leaves a zero step, and reaches the cast
+    * below, where the conversion is undefined. */
+   if (!(data->ratio > 0.0) || !(data->ratio <= NEAREST_I16_RATIO_MAX))
+   {
+      data->output_frames = 0;
+      return;
+   }
+   step = (int64_t)((1.0 / data->ratio) * (double)one + 0.5);
 
    while (inp != inp_max)
    {

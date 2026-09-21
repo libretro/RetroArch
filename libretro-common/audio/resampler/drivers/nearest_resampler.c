@@ -31,6 +31,11 @@ typedef struct rarch_nearest_resampler
    float fraction;
 } rarch_nearest_resampler_t;
 
+/* The step is 1/ratio, so a ratio that is not positive, or larger than
+ * a pair of sample rates can name, leaves the inner loop emitting past
+ * data_out rather than advancing. */
+#define NEAREST_RATIO_MAX 65536.0
+
 static void resampler_nearest_process(
       void *re_, struct resampler_data *data)
 {
@@ -38,7 +43,14 @@ static void resampler_nearest_process(
    audio_frame_float_t  *inp     = (audio_frame_float_t*)data->data_in;
    audio_frame_float_t  *inp_max = (audio_frame_float_t*)inp + data->input_frames;
    audio_frame_float_t  *outp    = (audio_frame_float_t*)data->data_out;
-   float                   ratio = 1.0 / data->ratio;
+   float                   ratio;
+
+   if (!(data->ratio > 0.0) || !(data->ratio <= NEAREST_RATIO_MAX))
+   {
+      data->output_frames = 0;
+      return;
+   }
+   ratio = 1.0 / data->ratio;
 
    while (inp != inp_max)
    {

@@ -133,8 +133,7 @@ static void test_output_bound(const retro_resampler_t *r, double ratio)
  * caller reports no capacity, so a backend has to stop on its own
  * rather than walk out of data_out. data_out is exact and on the heap,
  * so a sanitizer build sees the write a padded static buffer would
- * swallow. sinc and nearest do run past it here; that is theirs to
- * answer for, not this suite's. */
+ * swallow. */
 static void test_unnameable_ratio(const retro_resampler_t *r)
 {
    static const double bad[] = { 1.0e9, 1.0 / 0.0, 0.0 / 0.0, 0.0, -1.5 };
@@ -217,8 +216,11 @@ int main(void)
          test_output_bound(backends[b], ratios[k]);
       }
    }
-   printf("   CC, ratios no rate pair can name\n");
-   test_unnameable_ratio(&CC_resampler);
+   for (b = 0; b < sizeof(backends) / sizeof(backends[0]); b++)
+   {
+      printf("   %s, ratios no rate pair can name\n", backends[b]->ident);
+      test_unnameable_ratio(backends[b]);
+   }
    printf("   CC, a ratio above the one init chose from\n");
    test_ratio_above_init(&CC_resampler);
    if (failures)

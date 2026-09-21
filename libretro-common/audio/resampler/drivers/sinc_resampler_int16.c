@@ -453,6 +453,12 @@ static void sinc_i16_process_lanczos(rarch_sinc_resampler_int16_t *re,
 void sinc_resampler_int16_process(void *re_, struct resampler_data_int16 *data)
 {
    rarch_sinc_resampler_int16_t *re = (rarch_sinc_resampler_int16_t*)re_;
+   if (!sinc_resampler_ratio_valid(data->ratio,
+            re->phase_bits, re->subphase_bits))
+   {
+      data->output_frames = 0;
+      return;
+   }
    if (re->window == SINC_I16_WINDOW_KAISER)
       sinc_i16_process_kaiser(re, data);
    else
