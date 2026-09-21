@@ -231,6 +231,25 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
             off += (size_t)w[k]*bps;
          }
       }
+      if (getenv("RH264_FRAMEDIFF"))
+         fprintf(stderr, "FRAME %d (drained) diff so far %ld\n", frames, bad);
+      if (getenv("RH264_DUMP") && frames == atoi(getenv("RH264_DUMP")))
+      {
+         /* luma of this frame against reference frames f-1, f and f+1,
+          * whole-frame counts: an order slip shows as a match elsewhere */
+         int cand, y, x;
+         for (cand = frames - 1; cand <= frames + 1; cand++)
+         {
+            size_t o = 0; long dd = 0; int fy;
+            for (fy = 0; fy < cand; fy++)
+               for (k = 0; k < 3; k++) o += (size_t)w[k] * hh[k] * bps;
+            if (o + (size_t)w[0]*hh[0]*bps > alen) { fprintf(stderr, "ref %d: past end\n", cand); continue; }
+            for (y = 0; y < hh[0]; y++)
+               for (x = 0; x < w[0]*bps; x++)
+                  if (p[0][(size_t)y*st[0]*bps + x] != ref_a[o + (size_t)y*w[0]*bps + x]) dd++;
+            fprintf(stderr, "frame %d vs ref %d: %ld luma differ\n", frames, cand, dd);
+         }
+      }
       frames++;
    }
    if (off != alen)
@@ -260,7 +279,7 @@ static void oracle_case(const char *name, const char *src, int frames,
          name, pix, x264);
    if (run("ffmpeg -v error -y -f lavfi -i \"%s\" -frames:v %d -c:v libx264 "
            "%s -pix_fmt %s %s '%s' && "
-           "ffmpeg -v error -y -i '%s' -f rawvideo -pix_fmt %s '%s'",
+           "ffmpeg -v error -y -i '%s' -fps_mode passthrough -f rawvideo -pix_fmt %s '%s'",
            src, frames, rate, pix, x264, mp4, mp4, pix, yuv) != 0
        || !(ref = slurp(yuv, &rlen)))
    {
@@ -500,7 +519,7 @@ static void mixed_case(void)
            "-c:v libx264 -preset ultrafast -qp 0 -g 1 -x264-params slices=2 "
            "-pix_fmt yuv420p '%s/ll2.mp4' && "
            "ffmpeg -v error -y -i '%s/ll2.mp4' -c:v copy -bsf:v h264_mp4toannexb '%s' && "
-           "ffmpeg -v error -y -i '%s/ll2.mp4' -f rawvideo -pix_fmt yuv420p '%s' && "
+           "ffmpeg -v error -y -i '%s/ll2.mp4' -fps_mode passthrough -f rawvideo -pix_fmt yuv420p '%s' && "
            "ffmpeg -v error -y -f lavfi -i testsrc2=s=96x80:r=10 -frames:v 3 "
            "-c:v libx264 -preset ultrafast -qp 30 -g 1 "
            "-x264-params slices=2:deblock=6,6:aq-mode=0 -pix_fmt yuv420p '%s/lossy2.mp4' && "
@@ -538,7 +557,7 @@ static void mixed_case(void)
    free(a); free(b); free(m.out);
    check("M0 mixed stream assembled (6 slices)", 1);
    if (run("ffmpeg -v error -y -i '%s' -c:v copy '%s' && "
-           "ffmpeg -v error -y -i '%s' -f rawvideo -pix_fmt yuv420p '%s'",
+           "ffmpeg -v error -y -i '%s' -fps_mode passthrough -f rawvideo -pix_fmt yuv420p '%s'",
            mix, mixmp4, mixmp4, ffyuv) != 0)
    {
       check("M0 ffmpeg decodes the mixed stream", 0);
@@ -566,10 +585,27 @@ int main(void)
    /* RH264_FILE=path RH264_REF=path.yuv: decode one file against its
     * ffmpeg reference, at one thread and, with RH264_FILE_THREADS,
     * concurrently - for a file that misbehaves in the field. */
-   if (getenv("RH264_FILE") && getenv("RH264_REF"))
+   if (getenv("RH264_FILE"))
    {
+      /* The reference is ffmpeg's decode of the same stream, its
+       * pictures and no more: without -fps_mode passthrough ffmpeg
+       * duplicates pictures to hold the declared rate against the
+       * timestamps, and the last picture of a file then compares
+       * against a copy of the one before it. RH264_REF names a
+       * reference already made that way. */
       size_t rlen = 0;
-      uint8_t *ref = slurp(getenv("RH264_REF"), &rlen);
+      const char *rf = getenv("RH264_REF");
+      char made[512];
+      uint8_t *ref;
+      if (!rf)
+      {
+         snprintf(made, sizeof(made), "/tmp/rh264_file_ref_%ld.yuv", (long)getpid());
+         if (run("ffmpeg -v error -y -i '%s' -fps_mode passthrough "
+                 "-f rawvideo -pix_fmt yuv420p '%s'", getenv("RH264_FILE"), made))
+            return 2;
+         rf = made;
+      }
+      ref = slurp(rf, &rlen);
       int nf = 0;
       long bad;
       const char *te = getenv("RH264_FILE_THREADS");
@@ -589,7 +625,10 @@ int main(void)
          bad = compare(getenv("RH264_FILE"), ref, rlen, ref, 0, &nf);
          printf("%d threads: %d frames, %ld differing samples\n", g_threads, nf, bad);
       }
-      return 0;
+      free(ref);
+      if (rf == made)
+         remove(made);
+      return bad != 0;
    }
    if (system("ffmpeg -version >/dev/null 2>&1") != 0)
    {
