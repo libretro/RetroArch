@@ -92,6 +92,31 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_options_test
           echo "[pass] webdav_options_test (TSan)"
 
+      - name: Build and run webdav_reauth_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/webdav_reauth
+        run: |
+          set -eu
+          # Includes network/cloud_sync/webdav.c and plays the server
+          # for every request type the driver sends (OPTIONS, GET, PUT,
+          # DELETE, MOVE, MKCOL). A server that keeps answering 401 with
+          # a Digest challenge - a wrong password - must get one retry
+          # and then a reported failure; the driver used to retry every
+          # challenge, so a mistyped password looped the first request
+          # of a sync forever. A single stale-nonce challenge must still
+          # be retried and succeed. A retried PUT must send the file:
+          # it used to re-read it from the end the first attempt left
+          # it at and upload uninitialised memory in place of the save.
+          make clean all SANITIZER=address,undefined
+          test -x webdav_reauth_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./webdav_reauth_test
+          echo "[pass] webdav_reauth_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_reauth_test
+          echo "[pass] webdav_reauth_test (TSan)"
+
       - name: Build and run cheevos_login_test (bear ASan+UBSan, bear TSan, mbed ASan+UBSan)
         shell: bash
         working-directory: samples/network/cheevos_login

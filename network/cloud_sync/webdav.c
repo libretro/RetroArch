@@ -32,6 +32,9 @@ typedef struct
    cloud_sync_complete_handler_t cb;
    void *user_data;
    RFILE *rfile;
+   /* Set once this request has been retried with fresh credentials;
+    * see webdav_retry_auth(). */
+   bool reauthed;
 } webdav_cb_state_t;
 
 typedef void (*webdav_mkdir_cb_t)(bool success, webdav_cb_state_t *state);
@@ -43,6 +46,7 @@ typedef struct
    char post_slash;
    webdav_mkdir_cb_t cb;
    webdav_cb_state_t *cb_st;
+   bool reauthed;
 } webdav_mkdir_state_t;
 
 /* TODO: all of this HTTP auth stuff should
@@ -549,6 +553,25 @@ static bool webdav_needs_reauth(http_transfer_data_t *data)
    return false;
 }
 
+/* Whether to retry a request the server answered with a Digest
+ * challenge.  One retry per request: that covers a stale nonce and a
+ * request that met the challenge first.  A second challenge means the
+ * server rejected the credentials themselves, and retrying again would
+ * only meet it again - with a wrong password the server answers every
+ * attempt that way, which used to loop the request forever. */
+static bool webdav_retry_auth(http_transfer_data_t *data, bool *reauthed)
+{
+   if (!webdav_needs_reauth(data))
+      return false;
+   if (*reauthed)
+   {
+      RARCH_ERR("[webdav] The server rejected the credentials. Check the WebDAV username and password.\n");
+      return false;
+   }
+   *reauthed = true;
+   return true;
+}
+
 /* RFC 9110 5.6.1.2: the Allow header is a comma-separated list of
  * method tokens describing what the *target resource* supports. Match
  * whole tokens so that a method merely containing another's name
@@ -621,7 +644,7 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
    if (!data)
       RARCH_WARN("[webdav] Did not get data for stat, is the server down?\n");
 
-   if (webdav_needs_reauth(data))
+   if (webdav_retry_auth(data, &webdav_cb_st->reauthed))
    {
       char *auth_header = webdav_get_auth_header("OPTIONS", webdav_st->url);
 
@@ -781,7 +804,7 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
    if (!success && data)
        webdav_log_http_failure(webdav_cb_st->path, data, err);
 
-   if (webdav_needs_reauth(data))
+   if (webdav_retry_auth(data, &webdav_cb_st->reauthed))
    {
       char            url_encoded[PATH_MAX_LENGTH];
       char           *auth_header;
@@ -903,6 +926,9 @@ static void webdav_mkdir_push(webdav_mkdir_state_t *webdav_mkdir_st)
 {
    char *auth_header;
 
+   /* Each collection in the walk is a request of its own. */
+   webdav_mkdir_st->reauthed = false;
+
    if (webdav_dir_is_known(webdav_mkdir_st->url))
    {
       http_transfer_data_t data;
@@ -930,7 +956,7 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data,
    if (!webdav_mkdir_st)
       return;
 
-   if (webdav_needs_reauth(data))
+   if (webdav_retry_auth(data, &webdav_mkdir_st->reauthed))
    {
       RARCH_DBG("[webdav] MKCOL %s\n", webdav_mkdir_st->url);
       auth_header = webdav_get_auth_header("MKCOL", webdav_mkdir_st->url);
@@ -1003,6 +1029,7 @@ static void webdav_ensure_dir(const char *dir, webdav_mkdir_cb_t cb,
    webdav_mkdir_st->post_slash = webdav_mkdir_st->last_slash[1];
    webdav_mkdir_st->cb         = cb;
    webdav_mkdir_st->cb_st      = webdav_cb_st;
+   webdav_mkdir_st->reauthed   = false;
 
    /* this is a recursive callback, set it up so it looks like it's still proceeding */
    data.status = 200;
@@ -1029,7 +1056,7 @@ static void webdav_update_cb(retro_task_t *task, void *task_data,
    else if (!data)
       RARCH_WARN("[webdav] Could not upload %s\n", webdav_cb_st->path);
 
-   if (webdav_needs_reauth(data))
+   if (webdav_retry_auth(data, &webdav_cb_st->reauthed))
    {
       webdav_do_update(true, webdav_cb_st);
       return;
@@ -1065,9 +1092,23 @@ static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
    }
 
    /* TODO: would be better to read file as it's being written to wire, this is very inefficient */
+   /* Rewind first: a retry after a Digest challenge comes back here
+    * with the file already read to its end, and without the seek it
+    * read nothing and uploaded a buffer of uninitialised memory in
+    * place of the save.  A short read fails the upload for the same
+    * reason. */
    len = filestream_get_size(webdav_cb_st->rfile);
-   buf = (char*)malloc((size_t)(len + 1));
-   filestream_read(webdav_cb_st->rfile, buf, len);
+   buf = (len >= 0) ? malloc((size_t)(len + 1)) : NULL;
+   if (   !buf
+       || filestream_seek(webdav_cb_st->rfile, 0, SEEK_SET) < 0
+       || filestream_read(webdav_cb_st->rfile, buf, len) != len)
+   {
+      RARCH_ERR("[webdav] Could not read %s for upload.\n", webdav_cb_st->path);
+      free(buf);
+      webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, false, webdav_cb_st->rfile);
+      free(webdav_cb_st);
+      return;
+   }
 
    RARCH_DBG("[webdav] PUT %s\n", url_encoded);
    auth_header = webdav_get_auth_header("PUT", url_encoded);
@@ -1119,7 +1160,7 @@ static void webdav_delete_cb(retro_task_t *task, void *task_data,
    else if (!data)
       RARCH_WARN("[webdav] Could not delete %s\n", webdav_cb_st->path);
 
-   if (webdav_needs_reauth(data))
+   if (webdav_retry_auth(data, &webdav_cb_st->reauthed))
    {
       char            url_encoded[PATH_MAX_LENGTH];
       char           *auth_header;
@@ -1162,7 +1203,7 @@ static void webdav_backup_cb(retro_task_t *task, void *task_data,
    else if (!data)
       RARCH_WARN("[webdav] Could not backup %s\n", webdav_cb_st->path);
 
-   if (webdav_needs_reauth(data))
+   if (webdav_retry_auth(data, &webdav_cb_st->reauthed))
    {
       webdav_do_backup(true, webdav_cb_st);
       return;
