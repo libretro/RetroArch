@@ -2778,7 +2778,6 @@ static const struct
    char s_79b8ce4a[80];
    char s_a1a8257e[112];
    char s_282f7955[106];
-   char s_d5231783[120];
    char s_a68d6d11[61];
    char s_74022c02[96];
    char s_8abad013[90];
@@ -7759,8 +7758,6 @@ static const struct
    "uair nach bhfuil aon \303\241bhar l\303\263d\303\241ilte.",
    "Roghnaigh na roghanna seo chun na socruithe cothrom\303\241nacha a choigeart\303\272 agus m\303"
    "\251id na h\303\255omh\303\241 a athr\303\272.",
-   "Do thaispe\303\241ntais CRT amh\303\241in. D\303\251antar iarracht an r\303\251iteach cro\303"
-   "\255/cluiche agus an r\303\241ta athnuachana cruinn a \303\272s\303\241id.",
    "Athraigh idir r\303\251iteach s\303\241r-dh\303\272chasach agus ultra-leathan.",
    "Bain \303\272s\303\241id as r\303\241ta athnuachana saincheaptha at\303\241 sonraithe sa chomhad"
    " cumra\303\255ochta m\303\241s g\303\241.",
@@ -10433,7 +10430,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (222134u
+      (sizeof(msg_hash_ga_blob) == (222014u
 #ifdef ANDROID
        + 390u
 #endif
@@ -13608,7 +13605,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

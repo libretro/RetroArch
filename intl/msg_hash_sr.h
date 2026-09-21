@@ -353,7 +353,6 @@ static const struct
    char s_48e88dc4[156];
    char s_79b8ce4a[78];
    char s_a1a8257e[102];
-   char s_d5231783[97];
    char s_a68d6d11[56];
    char s_74022c02[89];
    char s_8abad013[71];
@@ -817,8 +816,6 @@ static const struct
    "Koristi prirodni, nisko-rezolucioni video izlaz, za upotrebu sa CRT ekranima.",
    "Uklju\304\215i visoko-rezolucioni mod za upotrebu sa visoko-rezolucionim menijem ako sadr\305"
    "\276aj nije u\304\215itan.",
-   "Samo za CRT ekrane. Poku\305\241aj da koristi\305\241 preciznu rezoluciju i brzinu osve\305\276a"
-   "vanja jezgra/igre.",
    "Biraj izme\304\221u prirodne i ultra\305\241iroke super rezolucije.",
    "Prilagodi brzinu osve\305\276avanja specificiranu u konfiguracionoj datoteci, ako je potrebno.",
    "Pro\304\221i kroz ove opcije ako slika nije pravilno centrirana na displeju.",
@@ -965,7 +962,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sr_blob_check[
-      (sizeof(msg_hash_sr_blob) == (12222u
+      (sizeof(msg_hash_sr_blob) == (12125u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -1373,7 +1370,6 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

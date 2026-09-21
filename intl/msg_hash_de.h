@@ -2669,7 +2669,6 @@ static const struct
    char s_79b8ce4a[87];
    char s_a1a8257e[103];
    char s_282f7955[108];
-   char s_d5231783[99];
    char s_a68d6d11[61];
    char s_74022c02[76];
    char s_8abad013[90];
@@ -7312,8 +7311,6 @@ static const struct
    "kein Inhalt geladen ist.",
    "Durch diese Optionen bl\303\244ttern, um die horizontalen Einstellungen zur \303\204nderung der "
    "Bildgr\303\266\303\237e anzupassen.",
-   "Nur f\303\274r CRT-Bildschirme. Versucht die exakte Core-/Spielaufl\303\266sung und Bildfrequenz"
-   " zu verwenden.",
    "Zwischen nativer und ultraweiter Superaufl\303\266sung umschalten.",
    "Eine in der Konfigurationsdatei definierte Bildwiederholfrequenz verwenden.",
    "Diese Optionen durchwechseln, falls das Bild nicht richtig auf dem Display zentriert ist.",
@@ -9541,7 +9538,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (210066u
+      (sizeof(msg_hash_de_blob) == (209967u
 #ifdef ANDROID
        + 358u
 #endif
@@ -12613,7 +12610,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

@@ -2723,7 +2723,6 @@ static const struct
    char s_79b8ce4a[85];
    char s_a1a8257e[132];
    char s_282f7955[108];
-   char s_d5231783[120];
    char s_a68d6d11[71];
    char s_74022c02[107];
    char s_8abad013[101];
@@ -7447,8 +7446,6 @@ static const struct
    "adowana.",
    "Prze\305\202\304\205czaj pomi\304\231dzy tymi opcjami, aby dopasowa\304\207 poziome ustawienia o"
    "brazu, aby zmieni\304\207 rozmiar obrazu.",
-   "Tylko dla wy\305\233wietlaczy CRT. Pr\303\263buje u\305\274y\304\207 dok\305\202adnej rozdzielcz"
-   "o\305\233ci rdzenia / gry i cz\304\231stotliwo\305\233ci od\305\233wie\305\274ania.",
    "Prze\305\202\304\205cz mi\304\231dzy natywnymi i superszybkimi super rozdzielczo\305\233ciami.",
    "W razie potrzeby u\305\274yj niestandardowej cz\304\231stotliwo\305\233ci od\305\233wie\305\274a"
    "nia okre\305\233lonej w pliku konfiguracyjnym.",
@@ -9823,7 +9820,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (196170u
+      (sizeof(msg_hash_pl_blob) == (196050u
 #ifdef ANDROID
        + 385u
 #endif
@@ -12955,7 +12952,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

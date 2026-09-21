@@ -737,7 +737,6 @@ static const struct
    char s_92cf524f[28];
    char s_79b8ce4a[61];
    char s_a1a8257e[101];
-   char s_d5231783[97];
    char s_a68d6d11[52];
    char s_74022c02[84];
    char s_8abad013[70];
@@ -1726,7 +1725,6 @@ static const struct
    "Berkeluaran lokal, sinyal beresolusi rendah untuk layar CRT.",
    "Beralih ke modeline resolusi tinggi untuk menampilkan menu resolusi tinggi jika belum memuat kon"
    "ten.",
-   "Hanya untuk tampilan CRT. Mencoba memakai resolusi tepat dari core/p'mainan dan laju penyegaran.",
    "Mengganti ke resolusi lokal atau super ultra lebar.",
    "Gunakan laju penyegaran kustom yang ditentukan dalam berkas konfigurasi jika perlu.",
    "Atur opsi ini jika gambar tidak dapat ditampilkan memusat semestinya.",
@@ -2012,7 +2010,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26833u
+      (sizeof(msg_hash_id_blob) == (26736u
 #ifdef HAVE_MIST
        + 10u
 #endif
@@ -2846,7 +2844,6 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

@@ -927,7 +927,6 @@ static const struct
    char s_c3968f26[88];
    char s_79b8ce4a[72];
    char s_a1a8257e[121];
-   char s_d5231783[91];
    char s_a68d6d11[48];
    char s_74022c02[104];
    char s_8abad013[86];
@@ -2404,8 +2403,6 @@ static const struct
    "Sinais de sa\303\255da nativos e de baixa resolu\303\247\303\243o para uso com telas CRT.",
    "Alterne para o modo de alta resolu\303\247\303\243o para usar com menus de alta resolu\303\247"
    "\303\243o quando nenhum conte\303\272do est\303\241 carregado.",
-   "S\303\263 para telas CRT. Tenta usar a resolu\303\247\303\243o e a taxa de atualiza\303\247\303"
-   "\243o n\303\272cleo/jogo exata.",
    "Alterne entre resolu\303\247\303\265es nativas e ultrawide.",
    "Use uma taxa de atualiza\303\247\303\243o personalizada especificada no ficheiro de configura"
    "\303\247\303\243o, se necess\303\241rio.",
@@ -2986,7 +2983,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (54745u
+      (sizeof(msg_hash_pt_pt_blob) == (54654u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3997,7 +3994,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

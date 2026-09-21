@@ -2644,7 +2644,6 @@ static const struct
    char s_79b8ce4a[64];
    char s_a1a8257e[118];
    char s_282f7955[96];
-   char s_d5231783[98];
    char s_a68d6d11[65];
    char s_74022c02[78];
    char s_8abad013[77];
@@ -7080,8 +7079,6 @@ static const struct
    " menuoj kiam nenia enhavo estas \305\235argita.",
    "\305\234an\304\235u \304\211i tiun opcion por al\304\235ustigi la horizontalajn agordojn por "
    "\305\235an\304\235i la bildan grandon.",
-   "Nur por ekranoj de CRT. Provas uzi \304\235ustajn distingivon kaj ofteco de aktualigo de la kern"
-   "o/ludo.",
    "Inter\305\235an\304\235i inter indi\304\235enaj kaj ultralar\304\235aj superdistingivoj.",
    "Uzi propran oftecon de aktualigo specifitan en la konfigudosiero se bezonata.",
    "\305\234an\304\235u \304\211i tiun opcion se la bildo ne estas \304\235uste centrigita en la ekr"
@@ -9058,7 +9055,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172117u
+      (sizeof(msg_hash_eo_blob) == (172019u
 #ifdef ANDROID
        + 312u
 #endif
@@ -12091,7 +12088,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

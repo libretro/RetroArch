@@ -269,6 +269,7 @@ static const struct
    char s_48c208ee[18];
    char s_a38cafbb[28];
    char s_dcf2e800[5];
+   char s_cf4d4f28[40];
    char s_f4740f16[28];
    char s_d95f1db1[34];
    char s_3c9950ad[43];
@@ -849,6 +850,7 @@ static const struct
    char s_d458f013[37];
    char s_56e1b31e[17];
    char s_56e1b31f[16];
+   char s_267cbe7d[32];
    char s_597c4715[10];
    char s_56e1b329[15];
    char s_3318187b[19];
@@ -1230,6 +1232,7 @@ static const struct
    char s_ac60056b[14];
    char s_1ad09b45[24];
    char s_774e2332[35];
+   char s_1c9e1ceb[38];
    char s_87064238[37];
    char s_2a273dd7[15];
    char s_5e5fc0ee[19];
@@ -2422,6 +2425,7 @@ static const struct
    char s_a95c1929[48];
    char s_23b8ca2e[22];
    char s_daf6d7e2[45];
+   char s_708c69d6[257];
    char s_042502c4[66];
    char s_90ae9a9f[90];
    char s_81b79d5b_0[500];
@@ -2633,7 +2637,6 @@ static const struct
    char s_79b8ce4a[81];
    char s_a1a8257e[107];
    char s_282f7955[109];
-   char s_d5231783[105];
    char s_a68d6d11[57];
    char s_74022c02[89];
    char s_8abad013[79];
@@ -2750,6 +2753,7 @@ static const struct
    char s_6da9b571[273];
    char s_c2827177[137];
    char s_09f2837b[282];
+   char s_2c4c27eb[233];
    char s_85147d5c[72];
    char s_0b56ad4c[58];
    char s_c312b1ca[43];
@@ -3022,6 +3026,7 @@ static const struct
    char s_5aa622cc[201];
    char s_2b908073[258];
    char s_64bea160[176];
+   char s_2826de99[350];
    char s_97c62766[163];
    char s_6f458a85[92];
    char s_41702fdc[54];
@@ -4709,6 +4714,7 @@ static const struct
    "DSP-insticksmodul",
    "Ta bort DSP-insticksmodulen",
    "Ljud",
+   "Snabbspolning p\303\245verkar \303\245teranropsljud",
    "Tyst ljud vid snabbspolning",
    "Uppsnabbat ljud vid snabbspolning",
    "Omsampla till fast heltal (rekommendation)",
@@ -5290,6 +5296,7 @@ static const struct
    "Mappning f\303\266r tangentbordskontroller",
    "A-knapp (H\303\266gra)",
    "B-knapp (Nedre)",
+   "Handkontrollindata i bakgrunden",
    "D-Pad Ner",
    "L-knapp (Axel)",
    "L2-knapp (Trigger)",
@@ -5671,6 +5678,7 @@ static const struct
    "Uppstartssida",
    "Miniatyrbildsbakgrunder",
    "Ljud f\303\266r animerade miniatyrbilder",
+   "Tr\303\245dar f\303\266r animerade miniatyrbilder",
    "Miniatyrbilders uppskalningstr\303\266skel",
    "Mjuk Rull-text",
    "Rull-texthastighet",
@@ -6909,6 +6917,10 @@ static const struct
    "Inaktiverar DSP-insticksmoduler som \303\244r aktiva.",
    "Aktivera ljudutg\303\245ng.",
    "Spela samtidiga ljudstr\303\266mmar \303\244ven i menyn.",
+   "Anv\303\244nd snabbspolningens ljudhantering f\303\266r k\303\244rnor som \303\245terger ljud vi"
+   "a egna \303\245teranrop. Dessa k\303\244rnor producerar ljud i realtid, s\303\245 hastigheten h"
+   "\303\244mtas fr\303\245n videons uppn\303\245dda takt. Av beh\303\245ller ljudet i realtid, som "
+   "stabila RetroArch alltid har gjort.",
    "St\303\244ng av ljudet automatiskt n\303\244r snabbspolning fram\303\245t anv\303\244nds.",
    "Snabba upp ljudet vid snabbspolning fram\303\245t. F\303\266rhindrar knastrande men \303\244ndra"
    "r tonh\303\266jd.",
@@ -7281,8 +7293,6 @@ static const struct
    "l\303\266sta menyer n\303\244r inget inneh\303\245ll \303\244r laddat.",
    "Bl\303\244ddra igenom dessa alternativ f\303\266r att justera de horisontella inst\303\244llning"
    "arna och \303\244ndra bildstorleken.",
-   "Endast f\303\266r CRT-sk\303\244rmar. F\303\266rs\303\266ker att anv\303\244nda exakt k\303\244r"
-   "na/speluppl\303\266sning och uppdateringsfrekvens.",
    "V\303\244xla mellan inbyggda och ultravida superuppl\303\266sningar.",
    "Anv\303\244nd en anpassad uppdateringsfrekvens som anges i konfigurationsfilen om det beh\303"
    "\266vs.",
@@ -7464,6 +7474,10 @@ static const struct
    "igeras till en annan anv\303\244ndare. Observera! Snabbtangenterna p\303\245 tangentbordet funge"
    "rar inte om k\303\244rnport 1 omdirigeras till n\303\245gon annan anv\303\244ndare \303\244n > 1"
    " (tangentbordsinmatningen kommer fr\303\245n anv\303\244ndare 1).",
+   "Ta emot handkontrollindata n\303\244r RetroArch inte \303\244r det aktiva f\303\266nstret. N\303"
+   "\244r funktionen \303\244r avst\303\244ngd ignoreras handkontroller n\303\244r f\303\266nstret s"
+   "aknar fokus: menyn, snabbtangenterna och det k\303\266rande inneh\303\245llet reagerar inte p"
+   "\303\245 dem.",
    "H\303\266gsta antal anv\303\244ndare som RetroArch har st\303\266d f\303\266r. (Omstart kr\303"
    "\244vs)",
    "Spelkontrolls knappkombination f\303\266r att visa/d\303\266lj menyn.",
@@ -7906,6 +7920,11 @@ static const struct
    "Spelar upp ljudsp\303\245ret f\303\266r animerade WebM-miniatyrbilder medan de visas. Ljud i Vor"
    "bis och Opus st\303\266ds. Ljudet loopas med animeringen och stoppas n\303\244r miniatyrbilden s"
    "t\303\244ngs.",
+   "Hur m\303\245nga tr\303\245dar som omvandlar varje bildruta i en animerad WebM- eller MP4-miniat"
+   "yrbild till pixlar. En tr\303\245d beh\303\245ller hela omvandlingen p\303\245 avkodningstr\303"
+   "\245den. Fler tr\303\245dar sprider den \303\266ver k\303\244rnor, vilket hj\303\244lper stora f"
+   "\303\266rhandsvisningar p\303\245 maskiner med lediga k\303\244rnor men kostar den k\303\266rand"
+   "e k\303\244rnan dessa tr\303\245dar p\303\245 maskiner utan s\303\245dana.",
    "Uppskala automatiskt miniatyrbilder med en bredd/h\303\266jd som \303\244r mindre \303\244n det "
    "angivna v\303\244rdet. F\303\266rb\303\244ttrar bildkvalit\303\251n. Har en m\303\245ttlig inver"
    "kan p\303\245 prestanda.",
@@ -9592,7 +9611,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (192766u
+      (sizeof(msg_hash_sv_blob) == (193611u
 #ifdef ANDROID
        + 361u
 #endif
@@ -10267,6 +10286,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
@@ -10847,6 +10867,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
@@ -11228,6 +11249,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -12419,6 +12441,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
@@ -12624,7 +12647,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -12741,6 +12763,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -13013,6 +13036,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,

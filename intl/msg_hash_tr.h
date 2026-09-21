@@ -2482,7 +2482,6 @@ static const struct
    char s_79b8ce4a[86];
    char s_a1a8257e[130];
    char s_282f7955[116];
-   char s_d5231783[114];
    char s_a68d6d11[74];
    char s_74022c02[86];
    char s_8abad013[86];
@@ -6895,9 +6894,6 @@ static const struct
    "G\303\266r\303\274nt\303\274 boyutunu de\304\237i\305\237tirmek i\303\247in yatay ayarlar\304"
    "\261 d\303\274zenlemek \303\274zere bu se\303\247enekler aras\304\261nda ge\303\247i\305\237 yap"
    "\304\261n.",
-   "Sadece CRT ekranlar i\303\247in. Tam \303\247ekirdek/oyun \303\247\303\266z\303\274n\303\274rl"
-   "\303\274\304\237\303\274n\303\274 ve yenileme h\304\261z\304\261n\304\261 kullanmaya \303\247al"
-   "\304\261\305\237\304\261r.",
    "Do\304\237al ve ultrageni\305\237 s\303\274per \303\247\303\266z\303\274n\303\274rl\303\274kler "
    "aras\304\261nda ge\303\247i\305\237 yap\304\261n.",
    "Gerekirse, yap\304\261land\304\261rma dosyas\304\261nda belirtilen \303\266zel bir yenileme h"
@@ -9176,7 +9172,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170473u
+      (sizeof(msg_hash_tr_blob) == (170359u
 #ifdef ANDROID
        + 340u
 #endif
@@ -12016,7 +12012,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

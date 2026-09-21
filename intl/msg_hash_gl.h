@@ -2578,7 +2578,6 @@ static const struct
    char s_79b8ce4a[72];
    char s_a1a8257e[108];
    char s_282f7955[99];
-   char s_d5231783[100];
    char s_a68d6d11[56];
    char s_74022c02[81];
    char s_8abad013[90];
@@ -7000,8 +6999,6 @@ static const struct
    "on se cargou ning\303\272n contido.",
    "Alterna entre estas opci\303\263ns para axustar os par\303\241metros horizontais e cambiar o tam"
    "a\303\261o da imaxe.",
-   "S\303\263 para pantallas CRT. Tenta usar a resoluci\303\263n e tasa de refresco exactas para cad"
-   "a n\303\272cleo/xogo.",
    "Cambia entre super resoluci\303\263ns nativas ou ultraanchas.",
    "Usa unha tasa de refresco especificada no arquivo de configuracion se o precisa.",
    "Vai xirando sobre estas opci\303\263ns se a imaxe non est\303\241 correctamente centrada na pant"
@@ -9088,7 +9085,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (193457u
+      (sizeof(msg_hash_gl_blob) == (193357u
 #ifdef ANDROID
        + 365u
 #endif
@@ -12043,7 +12040,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

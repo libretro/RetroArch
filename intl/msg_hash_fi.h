@@ -2262,7 +2262,6 @@ static const struct
    char s_9831f77b[167];
    char s_79b8ce4a[92];
    char s_a1a8257e[114];
-   char s_d5231783[100];
    char s_a68d6d11[60];
    char s_74022c02[90];
    char s_8abad013[72];
@@ -5828,8 +5827,6 @@ static const struct
    "i CRT-n\303\244ytt\303\266jen kanssa.",
    "Vaihda korkean resoluution tilaan k\303\244ytett\303\244v\303\244ksi korkean resoluution valikos"
    "sa, kun sis\303\244lt\303\266\303\244 ei ole ladattu.",
-   "Vain CRT-n\303\244yt\303\266ille. Yritt\303\244\303\244 k\303\244ytt\303\244\303\244 samaa resol"
-   "uutiota ja virkistystaajuutta kuin ydin/peli.",
    "Vaihda natiivin ja ultraleve\303\244n superresoluution v\303\244lill\303\244.",
    "K\303\244yt\303\244 tarvittaessa mukautettua kokoonpanotiedostossa m\303\244\303\244ritetty\303"
    "\244 virkistystaajuutta.",
@@ -7456,7 +7453,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123856u
+      (sizeof(msg_hash_fi_blob) == (123756u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -10008,7 +10005,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

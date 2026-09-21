@@ -2752,7 +2752,6 @@ static const struct
    char s_79b8ce4a[113];
    char s_a1a8257e[123];
    char s_282f7955[100];
-   char s_d5231783[148];
    char s_a68d6d11[75];
    char s_74022c02[121];
    char s_8abad013[78];
@@ -7595,8 +7594,6 @@ static const struct
    "\251solution quand aucun contenu n'est charg\303\251.",
    "Parcourez ces options pour ajuster les r\303\251glages horizontaux afin de modifier la taille de"
    " l'image.",
-   "Pour les \303\251crans \303\240 tube cathodique (CRT) uniquement. Tente d'utiliser la r\303\251s"
-   "olution exacte du c\305\223ur/du jeu et sa fr\303\251quence de rafra\303\256chissement.",
    "Basculer entre les super r\303\251solutions natives et ultra-larges (UltraWide).",
    "Utiliser une fr\303\251quence de rafra\303\256chissement personnalis\303\251e sp\303\251cifi\303"
    "\251e dans le fichier de configuration si n\303\251cessaire.",
@@ -10055,7 +10052,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (236049u
+      (sizeof(msg_hash_fr_blob) == (235901u
 #ifdef ANDROID
        + 373u
 #endif
@@ -13196,7 +13193,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

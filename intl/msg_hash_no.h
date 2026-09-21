@@ -948,7 +948,6 @@ static const struct
    char s_48e88dc4[129];
    char s_79b8ce4a[62];
    char s_a1a8257e[113];
-   char s_d5231783[112];
    char s_a68d6d11[56];
    char s_74022c02[89];
    char s_8abad013[82];
@@ -2218,8 +2217,6 @@ static const struct
    "Send ut innebygde, lavoppl\303\270selige signaler for CRT-skjermer.",
    "Bytt til modeline med h\303\270y oppl\303\270sning for bruk med h\303\270yoppl\303\270selige men"
    "yer n\303\245r ikke noe innhold er lastet inn.",
-   "Kun for CRT skjermer. Denne innstillingen pr\303\270ver \303\245 bruke eksakt kjernen/spilloppl"
-   "\303\270sning og oppfriskingsrate.",
    "Bytt mellom innebygde og ultrabrede superoppl\303\270sninger.",
    "Bruk en egendefinert oppdateringsrate spesifisert i konfigurasjonsfilen hvis n\303\270dvendig.",
    "Bla gjennom disse alternativene hvis bildet ikke er sentrert riktig p\303\245 skjermen.",
@@ -2582,7 +2579,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (28870u
+      (sizeof(msg_hash_no_blob) == (28758u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3660,7 +3657,6 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

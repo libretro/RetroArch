@@ -2493,7 +2493,6 @@ static const struct
    char s_79b8ce4a[72];
    char s_a1a8257e[119];
    char s_282f7955[108];
-   char s_d5231783[102];
    char s_a68d6d11[53];
    char s_74022c02[104];
    char s_8abad013[82];
@@ -6697,8 +6696,6 @@ static const struct
    " inhoud wordt geladen.",
    "Ga door deze opties heen om de horizontale instellingen aan te passen om de afbeeldingsgrootte t"
    "e wijzigen.",
-   "Alleen voor CRT-schermen. Pogingen om exacte core-/spelresolutie en verversingssnelheid te gebru"
-   "iken.",
    "Schakel tussen native en ultrabrede superresoluties.",
    "Gebruik indien nodig een aangepaste vernieuwingsfrequentie die is opgegeven in het configuratieb"
    "estand.",
@@ -8568,7 +8565,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (173931u
+      (sizeof(msg_hash_nl_blob) == (173829u
 #ifdef ANDROID
        + 375u
 #endif
@@ -11453,7 +11450,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

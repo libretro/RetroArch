@@ -2796,7 +2796,6 @@ static const struct
    char s_79b8ce4a[92];
    char s_a1a8257e[136];
    char s_282f7955[134];
-   char s_d5231783[145];
    char s_a68d6d11[85];
    char s_74022c02[108];
    char s_8abad013[111];
@@ -8818,10 +8817,6 @@ static const struct
    "\221i\341\273\201u ch\341\273\211nh c\303\240i \304\221\341\272\267t theo chi\341\273\201u ngang"
    " nh\341\272\261m thay \304\221\341\273\225i k\303\255ch th\306\260\341\273\233c h\303\254nh \341"
    "\272\243nh.",
-   "Ch\341\273\211 d\303\240nh cho m\303\240n h\303\254nh CRT. C\341\273\221 g\341\272\257ng s\341"
-   "\273\255 d\341\273\245ng \304\221\341\273\231 ph\303\242n gi\341\272\243i tr\303\254nh gi\341"
-   "\272\243 l\341\272\255p/tr\303\262 ch\306\241i v\303\240 t\341\273\221c \304\221\341\273\231 l"
-   "\303\240m m\341\273\233i ch\303\255nh x\303\241c.",
    "Chuy\341\273\203n \304\221\341\273\225i gi\341\273\257a \304\221\341\273\231 ph\303\242n gi\341"
    "\272\243i g\341\273\221c v\303\240 \304\221\341\273\231 ph\303\242n gi\341\272\243i si\303\252u "
    "r\341\273\231ng.",
@@ -12941,7 +12936,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (251388u
+      (sizeof(msg_hash_vn_blob) == (251243u
 #ifdef ANDROID
        + 373u
 #endif
@@ -16128,7 +16123,6 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

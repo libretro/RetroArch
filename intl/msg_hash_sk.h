@@ -2551,7 +2551,6 @@ static const struct
    char s_79b8ce4a[71];
    char s_a1a8257e[132];
    char s_282f7955[94];
-   char s_d5231783[100];
    char s_a68d6d11[66];
    char s_74022c02[95];
    char s_8abad013[91];
@@ -7083,8 +7082,6 @@ static const struct
    "an\303\275 \305\276iaden obsah.",
    "Cyklujte cez tieto mo\305\276nosti pre \303\272pravu horizont\303\241lnych nastaven\303\255 a zm"
    "enu ve\304\276kosti obrazu.",
-   "Iba pre CRT displeje. Pok\303\272\305\241a sa pou\305\276i\305\245 presn\303\251 rozl\303\255"
-   "\305\241enie jadra/hry a obnovovaciu frekvenciu.",
    "Prep\303\255nanie medzi nat\303\255vnym a ultra\305\241irok\303\275m super rozl\303\255\305\241e"
    "n\303\255m.",
    "V pr\303\255pade potreby pou\305\276ite vlastn\303\272 obnovovaciu frekvenciu uveden\303\272 v k"
@@ -9433,7 +9430,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (179070u
+      (sizeof(msg_hash_sk_blob) == (178970u
 #ifdef ANDROID
        + 389u
 #endif
@@ -12384,7 +12381,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

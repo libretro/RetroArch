@@ -2559,7 +2559,6 @@ static const struct
    char s_79b8ce4a[92];
    char s_a1a8257e[104];
    char s_282f7955[80];
-   char s_d5231783[130];
    char s_a68d6d11[66];
    char s_74022c02[100];
    char s_8abad013[83];
@@ -7197,9 +7196,6 @@ static const struct
    "\241lat\303\241hoz, amikor nincs tartalom bet\303\266ltve.",
    "A k\303\274l\303\266nf\303\251le be\303\241ll\303\255t\303\241sok k\303\266zt v\303\241ltva v"
    "\303\241ltozik a v\303\255zszintes k\303\251pm\303\251ret.",
-   "Csak kat\303\263dsug\303\241rcs\303\266ves kijelz\305\221kh\303\266z. A mag/j\303\241t\303\251k "
-   "pontos felbont\303\241s\303\241t \303\251s friss\303\255t\303\251si gyakoris\303\241g\303\241t p"
-   "r\303\263b\303\241lja alkalmazni.",
    "V\303\241lt\303\241s az eredeti \303\251s az ultrasz\303\251les szuperfelbont\303\241sok k\303"
    "\266zt.",
    "Ha sz\303\274ks\303\251ges, haszn\303\241ljon a konfigur\303\241ci\303\263s f\303\241jlban megad"
@@ -9715,7 +9711,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (188558u
+      (sizeof(msg_hash_hu_blob) == (188428u
 #ifdef ANDROID
        + 316u
 #endif
@@ -12661,7 +12657,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,

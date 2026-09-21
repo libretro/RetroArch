@@ -527,7 +527,6 @@ static const struct
    char s_48e88dc4[154];
    char s_79b8ce4a[92];
    char s_a1a8257e[104];
-   char s_d5231783[131];
    char s_a68d6d11[50];
    char s_74022c02[115];
    char s_8abad013[71];
@@ -1251,8 +1250,6 @@ static const struct
    "\262dics (CRT).",
    "Canvia els men\303\272s a l\303\255nia de mode (modeline) en alta resoluci\303\263 quan no s'haj"
    "a carregat cap contingut.",
-   "Nom\303\251s per a pantalles de tub de raigs cat\303\262dics (CRT). Provar\303\240 d'usar-se la "
-   "resoluci\303\263 i refresc d'imatge exactes del nucli/joc.",
    "Canvia entre resolucions natives o panor\303\240miques.",
    "Usar par\303\240metres de freq\303\274\303\250ncia de refresc d'imatge especificats en l'arxiu d"
    "e configuraci\303\263 si es veu necessari.",
@@ -1522,7 +1519,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25635u
+      (sizeof(msg_hash_val_blob) == (25504u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2132,7 +2129,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
