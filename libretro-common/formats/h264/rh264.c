@@ -1517,6 +1517,9 @@ typedef struct {
    uint8_t *Yb,*Ub,*Vb;
    int ysb,csb,mbh_frame,field;
    int mbaff;             /* macroblock pairs, scanned two rows at a time */
+   size_t plane_len;      /* the plane block's length, for a fresh one */
+   struct rh264_mv_s *mvg_meta, *mvg2_meta; /* the grids carved out of meta */
+   int mvg_shared;        /* mvg/mvg2 are one counted block, not meta's */
    /* chroma rows per macroblock: 8 for 4:2:0, 16 for 4:2:2 and 4:4:4,
     * where chroma keeps the luma height */
    int cmbh;
@@ -4946,9 +4949,135 @@ struct rh264_video
 
 /* ---- allocation helpers ---- */
 
+/* A frame's plane block carries a reference count in a header ahead
+ * of the samples, so a decoded picture can be at once the working
+ * frame's, a reference in the DPB and a picture waiting to be shown
+ * without being copied between them: each holder takes a reference,
+ * and the block goes when the last one lets go. The header keeps the
+ * samples 64-byte aligned, which is what the arena layout assumes. */
+#define RH264_PLANES_HDR 64
+
+static uint8_t *rh264_planes_new(size_t len)
+{
+   uint8_t *mem = (uint8_t*)calloc(len + RH264_PLANES_HDR, 1);
+   if (!mem)
+      return NULL;
+   *(int*)mem = 1;
+   return mem + RH264_PLANES_HDR;
+}
+
+static void rh264_planes_release(uint8_t *planes)
+{
+   if (!planes)
+      return;
+   {
+      uint8_t *mem = planes - RH264_PLANES_HDR;
+      if (--*(int*)mem == 0)
+         free(mem);
+   }
+}
+
+static int rh264_planes_refs(const uint8_t *planes)
+{
+   return planes ? *(const int*)(planes - RH264_PLANES_HDR) : 0;
+}
+
+/* @dst takes @src's plane block, letting go of whatever it held. The
+ * geometry is the same on both sides: every frame here is allocated
+ * from the one SPS. */
+static void rh264_frame_share_planes(rh264_frame *dst, const rh264_frame *src)
+{
+   if (dst->planes == src->planes)
+      return;
+   rh264_planes_release(dst->planes);
+   dst->planes = src->planes;
+   ++*(int*)(dst->planes - RH264_PLANES_HDR);
+   dst->Yb = src->Yb; dst->Ub = src->Ub; dst->Vb = src->Vb;
+   dst->Y  = dst->Yb; dst->U  = dst->Ub; dst->V  = dst->Vb;
+}
+
+/* A frame about to be written into needs a block of its own: while
+ * another holder shares the one it has, it takes a fresh one, keeping
+ * the layout (the plane views are offsets into the block). */
+static int rh264_frame_own_planes(rh264_frame *f, size_t plane_len)
+{
+   uint8_t *fresh;
+   size_t o_ub, o_vb;
+   if (rh264_planes_refs(f->planes) <= 1)
+      return 0;
+   o_ub  = (size_t)(f->Ub - f->planes);
+   o_vb  = (size_t)(f->Vb - f->planes);
+   fresh = rh264_planes_new(plane_len);
+   if (!fresh)
+      return -1;
+   rh264_planes_release(f->planes);
+   f->planes = fresh;
+   f->Yb = fresh; f->Ub = fresh + o_ub; f->Vb = fresh + o_vb;
+   f->Y  = f->Yb; f->U  = f->Ub; f->V  = f->Vb;
+   return 0;
+}
+
+/* The motion-vector grid of a reference picture gets the same
+ * treatment as its samples: one counted block, shared with the
+ * picture's working grid rather than copied into the slot. A frame
+ * picture's motion stands for both parities, so mvg and mvg2 point at
+ * the one block; field pairs keep the copy into the frame's own
+ * grids, which stay carved out of meta. mvg_shared says which the
+ * slot holds, since only a counted block is released. */
+static rh264_mv *rh264_mvg_new(size_t cells)
+{
+   uint8_t *mem = (uint8_t*)calloc(cells * sizeof(rh264_mv) + RH264_PLANES_HDR, 1);
+   if (!mem)
+      return NULL;
+   *(int*)mem = 1;
+   return (rh264_mv*)(mem + RH264_PLANES_HDR);
+}
+
+static void rh264_mvg_release(rh264_mv *g)
+{
+   if (!g)
+      return;
+   {
+      uint8_t *mem = (uint8_t*)g - RH264_PLANES_HDR;
+      if (--*(int*)mem == 0)
+         free(mem);
+   }
+}
+
+static int rh264_mvg_refs(const rh264_mv *g)
+{
+   return g ? *(const int*)((const uint8_t*)g - RH264_PLANES_HDR) : 0;
+}
+
+/* The slot takes the working grid; whatever counted block it held
+ * goes, and a meta-carved grid is simply no longer pointed at. */
+static void rh264_frame_share_mvg(rh264_frame *dst, rh264_mv *g)
+{
+   if (dst->mvg_shared)
+      rh264_mvg_release(dst->mvg);
+   ++*(int*)((uint8_t*)g - RH264_PLANES_HDR);
+   dst->mvg        = g;
+   dst->mvg2       = g;
+   dst->mvg_shared = 1;
+}
+
+/* A field about to be copied into the slot's grids needs the frame's
+ * own, meta-carved ones back. */
+static void rh264_frame_own_mvg(rh264_frame *f)
+{
+   if (!f->mvg_shared)
+      return;
+   rh264_mvg_release(f->mvg);
+   f->mvg        = f->mvg_meta;
+   f->mvg2       = f->mvg2_meta;
+   f->mvg_shared = 0;
+}
+
 static void rh264_frame_free(rh264_frame *f)
 {
-   free(f->planes);
+   rh264_planes_release(f->planes);
+   if (f->mvg_shared)
+      rh264_mvg_release(f->mvg);
    free(f->meta);
    memset(f, 0, sizeof(*f));
 }
@@ -5028,7 +5157,8 @@ static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps,
    o_tbsave  = RH264_ARENA_NEXT(o_mc,      with_scratch ? (size_t)4096 : 0);
    meta_len  = RH264_ARENA_NEXT(o_tbsave,  with_scratch ? sizeof(struct rh264_tb_save_s) : 0);
 
-   f->planes = (uint8_t*)calloc(plane_len, 1);
+   f->planes = rh264_planes_new(plane_len);
+   f->plane_len = plane_len;
    f->meta   = (uint8_t*)calloc(meta_len, 1);
    if (!f->planes || !f->meta)
    {
@@ -5050,6 +5180,8 @@ static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps,
    {
       f->mvg  = (rh264_mv*)(f->meta + o_mvg);
       f->mvg2 = (rh264_mv*)(f->meta + o_mvg2);
+      f->mvg_meta  = f->mvg;
+      f->mvg2_meta = f->mvg2;
    }
    if (with_scratch)
    {
@@ -5102,7 +5234,21 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
    if (!v->have_sps) return -1;
    if (v->f.Yb && v->alloc_w == v->sps.frame_width
               && v->alloc_h == v->sps.frame_height)
-      return 0;
+   {
+      /* Same geometry: the working frame stands, but its samples and
+       * its motion grid may now be a reference's or a queued picture's
+       * (they were shared at the last finish rather than copied). The
+       * next picture is written into blocks of its own. */
+      if (v->pic_mvg && rh264_mvg_refs(v->pic_mvg) > 1)
+      {
+         rh264_mv *fresh = rh264_mvg_new((size_t)(v->f.mbw * 4) * (v->f.mbh * 4));
+         if (!fresh)
+            return -1;
+         rh264_mvg_release(v->pic_mvg);
+         v->pic_mvg = fresh;
+      }
+      return rh264_frame_own_planes(&v->f, v->f.plane_len);
+   }
    if (rh264_frame_alloc(&v->f, &v->sps, RH264_FRAME_ALLOC_WORKING) != 0) return -1;
    {
       int n = v->sps.max_num_ref_frames, i;
@@ -5118,13 +5264,13 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
       v->out_len = 0; v->out_show = -1;
    }
    free(v->mvg);
-   free(v->pic_mvg);
+   rh264_mvg_release(v->pic_mvg);
    {
       int gwmax = v->f.mbw * 4;
       int ghmax = (v->sps.frame_mbs > 0 ? v->sps.frame_mbs
                  : (v->sps.frame_height + 15) / 16) * 4;
       v->mvg = (rh264_mv*)calloc((size_t)gwmax * ghmax, sizeof(rh264_mv));
-      v->pic_mvg = (rh264_mv*)calloc((size_t)gwmax * ghmax, sizeof(rh264_mv));
+      v->pic_mvg = rh264_mvg_new((size_t)gwmax * ghmax);
       if (!v->mvg || !v->pic_mvg) return -1;
    }
    v->pic_open = 0;
@@ -5197,7 +5343,7 @@ void rh264_video_close(rh264_video *v)
    }
    free(v->rbsp_scratch);
    free(v->mvg);
-   free(v->pic_mvg);
+   rh264_mvg_release(v->pic_mvg);
    rh264_vlc_free(&v->vlc);
    free(v);
 }
@@ -8413,6 +8559,11 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
  * geometry). Used to place the just-decoded picture into the reference list. */
 static void rh264_frame_copy_planes(rh264_frame *dst, const rh264_frame *src)
 {
+   /* The destination may be sharing its block with a picture waiting
+    * to be shown or a reference still in use: a field written into it
+    * must not land in those. */
+   if (rh264_frame_own_planes(dst, dst->plane_len) < 0)
+      return;
    memcpy(dst->Yb, src->Yb, RH264_OFF(src, (size_t)src->ysb * src->mbh_frame * 16));
    memcpy(dst->Ub, src->Ub, RH264_OFF(src, (size_t)src->csb * src->mbh_frame * src->cmbh));
    memcpy(dst->Vb, src->Vb, RH264_OFF(src, (size_t)src->csb * src->mbh_frame * src->cmbh));
@@ -8604,15 +8755,7 @@ static int rh264_out_push(rh264_video *v, int poc, int is_idr)
        * the same SPS so the geometry is identical.  Field pairs keep
        * the copy - their two pictures fill the working planes
        * incrementally, which a swapped-in stale buffer would break. */
-      uint8_t *ty = v->out[slot].Yb, *tu = v->out[slot].Ub,
-              *tv = v->out[slot].Vb, *tp = v->out[slot].planes;
-      v->out[slot].Yb = v->f.Yb; v->out[slot].Ub = v->f.Ub;
-      v->out[slot].Vb = v->f.Vb; v->out[slot].planes = v->f.planes;
-      v->f.Yb = ty; v->f.Ub = tu; v->f.Vb = tv; v->f.planes = tp;
-      v->f.Y = v->f.Yb; v->f.U = v->f.Ub; v->f.V = v->f.Vb;
-      v->out[slot].Y = v->out[slot].Yb;
-      v->out[slot].U = v->out[slot].Ub;
-      v->out[slot].V = v->out[slot].Vb;
+      rh264_frame_share_planes(&v->out[slot], &v->f);
       v->out[slot].qp = v->f.qp;
       v->out[slot].chroma_qp_offset  = v->f.chroma_qp_offset;
       v->out[slot].chroma_qp_offset2 = v->f.chroma_qp_offset2;
@@ -8873,8 +9016,9 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
       if (v->last_poc < v->dpb_poc[slot])
       { v->dpb_poc[slot] = v->last_poc; v->dpb[slot].poc = v->last_poc; }
       {
-         rh264_mv *g = (v->cur_field == 2) ? v->dpb[slot].mvg2
-                                           : v->dpb[slot].mvg;
+         rh264_mv *g;
+         rh264_frame_own_mvg(&v->dpb[slot]);
+         g = (v->cur_field == 2) ? v->dpb[slot].mvg2 : v->dpb[slot].mvg;
          if (g && v->pic_mvg)
             memcpy(g, v->pic_mvg,
                   (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
@@ -8904,7 +9048,14 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
          if (!used) { slot = i; break; }
       }
    }
-   rh264_frame_copy_planes(&v->dpb[slot], &v->f);
+   /* A frame picture is one block: the reference is the working
+    * frame's samples, shared, and the working frame takes a fresh
+    * block for the next picture (see rh264_video_finish_picture). A
+    * field pair fills its block a field at a time and is copied. */
+   if (v->cur_field)
+      rh264_frame_copy_planes(&v->dpb[slot], &v->f);
+   else
+      rh264_frame_share_planes(&v->dpb[slot], &v->f);
    v->dpb_fields[slot] = (uint8_t)(v->cur_field ? (1 << (v->cur_field - 1))
                                                 : 3);
    v->pair_slot = (v->cur_field && v->pair_open) ? slot : -1;
@@ -8915,16 +9066,20 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
    v->dpb_pn[slot] = picnum;
    v->dpb_poc[slot] = v->last_poc;
    v->dpb[slot].poc = v->last_poc;
+   if (!v->cur_field && v->pic_mvg)
    {
-      /* a frame picture's motion goes in the top slot and stands for
-       * both parities; a first field goes in the slot for its own */
-      rh264_mv *g = (v->cur_field == 2) ? v->dpb[slot].mvg2
-                                        : v->dpb[slot].mvg;
+      /* a frame picture's motion stands for both parities: the slot
+       * takes the working grid itself, for both */
+      rh264_frame_share_mvg(&v->dpb[slot], v->pic_mvg);
+   }
+   else
+   {
+      /* a first field goes in the slot's own grid for its parity */
+      rh264_mv *g;
+      rh264_frame_own_mvg(&v->dpb[slot]);
+      g = (v->cur_field == 2) ? v->dpb[slot].mvg2 : v->dpb[slot].mvg;
       if (g && v->pic_mvg)
          memcpy(g, v->pic_mvg,
-               (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
-      if (!v->cur_field && v->dpb[slot].mvg2 && v->pic_mvg)
-         memcpy(v->dpb[slot].mvg2, v->pic_mvg,
                (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
    }
    v->dpb_lt[slot] = (signed char)lt;
@@ -9416,6 +9571,11 @@ static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
             && rh264_out_push(v, v->cur_field?v->pair_poc:v->last_poc, epoch) >= 0)
          *got_pic = 1;
    }
+   /* The picture's samples now belong to the DPB and the output queue
+    * as well; the next picture must not write over them. A frame
+    * picture leaves the working frame holding a shared block, and the
+    * write into the next one takes a fresh block on its way in, in
+    * rh264_frame_alloc_if_needed. */
    v->pic_open = 0;
 }
 
