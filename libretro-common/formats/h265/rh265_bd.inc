@@ -753,8 +753,11 @@ static void RH265_FN(deblock_frame)(rh265_dec *d)
       }
 }
 
+/* @src holds the deblocked, pre-SAO samples from picture row @src_y0
+ * down, at @src_stride: a band of one CTB row with a line above and
+ * below, not a copy of the picture. */
 static void RH265_FN(sao_ctb)(rh265_dec *d, const RH265_PEL *src,
-      int src_stride,
+      int src_stride, int src_y0,
       int c_idx, int rx, int ry)
 {
    const rh265_sao_params *sao = &d->sao[ry * d->sps->ctb_w + rx];
@@ -766,7 +769,7 @@ static void RH265_FN(sao_ctb)(rh265_dec *d, const RH265_PEL *src,
    int h = rh265_min(ctb, d->ph[c_idx] - y0);
    RH265_PEL *dst = (RH265_PEL*)d->pl[c_idx]
          + y0 * d->strd[c_idx] + x0;
-   const RH265_PEL *s = src + y0 * src_stride + x0;
+   const RH265_PEL *s = src + (y0 - src_y0) * src_stride + x0;
    int x, y;
 
    if (sao->type_idx[c_idx] == 1)
@@ -839,7 +842,6 @@ static int RH265_FN(sao_frame)(rh265_dec *d)
 {
    const rh265_sps *sps = d->sps;
    int c_idx, rx, ry;
-   RH265_PEL *copy[3];
    int need = 0;
    for (ry = 0; ry < sps->ctb_h && !need; ry++)
       for (rx = 0; rx < sps->ctb_w && !need; rx++)
@@ -850,27 +852,60 @@ static int RH265_FN(sao_frame)(rh265_dec *d)
       }
    if (!need)
       return 0;
+   /* SAO reads the deblocked samples around each one and writes in
+    * place, so the CTB row being filtered - and the line above, which
+    * the previous row's pass has already changed, and the line below,
+    * which the next row's has not - is read from a band copied ahead
+    * of the pass: one CTB row and two lines, kept with the decoder,
+    * rather than the whole picture copied and freed per picture. The
+    * line above comes from the previous band, where it is still
+    * pre-SAO; the rest from the picture. */
    for (c_idx = 0; c_idx < 3; c_idx++)
    {
-      copy[c_idx] = (RH265_PEL*)malloc((size_t)d->strd[c_idx]
-            * d->ph[c_idx] * sizeof(RH265_PEL));
-      if (!copy[c_idx])
+      int shift  = c_idx ? 1 : 0;
+      int ctb    = 1 << (sps->log2_ctb - shift);
+      size_t row = (size_t)d->strd[c_idx] * sizeof(RH265_PEL);
+      size_t cap = row * (size_t)(ctb + 2);
+      if (d->sao_band_cap[c_idx] < cap)
       {
-         while (c_idx--) free(copy[c_idx]);
-         return -1;
+         void *b = realloc(d->sao_band[c_idx], cap);
+         if (!b)
+            return -1;
+         d->sao_band[c_idx]     = b;
+         d->sao_band_cap[c_idx] = cap;
       }
-      memcpy(copy[c_idx], d->pl[c_idx], (size_t)d->strd[c_idx]
-            * d->ph[c_idx] * sizeof(RH265_PEL));
    }
    for (ry = 0; ry < sps->ctb_h; ry++)
+   {
+      for (c_idx = 0; c_idx < 3; c_idx++)
+      {
+         int shift  = c_idx ? 1 : 0;
+         int ctb    = 1 << (sps->log2_ctb - shift);
+         int y0     = ry << (sps->log2_ctb - shift);
+         int h      = rh265_min(ctb, d->ph[c_idx] - y0);
+         int below  = (y0 + h < d->ph[c_idx]) ? 1 : 0;
+         size_t row = (size_t)d->strd[c_idx] * sizeof(RH265_PEL);
+         uint8_t *band = (uint8_t*)d->sao_band[c_idx];
+         const uint8_t *pic = d->pl[c_idx];
+         if (ry > 0)
+         {
+            /* the line above: the previous band's last CTB line,
+             * still as deblocked */
+            int hp = rh265_min(ctb, d->ph[c_idx] - (y0 - ctb));
+            memmove(band, band + (size_t)hp * row, row);
+         }
+         memcpy(band + row, pic + (size_t)y0 * row, row * (size_t)(h + below));
+      }
       for (rx = 0; rx < sps->ctb_w; rx++)
          for (c_idx = 0; c_idx < 3; c_idx++)
-            RH265_FN(sao_ctb)(d, copy[c_idx], d->strd[c_idx],
-                  c_idx, rx, ry);
-   for (c_idx = 0; c_idx < 3; c_idx++)
-      free(copy[c_idx]);
+         {
+            int shift = c_idx ? 1 : 0;
+            int y0    = ry << (sps->log2_ctb - shift);
+            RH265_FN(sao_ctb)(d, (const RH265_PEL*)d->sao_band[c_idx],
+                  d->strd[c_idx], y0 - 1, c_idx, rx, ry);
+         }
+   }
    return 0;
 }
-
 #undef RH265_PIX_MAX
 #undef RH265_HALF

@@ -1466,6 +1466,8 @@ typedef struct
 
    uint8_t *pl[3];            /* aliases of the current picture's planes */
    int strd[3];
+   void  *sao_band[3];        /* SAO's band of deblocked samples, per plane */
+   size_t sao_band_cap[3];
    int pw[3], ph[3];
 
    /* current picture and its reference lists */
@@ -4843,6 +4845,9 @@ void rh265_video_close(rh265_video *v)
       return;
    rh265_free_frame(v);
    free(v->nal_scratch);
+   free(v->d.sao_band[0]);
+   free(v->d.sao_band[1]);
+   free(v->d.sao_band[2]);
    free(v->shadows);
    free(v->row_off);
    free(v->row_ctx);

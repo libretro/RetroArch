@@ -51,6 +51,8 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
    void *s = image_transfer_anim_stream_new((void*)buf, len, type);
    tpool_t *pool = NULL;
    int n = 0, nf = 0, loops = 0, dur;
+   int hash_on = getenv("BENCH_HASH") != NULL;
+   uint32_t hash = 2166136261u;
    int64_t t0, main_cpu0 = 0, proc_cpu0 = 0;
    const uint32_t *px;
 
@@ -87,6 +89,15 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
       if (!px)
          break;
       n++;
+      /* BENCH_HASH: a hash over every frame's pixels, so two builds
+       * of the decoders can be held to the same output on a file. */
+      if (hash_on)
+      {
+         const uint32_t *q = px;
+         size_t k, cnt = (size_t)*w * *h;
+         for (k = 0; k < cnt; k++)
+            hash = (hash ^ q[k]) * 16777619u;
+      }
       /* BENCH_LOG: name the frames that took longer than a third of a
        * second, which is what a viewer sees as a stall. */
       if (getenv("BENCH_LOG") && f1 - f0 > 300000)
@@ -99,6 +110,8 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
          break;
    }
    *usec = cpu_features_get_time_usec() - t0;
+   if (hash_on)
+      printf("      frames hash %08x over %d frames\n", (unsigned)hash, n);
 #if defined(CLOCK_THREAD_CPUTIME_ID) && defined(CLOCK_PROCESS_CPUTIME_ID)
    if (getenv("CPU_SPLIT"))
    {
