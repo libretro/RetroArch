@@ -86,6 +86,12 @@ void rh264_video_set_skip_nonref(rh264_video *v, int skip);
  * reordering, but this one's presentation slot has gone. */
 int rh264_video_dropped(const rh264_video *v);
 
+/* For the decoder's own samples: how many times a reference read found
+ * the rows it needed not yet final. On a single thread that is zero
+ * by construction, and a sample asserts it; it is the count a
+ * threaded decoder would have waited on. */
+int rh264_video_ref_wait_misses(void);
+
 int rh264_video_bit_depth(const rh264_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */

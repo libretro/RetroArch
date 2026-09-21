@@ -1594,6 +1594,12 @@ typedef struct {
    int rows_deblocked;
 } rh264_frame;
 
+/* The counted block behind a frame's planes (defined with the block
+ * allocator below); its row counter is what a reference read waits on. */
+struct rh264_block_hdr;
+static struct rh264_block_hdr *rh264_block_of(const void *data);
+static int rh264_block_rows_final(const void *data);
+
 /* store one raw sample (I_PCM) at sample index 'i' of a plane pointer */
 static RH264_INLINE void rh264_pcm_put(const rh264_frame *f, uint8_t *p,
       size_t i, unsigned v)
@@ -3022,6 +3028,43 @@ static void rh264_inter_clear_i4mode(rh264_frame *f, int mbx, int mby)
 /* Motion-compensate a luma partition (bw x bh px at MB-relative bx,by) from
  * the reference frame into the current frame, using quarter-pel MV. Also does
  * the matching chroma (half size). */
+/* Before a reference is read: the rows the read reaches must be final.
+ * A block of @bh lines at @oy displaced by @mvy (quarter-pel) with the
+ * six-tap filter reaches three lines past its last; that row of the
+ * reference, and every one above it, is what the read needs. On a
+ * single thread the whole picture is final before it is a reference
+ * and this returns at once; a picture on another thread waits here,
+ * and nowhere else. */
+static int rh264_ref_wait_misses;
+
+int rh264_video_ref_wait_misses(void)
+{
+   return rh264_ref_wait_misses;
+}
+
+static void rh264_ref_wait_rows(const rh264_frame *ref, int oy, int bh, int mvy)
+{
+   int y_last, rows;
+   if (!ref || !ref->planes)
+      return;
+   y_last = oy + bh + (mvy >> 2) + 3;
+   if (y_last < 0)
+      return;
+   rows = y_last / 16 + 1;
+   if (rows > ref->mbh)
+      rows = ref->mbh;
+   if (rh264_block_rows_final(ref->planes) < rows)
+   {
+      /* Single-threaded this is unreachable: a reference is complete
+       * before anything reads it. The threaded decoder will wait here
+       * on the block's row counter. Counted so a sample can assert
+       * that it never happens on one thread - if it did, the counter
+       * or its readers would be wrong, and a threaded decoder would
+       * wait for a row that had already been read. */
+      rh264_ref_wait_misses++;
+   }
+}
+
 static void rh264_inter_pred_block(rh264_frame *f, const rh264_frame *ref,
       int mbx, int mby, int bx, int by, int bw, int bh, int mvx, int mvy)
 {
@@ -3034,6 +3077,7 @@ static void rh264_inter_pred_block(rh264_frame *f, const rh264_frame *ref,
     * row for real reference data. */
    int rw = ref->mbw * 16, rh = ref->mbh * 16;
    uint8_t *dY = f->Y + RH264_OFF(f, oy * f->ystride + ox);
+   rh264_ref_wait_rows(ref, oy, bh, mvy);
    rh264_mc_luma(f, dY, f->ystride, ref->Y, ref->ystride, rw, rh,
          ox, oy, bw, bh, mvx, mvy);
    if (f->c444)
@@ -4833,33 +4877,21 @@ typedef struct {
    int32_t  cr_dcs[2][8], cr_cdc[2][8], cr_cac[2][8][16];
 } rh264_cabac;
 
-struct rh264_video
+#define RH264_MAX_SLICES 64
+
+/* Everything that belongs to the picture being decoded, as distinct
+ * from the sequence: the working frame, its motion grids, the slice
+ * bookkeeping, the slice scratch and the NAL unescape buffer. One of
+ * these per picture in flight is what lets pictures decode on
+ * different threads; the sequencing state - parameter sets, the DPB,
+ * picture order, reference marking - stays in rh264_video and is
+ * updated in decode order by the thread that submits. */
+typedef struct rh264_pic_ctx
 {
-   /* unescaped-RBSP scratch for slice NALs, grown on demand and kept
-    * for the decoder's lifetime */
    uint8_t  *rbsp_scratch;
    size_t    rbsp_scratch_cap;
-   rh264_sps sps;
-   rh264_pps pps;
-   int       have_sps, have_pps;
-   int       nal_length_size;   /* from avcC; 0 => Annex-B input */
-   /* picture assembly across slices */
-   #define RH264_MAX_SLICES 64
    int       pic_open;
-   int       cur_field, pair_open, pair_frame_num, pair_poc;
-   /* A switching slice was seen.  Those are references, so once one is
-    * refused nothing after it can be reconstructed either; the stream
-    * is given up rather than decoded into drift. */
    int       saw_switching;
-   /* When set, a non-reference picture (nal_ref_idc 0) is consumed
-    * without being decoded. Nothing predicts from it, so the pictures
-    * after it decode exactly as they would have; only its own output
-    * is missing, which is what a caller that has fallen behind the
-    * clock wants. */
-   int       skip_nonref;
-   int       dropped;           /* the last decode call passed a picture over */
-   /* DPB slot the pair's first field opened, so the second can fill it */
-   int       pair_slot;
    int       pic_kind;          /* 1 IDR-I, 2 recovery-I, 3 P, 4 B    */
    int       pic_ref;           /* nal_ref_idc of the picture         */
    int       pic_end;           /* first undecoded MB address         */
@@ -4869,15 +4901,54 @@ struct rh264_video
    signed char pic_oA[RH264_MAX_SLICES];   /* alpha offset per slice  */
    signed char pic_oB[RH264_MAX_SLICES];   /* beta offset per slice   */
    rh264_mv *pic_mvg;           /* picture MV grid accumulated across
-                                   slices (v->mvg is per-slice scratch) */
+                                   slices (v->cur->mvg is per-slice scratch) */
    rh264_frame f;
+   rh264_mv  *mvg;              /* motion-vector grid for the frame being decoded */
+   struct
+   {
+      rh264_slice_hdr sh;
+      rh264_bctx      bc;
+      const rh264_frame *ordered[RH264_MAX_REFS];
+      int opoc[RH264_MAX_REFS], opn[RH264_MAX_REFS];
+      int oslot[RH264_MAX_REFS];
+      int l0slot[34], l1slot[34];
+      int lpn0[34], lpn1[34];
+      int lpn[34], l0poc[34];
+      signed char picid[34];
+      rh264_cabac cb;
+   } sscr;
+} rh264_pic_ctx;
+
+struct rh264_video
+{
+   rh264_pic_ctx ctx0;
+   rh264_pic_ctx *cur;          /* the picture being decoded: ctx0 for now */
+   /* unescaped-RBSP scratch for slice NALs, grown on demand and kept
+    * for the decoder's lifetime */
+   rh264_sps sps;
+   rh264_pps pps;
+   int       have_sps, have_pps;
+   int       nal_length_size;   /* from avcC; 0 => Annex-B input */
+   /* picture assembly across slices */
+   int       cur_field, pair_open, pair_frame_num, pair_poc;
+   /* A switching slice was seen.  Those are references, so once one is
+    * refused nothing after it can be reconstructed either; the stream
+    * is given up rather than decoded into drift. */
+   /* When set, a non-reference picture (nal_ref_idc 0) is consumed
+    * without being decoded. Nothing predicts from it, so the pictures
+    * after it decode exactly as they would have; only its own output
+    * is missing, which is what a caller that has fallen behind the
+    * clock wants. */
+   int       skip_nonref;
+   int       dropped;           /* the last decode call passed a picture over */
+   /* DPB slot the pair's first field opened, so the second can fill it */
+   int       pair_slot;
    rh264_frame dpb[RH264_MAX_REFS];  /* short-term reference pictures        */
    int        dpb_slot[RH264_MAX_REFS]; /* slot indices, most recent first   */
    int        dpb_pn[RH264_MAX_REFS];   /* PicNum per slot                   */
    int        dpb_len;          /* number of valid reference pictures        */
    int        dpb_size;         /* slots allocated                           */
    int        dpb_poc[RH264_MAX_REFS];  /* picture order count per slot      */
-   rh264_mv  *mvg;              /* motion-vector grid for the frame being decoded */
    int        have_ref;         /* a reference frame is available (post-IDR)     */
    int        last_picnum;      /* frame_num of the picture just decoded         */
    int        last_poc;         /* POC of the picture just decoded               */
@@ -4934,19 +5005,6 @@ struct rh264_video
     * floor.  One slice decodes at a time per rh264_video, and nothing
     * here survives the call, so the workspace lives with the rest of
     * the (heap-allocated) decoder state. */
-   struct
-   {
-      rh264_slice_hdr sh;
-      rh264_bctx      bc;
-      const rh264_frame *ordered[RH264_MAX_REFS];
-      int opoc[RH264_MAX_REFS], opn[RH264_MAX_REFS];
-      int oslot[RH264_MAX_REFS];
-      int l0slot[34], l1slot[34];
-      int lpn0[34], lpn1[34];
-      int lpn[34], l0poc[34];
-      signed char picid[34];
-      rh264_cabac cb;
-   } sscr;
 };
 
 /* ---- allocation helpers ---- */
@@ -4975,7 +5033,25 @@ typedef struct rh264_block_hdr
    int    refs;
    size_t len;
    struct rh264_block_hdr *next_free;
+   /* How many macroblock rows of the picture in this block are final:
+    * reconstructed, filtered, and no longer written by anything -
+    * counted up from the top by the row hook as each row's filtering
+    * completes, and set to the whole picture at the finish. A picture
+    * decoding from this one as a reference reads up to a row and no
+    * further, so this is the one number it has to wait on; on a single
+    * thread it is complete before anyone asks. */
+   int    rows_final;
 } rh264_block_hdr;
+
+static rh264_block_hdr *rh264_block_of(const void *data)
+{
+   return (rh264_block_hdr*)((const uint8_t*)data - RH264_PLANES_HDR);
+}
+
+static int rh264_block_rows_final(const void *data)
+{
+   return rh264_block_of(data)->rows_final;
+}
 
 #define RH264_FREE_BLOCKS 8
 
@@ -4991,7 +5067,8 @@ static uint8_t *rh264_block_new(size_t len)
       {
          *pp = b->next_free;
          rh264_free_blocks_n--;
-         b->refs = 1;
+         b->refs       = 1;
+         b->rows_final = 0;
          return (uint8_t*)b + RH264_PLANES_HDR;
       }
       pp = &b->next_free;
@@ -5291,24 +5368,24 @@ static void rh264_frame_set_field(rh264_frame *f, int fl)
 static int rh264_frame_alloc_if_needed(rh264_video *v)
 {
    if (!v->have_sps) return -1;
-   if (v->f.Yb && v->alloc_w == v->sps.frame_width
+   if (v->cur->f.Yb && v->alloc_w == v->sps.frame_width
               && v->alloc_h == v->sps.frame_height)
    {
       /* Same geometry: the working frame stands, but its samples and
        * its motion grid may now be a reference's or a queued picture's
        * (they were shared at the last finish rather than copied). The
        * next picture is written into blocks of its own. */
-      if (v->pic_mvg && rh264_mvg_refs(v->pic_mvg) > 1)
+      if (v->cur->pic_mvg && rh264_mvg_refs(v->cur->pic_mvg) > 1)
       {
-         rh264_mv *fresh = rh264_mvg_new((size_t)(v->f.mbw * 4) * (v->f.mbh * 4));
+         rh264_mv *fresh = rh264_mvg_new((size_t)(v->cur->f.mbw * 4) * (v->cur->f.mbh * 4));
          if (!fresh)
             return -1;
-         rh264_mvg_release(v->pic_mvg);
-         v->pic_mvg = fresh;
+         rh264_mvg_release(v->cur->pic_mvg);
+         v->cur->pic_mvg = fresh;
       }
-      return rh264_frame_own_planes(&v->f, v->f.plane_len);
+      return rh264_frame_own_planes(&v->cur->f, v->cur->f.plane_len);
    }
-   if (rh264_frame_alloc(&v->f, &v->sps, RH264_FRAME_ALLOC_WORKING) != 0) return -1;
+   if (rh264_frame_alloc(&v->cur->f, &v->sps, RH264_FRAME_ALLOC_WORKING) != 0) return -1;
    {
       int n = v->sps.max_num_ref_frames, i;
       if (n < 1) n = 1;
@@ -5322,17 +5399,17 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
       { rh264_frame_free(&v->out[i]); v->out_used[i] = 0; }
       v->out_len = 0; v->out_show = -1;
    }
-   free(v->mvg);
-   rh264_mvg_release(v->pic_mvg);
+   free(v->cur->mvg);
+   rh264_mvg_release(v->cur->pic_mvg);
    {
-      int gwmax = v->f.mbw * 4;
+      int gwmax = v->cur->f.mbw * 4;
       int ghmax = (v->sps.frame_mbs > 0 ? v->sps.frame_mbs
                  : (v->sps.frame_height + 15) / 16) * 4;
-      v->mvg = (rh264_mv*)calloc((size_t)gwmax * ghmax, sizeof(rh264_mv));
-      v->pic_mvg = rh264_mvg_new((size_t)gwmax * ghmax);
-      if (!v->mvg || !v->pic_mvg) return -1;
+      v->cur->mvg = (rh264_mv*)calloc((size_t)gwmax * ghmax, sizeof(rh264_mv));
+      v->cur->pic_mvg = rh264_mvg_new((size_t)gwmax * ghmax);
+      if (!v->cur->mvg || !v->cur->pic_mvg) return -1;
    }
-   v->pic_open = 0;
+   v->cur->pic_open = 0;
    v->max_lt_idx = -1;
    v->have_ref = 0;
    v->dpb_len = 0;
@@ -5361,13 +5438,13 @@ static uint8_t *rh264_unescape_scratch(struct rh264_video *v,
 {
    uint8_t *r; size_t i, o = 0;
    size_t need = len ? len : 1;
-   if (need > v->rbsp_scratch_cap)
+   if (need > v->cur->rbsp_scratch_cap)
    {
-      if (!(r = (uint8_t*)realloc(v->rbsp_scratch, need))) return NULL;
-      v->rbsp_scratch     = r;
-      v->rbsp_scratch_cap = need;
+      if (!(r = (uint8_t*)realloc(v->cur->rbsp_scratch, need))) return NULL;
+      v->cur->rbsp_scratch     = r;
+      v->cur->rbsp_scratch_cap = need;
    }
-   r = v->rbsp_scratch;
+   r = v->cur->rbsp_scratch;
    for (i = 0; i < len; i++)
    {
       if (i >= 2 && nal[i] == 0x03 && nal[i-1] == 0x00 && nal[i-2] == 0x00
@@ -5381,6 +5458,7 @@ rh264_video *rh264_video_open(void)
 {
    rh264_video *v = (rh264_video*)calloc(1, sizeof(*v));
    if (!v) return NULL;
+   v->cur = &v->ctx0;
    /* Invert the CAVLC tables for this instance; on failure the decoder
     * runs on the serial matchers instead. */
    v->vlc_ready = rh264_vlc_init(&v->vlc) == 0;
@@ -5396,13 +5474,13 @@ void rh264_video_close(rh264_video *v)
    if (!v) return;
    {
       int i;
-      rh264_frame_free(&v->f);
+      rh264_frame_free(&v->cur->f);
       for (i = 0; i < RH264_MAX_REFS; i++) rh264_frame_free(&v->dpb[i]);
       for (i = 0; i < RH264_OUT_SLOTS; i++) rh264_frame_free(&v->out[i]);
    }
-   free(v->rbsp_scratch);
-   free(v->mvg);
-   rh264_mvg_release(v->pic_mvg);
+   free(v->cur->rbsp_scratch);
+   free(v->cur->mvg);
+   rh264_mvg_release(v->cur->pic_mvg);
    rh264_vlc_free(&v->vlc);
    free(v);
 }
@@ -5457,7 +5535,7 @@ int rh264_video_set_extradata(rh264_video *v, const uint8_t *avcc, size_t len)
    return (v->have_sps && v->have_pps) ? 0 : -1;
 }
 
-/* Decode a single IDR NAL into v->f (already sized). Returns 0 on success. */
+/* Decode a single IDR NAL into v->cur->f (already sized). Returns 0 on success. */
 /* ==================== CABAC (Main-profile I-slice) ==================== */
 /* Clean-room CABAC entropy decoder for Main-profile intra frames.
  * Byte-exact vs openh264 for I_4x4 / I_16x16 macroblocks (4:2:0). */
@@ -8814,14 +8892,14 @@ static int rh264_out_push(rh264_video *v, int poc, int is_idr)
        * the same SPS so the geometry is identical.  Field pairs keep
        * the copy - their two pictures fill the working planes
        * incrementally, which a swapped-in stale buffer would break. */
-      rh264_frame_share_planes(&v->out[slot], &v->f);
-      v->out[slot].qp = v->f.qp;
-      v->out[slot].chroma_qp_offset  = v->f.chroma_qp_offset;
-      v->out[slot].chroma_qp_offset2 = v->f.chroma_qp_offset2;
+      rh264_frame_share_planes(&v->out[slot], &v->cur->f);
+      v->out[slot].qp = v->cur->f.qp;
+      v->out[slot].chroma_qp_offset  = v->cur->f.chroma_qp_offset;
+      v->out[slot].chroma_qp_offset2 = v->cur->f.chroma_qp_offset2;
    }
    else
-      rh264_frame_copy_planes(&v->out[slot], &v->f);
-   v->out[slot].w = v->f.w; v->out[slot].h = v->f.h;
+      rh264_frame_copy_planes(&v->out[slot], &v->cur->f);
+   v->out[slot].w = v->cur->f.w; v->out[slot].h = v->cur->f.h;
    v->out_poc[slot] = poc; v->out_gen[slot] = v->idr_gen;
    v->out_used[slot] = 1;  v->out_len++;
    /* An IDR arriving with nothing pending can leave at once: no picture
@@ -8862,31 +8940,31 @@ static void rh264_mvg_set_intra(rh264_mv *mvg, int gwmax, int ghmax)
  * according to the slice that macroblock belongs to. */
 static int rh264_video_note_slice(rh264_video *v, const rh264_slice_hdr *sh)
 {
-   int n = v->pic_nslices;
+   int n = v->cur->pic_nslices;
    if (n >= RH264_MAX_SLICES) return -1;
-   v->pic_first[n] = sh->first_mb_in_slice;
-   v->pic_idc[n]   = (signed char)sh->disable_deblocking_filter_idc;
-   v->pic_oA[n]    = (signed char)sh->slice_alpha_c0_offset;
-   v->pic_oB[n]    = (signed char)sh->slice_beta_offset;
-   v->pic_nslices  = n + 1;
+   v->cur->pic_first[n] = sh->first_mb_in_slice;
+   v->cur->pic_idc[n]   = (signed char)sh->disable_deblocking_filter_idc;
+   v->cur->pic_oA[n]    = (signed char)sh->slice_alpha_c0_offset;
+   v->cur->pic_oB[n]    = (signed char)sh->slice_beta_offset;
+   v->cur->pic_nslices  = n + 1;
    return 0;
 }
 
 /* Fold the macroblock range a slice decoded into the picture's motion grid.
- * The grid the slice decoders work on (v->mvg) restarts at every slice so
+ * The grid the slice decoders work on (v->cur->mvg) restarts at every slice so
  * cells of other slices read as undecoded, exactly the neighbour
  * availability 6.4.8 asks for; the accumulated copy is what deblocking,
  * reference storage and temporal direct prediction see. */
 static void rh264_video_fold_mvg(rh264_video *v, int first, int end)
 {
-   int gw = v->f.mbw * 4, mb;
-   if (!v->mvg || !v->pic_mvg) return;
+   int gw = v->cur->f.mbw * 4, mb;
+   if (!v->cur->mvg || !v->cur->pic_mvg) return;
    for (mb = first; mb < end; mb++)
    {
-      int gx = (mb % v->f.mbw) * 4, gy = (mb / v->f.mbw) * 4, r;
+      int gx = (mb % v->cur->f.mbw) * 4, gy = (mb / v->cur->f.mbw) * 4, r;
       for (r = 0; r < 4; r++)
-         memcpy(v->pic_mvg + (gy + r) * gw + gx,
-                v->mvg     + (gy + r) * gw + gx, 4 * sizeof(rh264_mv));
+         memcpy(v->cur->pic_mvg + (gy + r) * gw + gx,
+                v->cur->mvg     + (gy + r) * gw + gx, 4 * sizeof(rh264_mv));
    }
 }
 
@@ -8907,7 +8985,7 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
    rh264_bits_init(&b, rbsp, rl);
    if (v->vlc_ready) b.vlc = &v->vlc;
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, &sh))
-   { if (sh.switching) v->saw_switching = 1; return -1; }
+   { if (sh.switching) v->cur->saw_switching = 1; return -1; }
    if (sh.first_mb_in_slice == 0)
    {
       /* first slice: a new picture begins (a picture left unfinished by a
@@ -8915,42 +8993,44 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
       int fld = sh.field_pic_flag ? (sh.bottom_field_flag ? 2 : 1) : 0;
       int second = fld && v->pair_open && v->pair_frame_num == sh.frame_num
             && v->cur_field && v->cur_field != fld;
-      v->pic_open = 0;
+      v->cur->pic_open = 0;
       if (!second) v->idr_gen++;
       v->last_poc = rh264_derive_poc(v, &sh, nri);
       v->cur_field = fld;
-      rh264_frame_set_field(&v->f, fld);
-      v->f.mbaff = (!fld && v->sps.mb_adaptive_frame_field_flag) ? 1 : 0;
-      rh264_frame_reset_ex(&v->f, second);
+      rh264_frame_set_field(&v->cur->f, fld);
+      v->cur->f.mbaff = (!fld && v->sps.mb_adaptive_frame_field_flag) ? 1 : 0;
+      rh264_frame_reset_ex(&v->cur->f, second);
       if (fld && second) { if(v->last_poc<v->pair_poc) v->pair_poc=v->last_poc;
                            v->pair_open=0; }
       else if (fld) { v->pair_open=1; v->pair_frame_num=sh.frame_num;
                       v->pair_poc=v->last_poc; }
       else v->pair_open=0;
-      v->pic_open = 1; v->pic_kind = 1; v->pic_ref = nri;
-      v->pic_end = 0;  v->pic_nslices = 0;
-      v->f.rows_deblocked = 0;
-      v->f.row_user       = v;
-      v->f.row_done       = (v->f.mbaff || v->f.field) ? NULL : rh264_video_row_done;
+      v->cur->pic_open = 1; v->cur->pic_kind = 1; v->cur->pic_ref = nri;
+      v->cur->pic_end = 0;  v->cur->pic_nslices = 0;
+      v->cur->f.rows_deblocked = 0;
+      v->cur->f.row_user       = v;
+      v->cur->f.row_done       = (v->cur->f.mbaff || v->cur->f.field) ? NULL : rh264_video_row_done;
+      if (v->cur->f.planes)
+         rh264_block_of(v->cur->f.planes)->rows_final = 0;
       v->pend_idr_ltr = sh.idr_ltr;
-      rh264_resolve_scaling(&v->sps, &v->pps, v->f.w4, v->f.w8);
+      rh264_resolve_scaling(&v->sps, &v->pps, v->cur->f.w4, v->cur->f.w8);
    }
-   else if (!v->pic_open || v->pic_kind != 1
-         || sh.first_mb_in_slice != v->pic_end)
+   else if (!v->cur->pic_open || v->cur->pic_kind != 1
+         || sh.first_mb_in_slice != v->cur->pic_end)
    { return -1; }   /* continuation without its picture */
    if (rh264_video_note_slice(v, &sh) != 0)
-   { v->pic_open = 0; return -1; }
+   { v->cur->pic_open = 0; return -1; }
    /* Main/High-profile streams use CABAC entropy coding; baseline uses CAVLC.
     * Dispatch on the PPS entropy_coding_mode_flag. Both paths are intra-only. */
    if (v->pps.entropy_coding_mode_flag)
-      rc = rh264_cabac_decode_islice(&b, &v->sps, &v->pps, &sh, &v->f, &end,
-            &v->sscr.cb);
+      rc = rh264_cabac_decode_islice(&b, &v->sps, &v->pps, &sh, &v->cur->f, &end,
+            &v->cur->sscr.cb);
    else
-      rc = rh264_decode_islice(&b, &v->sps, &v->pps, &sh, &v->f, &end);
+      rc = rh264_decode_islice(&b, &v->sps, &v->pps, &sh, &v->cur->f, &end);
    if (rc == 0)
-      v->pic_end = end;
+      v->cur->pic_end = end;
    else
-      v->pic_open = 0;
+      v->cur->pic_open = 0;
    return rc;
 }
 
@@ -9069,7 +9149,7 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
    if (v->cur_field && !v->pair_open && v->pair_slot >= 0)
    {
       slot = v->pair_slot;
-      rh264_frame_copy_planes(&v->dpb[slot], &v->f);
+      rh264_frame_copy_planes(&v->dpb[slot], &v->cur->f);
       v->dpb_fields[slot] |= (uint8_t)(1 << (v->cur_field - 1));
       v->dpb_poc_fld[slot][v->cur_field - 1] = v->last_poc;
       if (v->last_poc < v->dpb_poc[slot])
@@ -9078,9 +9158,9 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
          rh264_mv *g;
          rh264_frame_own_mvg(&v->dpb[slot]);
          g = (v->cur_field == 2) ? v->dpb[slot].mvg2 : v->dpb[slot].mvg;
-         if (g && v->pic_mvg)
-            memcpy(g, v->pic_mvg,
-                  (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
+         if (g && v->cur->pic_mvg)
+            memcpy(g, v->cur->pic_mvg,
+                  (size_t)(v->cur->f.mbw * 4) * (v->cur->f.mbh * 4) * sizeof(rh264_mv));
       }
       v->pair_slot = -1;
       return;
@@ -9112,9 +9192,9 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
     * block for the next picture (see rh264_video_finish_picture). A
     * field pair fills its block a field at a time and is copied. */
    if (v->cur_field)
-      rh264_frame_copy_planes(&v->dpb[slot], &v->f);
+      rh264_frame_copy_planes(&v->dpb[slot], &v->cur->f);
    else
-      rh264_frame_share_planes(&v->dpb[slot], &v->f);
+      rh264_frame_share_planes(&v->dpb[slot], &v->cur->f);
    v->dpb_fields[slot] = (uint8_t)(v->cur_field ? (1 << (v->cur_field - 1))
                                                 : 3);
    v->pair_slot = (v->cur_field && v->pair_open) ? slot : -1;
@@ -9125,11 +9205,11 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
    v->dpb_pn[slot] = picnum;
    v->dpb_poc[slot] = v->last_poc;
    v->dpb[slot].poc = v->last_poc;
-   if (!v->cur_field && v->pic_mvg)
+   if (!v->cur_field && v->cur->pic_mvg)
    {
       /* a frame picture's motion stands for both parities: the slot
        * takes the working grid itself, for both */
-      rh264_frame_share_mvg(&v->dpb[slot], v->pic_mvg);
+      rh264_frame_share_mvg(&v->dpb[slot], v->cur->pic_mvg);
    }
    else
    {
@@ -9137,9 +9217,9 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
       rh264_mv *g;
       rh264_frame_own_mvg(&v->dpb[slot]);
       g = (v->cur_field == 2) ? v->dpb[slot].mvg2 : v->dpb[slot].mvg;
-      if (g && v->pic_mvg)
-         memcpy(g, v->pic_mvg,
-               (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
+      if (g && v->cur->pic_mvg)
+         memcpy(g, v->cur->pic_mvg,
+               (size_t)(v->cur->f.mbw * 4) * (v->cur->f.mbh * 4) * sizeof(rh264_mv));
    }
    v->dpb_lt[slot] = (signed char)lt;
    for (i = v->dpb_len; i > 0; i--)
@@ -9214,7 +9294,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    size_t rl;
    uint8_t *rbsp;
    rh264_bits b;
-   rh264_slice_hdr *sh = &v->sscr.sh;
+   rh264_slice_hdr *sh = &v->cur->sscr.sh;
    if (len < 1) return -1;
    if (!v->have_ref) return -1;   /* need a decoded reference first */
    nut = nal[0] & 0x1f;
@@ -9224,7 +9304,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    rh264_bits_init(&b, rbsp, rl);
    if (v->vlc_ready) b.vlc = &v->vlc;
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, sh))
-   { if (sh->switching) v->saw_switching = 1; return -1; }   /* unsupported slice type (e.g. B) */
+   { if (sh->switching) v->cur->saw_switching = 1; return -1; }   /* unsupported slice type (e.g. B) */
    if (sh->slice_type != RH264_SLICE_P && sh->slice_type != RH264_SLICE_SP
          && sh->slice_type != RH264_SLICE_B
          && sh->slice_type != RH264_SLICE_I)
@@ -9236,29 +9316,31 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       int fld = sh->field_pic_flag ? (sh->bottom_field_flag ? 2 : 1) : 0;
       int second = fld && v->pair_open && v->pair_frame_num == sh->frame_num
             && v->cur_field && v->cur_field != fld;
-      v->pic_open = 0;
+      v->cur->pic_open = 0;
       v->last_poc = rh264_derive_poc(v, sh, nri);
       v->cur_field = fld;
-      rh264_frame_set_field(&v->f, fld);
-      v->f.mbaff = (!fld && v->sps.mb_adaptive_frame_field_flag) ? 1 : 0;
+      rh264_frame_set_field(&v->cur->f, fld);
+      v->cur->f.mbaff = (!fld && v->sps.mb_adaptive_frame_field_flag) ? 1 : 0;
       if (fld && second) { if(v->last_poc<v->pair_poc) v->pair_poc=v->last_poc;
                            v->pair_open=0; }
       else if (fld) { v->pair_open=1; v->pair_frame_num=sh->frame_num;
                       v->pair_poc=v->last_poc; }
       else v->pair_open=0;
-      v->pic_open = 1; v->pic_kind = kind; v->pic_ref = nri;
-      v->pic_end = 0;  v->pic_nslices = 0;
-      v->f.rows_deblocked = 0;
-      v->f.row_user       = v;
-      v->f.row_done       = (v->f.mbaff || v->f.field) ? NULL : rh264_video_row_done;
-      rh264_resolve_scaling(&v->sps, &v->pps, v->f.w4, v->f.w8);
+      v->cur->pic_open = 1; v->cur->pic_kind = kind; v->cur->pic_ref = nri;
+      v->cur->pic_end = 0;  v->cur->pic_nslices = 0;
+      v->cur->f.rows_deblocked = 0;
+      v->cur->f.row_user       = v;
+      v->cur->f.row_done       = (v->cur->f.mbaff || v->cur->f.field) ? NULL : rh264_video_row_done;
+      if (v->cur->f.planes)
+         rh264_block_of(v->cur->f.planes)->rows_final = 0;
+      rh264_resolve_scaling(&v->sps, &v->pps, v->cur->f.w4, v->cur->f.w8);
    }
-   else if (!v->pic_open || v->pic_kind != kind
-         || sh->first_mb_in_slice != v->pic_end)
+   else if (!v->cur->pic_open || v->cur->pic_kind != kind
+         || sh->first_mb_in_slice != v->cur->pic_end)
    { return -1; }   /* continuation without its picture, or a
                                  * mixed-type picture (unsupported) */
    if (rh264_video_note_slice(v, sh) != 0)
-   { v->pic_open = 0; return -1; }
+   { v->cur->pic_open = 0; return -1; }
    if (sh->slice_type == RH264_SLICE_I)
    {
       /* A non-IDR I picture, e.g. a recovery point: decoded like an IDR but
@@ -9266,11 +9348,11 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
        * the counters keep running, and the picture is stored like any other
        * reference. */
       if (v->pps.entropy_coding_mode_flag)
-         rc = rh264_cabac_decode_islice(&b, &v->sps, &v->pps, sh, &v->f,
-               &end, &v->sscr.cb);
+         rc = rh264_cabac_decode_islice(&b, &v->sps, &v->pps, sh, &v->cur->f,
+               &end, &v->cur->sscr.cb);
       else
-         rc = rh264_decode_islice(&b, &v->sps, &v->pps, sh, &v->f, &end);
-      if (rc == 0) v->pic_end = end; else v->pic_open = 0;
+         rc = rh264_decode_islice(&b, &v->sps, &v->pps, sh, &v->cur->f, &end);
+      if (rc == 0) v->cur->pic_end = end; else v->cur->pic_open = 0;
       v->last_picnum = sh->frame_num_val;
       v->pend_n_mmco = sh->n_mmco;
       memcpy(v->pend_mmco_op, sh->mmco_op, sizeof(v->pend_mmco_op));
@@ -9287,15 +9369,15 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
        * mirrored; when that leaves the two identical, its first two entries
        * swap. The first B slice of the stream raises the display delay to
        * what the VUI promises, or the reference count when it is silent. */
-      rh264_bctx *bc = &v->sscr.bc;
+      rh264_bctx *bc = &v->cur->sscr.bc;
       int i, n = 0, maxpn = 1 << v->sps.log2_max_frame_num;
       int currpn = sh->frame_num_val;
-      const rh264_frame **ordered = v->sscr.ordered;
-      int *opoc = v->sscr.opoc, *opn = v->sscr.opn;
-      int *oslot = v->sscr.oslot;      /* DPB slot behind ordered[]     */
-      int *l0slot = v->sscr.l0slot;    /* the two lists as slots        */
-      int *l1slot = v->sscr.l1slot;
-      int *lpn0 = v->sscr.lpn0, *lpn1 = v->sscr.lpn1;
+      const rh264_frame **ordered = v->cur->sscr.ordered;
+      int *opoc = v->cur->sscr.opoc, *opn = v->cur->sscr.opn;
+      int *oslot = v->cur->sscr.oslot;      /* DPB slot behind ordered[]     */
+      int *l0slot = v->cur->sscr.l0slot;    /* the two lists as slots        */
+      int *l1slot = v->cur->sscr.l1slot;
+      int *lpn0 = v->cur->sscr.lpn0, *lpn1 = v->cur->sscr.lpn1;
       int nref0 = sh->num_ref_idx_l0, nref1 = sh->num_ref_idx_l1;
       memset(bc, 0, sizeof(*bc));
       if (nref0 < 1)  nref0 = 1;
@@ -9421,17 +9503,17 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       if (!bc->colg) { return -1; }
       rh264_b_setup_scales(bc);
       if (v->pps.entropy_coding_mode_flag)
-         rc = rh264_cabac_decode_bslice(&b, &v->sps, &v->pps, sh, &v->f,
-               bc, v->mvg, &end, &v->sscr.cb);
+         rc = rh264_cabac_decode_bslice(&b, &v->sps, &v->pps, sh, &v->cur->f,
+               bc, v->cur->mvg, &end, &v->cur->sscr.cb);
       else
-         rc = rh264_decode_bslice(&b, &v->sps, &v->pps, sh, &v->f, bc,
-               v->mvg, &end);
+         rc = rh264_decode_bslice(&b, &v->sps, &v->pps, sh, &v->cur->f, bc,
+               v->cur->mvg, &end);
       if (rc == 0)
       {
          rh264_video_fold_mvg(v, sh->first_mb_in_slice, end);
-         v->pic_end = end;
+         v->cur->pic_end = end;
       }
-      else v->pic_open = 0;
+      else v->cur->pic_open = 0;
       v->last_picnum = sh->frame_num_val;
       v->pend_n_mmco = sh->n_mmco;
       memcpy(v->pend_mmco_op, sh->mmco_op, sizeof(v->pend_mmco_op));
@@ -9447,9 +9529,9 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
        * prediction offers a weighted and an unweighted version of it, so it
        * can be longer than the number of pictures held. */
       const rh264_frame *l0[34];
-      int *lpn = v->sscr.lpn;
-      int *l0poc = v->sscr.l0poc;
-      signed char *picid = v->sscr.picid;
+      int *lpn = v->cur->sscr.lpn;
+      int *l0poc = v->cur->sscr.l0poc;
+      signed char *picid = v->cur->sscr.picid;
       int i, n = 0, nref = sh->num_ref_idx_l0;
       int maxpn = 1 << v->sps.log2_max_frame_num;
       int currpn = sh->frame_num_val;
@@ -9500,18 +9582,18 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       }
       (void)lpn;
       if (v->pps.entropy_coding_mode_flag)
-         rc = rh264_cabac_decode_pslice(&b, &v->sps, &v->pps, sh, &v->f,
-               l0, nref, picid, l0poc, v->mvg, &end, &v->sscr.cb);
+         rc = rh264_cabac_decode_pslice(&b, &v->sps, &v->pps, sh, &v->cur->f,
+               l0, nref, picid, l0poc, v->cur->mvg, &end, &v->cur->sscr.cb);
       else
-         rc = rh264_decode_pslice(&b, &v->sps, &v->pps, sh, &v->f,
-               l0, nref, picid, l0poc, v->mvg, &end);
+         rc = rh264_decode_pslice(&b, &v->sps, &v->pps, sh, &v->cur->f,
+               l0, nref, picid, l0poc, v->cur->mvg, &end);
    }
    if (rc == 0)
    {
       rh264_video_fold_mvg(v, sh->first_mb_in_slice, end);
-      v->pic_end = end;
+      v->cur->pic_end = end;
    }
-   else v->pic_open = 0;
+   else v->cur->pic_open = 0;
    v->last_picnum = sh->frame_num_val;
    v->pend_n_mmco = sh->n_mmco;
    memcpy(v->pend_mmco_op, sh->mmco_op, sizeof(v->pend_mmco_op));
@@ -9536,12 +9618,12 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
 static void rh264_video_row_done(void *user, int mby)
 {
    rh264_video *v = (rh264_video*)user;
-   if (!v || !v->pic_open || v->pic_nslices != 1 || mby < 1)
+   if (!v || !v->cur->pic_open || v->cur->pic_nslices != 1 || mby < 1)
       return;
-   if (v->f.rows_deblocked != mby - 1)
+   if (v->cur->f.rows_deblocked != mby - 1)
       return;                         /* a gap: leave it to the finish */
-   if (v->pic_kind <= 2)
-      rh264_deblock(&v->f, v->pic_idc, v->pic_oA, v->pic_oB,
+   if (v->cur->pic_kind <= 2)
+      rh264_deblock(&v->cur->f, v->cur->pic_idc, v->cur->pic_oA, v->cur->pic_oB,
             mby - 1, mby);
    else
    {
@@ -9551,22 +9633,27 @@ static void rh264_video_row_done(void *user, int mby)
        * once each slice is done, and mid-slice it still holds the
        * last picture's. The finish reads pic_mvg because by then they
        * are the same. */
-      if (!v->mvg)
+      if (!v->cur->mvg)
          return;
-      rh264_deblock_pslice(&v->f, v->pic_idc, v->pic_oA, v->pic_oB,
-            v->mvg, mby - 1, mby);
+      rh264_deblock_pslice(&v->cur->f, v->cur->pic_idc, v->cur->pic_oA, v->cur->pic_oB,
+            v->cur->mvg, mby - 1, mby);
    }
-   v->f.rows_deblocked = mby;
+   v->cur->f.rows_deblocked = mby;
+   /* Row mby-1 is filtered; filtering row mby will still touch its
+    * last lines through their shared edge, so what is final is
+    * everything above it. */
+   if (v->cur->f.planes)
+      rh264_block_of(v->cur->f.planes)->rows_final = mby - 1;
 }
 
 static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
 {
-   int total = v->f.mbw * v->f.mbh, s;
-   if (!v->pic_open) return;
-   for (s = 0; s < v->pic_nslices; s++)
+   int total = v->cur->f.mbw * v->cur->f.mbh, s;
+   if (!v->cur->pic_open) return;
+   for (s = 0; s < v->cur->pic_nslices; s++)
    {
-      int lo = v->pic_first[s];
-      int hi = (s + 1 < v->pic_nslices) ? v->pic_first[s + 1] : v->pic_end;
+      int lo = v->cur->pic_first[s];
+      int hi = (s + 1 < v->cur->pic_nslices) ? v->cur->pic_first[s + 1] : v->cur->pic_end;
       int mb;
       if (hi > total) hi = total;
       /* mbslice is read by raster position (deblocking walks the
@@ -9575,27 +9662,29 @@ static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
       for (mb = lo; mb < hi; mb++)
       {
          int mx, my;
-         rh264_mb_pos(mb, v->f.mbw, v->f.mbaff, &mx, &my);
-         v->f.mbslice[my * v->f.mbw + mx] = (uint8_t)s;
+         rh264_mb_pos(mb, v->cur->f.mbw, v->cur->f.mbaff, &mx, &my);
+         v->cur->f.mbslice[my * v->cur->f.mbw + mx] = (uint8_t)s;
       }
    }
    /* The rows the slice decoders already filtered on the way through
     * stay filtered; the rest is done here, which is all of it for a
     * picture the row hook could not take (pair-scanned, or more than
     * one slice by the time a row completed). */
-   if (v->pic_kind <= 2)
+   if (v->cur->pic_kind <= 2)
    {
-      rh264_deblock(&v->f, v->pic_idc, v->pic_oA, v->pic_oB,
-            v->f.rows_deblocked, v->f.mbh);
-      if (v->pic_mvg)
-         rh264_mvg_set_intra(v->pic_mvg, v->f.mbw * 4, v->f.mbh * 4);
+      rh264_deblock(&v->cur->f, v->cur->pic_idc, v->cur->pic_oA, v->cur->pic_oB,
+            v->cur->f.rows_deblocked, v->cur->f.mbh);
+      if (v->cur->pic_mvg)
+         rh264_mvg_set_intra(v->cur->pic_mvg, v->cur->f.mbw * 4, v->cur->f.mbh * 4);
    }
    else
-      rh264_deblock_pslice(&v->f, v->pic_idc, v->pic_oA, v->pic_oB,
-            v->pic_mvg, v->f.rows_deblocked, v->f.mbh);
-   v->f.rows_deblocked = 0;
-   v->f.row_done       = NULL;
-   if (v->pic_kind == 1)
+      rh264_deblock_pslice(&v->cur->f, v->cur->pic_idc, v->cur->pic_oA, v->cur->pic_oB,
+            v->cur->pic_mvg, v->cur->f.rows_deblocked, v->cur->f.mbh);
+   v->cur->f.rows_deblocked = 0;
+   v->cur->f.row_done       = NULL;
+   if (v->cur->f.planes)
+      rh264_block_of(v->cur->f.planes)->rows_final = v->cur->f.mbh;
+   if (v->cur->pic_kind == 1)
    {
       v->dpb_len = 0;       /* an IDR empties the reference list (8.2.5.1) */
       /* long_term_reference_flag: the IDR itself becomes the long-term
@@ -9609,7 +9698,7 @@ static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
    else
    {
       int epoch = 0;
-      if (v->pic_ref)   /* nal_ref_idc: only reference pictures stored */
+      if (v->cur->pic_ref)   /* nal_ref_idc: only reference pictures stored */
       {
          int cur_lt = rh264_dpb_marking(v, v->last_picnum, &epoch);
          if (epoch)
@@ -9622,7 +9711,7 @@ static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
             v->prev_poc_msb = 0; v->prev_poc_lsb = 0;
             v->prev_frame_num = 0; v->fn_offset = 0;
             v->last_picnum = 0;
-            v->f.poc = 0;
+            v->cur->f.poc = 0;
          }
          rh264_dpb_insert(v, epoch ? 0 : v->last_picnum, cur_lt);
       }
@@ -9635,7 +9724,7 @@ static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
     * picture leaves the working frame holding a shared block, and the
     * write into the next one takes a fresh block on its way in, in
     * rh264_frame_alloc_if_needed. */
-   v->pic_open = 0;
+   v->cur->pic_open = 0;
 }
 
 static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
@@ -9644,7 +9733,7 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
    int type = nal[0] & 0x1f;
    /* a switching slice was refused earlier: everything after it would
     * be predicted from a picture that was never reconstructed */
-   if (v->saw_switching) return -1;
+   if (v->cur->saw_switching) return -1;
    if (type == 7 || type == 8) { rh264_video_take_ps(v, nal, nl); return 0; }
    if (type == 5 || type == 1)
    {
@@ -9655,7 +9744,7 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
        * advance on reference pictures only, so nothing downstream
        * notices it was never there. */
       if (v->skip_nonref && type == 1 && ((nal[0] >> 5) & 3) == 0
-            && !v->pic_open)
+            && !v->cur->pic_open)
          return 0;
       if (rh264_frame_alloc_if_needed(v) != 0) return -1;
       if (type == 5)
@@ -9664,7 +9753,7 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
       { if (rh264_video_decode_inter(v, nal, nl) != 0) return -1; }
       /* a picture completes when its slices cover every macroblock; until
        * then further slice NAL units of the same picture are expected */
-      if (v->pic_open && v->pic_end >= v->f.mbw * v->f.mbh)
+      if (v->cur->pic_open && v->cur->pic_end >= v->cur->f.mbw * v->cur->f.mbh)
       {
          rh264_video_finish_picture(v, got_pic);
          return 1;   /* one coded picture per call */
@@ -9744,7 +9833,7 @@ int rh264_video_bit_depth(const rh264_video *v)
 {
    const rh264_frame *f;
    if (!v) return 0;
-   f = (v->out_show >= 0) ? &v->out[v->out_show] : &v->f;
+   f = (v->out_show >= 0) ? &v->out[v->out_show] : &v->cur->f;
    return f->bd ? f->bd : 8;
 }
 
@@ -9755,7 +9844,7 @@ const uint8_t *rh264_video_plane(const rh264_video *v, int plane,
    const rh264_frame *f;
    int st, w, h;
    if (!v) return NULL;
-   f = (v->out_show >= 0) ? &v->out[v->out_show] : &v->f;
+   f = (v->out_show >= 0) ? &v->out[v->out_show] : &v->cur->f;
    /* Cropping is display-only (reference reads use the full coded
     * picture), so it is applied here and nowhere else: the returned
     * pointer starts at the visible window's origin.  crop_x is always

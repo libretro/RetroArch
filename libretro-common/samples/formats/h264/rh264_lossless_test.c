@@ -571,6 +571,15 @@ int main(void)
          "-preset medium -g 1 -x264-params cabac=0");
 
    run("rm -rf '%s'", dir);
+   /* The row counter every reference read consults: on one thread a
+    * reference is complete before it is read, so the read must never
+    * find rows missing. A miss here means the counter, or what the
+    * reads ask of it, is wrong - and a threaded decoder would wait on
+    * a row it had already been handed. */
+   printf("row progress: %d reference reads short of their rows\n",
+         rh264_video_ref_wait_misses());
+   check("row progress never short on one thread",
+         rh264_video_ref_wait_misses() == 0);
    printf("rh264_lossless_test: %s (%d failure%s)\n", fails ? "FAIL" : "PASS",
          fails, fails == 1 ? "" : "s");
    return fails ? 1 : 0;
