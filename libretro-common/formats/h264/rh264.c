@@ -9316,6 +9316,23 @@ static void rh264_video_row_done(void *user, int mby);
 static void rh264_video_post_picture(rh264_video *v);
 static void rh264_video_finish_picture(rh264_video *v, int *got_pic);
 
+
+/* A slice that is not the first of its picture continues the picture
+ * open on the context, at the macroblock where the last slice ended.
+ * On one thread that end is known; with the slices queued for the
+ * pool it is not yet, and the check is that the slices arrive in
+ * raster order - the job checks each against the last one's end when
+ * it runs them. */
+static int rh264_video_slice_continues(const rh264_video *v, int first_mb)
+{
+   const rh264_pic_ctx *c = v->cur;
+   if (!c->pic_open)
+      return 0;
+   if (v->threaded)
+      return c->pic_nslices > 0
+          && first_mb > c->pic_first[c->pic_nslices - 1];
+   return first_mb == c->pic_end;
+}
 /* A new picture takes the next context round and readies it for the
  * sequence's geometry. The one it leaves keeps its frame: that is the
  * last picture's, shared into the DPB and the output queue, and the
@@ -9400,7 +9417,7 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
       rh264_resolve_scaling(&v->sps, &v->pps, v->cur->f.w4, v->cur->f.w8);
    }
    else if (!v->cur->pic_open || v->cur->pic_kind != 1
-         || sh.first_mb_in_slice != v->cur->pic_end)
+         || !rh264_video_slice_continues(v, sh.first_mb_in_slice))
    { return -1; }   /* continuation without its picture */
    if (rh264_video_note_slice(v, &sh) != 0)
    { v->cur->pic_open = 0; return -1; }
@@ -9727,7 +9744,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       rh264_resolve_scaling(&v->sps, &v->pps, v->cur->f.w4, v->cur->f.w8);
    }
    else if (!v->cur->pic_open || v->cur->pic_kind != kind
-         || sh->first_mb_in_slice != v->cur->pic_end)
+         || !rh264_video_slice_continues(v, sh->first_mb_in_slice))
    { return -1; }   /* continuation without its picture, or a
                                  * mixed-type picture (unsupported) */
    if (rh264_video_note_slice(v, sh) != 0)
@@ -10191,6 +10208,8 @@ static void rh264_ctx_run_slices(rh264_video *v, rh264_pic_ctx *c, const struct 
       c->jobs = j->next;
       if (!c->jobs)
          c->jobs_tail = NULL;
+      if (c->job_rc == 0 && j->sh.first_mb_in_slice != c->pic_end)
+         c->job_rc = -1;               /* a gap between slices */
       if (c->job_rc == 0)
       {
          rh264_bits_init(&b, j->rbsp, j->rbsp_len);
@@ -10258,6 +10277,15 @@ static void rh264_ctx_run_slices(rh264_video *v, rh264_pic_ctx *c, const struct 
       rh264_ctx_complete_picture(c);
       c->completed = 1;
    }
+   else if (!c->completed && c->f.planes)
+   {
+      /* A picture that refused, or came up short of its last slice:
+       * nobody may wait on its rows, whichever thread ran it - a
+       * picture predicting from it would wait for a row that never
+       * comes. It is published whole; what it holds is what was
+       * decoded, and the caller learns of the refusal. */
+      rh264_block_publish_rows(c->f.planes, c->f.mbh);
+   }
 }
 
 
@@ -10276,8 +10304,6 @@ static void rh264_ctx_job(void *arg)
    }
    rh264_ctx_run_slices(c->owner, c, c->vlc);
    retro_atomic_fetch_sub_int(&rh264_jobs_running, 1);
-   if (c->job_rc != 0 && c->f.planes)
-      rh264_block_publish_rows(c->f.planes, c->f.mbh); /* nobody waits on a refusal */
    slock_lock(rh264_rows_lock);
    retro_atomic_store_release_int(&c->busy, 0);
    scond_broadcast(rh264_rows_cond);
@@ -10466,7 +10492,13 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
          {
             int r = rh264_video_handle_slice_nal(v, data + p, nl, &got_pic);
             if (r < 0) return -1;
-            if (r == 1) break;   /* one coded picture per call */
+            /* One coded picture per call: sequentially the picture
+             * shown is this sample's, complete at its last slice, and
+             * the rest of the sample is nothing. With pictures in
+             * flight the one shown at a slice's open is an earlier
+             * picture's, and this sample's remaining slices still
+             * have to be queued: the call ends with the sample. */
+            if (r == 1 && !v->threaded) break;
          }
          p += nl;
       }
@@ -10488,7 +10520,13 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
          {
             int r = rh264_video_handle_slice_nal(v, data + s, e - s, &got_pic);
             if (r < 0) return -1;
-            if (r == 1) break;   /* one coded picture per call */
+            /* One coded picture per call: sequentially the picture
+             * shown is this sample's, complete at its last slice, and
+             * the rest of the sample is nothing. With pictures in
+             * flight the one shown at a slice's open is an earlier
+             * picture's, and this sample's remaining slices still
+             * have to be queued: the call ends with the sample. */
+            if (r == 1 && !v->threaded) break;
          }
          p = e;
       }

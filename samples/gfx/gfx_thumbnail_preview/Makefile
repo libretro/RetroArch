@@ -205,6 +205,15 @@ PLATFORM_TARGETS := $(ANIM_WINDOW_TARGET)
 endif
 
 
+# Defined ahead of all: a prerequisite list expands when make reads it,
+# and a variable set below it is empty there.
+THREADED_TARGET := gfx_thumbnail_preview_test_threaded
+THREADED_DEFS   := -DHAVE_THREADS -DPREVIEW_THREADED
+THREADED_EXTRA  := $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+                   $(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
+                   $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
+THREADED_OBJS   := $(SOURCES:.c=.t.o) $(THREADED_EXTRA:.c=.t.o)
+
 all: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(THREADED_TARGET)
 
 $(ANIM_WINDOW_TARGET): $(ANIM_WINDOW_SOURCES)
@@ -305,12 +314,6 @@ $(TARGET): $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 # pool and the eventcount are the real ones; the stubs' thread shims
 # are compiled out under PREVIEW_THREADED. Objects carry .t.o so the
 # two builds never share one.
-THREADED_TARGET := gfx_thumbnail_preview_test_threaded
-THREADED_DEFS   := -DHAVE_THREADS -DPREVIEW_THREADED
-THREADED_EXTRA  := $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
-                   $(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
-                   $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
-THREADED_OBJS   := $(SOURCES:.c=.t.o) $(THREADED_EXTRA:.c=.t.o)
 
 %.t.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS) $(THREADED_DEFS)

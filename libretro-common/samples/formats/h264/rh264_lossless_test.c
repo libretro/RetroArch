@@ -186,6 +186,24 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
                off += (size_t)w[k]*bps;
             }
          }
+         if (getenv("RH264_FRAMEDIFF"))
+            fprintf(stderr, "FRAME %d diff so far %ld\n", frames, bad);
+         if (getenv("RH264_DUMP") && frames == atoi(getenv("RH264_DUMP")))
+         {
+            /* luma of this frame, one line per macroblock row: the
+             * count of samples differing from the reference */
+            size_t o = 0; int fy; int y, x;
+            for (fy = 0; fy < frames; fy++)
+               for (k = 0; k < 3; k++) o += (size_t)w[k] * hh[k] * bps;
+            for (y = 0; y < hh[0]; y += 16)
+            {
+               long d = 0; int yy;
+               for (yy = y; yy < y + 16 && yy < hh[0]; yy++)
+                  for (x = 0; x < w[0]*bps; x++)
+                     if (p[0][(size_t)yy*st[0]*bps + x] != ref_a[o + (size_t)yy*w[0]*bps + x]) d++;
+               fprintf(stderr, "ROW %2d diff %ld\n", y / 16, d);
+            }
+         }
          frames++;
       }
    }
@@ -545,6 +563,34 @@ static void mixed_case(void)
 
 int main(void)
 {
+   /* RH264_FILE=path RH264_REF=path.yuv: decode one file against its
+    * ffmpeg reference, at one thread and, with RH264_FILE_THREADS,
+    * concurrently - for a file that misbehaves in the field. */
+   if (getenv("RH264_FILE") && getenv("RH264_REF"))
+   {
+      size_t rlen = 0;
+      uint8_t *ref = slurp(getenv("RH264_REF"), &rlen);
+      int nf = 0;
+      long bad;
+      const char *te = getenv("RH264_FILE_THREADS");
+      if (!ref)
+         return 2;
+      g_pool = tpool_create_with_stack_size(3, 512 * 1024);
+      bad = compare(getenv("RH264_FILE"), ref, rlen, ref, 0, &nf);
+      printf("one thread: %d frames, %ld differing samples, %d reads short of their rows\n",
+            nf, bad, rh264_video_ref_wait_misses());
+      g_contexts = 4;
+      bad = compare(getenv("RH264_FILE"), ref, rlen, ref, 0, &nf);
+      g_contexts = 1;
+      printf("4 contexts, one thread: %d frames, %ld differing samples\n", nf, bad);
+      if (te && g_pool)
+      {
+         g_threads = atoi(te);
+         bad = compare(getenv("RH264_FILE"), ref, rlen, ref, 0, &nf);
+         printf("%d threads: %d frames, %ld differing samples\n", g_threads, nf, bad);
+      }
+      return 0;
+   }
    if (system("ffmpeg -version >/dev/null 2>&1") != 0)
    {
       printf("rh264_lossless_test: ffmpeg is required (with libx264)\n");
@@ -617,6 +663,12 @@ int main(void)
          "-preset medium");
    oracle_case("c444_ll_cavlc",  "mandelbrot=s=112x96:r=10", 3, "yuv444p", "-qp 0",
          "-preset medium -g 1 -x264-params cabac=0");
+   /* Every picture in eight slices: the shape the field sent in, and
+    * the one that showed the concurrent decoder stopping a sample at
+    * the first slice that showed a picture. Larger than the others so
+    * that eight slices are eight rows of macroblocks. */
+   oracle_case("slices8_ipb",    "mandelbrot=s=176x256:r=10", 8, "yuv420p", "-qp 0",
+         "-preset medium -x264-params slices=8:bframes=2");
 
    run("rm -rf '%s'", dir);
    /* The row counter every reference read consults: on one thread a
