@@ -125,6 +125,7 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <rthreads/tpool.h>
+#include <rthreads/retro_eventcount.h>
 #endif
 
 /* CTB rows decoded side by side at most. */
@@ -3768,6 +3769,7 @@ struct rh265_video
    int        row_cap;
    retro_atomic_int_t next_row;
    retro_atomic_int_t wpp_err;
+   unsigned  wpp_gen;              /* the picture the rows on the pool are of */
 };
 
 /* Unescape into the decoder's scratch block instead of a fresh
@@ -4104,38 +4106,98 @@ static int rh265_wpp_row(rh265_video *v, rh265_dec *d, int ry,
    return (ry == sps->ctb_h - 1) ? -1 : 0; /* last row must terminate */
 }
 
-typedef struct
+/* One picture's rows on the pool: the runners' jobs and what they
+ * share - the rows still to finish, the count of holders, and the
+ * picture's generation, so a runner the pool starts late, behind
+ * other work, finds the picture gone and leaves without touching the
+ * decoder's next one. On the heap, freed by the last holder, so such
+ * a runner has something to read. The caller waits for the rows
+ * alone, on a process-wide eventcount, never for the runners: a pool
+ * that also carries pictures in flight must not be drained per
+ * picture. */
+typedef struct rh265_wpp_group rh265_wpp_group;
+typedef struct { rh265_dec *d; rh265_wpp_group *g; } rh265_wpp_job;
+struct rh265_wpp_group
 {
    rh265_video *v;
-   rh265_dec   *d;
    const uint8_t *rbsp;
    size_t         size;
-} rh265_wpp_job;
+   unsigned       gen;
+   retro_atomic_int_t rows_left;
+   retro_atomic_int_t refs;
+   rh265_wpp_job  job[RH265_WPP_THREADS_MAX];
+};
+
+static retro_eventcount_t  rh265_wpp_ec;
+static retro_atomic_int_t  rh265_wpp_ec_state;   /* 0 none, 1 making, 2 ready */
+
+static int rh265_wpp_ec_ready(void)
+{
+   int st = retro_atomic_load_acquire_int(&rh265_wpp_ec_state);
+   if (st == 2)
+      return 1;
+   if (st == 0 && retro_atomic_cas_int(&rh265_wpp_ec_state, 0, 1))
+   {
+      if (retro_eventcount_init(&rh265_wpp_ec))
+      {
+         retro_atomic_store_release_int(&rh265_wpp_ec_state, 2);
+         return 1;
+      }
+      retro_atomic_store_release_int(&rh265_wpp_ec_state, 0);
+   }
+   return 0;
+}
+
+/* A runner lets go of the group; the one that leaves the caller alone
+ * with it wakes the caller, whose decoder state - the shadows, the row
+ * counters - the next picture will reuse, and so must not be handed
+ * to a picture while a runner of this one can still reach it. */
+static void rh265_wpp_group_release(rh265_wpp_group *g)
+{
+   int left = retro_atomic_fetch_sub_int(&g->refs, 1) - 1;
+   if (left == 1)
+      retro_eventcount_notify(&rh265_wpp_ec);
+   else if (left == 0)
+      free(g);
+}
 
 /* A thread's share: rows claimed in order from the shared counter,
  * so every row waits only on one claimed before it by a thread that
  * is running it. */
-static void rh265_wpp_worker(void *arg)
+/* Do rows until none are left to claim. A runner of a picture the
+ * decoder has moved past does nothing: its generation no longer
+ * matches. */
+static void rh265_wpp_drain(rh265_wpp_group *g, rh265_dec *d)
 {
-   rh265_wpp_job *j     = (rh265_wpp_job*)arg;
-   rh265_video   *v     = j->v;
-   const rh265_sps *sps = j->d->sps;
+   rh265_video   *v     = g->v;
+   const rh265_sps *sps = d->sps;
+   if (g->gen != v->wpp_gen)
+      return;
    for (;;)
    {
       int ry = retro_atomic_fetch_add_int(&v->next_row, 1);
       if (ry >= sps->ctb_h)
          break;
-      if (retro_atomic_load_acquire_int(&v->wpp_err))
-         break;
-      if (rh265_wpp_row(v, j->d, ry, j->rbsp + v->row_off[ry],
-               j->rbsp + j->size) < 0)
+      if (!retro_atomic_load_acquire_int(&v->wpp_err))
       {
-         retro_atomic_store_release_int(&v->wpp_err, 1);
-         /* let rows waiting on this one give up */
-         retro_atomic_store_release_int(&v->row_prog[ry], sps->ctb_w);
-         break;
+         if (rh265_wpp_row(v, d, ry, g->rbsp + v->row_off[ry],
+                  g->rbsp + g->size) < 0)
+         {
+            retro_atomic_store_release_int(&v->wpp_err, 1);
+            /* let rows waiting on this one give up */
+            retro_atomic_store_release_int(&v->row_prog[ry], sps->ctb_w);
+         }
       }
+      if (retro_atomic_fetch_sub_int(&g->rows_left, 1) == 1)
+         retro_eventcount_notify(&rh265_wpp_ec);
    }
+}
+
+static void rh265_wpp_worker(void *arg)
+{
+   rh265_wpp_job *j = (rh265_wpp_job*)arg;
+   rh265_wpp_drain(j->g, j->d);
+   rh265_wpp_group_release(j->g);
 }
 
 /* The threaded decode of a single-slice WPP picture: every row's
@@ -4150,13 +4212,15 @@ static int rh265_decode_slice_data_wpp(rh265_video *v, const uint8_t *rbsp,
    const rh265_sps *sps = d->sps;
    int rows             = sps->ctb_h;
    int workers          = (int)v->threads;
-   rh265_wpp_job jobs[RH265_WPP_THREADS_MAX];
+   rh265_wpp_group *g;
    int r, w;
 
    if (workers > rows)
       workers = rows;
    if (workers > (int)v->num_shadows + 1)
       workers = (int)v->num_shadows + 1;
+   if (!rh265_wpp_ec_ready())
+      return -2;                          /* this picture on one thread */
    if (rh265_wpp_rows_alloc(v, rows) < 0)
       return -1;
 
@@ -4177,23 +4241,61 @@ static int rh265_decode_slice_data_wpp(rh265_video *v, const uint8_t *rbsp,
    retro_atomic_int_init(&v->next_row, 0);
    retro_atomic_int_init(&v->wpp_err, 0);
 
+   g = (rh265_wpp_group*)malloc(sizeof(*g));
+   if (!g)
+      return -1;
+   v->wpp_gen++;
+   g->v    = v;
+   g->rbsp = rbsp;
+   g->size = size;
+   g->gen  = v->wpp_gen;
+   retro_atomic_int_init(&g->rows_left, rows);
+   retro_atomic_int_init(&g->refs, 1);
    for (w = 0; w < workers; w++)
    {
-      jobs[w].v    = v;
-      jobs[w].d    = w ? &v->shadows[w - 1] : d;
-      jobs[w].rbsp = rbsp;
-      jobs[w].size = size;
+      g->job[w].d = w ? &v->shadows[w - 1] : d;
+      g->job[w].g = g;
       if (w)
          memcpy(&v->shadows[w - 1], d, sizeof(*d));
    }
    for (w = 1; w < workers; w++)
-      if (!tpool_add_work((tpool_t*)v->pool, rh265_wpp_worker, &jobs[w]))
-         rh265_wpp_worker(&jobs[w]);
-   rh265_wpp_worker(&jobs[0]);
-   tpool_wait((tpool_t*)v->pool);
-
-   if (retro_atomic_load_acquire_int(&v->wpp_err))
-      return -1;
+   {
+      retro_atomic_fetch_add_int(&g->refs, 1);
+      if (!tpool_add_work((tpool_t*)v->pool, rh265_wpp_worker, &g->job[w]))
+         retro_atomic_fetch_sub_int(&g->refs, 1);
+   }
+   rh265_wpp_drain(g, d);
+   /* the rows in other hands, and only those */
+   while (retro_atomic_load_acquire_int(&g->rows_left) > 0)
+   {
+      int key = retro_eventcount_prepare_wait(&rh265_wpp_ec);
+      if (retro_atomic_load_acquire_int(&g->rows_left) <= 0)
+      {
+         retro_eventcount_cancel_wait(&rh265_wpp_ec);
+         break;
+      }
+      retro_eventcount_commit_wait(&rh265_wpp_ec, key);
+   }
+   /* and the runners themselves: one still queued behind other work
+    * would find its rows gone and leave at once, but until it has,
+    * the shadows and counters it can reach are not the next
+    * picture's to reset */
+   while (retro_atomic_load_acquire_int(&g->refs) > 1)
+   {
+      int key = retro_eventcount_prepare_wait(&rh265_wpp_ec);
+      if (retro_atomic_load_acquire_int(&g->refs) <= 1)
+      {
+         retro_eventcount_cancel_wait(&rh265_wpp_ec);
+         break;
+      }
+      retro_eventcount_commit_wait(&rh265_wpp_ec, key);
+   }
+   {
+      int err = retro_atomic_load_acquire_int(&v->wpp_err);
+      rh265_wpp_group_release(g);
+      if (err)
+         return -1;
+   }
    return sps->pic_size_ctbs;
 }
 #endif
@@ -4290,8 +4392,14 @@ static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
    if (     wpp && v->pool && v->threads > 1 && ctb_addr == 0
          && d->sh.first_slice_in_pic && sps->ctb_h > 1
          && d->sh.num_entry_points == sps->ctb_h - 1)
-      return rh265_decode_slice_data_wpp(v, rbsp, size, esc_base, esc_idx,
+   {
+      int r = rh265_decode_slice_data_wpp(v, rbsp, size, esc_base, esc_idx,
             esc_pos, esc_count);
+      if (r != -2)
+         return r;
+      /* the rows' eventcount could not be made: this picture on one
+       * thread, as below */
+   }
 #endif
 
    while (ctb_addr < sps->pic_size_ctbs)
