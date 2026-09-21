@@ -166,10 +166,8 @@ jobs:
             # microsecond clock; the late bound is loose for a loaded
             # runner.
             retro_sleep_until_test
-            # Runs its natural tier only here; Makefile.test's
-            # threads-samples forces each tier in turn.  On the
-            # runner's cores the fence check is load-bearing, which
-            # this box cannot make it.
+            # Runs its natural tier only here; procbarrier-tiers.yml
+            # forces every tier on Linux, Windows and macOS runners.
             retro_procbarrier_test
             retro_asym_eventcount_test
             sthread_ex_test

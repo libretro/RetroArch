@@ -1,0 +1,141 @@
+name: CI procbarrier tiers
+
+# retro_procbarrier picks one of several ways to force a memory barrier
+# on every running thread, and which one depends on the OS and the CPU.
+# The Linux samples job only ever runs the one its runner picks
+# (membarrier). This runs every tier each platform has, on a multi-core
+# runner so the fence checks can actually catch a missing barrier, and
+# fails if a forced tier quietly fell back to another one.
+#
+#   Linux x86_64     membarrier, page-flip, signal
+#   Linux arm64      membarrier, signal
+#   Windows x64      FlushProcessWriteBuffers, page-flip
+#   Windows arm64    FlushProcessWriteBuffers
+#   macOS arm64      signal
+#   macOS x86_64     page-flip, signal
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'libretro-common/rthreads/**'
+      - 'libretro-common/include/rthreads/**'
+      - 'libretro-common/include/retro_atomic.h'
+      - 'libretro-common/samples/rthreads/retro_procbarrier_test/**'
+      - 'libretro-common/samples/rthreads/retro_asym_eventcount_test/**'
+      - '.github/workflows/procbarrier-tiers.yml'
+  pull_request:
+    paths:
+      - 'libretro-common/rthreads/**'
+      - 'libretro-common/include/rthreads/**'
+      - 'libretro-common/include/retro_atomic.h'
+      - 'libretro-common/samples/rthreads/retro_procbarrier_test/**'
+      - 'libretro-common/samples/rthreads/retro_asym_eventcount_test/**'
+      - '.github/workflows/procbarrier-tiers.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  posix:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-latest
+            libs: -lpthread -lrt
+            tiers: natural=membarrier membarrier=membarrier pageflip=page-flip signal=signal
+          - name: linux-arm64
+            os: ubuntu-24.04-arm
+            libs: -lpthread -lrt
+            tiers: natural=membarrier membarrier=membarrier signal=signal
+          - name: macos-arm64
+            os: macos-latest
+            libs: -lpthread
+            tiers: natural=signal signal=signal
+          - name: macos-x86_64
+            os: macos-15-intel
+            libs: -lpthread
+            tiers: natural=page-flip pageflip=page-flip signal=signal
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build
+        working-directory: libretro-common
+        run: |
+          set -e
+          cc -std=gnu99 -O1 -g -Wall -DHAVE_THREADS -Iinclude \
+             samples/rthreads/retro_procbarrier_test/retro_procbarrier_test.c \
+             rthreads/retro_procbarrier.c rthreads/rthreads.c \
+             -o retro_procbarrier_test ${{ matrix.libs }}
+          cc -std=gnu99 -O1 -g -Wall -DHAVE_THREADS -Iinclude \
+             samples/rthreads/retro_asym_eventcount_test/retro_asym_eventcount_test.c \
+             rthreads/retro_asym_eventcount.c \
+             rthreads/retro_procbarrier.c rthreads/rthreads.c \
+             -o retro_asym_eventcount_test ${{ matrix.libs }}
+
+      - name: Run every tier
+        working-directory: libretro-common
+        env:
+          REQUIRE_SMP: 1
+        run: |
+          bash samples/rthreads/retro_procbarrier_test/run_tiers.sh \
+             ./retro_procbarrier_test ./retro_asym_eventcount_test \
+             ${{ matrix.tiers }}
+
+  windows:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x64
+            os: windows-2022
+            vcvars: vcvars64.bat
+            tiers: natural=FlushProcessWriteBuffers fpwb=FlushProcessWriteBuffers pageflip=page-flip
+          - name: windows-arm64
+            os: windows-11-arm
+            vcvars: vcvarsarm64.bat
+            tiers: natural=FlushProcessWriteBuffers fpwb=FlushProcessWriteBuffers
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build
+        shell: cmd
+        working-directory: libretro-common
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set VSPATH=%%i
+          if not defined VSPATH exit /b 1
+          call "%VSPATH%\VC\Auxiliary\Build\${{ matrix.vcvars }}"
+          cl /nologo /W3 /O1 /DHAVE_THREADS /Iinclude ^
+             samples\rthreads\retro_procbarrier_test\retro_procbarrier_test.c ^
+             rthreads\retro_procbarrier.c rthreads\rthreads.c ^
+             /Fe:retro_procbarrier_test.exe
+          if errorlevel 1 exit /b 1
+          cl /nologo /W3 /O1 /DHAVE_THREADS /Iinclude ^
+             samples\rthreads\retro_asym_eventcount_test\retro_asym_eventcount_test.c ^
+             rthreads\retro_asym_eventcount.c ^
+             rthreads\retro_procbarrier.c rthreads\rthreads.c ^
+             /Fe:retro_asym_eventcount_test.exe
+          if errorlevel 1 exit /b 1
+
+      - name: Run every tier
+        shell: bash
+        working-directory: libretro-common
+        env:
+          REQUIRE_SMP: 1
+        run: |
+          bash samples/rthreads/retro_procbarrier_test/run_tiers.sh \
+             ./retro_procbarrier_test.exe ./retro_asym_eventcount_test.exe \
+             ${{ matrix.tiers }}
