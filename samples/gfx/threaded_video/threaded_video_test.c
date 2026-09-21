@@ -2561,6 +2561,159 @@ static void lane_surface_update(void)
 /*   page that runs.                                                   */
 /* ------------------------------------------------------------------ */
 
+/* An overlay back end for the null driver, which has none, so the lane
+ * gets past "no load_textures" to what it is about. It goes on
+ * video_null itself and BEFORE the mode switch, because the wrapper's
+ * init drops its own overlay entry point when the driver it wraps has
+ * none: with one there, the threaded pass runs the real path - the
+ * main thread's calls cross the command ring, the video thread's
+ * capture of the table happens in the CMD_OVERLAY_LOAD handler, and
+ * what arrives here arrives on the video thread.
+ *
+ * Recording what the driver is told is what lets the pass assert the
+ * two things the wrapper promises and nothing has checked: that a page
+ * switch passes indices rather than uploading, and that an alpha set
+ * cannot be lost. */
+#define OVLFAKE_MAX 8
+
+static unsigned  ovl_enables;
+static unsigned  ovl_disables;
+static unsigned  ovl_loads;           /* the uploading variant         */
+static unsigned  ovl_pages;           /* load_textures()               */
+static unsigned  ovl_page_num;
+static uintptr_t ovl_page[OVLFAKE_MAX];
+static unsigned  ovl_tex_geoms;
+static unsigned  ovl_vertex_geoms;
+static unsigned  ovl_alpha_sets;
+static float     ovl_alpha[OVLFAKE_MAX];
+
+/* One shot, armed by the lane and fired by the driver's set_alpha the
+ * first time the apply runs: a set that lands after the apply has
+ * cleared its flag and read the value it was going to use. The
+ * wrapper's order - clear the flag with an acquire exchange, THEN read
+ * the values - is what carries this to the next pass. Reading first
+ * and clearing after drops it, and that is the defect this catches. */
+static retro_atomic_int_t                ovl_inject_arm;
+static float                             ovl_inject_value;
+static const video_overlay_interface_t  *ovl_inject_iface;
+static void                             *ovl_inject_data;
+
+static void ovl_enable(void *data, bool state)
+{
+   (void)data;
+   if (state)
+      ovl_enables++;
+   else
+      ovl_disables++;
+}
+
+static bool ovl_load(void *data, const void *images, unsigned num_images)
+{
+   (void)data; (void)images;
+   ovl_loads++;
+   ovl_page_num = num_images;
+   return true;
+}
+
+static bool ovl_load_textures(void *data, const uintptr_t *textures,
+      unsigned num_textures)
+{
+   unsigned i;
+   (void)data;
+   if (num_textures > OVLFAKE_MAX)
+      return false;
+   ovl_pages++;
+   ovl_page_num = num_textures;
+   for (i = 0; i < num_textures; i++)
+      ovl_page[i] = textures[i];
+   return true;
+}
+
+static void ovl_tex_geom(void *data, unsigned image,
+      float x, float y, float w, float h)
+{
+   (void)data; (void)image; (void)x; (void)y; (void)w; (void)h;
+   ovl_tex_geoms++;
+}
+
+static void ovl_vertex_geom(void *data, unsigned image,
+      float x, float y, float w, float h)
+{
+   (void)data; (void)image; (void)x; (void)y; (void)w; (void)h;
+   ovl_vertex_geoms++;
+}
+
+static void ovl_full_screen(void *data, bool enable)
+{
+   (void)data; (void)enable;
+}
+
+static void ovl_set_alpha(void *data, unsigned image, float mod)
+{
+   (void)data;
+   if (image < OVLFAKE_MAX)
+      ovl_alpha[image] = mod;
+   ovl_alpha_sets++;
+
+   if (image == 0 && retro_atomic_load_relaxed_int(&ovl_inject_arm))
+   {
+      /* Cleared first: this must run once, or the flag it raises keeps
+       * the apply coming back for good. */
+      retro_atomic_store_relaxed_int(&ovl_inject_arm, 0);
+      ovl_inject_iface->set_alpha(ovl_inject_data, 0, ovl_inject_value);
+   }
+}
+
+static const video_overlay_interface_t ovl_iface = {
+   ovl_enable,
+   ovl_load,
+   ovl_load_textures,
+   ovl_tex_geom,
+   ovl_vertex_geom,
+   ovl_full_screen,
+   ovl_set_alpha,
+};
+
+static void ovl_get_iface(void *data, const video_overlay_interface_t **iface)
+{
+   (void)data;
+   *iface = &ovl_iface;
+}
+
+static void ovl_counts_reset(void)
+{
+   unsigned i;
+   ovl_enables = ovl_disables = ovl_loads = ovl_pages = 0;
+   ovl_page_num = ovl_tex_geoms = ovl_vertex_geoms = ovl_alpha_sets = 0;
+   for (i = 0; i < OVLFAKE_MAX; i++)
+   {
+      ovl_page[i]  = 0;
+      ovl_alpha[i] = -1.0f;
+   }
+   retro_atomic_store_relaxed_int(&ovl_inject_arm, 0);
+}
+
+/* video_null is not const, and the wrapper reads the entry off the
+ * driver it wraps at init: installed here, before the mode switch,
+ * both passes see an overlay-capable driver. */
+static bool ovl_installed;
+
+static void ovl_install(void)
+{
+   if (ovl_installed || real_driver() || video_null.overlay_interface)
+      return;
+   video_null.overlay_interface = ovl_get_iface;
+   ovl_installed                = true;
+}
+
+static void ovl_remove(void)
+{
+   if (!ovl_installed)
+      return;
+   video_null.overlay_interface = NULL;
+   ovl_installed                = false;
+}
+
 static void lane_overlay_textures_pass(bool threaded)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
@@ -2570,9 +2723,18 @@ static void lane_overlay_textures_pass(bool threaded)
    uintptr_t tex[3];
    unsigned i, j;
 
+   /* Before the switch: the wrapper decides at init whether it has an
+    * overlay to offer, from the driver it is about to wrap. */
+   ovl_install();
    set_threaded_via_setting(threaded);
    run_frames(3);
    expect_wrapper(threaded, "overlay lane");
+
+   /* And a texture back end, so the pack's textures exist at all. */
+   if (!real_driver())
+      CHECK(surftex_install(), "overlay lane (%s): no texture back end",
+            threaded ? "threaded" : "direct");
+   ovl_counts_reset();
 
    for (i = 0; i < 3; i++)
    {
@@ -2590,6 +2752,8 @@ static void lane_overlay_textures_pass(bool threaded)
    {
       fprintf(stderr, "[skip] overlay lane (%s): driver made no texture\n",
             threaded ? "threaded" : "direct");
+      surftex_remove();
+      ovl_remove();
       return;
    }
    if (video_st->current_video && video_st->current_video->overlay_interface)
@@ -2601,6 +2765,8 @@ static void lane_overlay_textures_pass(bool threaded)
       for (i = 0; i < 3; i++)
          if (tex[i])
             video_driver_texture_unload(&tex[i]);
+      surftex_remove();
+      ovl_remove();
       return;
    }
 
@@ -2615,6 +2781,28 @@ static void lane_overlay_textures_pass(bool threaded)
       iface->set_alpha(video_st->data, i, 0.75f);
    }
    run_frames(4);
+   if (ovl_installed)
+   {
+      /* What the driver was actually told, on the far side of the
+       * command ring: the page it was handed is the frontend's own
+       * handles, in order, and the geometry for both images arrived. */
+      video_thread_wait_idle();
+      CHECK(ovl_pages == 1, "%u load_textures calls reached the driver for "
+            "page one", ovl_pages);
+      CHECK(ovl_loads == 0, "the uploading load() ran %u times on a driver "
+            "with load_textures", ovl_loads);
+      CHECK(ovl_page_num == 2 && ovl_page[0] == tex[0] && ovl_page[1] == tex[1],
+            "page one arrived as %u handles (%lx, %lx), not (%lx, %lx)",
+            ovl_page_num, (unsigned long)ovl_page[0],
+            (unsigned long)ovl_page[1], (unsigned long)tex[0],
+            (unsigned long)tex[1]);
+      CHECK(ovl_enables == 1 && ovl_disables == 0,
+            "enable reached the driver %u on, %u off", ovl_enables,
+            ovl_disables);
+      CHECK(ovl_tex_geoms == 2 && ovl_vertex_geoms == 2,
+            "%u tex_geom and %u vertex_geom for two images",
+            ovl_tex_geoms, ovl_vertex_geoms);
+   }
    /* Page two: a different set of the same textures, no upload. */
    CHECK(iface->load_textures(video_st->data, tex + 1, 2),
          "load_textures refused page two (%s)", threaded ? "threaded" : "direct");
@@ -2625,12 +2813,92 @@ static void lane_overlay_textures_pass(bool threaded)
       iface->set_alpha(video_st->data, i, 1.0f);
    }
    run_frames(4);
+   if (ovl_installed)
+   {
+      video_thread_wait_idle();
+      /* The switch is a pass over indices: a second page, still no
+       * upload, and the handles are the ones the frontend already
+       * owns. */
+      CHECK(ovl_pages == 2, "%u load_textures calls for two pages",
+            ovl_pages);
+      CHECK(ovl_loads == 0, "a page switch fell back to the uploading "
+            "load() (%u calls)", ovl_loads);
+      CHECK(ovl_page[0] == tex[1] && ovl_page[1] == tex[2],
+            "page two arrived as (%lx, %lx), not (%lx, %lx)",
+            (unsigned long)ovl_page[0], (unsigned long)ovl_page[1],
+            (unsigned long)tex[1], (unsigned long)tex[2]);
+   }
+
+   /* The alpha path. Threaded, a set is fire-and-forget: the value goes
+    * into an atomic and raises a flag the video thread clears with an
+    * acquire exchange BEFORE reading the values, so a set that lands
+    * mid-apply is applied whole on the next pass. Fire one from inside
+    * the apply - the driver's set_alpha below is on the video thread,
+    * after the flag was cleared and after the value for image 0 was
+    * read - and it must still arrive. Clearing the flag after the read
+    * instead would drop it, and nothing else in the tree notices. */
+   if (ovl_installed && threaded)
+   {
+      ovl_alpha[0]     = -1.0f;
+      ovl_inject_iface = iface;
+      ovl_inject_data  = video_st->data;
+      ovl_inject_value = 0.375f;          /* exact in binary32 */
+      retro_atomic_store_release_int(&ovl_inject_arm, 1);
+      iface->set_alpha(video_st->data, 0, 0.5f);
+      run_frames(8);
+      video_thread_wait_idle();
+      CHECK(!retro_atomic_load_acquire_int(&ovl_inject_arm),
+            "the overlay alpha apply never ran");
+      CHECK(ovl_alpha[0] == 0.375f,
+            "an alpha set from inside the apply was lost: the driver last "
+            "saw %.3f, not 0.375", (double)ovl_alpha[0]);
+   }
+
    iface->enable(video_st->data, false);
    run_frames(2);
-   for (i = 0; i < 3; i++)
-      if (tex[i])
-         video_driver_texture_unload(&tex[i]);
+   if (ovl_installed)
+   {
+      video_thread_wait_idle();
+      CHECK(ovl_disables == 1, "enable(false) reached the driver %u times",
+            ovl_disables);
+   }
+
+   /* Unloading the pack. Threaded, the wrapper does NOT hand the driver
+    * a release here: a texture the in-flight frame may still name is
+    * put on the retire list and freed by the video thread once it has
+    * drawn the frame that carries it. So nothing reaches the driver
+    * until frames run, and this is the only check on that path. */
+   {
+      unsigned  before = surftex_unloads;
+      uintptr_t held[3];
+      for (i = 0; i < 3; i++)
+      {
+         held[i] = tex[i];
+         if (tex[i])
+            video_driver_texture_unload(&tex[i]);
+      }
+      if (ovl_installed && threaded)
+         CHECK(surftex_unloads == before,
+               "%u of the pack's textures were released on the main thread "
+               "instead of being retired", surftex_unloads - before);
+      run_frames(3);
+      if (ovl_installed)
+      {
+         video_thread_wait_idle();
+         run_frames(1);
+         video_thread_wait_idle();
+         /* Named one by one, so what else the frontend may have
+          * uploaded through the same poke in these frames cannot
+          * stand in for the pack. */
+         for (i = 0; i < 3; i++)
+            CHECK(!surftex_is_live(held[i]),
+                  "the pack's texture %u (%lx) was never released",
+                  i, (unsigned long)held[i]);
+      }
+   }
    run_frames(3);
+   surftex_remove();
+   ovl_remove();
 }
 
 static void lane_overlay_textures(void)
