@@ -1520,6 +1520,7 @@ typedef struct {
    size_t plane_len;      /* the plane block's length, for a fresh one */
    struct rh264_mv_s *mvg_meta, *mvg2_meta; /* the grids carved out of meta */
    int mvg_shared;        /* mvg/mvg2 are one counted block, not meta's */
+   size_t mvg_cells;      /* cells per grid, for making the frame's own */
    /* chroma rows per macroblock: 8 for 4:2:0, 16 for 4:2:2 and 4:4:4,
     * where chroma keeps the luma height */
    int cmbh;
@@ -5109,9 +5110,15 @@ static void rh264_frame_share_mvg(rh264_frame *dst, rh264_mv *g)
  * own, meta-carved ones back. */
 static void rh264_frame_own_mvg(rh264_frame *f)
 {
-   if (!f->mvg_shared)
-      return;
-   rh264_mvg_release(f->mvg);
+   if (!f->mvg_meta && f->mvg_cells)
+   {
+      /* first field into this slot: the slot's own grids, one per
+       * parity, made now and kept with the frame */
+      f->mvg_meta  = rh264_mvg_new(f->mvg_cells);
+      f->mvg2_meta = rh264_mvg_new(f->mvg_cells);
+   }
+   if (f->mvg_shared)
+      rh264_mvg_release(f->mvg);
    f->mvg        = f->mvg_meta;
    f->mvg2       = f->mvg2_meta;
    f->mvg_shared = 0;
@@ -5122,6 +5129,8 @@ static void rh264_frame_free(rh264_frame *f)
    rh264_planes_release(f->planes);
    if (f->mvg_shared)
       rh264_mvg_release(f->mvg);
+   rh264_mvg_release(f->mvg_meta);
+   rh264_mvg_release(f->mvg2_meta);
    free(f->meta);
    memset(f, 0, sizeof(*f));
 }
@@ -5175,7 +5184,12 @@ static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps,
 
    grid      = (size_t)mbw * 4 * mbh * 4;
    mbs       = (size_t)mbw * mbh;
-   mvlen     = with_mv ? grid * sizeof(rh264_mv) : 0;
+   /* A reference's own grids are made on demand (rh264_frame_own_mvg):
+    * a frame picture shares the working grid, and only a field pair
+    * copies into grids of its own. Carving them here allocated and
+    * zeroed two full grids per slot that nothing used. */
+   mvlen     = 0;
+   (void)with_mv;
    o_nzl     = RH264_ARENA_NEXT(0,         grid);
    /* the chroma coefficient-count grids are luma shaped in 4:4:4 and
     * never larger than that in 4:2:x */
@@ -5222,10 +5236,11 @@ static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps,
    f->mbslice= f->meta + o_mbslice;
    if (with_mv)
    {
-      f->mvg  = (rh264_mv*)(f->meta + o_mvg);
-      f->mvg2 = (rh264_mv*)(f->meta + o_mvg2);
-      f->mvg_meta  = f->mvg;
-      f->mvg2_meta = f->mvg2;
+      f->mvg  = NULL;
+      f->mvg2 = NULL;
+      f->mvg_meta  = NULL;
+      f->mvg2_meta = NULL;
+      f->mvg_cells = grid;
    }
    if (with_scratch)
    {

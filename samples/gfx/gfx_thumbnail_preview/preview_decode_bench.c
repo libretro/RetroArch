@@ -80,6 +80,9 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
                (double)(f1 - f0) / 1000.0);
       if (n > 100000)
          break;
+      /* BENCH_MAX: stop after this many frames, for profiling a start. */
+      if (getenv("BENCH_MAX") && n >= atoi(getenv("BENCH_MAX")))
+         break;
    }
    *usec = cpu_features_get_time_usec() - t0;
 
