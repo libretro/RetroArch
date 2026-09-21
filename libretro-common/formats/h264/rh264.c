@@ -1575,6 +1575,19 @@ typedef struct {
    struct rh264_mv_s *mvg2;
    int poc;                /* picture order count of this picture */
    int cropx, cropy;       /* visible window origin, luma samples */
+   /* Row-lagged deblocking. When set, each slice decoder calls this
+    * as it completes a macroblock row, and the video layer filters the
+    * row above it: intra prediction reads unfiltered neighbours, so a
+    * row is filtered only once the row below has read its last line.
+    * The result is the whole-picture pass's, macroblock for
+    * macroblock, since address order is unchanged; what changes is that
+    * a row is filtered while it is still in cache, and that rows become
+    * final one at a time - which is what a frame decoded on another
+    * thread will wait on. rows_deblocked is what the finish then has
+    * left to do. */
+   void (*row_done)(void *user, int mby);
+   void *row_user;
+   int rows_deblocked;
 } rh264_frame;
 
 /* store one raw sample (I_PCM) at sample index 'i' of a plane pointer */
@@ -2343,14 +2356,15 @@ static void rh264_tb_deblock_restore(rh264_frame *f, int mbx, int mby,
  * idc 1 disables the filter for that slice's macroblocks, and idc 2 keeps
  * the filter but not across a slice boundary. */
 static void rh264_deblock(rh264_frame *f, const signed char *sidc,
-      const signed char *soA, const signed char *soB)
+      const signed char *soA, const signed char *soB, int mby0, int mby1)
 {
    int mbx,mby,edge,mba;
    /* The filter runs macroblock by macroblock in ADDRESS order (8.7),
     * and each macroblock filters against samples its neighbours have
     * already had filtered - so the order matters.  Under pair scanning
-    * address order is not raster order. */
-   for(mba=0;mba<f->mbw*f->mbh;mba++)
+    * address order is not raster order, and the row range is then
+    * always the whole picture. */
+   for(mba=mby0*f->mbw;mba<mby1*f->mbw;mba++)
    {
       int mbi, sl, oA, oB, qp, mbt8;
       rh264_tb_save *tbs = f->scr_tbsave;
@@ -4462,13 +4476,14 @@ static unsigned rh264_mb_nzmask(const rh264_frame *f, int gw,
 }
 
 static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
-      const signed char *soA, const signed char *soB, const rh264_mv *mvg)
+      const signed char *soA, const signed char *soB, const rh264_mv *mvg,
+      int mby0, int mby1)
 {
    int mbx, mby, edge, seg, mba;
    int gw = f->mbw * 4, cgw = f->mbw * 2;
 
    /* address order, not raster: see rh264_deblock */
-   for (mba = 0; mba < f->mbw * f->mbh; mba++)
+   for (mba = mby0 * f->mbw; mba < mby1 * f->mbw; mba++)
    {
       int mbi, sl, oA, oB, qp, mbt8;
       unsigned curm, lftm, topm;
@@ -4767,6 +4782,8 @@ static int rh264_decode_islice(rh264_bits *b,const rh264_sps *sps,
       if(rh264_decode_intra_mb_cavlc(b,f,mbx,mby,mb_type,
             pps->transform_8x8_mode,sh->first_mb_in_slice)<0) return -1;
       if(f->mbqp) f->mbqp[mby*f->mbw+mbx]=(uint8_t)RH264_QPP(f);
+         if (f->row_done && mbx == f->mbw - 1)
+            f->row_done(f->row_user, mby);
       mbaddr++;
    }
    if(end_mb) *end_mb=mbaddr;
@@ -6959,6 +6976,8 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
          if (bot)      { leftB = tmp; row[mbx] = tmp; }
          else if (f->mbaff) { leftT = tmp; toprow[mbx] = tmp; }
          else          { leftT = tmp; row[mbx] = tmp; }
+         if (f->row_done && mbx == f->mbw - 1)
+            f->row_done(f->row_user, mby);
          /* end_of_slice_flag, but NOT after the top macroblock of a
           * pair: with pair scanning more data always follows it
           * (7.3.4), and reading a flag there consumes a bit the
@@ -7572,6 +7591,8 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                           leftskipT = 0; topskip[mbx] = 0; }
                else { leftT = tmp; row[mbx] = tmp;
                           leftskipT = 0; skiprow[mbx] = 0; }
+               if (f->row_done && mbx == mbw - 1)
+                  f->row_done(f->row_user, mby);
                if (mba == mbw*mbh-1) break;
                if (!(f->mbaff && !bot) && rh264_cabac_terminate(cb))
                { slice_end = mba+1; break; }
@@ -7759,6 +7780,8 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
          else if (f->mbaff) { leftskipT = skip; topskip[mbx] = (uint8_t)skip; }
          else { leftskipT = skip; skiprow[mbx] = (uint8_t)skip; }
 
+         if (f->row_done && mbx == mbw - 1)
+            f->row_done(f->row_user, mby);
          if (mba == mbw*mbh-1) break;
          if (!(f->mbaff && !bot) && rh264_cabac_terminate(cb))
                { slice_end = mba+1; break; }
@@ -8030,6 +8053,8 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                if (bot) { lefttypeB = 1; typerow[mbx] = 1; }
                else if (f->mbaff) { lefttypeT = 1; toptype[mbx] = 1; }
                else { lefttypeT = 1; typerow[mbx] = 1; }
+               if (f->row_done && mbx == mbw - 1)
+                  f->row_done(f->row_user, mby);
                if (mba == mbw*mbh-1) break;
                if (!(f->mbaff && !bot) && rh264_cabac_terminate(cb))
                { slice_end = mba+1; break; }
@@ -8373,6 +8398,8 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
          { lefttypeT = lefttype; toptype[mbx] = (uint8_t)lefttype; }
          else { lefttypeT = lefttype; typerow[mbx] = (uint8_t)lefttype; }
 
+         if (f->row_done && mbx == mbw - 1)
+            f->row_done(f->row_user, mby);
          if (mba == mbw*mbh-1) break;
          if (!(f->mbaff && !bot) && rh264_cabac_terminate(cb))
                { slice_end = mba+1; break; }
@@ -8661,6 +8688,8 @@ static void rh264_video_fold_mvg(rh264_video *v, int first, int end)
    }
 }
 
+static void rh264_video_row_done(void *user, int mby);
+
 static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len)
 {
    int nut, nri, rc, end = 0;
@@ -8698,6 +8727,9 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
       else v->pair_open=0;
       v->pic_open = 1; v->pic_kind = 1; v->pic_ref = nri;
       v->pic_end = 0;  v->pic_nslices = 0;
+      v->f.rows_deblocked = 0;
+      v->f.row_user       = v;
+      v->f.row_done       = (v->f.mbaff || v->f.field) ? NULL : rh264_video_row_done;
       v->pend_idr_ltr = sh.idr_ltr;
       rh264_resolve_scaling(&v->sps, &v->pps, v->f.w4, v->f.w8);
    }
@@ -9002,6 +9034,9 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       else v->pair_open=0;
       v->pic_open = 1; v->pic_kind = kind; v->pic_ref = nri;
       v->pic_end = 0;  v->pic_nslices = 0;
+      v->f.rows_deblocked = 0;
+      v->f.row_user       = v;
+      v->f.row_done       = (v->f.mbaff || v->f.field) ? NULL : rh264_video_row_done;
       rh264_resolve_scaling(&v->sps, &v->pps, v->f.w4, v->f.w8);
    }
    else if (!v->pic_open || v->pic_kind != kind
@@ -9276,6 +9311,40 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
 /* Complete the assembled picture: mark each macroblock with its slice, run
  * the loop filter with per-slice parameters, and do the reference/output
  * bookkeeping that depends on the whole picture existing. */
+
+/* The slice decoders call this as each macroblock row completes (see
+ * rh264_frame::row_done). Filters the row above the one just finished,
+ * with the picture's first slice's parameters: the hook is only armed
+ * while the picture has a single slice, and a row that completed
+ * inside slice 0 has slice 0 above it, so the parameters are the ones
+ * the whole-picture pass would use. A second slice disarms it and the
+ * finish takes the rest. */
+static void rh264_video_row_done(void *user, int mby)
+{
+   rh264_video *v = (rh264_video*)user;
+   if (!v || !v->pic_open || v->pic_nslices != 1 || mby < 1)
+      return;
+   if (v->f.rows_deblocked != mby - 1)
+      return;                         /* a gap: leave it to the finish */
+   if (v->pic_kind <= 2)
+      rh264_deblock(&v->f, v->pic_idc, v->pic_oA, v->pic_oB,
+            mby - 1, mby);
+   else
+   {
+      /* The boundary strengths read the motion vectors of the rows
+       * being filtered and the row above them. Those are in the
+       * working grid: pic_mvg is the picture's copy, folded from it
+       * once each slice is done, and mid-slice it still holds the
+       * last picture's. The finish reads pic_mvg because by then they
+       * are the same. */
+      if (!v->mvg)
+         return;
+      rh264_deblock_pslice(&v->f, v->pic_idc, v->pic_oA, v->pic_oB,
+            v->mvg, mby - 1, mby);
+   }
+   v->f.rows_deblocked = mby;
+}
+
 static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
 {
    int total = v->f.mbw * v->f.mbh, s;
@@ -9296,15 +9365,22 @@ static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
          v->f.mbslice[my * v->f.mbw + mx] = (uint8_t)s;
       }
    }
+   /* The rows the slice decoders already filtered on the way through
+    * stay filtered; the rest is done here, which is all of it for a
+    * picture the row hook could not take (pair-scanned, or more than
+    * one slice by the time a row completed). */
    if (v->pic_kind <= 2)
    {
-      rh264_deblock(&v->f, v->pic_idc, v->pic_oA, v->pic_oB);
+      rh264_deblock(&v->f, v->pic_idc, v->pic_oA, v->pic_oB,
+            v->f.rows_deblocked, v->f.mbh);
       if (v->pic_mvg)
          rh264_mvg_set_intra(v->pic_mvg, v->f.mbw * 4, v->f.mbh * 4);
    }
    else
       rh264_deblock_pslice(&v->f, v->pic_idc, v->pic_oA, v->pic_oB,
-            v->pic_mvg);
+            v->pic_mvg, v->f.rows_deblocked, v->f.mbh);
+   v->f.rows_deblocked = 0;
+   v->f.row_done       = NULL;
    if (v->pic_kind == 1)
    {
       v->dpb_len = 0;       /* an IDR empties the reference list (8.2.5.1) */
