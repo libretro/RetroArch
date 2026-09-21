@@ -151,6 +151,77 @@ static unsigned wrapper_frames_since(unsigned *last)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the viewport-parameter publish only writes on a change       */
+/*   The snapshot is published once per frame as a catch-all for       */
+/*   settings toggles, and the video thread reads it every frame. A    */
+/*   publish that stores unconditionally takes the line away from that */
+/*   reader sixty times a second to say nothing, so it compares first. */
+/*   Nothing else notices if the compare goes: the values are still    */
+/*   right, every lane passes, and the line goes back to moving every  */
+/*   frame. So the sequence counter is watched instead - it is the one */
+/*   thing that stands still exactly when the publish did nothing.     */
+/* ------------------------------------------------------------------ */
+
+static void lane_vp_params_publish(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   int seq0, seq1;
+   unsigned saved_idx;
+
+   /* Settle: the first frames publish whatever the boot left unset. */
+   run_frames(6);
+   seq0 = retro_atomic_load_acquire_int(&video_st->vp_params_seq);
+   run_frames(10);
+   seq1 = retro_atomic_load_acquire_int(&video_st->vp_params_seq);
+   CHECK(seq1 == seq0,
+         "the viewport parameters were published %d times over 10 frames "
+         "with nothing changed", (seq1 - seq0) / 2);
+
+   /* And it does still publish when something moves: the aspect index
+    * is one of the fifteen slots. */
+   saved_idx = settings->uints.video_aspect_ratio_idx;
+   settings->uints.video_aspect_ratio_idx =
+      saved_idx ? saved_idx - 1 : saved_idx + 1;
+   run_frames(2);
+   seq1 = retro_atomic_load_acquire_int(&video_st->vp_params_seq);
+   CHECK(seq1 > seq0,
+         "a changed viewport parameter was not published (sequence still "
+         "%d)", seq1);
+   /* The change reached the snapshot, not just the counter. */
+   {
+      unsigned tries;
+      int want = (int)settings->uints.video_aspect_ratio_idx;
+      for (tries = 0; tries < 60; tries++)
+      {
+         if (retro_atomic_load_relaxed_int(&video_st->vp_params_bits[4])
+               == want)
+            break;
+         run_frames(1);
+      }
+      CHECK(retro_atomic_load_relaxed_int(&video_st->vp_params_bits[4])
+            == want,
+            "the published aspect index is %d, the setting is %d",
+            retro_atomic_load_relaxed_int(&video_st->vp_params_bits[4]),
+            want);
+   }
+   settings->uints.video_aspect_ratio_idx = saved_idx;
+   run_frames(4);
+
+   /* And still still after the change: back to standing still. */
+   seq0 = retro_atomic_load_acquire_int(&video_st->vp_params_seq);
+   run_frames(10);
+   seq1 = retro_atomic_load_acquire_int(&video_st->vp_params_seq);
+   CHECK(seq1 == seq0,
+         "the publish did not settle again: %d publishes over 10 quiet "
+         "frames", (seq1 - seq0) / 2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] viewport-parameter publish lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: the cache lines that must not be shared                      */
 /*   Fields written by different threads are kept off each other's     */
 /*   lines by padding in thread_video_t. The padding is what makes     */
@@ -3627,6 +3698,7 @@ int main(int argc, char *argv[])
    expect_wrapper(false, "boot");
 
    lane_line_separation();
+   lane_vp_params_publish();
    lane_toggle_cycle(cycles);
    lane_reinit_under_wrapper(cycles / 2 + 1);
    lane_toggle_in_game(cycles);

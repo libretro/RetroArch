@@ -3414,47 +3414,51 @@ void video_driver_publish_vp_params(void)
 {
    video_driver_state_t *video_st = &video_driver_st;
    settings_t *settings           = config_get_ptr();
-   int seq = retro_atomic_load_relaxed_int(&video_st->vp_params_seq);
    retro_atomic_int_t *b          = video_st->vp_params_bits;
+   int v[VIDEO_VP_PARAM_SLOTS];
+   int i;
+   int seq;
 
-   retro_atomic_store_relaxed_int(&video_st->vp_params_seq, seq + 1);
-   retro_atomic_thread_fence_release();
-   retro_atomic_store_relaxed_int(&b[0],
-         settings->bools.video_scale_integer ? 1 : 0);
-   retro_atomic_store_relaxed_int(&b[1],  (int)retroarch_get_rotation());
-   retro_atomic_store_relaxed_int(&b[2],
-         (int)retroarch_get_core_requested_rotation());
-   retro_atomic_store_relaxed_int(&b[3],
-         video_float_bits(VIDEO_DRIVER_ASPECT_RATIO(video_st)));
-   retro_atomic_store_relaxed_int(&b[4],
-         (int)settings->uints.video_aspect_ratio_idx);
-   retro_atomic_store_relaxed_int(&b[5],
-         (int)settings->uints.video_scale_integer_scaling);
-   retro_atomic_store_relaxed_int(&b[6],
-         (int)settings->uints.video_scale_integer_axis);
-   retro_atomic_store_relaxed_int(&b[7],
-         video_float_bits(settings->floats.video_vp_bias_x));
-   retro_atomic_store_relaxed_int(&b[8],
-         video_float_bits(settings->floats.video_vp_bias_y));
+   v[0]  = settings->bools.video_scale_integer ? 1 : 0;
+   v[1]  = (int)retroarch_get_rotation();
+   v[2]  = (int)retroarch_get_core_requested_rotation();
+   v[3]  = video_float_bits(VIDEO_DRIVER_ASPECT_RATIO(video_st));
+   v[4]  = (int)settings->uints.video_aspect_ratio_idx;
+   v[5]  = (int)settings->uints.video_scale_integer_scaling;
+   v[6]  = (int)settings->uints.video_scale_integer_axis;
+   v[7]  = video_float_bits(settings->floats.video_vp_bias_x);
+   v[8]  = video_float_bits(settings->floats.video_vp_bias_y);
 #if defined(RARCH_MOBILE)
-   retro_atomic_store_relaxed_int(&b[9],
-         video_float_bits(settings->floats.video_vp_bias_portrait_x));
-   retro_atomic_store_relaxed_int(&b[10],
-         video_float_bits(settings->floats.video_vp_bias_portrait_y));
+   v[9]  = video_float_bits(settings->floats.video_vp_bias_portrait_x);
+   v[10] = video_float_bits(settings->floats.video_vp_bias_portrait_y);
 #else
    /* The portrait bias fields only exist in mobile builds; mirror
     * the landscape values so the slots are never unpublished. */
-   retro_atomic_store_relaxed_int(&b[9],
-         video_float_bits(settings->floats.video_vp_bias_x));
-   retro_atomic_store_relaxed_int(&b[10],
-         video_float_bits(settings->floats.video_vp_bias_y));
+   v[9]  = video_float_bits(settings->floats.video_vp_bias_x);
+   v[10] = video_float_bits(settings->floats.video_vp_bias_y);
 #endif
-   retro_atomic_store_relaxed_int(&b[11], settings->video_vp_custom.x);
-   retro_atomic_store_relaxed_int(&b[12], settings->video_vp_custom.y);
-   retro_atomic_store_relaxed_int(&b[13],
-         (int)settings->video_vp_custom.width);
-   retro_atomic_store_relaxed_int(&b[14],
-         (int)settings->video_vp_custom.height);
+   v[11] = settings->video_vp_custom.x;
+   v[12] = settings->video_vp_custom.y;
+   v[13] = (int)settings->video_vp_custom.width;
+   v[14] = (int)settings->video_vp_custom.height;
+
+   /* Compare before writing. This runs once per frame as the catch-all,
+    * and what it publishes changes on a settings toggle, a rotation or
+    * an aspect change - never during play. A store pulls the line away
+    * from the video thread, which reads these every frame, so an
+    * unconditional publish spends a line transfer a frame to say
+    * nothing; the loads below leave the line where it is. */
+   for (i = 0; i < VIDEO_VP_PARAM_SLOTS; i++)
+      if (retro_atomic_load_relaxed_int(&b[i]) != v[i])
+         break;
+   if (i == VIDEO_VP_PARAM_SLOTS)
+      return;
+
+   seq = retro_atomic_load_relaxed_int(&video_st->vp_params_seq);
+   retro_atomic_store_relaxed_int(&video_st->vp_params_seq, seq + 1);
+   retro_atomic_thread_fence_release();
+   for (i = 0; i < VIDEO_VP_PARAM_SLOTS; i++)
+      retro_atomic_store_relaxed_int(&b[i], v[i]);
    retro_atomic_thread_fence_release();
    retro_atomic_store_release_int(&video_st->vp_params_seq, seq + 2);
 }
@@ -3468,12 +3472,12 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps)
    retro_atomic_int_t *b          = video_st->vp_params_bits;
    for (;;)
    {
-      int v[15];
+      int v[VIDEO_VP_PARAM_SLOTS];
       int i;
       int s1 = retro_atomic_load_acquire_int(&video_st->vp_params_seq);
       if (s1 & 1)
          continue;
-      for (i = 0; i < 15; i++)
+      for (i = 0; i < VIDEO_VP_PARAM_SLOTS; i++)
          v[i] = retro_atomic_load_relaxed_int(&b[i]);
       retro_atomic_thread_fence_acquire();
       if (retro_atomic_load_relaxed_int(&video_st->vp_params_seq) == s1)
