@@ -76,6 +76,37 @@ webdav_state_t *webdav_state_get_ptr(void)
    return &webdav_driver_st;
 }
 
+/* Encode the configured collection URL and the file path separately.
+ * A '#' in a save filename must be sent as %23, not as a URL fragment. */
+static bool webdav_url_for_path(char *url, size_t len, const char *path,
+      size_t *base_len)
+{
+   const char *raw_base     = webdav_state_get_ptr()->url;
+   size_t      base_size    = 3 * strlen(raw_base) + 1;
+   char       *base         = (char*)malloc(base_size);
+   char       *encoded_path = NULL;
+   size_t      written;
+
+   if (!base)
+      return false;
+
+   /* Every byte after the host can expand to three (%XX) bytes. */
+   net_http_urlencode_full(base, raw_base, base_size);
+   net_http_urlencode(&encoded_path, path);
+   if (!encoded_path)
+   {
+      free(base);
+      return false;
+   }
+
+   if (base_len)
+      *base_len = strlen(base);
+   written = fill_pathname_join_special(url, base, encoded_path, len);
+   free(encoded_path);
+   free(base);
+   return written < len;
+}
+
 static char *webdav_create_basic_auth(void)
 {
    int         flen;
@@ -736,21 +767,25 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
    webdav_cb_state_t    *webdav_cb_st = (webdav_cb_state_t *)user_data;
    http_transfer_data_t *data         = (http_transfer_data_t*)task_data;
    RFILE                *file         = NULL;
-   bool success = (data
-              && ((data->status >= 200 && data->status < 300) || data->status == 404));
+   bool                  found        = (data
+                                      && data->status >= 200
+                                      && data->status < 300);
+   bool                  success      = (found || (data && data->status == 404));
 
    if (!success && data)
        webdav_log_http_failure(webdav_cb_st->path, data, err);
 
    if (webdav_needs_reauth(data))
    {
-      webdav_state_t *webdav_st = webdav_state_get_ptr();
-      char            url[PATH_MAX_LENGTH];
       char            url_encoded[PATH_MAX_LENGTH];
       char           *auth_header;
 
-      fill_pathname_join_special(url, webdav_st->url, webdav_cb_st->path, sizeof(url));
-      net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
+      if (!webdav_url_for_path(url_encoded, sizeof(url_encoded), webdav_cb_st->path, NULL))
+      {
+         webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, false, NULL);
+         free(webdav_cb_st);
+         return;
+      }
 
       RARCH_DBG("[webdav] GET %s\n", url_encoded);
       auth_header = webdav_get_auth_header("GET", url_encoded);
@@ -759,7 +794,7 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
       return;
    }
 
-   if (success && data->data && webdav_cb_st)
+   if (found && data->data && webdav_cb_st)
    {
       /* TODO/FIXME: it would be better if writing
        * to the file happened during the network reads */
@@ -786,13 +821,14 @@ static bool webdav_read(const char *path, const char *file,
 {
    void              *t;
    char              *auth_header;
-   char               url[PATH_MAX_LENGTH];
    char               url_encoded[PATH_MAX_LENGTH];
-   webdav_state_t    *webdav_st    = webdav_state_get_ptr();
    webdav_cb_state_t *webdav_cb_st = (webdav_cb_state_t*)calloc(1, sizeof(webdav_cb_state_t));
 
-   fill_pathname_join_special(url, webdav_st->url, path, sizeof(url));
-   net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
+   if (!webdav_cb_st || !webdav_url_for_path(url_encoded, sizeof(url_encoded), path, NULL))
+   {
+      free(webdav_cb_st);
+      return false;
+   }
 
    webdav_cb_st->cb        = cb;
    webdav_cb_st->user_data = user_data;
@@ -931,14 +967,23 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data,
 static void webdav_ensure_dir(const char *dir, webdav_mkdir_cb_t cb,
       webdav_cb_state_t *webdav_cb_st)
 {
-   char url[PATH_MAX_LENGTH];
-   http_transfer_data_t  data;
-   webdav_state_t       *webdav_st       = webdav_state_get_ptr();
+   size_t                 base_len;
+   http_transfer_data_t   data;
    webdav_mkdir_state_t *webdav_mkdir_st = (webdav_mkdir_state_t *)malloc(sizeof(webdav_mkdir_state_t));
 
-   fill_pathname_join_special(url, webdav_st->url, dir, sizeof(url));
-   net_http_urlencode_full(webdav_mkdir_st->url, url, sizeof(webdav_mkdir_st->url));
-   webdav_mkdir_st->last_slash = strchr(webdav_mkdir_st->url + strlen(webdav_st->url) - 1, '/');
+   if (!webdav_mkdir_st)
+   {
+      cb(false, webdav_cb_st);
+      return;
+   }
+   if (!webdav_url_for_path(webdav_mkdir_st->url,
+            sizeof(webdav_mkdir_st->url), dir, &base_len))
+   {
+      free(webdav_mkdir_st);
+      cb(false, webdav_cb_st);
+      return;
+   }
+   webdav_mkdir_st->last_slash = strchr(webdav_mkdir_st->url + base_len - 1, '/');
    webdav_mkdir_st->post_slash = webdav_mkdir_st->last_slash[1];
    webdav_mkdir_st->cb         = cb;
    webdav_mkdir_st->cb_st      = webdav_cb_st;
@@ -979,9 +1024,7 @@ static void webdav_update_cb(retro_task_t *task, void *task_data,
 
 static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
 {
-   webdav_state_t *webdav_st = webdav_state_get_ptr();
    char            url_encoded[PATH_MAX_LENGTH];
-   char            url[PATH_MAX_LENGTH];
    void           *buf;
    int64_t         len;
    char           *auth_header;
@@ -997,13 +1040,17 @@ static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
       return;
    }
 
+   if (!webdav_url_for_path(url_encoded, sizeof(url_encoded), webdav_cb_st->path, NULL))
+   {
+      webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, false, webdav_cb_st->rfile);
+      free(webdav_cb_st);
+      return;
+   }
+
    /* TODO: would be better to read file as it's being written to wire, this is very inefficient */
    len = filestream_get_size(webdav_cb_st->rfile);
    buf = (char*)malloc((size_t)(len + 1));
    filestream_read(webdav_cb_st->rfile, buf, len);
-
-   fill_pathname_join_special(url, webdav_st->url, webdav_cb_st->path, sizeof(url));
-   net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
 
    RARCH_DBG("[webdav] PUT %s\n", url_encoded);
    auth_header = webdav_get_auth_header("PUT", url_encoded);
@@ -1051,13 +1098,15 @@ static void webdav_delete_cb(retro_task_t *task, void *task_data,
 
    if (webdav_needs_reauth(data))
    {
-      webdav_state_t *webdav_st = webdav_state_get_ptr();
-      char            url[PATH_MAX_LENGTH];
       char            url_encoded[PATH_MAX_LENGTH];
       char           *auth_header;
 
-      fill_pathname_join_special(url, webdav_st->url, webdav_cb_st->path, sizeof(url));
-      net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
+      if (!webdav_url_for_path(url_encoded, sizeof(url_encoded), webdav_cb_st->path, NULL))
+      {
+         webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, false, NULL);
+         free(webdav_cb_st);
+         return;
+      }
 
       RARCH_DBG("[webdav] DELETE %s\n", url_encoded);
       auth_header = webdav_get_auth_header("DELETE", url_encoded);
@@ -1109,11 +1158,9 @@ static void webdav_do_backup(bool success, webdav_cb_state_t *webdav_cb_st)
    char *auth_header;
    size_t          len;
    struct tm       tm_;
-   webdav_state_t *webdav_st = webdav_state_get_ptr();
    char            dest_encoded[PATH_MAX_LENGTH];
    char            dest[PATH_MAX_LENGTH];
    char            url_encoded[PATH_MAX_LENGTH];
-   char            url[PATH_MAX_LENGTH];
    time_t          cur_time = time(NULL);
 
    if (!webdav_cb_st)
@@ -1127,14 +1174,17 @@ static void webdav_do_backup(bool success, webdav_cb_state_t *webdav_cb_st)
       return;
    }
 
-   fill_pathname_join_special(url, webdav_st->url, webdav_cb_st->path, sizeof(url));
-   net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
-
-   fill_pathname_join_special(url, webdav_st->url, "deleted/", sizeof(url));
-   len = fill_pathname_join_special(dest, url, webdav_cb_st->path, sizeof(dest));
+   len = fill_pathname_join_special(dest, "deleted", webdav_cb_st->path, sizeof(dest));
    rtime_localtime(&cur_time, &tm_);
-   strftime(dest + len, sizeof(dest) - len, "-%y%m%d-%H%M%S", &tm_);
-   net_http_urlencode_full(dest_encoded, dest, sizeof(dest_encoded));
+   if (   len >= sizeof(dest)
+       || !strftime(dest + len, sizeof(dest) - len, "-%y%m%d-%H%M%S", &tm_)
+       || !webdav_url_for_path(url_encoded, sizeof(url_encoded), webdav_cb_st->path, NULL)
+       || !webdav_url_for_path(dest_encoded, sizeof(dest_encoded), dest, NULL))
+   {
+      webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, false, NULL);
+      free(webdav_cb_st);
+      return;
+   }
 
    RARCH_DBG("[webdav] MOVE %s -> %s\n", url_encoded, dest_encoded);
    auth_header = webdav_get_auth_header("MOVE", url_encoded);
@@ -1159,12 +1209,13 @@ static bool webdav_delete(const char *path, cloud_sync_complete_handler_t cb, vo
    if (settings->bools.cloud_sync_destructive)
    {
       char *auth_header;
-      char url[PATH_MAX_LENGTH];
       char url_encoded[PATH_MAX_LENGTH];
-      webdav_state_t *webdav_st = webdav_state_get_ptr();
 
-      fill_pathname_join_special(url, webdav_st->url, path, sizeof(url));
-      net_http_urlencode_full(url_encoded, url, sizeof(url_encoded));
+      if (!webdav_url_for_path(url_encoded, sizeof(url_encoded), path, NULL))
+      {
+         free(webdav_cb_st);
+         return false;
+      }
 
       RARCH_DBG("[webdav] DELETE %s\n", url_encoded);
       auth_header = webdav_get_auth_header("DELETE", url_encoded);
