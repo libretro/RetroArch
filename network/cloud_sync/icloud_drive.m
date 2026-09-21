@@ -33,71 +33,85 @@ static bool icloud_drive_sync_end(cloud_sync_complete_handler_t cb, void *user_d
    return true;
 }
 
+/* Cloud sync counts its outstanding requests and waits for each one
+ * to report, so every request below calls @cb exactly once, on every
+ * path.  Without a container nothing could be checked, so that is a
+ * failure too - never "not present", which cloud sync reads as the
+ * server not having the file, or "deleted". */
+
 static bool icloud_drive_read(const char *p, const char *f, cloud_sync_complete_handler_t cb, void *user_data)
 {
     char *path = strdup(p);
     char *file = strdup(f);
-    
+
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
-        NSURL *url = icloud_file_url(path);
+        NSURL  *url   = icloud_file_url(path);
+        RFILE  *rfile = NULL;
+        bool    ok    = false;
 
-        BOOL is_cloud_file_present = [[NSFileManager defaultManager] fileExistsAtPath: url.path];
-        if (is_cloud_file_present)
+        if (!url)
+            RARCH_DBG("[iCloudDrive] iCloud is not available for %s\n", path);
+        else if (![[NSFileManager defaultManager] fileExistsAtPath: url.path])
         {
-            NSData *data = [NSData dataWithContentsOfURL:url];
-            if (!data) {
-                RARCH_DBG("[iCloudDrive] Could not retrieve data for %s \n", path);
-                cb(user_data, path, false, NULL);
-            }
-
-            RFILE *rfile = filestream_open(file, RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-            
-            if (rfile)
-            {
-                filestream_truncate(rfile, 0);
-                filestream_write(rfile, [data bytes], [data length]);
-                filestream_seek(rfile, 0, SEEK_SET);
-
-                cb(user_data, path, true, rfile);
-            }
-            else
-            {
-                RARCH_DBG("[iCloudDrive] Could not create RFILE for %s \n", path);
-            }
+            RARCH_DBG("[iCloudDrive] File %s is not present\n", path);
+            ok = true;
         }
         else
         {
-            RARCH_DBG("[iCloudDrive] File %s is not present\n", path);
-            cb(user_data, path, true, NULL);
+            NSData *data = [NSData dataWithContentsOfURL:url];
+
+            if (!data)
+                RARCH_DBG("[iCloudDrive] Could not retrieve data for %s\n", path);
+            else if (!(rfile = filestream_open(file,
+                        RETRO_VFS_FILE_ACCESS_READ_WRITE,
+                        RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+                RARCH_DBG("[iCloudDrive] Could not create RFILE for %s\n", path);
+            else if (filestream_write(rfile, [data bytes], [data length])
+                    != (int64_t)[data length])
+            {
+                RARCH_DBG("[iCloudDrive] Could not write %s\n", file);
+                filestream_close(rfile);
+                rfile = NULL;
+            }
+            else
+            {
+                filestream_seek(rfile, 0, SEEK_SET);
+                ok = true;
+            }
         }
 
+        cb(user_data, path, ok, rfile);
         free(path);
         free(file);
-   });
-   return true;
+    });
+    return true;
 }
 
 
 static bool icloud_drive_update(const char *p, RFILE *rfile, cloud_sync_complete_handler_t cb, void *user_data)
 {
-    char *path = strdup(p);
-    NSURL *url = icloud_file_url(path);
-    NSURL *directory_url = [url URLByDeletingLastPathComponent];
+    char     *path          = strdup(p);
+    NSURL    *url           = icloud_file_url(path);
+    NSURL    *directory_url = [url URLByDeletingLastPathComponent];
+    NSString *file_string   = [NSString stringWithUTF8String:filestream_get_path(rfile)];
+    NSData   *local_data    = [NSData dataWithContentsOfFile:file_string];
 
-    NSString *file_string = [NSString stringWithUTF8String:filestream_get_path(rfile)];
-    NSData *local_data = [NSData dataWithContentsOfFile:file_string];
-
-    if (!local_data)
+    if (!url || !local_data)
     {
-        RARCH_DBG("[iCloudDrive] Failed to read local file: %s\n", [file_string UTF8String]);
+        if (!url)
+            RARCH_DBG("[iCloudDrive] iCloud is not available for %s\n", path);
+        else
+            RARCH_DBG("[iCloudDrive] Failed to read local file: %s\n", [file_string UTF8String]);
         cb(user_data, path, false, rfile);
+        free(path);
+        return true;
     }
 
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
         NSError *error = nil;
         NSError *directory_error = nil;
         BOOL directory_is_present = [[NSFileManager defaultManager] fileExistsAtPath: directory_url.path];
-        
+
         if (!directory_is_present)
         {
             [[NSFileManager defaultManager] createDirectoryAtPath:directory_url.path withIntermediateDirectories:YES attributes:nil error:&directory_error];
@@ -106,15 +120,15 @@ static bool icloud_drive_update(const char *p, RFILE *rfile, cloud_sync_complete
                 RARCH_DBG("[iCloudDrive] Failed to create directory: %s\n", [[directory_error debugDescription] UTF8String]);
             }
         }
-        
+
         [local_data writeToURL:url options:NSDataWritingAtomic error:&error];
         RARCH_DBG("[iCloudDrive] %s writing to %s\n", error == nil ? "succeeded" : "failed", [url.absoluteString UTF8String]);
-      
+
         if (error)
         {
             RARCH_DBG("[iCloudDrive] error: %s\n", [[error debugDescription] UTF8String]);
         }
-                 
+
         cb(user_data, path, error == nil, rfile);
         free(path);
     });
@@ -124,21 +138,30 @@ static bool icloud_drive_update(const char *p, RFILE *rfile, cloud_sync_complete
 
 static bool icloud_drive_delete(const char *p, cloud_sync_complete_handler_t cb, void *user_data)
 {
-    NSString *path_string = [NSString stringWithUTF8String:p];
-    NSURL *url = icloud_file_url(p);
-    
+    char  *path = strdup(p);
+    NSURL *url  = icloud_file_url(p);
+
+    if (!url)
+    {
+        RARCH_DBG("[iCloudDrive] iCloud is not available for %s\n", path);
+        cb(user_data, path, false, NULL);
+        free(path);
+        return true;
+    }
+
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
         NSError *error = nil;
         if ([[NSFileManager defaultManager] fileExistsAtPath:url.path])
         {
             [[NSFileManager defaultManager] removeItemAtURL:url error:&error];
-            RARCH_DBG("[iCloudDrive] delete %s %s\n", p, error == nil ? "succeeded" : "failed");
+            RARCH_DBG("[iCloudDrive] delete %s %s\n", path, error == nil ? "succeeded" : "failed");
             if (error)
             {
                 RARCH_DBG("[iCloudDrive] error: %s\n", [[error debugDescription] UTF8String]);
             }
         }
-       cb(user_data, [path_string UTF8String], error == nil, NULL);
+        cb(user_data, path, error == nil, NULL);
+        free(path);
     });
     return true;
 }
