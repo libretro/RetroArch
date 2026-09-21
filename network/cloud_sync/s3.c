@@ -786,10 +786,18 @@ static char* s3_build_auth_header(const char *method, const char *canonical_uri,
    return auth_header;
 }
 
-static void s3_log_http_failure(const char *path, http_transfer_data_t *data)
+static void s3_log_http_failure(const char *path,
+      http_transfer_data_t *data, const char *err)
 {
    size_t i;
-   RARCH_WARN(S3_PFX "Failed: %s: HTTP %d\n", path ? path : "<unknown>", data->status);
+   /* No status means the transport failed before the server answered;
+    * the task's error names the stage and its code, as in webdav.c. */
+   if (data->status < 0 && err && *err)
+      RARCH_WARN(S3_PFX "Failed: %s: HTTP %d (%s)\n",
+            path ? path : "<unknown>", data->status, err);
+   else
+      RARCH_WARN(S3_PFX "Failed: %s: HTTP %d\n",
+            path ? path : "<unknown>", data->status);
    for (i = 0; data->headers && i < data->headers->size; i++)
       RARCH_WARN(S3_PFX "%s\n", data->headers->elems[i].data);
    /* See webdav.c: the buffer is sized exactly to data->len, so
@@ -807,15 +815,15 @@ static void s3_read_cb(retro_task_t *task, void *task_data, void *user_data, con
    RFILE *file                   = NULL;
 
    (void)task;
-   (void)err;
 
    if (!s3_cb_st)
       return;
 
    if (!data)
-      RARCH_WARN(S3_PFX "Did not get HTTP data for read '%s'\n", s3_cb_st->path);
+      RARCH_WARN(S3_PFX "Did not get HTTP data for read '%s'%s%s\n",
+            s3_cb_st->path, (err && *err) ? ": " : "", (err && *err) ? err : "");
    else if (!success)
-      s3_log_http_failure(s3_cb_st->path, data);
+      s3_log_http_failure(s3_cb_st->path, data, err);
 
    if (success && data && data->status >= 200 && data->status < 300)
    {
@@ -847,15 +855,15 @@ static void s3_update_cb(retro_task_t *task, void *task_data, void *user_data, c
    bool success                  = (data && data->status >= 200 && data->status < 300);
 
    (void)task;
-   (void)err;
 
    if (!s3_cb_st)
       return;
 
    if (!data)
-      RARCH_WARN(S3_PFX "Did not get HTTP data for update '%s'\n", s3_cb_st->path);
+      RARCH_WARN(S3_PFX "Did not get HTTP data for update '%s'%s%s\n",
+            s3_cb_st->path, (err && *err) ? ": " : "", (err && *err) ? err : "");
    else if (!success)
-      s3_log_http_failure(s3_cb_st->path, data);
+      s3_log_http_failure(s3_cb_st->path, data, err);
 
    if (s3_cb_st->cb)
       s3_cb_st->cb(s3_cb_st->user_data, s3_cb_st->path, success, s3_cb_st->rfile);
@@ -869,15 +877,15 @@ static void s3_delete_cb(retro_task_t *task, void *task_data, void *user_data, c
    bool success                  = (data && data->status >= 200 && data->status < 300);
 
    (void)task;
-   (void)err;
 
    if (!s3_cb_st)
       return;
 
    if (!data)
-      RARCH_WARN(S3_PFX "Did not get HTTP data for delete '%s'\n", s3_cb_st->path);
+      RARCH_WARN(S3_PFX "Did not get HTTP data for delete '%s'%s%s\n",
+            s3_cb_st->path, (err && *err) ? ": " : "", (err && *err) ? err : "");
    else if (!success)
-      s3_log_http_failure(s3_cb_st->path, data);
+      s3_log_http_failure(s3_cb_st->path, data, err);
 
    if (s3_cb_st->cb)
       s3_cb_st->cb(s3_cb_st->user_data, s3_cb_st->path, success, NULL);
@@ -1292,13 +1300,14 @@ static bool s3_multipart_fallback_single_put(s3_multipart_state_t *mp_st)
    return true;
 }
 
-static void s3_multipart_fail(s3_multipart_state_t *mp_st, http_transfer_data_t *data, const char *phase)
+static void s3_multipart_fail(s3_multipart_state_t *mp_st,
+      http_transfer_data_t *data, const char *err, const char *phase)
 {
    if (!mp_st)
       return;
 
    if (data)
-      s3_log_http_failure(mp_st->cb_state ? mp_st->cb_state->path : phase, data);
+      s3_log_http_failure(mp_st->cb_state ? mp_st->cb_state->path : phase, data, err);
    else
       RARCH_WARN(S3_PFX "Multipart upload failed during %s\n", phase ? phase : "unknown phase");
 
@@ -1389,14 +1398,13 @@ static void s3_multipart_complete_cb(retro_task_t *task, void *task_data, void *
    bool success                  = (data && data->status >= 200 && data->status < 300);
 
    (void)task;
-   (void)err;
 
    if (!mp_st)
       return;
 
    if (!success)
    {
-      s3_multipart_fail(mp_st, data, "complete");
+      s3_multipart_fail(mp_st, data, err, "complete");
       return;
    }
 
@@ -1429,7 +1437,7 @@ static void s3_multipart_complete(s3_multipart_state_t *mp_st)
    {
       if (!mp_st->part_etags[i] || !*mp_st->part_etags[i])
       {
-         s3_multipart_fail(mp_st, NULL, "complete missing ETag");
+         s3_multipart_fail(mp_st, NULL, NULL, "complete missing ETag");
          return;
       }
       xml_cap += strlen(mp_st->part_etags[i]) + 96;
@@ -1438,7 +1446,7 @@ static void s3_multipart_complete(s3_multipart_state_t *mp_st)
    xml_body = (char*)malloc(xml_cap);
    if (!xml_body)
    {
-      s3_multipart_fail(mp_st, NULL, "complete allocation");
+      s3_multipart_fail(mp_st, NULL, NULL, "complete allocation");
       return;
    }
 
@@ -1486,7 +1494,7 @@ fail:
    free(payload_hash);
    free(auth_header);
    free(xml_body);
-   s3_multipart_fail(mp_st, NULL, "complete start");
+   s3_multipart_fail(mp_st, NULL, NULL, "complete start");
 }
 
 static void s3_multipart_upload_part_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
@@ -1497,14 +1505,13 @@ static void s3_multipart_upload_part_cb(retro_task_t *task, void *task_data, voi
    char *etag = NULL;
 
    (void)task;
-   (void)err;
 
    if (!mp_st)
       return;
 
    if (!success)
    {
-      s3_multipart_fail(mp_st, data, "upload part");
+      s3_multipart_fail(mp_st, data, err, "upload part");
       return;
    }
 
@@ -1512,7 +1519,7 @@ static void s3_multipart_upload_part_cb(retro_task_t *task, void *task_data, voi
    if (!etag)
    {
       RARCH_WARN(S3_PFX "Missing ETag for multipart part %u\n", (unsigned)(mp_st->current_part + 1));
-      s3_multipart_fail(mp_st, data, "upload part missing etag");
+      s3_multipart_fail(mp_st, data, err, "upload part missing etag");
       return;
    }
 
@@ -1586,7 +1593,7 @@ fail:
    free(query);
    free(url_with_query);
    free(auth_header);
-   s3_multipart_fail(mp_st, NULL, "upload part start");
+   s3_multipart_fail(mp_st, NULL, NULL, "upload part start");
 }
 
 static void s3_multipart_initiate_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
@@ -1597,7 +1604,6 @@ static void s3_multipart_initiate_cb(retro_task_t *task, void *task_data, void *
    char *response_xml            = NULL;
 
    (void)task;
-   (void)err;
 
    if (!mp_st)
       return;
@@ -1621,20 +1627,20 @@ static void s3_multipart_initiate_cb(retro_task_t *task, void *task_data, void *
 
       if (err && *err)
          RARCH_WARN(S3_PFX "Multipart initiate transport error: %s\n", err);
-      s3_multipart_fail(mp_st, data, "initiate");
+      s3_multipart_fail(mp_st, data, err, "initiate");
       return;
    }
 
    if (!data || (!data->data || !*data->data))
    {
-      s3_multipart_fail(mp_st, data, "initiate empty response");
+      s3_multipart_fail(mp_st, data, err, "initiate empty response");
       return;
    }
 
    response_xml = (char*)malloc(data->len + 1);
    if (!response_xml)
    {
-      s3_multipart_fail(mp_st, data, "initiate allocation");
+      s3_multipart_fail(mp_st, data, err, "initiate allocation");
       return;
    }
    memcpy(response_xml, data->data, data->len);
@@ -1645,7 +1651,7 @@ static void s3_multipart_initiate_cb(retro_task_t *task, void *task_data, void *
    if (!mp_st->upload_id || !*mp_st->upload_id)
    {
       RARCH_WARN(S3_PFX "Multipart initiation response missing UploadId\n");
-      s3_multipart_fail(mp_st, data, "initiate missing upload id");
+      s3_multipart_fail(mp_st, data, err, "initiate missing upload id");
       return;
    }
 
