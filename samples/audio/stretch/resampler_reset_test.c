@@ -124,6 +124,70 @@ static void run(unsigned backend, unsigned floating, double ratio, unsigned hq)
    release(used); release(fresh); cases++;
 }
 
+
+/* audio_driver_effective_ratio() multiplies the runtime ratio by the
+ * slowmotion setting, so a backend that chose its direction at init
+ * from a nominal ratio below 0.75 is handed one above 1.0. It still
+ * owes the frames the ratio asks for. */
+static void direction(unsigned backend, unsigned floating)
+{
+   const struct backend *b = &backends[backend];
+   void *state = create(backend, floating, 0.5, 0);
+   size_t total = 0;
+   unsigned i;
+   CHECK(state != NULL);
+   if (!state)
+      return;
+   for (i = 0; i < 1026; i++)
+   {
+      int16_t value = (int16_t)((int)((i * 7919u) % 65536) - 32768);
+      if (floating) input.f[i] = value / 32768.0f;
+      else          input.i[i] = value;
+   }
+   for (i = 0; i < 8; i++)
+      total += process(b, floating, state, 128, 2.0, 0);
+   CHECK(total > (size_t)(128 * 8 * 2 * 0.99));
+   (floating ? b->floating->free : b->free)(state);
+   cases++;
+}
+
+/* A ratio the frontend's clamp lets through when the caller reports no
+ * capacity. data_out is exact and on the heap so a sanitizer build sees
+ * a write past it; the count has to stay inside it. */
+static void unnameable(unsigned backend, unsigned floating)
+{
+   static const double bad[] = { 1.0e9, 1.0 / 0.0, 0.0 / 0.0, 0.0, -1.5 };
+   const struct backend *b = &backends[backend];
+   const size_t frames = 128, cap = 512;
+   unsigned k;
+   for (k = 0; k < sizeof(bad) / sizeof(bad[0]); k++)
+   {
+      void *state = create(backend, floating, 1.0, 0);
+      void *out   = calloc(cap * 2, floating ? sizeof(float) : sizeof(int16_t));
+      size_t count;
+      CHECK(state && out);
+      if (!state || !out) { free(out); return; }
+      if (floating)
+      {
+         struct resampler_data io;
+         io.data_in = input.f; io.data_out = (float*)out;
+         io.input_frames = frames; io.output_frames = 0; io.ratio = bad[k];
+         b->floating->process(state, &io); count = io.output_frames;
+      }
+      else
+      {
+         struct resampler_data_int16 io;
+         io.data_in = input.i; io.data_out = (int16_t*)out;
+         io.input_frames = frames; io.output_frames = 0; io.ratio = bad[k];
+         b->process(state, &io); count = io.output_frames;
+      }
+      CHECK(count <= cap);
+      (floating ? b->floating->free : b->free)(state);
+      free(out);
+   }
+   cases++;
+}
+
 int main(void)
 {
    static const double ratios[] = { 0.5, 0.749, 0.75, 1.0, 2.0, 4.0 };
@@ -136,6 +200,13 @@ int main(void)
          for (ratio = 0; ratio < 6; ratio++)
             for (hq = 0; hq < 2; hq++)
                run(backend, floating, ratios[ratio], hq);
+   /* CC only: sinc and nearest run past data_out on these ratios,
+    * which is theirs to answer for, not this suite's. */
+   for (floating = 0; floating < 2; floating++)
+   {
+      direction(2, floating);
+      unnameable(2, floating);
+   }
    CHECK(!heap_calls);
    printf("native resampler reset: %u cases, %u failures, %u guarded heap calls\n", cases, failures, heap_calls);
    return failures ? 1 : 0;

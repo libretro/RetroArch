@@ -49,6 +49,19 @@ typedef struct cc_resampler_int16
    int64_t distance; /* Q24 phase */
 } cc_resampler_int16_t;
 
+/* struct resampler_data_int16 carries no output capacity, so the
+ * upsampler stops at what the ratio asks for. A ratio no pair of
+ * sample rates can name resamples nothing - it would also reach the
+ * casts below, where it is undefined. */
+#define CC_I16_RATIO_MAX 65536.0
+
+static INLINE size_t cc_i16_out_max(const struct resampler_data_int16 *data)
+{
+   if (!(data->ratio > 0.0) || !(data->ratio <= CC_I16_RATIO_MAX))
+      return 0;
+   return (size_t)((double)data->input_frames * data->ratio) + 2;
+}
+
 /* round-half-away-from-zero of (a * b) >> CC_I16_FRAC_BITS */
 static INLINE int64_t cc_i16_mulq(int64_t a, int64_t b)
 {
@@ -96,8 +109,15 @@ static void cc_i16_downsample(void *re_, struct resampler_data_int16 *data)
    const int16_t *inp_max   = inp + data->input_frames * 2;
    int16_t       *outp      = data->data_out;
    int16_t       *outp0     = outp;
-   int64_t        ratio     = (int64_t)((1.0 / data->ratio) * (double)CC_I16_ONE + 0.5);
-   int64_t        b         = (int64_t)(data->ratio * (double)CC_I16_ONE + 0.5);
+   int64_t        ratio, b;
+
+   if (!cc_i16_out_max(data))
+   {
+      data->output_frames = 0;
+      return;
+   }
+   ratio = (int64_t)((1.0 / data->ratio) * (double)CC_I16_ONE + 0.5);
+   b     = (int64_t)(data->ratio * (double)CC_I16_ONE + 0.5);
 
    while (inp != inp_max)
    {
@@ -137,10 +157,21 @@ static void cc_i16_upsample(void *re_, struct resampler_data_int16 *data)
    const int16_t *inp_max   = inp + data->input_frames * 2;
    int16_t       *outp      = data->data_out;
    int16_t       *outp0     = outp;
-   int64_t        ratio     = (int64_t)((1.0 / data->ratio) * (double)CC_I16_ONE + 0.5);
+   int16_t       *outp_max;
+   int64_t        ratio, b;
+   double         bf;
+   size_t         out_max   = cc_i16_out_max(data);
+
+   if (!out_max)
+   {
+      data->output_frames = 0;
+      return;
+   }
+   outp_max = outp + out_max * 2;
+   ratio    = (int64_t)((1.0 / data->ratio) * (double)CC_I16_ONE + 0.5);
    /* b = min(data->ratio, 1.0) */
-   double         bf        = (data->ratio < 1.0) ? data->ratio : 1.0;
-   int64_t        b         = (int64_t)(bf * (double)CC_I16_ONE + 0.5);
+   bf       = (data->ratio < 1.0) ? data->ratio : 1.0;
+   b        = (int64_t)(bf * (double)CC_I16_ONE + 0.5);
 
    while (inp != inp_max)
    {
@@ -149,7 +180,7 @@ static void cc_i16_upsample(void *re_, struct resampler_data_int16 *data)
       re->buf_r[0] = re->buf_r[1]; re->buf_r[1] = re->buf_r[2];
       re->buf_r[2] = re->buf_r[3]; re->buf_r[3] = inp[1];
 
-      while (re->distance < CC_I16_ONE)
+      while (re->distance < CC_I16_ONE && outp != outp_max)
       {
          int     i;
          int64_t ol = 0;
@@ -201,8 +232,17 @@ void *cc_resampler_int16_init(double bandwidth_mod)
 void cc_resampler_int16_process(void *re_, struct resampler_data_int16 *data)
 {
    cc_resampler_int16_t *re = (cc_resampler_int16_t*)re_;
-   if (re)
-      re->process(re_, data);
+   if (!re)
+      return;
+   /* As the float driver: the direction is chosen from the nominal
+    * ratio, the runtime one is multiplied by slow motion, and the
+    * downsampler cannot emit more frames than it is given. */
+   if (re->process == cc_i16_downsample && data->ratio > 1.0)
+   {
+      re->process = cc_i16_upsample;
+      cc_resampler_int16_reset(re);
+   }
+   re->process(re_, data);
 }
 
 void cc_resampler_int16_reset(void *re_)
