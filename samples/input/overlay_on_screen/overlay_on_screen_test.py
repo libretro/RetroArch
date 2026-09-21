@@ -87,6 +87,12 @@ def write_config(d, overlay, threaded):
             'video_fullscreen = "true"',
             'video_windowed_fullscreen = "true"',
             'menu_driver = "rgui"',
+            # A widget notification is an opaque 0x161616 box, and
+            # at 640x480 one sits over the bottom right square: a
+            # runner slow enough to reinit a driver at startup got
+            # one mid-grab and failed with (22, 22, 22) at square
+            # 1's centre. The overlay is the only thing looked at.
+            'menu_enable_widgets = "false"',
             'audio_driver = "null"',
             'pause_nonactive = "false"',
             'input_overlay = "%s"' % overlay,
