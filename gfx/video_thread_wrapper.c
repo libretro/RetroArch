@@ -58,16 +58,14 @@ static void video_thread_publish_vp(thread_video_t *thr,
 
    retro_atomic_store_relaxed_int(&thr->vp_seq, seq + 1);
    retro_atomic_thread_fence_release();
-   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_X],      vp->x);
-   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_Y],      vp->y);
-   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_W],
-         (int)vp->width);
-   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_H],
-         (int)vp->height);
-   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_FULL_W],
-         (int)vp->full_width);
-   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_FULL_H],
-         (int)vp->full_height);
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_X], vp->x);
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_Y], vp->y);
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_WH], (int)(
+            ((vp->width  & 0xFFFFu) << 16)
+          |  (vp->height & 0xFFFFu)));
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_FULL_WH], (int)(
+            ((vp->full_width  & 0xFFFFu) << 16)
+          |  (vp->full_height & 0xFFFFu)));
    retro_atomic_thread_fence_release();
    retro_atomic_store_release_int(&thr->vp_seq, seq + 2);
 }
@@ -78,21 +76,23 @@ static void video_thread_read_vp(thread_video_t *thr,
    retro_atomic_int_t *s = thr->vp_pub;
    for (;;)
    {
+      unsigned wh;
+      unsigned full;
       int s1 = retro_atomic_load_acquire_int(&thr->vp_seq);
       if (s1 & 1)
          continue;
+      wh              = (unsigned)retro_atomic_load_relaxed_int(
+            &s[VIDEO_THREAD_VP_WH]);
+      full            = (unsigned)retro_atomic_load_relaxed_int(
+            &s[VIDEO_THREAD_VP_FULL_WH]);
       vp->x           = retro_atomic_load_relaxed_int(
             &s[VIDEO_THREAD_VP_X]);
       vp->y           = retro_atomic_load_relaxed_int(
             &s[VIDEO_THREAD_VP_Y]);
-      vp->width       = (unsigned)retro_atomic_load_relaxed_int(
-            &s[VIDEO_THREAD_VP_W]);
-      vp->height      = (unsigned)retro_atomic_load_relaxed_int(
-            &s[VIDEO_THREAD_VP_H]);
-      vp->full_width  = (unsigned)retro_atomic_load_relaxed_int(
-            &s[VIDEO_THREAD_VP_FULL_W]);
-      vp->full_height = (unsigned)retro_atomic_load_relaxed_int(
-            &s[VIDEO_THREAD_VP_FULL_H]);
+      vp->width       = wh   >> 16;
+      vp->height      = wh    & 0xFFFFu;
+      vp->full_width  = full >> 16;
+      vp->full_height = full  & 0xFFFFu;
       retro_atomic_thread_fence_acquire();
       if (retro_atomic_load_relaxed_int(&thr->vp_seq) == s1)
          break;
@@ -2037,9 +2037,8 @@ static void video_thread_loop(void *data)
          /* Statistics. The viewport maths ran on this thread during
           * thr->driver->frame() above, so publish the result rather
           * than letting the main thread read video_driver_st. */
-         retro_atomic_store_release_int(&thr->scale_packed, (int)(
-                 ((thr->video_st->scale_width  & 0xFFFFu) << 16)
-               |  (thr->video_st->scale_height & 0xFFFFu)));
+         retro_atomic_store_release_int(&thr->scale_packed,
+               (int)thr->video_st->scale_dims);
          /* Under the wrapper this thread owns swap_count; every advance
           * happens here, under lock, and is published with the
           * snapshot video_thread_swap_count() reads. */

@@ -281,15 +281,18 @@ enum video_thread_stat_slot
    VIDEO_THREAD_STAT_SLOTS
 };
 
-/* Slots of the viewport thread_video_t::vp_pub publishes. */
+/* Slots of the viewport thread_video_t::vp_pub publishes. Each size
+ * pair travels as one word, width in the high half and height in the
+ * low, the way scale_packed carries its own - two stores a frame
+ * instead of four, two loads a read instead of four, and the pair
+ * cannot be read half updated even before the sequence is checked. The
+ * bound is the same 65535 per axis scale_packed accepts. */
 enum video_thread_vp_slot
 {
    VIDEO_THREAD_VP_X = 0,
    VIDEO_THREAD_VP_Y,
-   VIDEO_THREAD_VP_W,
-   VIDEO_THREAD_VP_H,
-   VIDEO_THREAD_VP_FULL_W,
-   VIDEO_THREAD_VP_FULL_H,
+   VIDEO_THREAD_VP_WH,
+   VIDEO_THREAD_VP_FULL_WH,
    VIDEO_THREAD_VP_SLOTS
 };
 
