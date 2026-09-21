@@ -137,6 +137,8 @@ void *task_push_webdav_delete(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
 void *task_push_webdav_move(const char *url, const char *dest, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
+void *task_push_webdav_copy(const char *url, const char *dest, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
 
 bool task_push_bluetooth_scan(retro_task_callback_t cb);
 

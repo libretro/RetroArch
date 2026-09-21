@@ -117,6 +117,31 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_reauth_test
           echo "[pass] webdav_reauth_test (TSan)"
 
+      - name: Build and run webdav_backup_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/webdav_backup
+        run: |
+          set -eu
+          # Includes network/cloud_sync/webdav.c and plays the server,
+          # request by request. With destructive sync off, an upload
+          # must COPY the server's file to deleted/<path>-<time> before
+          # the PUT replaces it - it used to overwrite it in place, so
+          # the setting protected against deletes but not overwrites.
+          # Covers the order (backup first, into an existing deleted/
+          # collection, named as a delete names it), 404 as "nothing to
+          # back up", a failed backup stopping the upload, destructive
+          # sync and the server manifest skipping the backup, and COPY
+          # and PUT each getting their own Digest retry.
+          make clean all SANITIZER=address,undefined
+          test -x webdav_backup_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./webdav_backup_test
+          echo "[pass] webdav_backup_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_backup_test
+          echo "[pass] webdav_backup_test (TSan)"
+
       - name: Build and run cheevos_login_test (bear ASan+UBSan, bear TSan, mbed ASan+UBSan)
         shell: bash
         working-directory: samples/network/cheevos_login

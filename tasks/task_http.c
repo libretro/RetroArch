@@ -612,8 +612,10 @@ void* task_push_webdav_delete(const char *url, bool mute,
    return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
 }
 
-void *task_push_webdav_move(const char *url,
-      const char *dest, bool mute, const char *headers,
+/* MOVE and COPY (RFC 4918 9.8, 9.9): the target in a Destination
+ * header, ahead of any caller headers. */
+static void *task_push_webdav_to_destination(const char *url,
+      const char *method, const char *dest, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata)
 {
    size_t _len;
@@ -623,7 +625,7 @@ void *task_push_webdav_move(const char *url,
    if (!url || !*url)
       return NULL;
 
-   if (!(conn = net_http_connection_new(url, "MOVE", NULL)))
+   if (!(conn = net_http_connection_new(url, method, NULL)))
       return NULL;
 
    _len  = strlcpy_lit(dest_header, "Destination: ", sizeof(dest_header));
@@ -636,6 +638,22 @@ void *task_push_webdav_move(const char *url,
    net_http_connection_set_headers(conn, dest_header);
 
    return task_push_http_transfer_generic(conn, url, mute, false, cb, userdata);
+}
+
+void *task_push_webdav_move(const char *url,
+      const char *dest, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata)
+{
+   return task_push_webdav_to_destination(url, "MOVE", dest, mute,
+         headers, cb, userdata);
+}
+
+void *task_push_webdav_copy(const char *url,
+      const char *dest, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata)
+{
+   return task_push_webdav_to_destination(url, "COPY", dest, mute,
+         headers, cb, userdata);
 }
 
 void* task_push_http_transfer_file(const char* url, bool mute,

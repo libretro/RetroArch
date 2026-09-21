@@ -1118,26 +1118,136 @@ static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
    free(buf);
 }
 
+/* Where the backup of @path goes: deleted/<path>-<yymmdd-hhmmss>, the
+ * same place a non-destructive delete moves it to.  Keep the trailing
+ * '/': with a bare "deleted" the join falls back to PATH_DEFAULT_SLASH,
+ * which is a backslash on Windows and would then be sent as %5C
+ * instead of a collection separator. */
+static bool webdav_backup_path(char *s, size_t len, const char *path)
+{
+   struct tm tm_;
+   time_t    cur_time = time(NULL);
+   size_t    _len     = fill_pathname_join_special(s, "deleted/", path, len);
+
+   rtime_localtime(&cur_time, &tm_);
+   return _len < len
+       && strftime(s + _len, len - _len, "-%y%m%d-%H%M%S", &tm_) != 0;
+}
+
+/* The upload itself: create the file's collection if needed, then PUT. */
+static void webdav_update_upload(webdav_cb_state_t *webdav_cb_st)
+{
+   char dir[DIR_MAX_LENGTH];
+
+   if (strchr(webdav_cb_st->path, '/'))
+   {
+      fill_pathname_basedir(dir, webdav_cb_st->path, sizeof(dir));
+      webdav_ensure_dir(dir, webdav_do_update, webdav_cb_st);
+   }
+   else
+      webdav_do_update(true, webdav_cb_st);
+}
+
+static void webdav_do_update_backup(bool success, webdav_cb_state_t *webdav_cb_st);
+
+static void webdav_update_backup_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   webdav_cb_state_t    *webdav_cb_st = (webdav_cb_state_t *)user_data;
+   http_transfer_data_t *data         = (http_transfer_data_t*)task_data;
+   bool                  copied       = (data && data->status >= 200 && data->status < 300);
+
+   if (!webdav_cb_st)
+   {
+      RARCH_WARN("[webdav] Missing cb data in update backup?\n");
+      return;
+   }
+
+   if (webdav_retry_auth(data, &webdav_cb_st->reauthed))
+   {
+      webdav_do_update_backup(true, webdav_cb_st);
+      return;
+   }
+
+   /* 404: nothing on the server yet, so nothing to keep. */
+   if (copied || (data && data->status == 404))
+   {
+      /* The PUT is a request of its own. */
+      webdav_cb_st->reauthed = false;
+      webdav_update_upload(webdav_cb_st);
+      return;
+   }
+
+   if (data)
+      webdav_log_http_failure(webdav_cb_st->path, data, err);
+   RARCH_ERR("[webdav] Not uploading %s: the copy on the server could not be backed up.\n",
+         webdav_cb_st->path);
+   webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, false, webdav_cb_st->rfile);
+   free(webdav_cb_st);
+}
+
+/* COPY, not MOVE: the server keeps its current copy until the PUT
+ * replaces it, so an upload that fails after the backup leaves the
+ * server as it was rather than without the file. */
+static void webdav_do_update_backup(bool success, webdav_cb_state_t *webdav_cb_st)
+{
+   char *auth_header;
+   char  dest[PATH_MAX_LENGTH];
+   char  dest_encoded[PATH_MAX_LENGTH];
+   char  url_encoded[PATH_MAX_LENGTH];
+
+   if (!webdav_cb_st)
+      return;
+
+   if (   !success
+       || !webdav_backup_path(dest, sizeof(dest), webdav_cb_st->path)
+       || !webdav_url_for_path(url_encoded, sizeof(url_encoded), webdav_cb_st->path, NULL)
+       || !webdav_url_for_path(dest_encoded, sizeof(dest_encoded), dest, NULL))
+   {
+      RARCH_ERR("[webdav] Not uploading %s: the copy on the server could not be backed up.\n",
+            webdav_cb_st->path);
+      webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, false, webdav_cb_st->rfile);
+      free(webdav_cb_st);
+      return;
+   }
+
+   RARCH_DBG("[webdav] COPY %s -> %s\n", url_encoded, dest_encoded);
+   auth_header = webdav_get_auth_header("COPY", url_encoded);
+   task_push_webdav_copy(url_encoded, dest_encoded, true, auth_header,
+         webdav_update_backup_cb, webdav_cb_st);
+   free(auth_header);
+}
+
 static bool webdav_update(const char *path, RFILE *rfile,
       cloud_sync_complete_handler_t cb, void *user_data)
 {
-   char               dir[DIR_MAX_LENGTH];
+   settings_t        *settings     = config_get_ptr();
    webdav_cb_state_t *webdav_cb_st = (webdav_cb_state_t*)calloc(1, sizeof(webdav_cb_state_t));
 
-   /* TODO/FIXME: if !settings->bools.cloud_sync_destructive, should move to deleted/ first */
+   if (!webdav_cb_st)
+      return false;
 
    webdav_cb_st->cb = cb;
    webdav_cb_st->user_data = user_data;
    strlcpy(webdav_cb_st->path, path, sizeof(webdav_cb_st->path));
    webdav_cb_st->rfile = rfile;
 
-   if (strchr(path, '/'))
+   /* With destructive sync off, a delete keeps the server's copy in
+    * deleted/, and so does an upload that replaces it: otherwise the
+    * setting protected against the server's copy being removed but not
+    * against it being overwritten.  The local side does the same with
+    * cloud_backups/ before a fetch replaces a local file.  The server
+    * manifest is rewritten every sync and is not backed up. */
+   if (   !settings->bools.cloud_sync_destructive
+       && !string_is_equal(path, CLOUD_SYNC_SERVER_MANIFEST))
    {
-      fill_pathname_basedir(dir, path, sizeof(dir));
-      webdav_ensure_dir(dir, webdav_do_update, webdav_cb_st);
+      char   dir[DIR_MAX_LENGTH];
+      size_t _len = strlcpy_lit(dir, "deleted/", sizeof(dir));
+      fill_pathname_basedir(dir + _len, path, sizeof(dir) - _len);
+      webdav_ensure_dir(dir, webdav_do_update_backup, webdav_cb_st);
    }
    else
-      webdav_do_update(true, webdav_cb_st);
+      webdav_update_upload(webdav_cb_st);
 
    return true;
 }
@@ -1216,12 +1326,9 @@ static void webdav_backup_cb(retro_task_t *task, void *task_data,
 static void webdav_do_backup(bool success, webdav_cb_state_t *webdav_cb_st)
 {
    char *auth_header;
-   size_t          len;
-   struct tm       tm_;
    char            dest_encoded[PATH_MAX_LENGTH];
    char            dest[PATH_MAX_LENGTH];
    char            url_encoded[PATH_MAX_LENGTH];
-   time_t          cur_time = time(NULL);
 
    if (!webdav_cb_st)
       return;
@@ -1234,13 +1341,7 @@ static void webdav_do_backup(bool success, webdav_cb_state_t *webdav_cb_st)
       return;
    }
 
-   /* Keep the trailing '/': with a bare "deleted" the join falls back
-    * to PATH_DEFAULT_SLASH, which is a backslash on Windows and would then
-    * be sent as %5C instead of a collection separator. */
-   len = fill_pathname_join_special(dest, "deleted/", webdav_cb_st->path, sizeof(dest));
-   rtime_localtime(&cur_time, &tm_);
-   if (   len >= sizeof(dest)
-       || !strftime(dest + len, sizeof(dest) - len, "-%y%m%d-%H%M%S", &tm_)
+   if (   !webdav_backup_path(dest, sizeof(dest), webdav_cb_st->path)
        || !webdav_url_for_path(url_encoded, sizeof(url_encoded), webdav_cb_st->path, NULL)
        || !webdav_url_for_path(dest_encoded, sizeof(dest_encoded), dest, NULL))
    {

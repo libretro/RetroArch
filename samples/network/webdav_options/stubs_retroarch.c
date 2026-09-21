@@ -133,3 +133,13 @@ void *task_push_webdav_move(const char *url, const char *dest,
    unreachable("task_push_webdav_move");
    return NULL;
 }
+
+void *task_push_webdav_copy(const char *url, const char *dest,
+      bool suppress, const char *headers, retro_task_callback_t cb,
+      void *user_data)
+{
+   (void)url; (void)dest; (void)suppress; (void)headers; (void)cb;
+   (void)user_data;
+   unreachable("task_push_webdav_copy");
+   return NULL;
+}

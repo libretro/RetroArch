@@ -39,7 +39,7 @@
 #define CSPFX "[CloudSync] "
 
 #define MANIFEST_FILENAME_LOCAL  "manifest.local"
-#define MANIFEST_FILENAME_SERVER "manifest.server"
+#define MANIFEST_FILENAME_SERVER CLOUD_SYNC_SERVER_MANIFEST
 
 #define CS_FILE_HASH(item_file) ((char*)((item_file) ? ((item_file)->userdata) : (NULL)))
 #define CS_FILE_KEY(item_file) ((item_file) ? ((item_file)->alt) : (NULL))
