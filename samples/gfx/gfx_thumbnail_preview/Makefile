@@ -3,6 +3,7 @@ DECODE_TARGET          := preview_audio_decode_test
 DECODE_TARGET_NORWEBM  := preview_audio_decode_test_norwebm
 ANIM_WINDOW_TARGET     := preview_anim_window_test
 CATCHUP_TARGET         := preview_catchup_test
+BENCH_TARGET           := preview_decode_bench
 
 # Links the REAL gfx/gfx_thumbnail.c and the REAL
 # libretro-common/audio/audio_mixer.c.  Stubbing either is what let
@@ -193,6 +194,7 @@ CATCHUP_SOURCES := preview_catchup_test.c $(filter-out preview_anim_window_test.
 $(CATCHUP_TARGET): $(CATCHUP_SOURCES)
 	$(CC) -o $@ $(CATCHUP_SOURCES) $(ANIM_WINDOW_CFLAGS) $(LDFLAGS) -lz
 
+
 $(DECODE_TARGET): $(DECODE_SOURCES_WEBM) preview_audio_decode_test.c
 	$(CC) -o $@ $(DECODE_SOURCES_WEBM) \
 	      $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM $(LDFLAGS)
@@ -229,6 +231,27 @@ BLIT_BANDS_SOURCES := preview_blit_bands_test.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+
+# Not a test: frames per second per codec and thread count. Built by
+# `make bench`, never by check, and meaningless under a sanitizer.
+BENCH_SOURCES := preview_decode_bench.c $(filter-out preview_blit_bands_test.c,$(BLIT_BANDS_SOURCES)) \
+                 $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
+                 $(LIBRETRO_COMM_DIR)/formats/png/rpng.c \
+                 $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.c \
+                 $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+                 $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+                 $(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
+                 $(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+                 $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c
+$(BENCH_TARGET): $(BENCH_SOURCES)
+	$(CC) -o $@ $(BENCH_SOURCES) \
+	      -Wall -std=gnu99 -O2 -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RH264 -DHAVE_RH265 -DHAVE_RVP9 -DHAVE_RPNG -DHAVE_THREADS \
+	      -DHAVE_MMAP -D_GNU_SOURCE -I$(LIBRETRO_COMM_DIR)/include \
+	      $(EXTRA_CFLAGS) $(LDFLAGS) -lpthread
+
+bench: $(BENCH_TARGET) fixtures
+	./$(BENCH_TARGET) fixtures/long_video.mp4 fixtures/hevc_wpp.mp4 fixtures/vp9_tiles.webm fixtures/bframes_h264.mp4
+	./$(BENCH_TARGET) --catchup fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 
 $(BLIT_BANDS_TARGET): $(BLIT_BANDS_SOURCES)
 	$(CC) -o $@ $(BLIT_BANDS_SOURCES) \
@@ -282,4 +305,4 @@ clean:
 distclean: clean
 	rm -rf fixtures
 
-.PHONY: all check fixtures clean distclean
+.PHONY: bench all check fixtures clean distclean
