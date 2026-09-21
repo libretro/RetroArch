@@ -217,7 +217,6 @@ static void *resampler_CC_init(const struct resampler_config *config,
 #else
 
 #if defined(__SSE__)
-#define CC_RESAMPLER_IDENT "SSE"
 
 static void resampler_CC_downsample(void *re_, struct resampler_data *data)
 {
@@ -391,7 +390,6 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 
 #elif defined(HAVE_ARM_NEON_ASM_OPTIMIZATIONS)
 
-#define CC_RESAMPLER_IDENT "NEON"
 
 size_t resampler_CC_downsample_neon(float *outp, const float *inp,
       rarch_CC_resampler_t* re_, size_t input_frames, float ratio);
@@ -414,7 +412,6 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 
 /* C reference version. Not optimized. */
 
-#define CC_RESAMPLER_IDENT "C"
 
 #if (CC_RESAMPLER_PRECISION > 4)
 static INLINE float cc_int(float x, float b)

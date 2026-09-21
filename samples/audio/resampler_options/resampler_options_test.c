@@ -80,6 +80,27 @@ static void sinc_cases(void)
    }
    driver->free(state);
 #endif
+#ifdef HAVE_CC_RESAMPLER
+   /* The blocks above leave state freed; realloc would free it again. */
+   state = NULL; driver = NULL;
+   /* CC reads neither quality nor the HQ request; both must still
+    * reach it as the named backend, and both must give one stream. */
+   CHECK(retro_resampler_realloc_hq(&state, &driver, "cc", RESAMPLER_QUALITY_NORMAL, 4, true));
+   CHECK(driver == &CC_resampler);
+   {
+      void *reference = CC_resampler.init(NULL, 4, RESAMPLER_QUALITY_HIGHEST, 0);
+      if (!reference || !state) exit(2);
+      compare(state, driver, reference, &CC_resampler, 4);
+      CC_resampler.free(reference);
+   }
+   driver->free(state);
+   state = NULL; driver = NULL;
+   CHECK(retro_resampler_realloc(&state, &driver, "CC", RESAMPLER_QUALITY_LOWEST, 0.5));
+   CHECK(driver == &CC_resampler);
+   if (state)
+      driver->free(state);
+   state = NULL; driver = NULL;
+#endif
 }
 
 static void independent_instances(void)
