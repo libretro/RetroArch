@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(__ARM_NEON__)
+#if defined(__ARM_NEON__) && defined(HAVE_ARM_NEON_ASM_OPTIMIZATIONS)
 
 #ifndef CC_RESAMPLER_PRECISION
 #define CC_RESAMPLER_PRECISION 1
