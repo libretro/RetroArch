@@ -6718,8 +6718,7 @@ void video_driver_frame(const void *data, unsigned width,
       /* The driver's name, not the wrapper's under threaded video. */
       const char *video_ident                = video_driver_get_ident();
       const void *cache_data                 = NULL;
-      unsigned cache_width                   = 0;
-      unsigned cache_height                  = 0;
+      unsigned cache_dims                    = 0;
       size_t   cache_pitch                   = 0;
       float font_size_ratio                  = (float)(DEFAULT_FONT_SIZE / video_info.font_size);
       float scale                            = (float)video_info.height / (video_info.font_size * 30)
@@ -6741,12 +6740,7 @@ void video_driver_frame(const void *data, unsigned width,
 
       audio_compute_buffer_statistics(&audio_stats);
       video_monitor_fps_statistics(NULL, &stddev, NULL);
-      {
-         unsigned cache_dims                 = 0;
-         frame_cache_peek(&cache_data, &cache_dims, &cache_pitch);
-         cache_width                         = VIDEO_SCALE_W(cache_dims);
-         cache_height                        = VIDEO_SCALE_H(cache_dims);
-      }
+      frame_cache_peek(&cache_data, &cache_dims, &cache_pitch);
 
       video_info.osd_stat_params.x           = 0.001f;
       video_info.osd_stat_params.y           = 0.970f;
@@ -6784,8 +6778,8 @@ void video_driver_frame(const void *data, unsigned width,
                " Frames:  %8" PRIu64"\n"
                " -Dropped:  %6u\n"
                ,
-               cache_width,
-               cache_height,
+               VIDEO_SCALE_W(cache_dims),
+               VIDEO_SCALE_H(cache_dims),
                av_info->geometry.base_width,
                av_info->geometry.base_height,
                av_info->geometry.max_width,
@@ -6801,9 +6795,11 @@ void video_driver_frame(const void *data, unsigned width,
                video_info.scale_width,
                video_info.scale_height,
                (float)video_info.scale_width  / ((rotation % 2)
-                     ? (float)cache_height : (float)cache_width),
+                     ? (float)VIDEO_SCALE_H(cache_dims)
+                     : (float)VIDEO_SCALE_W(cache_dims)),
                (float)video_info.scale_height / ((rotation % 2)
-                     ? (float)cache_width : (float)cache_height),
+                     ? (float)VIDEO_SCALE_W(cache_dims)
+                     : (float)VIDEO_SCALE_H(cache_dims)),
                video_info.refresh_rate,
                last_fps,
                frame_time / 1000.0f,
