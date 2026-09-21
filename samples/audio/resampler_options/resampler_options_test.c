@@ -122,10 +122,32 @@ static void independent_instances(void)
    on_driver->free(on);
 }
 
+/* What the frontend offers a control for. A name nothing is registered
+ * under reports the fallback's, as the realloc lookup does. */
+static void caps_cases(void)
+{
+   CHECK(sinc_resampler.caps
+         == (RESAMPLER_CAP_QUALITY | RESAMPLER_CAP_HQ_OVERSAMPLE));
+   CHECK(audio_resampler_driver_caps("sinc") == sinc_resampler.caps);
+   CHECK(audio_resampler_driver_caps("SINC") == sinc_resampler.caps);
+   CHECK(audio_resampler_driver_caps(NULL) == sinc_resampler.caps);
+   CHECK(audio_resampler_driver_caps("missing-backend") == sinc_resampler.caps);
+#ifdef HAVE_NEAREST_RESAMPLER
+   CHECK(nearest_resampler.caps == 0);
+   CHECK(audio_resampler_driver_caps("nearest") == 0);
+#endif
+#ifdef HAVE_CC_RESAMPLER
+   CHECK(CC_resampler.caps == 0);
+   CHECK(audio_resampler_driver_caps("cc") == 0);
+   CHECK(audio_resampler_driver_caps("CC") == 0);
+#endif
+}
+
 int main(void)
 {
    unsigned i;
    for (i = 0; i < 512 * 2; i++) input[i] = ((int)(i % 71) - 35) / 64.0f;
+   caps_cases();
    sinc_cases();
    independent_instances();
    printf("Resampler options: %u failures\n", failures);

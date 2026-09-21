@@ -624,5 +624,6 @@ retro_resampler_t CC_resampler = {
    RESAMPLER_API_VERSION,
    "CC",
    "cc",
-   resampler_CC_reset
+   resampler_CC_reset,
+   0
 };

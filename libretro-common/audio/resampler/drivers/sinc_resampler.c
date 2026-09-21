@@ -1019,7 +1019,8 @@ retro_resampler_t sinc_resampler = {
    RESAMPLER_API_VERSION,
    "sinc",
    "sinc",
-   resampler_sinc_reset
+   resampler_sinc_reset,
+   RESAMPLER_CAP_QUALITY | RESAMPLER_CAP_HQ_OVERSAMPLE
 };
 
 #if defined(__GNUC__) && defined(__OPTIMIZE__) && !defined(__clang__)

@@ -88,5 +88,6 @@ retro_resampler_t nearest_resampler = {
    RESAMPLER_API_VERSION,
    "nearest",
    "nearest",
-   resampler_nearest_reset
+   resampler_nearest_reset,
+   0
 };

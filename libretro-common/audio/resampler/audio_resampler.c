@@ -130,6 +130,12 @@ static bool resampler_append_plugs(void **re,
 }
 
 
+unsigned audio_resampler_driver_caps(const char *ident)
+{
+   const retro_resampler_t *drv = find_resampler_driver(ident);
+   return drv ? drv->caps : 0;
+}
+
 /**
  * audio_resampler_driver_find_handle:
  * @idx                : index of driver to get handle to.

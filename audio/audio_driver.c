@@ -592,7 +592,8 @@ static bool audio_driver_resampler_realloc(audio_driver_state_t *audio_st,
          audio_st->resampler_quality, audio_st->src_ratio_orig, hq_oversampling);
    audio_st->resampler_hq = initialized && hq_oversampling
       && audio_st->src_ratio_orig >= 2.0
-      && audio_st->resampler == &sinc_resampler;
+      && audio_st->resampler
+      && (audio_st->resampler->caps & RESAMPLER_CAP_HQ_OVERSAMPLE);
    return initialized;
 }
 

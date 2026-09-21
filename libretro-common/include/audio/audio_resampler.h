@@ -163,6 +163,12 @@ typedef void (*resampler_process_t)(void *_data, struct resampler_data *data);
  * on the thread that resamples. */
 typedef void (*resampler_reset_t)(void *data);
 
+/* What a backend reads of the settings the frontend exposes. One that
+ * reads neither leaves this zero, and the frontend has no control to
+ * offer for it. */
+#define RESAMPLER_CAP_QUALITY       (1 << 0)
+#define RESAMPLER_CAP_HQ_OVERSAMPLE (1 << 1)
+
 typedef struct retro_resampler
 {
    resampler_init_t     init;
@@ -182,6 +188,9 @@ typedef struct retro_resampler
    /* Optional; last, so an implementation that does not set it is
     * NULL here, and the caller re-creates the state instead. */
    resampler_reset_t    reset;
+
+   /* RESAMPLER_CAP_*, zero for a backend that reads neither. */
+   unsigned caps;
 } retro_resampler_t;
 
 typedef struct audio_frame_float
@@ -195,6 +204,11 @@ extern retro_resampler_t sinc_resampler;
 extern retro_resampler_t CC_resampler;
 #endif
 extern retro_resampler_t nearest_resampler;
+
+/* The RESAMPLER_CAP_* of the named backend, by the same lookup
+ * retro_resampler_realloc() uses, so an unknown name reports the
+ * fallback's. Zero where the name is NULL or nothing is registered. */
+unsigned audio_resampler_driver_caps(const char *ident);
 
 /**
  * audio_resampler_driver_find_handle:

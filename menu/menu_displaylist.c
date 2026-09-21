@@ -9148,10 +9148,26 @@ unsigned menu_displaylist_build_list(
             }
             if (string_is_not_equal(settings->arrays.audio_resampler, "null"))
             {
+               /* Quality and HQ oversampling are shown for the backends
+                * that read them; the rest ignore both. */
+               unsigned caps = audio_resampler_driver_caps(
+                     settings->arrays.audio_resampler);
+               if (caps & RESAMPLER_CAP_QUALITY)
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY,
+                           PARSE_ONLY_UINT, false) == 0)
+                     count++;
+               }
+               if (caps & RESAMPLER_CAP_HQ_OVERSAMPLE)
+               {
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
+                           PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+               }
                {
                   static const menu_displaylist_settings_row_t dl_rows_3[] = {
-                     { MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY, PARSE_ONLY_UINT, false },
-                     { MENU_ENUM_LABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING, PARSE_ONLY_BOOL, false },
                      { MENU_ENUM_LABEL_AUDIO_FASTPATH_S16, PARSE_ONLY_BOOL, false },
                      { MENU_ENUM_LABEL_AUDIO_FORMAT_NEGOTIATION, PARSE_ONLY_UINT, false },
                      { MENU_ENUM_LABEL_AUDIO_OUTPUT_LAYOUT,      PARSE_ONLY_UINT, false },
@@ -9209,7 +9225,8 @@ unsigned menu_displaylist_build_list(
             count += menu_displaylist_parse_settings_rows(list, settings,
                   dl_rows_4, (unsigned)ARRAY_SIZE(dl_rows_4));
          }
-         if (string_is_not_equal(settings->arrays.microphone_resampler, "null"))
+         if (audio_resampler_driver_caps(settings->arrays.microphone_resampler)
+               & RESAMPLER_CAP_QUALITY)
          {
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                      MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_QUALITY,
