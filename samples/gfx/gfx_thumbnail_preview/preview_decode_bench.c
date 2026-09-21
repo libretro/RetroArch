@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <formats/image.h>
+#include <formats/rh264.h>
 #include <streams/file_stream.h>
 #include <features/features_cpu.h>
 #include <rthreads/tpool.h>
@@ -85,6 +86,18 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
          break;
    }
    *usec = cpu_features_get_time_usec() - t0;
+
+   /* What the H.264 pipeline did, when there is one and it ran. */
+   {
+      void *h = image_transfer_anim_stream_h264(s, type);
+      int posted = 0, inflight = 0, at_max = 0, jw = 0, ph = 0, pw = 0;
+      if (h)
+         rh264_video_stats((const rh264_video*)h, &posted, &inflight, &at_max, &jw, &ph, &pw);
+      if (posted)
+         printf("      pipeline: %d posted, %d.%02d in flight on average, "
+               "%d posts at the limit, %d joins waited, %d pops held, %d pops waited\n",
+               posted, inflight / 100, inflight % 100, at_max, jw, ph, pw);
+   }
 
    image_transfer_anim_stream_free(s, type);
    if (pool)

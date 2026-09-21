@@ -1026,6 +1026,11 @@ void rmp4_video_stream_set_output(rmp4_video_stream_t *s, uint32_t *out)
       s->out = out;
 }
 
+void *rmp4_video_stream_h264(rmp4_video_stream_t *s)
+{
+   return s ? (void*)s->h264 : NULL;
+}
+
 void rmp4_video_stream_set_catchup(rmp4_video_stream_t *s, int behind)
 {
    if (!s)

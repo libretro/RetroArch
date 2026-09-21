@@ -115,6 +115,14 @@ void rh264_video_set_thread_pool(rh264_video *v, void *pool, int threads);
  * must be byte-exact under it. 0 is off. Debug only. */
 void rh264_video_set_publish_delay(int max_yields);
 
+/* What the pipeline did, for a bench: pictures posted to the pool, the
+ * mean pictures in flight at a post (x100), posts that found the most
+ * possible in flight, joins that had to wait for a context, output
+ * pops that held a due picture for being incomplete, and pops that
+ * waited for one because the queue was full. */
+void rh264_video_stats(const rh264_video *v, int *posted, int *inflight_x100,
+      int *at_max, int *join_waits, int *pop_held, int *pop_waits);
+
 int rh264_video_bit_depth(const rh264_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */

@@ -325,6 +325,10 @@ bool image_transfer_anim_stream_set_argb(void *stream,
  * pass, so the stream catches up; what is shown is decoded exactly as
  * before. Only the MP4 codecs (H.264, HEVC) have such pictures; for
  * the rest this is a no-op. Clear it once caught up. */
+/* The stream's H.264 decoder (an rh264_video*), for a bench to ask
+ * what its pipeline did; NULL for any other type. */
+void *image_transfer_anim_stream_h264(void *stream, enum image_type_enum type);
+
 void image_transfer_anim_stream_set_catchup(void *stream,
       enum image_type_enum type, int behind);
 

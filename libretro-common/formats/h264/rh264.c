@@ -5030,6 +5030,13 @@ struct rh264_video
 #endif
    int            threaded;     /* pictures decode on the pool, in flight */
    int            broken;       /* a posted picture's decode refused */
+   /* What the pipeline did, for a bench to print: pictures posted,
+    * the sum over posts of pictures then in flight, posts that found
+    * the most possible in flight, joins that had to wait, pops that
+    * held a due picture for being incomplete, pops that waited for
+    * one because the queue was full. */
+   int            st_posted, st_inflight_sum, st_inflight_max;
+   int            st_join_waits, st_pop_held, st_pop_waits;
    /* unescaped-RBSP scratch for slice NALs, grown on demand and kept
     * for the decoder's lifetime */
    rh264_sps sps;
@@ -9178,7 +9185,11 @@ static int rh264_out_push(rh264_video *v, int poc, int is_idr)
          && rh264_block_rows_final(v->out[bi].planes) < v->out[bi].mbh)
    {
       if (v->out_len < RH264_OUT_SLOTS - 1)
+      {
+         v->st_pop_held++;
          return -1;
+      }
+      v->st_pop_waits++;
       slock_lock(rh264_rows_lock);
       while (rh264_block_rows_final(v->out[bi].planes) < v->out[bi].mbh)
          scond_wait(rh264_rows_cond, rh264_rows_lock);
@@ -9267,6 +9278,8 @@ static int rh264_video_next_ctx(rh264_video *v, int *got_pic)
       v->cur = &v->ctx[(i + 1) % v->nctx];
    }
 #ifdef HAVE_THREADS
+   if (retro_atomic_load_acquire_int(&v->cur->busy))
+      v->st_join_waits++;
    rh264_ctx_join(v->cur);
 #endif
    v->cur->posted = 0;
@@ -10167,7 +10180,16 @@ static void rh264_video_post_picture(rh264_video *v)
    {
       retro_atomic_store_release_int(&c->busy, 1);
       if (tpool_add_work((tpool_t*)v->pool, rh264_ctx_job, c))
+      {
+         int k, busy = 0;
+         for (k = 0; k < v->nctx; k++)
+            busy += retro_atomic_load_acquire_int(&v->ctx[k].busy);
+         v->st_posted++;
+         v->st_inflight_sum += busy;
+         if (busy >= v->nctx - 1)
+            v->st_inflight_max++;
          return;
+      }
       retro_atomic_store_release_int(&c->busy, 0);
    }
 #endif
@@ -10342,6 +10364,19 @@ void rh264_video_set_contexts(rh264_video *v, int n)
    if (n < 1) n = 1;
    if (n > RH264_MAX_CTX) n = RH264_MAX_CTX;
    v->nctx = n;
+}
+
+void rh264_video_stats(const rh264_video *v, int *posted, int *inflight_x100,
+      int *at_max, int *join_waits, int *pop_held, int *pop_waits)
+{
+   if (!v)
+      return;
+   if (posted)        *posted        = v->st_posted;
+   if (inflight_x100) *inflight_x100 = v->st_posted ? v->st_inflight_sum * 100 / v->st_posted : 0;
+   if (at_max)        *at_max        = v->st_inflight_max;
+   if (join_waits)    *join_waits    = v->st_join_waits;
+   if (pop_held)      *pop_held      = v->st_pop_held;
+   if (pop_waits)     *pop_waits     = v->st_pop_waits;
 }
 
 void rh264_video_set_publish_delay(int max_us)
