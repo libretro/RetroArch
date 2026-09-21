@@ -13,6 +13,8 @@ LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 SOURCES = $(COMMON)/audio/resampler/drivers/sinc_resampler.c \
  $(COMMON)/audio/resampler/drivers/sinc_resampler_int16.c \
+ $(COMMON)/audio/resampler/audio_resampler.c \
+ $(COMMON)/audio/resampler/audio_resampler_int16.c \
  $(COMMON)/audio/conversion/s16_to_float.c $(COMMON)/audio/conversion/float_to_s16.c \
  $(COMMON)/memmap/memalign.c $(ROOT)/audio/audio_upmix.c
 all: extra_capacity_test hq_settings_test

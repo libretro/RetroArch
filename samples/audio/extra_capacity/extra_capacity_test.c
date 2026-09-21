@@ -82,7 +82,10 @@ bool retro_resampler_realloc_hq(void **re, const retro_resampler_t **backend,
    *backend = &sinc_resampler;
    if (ident && strcmp(ident, "other") == 0)
    {
+      /* A backend that does not offer HQ oversampling, which is what
+       * the policy reads now rather than the identity of sinc. */
       alternate = sinc_resampler;
+      alternate.caps &= ~RESAMPLER_CAP_HQ_OVERSAMPLE;
       *backend = &alternate;
       hq = false;
    }

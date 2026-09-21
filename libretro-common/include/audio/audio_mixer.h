@@ -178,7 +178,9 @@ bool audio_mixer_has_float_voices(void);
 bool audio_mixer_has_s16_voices(void);
 
 audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
-      bool repeat, int32_t gain, enum resampler_quality quality,
+      bool repeat, int32_t gain,
+      const char *resampler_ident,
+      enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb);
 
 RETRO_END_DECLS

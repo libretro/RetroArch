@@ -16,6 +16,7 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.c \
 	$(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.c \
 	$(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.c \
+ $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler_int16.c \
 	$(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.c \
 	$(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler_int16.c \
 	$(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.c \

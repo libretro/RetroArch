@@ -39,6 +39,7 @@ SOURCES := gfx_thumbnail_preview_test.c \
            stubs_retroarch.c \
            $(REPO_ROOT)/libretro-common/audio/audio_mixer.c \
            $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.c \
+ $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler_int16.c \
            $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.c \
            $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_int16.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
@@ -104,6 +105,7 @@ OBJS := $(SOURCES:.c=.o)
 DECODE_SOURCES := preview_audio_decode_test.c \
            $(REPO_ROOT)/libretro-common/audio/audio_mixer.c \
            $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.c \
+           $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler_int16.c \
            $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.c \
            $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_int16.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \

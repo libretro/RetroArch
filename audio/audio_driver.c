@@ -597,23 +597,6 @@ static bool audio_driver_resampler_realloc(audio_driver_state_t *audio_st,
    return initialized;
 }
 
-/* Map the shared resampler quality enum onto the integer sinc driver's own
- * quality enum (they use different orderings). */
-static enum sinc_int16_quality audio_sinc_int16_quality_map(
-      enum resampler_quality q)
-{
-   switch (q)
-   {
-      case RESAMPLER_QUALITY_LOWEST:  return SINC_INT16_QUALITY_LOWEST;
-      case RESAMPLER_QUALITY_LOWER:   return SINC_INT16_QUALITY_LOWER;
-      case RESAMPLER_QUALITY_HIGHER:  return SINC_INT16_QUALITY_HIGHER;
-      case RESAMPLER_QUALITY_HIGHEST: return SINC_INT16_QUALITY_HIGHEST;
-      case RESAMPLER_QUALITY_NORMAL:
-      case RESAMPLER_QUALITY_DONTCARE:
-      default:                        return SINC_INT16_QUALITY_NORMAL;
-   }
-}
-
 size_t audio_driver_get_underruns(void)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
@@ -655,21 +638,13 @@ static void audio_driver_extra_free(audio_driver_state_t *audio_st)
 /* An int16 resampler instance of the kind the front pair uses. */
 static void *audio_driver_int16_resampler_new(audio_driver_state_t *audio_st)
 {
-   const char *rs_ident = (audio_st->resampler && audio_st->resampler->short_ident)
-         ? audio_st->resampler->short_ident : "";
-   if (string_is_equal(rs_ident, "sinc"))
-      return sinc_resampler_int16_init_hq(audio_st->src_ratio_orig,
-            audio_sinc_int16_quality_map(audio_st->resampler_quality),
-            audio_st->resampler_hq);
-#ifdef HAVE_NEAREST_RESAMPLER
-   if (string_is_equal(rs_ident, "nearest"))
-      return nearest_resampler_int16_init();
-#endif
-#ifdef HAVE_CC_RESAMPLER
-   if (string_is_equal(rs_ident, "cc"))
-      return cc_resampler_int16_init(audio_st->src_ratio_orig);
-#endif
-   return NULL;
+   retro_resampler_int16_t rs;
+   retro_resampler_int16_new(&rs,
+         (audio_st->resampler && audio_st->resampler->short_ident)
+               ? audio_st->resampler->short_ident : NULL,
+         audio_st->resampler_quality, audio_st->src_ratio_orig,
+         audio_st->resampler_hq);
+   return rs.data;
 }
 
 /* Room for a batch of extras: the buffers, and resampler instances of
@@ -4473,35 +4448,14 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          && audio_driver_st.resampler->short_ident)
    {
       const char *rs_ident = audio_driver_st.resampler->short_ident;
-      if (string_is_equal(rs_ident, "sinc"))
-      {
-         audio_driver_st.resampler_data_int16 = sinc_resampler_int16_init_hq(
-               audio_driver_st.src_ratio_orig,
-               audio_sinc_int16_quality_map(audio_driver_st.resampler_quality),
-               audio_driver_st.resampler_hq);
-         audio_driver_st.resampler_int16_process = sinc_resampler_int16_process;
-         audio_driver_st.resampler_int16_free    = sinc_resampler_int16_free;
-         audio_driver_st.resampler_int16_reset   = sinc_resampler_int16_reset;
-      }
-#ifdef HAVE_NEAREST_RESAMPLER
-      else if (string_is_equal(rs_ident, "nearest"))
-      {
-         audio_driver_st.resampler_data_int16 = nearest_resampler_int16_init();
-         audio_driver_st.resampler_int16_process = nearest_resampler_int16_process;
-         audio_driver_st.resampler_int16_free    = nearest_resampler_int16_free;
-         audio_driver_st.resampler_int16_reset   = nearest_resampler_int16_reset;
-      }
-#endif
-#ifdef HAVE_CC_RESAMPLER
-      else if (string_is_equal(rs_ident, "cc"))
-      {
-         audio_driver_st.resampler_data_int16 = cc_resampler_int16_init(
-               audio_driver_st.src_ratio_orig);
-         audio_driver_st.resampler_int16_process = cc_resampler_int16_process;
-         audio_driver_st.resampler_int16_free    = cc_resampler_int16_free;
-         audio_driver_st.resampler_int16_reset   = cc_resampler_int16_reset;
-      }
-#endif
+      retro_resampler_int16_t rs;
+      retro_resampler_int16_new(&rs, rs_ident,
+            audio_driver_st.resampler_quality,
+            audio_driver_st.src_ratio_orig, audio_driver_st.resampler_hq);
+      audio_driver_st.resampler_data_int16    = rs.data;
+      audio_driver_st.resampler_int16_process = rs.process;
+      audio_driver_st.resampler_int16_free    = rs.free;
+      audio_driver_st.resampler_int16_reset   = rs.reset;
       if (audio_driver_st.resampler_int16_process)
          RARCH_LOG("[Audio] %s resampler: integer s16 path %s.\n",
                rs_ident,
@@ -7774,6 +7728,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          if (audio_driver_mixer_use_s16(audio_driver_st.stat_core_is_float))
             voice = audio_mixer_play_s16(handle, looped,
                   GAIN_TO_Q16(params->volume),
+                  audio_driver_st.resampler_ident,
                   audio_driver_st.resampler_quality, stop_cb);
          else
             voice = audio_mixer_play(handle, looped, params->volume,
@@ -7864,6 +7819,7 @@ static void audio_driver_mixer_play_stream_internal(
                audio_mixer_play_s16(audio_driver_st.mixer_streams[i].handle,
                   (type == AUDIO_STREAM_STATE_PLAYING_LOOPED) ? true : false,
                   AUDIO_MIXER_GAIN_UNITY,
+                  audio_driver_st.resampler_ident,
                   audio_driver_st.resampler_quality,
                   audio_driver_st.mixer_streams[i].stop_cb);
          else
@@ -9430,32 +9386,12 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
          &&   microphone->resampler
          &&   microphone->resampler->short_ident)
    {
-      const char *rs_ident = microphone->resampler->short_ident;
-      if (string_is_equal(rs_ident, "sinc"))
-      {
-         microphone->resampler_data_int16 = sinc_resampler_int16_init(
-               microphone->orig_ratio,
-               audio_sinc_int16_quality_map(mic_st->resampler_quality));
-         microphone->resampler_int16_process = sinc_resampler_int16_process;
-         microphone->resampler_int16_free    = sinc_resampler_int16_free;
-      }
-#ifdef HAVE_NEAREST_RESAMPLER
-      else if (string_is_equal(rs_ident, "nearest"))
-      {
-         microphone->resampler_data_int16 = nearest_resampler_int16_init();
-         microphone->resampler_int16_process = nearest_resampler_int16_process;
-         microphone->resampler_int16_free    = nearest_resampler_int16_free;
-      }
-#endif
-#ifdef HAVE_CC_RESAMPLER
-      else if (string_is_equal(rs_ident, "cc"))
-      {
-         microphone->resampler_data_int16 = cc_resampler_int16_init(
-               microphone->orig_ratio);
-         microphone->resampler_int16_process = cc_resampler_int16_process;
-         microphone->resampler_int16_free    = cc_resampler_int16_free;
-      }
-#endif
+      retro_resampler_int16_t rs;
+      retro_resampler_int16_new(&rs, microphone->resampler->short_ident,
+            mic_st->resampler_quality, microphone->orig_ratio, false);
+      microphone->resampler_data_int16    = rs.data;
+      microphone->resampler_int16_process = rs.process;
+      microphone->resampler_int16_free    = rs.free;
       if (!microphone->resampler_data_int16)
       {
          microphone->resampler_int16_process = NULL;

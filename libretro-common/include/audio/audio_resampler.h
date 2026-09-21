@@ -29,6 +29,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include <audio/sinc_resampler_int16.h>
+
 RETRO_BEGIN_DECLS
 
 #define RESAMPLER_SIMD_SSE      (1 << 0)
@@ -204,6 +206,31 @@ extern retro_resampler_t sinc_resampler;
 extern retro_resampler_t CC_resampler;
 #endif
 extern retro_resampler_t nearest_resampler;
+
+/* The deterministic integer counterpart of a float backend. Zeroed
+ * where the named backend has no int16 implementation, which is the
+ * caller's signal to keep the float path. */
+typedef struct retro_resampler_int16
+{
+   void  *data;
+   void (*process)(void *, struct resampler_data_int16 *);
+   void (*reset)(void *);
+   void (*free)(void *);
+} retro_resampler_int16_t;
+
+/* Builds the int16 counterpart of @short_ident - the short_ident of a
+ * backend, not a user-facing name. @hq_oversampling is a request; a
+ * backend that does not read it ignores it, as it ignores @quality.
+ * Returns whether an instance was made; the struct is zeroed if not,
+ * and its free() is the one that must release data. */
+bool retro_resampler_int16_new(retro_resampler_int16_t *out,
+      const char *short_ident, enum resampler_quality quality,
+      double bw_ratio, bool hq_oversampling);
+
+/* The backend the named one resolves to, by the lookup
+ * retro_resampler_realloc() uses: NULL or an unknown name gives the
+ * fallback. */
+const retro_resampler_t *audio_resampler_driver_find(const char *ident);
 
 /* The RESAMPLER_CAP_* of the named backend, by the same lookup
  * retro_resampler_realloc() uses, so an unknown name reports the

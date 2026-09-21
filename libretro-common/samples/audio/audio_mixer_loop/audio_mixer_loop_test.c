@@ -366,7 +366,7 @@ static int mix_repeating(audio_mixer_sound_t *sound, int s16,
    voice_ended = 0;
 
    voice = s16
-      ? audio_mixer_play_s16(sound, true, 0x10000,
+      ? audio_mixer_play_s16(sound, true, 0x10000, NULL,
             RESAMPLER_QUALITY_DONTCARE, voice_stopped)
       : audio_mixer_play(sound, true, 1.0f, NULL,
             RESAMPLER_QUALITY_DONTCARE, voice_stopped);

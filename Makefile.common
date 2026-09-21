@@ -401,6 +401,7 @@ DEFINES += -DHAVE_WINDOW_OFFSET
 endif
 
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o
+OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler_int16.o
 
 ifeq ($(HAVE_DSP_FILTER), 1)
 DEFINES += -DHAVE_DSP_FILTER
