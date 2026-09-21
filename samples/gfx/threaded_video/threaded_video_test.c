@@ -2164,6 +2164,163 @@ static void surf_fill(gfx_surface_t *s, unsigned slot, unsigned seed)
       s->slots[slot][i] = 0xff000000u | ((i * 7u + seed * 31u) & 0xffffffu);
 }
 
+/* A texture back end for the null driver, which has none at all. Up to
+ * now the lane below stopped at "driver made no texture" and never
+ * reached what it is about: that a streaming surface loads ONE texture
+ * and keeps it across every frame, that each queued submit is released
+ * exactly once, and that freeing a surface - with a frame still on its
+ * way - releases its texture rather than leaking it. Handles are tagged
+ * and tracked individually, so the checks name the surface's own
+ * texture and are not disturbed by whatever else the frontend uploads
+ * through the same poke (the menu's own framebuffer comes through it).
+ *
+ * The back end has to be installed per video mode: each switch reinits
+ * the driver, which rebuilds the poke from the real one and drops the
+ * override. Threaded, it goes on the wrapped driver so the worker's
+ * uploads run through it; direct, on the driver's own poke. */
+#define SURFTEX_TAG   0x5000
+#define SURFTEX_MAX   256
+
+static video_driver_t                 surftex_driver;
+static const video_driver_t          *surftex_inner;
+static video_poke_interface_t          surftex_poke;
+static const video_poke_interface_t  *surftex_inner_poke;
+static const video_poke_interface_t  *surftex_saved_poke;
+static unsigned char surftex_live[SURFTEX_MAX + 1];
+static unsigned      surftex_loads;
+static unsigned      surftex_updates;
+static unsigned      surftex_unloads;
+/* 0 down, 1 on the wrapped driver, 2 on the driver's own poke. */
+static int           surftex_mode;
+
+static bool surftex_ours(uintptr_t id)
+{
+   return id > SURFTEX_TAG && id <= SURFTEX_TAG + SURFTEX_MAX;
+}
+
+static bool surftex_is_live(uintptr_t id)
+{
+   return surftex_ours(id) && surftex_live[id - SURFTEX_TAG];
+}
+
+static unsigned surftex_live_count(void)
+{
+   unsigned i, n = 0;
+   for (i = 1; i <= SURFTEX_MAX; i++)
+      if (surftex_live[i])
+         n++;
+   return n;
+}
+
+static uintptr_t surftex_load(void *data, void *img, bool threaded,
+      enum texture_filter_type filter)
+{
+   (void)data; (void)img; (void)threaded; (void)filter;
+   if (surftex_loads >= SURFTEX_MAX)
+      return 0;
+   surftex_live[++surftex_loads] = 1;
+   return SURFTEX_TAG + surftex_loads;
+}
+
+/* In place: the same handle comes back, which is what lets the lane
+ * check that a driver with an update path is not reloading. */
+static bool surftex_update(void *data, uintptr_t id,
+      const struct texture_image *ti, bool threaded)
+{
+   (void)data; (void)ti; (void)threaded;
+   if (!surftex_is_live(id))
+      return false;
+   surftex_updates++;
+   return true;
+}
+
+static void surftex_unload(void *data, bool threaded, uintptr_t id)
+{
+   if (surftex_ours(id))
+   {
+      surftex_live[id - SURFTEX_TAG] = 0;
+      surftex_unloads++;
+      return;
+   }
+   if (surftex_inner_poke && surftex_inner_poke->unload_texture)
+      surftex_inner_poke->unload_texture(data, threaded, id);
+}
+
+/* Builds the overriding poke over `base`, which the unload forwards
+ * handles it did not issue to. */
+static void surftex_build(const video_poke_interface_t *base)
+{
+   surftex_inner_poke = base;
+   if (base)
+      surftex_poke = *base;
+   else
+      memset(&surftex_poke, 0, sizeof(surftex_poke));
+   surftex_poke.load_texture   = surftex_load;
+   surftex_poke.unload_texture = surftex_unload;
+   surftex_poke.update_texture = surftex_update;
+}
+
+static void surftex_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   const video_poke_interface_t *base = NULL;
+   if (surftex_inner && surftex_inner->poke_interface)
+      surftex_inner->poke_interface(data, &base);
+   surftex_build(base);
+   *iface = &surftex_poke;
+}
+
+static void surftex_reset_counts(void)
+{
+   memset(surftex_live, 0, sizeof(surftex_live));
+   surftex_loads   = 0;
+   surftex_updates = 0;
+   surftex_unloads = 0;
+}
+
+static bool surftex_install(void)
+{
+   video_driver_state_t *vst = video_state_get_ptr();
+   if (surftex_mode || !vst->data)
+      return false;
+   surftex_reset_counts();
+   if (vst->thread_wrapper_active)
+   {
+      thread_video_t *thr = (thread_video_t*)vst->data;
+      if (!thr->driver)
+         return false;
+      video_thread_wait_idle();
+      surftex_inner                 = thr->driver;
+      surftex_driver                = *thr->driver;
+      surftex_driver.poke_interface = surftex_get_poke;
+      thr->driver                   = &surftex_driver;
+      surftex_get_poke(thr->driver_data, &thr->poke);
+      surftex_mode                  = 1;
+      return true;
+   }
+   surftex_saved_poke = vst->poke;
+   surftex_inner      = NULL;
+   surftex_build(vst->poke);
+   vst->poke          = &surftex_poke;
+   surftex_mode       = 2;
+   return true;
+}
+
+static void surftex_remove(void)
+{
+   video_driver_state_t *vst = video_state_get_ptr();
+   if (surftex_mode == 1)
+   {
+      thread_video_t *thr = (thread_video_t*)vst->data;
+      video_thread_wait_idle();
+      thr->driver = surftex_inner;
+      thr->poke   = surftex_inner_poke;
+   }
+   else if (surftex_mode == 2)
+      vst->poke = surftex_saved_poke;
+   surftex_mode  = 0;
+   surftex_inner = NULL;
+}
+
 static void lane_surface_update(void)
 {
    unsigned had = failures;
@@ -2180,13 +2337,22 @@ static void lane_surface_update(void)
    run_frames(3);
    expect_wrapper(true, "surface lane");
 
+   /* Lend the null driver a texture back end, so the checks below run
+    * instead of stopping at "driver made no texture". A real driver
+    * brings its own. */
+   if (!real_driver())
+      CHECK(surftex_install(), "surface lane: no texture back end installed");
+
 #ifdef HAVE_GFX_INSTRUMENT
    gfx_instrument_reset();
 #endif
    s = gfx_surface_new(64, 48, 2, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
    CHECK(s != NULL, "surface allocation failed");
    if (!s)
+   {
+      surftex_remove();
       return;
+   }
    surf_releases = 0;
    surf_fill(s, 0, 0);
    r = gfx_surface_submit(s, 0, rgba);
@@ -2199,8 +2365,9 @@ static void lane_surface_update(void)
          "first release: %u releases, slot %u", surf_releases, surf_last_slot);
    if (!s->handle)
    {
-      /* The null driver has no texture load: nothing more to see. */
+      /* A real driver that makes none: nothing more to see. */
       fprintf(stderr, "[skip] surface lane: driver made no texture\n");
+      surftex_remove();
       gfx_surface_free(s);
       run_frames(2);
       set_threaded_via_setting(false);
@@ -2251,6 +2418,22 @@ static void lane_surface_update(void)
    gfx_surface_free(s);
    run_frames(3);
 
+   /* The free above had a frame in flight, so the completion is what
+    * releases the texture. On the harness back end the handle can be
+    * named: it is either still loaded or it is not. */
+   if (surftex_mode)
+   {
+      video_thread_wait_idle();
+      CHECK(!surftex_is_live(first),
+            "surface freed with a frame in flight left its texture loaded");
+      CHECK(surftex_live_count() == 0,
+            "%u textures still loaded after the threaded half "
+            "(%u loads, %u unloads)", surftex_live_count(),
+            surftex_loads, surftex_unloads);
+      CHECK(surftex_loads == 1, "%u texture loads for one streaming "
+            "surface on the harness back end", surftex_loads);
+   }
+
 #ifdef HAVE_GFX_INSTRUMENT
    /* The threaded half on its own: one texture, then an update per
     * frame, each posted as a descriptor. Counted before the mode
@@ -2274,17 +2457,26 @@ static void lane_surface_update(void)
       }
    }
 #endif
-   /* Direct: the submit runs the driver here and now. */
+   /* Direct: the submit runs the driver here and now. The mode switch
+    * reinits video, so the back end comes off first and goes back on
+    * the driver's own poke after. */
+   surftex_remove();
    set_threaded_via_setting(false);
    run_frames(2);
 #ifdef HAVE_GFX_INSTRUMENT
    gfx_instrument_reset();
 #endif
    expect_wrapper(false, "surface lane, direct");
+   if (!real_driver())
+      CHECK(surftex_install(),
+            "surface lane, direct: no texture back end installed");
    s = gfx_surface_new(64, 48, 1, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
    CHECK(s != NULL, "direct surface allocation failed");
    if (!s)
+   {
+      surftex_remove();
       return;
+   }
    surf_fill(s, 0, 0);
    r = gfx_surface_submit(s, 0, rgba);
    CHECK(r == GFX_SURFACE_SUBMIT_DONE, "direct submit returned %d, not DONE", r);
@@ -2301,6 +2493,20 @@ static void lane_surface_update(void)
       CHECK(s->handle == first, "direct in-place driver replaced the texture");
    gfx_surface_free(s);
    run_frames(2);
+
+   if (surftex_mode)
+   {
+      CHECK(!surftex_is_live(first),
+            "direct free left the surface's texture loaded");
+      CHECK(surftex_live_count() == 0,
+            "%u textures still loaded after the direct half "
+            "(%u loads, %u unloads)", surftex_live_count(),
+            surftex_loads, surftex_unloads);
+      CHECK(surftex_loads == 1, "%u texture loads for one direct surface "
+            "on the harness back end", surftex_loads);
+      CHECK(surftex_updates > 0, "no in-place update reached the harness "
+            "back end in 11 direct submits");
+   }
 
 #ifdef HAVE_GFX_INSTRUMENT
    /* What those frames cost, on this driver, counted where it
@@ -2338,6 +2544,8 @@ static void lane_surface_update(void)
       }
    }
 #endif
+
+   surftex_remove();
 
    if (failures == had)
       fprintf(stderr, "[pass] surface lane (31 threaded, 11 direct submits)\n");
