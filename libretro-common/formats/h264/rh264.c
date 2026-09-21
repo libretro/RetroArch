@@ -5219,7 +5219,7 @@ static void rh264_block_publish_rows(void *data, int rows)
    retro_atomic_store_release_int(&b->rows_final, rows);
 }
 
-#define RH264_FREE_BLOCKS 8
+#define RH264_FREE_BLOCKS 16
 
 static rh264_block_hdr *rh264_free_blocks;
 static int              rh264_free_blocks_n;
@@ -5469,10 +5469,12 @@ static void rh264_frame_free(rh264_frame *f)
 #define RH264_FRAME_ALLOC_PLAIN   0
 #define RH264_FRAME_ALLOC_REF     1
 #define RH264_FRAME_ALLOC_WORKING 2
+#define RH264_FRAME_ALLOC_SHELL   3   /* bookkeeping only; the block is shared in */
 static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps,
       int mode)
 {
    int with_mv      = (mode == RH264_FRAME_ALLOC_REF);
+   int with_samples = (mode != RH264_FRAME_ALLOC_SHELL);
    int with_scratch = (mode == RH264_FRAME_ALLOC_WORKING);
    int mbw = sps->pic_width_in_mbs;
    int mbh = sps->frame_mbs > 0 ? sps->frame_mbs
@@ -5534,17 +5536,17 @@ static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps,
    o_tbsave  = RH264_ARENA_NEXT(o_mc,      with_scratch ? (size_t)4096 : 0);
    meta_len  = RH264_ARENA_NEXT(o_tbsave,  with_scratch ? sizeof(struct rh264_tb_save_s) : 0);
 
-   f->planes = rh264_planes_new(plane_len);
+   f->planes = with_samples ? rh264_planes_new(plane_len) : NULL;
    f->plane_len = plane_len;
    f->meta   = (uint8_t*)calloc(meta_len, 1);
-   if (!f->planes || !f->meta)
+   if ((with_samples && !f->planes) || !f->meta)
    {
       rh264_frame_free(f);
       return -1;
    }
    f->Yb     = f->planes;
-   f->Ub     = f->planes + o_ub;
-   f->Vb     = f->planes + o_vb;
+   f->Ub     = f->planes ? f->planes + o_ub : NULL;
+   f->Vb     = f->planes ? f->planes + o_vb : NULL;
    f->Y = f->Yb; f->U = f->Ub; f->V = f->Vb;
    f->i4mode = f->meta;
    f->nzL    = f->meta + o_nzl;
@@ -9156,8 +9158,27 @@ static int rh264_out_push(rh264_video *v, int poc, int is_idr)
    for (i = 0; i < RH264_OUT_SLOTS; i++)
       if (!v->out_used[i] && i != v->out_show) { slot = i; break; }
    if (slot < 0) return -1;            /* cannot happen: delay < slot count */
-   if (!v->out[slot].Yb)
-      if (rh264_frame_alloc(&v->out[slot], &v->sps, RH264_FRAME_ALLOC_PLAIN) != 0) return -1;
+   /* A slot that has been shown and is not the one on show holds its
+    * block for nothing: let it go now, so the block is back on the
+    * free list for the next picture rather than pinned in a slot that
+    * may not come round for a dozen pictures. */
+   for (i = 0; i < RH264_OUT_SLOTS; i++)
+      if (!v->out_used[i] && i != v->out_show && v->out[i].planes
+            && !v->out[i].field)
+      {
+         rh264_planes_release(v->out[i].planes);
+         v->out[i].planes = NULL;
+         v->out[i].Yb = v->out[i].Ub = v->out[i].Vb = NULL;
+         v->out[i].Y  = v->out[i].U  = v->out[i].V  = NULL;
+      }
+   /* A frame picture shares its block into the slot: the slot needs
+    * its bookkeeping, not a block of its own, which would be made,
+    * zeroed and let go again on the spot. Only a field pair, which
+    * copies, needs the slot to hold samples. */
+   if (!v->out[slot].meta || (v->cur_field && !v->out[slot].Yb))
+      if (rh264_frame_alloc(&v->out[slot], &v->sps,
+               v->cur_field ? RH264_FRAME_ALLOC_PLAIN : RH264_FRAME_ALLOC_SHELL) != 0)
+         return -1;
    if (!v->cur_field)
    {
       /* Frame pictures swap their planes into the output slot instead
