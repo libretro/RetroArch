@@ -4890,6 +4890,14 @@ typedef struct rh264_pic_ctx
 {
    uint8_t  *rbsp_scratch;
    size_t    rbsp_scratch_cap;
+   /* The pictures this one predicts from, as copies of their frames
+    * holding their own references on the sample and motion blocks.
+    * A slice decoder reads its lists through these rather than through
+    * the DPB slots, so a slot taken by a later picture while this one
+    * still decodes cannot pull a reference out from under it. Released
+    * at the finish. */
+   rh264_frame refs[RH264_MAX_REFS * 2 + 2];
+   int         nrefs;
    int       pic_open;
    int       saw_switching;
    int       pic_kind;          /* 1 IDR-I, 2 recovery-I, 3 P, 4 B    */
@@ -5199,6 +5207,55 @@ static void rh264_frame_own_mvg(rh264_frame *f)
    f->mvg        = f->mvg_meta;
    f->mvg2       = f->mvg2_meta;
    f->mvg_shared = 0;
+}
+
+/* A reference list entry becomes a snapshot held by the context: the
+ * same frame, with a reference taken on each counted block it points
+ * at. Entries naming the same picture share one snapshot. */
+static const rh264_frame *rh264_ctx_snapshot(rh264_pic_ctx *c,
+      const rh264_frame *src)
+{
+   int i;
+   rh264_frame *d;
+   for (i = 0; i < c->nrefs; i++)
+      if (c->refs[i].planes == src->planes && c->refs[i].mvg == src->mvg
+            && c->refs[i].field == src->field && c->refs[i].poc == src->poc)
+         return &c->refs[i];
+   if (c->nrefs >= (int)(sizeof(c->refs) / sizeof(c->refs[0])))
+      return src;                       /* over the bound: read the slot */
+   d = &c->refs[c->nrefs++];
+   *d = *src;
+   if (d->planes)
+      ++rh264_block_of(d->planes)->refs;
+   if (d->mvg_shared && d->mvg)
+      ++rh264_block_of(d->mvg)->refs;
+   /* the snapshot owns nothing carved out of the slot's meta */
+   d->meta = NULL;
+   d->mvg_meta = NULL; d->mvg2_meta = NULL;
+   return d;
+}
+
+static void rh264_ctx_snapshot_list(rh264_pic_ctx *c,
+      const rh264_frame **list, int n)
+{
+   int i;
+   for (i = 0; i < n; i++)
+      if (list[i])
+         list[i] = rh264_ctx_snapshot(c, list[i]);
+}
+
+static void rh264_ctx_release_refs(rh264_pic_ctx *c)
+{
+   int i;
+   for (i = 0; i < c->nrefs; i++)
+   {
+      rh264_planes_release(c->refs[i].planes);
+      if (c->refs[i].mvg_shared)
+         rh264_mvg_release(c->refs[i].mvg);
+      c->refs[i].planes = NULL;
+      c->refs[i].mvg    = NULL;
+   }
+   c->nrefs = 0;
 }
 
 static void rh264_frame_free(rh264_frame *f)
@@ -9499,6 +9556,8 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       bc->direct_spatial = sh->direct_spatial_mv_pred_flag;
       bc->d8x8 = v->sps.direct_8x8_inference_flag;
       bc->wbidc = v->pps.weighted_bipred_idc;
+      rh264_ctx_snapshot_list(v->cur, bc->l0, bc->n0);
+      rh264_ctx_snapshot_list(v->cur, bc->l1, bc->n1);
       bc->colg = bc->l1[0]->mvg;
       if (!bc->colg) { return -1; }
       rh264_b_setup_scales(bc);
@@ -9581,6 +9640,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
               l0poc[i] = v->fieldview[j].poc; break; }
       }
       (void)lpn;
+      rh264_ctx_snapshot_list(v->cur, l0, nref);
       if (v->pps.entropy_coding_mode_flag)
          rc = rh264_cabac_decode_pslice(&b, &v->sps, &v->pps, sh, &v->cur->f,
                l0, nref, picid, l0poc, v->cur->mvg, &end, &v->cur->sscr.cb);
@@ -9684,6 +9744,7 @@ static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
    v->cur->f.row_done       = NULL;
    if (v->cur->f.planes)
       rh264_block_of(v->cur->f.planes)->rows_final = v->cur->f.mbh;
+   rh264_ctx_release_refs(v->cur);
    if (v->cur->pic_kind == 1)
    {
       v->dpb_len = 0;       /* an IDR empties the reference list (8.2.5.1) */
