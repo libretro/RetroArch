@@ -508,6 +508,12 @@ end:
 #define EQ_ARENA_NEXT(cur, bytes) \
    ((((cur) + (bytes) + EQ_ARENA_ALIGN - 1) / EQ_ARENA_ALIGN) * EQ_ARENA_ALIGN)
 
+/* Ordered so NaN, which compares false against everything, lands on lo. */
+static float eq_clampf(float x, float lo, float hi)
+{
+   return (x >= lo) ? ((x <= hi) ? x : hi) : lo;
+}
+
 static void *eq_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
@@ -524,13 +530,26 @@ static void *eq_init(const struct dspfilter_info *info,
    struct eq_data *eq         = (struct eq_data*)calloc(1, sizeof(*eq));
    if (!eq)
       return NULL;
+   /* 0 is what the rate is when the audio device never opened. */
+   if (!info || info->input_rate < 1)
+   {
+      free(eq);
+      return NULL;
+   }
 
    default_freq[0] = 0.0f;
    default_freq[1] = info->input_rate;
 
    config->get_float(userdata, "window_beta", &beta, 4.0f);
+   beta = eq_clampf(beta, 0.0f, 32.0f);
 
    config->get_int(userdata, "block_size_log2", &size_log2, 8);
+   /* The shift, the arena, the FFT order and the block divisor all come
+    * from this one value. */
+   if (size_log2 < 4)
+      size_log2 = 4;
+   else if (size_log2 > 16)
+      size_log2 = 16;
    size = 1 << size_log2;
 
    config->get_float_array(userdata, "frequencies", &frequencies, &num_freq, default_freq, 2);
@@ -549,8 +568,9 @@ static void *eq_init(const struct dspfilter_info *info,
 
    for (i = 0; i < num_gain; i++)
    {
-      gains[i].freq = frequencies[i] / (0.5f * info->input_rate);
-      gains[i].gain = pow(10.0, gain[i] / 20.0);
+      gains[i].freq = eq_clampf(frequencies[i], 0.0f, (float)info->input_rate)
+                    / (0.5f * info->input_rate);
+      gains[i].gain = pow(10.0, eq_clampf(gain[i], -120.0f, 60.0f) / 20.0);
    }
    config->free(frequencies);
    config->free(gain);

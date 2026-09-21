@@ -234,18 +234,38 @@ static uint64_t wahwah_turns_q64(double t)
    return ((uint64_t)(uint32_t)hi << 32) + (uint64_t)lo;
 }
 
+/* Ordered so NaN, which compares false against everything, lands on lo. */
+static float wahwah_clampf(float x, float lo, float hi)
+{
+   return (x >= lo) ? ((x <= hi) ? x : hi) : lo;
+}
+
 static void *wahwah_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
    struct wahwah_data *wah = (struct wahwah_data*)calloc(1, sizeof(*wah));
    if (!wah)
       return NULL;
+   /* 0 is what the rate is when the audio device never opened. */
+   if (!info || info->input_rate < 1)
+   {
+      free(wah);
+      return NULL;
+   }
 
    config->get_float(userdata, "lfo_freq", &wah->freq, 1.5f);
    config->get_float(userdata, "lfo_start_phase", &wah->startphase, 0.0f);
    config->get_float(userdata, "freq_offset", &wah->freqofs, 0.3f);
    config->get_float(userdata, "depth", &wah->depth, 0.7f);
    config->get_float(userdata, "resonance", &wah->res, 2.5f);
+
+   /* res divides the biquad alpha; depth and freqofs drive an exp() that
+    * reaches infinity long before the float range does. */
+   wah->freq       = wahwah_clampf(wah->freq, 0.0f, 100.0f);
+   wah->startphase = wahwah_clampf(wah->startphase, 0.0f, 360.0f);
+   wah->freqofs    = wahwah_clampf(wah->freqofs, 0.0f, 1.0f);
+   wah->depth      = wahwah_clampf(wah->depth, 0.0f, 1.0f);
+   wah->res        = wahwah_clampf(wah->res, 0.1f, 100.0f);
 
    wah->lfoskip = wah->freq * 2.0f * M_PI / info->input_rate;
    wah->phase   = wah->startphase * M_PI / 180.0f;

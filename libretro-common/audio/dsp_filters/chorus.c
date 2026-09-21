@@ -182,6 +182,12 @@ static void chorus_process_i16(void *data,
    }
 }
 
+/* Ordered so NaN, which compares false against everything, lands on lo. */
+static float chorus_clampf(float x, float lo, float hi)
+{
+   return (x >= lo) ? ((x <= hi) ? x : hi) : lo;
+}
+
 static void *chorus_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
@@ -189,6 +195,12 @@ static void *chorus_init(const struct dspfilter_info *info,
    struct chorus_data *ch = (struct chorus_data*)calloc(1, sizeof(*ch));
    if (!ch)
       return NULL;
+   /* 0 is what the rate is when the audio device never opened. */
+   if (!info || info->input_rate < 1)
+   {
+      free(ch);
+      return NULL;
+   }
 
    config->get_float(userdata, "delay_ms", &delay, 25.0f);
    config->get_float(userdata, "depth_ms", &depth, 1.0f);
@@ -198,13 +210,19 @@ static void *chorus_init(const struct dspfilter_info *info,
    delay            /= 1000.0f;
    depth            /= 1000.0f;
 
+   /* The ring holds CHORUS_MAX_DELAY frames and the int16 LUT carries the
+    * modulated delay as Q16 samples, so delay + depth has to fit both. */
+   {
+      float max_s    = (float)(CHORUS_MAX_DELAY - 2) / (float)info->input_rate;
+      delay          = chorus_clampf(delay, 0.0f, max_s);
+      depth          = chorus_clampf(depth, 0.0f, max_s - delay);
+   }
    if (depth > delay)
       depth          = delay;
 
-   if (drywet < 0.0f)
-      drywet         = 0.0f;
-   else if (drywet > 1.0f)
-      drywet         = 1.0f;
+   /* lfo_freq sets the LUT length and the loop that fills it. */
+   lfo_freq          = chorus_clampf(lfo_freq, 0.05f, 50.0f);
+   drywet            = chorus_clampf(drywet, 0.0f, 1.0f);
 
    ch->mix_dry       = 1.0f - 0.5f * drywet;
    ch->mix_wet       = 0.5f * drywet;

@@ -92,6 +92,12 @@ static void panning_process_i16(void *data,
    }
 }
 
+/* Ordered so NaN, which compares false against everything, lands on lo. */
+static float panning_clampf(float x, float lo, float hi)
+{
+   return (x >= lo) ? ((x <= hi) ? x : hi) : lo;
+}
+
 static void *panning_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
@@ -116,6 +122,12 @@ static void *panning_init(const struct dspfilter_info *info,
          left :  default_left,  sizeof(pan->left));
    memcpy(pan->right, (num_right == 2) ?
          right : default_right, sizeof(pan->right));
+
+   /* Linear gains from the preset, quantized to Q16 below. */
+   pan->left[0]    = panning_clampf(pan->left[0],  -16.0f, 16.0f);
+   pan->left[1]    = panning_clampf(pan->left[1],  -16.0f, 16.0f);
+   pan->right[0]   = panning_clampf(pan->right[0], -16.0f, 16.0f);
+   pan->right[1]   = panning_clampf(pan->right[1], -16.0f, 16.0f);
 
    pan->left_i[0]  = (int32_t)floor((double)pan->left[0]  * 65536.0 + 0.5);
    pan->left_i[1]  = (int32_t)floor((double)pan->left[1]  * 65536.0 + 0.5);

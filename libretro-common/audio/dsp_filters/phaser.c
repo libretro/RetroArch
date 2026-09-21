@@ -219,6 +219,12 @@ static void phaser_process_i16(void *data, struct dspfilter_output_i16 *output,
    }
 }
 
+/* Ordered so NaN, which compares false against everything, lands on lo. */
+static float phaser_clampf(float x, float lo, float hi)
+{
+   return (x >= lo) ? ((x <= hi) ? x : hi) : lo;
+}
+
 static void *phaser_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
@@ -226,6 +232,12 @@ static void *phaser_init(const struct dspfilter_info *info,
    struct phaser_data *ph = (struct phaser_data*)calloc(1, sizeof(*ph));
    if (!ph)
       return NULL;
+   /* 0 is what the rate is when the audio device never opened. */
+   if (!info || info->input_rate < 1)
+   {
+      free(ph);
+      return NULL;
+   }
 
    config->get_float(userdata, "lfo_freq", &lfo_freq, 0.4f);
    config->get_float(userdata, "lfo_start_phase", &lfo_start_phase, 0.0f);
@@ -238,6 +250,14 @@ static void *phaser_init(const struct dspfilter_info *info,
       ph->stages = 1;
    else if (ph->stages > 24)
       ph->stages = 24;
+
+   /* feedback is a percentage; depth and dry_wet are fractions. All three
+    * are quantized to Q30 or Q16 below. */
+   lfo_freq        = phaser_clampf(lfo_freq, 0.0f, 100.0f);
+   lfo_start_phase = phaser_clampf(lfo_start_phase, 0.0f, 360.0f);
+   ph->fb          = phaser_clampf(ph->fb, -100.0f, 100.0f);
+   ph->depth       = phaser_clampf(ph->depth, 0.0f, 1.0f);
+   ph->drywet      = phaser_clampf(ph->drywet, 0.0f, 1.0f);
 
    ph->lfoskip = lfo_freq * 2.0 * M_PI / info->input_rate;
    ph->phase   = lfo_start_phase * M_PI / 180.0;

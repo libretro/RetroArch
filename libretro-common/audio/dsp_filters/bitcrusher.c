@@ -172,7 +172,8 @@ static void *bitcrusher_init(const struct dspfilter_info *info,
       downsample = 1;
    else if (downsample > 64)
       downsample = 64;
-   if (mix < 0.0f)
+   /* NaN compares false both ways, so test for the good range. */
+   if (!(mix >= 0.0f))
       mix = 0.0f;
    else if (mix > 1.0f)
       mix = 1.0f;

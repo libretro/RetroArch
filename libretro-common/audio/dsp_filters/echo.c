@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <math.h>
 
+#include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <libretro_dspfilter.h>
 
@@ -118,6 +119,21 @@ static void echo_process(void *data, struct dspfilter_output *output,
  * with the delay lines and accumulation in Q16 fixed point (int64), the amp
  * and per-tap feedback gains as Q16, and round-half-away-from-zero on every
  * narrowing shift.  Only the final dry+echo sum is saturated to s16. */
+/* amp sits inside the feedback path, so amp * feedback is the loop gain
+ * and a preset can set it at or above 1. Hold the Q16 delay line to a
+ * magnitude whose product with amp stays inside int64; 2^36 is 2^20 times
+ * full scale, which a decaying setting never reaches. */
+#define ECHO_Q16_MAX ((int64_t)1 << 36)
+
+static INLINE int64_t echo_sat_q16(int64_t v)
+{
+   if (v >  ECHO_Q16_MAX)
+      return  ECHO_Q16_MAX;
+   if (v < -ECHO_Q16_MAX)
+      return -ECHO_Q16_MAX;
+   return v;
+}
+
 static void echo_process_i16(void *data,
       struct dspfilter_output_i16 *output,
       const struct dspfilter_input_i16 *input)
@@ -163,9 +179,9 @@ static void echo_process_i16(void *data,
          fr = (fr >= 0) ? ((fr + 32768) >> 16) : -(((-fr) + 32768) >> 16);
 
          echo->channels[c].buffer_i[(echo->channels[c].ptr << 1) + 0] =
-               (int64_t)in0 * 65536 + fl;
+               echo_sat_q16((int64_t)in0 * 65536 + fl);
          echo->channels[c].buffer_i[(echo->channels[c].ptr << 1) + 1] =
-               (int64_t)in1 * 65536 + fr;
+               echo_sat_q16((int64_t)in1 * 65536 + fr);
 
          echo->channels[c].ptr =
                (echo->channels[c].ptr + 1) % echo->channels[c].frames;
@@ -185,6 +201,12 @@ static void echo_process_i16(void *data,
    }
 }
 
+/* Ordered so NaN, which compares false against everything, lands on lo. */
+static float echo_clampf(float x, float lo, float hi)
+{
+   return (x >= lo) ? ((x <= hi) ? x : hi) : lo;
+}
+
 static void *echo_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
@@ -202,15 +224,30 @@ static void *echo_init(const struct dspfilter_info *info,
 
    if (!echo)
       return NULL;
+   /* 0 is what the rate is when the audio device never opened. */
+   if (!info || info->input_rate < 1)
+   {
+      free(echo);
+      return NULL;
+   }
 
    config->get_float_array(userdata, "delay", &delay,
          &num_delay, default_delay, 1);
    config->get_float_array(userdata, "feedback", &feedback,
          &num_feedback, default_feedback, 1);
    config->get_float(userdata, "amp", &echo->amp, 0.2f);
+   echo->amp   = echo_clampf(echo->amp, -16.0f, 16.0f);
    echo->amp_q = (int32_t)floor((double)echo->amp * 65536.0 + 0.5);
 
    channels            = num_feedback = num_delay = MIN(num_delay, num_feedback);
+
+   /* Both arrays come from the preset: the delays size the lines, and a
+    * feedback at or past unity never decays. */
+   for (i = 0; i < channels; i++)
+   {
+      delay[i]    = echo_clampf(delay[i], 1.0f, 2000.0f);
+      feedback[i] = echo_clampf(feedback[i], -1.0f, 1.0f);
+   }
 
    /* Measure: the channel descriptors, then per channel a stereo float
     * delay line and its stereo int64 mirror. */

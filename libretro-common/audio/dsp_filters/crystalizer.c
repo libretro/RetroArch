@@ -96,6 +96,12 @@ static void delta_process_i16(void *data,
    }
 }
 
+/* Ordered so NaN, which compares false against everything, lands on lo. */
+static float delta_clampf(float x, float lo, float hi)
+{
+   return (x >= lo) ? ((x <= hi) ? x : hi) : lo;
+}
+
 static void *delta_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
@@ -103,6 +109,8 @@ static void *delta_init(const struct dspfilter_info *info,
    if (!d)
       return NULL;
    config->get_float(userdata, "intensity", &d->intensity, 5.0f);
+   /* Q16, and the preset documents 0 to 10. */
+   d->intensity  = delta_clampf(d->intensity, -16.0f, 16.0f);
    d->intensity_i = (int32_t)floor((double)d->intensity * 65536.0 + 0.5);
    return d;
 }
