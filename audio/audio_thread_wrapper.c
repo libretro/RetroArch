@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include <lists/string_list.h>
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
 #include <features/features_cpu.h>
 
@@ -55,6 +56,15 @@ typedef struct audio_thread
    unsigned *new_rate;
 
    int inited;
+   /* The thread's two loop conditions. Atomics, so the loop tests them
+    * without taking 'lock' on a pass that has nothing to coordinate -
+    * which is every pass while audio is playing - and so that the
+    * frontend's own reads of them are reads rather than races. A writer
+    * still holds 'lock' while it changes one and signals 'cond',
+    * because that is what makes the change and the wakeup atomic
+    * against a waiter. alive only ever goes false. */
+   retro_atomic_int_t alive;
+   retro_atomic_int_t stopped;
    /* The frontend stopped waiting for init(): this thread owns its own
     * state from there and frees it when init() finally returns. */
    bool abandoned;
@@ -63,8 +73,6 @@ typedef struct audio_thread
    unsigned out_rate;
    unsigned latency;
 
-   bool alive;
-   bool stopped;
    bool stopped_ack;
    bool is_paused;
    bool is_shutdown;
@@ -145,7 +153,7 @@ static void audio_thread_loop(void *data)
     * acknowledgement whichever loop the thread is in, so this one
     * gives it too. */
    slock_lock(thr->lock);
-   while (thr->stopped)
+   while (retro_atomic_load_relaxed_int(&thr->stopped))
    {
       thr->stopped_ack = true;
       scond_signal(thr->cond);
@@ -161,38 +169,51 @@ static void audio_thread_loop(void *data)
 
    for (;;)
    {
-      slock_lock(thr->lock);
-
-      if (!thr->alive)
+      /* Tested without the lock: a pass that is neither leaving nor
+       * parking has nothing to say to the main thread, and that is
+       * every pass while audio is playing. A request that lands just
+       * after either test is taken on the next pass, which is where it
+       * was taken before. */
+      if (!retro_atomic_load_acquire_int(&thr->alive))
       {
-         scond_signal(thr->cond);
+         slock_lock(thr->lock);
          thr->stopped_ack = true;
+         scond_signal(thr->cond);
          slock_unlock(thr->lock);
          break;
       }
 
-      if (thr->stopped)
+      if (retro_atomic_load_acquire_int(&thr->stopped))
       {
-         thr->driver->stop(thr->driver_data);
-         while (thr->stopped)
+         slock_lock(thr->lock);
+         /* Again under the lock: a start() between the test and here
+          * has already cleared it, and there is nothing to park. */
+         if (retro_atomic_load_relaxed_int(&thr->stopped))
          {
-            /* If we stop right after start,
-             * we might not be able to properly ack.
-             * Signal in the loop instead. */
-            thr->stopped_ack = true;
-            scond_signal(thr->cond);
+            thr->driver->stop(thr->driver_data);
+            while (retro_atomic_load_relaxed_int(&thr->stopped))
+            {
+               /* If we stop right after start,
+                * we might not be able to properly ack.
+                * Signal in the loop instead. */
+               thr->stopped_ack = true;
+               scond_signal(thr->cond);
 
-            scond_wait(thr->cond, thr->lock);
+               scond_wait(thr->cond, thr->lock);
+            }
+            thr->driver->start(thr->driver_data, thr->is_shutdown);
          }
-         thr->driver->start(thr->driver_data, thr->is_shutdown);
+         slock_unlock(thr->lock);
       }
-
-      slock_unlock(thr->lock);
 
       if (!audio_driver_callback())
       {
          slock_lock(thr->lock);
-         if (thr->alive && !thr->stopped)
+         /* The re-test belongs under the lock: a request that lands
+          * between it and the wait would otherwise go unseen until the
+          * timeout. */
+         if (     retro_atomic_load_relaxed_int(&thr->alive)
+               && !retro_atomic_load_relaxed_int(&thr->stopped))
             scond_wait_timeout(thr->cond, thr->lock,
                   AUDIO_THREAD_IDLE_WAIT_US);
          slock_unlock(thr->lock);
@@ -212,7 +233,7 @@ static void audio_thread_block(audio_thread_t *thr)
    if (!thr)
       return;
 
-   if (thr->stopped)
+   if (retro_atomic_load_acquire_int(&thr->stopped))
       return;
 
    slock_lock(thr->lock);
@@ -221,13 +242,13 @@ static void audio_thread_block(audio_thread_t *thr)
     * acknowledge anything again, and the wait below would never end.
     * There is nothing running to park, so there is nothing to wait
     * for. */
-   if (!thr->alive)
+   if (!retro_atomic_load_relaxed_int(&thr->alive))
    {
       slock_unlock(thr->lock);
       return;
    }
    thr->stopped_ack = false;
-   thr->stopped = true;
+   retro_atomic_store_release_int(&thr->stopped, 1);
    scond_signal(thr->cond);
    /* The thread may be asleep in the pipeline waiting for data; wake it
     * so it comes back to the loop and acknowledges now rather than
@@ -269,7 +290,7 @@ static void audio_thread_unblock(audio_thread_t *thr)
       return;
 
    slock_lock(thr->lock); /* Prevent the audio thread from touching this flag... */
-   thr->stopped = false; /* ...so that the main thread can do it. */
+   retro_atomic_store_release_int(&thr->stopped, 0);
    scond_signal(thr->cond); /* Then let the audio thread know that it's okay to resume. */
    slock_unlock(thr->lock); /* "As you were." */
 }
@@ -284,8 +305,8 @@ static void audio_thread_free(void *data)
    if (thr->thread)
    {
       slock_lock(thr->lock); /* Let the audio thread finish what it's doing... */
-      thr->stopped = false; /* Then stop it. "You're fired." */
-      thr->alive   = false;
+      retro_atomic_store_release_int(&thr->stopped, 0);
+      retro_atomic_store_release_int(&thr->alive,    0);
       scond_signal(thr->cond); /* Let the thread know it's okay to continue */
       slock_unlock(thr->lock); /* At this point, it will exit its loop. */
 
@@ -316,7 +337,7 @@ static bool audio_thread_alive(void *data)
    /* A thread that has ended after a failed write reports the device
     * as not alive, which is what it is; block() below is a no-op then,
     * and the answer has to come from somewhere. */
-   if (!thr->alive)
+   if (!retro_atomic_load_acquire_int(&thr->alive))
       return false;
 
    audio_thread_block(thr);
@@ -333,9 +354,7 @@ void audio_thread_apply_control(void *data,
    bool running;
    if (!thr || !control)
       return;
-   slock_lock(thr->lock);
-   running = !thr->stopped;
-   slock_unlock(thr->lock);
+   running = !retro_atomic_load_acquire_int(&thr->stopped);
    audio_thread_block(thr);
    control(userdata);
    if (running)
@@ -491,7 +510,7 @@ static ssize_t audio_thread_write(void *data, const void *s, size_t len)
    if (_len < 0)
    {
       slock_lock(thr->lock);
-      thr->alive = false;
+      retro_atomic_store_release_int(&thr->alive, 0);
       scond_signal(thr->cond);
       slock_unlock(thr->lock);
    }
@@ -605,8 +624,8 @@ bool audio_init_thread(const audio_driver_t **out_driver,
    if (!(thr->lock     = slock_new()))
       goto error;
 
-   thr->alive          = true;
-   thr->stopped        = true;
+   retro_atomic_store_release_int(&thr->alive,   1);
+   retro_atomic_store_release_int(&thr->stopped, 1);
 
    if (!(thr->thread   = sthread_create(audio_thread_loop, thr)))
       goto error;

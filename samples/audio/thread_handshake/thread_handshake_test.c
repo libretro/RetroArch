@@ -105,10 +105,16 @@ static retro_atomic_int_t writes = RETRO_ATOMIC_INT_INITIALIZER(0);
 static retro_atomic_int_t format_errors = RETRO_ATOMIC_INT_INITIALIZER(0);
 static unsigned format_generation, controls;
 
+/* While set the device refuses the write, as one that has been pulled
+ * out does. The wrapper's own write() is what sees it. */
+static retro_atomic_int_t fail_write = RETRO_ATOMIC_INT_INITIALIZER(0);
+
 static ssize_t fake_write(void *data, const void *buf, size_t size)
 {
    unsigned format = format_generation;
    (void)data; (void)buf;
+   if (retro_atomic_load_acquire_int(&fail_write))
+      return -1;
    retro_atomic_store_release_int(&in_write, 1);
    /* Stands in for a device that has stopped draining: the audio
     * thread is inside this call and cannot reach the loop to
@@ -201,7 +207,13 @@ bool audio_driver_callback(void)
          return true;
       }
    }
-   fake_write(NULL, buf, sizeof(buf));
+   /* Through the wrapper's own write(), which is where the frontend's
+    * samples go: that is the only place the audio thread reports a
+    * device that has stopped taking them. */
+   if (wrapper_drv && wrapper_drv->write)
+      wrapper_drv->write(wrapper_ctx, buf, sizeof(buf));
+   else
+      fake_write(NULL, buf, sizeof(buf));
    return true;
 }
 
@@ -375,7 +387,29 @@ int main(void)
    printf("idle callback: parked, %d asks in 200 ms, stop and resume prompt\n",
          retro_atomic_load_acquire_int(&idle_calls));
 
-   /* 6. Teardown joins the thread. */
+   /* 6. The device refuses a write. The wrapper's write() marks the
+    *    device gone from the audio thread, and the frontend asks about
+    *    it from this one: alive() has to report it, a stop has to
+    *    return rather than wait for an acknowledgement that is never
+    *    coming, and free() has to join. */
+   STAGE(215);
+   retro_atomic_store_release_int(&fail_write, 1);
+   for (i = 0; i < 2000 && drv && drv->alive(data); i++)
+      sleep_us(1000);
+   CHECK(drv && !drv->alive(data),
+         "a device that refused a write is still reported alive");
+   t0 = now_ms();
+   CHECK(drv && drv->stop(data), "stop failed after the device refused a write");
+   t1 = now_ms();
+   CHECK(t1 - t0 < 500.0,
+         "stop against a device that refused a write took %f ms: it waited "
+         "for an acknowledgement from a thread that has left its loop",
+         t1 - t0);
+   retro_atomic_store_release_int(&fail_write, 0);
+   printf("device refusal: reported in %u ms, stop returned in %.1f ms\n",
+         i, t1 - t0);
+
+   /* 7. Teardown joins the thread. */
    STAGE(22);
    if (drv)
       drv->free(data);
