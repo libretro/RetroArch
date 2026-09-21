@@ -1839,16 +1839,17 @@ static bool audio_mixer_play_stream(
          goto error;
    }
 
-   /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
-    * add 16 more samples in the formula below just as safeguard, because
-    * resampler->process sometimes reports more output samples than the
-    * formula below calculates. Ideally, audio resamplers should have a
-    * function to return the number of samples they will output given a
-    * count of input samples. */
+   /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes.
+    * process() reports more than the estimate below - a call ends on a
+    * phase it did not start on, so one input frame's worth of output
+    * lands on top - and the excess scales with the ratio, as it does in
+    * one_shot_resample(). buf_samples is what the fill clamps to. */
    samples                         = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
+   samples                         = ((samples + 2 * (unsigned)(ratio + 1.0)
+                                       + 32) + 15) & ~15;
    voice->types.stream.decode_buf  = (float*)memalign_alloc(64,
          (AUDIO_MIXER_STREAM_BUF_OFFSET(sizeof(float))
-          + (((samples + 16) + 15) & ~15)) * sizeof(float));
+          + samples) * sizeof(float));
 
    if (!voice->types.stream.decode_buf)
    {
@@ -1985,9 +1986,10 @@ static bool audio_mixer_play_stream_s16(
    }
 
    samples     = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
+   samples     = ((samples + 2 * (unsigned)(ratio + 1.0) + 32) + 15) & ~15;
    voice->types.stream.decode_buf_s16 = (int16_t*)memalign_alloc(64,
          (AUDIO_MIXER_STREAM_BUF_OFFSET(sizeof(int16_t))
-          + (((samples + 16) + 15) & ~15)) * sizeof(int16_t));
+          + samples) * sizeof(int16_t));
 
    if (!voice->types.stream.decode_buf_s16)
    {
@@ -2566,6 +2568,8 @@ again:
          voice->types.stream.resampler->process(
                voice->types.stream.resampler_data, &info);
          voice->types.stream.samples = (unsigned)(info.output_frames * 2);
+         if (voice->types.stream.samples > voice->types.stream.buf_samples)
+            voice->types.stream.samples = voice->types.stream.buf_samples;
       }
       else
       {
@@ -2693,6 +2697,8 @@ again:
          voice->types.stream.resampler_int16.process(
                voice->types.stream.resampler_int16.data, &info);
          voice->types.stream.samples = (unsigned)(info.output_frames * 2);
+         if (voice->types.stream.samples > voice->types.stream.buf_samples)
+            voice->types.stream.samples = voice->types.stream.buf_samples;
       }
       else
       {

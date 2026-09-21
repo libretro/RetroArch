@@ -105,12 +105,59 @@ static bool load_one(unsigned frames, unsigned rate, unsigned ch,
    return s != NULL;
 }
 
+/* A streaming voice sizes its resampled buffer from the ratio and then
+ * writes whatever process() reports into it. process() reports more
+ * than the estimate - a call ends on a phase it did not start on - and
+ * the excess scales with the ratio, so a source well below the mixer's
+ * rate is where the two part company. Mix enough to drive several
+ * fills; under ASan a write past the block is caught at the boundary. */
+static void stream_one(unsigned mix_rate, unsigned src_rate, bool s16)
+{
+   size_t size;
+   unsigned char *w = make_wav(8192, src_rate, 2, &size);
+   audio_mixer_sound_t *snd;
+   audio_mixer_voice_t *v;
+   static float  out_f[4096 * 2];
+   static int16_t out_i[4096 * 2];
+   unsigned n;
+
+   if (!w)
+   {
+      CHECK(0, "wav build failed at %u Hz", src_rate);
+      return;
+   }
+   audio_mixer_init(mix_rate);
+   /* The stream loader keeps the caller's buffer; destroy releases it. */
+   if (!(snd = audio_mixer_load_wav_stream(w, size)))
+   {
+      free(w);
+      return;
+   }
+   v = s16 ? audio_mixer_play_s16(snd, false, 0x10000, "sinc",
+               RESAMPLER_QUALITY_NORMAL, NULL)
+           : audio_mixer_play(snd, false, 1.0f, "sinc",
+               RESAMPLER_QUALITY_NORMAL, NULL);
+   CHECK(v != NULL, "stream at %u -> %u Hz did not play", src_rate, mix_rate);
+   for (n = 0; n < 64 && v; n++)
+   {
+      if (s16) audio_mixer_mix_s16(out_i, 4096, 0x10000, true);
+      else     audio_mixer_mix(out_f, 4096, 1.0f, true);
+   }
+   /* The voice outlives the sound, so stop it before the sound goes. */
+   if (v)
+      audio_mixer_stop(v);
+   audio_mixer_destroy(snd);
+   audio_mixer_done();
+}
+
 int main(void)
 {
    static const unsigned mix_rates[] = { 44100, 32000, 22050, 96000, 8000, 48000, 47999 };
    static const unsigned wav_rates[] = { 48000, 44100, 22050, 11025 };
    static const unsigned lens[]      = { 1, 7, 12000, 12001, 44100, 65535 };
-   unsigned q, mi, wi, li, ch;
+   /* Ratios where the estimate and what sinc reports part company. */
+   static const unsigned stream_src[] = { 44100, 8000, 4000, 3000, 2000 };
+   unsigned q, mi, wi, li, ch, si;
    unsigned loads = 0;
 
    /* 1. Mixer never initialised: s_rate is 0. Every quality, both
@@ -151,6 +198,14 @@ int main(void)
                loads++;
             }
       audio_mixer_done();
+   }
+
+   /* 4. Streaming voices, where the source sits well below the mixer. */
+   for (si = 0; si < sizeof(stream_src) / sizeof(stream_src[0]); si++)
+   {
+      stream_one(48000, stream_src[si], false);
+      stream_one(48000, stream_src[si], true);
+      stream_one(96000, stream_src[si], false);
    }
 
    if (failures)
