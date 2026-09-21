@@ -33,9 +33,9 @@ typedef struct rsd
 
    /* Single producer (the core thread in rs_write), single consumer
     * (librsound's worker in rsound_audio_cb): a lock-free retro_spsc
-    * ring, so neither side takes librsound's callback lock to touch
-    * it.  retro_spsc rounds capacity up to a power of two; fifo_size
-    * is the size asked for and the producer never fills past it. */
+    * ring, so the handoff between them needs nothing of librsound's.
+    * retro_spsc rounds capacity up to a power of two; fifo_size is the
+    * size asked for and the producer never fills past it. */
    retro_spsc_t   ring;
    bool           ring_init;
    /* Only the bounded waits a full ring puts the writer into; the ring

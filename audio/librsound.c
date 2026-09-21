@@ -75,6 +75,7 @@
 #endif
 
 #include <ctype.h>
+#include <stdio.h>    /* perror(), snprintf() */
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
