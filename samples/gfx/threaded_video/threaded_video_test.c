@@ -2520,11 +2520,38 @@ static const video_poke_interface_t *async_inner_poke;
 static uintptr_t async_upload_thread;
 static unsigned  async_uploads;
 
+/* Held inside the upload, which the worker runs with no lock held and
+ * with nothing on the main thread waiting on it: the posts below are
+ * made while the video thread is provably busy with one of them, and
+ * whether they came back before it got out is the whole test. A wall
+ * clock would answer a different question on a loaded runner. */
+static retro_atomic_int_t async_hold_arm;
+static retro_atomic_int_t async_hold_release;
+static retro_atomic_int_t async_in_upload;
+
+/* One upload only: the arm is spent on entry, so a load posted behind
+ * this one cannot re-enter the hold and hide a post that waited for
+ * it. The wait is bounded so that a post which does wait fails the
+ * lane rather than hanging it. */
+static void async_hold_upload(void)
+{
+   unsigned spun;
+   if (!retro_atomic_load_acquire_int(&async_hold_arm))
+      return;
+   retro_atomic_store_release_int(&async_hold_arm, 0);
+   retro_atomic_store_release_int(&async_in_upload, 1);
+   for (spun = 0; spun < 2000
+         && !retro_atomic_load_acquire_int(&async_hold_release); spun++)
+      retro_sleep(1);
+   retro_atomic_store_release_int(&async_in_upload, 0);
+}
+
 static uintptr_t async_fake_load(void *data, void *img, bool threaded,
       enum texture_filter_type filter)
 {
    (void)data; (void)img; (void)threaded; (void)filter;
    async_upload_thread = sthread_get_current_thread_id();
+   async_hold_upload();
    return 0x1000 + ++async_uploads;
 }
 
@@ -2610,15 +2637,31 @@ static void lane_async_texture_load(void)
       imgs[i].pixels = (uint32_t*)&imgs[i];
    }
 
+   /* The first load parks the worker inside the upload; the rest are
+    * posted into a video thread that is provably busy with it. */
+   retro_atomic_store_release_int(&async_in_upload, 0);
+   retro_atomic_store_release_int(&async_hold_release, 0);
+   retro_atomic_store_release_int(&async_hold_arm, 1);
+   CHECK(video_driver_texture_load_async(&imgs[0], TEXTURE_FILTER_LINEAR,
+            async_done_cb, (void*)(uintptr_t)0, async_release_cb),
+         "async load 0 refused");
+   for (i = 0; i < 2000
+         && !retro_atomic_load_acquire_int(&async_in_upload); i++)
+      retro_sleep(1);
+   CHECK(retro_atomic_load_acquire_int(&async_in_upload),
+         "the worker never reached the held upload");
+
    t0 = cpu_features_get_time_usec();
-   for (i = 0; i < ASYNC_N; i++)
+   for (i = 1; i < ASYNC_N; i++)
       CHECK(video_driver_texture_load_async(&imgs[i], TEXTURE_FILTER_LINEAR,
                async_done_cb, (void*)(uintptr_t)i, async_release_cb),
             "async load %u refused", i);
    t1 = cpu_features_get_time_usec();
-   CHECK(t1 - t0 < 5000, "posting %u async loads took %lld us: it blocked",
-         ASYNC_N, (long long)(t1 - t0));
+   CHECK(retro_atomic_load_acquire_int(&async_in_upload),
+         "posting %u async loads took %lld us and outlasted the held upload: it blocked",
+         ASYNC_N - 1, (long long)(t1 - t0));
    CHECK(async_done_count == 0, "done() ran before any frame was pushed");
+   retro_atomic_store_release_int(&async_hold_release, 1);
 
    run_frames(5);
    video_thread_wait_idle();
