@@ -4211,10 +4211,11 @@ static bool accessibility_speak_unix(int speed,
                (char*) "-l", NULL,
                (char*) "-r", NULL,
                (char*) "-w",
+               (char*) "--",
                NULL, NULL };
             cmd[2] = (char*)language;
             cmd[4] = (char*)spd_rates[speed-1];
-            cmd[6] = (char*)speak_text;
+            cmd[7] = (char*)speak_text;
             execvp("spd-say", cmd);
 
             RARCH_WARN("Could not execute spd-say.\n");
@@ -4224,10 +4225,11 @@ static bool accessibility_speak_unix(int speed,
          else
          {
             /* child process: replace process with the espeak command */
-            char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL };
+            char* cmd[] = { (char*) "espeak", NULL, NULL,
+               (char*) "--", NULL, NULL };
             cmd[1] = voice_out;
             cmd[2] = speed_out;
-            cmd[3] = (char*)speak_text;
+            cmd[4] = (char*)speak_text;
             execvp("espeak", cmd);
 
             RARCH_WARN("Could not execute espeak.\n");

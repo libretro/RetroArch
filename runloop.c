@@ -1902,6 +1902,34 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_ACCESSIBILITY_SPEAK:
+      {
+#ifdef HAVE_ACCESSIBILITY
+         const struct retro_accessibility_speech *speech =
+            (const struct retro_accessibility_speech*)data;
+         frontend_ctx_driver_t *frontend =
+            frontend_state_get_ptr()->current_frontend_ctx;
+
+         if (   !speech
+             || string_is_empty(speech->text)
+             || speech->flags != 0
+             || !is_accessibility_enabled(
+                   settings->bools.accessibility_enable,
+                   access_state_get_ptr()->enabled)
+             || !frontend
+             || !frontend->accessibility_speak)
+            return false;
+
+         return accessibility_speak_priority(
+               settings->bools.accessibility_enable,
+               settings->uints.accessibility_narrator_speech_speed,
+               speech->text,
+               speech->priority);
+#else
+         return false;
+#endif
+      }
+
       case RETRO_ENVIRONMENT_SET_MESSAGE_EXT:
       {
          const struct retro_message_ext *msg =
