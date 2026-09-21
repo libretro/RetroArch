@@ -60,6 +60,14 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
    if (!s)
       return -1;
    image_transfer_anim_stream_get_info(s, type, w, h, &nf, &loops);
+   /* RH265_CONTEXTS: decode with this many HEVC contexts in rotation,
+    * one after the other; the hash must not change. */
+   if (getenv("RH265_CONTEXTS"))
+   {
+      void *h265 = image_transfer_anim_stream_h265(s, type);
+      if (h265)
+         rh265_video_set_contexts((rh265_video*)h265, atoi(getenv("RH265_CONTEXTS")));
+   }
    if (threads > 1)
    {
       pool = tpool_create_with_stack_size((size_t)(threads - 1), 512 * 1024);

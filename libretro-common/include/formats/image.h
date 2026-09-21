@@ -328,6 +328,7 @@ bool image_transfer_anim_stream_set_argb(void *stream,
 /* The stream's H.264 decoder (an rh264_video*), for a bench to ask
  * what its pipeline did; NULL for any other type. */
 void *image_transfer_anim_stream_h264(void *stream, enum image_type_enum type);
+void *image_transfer_anim_stream_h265(void *stream, enum image_type_enum type);
 
 void image_transfer_anim_stream_set_catchup(void *stream,
       enum image_type_enum type, int behind);

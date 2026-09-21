@@ -142,6 +142,7 @@ void rmp4_video_stream_set_catchup(rmp4_video_stream_t *stream, int behind);
 
 /* The stream's H.264 decoder, for a bench to ask about, or NULL. */
 void *rmp4_video_stream_h264(rmp4_video_stream_t *stream);
+void *rmp4_video_stream_h265(rmp4_video_stream_t *stream);
 
 void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
       uint32_t *out);

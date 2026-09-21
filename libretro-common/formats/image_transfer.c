@@ -991,6 +991,16 @@ void image_transfer_anim_stream_complete_scan(void *stream,
    }
 }
 
+void *image_transfer_anim_stream_h265(void *stream, enum image_type_enum type)
+{
+#ifdef HAVE_RMP4
+   if (stream && type == IMAGE_TYPE_MP4)
+      return rmp4_video_stream_h265((rmp4_video_stream_t*)stream);
+#endif
+   (void)stream; (void)type;
+   return NULL;
+}
+
 void *image_transfer_anim_stream_h264(void *stream, enum image_type_enum type)
 {
 #ifdef HAVE_RMP4

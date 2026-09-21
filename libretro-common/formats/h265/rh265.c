@@ -1443,6 +1443,7 @@ typedef struct
 } rh265_mvfield;
 
 #define RH265_MAX_DPB  18
+#define RH265_MAX_CTX  8
 
 typedef struct
 {
@@ -3746,7 +3747,13 @@ struct rh265_video
    size_t    nal_scratch_cap;
    rh265_sps sps[RH265_MAX_SPS];
    rh265_pps pps[RH265_MAX_PPS];
-   rh265_dec d;
+   /* One decode state per picture that can be in flight; a new picture
+    * takes the next one round. With one context that is the same one
+    * every time, which is the decoder as it was. The WPP shadows are
+    * the current context's row copies. */
+   rh265_dec  ctx[RH265_MAX_CTX];
+   rh265_dec *cur;
+   int        nctx;
    int alloc_w, alloc_h;      /* dimensions the frame buffers were sized for */
    int alloc_bd;
    int poc;
@@ -3845,9 +3852,26 @@ static uint8_t *rh265_unescape_scratch(struct rh265_video *v,
    return rbsp;
 }
 
+/* A context's per-picture maps go. */
+static void rh265_dec_free_meta(rh265_dec *d)
+{
+   int i;
+   for (i = 0; i < 3; i++)
+      d->pl[i] = NULL;
+   d->mvf = NULL;
+   d->cur = NULL;
+   d->col_ref = NULL;
+   free(d->meta);
+   d->meta  = NULL;
+   d->ipm   = d->ctd = d->vedge = d->hedge = d->nzc = d->skipm = NULL;
+   d->qpy   = NULL;
+   d->sao   = NULL;
+   d->ctb_slice     = NULL;
+   d->ctb_lf_across = NULL;
+}
+
 static void rh265_free_frame(rh265_video *v)
 {
-   rh265_dec *d = &v->d;
    int i, p;
    for (p = 0; p < RH265_MAX_DPB; p++)
    {
@@ -3858,20 +3882,10 @@ static void rh265_free_frame(rh265_video *v)
       v->dpb[p].mvf = NULL;
       v->dpb[p].in_use = 0;
    }
-   for (i = 0; i < 3; i++)
-      d->pl[i] = NULL;
-   d->mvf = NULL;
-   d->cur = NULL;
-   d->col_ref = NULL;
    v->out_pic = -1;
    v->out_count = 0;
-   free(d->meta);
-   d->meta  = NULL;
-   d->ipm   = d->ctd = d->vedge = d->hedge = d->nzc = d->skipm = NULL;
-   d->qpy   = NULL;
-   d->sao   = NULL;
-   d->ctb_slice     = NULL;
-   d->ctb_lf_across = NULL;
+   for (i = 0; i < RH265_MAX_CTX; i++)
+      rh265_dec_free_meta(&v->ctx[i]);
 }
 
 /* Region spacing inside the meta and picture arenas, in bytes: every
@@ -3883,7 +3897,7 @@ static void rh265_free_frame(rh265_video *v)
 
 static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
 {
-   rh265_dec *d = &v->d;
+   rh265_dec *d = v->cur;
    size_t n4, o_ctd, o_vedge, o_hedge, o_nzc, o_skipm, o_qpy, o_sao,
           o_slice, o_lfa, len;
    d->bd        = s->bit_depth_luma;
@@ -3892,7 +3906,14 @@ static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
    if (v->alloc_w == s->width && v->alloc_h == s->height
          && v->alloc_bd == d->bd && d->ipm)
       return 0;
-   rh265_free_frame(v);
+   /* The DPB and every context go when the geometry changes; a
+    * context arriving at a geometry the decoder already has takes
+    * only its own maps. */
+   if (v->alloc_w != s->width || v->alloc_h != s->height
+         || v->alloc_bd != d->bd)
+      rh265_free_frame(v);
+   else
+      rh265_dec_free_meta(d);
    v->alloc_bd = d->bd;
    d->pw[0] = s->width;      d->ph[0] = s->height;
    d->pw[1] = s->width >> 1; d->ph[1] = s->height >> 1;
@@ -3945,7 +3966,7 @@ fail:
  * starting on a 64-byte boundary. */
 static int rh265_pic_alloc(rh265_video *v, int slot)
 {
-   rh265_dec *d = &v->d;
+   rh265_dec *d = v->cur;
    rh265_pic *p = &v->dpb[slot];
    size_t off[3], cur = 0;
    int i;
@@ -4236,7 +4257,7 @@ static int rh265_decode_slice_data_wpp(rh265_video *v, const uint8_t *rbsp,
       size_t size, size_t esc_base, int esc_idx, const uint32_t *esc_pos,
       int esc_count)
 {
-   rh265_dec *d         = &v->d;
+   rh265_dec *d         = v->cur;
    const rh265_sps *sps = d->sps;
    int rows             = sps->ctb_h;
    int workers          = (int)v->threads;
@@ -4328,6 +4349,15 @@ static int rh265_decode_slice_data_wpp(rh265_video *v, const uint8_t *rbsp,
 }
 #endif
 
+void rh265_video_set_contexts(rh265_video *v, int n)
+{
+   if (!v)
+      return;
+   if (n < 1) n = 1;
+   if (n > RH265_MAX_CTX) n = RH265_MAX_CTX;
+   v->nctx = n;
+}
+
 void rh265_video_set_thread_pool(rh265_video *v, void *pool,
       unsigned threads)
 {
@@ -4402,7 +4432,7 @@ static void rh265_ref_wait_rows(const rh265_dec *d, const rh265_pic *ref,
 
 static void rh265_row_done(rh265_video *v, int ry)
 {
-   rh265_dec *d = &v->d;
+   rh265_dec *d = v->cur;
    const rh265_sps *sps = d->sps;
    int ctb = 1 << sps->log2_ctb;
    if (d->rows_deblocked != ry)
@@ -4431,7 +4461,7 @@ static void rh265_row_done(rh265_video *v, int ry)
  * whole picture when the hook could not run. */
 static int rh265_filters_finish(rh265_video *v)
 {
-   rh265_dec *d = &v->d;
+   rh265_dec *d = v->cur;
    const rh265_sps *sps = d->sps;
    int ctb = 1 << sps->log2_ctb;
    if (d->rows_deblocked < sps->ctb_h)
@@ -4453,7 +4483,7 @@ static int rh265_filters_finish(rh265_video *v)
 static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
       size_t size, size_t data_bit, const uint32_t *esc_pos, int esc_count)
 {
-   rh265_dec *d = &v->d;
+   rh265_dec *d = v->cur;
    const rh265_sps *sps = d->sps;
    int ctb_addr = d->sh.slice_segment_address;
    int end_of_slice = 0;
@@ -4647,7 +4677,7 @@ static void rh265_compute_poc(rh265_video *v, const rh265_sps *sps,
  * that is not in the DPB is a broken reference: fail. */
 static int rh265_apply_rps(rh265_video *v)
 {
-   const rh265_st_rps *rps = &v->d.sh.rps;
+   const rh265_st_rps *rps = &v->cur->sh.rps;
    uint8_t keep[RH265_MAX_DPB];
    int i, p;
    memset(keep, 0, sizeof(keep));
@@ -4693,7 +4723,7 @@ static int rh265_apply_rps(rh265_video *v)
  * StCurrBefore/StCurrAfter sets. */
 static int rh265_build_ref_lists(rh265_video *v)
 {
-   rh265_dec *d = &v->d;
+   rh265_dec *d = v->cur;
    int total = v->nb_st_bef + v->nb_st_aft;
    int l, i;
    d->nb_refs[0] = d->nb_refs[1] = 0;
@@ -4838,9 +4868,15 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
          else
          {
          v->skip_pic = 0;
-         v->d.sps = sps;
-         v->d.pps = pps;
-         memcpy(&v->d.sh, shp, sizeof(*shp));
+         /* A new picture takes the next context round; the one it
+          * leaves keeps its maps for when it comes round again, and
+          * its picture is in the DPB. Its parameters are set below
+          * as every picture's are. */
+         if (shp->first_slice_in_pic && v->nctx > 1)
+            v->cur = &v->ctx[((int)(v->cur - v->ctx) + 1) % v->nctx];
+         v->cur->sps = sps;
+         v->cur->pps = pps;
+         memcpy(&v->cur->sh, shp, sizeof(*shp));
          if (rh265_alloc_frame(v, sps) < 0)
             ret = -1;
          else if (is_rasl && v->rasl_skip)
@@ -4852,10 +4888,10 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
             if (shp->first_slice_in_pic)
             {
                int slot, p;
-               v->d.slice_seq = 0;
-               v->d.rows_deblocked = 0;
-               v->d.rows_sao       = 0;
-               v->d.sao_wanted     = 0;
+               v->cur->slice_seq = 0;
+               v->cur->rows_deblocked = 0;
+               v->cur->rows_sao       = 0;
+               v->cur->sao_wanted     = 0;
                rh265_compute_poc(v, sps, nal_type, shp->poc_lsb, tid);
                if (RH265_IS_IRAP(nal_type) &&
                    (nal_type != RH265_NAL_CRA || !v->first_pic_decoded))
@@ -4885,22 +4921,22 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                   rh265_pic *cur = &v->dpb[slot];
                   int i;
                   v->cur_slot = slot;
-                  v->d.cur = cur;
+                  v->cur->cur = cur;
                   rh265_pic_publish_rows(cur, 0);
                   for (i = 0; i < 3; i++)
-                     v->d.pl[i] = cur->pl[i];
-                  v->d.mvf = cur->mvf;
+                     v->cur->pl[i] = cur->pl[i];
+                  v->cur->mvf = cur->mvf;
                   memset(cur->mvf, 0,
-                        (size_t)v->d.w4 * v->d.h4 * sizeof(rh265_mvfield));
-                  memset(v->d.ipm, 1, (size_t)v->d.w4 * v->d.h4);
-                  memset(v->d.ctd, 0, (size_t)v->d.w4 * v->d.h4);
-                  memset(v->d.vedge, 0, (size_t)v->d.w4 * v->d.h4);
-                  memset(v->d.hedge, 0, (size_t)v->d.w4 * v->d.h4);
-                  memset(v->d.nzc, 0, (size_t)v->d.w4 * v->d.h4);
-                  memset(v->d.skipm, 0, (size_t)v->d.w4 * v->d.h4);
-                  memset(v->d.qpy, (uint8_t)shp->slice_qp,
-                        (size_t)v->d.w8 * v->d.h8);
-                  memset(v->d.sao, 0,
+                        (size_t)v->cur->w4 * v->cur->h4 * sizeof(rh265_mvfield));
+                  memset(v->cur->ipm, 1, (size_t)v->cur->w4 * v->cur->h4);
+                  memset(v->cur->ctd, 0, (size_t)v->cur->w4 * v->cur->h4);
+                  memset(v->cur->vedge, 0, (size_t)v->cur->w4 * v->cur->h4);
+                  memset(v->cur->hedge, 0, (size_t)v->cur->w4 * v->cur->h4);
+                  memset(v->cur->nzc, 0, (size_t)v->cur->w4 * v->cur->h4);
+                  memset(v->cur->skipm, 0, (size_t)v->cur->w4 * v->cur->h4);
+                  memset(v->cur->qpy, (uint8_t)shp->slice_qp,
+                        (size_t)v->cur->w8 * v->cur->h8);
+                  memset(v->cur->sao, 0,
                         (size_t)sps->pic_size_ctbs * sizeof(rh265_sao_params));
                   cur->poc        = v->poc;
                   cur->is_ref     = 1;
@@ -4925,7 +4961,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
             if (ret == 0)
             {
                if (!shp->first_slice_in_pic)
-                  v->d.slice_seq++;
+                  v->cur->slice_seq++;
                ret = rh265_decode_slice_data(v, rbsp, rbsp_size,
                      b.bitpos, esc_pos, esc_count);
                if (ret >= 0)
@@ -4956,6 +4992,8 @@ rh265_video *rh265_video_open(void)
    rh265_video *v = (rh265_video*)calloc(1, sizeof(*v));
    if (v)
    {
+      v->cur      = &v->ctx[0];
+      v->nctx     = 1;
       v->cur_slot = -1;
       v->out_pic  = -1;
    }
@@ -4968,9 +5006,15 @@ void rh265_video_close(rh265_video *v)
       return;
    rh265_free_frame(v);
    free(v->nal_scratch);
-   free(v->d.sao_band[0]);
-   free(v->d.sao_band[1]);
-   free(v->d.sao_band[2]);
+   {
+      int k;
+      for (k = 0; k < RH265_MAX_CTX; k++)
+      {
+         free(v->ctx[k].sao_band[0]);
+         free(v->ctx[k].sao_band[1]);
+         free(v->ctx[k].sao_band[2]);
+      }
+   }
    free(v->shadows);
    free(v->row_off);
    free(v->row_ctx);
@@ -5127,11 +5171,11 @@ const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
    pic = &v->dpb[v->out_pic];
    if (!pic->pl[plane])
       return NULL;
-   s = v->d.sps;
+   s = v->cur->sps;
    shift = plane ? 1 : 0;
    /* conformance-window offsets are coded in chroma units (SubWidthC =
     * SubHeightC = 2 for 4:2:0); the luma crop is twice the coded value */
-   if (stride) *stride = v->d.strd[plane];
+   if (stride) *stride = v->cur->strd[plane];
    if (width)  *width  = (s->width  - 2 * (s->crop_left + s->crop_right))
          >> shift;
    if (height) *height = (s->height - 2 * (s->crop_top + s->crop_bottom))
@@ -5140,8 +5184,8 @@ const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
     * uint16_t and indexes with the sample stride, as with the VP9
     * high-bit-depth planes */
    return pic->pl[plane]
-         + (((s->crop_top << 1) >> shift) * v->d.strd[plane]
-            + ((s->crop_left << 1) >> shift)) * v->d.pel_bytes;
+         + (((s->crop_top << 1) >> shift) * v->cur->strd[plane]
+            + ((s->crop_left << 1) >> shift)) * v->cur->pel_bytes;
 }
 
 void rh265_video_set_skip_nonref(rh265_video *v, int skip)
@@ -5157,5 +5201,5 @@ int rh265_video_dropped(const rh265_video *v)
 
 int rh265_video_bit_depth(const rh265_video *v)
 {
-   return (v && v->d.bd) ? v->d.bd : 8;
+   return (v && v->cur->bd) ? v->cur->bd : 8;
 }

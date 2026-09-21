@@ -100,6 +100,14 @@ void rh265_video_close(rh265_video *v);
  * a sample asserts it. */
 int rh265_video_ref_wait_misses(void);
 
+/* How many decode contexts the decoder keeps in rotation, 1 to 8: a
+ * new picture takes the next one round. Today the pictures still
+ * decode one after the other, so this changes which memory a picture
+ * uses and nothing else - which is what a sample proves the
+ * per-picture state complete with, before pictures decode
+ * concurrently. */
+void rh265_video_set_contexts(rh265_video *v, int n);
+
 void rh265_video_set_thread_pool(rh265_video *v, void *pool,
       unsigned threads);
 

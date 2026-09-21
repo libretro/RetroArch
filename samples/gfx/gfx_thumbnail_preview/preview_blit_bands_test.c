@@ -75,6 +75,16 @@ static void vs_pool(vstream *v, void *pool, unsigned bands)
 {
    if (v->mp4)  rmp4_video_stream_set_blit_pool(v->mp4, pool, bands);
    else         rwebm_video_stream_set_blit_pool(v->webm, pool, bands);
+   /* the banded decode also rotates the HEVC decoder's contexts: the
+    * pictures still decode one after the other, so the frames must
+    * match the one-thread decode to the byte - a difference is
+    * picture state left in the decoder rather than the context */
+   if (v->mp4 && bands > 1)
+   {
+      void *h265 = rmp4_video_stream_h265(v->mp4);
+      if (h265)
+         rh265_video_set_contexts((rh265_video*)h265, 4);
+   }
 }
 static const uint32_t *vs_next(vstream *v, int *dur)
 {
