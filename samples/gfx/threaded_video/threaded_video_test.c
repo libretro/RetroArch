@@ -322,6 +322,158 @@ static void lane_swap_count(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the statistics snapshot                                      */
+/*   The overlay's numbers are published as a seqlock, so the readers  */
+/*   take no lock. Two things about the publication have to hold: what */
+/*   a reader gets is what the field holds, field by field; and the    */
+/*   64-bit counters, which travel as two int-wide halves, survive a   */
+/*   carry out of the low half.                                        */
+/*                                                                    */
+/*   Ground truth is the field read under the wrapper's own lock. The  */
+/*   video thread can publish between the two reads, so each           */
+/*   comparison is bracketed: truth, snapshot, truth again, and only   */
+/*   an unchanged bracket is asserted on.                              */
+/* ------------------------------------------------------------------ */
+
+/* Every published field against the field it came from. Callable from
+ * any lane with the wrapper up, and meant to be: a flag bit dropped
+ * from the word is invisible while its source is false, so the lanes
+ * that drive one of these bools true call this at the end. */
+static void stats_snapshot_check(const char *when)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   unsigned tries;
+   bool     settled = false;
+
+   if (     !video_st->thread_wrapper_active
+         || !(thr = (thread_video_t*)video_st->data))
+      return;
+
+   for (tries = 0; tries < 64 && !settled; tries++)
+   {
+      uint64_t     t_repeats, t_swaps, t_repeats2, t_swaps2;
+      retro_time_t t_avg, t_max, t_core, t_render;
+      retro_time_t t_avg2, t_max2, t_core2, t_render2;
+      bool         t_armed, t_phase, t_latdisp, t_pacing;
+      bool         t_armed2, t_phase2, t_latdisp2, t_pacing2;
+      uint64_t     s_repeats, s_swaps;
+      retro_time_t s_avg, s_max, s_core, s_render;
+      bool         s_armed, s_phase, s_latdisp, s_pacing;
+
+      video_thread_wait_idle();
+      slock_lock(thr->lock);
+      t_repeats = thr->frames_repeated;
+      t_swaps   = video_st->swap_count;
+      t_avg     = thr->latency_avg;
+      t_max     = thr->latency_max;
+      t_core    = thr->core_time;
+      t_render  = thr->render_time;
+      t_armed   = thr->present_repeat;
+      t_phase   = thr->phase_from_display;
+      t_latdisp = thr->latency_from_display;
+      t_pacing  = thr->display_pacing;
+      slock_unlock(thr->lock);
+
+      s_armed   = video_thread_presenter_stats(&s_repeats, &s_phase);
+      video_thread_latency_stats(&s_avg, &s_max, &s_latdisp);
+      video_thread_pacing_stats(&s_pacing, &s_core, &s_render);
+      s_swaps   = video_thread_swap_count();
+
+      slock_lock(thr->lock);
+      t_repeats2 = thr->frames_repeated;
+      t_swaps2   = video_st->swap_count;
+      t_avg2     = thr->latency_avg;
+      t_max2     = thr->latency_max;
+      t_core2    = thr->core_time;
+      t_render2  = thr->render_time;
+      t_armed2   = thr->present_repeat;
+      t_phase2   = thr->phase_from_display;
+      t_latdisp2 = thr->latency_from_display;
+      t_pacing2  = thr->display_pacing;
+      slock_unlock(thr->lock);
+
+      if (     t_repeats != t_repeats2 || t_swaps   != t_swaps2
+            || t_avg     != t_avg2     || t_max     != t_max2
+            || t_core    != t_core2    || t_render  != t_render2
+            || t_armed   != t_armed2   || t_phase   != t_phase2
+            || t_latdisp != t_latdisp2 || t_pacing  != t_pacing2)
+         continue;                    /* a publish landed; take another */
+
+      settled = true;
+      CHECK(s_repeats == t_repeats, "%s: published repeats %llu, field %llu",
+            when, (unsigned long long)s_repeats, (unsigned long long)t_repeats);
+      CHECK(s_swaps   == t_swaps,   "%s: published swaps %llu, field %llu",
+            when, (unsigned long long)s_swaps, (unsigned long long)t_swaps);
+      CHECK(s_avg     == t_avg,     "%s: published latency avg %lld, field %lld",
+            when, (long long)s_avg, (long long)t_avg);
+      CHECK(s_max     == t_max,     "%s: published latency worst %lld, field %lld",
+            when, (long long)s_max, (long long)t_max);
+      CHECK(s_core    == t_core,    "%s: published core time %lld, field %lld",
+            when, (long long)s_core, (long long)t_core);
+      CHECK(s_render  == t_render,  "%s: published render time %lld, field %lld",
+            when, (long long)s_render, (long long)t_render);
+      CHECK(s_armed   == t_armed,   "%s: published repeat armed %d, field %d",
+            when, (int)s_armed, (int)t_armed);
+      CHECK(s_phase   == t_phase,   "%s: published display phase %d, field %d",
+            when, (int)s_phase, (int)t_phase);
+      CHECK(s_latdisp == t_latdisp, "%s: published latency source %d, field %d",
+            when, (int)s_latdisp, (int)t_latdisp);
+      CHECK(s_pacing  == t_pacing,  "%s: published display pacing %d, field %d",
+            when, (int)s_pacing, (int)t_pacing);
+   }
+   CHECK(settled, "%s: the published snapshot never settled against the "
+         "fields", when);
+}
+
+static void lane_stats_snapshot(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+
+   set_threaded_via_setting(true);
+   run_frames(8);
+   expect_wrapper(true, "stats snapshot lane");
+   if (!(thr = (thread_video_t*)video_st->data))
+      return;
+   stats_snapshot_check("stats snapshot lane");
+
+   /* The carry. The count is put on the wire as two int-wide halves, so
+    * seed it two short of the boundary and let the frames take it
+    * across. */
+   {
+      uint64_t saved, truth, seen;
+      video_thread_wait_idle();
+      slock_lock(thr->lock);
+      saved                = video_st->swap_count;
+      video_st->swap_count = 0xFFFFFFFEull;
+      slock_unlock(thr->lock);
+      run_frames(12);
+      video_thread_wait_idle();
+      seen = video_thread_swap_count();
+      slock_lock(thr->lock);
+      truth = video_st->swap_count;
+      slock_unlock(thr->lock);
+      CHECK(truth > 0xFFFFFFFFull,
+            "the count did not cross the carry (%llu)",
+            (unsigned long long)truth);
+      CHECK(seen >= 0x100000000ull && truth - seen <= 4,
+            "across the carry the count read %llu, field %llu",
+            (unsigned long long)seen, (unsigned long long)truth);
+      slock_lock(thr->lock);
+      video_st->swap_count = saved;
+      slock_unlock(thr->lock);
+   }
+
+   set_threaded_via_setting(false);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] stats snapshot lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: presenter repeats                                            */
 /*   With video_threaded_present_repeat on and a driver that can      */
 /*   present its last frame again (the null driver can), a stalled    */
@@ -393,6 +545,11 @@ static void lane_present_repeat(void)
          (unsigned long long)(swaps1 - swaps0), (unsigned long long)(rep1 - rep0));
    settings->uints.video_black_frame_insertion = 0;
    run_frames(5);
+
+   /* Repeats are armed here, and the presenter's phase came from the
+    * driver's own timestamps, so this is where the flags word carries
+    * bits the snapshot lane's own state leaves clear. */
+   stats_snapshot_check("repeat lane");
 
    /* Off: no repeats at all through the same stall. */
    settings->bools.video_threaded_present_repeat = false;
@@ -822,6 +979,12 @@ static void lane_display_phase(void)
    CHECK(rep1 - rep0 <= 8,
          "%llu repeats over 70 ms: a stale display report piled them up",
          (unsigned long long)(rep1 - rep0));
+
+   /* The stale report is still in place and it is in the past, so the
+    * presenter's phase - and the latency's source with it - came from
+    * the display here. Those two bits of the snapshot's flags word are
+    * clear in every other lane. */
+   stats_snapshot_check("display-phase lane");
 
    thr->driver = phase_inner;
    thr->poke   = phase_inner_poke;
@@ -1280,6 +1443,9 @@ static void lane_display_pacing(void)
       settings->bools.menu_pause_libretro = saved_pause;
    }
 #endif
+   /* Pacing is still on here, so the snapshot's pacing bit and the core
+    * and render times it carries are all non-trivial. */
+   stats_snapshot_check("display-pacing lane");
    settings->bools.video_threaded_display_pacing = saved_pacing;
 
    if (failures == had)
@@ -3194,6 +3360,7 @@ int main(int argc, char *argv[])
    lane_reinit_under_wrapper(cycles / 2 + 1);
    lane_toggle_in_game(cycles);
    lane_swap_count();
+   lane_stats_snapshot();
    lane_async_texture_load();
    if (!real_driver())
       lane_present_repeat();

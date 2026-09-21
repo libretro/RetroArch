@@ -909,6 +909,99 @@ static bool video_thread_handle_packet(
    return false;
 }
 
+/* One read of the published statistics: whatever a caller wants, taken
+ * in a single seqlock pass rather than one per readout. */
+typedef struct
+{
+   uint64_t     repeats;
+   uint64_t     swaps;
+   retro_time_t latency_avg;
+   retro_time_t latency_max;
+   retro_time_t core_time;
+   retro_time_t render_time;
+   int          flags;
+} video_thread_stat_snap_t;
+
+/* A 64-bit value across two int-wide slots, low half first. */
+static void video_thread_stat_put64(retro_atomic_int_t *s, int lo, uint64_t v)
+{
+   retro_atomic_store_relaxed_int(&s[lo],     (int)(uint32_t)v);
+   retro_atomic_store_relaxed_int(&s[lo + 1], (int)(uint32_t)(v >> 32));
+}
+
+static uint64_t video_thread_stat_get64(retro_atomic_int_t *s, int lo)
+{
+   uint32_t l = (uint32_t)retro_atomic_load_relaxed_int(&s[lo]);
+   uint32_t h = (uint32_t)retro_atomic_load_relaxed_int(&s[lo + 1]);
+   return ((uint64_t)h << 32) | l;
+}
+
+/* Publishes the statistics snapshot the overlay reads. Video thread,
+ * with 'lock' held: that is what keeps two publishes from overlapping,
+ * and it is the last thing the region does that a reader can observe,
+ * so a ring waiter released below has seen this snapshot. */
+static void video_thread_publish_stats(thread_video_t *thr)
+{
+   retro_atomic_int_t *s = thr->stats;
+   int seq               = retro_atomic_load_relaxed_int(&thr->stats_seq);
+   int flags             =
+        (thr->present_repeat       ? VIDEO_THREAD_STAT_F_PRESENT_REPEAT : 0)
+      | (thr->phase_from_display   ? VIDEO_THREAD_STAT_F_PHASE_DISPLAY  : 0)
+      | (thr->latency_from_display ? VIDEO_THREAD_STAT_F_LAT_DISPLAY    : 0)
+      | (thr->display_pacing       ? VIDEO_THREAD_STAT_F_DISPLAY_PACING : 0);
+
+   retro_atomic_store_relaxed_int(&thr->stats_seq, seq + 1);
+   retro_atomic_thread_fence_release();
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_STAT_FLAGS], flags);
+   video_thread_stat_put64(s, VIDEO_THREAD_STAT_REPEATS_LO,
+         thr->frames_repeated);
+   video_thread_stat_put64(s, VIDEO_THREAD_STAT_LAT_AVG_LO,
+         (uint64_t)thr->latency_avg);
+   video_thread_stat_put64(s, VIDEO_THREAD_STAT_LAT_MAX_LO,
+         (uint64_t)thr->latency_max);
+   video_thread_stat_put64(s, VIDEO_THREAD_STAT_CORE_LO,
+         (uint64_t)thr->core_time);
+   video_thread_stat_put64(s, VIDEO_THREAD_STAT_RENDER_LO,
+         (uint64_t)thr->render_time);
+   video_thread_stat_put64(s, VIDEO_THREAD_STAT_SWAPS_LO,
+         thr->video_st->swap_count);
+   retro_atomic_thread_fence_release();
+   retro_atomic_store_release_int(&thr->stats_seq, seq + 2);
+}
+
+/* Seqlock read: retry while a publish is in flight (odd) or lands
+ * across the copy. The publisher runs once a presented frame, so this
+ * converges in one pass; shaped so no comparison sees an unset
+ * counter. */
+static void video_thread_read_stats(thread_video_t *thr,
+      video_thread_stat_snap_t *out)
+{
+   retro_atomic_int_t *s = thr->stats;
+   for (;;)
+   {
+      int s1 = retro_atomic_load_acquire_int(&thr->stats_seq);
+      if (s1 & 1)
+         continue;
+      out->repeats     = video_thread_stat_get64(s,
+            VIDEO_THREAD_STAT_REPEATS_LO);
+      out->latency_avg = (retro_time_t)video_thread_stat_get64(s,
+            VIDEO_THREAD_STAT_LAT_AVG_LO);
+      out->latency_max = (retro_time_t)video_thread_stat_get64(s,
+            VIDEO_THREAD_STAT_LAT_MAX_LO);
+      out->core_time   = (retro_time_t)video_thread_stat_get64(s,
+            VIDEO_THREAD_STAT_CORE_LO);
+      out->render_time = (retro_time_t)video_thread_stat_get64(s,
+            VIDEO_THREAD_STAT_RENDER_LO);
+      out->swaps       = video_thread_stat_get64(s,
+            VIDEO_THREAD_STAT_SWAPS_LO);
+      out->flags       = retro_atomic_load_relaxed_int(
+            &s[VIDEO_THREAD_STAT_FLAGS]);
+      retro_atomic_thread_fence_acquire();
+      if (retro_atomic_load_relaxed_int(&thr->stats_seq) == s1)
+         break;
+   }
+}
+
 /* Called on the video thread after a present. Sets when a repeat falls
  * due: a period after the display's own timestamp for that present when
  * the driver reports one, else after now; and never at or before now,
@@ -1890,8 +1983,8 @@ static void video_thread_loop(void *data)
                  ((thr->video_st->scale_width  & 0xFFFFu) << 16)
                |  (thr->video_st->scale_height & 0xFFFFu)));
          /* Under the wrapper this thread owns swap_count; every advance
-          * happens here, under lock, so the main thread can read it
-          * consistently through video_thread_swap_count(). */
+          * happens here, under lock, and is published with the
+          * snapshot video_thread_swap_count() reads. */
          thr->video_st->swap_count += presents;
          thr->driver_refresh_rate = refresh_rate;
          if (ret_frame)
@@ -1958,6 +2051,9 @@ static void video_thread_loop(void *data)
                thr->render_time = thr->render_time
                   ? (thr->render_time * 7 + render_took) / 8 : render_took;
          }
+         /* Before the release below, so a waiter that sees the ring
+          * free has seen this frame's numbers too. */
+         video_thread_publish_stats(thr);
          thr->frame.busy    = false;
          scond_broadcast(thr->cond_ring);
          /* The textures this frame carried: every frame that could name
@@ -1996,6 +2092,7 @@ static void video_thread_loop(void *data)
          }
          else
             thr->present_repeat = false;
+         video_thread_publish_stats(thr);
          slock_unlock(thr->lock);
       }
    }
@@ -3873,11 +3970,12 @@ bool video_thread_presentable(void)
 }
 
 /* Presenter statistics for the overlay: repeats made this session, and
- * whether their cadence is phase-locked to the display. Under the lock;
- * false/0 without the wrapper. Returns whether repeats are armed. */
+ * whether their cadence is phase-locked to the display. From the
+ * published snapshot; false/0 without the wrapper. Returns whether
+ * repeats are armed. */
 bool video_thread_presenter_stats(uint64_t *repeats, bool *display_phase)
 {
-   bool armed;
+   video_thread_stat_snap_t snap;
    video_driver_state_t *video_st = video_state_get_ptr();
    thread_video_t       *thr;
    *repeats       = 0;
@@ -3886,17 +3984,16 @@ bool video_thread_presenter_stats(uint64_t *repeats, bool *display_phase)
       return false;
    if (!(thr = (thread_video_t*)video_st->data) || !thr->thread)
       return false;
-   slock_lock(thr->lock);
-   armed          = thr->present_repeat;
-   *repeats       = thr->frames_repeated;
-   *display_phase = thr->phase_from_display;
-   slock_unlock(thr->lock);
-   return armed;
+   video_thread_read_stats(thr, &snap);
+   *repeats       = snap.repeats;
+   *display_phase = (snap.flags & VIDEO_THREAD_STAT_F_PHASE_DISPLAY) != 0;
+   return (snap.flags & VIDEO_THREAD_STAT_F_PRESENT_REPEAT) != 0;
 }
 
 bool video_thread_latency_stats(retro_time_t *avg, retro_time_t *worst,
       bool *from_display)
 {
+   video_thread_stat_snap_t snap;
    thread_video_t *thr;
    video_driver_state_t *video_st = video_state_get_ptr();
    *avg = *worst = 0;
@@ -3905,17 +4002,17 @@ bool video_thread_latency_stats(retro_time_t *avg, retro_time_t *worst,
       return false;
    if (!(thr = (thread_video_t*)video_st->data) || !thr->thread)
       return false;
-   slock_lock(thr->lock);
-   *avg          = thr->latency_avg;
-   *worst        = thr->latency_max;
-   *from_display = thr->latency_from_display;
-   slock_unlock(thr->lock);
+   video_thread_read_stats(thr, &snap);
+   *avg          = snap.latency_avg;
+   *worst        = snap.latency_max;
+   *from_display = (snap.flags & VIDEO_THREAD_STAT_F_LAT_DISPLAY) != 0;
    return *avg > 0;
 }
 
 bool video_thread_pacing_stats(bool *display_pacing,
       retro_time_t *core_time, retro_time_t *render_time)
 {
+   video_thread_stat_snap_t snap;
    video_driver_state_t *video_st = video_state_get_ptr();
    thread_video_t       *thr;
    *display_pacing = false;
@@ -3925,11 +4022,10 @@ bool video_thread_pacing_stats(bool *display_pacing,
       return false;
    if (!(thr = (thread_video_t*)video_st->data) || !thr->thread)
       return false;
-   slock_lock(thr->lock);
-   *display_pacing = thr->display_pacing;
-   *core_time      = thr->core_time;
-   *render_time    = thr->render_time;
-   slock_unlock(thr->lock);
+   video_thread_read_stats(thr, &snap);
+   *display_pacing = (snap.flags & VIDEO_THREAD_STAT_F_DISPLAY_PACING) != 0;
+   *core_time      = snap.core_time;
+   *render_time    = snap.render_time;
    return true;
 }
 
@@ -3947,7 +4043,7 @@ bool video_thread_get_handoff_stats(video_thread_handoff_stats_t *out)
 
 uint64_t video_thread_swap_count(void)
 {
-   uint64_t ret;
+   video_thread_stat_snap_t snap;
    video_driver_state_t *video_st = video_state_get_ptr();
    thread_video_t       *thr;
    if (!video_st->thread_wrapper_active)
@@ -3956,10 +4052,8 @@ uint64_t video_thread_swap_count(void)
       return video_st->swap_count;
    if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
       return video_st->swap_count;
-   slock_lock(thr->lock);
-   ret = video_st->swap_count;
-   slock_unlock(thr->lock);
-   return ret;
+   video_thread_read_stats(thr, &snap);
+   return snap.swaps;
 }
 
 #ifdef HAVE_GFX_WIDGETS

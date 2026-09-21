@@ -260,6 +260,33 @@ typedef struct video_thread_handoff_stats
    unsigned declined_size;
 } video_thread_handoff_stats_t;
 
+/* Slots of the statistics snapshot thread_video_t::stats publishes.
+ * Each 64-bit value takes two, low half first, because the atomics are
+ * int-wide on every backend. */
+enum video_thread_stat_slot
+{
+   VIDEO_THREAD_STAT_FLAGS = 0,
+   VIDEO_THREAD_STAT_REPEATS_LO,
+   VIDEO_THREAD_STAT_REPEATS_HI,
+   VIDEO_THREAD_STAT_LAT_AVG_LO,
+   VIDEO_THREAD_STAT_LAT_AVG_HI,
+   VIDEO_THREAD_STAT_LAT_MAX_LO,
+   VIDEO_THREAD_STAT_LAT_MAX_HI,
+   VIDEO_THREAD_STAT_CORE_LO,
+   VIDEO_THREAD_STAT_CORE_HI,
+   VIDEO_THREAD_STAT_RENDER_LO,
+   VIDEO_THREAD_STAT_RENDER_HI,
+   VIDEO_THREAD_STAT_SWAPS_LO,
+   VIDEO_THREAD_STAT_SWAPS_HI,
+   VIDEO_THREAD_STAT_SLOTS
+};
+
+/* The bools of that snapshot, in VIDEO_THREAD_STAT_FLAGS. */
+#define VIDEO_THREAD_STAT_F_PRESENT_REPEAT  (1 << 0)
+#define VIDEO_THREAD_STAT_F_PHASE_DISPLAY   (1 << 1)
+#define VIDEO_THREAD_STAT_F_LAT_DISPLAY     (1 << 2)
+#define VIDEO_THREAD_STAT_F_DISPLAY_PACING  (1 << 3)
+
 typedef struct thread_video
 {
    retro_time_t last_time;
@@ -461,6 +488,17 @@ typedef struct thread_video
     * value so the pair is read whole and without 'lock'. Statistics
     * only. */
    retro_atomic_int_t scale_packed;
+
+   /* The statistics overlay's numbers, published as a seqlock so that
+    * reading them takes no lock: 'lock' stays the frame handoff's and
+    * the ring's, and a reader only ever loads. The video thread writes
+    * the slots inside a region it already holds 'lock' for, which is
+    * what serialises publishers; a reader retries while a publish is
+    * in flight (odd) or lands across its copy. Statistics only, so the
+    * two the main thread feeds - core_time and display_pacing - are
+    * carried at one frame's lag. */
+   retro_atomic_int_t stats_seq;
+   retro_atomic_int_t stats[VIDEO_THREAD_STAT_SLOTS];
 
    thread_packet_t cmd_data;
    /* Set by the video thread while it runs a command inline on itself:
@@ -742,8 +780,9 @@ bool video_thread_presentable(void);
 bool video_thread_presenter_stats(uint64_t *repeats, bool *display_phase);
 
 /* Display pacing statistics: whether it is on, and the core and render
- * times it is reserving, in microseconds. Under the lock. Returns
- * whether the wrapper is up at all. */
+ * times it is reserving, in microseconds. From the published snapshot,
+ * so the two the main thread feeds are a frame behind. Returns whether
+ * the wrapper is up at all. */
 bool video_thread_pacing_stats(bool *display_pacing,
       retro_time_t *core_time, retro_time_t *render_time);
 
@@ -754,8 +793,9 @@ bool video_thread_latency_stats(retro_time_t *avg, retro_time_t *worst,
       bool *from_display);
 
 /* video_st->swap_count is written by the video thread while the wrapper
- * is installed; this reads it under the wrapper's lock. Without the
- * wrapper (or from the video thread) it is the plain value. */
+ * is installed; this reads it from the published snapshot, which every
+ * advance of it is published with. Without the wrapper (or from the
+ * video thread) it is the plain value. */
 uint64_t video_thread_swap_count(void);
 
 /* False when the wrapper is not active. Main thread. */
