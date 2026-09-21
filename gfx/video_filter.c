@@ -24,6 +24,12 @@
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
+
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -61,47 +67,65 @@ struct rarch_softfilter
    unsigned threads;
 
 #ifdef HAVE_THREADS
+   /* Workers notify this once the last of them is done, so the join
+    * below waits on one object rather than on each worker in turn and
+    * a worker that finishes early is not held behind a slower one. */
+   retro_eventcount_t join_ec;
+   /* Packets handed out for this frame and not yet finished. Set to
+    * the thread count before any worker is woken. */
+   retro_atomic_int_t outstanding;
    struct filter_thread_data *thread_data;
 #endif
 };
 
 #ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
 
 struct filter_thread_data
 {
+   retro_eventcount_t wake_ec;
    sthread_t *thread;
    const struct softfilter_work_packet *packet;
-   scond_t *cond;
-   slock_t *lock;
    void *userdata;
-   bool die;
-   bool done;
+   struct rarch_softfilter *filt;
+   /* A packet is waiting: published by the fan-out with a release
+    * store, which carries the packet pointer above with it. */
+   retro_atomic_int_t go;
+   retro_atomic_int_t die;
 };
 
 static void filter_thread_loop(void *data)
 {
    struct filter_thread_data *thr = (struct filter_thread_data*)data;
+   struct rarch_softfilter *filt  = thr->filt;
 
    for (;;)
    {
-      bool die;
-      slock_lock(thr->lock);
-      while (thr->done && !thr->die)
-         scond_wait(thr->cond, thr->lock);
-      die = thr->die;
-      slock_unlock(thr->lock);
+      int key = retro_eventcount_prepare_wait(&thr->wake_ec);
 
-      if (die)
+      /* Tested inside the wait window, so a fan-out that publishes
+       * between the test and the park still releases this worker. */
+      if (     retro_atomic_load_acquire_int(&thr->go)
+            || retro_atomic_load_acquire_int(&thr->die))
+         retro_eventcount_cancel_wait(&thr->wake_ec);
+      else
+         retro_eventcount_commit_wait(&thr->wake_ec, key);
+
+      if (retro_atomic_load_acquire_int(&thr->die))
          break;
+
+      /* commit_wait may return early and spuriously */
+      if (!retro_atomic_load_acquire_int(&thr->go))
+         continue;
 
       if (thr->packet && thr->packet->work)
          thr->packet->work(thr->userdata, thr->packet->thread_data);
 
-      slock_lock(thr->lock);
-      thr->done = true;
-      scond_signal(thr->cond);
-      slock_unlock(thr->lock);
+      retro_atomic_store_release_int(&thr->go, 0);
+
+      /* Only the worker that takes the count to zero wakes the join,
+       * so a frame costs one notify rather than one per thread. */
+      if (retro_atomic_fetch_sub_int(&filt->outstanding, 1) == 1)
+         retro_eventcount_notify(&filt->join_ec);
    }
 }
 #endif
@@ -241,16 +265,19 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
          calloc(threads, sizeof(*filt->thread_data))))
          return false;
 
+      retro_atomic_store_release_int(&filt->outstanding, 0);
+
+      if (!retro_eventcount_init(&filt->join_ec))
+         return false;
+
       for (i = 0; i < threads; i++)
       {
          filt->thread_data[i].userdata = filt->impl_data;
-         filt->thread_data[i].done     = true;
+         filt->thread_data[i].filt     = filt;
+         retro_atomic_store_release_int(&filt->thread_data[i].go,  0);
+         retro_atomic_store_release_int(&filt->thread_data[i].die, 0);
 
-         filt->thread_data[i].lock     = slock_new();
-         if (!filt->thread_data[i].lock)
-            return false;
-         filt->thread_data[i].cond     = scond_new();
-         if (!filt->thread_data[i].cond)
+         if (!retro_eventcount_init(&filt->thread_data[i].wake_ec))
             return false;
          filt->thread_data[i].thread   = sthread_create(
                filter_thread_loop, &filt->thread_data[i]);
@@ -499,16 +526,15 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
    {
       for (i = 0; i < filt->threads; i++)
       {
-         if (!filt->thread_data[i].thread)
-            continue;
-         slock_lock(filt->thread_data[i].lock);
-         filt->thread_data[i].die = true;
-         scond_signal(filt->thread_data[i].cond);
-         slock_unlock(filt->thread_data[i].lock);
-         sthread_join(filt->thread_data[i].thread);
-         slock_free(filt->thread_data[i].lock);
-         scond_free(filt->thread_data[i].cond);
+         if (filt->thread_data[i].thread)
+         {
+            retro_atomic_store_release_int(&filt->thread_data[i].die, 1);
+            retro_eventcount_notify(&filt->thread_data[i].wake_ec);
+            sthread_join(filt->thread_data[i].thread);
+         }
+         retro_eventcount_free(&filt->thread_data[i].wake_ec);
       }
+      retro_eventcount_free(&filt->join_ec);
       free(filt->thread_data);
    }
 #endif
@@ -574,23 +600,29 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
 #ifdef HAVE_THREADS
    if (filt->threads > 1)
    {
+      /* The count is armed before any worker is woken, so a worker
+       * that finishes while the rest are still being handed their
+       * packets decrements a count that already covers all of them. */
+      retro_atomic_store_release_int(&filt->outstanding,
+            (int)filt->threads);
+
       /* Fire off workers */
       for (i = 0; i < filt->threads; i++)
       {
          filt->thread_data[i].packet = &filt->packets[i];
-         slock_lock(filt->thread_data[i].lock);
-         filt->thread_data[i].done = false;
-         scond_signal(filt->thread_data[i].cond);
-         slock_unlock(filt->thread_data[i].lock);
+         retro_atomic_store_release_int(&filt->thread_data[i].go, 1);
+         retro_eventcount_notify(&filt->thread_data[i].wake_ec);
       }
 
-      /* Wait for workers */
-      for (i = 0; i < filt->threads; i++)
+      /* Wait for workers, in whatever order they finish */
+      while (retro_atomic_load_acquire_int(&filt->outstanding) > 0)
       {
-         slock_lock(filt->thread_data[i].lock);
-         while (!filt->thread_data[i].done)
-            scond_wait(filt->thread_data[i].cond, filt->thread_data[i].lock);
-         slock_unlock(filt->thread_data[i].lock);
+         int key = retro_eventcount_prepare_wait(&filt->join_ec);
+
+         if (retro_atomic_load_acquire_int(&filt->outstanding) > 0)
+            retro_eventcount_commit_wait(&filt->join_ec, key);
+         else
+            retro_eventcount_cancel_wait(&filt->join_ec);
       }
       return;
    }

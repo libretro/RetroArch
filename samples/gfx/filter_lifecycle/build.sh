@@ -23,6 +23,7 @@ SRCS="$R/gfx/video_filter.c \
    $R/libretro-common/compat/compat_strcasestr.c \
    $R/libretro-common/time/rtime.c \
    $R/libretro-common/rthreads/rthreads.c \
+   $R/libretro-common/rthreads/retro_eventcount.c \
    $R/verbosity.c"
 SRCS="$SRCS $FILTERS"
 gcc -O1 -g -fsanitize=address -std=gnu99 \
