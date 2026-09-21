@@ -87,6 +87,20 @@
 #define POLLNVAL    0x0004
 #endif
 
+/* winsock2.h declares struct pollfd only when the target is Vista or
+ * newer. 9x/2000/XP targets get it here, with the WSAPOLLFD layout. */
+#ifndef HAVE_POLLFD
+#define HAVE_POLLFD 1
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0600)
+struct pollfd
+{
+   SOCKET fd;
+   short  events;
+   short  revents;
+};
+#endif
+#endif
+
 #elif defined(_XBOX)
 #define NOD3D
 
