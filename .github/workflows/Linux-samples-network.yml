@@ -142,6 +142,31 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_backup_test
           echo "[pass] webdav_backup_test (TSan)"
 
+      - name: Build and run s3_backup_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/s3_backup
+        run: |
+          set -eu
+          # Includes network/cloud_sync/s3.c and plays the server,
+          # request by request. The S3 driver never read the
+          # destructive sync setting: deletes removed objects for good
+          # and uploads overwrote them. With it off, both must first
+          # CopyObject the object to deleted/<path>-<time>. Covers the
+          # copy source for virtual-hosted and path-style endpoints,
+          # x-amz-copy-source being signed, 404 as "nothing to keep", a
+          # failed copy (including a 200 with an <Error> body) stopping
+          # the delete or upload, and destructive sync and the server
+          # manifest skipping the copy.
+          make clean all SANITIZER=address,undefined
+          test -x s3_backup_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./s3_backup_test
+          echo "[pass] s3_backup_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./s3_backup_test
+          echo "[pass] s3_backup_test (TSan)"
+
       - name: Build and run cheevos_login_test (bear ASan+UBSan, bear TSan, mbed ASan+UBSan)
         shell: bash
         working-directory: samples/network/cheevos_login
