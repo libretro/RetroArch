@@ -100,6 +100,21 @@ int rh264_video_ref_wait_misses(void);
  * pictures decode concurrently. */
 void rh264_video_set_contexts(rh264_video *v, int n);
 
+/* Decode pictures concurrently on @pool (a tpool_t), up to @threads at
+ * a time: a picture's slices are handed to the pool when the next
+ * picture opens, and a picture reading from one still decoding waits
+ * for the rows it needs and no more. Output is the same, in the same
+ * order, later by the pictures in flight; rh264_video_drain() lands
+ * them all. NULL, or fewer than two, is the decoder on the calling
+ * thread. No effect without HAVE_THREADS. */
+void rh264_video_set_thread_pool(rh264_video *v, void *pool, int threads);
+
+/* Test knob: hold each row's publication for up to @max_yields thread
+ * yields, drawn at random, so that pictures reading from a picture in flight
+ * wait for their rows rather than nearly always finding them. Output
+ * must be byte-exact under it. 0 is off. Debug only. */
+void rh264_video_set_publish_delay(int max_yields);
+
 int rh264_video_bit_depth(const rh264_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */

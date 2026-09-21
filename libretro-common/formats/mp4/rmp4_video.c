@@ -513,6 +513,8 @@ static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
          if (!(s->h264 = rh264_video_open()))
             return false;
          rh264_video_set_skip_nonref(s->h264, s->catchup);
+         if (s->blit_pool && s->blit_bands > 1)
+            rh264_video_set_thread_pool(s->h264, s->blit_pool, (int)s->blit_bands);
          if (t && t->codec_private && t->codec_private_size)
             rh264_video_set_extradata(s->h264, t->codec_private,
                   t->codec_private_size);
@@ -1050,6 +1052,11 @@ void rmp4_video_stream_set_blit_pool(rmp4_video_stream_t *s,
    /* H.265 WPP rows likewise. */
    if (s->h265)
       rh265_video_set_thread_pool(s->h265, pool, bands);
+   /* H.264 has no rows to split; its pictures decode concurrently
+    * instead, one per thread, each waiting on the rows of the ones it
+    * predicts from. */
+   if (s->h264)
+      rh264_video_set_thread_pool(s->h264, pool, (int)bands);
 }
 
 /* The blit as a row-band job (image_blit_bands): every parameter of

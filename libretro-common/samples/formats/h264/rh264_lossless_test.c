@@ -39,6 +39,7 @@
 
 #include <formats/rmp4.h>
 #include <formats/rh264.h>
+#include <rthreads/tpool.h>
 
 static int fails;
 static char dir[256];
@@ -98,6 +99,13 @@ static int run(const char *fmt, ...)
  * and would be shared between pictures decoding concurrently. Every
  * case is decoded at both. */
 static int g_contexts = 1;
+/* Pool threads for the decode under test; 0 is the calling thread. With
+ * a pool the pictures decode concurrently, a picture reading from one
+ * still decoding waits for the rows it needs, and the output must be
+ * the single-thread output to the byte - a difference is a row read
+ * before it was final, or published before it was. */
+static int g_threads = 0;
+static void *g_pool = NULL;
 
 static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
       const uint8_t *ref_b, int split, int *frames_out)
@@ -126,6 +134,8 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
    h = rh264_video_open();
    if (h && g_contexts > 1)
       rh264_video_set_contexts(h, g_contexts);
+   if (h && g_threads > 1 && g_pool)
+      rh264_video_set_thread_pool(h, g_pool, g_threads);
    if (trk < 0 || !h || rh264_video_set_extradata(h,
             rmp4_get_track(m, trk)->codec_private,
             rmp4_get_track(m, trk)->codec_private_size))
@@ -143,6 +153,8 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
       if (pkt.track != trk)
          continue;
       got = rh264_video_decode(h, pkt.data, pkt.size);
+      if (getenv("RH264_TRACE"))
+         fprintf(stderr, "TRACE threads=%d sample=%zu got=%d\n", g_threads, pkt.size, got);
       if (got < 0)
       {
          bad = -1;
@@ -247,6 +259,23 @@ static void oracle_case(const char *name, const char *src, int frames,
    printf("      %d frames, %ld differing samples with 4 contexts in rotation\n",
          nf, bad < 0 ? 0 : bad);
    check("  same with 4 picture contexts in rotation", bad == 0 && nf == frames);
+   if (g_pool)
+   {
+      g_threads = 4;
+      bad = compare(mp4, ref, rlen, ref, 0, &nf);
+      printf("      %d frames, %ld differing samples with 4 pictures decoding concurrently\n",
+            nf, bad < 0 ? 0 : bad);
+      check("  same with 4 pictures decoding concurrently", bad == 0 && nf == frames);
+      /* and with every row's publication held back at random, so the
+       * readers wait for their rows instead of finding them */
+      rh264_video_set_publish_delay(200);
+      bad = compare(mp4, ref, rlen, ref, 0, &nf);
+      rh264_video_set_publish_delay(0);
+      g_threads = 0;
+      printf("      %d frames, %ld differing samples concurrently with rows held back\n",
+            nf, bad < 0 ? 0 : bad);
+      check("  same concurrently with every row's publication delayed", bad == 0 && nf == frames);
+   }
    free(ref);
 }
 
@@ -549,6 +578,9 @@ int main(void)
     * and in CABAC the contexts still see it.  Intra macroblocks amid
     * inter ones in P / B pictures exercise every neighbour position. */
    printf("constrained_intra_pred, byte-exact vs ffmpeg:\n");
+   g_pool = tpool_create_with_stack_size(3, 512 * 1024);
+   if (!g_pool)
+      printf("no thread pool: the concurrent decodes are skipped\n");
    oracle_case("cip_cabac",  "testsrc2=s=176x144:r=15",   8, "yuv420p", "-crf 20",
          "-preset medium -x264-params constrained-intra=1");
    oracle_case("cip_cavlc",  "testsrc2=s=176x144:r=15",   8, "yuv420p", "-crf 20",
