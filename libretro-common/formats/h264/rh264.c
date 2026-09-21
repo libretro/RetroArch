@@ -5059,6 +5059,10 @@ struct rh264_video
    uint8_t       *rbsp_free[RH264_RBSP_POOL];
    size_t         rbsp_free_cap[RH264_RBSP_POOL];
    int            rbsp_free_n;
+   /* and the slice jobs themselves, two kilobytes each with a B
+    * context inside: a finished one is kept for the next slice */
+   rh264_slice_job *job_free;
+   int              job_free_n;
 
    /* unescaped-RBSP scratch for slice NALs, grown on demand and kept
     * for the decoder's lifetime */
@@ -5768,6 +5772,12 @@ void rh264_video_close(rh264_video *v)
       for (i = 0; i < RH264_MAX_REFS; i++) rh264_frame_free(&v->dpb[i]);
       for (i = 0; i < RH264_OUT_SLOTS; i++) rh264_frame_free(&v->out[i]);
       for (i = 0; i < v->rbsp_free_n; i++) free(v->rbsp_free[i]);
+      while (v->job_free)
+      {
+         rh264_slice_job *j = v->job_free;
+         v->job_free = j->next;
+         free(j);
+      }
    }
    rh264_vlc_free(&v->vlc);
    free(v);
@@ -10096,8 +10106,17 @@ static void rh264_ctx_complete_picture(rh264_pic_ctx *c)
 static rh264_slice_job *rh264_ctx_queue_slice(rh264_video *v, rh264_pic_ctx *c,
       const rh264_bits *b, const rh264_slice_hdr *sh, int kind, int cabac)
 {
-   rh264_slice_job *j = (rh264_slice_job*)calloc(1, sizeof(*j));
-   if (!j)
+   rh264_slice_job *j;
+   rh264_blocks_lock_take();
+   if ((j = v->job_free))
+   {
+      v->job_free = j->next;
+      v->job_free_n--;
+   }
+   rh264_blocks_lock_drop();
+   if (j)
+      memset(j, 0, sizeof(*j));
+   else if (!(j = (rh264_slice_job*)calloc(1, sizeof(*j))))
       return NULL;
    /* The slice was unescaped into the buffer of whichever context was
     * current at the time - the one before the rotation, when this
@@ -10208,16 +10227,27 @@ static void rh264_ctx_run_slices(rh264_video *v, rh264_pic_ctx *c, const struct 
          else
             c->job_rc = rc;
       }
+      /* the buffer and the job go back to their pools, or are freed
+       * when the pools are full; the buffer is settled before the job
+       * is offered, since a pooled job is another thread's to take */
       rh264_blocks_lock_take();
       if (v->rbsp_free_n < RH264_RBSP_POOL)
       {
          v->rbsp_free[v->rbsp_free_n]     = j->rbsp;
          v->rbsp_free_cap[v->rbsp_free_n] = j->rbsp_cap;
          v->rbsp_free_n++;
-         j->rbsp = NULL;
+      }
+      else
+         free(j->rbsp);
+      j->rbsp = NULL;
+      if (v->job_free_n < RH264_RBSP_POOL)
+      {
+         j->next     = v->job_free;
+         v->job_free = j;
+         v->job_free_n++;
+         j = NULL;
       }
       rh264_blocks_lock_drop();
-      free(j->rbsp);
       free(j);
    }
    /* Completion is the picture's own affair, not the sequence's: it
