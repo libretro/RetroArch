@@ -4474,11 +4474,6 @@ void rh265_video_set_thread_pool(rh265_video *v, void *pool,
 }
 
 
-/* CTB row @ry of the picture in @d is reconstructed: deblock it - its
- * top edge needs the row above, already there - and run SAO over the
- * row above, whose last line reads this row's first as deblocked.
- * Only for a picture decoding in order on one thread as one slice;
- * anything else filters whole at the finish. */
 /* The miss counter every reference read consults: on one thread a
  * reference is complete before it is read, so a read that finds its
  * rows short is a wrong counter or a wrong bound - a sample asserts
@@ -4585,30 +4580,41 @@ static void rh265_ref_wait_rows(const rh265_dec *d, const rh265_pic *ref,
    }
 }
 
+/* CTB row @ry of the picture in @d is reconstructed. Intra prediction
+ * reads reconstructed samples before the in-loop filters, and the
+ * next row's first line predicts from this row's last, so this row
+ * is not filtered yet: the row ABOVE is, now that nothing will
+ * predict from it - its vertical edges, then its horizontal edges
+ * from its top edge down to, not including, the edge it shares with
+ * this row, which is filtered with this row on the next call. SAO,
+ * reading a row's neighbours as deblocked, runs two rows behind. Only
+ * for a picture decoding in order on one thread as one slice;
+ * anything else filters whole at the finish. */
 static void rh265_row_done(rh265_video *v, rh265_dec *d, int ry)
 {
    const rh265_sps *sps = d->sps;
    int ctb = 1 << sps->log2_ctb;
-   if (d->rows_deblocked != ry)
+   int sao = d->sao_wanted && sps->sao_enabled;
+   if (ry < 1 || d->rows_deblocked != ry - 1)
       return;                          /* out of order, or a slice edge */
-   d->fns->deblock_rows(d, ry * ctb, (ry + 1) * ctb);
-   d->rows_deblocked = ry + 1;
-   if (!(d->sao_wanted && sps->sao_enabled))
-      d->rows_sao = ry + 1;
-   else if (ry > 0 && d->rows_sao == ry - 1)
+   d->fns->deblock_rows(d, (ry - 1) * ctb, ry * ctb);
+   d->rows_deblocked = ry;
+   if (sao)
    {
-      if (d->fns->sao_row(d, ry - 1) < 0)
-         return;
-      d->rows_sao = ry;
+      if (ry >= 2 && d->rows_sao == ry - 2)
+      {
+         if (d->fns->sao_row(d, ry - 2) < 0)
+            return;
+         d->rows_sao = ry - 1;
+      }
    }
-   /* Row rows_sao-1 is final; the horizontal edge at the top of row
-    * ry+1 will still touch row ry's last lines, and SAO of row ry
-    * reads them, so what is final is what SAO has been over - and
-    * without SAO, what is deblocked below the row still being
-    * filtered against. */
+   else
+      d->rows_sao = ry - 1;
+   /* final: SAO done, and the edge below deblocked - both true of
+    * the rows below rows_sao */
    if (d->cur)
-      rh265_pic_publish_rows(d->cur, (d->sao_wanted && sps->sao_enabled)
-            ? d->rows_sao : (d->rows_deblocked > 0 ? d->rows_deblocked - 1 : 0));
+      rh265_pic_publish_rows(d->cur, d->rows_sao);
+   (void)v;
 }
 
 /* The finish: whatever the hook left - the last row's SAO, or the

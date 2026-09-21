@@ -32,8 +32,9 @@ jobs:
           # All three packages ship on the stock ubuntu-latest image, so
           # this step is a no-op there and apt is only contacted if the
           # image ever drops one of them.
-          # ffmpeg (with libx264): formats/h264/rh264_lossless_test builds
-          # its lossless corpus and its reference decodes with it.
+          # ffmpeg (with libx264 and libx265): formats/h264/rh264_lossless_test
+          # and formats/h265/rh265_lossless_test build their corpora and
+          # their reference decodes with it.
           if dpkg -s build-essential zlib1g-dev clang ffmpeg >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -113,6 +114,7 @@ jobs:
             audio_transfer_window_test
             rjpeg_test
             rh264_lossless_test
+            rh265_lossless_test
             r7z_lzma_props_test
             vcdiff_test
             net_ifinfo

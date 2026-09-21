@@ -259,7 +259,7 @@ def main():
             'anim_dispose_prev.png', 'trailing_large.mp4',
             'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4',
             'vp9_tiles.webm', 'hevc_wpp.mp4', 'bframes_h264.mp4',
-            'bframes_hevc.mp4')):
+            'bframes_hevc.mp4', 'hevc_nowpp.mp4')):
         print('fixtures present, not rebuilt')
         return
 
@@ -324,6 +324,17 @@ def main():
         'bframes=3:b-pyramid=0:b-adapt=0:keyint=30:log-level=none',
         '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', '-an',
         j('bframes_hevc.mp4')])
+    # HEVC without the wavefront, taller than one CTB row and with a
+    # partial last row, SAO and deblocking on: the decoder's row hook
+    # runs on this one - the loop filters a CTB row behind the decode
+    # - which the WPP fixtures never exercise.
+    subprocess.check_call([
+        'ffmpeg', '-v', 'error', '-y',
+        '-f', 'lavfi', '-i', 'testsrc2=s=320x200:r=30', '-t', '2',
+        '-c:v', 'libx265', '-x265-params',
+        'wpp=0:frame-threads=1:sao=1:deblock=1:bframes=3:b-pyramid=1:keyint=30:log-level=none',
+        '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', '-an',
+        j('hevc_nowpp.mp4')])
     seed(j('seed_small.mp4'), 3, 640, 360, '300k')
     seed(j('seed_4k.mp4'), 3, 3840, 2160, '400k')
 
