@@ -167,6 +167,33 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./s3_backup_test
           echo "[pass] s3_backup_test (TSan)"
 
+      - name: Build and run smb_backup_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/smb_backup
+        run: |
+          set -eu
+          # Includes network/cloud_sync/smb.c and runs it against an
+          # in-memory libsmb2 share (fake_smb.c), checking what the
+          # share holds after each upload. The driver used to truncate
+          # the server file and then write, so a write failing part way
+          # left a truncated save; and with destructive sync off it
+          # overwrote the file without keeping the old copy a delete
+          # keeps. Uploads now go through <path>.rauploading and the
+          # replaced file is kept as <path>-<time> (non-destructive).
+          # Covers a failed write, backup and final rename each leaving
+          # the old file intact with no temporary file left, no backup
+          # for destructive sync, a new file or the manifest, an empty
+          # upload and the configured subdirectory.
+          make clean all SANITIZER=address,undefined
+          test -x smb_backup_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./smb_backup_test
+          echo "[pass] smb_backup_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./smb_backup_test
+          echo "[pass] smb_backup_test (TSan)"
+
       - name: Build and run cheevos_login_test (bear ASan+UBSan, bear TSan, mbed ASan+UBSan)
         shell: bash
         working-directory: samples/network/cheevos_login

@@ -330,17 +330,90 @@ static bool smb_read(const char *path, const char *file,
    return true;
 }
 
+/* <smb_path>-<yymmdd-hhmmss>, beside the file: where a non-destructive
+ * delete has always put the copy it keeps. */
+static void smb_backup_path(char *s, size_t len, const char *smb_path)
+{
+   time_t    t;
+   struct tm tm_buf;
+   char      ts[32];
+
+   time(&t);
+   rtime_localtime(&t, &tm_buf);
+   snprintf(ts, sizeof(ts), "-%02d%02d%02d-%02d%02d%02d",
+         tm_buf.tm_year % 100, tm_buf.tm_mon + 1, tm_buf.tm_mday,
+         tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec);
+   strlcpy(s, smb_path, len);
+   strlcat(s, ts, len);
+}
+
+/* Write the whole of @buf to a new remote file at @smb_path. */
+static bool smb_write_file(const char *smb_path, const uint8_t *buf,
+      uint64_t size)
+{
+   uint64_t       offset = 0;
+   uint32_t       chunk  = smb2_get_max_write_size(smb_st.ctx);
+   struct smb2fh *fh     = smb2_open(smb_st.ctx, smb_path,
+         O_WRONLY | O_CREAT | O_TRUNC);
+
+   if (!fh)
+   {
+      RARCH_ERR(SMBPFX "Failed to open '%s' for writing: %s\n",
+            smb_path, smb2_get_error(smb_st.ctx));
+      return false;
+   }
+
+   /* O_TRUNC is not honoured by every server; the file is new anyway,
+    * but a stale one from an interrupted upload must not keep a tail. */
+   smb2_ftruncate(smb_st.ctx, fh, 0);
+
+   while (offset < size)
+   {
+      uint32_t to_write = (uint32_t)((size - offset) < chunk
+            ? (size - offset) : chunk);
+      int n = smb2_write(smb_st.ctx, fh, buf + offset, to_write);
+      /* 0 would loop here forever. */
+      if (n <= 0)
+      {
+         RARCH_ERR(SMBPFX "Write error on '%s': %s\n",
+               smb_path, smb2_get_error(smb_st.ctx));
+         smb2_close(smb_st.ctx, fh);
+         return false;
+      }
+      offset += (uint32_t)n;
+   }
+
+   smb2_close(smb_st.ctx, fh);
+   return true;
+}
+
+/* The upload goes to a temporary file first and is renamed into place
+ * once it is complete.  The old code opened the file itself, truncated
+ * it and wrote: a write that failed part way left the server holding a
+ * truncated save.
+ *
+ * Before the rename, the file being replaced is moved aside:
+ * with destructive sync off it becomes <path>-<yymmdd-hhmmss>, the copy
+ * a non-destructive delete keeps, so an upload no longer destroys the
+ * server's copy either; with it on, it is removed.  If the final rename
+ * fails, the old file is put back.  The server manifest is rewritten
+ * every sync and is never kept. */
 static bool smb_update(const char *path, RFILE *rfile,
       cloud_sync_complete_handler_t cb, void *user_data)
 {
    char smb_path[PATH_MAX_LENGTH];
-   struct smb2fh *fh;
+   char tmp_path[PATH_MAX_LENGTH];
+   char backup_path[PATH_MAX_LENGTH];
+   struct smb2_stat_64 st;
+   settings_t *settings = config_get_ptr();
+   bool keep_old;
+   bool had_old;
    int64_t file_size;
-   uint8_t *buf;
-   uint64_t offset = 0;
-   uint32_t chunk;
+   uint8_t *buf = NULL;
 
    smb_sync_build_path(smb_path, sizeof(smb_path), smb_st.subdir, path);
+   strlcpy(tmp_path, smb_path, sizeof(tmp_path));
+   strlcat(tmp_path, ".rauploading", sizeof(tmp_path));
 
    /* Ensure parent directories exist */
    if (!smb_sync_ensure_parent_dir(smb_st.ctx, smb_path))
@@ -350,55 +423,70 @@ static bool smb_update(const char *path, RFILE *rfile,
       return true;
    }
 
-   /* Read the local file into memory */
+   /* Read the local file into memory, from the start. */
    file_size = filestream_get_size(rfile);
    if (file_size < 0)
       file_size = 0;
-
-   buf = (uint8_t *)malloc((size_t)file_size);
-   if (!buf && file_size > 0)
-   {
-      cb(user_data, path, false, rfile);
-      return true;
-   }
-
    if (file_size > 0)
-      filestream_read(rfile, buf, file_size);
-
-   /* Open remote file for writing (create if needed) */
-   fh = smb2_open(smb_st.ctx, smb_path, O_WRONLY | O_CREAT);
-   if (!fh)
    {
-      RARCH_ERR(SMBPFX "Failed to open '%s' for writing: %s\n",
-            smb_path, smb2_get_error(smb_st.ctx));
-      free(buf);
-      cb(user_data, path, false, rfile);
-      return true;
-   }
-
-   /* Truncate to 0 in case file already existed with larger content */
-   smb2_ftruncate(smb_st.ctx, fh, 0);
-
-   chunk = smb2_get_max_write_size(smb_st.ctx);
-   while (offset < (uint64_t)file_size)
-   {
-      uint32_t to_write = (uint32_t)(((uint64_t)file_size - offset) < chunk
-            ? ((uint64_t)file_size - offset) : chunk);
-      int n = smb2_write(smb_st.ctx, fh, buf + offset, to_write);
-      if (n < 0)
+      if (   !(buf = (uint8_t *)malloc((size_t)file_size))
+          || filestream_seek(rfile, 0, SEEK_SET) < 0
+          || filestream_read(rfile, buf, file_size) != file_size)
       {
-         RARCH_ERR(SMBPFX "Write error on '%s': %s\n",
-               smb_path, smb2_get_error(smb_st.ctx));
+         RARCH_ERR(SMBPFX "Could not read local file for '%s'\n", smb_path);
          free(buf);
-         smb2_close(smb_st.ctx, fh);
          cb(user_data, path, false, rfile);
          return true;
       }
-      offset += (uint32_t)n;
    }
 
-   smb2_close(smb_st.ctx, fh);
+   if (!smb_write_file(tmp_path, buf, (uint64_t)file_size))
+   {
+      free(buf);
+      smb2_unlink(smb_st.ctx, tmp_path);
+      cb(user_data, path, false, rfile);
+      return true;
+   }
    free(buf);
+
+   had_old  = smb2_stat(smb_st.ctx, smb_path, &st) >= 0;
+   keep_old = had_old
+           && !settings->bools.cloud_sync_destructive
+           && !string_is_equal(path, CLOUD_SYNC_SERVER_MANIFEST);
+
+   if (had_old)
+   {
+      int rc;
+      if (keep_old)
+      {
+         smb_backup_path(backup_path, sizeof(backup_path), smb_path);
+         rc = smb2_rename(smb_st.ctx, smb_path, backup_path);
+      }
+      else
+         rc = smb2_unlink(smb_st.ctx, smb_path);
+      if (rc < 0)
+      {
+         RARCH_ERR(SMBPFX "Not replacing '%s': could not %s the old copy: %s\n",
+               smb_path, keep_old ? "back up" : "remove",
+               smb2_get_error(smb_st.ctx));
+         smb2_unlink(smb_st.ctx, tmp_path);
+         cb(user_data, path, false, rfile);
+         return true;
+      }
+      if (keep_old)
+         RARCH_DBG(SMBPFX "Backed up %s -> %s\n", smb_path, backup_path);
+   }
+
+   if (smb2_rename(smb_st.ctx, tmp_path, smb_path) < 0)
+   {
+      RARCH_ERR(SMBPFX "Rename '%s' -> '%s' failed: %s\n",
+            tmp_path, smb_path, smb2_get_error(smb_st.ctx));
+      if (keep_old)
+         smb2_rename(smb_st.ctx, backup_path, smb_path);
+      smb2_unlink(smb_st.ctx, tmp_path);
+      cb(user_data, path, false, rfile);
+      return true;
+   }
 
    RARCH_DBG(SMBPFX "Updated %s (%u bytes)\n",
          smb_path, (unsigned)file_size);
@@ -448,18 +536,7 @@ static bool smb_free(const char *path,
    {
       /* Non-destructive: rename with timestamp */
       char new_path[PATH_MAX_LENGTH];
-      time_t t;
-      struct tm tm_buf;
-      char ts[32];
-
-      time(&t);
-      rtime_localtime(&t, &tm_buf);
-      snprintf(ts, sizeof(ts), "-%02d%02d%02d-%02d%02d%02d",
-            tm_buf.tm_year % 100, tm_buf.tm_mon + 1, tm_buf.tm_mday,
-            tm_buf.tm_hour, tm_buf.tm_min, tm_buf.tm_sec);
-
-      strlcpy(new_path, smb_path, sizeof(new_path));
-      strlcat(new_path, ts, sizeof(new_path));
+      smb_backup_path(new_path, sizeof(new_path), smb_path);
 
       /* Ensure parent dir of backup path exists */
       smb_sync_ensure_parent_dir(smb_st.ctx, new_path);
