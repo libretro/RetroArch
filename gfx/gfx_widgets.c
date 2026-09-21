@@ -417,6 +417,10 @@ static void gfx_widgets_msg_queue_push_state(
 
          msg_widget->offset_y                   = 0;
          msg_widget->alpha                      = 1.0f;
+         /* Set while the task is being built, before task_queue_push()
+          * hands it to the queue, and never changed after - so this is
+          * the one task property readable here without the queue's
+          * property lock, which the push no longer holds. */
          msg_widget->alternative_look           = task && (task->flags & RETRO_TASK_FLG_ALTERNATIVE_LOOK);
 
          msg_widget->width                      = 0;

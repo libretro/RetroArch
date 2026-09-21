@@ -142,54 +142,70 @@ static bool property_lock_pinned            = false;
 static unsigned gcd_queue_count             = 0;
 #endif
 
-static void task_queue_msg_push(retro_task_t *task,
-      unsigned prio, unsigned duration,
-      bool flush, const char *fmt, ...)
+static void task_queue_msg_format(char *s, size_t len, const char *fmt, ...)
+{
+   va_list ap;
+
+   va_start(ap, fmt);
+   vsnprintf(s, len, fmt, ap);
+   va_end(ap);
+}
+
+/* Builds this frame's message from the task's properties and hands it to
+ * the frontend.  The message is formatted under property_lock, because a
+ * worker replacing the title frees the old buffer as it goes
+ * (task_free_title() then task_set_title()), and then pushed with the
+ * lock released: msg_push() reaches the frontend's
+ * message path, which inserts into the widget queue and, on a build with
+ * accessibility enabled, forks to speak - none of which a worker's
+ * task_set_progress() should be parked behind.  The push therefore
+ * carries the formatted string and nothing the lock guards, so
+ * msg_push() must not read the task's title, progress or flags; see
+ * runloop_task_msg_queue_push(). */
+static void task_queue_push_progress(retro_task_t *task)
 {
    char buf[1024];
-   va_list ap;
+   bool have_msg = false;
+   bool flush    = false;
 
    buf[0] = '\0';
 
-   va_start(ap, fmt);
-   vsnprintf(buf, sizeof(buf), fmt, ap);
-   va_end(ap);
-
-   if (impl_current->msg_push)
-      impl_current->msg_push(task, buf, prio, duration, flush);
-}
-
-static void task_queue_push_progress(retro_task_t *task)
-{
 #ifdef HAVE_THREADS
-   /* msg_push callback interacts directly with the task properties (particularly title).
-    * make sure another thread doesn't modify them while rendering
-    */
    slock_lock(property_lock);
 #endif
 
    if (task->title && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
    {
+      have_msg = true;
+
       if ((task->flags & RETRO_TASK_FLG_FINISHED) > 0)
       {
          if (task->error)
-            task_queue_msg_push(task, 1, 60, true, "%s: %s",
-               "Task failed", task->title);
+         {
+            flush = true;
+            task_queue_msg_format(buf, sizeof(buf), "%s: %s",
+                  "Task failed", task->title);
+         }
          else
-            task_queue_msg_push(task, 1, 60, false, "100%%: %s", task->title);
+            task_queue_msg_format(buf, sizeof(buf), "100%%: %s", task->title);
       }
       else
       {
          if (task->progress >= 0 && task->progress <= 100)
-            task_queue_msg_push(task, 1, 60, true, "%i%%: %s",
+         {
+            flush = true;
+            task_queue_msg_format(buf, sizeof(buf), "%i%%: %s",
                   task->progress, task->title);
+         }
          else
-            task_queue_msg_push(task, 1, 60, false, "%s...", task->title);
+            task_queue_msg_format(buf, sizeof(buf), "%s...", task->title);
       }
    }
 
    /* Messages are gated on the title above; the callback is for
-    * code, so it needs only the mute opt-out. */
+    * code, so it needs only the mute opt-out. It stays under the lock:
+    * it reads the task's progress and finished flag, and it pokes the
+    * display server rather than going through the message path. */
    if (     task->progress_cb
          && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
       task->progress_cb(task);
@@ -197,6 +213,9 @@ static void task_queue_push_progress(retro_task_t *task)
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
 #endif
+
+   if (have_msg && impl_current->msg_push)
+      impl_current->msg_push(task, buf, 1, 60, flush);
 }
 
 static void task_queue_put(task_queue_t *queue, retro_task_t *task)
