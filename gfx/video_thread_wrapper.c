@@ -1707,9 +1707,17 @@ static void video_thread_loop(void *data)
          vp.full_width            = 0;
          vp.full_height           = 0;
 
+         /* Only the handoff needs the lock. The driver takes the menu
+          * texture's pixels inside its own set_texture_frame() - it
+          * uploads or copies them there and does not keep the pointer -
+          * so once the update returns, the staging buffer is free and
+          * the render below needs nothing this lock guards. Holding it
+          * across the render would park the main thread's
+          * set_texture_frame() on a whole frame and its swap, which is
+          * what RGUI does on every frame the menu is up. */
          slock_lock(thr->frame.lock);
-
          thread_update_driver_state(thr);
+         slock_unlock(thr->frame.lock);
 
          if (thr->driver_data && thr->driver)
          {
@@ -1810,8 +1818,6 @@ static void video_thread_loop(void *data)
                      video_info);
                }
 
-               slock_unlock(thr->frame.lock);
-
                ret_frame  = ret;
                render_took = cpu_features_get_time_usec() - render_start;
                if (ret)
@@ -1849,8 +1855,6 @@ static void video_thread_loop(void *data)
                      refresh_rate = thr->poke->get_refresh_rate(thr->driver_data);
                }
             }
-            else
-               slock_unlock(thr->frame.lock);
 
             if (thr->driver->viewport_info)
                thr->driver->viewport_info(thr->driver_data, &vp);
@@ -1862,8 +1866,6 @@ static void video_thread_loop(void *data)
                      ((video_thread_private_t*)thr)->rec_slot[slot], &vp);
 #endif
          }
-         else
-            slock_unlock(thr->frame.lock);
 
          slock_lock(thr->lock);
          retro_atomic_store_release_int(&thr->alive,        alive);
@@ -1969,10 +1971,11 @@ static void video_thread_loop(void *data)
           * no menu texture is touched, so this is not a rendered frame
           * for the purposes of video_thread_wait_idle(). */
          unsigned swaps = 0;
-         slock_lock(thr->frame.lock);
+         /* The comment above is the reason this takes no lock: a repeat
+          * touches no menu texture, so there is no handoff to serialise
+          * against, and the main thread never calls the driver. */
          if (thr->driver_data && thr->poke && thr->poke->present_last)
             swaps = thr->poke->present_last(thr->driver_data);
-         slock_unlock(thr->frame.lock);
 
          slock_lock(thr->lock);
          if (swaps)
