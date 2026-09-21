@@ -522,11 +522,25 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 }
 #endif
 
+static void resampler_CC_reset(void *re_);
+
 static void resampler_CC_process(void *re_, struct resampler_data *data)
 {
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
-   if (re)
-      re->process(re_, data);
+   if (!re)
+      return;
+   /* init picks the direction from the nominal ratio, but the ratio
+    * moves at runtime - slow motion multiplies it. The downsampler
+    * emits at most one frame per input frame, so it cannot serve a
+    * ratio above one. The upsampler serves either, to the same output
+    * below one, so the stream moves there and stays; the two carry
+    * distance differently, so the move restarts it. */
+   if (re->process == resampler_CC_downsample && data->ratio > 1.0)
+   {
+      re->process = resampler_CC_upsample;
+      resampler_CC_reset(re);
+   }
+   re->process(re_, data);
 }
 
 static void *resampler_CC_init(const struct resampler_config *config,

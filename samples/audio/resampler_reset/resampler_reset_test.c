@@ -169,6 +169,36 @@ static void test_unnameable_ratio(const retro_resampler_t *r)
    }
 }
 
+/* audio_driver_effective_ratio() multiplies the ratio by the slowmotion
+ * setting, so a backend that chose its direction from the nominal ratio
+ * at init is handed one above 1.0 the moment slow motion starts. It has
+ * to keep producing the frames the ratio asks for. */
+static void test_ratio_above_init(const retro_resampler_t *r)
+{
+   static float in_a[IN_FRAMES * 2];
+   static float out[OUT_CAP * 2];
+   struct resampler_config cfg;
+   void *re;
+   size_t k, total = 0;
+   double nominal = 0.5, fast = 2.0, expect;
+
+   memset(&cfg, 0, sizeof(cfg));
+   fill(in_a, IN_FRAMES, 4);
+   if (!(re = r->init(&cfg, nominal, RESAMPLER_QUALITY_NORMAL, 0)))
+   {
+      CHECK(0, "%s: init failed at %.2f", r->ident, nominal);
+      return;
+   }
+   for (k = 0; k < 8; k++)
+      total += run(r, re, fast, in_a, out);
+   r->free(re);
+
+   expect = (double)(IN_FRAMES * 8) * fast;
+   CHECK((double)total > expect * 0.99,
+         "%s: inited at %.2f, run at %.2f: %u frames where %.0f are due",
+         r->ident, nominal, fast, (unsigned)total, expect);
+}
+
 int main(void)
 {
    const retro_resampler_t *backends[] = { &sinc_resampler, &nearest_resampler, &CC_resampler };
@@ -189,6 +219,8 @@ int main(void)
    }
    printf("   CC, ratios no rate pair can name\n");
    test_unnameable_ratio(&CC_resampler);
+   printf("   CC, a ratio above the one init chose from\n");
+   test_ratio_above_init(&CC_resampler);
    if (failures)
    {
       printf("%u failure(s)\n", failures);
