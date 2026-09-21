@@ -99,6 +99,7 @@ typedef struct gfx_anim_preview
    /* preview audio (WEBM / MP4), main thread */
    struct data_transfer *audio_dt;
    size_t audio_hi;
+   size_t audio_tell;   /* the decoder's position at the last feed */
    int    audio_slot;
 } gfx_anim_preview_t;
 

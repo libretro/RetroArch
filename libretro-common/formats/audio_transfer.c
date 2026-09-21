@@ -4659,6 +4659,20 @@ static int64_t audio_transfer_aac_seek_to(struct audio_transfer_aac *ac,
    ac->pkt_offset  = 0;
    ac->pend_frames = 0;
    ac->pend_pos    = 0;
+   /* Out of a sliding window, nothing behind the old position is
+    * resident any more: the feeder let the head go as the lap went
+    * on, and only it can bring the head back, on its next tick. Until
+    * it publishes a new bound the reads stand at the wall rather than
+    * touch pages that are gone. A whole-file buffer has no window and
+    * no bound, and is untouched. */
+   if (ac->avail)
+   {
+      ac->avail = 1;
+#ifdef HAVE_RMP4
+      if (ac->demux)
+         rmp4_set_avail(ac->demux, 1);
+#endif
+   }
    if (stop < 0)
       stop = 0;
    while (pos < stop)

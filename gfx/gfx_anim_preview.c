@@ -567,6 +567,7 @@ static void gfx_anim_preview_audio_stop_slot(gfx_anim_preview_t *p)
    /* the mixer owns (and frees) the audio window through buf_owner */
    p->audio_dt   = NULL;
    p->audio_hi   = 0;
+   p->audio_tell = 0;
    p->audio_slot = -1;
 }
 #endif
@@ -718,6 +719,12 @@ bool gfx_anim_preview_audio_feed(gfx_anim_preview_t *p)
       size_t res_hi = 0;
       if (hi > p->len)
          hi = p->len;
+      /* The decoder looped: it stands at the wall until this tick has
+       * brought the head back and published a bound for the new lap,
+       * so the bound published for the old lap counts for nothing. */
+      if (anchor < p->audio_tell)
+         p->audio_hi = 0;
+      p->audio_tell = anchor;
       if (!data_transfer_window_feed_budget(p->audio_dt, anchor,
                GFX_ANIM_PREVIEW_AUDIO_LOOKAHEAD, GFX_ANIM_PREVIEW_AUDIO_MARGIN,
                GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET, &res_hi))
