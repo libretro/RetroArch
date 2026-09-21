@@ -9,3 +9,5 @@
 const size_t settings_layout_sizeof = sizeof(settings_t);
 const size_t settings_layout_preview_audio_off =
       offsetof(settings_t, bools.menu_thumbnail_preview_audio);
+const size_t settings_layout_preview_threads_off =
+      offsetof(settings_t, uints.menu_thumbnail_preview_threads);

@@ -205,7 +205,7 @@ PLATFORM_TARGETS := $(ANIM_WINDOW_TARGET)
 endif
 
 
-all: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET)
+all: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(THREADED_TARGET)
 
 $(ANIM_WINDOW_TARGET): $(ANIM_WINDOW_SOURCES)
 	$(CC) -o $@ $(ANIM_WINDOW_SOURCES) $(ANIM_WINDOW_CFLAGS) $(LDFLAGS) -lz
@@ -299,18 +299,48 @@ $(LAYOUT_OBJ): settings_layout_uut.c
 $(TARGET): $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+# The same test with HAVE_THREADS: the thumbnail decodes on its worker
+# thread and, for THREADS above one, on the pool - the app's own path,
+# which the single-threaded build above cannot show. rthreads, the
+# pool and the eventcount are the real ones; the stubs' thread shims
+# are compiled out under PREVIEW_THREADED. Objects carry .t.o so the
+# two builds never share one.
+THREADED_TARGET := gfx_thumbnail_preview_test_threaded
+THREADED_DEFS   := -DHAVE_THREADS -DPREVIEW_THREADED
+THREADED_EXTRA  := $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+                   $(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
+                   $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
+THREADED_OBJS   := $(SOURCES:.c=.t.o) $(THREADED_EXTRA:.c=.t.o)
+
+%.t.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS) $(THREADED_DEFS)
+
+gfx_thumbnail_uut.t.o: $(UUT_SRC)
+	$(CC) -c -o $@ $< $(UUT_CFLAGS) $(THREADED_DEFS)
+gfx_anim_preview_uut.t.o: $(ANIM_PREVIEW_SRC)
+	$(CC) -c -o $@ $< $(UUT_CFLAGS) $(THREADED_DEFS)
+gfx_surface_uut.t.o: $(SURFACE_SRC)
+	$(CC) -c -o $@ $< $(UUT_CFLAGS) $(THREADED_DEFS)
+settings_layout_uut.t.o: settings_layout_uut.c
+	$(CC) -c -o $@ $< $(UUT_CFLAGS) $(THREADED_DEFS)
+
+$(THREADED_TARGET): $(THREADED_OBJS) gfx_thumbnail_uut.t.o settings_layout_uut.t.o \
+                    gfx_anim_preview_uut.t.o gfx_surface_uut.t.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 # The fixtures are container layouts, not clips: see mkfixtures.py.
 # Sparse, so the 7.28 GB ones cost ~40 MB of disk.
 fixtures:
 	python3 mkfixtures.py fixtures
 
-check: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) fixtures
+check: $(TARGET) $(THREADED_TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) fixtures
 	./$(TARGET) fixtures/*.mp4 fixtures/anim_lossless.webp
 ifneq ($(OS),Windows_NT)
 	./$(ANIM_WINDOW_TARGET) fixtures
 endif
 	./$(CATCHUP_TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=500 NOAUDIO=1 ./$(TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
+	THREADS=4 FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=500 NOAUDIO=1 ./$(THREADED_TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	./$(BLIT_BANDS_TARGET) fixtures/long_video.mp4
 	./$(BLIT_BANDS_TARGET) fixtures/vp9_tiles.webm
 	./$(BLIT_BANDS_TARGET) fixtures/hevc_wpp.mp4
@@ -323,7 +353,9 @@ endif
 # a different SANITIZER=, and a clean that took the fixtures with it
 # left the following run globbing nothing.  Use distclean to drop them.
 clean:
-	rm -f $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) \
+	rm -f $(TARGET) $(THREADED_TARGET) $(THREADED_TARGET).exe $(THREADED_OBJS) \
+	      gfx_thumbnail_uut.t.o settings_layout_uut.t.o gfx_anim_preview_uut.t.o gfx_surface_uut.t.o \
+	      $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) \
 	      $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(BENCH_TARGET) \
 	      $(TARGET).exe $(CATCHUP_TARGET).exe $(BENCH_TARGET).exe $(BLIT_BANDS_TARGET).exe \
 	      $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)

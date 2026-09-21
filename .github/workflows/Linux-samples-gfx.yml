@@ -1070,6 +1070,15 @@ jobs:
           AUDIO_BYTES_PER_TICK=65536 FRAMES=120 timeout 300 \
              ./gfx_thumbnail_preview_test fixtures/*.mp4 fixtures/anim_lossless.webp
           echo "[pass] gfx_thumbnail_preview_test (ASan)"
+          # The same session with HAVE_THREADS: the thumbnail decodes on
+          # its worker and the pool, the app's own path, paced at a
+          # display's rate with a bound on the longest stall.
+          test -x gfx_thumbnail_preview_test_threaded
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+          UBSAN_OPTIONS=print_stacktrace=1 \
+          THREADS=4 FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=800 NOAUDIO=1 timeout 300 \
+             ./gfx_thumbnail_preview_test_threaded fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
+          echo "[pass] gfx_thumbnail_preview_test_threaded (ASan, 4 threads)"
           # The frame-indexed types (animated WEBP, APNG) through the
           # same session, windowed: animated WEBP had no progressive
           # open, so the session read the whole file into the
@@ -1132,6 +1141,11 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1:allocator_may_return_null=1 FRAMES=60 timeout 300 \
              ./gfx_thumbnail_preview_test fixtures/*.mp4 fixtures/anim_lossless.webp
           echo "[pass] gfx_thumbnail_preview_test (TSan)"
+          # and threaded under TSan, which is the run that can see a
+          # race between the worker, the pool and the poll
+          THREADS=4 FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=1500 NOAUDIO=1 timeout 300 \
+             ./gfx_thumbnail_preview_test_threaded fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
+          echo "[pass] gfx_thumbnail_preview_test_threaded (TSan, 4 threads)"
           # The pool and the tile-column threads under TSan: the
           # shared frame buffers and contexts are written in disjoint
           # columns, the counts merged after the join.
