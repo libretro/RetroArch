@@ -92,6 +92,14 @@ int rh264_video_dropped(const rh264_video *v);
  * threaded decoder would have waited on. */
 int rh264_video_ref_wait_misses(void);
 
+/* How many pictures the decoder keeps in rotation, 1 to 4. Each new
+ * picture takes the next context round; with one, the same every
+ * time. Today the pictures still decode one after the other, so this
+ * changes which memory a picture uses and nothing else - which is
+ * what lets a sample prove the per-picture state complete before the
+ * pictures decode concurrently. */
+void rh264_video_set_contexts(rh264_video *v, int n);
+
 int rh264_video_bit_depth(const rh264_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */

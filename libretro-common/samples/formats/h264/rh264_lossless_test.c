@@ -91,6 +91,14 @@ static int run(const char *fmt, ...)
  * 'split' against ref_a, from it on against ref_b (ref_b == ref_a and
  * split == 0 for a single reference).  Returns the number of differing
  * samples, -1 on decode failure, and writes the frame count. */
+/* Picture contexts in rotation for the decode under test. The
+ * pictures still decode one after the other, so the output at four
+ * must be the output at one to the byte: a difference means some piece
+ * of picture state was left in the decoder rather than the context,
+ * and would be shared between pictures decoding concurrently. Every
+ * case is decoded at both. */
+static int g_contexts = 1;
+
 static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
       const uint8_t *ref_b, int split, int *frames_out)
 {
@@ -116,6 +124,8 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
          break;
       }
    h = rh264_video_open();
+   if (h && g_contexts > 1)
+      rh264_video_set_contexts(h, g_contexts);
    if (trk < 0 || !h || rh264_video_set_extradata(h,
             rmp4_get_track(m, trk)->codec_private,
             rmp4_get_track(m, trk)->codec_private_size))
@@ -231,6 +241,12 @@ static void oracle_case(const char *name, const char *src, int frames,
    printf("      %d frames, %ld differing samples%s\n", nf, bad < 0 ? 0 : bad,
          bad < 0 ? " (decode refused or failed)" : "");
    check(label, bad == 0 && nf == frames);
+   g_contexts = 4;
+   bad = compare(mp4, ref, rlen, ref, 0, &nf);
+   g_contexts = 1;
+   printf("      %d frames, %ld differing samples with 4 contexts in rotation\n",
+         nf, bad < 0 ? 0 : bad);
+   check("  same with 4 picture contexts in rotation", bad == 0 && nf == frames);
    free(ref);
 }
 

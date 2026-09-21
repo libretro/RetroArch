@@ -4898,6 +4898,7 @@ typedef struct rh264_pic_ctx
     * at the finish. */
    rh264_frame refs[RH264_MAX_REFS * 2 + 2];
    int         nrefs;
+   int         alloc_w, alloc_h;  /* geometry the context's frame is for */
    int       pic_open;
    int       saw_switching;
    int       pic_kind;          /* 1 IDR-I, 2 recovery-I, 3 P, 4 B    */
@@ -4927,10 +4928,17 @@ typedef struct rh264_pic_ctx
    } sscr;
 } rh264_pic_ctx;
 
+#define RH264_MAX_CTX 4
+
 struct rh264_video
 {
-   rh264_pic_ctx ctx0;
-   rh264_pic_ctx *cur;          /* the picture being decoded: ctx0 for now */
+   /* One context per picture that can be in flight. A new picture
+    * takes the next one round; with one context that is the same one
+    * every time, which is the decoder as it was. Field pairs stay on
+    * the context their first field took. */
+   rh264_pic_ctx  ctx[RH264_MAX_CTX];
+   rh264_pic_ctx *cur;          /* the picture being decoded */
+   int            nctx;         /* contexts in rotation, 1..RH264_MAX_CTX */
    /* unescaped-RBSP scratch for slice NALs, grown on demand and kept
     * for the decoder's lifetime */
    rh264_sps sps;
@@ -5422,27 +5430,50 @@ static void rh264_frame_set_field(rh264_frame *f, int fl)
 }
 
 /* (Re)allocate the frame buffers if the SPS geometry changed. */
+/* The context's working frame and grids, for the sequence's current
+ * geometry: made when the context has none, made afresh when the
+ * geometry changed under it, and otherwise made the context's own
+ * again where the last picture left them shared. */
+static int rh264_ctx_prepare(rh264_video *v, rh264_pic_ctx *c)
+{
+   if (c->f.Yb && c->alloc_w == v->sps.frame_width
+              && c->alloc_h == v->sps.frame_height)
+   {
+      if (c->pic_mvg && rh264_mvg_refs(c->pic_mvg) > 1)
+      {
+         rh264_mv *fresh = rh264_mvg_new((size_t)(c->f.mbw * 4) * (c->f.mbh * 4));
+         if (!fresh)
+            return -1;
+         rh264_mvg_release(c->pic_mvg);
+         c->pic_mvg = fresh;
+      }
+      return rh264_frame_own_planes(&c->f, c->f.plane_len);
+   }
+   if (rh264_frame_alloc(&c->f, &v->sps, RH264_FRAME_ALLOC_WORKING) != 0) return -1;
+   free(c->mvg);
+   rh264_mvg_release(c->pic_mvg);
+   {
+      int gwmax = c->f.mbw * 4;
+      int ghmax = (v->sps.frame_mbs > 0 ? v->sps.frame_mbs
+                 : (v->sps.frame_height + 15) / 16) * 4;
+      c->mvg = (rh264_mv*)calloc((size_t)gwmax * ghmax, sizeof(rh264_mv));
+      c->pic_mvg = rh264_mvg_new((size_t)gwmax * ghmax);
+      if (!c->mvg || !c->pic_mvg) return -1;
+   }
+   c->pic_open = 0;
+   c->alloc_w  = v->sps.frame_width;
+   c->alloc_h  = v->sps.frame_height;
+   return 0;
+}
+
+/* The sequence's DPB and output queue for the current geometry, then
+ * the current context's working frame. The DPB is remade only when
+ * the geometry changed; a context arriving at a geometry the sequence
+ * already has takes only its own frame. */
 static int rh264_frame_alloc_if_needed(rh264_video *v)
 {
    if (!v->have_sps) return -1;
-   if (v->cur->f.Yb && v->alloc_w == v->sps.frame_width
-              && v->alloc_h == v->sps.frame_height)
-   {
-      /* Same geometry: the working frame stands, but its samples and
-       * its motion grid may now be a reference's or a queued picture's
-       * (they were shared at the last finish rather than copied). The
-       * next picture is written into blocks of its own. */
-      if (v->cur->pic_mvg && rh264_mvg_refs(v->cur->pic_mvg) > 1)
-      {
-         rh264_mv *fresh = rh264_mvg_new((size_t)(v->cur->f.mbw * 4) * (v->cur->f.mbh * 4));
-         if (!fresh)
-            return -1;
-         rh264_mvg_release(v->cur->pic_mvg);
-         v->cur->pic_mvg = fresh;
-      }
-      return rh264_frame_own_planes(&v->cur->f, v->cur->f.plane_len);
-   }
-   if (rh264_frame_alloc(&v->cur->f, &v->sps, RH264_FRAME_ALLOC_WORKING) != 0) return -1;
+   if (v->alloc_w != v->sps.frame_width || v->alloc_h != v->sps.frame_height)
    {
       int n = v->sps.max_num_ref_frames, i;
       if (n < 1) n = 1;
@@ -5455,36 +5486,24 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
       for (i = 0; i < RH264_OUT_SLOTS; i++)
       { rh264_frame_free(&v->out[i]); v->out_used[i] = 0; }
       v->out_len = 0; v->out_show = -1;
+      v->max_lt_idx = -1;
+      v->have_ref = 0;
+      {
+         int d;
+         if (v->sps.vui_num_reorder >= 0) d = v->sps.vui_num_reorder;
+         else if (v->sps.profile_idc == 66) d = 0;
+         else d = v->sps.max_num_ref_frames;
+         if (d > RH264_MAX_REFS) d = RH264_MAX_REFS;
+         if (d < 0) d = 0;
+         v->reorder_delay = d;
+      }
+      v->alloc_w = v->sps.frame_width;
+      v->alloc_h = v->sps.frame_height;
    }
-   free(v->cur->mvg);
-   rh264_mvg_release(v->cur->pic_mvg);
-   {
-      int gwmax = v->cur->f.mbw * 4;
-      int ghmax = (v->sps.frame_mbs > 0 ? v->sps.frame_mbs
-                 : (v->sps.frame_height + 15) / 16) * 4;
-      v->cur->mvg = (rh264_mv*)calloc((size_t)gwmax * ghmax, sizeof(rh264_mv));
-      v->cur->pic_mvg = rh264_mvg_new((size_t)gwmax * ghmax);
-      if (!v->cur->mvg || !v->cur->pic_mvg) return -1;
-   }
-   v->cur->pic_open = 0;
-   v->max_lt_idx = -1;
-   v->have_ref = 0;
-   v->dpb_len = 0;
-   /* Display delay for the whole sequence: what the VUI promises, else no
-    * delay for Baseline (no B slices there), else the reference count. Known
-    * up front so the pictures decoded before the first B slice are already
-    * being held back when it arrives. */
-   {
-      int d;
-      if (v->sps.vui_num_reorder >= 0) d = v->sps.vui_num_reorder;
-      else if (v->sps.profile_idc == 66) d = 0;
-      else d = v->sps.max_num_ref_frames;
-      if (d > RH264_MAX_REFS) d = RH264_MAX_REFS;
-      if (d < 0) d = 0;
-      v->reorder_delay = d;
-   }
-   v->alloc_w = v->sps.frame_width;
-   v->alloc_h = v->sps.frame_height;
+   /* The context is readied when its picture opens (rh264_video_next_ctx);
+    * here only a first frame, for a slice arriving before any open. */
+   if (!v->cur->f.Yb)
+      return rh264_ctx_prepare(v, v->cur);
    return 0;
 }
 
@@ -5515,7 +5534,8 @@ rh264_video *rh264_video_open(void)
 {
    rh264_video *v = (rh264_video*)calloc(1, sizeof(*v));
    if (!v) return NULL;
-   v->cur = &v->ctx0;
+   v->cur  = &v->ctx[0];
+   v->nctx = 1;
    /* Invert the CAVLC tables for this instance; on failure the decoder
     * runs on the serial matchers instead. */
    v->vlc_ready = rh264_vlc_init(&v->vlc) == 0;
@@ -5531,13 +5551,17 @@ void rh264_video_close(rh264_video *v)
    if (!v) return;
    {
       int i;
-      rh264_frame_free(&v->cur->f);
+      for (i = 0; i < RH264_MAX_CTX; i++)
+      {
+         rh264_ctx_release_refs(&v->ctx[i]);
+         rh264_frame_free(&v->ctx[i].f);
+         free(v->ctx[i].rbsp_scratch);
+         free(v->ctx[i].mvg);
+         rh264_mvg_release(v->ctx[i].pic_mvg);
+      }
       for (i = 0; i < RH264_MAX_REFS; i++) rh264_frame_free(&v->dpb[i]);
       for (i = 0; i < RH264_OUT_SLOTS; i++) rh264_frame_free(&v->out[i]);
    }
-   free(v->cur->rbsp_scratch);
-   free(v->cur->mvg);
-   rh264_mvg_release(v->cur->pic_mvg);
    rh264_vlc_free(&v->vlc);
    free(v);
 }
@@ -9027,6 +9051,21 @@ static void rh264_video_fold_mvg(rh264_video *v, int first, int end)
 
 static void rh264_video_row_done(void *user, int mby);
 
+
+/* A new picture takes the next context round and readies it for the
+ * sequence's geometry. The one it leaves keeps its frame: that is the
+ * last picture's, shared into the DPB and the output queue, and the
+ * context will take a block of its own when it comes round again. */
+static int rh264_video_next_ctx(rh264_video *v)
+{
+   if (v->nctx > 1)
+   {
+      int i = (int)(v->cur - v->ctx);
+      v->cur = &v->ctx[(i + 1) % v->nctx];
+   }
+   return rh264_ctx_prepare(v, v->cur);
+}
+
 static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len)
 {
    int nut, nri, rc, end = 0;
@@ -9051,6 +9090,7 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
       int second = fld && v->pair_open && v->pair_frame_num == sh.frame_num
             && v->cur_field && v->cur_field != fld;
       v->cur->pic_open = 0;
+      if (!second && rh264_video_next_ctx(v) != 0) return -1;
       if (!second) v->idr_gen++;
       v->last_poc = rh264_derive_poc(v, &sh, nri);
       v->cur_field = fld;
@@ -9374,6 +9414,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       int second = fld && v->pair_open && v->pair_frame_num == sh->frame_num
             && v->cur_field && v->cur_field != fld;
       v->cur->pic_open = 0;
+      if (!second && rh264_video_next_ctx(v) != 0) return -1;
       v->last_poc = rh264_derive_poc(v, sh, nri);
       v->cur_field = fld;
       rh264_frame_set_field(&v->cur->f, fld);
@@ -9706,14 +9747,19 @@ static void rh264_video_row_done(void *user, int mby)
       rh264_block_of(v->cur->f.planes)->rows_final = mby - 1;
 }
 
-static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
+/* The picture's own completion: the slice map for the filter, the rows
+ * the row hook did not filter, the intra marks in the motion grid, the
+ * block's row count set to the whole picture, the references let go.
+ * Nothing here touches the sequence, and nothing after the last slice
+ * of the picture reads the sequence to do it: this is the part a pool
+ * thread runs, on the picture's own context. */
+static void rh264_ctx_complete_picture(rh264_pic_ctx *c)
 {
-   int total = v->cur->f.mbw * v->cur->f.mbh, s;
-   if (!v->cur->pic_open) return;
-   for (s = 0; s < v->cur->pic_nslices; s++)
+   int total = c->f.mbw * c->f.mbh, s;
+   for (s = 0; s < c->pic_nslices; s++)
    {
-      int lo = v->cur->pic_first[s];
-      int hi = (s + 1 < v->cur->pic_nslices) ? v->cur->pic_first[s + 1] : v->cur->pic_end;
+      int lo = c->pic_first[s];
+      int hi = (s + 1 < c->pic_nslices) ? c->pic_first[s + 1] : c->pic_end;
       int mb;
       if (hi > total) hi = total;
       /* mbslice is read by raster position (deblocking walks the
@@ -9722,29 +9768,41 @@ static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
       for (mb = lo; mb < hi; mb++)
       {
          int mx, my;
-         rh264_mb_pos(mb, v->cur->f.mbw, v->cur->f.mbaff, &mx, &my);
-         v->cur->f.mbslice[my * v->cur->f.mbw + mx] = (uint8_t)s;
+         rh264_mb_pos(mb, c->f.mbw, c->f.mbaff, &mx, &my);
+         c->f.mbslice[my * c->f.mbw + mx] = (uint8_t)s;
       }
    }
    /* The rows the slice decoders already filtered on the way through
     * stay filtered; the rest is done here, which is all of it for a
     * picture the row hook could not take (pair-scanned, or more than
     * one slice by the time a row completed). */
-   if (v->cur->pic_kind <= 2)
+   if (c->pic_kind <= 2)
    {
-      rh264_deblock(&v->cur->f, v->cur->pic_idc, v->cur->pic_oA, v->cur->pic_oB,
-            v->cur->f.rows_deblocked, v->cur->f.mbh);
-      if (v->cur->pic_mvg)
-         rh264_mvg_set_intra(v->cur->pic_mvg, v->cur->f.mbw * 4, v->cur->f.mbh * 4);
+      rh264_deblock(&c->f, c->pic_idc, c->pic_oA, c->pic_oB,
+            c->f.rows_deblocked, c->f.mbh);
+      if (c->pic_mvg)
+         rh264_mvg_set_intra(c->pic_mvg, c->f.mbw * 4, c->f.mbh * 4);
    }
    else
-      rh264_deblock_pslice(&v->cur->f, v->cur->pic_idc, v->cur->pic_oA, v->cur->pic_oB,
-            v->cur->pic_mvg, v->cur->f.rows_deblocked, v->cur->f.mbh);
-   v->cur->f.rows_deblocked = 0;
-   v->cur->f.row_done       = NULL;
-   if (v->cur->f.planes)
-      rh264_block_of(v->cur->f.planes)->rows_final = v->cur->f.mbh;
-   rh264_ctx_release_refs(v->cur);
+      rh264_deblock_pslice(&c->f, c->pic_idc, c->pic_oA, c->pic_oB,
+            c->pic_mvg, c->f.rows_deblocked, c->f.mbh);
+   c->f.rows_deblocked = 0;
+   c->f.row_done       = NULL;
+   if (c->f.planes)
+      rh264_block_of(c->f.planes)->rows_final = c->f.mbh;
+   rh264_ctx_release_refs(c);
+}
+
+/* The sequence's side of a finished picture: an IDR empties the DPB,
+ * reference marking runs, the picture enters the DPB as a reference
+ * and the output queue as a picture to show. Runs in decode order on
+ * the thread that submits, after the picture's own completion for now
+ * and before it once pictures decode concurrently - at which point the
+ * picture enters both with its rows still counting up. */
+static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
+{
+   if (!v->cur->pic_open) return;
+   rh264_ctx_complete_picture(v->cur);
    if (v->cur->pic_kind == 1)
    {
       v->dpb_len = 0;       /* an IDR empties the reference list (8.2.5.1) */
@@ -9888,6 +9946,15 @@ void rh264_video_set_skip_nonref(rh264_video *v, int skip)
 int rh264_video_dropped(const rh264_video *v)
 {
    return v ? v->dropped : 0;
+}
+
+void rh264_video_set_contexts(rh264_video *v, int n)
+{
+   if (!v)
+      return;
+   if (n < 1) n = 1;
+   if (n > RH264_MAX_CTX) n = RH264_MAX_CTX;
+   v->nctx = n;
 }
 
 int rh264_video_bit_depth(const rh264_video *v)
