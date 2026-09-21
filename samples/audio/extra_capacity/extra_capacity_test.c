@@ -71,6 +71,24 @@ static void *tracked_realloc(void *ptr, size_t bytes)
 #undef realloc
 
 /* Only the resampler factory is stubbed; preparation and processing are real. */
+/* As with retro_resampler_realloc_hq() below: the harness supplies the
+ * resampler layer rather than linking it, and the lanes here drive sinc. */
+bool retro_resampler_int16_new(retro_resampler_int16_t *out,
+      const char *short_ident, enum resampler_quality quality,
+      double bw_ratio, bool hq_oversampling)
+{
+   (void)short_ident;
+   (void)quality;
+   memset(out, 0, sizeof(*out));
+   if (!(out->data = sinc_resampler_int16_init_hq(bw_ratio,
+               SINC_INT16_QUALITY_NORMAL, hq_oversampling)))
+      return false;
+   out->process = sinc_resampler_int16_process;
+   out->reset   = sinc_resampler_int16_reset;
+   out->free    = sinc_resampler_int16_free;
+   return true;
+}
+
 bool retro_resampler_realloc_hq(void **re, const retro_resampler_t **backend,
       const char *ident, enum resampler_quality quality, double ratio, bool hq)
 {
