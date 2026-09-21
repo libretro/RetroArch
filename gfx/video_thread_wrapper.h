@@ -491,12 +491,17 @@ typedef struct thread_video
       /* Protects the menu texture / apply_state_changes handoff and
        * nothing beyond it: the video thread takes it only for the
        * thread_update_driver_state() that applies them, and the render
-       * that follows runs without it, so a main-thread
-       * set_texture_frame() waits for that handoff rather than for a
-       * frame and its swap. The driver takes the texture's pixels
-       * inside its own set_texture_frame(), uploading or copying them
-       * there, so the staging buffer is free again as soon as the
-       * update returns. Not the ring: the ring is guarded by 'lock'. */
+       * that follows runs without it. The driver takes the texture's
+       * pixels inside its own set_texture_frame(), uploading or copying
+       * them there, so the staging buffer is free again as soon as the
+       * update returns.
+       *
+       * It is close to uncontended on the path that uses it most:
+       * video_thread_frame() drains the ring whenever the menu texture
+       * is enabled, so the worker is idle before the next menu frame's
+       * push. The callers it does keep off a render are the ones with
+       * no push behind them - set_texture_enable() and
+       * apply_state_changes(). Not the ring: 'lock' guards that. */
       slock_t *lock;
       /* Bytes allocated for each slot buffer at thread_init, from the
        * core's declared maximum geometry. A core that hands over a

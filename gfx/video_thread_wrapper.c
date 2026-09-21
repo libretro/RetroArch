@@ -1711,10 +1711,20 @@ static void video_thread_loop(void *data)
           * texture's pixels inside its own set_texture_frame() - it
           * uploads or copies them there and does not keep the pointer -
           * so once the update returns, the staging buffer is free and
-          * the render below needs nothing this lock guards. Holding it
-          * across the render would park the main thread's
-          * set_texture_frame() on a whole frame and its swap, which is
-          * what RGUI does on every frame the menu is up. */
+          * the render below needs nothing this lock guards.
+          *
+          * What this is worth is narrower than it looks. On the menu
+          * path it buys nothing measurable: video_thread_frame() waits
+          * for the ring to drain whenever the menu texture is enabled,
+          * so the worker is already idle when the next iteration's
+          * set_texture_frame() arrives and the lock was never
+          * contended. It is the main thread's other callers -
+          * apply_state_changes() and set_texture_enable(), which arrive
+          * on a user action rather than with a push behind them - that
+          * were waiting out a render, and holding a lock across a
+          * render and its swap is not a shape to keep either way.
+          * samples/gfx/threaded_video's menu-texture lane pins the
+          * drain, because it is the drain that keeps this uncontended. */
          slock_lock(thr->frame.lock);
          thread_update_driver_state(thr);
          slock_unlock(thr->frame.lock);

@@ -834,6 +834,190 @@ static void lane_display_phase(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the menu texture handoff and the drain that protects it       */
+/*   RGUI pushes a menu texture through the wrapper on every frame the */
+/*   software menu is up, and the worker hands it to the driver from    */
+/*   thread_update_driver_state() under frame.lock. What keeps that     */
+/*   lock uncontended is not the lock itself: video_thread_frame()      */
+/*   waits for the ring to drain whenever the menu texture is enabled,  */
+/*   so the worker is idle again before the next iteration's push.      */
+/*   Take that wait away and every menu frame's push starts racing a    */
+/*   render for the lock, which is why it is pinned here.               */
+/*                                                                     */
+/*   Two things are asserted, neither of which the null driver can show */
+/*   on its own because it has no set_texture_frame at all - so this    */
+/*   lane supplies one, and a slow frame() to make the drain visible:   */
+/*                                                                     */
+/*   1. With the menu texture enabled, video_driver_frame() returns     */
+/*      with the ring drained - nothing pending, nothing being          */
+/*      rendered. Checked right after the push returns.                 */
+/*   2. The driver is handed one push's pixels, never a mixture. Every  */
+/*      push fills the buffer with its own generation, so a staging     */
+/*      buffer rewritten under the driver shows up as two values in one */
+/*      texture.                                                        */
+/* ------------------------------------------------------------------ */
+
+#define MENUTEX_W          32
+#define MENUTEX_H          24
+#define MENUTEX_RENDER_MS  30
+#define MENUTEX_PUSHES     12
+/* Marks this lane's own pushes apart from the menu's framebuffer. */
+#define MENUTEX_MARK       0xA500
+#define MENUTEX_MARK_MASK  0xFF00
+
+static video_driver_t                 menutex_driver;
+static const video_driver_t          *menutex_inner;
+static video_poke_interface_t          menutex_poke;
+static const video_poke_interface_t  *menutex_inner_poke;
+
+static retro_atomic_int_t menutex_seen;
+static retro_atomic_int_t menutex_torn;
+static retro_atomic_int_t menutex_frames;
+static bool               menutex_slow;
+
+static bool menutex_frame(void *data, const void *frame, unsigned width,
+      unsigned height, uint64_t count, unsigned pitch, const char *msg,
+      video_frame_info_t *info)
+{
+   if (menutex_slow)
+   {
+      retro_atomic_fetch_add_int(&menutex_frames, 1);
+      retro_sleep(MENUTEX_RENDER_MS);
+   }
+   if (menutex_inner->frame)
+      return menutex_inner->frame(data, frame, width, height, count,
+            pitch, msg, info);
+   return true;
+}
+
+/* The receiving end. A real driver uploads or copies here and does not
+ * keep the pointer, which is what lets the worker drop the lock as soon
+ * as this returns; reading the whole buffer is how this one checks the
+ * bytes it was handed belong to a single push.
+ *
+ * The menu is up in this harness and RGUI pushes its own framebuffer
+ * through the same entry point, so only this lane's own pushes are
+ * checked: they are MENUTEX_W x MENUTEX_H and every pixel carries
+ * MENUTEX_MARK. The lock is what keeps the two producers from
+ * interleaving, so a buffer is wholly one push's or wholly the other's -
+ * a marked buffer holding two generations is the tear this looks for. */
+static void menutex_set_texture_frame(void *data, const void *frame,
+      bool rgb32, unsigned width, unsigned height, float alpha)
+{
+   const uint16_t *px = (const uint16_t*)frame;
+   unsigned i, n      = width * height;
+
+   (void)data; (void)alpha;
+
+   if (!px || !n)
+      return;
+   /* Not one of ours: the menu's own framebuffer. */
+   if (rgb32 || width != MENUTEX_W || height != MENUTEX_H)
+      return;
+   if ((px[0] & MENUTEX_MARK_MASK) != MENUTEX_MARK)
+      return;
+
+   for (i = 1; i < n; i++)
+   {
+      if (px[i] != px[0])
+      {
+         retro_atomic_store_release_int(&menutex_torn, 1);
+         break;
+      }
+   }
+
+   retro_atomic_fetch_add_int(&menutex_seen, 1);
+}
+
+static void menutex_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   menutex_inner->poke_interface(data, &menutex_inner_poke);
+   menutex_poke                   = *menutex_inner_poke;
+   menutex_poke.set_texture_frame = menutex_set_texture_frame;
+   *iface                         = &menutex_poke;
+}
+
+static void lane_menu_texture(void)
+{
+   unsigned had                   = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   static uint16_t buf[MENUTEX_W * MENUTEX_H];
+   unsigned gen, i, not_drained = 0;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "menu texture lane");
+   thr = (thread_video_t*)video_st->data;
+
+   video_thread_wait_idle();
+   menutex_inner                 = thr->driver;
+   menutex_driver                = *thr->driver;
+   menutex_driver.frame          = menutex_frame;
+   menutex_driver.poke_interface = menutex_get_poke;
+   thr->driver                   = &menutex_driver;
+   /* The wrapper caches its poke at init; refresh it through the
+    * swapped driver so the worker hands the texture to ours. */
+   menutex_driver.poke_interface(thr->driver_data, &thr->poke);
+
+   retro_atomic_store_release_int(&menutex_seen,   0);
+   retro_atomic_store_release_int(&menutex_torn,   0);
+   retro_atomic_store_release_int(&menutex_frames, 0);
+   menutex_slow = true;
+
+   for (gen = 1; gen <= MENUTEX_PUSHES; gen++)
+   {
+      unsigned pending;
+      bool     busy;
+
+      for (i = 0; i < MENUTEX_W * MENUTEX_H; i++)
+         buf[i] = (uint16_t)(MENUTEX_MARK | gen);
+
+      video_st->poke->set_texture_frame(video_st->data, buf, false,
+            MENUTEX_W, MENUTEX_H, 1.0f);
+
+      /* One frame through the real path, then the drain the menu
+       * texture asks for must have happened: the worker holds no slot
+       * and has none waiting, so the next push meets no render. */
+      run_frames(1);
+
+      slock_lock(thr->lock);
+      pending = thr->frame.pending;
+      busy    = thr->frame.busy;
+      slock_unlock(thr->lock);
+
+      if (pending || busy)
+         not_drained++;
+   }
+
+   menutex_slow = false;
+   video_thread_wait_idle();
+
+   CHECK(retro_atomic_load_acquire_int(&menutex_frames) > 0,
+         "the slow render never ran, so the drain was never worth checking");
+   CHECK(retro_atomic_load_acquire_int(&menutex_seen) > 0,
+         "the driver was handed no menu texture: the lane proved nothing");
+   CHECK(!retro_atomic_load_acquire_int(&menutex_torn),
+         "the driver saw pixels from more than one push: the staging "
+         "buffer was rewritten while it was being read");
+   CHECK(not_drained == 0,
+         "%u of %d menu frames returned with the ring still busy: the "
+         "drain video_thread_frame() does for an enabled menu texture is "
+         "what keeps the handoff lock uncontended",
+         not_drained, MENUTEX_PUSHES);
+
+   thr->driver = menutex_inner;
+   thr->poke   = menutex_inner_poke;
+   set_threaded_via_setting(false);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] menu-texture handoff lane (%d handed over, "
+            "%d slow renders, all drained)\n",
+            retro_atomic_load_acquire_int(&menutex_seen),
+            retro_atomic_load_acquire_int(&menutex_frames));
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: a command runs once while the presenter is repeating          */
 /*   The worker wakes on its own for repeats. A command whose reply    */
 /*   the main thread has not yet consumed must not be run again on    */
@@ -2545,6 +2729,8 @@ int main(int argc, char *argv[])
       lane_display_phase();
    lane_command_runs_once();
    lane_font_marshal();
+   if (!real_driver())
+      lane_menu_texture();
    if (!real_driver())
    {
       lane_display_pacing();
