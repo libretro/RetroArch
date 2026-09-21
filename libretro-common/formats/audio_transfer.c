@@ -4639,6 +4639,24 @@ static int audio_transfer_aac_pull(struct audio_transfer_aac *ac,
  * walked-over access units, so noise samples after a seek differ from
  * a straight decode (by an LSB or so at s16).  Deterministic loops on
  * PNS content need seek(0), which raac_reset makes exact. */
+/* Out of a sliding window, nothing behind the old position is
+ * resident any more: the feeder let the head go as the lap went on,
+ * and only it can bring the head back, on its next tick. Until it
+ * publishes a new bound the reads stand at the wall rather than touch
+ * pages that are gone. A whole-file buffer has no window and no
+ * bound, and is untouched. Every rewind of an AAC stream goes through
+ * here - the seek's own and the loop's. */
+static void audio_transfer_aac_withdraw_bound(struct audio_transfer_aac *ac)
+{
+   if (!ac->avail)
+      return;
+   ac->avail = 1;
+#ifdef HAVE_RMP4
+   if (ac->demux)
+      rmp4_set_avail(ac->demux, 1);
+#endif
+}
+
 static int audio_transfer_aac_fill(struct audio_transfer_aac *ac);
 
 static int64_t audio_transfer_aac_seek_to(struct audio_transfer_aac *ac,
@@ -4659,20 +4677,7 @@ static int64_t audio_transfer_aac_seek_to(struct audio_transfer_aac *ac,
    ac->pkt_offset  = 0;
    ac->pend_frames = 0;
    ac->pend_pos    = 0;
-   /* Out of a sliding window, nothing behind the old position is
-    * resident any more: the feeder let the head go as the lap went
-    * on, and only it can bring the head back, on its next tick. Until
-    * it publishes a new bound the reads stand at the wall rather than
-    * touch pages that are gone. A whole-file buffer has no window and
-    * no bound, and is untouched. */
-   if (ac->avail)
-   {
-      ac->avail = 1;
-#ifdef HAVE_RMP4
-      if (ac->demux)
-         rmp4_set_avail(ac->demux, 1);
-#endif
-   }
+   audio_transfer_aac_withdraw_bound(ac);
    if (stop < 0)
       stop = 0;
    while (pos < stop)
@@ -5794,6 +5799,9 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
             ac->pend_pos    = 0;
             ac->trim_left   = ac->start_trim;
             ac->emitted     = 0;
+            /* the loop: the mixer's repeat comes through here, not
+             * through the seek below */
+            audio_transfer_aac_withdraw_bound(ac);
             return true;
          }
          /* Where the length is known, refuse to be sent past it rather
