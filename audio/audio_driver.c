@@ -3384,17 +3384,14 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * batch.  The resampler sees identical bytes either way, so output is
     * bit-exact.
     *
-    * input_data is memalign_alloc(64) and a core-owned buffer carries no
-    * such guarantee, so fall back to the copy unless the pointer is at
-    * least 16-byte aligned.  No resampler arm requires that of its input
-    * any more; the check is the conservative side of a change that has
-    * not been measured on this path. */
+    * Nothing downstream requires the pointer to be aligned: every
+    * resampler reads data_in scalar-wise or with unaligned loads, and so
+    * does the bypass clamp. */
    {
       bool synth_on   = midi_driver_synth_active() && audio_st->synth_buf;
       bool copy_input = !is_float
             || (audio_volume_gain != 1.0f)
             || synth_on
-            || (((uintptr_t)data & 0xf) != 0)
 #ifdef HAVE_DSP_FILTER
             || (audio_st->dsp != NULL)
 #endif
