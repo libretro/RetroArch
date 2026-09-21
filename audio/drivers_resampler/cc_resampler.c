@@ -67,16 +67,33 @@ static INLINE size_t resampler_CC_out_max(const struct resampler_data *data)
 }
 
 #ifdef _MIPS_ARCH_ALLEGREX
+/* The VFPU is per-thread context, and the frontend creates a resampler
+ * on the main thread but runs it on the audio worker, so nothing in
+ * those registers survives from init() to process(). One register file
+ * also cannot hold several instances at once. The constants are issued
+ * per call and the state travels in the handle. */
+typedef struct rarch_CC_resampler_psp
+{
+   /* c720, the output pair, then c730, the position within it. Quad
+    * loads and stores, so 16-byte aligned by the allocation. */
+   float state[8];
+} rarch_CC_resampler_psp_t;
+
 static void resampler_CC_process(void *re_, struct resampler_data *data)
 {
    float ratio, fraction;
+   rarch_CC_resampler_psp_t *re = (rarch_CC_resampler_psp_t*)re_;
    audio_frame_float_t     *inp = (audio_frame_float_t*)data->data_in;
    audio_frame_float_t *inp_max = (audio_frame_float_t*)
       (inp + data->input_frames);
    audio_frame_float_t    *outp = (audio_frame_float_t*)data->data_out;
    audio_frame_float_t *outp_max = outp + resampler_CC_out_max(data);
 
-   (void)re_;
+   if (!re)
+   {
+      data->output_frames = 0;
+      return;
+   }
 
    __asm__ (
          ".set      push\n"
@@ -84,6 +101,10 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
 
          "mtv       %2,   s700              \n"   /* 700 = data->ratio = b */
          /*    "vsat0.s   s700, s700              \n" */
+         "lv.q      c720,  0(%3)            \n"   /* the output pair */
+         "lv.q      c730, 16(%3)            \n"   /* the position within it */
+         "vcst.s    s710, VFPU_PI           \n"   /* 710 = pi */
+         "vcst.s    s711, VFPU_1_PI         \n"   /* 711 = 1.0 / (pi) */
          "vrcp.s    s701, s700              \n"   /* 701 = 1.0 / b */
          "vadd.s    s702, s700, s700        \n"   /* 702 = 2 * b */
          "vmul.s    s703, s700, s710        \n"   /* 703 = b * pi */
@@ -93,7 +114,7 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
 
          ".set      pop\n"
          : "=r"(ratio), "=r"(fraction)
-         : "r"((float)data->ratio)
+         : "r"((float)data->ratio), "r"(re->state)
    );
 
    for (;;)
@@ -155,10 +176,17 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
       outp++;
    }
 
-   /* The VFPU state is assumed to remain intact
-    * in-between calls to resampler_CC_process. */
-
 done:
+   __asm__ (
+         ".set      push\n"
+         ".set      noreorder\n"
+
+         "sv.q      c720,  0(%0)            \n"
+         "sv.q      c730, 16(%0)            \n"
+
+         ".set      pop\n"
+         :: "r"(re->state));
+
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
 }
 
@@ -167,23 +195,21 @@ static void *resampler_CC_init(const struct resampler_config *config,
       enum resampler_quality quality,
       resampler_simd_mask_t mask)
 {
+   int i;
+   rarch_CC_resampler_psp_t *re = (rarch_CC_resampler_psp_t*)
+      memalign_alloc(16, sizeof(rarch_CC_resampler_psp_t));
+
    (void)mask;
    (void)bandwidth_mod;
    (void)config;
 
-   __asm__ (
-         ".set      push\n"
-         ".set      noreorder\n"
+   if (!re)
+      return NULL;
 
-         "vcst.s    s710, VFPU_PI           \n"   /* 710 = pi */
-         "vcst.s    s711, VFPU_1_PI         \n"   /* 711 = 1.0 / (pi) */
+   for (i = 0; i < 8; i++)
+      re->state[i] = 0.0f;
 
-         "vzero.q   c720                    \n"
-         "vzero.q   c730                    \n"
-
-         ".set      pop\n");
-
-   return (void*)-1;
+   return re;
 }
 #else
 
@@ -546,27 +572,19 @@ static void *resampler_CC_init(const struct resampler_config *config,
 
 static void resampler_CC_free(void *re_)
 {
-#ifndef _MIPS_ARCH_ALLEGREX
-   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)re_;
-   if (re)
-      memalign_free(re);
-#endif
-   (void)re_;
+   if (re_)
+      memalign_free(re_);
 }
 
 #ifdef _MIPS_ARCH_ALLEGREX
-/* The stream's state lives in the VFPU: c720 is the accumulating
- * output pair, c730 the fractional position. Zeroed as init zeroes
- * them; the constants in c710 stand. */
 static void resampler_CC_reset(void *re_)
 {
-   (void)re_;
-   __asm__ (
-         ".set      push\n"
-         ".set      noreorder\n"
-         "vzero.q   c720                    \n"
-         "vzero.q   c730                    \n"
-         ".set      pop\n");
+   rarch_CC_resampler_psp_t *re = (rarch_CC_resampler_psp_t*)re_;
+   int i;
+   if (!re)
+      return;
+   for (i = 0; i < 8; i++)
+      re->state[i] = 0.0f;
 }
 #else
 static void resampler_CC_reset(void *re_)
