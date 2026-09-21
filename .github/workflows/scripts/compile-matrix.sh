@@ -208,6 +208,38 @@ d3d_video "d3d11 video"   "$D3DDEFS -DHAVE_D3D11" gfx/drivers/d3d11.c
 d3d_video "d3d12 video"   "$D3DDEFS -DHAVE_D3D12" gfx/drivers/d3d12.c
 d3d_video "gdi video"     "-DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_GDI" \
    gfx/drivers/gdi_gfx.c
+
+# The context drivers, which no job here compiles either. Each answers
+# the frontend's window and size questions, so a change to what those
+# hand back reaches all of them at once. Every lane names the headers it
+# wants and says so when the runner has none.
+platform_video "ctx: null" "" "" gfx/drivers_context/gfx_null_ctx.c ""
+platform_video "ctx: x11 gl" "-DHAVE_X11 -DHAVE_OPENGL -DHAVE_EGL" "" \
+   gfx/drivers_context/x_ctx.c /usr/include/X11/Xlib.h
+platform_video "ctx: x11 egl" "-DHAVE_X11 -DHAVE_EGL -DHAVE_OPENGLES" "" \
+   gfx/drivers_context/xegl_ctx.c /usr/include/X11/Xlib.h
+platform_video "ctx: x11 vulkan" "-DHAVE_VULKAN -DHAVE_X11" "" \
+   gfx/drivers_context/x_vk_ctx.c /usr/include/vulkan/vulkan.h
+platform_video "ctx: khr display" "-DHAVE_VULKAN" "" \
+   gfx/drivers_context/khr_display_ctx.c /usr/include/vulkan/vulkan.h
+platform_video "ctx: kms/gbm" "-DHAVE_EGL -DHAVE_OPENGL -DHAVE_KMS -DHAVE_GBM" \
+   "-I/usr/include/libdrm" gfx/drivers_context/drm_ctx.c /usr/include/gbm.h
+# vivante_fbdev is left out: it calls Vivante's own fbCreateWindow and
+# fbGetDisplayByIndex, which only that vendor's EGL headers declare, and
+# a lane that let those go implicit would pass what the SDK rejects.
+platform_video "ctx: mali fbdev" "-DHAVE_EGL -DHAVE_OPENGLES" "" \
+   gfx/drivers_context/mali_fbdev_ctx.c /usr/include/EGL/egl.h
+platform_video "ctx: opendingux fbdev" "-DHAVE_EGL -DHAVE_OPENGLES -DDINGUX" "" \
+   gfx/drivers_context/opendingux_fbdev_ctx.c /usr/include/EGL/egl.h
+platform_video "ctx: sdl1 gl" "-DHAVE_SDL -DHAVE_OPENGL" "-I/usr/include/SDL" \
+   gfx/drivers_context/sdl1_gl_ctx.c /usr/include/SDL/SDL.h
+platform_video "ctx: sdl2 gl" "-DHAVE_SDL2 -DHAVE_OPENGL" "-I/usr/include/SDL2" \
+   gfx/drivers_context/sdl2_gl_ctx.c /usr/include/SDL2/SDL.h
+# osmesa is the software context a headless build selects, and
+# qb/config.libs.sh can enable it from a pkg-config probe alone.
+platform_video "ctx: osmesa" "-DHAVE_OSMESA -DHAVE_OPENGL" "" \
+   gfx/drivers_context/osmesa_ctx.c /usr/include/GL/osmesa.h
+
 arm "win32"      win32      "-D_WIN32 -D_WIN32_WINNT=0x0600"
 arm "win32-old"  win32      "-D_WIN32 -D_WIN32_WINNT=0x0400"
 arm "macos"      apple      "-D__APPLE__"

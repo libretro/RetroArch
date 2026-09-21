@@ -30,6 +30,8 @@
 #include <GL/osmesa.h>
 
 #include "../../configuration.h"
+#include "../../input/input_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #if (OSMESA_MAJOR_VERSION * 1000 + OSMESA_MINOR_VERSION) >= 11002
@@ -62,7 +64,7 @@ typedef struct gfx_osmesa_ctx_data
 
 static void osmesa_fifo_open(gfx_ctx_osmesa_data_t *osmesa)
 {
-   struct sockaddr_un saun, fsaun;
+   struct sockaddr_un saun;
 
    osmesa->socket = socket(AF_UNIX, SOCK_STREAM, 0);
    osmesa->client = -1;
@@ -79,8 +81,8 @@ static void osmesa_fifo_open(gfx_ctx_osmesa_data_t *osmesa)
 
    unlink(OSMESA_FIFO_PATH);
 
-   if (bind(osmesa->socket,
-            &saun, sizeof(saun.sun_family) + sizeof(saun.sun_path)) < 0)
+   if (bind(osmesa->socket, (struct sockaddr*)&saun,
+            sizeof(saun.sun_family) + sizeof(saun.sun_path)) < 0)
    {
       perror("[osmesa] bind()");
       close(osmesa->socket);
