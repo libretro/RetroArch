@@ -68,7 +68,8 @@ SRCS="ui/companion/companion_thumbs.c \
       $LC/time/rtime.c \
       $LC/features/features_cpu.c \
       $LC/rthreads/rthreads.c \
-      $LC/rthreads/tpool.c"
+      $LC/rthreads/tpool.c \
+      $LC/rthreads/retro_eventcount.c"
 
 # C89 honesty pass on the engine itself (no threads).
 # (_GNU_SOURCE as in the real C89 gate: strict -ansi hides POSIX types
