@@ -16,6 +16,7 @@
  * frame drew at zero opacity.
  */
 #include <features/features_cpu.h>
+#include <retro_timers.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -95,6 +96,18 @@ static void run(const char *path, const char *label, int expect_video)
       double after_open = rss_mib();
       for (i = 0; i < nf; i++)
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+      /* The frames above are the measurement window; whether the
+       * first picture has landed by then is a matter of how loaded
+       * the worker is - under a sanitizer, with other fixtures' jobs
+       * still draining, it may not have. What the checks below ask is
+       * whether it lands at all, so keep animating, yielding to the
+       * worker, until it does or a generous bound says it never will. */
+      for (i = 0; i < 2000 && !th.texture
+            && th.status != GFX_THUMBNAIL_STATUS_MISSING; i++)
+      {
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+         retro_sleep(1);
+      }
       peak = rss_mib();
       printf("      RSS after open=%.1f MiB, after %d frames=%.1f MiB\n",
             after_open, nf, peak);

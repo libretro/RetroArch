@@ -668,6 +668,7 @@ void image_transfer_set_want_10bit(void *data, enum image_type_enum type,
    }
 }
 
+
 /* Report whether the last processed frame was actually written as
  * packed XRGB2101010 rather than 8-bit RGBA, i.e. 10-bit was requested
  * and the source could supply it.  False for every type that cannot
@@ -986,6 +987,26 @@ void image_transfer_anim_stream_complete_scan(void *stream,
           * no media bytes: it is never truncated by the wall. */
          break;
       default:
+         break;
+   }
+}
+
+void image_transfer_anim_stream_set_catchup(void *stream,
+      enum image_type_enum type, int behind)
+{
+   if (!stream)
+      return;
+   switch (type)
+   {
+#ifdef HAVE_RMP4
+      case IMAGE_TYPE_MP4:
+         rmp4_video_stream_set_catchup((rmp4_video_stream_t*)stream, behind);
+         break;
+#endif
+      default:
+         /* WEBM (VP8/VP9), APNG, WEBP: every frame here is a
+          * reference for the next, so there is nothing to drop. */
+         (void)behind;
          break;
    }
 }

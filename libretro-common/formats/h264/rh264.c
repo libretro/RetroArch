@@ -4830,6 +4830,12 @@ struct rh264_video
     * refused nothing after it can be reconstructed either; the stream
     * is given up rather than decoded into drift. */
    int       saw_switching;
+   /* When set, a non-reference picture (nal_ref_idc 0) is consumed
+    * without being decoded. Nothing predicts from it, so the pictures
+    * after it decode exactly as they would have; only its own output
+    * is missing, which is what a caller that has fallen behind the
+    * clock wants. */
+   int       skip_nonref;
    /* DPB slot the pair's first field opened, so the second can fill it */
    int       pair_slot;
    int       pic_kind;          /* 1 IDR-I, 2 recovery-I, 3 P, 4 B    */
@@ -9348,6 +9354,14 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
    if (type == 5 || type == 1)
    {
       if (!v->have_sps || !v->have_pps) return -1;
+      /* A droppable picture while catching up: every slice of it
+       * carries the same nal_ref_idc, so all of them are passed over
+       * and the picture never opens. frame_num and the POC state
+       * advance on reference pictures only, so nothing downstream
+       * notices it was never there. */
+      if (v->skip_nonref && type == 1 && ((nal[0] >> 5) & 3) == 0
+            && !v->pic_open)
+         return 0;
       if (rh264_frame_alloc_if_needed(v) != 0) return -1;
       if (type == 5)
       { if (rh264_video_decode_idr(v, nal, nl) != 0) return -1; }
@@ -9417,6 +9431,12 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
       }
    }
    return got_pic ? 1 : 0;
+}
+
+void rh264_video_set_skip_nonref(rh264_video *v, int skip)
+{
+   if (v)
+      v->skip_nonref = skip ? 1 : 0;
 }
 
 int rh264_video_bit_depth(const rh264_video *v)

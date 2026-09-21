@@ -761,6 +761,8 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
    thumbnail->anim_dt         = NULL;
    thumbnail->anim_buf_len    = 0;
    thumbnail->anim_next_us    = 0;
+   /* A new stream starts on the clock. */
+   thumbnail->flags          &= ~GFX_THUMB_FLAG_ANIM_BEHIND;
    thumbnail->anim_loops_left = 0;
    thumbnail->anim_type       = 0;
    thumbnail->anim_read_pending = 0;
@@ -1143,6 +1145,8 @@ static gfx_surface_t *gfx_thumbnail_anim_surface(gfx_thumbnail_t *thumbnail,
 static void gfx_thumbnail_anim_schedule(gfx_thumbnail_t *thumbnail,
       int duration_ms, int64_t now)
 {
+   int behind = 0;
+
    if (duration_ms <= 0)
       duration_ms = GFX_THUMB_ANIM_DUR_DEFAULT;
    else if (duration_ms < GFX_THUMB_ANIM_DUR_MIN)
@@ -1157,7 +1161,27 @@ static void gfx_thumbnail_anim_schedule(gfx_thumbnail_t *thumbnail,
    {
       thumbnail->anim_next_us += (int64_t)duration_ms * 1000;
       if (thumbnail->anim_next_us < now)
+      {
+         /* This frame landed after the next one was already due: the
+          * decode is slower than the file's rate. Rather than show
+          * every frame late - a 4K stream turned into slow motion -
+          * ask the stream to pass over the pictures nothing
+          * references until it is back on the clock. What is shown
+          * is decoded exactly as it would have been. */
+         behind = 1;
          thumbnail->anim_next_us = now + (int64_t)duration_ms * 1000;
+      }
+   }
+
+   if (behind != !!(thumbnail->flags & GFX_THUMB_FLAG_ANIM_BEHIND))
+   {
+      if (behind)
+         thumbnail->flags |= GFX_THUMB_FLAG_ANIM_BEHIND;
+      else
+         thumbnail->flags &= ~GFX_THUMB_FLAG_ANIM_BEHIND;
+      if (thumbnail->anim)
+         image_transfer_anim_stream_set_catchup(thumbnail->anim,
+               (enum image_type_enum)thumbnail->anim_type, behind);
    }
 }
 

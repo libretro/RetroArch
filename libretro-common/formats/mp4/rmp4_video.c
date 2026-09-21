@@ -90,6 +90,7 @@ struct rmp4_video_stream
    int          rndr_kind;     /* 0 none, 1 vp8, 2 vp9, 3 h264, 4 h265 */
    int          rndr_vp9_show; /* fbs index of the vp9 picture       */
    int          wait_key;   /* a reference failed; hold out for a key */
+   int          catchup;    /* dropping droppable pictures to catch up */
    int          track;      /* index of the chosen video track        */
    unsigned     matrix;     /* colr matrix_coefficients; 0 untagged   */
    unsigned     transfer;   /* colr transfer_characteristics          */
@@ -511,6 +512,7 @@ static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
          const rmp4_track *t = rmp4_get_track(s->demux, s->track);
          if (!(s->h264 = rh264_video_open()))
             return false;
+         rh264_video_set_skip_nonref(s->h264, s->catchup);
          if (t && t->codec_private && t->codec_private_size)
             rh264_video_set_extradata(s->h264, t->codec_private,
                   t->codec_private_size);
@@ -525,6 +527,7 @@ static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
             rh265_video_set_extradata(s->h265, t->codec_private,
                   t->codec_private_size);
          rh265_video_set_thread_pool(s->h265, s->blit_pool, s->blit_bands);
+         rh265_video_set_skip_nonref(s->h265, s->catchup);
          return true;
       }
       default:
@@ -1010,6 +1013,17 @@ void rmp4_video_stream_set_output(rmp4_video_stream_t *s, uint32_t *out)
       s->out = out;
 }
 
+void rmp4_video_stream_set_catchup(rmp4_video_stream_t *s, int behind)
+{
+   if (!s)
+      return;
+   s->catchup = behind ? 1 : 0;
+   if (s->h264)
+      rh264_video_set_skip_nonref(s->h264, s->catchup);
+   if (s->h265)
+      rh265_video_set_skip_nonref(s->h265, s->catchup);
+}
+
 void rmp4_video_stream_set_blit_pool(rmp4_video_stream_t *s,
       void *pool, unsigned bands)
 {
@@ -1469,6 +1483,8 @@ void rmp4_video_set_want_10bit(rmp4_video_t *mp4, int want)
    if (mp4)
       mp4->want10 = want ? 1 : 0;
 }
+
+
 
 void rmp4_video_set_avail(rmp4_video_t *mp4, size_t avail)
 {

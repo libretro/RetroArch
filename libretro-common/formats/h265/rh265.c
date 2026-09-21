@@ -297,6 +297,10 @@ typedef struct
    /* derived */
    int ctb_w, ctb_h;                    /* PicWidthInCtbsY, PicHeightInCtbsY */
    int pic_size_ctbs;
+   /* sps_max_sub_layers_minus1: a sub-layer non-reference picture is
+    * droppable only in the highest sub-layer, where nothing above it
+    * can reference it. */
+   int max_sub_layers_minus1;
 } rh265_sps;
 
 typedef struct
@@ -630,6 +634,7 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, rh265_sps *s,
    rh265_skip_ptl(&b, max_sub_layers_minus1);
    sps_id = (int)rh265_ue(&b);
    if (sps_id >= RH265_MAX_SPS) return -1;
+   s->max_sub_layers_minus1 = max_sub_layers_minus1;
    s->chroma_format_idc = (int)rh265_ue(&b);
    if (s->chroma_format_idc == 3)
       rh265_u1(&b);                      /* separate_colour_plane_flag */
@@ -3727,6 +3732,12 @@ struct rh265_video
    int out_pic;               /* slot whose planes the API exposes, -1 */
    int first_pic_decoded;     /* a NoRaslOutputFlag anchor was seen */
    int rasl_skip;             /* drop RASL pictures after that anchor */
+   /* When set, a sub-layer non-reference picture in the highest
+    * sub-layer is consumed without being decoded: nothing can
+    * reference it, so what follows decodes unchanged and only its
+    * own output is missing. For a caller behind its clock. */
+   int skip_nonref;
+   int skip_pic;              /* the picture being passed over, all slices */
 
    /* RefPicSetStCurrBefore/After of the current picture (DPB slots) */
    int st_bef[RH265_MAX_REFS], st_aft[RH265_MAX_REFS];
@@ -4579,6 +4590,22 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                        nal_type == RH265_NAL_RASL_R;
          int is_radl = nal_type == RH265_NAL_RADL_N ||
                        nal_type == RH265_NAL_RADL_R;
+         /* Dropping, and droppable: a sub-layer non-reference picture
+          * in the highest sub-layer, which nothing can reference. It
+          * is passed over here, before any of the picture's state is
+          * taken on, so the decoder is exactly as it was. */
+         if (v->skip_nonref && shp->first_slice_in_pic
+               && nal_type < RH265_NAL_BLA_W_LP && !(nal_type & 1)
+               && tid >= sps->max_sub_layers_minus1)
+         {
+            v->skip_pic = 1;            /* and every slice of it */
+            ret = 0;
+         }
+         else if (v->skip_pic && !shp->first_slice_in_pic)
+            ret = 0;                    /* a later slice of the same */
+         else
+         {
+         v->skip_pic = 0;
          v->d.sps = sps;
          v->d.pps = pps;
          memcpy(&v->d.sh, shp, sizeof(*shp));
@@ -4680,6 +4707,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                   ret = 0;
                }
             }
+         }
          }
       }
    }
@@ -4874,6 +4902,12 @@ const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
    return pic->pl[plane]
          + (((s->crop_top << 1) >> shift) * v->d.strd[plane]
             + ((s->crop_left << 1) >> shift)) * v->d.pel_bytes;
+}
+
+void rh265_video_set_skip_nonref(rh265_video *v, int skip)
+{
+   if (v)
+      v->skip_nonref = skip ? 1 : 0;
 }
 
 int rh265_video_bit_depth(const rh265_video *v)

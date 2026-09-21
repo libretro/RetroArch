@@ -133,6 +133,13 @@ void rmp4_video_stream_set_argb(rmp4_video_stream_t *stream, int argb);
  * own buffer needs no copy out of the stream. NULL restores the
  * stream's frame. Takes effect from the next rendered frame; @out must
  * stay valid until the next call that renders has returned. */
+/* While @behind is set, pictures nothing references are consumed
+ * without being decoded and their presentation slots pass, so the
+ * stream catches up with a caller that has fallen behind its clock;
+ * what is shown is decoded exactly as before. Clear it once caught
+ * up. */
+void rmp4_video_stream_set_catchup(rmp4_video_stream_t *stream, int behind);
+
 void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
       uint32_t *out);
 

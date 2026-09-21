@@ -206,7 +206,11 @@ enum gfx_thumbnail_flags
    GFX_THUMB_FLAG_ANIM_ACTIVE = (1 << 3),
    /* 'texture' is the animation surface's, which owns and unloads it;
     * clear while it is a still the thumbnail unloads itself. */
-   GFX_THUMB_FLAG_TEX_SURFACE = (1 << 4)
+   GFX_THUMB_FLAG_TEX_SURFACE = (1 << 4),
+   /* The animation's decode is behind the file's rate and the stream
+    * has been asked to pass over droppable pictures until it catches
+    * up. Cleared the moment a frame lands on time. */
+   GFX_THUMB_FLAG_ANIM_BEHIND = (1 << 5)
 };
 
 /* Holds all runtime parameters associated with

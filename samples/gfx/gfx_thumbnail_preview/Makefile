@@ -2,6 +2,7 @@ TARGET := gfx_thumbnail_preview_test
 DECODE_TARGET          := preview_audio_decode_test
 DECODE_TARGET_NORWEBM  := preview_audio_decode_test_norwebm
 ANIM_WINDOW_TARGET     := preview_anim_window_test
+CATCHUP_TARGET         := preview_catchup_test
 
 # Links the REAL gfx/gfx_thumbnail.c and the REAL
 # libretro-common/audio/audio_mixer.c.  Stubbing either is what let
@@ -182,10 +183,15 @@ endif
 
 BLIT_BANDS_TARGET  := preview_blit_bands_test
 
-all: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET)
+all: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET)
 
 $(ANIM_WINDOW_TARGET): $(ANIM_WINDOW_SOURCES)
 	$(CC) -o $@ $(ANIM_WINDOW_SOURCES) $(ANIM_WINDOW_CFLAGS) $(LDFLAGS) -lz
+
+# Same tree the windowed oracle links, with its own main.
+CATCHUP_SOURCES := preview_catchup_test.c $(filter-out preview_anim_window_test.c,$(ANIM_WINDOW_SOURCES))
+$(CATCHUP_TARGET): $(CATCHUP_SOURCES)
+	$(CC) -o $@ $(CATCHUP_SOURCES) $(ANIM_WINDOW_CFLAGS) $(LDFLAGS) -lz
 
 $(DECODE_TARGET): $(DECODE_SOURCES_WEBM) preview_audio_decode_test.c
 	$(CC) -o $@ $(DECODE_SOURCES_WEBM) \
@@ -253,9 +259,10 @@ $(TARGET): $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 fixtures:
 	python3 mkfixtures.py fixtures
 
-check: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET) fixtures
+check: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) fixtures
 	./$(TARGET) fixtures/*.mp4 fixtures/anim_lossless.webp
 	./$(ANIM_WINDOW_TARGET) fixtures
+	./$(CATCHUP_TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	./$(BLIT_BANDS_TARGET) fixtures/long_video.mp4
 	./$(BLIT_BANDS_TARGET) fixtures/vp9_tiles.webm
 	./$(BLIT_BANDS_TARGET) fixtures/hevc_wpp.mp4

@@ -258,7 +258,8 @@ def main():
             'still_lossless.webp', 'anim_lossless.png',
             'anim_dispose_prev.png', 'trailing_large.mp4',
             'trailing_huge.mp4', 'leading_huge.mp4', 'trailing_small.mp4',
-            'vp9_tiles.webm', 'hevc_wpp.mp4')):
+            'vp9_tiles.webm', 'hevc_wpp.mp4', 'bframes_h264.mp4',
+            'bframes_hevc.mp4')):
         print('fixtures present, not rebuilt')
         return
 
@@ -304,6 +305,25 @@ def main():
         '-c:v', 'libx265', '-x265-params', 'wpp=1:log-level=none',
         '-b:v', '400k', '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', '-an',
         j('hevc_wpp.mp4')])
+    # Two seconds with three non-reference B-frames between every
+    # pair of references and no B-pyramid, so about two thirds of the
+    # pictures are ones nothing predicts from. The catch-up oracle
+    # drops those and checks the pictures it still shows are the ones
+    # a full decode shows, byte for byte.
+    subprocess.check_call([
+        'ffmpeg', '-v', 'error', '-y',
+        '-f', 'lavfi', '-i', 'testsrc2=s=160x120:r=30', '-t', '2',
+        '-c:v', 'libx264', '-preset', 'veryfast', '-bf', '3',
+        '-b-pyramid', 'none', '-g', '30', '-x264-params', 'b-adapt=0',
+        '-pix_fmt', 'yuv420p', '-an',
+        j('bframes_h264.mp4')])
+    subprocess.check_call([
+        'ffmpeg', '-v', 'error', '-y',
+        '-f', 'lavfi', '-i', 'testsrc2=s=160x120:r=30', '-t', '2',
+        '-c:v', 'libx265', '-x265-params',
+        'bframes=3:b-pyramid=0:b-adapt=0:keyint=30:log-level=none',
+        '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', '-an',
+        j('bframes_hevc.mp4')])
     seed(j('seed_small.mp4'), 3, 640, 360, '300k')
     seed(j('seed_4k.mp4'), 3, 3840, 2160, '400k')
 

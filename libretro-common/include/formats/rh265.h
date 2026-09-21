@@ -67,6 +67,14 @@ int rh265_video_drain(rh265_video *v);
 /* Active luma bit depth of the stream (8 or 10).  At 10 bits the
  * plane pointers reference uint16_t samples: cast the returned byte
  * pointer and index with the sample stride. */
+/* While @skip is set, a sub-layer non-reference picture (TRAIL_N and
+ * its kin) in the highest sub-layer is consumed without being decoded:
+ * the decode call returns 0 for it, as for any sample yielding no
+ * picture, and the stream moves on. Nothing can reference it, so what
+ * follows decodes unchanged. For a caller that has fallen behind its
+ * clock and would rather drop a frame than show every one late. */
+void rh265_video_set_skip_nonref(rh265_video *v, int skip);
+
 int rh265_video_bit_depth(const rh265_video *v);
 
 const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
