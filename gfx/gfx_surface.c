@@ -53,8 +53,7 @@ gfx_surface_t *gfx_surface_new(unsigned width, unsigned height,
 
    s->release    = release;
    s->user       = user;
-   s->width      = width;
-   s->height     = height;
+   s->dims       = VIDEO_SCALE_PACK(width, height);
    s->num_slots  = num_slots;
    s->filter     = filter;
    s->rgba       = 0xff;
@@ -119,8 +118,7 @@ gfx_surface_t *gfx_surface_new_static(unsigned width, unsigned height,
       return NULL;
    if (!(s = (gfx_surface_t*)calloc(1, sizeof(*s))))
       return NULL;
-   s->width      = width;
-   s->height     = height;
+   s->dims       = VIDEO_SCALE_PACK(width, height);
    s->num_slots  = 0;
    s->filter     = filter;
    s->rgba       = 0xff;
@@ -243,8 +241,8 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
    }
 
    s->img.pixels        = s->slots[slot];
-   s->img.width         = s->width;
-   s->img.height        = s->height;
+   s->img.width         = VIDEO_SCALE_W(s->dims);
+   s->img.height        = VIDEO_SCALE_H(s->dims);
    s->img.supports_rgba = rgba;
    s->img.pix10         = false;
    s->img.compressed    = NULL;
@@ -274,14 +272,15 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
        * against a wait of up to a present. */
       GFX_INSTR_INC(GFX_INSTR_SUBMIT_COPY);
       memcpy(s->slots[0], pixels,
-            (size_t)s->width * s->height * sizeof(uint32_t));
+            (size_t)VIDEO_SCALE_W(s->dims)
+            * VIDEO_SCALE_H(s->dims) * sizeof(uint32_t));
       return gfx_surface_submit(s, 0, rgba);
    }
 #endif
 
    s->img.pixels        = (uint32_t*)pixels;
-   s->img.width         = s->width;
-   s->img.height        = s->height;
+   s->img.width         = VIDEO_SCALE_W(s->dims);
+   s->img.height        = VIDEO_SCALE_H(s->dims);
    s->img.supports_rgba = rgba;
    s->img.pix10         = false;
    s->img.compressed    = NULL;
@@ -305,8 +304,8 @@ enum gfx_surface_submit_result gfx_surface_submit_external(gfx_surface_t *s,
    s->release           = release;
    s->user              = user;
    s->img.pixels        = (uint32_t*)pixels;
-   s->img.width         = s->width;
-   s->img.height        = s->height;
+   s->img.width         = VIDEO_SCALE_W(s->dims);
+   s->img.height        = VIDEO_SCALE_H(s->dims);
    s->img.supports_rgba = rgba;
    s->img.pix10         = false;
    s->img.compressed    = NULL;

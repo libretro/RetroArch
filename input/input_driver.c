@@ -3283,7 +3283,7 @@ static bool input_overlay_update_apng_frame(input_overlay_t *ol,
    if (!pix || !s || !s->num_slots || s->inflight)
       return false;
 
-   frame_len = (size_t)s->width * s->height;
+   frame_len = (size_t)VIDEO_SCALE_W(s->dims) * VIDEO_SCALE_H(s->dims);
    memcpy(s->slots[0], pix + (target_frame ? frame_len : 0),
          frame_len * sizeof(uint32_t));
    return gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
@@ -3359,7 +3359,8 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
             continue;
       }
       memcpy(s->slots[0], frame,
-            (size_t)s->width * s->height * sizeof(uint32_t));
+            (size_t)VIDEO_SCALE_W(s->dims)
+            * VIDEO_SCALE_H(s->dims) * sizeof(uint32_t));
       if (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
             == GFX_SURFACE_SUBMIT_FAILED)
          continue;

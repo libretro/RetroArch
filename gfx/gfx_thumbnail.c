@@ -1032,8 +1032,8 @@ static void gfx_thumbnail_anim_shown(gfx_thumbnail_t *thumbnail,
       thumbnail->flags |= GFX_THUMB_FLAG_TEX_SURFACE;
    }
    thumbnail->texture = s->handle;
-   thumbnail->width   = s->width;
-   thumbnail->height  = s->height;
+   thumbnail->width   = VIDEO_SCALE_W(s->dims);
+   thumbnail->height  = VIDEO_SCALE_H(s->dims);
    /* Release-store pairs with the acquire-load in the draw path:
     * texture/width/height are visible before AVAILABLE is. */
    if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) ==
@@ -1109,7 +1109,7 @@ static gfx_surface_t *gfx_thumbnail_anim_surface(gfx_thumbnail_t *thumbnail,
 {
    gfx_surface_t *s = (gfx_surface_t*)thumbnail->anim_surface;
    if (     s
-         && (s->width != width || s->height != height
+         && (s->dims != VIDEO_SCALE_PACK(width, height)
             || s->num_slots < num_slots
             || (!num_slots && s->num_slots)))
    {
@@ -1569,7 +1569,8 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       }
       else if (!sync_use_rgba && !sync_native_order)
       {
-         size_t i, n = (size_t)s->width * s->height;
+         size_t i, n = (size_t)VIDEO_SCALE_W(s->dims)
+               * VIDEO_SCALE_H(s->dims);
          GFX_INSTR_INC(GFX_INSTR_ANIM_SWIZZLE);
          for (i = 0; i < n; i++)
          {

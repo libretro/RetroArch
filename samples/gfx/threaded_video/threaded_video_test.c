@@ -2719,7 +2719,7 @@ static void surf_release_cb(void *user, gfx_surface_t *s, unsigned slot)
 
 static void surf_fill(gfx_surface_t *s, unsigned slot, unsigned seed)
 {
-   unsigned i, n = s->width * s->height;
+   unsigned i, n = VIDEO_SCALE_W(s->dims) * VIDEO_SCALE_H(s->dims);
    for (i = 0; i < n; i++)
       s->slots[slot][i] = 0xff000000u | ((i * 7u + seed * 31u) & 0xffffffu);
 }

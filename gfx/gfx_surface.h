@@ -89,8 +89,8 @@ struct gfx_surface
     * in flight leaves the previous texture here, drawable, until the
     * new one arrives. */
    uintptr_t handle;
-   unsigned width;
-   unsigned height;
+   /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
+   unsigned dims;
    unsigned num_slots;
    unsigned inflight_slot;
    enum texture_filter_type filter;
