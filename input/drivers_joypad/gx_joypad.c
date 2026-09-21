@@ -355,6 +355,7 @@ static int16_t gx_joypad_state(
 
 static int16_t WPAD_StickX(WPADData *data, u8 right)
 {
+  double val;
   float mag = 0.0f;
   float ang = 0.0f;
 
@@ -391,7 +392,7 @@ static int16_t WPAD_StickX(WPADData *data, u8 right)
      mag = 1.0f;
   else if (mag < -1.0f)
      mag = -1.0f;
-  double val = mag * sin(PI * ang/180.0f);
+  val = mag * sin(PI * ang/180.0f);
 
   return (int16_t)(val * 32767.0f);
 }

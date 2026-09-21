@@ -267,6 +267,35 @@ check "features_cpu: ps3"        "$HOSTOFF -Itools/platform_stubs/ps3 -D__PS3__ 
 check "features_cpu: psl1ght"    "$HOSTOFF -Itools/platform_stubs/psl1ght -D__PS3__ -D__PSL1GHT__ -DRARCH_CONSOLE" $FCPU_TU
 check "features_cpu: emscripten" "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN" $FCPU_TU
 
+# Platform drivers no other job compiles. Each of these reaches a
+# compiler only inside its own console toolchain - griffin includes it
+# behind that platform's #ifdef and the desktop makefiles never build
+# it - so a C89 slip or a missing declaration in one sits until the
+# console job runs, which is how a mixed declaration lived in
+# gx_joypad.c. These are the ones the stubs already in the tree can
+# reach; the rest need headers no stub here supplies. psp1_gfx and
+# dispserv_android already have lanes of their own - the latter gains
+# the C89 declaration check below rather than a second lane.
+#
+# Same warnings as the driver lanes above, C89 declarations included,
+# because that is the rule these files are furthest from anyone
+# checking. GEKKO takes the vendored libogc headers before its stub:
+# the stub carries only what libogc does not.
+CDECL="-Wdeclaration-after-statement -Werror=declaration-after-statement"
+GEKKO_INC="-Iwii/libogc/include -Itools/platform_stubs/gekko"
+check "gekko: gx_input"        "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" input/drivers/gx_input.c
+check "gekko: gx_joypad"       "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" input/drivers_joypad/gx_joypad.c
+check "gekko: mem2_manager"    "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" libretro-common/memory/mem2_manager.c
+check "3ds: ctr_input"         "$HOSTOFF -Itools/platform_stubs/ctr -D_3DS -D__3DS__ -DARM11 -DRARCH_CONSOLE $CDECL" input/drivers/ctr_input.c
+check "orbis: ps4_audio"       "$HOSTOFF -Itools/platform_stubs/orbis -DORBIS $CDECL" audio/drivers/ps4_audio.c
+check "qnx: alsa_qsa"          "$HOSTOFF -Itools/platform_stubs/qnx -D__QNX__ $CDECL" audio/drivers/alsa_qsa.c
+check "android: vfs saf"       "$HOSTOFF -Itools/platform_stubs/android -DANDROID $CDECL" libretro-common/vfs/vfs_implementation_saf.c
+check "android: play delivery" "$HOSTOFF -Itools/platform_stubs/android -DANDROID $CDECL" play_feature_delivery/play_feature_delivery.c
+# rwebaudio is its own translation unit in the emscripten build, not
+# part of griffin's, and nothing else compiles it at all.
+check "emscripten: rwebaudio"  "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN -DHAVE_RWEBAUDIO $CDECL" audio/drivers/rwebaudio.c
+check "emscripten: rwebcam"    "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN $CDECL" camera/drivers/rwebcam.c
+
 # The salamander launchers link a hand-picked subset of libretro-common
 # with -DIS_SALAMANDER: rtime.c for rtime_localtime, no features_cpu.c.
 # A syntax pass cannot see the link error that a symbol from an
@@ -294,7 +323,7 @@ salamander_link "salamander link: rtime.c" \
 # (jni, looper, native_activity, sensor, configuration, window) with
 # the host identity shed.
 check "android: runloop" "$HOSTOFF -DANDROID -Itools/platform_stubs/android" runloop.c
-check "android: dispserv" "$HOSTOFF -DANDROID -Itools/platform_stubs/android" gfx/display_servers/dispserv_android.c
+check "android: dispserv" "$HOSTOFF -DANDROID -Itools/platform_stubs/android $CDECL" gfx/display_servers/dispserv_android.c
 
 # The Android arms of rthreads: thread affinity goes to the kernel
 # directly there (bionic keeps cpu_set_t behind _GNU_SOURCE), and the
