@@ -129,6 +129,10 @@ void rh264_video_stats(const rh264_video *v, int *posted, int *inflight_x100,
  * stands when it does. Process-wide; reading resets. */
 void rh264_video_row_wait_stats(int *waits, int *rows_short_x100);
 
+/* The most pictures the pool had decoding at one moment since the last
+ * call; reading resets. Process-wide. One means they never overlapped. */
+int rh264_video_jobs_at_once(void);
+
 int rh264_video_bit_depth(const rh264_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */

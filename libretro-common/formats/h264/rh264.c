@@ -3055,6 +3055,8 @@ static void rh264_inter_clear_i4mode(rh264_frame *f, int mbx, int mby)
 static retro_atomic_int_t rh264_ref_wait_misses;
 /* process-wide: reference reads that waited, and the rows they were short */
 static retro_atomic_int_t rh264_row_waits, rh264_row_short_sum;
+/* process-wide: jobs on the pool at this moment, and the most at once */
+static retro_atomic_int_t rh264_jobs_running, rh264_jobs_running_max;
 
 int rh264_video_ref_wait_misses(void)
 {
@@ -10150,7 +10152,17 @@ static void rh264_ctx_run_slices(rh264_pic_ctx *c, const struct rh264_vlc_set *v
 static void rh264_ctx_job(void *arg)
 {
    rh264_pic_ctx *c = (rh264_pic_ctx*)arg;
+   {
+      int now = retro_atomic_fetch_add_int(&rh264_jobs_running, 1) + 1, m;
+      do
+      {
+         m = retro_atomic_load_acquire_int(&rh264_jobs_running_max);
+         if (now <= m)
+            break;
+      } while (!retro_atomic_cas_int(&rh264_jobs_running_max, m, now));
+   }
    rh264_ctx_run_slices(c, c->vlc);
+   retro_atomic_fetch_sub_int(&rh264_jobs_running, 1);
    if (c->job_rc != 0 && c->f.planes)
       rh264_block_publish_rows(c->f.planes, c->f.mbh); /* nobody waits on a refusal */
    slock_lock(rh264_rows_lock);
@@ -10383,6 +10395,13 @@ void rh264_video_stats(const rh264_video *v, int *posted, int *inflight_x100,
    if (join_waits)    *join_waits    = v->st_join_waits;
    if (pop_held)      *pop_held      = v->st_pop_held;
    if (pop_waits)     *pop_waits     = v->st_pop_waits;
+}
+
+int rh264_video_jobs_at_once(void)
+{
+   int m = retro_atomic_load_acquire_int(&rh264_jobs_running_max);
+   retro_atomic_store_release_int(&rh264_jobs_running_max, 0);
+   return m;
 }
 
 void rh264_video_row_wait_stats(int *waits, int *rows_short_x100)

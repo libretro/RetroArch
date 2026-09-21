@@ -126,8 +126,9 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
          printf("      pipeline: %d posted, %d.%02d in flight on average, "
                "%d posts at the limit, %d joins waited, %d pops held, %d pops waited\n",
                posted, inflight / 100, inflight % 100, at_max, jw, ph, pw);
-         printf("      row waits: %d, short by %d.%02d rows on average\n",
-               rw, rs / 100, rs % 100);
+         printf("      row waits: %d, short by %d.%02d rows on average; "
+               "%d pictures decoding at once at most\n",
+               rw, rs / 100, rs % 100, rh264_video_jobs_at_once());
       }
    }
 
