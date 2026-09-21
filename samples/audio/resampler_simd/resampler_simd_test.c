@@ -13,6 +13,17 @@
 
 extern retro_resampler_t CC_resampler;
 
+/* The driver's own condition: above 4 it builds the reference alone,
+ * so there is no vector arm to compare against. */
+#ifndef CC_RESAMPLER_PRECISION
+#define CC_RESAMPLER_PRECISION 1
+#endif
+#if (CC_RESAMPLER_PRECISION > 4)
+#define CC_VECTOR_ARMS 0
+#else
+#define CC_VECTOR_ARMS 1
+#endif
+
 static unsigned failures;
 #define CHECK(cond, ...) do { if (!(cond)) { printf("      FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
 
@@ -113,11 +124,13 @@ int main(void)
     * to the reference and compare against itself. The predicates are
     * the driver's own. */
    struct { const char *name; resampler_simd_mask_t mask; } arms[] = {
+#if CC_VECTOR_ARMS
 #if defined(__SSE__)
       { "SSE",  RESAMPLER_SIMD_SSE },
 #endif
 #if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
       { "NEON", RESAMPLER_SIMD_NEON },
+#endif
 #endif
       { NULL, 0 }
    };
@@ -131,7 +144,7 @@ int main(void)
       compare(arms[a].name, arms[a].mask, 0.5,  down, sizeof(down)/sizeof(down[0]));
    }
    if (a == 0)
-      printf("   (this build has no vector arm; the reference is all there is)\n");
+      printf("   (no vector arm in this build; the reference is all there is)\n");
    if (failures)
    {
       printf("%u failure(s)\n", failures);

@@ -29,7 +29,10 @@
 #define CC_HAVE_NEON 0
 #endif
 
+#include <math.h>
+
 #include <retro_inline.h>
+#include <retro_math.h>
 #include <retro_miscellaneous.h>
 #include <memalign.h>
 #include <math/float_minmax.h>
@@ -44,7 +47,11 @@
  * setting 0 doesn't use a polynom
  * setting 1 uses P(X) = X - (3/4)*X^3 + (1/4)*X^5
  *
- * only 0 and 1 are implemented for SSE and NEON currently
+ * Only 0 and 1 have a vector kernel, so above 4 the reference is the
+ * only arm built: otherwise one binary would resample differently
+ * depending on which arm the mask picked. It costs about 21 dB of
+ * THD+N at 100 Hz and nothing above 2 kHz, measured against the
+ * polynomial at 32 to 48 kHz.
  *
  * the MIPS_ARCH_ALLEGREX target doesnt require this setting since it has
  * native support for the required functions so it will always use full precision.
@@ -52,6 +59,13 @@
 
 #ifndef CC_RESAMPLER_PRECISION
 #define CC_RESAMPLER_PRECISION 1
+#endif
+
+/* The vector arms implement the polynomial kernel only. */
+#if (CC_RESAMPLER_PRECISION > 4)
+#define CC_VECTOR_ARMS 0
+#else
+#define CC_VECTOR_ARMS 1
 #endif
 
 typedef struct rarch_CC_resampler
@@ -344,7 +358,7 @@ static void resampler_CC_upsample_c(void *re_, struct resampler_data *data)
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
 }
 
-#if defined(__SSE__)
+#if defined(__SSE__) && CC_VECTOR_ARMS
 static void resampler_CC_downsample_sse(void *re_, struct resampler_data *data)
 {
    rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
@@ -517,7 +531,7 @@ static void resampler_CC_upsample_sse(void *re_, struct resampler_data *data)
 #endif
 
 
-#if CC_HAVE_NEON
+#if CC_HAVE_NEON && CC_VECTOR_ARMS
 /* The SSE kernels' lanes, in NEON: vzipq gives the {0,0,1,1} and
  * {2,2,3,3} spreads _mm_shuffle_ps built, and vcombine the half
  * splices. */
@@ -686,14 +700,14 @@ static void *resampler_CC_init(const struct resampler_config *config,
 
    re->upsample   = resampler_CC_upsample_c;
    re->downsample = resampler_CC_downsample_c;
-#if defined(__SSE__)
+#if defined(__SSE__) && CC_VECTOR_ARMS
    if (mask & RESAMPLER_SIMD_SSE)
    {
       re->upsample   = resampler_CC_upsample_sse;
       re->downsample = resampler_CC_downsample_sse;
    }
 #endif
-#if CC_HAVE_NEON
+#if CC_HAVE_NEON && CC_VECTOR_ARMS
    if (mask & RESAMPLER_SIMD_NEON)
    {
       re->upsample   = resampler_CC_upsample_neon;
