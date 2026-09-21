@@ -147,6 +147,27 @@ typedef struct retro_eventcount
     * condition variable would re-acquire one on every wake. */
    retro_atomic_ptr_t  waitlist;
 #endif
+   /* One cache line on purpose, and measured that way. The notifier
+    * writes epoch and reads waiters; a waiter writes waiters and reads
+    * epoch, and both writes are sequentially-consistent
+    * read-modify-writes, so on one line the two sides take it exclusive
+    * in turn. Padding them apart looks like the obvious fix and is not:
+    * each side reads BOTH cursors on every operation, so separated,
+    * each pays two lines where one served.
+    *
+    * Measured on 32 cores, shared against padded, medians over nine
+    * rounds: with the operations punctuating real work - which is what
+    * every caller in the tree does, a notify after a frame or a slice -
+    * no difference at all, 1.00 with the bracket inside a percent,
+    * whether one waiter or four. In a tight loop the direction is not
+    * even consistent: one notifier and one waiter lose a third of the
+    * notify rate when separated (0.67), four waiters gain a seventh
+    * (1.13). Neither regime is a caller here, and the padding would
+    * cost the video ring's own shape - one notifier, one waiter - for
+    * nothing.
+    *
+    * retro_spsc pads its cursors because its two sides read only their
+    * own; this does not, because both sides read both. */
    retro_atomic_int_t  epoch;   /* bumped once per notify                    */
    retro_atomic_int_t  waiters; /* threads inside a prepare/commit window    */
 } retro_eventcount_t;

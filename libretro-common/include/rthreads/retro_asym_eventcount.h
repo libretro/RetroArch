@@ -82,6 +82,10 @@ typedef struct retro_asym_eventcount
 {
    struct slock       *lock;
    struct scond       *cond;
+   /* Together on one line, for the reason retro_eventcount.h gives at
+    * the same two fields: both sides read both cursors, so separating
+    * them buys a second line per operation and measures as no change
+    * where the operations punctuate real work. */
    retro_atomic_int_t  epoch;      /* bumped once per notify              */
    retro_atomic_int_t  waiters;    /* threads inside a prepare/commit     */
    int                 asymmetric; /* 1: barrier-backed; 0: seq_cst pair  */
