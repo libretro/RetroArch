@@ -632,10 +632,25 @@ fail:
    return false;
 }
 
+/* The threads the preview may use now: the setting, unless a core is
+ * running under the menu - content loaded and not paused - in which
+ * case one, so that a 4K preview does not take the cores the game is
+ * on. The preview then decodes as it did without the setting; the
+ * pool is torn down and remade as the count changes. */
+static int gfx_thumbnail_anim_threads_wanted(void)
+{
+   int wanted = (int)config_get_ptr()->uints.menu_thumbnail_preview_threads;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   if (     (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+         && !(runloop_st->flags & RUNLOOP_FLAG_PAUSED))
+      return 1;
+   return wanted;
+}
+
 static void gfx_thumbnail_anim_job_enqueue(gfx_thumb_anim_job_t *job)
 {
    retro_atomic_store_relaxed_int(&gfx_thumb_blit_wanted,
-         (int)config_get_ptr()->uints.menu_thumbnail_preview_threads);
+         gfx_thumbnail_anim_threads_wanted());
    slock_lock(gfx_thumb_worker_lock);
    retro_atomic_store_relaxed_int(&job->status, GFX_THUMB_JOB_QUEUED);
    job->next   = NULL;
