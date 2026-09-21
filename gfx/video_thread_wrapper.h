@@ -299,6 +299,16 @@ enum video_thread_vp_slot
 #define VIDEO_THREAD_STAT_F_LAT_DISPLAY     (1 << 2)
 #define VIDEO_THREAD_STAT_F_DISPLAY_PACING  (1 << 3)
 
+/* Cache-line padding, where two threads write fields that would
+ * otherwise share a line. A line carrying a write from each is pulled
+ * back and forth between them on every write to either, which costs
+ * more than the writes do; the article's phrase for it is write
+ * sharing, and it is the reason the values below are published rather
+ * than locked in the first place. A full line each way, so the
+ * separation holds wherever the fields land rather than depending on
+ * an offset. */
+#define VIDEO_THREAD_LINE 64
+
 typedef struct thread_video
 {
    retro_time_t last_time;
@@ -522,6 +532,11 @@ typedef struct thread_video
    retro_atomic_int_t vp_pub[VIDEO_THREAD_VP_SLOTS];
    retro_atomic_int_t refresh_rate_bits;
 
+   /* The snapshots above are written by the video thread every frame;
+    * cmd_data below is rewritten by a sender for every synchronous
+    * command, and a burst of them rewrites it in place. */
+   unsigned char pad_published[VIDEO_THREAD_LINE];
+
    thread_packet_t cmd_data;
    /* Set by the video thread while it runs a command inline on itself:
     * the reply goes here instead of into cmd_data, so a command the
@@ -694,6 +709,12 @@ typedef struct thread_video
    retro_atomic_int_t presentable;
    retro_atomic_int_t suppress_screensaver;
    retro_atomic_int_t has_windowed;
+
+   /* The flags above are published by the video thread every frame;
+    * the two below, and the ring's head after them, are the main
+    * thread's. */
+   unsigned char pad_flags[VIDEO_THREAD_LINE];
+
    bool nonblock;
    bool is_idle;
 
@@ -705,11 +726,19 @@ typedef struct thread_video
     * acquire. The indices only grow; the slot is the index modulo the
     * size. Allocated once, so the ring's size is not this struct's.
     *
-    * Last in the struct on purpose: everything above keeps the offset
-    * it had, so an object built against an older copy of this header
-    * still finds the fields it knows where it left them. */
+    * Last in the struct, so a new field goes after these rather than
+    * between anything above. The padding around them is deliberate and
+    * is described where VIDEO_THREAD_LINE is defined; a field added
+    * inside one of those pads puts back the sharing they exist to
+    * remove. */
    thread_packet_t *deferred;
    retro_atomic_int_t deferred_head;
+
+   /* head is the producer's, tail is the video thread's, and each
+    * reads the other every pass: on one line the pass costs a
+    * transfer in each direction. */
+   unsigned char pad_ring[VIDEO_THREAD_LINE];
+
    retro_atomic_int_t deferred_tail;
 } thread_video_t;
 

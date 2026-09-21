@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <time.h>
 #include <string.h>
 #include <unistd.h>
@@ -147,6 +148,56 @@ static unsigned wrapper_frames_since(unsigned *last)
    d   = now - *last;
    *last = now;
    return d;
+}
+
+/* ------------------------------------------------------------------ */
+/* Lane: the cache lines that must not be shared                      */
+/*   Fields written by different threads are kept off each other's     */
+/*   lines by padding in thread_video_t. The padding is what makes     */
+/*   the separation, and nothing else notices when a field added       */
+/*   above one of the pads moves the field below it back onto the      */
+/*   shared line - the suite passes and the throughput goes. So the    */
+/*   separations are asserted by offset, on the struct this build      */
+/*   actually has.                                                     */
+/* ------------------------------------------------------------------ */
+
+#define LINE_OF(f) (offsetof(thread_video_t, f) / VIDEO_THREAD_LINE)
+
+static void lane_line_separation(void)
+{
+   unsigned had = failures;
+
+   /* The snapshots the video thread publishes every frame against the
+    * command packet a sender rewrites for every synchronous command. */
+   CHECK(LINE_OF(refresh_rate_bits) != LINE_OF(cmd_data),
+         "refresh_rate_bits and cmd_data share line %u",
+         (unsigned)LINE_OF(cmd_data));
+   CHECK(LINE_OF(stats) != LINE_OF(cmd_data),
+         "the statistics slots and cmd_data share line %u",
+         (unsigned)LINE_OF(cmd_data));
+   CHECK(LINE_OF(vp_pub) != LINE_OF(cmd_data),
+         "the viewport slots and cmd_data share line %u",
+         (unsigned)LINE_OF(cmd_data));
+
+   /* The per-frame published flags against the main thread's own. */
+   CHECK(LINE_OF(has_windowed) != LINE_OF(nonblock),
+         "has_windowed and nonblock share line %u",
+         (unsigned)LINE_OF(nonblock));
+   CHECK(LINE_OF(has_windowed) != LINE_OF(deferred_head),
+         "has_windowed and deferred_head share line %u",
+         (unsigned)LINE_OF(deferred_head));
+
+   /* The deferred ring's producer and consumer indices. */
+   CHECK(LINE_OF(deferred_head) != LINE_OF(deferred_tail),
+         "deferred_head and deferred_tail share line %u",
+         (unsigned)LINE_OF(deferred_head));
+
+   if (failures == had)
+      fprintf(stderr, "[pass] cache-line separation lane "
+            "(struct %u bytes, %u lines)\n",
+            (unsigned)sizeof(thread_video_t),
+            (unsigned)((sizeof(thread_video_t) + VIDEO_THREAD_LINE - 1)
+               / VIDEO_THREAD_LINE));
 }
 
 /* ------------------------------------------------------------------ */
@@ -3575,6 +3626,7 @@ int main(int argc, char *argv[])
    CHECK(menu_is_up(), "menu did not open");
    expect_wrapper(false, "boot");
 
+   lane_line_separation();
    lane_toggle_cycle(cycles);
    lane_reinit_under_wrapper(cycles / 2 + 1);
    lane_toggle_in_game(cycles);
