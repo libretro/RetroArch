@@ -117,9 +117,11 @@ struct wsola
 /* mono, ola, resamp and reference are 4-byte elements in both lanes. */
 #define WSOLA_W_SZ       4u
 
+/* Ordered so NaN, which compares false against everything, lands on lo
+ * rather than passing through into the fixed-point positions. */
 static double wsola_clampd(double x, double lo, double hi)
 {
-   return x < lo ? lo : (x > hi ? hi : x);
+   return (x >= lo) ? ((x <= hi) ? x : hi) : lo;
 }
 
 static size_t wsola_next_pow2(size_t n)

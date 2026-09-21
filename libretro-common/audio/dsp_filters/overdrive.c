@@ -198,9 +198,11 @@ static void overdrive_free(void *data)
    free(data);
 }
 
+/* Ordered so NaN, which compares false against everything, lands on lo
+ * rather than passing through into the Q20/Q30 conversions below. */
 static float overdrive_clampf(float x, float lo, float hi)
 {
-   return x < lo ? lo : (x > hi ? hi : x);
+   return (x >= lo) ? ((x <= hi) ? x : hi) : lo;
 }
 
 static float overdrive_db_to_gain(float db)

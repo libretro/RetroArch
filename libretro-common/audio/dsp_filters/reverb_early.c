@@ -335,9 +335,11 @@ static void earlyreverb_free(void *data)
    free(rv);
 }
 
+/* Ordered so NaN, which compares false against everything, lands on lo
+ * rather than passing through into the lengths and Q conversions. */
 static float earlyreverb_clampf(float x, float lo, float hi)
 {
-   return x < lo ? lo : (x > hi ? hi : x);
+   return (x >= lo) ? ((x <= hi) ? x : hi) : lo;
 }
 
 static int32_t earlyreverb_q(float v, unsigned bits)
