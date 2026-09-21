@@ -20,6 +20,35 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/* O_CLOEXEC, fstatat() and dirfd() are POSIX.1-2008, and syscall() is
+ * a glibc/musl extension; all four are hidden unless the translation
+ * unit asks for the matching profile before its first system header.
+ * A consumer is free to compile libretro-common under a stricter one
+ * than the default - the Debian/Launchpad packaging builds the cores
+ * with -D_XOPEN_SOURCE=600 - so ask here rather than depend on the
+ * build's flags.
+ *
+ * The guards only ever raise the profile, so a consumer asking for
+ * more keeps what it asked for, and _GNU_SOURCE already implies all
+ * of this.  What is requested is exactly what a build passing no
+ * feature macros at all already gets, which keeps the fallocate() and
+ * copy_file_range() paths below selected the way they are today.
+ * Linux only: Darwin and the BSDs expose these by default, and there
+ * _POSIX_C_SOURCE would instead hide extensions this file uses. */
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+#if !defined(_POSIX_C_SOURCE) || (_POSIX_C_SOURCE - 0) < 200809L
+#undef  _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+#if defined(_XOPEN_SOURCE) && (_XOPEN_SOURCE - 0) < 700
+#undef  _XOPEN_SOURCE
+#define _XOPEN_SOURCE 700
+#endif
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE 1
+#endif
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
