@@ -2,6 +2,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <audio/sinc_resampler.h>
+#include <file/config_file_userdata.h>
+
+/* audio_resampler.c's resampler_config points at these. Nothing here
+ * passes backend config userdata, so a call is a bug. Visible despite
+ * -fwhole-program: audio_resampler.o links against them. */
+#define CU_STUB __attribute__((externally_visible))
+CU_STUB int config_userdata_get_float(void *u, const char *k, float *v, float d) { abort(); return 0; }
+CU_STUB int config_userdata_get_int(void *u, const char *k, int *v, int d) { abort(); return 0; }
+CU_STUB int config_userdata_get_float_array(void *u, const char *k, float **v, unsigned *n, const float *d, unsigned c) { abort(); return 0; }
+CU_STUB int config_userdata_get_int_array(void *u, const char *k, int **v, unsigned *n, const int *d, unsigned c) { abort(); return 0; }
+CU_STUB int config_userdata_get_string(void *u, const char *k, char **v, const char *d) { abort(); return 0; }
+CU_STUB void config_userdata_free(void *p) { abort(); }
 #ifndef EXTRA_TEST_SIMD
 #define EXTRA_TEST_SIMD 0
 #endif
