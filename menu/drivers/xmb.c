@@ -1208,7 +1208,7 @@ static void xmb_draw_icon(
       if (scale_factor < 1)
       {
          draw.x         = draw.x + (icon_size_x-VIDEO_SCALE_W(draw.dims))/2;
-         draw.y         = draw.y + (icon_size_y-VIDEO_SCALE_W(draw.dims))/2;
+         draw.y         = draw.y + (icon_size_y-VIDEO_SCALE_H(draw.dims))/2;
       }
 #endif
       if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
@@ -1224,7 +1224,7 @@ static void xmb_draw_icon(
    if (scale_factor < 1)
    {
       draw.x            = draw.x + (icon_size_x-VIDEO_SCALE_W(draw.dims))/2;
-      draw.y            = draw.y + (icon_size_y-VIDEO_SCALE_W(draw.dims))/2;
+      draw.y            = draw.y + (icon_size_y-VIDEO_SCALE_H(draw.dims))/2;
    }
 #endif
    if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
