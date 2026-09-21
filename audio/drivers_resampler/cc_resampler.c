@@ -54,6 +54,18 @@ typedef struct rarch_CC_resampler
    float distance;
 } rarch_CC_resampler_t;
 
+/* struct resampler_data carries no output capacity, so the arms that
+ * emit more than one frame per input frame stop at what the ratio asks
+ * for. A ratio no pair of sample rates can name resamples nothing. */
+#define CC_RESAMPLER_RATIO_MAX 65536.0
+
+static INLINE size_t resampler_CC_out_max(const struct resampler_data *data)
+{
+   if (!(data->ratio > 0.0) || !(data->ratio <= CC_RESAMPLER_RATIO_MAX))
+      return 0;
+   return (size_t)((double)data->input_frames * data->ratio) + 2;
+}
+
 #ifdef _MIPS_ARCH_ALLEGREX
 static void resampler_CC_process(void *re_, struct resampler_data *data)
 {
@@ -62,6 +74,7 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
    audio_frame_float_t *inp_max = (audio_frame_float_t*)
       (inp + data->input_frames);
    audio_frame_float_t    *outp = (audio_frame_float_t*)data->data_out;
+   audio_frame_float_t *outp_max = outp + resampler_CC_out_max(data);
 
    (void)re_;
 
@@ -122,6 +135,8 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
 
          inp++;
       }
+      if (outp == outp_max)
+         goto done;
       __asm__ (
             ".set    push                       \n"
             ".set    noreorder                  \n"
@@ -270,6 +285,7 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
    audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
    audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
+   audio_frame_float_t *outp_max = outp + resampler_CC_out_max(data);
    float b                      = float_min(data->ratio, 1.00); /* cutoff frequency. */
    float ratio                  = 1.0 / data->ratio;
    __m128 vec_previous          = _mm_loadu_ps((float*)&re->buffer[0]);
@@ -283,7 +299,7 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
       vec_current  =
          _mm_shuffle_ps(vec_current,vec_in,_MM_SHUFFLE(1, 0, 3, 2));
 
-      while (re->distance < 1.0)
+      while (re->distance < 1.0 && outp != outp_max)
       {
          __m128 vec_w_previous, vec_w_current, vec_out;
 #if (CC_RESAMPLER_PRECISION > 0)
@@ -443,6 +459,7 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
    audio_frame_float_t *inp_max = (audio_frame_float_t*)
       (inp + data->input_frames);
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
+   audio_frame_float_t *outp_max = outp + resampler_CC_out_max(data);
    float                      b = float_min(data->ratio, 1.00); /* cutoff frequency. */
    float                  ratio = 1.0 / data->ratio;
 
@@ -453,7 +470,7 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
       re->buffer[2] = re->buffer[3];
       re->buffer[3] = *inp;
 
-      while (re->distance < 1.0)
+      while (re->distance < 1.0 && outp != outp_max)
       {
          int i;
 

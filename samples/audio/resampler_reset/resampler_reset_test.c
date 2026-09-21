@@ -99,6 +99,76 @@ static void test_backend(const retro_resampler_t *r, double ratio)
    r->free(fresh);
 }
 
+/* What a caller sizing data_out gets to assume, since the API carries
+ * no capacity: never more than the ratio asks for, plus the frame a
+ * carried phase adds. */
+static void test_output_bound(const retro_resampler_t *r, double ratio)
+{
+   static float in_a[IN_FRAMES * 2];
+   static float out[OUT_CAP * 2];
+   struct resampler_config cfg;
+   void *re;
+   size_t n, k;
+
+   memset(&cfg, 0, sizeof(cfg));
+   fill(in_a, IN_FRAMES, 3);
+   if (!(re = r->init(&cfg, ratio, RESAMPLER_QUALITY_NORMAL, 0)))
+   {
+      CHECK(0, "%s: init failed at ratio %.4f", r->ident, ratio);
+      return;
+   }
+   /* Across several calls, so a carried phase is in play. */
+   for (k = 0; k < 4; k++)
+   {
+      n = run(r, re, ratio, in_a, out);
+      CHECK(n <= (size_t)(IN_FRAMES * ratio) + 2,
+            "%s at %.4f: call %u reported %u frames, ratio asks for %u",
+            r->ident, ratio, (unsigned)k, (unsigned)n,
+            (unsigned)((size_t)(IN_FRAMES * ratio) + 2));
+   }
+   r->free(re);
+}
+
+/* audio_driver_bound_ratio() returns the ratio untouched where the
+ * caller reports no capacity, so a backend has to stop on its own
+ * rather than walk out of data_out. data_out is exact and on the heap,
+ * so a sanitizer build sees the write a padded static buffer would
+ * swallow. sinc and nearest do run past it here; that is theirs to
+ * answer for, not this suite's. */
+static void test_unnameable_ratio(const retro_resampler_t *r)
+{
+   static const double bad[] = { 1.0e9, 1.0 / 0.0, 0.0 / 0.0, 0.0, -1.5 };
+   struct resampler_config cfg;
+   struct resampler_data d;
+   float *in, *out;
+   void *re;
+   size_t k;
+
+   memset(&cfg, 0, sizeof(cfg));
+   for (k = 0; k < sizeof(bad) / sizeof(bad[0]); k++)
+   {
+      if (!(re = r->init(&cfg, 1.0, RESAMPLER_QUALITY_NORMAL, 0)))
+      {
+         CHECK(0, "%s: init failed", r->ident);
+         return;
+      }
+      in  = (float*)calloc(IN_FRAMES * 2, sizeof(float));
+      out = (float*)calloc(OUT_CAP * 2, sizeof(float));
+      memset(&d, 0, sizeof(d));
+      d.data_in      = in;
+      d.data_out     = out;
+      d.input_frames = IN_FRAMES;
+      d.ratio        = bad[k];
+      r->process(re, &d);
+      CHECK(d.output_frames <= OUT_CAP,
+            "%s at ratio %g: reported %u frames into room for %u",
+            r->ident, bad[k], (unsigned)d.output_frames, (unsigned)OUT_CAP);
+      r->free(re);
+      free(in);
+      free(out);
+   }
+}
+
 int main(void)
 {
    const retro_resampler_t *backends[] = { &sinc_resampler, &nearest_resampler, &CC_resampler };
@@ -112,13 +182,19 @@ int main(void)
       if (!backends[b]->reset)
          continue;
       for (k = 0; k < sizeof(ratios) / sizeof(ratios[0]); k++)
+      {
          test_backend(backends[b], ratios[k]);
+         test_output_bound(backends[b], ratios[k]);
+      }
    }
+   printf("   CC, ratios no rate pair can name\n");
+   test_unnameable_ratio(&CC_resampler);
    if (failures)
    {
       printf("%u failure(s)\n", failures);
       return 1;
    }
    printf("resampler reset: every backend resumes as a fresh one would, to the sample, with no allocation\n");
+   printf("resampler output: no backend reports past what the ratio asks for, and CC stops on a ratio it cannot use\n");
    return 0;
 }
