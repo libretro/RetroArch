@@ -1565,19 +1565,40 @@ static RFILE *task_cloud_sync_write_updated_manifest(file_list_t *manifest, char
 static void task_cloud_sync_commit_local_manifest(task_cloud_sync_state_t *sync_state)
 {
    char   manifest_path[PATH_MAX_LENGTH];
+   char   tmp_path[PATH_MAX_LENGTH];
    RFILE *file;
 
    task_cloud_sync_manifest_filename(manifest_path, sizeof(manifest_path), false,
          sync_state->dir_core_assets);
 
-   if ((file = task_cloud_sync_write_updated_manifest(
-               sync_state->updated_local_manifest, manifest_path)))
+   /* Write the new manifest beside the old one and rename it into
+    * place.  Written in place, a crash, full disk or power cut part
+    * way through left an empty or truncated manifest.local, which the
+    * next sync can only throw away (see
+    * task_cloud_sync_read_local_manifest()).  With the rename, the old
+    * manifest stays intact until the new one is complete, and keeping
+    * the old one is the safe outcome described above. */
+   if (strlcpy(tmp_path, manifest_path, sizeof(tmp_path)) >= sizeof(tmp_path)
+         || strlcat(tmp_path, ".tmp", sizeof(tmp_path)) >= sizeof(tmp_path))
    {
-      filestream_close(file);
+      RARCH_ERR(CSPFX "Local manifest path too long.\n");
+      sync_state->failures = true;
       return;
    }
 
-   RARCH_ERR(CSPFX "Failed to write local manifest to \"%s\".\n", manifest_path);
+   if ((file = task_cloud_sync_write_updated_manifest(
+               sync_state->updated_local_manifest, tmp_path)))
+   {
+      filestream_close(file);
+      if (filestream_rename(tmp_path, manifest_path) == 0)
+         return;
+      RARCH_ERR(CSPFX "Failed to replace \"%s\" with \"%s\".\n",
+            manifest_path, tmp_path);
+   }
+   else
+      RARCH_ERR(CSPFX "Failed to write local manifest to \"%s\".\n", tmp_path);
+
+   filestream_delete(tmp_path);
    sync_state->failures = true;
 }
 
