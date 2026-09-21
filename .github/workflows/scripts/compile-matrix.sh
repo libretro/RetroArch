@@ -317,6 +317,29 @@ check "features_cpu: ps3"        "$HOSTOFF -Itools/platform_stubs/ps3 -D__PS3__ 
 check "features_cpu: psl1ght"    "$HOSTOFF -Itools/platform_stubs/psl1ght -D__PS3__ -D__PSL1GHT__ -DRARCH_CONSOLE" $FCPU_TU
 check "features_cpu: emscripten" "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN" $FCPU_TU
 
+# Shared menu and video code under the console platform macros. These
+# files are compiled by every desktop job, but the blocks inside them
+# that a console selects are not, and a change to a struct those blocks
+# touch is green everywhere until a console job runs. The frame and
+# draw descriptors they read need no SDK header, so these lanes take
+# the stubs already here and shed the host identity like the ones
+# above.
+MENUGFX="gfx/video_driver.c gfx/gfx_display.c gfx/gfx_widgets.c \
+ gfx/gfx_thumbnail.c gfx/gfx_surface.c gfx/video_thread_wrapper.c \
+ menu/drivers/xmb.c menu/drivers/ozone.c menu/drivers/materialui.c"
+MG_BASE="-DHAVE_XMB -DHAVE_OZONE -DHAVE_MATERIALUI -DHAVE_RGUI \
+ -DHAVE_GFX_WIDGETS -DHAVE_OVERLAY -DHAVE_CONFIGFILE -DRARCH_CONSOLE \
+ -DRARCH_INTERNAL -Iinput/include"
+check "console menu+gfx: vita"    "$HOSTOFF $MG_BASE -Itools/platform_stubs/vita -DVITA" $MENUGFX
+check "console menu+gfx: wiiu"    "$HOSTOFF $MG_BASE -Itools/platform_stubs/wiiu -DWIIU" $MENUGFX
+check "console menu+gfx: psl1ght" "$HOSTOFF $MG_BASE -Itools/platform_stubs/psl1ght -D__PS3__ -D__PSL1GHT__" $MENUGFX
+# video_thread_wrapper.c reaches for libctru's own allocator on 3DS,
+# and a guessed linearMemAlign() would let this lane pass what the real
+# SDK rejects, so the 3DS lane takes the rest.
+check "console menu+gfx: 3ds"     "$HOSTOFF $MG_BASE -Itools/platform_stubs/ctr -D_3DS -D__3DS__" \
+   $(echo "$MENUGFX" | tr ' ' '\n' | grep -v video_thread_wrapper)
+check "console menu+gfx: gekko"   "$HOSTOFF $MG_BASE -Itools/platform_stubs/gekko -DGEKKO -DHW_RVL" $MENUGFX
+
 # Platform drivers no other job compiles. Each of these reaches a
 # compiler only inside its own console toolchain - griffin includes it
 # behind that platform's #ifdef and the desktop makefiles never build

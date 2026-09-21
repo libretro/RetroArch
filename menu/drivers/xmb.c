@@ -1174,13 +1174,17 @@ static void xmb_draw_icon(
    coords.tex_coord     = NULL;
    coords.lut_tex_coord = NULL;
 
+#if defined(VITA) || defined(WIIU) || defined(__PS3__)
+   /* These backends take the scale in the size rather than through
+    * the matrix. */
+   draw.dims            = VIDEO_SCALE_PACK(
+         (unsigned)(icon_size_x * scale_factor),
+         (unsigned)(icon_size_y * scale_factor));
+#else
    draw.dims            = VIDEO_SCALE_PACK(icon_size_x, icon_size_y);
+#endif
    draw.rotation        = rotation;
    draw.scale_factor    = scale_factor;
-#if defined(VITA) || defined(WIIU) || defined(__PS3__)
-   VIDEO_SCALE_W(draw.dims)          *= scale_factor;
-   VIDEO_SCALE_H(draw.dims)         *= scale_factor;
-#endif
    draw.coords          = &coords;
    draw.matrix_data     = &mymat_tmp;
    draw.texture         = texture;
