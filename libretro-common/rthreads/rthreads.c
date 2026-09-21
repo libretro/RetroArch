@@ -3212,7 +3212,15 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    now.tv_nsec = mts.tv_nsec;
 #endif
 #elif defined(RETRO_WIN32_USE_PTHREADS)
-   _ftime64_s(&now);
+   {
+      /* _ftime64_s fills a __timeb64, not a timespec: seconds and
+       * milliseconds, which pthread_cond_timedwait wants as seconds
+       * and nanoseconds since the epoch. */
+      struct __timeb64 tb;
+      _ftime64_s(&tb);
+      now.tv_sec  = (time_t)tb.time;
+      now.tv_nsec = (long)tb.millitm * 1000000L;
+   }
 #else
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
