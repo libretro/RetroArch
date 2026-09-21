@@ -4856,6 +4856,7 @@ struct rh264_video
     * is missing, which is what a caller that has fallen behind the
     * clock wants. */
    int       skip_nonref;
+   int       dropped;           /* the last decode call passed a picture over */
    /* DPB slot the pair's first field opened, so the second can fill it */
    int       pair_slot;
    int       pic_kind;          /* 1 IDR-I, 2 recovery-I, 3 P, 4 B    */
@@ -4957,24 +4958,77 @@ struct rh264_video
  * samples 64-byte aligned, which is what the arena layout assumes. */
 #define RH264_PLANES_HDR 64
 
+/* Blocks are recycled rather than freed. The working frame takes a
+ * fresh block for nearly every picture - the one it holds is a
+ * reference's or a queued picture's by then - and a 4K block is twelve
+ * megabytes: on an allocator that hands such sizes to the kernel and
+ * back (the C runtime MinGW builds against does) that is a page-zeroed
+ * mapping per picture, twice, where the swap it replaced allocated
+ * nothing. A released block goes on a short free list keyed by its
+ * length, and the next of that length comes from there. The list is
+ * one per process and serialised nowhere: the decoders run one
+ * picture at a time today, and frame threading will give each
+ * decoder its own. */
+typedef struct rh264_block_hdr
+{
+   int    refs;
+   size_t len;
+   struct rh264_block_hdr *next_free;
+} rh264_block_hdr;
+
+#define RH264_FREE_BLOCKS 8
+
+static rh264_block_hdr *rh264_free_blocks;
+static int              rh264_free_blocks_n;
+
+static uint8_t *rh264_block_new(size_t len)
+{
+   rh264_block_hdr **pp = &rh264_free_blocks, *b;
+   while ((b = *pp))
+   {
+      if (b->len == len)
+      {
+         *pp = b->next_free;
+         rh264_free_blocks_n--;
+         b->refs = 1;
+         return (uint8_t*)b + RH264_PLANES_HDR;
+      }
+      pp = &b->next_free;
+   }
+   b = (rh264_block_hdr*)calloc(len + RH264_PLANES_HDR, 1);
+   if (!b)
+      return NULL;
+   b->refs = 1;
+   b->len  = len;
+   return (uint8_t*)b + RH264_PLANES_HDR;
+}
+
+static void rh264_block_release(void *data)
+{
+   rh264_block_hdr *b;
+   if (!data)
+      return;
+   b = (rh264_block_hdr*)((uint8_t*)data - RH264_PLANES_HDR);
+   if (--b->refs != 0)
+      return;
+   if (rh264_free_blocks_n < RH264_FREE_BLOCKS)
+   {
+      b->next_free = rh264_free_blocks;
+      rh264_free_blocks = b;
+      rh264_free_blocks_n++;
+      return;
+   }
+   free(b);
+}
+
 static uint8_t *rh264_planes_new(size_t len)
 {
-   uint8_t *mem = (uint8_t*)calloc(len + RH264_PLANES_HDR, 1);
-   if (!mem)
-      return NULL;
-   *(int*)mem = 1;
-   return mem + RH264_PLANES_HDR;
+   return rh264_block_new(len);
 }
 
 static void rh264_planes_release(uint8_t *planes)
 {
-   if (!planes)
-      return;
-   {
-      uint8_t *mem = planes - RH264_PLANES_HDR;
-      if (--*(int*)mem == 0)
-         free(mem);
-   }
+   rh264_block_release(planes);
 }
 
 static int rh264_planes_refs(const uint8_t *planes)
@@ -5026,22 +5080,12 @@ static int rh264_frame_own_planes(rh264_frame *f, size_t plane_len)
  * slot holds, since only a counted block is released. */
 static rh264_mv *rh264_mvg_new(size_t cells)
 {
-   uint8_t *mem = (uint8_t*)calloc(cells * sizeof(rh264_mv) + RH264_PLANES_HDR, 1);
-   if (!mem)
-      return NULL;
-   *(int*)mem = 1;
-   return (rh264_mv*)(mem + RH264_PLANES_HDR);
+   return (rh264_mv*)rh264_block_new(cells * sizeof(rh264_mv));
 }
 
 static void rh264_mvg_release(rh264_mv *g)
 {
-   if (!g)
-      return;
-   {
-      uint8_t *mem = (uint8_t*)g - RH264_PLANES_HDR;
-      if (--*(int*)mem == 0)
-         free(mem);
-   }
+   rh264_block_release(g);
 }
 
 static int rh264_mvg_refs(const rh264_mv *g)
@@ -9620,6 +9664,7 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
    size_t p = 0;
    int got_pic = 0;
    if (!v || !data) return -1;
+   v->dropped = 0;
 
    if (v->nal_length_size > 0 && len >= (size_t)v->nal_length_size)
    {
@@ -9673,6 +9718,11 @@ void rh264_video_set_skip_nonref(rh264_video *v, int skip)
 {
    if (v)
       v->skip_nonref = skip ? 1 : 0;
+}
+
+int rh264_video_dropped(const rh264_video *v)
+{
+   return v ? v->dropped : 0;
 }
 
 int rh264_video_bit_depth(const rh264_video *v)

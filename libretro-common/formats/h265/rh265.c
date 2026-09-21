@@ -3738,6 +3738,7 @@ struct rh265_video
     * own output is missing. For a caller behind its clock. */
    int skip_nonref;
    int skip_pic;              /* the picture being passed over, all slices */
+   int dropped;               /* the last decode call passed a picture over */
 
    /* RefPicSetStCurrBefore/After of the current picture (DPB slots) */
    int st_bef[RH265_MAX_REFS], st_aft[RH265_MAX_REFS];
@@ -4599,6 +4600,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                && tid >= sps->max_sub_layers_minus1)
          {
             v->skip_pic = 1;            /* and every slice of it */
+            v->dropped  = 1;
             ret = 0;
          }
          else if (v->skip_pic && !shp->first_slice_in_pic)
@@ -4800,6 +4802,8 @@ int rh265_video_decode(rh265_video *v, const uint8_t *data, size_t len)
    size_t pos = 0;
    int got = 0, ret;
    int annexb;
+   if (v)
+      v->dropped = 0;
    if (!v || !data || len < 4)
       return -1;
 
@@ -4908,6 +4912,11 @@ void rh265_video_set_skip_nonref(rh265_video *v, int skip)
 {
    if (v)
       v->skip_nonref = skip ? 1 : 0;
+}
+
+int rh265_video_dropped(const rh265_video *v)
+{
+   return v ? v->dropped : 0;
 }
 
 int rh265_video_bit_depth(const rh265_video *v)

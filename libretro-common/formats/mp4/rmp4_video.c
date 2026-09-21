@@ -884,7 +884,14 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
          }
          s->wait_key = 0;
          if (dec == 0)   /* consumed; picture held for display reordering */
+         {
+            /* Unless it was passed over to catch up: then its slot on
+             * the timeline has gone by, like a refused picture's, and
+             * the durations of what follows are read from theirs. */
+            if (rh264_video_dropped(s->h264))
+               s->disp_idx++;
             return 0;
+         }
       }
       /* Planes stay valid until the next decode; defer conversion. */
       if (!rh264_video_plane(s->h264, 0, NULL, NULL, NULL))
@@ -916,7 +923,11 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
       }
       s->wait_key = 0;
       if (dec == 0)   /* consumed; picture held for display reordering */
+      {
+         if (rh265_video_dropped(s->h265))
+            s->disp_idx++; /* passed over: its slot has gone by */
          return 0;
+      }
       /* Planes stay valid until the next decode; defer conversion. */
       if (!rh265_video_plane(s->h265, 0, NULL, NULL, NULL))
          return -1;

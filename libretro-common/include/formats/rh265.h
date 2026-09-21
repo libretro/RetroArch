@@ -74,6 +74,9 @@ int rh265_video_drain(rh265_video *v);
  * follows decodes unchanged. For a caller that has fallen behind its
  * clock and would rather drop a frame than show every one late. */
 void rh265_video_set_skip_nonref(rh265_video *v, int skip);
+/* Whether the last decode call passed a picture over under that
+ * setting; its presentation slot has gone. */
+int rh265_video_dropped(const rh265_video *v);
 
 int rh265_video_bit_depth(const rh265_video *v);
 

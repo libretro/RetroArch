@@ -81,6 +81,10 @@ int rh264_video_drain(rh264_video *v);
  * For a caller that has fallen behind its clock and would rather
  * drop a frame than show every one late. */
 void rh264_video_set_skip_nonref(rh264_video *v, int skip);
+/* Whether the last decode call passed a picture over under that
+ * setting: it returned 0 as it does for a picture held back for
+ * reordering, but this one's presentation slot has gone. */
+int rh264_video_dropped(const rh264_video *v);
 
 int rh264_video_bit_depth(const rh264_video *v);
 

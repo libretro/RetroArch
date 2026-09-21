@@ -92,10 +92,43 @@ static void run(const char *path, const char *label, int expect_video)
 
    {
       const char *fe = getenv("FRAMES");
+      const char *pe = getenv("PACE_HZ");
       int nf = fe ? atoi(fe) : 12;
+      int pace_hz = pe ? atoi(pe) : 0;
       double after_open = rss_mib();
+      int64_t next_us = cpu_features_get_time_usec();
+      int64_t last_change_us = next_us;
+      int64_t worst_gap_us = 0;
+      int last_frames = 0;
       for (i = 0; i < nf; i++)
-         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+      {
+         int64_t now;
+         /* PACE_HZ: run the poll at a display's cadence rather than
+          * flat out, which is how the thumbnail is actually driven,
+          * and record the longest run of polls in which the picture
+          * did not change - the stall a viewer would see. */
+         if (pace_hz > 0)
+         {
+            next_us += 1000000 / pace_hz;
+            now = cpu_features_get_time_usec();
+            if (next_us > now)
+               retro_sleep((unsigned)((next_us - now) / 1000));
+         }
+         now = cpu_features_get_time_usec();
+         gfx_thumbnail_animate(&th, now);
+         if (hp.texture_uploads != last_frames)
+         {
+            int64_t gap = now - last_change_us;
+            if (gap > worst_gap_us)
+               worst_gap_us = gap;
+            last_change_us = now;
+            last_frames = hp.texture_uploads;
+         }
+      }
+      if (pace_hz > 0)
+         printf("      paced at %d Hz: %d picture changes in %d polls, "
+               "longest stall %.0f ms\n", pace_hz, last_frames, nf,
+               (double)worst_gap_us / 1000.0);
       /* The frames above are the measurement window; whether the
        * first picture has landed by then is a matter of how loaded
        * the worker is - under a sanitizer, with other fixtures' jobs
