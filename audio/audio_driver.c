@@ -3384,12 +3384,11 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * batch.  The resampler sees identical bytes either way, so output is
     * bit-exact.
     *
-    * The pointer must still be suitably aligned: the CC resampler's ARM
-    * NEON assembly loads its input with an explicit alignment hint
-    * (`vld1.f32 d16, [r1, :64]!` in cc_resampler_neon.S), which faults on
-    * an under-aligned address.  input_data is memalign_alloc(64); a
-    * core-owned buffer carries no such guarantee, so fall back to the copy
-    * unless the pointer is at least 16-byte aligned. */
+    * input_data is memalign_alloc(64) and a core-owned buffer carries no
+    * such guarantee, so fall back to the copy unless the pointer is at
+    * least 16-byte aligned.  No resampler arm requires that of its input
+    * any more; the check is the conservative side of a change that has
+    * not been measured on this path. */
    {
       bool synth_on   = midi_driver_synth_active() && audio_st->synth_buf;
       bool copy_input = !is_float

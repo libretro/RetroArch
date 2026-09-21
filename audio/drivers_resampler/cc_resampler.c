@@ -22,6 +22,13 @@
 #include <xmmintrin.h>
 #endif
 
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
+#define CC_HAVE_NEON 1
+#include <arm_neon.h>
+#else
+#define CC_HAVE_NEON 0
+#endif
+
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <memalign.h>
@@ -54,7 +61,11 @@ typedef struct rarch_CC_resampler
     * address. */
    audio_frame_float_t buffer[4];
    float distance;
+   /* The pair the mask picked at init, and whichever of them the
+    * current ratio calls for. */
    void (*process)(void *re, struct resampler_data *data);
+   void (*upsample)(void *re, struct resampler_data *data);
+   void (*downsample)(void *re, struct resampler_data *data);
 } rarch_CC_resampler_t;
 
 /* struct resampler_data carries no output capacity, so the arms that
@@ -216,9 +227,122 @@ static void *resampler_CC_init(const struct resampler_config *config,
 }
 #else
 
-#if defined(__SSE__)
 
-static void resampler_CC_downsample(void *re_, struct resampler_data *data)
+/* The scalar reference is always built: it is the fallback when the
+ * mask names nothing this build has a kernel for. */
+/* C reference version. Not optimized. */
+
+
+#if (CC_RESAMPLER_PRECISION > 4)
+static INLINE float cc_int(float x, float b)
+{
+   float val = x * b * M_PI + sinf(x * b * M_PI);
+   return (val > M_PI) ? M_PI : (val < -M_PI) ? -M_PI : val;
+}
+
+#define cc_kernel(x, b)    ((cc_int((x) + 0.5, (b)) - cc_int((x) - 0.5, (b))) / (2.0 * M_PI))
+#else
+static INLINE float cc_int(float x, float b)
+{
+   float val = x * b;
+#if (CC_RESAMPLER_PRECISION > 0)
+   val = val*(1 - 0.25 * val * val * (3.0 - val * val));
+#endif
+   return (val > 0.5) ? 0.5 : (val < -0.5) ? -0.5 : val;
+}
+
+#define cc_kernel(x, b)    ((cc_int((x) + 0.5, (b)) - cc_int((x) - 0.5, (b))))
+#endif
+
+static INLINE void add_to(const audio_frame_float_t *source,
+      audio_frame_float_t *target, float ratio)
+{
+   target->l += source->l * ratio;
+   target->r += source->r * ratio;
+}
+
+static void resampler_CC_downsample_c(void *re_, struct resampler_data *data)
+{
+   rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
+   audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
+   audio_frame_float_t *inp_max = (audio_frame_float_t*)
+      (inp + data->input_frames);
+   audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
+   float                  ratio = 1.0 / data->ratio;
+   float                      b = data->ratio; /* cutoff frequency. */
+
+   while (inp != inp_max)
+   {
+      add_to(inp, re->buffer + 0, cc_kernel(re->distance, b));
+      add_to(inp, re->buffer + 1, cc_kernel(re->distance - ratio, b));
+      add_to(inp, re->buffer + 2, cc_kernel(re->distance - ratio - ratio, b));
+
+      re->distance++;
+      inp++;
+
+      if (re->distance > (ratio + 0.5))
+      {
+         *outp = re->buffer[0];
+
+         re->buffer[0] = re->buffer[1];
+         re->buffer[1] = re->buffer[2];
+
+         re->buffer[2].l = 0.0;
+         re->buffer[2].r = 0.0;
+
+         re->distance -= ratio;
+         outp++;
+      }
+   }
+
+   data->output_frames = outp - (audio_frame_float_t*)data->data_out;
+}
+
+static void resampler_CC_upsample_c(void *re_, struct resampler_data *data)
+{
+   rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
+   audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
+   audio_frame_float_t *inp_max = (audio_frame_float_t*)
+      (inp + data->input_frames);
+   audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
+   audio_frame_float_t *outp_max = outp + resampler_CC_out_max(data);
+   float                      b = float_min(data->ratio, 1.00); /* cutoff frequency. */
+   float                  ratio = 1.0 / data->ratio;
+
+   while (inp != inp_max)
+   {
+      re->buffer[0] = re->buffer[1];
+      re->buffer[1] = re->buffer[2];
+      re->buffer[2] = re->buffer[3];
+      re->buffer[3] = *inp;
+
+      while (re->distance < 1.0 && outp != outp_max)
+      {
+         int i;
+
+         outp->l = 0.0;
+         outp->r = 0.0;
+
+         for (i = 0; i < 4; i++)
+         {
+            float temp = cc_kernel(re->distance + 1.0 - i, b);
+            outp->l   += re->buffer[i].l * temp;
+            outp->r   += re->buffer[i].r * temp;
+         }
+
+         re->distance += ratio;
+         outp++;
+      }
+
+      re->distance -= 1.0;
+      inp++;
+   }
+
+   data->output_frames = outp - (audio_frame_float_t*)data->data_out;
+}
+
+#if defined(__SSE__)
+static void resampler_CC_downsample_sse(void *re_, struct resampler_data *data)
 {
    rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
 
@@ -307,7 +431,7 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
 }
 
-static void resampler_CC_upsample(void *re_, struct resampler_data *data)
+static void resampler_CC_upsample_sse(void *re_, struct resampler_data *data)
 {
    rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
    audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
@@ -387,128 +511,123 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
 
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
 }
+#endif
 
-#elif defined(HAVE_ARM_NEON_ASM_OPTIMIZATIONS)
 
-
-size_t resampler_CC_downsample_neon(float *outp, const float *inp,
-      rarch_CC_resampler_t* re_, size_t input_frames, float ratio);
-size_t resampler_CC_upsample_neon  (float *outp, const float *inp,
-      rarch_CC_resampler_t* re_, size_t input_frames, float ratio);
-
-static void resampler_CC_downsample(void *re_, struct resampler_data *data)
+#if CC_HAVE_NEON
+/* The SSE kernels' lanes, in NEON: vzipq gives the {0,0,1,1} and
+ * {2,2,3,3} spreads _mm_shuffle_ps built, and vcombine the half
+ * splices. */
+static INLINE float32x4_t cc_neon_window(float32x4_t vec_w, float32x4_t vec_b)
 {
-   data->output_frames = resampler_CC_downsample_neon(
-         data->data_out, data->data_in, (struct rarch_CC_resampler*)re_, data->input_frames, data->ratio);
-}
-
-static void resampler_CC_upsample(void *re_, struct resampler_data *data)
-{
-   data->output_frames = resampler_CC_upsample_neon(
-         data->data_out, data->data_in, (struct rarch_CC_resampler*)re_, data->input_frames, data->ratio);
-}
-
-#else
-
-/* C reference version. Not optimized. */
-
-
-#if (CC_RESAMPLER_PRECISION > 4)
-static INLINE float cc_int(float x, float b)
-{
-   float val = x * b * M_PI + sinf(x * b * M_PI);
-   return (val > M_PI) ? M_PI : (val < -M_PI) ? -M_PI : val;
-}
-
-#define cc_kernel(x, b)    ((cc_int((x) + 0.5, (b)) - cc_int((x) - 0.5, (b))) / (2.0 * M_PI))
-#else
-static INLINE float cc_int(float x, float b)
-{
-   float val = x * b;
+   float32x4_t vec_w1 = vmulq_f32(vaddq_f32(vec_w, vdupq_n_f32(0.5f)), vec_b);
+   float32x4_t vec_w2 = vmulq_f32(vsubq_f32(vec_w, vdupq_n_f32(0.5f)), vec_b);
 #if (CC_RESAMPLER_PRECISION > 0)
-   val = val*(1 - 0.25 * val * val * (3.0 - val * val));
+   float32x4_t vec_ww1 = vmulq_f32(vec_w1, vec_w1);
+   float32x4_t vec_ww2 = vmulq_f32(vec_w2, vec_w2);
+
+   vec_ww1 = vmulq_f32(vec_ww1, vsubq_f32(vdupq_n_f32(3.0f), vec_ww1));
+   vec_ww2 = vmulq_f32(vec_ww2, vsubq_f32(vdupq_n_f32(3.0f), vec_ww2));
+
+   vec_ww1 = vmulq_f32(vdupq_n_f32(0.25f), vec_ww1);
+   vec_ww2 = vmulq_f32(vdupq_n_f32(0.25f), vec_ww2);
+
+   vec_w1  = vmulq_f32(vec_w1, vsubq_f32(vdupq_n_f32(1.0f), vec_ww1));
+   vec_w2  = vmulq_f32(vec_w2, vsubq_f32(vdupq_n_f32(1.0f), vec_ww2));
 #endif
-   return (val > 0.5) ? 0.5 : (val < -0.5) ? -0.5 : val;
+   vec_w1  = vminq_f32(vec_w1, vdupq_n_f32( 0.5f));
+   vec_w2  = vminq_f32(vec_w2, vdupq_n_f32( 0.5f));
+   vec_w1  = vmaxq_f32(vec_w1, vdupq_n_f32(-0.5f));
+   vec_w2  = vmaxq_f32(vec_w2, vdupq_n_f32(-0.5f));
+   return vsubq_f32(vec_w1, vec_w2);
 }
 
-#define cc_kernel(x, b)    ((cc_int((x) + 0.5, (b)) - cc_int((x) - 0.5, (b))))
-#endif
-
-static INLINE void add_to(const audio_frame_float_t *source,
-      audio_frame_float_t *target, float ratio)
-{
-   target->l += source->l * ratio;
-   target->r += source->r * ratio;
-}
-
-static void resampler_CC_downsample(void *re_, struct resampler_data *data)
+static void resampler_CC_downsample_neon(void *re_, struct resampler_data *data)
 {
    rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
    audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
-   audio_frame_float_t *inp_max = (audio_frame_float_t*)
-      (inp + data->input_frames);
+   audio_frame_float_t *inp_max = (audio_frame_float_t*)(inp + data->input_frames);
    audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
-   float                  ratio = 1.0 / data->ratio;
-   float                      b = data->ratio; /* cutoff frequency. */
+   float ratio                  = 1.0 / data->ratio;
+   float b                      = data->ratio; /* cutoff frequency. */
+   const float32x4_t vec_step   = { 0.0f, 1.0f, 2.0f, 3.0f };
+   float32x4_t vec_b            = vdupq_n_f32(b);
+   float32x4_t vec_previous     = vld1q_f32((const float*)&re->buffer[0]);
+   float32x4_t vec_current      = vld1q_f32((const float*)&re->buffer[2]);
 
    while (inp != inp_max)
    {
-      add_to(inp, re->buffer + 0, cc_kernel(re->distance, b));
-      add_to(inp, re->buffer + 1, cc_kernel(re->distance - ratio, b));
-      add_to(inp, re->buffer + 2, cc_kernel(re->distance - ratio - ratio, b));
+      float32x4x2_t spread;
+      float32x2_t   in2   = vld1_f32((const float*)inp);
+      float32x4_t   vec_in;
+      float32x4_t   vec_w = cc_neon_window(
+            vsubq_f32(vdupq_n_f32(re->distance),
+                      vmulq_f32(vdupq_n_f32(ratio), vec_step)), vec_b);
+
+      spread       = vzipq_f32(vec_w, vec_w);
+      vec_in       = vcombine_f32(in2, in2);
+
+      vec_previous = vaddq_f32(vec_previous, vmulq_f32(vec_in, spread.val[0]));
+      vec_current  = vaddq_f32(vec_current,  vmulq_f32(vec_in, spread.val[1]));
 
       re->distance++;
       inp++;
 
       if (re->distance > (ratio + 0.5))
       {
-         *outp = re->buffer[0];
-
-         re->buffer[0] = re->buffer[1];
-         re->buffer[1] = re->buffer[2];
-
-         re->buffer[2].l = 0.0;
-         re->buffer[2].r = 0.0;
-
+         vst1_f32((float*)outp, vget_low_f32(vec_previous));
+         vec_previous = vcombine_f32(vget_high_f32(vec_previous),
+                                     vget_low_f32(vec_current));
+         vec_current  = vcombine_f32(vget_high_f32(vec_current),
+                                     vdup_n_f32(0.0f));
          re->distance -= ratio;
          outp++;
       }
    }
 
+   vst1q_f32((float*)&re->buffer[0], vec_previous);
+   vst1q_f32((float*)&re->buffer[2], vec_current);
+
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
 }
 
-static void resampler_CC_upsample(void *re_, struct resampler_data *data)
+static void resampler_CC_upsample_neon(void *re_, struct resampler_data *data)
 {
-   rarch_CC_resampler_t *re     = (rarch_CC_resampler_t*)re_;
-   audio_frame_float_t *inp     = (audio_frame_float_t*)data->data_in;
-   audio_frame_float_t *inp_max = (audio_frame_float_t*)
-      (inp + data->input_frames);
-   audio_frame_float_t *outp    = (audio_frame_float_t*)data->data_out;
+   rarch_CC_resampler_t *re      = (rarch_CC_resampler_t*)re_;
+   audio_frame_float_t *inp      = (audio_frame_float_t*)data->data_in;
+   audio_frame_float_t *inp_max  = (audio_frame_float_t*)(inp + data->input_frames);
+   audio_frame_float_t *outp     = (audio_frame_float_t*)data->data_out;
    audio_frame_float_t *outp_max = outp + resampler_CC_out_max(data);
-   float                      b = float_min(data->ratio, 1.00); /* cutoff frequency. */
-   float                  ratio = 1.0 / data->ratio;
+   float b                       = float_min(data->ratio, 1.00); /* cutoff frequency. */
+   float ratio                   = 1.0 / data->ratio;
+   const float32x4_t vec_taps    = { 1.0f, 0.0f, -1.0f, -2.0f };
+   float32x4_t vec_b             = vdupq_n_f32(b);
+   float32x4_t vec_previous      = vld1q_f32((const float*)&re->buffer[0]);
+   float32x4_t vec_current       = vld1q_f32((const float*)&re->buffer[2]);
 
    while (inp != inp_max)
    {
-      re->buffer[0] = re->buffer[1];
-      re->buffer[1] = re->buffer[2];
-      re->buffer[2] = re->buffer[3];
-      re->buffer[3] = *inp;
+      float32x2_t in2 = vld1_f32((const float*)inp);
+
+      vec_previous = vcombine_f32(vget_high_f32(vec_previous),
+                                  vget_low_f32(vec_current));
+      vec_current  = vcombine_f32(vget_high_f32(vec_current), in2);
 
       while (re->distance < 1.0 && outp != outp_max)
       {
-         int i;
+         float32x4x2_t spread;
+         float32x4_t   vec_out;
+         float32x4_t   vec_w = cc_neon_window(
+               vaddq_f32(vdupq_n_f32(re->distance), vec_taps), vec_b);
 
-         outp->l = 0.0;
-         outp->r = 0.0;
+         spread  = vzipq_f32(vec_w, vec_w);
 
-         for (i = 0; i < 4; i++)
-         {
-            float temp = cc_kernel(re->distance + 1.0 - i, b);
-            outp->l   += re->buffer[i].l * temp;
-            outp->r   += re->buffer[i].r * temp;
-         }
+         vec_out = vmulq_f32(vec_previous, spread.val[0]);
+         vec_out = vaddq_f32(vec_out, vmulq_f32(vec_current, spread.val[1]));
+         vec_out = vaddq_f32(vec_out,
+               vcombine_f32(vget_high_f32(vec_out), vget_high_f32(vec_out)));
+
+         vst1_f32((float*)outp, vget_low_f32(vec_out));
 
          re->distance += ratio;
          outp++;
@@ -518,9 +637,13 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
       inp++;
    }
 
+   vst1q_f32((float*)&re->buffer[0], vec_previous);
+   vst1q_f32((float*)&re->buffer[2], vec_current);
+
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
 }
 #endif
+
 
 static void resampler_CC_reset(void *re_);
 
@@ -535,9 +658,9 @@ static void resampler_CC_process(void *re_, struct resampler_data *data)
     * ratio above one. The upsampler serves either, to the same output
     * below one, so the stream moves there and stays; the two carry
     * distance differently, so the move restarts it. */
-   if (re->process == resampler_CC_downsample && data->ratio > 1.0)
+   if (re->process == re->downsample && data->ratio > 1.0)
    {
-      re->process = resampler_CC_upsample;
+      re->process = re->upsample;
       resampler_CC_reset(re);
    }
    re->process(re_, data);
@@ -552,14 +675,26 @@ static void *resampler_CC_init(const struct resampler_config *config,
    rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)
       memalign_alloc(32, sizeof(rarch_CC_resampler_t));
 
-   /* TODO: lookup if NEON support can be detected at
-    * runtime and a funcptr set at runtime for either
-    * C codepath or NEON codepath. This will help out
-    * Android. */
-   (void)mask;
    (void)config;
    if (!re)
       return NULL;
+
+   re->upsample   = resampler_CC_upsample_c;
+   re->downsample = resampler_CC_downsample_c;
+#if defined(__SSE__)
+   if (mask & RESAMPLER_SIMD_SSE)
+   {
+      re->upsample   = resampler_CC_upsample_sse;
+      re->downsample = resampler_CC_downsample_sse;
+   }
+#endif
+#if CC_HAVE_NEON
+   if (mask & RESAMPLER_SIMD_NEON)
+   {
+      re->upsample   = resampler_CC_upsample_neon;
+      re->downsample = resampler_CC_downsample_neon;
+   }
+#endif
 
    for (i = 0; i < 4; i++)
    {
@@ -571,12 +706,12 @@ static void *resampler_CC_init(const struct resampler_config *config,
     * than around 1.0 for both up/downsampler. */
    if (bandwidth_mod < 0.75)
    {
-      re->process = resampler_CC_downsample;
+      re->process = re->downsample;
       re->distance = 0.0;
    }
    else
    {
-      re->process = resampler_CC_upsample;
+      re->process = re->upsample;
       re->distance = 2.0;
    }
 
@@ -613,7 +748,7 @@ static void resampler_CC_reset(void *re_)
       re->buffer[i].r = 0.0;
    }
    /* The starting distance init chose for the direction. */
-   re->distance = (re->process == resampler_CC_upsample) ? 2.0 : 0.0;
+   re->distance = (re->process == re->upsample) ? 2.0 : 0.0;
 }
 #endif
 
