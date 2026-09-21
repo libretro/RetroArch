@@ -277,6 +277,28 @@ bool tpool_add_work(tpool_t *tp, thread_func_t func, void *arg)
    return true;
 }
 
+bool tpool_help(tpool_t *tp)
+{
+   tpool_work_t *work;
+   if (!tp)
+      return false;
+   slock_lock(tp->work_mutex);
+   work = tp->stop ? NULL : tpool_work_get(tp);
+   if (work)
+      tp->working_cnt++;
+   slock_unlock(tp->work_mutex);
+   if (!work)
+      return false;
+   work->func(work->arg);
+   tpool_work_destroy(work);
+   slock_lock(tp->work_mutex);
+   tp->working_cnt--;
+   if (!tp->stop && tp->working_cnt == 0 && !tp->work_first)
+      scond_signal(tp->working_cond);
+   slock_unlock(tp->work_mutex);
+   return true;
+}
+
 void tpool_wait(tpool_t *tp)
 {
    if (!tp)

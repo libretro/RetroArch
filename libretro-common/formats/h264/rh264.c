@@ -1603,10 +1603,11 @@ typedef struct {
  * allocator below); its row counter is what a reference read waits on. */
 struct rh264_block_hdr;
 struct rh264_pic_ctx;
+struct rh264_video;
 static struct rh264_block_hdr *rh264_block_of(const void *data);
 static int rh264_block_rows_final(const void *data);
 #ifdef HAVE_THREADS
-static void rh264_ctx_join(struct rh264_pic_ctx *c);
+static void rh264_ctx_join(struct rh264_video *v, struct rh264_pic_ctx *c);
 /* One lock and condition for every row publication and every wait on
  * one, shared by the decoders in the process: a publication is a
  * release store and a broadcast, a wait sleeps until the count it
@@ -3055,8 +3056,10 @@ static void rh264_inter_clear_i4mode(rh264_frame *f, int mbx, int mby)
 static retro_atomic_int_t rh264_ref_wait_misses;
 /* process-wide: reference reads that waited, and the rows they were short */
 static retro_atomic_int_t rh264_row_waits, rh264_row_short_sum;
+#ifdef HAVE_THREADS
 /* process-wide: jobs on the pool at this moment, and the most at once */
 static retro_atomic_int_t rh264_jobs_running, rh264_jobs_running_max;
+#endif
 
 int rh264_video_ref_wait_misses(void)
 {
@@ -5021,7 +5024,7 @@ typedef struct rh264_pic_ctx
    const struct rh264_vlc_set *vlc;
 } rh264_pic_ctx;
 
-#define RH264_MAX_CTX 4
+#define RH264_MAX_CTX 8
 
 struct rh264_video
 {
@@ -5728,7 +5731,7 @@ void rh264_video_close(rh264_video *v)
       for (i = 0; i < RH264_MAX_CTX; i++)
       {
 #ifdef HAVE_THREADS
-         rh264_ctx_join(&v->ctx[i]);
+         rh264_ctx_join(v, &v->ctx[i]);
 #endif
          while (v->ctx[i].jobs)
          {
@@ -9263,9 +9266,6 @@ static void rh264_video_row_done(void *user, int mby);
 
 static void rh264_video_post_picture(rh264_video *v);
 static void rh264_video_finish_picture(rh264_video *v, int *got_pic);
-#ifdef HAVE_THREADS
-static void rh264_ctx_join(rh264_pic_ctx *c);
-#endif
 
 /* A new picture takes the next context round and readies it for the
  * sequence's geometry. The one it leaves keeps its frame: that is the
@@ -9288,7 +9288,7 @@ static int rh264_video_next_ctx(rh264_video *v, int *got_pic)
 #ifdef HAVE_THREADS
    if (retro_atomic_load_acquire_int(&v->cur->busy))
       v->st_join_waits++;
-   rh264_ctx_join(v->cur);
+   rh264_ctx_join(v, v->cur);
 #endif
    v->cur->posted = 0;
    return rh264_ctx_prepare(v, v->cur);
@@ -10171,15 +10171,24 @@ static void rh264_ctx_job(void *arg)
    slock_unlock(rh264_rows_lock);
 }
 
-/* Wait for the context's picture, if a pool thread still has it. */
-static void rh264_ctx_join(rh264_pic_ctx *c)
+/* Wait for the context's picture, if a pool thread still has it. The
+ * submitting thread would sit idle for it; it takes queued pictures
+ * from the pool instead while there are any - the one it waits for,
+ * or one before it that the workers have not reached - and sleeps
+ * only once the queue is empty and the picture is in other hands. */
+static void rh264_ctx_join(rh264_video *v, rh264_pic_ctx *c)
 {
    if (!rh264_rows_lock)
       return;
-   slock_lock(rh264_rows_lock);
    while (retro_atomic_load_acquire_int(&c->busy))
-      scond_wait(rh264_rows_cond, rh264_rows_lock);
-   slock_unlock(rh264_rows_lock);
+   {
+      if (v->pool && tpool_help((tpool_t*)v->pool))
+         continue;
+      slock_lock(rh264_rows_lock);
+      if (retro_atomic_load_acquire_int(&c->busy))
+         scond_wait(rh264_rows_cond, rh264_rows_lock);
+      slock_unlock(rh264_rows_lock);
+   }
 }
 #endif
 
@@ -10287,9 +10296,19 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
        * and the picture never opens. frame_num and the POC state
        * advance on reference pictures only, so nothing downstream
        * notices it was never there. */
-      if (v->skip_nonref && type == 1 && ((nal[0] >> 5) & 3) == 0
+      /* Catching up drops the pictures nothing references. With
+       * pictures decoding concurrently those are the ones that cost
+       * nothing - they run beside the chain of references, which is
+       * the critical path either way - so dropping them buys no time
+       * and empties the pool; a preview that fell behind would stay
+       * behind, on the pictures it has left. Threaded, the drops are
+       * declined. */
+      if (v->skip_nonref && !v->threaded && type == 1 && ((nal[0] >> 5) & 3) == 0
             && !v->cur->pic_open)
+      {
+         v->dropped = 1;
          return 0;
+      }
       if (rh264_frame_alloc_if_needed(v) != 0) return -1;
       if (type == 5)
       { if (rh264_video_decode_idr(v, nal, nl, got_pic) != 0) return -1; }
@@ -10399,9 +10418,13 @@ void rh264_video_stats(const rh264_video *v, int *posted, int *inflight_x100,
 
 int rh264_video_jobs_at_once(void)
 {
+#ifdef HAVE_THREADS
    int m = retro_atomic_load_acquire_int(&rh264_jobs_running_max);
    retro_atomic_store_release_int(&rh264_jobs_running_max, 0);
    return m;
+#else
+   return 0;
+#endif
 }
 
 void rh264_video_row_wait_stats(int *waits, int *rows_short_x100)
@@ -10448,7 +10471,10 @@ void rh264_video_set_thread_pool(rh264_video *v, void *pool, int threads)
          return;
       }
    }
-   rh264_video_set_contexts(v, threads > RH264_MAX_CTX ? RH264_MAX_CTX : threads);
+   /* One context per thread that may be decoding - the workers and
+    * the submitter, which helps - and one for the picture being
+    * built; the join is the throttle when they are all taken. */
+   rh264_video_set_contexts(v, threads + 1 > RH264_MAX_CTX ? RH264_MAX_CTX : threads + 1);
    v->pool     = pool;
    v->threaded = v->nctx > 1;
 #else
@@ -10510,7 +10536,7 @@ int rh264_video_drain(rh264_video *v)
       }
 #ifdef HAVE_THREADS
       for (i = 0; i < v->nctx; i++)
-         rh264_ctx_join(&v->ctx[i]);
+         rh264_ctx_join(v, &v->ctx[i]);
 #endif
    }
    for (i = 0; i < RH264_OUT_SLOTS; i++)
