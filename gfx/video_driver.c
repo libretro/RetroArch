@@ -768,8 +768,7 @@ static retro_atomic_int_t  frame_cache_dims;
 static retro_atomic_size_t frame_cache_pitch;
 #else
 static const void *frame_cache_data    = NULL;
-static unsigned    frame_cache_width   = 0;
-static unsigned    frame_cache_height  = 0;
+static unsigned    frame_cache_dims    = 0;
 static size_t      frame_cache_pitch   = 0;
 #endif
 
@@ -778,11 +777,11 @@ static size_t      frame_cache_pitch   = 0;
  * the tuple.  snapshot() is for any thread and retries against the
  * stamp; peek() is the producer reading fields only it writes. */
 static bool frame_cache_snapshot(const void **data,
-      unsigned *width, unsigned *height, size_t *pitch);
+      unsigned *dims, size_t *pitch);
 static void frame_cache_peek(const void **data,
-      unsigned *width, unsigned *height, size_t *pitch);
+      unsigned *dims, size_t *pitch);
 static void frame_cache_store(const void *data,
-      unsigned width, unsigned height, size_t pitch);
+      unsigned dims, size_t pitch);
 
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 {
@@ -3058,11 +3057,13 @@ static void video_viewport_get_scaled_integer(
    float vp_bias_x                 = ps->bias_x;
    float vp_bias_y                 = ps->bias_y;
    const void *cache_data          = NULL;
+   unsigned cache_dims             = 0;
    unsigned content_width          = 0;
    unsigned content_height         = 0;
    size_t   cache_pitch            = 0;
-   frame_cache_peek(&cache_data, &content_width, &content_height,
-         &cache_pitch);
+   frame_cache_peek(&cache_data, &cache_dims, &cache_pitch);
+   content_width                   = VIDEO_SCALE_W(cache_dims);
+   content_height                  = VIDEO_SCALE_H(cache_dims);
 #if defined(RARCH_MOBILE)
    if (width < height)
    {
@@ -4075,8 +4076,7 @@ void video_driver_cached_frame(void)
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
       const void *data;
-      unsigned    width;
-      unsigned    height;
+      unsigned    dims;
       size_t      pitch;
 
       /* The tuple has to arrive whole: a pointer paired with another
@@ -4085,11 +4085,11 @@ void video_driver_cached_frame(void)
        * producer, which the compare in
        * video_driver_cached_frame_publish() turns into a no-op for
        * the tuple read here. */
-      frame_cache_snapshot(&data, &width, &height, &pitch);
+      frame_cache_snapshot(&data, &dims, &pitch);
 
       cbs->frame_cb(
             (data != RETRO_HW_FRAME_BUFFER_VALID) ? data : NULL,
-            width, height, pitch);
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch);
    }
 
    recording_st->data             = recording;
@@ -4226,7 +4226,7 @@ static retro_atomic_size_t frame_cache_seq;
 #define FRAME_CACHE_SEQ_TRIES 64
 
 static bool frame_cache_snapshot(const void **data,
-      unsigned *width, unsigned *height, size_t *pitch)
+      unsigned *dims, size_t *pitch)
 {
    unsigned tries;
 
@@ -4242,11 +4242,7 @@ static bool frame_cache_snapshot(const void **data,
       }
 
       *data   = (const void*)retro_atomic_load_relaxed_ptr(&frame_cache_data);
-      {
-         int dims = retro_atomic_load_relaxed_int(&frame_cache_dims);
-         *width   = VIDEO_SCALE_W(dims);
-         *height  = VIDEO_SCALE_H(dims);
-      }
+      *dims   = (unsigned)retro_atomic_load_relaxed_int(&frame_cache_dims);
       *pitch  = (size_t)retro_atomic_load_relaxed_size(&frame_cache_pitch);
 
       retro_atomic_thread_fence_acquire();
@@ -4256,8 +4252,7 @@ static bool frame_cache_snapshot(const void **data,
    }
 
    *data   = NULL;
-   *width  = 0;
-   *height = 0;
+   *dims   = 0;
    *pitch  = 0;
    return false;
 }
@@ -4265,14 +4260,10 @@ static bool frame_cache_snapshot(const void **data,
 /* Producer-side read: the runloop thread reading fields only it
  * writes, so there is no stamp to lose a race against. */
 static void frame_cache_peek(const void **data,
-      unsigned *width, unsigned *height, size_t *pitch)
+      unsigned *dims, size_t *pitch)
 {
    *data   = (const void*)retro_atomic_load_relaxed_ptr(&frame_cache_data);
-   {
-      int dims = retro_atomic_load_relaxed_int(&frame_cache_dims);
-      *width   = VIDEO_SCALE_W(dims);
-      *height  = VIDEO_SCALE_H(dims);
-   }
+   *dims   = (unsigned)retro_atomic_load_relaxed_int(&frame_cache_dims);
    *pitch  = (size_t)retro_atomic_load_relaxed_size(&frame_cache_pitch);
 }
 
@@ -4281,7 +4272,7 @@ static void frame_cache_peek(const void **data,
  * the compare in video_driver_cached_frame_publish() drops before it
  * gets this far. */
 static void frame_cache_store(const void *data,
-      unsigned width, unsigned height, size_t pitch)
+      unsigned dims, size_t pitch)
 {
    size_t s = retro_atomic_load_relaxed_size(&frame_cache_seq);
 
@@ -4291,8 +4282,7 @@ static void frame_cache_store(const void *data,
    retro_atomic_thread_fence_release();
 
    retro_atomic_store_relaxed_ptr(&frame_cache_data,   (void*)data);
-   retro_atomic_store_relaxed_int(&frame_cache_dims,
-         (int)VIDEO_SCALE_PACK(width, height));
+   retro_atomic_store_relaxed_int(&frame_cache_dims,   (int)dims);
    retro_atomic_store_relaxed_size(&frame_cache_pitch, pitch);
 
    retro_atomic_store_release_size(&frame_cache_seq, s + 2);
@@ -4319,30 +4309,28 @@ static INLINE void cached_frame_lock_release(void)
 #endif
 
 static bool frame_cache_snapshot(const void **data,
-      unsigned *width, unsigned *height, size_t *pitch)
+      unsigned *dims, size_t *pitch)
 {
    cached_frame_lock_acquire();
    *data   = frame_cache_data;
-   *width  = frame_cache_width;
-   *height = frame_cache_height;
+   *dims   = frame_cache_dims;
    *pitch  = frame_cache_pitch;
    cached_frame_lock_release();
    return true;
 }
 
 static void frame_cache_peek(const void **data,
-      unsigned *width, unsigned *height, size_t *pitch)
+      unsigned *dims, size_t *pitch)
 {
-   frame_cache_snapshot(data, width, height, pitch);
+   frame_cache_snapshot(data, dims, pitch);
 }
 
 static void frame_cache_store(const void *data,
-      unsigned width, unsigned height, size_t pitch)
+      unsigned dims, size_t pitch)
 {
    cached_frame_lock_acquire();
    frame_cache_data   = data;
-   frame_cache_width  = width;
-   frame_cache_height = height;
+   frame_cache_dims   = dims;
    frame_cache_pitch  = pitch;
    cached_frame_lock_release();
 }
@@ -4353,15 +4341,14 @@ bool video_driver_cached_frame_info(
       bool *has_cpu_pixels)
 {
    const void *data;
-   unsigned    w;
-   unsigned    h;
+   unsigned    d;
    size_t      p;
 
-   if (     frame_cache_snapshot(&data, &w, &h, &p)
+   if (     frame_cache_snapshot(&data, &d, &p)
          && data)
    {
-      if (width)          *width          = w;
-      if (height)         *height         = h;
+      if (width)          *width          = VIDEO_SCALE_W(d);
+      if (height)         *height         = VIDEO_SCALE_H(d);
       if (pitch)          *pitch          = p;
       if (has_cpu_pixels) *has_cpu_pixels =
          (data != RETRO_HW_FRAME_BUFFER_VALID);
@@ -4384,8 +4371,7 @@ void video_driver_cached_frame_read(
                  unsigned width, unsigned height, size_t pitch))
 {
    const void *data;
-   unsigned    width  = 0;
-   unsigned    height = 0;
+   unsigned    dims   = 0;
    size_t      pitch  = 0;
 #ifdef FRAME_CACHE_HAZARDS
    int         hazard = -1;
@@ -4407,7 +4393,7 @@ void video_driver_cached_frame_read(
        * guards this ordering. */
       gen = retro_atomic_load_acquire_int(&frame_cache_generation);
 #endif
-      frame_cache_snapshot(&data, &width, &height, &pitch);
+      frame_cache_snapshot(&data, &dims, &pitch);
 
       /* Nothing to guard: the sentinel is not a pointer and an
        * empty cache has nothing to free.  Hand the callback NULL so
@@ -4450,35 +4436,32 @@ void video_driver_cached_frame_read(
        * degenerate to no-op locking and pay nothing. */
       cached_frame_lock_acquire();
       data   = frame_cache_data;
-      width  = frame_cache_width;
-      height = frame_cache_height;
+      dims   = frame_cache_dims;
       pitch  = frame_cache_pitch;
       if (!data || data == RETRO_HW_FRAME_BUFFER_VALID)
       {
          data   = NULL;
-         width  = 0;
-         height = 0;
+         dims   = 0;
          pitch  = 0;
       }
-      cb(userdata, data, width, height, pitch);
+      cb(userdata, data, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch);
       cached_frame_lock_release();
       return;
 #endif
       break;
    }
 
-   cb(userdata, data, width, height, pitch);
+   cb(userdata, data, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch);
    frame_cache_hazard_release(hazard);
 }
 
 bool video_driver_cached_frame_is_hw_render(void)
 {
    const void *data;
-   unsigned    width;
-   unsigned    height;
+   unsigned    dims;
    size_t      pitch;
 
-   frame_cache_snapshot(&data, &width, &height, &pitch);
+   frame_cache_snapshot(&data, &dims, &pitch);
    return (data == RETRO_HW_FRAME_BUFFER_VALID);
 }
 
@@ -4501,17 +4484,16 @@ void video_driver_cached_frame_publish(
 {
    const void *cur;
    const void *next;
-   unsigned    cur_width;
-   unsigned    cur_height;
+   unsigned    cur_dims;
    size_t      cur_pitch;
+   unsigned    dims = VIDEO_SCALE_PACK(width, height);
 
-   frame_cache_peek(&cur, &cur_width, &cur_height, &cur_pitch);
+   frame_cache_peek(&cur, &cur_dims, &cur_pitch);
 
    if (data)
       next = data;
-   else if (   width  != cur_width
-            || height != cur_height
-            || pitch  != cur_pitch)
+   else if (   dims  != cur_dims
+            || pitch != cur_pitch)
       /* A duped frame carries no pixels, so the pointer retained above
        * still describes the buffer the *previous* frame arrived in.
        * Publishing new dimensions alongside it would leave a tuple that
@@ -4524,13 +4506,12 @@ void video_driver_cached_frame_publish(
    else
       next = cur;
 
-   if (     next   == cur
-         && width  == cur_width
-         && height == cur_height
-         && pitch  == cur_pitch)
+   if (     next  == cur
+         && dims  == cur_dims
+         && pitch == cur_pitch)
       return;
 
-   frame_cache_store(next, width, height, pitch);
+   frame_cache_store(next, dims, pitch);
 }
 
 /* Producer-side invalidate: forget the cached frame.
@@ -4543,7 +4524,7 @@ void video_driver_cached_frame_publish(
  * that releases memory, call video_driver_cached_frame_retire(). */
 void video_driver_cached_frame_invalidate(void)
 {
-   frame_cache_store(NULL, 0, 0, 0);
+   frame_cache_store(NULL, 0, 0);
 }
 
 /* Producer-side retire: forget the cached frame and guarantee no
@@ -6760,8 +6741,12 @@ void video_driver_frame(const void *data, unsigned width,
 
       audio_compute_buffer_statistics(&audio_stats);
       video_monitor_fps_statistics(NULL, &stddev, NULL);
-      frame_cache_peek(&cache_data, &cache_width, &cache_height,
-            &cache_pitch);
+      {
+         unsigned cache_dims                 = 0;
+         frame_cache_peek(&cache_data, &cache_dims, &cache_pitch);
+         cache_width                         = VIDEO_SCALE_W(cache_dims);
+         cache_height                        = VIDEO_SCALE_H(cache_dims);
+      }
 
       video_info.osd_stat_params.x           = 0.001f;
       video_info.osd_stat_params.y           = 0.970f;
