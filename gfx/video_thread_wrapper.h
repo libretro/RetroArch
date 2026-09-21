@@ -102,8 +102,7 @@ typedef struct thread_packet
 
       struct
       {
-         unsigned width;
-         unsigned height;
+         unsigned dims;
          bool force_full;
          bool allow_rotate;
       } set_viewport;
@@ -130,14 +129,7 @@ typedef struct thread_packet
 
       struct
       {
-         unsigned width;
-         unsigned height;
-      } output;
-
-      struct
-      {
-         unsigned width;
-         unsigned height;
+         unsigned dims;
          bool fullscreen;
       } new_mode;
 
@@ -488,8 +480,7 @@ typedef struct thread_video
    {
       void *frame;
       size_t frame_cap;
-      unsigned width;
-      unsigned height;
+      unsigned dims;
       float alpha;
       bool frame_updated;
       bool rgb32;
@@ -596,8 +587,7 @@ typedef struct thread_video
           * which holds whatever frame was last put in it, an old one. */
          bool dupe;
          uint8_t *buffer;
-         unsigned width;
-         unsigned height;
+         unsigned dims;
          unsigned pitch;
          char msg[NAME_MAX_LENGTH];
 #ifdef HAVE_GFX_WIDGETS

@@ -527,7 +527,7 @@ static void thread_update_driver_state(thread_video_t *thr)
       if (thr->driver_data && thr->poke && thr->poke->set_texture_frame)
          thr->poke->set_texture_frame(thr->driver_data,
                thr->texture.frame, thr->texture.rgb32,
-               thr->texture.width, thr->texture.height,
+               VIDEO_SCALE_W(thr->texture.dims), VIDEO_SCALE_H(thr->texture.dims),
                thr->texture.alpha);
       thr->texture.frame_updated = false;
    }
@@ -677,8 +677,8 @@ static bool video_thread_handle_packet(
       case CMD_SET_VIEWPORT:
          if (thr->driver_data && thr->driver && thr->driver->set_viewport)
             thr->driver->set_viewport(thr->driver_data,
-                  pkt.data.set_viewport.width,
-                  pkt.data.set_viewport.height,
+                  VIDEO_SCALE_W(pkt.data.set_viewport.dims),
+                  VIDEO_SCALE_H(pkt.data.set_viewport.dims),
                   pkt.data.set_viewport.force_full,
                   pkt.data.set_viewport.allow_rotate);
          video_thread_reply(thr, &pkt);
@@ -839,8 +839,8 @@ static bool video_thread_handle_packet(
       case CMD_POKE_SET_VIDEO_MODE:
          if (thr->driver_data && thr->poke && thr->poke->set_video_mode)
             thr->poke->set_video_mode(thr->driver_data,
-                  pkt.data.new_mode.width,
-                  pkt.data.new_mode.height,
+                  VIDEO_SCALE_W(pkt.data.new_mode.dims),
+                  VIDEO_SCALE_H(pkt.data.new_mode.dims),
                   pkt.data.new_mode.fullscreen);
          video_thread_reply(thr, &pkt);
          break;
@@ -1942,8 +1942,8 @@ static void video_thread_loop(void *data)
                   video_thread_hw_before_frame(thr, thr->frame.slot[slot].hw_slot);
                   ret = thr->driver->frame(thr->driver_data,
                      RETRO_HW_FRAME_BUFFER_VALID,
-                     thr->frame.slot[slot].width,
-                     thr->frame.slot[slot].height,
+                     VIDEO_SCALE_W(thr->frame.slot[slot].dims),
+                     VIDEO_SCALE_H(thr->frame.slot[slot].dims),
                      thr->frame.slot[slot].count,
                      thr->frame.slot[slot].pitch,
                      *thr->frame.slot[slot].msg
@@ -1957,8 +1957,8 @@ static void video_thread_loop(void *data)
                    * sent, exactly as it does without the wrapper. */
                   const void *fdata = thr->frame.slot[slot].dupe
                      ? NULL : thr->frame.slot[slot].buffer;
-                  unsigned fwidth   = thr->frame.slot[slot].width;
-                  unsigned fheight  = thr->frame.slot[slot].height;
+                  unsigned fwidth   = VIDEO_SCALE_W(thr->frame.slot[slot].dims);
+                  unsigned fheight  = VIDEO_SCALE_H(thr->frame.slot[slot].dims);
                   unsigned fpitch   = thr->frame.slot[slot].pitch;
                   if (fdata && thr->frame.slot[slot].convert)
                      video_thread_convert(thr, thr->frame.slot[slot].convert,
@@ -2641,8 +2641,7 @@ static bool video_thread_frame(void *data, const void *frame_,
          copied = (size_t)height * copy_stride;
       }
 
-      thr->frame.slot[slot].width  = width;
-      thr->frame.slot[slot].height = height;
+      thr->frame.slot[slot].dims   = VIDEO_SCALE_PACK(width, height);
       thr->frame.slot[slot].count  = frame_count;
       thr->frame.slot[slot].pushed_at = now;
       thr->frame.slot[slot].hw_slot = hw_slot;
@@ -2897,8 +2896,7 @@ static void video_thread_set_viewport(void *data, unsigned width,
    {
       thread_packet_t pkt;
       pkt.type                         = CMD_SET_VIEWPORT;
-      pkt.data.set_viewport.width      = width;
-      pkt.data.set_viewport.height     = height;
+      pkt.data.set_viewport.dims       = VIDEO_SCALE_PACK(width, height);
       pkt.data.set_viewport.force_full = force_full;
       pkt.data.set_viewport.allow_rotate = video_allow_rotate;
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
@@ -3242,8 +3240,7 @@ static void thread_set_video_mode(void *data,
    {
       thread_packet_t pkt;
       pkt.type                     = CMD_POKE_SET_VIDEO_MODE;
-      pkt.data.new_mode.width      = width;
-      pkt.data.new_mode.height     = height;
+      pkt.data.new_mode.dims       = VIDEO_SCALE_PACK(width, height);
       pkt.data.new_mode.fullscreen = video_fullscreen;
 
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
@@ -3430,8 +3427,7 @@ static void thread_set_texture_frame(void *data, const void *frame,
    memcpy(thr->texture.frame, frame, required);
 
    thr->texture.rgb32         = rgb32;
-   thr->texture.width         = width;
-   thr->texture.height        = height;
+   thr->texture.dims          = VIDEO_SCALE_PACK(width, height);
    thr->texture.alpha         = alpha;
    thr->texture.frame_updated = true;
 
