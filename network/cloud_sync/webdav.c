@@ -1174,7 +1174,10 @@ static void webdav_do_backup(bool success, webdav_cb_state_t *webdav_cb_st)
       return;
    }
 
-   len = fill_pathname_join_special(dest, "deleted", webdav_cb_st->path, sizeof(dest));
+   /* Keep the trailing '/': with a bare "deleted" the join falls back
+    * to PATH_DEFAULT_SLASH, which is a backslash on Windows and would then
+    * be sent as %5C instead of a collection separator. */
+   len = fill_pathname_join_special(dest, "deleted/", webdav_cb_st->path, sizeof(dest));
    rtime_localtime(&cur_time, &tm_);
    if (   len >= sizeof(dest)
        || !strftime(dest + len, sizeof(dest) - len, "-%y%m%d-%H%M%S", &tm_)
