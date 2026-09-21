@@ -196,6 +196,23 @@ static void run(const char *path, const char *label, int expect_video)
    gfx_thumbnail_reset(&th);
 }
 
+
+/* setenv/unsetenv are POSIX; the MSVCRT that MinGW builds against has
+ * _putenv, where "NAME=" removes the variable. getenv sees both. */
+static void env_set(const char *name, const char *value)
+{
+#ifdef _WIN32
+   char buf[256];
+   snprintf(buf, sizeof(buf), "%s=%s", name, value ? value : "");
+   _putenv(buf);
+#else
+   if (value)
+      setenv(name, value, 1);
+   else
+      unsetenv(name);
+#endif
+}
+
 int main(int argc, char **argv)
 {
    int i;
@@ -212,14 +229,14 @@ int main(int argc, char **argv)
     * file mapping path is exercised: the windowed flag must be false
     * and RSS must not balloon to the file size on the huge sparse
     * fixtures. This is the path the companion-UI merge regressed. */
-   setenv("MEMMAP_NO_RESERVE", "1", 1);
+   env_set("MEMMAP_NO_RESERVE", "1");
    for (i = 1; i < argc; i++)
    {
       char lbl[512];
       snprintf(lbl, sizeof(lbl), "%s [noreserve]", argv[i]);
       run(argv[i], lbl, 2);
    }
-   unsetenv("MEMMAP_NO_RESERVE");
+   env_set("MEMMAP_NO_RESERVE", NULL);
 
    printf("\n%s (%d failure%s)\n", fails ? "FAIL" : "PASS", fails,
          fails == 1 ? "" : "s");
