@@ -23,6 +23,7 @@
 
 #include <formats/image.h>
 #include <formats/rh264.h>
+#include <formats/rh265.h>
 #include <streams/file_stream.h>
 #include <features/features_cpu.h>
 #include <rthreads/tpool.h>
@@ -111,7 +112,8 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
    }
    *usec = cpu_features_get_time_usec() - t0;
    if (hash_on)
-      printf("      frames hash %08x over %d frames\n", (unsigned)hash, n);
+      printf("      frames hash %08x over %d frames; %d HEVC reads short of their rows\n",
+            (unsigned)hash, n, rh265_video_ref_wait_misses());
 #if defined(CLOCK_THREAD_CPUTIME_ID) && defined(CLOCK_PROCESS_CPUTIME_ID)
    if (getenv("CPU_SPLIT"))
    {

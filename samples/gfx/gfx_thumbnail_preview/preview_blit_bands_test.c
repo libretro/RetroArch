@@ -25,6 +25,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
+#include <formats/rh265.h>
 
 #define BANDS 8
 
@@ -208,6 +209,17 @@ int main(int argc, char **argv)
    free(a);
    free(b);
    free(buf);
+   /* The HEVC row counter every reference read consults: on one thread
+    * and on the wavefront a reference is complete before it is read, so
+    * no read may find its rows short. A short read would be a wrong
+    * counter or a wrong bound, and a decoder with pictures in flight
+    * would then wait for a row it had been handed already. */
+   if (rh265_video_ref_wait_misses())
+   {
+      printf("[FAIL] %d HEVC reference reads short of their rows\n",
+            rh265_video_ref_wait_misses());
+      bad = 1;
+   }
    printf(bad ? "FAIL\n" : "PASS\n");
    return bad;
 }

@@ -95,6 +95,11 @@ void rh265_video_close(rh265_video *v);
  * before. NULL or threads <= 1 restores single-threaded decoding.
  * The pool is the caller's and must outlive every decode made while
  * it is set. */
+/* For the decoder's own samples: how many times a reference read found
+ * the rows it needed not yet final. Zero on one thread by construction;
+ * a sample asserts it. */
+int rh265_video_ref_wait_misses(void);
+
 void rh265_video_set_thread_pool(rh265_video *v, void *pool,
       unsigned threads);
 

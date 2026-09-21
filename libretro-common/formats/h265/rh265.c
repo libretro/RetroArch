@@ -1454,6 +1454,13 @@ typedef struct
    int      is_ref;           /* member of the active RPS */
    int      needed_out;       /* not yet emitted through the API */
    int      in_use;
+   /* CTB rows of this picture that are final - reconstructed,
+    * deblocked, SAO'd, nothing writes them again - counted from the
+    * top by the row hook and set to the whole picture at the finish.
+    * A picture predicting from this one waits on it, for the rows its
+    * read reaches and no more; on one thread it is complete before
+    * anyone asks. */
+   retro_atomic_int_t rows_final;
 } rh265_pic;
 
 #define RH265_MAX_PB 64
@@ -1558,6 +1565,11 @@ typedef struct
    int max_merge;             /* MaxNumMergeCand */
    int slice_tmvp;            /* slice_temporal_mvp_enabled_flag */
 } rh265_dec;
+
+/* A reference read waits for the rows it reaches (defined with the
+ * row hook below). */
+static void rh265_ref_wait_rows(const rh265_dec *d, const rh265_pic *ref,
+      int row);
 
 /* Per-bit-depth entry points, instantiated from rh265_bd.inc.  Common
  * code never touches samples directly: everything pixel-typed goes
@@ -2676,6 +2688,9 @@ static int rh265_temporal_mv(const rh265_dec *d, int x0, int y0,
       out->x = out->y = 0;
       return 0;
    }
+   /* the bottom-right candidate stays in this CTB row; both reads are
+    * of the row the block is in */
+   rh265_ref_wait_rows(d, ref, y0 >> sps->log2_ctb);
    /* bottom-right collocated block */
    x = x0 + nPbW;
    y = y0 + nPbH;
@@ -4353,6 +4368,38 @@ void rh265_video_set_thread_pool(rh265_video *v, void *pool,
  * row above, whose last line reads this row's first as deblocked.
  * Only for a picture decoding in order on one thread as one slice;
  * anything else filters whole at the finish. */
+/* The miss counter every reference read consults: on one thread a
+ * reference is complete before it is read, so a read that finds its
+ * rows short is a wrong counter or a wrong bound - a sample asserts
+ * it never happens. */
+static retro_atomic_int_t rh265_ref_wait_misses;
+
+int rh265_video_ref_wait_misses(void)
+{
+   return retro_atomic_load_acquire_int(&rh265_ref_wait_misses);
+}
+
+/* Publish that @rows CTB rows of @pic are final. */
+static void rh265_pic_publish_rows(rh265_pic *pic, int rows)
+{
+   retro_atomic_store_release_int(&pic->rows_final, rows);
+}
+
+/* Before a read of @ref reaches CTB row @row: the rows it reaches
+ * must be final. On one thread they are; a picture on another thread
+ * will wait here. */
+static void rh265_ref_wait_rows(const rh265_dec *d, const rh265_pic *ref,
+      int row)
+{
+   int rows = row + 1;
+   if (!ref)
+      return;
+   if (rows > d->sps->ctb_h)
+      rows = d->sps->ctb_h;
+   if (retro_atomic_load_acquire_int(&ref->rows_final) < rows)
+      retro_atomic_fetch_add_int(&rh265_ref_wait_misses, 1);
+}
+
 static void rh265_row_done(rh265_video *v, int ry)
 {
    rh265_dec *d = &v->d;
@@ -4370,6 +4417,14 @@ static void rh265_row_done(rh265_video *v, int ry)
          return;
       d->rows_sao = ry;
    }
+   /* Row rows_sao-1 is final; the horizontal edge at the top of row
+    * ry+1 will still touch row ry's last lines, and SAO of row ry
+    * reads them, so what is final is what SAO has been over - and
+    * without SAO, what is deblocked below the row still being
+    * filtered against. */
+   if (d->cur)
+      rh265_pic_publish_rows(d->cur, (d->sao_wanted && sps->sao_enabled)
+            ? d->rows_sao : (d->rows_deblocked > 0 ? d->rows_deblocked - 1 : 0));
 }
 
 /* The finish: whatever the hook left - the last row's SAO, or the
@@ -4390,6 +4445,8 @@ static int rh265_filters_finish(rh265_video *v)
             return -1;
    }
    d->rows_sao = sps->ctb_h;
+   if (d->cur)
+      rh265_pic_publish_rows(d->cur, sps->ctb_h);
    return 0;
 }
 
@@ -4829,6 +4886,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                   int i;
                   v->cur_slot = slot;
                   v->d.cur = cur;
+                  rh265_pic_publish_rows(cur, 0);
                   for (i = 0; i < 3; i++)
                      v->d.pl[i] = cur->pl[i];
                   v->d.mvf = cur->mvf;

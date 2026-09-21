@@ -485,6 +485,16 @@ static void RH265_FN(mc_pu)(rh265_dec *d, int x0, int y0, int w, int h,
    }
    if ((mv->pred & RH265_PF_L0) && !r0) return;
    if ((mv->pred & RH265_PF_L1) && !r1) return;
+   /* The rows the reads reach must be final: the block's last line
+    * displaced by the vector, and the eight-tap filter's four lines
+    * past it (chroma's four-tap at half resolution reaches no
+    * further). */
+   if (r0)
+      rh265_ref_wait_rows(d, r0, (y0 + h - 1 + (mv->mv[0].y >> 2) + 4)
+            >> d->sps->log2_ctb);
+   if (r1)
+      rh265_ref_wait_rows(d, r1, (y0 + h - 1 + (mv->mv[1].y >> 2) + 4)
+            >> d->sps->log2_ctb);
 
    /* luma */
    if (r0)
