@@ -70,7 +70,12 @@ int main(int argc, char *argv[])
       if (!filt)
          break;
 
-      rarch_softfilter_get_output_size(filt, &ow, &oh, SRC_W, SRC_H);
+      {
+         unsigned od = 0;
+         rarch_softfilter_get_output_size(filt, &od, SRC_W, SRC_H);
+         ow = VIDEO_SCALE_W(od);
+         oh = VIDEO_SCALE_H(od);
+      }
       CHECK(ow == SRC_W * 2 && oh == SRC_H * 2,
             "cycle %u: output size %ux%u, want %ux%u",
             cycle, ow, oh, SRC_W * 2, SRC_H * 2);

@@ -562,19 +562,26 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
 }
 
 void rarch_softfilter_get_max_output_size(rarch_softfilter_t *filt,
-      unsigned *width, unsigned *height)
+      unsigned *out_dims)
 {
-   rarch_softfilter_get_output_size(filt, width, height,
+   rarch_softfilter_get_output_size(filt, out_dims,
          filt->max_width, filt->max_height);
 }
 
+/* The plugin ABI hands the axes back through two pointers and leaves
+ * them alone when a filter offers no query_output_size, so *out_dims
+ * seeds them and takes the answer. */
 void rarch_softfilter_get_output_size(rarch_softfilter_t *filt,
-      unsigned *out_width, unsigned *out_height,
-      unsigned width, unsigned height)
+      unsigned *out_dims, unsigned width, unsigned height)
 {
+   unsigned out_width  = VIDEO_SCALE_W(*out_dims);
+   unsigned out_height = VIDEO_SCALE_H(*out_dims);
+
    if (filt && filt->impl && filt->impl->query_output_size)
-      filt->impl->query_output_size(filt->impl_data, out_width,
-            out_height, width, height);
+      filt->impl->query_output_size(filt->impl_data, &out_width,
+            &out_height, width, height);
+
+   *out_dims = VIDEO_SCALE_PACK(out_width, out_height);
 }
 
 enum retro_pixel_format rarch_softfilter_get_output_format(

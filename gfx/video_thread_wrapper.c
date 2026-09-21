@@ -1401,23 +1401,22 @@ static void video_thread_filter(thread_video_t *thr,
       unsigned *width, unsigned *height, unsigned *pitch)
 {
    video_driver_state_t *video_st = thr->video_st;
-   unsigned out_width             = 0;
-   unsigned out_height            = 0;
+   unsigned out_dims              = 0;
    unsigned out_pitch;
 
    if (!*data || !video_st->state_filter || !video_st->state_buffer)
       return;
 
    rarch_softfilter_get_output_size(video_st->state_filter,
-         &out_width, &out_height, *width, *height);
-   out_pitch = out_width * video_st->state_out_bpp;
+         &out_dims, *width, *height);
+   out_pitch = VIDEO_SCALE_W(out_dims) * video_st->state_out_bpp;
    rarch_softfilter_process(video_st->state_filter,
          video_st->state_buffer, out_pitch,
          *data, *width, *height, *pitch);
 
    *data     = video_st->state_buffer;
-   *width    = out_width;
-   *height   = out_height;
+   *width    = VIDEO_SCALE_W(out_dims);
+   *height   = VIDEO_SCALE_H(out_dims);
    *pitch    = out_pitch;
 }
 

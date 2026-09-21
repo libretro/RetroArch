@@ -2228,8 +2228,8 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
    void *buf                            = NULL;
    video_driver_state_t *video_st       = &video_driver_st;
    struct retro_game_geometry *geom     = &video_st->av_info.geometry;
-   unsigned width                       = geom->max_width;
-   unsigned height                      = geom->max_height;
+   unsigned dims                        = VIDEO_SCALE_PACK(
+         geom->max_width, geom->max_height);
    /* Deprecated format. Gets pre-converted. */
    enum retro_pixel_format colfmt       =
       (colfmt_int == RETRO_PIXEL_FORMAT_0RGB1555)
@@ -2249,18 +2249,17 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
 
    if (!(video_st->state_filter = rarch_softfilter_new(
          settings->paths.path_softfilter_plugin,
-         RARCH_SOFTFILTER_THREADS_AUTO, colfmt, width, height)))
+         RARCH_SOFTFILTER_THREADS_AUTO, colfmt,
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims))))
    {
       RARCH_ERR("[Video] Failed to load filter.\n");
       return;
    }
 
-   rarch_softfilter_get_max_output_size(
-         video_st->state_filter,
-         &width, &height);
+   rarch_softfilter_get_max_output_size(video_st->state_filter, &dims);
 
-   pow2_x                              = next_pow2(width);
-   pow2_y                              = next_pow2(height);
+   pow2_x                              = next_pow2(VIDEO_SCALE_W(dims));
+   pow2_y                              = next_pow2(VIDEO_SCALE_H(dims));
    maxsize                             = MAX(pow2_x, pow2_y);
 
 #ifdef _3DS
@@ -2291,11 +2290,11 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
     * driver reads it back for upload, so start it on a cache line:
     * with the usual pitches every row then begins on one too. */
 #ifdef _3DS
-   buf = linearMemAlign(
-         width * height * video_st->state_out_bpp, 0x80);
+   buf = linearMemAlign(VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims)
+         * video_st->state_out_bpp, 0x80);
 #else
-   buf = memalign_alloc(64,
-         width * height * video_st->state_out_bpp);
+   buf = memalign_alloc(64, VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims)
+         * video_st->state_out_bpp);
 #endif
    if (!buf)
    {
@@ -6629,14 +6628,13 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
       )
    {
-      unsigned output_width                             = 0;
-      unsigned output_height                            = 0;
+      unsigned output_dims                              = 0;
       unsigned output_pitch                             = 0;
 
       rarch_softfilter_get_output_size(video_st->state_filter,
-            &output_width, &output_height, width, height);
+            &output_dims, width, height);
 
-      output_pitch = (output_width) * video_st->state_out_bpp;
+      output_pitch = VIDEO_SCALE_W(output_dims) * video_st->state_out_bpp;
 
       rarch_softfilter_process(video_st->state_filter,
             video_st->state_buffer, output_pitch,
@@ -6648,12 +6646,13 @@ void video_driver_frame(const void *data, unsigned width,
             && recording_st->driver->push_video)
          recording_dump_frame(
                video_st->state_buffer,
-               output_width, output_height, output_pitch,
+               VIDEO_SCALE_W(output_dims), VIDEO_SCALE_H(output_dims),
+               output_pitch,
                runloop_idle);
 
       data   = video_st->state_buffer;
-      width  = output_width;
-      height = output_height;
+      width  = VIDEO_SCALE_W(output_dims);
+      height = VIDEO_SCALE_H(output_dims);
       pitch  = output_pitch;
    }
 #endif

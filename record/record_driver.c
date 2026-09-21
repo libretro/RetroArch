@@ -416,8 +416,7 @@ bool recording_init(void)
       if (settings->bools.video_post_filter_record
             && !!video_st->state_filter)
       {
-         unsigned max_width  = 0;
-         unsigned max_height = 0;
+         unsigned max_dims   = 0;
 
          params.pix_fmt      = FFEMU_PIX_RGB565;
 
@@ -425,10 +424,9 @@ bool recording_init(void)
             params.pix_fmt = FFEMU_PIX_ARGB8888;
 
          rarch_softfilter_get_max_output_size(
-               video_st->state_filter,
-               &max_width, &max_height);
-         params.fb_width  = next_pow2(max_width);
-         params.fb_height = next_pow2(max_height);
+               video_st->state_filter, &max_dims);
+         params.fb_width  = next_pow2(VIDEO_SCALE_W(max_dims));
+         params.fb_height = next_pow2(VIDEO_SCALE_H(max_dims));
       }
 #endif
    }

@@ -22,6 +22,8 @@
 #include <libretro.h>
 #include <retro_common_api.h>
 
+#include "video_defines.h"   /* VIDEO_SCALE_PACK */
+
 #define RARCH_SOFTFILTER_THREADS_AUTO 0
 
 RETRO_BEGIN_DECLS
@@ -36,12 +38,14 @@ rarch_softfilter_t *rarch_softfilter_new(
 
 void rarch_softfilter_free(rarch_softfilter_t *filt);
 
+/* Both take the output size as one word in VIDEO_SCALE_PACK's layout,
+ * seeded with what the caller has and left that way by a filter with
+ * no size query of its own. */
 void rarch_softfilter_get_max_output_size(rarch_softfilter_t *filt,
-      unsigned *width, unsigned *height);
+      unsigned *out_dims);
 
 void rarch_softfilter_get_output_size(rarch_softfilter_t *filt,
-      unsigned *out_width, unsigned *out_height,
-      unsigned width, unsigned height);
+      unsigned *out_dims, unsigned width, unsigned height);
 
 enum retro_pixel_format rarch_softfilter_get_output_format(
       rarch_softfilter_t *filt);

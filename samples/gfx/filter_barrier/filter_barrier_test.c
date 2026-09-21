@@ -259,7 +259,12 @@ int main(void)
       return 0;
    }
 
-   rarch_softfilter_get_output_size(filt, &ow, &oh, SRC_W, SRC_H);
+   {
+      unsigned od = 0;
+      rarch_softfilter_get_output_size(filt, &od, SRC_W, SRC_H);
+      ow = VIDEO_SCALE_W(od);
+      oh = VIDEO_SCALE_H(od);
+   }
 
    /* The pool is threaded or there is no barrier to test. */
    CHECK(filt->threads > 1 && filt->thread_data != NULL,
