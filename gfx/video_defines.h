@@ -191,9 +191,12 @@ enum text_alignment
  * clamped so neither axis can write over the other. Anything past
  * 65535 an axis is beyond what a driver here allocates. */
 #define VIDEO_SCALE_DIM_MAX 0xffffu
+/* Each axis becomes unsigned before it is compared, so a caller holding
+ * its sizes in int or float packs without a cast of its own. */
+#define VIDEO_SCALE_CLAMP(v) \
+   ((unsigned)(v) > VIDEO_SCALE_DIM_MAX ? VIDEO_SCALE_DIM_MAX : (unsigned)(v))
 #define VIDEO_SCALE_PACK(w, h) \
-   ((unsigned)(((((w) > VIDEO_SCALE_DIM_MAX ? VIDEO_SCALE_DIM_MAX : (w))) << 16) \
-             |  (((h) > VIDEO_SCALE_DIM_MAX ? VIDEO_SCALE_DIM_MAX : (h)))))
+   ((VIDEO_SCALE_CLAMP(w) << 16) | VIDEO_SCALE_CLAMP(h))
 #define VIDEO_SCALE_W(d) (((unsigned)(d) >> 16) & VIDEO_SCALE_DIM_MAX)
 #define VIDEO_SCALE_H(d)  ((unsigned)(d)        & VIDEO_SCALE_DIM_MAX)
 
