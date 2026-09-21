@@ -85,6 +85,7 @@ typedef struct
    bool need_manifest_uploaded;
    bool failures;
    bool conflicts;
+   const char *fatal_error;
    /* Conflict resolution mode: 0=none, 1=keep_local, 2=keep_server */
    int conflict_resolution;
    uint32_t uploads;
@@ -198,7 +199,12 @@ static void task_cloud_sync_begin_handler(void *user_data, const char *path, boo
 static bool tcs_object_member_handler(void *ctx, const char *s, size_t len)
 {
    file_list_t      *list = (file_list_t *)ctx;
-   struct item_file *item = &list->list[list->size - 1];
+   struct item_file *item;
+
+   if (!list->size)
+      return false;
+
+   item = &list->list[list->size - 1];
    if (string_is_equal(s, "path"))
       item->type = 1;
    else
@@ -209,8 +215,14 @@ static bool tcs_object_member_handler(void *ctx, const char *s, size_t len)
 static bool tcs_string_handler(void *ctx, const char *s, size_t len)
 {
    file_list_t      *list = (file_list_t *)ctx;
-   size_t            idx = list->size - 1;
-   struct item_file *item = &list->list[idx];
+   size_t            idx;
+   struct item_file *item;
+
+   if (!list->size)
+      return false;
+
+   idx  = list->size - 1;
+   item = &list->list[idx];
    if (item->type)
       file_list_set_alt_at_offset(list, idx, s);
    else
@@ -221,16 +233,20 @@ static bool tcs_string_handler(void *ctx, const char *s, size_t len)
 static bool tcs_start_object_handler(void *ctx)
 {
    file_list_t *list = (file_list_t *)ctx;
-   file_list_append(list, NULL, NULL, 0, 0, 0);
-   return true;
+   return file_list_append(list, NULL, NULL, 0, 0, 0);
 }
 
 static bool tcs_end_object_handler(void *ctx)
 {
    file_list_t      *list = (file_list_t *)ctx;
-   struct item_file *item = &list->list[list->size - 1];
+   struct item_file *item;
+
+   if (!list->size)
+      return false;
+
+   item = &list->list[list->size - 1];
    if (!CS_FILE_KEY(item))
-      list->size--;
+      file_list_pop(list, NULL);
    else
       item->type = 0;
    return true;
@@ -238,8 +254,9 @@ static bool tcs_end_object_handler(void *ctx)
 
 static file_list_t *task_cloud_sync_create_manifest(RFILE *file)
 {
-   file_list_t  *list = NULL;
-   rjson_t      *json = NULL;
+   file_list_t    *list         = NULL;
+   rjson_t        *json         = NULL;
+   enum rjson_type parse_result = RJSON_ERROR;
 
    if (!(list = (file_list_t *)calloc(1, sizeof(file_list_t))))
       return NULL;
@@ -250,7 +267,7 @@ static file_list_t *task_cloud_sync_create_manifest(RFILE *file)
       return NULL;
    }
 
-   rjson_parse(json, list,
+   parse_result = rjson_parse(json, list,
                tcs_object_member_handler,
                tcs_string_handler,
                NULL,
@@ -260,6 +277,18 @@ static file_list_t *task_cloud_sync_create_manifest(RFILE *file)
                NULL,
                NULL,
                NULL);
+
+   if (parse_result != RJSON_DONE)
+   {
+      const char *error = rjson_get_error(json);
+      RARCH_ERR(CSPFX "Invalid manifest at line %u, column %u: %s\n",
+            (unsigned)rjson_get_source_line(json),
+            (unsigned)rjson_get_source_column(json),
+            string_is_empty(error) ? "invalid structure" : error);
+      rjson_free(json);
+      file_list_free(list);
+      return NULL;
+   }
 
    rjson_free(json);
 
@@ -301,6 +330,14 @@ static void task_cloud_sync_manifest_handler(void *user_data, const char *path,
    {
       sync_state->server_manifest = task_cloud_sync_create_manifest(file);
       filestream_close(file);
+      if (!sync_state->server_manifest)
+      {
+         sync_state->failures    = true;
+         sync_state->fatal_error = "Invalid server manifest";
+         task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
+         task_cloud_sync_waiting_set(sync_state, 0);
+         return;
+      }
    }
    task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_READ_LOCAL_MANIFEST);
    task_cloud_sync_waiting_set(sync_state, 0);
@@ -334,11 +371,26 @@ static void task_cloud_sync_read_local_manifest(task_cloud_sync_state_t *sync_st
    {
       RFILE *rfile = filestream_open(manifest_path,
             RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-      if (rfile)
+      if (!rfile)
+      {
+         RARCH_ERR(CSPFX "Could not open local manifest.\n");
+         sync_state->failures    = true;
+         sync_state->fatal_error = "Cannot read local manifest";
+         task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
+         return;
+      }
+      else
       {
          RARCH_WARN(CSPFX "Opened local manifest.\n");
          sync_state->local_manifest = task_cloud_sync_create_manifest(rfile);
          filestream_close(rfile);
+         if (!sync_state->local_manifest)
+         {
+            sync_state->failures    = true;
+            sync_state->fatal_error = "Invalid manifest";
+            task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
+            return;
+         }
       }
    }
 
@@ -1582,15 +1634,23 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
    if ((sync_state = (task_cloud_sync_state_t *)task->state))
    {
       char title[128];
-      size_t _len = strlcpy_lit(title, "Cloud Sync finished", sizeof(title));
-      if (sync_state->failures || sync_state->conflicts)
-         _len += strlcpy_lit(title + _len, " with ", sizeof(title) - _len);
-      if (sync_state->failures)
-         _len += strlcpy_lit(title + _len, "failures", sizeof(title) - _len);
-      if (sync_state->failures && sync_state->conflicts)
-         _len += strlcpy_lit(title + _len, " and ", sizeof(title) - _len);
-      if (sync_state->conflicts)
-         strlcpy_lit(title + _len, "conflicts", sizeof(title) - _len);
+      if (sync_state->fatal_error)
+      {
+         strlcpy(title, sync_state->fatal_error, sizeof(title));
+         task_set_error(task, strdup(sync_state->fatal_error));
+      }
+      else
+      {
+         size_t _len = strlcpy_lit(title, "Cloud Sync finished", sizeof(title));
+         if (sync_state->failures || sync_state->conflicts)
+            _len += strlcpy_lit(title + _len, " with ", sizeof(title) - _len);
+         if (sync_state->failures)
+            _len += strlcpy_lit(title + _len, "failures", sizeof(title) - _len);
+         if (sync_state->failures && sync_state->conflicts)
+            _len += strlcpy_lit(title + _len, " and ", sizeof(title) - _len);
+         if (sync_state->conflicts)
+            strlcpy_lit(title + _len, "conflicts", sizeof(title) - _len);
+      }
       task_free_title(task);
       task_set_title(task, strdup(title));
 
