@@ -561,8 +561,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
 
    {
       gfx_display_t *p_disp   = disp_get_ptr();
-      p_disp->framebuf_width  = new_fb_width;
-      p_disp->framebuf_height = new_fb_height;
+      p_disp->framebuf_dims   = VIDEO_SCALE_PACK(new_fb_width, new_fb_height);
       p_disp->framebuf_pitch  = new_fb_pitch;
    }
 
@@ -678,8 +677,8 @@ static void init_texture(gx_video_t *gx, unsigned width, unsigned height,
    width                  &= ~3;
    height                 &= ~3;
 
-   fb_width                = p_disp->framebuf_width;
-   fb_height               = p_disp->framebuf_height;
+   fb_width                = VIDEO_SCALE_W(p_disp->framebuf_dims);
+   fb_height               = VIDEO_SCALE_H(p_disp->framebuf_dims);
 
    GX_InitTexObj(fb_ptr, g_tex.data, width, height,
          (gx->rgb32)
@@ -1658,8 +1657,8 @@ static bool gx_frame(void *data, const void *frame,
    if (gx->menu_texture_enable && gx->menu_data)
    {
       gfx_display_t *p_disp   = disp_get_ptr();
-      unsigned fb_width       = p_disp->framebuf_width;
-      unsigned fb_height      = p_disp->framebuf_height;
+      unsigned fb_width       = VIDEO_SCALE_W(p_disp->framebuf_dims);
+      unsigned fb_height      = VIDEO_SCALE_H(p_disp->framebuf_dims);
       unsigned fb_pitch       = p_disp->framebuf_pitch;
 
       convert_texture16(

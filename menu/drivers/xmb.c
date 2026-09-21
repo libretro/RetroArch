@@ -8136,8 +8136,7 @@ static void xmb_render(void *data,
    /* This must be set every frame when using a pointer,
     * otherwise touchscreen input breaks when changing
     * orientation */
-   p_disp->framebuf_width      = width;
-   p_disp->framebuf_height     = height;
+   p_disp->framebuf_dims       = VIDEO_SCALE_PACK(width, height);
 
    /* Read pointer state */
    menu_input_get_pointer_state(&xmb->pointer);
@@ -10582,8 +10581,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    /* TODO/FIXME - we don't use framebuffer at all
     * for XMB, we should refactor this dependency
     * away. */
-   p_disp->framebuf_width  = width;
-   p_disp->framebuf_height = height;
+   p_disp->framebuf_dims   = VIDEO_SCALE_PACK(width, height);
 
    gfx_display_init_white_texture();
 

@@ -109,8 +109,7 @@ static void reset_thumb(gfx_thumbnail_t *t)
    /* what gfx_thumbnail_handle_upload leaves behind just before it
     * reaches the animation block */
    t->status  = GFX_THUMBNAIL_STATUS_AVAILABLE;
-   t->width   = 4;
-   t->height  = 4;
+   t->dims    = VIDEO_SCALE_PACK(4, 4);
    t->texture = 1;
 }
 

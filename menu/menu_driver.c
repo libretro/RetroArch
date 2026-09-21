@@ -1297,7 +1297,7 @@ static float menu_input_get_dpi(
       /* Read framebuffer info? */
       if (menu_has_fb)
       {
-         unsigned fb_height         = p_disp->framebuf_height;
+         unsigned fb_height         = VIDEO_SCALE_H(p_disp->framebuf_dims);
          /* Rationale for current 'DPI' determination method:
           * - Divide screen height by DPI, to get number of vertical
           *   '1 inch' squares
@@ -2098,8 +2098,8 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
        * menu space... */
       struct video_viewport vp     = {0};
       /* Read display/framebuffer info */
-      unsigned fb_width            = p_disp->framebuf_width;
-      unsigned fb_height           = p_disp->framebuf_height;
+      unsigned fb_width            = VIDEO_SCALE_W(p_disp->framebuf_dims);
+      unsigned fb_height           = VIDEO_SCALE_H(p_disp->framebuf_dims);
 
       video_driver_get_viewport_info(&vp);
 
@@ -2294,8 +2294,8 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
    /* TODO/FIXME - this should only be used for framebuffer-based
     * menu drivers like RGUI. Touchscreen input as a whole should
     * NOT be dependent on this */
-   fb_width             = p_disp->framebuf_width;
-   fb_height            = p_disp->framebuf_height;
+   fb_width             = VIDEO_SCALE_W(p_disp->framebuf_dims);
+   fb_height            = VIDEO_SCALE_H(p_disp->framebuf_dims);
 
    joypad_info.joy_idx                          = 0;
    joypad_info.auto_binds                       = NULL;

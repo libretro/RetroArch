@@ -268,8 +268,8 @@ typedef struct dispgfx_widget
     * type is not exposed in this header. */
 #endif
 
-   unsigned last_video_width;
-   unsigned last_video_height;
+   /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
+   unsigned last_video_dims;
    unsigned msg_queue_kill;
    /* Count of messages bound to a task in current_msgs */
    unsigned msg_queue_tasks_count;
@@ -297,8 +297,7 @@ typedef struct dispgfx_widget
    float msg_queue_bg[16];
    float pure_white[16];
 #ifdef HAVE_TRANSLATE
-   unsigned ai_service_overlay_width;
-   unsigned ai_service_overlay_height;
+   unsigned ai_service_overlay_dims;
 #endif
 
    uint8_t flags;

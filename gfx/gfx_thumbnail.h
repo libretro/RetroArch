@@ -276,8 +276,8 @@ typedef struct
     * waited on. */
    uint64_t list_id;
    int32_t anim_loops_left; /* remaining loops, -1 = infinite */
-   unsigned width;
-   unsigned height;
+   /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
+   unsigned dims;
    float alpha;
    float delay_timer;
    retro_atomic_int_t status;
@@ -327,8 +327,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_next_us    = 0;
    t->list_id         = 0;
    t->anim_loops_left = 0;
-   t->width           = 0;
-   t->height          = 0;
+   t->dims            = 0;
    t->alpha           = 0.0f;
    t->delay_timer     = 0.0f;
    retro_atomic_int_init(&t->status, 0 /* GFX_THUMBNAIL_STATUS_UNKNOWN */);

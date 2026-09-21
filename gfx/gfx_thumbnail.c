@@ -1047,10 +1047,9 @@ static void gfx_thumbnail_anim_shown(gfx_thumbnail_t *thumbnail,
       thumbnail->flags |= GFX_THUMB_FLAG_TEX_SURFACE;
    }
    thumbnail->texture = s->handle;
-   thumbnail->width   = VIDEO_SCALE_W(s->dims);
-   thumbnail->height  = VIDEO_SCALE_H(s->dims);
+   thumbnail->dims    = s->dims;
    /* Release-store pairs with the acquire-load in the draw path:
-    * texture/width/height are visible before AVAILABLE is. */
+    * texture and dims are visible before AVAILABLE is. */
    if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) ==
          GFX_THUMBNAIL_STATUS_PENDING)
    {
@@ -1668,8 +1667,8 @@ static void gfx_thumbnail_handle_upload(
       if (r == GFX_SURFACE_SUBMIT_QUEUED)
       {
          /* Dimensions now, so layout does not wait for the handle. */
-         thumbnail_tag->thumbnail->width  = img->width;
-         thumbnail_tag->thumbnail->height = img->height;
+         thumbnail_tag->thumbnail->dims   = VIDEO_SCALE_PACK(
+               img->width, img->height);
          img = NULL;    /* the surface frees it from its release */
          goto open_anim;
       }
@@ -2188,8 +2187,7 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
     * thread learn on delivery that this reset happened. */
    GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_UNKNOWN);
    thumbnail->texture     = 0;
-   thumbnail->width       = 0;
-   thumbnail->height      = 0;
+   thumbnail->dims        = 0;
    thumbnail->alpha       = 0.0f;
    thumbnail->delay_timer = 0.0f;
    thumbnail->flags       = 0;
@@ -2594,8 +2592,8 @@ void gfx_thumbnail_get_draw_dimensions(
    if (   !thumbnail
        || (width             < 1)
        || (height            < 1)
-       || (thumbnail->width  < 1)
-       || (thumbnail->height < 1))
+       || (VIDEO_SCALE_W(thumbnail->dims) < 1)
+       || (VIDEO_SCALE_H(thumbnail->dims) < 1))
    {
       *draw_width  = 0.0f;
       *draw_height = 0.0f;
@@ -2605,7 +2603,8 @@ void gfx_thumbnail_get_draw_dimensions(
    /* Account for display/thumbnail/core aspect ratio
     * differences */
    display_aspect   = (float)width            / (float)height;
-   thumbnail_aspect = (float)thumbnail->width / (float)thumbnail->height;
+   thumbnail_aspect = (float)VIDEO_SCALE_W(thumbnail->dims)
+                    / (float)VIDEO_SCALE_H(thumbnail->dims);
    core_aspect      = ((thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
          && video_st && video_st->av_info.geometry.aspect_ratio > 0)
                ? video_st->av_info.geometry.aspect_ratio
@@ -2614,7 +2613,7 @@ void gfx_thumbnail_get_draw_dimensions(
    if (thumbnail_aspect > display_aspect)
    {
       *draw_width  = (float)width;
-      *draw_height = (float)thumbnail->height * (*draw_width / (float)thumbnail->width);
+      *draw_height = (float)VIDEO_SCALE_H(thumbnail->dims) * (*draw_width / (float)VIDEO_SCALE_W(thumbnail->dims));
 
       if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
       {
@@ -2623,7 +2622,7 @@ void gfx_thumbnail_get_draw_dimensions(
          if (*draw_height > height)
          {
             *draw_height = (float)height;
-            *draw_width  = (float)thumbnail->width * (*draw_height / (float)thumbnail->height);
+            *draw_width  = (float)VIDEO_SCALE_W(thumbnail->dims) * (*draw_height / (float)VIDEO_SCALE_H(thumbnail->dims));
             *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
          }
       }
@@ -2631,7 +2630,7 @@ void gfx_thumbnail_get_draw_dimensions(
    else
    {
       *draw_height = (float)height;
-      *draw_width  = (float)thumbnail->width * (*draw_height / (float)thumbnail->height);
+      *draw_width  = (float)VIDEO_SCALE_W(thumbnail->dims) * (*draw_height / (float)VIDEO_SCALE_H(thumbnail->dims));
 
       if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
          *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
@@ -2641,7 +2640,7 @@ void gfx_thumbnail_get_draw_dimensions(
    if (*draw_width > width)
    {
       *draw_width  = (float)width;
-      *draw_height = (float)thumbnail->height * (*draw_width / (float)thumbnail->width);
+      *draw_height = (float)VIDEO_SCALE_H(thumbnail->dims) * (*draw_width / (float)VIDEO_SCALE_W(thumbnail->dims));
 
       if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
          *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
@@ -2711,8 +2710,8 @@ void gfx_thumbnail_draw(
        * the live struct concurrently (upload callback, reset, or
        * animation tick on alpha), but these locals are stable. */
       uintptr_t thumb_texture = thumbnail->texture;
-      unsigned  thumb_width   = thumbnail->width;
-      unsigned  thumb_height  = thumbnail->height;
+      unsigned  thumb_width   = VIDEO_SCALE_W(thumbnail->dims);
+      unsigned  thumb_height  = VIDEO_SCALE_H(thumbnail->dims);
       float     thumb_alpha   = thumbnail->alpha;
       uint8_t   thumb_flags   = thumbnail->flags;
 
@@ -2737,8 +2736,7 @@ void gfx_thumbnail_draw(
       {
          gfx_thumbnail_t thumb_snapshot;
          thumb_snapshot.texture = thumb_texture;
-         thumb_snapshot.width   = thumb_width;
-         thumb_snapshot.height  = thumb_height;
+         thumb_snapshot.dims    = VIDEO_SCALE_PACK(thumb_width, thumb_height);
          thumb_snapshot.alpha   = thumb_alpha;
          thumb_snapshot.flags   = thumb_flags;
          /* Local snapshot: initialise the atomic-typed status

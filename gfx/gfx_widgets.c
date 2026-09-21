@@ -84,7 +84,7 @@ static void gfx_widgets_update_icon_layout(dispgfx_widget_t *p_dispwidget)
    if (!p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_HOURGLASS])
       p_dispwidget->msg_queue_task_text_start_x  -= p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 2.0f;
 
-   p_dispwidget->msg_queue_default_rect_width     = p_dispwidget->last_video_width
+   p_dispwidget->msg_queue_default_rect_width     = VIDEO_SCALE_W(p_dispwidget->last_video_dims)
          - p_dispwidget->msg_queue_regular_text_start - (2 * p_dispwidget->simple_widget_padding);
 }
 
@@ -1230,15 +1230,14 @@ static INLINE void gfx_widgets_update_layout(
     * video driver up and the thread that drives it, which is what
     * runs once a frame here. */
    if ((scale_factor != p_dispwidget->last_scale_factor) ||
-       (width        != p_dispwidget->last_video_width) ||
-       (height       != p_dispwidget->last_video_height) ||
+       (width        != VIDEO_SCALE_W(p_dispwidget->last_video_dims)) ||
+       (height       != VIDEO_SCALE_H(p_dispwidget->last_video_dims)) ||
        !string_is_equal(p_dispwidget->last_font_path,
              font_path ? font_path : ""))
    {
       gfx_widgets_state_lock();
       p_dispwidget->last_scale_factor = scale_factor;
-      p_dispwidget->last_video_width  = width;
-      p_dispwidget->last_video_height = height;
+      p_dispwidget->last_video_dims   = VIDEO_SCALE_PACK(width, height);
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
@@ -2445,20 +2444,19 @@ static void gfx_widgets_context_reset(
    }
 
    /* Update scaling/dimensions */
-   p_dispwidget->last_video_width     = width;
-   p_dispwidget->last_video_height    = height;
+   p_dispwidget->last_video_dims      = VIDEO_SCALE_PACK(width, height);
 #ifdef HAVE_XMB
    if (p_disp->menu_driver_id == MENU_DRIVER_ID_XMB)
       p_dispwidget->last_scale_factor = gfx_display_get_widget_pixel_scale(
             p_disp, settings,
-            p_dispwidget->last_video_width,
-            p_dispwidget->last_video_height, fullscreen);
+            VIDEO_SCALE_W(p_dispwidget->last_video_dims),
+            VIDEO_SCALE_H(p_dispwidget->last_video_dims), fullscreen);
    else
 #endif
       p_dispwidget->last_scale_factor = gfx_display_get_dpi_scale(
                      p_disp, settings,
-                     p_dispwidget->last_video_width,
-                     p_dispwidget->last_video_height,
+                     VIDEO_SCALE_W(p_dispwidget->last_video_dims),
+                     VIDEO_SCALE_H(p_dispwidget->last_video_dims),
                      fullscreen, true);
 
    gfx_widgets_layout(p_disp, p_dispwidget,
@@ -2736,13 +2734,15 @@ bool gfx_widgets_ai_service_overlay_load(
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    if (gfx_widgets_ai_service_overlay_get_state() == 0)
    {
+      unsigned width                = 0;
+      unsigned height               = 0;
       if (!gfx_display_reset_textures_list_buffer(
                &p_dispwidget->ai_service_overlay_texture,
                gfx_display_texture_filter(),
                (void *) buffer, buffer_len, image_type,
-               &p_dispwidget->ai_service_overlay_width,
-               &p_dispwidget->ai_service_overlay_height))
+               &width, &height))
          return false;
+      p_dispwidget->ai_service_overlay_dims = VIDEO_SCALE_PACK(width, height);
       gfx_widgets_ai_service_overlay_set_state(1);
    }
    return true;

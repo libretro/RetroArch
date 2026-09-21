@@ -4511,8 +4511,7 @@ static void materialui_render(void *data,
 
    /* Need to update this each frame, otherwise touchscreen
     * input breaks when changing orientation */
-   p_disp->framebuf_width  = width;
-   p_disp->framebuf_height = height;
+   p_disp->framebuf_dims   = VIDEO_SCALE_PACK(width, height);
 
    /* Read pointer state */
    menu_input_get_pointer_state(&mui->pointer);

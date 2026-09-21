@@ -2234,8 +2234,8 @@ static void rgui_init_particle_effect(
       gfx_display_t *p_disp)
 {
    size_t i;
-   unsigned fb_width  = p_disp->framebuf_width;
-   unsigned fb_height = p_disp->framebuf_height;
+   unsigned fb_width  = VIDEO_SCALE_W(p_disp->framebuf_dims);
+   unsigned fb_height = VIDEO_SCALE_H(p_disp->framebuf_dims);
 
    switch (rgui->particle_effect)
    {
@@ -5208,8 +5208,8 @@ static bool rgui_osk_pointer_over_textbox(
       unsigned keyboard_offset_y = 10 + 15 + (2 * rgui->font_height_stride);
       unsigned osk_width         = (key_width * OSK_CHARS_PER_LINE) + 20;
       unsigned osk_height        = keyboard_offset_y + (key_height * 4) + 10;
-      unsigned osk_x             = (p_disp->framebuf_width  - osk_width)  / 2;
-      unsigned osk_y             = (p_disp->framebuf_height - osk_height) / 2;
+      unsigned osk_x             = (VIDEO_SCALE_W(p_disp->framebuf_dims)  - osk_width)  / 2;
+      unsigned osk_y             = (VIDEO_SCALE_H(p_disp->framebuf_dims) - osk_height) / 2;
 
       return (unsigned)x > osk_x + 5
           && (unsigned)x < osk_x + osk_width - 5
@@ -5248,8 +5248,8 @@ static int rgui_osk_ptr_at_pos(
       unsigned osk_width                = keyboard_width + 20;
       unsigned osk_height               = keyboard_offset_y + keyboard_height + 10;
       /* Get dimensions/layout */
-      unsigned fb_width                 = p_disp->framebuf_width;
-      unsigned fb_height                = p_disp->framebuf_height;
+      unsigned fb_width                 = VIDEO_SCALE_W(p_disp->framebuf_dims);
+      unsigned fb_height                = VIDEO_SCALE_H(p_disp->framebuf_dims);
       unsigned osk_x                    = (fb_width  - osk_width)  / 2;
       unsigned osk_y                    = (fb_height - osk_height) / 2;
 
@@ -5867,8 +5867,8 @@ static void rgui_render(void *data, unsigned width, unsigned height,
    }
 
    display_kb = current_display_cb;
-   fb_width   = p_disp->framebuf_width;
-   fb_height  = p_disp->framebuf_height;
+   fb_width   = VIDEO_SCALE_W(p_disp->framebuf_dims);
+   fb_height  = VIDEO_SCALE_H(p_disp->framebuf_dims);
    fb_pitch   = p_disp->framebuf_pitch;
 
    /* If the framebuffer changed size, or the background config has
@@ -6804,8 +6804,8 @@ static void rgui_update_menu_viewport(
       unsigned menu_rgui_aspect_ratio_lock)
 {
    struct video_viewport vp;
-   unsigned fb_width           = p_disp->framebuf_width;
-   unsigned fb_height          = p_disp->framebuf_height;
+   unsigned fb_width           = VIDEO_SCALE_W(p_disp->framebuf_dims);
+   unsigned fb_height          = VIDEO_SCALE_H(p_disp->framebuf_dims);
 
 #ifndef GEKKO
 #ifdef DINGUX
@@ -6969,7 +6969,7 @@ static bool rgui_set_aspect_ratio(
    /* Since Wii graphics driver can change frame buffer
     * dimensions at will, have to read currently set
     * values */
-   rgui->frame_buf.height = p_disp->framebuf_height;
+   rgui->frame_buf.height = VIDEO_SCALE_H(p_disp->framebuf_dims);
 #elif defined(DINGUX)
    /* Dingux devices use a fixed framebuffer size */
    rgui->frame_buf.height = RGUI_DINGUX_FB_HEIGHT;
@@ -7246,8 +7246,7 @@ static bool rgui_set_aspect_ratio(
 #endif
 
    /* Configure 'menu display' settings */
-   p_disp->framebuf_width  = rgui->frame_buf.width;
-   p_disp->framebuf_height = rgui->frame_buf.height;
+   p_disp->framebuf_dims   = VIDEO_SCALE_PACK(rgui->frame_buf.width, rgui->frame_buf.height);
    p_disp->framebuf_pitch  = rgui->frame_buf.width * sizeof(uint16_t);
 
    /* Determine terminal layout */
@@ -7556,8 +7555,8 @@ static void rgui_set_texture(void *data)
    if (!rgui || !(p_disp->flags & GFX_DISP_FLAG_FB_DIRTY))
       return;
 
-   fb_width               = p_disp->framebuf_width;
-   fb_height              = p_disp->framebuf_height;
+   fb_width               = VIDEO_SCALE_W(p_disp->framebuf_dims);
+   fb_height              = VIDEO_SCALE_H(p_disp->framebuf_dims);
 
    p_disp->flags         &= ~GFX_DISP_FLAG_FB_DIRTY;
 

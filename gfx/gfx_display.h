@@ -222,10 +222,10 @@ struct gfx_display
    gfx_display_ctx_driver_t *dispctx;
    video_coord_array_t dispca; /* ptr alignment */
 
-   /* Width, height and pitch of the display framebuffer */
+   /* Pitch of the display framebuffer, and both its axes in one word
+    * in VIDEO_SCALE_PACK's layout */
    size_t   framebuf_pitch;
-   unsigned framebuf_width;
-   unsigned framebuf_height;
+   unsigned framebuf_dims;
 
    /* Height of the display header */
    unsigned header_height;
@@ -250,11 +250,9 @@ struct gfx_display
     * one quad is not worth a difference. */
    int       batch_first_x;
    int       batch_first_y;
-   unsigned  batch_first_w;
-   unsigned  batch_first_h;
+   unsigned  batch_first_dims;
    void     *batch_userdata;
-   unsigned  batch_video_width;
-   unsigned  batch_video_height;
+   unsigned  batch_video_dims;
    /* Whether a caller has blending on right now. A quad drawn on its
     * own turns blending on and off around itself; one gathered while
     * a caller has it on must leave it on, or the caller's group ends

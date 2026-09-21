@@ -594,7 +594,7 @@ static void gfx_widget_load_content_animation_calculate(
    int system_name_width;
    int text_width;
 
-   unsigned last_video_width            = p_dispwidget->last_video_width;
+   unsigned last_video_width            = VIDEO_SCALE_W(p_dispwidget->last_video_dims);
    unsigned widget_padding              = p_dispwidget->simple_widget_padding;
 
    gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
@@ -636,8 +636,8 @@ static void gfx_widget_load_content_animation_layout(
    dispgfx_widget_t *p_dispwidget                   = (dispgfx_widget_t*)data;
    gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
-   unsigned last_video_width                        = p_dispwidget->last_video_width;
-   unsigned last_video_height                       = p_dispwidget->last_video_height;
+   unsigned last_video_width                        = VIDEO_SCALE_W(p_dispwidget->last_video_dims);
+   unsigned last_video_height                       = VIDEO_SCALE_H(p_dispwidget->last_video_dims);
    unsigned widget_padding                          = p_dispwidget->simple_widget_padding;
 
    gfx_widget_font_data_t *font_regular             = &p_dispwidget->gfx_widget_fonts.regular;

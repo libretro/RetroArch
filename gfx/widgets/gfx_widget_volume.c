@@ -337,7 +337,7 @@ static void gfx_widget_volume_layout(
 {
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)data;
    gfx_widget_volume_state_t *state     = &p_w_volume_st;
-   unsigned last_video_width            = p_dispwidget->last_video_width;
+   unsigned last_video_width            = VIDEO_SCALE_W(p_dispwidget->last_video_dims);
    gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
 
    state->widget_height                 = font_regular->line_height * 4;
