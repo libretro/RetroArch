@@ -94,6 +94,15 @@ static void sinc_cases(void)
       CC_resampler.free(reference);
    }
    driver->free(state);
+   /* A nominal ratio CC cannot serve is refused at init, as sinc
+    * refuses one its phase clock cannot advance on. */
+   state = NULL; driver = NULL;
+   CHECK(!retro_resampler_realloc(&state, &driver, "cc", RESAMPLER_QUALITY_NORMAL, 0.0));
+   CHECK(!state && !driver);
+   CHECK(!retro_resampler_realloc(&state, &driver, "cc", RESAMPLER_QUALITY_NORMAL, -1.5));
+   CHECK(!state && !driver);
+   CHECK(!retro_resampler_realloc(&state, &driver, "cc", RESAMPLER_QUALITY_NORMAL, 1.0e9));
+   CHECK(!state && !driver);
    state = NULL; driver = NULL;
    CHECK(retro_resampler_realloc(&state, &driver, "CC", RESAMPLER_QUALITY_LOWEST, 0.5));
    CHECK(driver == &CC_resampler);

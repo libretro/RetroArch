@@ -207,6 +207,12 @@ int main(void)
       direction(2, floating);
       unnameable(2, floating);
    }
+   /* The int16 driver refuses a nominal ratio it cannot serve, as its
+    * process() refuses the same range per call. */
+   CHECK(cc_resampler_int16_init(0.0)   == NULL);
+   CHECK(cc_resampler_int16_init(-1.5)  == NULL);
+   CHECK(cc_resampler_int16_init(1.0e9) == NULL);
+   cases++;
    CHECK(!heap_calls);
    printf("native resampler reset: %u cases, %u failures, %u guarded heap calls\n", cases, failures, heap_calls);
    return failures ? 1 : 0;

@@ -55,9 +55,11 @@ typedef struct cc_resampler_int16
  * casts below, where it is undefined. */
 #define CC_I16_RATIO_MAX 65536.0
 
+#define CC_I16_RATIO_USABLE(r) ((r) > 0.0 && (r) <= CC_I16_RATIO_MAX)
+
 static INLINE size_t cc_i16_out_max(const struct resampler_data_int16 *data)
 {
-   if (!(data->ratio > 0.0) || !(data->ratio <= CC_I16_RATIO_MAX))
+   if (!CC_I16_RATIO_USABLE(data->ratio))
       return 0;
    return (size_t)((double)data->input_frames * data->ratio) + 2;
 }
@@ -209,8 +211,10 @@ static void cc_i16_upsample(void *re_, struct resampler_data_int16 *data)
 
 void *cc_resampler_int16_init(double bandwidth_mod)
 {
-   cc_resampler_int16_t *re = (cc_resampler_int16_t*)calloc(1, sizeof(*re));
-   if (!re)
+   cc_resampler_int16_t *re;
+   if (!CC_I16_RATIO_USABLE(bandwidth_mod))
+      return NULL;
+   if (!(re = (cc_resampler_int16_t*)calloc(1, sizeof(*re))))
       return NULL;
 
    /* Variations of data->ratio around 0.75 are safer than around 1.0 for

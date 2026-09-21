@@ -73,9 +73,11 @@ typedef struct rarch_CC_resampler
  * for. A ratio no pair of sample rates can name resamples nothing. */
 #define CC_RESAMPLER_RATIO_MAX 65536.0
 
+#define CC_RATIO_USABLE(r) ((r) > 0.0 && (r) <= CC_RESAMPLER_RATIO_MAX)
+
 static INLINE size_t resampler_CC_out_max(const struct resampler_data *data)
 {
-   if (!(data->ratio > 0.0) || !(data->ratio <= CC_RESAMPLER_RATIO_MAX))
+   if (!CC_RATIO_USABLE(data->ratio))
       return 0;
    return (size_t)((double)data->input_frames * data->ratio) + 2;
 }
@@ -210,14 +212,15 @@ static void *resampler_CC_init(const struct resampler_config *config,
       resampler_simd_mask_t mask)
 {
    int i;
-   rarch_CC_resampler_psp_t *re = (rarch_CC_resampler_psp_t*)
-      memalign_alloc(16, sizeof(rarch_CC_resampler_psp_t));
+   rarch_CC_resampler_psp_t *re;
 
    (void)mask;
-   (void)bandwidth_mod;
    (void)config;
 
-   if (!re)
+   if (!CC_RATIO_USABLE(bandwidth_mod))
+      return NULL;
+   if (!(re = (rarch_CC_resampler_psp_t*)
+            memalign_alloc(16, sizeof(rarch_CC_resampler_psp_t))))
       return NULL;
 
    for (i = 0; i < 8; i++)
@@ -672,11 +675,13 @@ static void *resampler_CC_init(const struct resampler_config *config,
       resampler_simd_mask_t mask)
 {
    int i;
-   rarch_CC_resampler_t *re = (rarch_CC_resampler_t*)
-      memalign_alloc(32, sizeof(rarch_CC_resampler_t));
+   rarch_CC_resampler_t *re;
 
    (void)config;
-   if (!re)
+   if (!CC_RATIO_USABLE(bandwidth_mod))
+      return NULL;
+   if (!(re = (rarch_CC_resampler_t*)
+            memalign_alloc(32, sizeof(rarch_CC_resampler_t))))
       return NULL;
 
    re->upsample   = resampler_CC_upsample_c;
