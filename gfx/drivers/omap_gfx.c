@@ -78,8 +78,8 @@ typedef struct omapfb_data
   int fd;
   int num_pages;
   unsigned fb_framesize;
-  /* native screen size */
-  unsigned nat_w, nat_h;
+  /* native screen size, VIDEO_SCALE_PACK's layout */
+  unsigned nat_dims;
   /* bytes per pixel */
   unsigned bpp;
   bool sync;
@@ -286,8 +286,7 @@ static int omapfb_detect_screen(omapfb_data_t *pdata)
    RARCH_LOG("[Omap] Detected %dx%d '%s' (%d) display attached to fb %d and overlay %d.\n",
          w, h, display_name, display_id, fb_id, overlay_id);
 
-   pdata->nat_w = w;
-   pdata->nat_h = h;
+   pdata->nat_dims = VIDEO_SCALE_PACK(w, h);
 
    return 0;
 }
@@ -496,8 +495,10 @@ static int omapfb_setup_screeninfo(omapfb_data_t *pdata, int width, int height)
 
 static float omapfb_scaling(omapfb_data_t *pdata, int width, int height)
 {
-   const float w_factor = (float)pdata->nat_w / (float)width;
-   const float h_factor = (float)pdata->nat_h / (float)height;
+   const float w_factor = (float)VIDEO_SCALE_W(pdata->nat_dims)
+      / (float)width;
+   const float h_factor = (float)VIDEO_SCALE_H(pdata->nat_dims)
+      / (float)height;
 
    return (w_factor < h_factor ? w_factor : h_factor);
 }
@@ -512,8 +513,8 @@ static int omapfb_setup_plane(omapfb_data_t *pdata, int width, int height)
 
    RARCH_LOG("[Omap] Scaling %dx%d to %dx%d.\n", width, height, w, h);
 
-   x = pdata->nat_w / 2 - w / 2;
-   y = pdata->nat_h / 2 - h / 2;
+   x = (int)VIDEO_SCALE_W(pdata->nat_dims) / 2 - w / 2;
+   y = (int)VIDEO_SCALE_H(pdata->nat_dims) / 2 - h / 2;
 
    if (width * height * pdata->bpp * pdata->num_pages > pdata->current_state->mi.size)
    {
@@ -783,9 +784,8 @@ typedef struct omap_video
 
    unsigned bytes_per_pixel;
 
-   /* current dimensions */
-   unsigned width;
-   unsigned height;
+   /* current dimensions, VIDEO_SCALE_PACK's layout */
+   unsigned dims;
 
    struct
    {
@@ -853,8 +853,10 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
    settings_t *settings = config_get_ptr();
    float msg_pos_x      = settings->floats.video_msg_pos_x;
    float msg_pos_y      = settings->floats.video_msg_pos_y;
-   int msg_base_x       = msg_pos_x * vid->width;
-   int msg_base_y       = (1.0 - msg_pos_y) * vid->height;
+   unsigned vid_width   = VIDEO_SCALE_W(vid->dims);
+   unsigned vid_height  = VIDEO_SCALE_H(vid->dims);
+   int msg_base_x       = msg_pos_x * vid_width;
+   int msg_base_y       = (1.0 - msg_pos_y) * vid_height;
 
    if (!vid->font)
       return;
@@ -875,8 +877,8 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 
       base_x               = msg_base_x + glyph->draw_offset_x;
       base_y               = msg_base_y + glyph->draw_offset_y;
-      max_width            = vid->width - base_x;
-      max_height           = vid->height - base_y;
+      max_width            = vid_width  - base_x;
+      max_height           = vid_height - base_y;
 
       glyph_width          = glyph->width;
       glyph_height         = glyph->height;
@@ -948,10 +950,9 @@ static void *omap_init(const video_info_t *video,
       goto fail_omapfb;
 
    /* set some initial mode for the menu */
-   vid->width  = 320;
-   vid->height = 240;
+   vid->dims   = VIDEO_SCALE_PACK(320, 240);
 
-   if (omapfb_set_mode(vid->omap, vid->width, vid->height) != 0)
+   if (omapfb_set_mode(vid->omap, 320, 240) != 0)
       goto fail_omapfb;
 
    if (input && input_data)
@@ -959,7 +960,8 @@ static void *omap_init(const video_info_t *video,
 
    omap_init_font(vid);
 
-   vid->menu.frame = calloc(vid->width * vid->height, vid->bytes_per_pixel);
+   vid->menu.frame = calloc(VIDEO_SCALE_W(vid->dims)
+         * VIDEO_SCALE_H(vid->dims), vid->bytes_per_pixel);
    if (!vid->menu.frame)
       goto fail_omapfb;
 
@@ -983,6 +985,7 @@ static bool omap_frame(void *data, const void *frame, unsigned width,
       video_frame_info_t *video_info)
 {
    omap_video_t  *vid = (omap_video_t*)data;
+   unsigned      dims = VIDEO_SCALE_PACK(width, height);
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
@@ -992,7 +995,7 @@ static bool omap_frame(void *data, const void *frame, unsigned width,
 
    if (     (width  > 4)
          && (height > 4)
-         && (width != vid->width || height != vid->height))
+         && (dims != vid->dims))
    {
       RARCH_LOG("[Omap] Mode set (resolution changed by core).\n");
 
@@ -1002,12 +1005,11 @@ static bool omap_frame(void *data, const void *frame, unsigned width,
          return false;
       }
 
-      vid->width  = width;
-      vid->height = height;
+      vid->dims   = dims;
    }
 
    omapfb_prepare(vid->omap);
-   omapfb_blit_frame(vid->omap, frame, vid->height, pitch);
+   omapfb_blit_frame(vid->omap, frame, VIDEO_SCALE_H(vid->dims), pitch);
 
 #ifdef HAVE_MENU
    menu_driver_frame(menu_is_alive, video_info);
@@ -1048,8 +1050,8 @@ static void omap_viewport_info(void *data, struct video_viewport *vp)
 
    vp->x = vp->y     = 0;
 
-   vp->width         = vp->full_width  = vid->width;
-   vp->height        = vp->full_height = vid->height;
+   vp->width         = vp->full_width  = VIDEO_SCALE_W(vid->dims);
+   vp->height        = vp->full_height = VIDEO_SCALE_H(vid->dims);
 }
 
 static bool omap_suppress_screensaver(void *data, bool enable) { return false; }
@@ -1063,15 +1065,16 @@ static void omap_set_texture_frame(void *data, const void *frame, bool rgb32,
 {
    omap_video_t          *vid = (omap_video_t*)data;
    enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
+   unsigned        vid_width  = VIDEO_SCALE_W(vid->dims);
 
    video_frame_scale(
          &vid->menu.scaler,
          vid->menu.frame,
          frame,
          format,
-         vid->width,
-         vid->height,
-         vid->width * vid->bytes_per_pixel,
+         vid_width,
+         VIDEO_SCALE_H(vid->dims),
+         vid_width * vid->bytes_per_pixel,
          width,
          height,
          width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
