@@ -384,12 +384,16 @@ static void task_cloud_sync_read_local_manifest(task_cloud_sync_state_t *sync_st
          RARCH_WARN(CSPFX "Opened local manifest.\n");
          sync_state->local_manifest = task_cloud_sync_create_manifest(rfile);
          filestream_close(rfile);
+         /* The local manifest is rewritten in place, so an interrupted
+          * write can leave it empty or truncated. Treating that as fatal
+          * would block every later sync with no way out from the UI.
+          * Drop it and continue as a first sync instead: files that
+          * differ between local and server become conflicts rather
+          * than being overwritten. */
          if (!sync_state->local_manifest)
          {
-            sync_state->failures    = true;
-            sync_state->fatal_error = "Invalid manifest";
-            task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
-            return;
+            RARCH_WARN(CSPFX "Discarding invalid local manifest.\n");
+            filestream_delete(manifest_path);
          }
       }
    }
