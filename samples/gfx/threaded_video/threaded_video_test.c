@@ -474,6 +474,225 @@ static void lane_stats_snapshot(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the viewport and the rate, published and read without a lock */
+/*   Both come from the wrapped driver on the video thread, and both   */
+/*   are read from elsewhere - an input driver asks for the viewport    */
+/*   every poll, the runloop asks for the rate every iteration. So two  */
+/*   things: what the reader gets is what the driver reported, and the  */
+/*   read does not touch the wrapper's lock.                            */
+/*                                                                    */
+/*   The second is asserted directly. A helper thread holds that lock   */
+/*   for a window, and the readers are timed inside it: a reader that   */
+/*   still takes the lock is delayed by the rest of the window, which   */
+/*   fails the check, instead of deadlocking the run.                   */
+/* ------------------------------------------------------------------ */
+
+#define VPLANE_HOLD_MS   200
+#define VPLANE_BUDGET_US (VPLANE_HOLD_MS * 1000 / 4)
+
+static video_driver_t                 vplane_driver;
+static const video_driver_t          *vplane_inner;
+static video_poke_interface_t          vplane_poke;
+static const video_poke_interface_t  *vplane_inner_poke;
+/* What the fake driver reports. Written by the lane between frames with
+ * the worker idle, read on the video thread. */
+static retro_atomic_int_t vplane_w, vplane_h, vplane_rate_milli;
+static retro_atomic_int_t vplane_held;
+
+static void vplane_viewport_info(void *data, struct video_viewport *vp)
+{
+   (void)data;
+   vp->x           = 3;
+   vp->y           = 5;
+   vp->width       = (unsigned)retro_atomic_load_acquire_int(&vplane_w);
+   vp->height      = (unsigned)retro_atomic_load_acquire_int(&vplane_h);
+   vp->full_width  = vp->width  + 7;
+   vp->full_height = vp->height + 9;
+}
+
+static float vplane_refresh(void *data)
+{
+   (void)data;
+   return retro_atomic_load_acquire_int(&vplane_rate_milli) / 1000.0f;
+}
+
+static void vplane_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   vplane_inner->poke_interface(data, &vplane_inner_poke);
+   vplane_poke                  = *vplane_inner_poke;
+   vplane_poke.get_refresh_rate = vplane_refresh;
+   *iface                       = &vplane_poke;
+}
+
+/* Holds the wrapper's lock for the window, so the timed readers below
+ * run against a lock that is genuinely taken. */
+static void vplane_holder(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   slock_lock(thr->lock);
+   retro_atomic_store_release_int(&vplane_held, 1);
+   retro_sleep(VPLANE_HOLD_MS);
+   slock_unlock(thr->lock);
+   retro_atomic_store_release_int(&vplane_held, 0);
+}
+
+/* The viewport the frontend is told, and whether read_vp followed it -
+ * that is what CMD_READ_VIEWPORT compares against, so a screenshot's
+ * readback depends on it. */
+static void vplane_expect(thread_video_t *thr, unsigned w, unsigned h,
+      const char *when)
+{
+   struct video_viewport vp;
+   unsigned tries;
+   memset(&vp, 0, sizeof(vp));
+   for (tries = 0; tries < 200; tries++)
+   {
+      run_frames(1);
+      video_thread_wait_idle();
+      video_driver_get_viewport_info(&vp);
+      if (vp.width == w && vp.height == h)
+         break;
+   }
+   CHECK(vp.width == w && vp.height == h,
+         "%s: the viewport read %ux%u, the driver reported %ux%u",
+         when, vp.width, vp.height, w, h);
+   CHECK(vp.x == 3 && vp.y == 5,
+         "%s: the viewport's origin read %d,%d, not 3,5", when, vp.x, vp.y);
+   CHECK(vp.full_width == w + 7 && vp.full_height == h + 9,
+         "%s: the full size read %ux%u, not %ux%u", when,
+         vp.full_width, vp.full_height, w + 7, h + 9);
+   CHECK(thr->read_vp.width == vp.width && thr->read_vp.height == vp.height
+         && thr->read_vp.x == vp.x && thr->read_vp.y == vp.y
+         && thr->read_vp.full_width  == vp.full_width
+         && thr->read_vp.full_height == vp.full_height,
+         "%s: read_vp did not follow the reported viewport (%ux%u vs %ux%u)",
+         when, thr->read_vp.width, thr->read_vp.height, vp.width, vp.height);
+}
+
+static void lane_viewport_publish(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   sthread_t *holder;
+
+   set_threaded_via_setting(true);
+   run_frames(4);
+   expect_wrapper(true, "viewport lane");
+   if (!(thr = (thread_video_t*)video_st->data))
+      return;
+
+   retro_atomic_store_release_int(&vplane_w, 321);
+   retro_atomic_store_release_int(&vplane_h, 241);
+   retro_atomic_store_release_int(&vplane_rate_milli, 59940);
+   video_thread_wait_idle();
+   vplane_inner                = thr->driver;
+   vplane_driver               = *thr->driver;
+   vplane_driver.viewport_info = vplane_viewport_info;
+   vplane_driver.poke_interface = vplane_get_poke;
+   thr->driver                 = &vplane_driver;
+   vplane_driver.poke_interface(thr->driver_data, &thr->poke);
+
+   vplane_expect(thr, 321, 241, "first report");
+
+   /* A resize: the published viewport has to follow, and read_vp with
+    * it. */
+   retro_atomic_store_release_int(&vplane_w, 640);
+   retro_atomic_store_release_int(&vplane_h, 480);
+   vplane_expect(thr, 640, 480, "after a resize");
+
+   /* The rate the main thread is told is the driver's. */
+   {
+      unsigned tries;
+      float rate = 0.0f;
+      for (tries = 0; tries < 200; tries++)
+      {
+         run_frames(1);
+         video_thread_wait_idle();
+         /* Through the wrapper's own poke, which is what the frontend
+          * holds - not the wrapped driver's, which is the fake above. */
+         rate = video_st->poke && video_st->poke->get_refresh_rate
+            ? video_st->poke->get_refresh_rate(video_st->data) : 0.0f;
+         if (rate > 59.9f && rate < 59.95f)
+            break;
+      }
+      CHECK(rate > 59.9f && rate < 59.95f,
+            "the rate read %.3f, the driver reported 59.940", (double)rate);
+      retro_atomic_store_release_int(&vplane_rate_milli, 100000);
+      for (tries = 0; tries < 200; tries++)
+      {
+         run_frames(1);
+         video_thread_wait_idle();
+         rate = video_st->poke->get_refresh_rate(video_st->data);
+         if (rate > 99.9f && rate < 100.1f)
+            break;
+      }
+      CHECK(rate > 99.9f && rate < 100.1f,
+            "after the driver changed its rate the read gave %.3f, not 100",
+            (double)rate);
+   }
+
+   /* No lock. The viewport has not changed since the last read above,
+    * which is the steady state an input driver polls in. */
+   {
+      retro_time_t t0, took;
+      struct video_viewport vp;
+      uint64_t     repeats, swaps;
+      retro_time_t avg, worst, core_t, render_t;
+      bool         phase, latdisp, pacing;
+      float        rate;
+
+      video_thread_wait_idle();
+      video_driver_get_viewport_info(&vp);      /* read_vp is current */
+      retro_atomic_store_release_int(&vplane_held, 0);
+      if (!(holder = sthread_create(vplane_holder, thr)))
+         CHECK(false, "could not start the lock holder");
+      else
+      {
+         unsigned spins = 0;
+         while (!retro_atomic_load_acquire_int(&vplane_held) && spins++ < 5000)
+            retro_sleep(1);
+         CHECK(retro_atomic_load_acquire_int(&vplane_held),
+               "the lock holder never took the lock");
+
+         t0   = cpu_features_get_time_usec();
+         video_driver_get_viewport_info(&vp);
+         rate = video_st->poke->get_refresh_rate(video_st->data);
+         (void)video_thread_presenter_stats(&repeats, &phase);
+         (void)video_thread_latency_stats(&avg, &worst, &latdisp);
+         (void)video_thread_pacing_stats(&pacing, &core_t, &render_t);
+         swaps = video_thread_swap_count();
+         took  = cpu_features_get_time_usec() - t0;
+
+         sthread_join(holder);
+         CHECK(took < VPLANE_BUDGET_US,
+               "the viewport, the rate and the statistics took %lld us to "
+               "read while the wrapper's lock was held: one of them still "
+               "takes it", (long long)took);
+         /* The values are still the driver's, not zeroed by the timing
+          * path above. */
+         CHECK(vp.width == 640 && vp.height == 480,
+               "the timed read gave %ux%u", vp.width, vp.height);
+         CHECK(rate > 99.9f && rate < 100.1f,
+               "the timed read gave rate %.3f", (double)rate);
+         (void)repeats; (void)swaps; (void)avg; (void)worst;
+         (void)core_t; (void)render_t; (void)phase; (void)latdisp;
+         (void)pacing;
+      }
+   }
+
+   video_thread_wait_idle();
+   thr->driver = vplane_inner;
+   thr->poke   = vplane_inner_poke;
+   run_frames(2);
+   set_threaded_via_setting(false);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] viewport publish lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: presenter repeats                                            */
 /*   With video_threaded_present_repeat on and a driver that can      */
 /*   present its last frame again (the null driver can), a stalled    */
@@ -3361,6 +3580,7 @@ int main(int argc, char *argv[])
    lane_toggle_in_game(cycles);
    lane_swap_count();
    lane_stats_snapshot();
+   lane_viewport_publish();
    lane_async_texture_load();
    if (!real_driver())
       lane_present_repeat();

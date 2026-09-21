@@ -46,6 +46,58 @@ static INLINE float video_thread_bits_float(int b)
    memcpy(&f, &b, sizeof(f));
    return f;
 }
+
+/* The viewport the video thread just took from the driver, and the rate
+ * that came back with it. Video thread only, and that is the whole of
+ * the serialisation: no other thread writes either one. */
+static void video_thread_publish_vp(thread_video_t *thr,
+      const struct video_viewport *vp)
+{
+   retro_atomic_int_t *s = thr->vp_pub;
+   int seq               = retro_atomic_load_relaxed_int(&thr->vp_seq);
+
+   retro_atomic_store_relaxed_int(&thr->vp_seq, seq + 1);
+   retro_atomic_thread_fence_release();
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_X],      vp->x);
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_Y],      vp->y);
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_W],
+         (int)vp->width);
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_H],
+         (int)vp->height);
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_FULL_W],
+         (int)vp->full_width);
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_FULL_H],
+         (int)vp->full_height);
+   retro_atomic_thread_fence_release();
+   retro_atomic_store_release_int(&thr->vp_seq, seq + 2);
+}
+
+static void video_thread_read_vp(thread_video_t *thr,
+      struct video_viewport *vp)
+{
+   retro_atomic_int_t *s = thr->vp_pub;
+   for (;;)
+   {
+      int s1 = retro_atomic_load_acquire_int(&thr->vp_seq);
+      if (s1 & 1)
+         continue;
+      vp->x           = retro_atomic_load_relaxed_int(
+            &s[VIDEO_THREAD_VP_X]);
+      vp->y           = retro_atomic_load_relaxed_int(
+            &s[VIDEO_THREAD_VP_Y]);
+      vp->width       = (unsigned)retro_atomic_load_relaxed_int(
+            &s[VIDEO_THREAD_VP_W]);
+      vp->height      = (unsigned)retro_atomic_load_relaxed_int(
+            &s[VIDEO_THREAD_VP_H]);
+      vp->full_width  = (unsigned)retro_atomic_load_relaxed_int(
+            &s[VIDEO_THREAD_VP_FULL_W]);
+      vp->full_height = (unsigned)retro_atomic_load_relaxed_int(
+            &s[VIDEO_THREAD_VP_FULL_H]);
+      retro_atomic_thread_fence_acquire();
+      if (retro_atomic_load_relaxed_int(&thr->vp_seq) == s1)
+         break;
+   }
+}
 #ifdef HAVE_GFX_WIDGETS
 #include "gfx_widgets.h"
 #endif
@@ -525,7 +577,13 @@ static bool video_thread_handle_packet(
             thr->driver_data = thr->driver->init(&thr->info,
                   thr->input, thr->input_data);
             if (thr->driver_data && thr->driver->viewport_info)
-               thr->driver->viewport_info(thr->driver_data, &thr->vp);
+            {
+               struct video_viewport vp;
+               vp.x = vp.y = 0;
+               vp.width = vp.height = vp.full_width = vp.full_height = 0;
+               thr->driver->viewport_info(thr->driver_data, &vp);
+               video_thread_publish_vp(thr, &vp);
+            }
 #ifdef HAVE_OVERLAY
             /* Taken here, on the thread that reads it: the frame path
              * and the overlay commands both run on this one, and a
@@ -1975,7 +2033,7 @@ static void video_thread_loop(void *data)
          retro_atomic_store_release_int(&thr->focus,        focus);
          retro_atomic_store_release_int(&thr->presentable,  presentable);
          retro_atomic_store_release_int(&thr->has_windowed, has_windowed);
-         thr->vp            = vp;
+         video_thread_publish_vp(thr, &vp);
          /* Statistics. The viewport maths ran on this thread during
           * thr->driver->frame() above, so publish the result rather
           * than letting the main thread read video_driver_st. */
@@ -1987,6 +2045,8 @@ static void video_thread_loop(void *data)
           * snapshot video_thread_swap_count() reads. */
          thr->video_st->swap_count += presents;
          thr->driver_refresh_rate = refresh_rate;
+         retro_atomic_store_release_int(&thr->refresh_rate_bits,
+               video_thread_float_bits(refresh_rate));
          if (ret_frame)
          {
             /* The presenter's and the pacer's inputs, all under the
@@ -2874,14 +2934,20 @@ static void video_thread_viewport_info(void *data, struct video_viewport *vp)
 
    if (thr)
    {
-      slock_lock(thr->lock);
+      video_thread_read_vp(thr, vp);
 
-      *vp = thr->vp;
-
-      /* Explicitly mem-copied so we can use memcmp correctly later. */
-      memcpy(&thr->read_vp, &thr->vp, sizeof(thr->read_vp));
-
-      slock_unlock(thr->lock);
+      /* read_vp is what CMD_READ_VIEWPORT compares the driver's own
+       * viewport against on the video thread, so it has to follow what
+       * was last reported. It changes only when the viewport does - a
+       * resize - so an input driver asking every poll takes no lock.
+       * Every reporter writes the same published value, so a compare
+       * that races another's write converges on it either way. */
+      if (memcmp(&thr->read_vp, vp, sizeof(*vp)))
+      {
+         slock_lock(thr->lock);
+         memcpy(&thr->read_vp, vp, sizeof(thr->read_vp));
+         slock_unlock(thr->lock);
+      }
    }
 }
 
@@ -3623,14 +3689,11 @@ static uintptr_t thread_load_texture_compressed(void *video_data,
 
 static float thread_get_refresh_rate(void *data)
 {
-   float ret;
    thread_video_t *thr = (thread_video_t*)data;
    if (!thr)
       return 0.0f;
-   slock_lock(thr->lock);
-   ret = thr->driver_refresh_rate;
-   slock_unlock(thr->lock);
-   return ret;
+   return video_thread_bits_float(
+         retro_atomic_load_acquire_int(&thr->refresh_rate_bits));
 }
 
 /* Asks the video thread to show the retained frame again as soon as it

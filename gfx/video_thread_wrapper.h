@@ -281,6 +281,18 @@ enum video_thread_stat_slot
    VIDEO_THREAD_STAT_SLOTS
 };
 
+/* Slots of the viewport thread_video_t::vp_pub publishes. */
+enum video_thread_vp_slot
+{
+   VIDEO_THREAD_VP_X = 0,
+   VIDEO_THREAD_VP_Y,
+   VIDEO_THREAD_VP_W,
+   VIDEO_THREAD_VP_H,
+   VIDEO_THREAD_VP_FULL_W,
+   VIDEO_THREAD_VP_FULL_H,
+   VIDEO_THREAD_VP_SLOTS
+};
+
 /* The bools of that snapshot, in VIDEO_THREAD_STAT_FLAGS. */
 #define VIDEO_THREAD_STAT_F_PRESENT_REPEAT  (1 << 0)
 #define VIDEO_THREAD_STAT_F_PHASE_DISPLAY   (1 << 1)
@@ -316,8 +328,9 @@ typedef struct thread_video
     * the driver reported (true) or from the clock (false). Stats. */
    bool phase_from_display;
    /* The wrapped driver's answer to get_refresh_rate, polled on the
-    * video thread after each frame and read under 'lock'; 0 when it
-    * has none. The presenter paces on it in preference to the setting. */
+    * video thread after each frame; 0 when it has none. The presenter
+    * paces on it in preference to the setting. Video thread only -
+    * every other thread takes it from refresh_rate_bits. */
    float driver_refresh_rate;
    /* Swaps one repeat makes: the group the retained frame made. */
    unsigned present_group;
@@ -478,7 +491,6 @@ typedef struct thread_video
    unsigned miss_count;
    unsigned alpha_mods;
 
-   struct video_viewport vp;
    struct video_viewport read_vp; /* Last viewport reported to caller. */
 
    /* Content scale, published at the end of each frame. The viewport
@@ -499,6 +511,16 @@ typedef struct thread_video
     * carried at one frame's lag. */
    retro_atomic_int_t stats_seq;
    retro_atomic_int_t stats[VIDEO_THREAD_STAT_SLOTS];
+
+   /* The driver's viewport and the rate that came back with it,
+    * published by the video thread - the only writer of either - so
+    * that an input driver asking for the viewport every poll, and the
+    * runloop asking for the rate every iteration, take no lock. The
+    * viewport is a seqlock over six slots; the rate is one word, whole
+    * at int width, carried as float bits. */
+   retro_atomic_int_t vp_seq;
+   retro_atomic_int_t vp_pub[VIDEO_THREAD_VP_SLOTS];
+   retro_atomic_int_t refresh_rate_bits;
 
    thread_packet_t cmd_data;
    /* Set by the video thread while it runs a command inline on itself:
