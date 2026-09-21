@@ -448,11 +448,31 @@ bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
        * ahead: once the resident lookahead is below half its target,
        * the tick extends unpaced, the burst a lap or an open already
        * pays, and the decoder never sees the wall. */
-      else if (p->feed_res_hi > anchor
-            && p->feed_res_hi - anchor < ahead / 2)
-         budget = 0;
-      else if (p->feed_res_hi <= anchor)
-         budget = 0;
+      else
+      {
+         /* The budget follows the decoder's appetite: at least twice
+          * what it took since the last feed, so a decoder taking four
+          * samples a tick - pictures decoding concurrently take them
+          * in bursts - is kept ahead of without the lookahead ever
+          * running down. And when it has run down, the shortfall is
+          * made up over a few ticks rather than in one read: a burst
+          * of two seconds of 4K from disk on the decoding thread is
+          * itself the pause it was meant to prevent. Only a decoder
+          * already past the frontier gets the unpaced extend, since
+          * its next read faults otherwise. */
+         size_t took = (anchor > p->feed_tell) ? anchor - p->feed_tell : 0;
+         if (budget < took * 2)
+            budget = took * 2;
+         if (p->feed_res_hi > anchor && p->feed_res_hi - anchor < ahead / 2)
+         {
+            size_t shortfall = ahead - (p->feed_res_hi - anchor);
+            if (budget < shortfall / 4)
+               budget = shortfall / 4;
+         }
+         else if (p->feed_res_hi <= anchor)
+            budget = 0;
+      }
+      p->feed_tell = anchor;
       hi = anchor + ahead;
       if (!data_transfer_window_feed_budget(p->dt, anchor,
                ahead, margin, budget, &res_hi))

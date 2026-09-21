@@ -89,6 +89,7 @@ typedef struct gfx_anim_preview
    /* Where the resident window ended after the last feed: how far
     * ahead of the decoder the feed still is, before this tick's. */
    size_t feed_res_hi;
+   size_t feed_tell;    /* the decoder's position at the last feed */
    /* Whether the stream emits ARGB words (asked once at open; a stream
     * that honours it keeps that order for the whole animation, and
     * some - APNG - report "no" to a repeat request after the first
