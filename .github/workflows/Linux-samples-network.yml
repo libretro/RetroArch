@@ -194,6 +194,31 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./smb_backup_test
           echo "[pass] smb_backup_test (TSan)"
 
+      - name: Build and run gdrive_backup_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/gdrive_backup
+        run: |
+          set -eu
+          # Includes network/cloud_sync/google_drive.c and plays the
+          # Drive API, request by request. With destructive sync off, a
+          # delete kept the old file (renamed <name>-<time>) but an
+          # upload replaced its content outright. An upload to an
+          # existing file must now files.copy it to that name in the
+          # same folder before the PATCH. Covers the order and the copy
+          # request, a failed copy stopping the upload, a 401 on the
+          # copy and on the PATCH each refreshing the token once (the
+          # PATCH retry repeating only the PATCH, not the backup), and
+          # destructive sync, a new file and the manifest skipping it.
+          make clean all SANITIZER=address,undefined
+          test -x gdrive_backup_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./gdrive_backup_test
+          echo "[pass] gdrive_backup_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./gdrive_backup_test
+          echo "[pass] gdrive_backup_test (TSan)"
+
       - name: Build and run cheevos_login_test (bear ASan+UBSan, bear TSan, mbed ASan+UBSan)
         shell: bash
         working-directory: samples/network/cheevos_login
