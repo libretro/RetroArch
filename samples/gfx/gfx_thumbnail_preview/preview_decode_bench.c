@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <time.h>
 
 #include <formats/image.h>
 #include <formats/rh264.h>
@@ -50,7 +51,7 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
    void *s = image_transfer_anim_stream_new((void*)buf, len, type);
    tpool_t *pool = NULL;
    int n = 0, nf = 0, loops = 0, dur;
-   int64_t t0;
+   int64_t t0, main_cpu0 = 0, proc_cpu0 = 0;
    const uint32_t *px;
 
    if (!s)
@@ -65,6 +66,18 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
    if (catchup)
       image_transfer_anim_stream_set_catchup(s, type, 1);
 
+   {
+      /* CPU_SPLIT: how much of the run the calling thread itself spent,
+       * against the whole process: a submitter that is busy the whole
+       * time is the bottleneck whatever the pool does. */
+#if defined(CLOCK_THREAD_CPUTIME_ID) && defined(CLOCK_PROCESS_CPUTIME_ID)
+      struct timespec a, b;
+      clock_gettime(CLOCK_THREAD_CPUTIME_ID, &a);
+      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &b);
+      main_cpu0 = (int64_t)a.tv_sec * 1000000 + a.tv_nsec / 1000;
+      proc_cpu0 = (int64_t)b.tv_sec * 1000000 + b.tv_nsec / 1000;
+#endif
+   }
    t0 = cpu_features_get_time_usec();
    while (1)
    {
@@ -86,6 +99,19 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
          break;
    }
    *usec = cpu_features_get_time_usec() - t0;
+#if defined(CLOCK_THREAD_CPUTIME_ID) && defined(CLOCK_PROCESS_CPUTIME_ID)
+   if (getenv("CPU_SPLIT"))
+   {
+      struct timespec a, b;
+      int64_t mc, pc;
+      clock_gettime(CLOCK_THREAD_CPUTIME_ID, &a);
+      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &b);
+      mc = (int64_t)a.tv_sec * 1000000 + a.tv_nsec / 1000 - main_cpu0;
+      pc = (int64_t)b.tv_sec * 1000000 + b.tv_nsec / 1000 - proc_cpu0;
+      printf("      cpu: caller %.0f ms of %.0f ms wall; pool threads %.0f ms\n",
+            (double)mc / 1000.0, (double)*usec / 1000.0, (double)(pc - mc) / 1000.0);
+   }
+#endif
 
    /* What the H.264 pipeline did, when there is one and it ran. */
    {
@@ -94,9 +120,15 @@ static int run(const uint8_t *buf, size_t len, enum image_type_enum type,
       if (h)
          rh264_video_stats((const rh264_video*)h, &posted, &inflight, &at_max, &jw, &ph, &pw);
       if (posted)
+      {
+         int rw = 0, rs = 0;
+         rh264_video_row_wait_stats(&rw, &rs);
          printf("      pipeline: %d posted, %d.%02d in flight on average, "
                "%d posts at the limit, %d joins waited, %d pops held, %d pops waited\n",
                posted, inflight / 100, inflight % 100, at_max, jw, ph, pw);
+         printf("      row waits: %d, short by %d.%02d rows on average\n",
+               rw, rs / 100, rs % 100);
+      }
    }
 
    image_transfer_anim_stream_free(s, type);

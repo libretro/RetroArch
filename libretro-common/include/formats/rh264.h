@@ -123,6 +123,12 @@ void rh264_video_set_publish_delay(int max_yields);
 void rh264_video_stats(const rh264_video *v, int *posted, int *inflight_x100,
       int *at_max, int *join_waits, int *pop_held, int *pop_waits);
 
+/* Reference reads that had to wait for rows since the last call, and
+ * the rows they were short by on average (x100): how often a picture
+ * in flight stalls on the one it predicts from, and how far behind it
+ * stands when it does. Process-wide; reading resets. */
+void rh264_video_row_wait_stats(int *waits, int *rows_short_x100);
+
 int rh264_video_bit_depth(const rh264_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */

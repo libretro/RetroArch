@@ -3053,6 +3053,8 @@ static void rh264_inter_clear_i4mode(rh264_frame *f, int mbx, int mby)
  * and this returns at once; a picture on another thread waits here,
  * and nowhere else. */
 static retro_atomic_int_t rh264_ref_wait_misses;
+/* process-wide: reference reads that waited, and the rows they were short */
+static retro_atomic_int_t rh264_row_waits, rh264_row_short_sum;
 
 int rh264_video_ref_wait_misses(void)
 {
@@ -3093,6 +3095,9 @@ static void rh264_ref_wait_rows(const rh264_frame *f, const rh264_frame *ref,
       if (rh264_rows_lock)
       {
          /* a wait, not a miss: on the pool the rows arrive */
+         retro_atomic_fetch_add_int(&rh264_row_waits, 1);
+         retro_atomic_fetch_add_int(&rh264_row_short_sum,
+               rows - rh264_block_rows_final(ref->planes));
          slock_lock(rh264_rows_lock);
          while (rh264_block_rows_final(ref->planes) < rows)
             scond_wait(rh264_rows_cond, rh264_rows_lock);
@@ -5037,6 +5042,7 @@ struct rh264_video
     * one because the queue was full. */
    int            st_posted, st_inflight_sum, st_inflight_max;
    int            st_join_waits, st_pop_held, st_pop_waits;
+
    /* unescaped-RBSP scratch for slice NALs, grown on demand and kept
     * for the decoder's lifetime */
    rh264_sps sps;
@@ -10377,6 +10383,16 @@ void rh264_video_stats(const rh264_video *v, int *posted, int *inflight_x100,
    if (join_waits)    *join_waits    = v->st_join_waits;
    if (pop_held)      *pop_held      = v->st_pop_held;
    if (pop_waits)     *pop_waits     = v->st_pop_waits;
+}
+
+void rh264_video_row_wait_stats(int *waits, int *rows_short_x100)
+{
+   int w = retro_atomic_load_acquire_int(&rh264_row_waits);
+   int r = retro_atomic_load_acquire_int(&rh264_row_short_sum);
+   if (waits)           *waits = w;
+   if (rows_short_x100) *rows_short_x100 = w ? r * 100 / w : 0;
+   retro_atomic_store_release_int(&rh264_row_waits, 0);
+   retro_atomic_store_release_int(&rh264_row_short_sum, 0);
 }
 
 void rh264_video_set_publish_delay(int max_us)
