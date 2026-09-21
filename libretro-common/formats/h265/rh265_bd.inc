@@ -655,7 +655,15 @@ static int RH265_FN(deblock_chroma_tc)(rh265_dec *d, int qp_y, int c_idx)
 /* Deblock the whole picture: all marked TU/PU edges on the 8x8 luma grid
  * carry bS 2 in an intra picture.  Vertical edges over the full picture
  * first, then horizontal edges (8.7.2.1). */
-static void RH265_FN(deblock_frame)(rh265_dec *d)
+/* Deblock the luma lines [y_lo, y_hi) - y_lo a multiple of 8 - and
+ * the chroma under them: the vertical edges of those lines, then the
+ * horizontal edges at and below y_lo, the one at y_lo included. Done
+ * band by band from the top this is the picture's filter to the
+ * sample: a horizontal edge reads only lines whose vertical edges the
+ * band, or the one above it, has already filtered, and a band's
+ * horizontal edges reach no line the band below still has to filter
+ * vertically. */
+static void RH265_FN(deblock_rows)(rh265_dec *d, int y_lo, int y_hi)
 {
    const rh265_sps *sps = d->sps;
    /* the div2 offsets are se(v) values in -6..6; scale by
@@ -666,10 +674,12 @@ static void RH265_FN(deblock_frame)(rh265_dec *d)
 
    if (d->sh.deblocking_filter_disabled)
       return;
+   if (y_hi > sps->height)
+      y_hi = sps->height;
 
    /* vertical edges */
    for (x = 8; x < sps->width; x += 8)
-      for (y = 0; y < sps->height; y += 4)
+      for (y = y_lo; y < y_hi; y += 4)
       {
          bs = d->vedge[(y >> 2) * d->w4 + (x >> 2)];
          if (!bs)
@@ -712,7 +722,7 @@ static void RH265_FN(deblock_frame)(rh265_dec *d)
       }
 
    /* horizontal edges */
-   for (y = 8; y < sps->height; y += 8)
+   for (y = (y_lo < 8) ? 8 : y_lo; y < y_hi; y += 8)
       for (x = 0; x < sps->width; x += 4)
       {
          bs = d->hedge[(y >> 2) * d->w4 + (x >> 2)];
@@ -751,6 +761,11 @@ static void RH265_FN(deblock_frame)(rh265_dec *d)
                   d->strd[2], 1, RH265_FN(deblock_chroma_tc)(d, qp, 2));
          }
       }
+}
+
+static void RH265_FN(deblock_frame)(rh265_dec *d)
+{
+   RH265_FN(deblock_rows)(d, 0, d->sps->height);
 }
 
 /* @src holds the deblocked, pre-SAO samples from picture row @src_y0
@@ -838,20 +853,14 @@ static void RH265_FN(sao_ctb)(rh265_dec *d, const RH265_PEL *src,
    }
 }
 
-static int RH265_FN(sao_frame)(rh265_dec *d)
+/* SAO over CTB row @ry. Rows go in order from the top, each after the
+ * deblocking of the row below it has run, since the row's last line
+ * reads the line under it as deblocked. The band buffers are sized
+ * on the first row. */
+static int RH265_FN(sao_row)(rh265_dec *d, int ry)
 {
    const rh265_sps *sps = d->sps;
-   int c_idx, rx, ry;
-   int need = 0;
-   for (ry = 0; ry < sps->ctb_h && !need; ry++)
-      for (rx = 0; rx < sps->ctb_w && !need; rx++)
-      {
-         const rh265_sao_params *p = &d->sao[ry * sps->ctb_w + rx];
-         if (p->type_idx[0] || p->type_idx[1] || p->type_idx[2])
-            need = 1;
-      }
-   if (!need)
-      return 0;
+   int c_idx, rx;
    /* SAO reads the deblocked samples around each one and writes in
     * place, so the CTB row being filtered - and the line above, which
     * the previous row's pass has already changed, and the line below,
@@ -875,7 +884,6 @@ static int RH265_FN(sao_frame)(rh265_dec *d)
          d->sao_band_cap[c_idx] = cap;
       }
    }
-   for (ry = 0; ry < sps->ctb_h; ry++)
    {
       for (c_idx = 0; c_idx < 3; c_idx++)
       {
@@ -905,6 +913,26 @@ static int RH265_FN(sao_frame)(rh265_dec *d)
                   d->strd[c_idx], y0 - 1, c_idx, rx, ry);
          }
    }
+   return 0;
+}
+
+static int RH265_FN(sao_frame)(rh265_dec *d)
+{
+   const rh265_sps *sps = d->sps;
+   int rx, ry;
+   int need = 0;
+   for (ry = 0; ry < sps->ctb_h && !need; ry++)
+      for (rx = 0; rx < sps->ctb_w && !need; rx++)
+      {
+         const rh265_sao_params *p = &d->sao[ry * sps->ctb_w + rx];
+         if (p->type_idx[0] || p->type_idx[1] || p->type_idx[2])
+            need = 1;
+      }
+   if (!need)
+      return 0;
+   for (ry = 0; ry < sps->ctb_h; ry++)
+      if (RH265_FN(sao_row)(d, ry) < 0)
+         return -1;
    return 0;
 }
 #undef RH265_PIX_MAX

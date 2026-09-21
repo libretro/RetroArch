@@ -1468,6 +1468,13 @@ typedef struct
    int strd[3];
    void  *sao_band[3];        /* SAO's band of deblocked samples, per plane */
    size_t sao_band_cap[3];
+   /* The loop filters run a CTB row at a time behind the decode: rows
+    * below rows_deblocked are deblocked, rows below rows_sao are done
+    * with SAO too - and final. A picture the hook could not take (the
+    * wavefront, more than one slice) filters whole at the finish. */
+   int    rows_deblocked;
+   int    rows_sao;
+   int    sao_wanted;         /* any CTB of the picture asked for SAO */
    int pw[3], ph[3];
 
    /* current picture and its reference lists */
@@ -1565,6 +1572,8 @@ typedef struct rh265_bd_fns_s
          const rh265_mvfield *mv);
    void (*deblock_frame)(rh265_dec *d);
    int  (*sao_frame)(rh265_dec *d);
+   void (*deblock_rows)(rh265_dec *d, int y_lo, int y_hi);
+   int  (*sao_row)(rh265_dec *d, int ry);
 } rh265_bd_fns;
 
 static const rh265_bd_fns *rh265_get_fns(int bd);
@@ -3612,12 +3621,14 @@ static const int8_t rh265_sao_eo_dy[4]={ 0,-1,-1,-1};
 static const rh265_bd_fns rh265_bd8_fns =
 {
    rh265_intra_pred_8, rh265_add_residual_8, rh265_mc_pu_8,
-   rh265_deblock_frame_8, rh265_sao_frame_8
+   rh265_deblock_frame_8, rh265_sao_frame_8,
+   rh265_deblock_rows_8, rh265_sao_row_8
 };
 static const rh265_bd_fns rh265_bd10_fns =
 {
    rh265_intra_pred_10, rh265_add_residual_10, rh265_mc_pu_10,
-   rh265_deblock_frame_10, rh265_sao_frame_10
+   rh265_deblock_frame_10, rh265_sao_frame_10,
+   rh265_deblock_rows_10, rh265_sao_row_10
 };
 
 static const rh265_bd_fns *rh265_get_fns(int bd)
@@ -4336,6 +4347,52 @@ void rh265_video_set_thread_pool(rh265_video *v, void *pool,
 #endif
 }
 
+
+/* CTB row @ry of the picture in @d is reconstructed: deblock it - its
+ * top edge needs the row above, already there - and run SAO over the
+ * row above, whose last line reads this row's first as deblocked.
+ * Only for a picture decoding in order on one thread as one slice;
+ * anything else filters whole at the finish. */
+static void rh265_row_done(rh265_video *v, int ry)
+{
+   rh265_dec *d = &v->d;
+   const rh265_sps *sps = d->sps;
+   int ctb = 1 << sps->log2_ctb;
+   if (d->rows_deblocked != ry)
+      return;                          /* out of order, or a slice edge */
+   d->fns->deblock_rows(d, ry * ctb, (ry + 1) * ctb);
+   d->rows_deblocked = ry + 1;
+   if (!(d->sao_wanted && sps->sao_enabled))
+      d->rows_sao = ry + 1;
+   else if (ry > 0 && d->rows_sao == ry - 1)
+   {
+      if (d->fns->sao_row(d, ry - 1) < 0)
+         return;
+      d->rows_sao = ry;
+   }
+}
+
+/* The finish: whatever the hook left - the last row's SAO, or the
+ * whole picture when the hook could not run. */
+static int rh265_filters_finish(rh265_video *v)
+{
+   rh265_dec *d = &v->d;
+   const rh265_sps *sps = d->sps;
+   int ctb = 1 << sps->log2_ctb;
+   if (d->rows_deblocked < sps->ctb_h)
+      d->fns->deblock_rows(d, d->rows_deblocked * ctb, sps->height);
+   d->rows_deblocked = sps->ctb_h;
+   if (sps->sao_enabled && d->sao_wanted)
+   {
+      int ry;
+      for (ry = d->rows_sao; ry < sps->ctb_h; ry++)
+         if (d->fns->sao_row(d, ry) < 0)
+            return -1;
+   }
+   d->rows_sao = sps->ctb_h;
+   return 0;
+}
+
 static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
       size_t size, size_t data_bit, const uint32_t *esc_pos, int esc_count)
 {
@@ -4389,6 +4446,8 @@ static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
          (ctb_addr / sps->ctb_w) << sps->log2_ctb);
 
 #ifdef HAVE_THREADS
+   if (d->sh.sao_luma || d->sh.sao_chroma)
+      d->sao_wanted = 1;
    /* One slice covering the picture, an entry point per row: the
     * shape the wavefront threads take. */
    if (     wpp && v->pool && v->threads > 1 && ctb_addr == 0
@@ -4468,6 +4527,10 @@ static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
          have_save = 1;
       }
       ctb_addr++;
+      /* the row is reconstructed: a single-slice picture decoding in
+       * order filters it now, a CTB row behind the decode */
+      if (!wpp && d->slice_seq == 0 && rx == sps->ctb_w - 1)
+         rh265_row_done(v, ry);
       end_of_slice = rh265_cabac_terminate(&d->cb);
       if (end_of_slice)
          break;
@@ -4733,6 +4796,9 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
             {
                int slot, p;
                v->d.slice_seq = 0;
+               v->d.rows_deblocked = 0;
+               v->d.rows_sao       = 0;
+               v->d.sao_wanted     = 0;
                rh265_compute_poc(v, sps, nal_type, shp->poc_lsb, tid);
                if (RH265_IS_IRAP(nal_type) &&
                    (nal_type != RH265_NAL_CRA || !v->first_pic_decoded))
@@ -4808,11 +4874,10 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                {
                   if (ret >= sps->pic_size_ctbs)
                   {
-                     /* picture complete: run the loop filters */
-                     v->d.fns->deblock_frame(&v->d);
-                     if (sps->sao_enabled)
-                        if (v->d.fns->sao_frame(&v->d) < 0)
-                           return -1;
+                     /* picture complete: the loop filters, or what
+                      * the row hook left of them */
+                     if (rh265_filters_finish(v) < 0)
+                        return -1;
                      v->cur_slot = -1;
                      rh265_dpb_bump(v, sps->max_num_reorder_pics);
                   }
