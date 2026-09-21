@@ -4,6 +4,8 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 
+#include "../gfx/video_defines.h"   /* VIDEO_SCALE_PACK */
+
 enum ffemu_pix_format
 {
    FFEMU_PIX_RGB565 = 0,
@@ -87,8 +89,8 @@ struct record_params
 struct record_video_data
 {
    const void *data;
-   unsigned width;
-   unsigned height;
+   /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
+   unsigned dims;
    int pitch;
    bool is_dupe;
 };

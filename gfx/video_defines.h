@@ -187,6 +187,16 @@ enum text_alignment
 #define FONT_COLOR_GET_ALPHA(col) (((col) >>  0) & 0xff)
 #define FONT_COLOR_ARGB_TO_RGBA(col) ( (((col) >> 24) & 0xff) | (((unsigned)(col) << 8) & 0xffffff00) )
 
+/* A size pair in one word: width in the high half, height in the low,
+ * clamped so neither axis can write over the other. Anything past
+ * 65535 an axis is beyond what a driver here allocates. */
+#define VIDEO_SCALE_DIM_MAX 0xffffu
+#define VIDEO_SCALE_PACK(w, h) \
+   ((unsigned)(((((w) > VIDEO_SCALE_DIM_MAX ? VIDEO_SCALE_DIM_MAX : (w))) << 16) \
+             |  (((h) > VIDEO_SCALE_DIM_MAX ? VIDEO_SCALE_DIM_MAX : (h)))))
+#define VIDEO_SCALE_W(d) (((unsigned)(d) >> 16) & VIDEO_SCALE_DIM_MAX)
+#define VIDEO_SCALE_H(d)  ((unsigned)(d)        & VIDEO_SCALE_DIM_MAX)
+
 typedef struct video_viewport
 {
    int x;

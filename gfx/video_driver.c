@@ -763,16 +763,8 @@ static const video_display_server_t *video_display_server_modes(void **data)
 #ifdef FRAME_CACHE_HAZARDS
 static retro_atomic_ptr_t  frame_cache_data;
 /* Both dimensions in one word, so they move in one store and arrive
- * from one load.  16 bits each: a frame wider or taller than 65535 is
- * past what any driver here will allocate, and the clamp keeps a core
- * that declares one from writing over the other field. */
+ * from one load, in VIDEO_SCALE_PACK's layout. */
 static retro_atomic_int_t  frame_cache_dims;
-#define FRAME_CACHE_DIM_MAX   0xffffu
-#define FRAME_CACHE_DIMS_PACK(w, h) \
-   ((int)((((h) > FRAME_CACHE_DIM_MAX ? FRAME_CACHE_DIM_MAX : (h)) << 16) \
-        |  ((w) > FRAME_CACHE_DIM_MAX ? FRAME_CACHE_DIM_MAX : (w))))
-#define FRAME_CACHE_DIMS_W(d) ((unsigned)(d) & FRAME_CACHE_DIM_MAX)
-#define FRAME_CACHE_DIMS_H(d) (((unsigned)(d) >> 16) & FRAME_CACHE_DIM_MAX)
 static retro_atomic_size_t frame_cache_pitch;
 #else
 static const void *frame_cache_data    = NULL;
@@ -958,8 +950,8 @@ static void video_thread_get_scale(video_driver_state_t *video_st,
    }
    {
       unsigned packed = (unsigned)retro_atomic_load_acquire_int(&thr->scale_packed);
-      *width          = packed >> 16;
-      *height         = packed & 0xFFFFu;
+      *width          = VIDEO_SCALE_W(packed);
+      *height         = VIDEO_SCALE_H(packed);
    }
 }
 #endif
@@ -1557,8 +1549,7 @@ static void recording_dump_frame(
    recording_state_t *record_st     = recording_state_get_ptr();
 
    ffemu_data.data     = data;
-   ffemu_data.width    = width;
-   ffemu_data.height   = height;
+   ffemu_data.dims     = VIDEO_SCALE_PACK(width, height);
    ffemu_data.pitch    = (int)pitch;
    ffemu_data.is_dupe  = false;
 
@@ -1627,10 +1618,10 @@ static void recording_dump_frame(
 
       }
 
-      ffemu_data.width  = VIDEO_SCALE_W(record_st->gpu_dims);
-      ffemu_data.height = VIDEO_SCALE_H(record_st->gpu_dims);
-      ffemu_data.pitch  = (int)(ffemu_data.width * 3);
-      ffemu_data.data   = gpu_frame + (ffemu_data.height - 1) * ffemu_data.pitch;
+      ffemu_data.dims   = record_st->gpu_dims;
+      ffemu_data.pitch  = (int)(VIDEO_SCALE_W(ffemu_data.dims) * 3);
+      ffemu_data.data   = gpu_frame
+         + (VIDEO_SCALE_H(ffemu_data.dims) - 1) * ffemu_data.pitch;
 
       ffemu_data.pitch  = -ffemu_data.pitch;
    }
@@ -2600,13 +2591,8 @@ void video_driver_get_output_size(unsigned *width, unsigned *height)
 
 void video_driver_set_output_size(unsigned width, unsigned height)
 {
-   /* 16 bits each in the packed value; no display is near the limit */
-   if (width  > 0xFFFFu)
-      width  = 0xFFFFu;
-   if (height > 0xFFFFu)
-      height = 0xFFFFu;
    retro_atomic_store_release_int(&video_driver_st.output_size_packed,
-         (int)((width << 16) | height));
+         (int)VIDEO_SCALE_PACK(width, height));
 }
 
 #ifdef HAVE_OVERLAY
@@ -4258,8 +4244,8 @@ static bool frame_cache_snapshot(const void **data,
       *data   = (const void*)retro_atomic_load_relaxed_ptr(&frame_cache_data);
       {
          int dims = retro_atomic_load_relaxed_int(&frame_cache_dims);
-         *width   = FRAME_CACHE_DIMS_W(dims);
-         *height  = FRAME_CACHE_DIMS_H(dims);
+         *width   = VIDEO_SCALE_W(dims);
+         *height  = VIDEO_SCALE_H(dims);
       }
       *pitch  = (size_t)retro_atomic_load_relaxed_size(&frame_cache_pitch);
 
@@ -4284,8 +4270,8 @@ static void frame_cache_peek(const void **data,
    *data   = (const void*)retro_atomic_load_relaxed_ptr(&frame_cache_data);
    {
       int dims = retro_atomic_load_relaxed_int(&frame_cache_dims);
-      *width   = FRAME_CACHE_DIMS_W(dims);
-      *height  = FRAME_CACHE_DIMS_H(dims);
+      *width   = VIDEO_SCALE_W(dims);
+      *height  = VIDEO_SCALE_H(dims);
    }
    *pitch  = (size_t)retro_atomic_load_relaxed_size(&frame_cache_pitch);
 }
@@ -4306,7 +4292,7 @@ static void frame_cache_store(const void *data,
 
    retro_atomic_store_relaxed_ptr(&frame_cache_data,   (void*)data);
    retro_atomic_store_relaxed_int(&frame_cache_dims,
-         FRAME_CACHE_DIMS_PACK(width, height));
+         (int)VIDEO_SCALE_PACK(width, height));
    retro_atomic_store_relaxed_size(&frame_cache_pitch, pitch);
 
    retro_atomic_store_release_size(&frame_cache_seq, s + 2);

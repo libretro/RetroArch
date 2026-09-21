@@ -2200,6 +2200,59 @@ static void lane_dupe_under_wrapper(void)
       fprintf(stderr, "[pass] dupe lane (NULL reaches the driver as NULL)\n");
 }
 
+/* ------------------------------------------------------------------ */
+/* Lane: a size pair survives its packed word                         */
+/*   Several width/height pairs travel as one machine word in         */
+/*   VIDEO_SCALE_PACK's layout. A store and a load that disagree on   */
+/*   which half holds which axis give every consumer a transposed     */
+/*   frame, and nothing else in the suite notices: the values are     */
+/*   both there, both plausible, and every other lane passes. So      */
+/*   each pair with a public accessor is round-tripped here at        */
+/*   dimensions no square frame can hide, and the clamp is checked    */
+/*   at the top of the range, where a mask would wrap an axis to a    */
+/*   small number instead of pinning it.                              */
+/* ------------------------------------------------------------------ */
+
+static void lane_size_pair_round_trip(void)
+{
+   unsigned had = failures;
+   unsigned w, h;
+   size_t   pitch;
+   bool     has_pixels;
+   static uint8_t pix[320 * 200 * sizeof(uint32_t)];
+
+   /* The output size. */
+   video_driver_set_output_size(1280, 720);
+   video_driver_get_output_size(&w, &h);
+   CHECK(w == 1280 && h == 720,
+         "the output size came back %ux%u, not 1280x720", w, h);
+
+   video_driver_set_output_size(VIDEO_SCALE_DIM_MAX + 1, 720);
+   video_driver_get_output_size(&w, &h);
+   CHECK(w == VIDEO_SCALE_DIM_MAX && h == 720,
+         "an out-of-range output width came back as %u, not clamped to %u",
+         w, VIDEO_SCALE_DIM_MAX);
+
+   /* The cached frame's dimensions, through the seqlock the replay and
+    * screenshot paths read them from. */
+   memset(pix, 0x40, sizeof(pix));
+   video_driver_cached_frame_publish(pix, 320, 200,
+         320 * sizeof(uint32_t));
+   CHECK(video_driver_cached_frame_info(&w, &h, &pitch, &has_pixels),
+         "nothing was cached by a publish of a 320x200 frame");
+   CHECK(w == 320 && h == 200,
+         "the cached frame came back %ux%u, not 320x200", w, h);
+   CHECK(pitch == 320 * sizeof(uint32_t),
+         "the cached pitch came back %u", (unsigned)pitch);
+
+   /* Not a frame the lanes after this one should find in the cache. */
+   video_driver_cached_frame_invalidate();
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] size-pair round-trip lane\n");
+}
+
 /* Heap traffic on the frame path.
  *
  * The emulation frame path makes no general-purpose heap calls today -
@@ -3735,6 +3788,7 @@ int main(int argc, char *argv[])
       lane_frame_path_heap();
       lane_resize_under_wrapper();
       lane_dupe_under_wrapper();
+      lane_size_pair_round_trip();
    }
    else
       fprintf(stderr, "[skip] null-driver instrumented lanes (real driver: %s)\n",

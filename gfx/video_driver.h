@@ -87,8 +87,8 @@
  * halves from it: two loads could pair a width with another size's
  * height. */
 #define VIDEO_DRIVER_OUTPUT_SIZE(video_st) ((unsigned)retro_atomic_load_acquire_int(&(video_st)->output_size_packed))
-#define VIDEO_DRIVER_OUTPUT_WIDTH(size)    ((unsigned)(size) >> 16)
-#define VIDEO_DRIVER_OUTPUT_HEIGHT(size)   ((unsigned)(size) & 0xFFFFu)
+#define VIDEO_DRIVER_OUTPUT_WIDTH(size)    VIDEO_SCALE_W(size)
+#define VIDEO_DRIVER_OUTPUT_HEIGHT(size)   VIDEO_SCALE_H(size)
 
 #define VIDEO_HAS_FOCUS(video_st) ((video_st->current_video && video_st->data && video_st->current_video->focus) ? (video_st->current_video->focus(video_st->data)) : true)
 
@@ -1145,13 +1145,6 @@ typedef struct video_driver
     * other vtable slot. */
    const struct font_renderer *font_backend;
 } video_driver_t;
-
-#define VIDEO_SCALE_DIM_MAX 0xffffu
-#define VIDEO_SCALE_PACK(w, h) \
-   ((unsigned)(((((w) > VIDEO_SCALE_DIM_MAX ? VIDEO_SCALE_DIM_MAX : (w))) << 16) \
-             |  (((h) > VIDEO_SCALE_DIM_MAX ? VIDEO_SCALE_DIM_MAX : (h)))))
-#define VIDEO_SCALE_W(d) (((unsigned)(d) >> 16) & VIDEO_SCALE_DIM_MAX)
-#define VIDEO_SCALE_H(d)  ((unsigned)(d)        & VIDEO_SCALE_DIM_MAX)
 
 /* Slots of video_driver_state_t::vp_params_bits in use. The array has
  * headroom above this so a parameter can be added without moving

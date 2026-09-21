@@ -121,8 +121,7 @@ int main(void)
    {
       paint(fb, n);
       vid.data    = fb;
-      vid.width   = W;
-      vid.height  = H;
+      vid.dims    = VIDEO_SCALE_PACK(W, H);
       vid.pitch   = W * sizeof(uint32_t);
       vid.is_dupe = false;
       if (!record_ffmpeg.push_video(rec, &vid))

@@ -501,23 +501,25 @@ static bool avfoundation_record_push_video(void *data,
       void  *baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer);
       size_t bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer);
 
+      unsigned src_w = VIDEO_SCALE_W(video_data->dims);
+      unsigned src_h = VIDEO_SCALE_H(video_data->dims);
+
       /* Clamp destination to source size (like ffmpeg does) */
-      unsigned dst_w = video_data->width < handle->width
-                     ? video_data->width : handle->width;
-      unsigned dst_h = video_data->height < handle->height
-                     ? video_data->height : handle->height;
-      bool shrunk    = dst_w < video_data->width
-                     || dst_h < video_data->height;
+      unsigned dst_w = src_w < handle->width
+                     ? src_w : handle->width;
+      unsigned dst_h = src_h < handle->height
+                     ? src_h : handle->height;
+      bool shrunk    = dst_w < src_w || dst_h < src_h;
 
       /* Regenerate scaler filter when input dimensions change */
-      if (   handle->scaler_in_width  != video_data->width
-          || handle->scaler_in_height != video_data->height)
+      if (   handle->scaler_in_width  != src_w
+          || handle->scaler_in_height != src_h)
       {
          struct scaler_ctx *scaler = &handle->scaler;
          scaler_ctx_gen_reset(scaler);
 
-         scaler->in_width   = video_data->width;
-         scaler->in_height  = video_data->height;
+         scaler->in_width   = src_w;
+         scaler->in_height  = src_h;
          scaler->in_stride  = abs(video_data->pitch);
          scaler->out_width  = dst_w;
          scaler->out_height = dst_h;
@@ -548,8 +550,8 @@ static bool avfoundation_record_push_video(void *data,
             return false;
          }
 
-         handle->scaler_in_width  = video_data->width;
-         handle->scaler_in_height = video_data->height;
+         handle->scaler_in_width  = src_w;
+         handle->scaler_in_height = src_h;
       }
 
       {
@@ -562,7 +564,7 @@ static bool avfoundation_record_push_video(void *data,
           * so the scaler can read forward without overrunning the buffer. */
          if (flip)
             frame_data = (const uint8_t*)video_data->data
-                       + (int)video_data->pitch * ((int)video_data->height - 1);
+                       + (int)video_data->pitch * ((int)src_h - 1);
 
          scaler->in_stride  = abs(video_data->pitch);
          scaler->out_stride = (int)bytesPerRow;

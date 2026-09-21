@@ -60,12 +60,10 @@ static void video_thread_publish_vp(thread_video_t *thr,
    retro_atomic_thread_fence_release();
    retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_X], vp->x);
    retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_Y], vp->y);
-   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_WH], (int)(
-            ((vp->width  & 0xFFFFu) << 16)
-          |  (vp->height & 0xFFFFu)));
-   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_FULL_WH], (int)(
-            ((vp->full_width  & 0xFFFFu) << 16)
-          |  (vp->full_height & 0xFFFFu)));
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_WH],
+         (int)VIDEO_SCALE_PACK(vp->width, vp->height));
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_FULL_WH],
+         (int)VIDEO_SCALE_PACK(vp->full_width, vp->full_height));
    retro_atomic_thread_fence_release();
    retro_atomic_store_release_int(&thr->vp_seq, seq + 2);
 }
@@ -89,10 +87,10 @@ static void video_thread_read_vp(thread_video_t *thr,
             &s[VIDEO_THREAD_VP_X]);
       vp->y           = retro_atomic_load_relaxed_int(
             &s[VIDEO_THREAD_VP_Y]);
-      vp->width       = wh   >> 16;
-      vp->height      = wh    & 0xFFFFu;
-      vp->full_width  = full >> 16;
-      vp->full_height = full  & 0xFFFFu;
+      vp->width       = VIDEO_SCALE_W(wh);
+      vp->height      = VIDEO_SCALE_H(wh);
+      vp->full_width  = VIDEO_SCALE_W(full);
+      vp->full_height = VIDEO_SCALE_H(full);
       retro_atomic_thread_fence_acquire();
       if (retro_atomic_load_relaxed_int(&thr->vp_seq) == s1)
          break;
