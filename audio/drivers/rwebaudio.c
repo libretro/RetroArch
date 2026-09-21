@@ -16,6 +16,7 @@
  */
 
 #include <stdlib.h>
+#include <malloc.h>   /* memalign(), as in audioworklet.c */
 #include <unistd.h>
 #include <boolean.h>
 #include <retro_timers.h>
@@ -85,6 +86,7 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
    if (!RWebAudioInit(latency))
    {
       RARCH_ERR("[RWebAudio] Failed to initialize driver.\n");
+      free(rwebaudio);
       return NULL;
    }
    rwebaudio_static_data    = rwebaudio;
@@ -92,6 +94,15 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
    rwebaudio->tmpbuf_frames = RWEBAUDIO_BUFFER_SIZE_MS * *new_rate / 1000;
    rwebaudio->tmpbuf_left   = memalign(16, rwebaudio->tmpbuf_frames * sizeof(float));
    rwebaudio->tmpbuf_right  = memalign(16, rwebaudio->tmpbuf_frames * sizeof(float));
+   /* rwebaudio_write() interleaves into these on every call with no
+    * test of its own, so a refused allocation has to stop the driver
+    * here rather than hand back a context that faults on first use. */
+   if (!rwebaudio->tmpbuf_left || !rwebaudio->tmpbuf_right)
+   {
+      RARCH_ERR("[RWebAudio] Failed to allocate the mixing buffers.\n");
+      rwebaudio_free(rwebaudio);
+      return NULL;
+   }
    RARCH_LOG("[RWebAudio] Device rate: %d Hz.\n", *new_rate);
    RARCH_LOG("[RWebAudio] Buffer size: %lu bytes.\n", RWebAudioBufferSizeFrames() * 2 * sizeof(float));
    return rwebaudio;
