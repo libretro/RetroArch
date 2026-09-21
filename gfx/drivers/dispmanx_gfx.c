@@ -17,6 +17,7 @@
 #include <bcm_host.h>
 
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <retro_atomic.h>
 
 #ifdef HAVE_CONFIG_H
@@ -97,8 +98,7 @@ struct dispmanx_video
    uint8_t *screen_bck;
 
    /* For threading */
-   scond_t *vsync_condition;
-   slock_t *pending_mutex;
+   retro_eventcount_t vsync_ec;
    /* We use this to keep track of internal resolution changes
     * done by cores in the main surface or in the menu.
     * We need these outside the surface because we free surfaces
@@ -116,7 +116,11 @@ struct dispmanx_video
    /* Total dispmanx video dimensions. Not counting overscan settings. */
    unsigned int dispmanx_width;
    unsigned int dispmanx_height;
-   unsigned int pageflip_pending; /* For threading */
+   /* Flips issued and not yet reported by the vsync callback. The
+    * callback decrements it and notifies; a waiter re-tests it inside
+    * the eventcount's wait window, so a callback landing between the
+    * test and the park cannot be missed. */
+   retro_atomic_int_t pageflip_pending;
 
    uint32_t vc_image_ptr;
 
@@ -129,11 +133,30 @@ struct dispmanx_video
    bool rgb32;
 };
 
+/* Park until every issued flip has been reported by the vsync
+ * callback. The re-test sits inside the wait window, so a callback
+ * that lands after the first test still releases the waiter. */
+static void dispmanx_drain_flips(struct dispmanx_video *_dispvars)
+{
+   int key;
+
+   while (retro_atomic_load_acquire_int(&_dispvars->pageflip_pending) > 0)
+   {
+      key = retro_eventcount_prepare_wait(&_dispvars->vsync_ec);
+
+      if (retro_atomic_load_acquire_int(&_dispvars->pageflip_pending) > 0)
+         retro_eventcount_commit_wait(&_dispvars->vsync_ec, key);
+      else
+         retro_eventcount_cancel_wait(&_dispvars->vsync_ec);
+   }
+}
+
 /* If no free page is available when called, wait for a page flip. */
 static struct dispmanx_page *dispmanx_get_free_page(struct dispmanx_video *_dispvars,
       struct dispmanx_surface *surface)
 {
    unsigned i;
+   int key;
    struct dispmanx_page *page = NULL;
 
    while (!page)
@@ -152,10 +175,15 @@ static struct dispmanx_page *dispmanx_get_free_page(struct dispmanx_video *_disp
        * wait until a free page is freed by vsync CB. */
       if (!page)
       {
-         slock_lock(_dispvars->pending_mutex);
-          if (_dispvars->pageflip_pending > 0)
-             scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
-         slock_unlock(_dispvars->pending_mutex);
+         /* One flip's worth of progress, then the scan above runs
+          * again - the window opens before the test so a callback in
+          * between is counted, not missed. */
+         key = retro_eventcount_prepare_wait(&_dispvars->vsync_ec);
+
+         if (retro_atomic_load_acquire_int(&_dispvars->pageflip_pending) > 0)
+            retro_eventcount_commit_wait(&_dispvars->vsync_ec, key);
+         else
+            retro_eventcount_cancel_wait(&_dispvars->vsync_ec);
       }
    }
 
@@ -183,14 +211,10 @@ static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
     * caused this callback becomes the visible one */
    surface->current_page = page;
 
-   /* These two things must be isolated "atomically" to avoid getting
-    * a false positive in the pending_mutex test in update_main. */
-   slock_lock(page->dispvars->pending_mutex);
-
-   page->dispvars->pageflip_pending--;
-   scond_signal(page->dispvars->vsync_condition);
-
-   slock_unlock(page->dispvars->pending_mutex);
+   /* Decrement before the notify, so a waiter released by it sees the
+    * count this callback settled on. */
+   retro_atomic_fetch_sub_int(&page->dispvars->pageflip_pending, 1);
+   retro_eventcount_notify(&page->dispvars->vsync_ec);
 }
 
 static void dispmanx_surface_free(struct dispmanx_video *_dispvars,
@@ -202,10 +226,7 @@ static void dispmanx_surface_free(struct dispmanx_video *_dispvars,
    /* What if we run into the vsync cb code after freeing the surface?
     * We could be trying to get non-existent lock, signal non-existent condition..
     * So we wait for any pending flips to complete before freeing any surface. */
-   slock_lock(_dispvars->pending_mutex);
-   if (_dispvars->pageflip_pending > 0)
-      scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
-   slock_unlock(_dispvars->pending_mutex);
+   dispmanx_drain_flips(_dispvars);
 
    for (i = 0; i < surface->numpages; i++)
    {
@@ -346,10 +367,7 @@ static void dispmanx_surface_update(struct dispmanx_video *_dispvars, const void
 
    /* Dispmanx doesn't support more than one pending pageflip. Doing so would overwrite
     * the page in the callback function, so we would be always freeing the same page. */
-   slock_lock(_dispvars->pending_mutex);
-   if (_dispvars->pageflip_pending > 0)
-      scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
-   slock_unlock(_dispvars->pending_mutex);
+   dispmanx_drain_flips(_dispvars);
 
    /* Issue a page flip that will be done at the next vsync. */
    _dispvars->update = vc_dispmanx_update_start(0);
@@ -357,9 +375,7 @@ static void dispmanx_surface_update(struct dispmanx_video *_dispvars, const void
    vc_dispmanx_element_change_source(_dispvars->update, surface->element,
          surface->next_page->resource);
 
-   slock_lock(_dispvars->pending_mutex);
-   _dispvars->pageflip_pending++;
-   slock_unlock(_dispvars->pending_mutex);
+   retro_atomic_fetch_add_int(&_dispvars->pageflip_pending, 1);
 
    vc_dispmanx_update_submit(_dispvars->update,
       dispmanx_vsync_callback, (void*)(surface->next_page));
@@ -420,7 +436,7 @@ static void *dispmanx_init(const video_info_t *video,
 
    /* Setup surface parameters */
    _dispvars->vc_image_ptr     = 0;
-   _dispvars->pageflip_pending = 0;
+   retro_atomic_store_release_int(&_dispvars->pageflip_pending, 0);
    _dispvars->menu_active      = false;
    _dispvars->rgb32            = video->rgb32;
 
@@ -430,9 +446,14 @@ static void *dispmanx_init(const video_info_t *video,
     * before we get to gfx_frame(). */
    _dispvars->aspect_ratio = video_driver_get_aspect_ratio();
 
-   /* Initialize the rest of the mutexes and conditions. */
-   _dispvars->vsync_condition  = scond_new();
-   _dispvars->pending_mutex    = slock_new();
+   if (!retro_eventcount_init(&_dispvars->vsync_ec))
+   {
+      vc_dispmanx_display_close(_dispvars->display);
+      bcm_host_deinit();
+      free(_dispvars);
+      return NULL;
+   }
+
    _dispvars->core_width       = 0;
    _dispvars->core_height      = 0;
    _dispvars->menu_width       = 0;
@@ -640,8 +661,7 @@ static void dispmanx_free(void *data)
    bcm_host_deinit();
 
    /* Destroy mutexes and conditions. */
-   slock_free(_dispvars->pending_mutex);
-   scond_free(_dispvars->vsync_condition);
+   retro_eventcount_free(&_dispvars->vsync_ec);
 
    free(_dispvars);
 }

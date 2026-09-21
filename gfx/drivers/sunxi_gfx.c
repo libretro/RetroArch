@@ -23,6 +23,8 @@
 #include <linux/fb.h>
 
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#include <retro_atomic.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -529,7 +531,11 @@ struct sunxi_video
 
    struct sunxi_page *pages;
    struct sunxi_page *nextPage;
-   bool pageflip_pending;
+   /* A flip issued and not yet reported by the vsync thread. The
+    * thread picks nextPage and then clears this with a release store,
+    * so the acquire load in sunxi_update_main() is what publishes the
+    * page it goes on to blit into. */
+   retro_atomic_int_t pageflip_pending;
 
    /* Keep the vsync while loop going. Set to false to exit. */
    bool keep_vsync;
@@ -540,8 +546,7 @@ struct sunxi_video
 
    /* For threading */
    sthread_t *vsync_thread;
-   scond_t *vsync_condition;
-   slock_t *pending_mutex;
+   retro_eventcount_t vsync_ec;
 
    /* menu data */
    unsigned int menu_rotation;
@@ -604,12 +609,10 @@ static void sunxi_vsync_thread_func(void *data)
       else
          _dispvars->nextPage = &_dispvars->pages[0];
 
-      /* These two things must be isolated "atomically" to avoid getting
-       * a false positive in the pending_mutex test in update_main. */
-      slock_lock(_dispvars->pending_mutex);
-      _dispvars->pageflip_pending = false;
-      scond_signal(_dispvars->vsync_condition);
-      slock_unlock(_dispvars->pending_mutex);
+      /* The release store carries the nextPage write above with it, so
+       * update_main() sees the page this flip settled on. */
+      retro_atomic_store_release_int(&_dispvars->pageflip_pending, 0);
+      retro_eventcount_notify(&_dispvars->vsync_ec);
    }
 }
 
@@ -636,7 +639,7 @@ static void *sunxi_init(const video_info_t *video,
    _dispvars->dst_pitch           = _dispvars->sunxi_disp->xres * _dispvars->sunxi_disp->bits_per_pixel / 8;
    /* Considering 4 bytes per pixel since we will be in 32bpp on the CB/CB2/CT for hw scalers to work. */
    _dispvars->dst_pixels_per_line = _dispvars->dst_pitch / 4;
-   _dispvars->pageflip_pending    = false;
+   retro_atomic_store_release_int(&_dispvars->pageflip_pending, 0);
    _dispvars->nextPage            = &_dispvars->pages[0];
    _dispvars->keep_vsync          = true;
    _dispvars->menu_active         = false;
@@ -659,8 +662,8 @@ static void *sunxi_init(const video_info_t *video,
          goto error;
    }
 
-   _dispvars->pending_mutex    = slock_new();
-   _dispvars->vsync_condition  = scond_new();
+   if (!retro_eventcount_init(&_dispvars->vsync_ec))
+      goto error;
 
    if (input && input_data)
       *input = NULL;
@@ -688,8 +691,7 @@ static void sunxi_free(void *data)
       sthread_join(_dispvars->vsync_thread);
    }
 
-   slock_free(_dispvars->pending_mutex);
-   scond_free(_dispvars->vsync_condition);
+   retro_eventcount_free(&_dispvars->vsync_ec);
 
    free(_dispvars->pages);
 
@@ -702,12 +704,20 @@ static void sunxi_free(void *data)
 
 static void sunxi_update_main(const void *frame, struct sunxi_video *_dispvars)
 {
-   slock_lock(_dispvars->pending_mutex);
+   int key;
 
-   if (_dispvars->pageflip_pending)
-      scond_wait(_dispvars->vsync_condition, _dispvars->pending_mutex);
+   while (retro_atomic_load_acquire_int(&_dispvars->pageflip_pending))
+   {
+      key = retro_eventcount_prepare_wait(&_dispvars->vsync_ec);
 
-   slock_unlock(_dispvars->pending_mutex);
+      if (!retro_atomic_load_acquire_int(&_dispvars->pageflip_pending))
+      {
+         retro_eventcount_cancel_wait(&_dispvars->vsync_ec);
+         break;
+      }
+
+      retro_eventcount_commit_wait(&_dispvars->vsync_ec, key);
+   }
 
    /* Frame blitting */
    pixman_blit(
@@ -724,9 +734,7 @@ static void sunxi_update_main(const void *frame, struct sunxi_video *_dispvars)
       _dispvars->nextPage->offset,
       _dispvars->src_width, _dispvars->src_height, _dispvars->sunxi_disp->xres);
 
-   slock_lock(_dispvars->pending_mutex);
-   _dispvars->pageflip_pending = true;
-   slock_unlock(_dispvars->pending_mutex);
+   retro_atomic_store_release_int(&_dispvars->pageflip_pending, 1);
 }
 
 static void sunxi_setup_scale (void *data,
