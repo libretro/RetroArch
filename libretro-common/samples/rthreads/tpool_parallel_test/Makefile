@@ -19,7 +19,11 @@ LDFLAGS += -lpthread
 
 # rthreads.c uses clock_gettime + CLOCK_REALTIME on Linux glibc; on
 # older glibc those live in -lrt.  Harmless on newer glibc.
+# Only glibc has it; MinGW has no librt and the link fails on it.
+ifeq ($(OS),Windows_NT)
+else
 LDFLAGS += -lrt
+endif
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
