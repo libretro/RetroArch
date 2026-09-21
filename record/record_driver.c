@@ -388,8 +388,8 @@ bool recording_init(void)
          params.aspect_ratio              = (float)vp.width / vp.height;
 
       params.pix_fmt                      = FFEMU_PIX_BGR24;
-      recording_st->gpu_width             = vp.width;
-      recording_st->gpu_height            = vp.height;
+      recording_st->gpu_dims              = VIDEO_SCALE_PACK(vp.width,
+            vp.height);
 
       RARCH_LOG("[Recording] %s %ux%u.\n", msg_hash_to_str(MSG_DETECTED_VIEWPORT_OF),
             vp.width, vp.height);
@@ -400,10 +400,10 @@ bool recording_init(void)
    }
    else
    {
-      if (recording_state.width || recording_state.height)
+      if (recording_state.out_dims)
       {
-         params.out_width  = recording_state.width;
-         params.out_height = recording_state.height;
+         params.out_width  = VIDEO_SCALE_W(recording_state.out_dims);
+         params.out_height = VIDEO_SCALE_H(recording_state.out_dims);
       }
 
       if (video_force_aspect &&

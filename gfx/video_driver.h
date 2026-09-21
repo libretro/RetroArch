@@ -1146,6 +1146,13 @@ typedef struct video_driver
    const struct font_renderer *font_backend;
 } video_driver_t;
 
+#define VIDEO_SCALE_DIM_MAX 0xffffu
+#define VIDEO_SCALE_PACK(w, h) \
+   ((unsigned)(((((w) > VIDEO_SCALE_DIM_MAX ? VIDEO_SCALE_DIM_MAX : (w))) << 16) \
+             |  (((h) > VIDEO_SCALE_DIM_MAX ? VIDEO_SCALE_DIM_MAX : (h)))))
+#define VIDEO_SCALE_W(d) (((unsigned)(d) >> 16) & VIDEO_SCALE_DIM_MAX)
+#define VIDEO_SCALE_H(d)  ((unsigned)(d)        & VIDEO_SCALE_DIM_MAX)
+
 /* Slots of video_driver_state_t::vp_params_bits in use. The array has
  * headroom above this so a parameter can be added without moving
  * anything after it; the count is what the publish and the read walk. */
@@ -1298,8 +1305,14 @@ typedef struct
     * and read under the same seq discipline as the overlay viewport. */
    retro_atomic_int_t vp_params_seq;
    retro_atomic_int_t vp_params_bits[16];
-   unsigned scale_width;
-   unsigned scale_height;
+   /* The content scale the viewport maths produced, both axes in one
+    * word - width in the high half, height in the low, the layout the
+    * threaded wrapper's scale_packed already carries this value in, so
+    * publishing it there is a copy rather than a second place that
+    * knows the packing. Set and read as a pair everywhere; 16 bits an
+    * axis, clamped, since a viewport past 65535 is beyond what any
+    * driver here allocates. */
+   unsigned scale_dims;
    /* Microseconds between the last two frames handed to the video
     * driver, for the shader chains' FrameTimeDelta. Written once per
     * frame in video_driver_frame() from the reading that path already

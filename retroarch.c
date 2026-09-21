@@ -8243,8 +8243,8 @@ static bool retroarch_parse_input_and_config(
                         retroarch_print_help(argv[0]);
                         retroarch_fail(1, "retroarch_parse_input()");
                      }
-                     rec_st->width  = (unsigned)w;
-                     rec_st->height = (unsigned)h;
+                     rec_st->out_dims = VIDEO_SCALE_PACK((unsigned)w,
+                           (unsigned)h);
                   }
                }
                break;

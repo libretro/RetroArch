@@ -952,8 +952,8 @@ static void video_thread_get_scale(video_driver_state_t *video_st,
    thread_video_t *thr = (thread_video_t*)video_st->data;
    if (!thr)
    {
-      *width  = video_st->scale_width;
-      *height = video_st->scale_height;
+      *width  = VIDEO_SCALE_W(video_st->scale_dims);
+      *height = VIDEO_SCALE_H(video_st->scale_dims);
       return;
    }
    {
@@ -1569,8 +1569,8 @@ static void recording_dump_frame(
       int taken = -2;
       if (video_st->thread_wrapper_active)
          taken = video_thread_record_take(video_st->data,
-               (unsigned)record_st->gpu_width,
-               (unsigned)record_st->gpu_height, &gpu_frame);
+               VIDEO_SCALE_W(record_st->gpu_dims),
+               VIDEO_SCALE_H(record_st->gpu_dims), &gpu_frame);
       if (taken == -1)
          return;
       if (!taken)
@@ -1605,8 +1605,7 @@ static void recording_dump_frame(
          }
 
          /* User has resized. We kinda have a problem now. */
-         if (     (vp.width  != record_st->gpu_width)
-               || (vp.height != record_st->gpu_height))
+         if (VIDEO_SCALE_PACK(vp.width, vp.height) != record_st->gpu_dims)
          {
             const char *_msg =
                msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE);
@@ -1628,9 +1627,9 @@ static void recording_dump_frame(
 
       }
 
-      ffemu_data.pitch  = (int)(record_st->gpu_width * 3);
-      ffemu_data.width  = (unsigned)record_st->gpu_width;
-      ffemu_data.height = (unsigned)record_st->gpu_height;
+      ffemu_data.width  = VIDEO_SCALE_W(record_st->gpu_dims);
+      ffemu_data.height = VIDEO_SCALE_H(record_st->gpu_dims);
+      ffemu_data.pitch  = (int)(ffemu_data.width * 3);
       ffemu_data.data   = gpu_frame + (ffemu_data.height - 1) * ffemu_data.pitch;
 
       ffemu_data.pitch  = -ffemu_data.pitch;
@@ -3039,8 +3038,7 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
    vp->height = vp_height;
 
    /* Statistics */
-   video_st->scale_width  = vp->width;
-   video_st->scale_height = vp->height;
+   video_st->scale_dims = VIDEO_SCALE_PACK(vp->width, vp->height);
 }
 
 /**
@@ -3402,8 +3400,7 @@ static void video_viewport_get_scaled_integer(
    vp->y       = y;
 
    /* Statistics */
-   video_st->scale_width  = vp->width;
-   video_st->scale_height = vp->height;
+   video_st->scale_dims = VIDEO_SCALE_PACK(vp->width, vp->height);
 }
 
 
@@ -4840,8 +4837,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    else
 #endif
    {
-      video_info->scale_width              = video_st->scale_width;
-      video_info->scale_height             = video_st->scale_height;
+      video_info->scale_width              = VIDEO_SCALE_W(
+            video_st->scale_dims);
+      video_info->scale_height             = VIDEO_SCALE_H(
+            video_st->scale_dims);
    }
 
    video_info->shader_active               = !(menu_shdr_flags & SHDR_FLAG_DISABLED) ? true : false;

@@ -117,11 +117,14 @@ struct recording
    const record_driver_t *driver;
    void *data;
 
-   size_t gpu_width;
-   size_t gpu_height;
+   /* The viewport the GPU recording was opened at, both axes in one
+    * word - VIDEO_SCALE_PACK's layout, so a resize is one comparison
+    * against a freshly packed viewport rather than two. */
+   unsigned gpu_dims;
 
-   unsigned width;
-   unsigned height;
+   /* --size's override of the recording's output size, same layout;
+    * zero when it was not given, which is one test instead of two. */
+   unsigned out_dims;
    /* The speaker layout the recorder was opened with (an AUDIO_LAYOUT_
     * mask): stereo, or the core's own wider layout when it had one at
     * the start of the recording. Every push is brought to it. */
