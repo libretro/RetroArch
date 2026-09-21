@@ -25,6 +25,7 @@ SOURCES := task_file_transfer_test.c \
            $(LIBRETRO_COMM_DIR)/formats/h265/rh265.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_blit_bands.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
            $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c \
            $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.c \
