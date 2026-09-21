@@ -461,8 +461,12 @@ bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
           * already past the frontier gets the unpaced extend, since
           * its next read faults otherwise. */
          size_t took = (anchor > p->feed_tell) ? anchor - p->feed_tell : 0;
-         if (budget < took * 2)
-            budget = took * 2;
+         /* file-derived sizes: saturate rather than wrap, or a
+          * decoder that took past half the address space would be
+          * budgeted next to nothing */
+         size_t twice = (took > (size_t)-1 / 2) ? (size_t)-1 : took * 2;
+         if (budget < twice)
+            budget = twice;
          if (p->feed_res_hi > anchor && p->feed_res_hi - anchor < ahead / 2)
          {
             size_t shortfall = ahead - (p->feed_res_hi - anchor);
@@ -473,7 +477,7 @@ bool gfx_anim_preview_feed(gfx_anim_preview_t *p)
             budget = 0;
       }
       p->feed_tell = anchor;
-      hi = anchor + ahead;
+      hi = (ahead > (size_t)-1 - anchor) ? (size_t)-1 : anchor + ahead;
       if (!data_transfer_window_feed_budget(p->dt, anchor,
                ahead, margin, budget, &res_hi))
          return false;
@@ -739,7 +743,8 @@ bool gfx_anim_preview_audio_feed(gfx_anim_preview_t *p)
    if (tell >= 0)
    {
       size_t anchor = (size_t)tell;
-      size_t hi     = anchor + GFX_ANIM_PREVIEW_AUDIO_LOOKAHEAD;
+      size_t hi     = (anchor > (size_t)-1 - GFX_ANIM_PREVIEW_AUDIO_LOOKAHEAD)
+                    ? (size_t)-1 : anchor + GFX_ANIM_PREVIEW_AUDIO_LOOKAHEAD;
       size_t res_hi = 0;
       if (hi > p->len)
          hi = p->len;
