@@ -49,9 +49,12 @@
 
 typedef struct rarch_CC_resampler
 {
-   void (*process)(void *re, struct resampler_data *data);
+   /* The stream's state leads the struct so the SIMD arms can load and
+    * store it aligned, and so it sits at the offsets the NEON kernels
+    * address. */
    audio_frame_float_t buffer[4];
    float distance;
+   void (*process)(void *re, struct resampler_data *data);
 } rarch_CC_resampler_t;
 
 /* struct resampler_data carries no output capacity, so the arms that
@@ -226,8 +229,8 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
    float ratio                  = 1.0 / data->ratio;
    float b                      = data->ratio; /* cutoff frequency. */
 
-   __m128 vec_previous          = _mm_loadu_ps((float*)&re->buffer[0]);
-   __m128 vec_current           = _mm_loadu_ps((float*)&re->buffer[2]);
+   __m128 vec_previous          = _mm_load_ps((float*)&re->buffer[0]);
+   __m128 vec_current           = _mm_load_ps((float*)&re->buffer[2]);
 
    while (inp != inp_max)
    {
@@ -299,8 +302,8 @@ static void resampler_CC_downsample(void *re_, struct resampler_data *data)
       }
    }
 
-   _mm_storeu_ps((float*)&re->buffer[0], vec_previous);
-   _mm_storeu_ps((float*)&re->buffer[2],  vec_current);
+   _mm_store_ps((float*)&re->buffer[0], vec_previous);
+   _mm_store_ps((float*)&re->buffer[2],  vec_current);
 
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
 }
@@ -314,8 +317,8 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
    audio_frame_float_t *outp_max = outp + resampler_CC_out_max(data);
    float b                      = float_min(data->ratio, 1.00); /* cutoff frequency. */
    float ratio                  = 1.0 / data->ratio;
-   __m128 vec_previous          = _mm_loadu_ps((float*)&re->buffer[0]);
-   __m128 vec_current           = _mm_loadu_ps((float*)&re->buffer[2]);
+   __m128 vec_previous          = _mm_load_ps((float*)&re->buffer[0]);
+   __m128 vec_current           = _mm_load_ps((float*)&re->buffer[2]);
 
    while (inp != inp_max)
    {
@@ -380,8 +383,8 @@ static void resampler_CC_upsample(void *re_, struct resampler_data *data)
       inp++;
    }
 
-   _mm_storeu_ps((float*)&re->buffer[0], vec_previous);
-   _mm_storeu_ps((float*)&re->buffer[2],  vec_current);
+   _mm_store_ps((float*)&re->buffer[0], vec_previous);
+   _mm_store_ps((float*)&re->buffer[2],  vec_current);
 
    data->output_frames = outp - (audio_frame_float_t*)data->data_out;
 }
