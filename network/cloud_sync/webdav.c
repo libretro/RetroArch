@@ -794,17 +794,30 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
       return;
    }
 
-   if (found && data->data && webdav_cb_st)
+   /* A found file always comes back as an open RFILE, even an empty
+    * one, and a file that cannot be written locally is a failure.
+    * That leaves success with no file meaning only one thing: the
+    * server does not have it (404). */
+   if (found && webdav_cb_st)
    {
       /* TODO/FIXME: it would be better if writing
        * to the file happened during the network reads */
       file = filestream_open(webdav_cb_st->file,
                              RETRO_VFS_FILE_ACCESS_READ_WRITE,
                              RETRO_VFS_FILE_ACCESS_HINT_NONE);
-      if (file)
+      if (   file
+          && data->data && data->len
+          && filestream_write(file, data->data, data->len) != (int64_t)data->len)
       {
-         filestream_write(file, data->data, data->len);
+         filestream_close(file);
+         file = NULL;
+      }
+      if (file)
          filestream_seek(file, 0, SEEK_SET);
+      else
+      {
+         RARCH_WARN("[webdav] Could not write \"%s\".\n", webdav_cb_st->file);
+         success = false;
       }
    }
 

@@ -1296,15 +1296,28 @@ static void gdrive_read_download_cb(retro_task_t *task, void *task_data,
    if (!success && data)
       gdrive_log_http_failure(cb_st->path, data);
 
-   if (success && data->data)
+   /* As in webdav.c: a downloaded file, even an empty one, is always
+    * handed back open, and one that cannot be written locally is a
+    * failure, so success with no file only ever means "not on the
+    * server" (gdrive_read_search_cb()). */
+   if (success)
    {
       file = filestream_open(cb_st->file,
             RETRO_VFS_FILE_ACCESS_READ_WRITE,
             RETRO_VFS_FILE_ACCESS_HINT_NONE);
-      if (file)
+      if (   file
+          && data->data && data->len
+          && filestream_write(file, data->data, data->len) != (int64_t)data->len)
       {
-         filestream_write(file, data->data, data->len);
+         filestream_close(file);
+         file = NULL;
+      }
+      if (file)
          filestream_seek(file, 0, SEEK_SET);
+      else
+      {
+         RARCH_WARN(GDPFX "Could not write \"%s\".\n", cb_st->file);
+         success = false;
       }
    }
 

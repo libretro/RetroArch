@@ -325,6 +325,13 @@ static void task_cloud_sync_manifest_handler(void *user_data, const char *path,
    }
 
    RARCH_LOG(CSPFX "Server manifest fetch succeeded.\n");
+   /* An empty body is no manifest too: rjson rejects empty input,
+    * and the drivers now hand back an empty file as an open RFILE. */
+   if (file && filestream_get_size(file) == 0)
+   {
+      filestream_close(file);
+      file = NULL;
+   }
    /* it is valid for there not to be a server manifest */
    if (file)
    {
@@ -904,13 +911,21 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
          sync_state->need_manifest_uploaded = true;
       sync_state->downloads++;
    }
+   else if (success)
+   {
+      /* The drivers report success with no file only when the server
+       * does not have it.  Keeping it in the server manifest would fail
+       * the same fetch on every sync, so drop it there and leave the
+       * local copy and local manifest alone: if this device has the
+       * file, the next sync sees it as new here and uploads it. */
+      RARCH_WARN(CSPFX "\"%s\" is in the server manifest but missing on the server, removing it from the manifest.\n", path);
+      sync_state->need_manifest_uploaded = true;
+      sync_state->failures               = true;
+   }
    else
    {
       /* on failure, don't add it to local manifest, that will cause a fetch again next time */
-      if (!success)
-         RARCH_WARN(CSPFX "Failed to fetch \"%s\".\n", path);
-      else
-         RARCH_WARN(CSPFX "Failed to write file from server: \"%s\".\n", path);
+      RARCH_WARN(CSPFX "Failed to fetch \"%s\".\n", path);
       task_cloud_sync_add_to_updated_manifest(sync_state, path, CS_FILE_HASH(server_file), true);
       sync_state->failures = true;
    }
