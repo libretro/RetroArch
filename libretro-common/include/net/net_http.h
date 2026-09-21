@@ -158,7 +158,9 @@ bool net_http_error(struct http_t *state);
  * Where a transfer that never produced a status failed: the transport
  * stage, as a literal ("dns_lookup_failed", "ssl_connect_failed",
  * ...), and through @code the library's own error for it when there
- * is one - the TLS library's for the ssl stages, 0 otherwise.  NULL
+ * is one - the TLS library's for the ssl stages (negative), the OS
+ * socket error (errno, or WSAGetLastError on Windows; positive) for
+ * socket_create/connect/send, 0 otherwise.  NULL
  * when the transport did not fail.  For turning "HTTP -1" into a
  * message that says what went wrong.
  **/

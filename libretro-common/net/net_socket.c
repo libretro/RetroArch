@@ -708,6 +708,24 @@ int socket_connect(int fd, void *data)
    return connect(fd, addr->ai_addr, addr->ai_addrlen);
 }
 
+/* Where the platform keeps socket errors in errno (or WSAGetLastError
+ * on Windows), a failed socket_connect_with_timeout() leaves the reason
+ * there too, so callers can report it.  A non-blocking connect reports
+ * a refused or unreachable peer through SO_ERROR rather than errno, and
+ * a timeout through nothing at all, so both are copied over by hand. */
+#if defined(_WIN32) || (!defined(__PS3__) && !defined(VITA) \
+      && !defined(WIIU) && !defined(GEKKO) && !defined(_3DS))
+#define SOCKET_CONNECT_SETS_ERROR
+static void socket_set_last_error(int err)
+{
+#ifdef _WIN32
+   WSASetLastError(err);
+#else
+   errno = err;
+#endif
+}
+#endif
+
 bool socket_connect_with_timeout(int fd, void *data, int timeout)
 {
    int res;
@@ -739,6 +757,7 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
    if (res)
    {
       bool ready = true;
+      bool waited;
 
       if (!isinprogress(res) && !isagain(res))
          return false;
@@ -746,8 +765,29 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
       if (timeout <= 0)
          timeout = 5000;
 
-      if (!socket_wait(fd, NULL, &ready, timeout) || !ready)
+      waited = socket_wait(fd, NULL, &ready, timeout);
+      if (!waited || !ready)
+      {
+#ifdef SOCKET_CONNECT_SETS_ERROR
+         int       err   = 0;
+         socklen_t errsz = sizeof(err);
+         getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&err, &errsz);
+         if (err)
+            socket_set_last_error(err);
+         /* Poll/select succeeded but the socket never became writable:
+          * that is the timeout.  A failed poll/select already left its
+          * own errno. */
+         else if (waited && !ready)
+         {
+#if defined(_WIN32)
+            socket_set_last_error(WSAETIMEDOUT);
+#elif defined(ETIMEDOUT)
+            socket_set_last_error(ETIMEDOUT);
+#endif
+         }
+#endif
          return false;
+      }
    }
 
 #if defined(GEKKO)
@@ -772,7 +812,12 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
 
       getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&err, &errsz);
       if (err)
+      {
+#ifdef SOCKET_CONNECT_SETS_ERROR
+         socket_set_last_error(err);
+#endif
          return false;
+      }
    }
 #endif
 

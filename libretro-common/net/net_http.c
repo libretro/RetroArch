@@ -216,6 +216,29 @@ struct http_connection_t
    bool ssl;
 };
 
+/* The OS error left by the socket call that just failed, for
+ * net_http_failure().  Only where the platform keeps it in errno (or
+ * WSAGetLastError on Windows); elsewhere 0, meaning "no code". */
+static int net_http_socket_error(void)
+{
+#if defined(_WIN32)
+   return WSAGetLastError();
+#elif defined(__PS3__) || defined(VITA) || defined(WIIU) \
+      || defined(GEKKO) || defined(_3DS)
+   return 0;
+#else
+   return errno;
+#endif
+}
+
+/* Record the socket error for the first failing stage.  Must run
+ * straight after the failed call, before anything can overwrite it. */
+static void net_http_note_socket_error(struct http_t *state)
+{
+   if (state && !state->fail_stage)
+      state->fail_code = net_http_socket_error();
+}
+
 static void net_http_log_transport_state(
       struct http_t *state, const char *stage, ssize_t io_len)
 {
@@ -1131,7 +1154,10 @@ static bool net_http_new_socket(struct http_t *state)
          if (fd >= 0)
             state->conn = net_http_conn_pool_add(state->request.domain, state->request.port, fd, state->ssl);
          else
+         {
+            net_http_note_socket_error(state);
             net_http_log_transport_state(state, "socket_create_failed", -1);
+         }
          /* still waiting on thread */
          UNLOCK_DNS_CACHE();
          return (fd >= 0);
@@ -1257,6 +1283,7 @@ static bool net_http_connect(struct http_t *state)
             return true;
          }
 
+         net_http_note_socket_error(state);
          net_http_log_transport_state(state, "socket_connect_failed", -1);
          socket_close(conn->fd);
       }
@@ -1326,6 +1353,7 @@ static void net_http_send_str(
       if (!socket_send_all_blocking(
                   state->conn->fd, text, text_size, true))
       {
+         net_http_note_socket_error(state);
          state->err = true;
          net_http_log_transport_state(state, "socket_send_failed", -1);
       }
