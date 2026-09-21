@@ -18,6 +18,12 @@
 
 #include "compat.h"
 
+#if defined(_WINDOWS) || defined(_XBOX) || defined(__MINGW32__)
+#ifndef NEED_POLL
+#define NEED_POLL
+#endif
+#endif
+
 #if defined(_WINDOWS) || defined(_XBOX)
 #include <errno.h>
 #include <stdlib.h>

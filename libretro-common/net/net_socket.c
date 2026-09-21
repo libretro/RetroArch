@@ -371,7 +371,72 @@ done:
 int socket_poll(struct pollfd *fds, unsigned nfds, int timeout)
 {
 #if defined(_WIN32)
-   return WSAPoll(fds, nfds, timeout);
+   /* select() exists on 9x, XP, Vista+, and Xbox XTL. WSAPoll does not. */
+   fd_set rfds, wfds, efds;
+   struct timeval tv, *ptv = NULL;
+   unsigned i;
+   int ret;
+   int nready = 0;
+
+   if (nfds && !fds)
+      return -1;
+
+   FD_ZERO(&rfds);
+   FD_ZERO(&wfds);
+   FD_ZERO(&efds);
+
+   for (i = 0; i < nfds; i++)
+   {
+      SOCKET s = (SOCKET)fds[i].fd;
+
+      fds[i].revents = 0;
+
+      if (s == INVALID_SOCKET)
+      {
+         fds[i].revents = POLLNVAL;
+         nready++;
+         continue;
+      }
+
+      if (fds[i].events & (POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI))
+         FD_SET(s, &rfds);
+      if (fds[i].events & (POLLOUT | POLLWRNORM | POLLWRBAND))
+         FD_SET(s, &wfds);
+      FD_SET(s, &efds);
+   }
+
+   if (timeout >= 0)
+   {
+      tv.tv_sec  = (long)timeout / 1000;
+      tv.tv_usec = ((long)timeout % 1000) * 1000;
+      ptv = &tv;
+   }
+
+   /* Winsock ignores nfds and walks the fd_set. */
+   ret = socket_select(0, &rfds, &wfds, &efds, ptv);
+   if (ret < 0)
+      return ret;
+
+   for (i = 0; i < nfds; i++)
+   {
+      SOCKET s = (SOCKET)fds[i].fd;
+
+      if (fds[i].revents & POLLNVAL)
+         continue;
+
+      if (FD_ISSET(s, &rfds))
+         fds[i].revents |= (short)(fds[i].events &
+               (POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI));
+      if (FD_ISSET(s, &wfds))
+         fds[i].revents |= (short)(fds[i].events &
+               (POLLOUT | POLLWRNORM | POLLWRBAND));
+      if (FD_ISSET(s, &efds))
+         fds[i].revents |= POLLERR;
+      if (fds[i].revents)
+         nready++;
+   }
+
+   return nready;
 #elif defined(VITA)
    int i, j;
    int epoll_fd;

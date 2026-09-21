@@ -49,17 +49,42 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-#if _MSC_VER && _MSC_VER <= 1600
-/* If we are using MSVC2010 or lower, disable WSAPoll support 
- * to ensure Windows XP and earlier backwards compatibility */
-#else
-#ifndef WIN32_SUPPORTS_POLL
-#define WIN32_SUPPORTS_POLL 1
-#endif
-#endif
-
-#if defined(WIN32_SUPPORTS_POLL) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
+/* socket_poll() is provided on every Win32 target. The implementation
+ * uses select(), which exists on 9x through current Windows. Do not
+ * call WSAPoll; that export is Vista+ only. */
 #define NETWORK_HAVE_POLL 1
+
+/* Vista winsock2.h already has these. 9x/XP SDKs do not.
+ * Values must match Microsoft WSAPOLLFD bits, not POSIX poll.h. */
+#ifndef POLLRDNORM
+#define POLLRDNORM  0x0100
+#endif
+#ifndef POLLRDBAND
+#define POLLRDBAND  0x0200
+#endif
+#ifndef POLLIN
+#define POLLIN      (POLLRDNORM | POLLRDBAND)
+#endif
+#ifndef POLLPRI
+#define POLLPRI     0x0400
+#endif
+#ifndef POLLWRNORM
+#define POLLWRNORM  0x0010
+#endif
+#ifndef POLLOUT
+#define POLLOUT     POLLWRNORM
+#endif
+#ifndef POLLWRBAND
+#define POLLWRBAND  0x0020
+#endif
+#ifndef POLLERR
+#define POLLERR     0x0001
+#endif
+#ifndef POLLHUP
+#define POLLHUP     0x0002
+#endif
+#ifndef POLLNVAL
+#define POLLNVAL    0x0004
 #endif
 
 #elif defined(_XBOX)
@@ -73,6 +98,49 @@
 #endif
 
 #define socklen_t unsigned int
+
+#define NETWORK_HAVE_POLL 1
+
+#ifndef POLLRDNORM
+#define POLLRDNORM  0x0100
+#endif
+#ifndef POLLRDBAND
+#define POLLRDBAND  0x0200
+#endif
+#ifndef POLLIN
+#define POLLIN      (POLLRDNORM | POLLRDBAND)
+#endif
+#ifndef POLLPRI
+#define POLLPRI     0x0400
+#endif
+#ifndef POLLWRNORM
+#define POLLWRNORM  0x0010
+#endif
+#ifndef POLLOUT
+#define POLLOUT     POLLWRNORM
+#endif
+#ifndef POLLWRBAND
+#define POLLWRBAND  0x0020
+#endif
+#ifndef POLLERR
+#define POLLERR     0x0001
+#endif
+#ifndef POLLHUP
+#define POLLHUP     0x0002
+#endif
+#ifndef POLLNVAL
+#define POLLNVAL    0x0004
+#endif
+
+#ifndef HAVE_POLLFD
+#define HAVE_POLLFD 1
+struct pollfd
+{
+   SOCKET fd;
+   short events;
+   short revents;
+};
+#endif
 
 #elif defined(VITA)
 #include <psp2/net/net.h>

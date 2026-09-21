@@ -202,9 +202,20 @@ struct iovec
   void *iov_base;        
 };	
 
-#if defined(_XBOX) || defined(__USE_WINSOCK__)
+/* All Win32/Xbox targets use the select()-based poll() in compat.c.
+ * Do not map poll to WSAPoll: that export is Vista+ only. */
+#ifndef HAVE_POLLFD
+#define HAVE_POLLFD 1
+struct pollfd {
+        t_socket fd;
+        short events;
+        short revents;
+};
+#endif
+
 int poll(struct pollfd *fds, unsigned int nfds, int timo);
 
+#if defined(_XBOX) || defined(__USE_WINSOCK__)
 #ifdef __USE_WINSOCK__
 #define write(fd, buf, maxcount) _write(fd, buf, (unsigned int)maxcount)
 #define read(fd, buf, maxcount) _read(fd, buf, (unsigned int)maxcount)
@@ -217,12 +228,6 @@ void smb2_freeaddrinfo(struct addrinfo *res);
 
 #define getaddrinfo smb2_getaddrinfo
 #define freeaddrinfo smb2_freeaddrinfo
-
-#else
-
-#undef poll
-#define poll WSAPoll
-
 #endif
 
 #ifdef __USE_WINSOCK__
