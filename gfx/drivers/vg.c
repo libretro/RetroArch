@@ -106,7 +106,7 @@ static void *vg_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    unsigned out_dims               = 0;
-   unsigned win_width, win_height;
+   unsigned win_dims;
    VGfloat clearColor[4]           = {0, 0, 0, 1};
    int interval                    = 0;
    unsigned mode_width             = 0;
@@ -160,19 +160,15 @@ static void *vg_init(const video_info_t *video,
    vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->keep_aspect = video->force_aspect;
 
-   win_width  = video->width;
-   win_height = video->height;
+   win_dims   = VIDEO_SCALE_PACK(video->width, video->height);
 
-   if (video->fullscreen && (win_width == 0) && (win_height == 0))
-   {
-      out_dims   = video_driver_get_output_dims();
-      win_width  = VIDEO_SCALE_W(out_dims);
-      win_height = VIDEO_SCALE_H(out_dims);
-   }
+   /* Neither axis set is the whole word clear */
+   if (video->fullscreen && (win_dims == 0))
+      win_dims = video_driver_get_output_dims();
 
    if (     !vg->ctx_driver->set_video_mode
-         || !vg->ctx_driver->set_video_mode(vg->ctx_data,
-            VIDEO_SCALE_PACK(win_width, win_height), video->fullscreen))
+         || !vg->ctx_driver->set_video_mode(vg->ctx_data, win_dims,
+            video->fullscreen))
       goto error;
 
    temp_width        = 0;

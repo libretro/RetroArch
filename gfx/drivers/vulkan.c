@@ -6103,8 +6103,7 @@ static void *vulkan_init(const video_info_t *video,
 {
       unsigned out_dims;
    unsigned full_x, full_y;
-   unsigned win_width;
-   unsigned win_height;
+   unsigned win_dims;
    unsigned mode_width                = 0;
    unsigned mode_height               = 0;
    int interval                       = 0;
@@ -6171,24 +6170,18 @@ static void *vulkan_init(const video_info_t *video,
       ctx_driver->swap_interval(vk->ctx_data, interval);
    }
 
-   win_width  = video->width;
-   win_height = video->height;
+   win_dims  = VIDEO_SCALE_PACK(video->width, video->height);
 
-   if (video->fullscreen && (win_width == 0) && (win_height == 0))
-   {
-      win_width  = full_x;
-      win_height = full_y;
-   }
+   /* Neither axis set is the whole word clear */
+   if (video->fullscreen && (win_dims == 0))
+      win_dims = VIDEO_SCALE_PACK(full_x, full_y);
    /* If fullscreen had to be forced, video->width/height is incorrect */
    else if (force_fullscreen)
-   {
-      win_width  = settings->uints.video_fullscreen_x;
-      win_height = settings->uints.video_fullscreen_y;
-   }
+      win_dims = VIDEO_SCALE_PACK(settings->uints.video_fullscreen_x,
+            settings->uints.video_fullscreen_y);
 
    if (     !vk->ctx_driver->set_video_mode
-         || !vk->ctx_driver->set_video_mode(vk->ctx_data,
-            VIDEO_SCALE_PACK(win_width, win_height),
+         || !vk->ctx_driver->set_video_mode(vk->ctx_data, win_dims,
             (video->fullscreen || force_fullscreen)))
    {
       RARCH_ERR("[Vulkan] Failed to set video mode.\n");

@@ -2460,7 +2460,7 @@ static void *gdi_init(const video_info_t *video,
       unsigned out_dims;
    unsigned full_x, full_y;
    unsigned mode_width = 0, mode_height = 0;
-   unsigned win_width  = 0, win_height  = 0;
+   unsigned win_dims   = 0;
    unsigned temp_width = 0, temp_height = 0;
    settings_t *settings                 = config_get_ptr();
    gdi_t *gdi                           = (gdi_t*)calloc(1, sizeof(*gdi));
@@ -2503,20 +2503,16 @@ static void *gdi_init(const video_info_t *video,
 
    RARCH_LOG("[GDI] Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
-   win_width   = video->width;
-   win_height  = video->height;
+   win_dims    = VIDEO_SCALE_PACK(video->width, video->height);
 
-   if (video->fullscreen && (win_width == 0) && (win_height == 0))
-   {
-      win_width  = full_x;
-      win_height = full_y;
-   }
+   /* Neither axis set is the whole word clear */
+   if (video->fullscreen && (win_dims == 0))
+      win_dims = VIDEO_SCALE_PACK(full_x, full_y);
 
-   mode_width      = win_width;
-   mode_height     = win_height;
+   mode_width      = VIDEO_SCALE_W(win_dims);
+   mode_height     = VIDEO_SCALE_H(win_dims);
 
-   if (!gfx_ctx_gdi_set_video_mode(
-            VIDEO_SCALE_PACK(mode_width, mode_height), video->fullscreen))
+   if (!gfx_ctx_gdi_set_video_mode(win_dims, video->fullscreen))
       goto error;
 
    mode_width     = 0;

@@ -5414,8 +5414,7 @@ static void *gl2_init(const video_info_t *video,
    unsigned mip_level                   = 0;
    unsigned mode_width                  = 0;
    unsigned mode_height                 = 0;
-   unsigned win_width                   = 0;
-   unsigned win_height                  = 0;
+   unsigned win_dims                    = 0;
    unsigned temp_width                  = 0;
    unsigned temp_height                 = 0;
    bool force_smooth                    = false;
@@ -5481,24 +5480,18 @@ static void *gl2_init(const video_info_t *video,
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
 
-   win_width   = video->width;
-   win_height  = video->height;
+   win_dims    = VIDEO_SCALE_PACK(video->width, video->height);
 
-   if (video->fullscreen && (win_width == 0) && (win_height == 0))
-   {
-      win_width  = full_x;
-      win_height = full_y;
-   }
+   /* Neither axis set is the whole word clear */
+   if (video->fullscreen && (win_dims == 0))
+      win_dims = VIDEO_SCALE_PACK(full_x, full_y);
    /* If fullscreen had to be forced, video->width/height is incorrect */
    else if (force_fullscreen)
-   {
-      win_width  = settings->uints.video_fullscreen_x;
-      win_height = settings->uints.video_fullscreen_y;
-   }
+      win_dims = VIDEO_SCALE_PACK(settings->uints.video_fullscreen_x,
+            settings->uints.video_fullscreen_y);
 
    if (     !gl->ctx_driver->set_video_mode
-         || !gl->ctx_driver->set_video_mode(gl->ctx_data,
-            VIDEO_SCALE_PACK(win_width, win_height),
+         || !gl->ctx_driver->set_video_mode(gl->ctx_data, win_dims,
             (video->fullscreen || force_fullscreen)))
       goto error;
 #if !defined(RARCH_CONSOLE) || defined(HAVE_LIBNX)
