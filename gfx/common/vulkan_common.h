@@ -264,6 +264,13 @@ typedef struct vulkan_context
     * drained the whole device to be destroyed. */
    VkSemaphore swapchain_stale_acquire_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    unsigned    num_stale_acquire_semaphores;
+   /* Fence an empty submission on present_queue signals, taken behind
+    * the presents when a swapchain is rebuilt or torn down: a present
+    * is a queue operation that vkQueuePresentKHR returns ahead of, its
+    * wait on the frame's swapchain semaphore is not covered by any
+    * frame fence, and the semaphore and the swapchain must outlive it.
+    * Nothing per frame. See vulkan_context_wait_frames(). */
+   VkFence     present_fence;
 
    /* Only used under VULKAN_DEBUG, but always present: this struct
     * is shared by every TU that includes this header, and a member
@@ -288,6 +295,8 @@ typedef struct vulkan_context
    uint8_t flags;
 
    bool swapchain_fences_signalled[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   /* A present was queued since present_fence was last waited on. */
+   bool present_pending;
 } vulkan_context_t;
 
 struct vulkan_emulated_mailbox

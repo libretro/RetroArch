@@ -245,6 +245,352 @@ static int test_context_cycle(void)
    return 0;
 }
 
+/* The validation layer retires a present's semaphore waits the moment
+ * vkQueuePresentKHR returns - it has no fence to learn otherwise from
+ * - so a semaphore destroyed under a pending present passes it clean.
+ * This tracker sits on the symbol wrapper's function pointers and
+ * keeps the one fact the layer drops: a present's wait, and the
+ * swapchain it was made against, stay pending on that queue until a
+ * fence submitted to the queue after the present has been waited on,
+ * or the queue or device has been drained. Destroying either while it
+ * is pending is the hazard. */
+#define TRACK_MAX 64
+
+struct track_present
+{
+   VkQueue        queue;
+   VkSemaphore    sem;        /* VK_NULL_HANDLE for a swapchain entry */
+   VkSwapchainKHR swapchain;  /* VK_NULL_HANDLE for a semaphore entry */
+   unsigned       seq;        /* present count on queue when queued */
+};
+
+struct track_fence
+{
+   VkQueue queue;
+   VkFence fence;
+   unsigned seq;              /* present count on queue when submitted */
+};
+
+static struct track_present s_pending[TRACK_MAX];
+static unsigned s_num_pending;
+static struct track_fence s_fences[TRACK_MAX];
+static unsigned s_num_fences;
+static VkQueue  s_seq_queue[8];
+static unsigned s_seq_count[8];
+static unsigned s_num_queues;
+static int      s_hazards;
+
+static PFN_vkQueuePresentKHR      s_real_present;
+static PFN_vkQueueSubmit          s_real_submit;
+static PFN_vkWaitForFences        s_real_wait;
+static PFN_vkQueueWaitIdle        s_real_queue_idle;
+static PFN_vkDeviceWaitIdle       s_real_device_idle;
+static PFN_vkDestroySemaphore     s_real_destroy_sem;
+static PFN_vkDestroySwapchainKHR  s_real_destroy_swapchain;
+
+static unsigned *track_seq(VkQueue queue)
+{
+   unsigned i;
+   for (i = 0; i < s_num_queues; i++)
+      if (s_seq_queue[i] == queue)
+         return &s_seq_count[i];
+   if (s_num_queues < 8)
+   {
+      s_seq_queue[s_num_queues] = queue;
+      s_seq_count[s_num_queues] = 0;
+      return &s_seq_count[s_num_queues++];
+   }
+   return &s_seq_count[0];
+}
+
+static void track_retire(VkQueue queue, unsigned upto)
+{
+   unsigned i = 0;
+   while (i < s_num_pending)
+   {
+      if (     (queue == VK_NULL_HANDLE || s_pending[i].queue == queue)
+            && s_pending[i].seq <= upto)
+         s_pending[i] = s_pending[--s_num_pending];
+      else
+         i++;
+   }
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL track_present_khr(VkQueue queue,
+      const VkPresentInfoKHR *info)
+{
+   VkResult res     = s_real_present(queue, info);
+   unsigned *seq    = track_seq(queue);
+   unsigned i;
+   (*seq)++;
+   for (i = 0; i < info->waitSemaphoreCount && s_num_pending < TRACK_MAX; i++)
+   {
+      s_pending[s_num_pending].queue     = queue;
+      s_pending[s_num_pending].sem       = info->pWaitSemaphores[i];
+      s_pending[s_num_pending].swapchain = VK_NULL_HANDLE;
+      s_pending[s_num_pending].seq       = *seq;
+      s_num_pending++;
+   }
+   for (i = 0; i < info->swapchainCount && s_num_pending < TRACK_MAX; i++)
+   {
+      s_pending[s_num_pending].queue     = queue;
+      s_pending[s_num_pending].sem       = VK_NULL_HANDLE;
+      s_pending[s_num_pending].swapchain = info->pSwapchains[i];
+      s_pending[s_num_pending].seq       = *seq;
+      s_num_pending++;
+   }
+   return res;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL track_submit(VkQueue queue,
+      uint32_t count, const VkSubmitInfo *submits, VkFence fence)
+{
+   VkResult res = s_real_submit(queue, count, submits, fence);
+   if (fence != VK_NULL_HANDLE && res == VK_SUCCESS)
+   {
+      unsigned i;
+      for (i = 0; i < s_num_fences; i++)
+         if (s_fences[i].fence == fence)
+            break;
+      if (i == s_num_fences && s_num_fences < TRACK_MAX)
+         s_num_fences++;
+      if (i < TRACK_MAX)
+      {
+         s_fences[i].queue = queue;
+         s_fences[i].fence = fence;
+         s_fences[i].seq   = *track_seq(queue);
+      }
+   }
+   return res;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL track_wait(VkDevice device,
+      uint32_t count, const VkFence *fences, VkBool32 wait_all,
+      uint64_t timeout)
+{
+   VkResult res = s_real_wait(device, count, fences, wait_all, timeout);
+   if (res == VK_SUCCESS && wait_all)
+   {
+      unsigned i, j;
+      for (i = 0; i < count; i++)
+         for (j = 0; j < s_num_fences; j++)
+            if (s_fences[j].fence == fences[i])
+               track_retire(s_fences[j].queue, s_fences[j].seq);
+   }
+   return res;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL track_queue_idle(VkQueue queue)
+{
+   VkResult res = s_real_queue_idle(queue);
+   if (res == VK_SUCCESS)
+      track_retire(queue, ~0u);
+   return res;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL track_device_idle(VkDevice device)
+{
+   VkResult res = s_real_device_idle(device);
+   if (res == VK_SUCCESS)
+      track_retire(VK_NULL_HANDLE, ~0u);
+   return res;
+}
+
+static VKAPI_ATTR void VKAPI_CALL track_destroy_sem(VkDevice device,
+      VkSemaphore sem, const VkAllocationCallbacks *alloc)
+{
+   unsigned i;
+   for (i = 0; i < s_num_pending; i++)
+      if (s_pending[i].sem == sem && sem != VK_NULL_HANDLE)
+      {
+         fprintf(stderr, "HAZARD: semaphore destroyed while a present"
+               " queued behind it is not known to have completed\n");
+         s_hazards++;
+      }
+   s_real_destroy_sem(device, sem, alloc);
+}
+
+static VKAPI_ATTR void VKAPI_CALL track_destroy_swapchain(VkDevice device,
+      VkSwapchainKHR swapchain, const VkAllocationCallbacks *alloc)
+{
+   unsigned i;
+   for (i = 0; i < s_num_pending; i++)
+      if (s_pending[i].swapchain == swapchain && swapchain != VK_NULL_HANDLE)
+      {
+         fprintf(stderr, "HAZARD: swapchain destroyed while a present"
+               " into it is not known to have completed\n");
+         s_hazards++;
+      }
+   s_real_destroy_swapchain(device, swapchain, alloc);
+}
+
+static void track_install(void)
+{
+   s_num_pending = s_num_fences = s_num_queues = 0;
+   s_hazards     = 0;
+   s_real_present           = vkQueuePresentKHR;
+   s_real_submit            = vkQueueSubmit;
+   s_real_wait              = vkWaitForFences;
+   s_real_queue_idle        = vkQueueWaitIdle;
+   s_real_device_idle       = vkDeviceWaitIdle;
+   s_real_destroy_sem       = vkDestroySemaphore;
+   s_real_destroy_swapchain = vkDestroySwapchainKHR;
+   vkQueuePresentKHR        = track_present_khr;
+   vkQueueSubmit            = track_submit;
+   vkWaitForFences          = track_wait;
+   vkQueueWaitIdle          = track_queue_idle;
+   vkDeviceWaitIdle         = track_device_idle;
+   vkDestroySemaphore       = track_destroy_sem;
+   vkDestroySwapchainKHR    = track_destroy_swapchain;
+}
+
+static void track_remove(void)
+{
+   vkQueuePresentKHR        = s_real_present;
+   vkQueueSubmit            = s_real_submit;
+   vkWaitForFences          = s_real_wait;
+   vkQueueWaitIdle          = s_real_queue_idle;
+   vkDeviceWaitIdle         = s_real_device_idle;
+   vkDestroySemaphore       = s_real_destroy_sem;
+   vkDestroySwapchainKHR    = s_real_destroy_swapchain;
+}
+
+/* A present is a queue operation: vkQueuePresentKHR returns while
+ * the presentation engine still has to wait on the frame's swapchain
+ * semaphore, and nothing on the frame fences covers that wait - the
+ * fences are signalled by the render submission, which the present
+ * comes after. A swapchain rebuild or teardown that waited on the
+ * frame fences alone then destroyed the semaphore, and the swapchain
+ * it belongs to, under a pending present. On Mali (Android, issue
+ * #19601) that broke the driver's presentation sync for good: every
+ * present after it failed, the swapchain was rebuilt every frame and
+ * the menu froze. The validation layer cannot see it (see the tracker
+ * above), so the tracker is the oracle: no semaphore or swapchain a
+ * present is queued against is destroyed before a fence behind that
+ * present has been waited on.
+ *
+ * The sequence is the driver's: acquire (done by the surface create),
+ * a fenced submission signalling the swapchain semaphore, the present,
+ * and a teardown right behind it. */
+static int test_present_then_teardown(void)
+{
+   gfx_ctx_vulkan_data_t vk;
+   VkSubmitInfo submit;
+   VkCommandPoolCreateInfo pool_info;
+   VkCommandBufferAllocateInfo cmd_info;
+   VkCommandBufferBeginInfo begin;
+   VkImageMemoryBarrier barrier;
+   VkCommandPool pool = VK_NULL_HANDLE;
+   VkCommandBuffer cmd = VK_NULL_HANDLE;
+   VkSemaphore wait_sems[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   VkPipelineStageFlags wait_stages[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   unsigned index;
+   unsigned frame;
+
+   reset_counts();
+
+   if (!context_up(&vk))
+   {
+      fputs("FAIL: context setup failed for the present test\n", stderr);
+      return 1;
+   }
+   /* The pointers are loaded by the context init above. */
+   track_install();
+
+   if (!(vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+   {
+      fputs("FAIL: surface create did not acquire an image\n", stderr);
+      vulkan_context_destroy(&vk, true);
+      return 1;
+   }
+
+   index = vk.context.current_swapchain_index;
+   frame = vk.context.current_frame_index;
+
+   if (     vk.context.swapchain_semaphores[index] == VK_NULL_HANDLE
+         || vk.context.swapchain_fences[frame]     == VK_NULL_HANDLE)
+   {
+      fputs("FAIL: acquire left no swapchain semaphore or frame fence\n",
+            stderr);
+      vulkan_context_destroy(&vk, true);
+      return 1;
+   }
+
+   /* The one command the frame needs: the acquired image into the
+    * layout a present takes. */
+   memset(&pool_info, 0, sizeof(pool_info));
+   pool_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   pool_info.queueFamilyIndex = vk.context.graphics_queue_index;
+   vkCreateCommandPool(vk.context.device, &pool_info, NULL, &pool);
+
+   memset(&cmd_info, 0, sizeof(cmd_info));
+   cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cmd_info.commandPool        = pool;
+   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cmd_info.commandBufferCount = 1;
+   vkAllocateCommandBuffers(vk.context.device, &cmd_info, &cmd);
+
+   memset(&begin, 0, sizeof(begin));
+   begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   vkBeginCommandBuffer(cmd, &begin);
+
+   memset(&barrier, 0, sizeof(barrier));
+   barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   barrier.dstAccessMask                   = VK_ACCESS_MEMORY_READ_BIT;
+   barrier.oldLayout                       = VK_IMAGE_LAYOUT_UNDEFINED;
+   barrier.newLayout                       = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+   barrier.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+   barrier.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+   barrier.image                           = vk.context.swapchain_images[index];
+   barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   barrier.subresourceRange.levelCount     = 1;
+   barrier.subresourceRange.layerCount     = 1;
+   vkCmdPipelineBarrier(cmd,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+         0, 0, NULL, 0, NULL, 1, &barrier);
+   vkEndCommandBuffer(cmd);
+
+   memset(&submit, 0, sizeof(submit));
+   submit.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.commandBufferCount   = 1;
+   submit.pCommandBuffers      = &cmd;
+   submit.waitSemaphoreCount   = vulkan_context_take_acquire_waits(
+         &vk.context, frame, wait_sems, wait_stages,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+   submit.pWaitSemaphores      = wait_sems;
+   submit.pWaitDstStageMask    = wait_stages;
+   submit.signalSemaphoreCount = 1;
+   submit.pSignalSemaphores    = &vk.context.swapchain_semaphores[index];
+
+   vkQueueSubmit(vk.context.queue, 1, &submit,
+         vk.context.swapchain_fences[frame]);
+   vk.context.swapchain_fences_signalled[frame] = true;
+
+   vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
+   vulkan_present(&vk, index);
+
+   /* The teardown right behind the present: the same path a resize
+    * or an out-of-date acquire takes through vulkan_destroy_swapchain. */
+   vulkan_surface_destroy(&vk);
+
+   /* The context teardown drains the device; the pool goes after
+    * that, once its command buffer can no longer be running. */
+   vkDeviceWaitIdle(vk.context.device);
+   vkDestroyCommandPool(vk.context.device, pool, NULL);
+   vulkan_context_destroy(&vk, true);
+   track_remove();
+
+   if (s_hazards)
+   {
+      fprintf(stderr, "FAIL: a teardown right behind a present destroyed"
+            " %d object(s) the present still needed\n", s_hazards);
+      return 1;
+   }
+   return report("a teardown right behind a present");
+}
+
 /* vulkan_find_memory_type() picks the heap for every allocation
  * the backend makes; a wrong answer is a validation error at the
  * first vkBindImageMemory rather than here, so check the
@@ -336,6 +682,8 @@ int main(void)
    else if (test_context_cycle())
       ret = 1;
    else if (test_memory_type_selection())
+      ret = 1;
+   else if (test_present_then_teardown())
       ret = 1;
 
    XDestroyWindow(s_dpy, s_win);

@@ -1599,8 +1599,9 @@ end:
  * swapchain, and is not drained for it. Needs no queue lock. */
 static void vulkan_context_wait_frames(gfx_ctx_vulkan_data_t *vk)
 {
-   VkFence fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
-   unsigned count = 0;
+   VkFence fences[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   unsigned count     = 0;
+   bool reset_present = false;
    unsigned i;
 
    if (vk->context.device == VK_NULL_HANDLE)
@@ -1611,9 +1612,62 @@ static void vulkan_context_wait_frames(gfx_ctx_vulkan_data_t *vk)
             && vk->context.swapchain_fences[i] != VK_NULL_HANDLE)
          fences[count++] = vk->context.swapchain_fences[i];
    }
+
+   /* The presents are not on those fences. vkQueuePresentKHR returns
+    * before the presentation engine has waited on the frame's
+    * swapchain semaphore, and that wait is a queue operation on
+    * present_queue - on its own queue, ordered with nothing the frame
+    * fences cover, and on the shared queue behind the last frame's
+    * fence rather than under it. Destroying the semaphore, or the
+    * swapchain, while that wait is pending is what Mali's Android WSI
+    * answered with a failed QueueSignalReleaseImageANDROID on every
+    * present after (#19601). An empty submission behind the presents
+    * signals its fence once they have executed, on the present queue
+    * alone; the rest of the device is still not drained. */
+   if (vk->context.present_pending)
+   {
+      VkQueue present_queue = vk->context.present_queue
+         ? vk->context.present_queue : vk->context.queue;
+      VkFence present_fence = vk->context.present_fence;
+
+      if (present_fence == VK_NULL_HANDLE)
+      {
+         VkFenceCreateInfo fence_info;
+         fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+         fence_info.pNext = NULL;
+         fence_info.flags = 0;
+         if (vkCreateFence(vk->context.device, &fence_info, NULL,
+                  &present_fence) != VK_SUCCESS)
+            present_fence = VK_NULL_HANDLE;
+         vk->context.present_fence = present_fence;
+      }
+
+      if (present_fence != VK_NULL_HANDLE)
+      {
+         VkResult res;
+#ifdef HAVE_THREADS
+         if (present_queue == vk->context.queue)
+            slock_lock(vk->context.queue_lock);
+#endif
+         res = vkQueueSubmit(present_queue, 0, NULL, present_fence);
+#ifdef HAVE_THREADS
+         if (present_queue == vk->context.queue)
+            slock_unlock(vk->context.queue_lock);
+#endif
+         if (res == VK_SUCCESS)
+         {
+            fences[count++] = present_fence;
+            reset_present    = true;
+         }
+      }
+      vk->context.present_pending = false;
+   }
+
    if (count)
       vkWaitForFences(vk->context.device, count, fences, VK_TRUE,
             UINT64_MAX);
+   if (reset_present)
+      vkResetFences(vk->context.device, 1, &vk->context.present_fence);
 }
 
 static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
@@ -3429,8 +3483,16 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 
    if (vk->context.device)
       vkDeviceWaitIdle(vk->context.device);
+   /* Drained above; the fence would only be waited on again. */
+   vk->context.present_pending = false;
 
    vulkan_destroy_swapchain(vk);
+
+   if (vk->context.present_fence != VK_NULL_HANDLE)
+   {
+      vkDestroyFence(vk->context.device, vk->context.present_fence, NULL);
+      vk->context.present_fence = VK_NULL_HANDLE;
+   }
 
    if (     destroy_surface
          && (vk->vk_surface != VK_NULL_HANDLE))
@@ -3572,6 +3634,10 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
       slock_lock(vk->context.queue_lock);
 #endif
    err = vkQueuePresentKHR(present_queue, &present);
+   /* Queued whatever it returned: a failed present has still put its
+    * semaphore wait on the queue, or may have, and the fence taken
+    * before the next rebuild covers either. */
+   vk->context.present_pending = true;
 
    /* VK_SUBOPTIMAL_KHR can be returned on
     * Android 10 when prerotate is not dealt with.
