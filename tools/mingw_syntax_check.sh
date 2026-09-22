@@ -73,6 +73,21 @@ C89FLAGS="-fsyntax-only -std=c89 -ansi -pedantic -Werror=pedantic \
 # feature set of pass 1, so pass 2 takes those defines for it too:
 # without them it checks code no build compiles and misses code every
 # Win32 build does (wnd_proc_d3d_common is declared behind HAVE_D3D*).
+# An optional platform header this box lacks turns the compile into a
+# fatal error at the include: the TU is never parsed, and the
+# missing-header filter below then reported it "ok". Every consumer of
+# win32_common.h went unchecked that way (HAVE_D3DKMT pulls in
+# d3dkmthk.h), which is how a broken call reached the MSVC lane. Drop
+# the define when its header is not here, so the file is really checked.
+for probe_def in D3DKMT:d3dkmthk.h; do
+   probe_name=${probe_def%%:*}
+   probe_hdr=${probe_def#*:}
+   if ! echo "#include <$probe_hdr>" | $CC $FLAGS -x c - >/dev/null 2>&1; then
+      FLAGS=$(printf '%s\n' $FLAGS | grep -v "^-DHAVE_$probe_name$" | tr '\n' ' ')
+      echo "note: no $probe_hdr here, checking without HAVE_$probe_name" >&2
+   fi
+done
+
 WIN32DEFS=$(printf '%s\n' $FLAGS | grep '^-D' | tr '\n' ' ')
 
 # A Win32-only translation unit cannot be C89-checked with the host gcc:
@@ -113,7 +128,7 @@ check_compat_include()
    return 1
 }
 
-fail=0; n=0
+fail=0; n=0; skipped=0
 for f in $FILES; do
    n=$((n+1))
    check_compat_include "$f" || fail=1
@@ -122,10 +137,23 @@ for f in $FILES; do
    # forgiven; a missing header with a path component (../companion/x.h:
    # a project header) is not - that once let a stale include of a
    # deleted header through as "ok".
-   err=$($CC $FLAGS "$f" 2>&1 | grep -E ' error: ' \
+   out=$($CC $FLAGS "$f" 2>&1)
+   # A fatal error stops the parse: nothing past the include was looked
+   # at, so this file was NOT checked and must not count as clean.
+   fatal=$(echo "$out" | grep -E ' fatal error: ' | head -1)
+   err=$(echo "$out" | grep -E ' error: ' \
          | grep -vE 'error: [A-Za-z0-9_.-]+: No such file|error: [A-Za-z0-9_.-]+: file not found' | head -3)
    if [ -n "$err" ]; then
       echo "FAIL [win32] $f"; echo "$err" | sed 's/^/     /'; fail=1
+   elif [ -n "$fatal" ]; then
+      # The parse stopped at an include, so nothing in this file was
+      # looked at. That is expected for a driver belonging to another
+      # platform, and it is NOT "ok" - it used to be reported as such,
+      # which is how a broken call in a Win32 file reached MSVC. Count
+      # it and name it, so the summary can never imply it was checked.
+      skipped=$((skipped+1))
+      echo "unchecked   $f"
+      echo "$fatal" | sed 's/^/     /'
    fi
    # Windows-only translation units cannot take pass 2 with the host
    # gcc (<windows.h> is not there, and -ansi breaks those headers
@@ -171,5 +199,8 @@ for f in $FILES; do
       echo "FAIL [c89]   $f"; echo "$err" | sed 's/^/     /'; fail=1
    fi
 done
-[ $fail = 0 ] && echo "ok: $n translation units clean (compat decls + win32 gnu99 + linux c89 pedantic)"
+if [ $fail = 0 ]; then
+   echo "ok: $((n - skipped))/$n translation units clean (compat decls + win32 gnu99 + linux c89 pedantic)"
+   [ $skipped -gt 0 ] && echo "    $skipped not checked here (the parse stopped at a header this box lacks)"
+fi
 exit $fail

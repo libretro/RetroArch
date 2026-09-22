@@ -929,11 +929,15 @@ static bool gfx_ctx_wgl_destroy_surface(void *data)
 static void win32_get_video_size(void* data,
    unsigned* width, unsigned* height)
 {
-   bool quit = false;
-   bool resize = false;
-   win32_check_window(NULL, &quit, &resize, width, height);
-   width = uwp_get_width();
-   height = uwp_get_height();
+   bool quit     = false;
+   bool resize   = false;
+   unsigned dims = 0;
+   win32_check_window(NULL, &quit, &resize, &dims);
+   *width        = VIDEO_SCALE_W(dims);
+   *height       = VIDEO_SCALE_H(dims);
+   /* Match the output res to the display resolution. */
+   *width        = uwp_get_width();
+   *height       = uwp_get_height();
 }
 
 bool win32_suspend_screensaver(void* data, bool enable)

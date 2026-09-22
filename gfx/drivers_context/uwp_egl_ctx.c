@@ -140,14 +140,17 @@ static bool gfx_ctx_uwp_set_resize(void *data,
 static void gfx_ctx_uwp_get_video_size(void *data,
       unsigned *width, unsigned *height)
 {
-   bool quit   = false;
-   bool resize = false;
-   win32_check_window(NULL, &quit, &resize, width, height);
+   bool quit     = false;
+   bool resize   = false;
+   unsigned dims = 0;
+   win32_check_window(NULL, &quit, &resize, &dims);
+   *width        = VIDEO_SCALE_W(dims);
+   *height       = VIDEO_SCALE_H(dims);
    if (is_running_on_xbox())
    {
       /* Match the output res to the display resolution */
-      width    = uwp_get_width();
-      height   = uwp_get_height();
+      *width   = uwp_get_width();
+      *height  = uwp_get_height();
    }
 }
 
