@@ -462,14 +462,14 @@ struct font_line_metrics
    float descender;
 };
 
+/* A pass in the FBO chain, its three sizes each in VIDEO_SCALE_PACK's
+ * layout: what the pass renders this frame, the largest it renders at
+ * any input size, and the texture that holds it. */
 struct video_fbo_rect
 {
-   unsigned img_width;
-   unsigned img_height;
-   unsigned max_img_width;
-   unsigned max_img_height;
-   unsigned width;
-   unsigned height;
+   unsigned img_dims;
+   unsigned max_img_dims;
+   unsigned dims;
 };
 
 struct video_ortho

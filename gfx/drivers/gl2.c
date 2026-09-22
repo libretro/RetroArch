@@ -1470,8 +1470,8 @@ static bool gl2_recreate_fbo(
    glBindTexture(GL_TEXTURE_2D, *texture);
    gl2_load_texture_image(GL_TEXTURE_2D,
          0, RARCH_GL_INTERNAL_FORMAT32,
-         fbo_rect->width,
-         fbo_rect->height,
+         VIDEO_SCALE_W(fbo_rect->dims),
+         VIDEO_SCALE_H(fbo_rect->dims),
          0, RARCH_GL_TEXTURE_TYPE32,
          RARCH_GL_FORMAT32, NULL);
 
@@ -1570,16 +1570,18 @@ static void gl2_renderchain_render(
       prev_rect = &gl->fbo_rect[i - 1];
       fbo_info  = &fbo_tex_info[i - 1];
 
-      xamt      = (GLfloat)prev_rect->img_width / prev_rect->width;
-      yamt      = (GLfloat)prev_rect->img_height / prev_rect->height;
+      xamt      = (GLfloat)VIDEO_SCALE_W(prev_rect->img_dims)
+            / VIDEO_SCALE_W(prev_rect->dims);
+      yamt      = (GLfloat)VIDEO_SCALE_H(prev_rect->img_dims)
+            / VIDEO_SCALE_H(prev_rect->dims);
 
       SET_TEXTURE_COORDS(fbo_tex_coords, xamt, yamt);
 
       fbo_info->tex           = chain->fbo_texture[i - 1];
-      fbo_info->input_size[0] = prev_rect->img_width;
-      fbo_info->input_size[1] = prev_rect->img_height;
-      fbo_info->tex_size[0]   = prev_rect->width;
-      fbo_info->tex_size[1]   = prev_rect->height;
+      fbo_info->input_size[0] = VIDEO_SCALE_W(prev_rect->img_dims);
+      fbo_info->input_size[1] = VIDEO_SCALE_H(prev_rect->img_dims);
+      fbo_info->tex_size[0]   = VIDEO_SCALE_W(prev_rect->dims);
+      fbo_info->tex_size[1]   = VIDEO_SCALE_H(prev_rect->dims);
       memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
       fbo_tex_info_cnt++;
 
@@ -1600,14 +1602,12 @@ static void gl2_renderchain_render(
 
       /* Render to FBO with certain size. */
       gl2_set_viewport(gl,
-            VIDEO_SCALE_PACK(rect->img_width, rect->img_height), true, false);
+            rect->img_dims, true, false);
 
       params.vp_dims       = VIDEO_SCALE_PACK(
             gl->out_vp_width, gl->out_vp_height);
-      params.dims          = VIDEO_SCALE_PACK(
-            prev_rect->img_width, prev_rect->img_height);
-      params.tex_dims      = VIDEO_SCALE_PACK(
-            prev_rect->width, prev_rect->height);
+      params.dims          = prev_rect->img_dims;
+      params.tex_dims      = prev_rect->dims;
       params.out_dims      = gl->vp.dims;
       params.frame_counter = (unsigned int)frame_count;
       /* Intermediate passes of the same present: the outer frame's
@@ -1637,8 +1637,10 @@ static void gl2_renderchain_render(
 
    /* Render our last FBO texture directly to screen. */
    prev_rect = &gl->fbo_rect[chain->fbo_pass - 1];
-   xamt      = (GLfloat)prev_rect->img_width / prev_rect->width;
-   yamt      = (GLfloat)prev_rect->img_height / prev_rect->height;
+   xamt      = (GLfloat)VIDEO_SCALE_W(prev_rect->img_dims)
+         / VIDEO_SCALE_W(prev_rect->dims);
+   yamt      = (GLfloat)VIDEO_SCALE_H(prev_rect->img_dims)
+         / VIDEO_SCALE_H(prev_rect->dims);
 
    SET_TEXTURE_COORDS(fbo_tex_coords, xamt, yamt);
 
@@ -1646,10 +1648,10 @@ static void gl2_renderchain_render(
    fbo_info                = &fbo_tex_info[chain->fbo_pass - 1];
 
    fbo_info->tex           = chain->fbo_texture[chain->fbo_pass - 1];
-   fbo_info->input_size[0] = prev_rect->img_width;
-   fbo_info->input_size[1] = prev_rect->img_height;
-   fbo_info->tex_size[0]   = prev_rect->width;
-   fbo_info->tex_size[1]   = prev_rect->height;
+   fbo_info->input_size[0] = VIDEO_SCALE_W(prev_rect->img_dims);
+   fbo_info->input_size[1] = VIDEO_SCALE_H(prev_rect->img_dims);
+   fbo_info->tex_size[0]   = VIDEO_SCALE_W(prev_rect->dims);
+   fbo_info->tex_size[1]   = VIDEO_SCALE_H(prev_rect->dims);
    memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
    fbo_tex_info_cnt++;
 
@@ -1678,9 +1680,8 @@ static void gl2_renderchain_render(
    gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
 
    params.vp_dims       = VIDEO_SCALE_PACK(gl->out_vp_width, gl->out_vp_height);
-   params.dims          = VIDEO_SCALE_PACK(
-         prev_rect->img_width, prev_rect->img_height);
-   params.tex_dims      = VIDEO_SCALE_PACK(prev_rect->width, prev_rect->height);
+   params.dims          = prev_rect->img_dims;
+   params.tex_dims      = prev_rect->dims;
    params.out_dims      = gl->vp.dims;
    params.frame_counter = (unsigned int)frame_count;
    /* Last pass of the same present; see above. */
@@ -1858,6 +1859,8 @@ static void gl2_create_fbo_texture(gl2_t *gl,
    unsigned mip_level            = i + 2;
    bool mipmapped                = gl->shader->mipmap_input(gl->shader_data, mip_level);
    GLenum min_filter             = mipmapped ? base_mip_filt : base_filt;
+   unsigned tex_w                = VIDEO_SCALE_W(gl->fbo_rect[i].dims);
+   unsigned tex_h                = VIDEO_SCALE_H(gl->fbo_rect[i].dims);
 
    if (gl->shader->filter_type(gl->shader_data,
             i + 2, &smooth))
@@ -1893,7 +1896,7 @@ static void gl2_create_fbo_texture(gl2_t *gl,
 #else
          GL_RGBA32F,
 #endif
-         gl->fbo_rect[i].width, gl->fbo_rect[i].height,
+         tex_w, tex_h,
          0, GL_RGBA, GL_FLOAT, NULL);
    }
    else
@@ -1919,7 +1922,7 @@ static void gl2_create_fbo_texture(gl2_t *gl,
 #else
             GL_SRGB8_ALPHA8,
 #endif
-            gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+            tex_w, tex_h, 0,
 #ifdef HAVE_OPENGLES2
             GL_SRGB_ALPHA_EXT,
 #else
@@ -1932,19 +1935,19 @@ static void gl2_create_fbo_texture(gl2_t *gl,
 #if defined(HAVE_OPENGLES)
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_RGBA,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+               tex_w, tex_h, 0,
                GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 #elif defined(HAVE_PSGL)
          glTexImage2D(GL_TEXTURE_2D,
                0, GL_ARGB_SCE,
-               gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+               tex_w, tex_h, 0,
                GL_ARGB_SCE, GL_UNSIGNED_BYTE, NULL);
 #else
          /* Avoid potential performance
           * reductions on particular platforms. */
          gl2_load_texture_image(GL_TEXTURE_2D,
             0, RARCH_GL_INTERNAL_FORMAT32,
-            gl->fbo_rect[i].width, gl->fbo_rect[i].height, 0,
+            tex_w, tex_h, 0,
             RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
 #endif
       }
@@ -1994,12 +1997,10 @@ static void gl2_renderchain_recompute_pass_sizes(
       unsigned vp_width, unsigned vp_height)
 {
    size_t i;
-   bool size_modified       = false;
-   GLint max_size           = 0;
-   unsigned last_width      = width;
-   unsigned last_height     = height;
-   unsigned last_max_width  = gl->tex_w;
-   unsigned last_max_height = gl->tex_h;
+   bool size_modified      = false;
+   GLint max_size          = 0;
+   unsigned last_dims      = VIDEO_SCALE_PACK(width, height);
+   unsigned last_max_dims  = VIDEO_SCALE_PACK(gl->tex_w, gl->tex_h);
 
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
 
@@ -2008,82 +2009,87 @@ static void gl2_renderchain_recompute_pass_sizes(
    {
       struct video_fbo_rect  *fbo_rect   = &gl->fbo_rect[i];
       struct gfx_fbo_scale *fbo_scale    = &chain->fbo_scale[i];
+      /* The axes scale apart from each other -- a pass can be absolute
+       * on one and relative on the other -- so each is found on its own
+       * here and the two are joined only when they are stored, which is
+       * what stops a pass ever holding half an update. */
+      unsigned img_w                     = VIDEO_SCALE_W(fbo_rect->img_dims);
+      unsigned img_h                     = VIDEO_SCALE_H(fbo_rect->img_dims);
+      unsigned max_img_w                 =
+            VIDEO_SCALE_W(fbo_rect->max_img_dims);
+      unsigned max_img_h                 =
+            VIDEO_SCALE_H(fbo_rect->max_img_dims);
 
       switch (fbo_scale->type_x)
       {
          case RARCH_SCALE_INPUT:
-            fbo_rect->img_width      = fbo_scale->scale_x * last_width;
-            fbo_rect->max_img_width  = last_max_width     * fbo_scale->scale_x;
+            img_w     = fbo_scale->scale_x * VIDEO_SCALE_W(last_dims);
+            max_img_w = VIDEO_SCALE_W(last_max_dims) * fbo_scale->scale_x;
             break;
 
          case RARCH_SCALE_ABSOLUTE:
-            fbo_rect->img_width      = fbo_rect->max_img_width =
-               fbo_scale->abs_x;
+            img_w     = max_img_w = fbo_scale->abs_x;
             break;
 
          case RARCH_SCALE_VIEWPORT:
             if (gl->rotation % 180 == 90)
-               fbo_rect->img_width = fbo_rect->max_img_width =
-               fbo_scale->scale_x * vp_height;
+               img_w  = max_img_w = fbo_scale->scale_x * vp_height;
             else
-               fbo_rect->img_width = fbo_rect->max_img_width =
-               fbo_scale->scale_x * vp_width;
+               img_w  = max_img_w = fbo_scale->scale_x * vp_width;
             break;
       }
 
       switch (fbo_scale->type_y)
       {
          case RARCH_SCALE_INPUT:
-            fbo_rect->img_height     = last_height * fbo_scale->scale_y;
-            fbo_rect->max_img_height = last_max_height * fbo_scale->scale_y;
+            img_h     = VIDEO_SCALE_H(last_dims) * fbo_scale->scale_y;
+            max_img_h = VIDEO_SCALE_H(last_max_dims) * fbo_scale->scale_y;
             break;
 
          case RARCH_SCALE_ABSOLUTE:
-            fbo_rect->img_height     = fbo_scale->abs_y;
-            fbo_rect->max_img_height = fbo_scale->abs_y;
+            img_h     = max_img_h = fbo_scale->abs_y;
             break;
 
          case RARCH_SCALE_VIEWPORT:
             if (gl->rotation % 180 == 90)
-               fbo_rect->img_height = fbo_rect->max_img_height =
-               fbo_scale->scale_y * vp_width;
+               img_h  = max_img_h = fbo_scale->scale_y * vp_width;
             else
-               fbo_rect->img_height = fbo_rect->max_img_height =
-                  fbo_scale->scale_y * vp_height;
+               img_h  = max_img_h = fbo_scale->scale_y * vp_height;
             break;
       }
 
-      if (fbo_rect->img_width > (unsigned)max_size)
+      if (img_w > (unsigned)max_size)
       {
-         size_modified            = true;
-         fbo_rect->img_width      = max_size;
+         size_modified = true;
+         img_w         = max_size;
       }
 
-      if (fbo_rect->img_height > (unsigned)max_size)
+      if (img_h > (unsigned)max_size)
       {
-         size_modified            = true;
-         fbo_rect->img_height     = max_size;
+         size_modified = true;
+         img_h         = max_size;
       }
 
-      if (fbo_rect->max_img_width > (unsigned)max_size)
+      if (max_img_w > (unsigned)max_size)
       {
-         size_modified            = true;
-         fbo_rect->max_img_width  = max_size;
+         size_modified = true;
+         max_img_w     = max_size;
       }
 
-      if (fbo_rect->max_img_height > (unsigned)max_size)
+      if (max_img_h > (unsigned)max_size)
       {
-         size_modified            = true;
-         fbo_rect->max_img_height = max_size;
+         size_modified = true;
+         max_img_h     = max_size;
       }
 
       if (size_modified)
          RARCH_WARN("[GL] FBO textures exceeded maximum size of GPU (%dx%d). Resizing to fit.\n", max_size, max_size);
 
-      last_width      = fbo_rect->img_width;
-      last_height     = fbo_rect->img_height;
-      last_max_width  = fbo_rect->max_img_width;
-      last_max_height = fbo_rect->max_img_height;
+      fbo_rect->img_dims     = VIDEO_SCALE_PACK(img_w, img_h);
+      fbo_rect->max_img_dims = VIDEO_SCALE_PACK(max_img_w, max_img_h);
+
+      last_dims              = fbo_rect->img_dims;
+      last_max_dims          = fbo_rect->max_img_dims;
    }
 }
 
@@ -2103,7 +2109,7 @@ static void gl2_renderchain_start_render(gl2_t *gl,
    gl2_bind_fb(chain->fbo[0]);
 
    gl2_set_viewport(gl,
-         VIDEO_SCALE_PACK(gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height), true, false);
+         gl->fbo_rect[0].img_dims, true, false);
 
    /* Need to preserve the "flipped" state when in FBO
     * as well to have consistent texture coordinates.
@@ -2193,10 +2199,14 @@ static void gl2_renderchain_init(
 
    for (i = 0; i < chain->fbo_pass; i++)
    {
-      gl->fbo_rect[i].width  = next_pow2(gl->fbo_rect[i].img_width);
-      gl->fbo_rect[i].height = next_pow2(gl->fbo_rect[i].img_height);
+      unsigned img_dims        = gl->fbo_rect[i].img_dims;
+
+      gl->fbo_rect[i].dims     = VIDEO_SCALE_PACK(
+            next_pow2(VIDEO_SCALE_W(img_dims)),
+            next_pow2(VIDEO_SCALE_H(img_dims)));
       RARCH_LOG("[GL] Creating FBO %d @ %ux%u.\n", i,
-            gl->fbo_rect[i].width, gl->fbo_rect[i].height);
+            VIDEO_SCALE_W(gl->fbo_rect[i].dims),
+            VIDEO_SCALE_H(gl->fbo_rect[i].dims));
    }
 
    if (gl->shader->get_feedback_pass(gl->shader_data, &gl->fbo_feedback_pass))
@@ -2204,8 +2214,8 @@ static void gl2_renderchain_init(
       if (gl->fbo_feedback_pass < (unsigned)chain->fbo_pass)
       {
          RARCH_LOG("[GL] Creating feedback FBO %d @ %ux%u.\n", i,
-               gl->fbo_rect[gl->fbo_feedback_pass].width,
-               gl->fbo_rect[gl->fbo_feedback_pass].height);
+               VIDEO_SCALE_W(gl->fbo_rect[gl->fbo_feedback_pass].dims),
+               VIDEO_SCALE_H(gl->fbo_rect[gl->fbo_feedback_pass].dims));
          gl->flags |=  GL2_FLAG_FBO_FEEDBACK_ENABLE;
       }
       else
@@ -4402,11 +4412,11 @@ static bool gl2_frame(void *data, const void *frame,
             struct video_fbo_rect *fbo_rect = &gl->fbo_rect[i];
             if (fbo_rect)
             {
-               unsigned img_width   = fbo_rect->max_img_width;
-               unsigned img_height  = fbo_rect->max_img_height;
+               unsigned img_width   = VIDEO_SCALE_W(fbo_rect->max_img_dims);
+               unsigned img_height  = VIDEO_SCALE_H(fbo_rect->max_img_dims);
 
-               if (     (img_width  > fbo_rect->width)
-                     || (img_height > fbo_rect->height))
+               if (     (img_width  > VIDEO_SCALE_W(fbo_rect->dims))
+                     || (img_height > VIDEO_SCALE_H(fbo_rect->dims)))
                {
                   /* Check proactively since we might suddenly
                    * get sizes of tex_w width or tex_h height. */
@@ -4415,8 +4425,8 @@ static bool gl2_frame(void *data, const void *frame,
                   bool update_feedback            = (gl->flags & GL2_FLAG_FBO_FEEDBACK_ENABLE)
                      && (unsigned)i == gl->fbo_feedback_pass;
 
-                  fbo_rect->width                 = pow2_size;
-                  fbo_rect->height                = pow2_size;
+                  fbo_rect->dims                  = VIDEO_SCALE_PACK(
+                        pow2_size, pow2_size);
 
                   gl2_recreate_fbo(fbo_rect, chain->fbo[i], &chain->fbo_texture[i]);
 
@@ -4435,7 +4445,8 @@ static bool gl2_frame(void *data, const void *frame,
                   }
 
                   RARCH_LOG("[GL] Recreating FBO texture #%d: %ux%u.\n",
-                        i, fbo_rect->width, fbo_rect->height);
+                        i, VIDEO_SCALE_W(fbo_rect->dims),
+                        VIDEO_SCALE_H(fbo_rect->dims));
                }
             }
          }
@@ -4522,14 +4533,16 @@ static bool gl2_frame(void *data, const void *frame,
    {
       const struct video_fbo_rect
          *rect                        = &gl->fbo_rect[gl->fbo_feedback_pass];
-      GLfloat xamt                    = (GLfloat)rect->img_width / rect->width;
-      GLfloat yamt                    = (GLfloat)rect->img_height / rect->height;
+      GLfloat xamt                    = (GLfloat)VIDEO_SCALE_W(rect->img_dims)
+            / VIDEO_SCALE_W(rect->dims);
+      GLfloat yamt                    = (GLfloat)VIDEO_SCALE_H(rect->img_dims)
+            / VIDEO_SCALE_H(rect->dims);
 
       feedback_info.tex               = gl->fbo_feedback_texture;
-      feedback_info.input_size[0]     = rect->img_width;
-      feedback_info.input_size[1]     = rect->img_height;
-      feedback_info.tex_size[0]       = rect->width;
-      feedback_info.tex_size[1]       = rect->height;
+      feedback_info.input_size[0]     = VIDEO_SCALE_W(rect->img_dims);
+      feedback_info.input_size[1]     = VIDEO_SCALE_H(rect->img_dims);
+      feedback_info.tex_size[0]       = VIDEO_SCALE_W(rect->dims);
+      feedback_info.tex_size[1]       = VIDEO_SCALE_H(rect->dims);
 
       SET_TEXTURE_COORDS(feedback_info.coord, xamt, yamt);
    }
@@ -5472,7 +5485,7 @@ static void *gl2_init(const video_info_t *video,
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
 
-   win_dims    = VIDEO_SCALE_PACK(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
+   win_dims    = video->dims;
 
    /* Neither axis set is the whole word clear */
    if (video->fullscreen && (win_dims == 0))
