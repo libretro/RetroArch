@@ -352,6 +352,7 @@ typedef struct settings
       unsigned menu_screensaver_animation;
       unsigned menu_remember_selection;
       unsigned menu_startup_page;
+      unsigned menu_file_browser_extension_display;
 
       unsigned playlist_entry_remove_enable;
       unsigned playlist_show_inline_core_name;

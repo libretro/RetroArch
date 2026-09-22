@@ -175,6 +175,14 @@ enum menu_remember_selection_type
    MENU_REMEMBER_SELECTION_LAST
 };
 
+enum menu_file_browser_extension_display_type
+{
+   MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS = 0,
+   MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
+   MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
+   MENU_FILE_BROWSER_EXTENSION_DISPLAY_LAST
+};
+
 /* Note: These must be kept synchronised with
  * 'enum playlist_sublabel_last_played_date_separator_type'
  * in 'runtime_file.h' */

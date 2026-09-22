@@ -173,6 +173,7 @@ typedef struct menu_file_list_cbs
    enum msg_hash_enums title_enum;
    uint8_t title_variant;
    bool checked;
+   uint8_t file_extension_state; /* 0: full name, 1: hidden, 2: hint */
 } menu_file_list_cbs_t;
 
 size_t menu_entries_get_title(char *s, size_t len);

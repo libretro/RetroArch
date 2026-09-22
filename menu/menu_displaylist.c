@@ -286,6 +286,7 @@ static int filebrowser_parse(
    struct string_list *walk_list                = NULL;
    enum menu_dirwalk_status walk_status         = MENU_DIRWALK_FAILED;
    struct string_list str_list                  = {0};
+   settings_t *settings                         = config_get_ptr();
    unsigned count                               = 0;
    enum menu_displaylist_ctl_state type         = (enum menu_displaylist_ctl_state)type_data;
    enum filebrowser_enums filebrowser_type      = filebrowser_get_type();
@@ -596,6 +597,11 @@ static int filebrowser_parse(
    }
 
    dir_list_deinitialize(&str_list);
+
+   /* Duplicate hints apply only to entries in the filtered view. */
+   if (settings)
+      menu_file_browser_prepare_extensions(info_list,
+            settings->uints.menu_file_browser_extension_display);
 
    if (count == 0)
       menu_entries_append(info_list,
@@ -11903,6 +11909,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,                                PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_CACHE_DIRECTORY,                                       PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_SHOW_HIDDEN_FILES,                                     PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,                   PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_FILTER_BY_CURRENT_CORE,                                PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_USE_LAST_START_DIRECTORY,                              PARSE_ONLY_BOOL},
