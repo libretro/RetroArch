@@ -43,6 +43,12 @@
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_setting.h"
 #include "../../../verbosity.h"
+#include "../../../input/input_driver.h"
+
+#ifdef HAVE_X11
+#include <X11/Xlib.h>
+#include "../../../gfx/common/x11_common.h"
+#endif
 
 #include <time/rtime.h>
 #include <retro_timers.h>
@@ -3692,6 +3698,124 @@ static void lane_surface_4k(void)
       fprintf(stderr, "[pass] 4k surface lane (%u submits)\n", n_sub);
 }
 
+/* ------------------------------------------------------------------ */
+/* Lane: X11 event pump against the input poll                        */
+/*   Under the wrapper the X event pump (x11_alive) runs on the video */
+/*   thread, while the input driver polls on the runloop thread; the  */
+/*   pointer-entered flag and the wheel/button latch are shared       */
+/*   between them. The events are sent from a connection of our own, */
+/*   so the lane does not depend on where the server's pointer sits.  */
+/* ------------------------------------------------------------------ */
+
+#ifdef HAVE_X11
+static void x11_send(Display *dpy, Window win, int type, unsigned button)
+{
+   XEvent ev;
+   memset(&ev, 0, sizeof(ev));
+   ev.type = type;
+   if (type == EnterNotify || type == LeaveNotify)
+   {
+      ev.xcrossing.window      = win;
+      ev.xcrossing.mode        = NotifyNormal;
+      ev.xcrossing.same_screen = True;
+   }
+   else
+   {
+      ev.xbutton.window        = win;
+      ev.xbutton.button        = button;
+      ev.xbutton.same_screen   = True;
+   }
+   /* An empty mask delivers to the client that created the window:
+    * the frontend's own connection, which x11_alive() drains. */
+   XSendEvent(dpy, win, False, 0, &ev);
+}
+#endif
+
+static void lane_x11_event_pump(void)
+{
+#ifdef HAVE_X11
+   unsigned had            = failures;
+   unsigned wheel_seen     = 0;
+   unsigned r              = 0;
+   unsigned spin;
+   input_driver_state_t *input_st;
+   Display *dpy;
+   Window win;
+
+   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
+   {
+      fprintf(stderr, "[skip] x11 event pump lane (not an X11 display)\n");
+      return;
+   }
+   if (!(dpy = XOpenDisplay(NULL)))
+   {
+      fprintf(stderr, "[skip] x11 event pump lane (no X connection)\n");
+      return;
+   }
+
+   command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   set_threaded_via_setting(true);
+   run_frames(5);
+   expect_wrapper(true, "x11 event pump");
+
+   input_st = input_state_get_ptr();
+   win      = g_x11_win;
+   if (     win == None
+         || !input_st->current_driver
+         || strcmp(input_st->current_driver->ident, "x"))
+   {
+      fprintf(stderr, "[skip] x11 event pump lane (input driver %s)\n",
+            input_st->current_driver
+            ? input_st->current_driver->ident : "none");
+      goto end;
+   }
+
+   /* A frame push waits for the frame before it, so what the worker
+    * pumps in the frame just handed over is the part the runloop is
+    * not ordered against. Hand one over, then send, then poll while
+    * that frame's alive() drains the connection. */
+   for (r = 0; r < 64; r++)
+   {
+      run_frames(1);
+      x11_send(dpy, win, EnterNotify,   0);
+      x11_send(dpy, win, ButtonPress,   4);
+      x11_send(dpy, win, ButtonPress,   8);
+      x11_send(dpy, win, ButtonRelease, 8);
+      if (r & 1)
+         x11_send(dpy, win, LeaveNotify, 0);
+      XFlush(dpy);
+      for (spin = 0; spin < 200; spin++)
+      {
+         input_st->current_driver->poll(input_st->current_data);
+         (void)input_st->current_driver->input_state(
+               input_st->current_data, NULL, NULL, NULL, NULL, false, 0,
+               RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_BUTTON_4);
+         if (input_st->current_driver->input_state(
+                  input_st->current_data, NULL, NULL, NULL, NULL, false, 0,
+                  RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP))
+         {
+            wheel_seen++;
+            break;
+         }
+         retro_sleep(1);
+      }
+   }
+
+   CHECK(wheel_seen > 0,
+         "x11 event pump: no wheel notch reached the input driver in %u rounds",
+         r);
+
+end:
+   XCloseDisplay(dpy);
+   set_threaded_via_setting(false);
+   run_frames(2);
+   command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   if (failures == had && win != None && wheel_seen)
+      fprintf(stderr, "[pass] x11 event pump lane (%u of %u rounds latched)\n",
+            wheel_seen, r);
+#endif
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -3836,6 +3960,8 @@ int main(int argc, char *argv[])
       lane_surface_4k();
    lane_overlay_textures();
    lane_driver_reloads();
+   if (real_driver())
+      lane_x11_event_pump();
    if (!real_driver())
    {
       lane_waiter_call();

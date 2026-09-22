@@ -41,6 +41,7 @@
 #endif
 
 #include <encodings/utf.h>
+#include <retro_atomic.h>
 #include <compat/strl.h>
 
 #ifdef HAVE_DBUS
@@ -62,7 +63,10 @@
 #define V_DBLSCAN                            0x20
 
 /* TODO/FIXME - globals */
-bool g_x11_entered                          = false;
+/* Whether the pointer is inside the window. Written by the event pump
+ * in x11_alive(), which runs on the video thread under the threaded
+ * wrapper, and read by the input driver's poll on the runloop thread. */
+retro_atomic_int_t g_x11_entered;
 Display *g_x11_dpy                          = NULL;
 unsigned g_x11_screen                       = 0;
 Window   g_x11_win                          = None;
@@ -741,11 +745,11 @@ bool x11_alive(void *data)
             break;
 
          case EnterNotify:
-            g_x11_entered = true;
+            retro_atomic_store_relaxed_int(&g_x11_entered, 1);
             break;
 
          case LeaveNotify:
-            g_x11_entered = false;
+            retro_atomic_store_relaxed_int(&g_x11_entered, 0);
             break;
 
          case ButtonRelease:

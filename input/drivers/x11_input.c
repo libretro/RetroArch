@@ -23,6 +23,7 @@
 #include <boolean.h>
 #include <compat/strl.h>
 #include <retro_inline.h>
+#include <retro_atomic.h>
 
 #ifdef HAVE_XI2
 #include <X11/extensions/XInput2.h>
@@ -70,8 +71,8 @@ typedef struct x11_input
 #endif
 } x11_input_t;
 
-/* Public global variable */
-extern bool g_x11_entered;
+/* Public global variable, owned by x11_common.c */
+extern retro_atomic_int_t g_x11_entered;
 
 static void *x_input_init(const char *joypad_driver)
 {
@@ -591,7 +592,7 @@ static void x_input_poll(void *data)
 
    /* If pointer is not inside the application
     * window, ignore mouse input */
-   if (!g_x11_entered)
+   if (!retro_atomic_load_relaxed_int(&g_x11_entered))
    {
       memset(x11->mouse_delta_x, 0, sizeof(x11->mouse_delta_x));
       memset(x11->mouse_delta_y, 0, sizeof(x11->mouse_delta_y));
