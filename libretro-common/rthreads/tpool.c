@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <boolean.h>
 
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
 #include <rthreads/tpool.h>
 
@@ -53,7 +54,12 @@ struct tpool
                                        This will also signal when there are no threads running. */
    size_t           working_cnt;  /* The number of threads processing work (Not waiting for work). */
    size_t           thread_cnt;   /* Total number of threads within the pool. */
-   bool             stop;         /* Marker to tell the work threads to exit. */
+   /* Read without work_mutex by tpool_help and tpool_wait, so that a
+    * pool with an empty queue answers both without touching it; every
+    * write is made under the mutex alongside the queue it counts. */
+   retro_atomic_int_t queued;     /* Work items sitting in the queue. */
+   retro_atomic_int_t outstanding;/* Queued plus in progress. */
+   retro_atomic_int_t stop;       /* Marker to tell the work threads to exit. */
 };
 
 static tpool_work_t *tpool_work_create(thread_func_t func, void *arg)
@@ -111,17 +117,20 @@ static void tpool_worker(void *arg)
 
       /* Wait until there is work available or we are told to stop.
        * Loop handles spurious wakeups. */
-      while (!tp->work_first && !tp->stop)
+      while (!tp->work_first && !retro_atomic_load_acquire_int(&tp->stop))
          scond_wait(tp->work_cond, tp->work_mutex);
 
       /* Re-check stop after waking from the conditional. */
-      if (tp->stop)
+      if (retro_atomic_load_acquire_int(&tp->stop))
          break;
 
       /* Try to pull work from the queue. */
       work = tpool_work_get(tp);
       if (work)
+      {
          tp->working_cnt++;
+         retro_atomic_fetch_sub_int(&tp->queued, 1);
+      }
       slock_unlock(tp->work_mutex);
 
       /* Call the work function and let it process. */
@@ -132,11 +141,13 @@ static void tpool_worker(void *arg)
 
          slock_lock(tp->work_mutex);
          tp->working_cnt--;
+         retro_atomic_fetch_sub_int(&tp->outstanding, 1);
          /* Since we're in a lock no work can be added or removed from the queue.
           * Also, the working_cnt can't be changed (except the thread holding the lock).
           * At this point if there isn't any work processing and if there is no work
           * signal this is the case. */
-         if (!tp->stop && tp->working_cnt == 0 && !tp->work_first)
+         if (     !retro_atomic_load_acquire_int(&tp->stop)
+               && tp->working_cnt == 0 && !tp->work_first)
             scond_signal(tp->working_cond);
          slock_unlock(tp->work_mutex);
       }
@@ -229,12 +240,14 @@ void tpool_destroy(tpool_t *tp)
       work2 = work->next;
       tpool_work_destroy(work);
       work = work2;
+      retro_atomic_fetch_sub_int(&tp->queued, 1);
+      retro_atomic_fetch_sub_int(&tp->outstanding, 1);
    }
    tp->work_first = NULL;
    tp->work_last  = NULL;
 
    /* Tell the worker threads to stop. */
-   tp->stop = true;
+   retro_atomic_store_release_int(&tp->stop, 1);
    scond_broadcast(tp->work_cond);
    slock_unlock(tp->work_mutex);
 
@@ -271,6 +284,8 @@ bool tpool_add_work(tpool_t *tp, thread_func_t func, void *arg)
       tp->work_last       = work;
    }
 
+   retro_atomic_fetch_add_int(&tp->queued, 1);
+   retro_atomic_fetch_add_int(&tp->outstanding, 1);
    scond_signal(tp->work_cond);
    slock_unlock(tp->work_mutex);
 
@@ -282,10 +297,19 @@ bool tpool_help(tpool_t *tp)
    tpool_work_t *work;
    if (!tp)
       return false;
+   /* An empty queue has nothing to hand over, and the counter says so
+    * without the mutex: a caller looping here while it waits on work
+    * in other hands leaves the queue's lock to the threads using it. */
+   if (!retro_atomic_load_acquire_int(&tp->queued))
+      return false;
    slock_lock(tp->work_mutex);
-   work = tp->stop ? NULL : tpool_work_get(tp);
+   work = retro_atomic_load_acquire_int(&tp->stop)
+        ? NULL : tpool_work_get(tp);
    if (work)
+   {
       tp->working_cnt++;
+      retro_atomic_fetch_sub_int(&tp->queued, 1);
+   }
    slock_unlock(tp->work_mutex);
    if (!work)
       return false;
@@ -293,7 +317,9 @@ bool tpool_help(tpool_t *tp)
    tpool_work_destroy(work);
    slock_lock(tp->work_mutex);
    tp->working_cnt--;
-   if (!tp->stop && tp->working_cnt == 0 && !tp->work_first)
+   retro_atomic_fetch_sub_int(&tp->outstanding, 1);
+   if (     !retro_atomic_load_acquire_int(&tp->stop)
+         && tp->working_cnt == 0 && !tp->work_first)
       scond_signal(tp->working_cond);
    slock_unlock(tp->work_mutex);
    return true;
@@ -302,6 +328,12 @@ bool tpool_help(tpool_t *tp)
 void tpool_wait(tpool_t *tp)
 {
    if (!tp)
+      return;
+
+   /* Nothing queued, nothing in progress and no teardown under way:
+    * the counters settle it without the queue's lock. */
+   if (     !retro_atomic_load_acquire_int(&tp->outstanding)
+         && !retro_atomic_load_acquire_int(&tp->stop))
       return;
 
    slock_lock(tp->work_mutex);
@@ -318,7 +350,9 @@ void tpool_wait(tpool_t *tp)
        * worker's completion path signals working_cond only when both
        * working_cnt == 0 and work_first == NULL, so this predicate matches
        * the signal exactly. */
-      if ((!tp->stop && (tp->work_first || tp->working_cnt != 0)) || (tp->stop && tp->thread_cnt != 0))
+      int stopping = retro_atomic_load_acquire_int(&tp->stop);
+      if (     (!stopping && (tp->work_first || tp->working_cnt != 0))
+            || ( stopping && tp->thread_cnt != 0))
          scond_wait(tp->working_cond, tp->work_mutex);
       else
          break;
