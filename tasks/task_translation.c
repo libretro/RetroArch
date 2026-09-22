@@ -118,7 +118,7 @@ typedef struct translation_driver
    /* Perform translation (async - results via callback)
     *
     * bgr24_data: Frame data in BGR24 format
-    * width/height: Frame dimensions
+    * dims: Frame size, one packed word (VIDEO_SCALE_PACK)
     * source_lang: Source language code or NULL for auto-detect
     * target_lang: Target language code
     * mode: 0=image, 1=speech, 2=narrator, 3=image+speech
@@ -129,8 +129,7 @@ typedef struct translation_driver
     */
    bool (*translate)(
          const uint8_t *bgr24_data,
-         unsigned width,
-         unsigned height,
+         unsigned dims,
          const char *source_lang,
          const char *target_lang,
          unsigned mode,
@@ -143,8 +142,7 @@ typedef struct translation_driver
 /* Driver declarations */
 static bool http_translate(
       const uint8_t *bit24_image,
-      unsigned width,
-      unsigned height,
+      unsigned dims,
       const char *source_lang,
       const char *target_lang,
       unsigned mode,
@@ -352,12 +350,8 @@ static void handle_translation_response(
       unsigned image_width, image_height;
       /* Get the video frame dimensions reference */
       unsigned dims   = 0;
-      unsigned width;
-      unsigned height;
       bool     is_hw_fb;
       video_driver_cached_frame_info(&dims, NULL, NULL);
-      width           = VIDEO_SCALE_W(dims);
-      height          = VIDEO_SCALE_H(dims);
       is_hw_fb = video_driver_cached_frame_is_hw_render();
 
       /* try two different modes for text display *
@@ -532,17 +526,17 @@ static void handle_translation_response(
 
          if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
          {
-            raw_output_data    = (uint8_t*)malloc(width * height * 4 * sizeof(uint8_t));
+            raw_output_data    = (uint8_t*)malloc(VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 4 * sizeof(uint8_t));
             scaler->out_fmt    = SCALER_FMT_ARGB8888;
-            pitch              = width * 4;
+            pitch              = VIDEO_SCALE_W(dims) * 4;
             scaler->out_stride = (int)pitch;
          }
          else
          {
-            raw_output_data    = (uint8_t*)malloc(width * height * 2 * sizeof(uint8_t));
+            raw_output_data    = (uint8_t*)malloc(VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 2 * sizeof(uint8_t));
             scaler->out_fmt    = SCALER_FMT_RGB565;
-            pitch              = width * 2;
-            scaler->out_stride = width;
+            pitch              = VIDEO_SCALE_W(dims) * 2;
+            scaler->out_stride = VIDEO_SCALE_W(dims);
          }
 
          if (!raw_output_data)
@@ -551,14 +545,14 @@ static void handle_translation_response(
          scaler->in_fmt        = SCALER_FMT_BGR24;
          scaler->in_width      = image_width;
          scaler->in_height     = image_height;
-         scaler->out_width     = width;
-         scaler->out_height    = height;
+         scaler->out_width     = VIDEO_SCALE_W(dims);
+         scaler->out_height    = VIDEO_SCALE_H(dims);
          scaler->scaler_type   = SCALER_TYPE_POINT;
          scaler_ctx_gen_filter(scaler);
-         scaler->in_stride     = -1 * width * 3;
+         scaler->in_stride     = -1 * VIDEO_SCALE_W(dims) * 3;
 
          scaler_ctx_scale_direct(scaler, raw_output_data,
-               (uint8_t*)raw_image_data + (image_height - 1) * width * 3);
+               (uint8_t*)raw_image_data + (image_height - 1) * VIDEO_SCALE_W(dims) * 3);
          video_driver_frame(raw_output_data, image_width, image_height, pitch);
       }
    }
@@ -861,8 +855,6 @@ struct translation_sw_ctx
 {
    struct scaler_ctx *scaler;
    uint8_t           *dst;
-   unsigned           width;
-   unsigned           height;
    size_t             pitch;
 };
 
@@ -891,7 +883,7 @@ bool run_translation_service(settings_t *settings, bool paused)
 {
    struct video_viewport vp;
    size_t pitch;
-   unsigned width, height;
+   unsigned dims                     = 0;
    uint8_t *bit24_image              = NULL;
    uint8_t *bit24_image_prev         = NULL;
    struct scaler_ctx *scaler         = NULL;
@@ -951,12 +943,9 @@ bool run_translation_service(settings_t *settings, bool paused)
 
    {
       bool has_cpu_pixels = false;
-      unsigned dims       = 0;
       if (!video_driver_cached_frame_info(&dims, &pitch,
                &has_cpu_pixels))
          goto finish;
-      width               = VIDEO_SCALE_W(dims);
-      height              = VIDEO_SCALE_H(dims);
 
       if (!has_cpu_pixels)
       {
@@ -978,7 +967,7 @@ bool run_translation_service(settings_t *settings, bool paused)
             goto finish;
 
          bit24_image_prev = (uint8_t*)malloc(VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims) * 3);
-         bit24_image      = (uint8_t*)malloc(width * height * 3);
+         bit24_image      = (uint8_t*)malloc(VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 3);
 
          if (!bit24_image_prev || !bit24_image)
             goto finish;
@@ -997,12 +986,12 @@ bool run_translation_service(settings_t *settings, bool paused)
          scaler->scaler_type = SCALER_TYPE_POINT;
          scaler->in_width    = VIDEO_SCALE_W(vp.dims);
          scaler->in_height   = VIDEO_SCALE_H(vp.dims);
-         scaler->out_width   = width;
-         scaler->out_height  = height;
+         scaler->out_width   = VIDEO_SCALE_W(dims);
+         scaler->out_height  = VIDEO_SCALE_H(dims);
          scaler_ctx_gen_filter(scaler);
 
          scaler->in_stride   = VIDEO_SCALE_W(vp.dims)*3;
-         scaler->out_stride  = width*3;
+         scaler->out_stride  = VIDEO_SCALE_W(dims)*3;
          scaler_ctx_scale_direct(scaler, bit24_image, bit24_image_prev);
       }
       else
@@ -1021,7 +1010,7 @@ bool run_translation_service(settings_t *settings, bool paused)
          const enum retro_pixel_format
             video_driver_pix_fmt           = video_st->pix_fmt;
 
-         if (!(bit24_image = (uint8_t*)malloc(width * height * 3)))
+         if (!(bit24_image = (uint8_t*)malloc(VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 3)))
             goto finish;
 
          if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
@@ -1033,8 +1022,6 @@ bool run_translation_service(settings_t *settings, bool paused)
             struct translation_sw_ctx ctx;
             ctx.scaler = scaler;
             ctx.dst    = bit24_image;
-            ctx.width  = width;
-            ctx.height = height;
             ctx.pitch  = pitch;
             video_driver_cached_frame_read(&ctx,
                   translation_sw_convert_cb);
@@ -1070,7 +1057,7 @@ bool run_translation_service(settings_t *settings, bool paused)
                   (enum translation_lang)ai_service_target_lang);
 
          success = driver->translate(
-               bit24_image, width, height,
+               bit24_image, dims,
                source_lang, target_lang,
                ai_service_mode,
                sys_lbl, paused,
@@ -1256,8 +1243,7 @@ finish:
 
 static bool http_translate(
       const uint8_t *bit24_image,
-      unsigned width,
-      unsigned height,
+      unsigned dims,
       const char *source_lang,
       const char *target_lang,
       unsigned mode,
@@ -1291,11 +1277,11 @@ static bool http_translate(
     * blob gated on an always-false TRANSLATE_USE_BMP local; that
     * branch has been deleted as dead code). */
    {
-      size_t pitch = width * 3;
+      size_t pitch = VIDEO_SCALE_W(dims) * 3;
 #ifdef HAVE_RPNG
       bmp_buffer   = rpng_save_image_bgr24_string(
-            bit24_image + width * (height - 1) * 3,
-            width, height, (signed)-pitch, &buffer_bytes);
+            bit24_image + VIDEO_SCALE_W(dims) * (VIDEO_SCALE_H(dims) - 1) * 3,
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), (signed)-pitch, &buffer_bytes);
 #else
       /* Encoding the screenshot requires RPNG; without it the translation
        * request cannot be built, so fail cleanly below on the NULL buffer. */
@@ -1539,8 +1525,7 @@ static void handle_apple_translation_cb(
 
 static bool apple_translate(
       const uint8_t *bgr24_data,
-      unsigned width,
-      unsigned height,
+      unsigned dims,
       const char *source_lang,
       const char *target_lang,
       unsigned mode,
@@ -1557,7 +1542,8 @@ static bool apple_translate(
 
    /* Async: callback will be invoked on main thread when done */
    apple_translate_image(
-         bgr24_data, width, height, width * 3,
+         bgr24_data, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+         VIDEO_SCALE_W(dims) * 3,
          source_lang, target_lang,
          mode,
          handle_apple_translation_cb, NULL);
