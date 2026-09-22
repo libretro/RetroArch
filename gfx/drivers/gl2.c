@@ -3474,13 +3474,13 @@ static void gl2_set_rotation(void *data, unsigned rotation)
    gl2_set_projection(gl, &default_ortho, true);
 }
 
-static void gl2_set_video_mode(void *data, unsigned width, unsigned height,
+static void gl2_set_video_mode(void *data, unsigned dims,
       bool fullscreen)
 {
    gl2_t               *gl = (gl2_t*)data;
    if (gl->ctx_driver->set_video_mode)
       gl->ctx_driver->set_video_mode(gl->ctx_data,
-            width, height, fullscreen);
+            dims, fullscreen);
 }
 
 static void gl2_update_input_size(gl2_t *gl, unsigned width,
@@ -5498,7 +5498,8 @@ static void *gl2_init(const video_info_t *video,
 
    if (     !gl->ctx_driver->set_video_mode
          || !gl->ctx_driver->set_video_mode(gl->ctx_data,
-            win_width, win_height, (video->fullscreen || force_fullscreen)))
+            VIDEO_SCALE_PACK(win_width, win_height),
+            (video->fullscreen || force_fullscreen)))
       goto error;
 #if !defined(RARCH_CONSOLE) || defined(HAVE_LIBNX)
    rglgen_resolve_symbols(ctx_driver->get_proc_address);

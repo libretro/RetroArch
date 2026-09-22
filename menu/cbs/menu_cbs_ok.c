@@ -8610,7 +8610,7 @@ static int action_ok_video_resolution(const char *path,
 #if defined(_WIN32) || defined(__PS3__)
       generic_action_ok_command(CMD_EVENT_REINIT);
 #endif
-      video_driver_set_video_mode(width, height, true);
+      video_driver_set_video_mode(VIDEO_SCALE_PACK(width, height), true);
 #ifdef GEKKO
       if (width == 0 || height == 0)
          _len = snprintf(msg, sizeof(msg),

@@ -645,7 +645,7 @@ static int action_start_video_resolution(
 #if defined(_WIN32) || !defined(__PSL1GHT__) && !defined(__PS3__)
       generic_action_ok_command(CMD_EVENT_REINIT);
 #endif
-      video_driver_set_video_mode(width, height, true);
+      video_driver_set_video_mode(VIDEO_SCALE_PACK(width, height), true);
 #ifdef GEKKO
       if (width == 0 || height == 0)
          _len = strlcpy_lit(msg, "Resetting to: DEFAULT", sizeof(msg));

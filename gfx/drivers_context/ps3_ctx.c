@@ -270,7 +270,7 @@ static void *gfx_ctx_ps3_init(void *video_driver)
 }
 
 static bool gfx_ctx_ps3_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen) { return true; }
+      unsigned dims, bool fullscreen) { return true; }
 
 static void gfx_ctx_ps3_destroy_resources(gfx_ctx_ps3_data_t *ps3)
 {

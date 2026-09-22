@@ -1046,7 +1046,7 @@ static void ps2_free(void *data)
 static bool ps2_set_shader(void *data,
       enum rarch_shader_type type, const char *path) { return false; }
 
-static void ps2_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
+static void ps2_set_video_mode(void *data, unsigned dims,
       bool fullscreen)
 {
    ps2_video_t *ps2 = (ps2_video_t *)data;

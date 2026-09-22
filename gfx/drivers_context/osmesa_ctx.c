@@ -238,9 +238,11 @@ static bool osmesa_ctx_bind_api(void *data,
 static void osmesa_ctx_swap_interval(void *data, int interval) { }
 
 static bool osmesa_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
    uint8_t               *screen = osmesa->screen;
    bool             size_changed = (width * height) != (osmesa->width * osmesa->height);

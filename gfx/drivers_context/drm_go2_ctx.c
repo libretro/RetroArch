@@ -214,7 +214,7 @@ static void gfx_ctx_go2_drm_swap_interval(void *data, int interval)
 }
 
 static bool gfx_ctx_go2_drm_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
    video_driver_state_t *video_st       = video_state_get_ptr();

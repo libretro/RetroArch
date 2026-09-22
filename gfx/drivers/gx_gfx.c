@@ -308,9 +308,11 @@ static bool gx_is_valid_yorigin(int origin)
 	return true;
 }
 
-static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
+static void gx_set_video_mode(void *data, unsigned dims,
       bool fullscreen)
 {
+   unsigned fbWidth = VIDEO_SCALE_W(dims);
+   unsigned lines   = VIDEO_SCALE_H(dims);
    int tmpOrigin;
    float refresh_rate;
    bool progressive, vfilter;
@@ -658,7 +660,7 @@ static void setup_video_mode(gx_video_t *gx)
    OSInitThreadQueue(&g_video_cond);
 
    gx_get_video_output_size(gx, &width, &height, desc, sizeof(desc));
-   gx_set_video_mode(gx, width, height, true);
+   gx_set_video_mode(gx, VIDEO_SCALE_PACK(width, height), true);
 }
 
 static void init_texture(gx_video_t *gx, unsigned width, unsigned height,

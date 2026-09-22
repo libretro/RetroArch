@@ -692,10 +692,10 @@ static void *gfx_ctx_wgl_init(void *video_driver)
 }
 
 static bool gfx_ctx_wgl_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
-   if (!win32_set_video_mode(NULL, width, height, fullscreen))
+   if (!win32_set_video_mode(NULL, dims, fullscreen))
    {
       RARCH_ERR("[WGL] win32_set_video_mode failed.\n");
       gfx_ctx_wgl_destroy(data);

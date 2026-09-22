@@ -432,7 +432,7 @@ static void network_get_video_output_size(void *data,
 static void network_get_video_output_prev(void *data) { }
 static void network_get_video_output_next(void *data) { }
 
-static void network_set_video_mode(void *data, unsigned width, unsigned height,
+static void network_set_video_mode(void *data, unsigned dims,
       bool fullscreen) { }
 
 static const video_poke_interface_t network_poke_interface = {

@@ -183,12 +183,12 @@ static void gfx_ctx_uwp_destroy(void *data)
 }
 
 static bool gfx_ctx_uwp_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
    gfx_ctx_uwp_data_t *uwp = (gfx_ctx_uwp_data_t*)data;
 
-   if (!win32_set_video_mode(NULL, width, height, fullscreen))
+   if (!win32_set_video_mode(NULL, dims, fullscreen))
    {
       RARCH_ERR("[UWP EGL] win32_set_video_mode failed.\n");
    }

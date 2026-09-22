@@ -132,9 +132,11 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
 }
 
 static bool gfx_ctx_khr_display_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    struct vulkan_display_surface_info info;
    khr_display_ctx_data_t *khr    = (khr_display_ctx_data_t*)data;
    settings_t *settings           = config_get_ptr();

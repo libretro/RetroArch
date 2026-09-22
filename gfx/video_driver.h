@@ -681,8 +681,9 @@ typedef struct gfx_ctx_driver
    /* Sets the swap interval. */
    void (*swap_interval)(void *data, int);
 
-   /* Sets video mode. Creates a window, etc. */
-   bool (*set_video_mode)(void*, unsigned, unsigned, bool);
+   /* Sets video mode. Creates a window, etc. The size is one word,
+    * VIDEO_SCALE_PACK's layout. */
+   bool (*set_video_mode)(void*, unsigned, bool);
 
    /* Gets current window size.
     * If not initialized yet, it returns current screen size. */
@@ -842,8 +843,8 @@ typedef struct video_poke_interface
    uintptr_t (*load_texture)(void *video_data, void *data,
          bool threaded, enum texture_filter_type filter_type);
    void (*unload_texture)(void *data, bool threaded, uintptr_t id);
-   void (*set_video_mode)(void *data, unsigned width,
-         unsigned height, bool fullscreen);
+   /* dims is one word, VIDEO_SCALE_PACK's layout. */
+   void (*set_video_mode)(void *data, unsigned dims, bool fullscreen);
    float (*get_refresh_rate)(void *data);
    void (*set_filtering)(void *data, unsigned index, bool smooth, bool ctx_scaling);
    void (*get_video_output_size)(void *data,
@@ -1663,8 +1664,7 @@ void video_driver_shader_deferred_tick(void);
 
 bool video_driver_set_rotation(unsigned rotation);
 
-bool video_driver_set_video_mode(unsigned width,
-      unsigned height, bool fullscreen);
+bool video_driver_set_video_mode(unsigned dims, bool fullscreen);
 
 bool video_driver_get_video_output_size(
       unsigned *width, unsigned *height, char *s, size_t len);

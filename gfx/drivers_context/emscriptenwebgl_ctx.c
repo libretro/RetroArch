@@ -147,8 +147,10 @@ error:
 }
 
 static bool gfx_ctx_emscripten_webgl_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen)
+      unsigned dims, bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
    if (!emscripten || !emscripten->ctx)
       return false;

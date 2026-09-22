@@ -194,9 +194,11 @@ video_driver_state_t *video_state_get_ptr(void)
    return &s_video_st;
 }
 
-bool video_driver_set_video_mode(unsigned width, unsigned height,
+bool video_driver_set_video_mode(unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    s_set_video_mode_calls++;
    s_set_video_mode_w  = width;
    s_set_video_mode_h  = height;

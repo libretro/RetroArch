@@ -183,7 +183,7 @@ static bool android_gfx_ctx_set_resize(void *data,
       unsigned width, unsigned height) { return false; }
 
 static bool android_gfx_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
 #if defined(HAVE_OPENGLES)

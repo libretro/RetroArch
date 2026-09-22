@@ -160,9 +160,11 @@ static bool android_gfx_ctx_vk_set_resize(void *data,
 }
 
 static bool android_gfx_ctx_vk_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    struct android_app *android_app = (struct android_app*)g_android;
    android_ctx_data_vk_t *and      = (android_ctx_data_vk_t*)data;
    and->width                      = ANativeWindow_getWidth(android_app->window);

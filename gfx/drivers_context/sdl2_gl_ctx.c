@@ -161,9 +161,11 @@ static void sdl2_ctx_swap_interval(void *data, int interval)
 }
 
 static bool sdl2_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    unsigned fsflag              = 0;
    gfx_ctx_sdl2_data_t *sdl     = (gfx_ctx_sdl2_data_t*)data;
    settings_t *settings         = config_get_ptr();

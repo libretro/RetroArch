@@ -169,7 +169,7 @@ static void sdl3_ctx_swap_interval(void *data, int interval)
 }
 
 static bool sdl3_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
    gfx_ctx_sdl3_data_t *sdl = (gfx_ctx_sdl3_data_t*)data;
@@ -202,7 +202,8 @@ static bool sdl3_ctx_set_video_mode(void *data,
       }
    }
 
-   if (!sdl3_window_set_video_mode(&sdl->win, width, height, fullscreen, SDL_WINDOW_OPENGL))
+   if (!sdl3_window_set_video_mode(&sdl->win, dims, fullscreen,
+            SDL_WINDOW_OPENGL))
       goto error;
 
    /* Hold onto the context across video reinit (hw_render.cache_context). */

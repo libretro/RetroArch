@@ -339,7 +339,7 @@ static void fpga_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len) { }
 static void fpga_get_video_output_prev(void *data) { }
 static void fpga_get_video_output_next(void *data) { }
-static void fpga_set_video_mode(void *data, unsigned width, unsigned height,
+static void fpga_set_video_mode(void *data, unsigned dims,
       bool fullscreen) { }
 
 static const video_poke_interface_t fpga_poke_interface = {

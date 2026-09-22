@@ -224,15 +224,17 @@ error:
 }
 
 static bool gfx_ctx_w_vk_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    if (fullscreen)
       win32_vk.flags |=  VK_DATA_FLAG_FULLSCREEN;
    else
       win32_vk.flags &= ~VK_DATA_FLAG_FULLSCREEN;
 
-   if (win32_set_video_mode(NULL, width, height, fullscreen))
+   if (win32_set_video_mode(NULL, VIDEO_SCALE_PACK(width, height), fullscreen))
    {
       /* Create a new swapchain in order to prevent fullscreen
        * emulated mailbox crash caused by refresh rate change */

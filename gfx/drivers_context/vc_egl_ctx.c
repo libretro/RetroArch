@@ -454,7 +454,7 @@ static void gfx_ctx_vc_set_swap_interval(void *data, int swap_interval)
 }
 
 static bool gfx_ctx_vc_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
 #ifdef HAVE_EGL

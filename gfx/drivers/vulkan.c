@@ -6188,7 +6188,8 @@ static void *vulkan_init(const video_info_t *video,
 
    if (     !vk->ctx_driver->set_video_mode
          || !vk->ctx_driver->set_video_mode(vk->ctx_data,
-            win_width, win_height, (video->fullscreen || force_fullscreen)))
+            VIDEO_SCALE_PACK(win_width, win_height),
+            (video->fullscreen || force_fullscreen)))
    {
       RARCH_ERR("[Vulkan] Failed to set video mode.\n");
       goto error;
@@ -6965,13 +6966,13 @@ static void vulkan_set_rotation(void *data, unsigned rotation)
 }
 
 static void vulkan_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
    vk_t *vk               = (vk_t*)data;
    if (vk->ctx_driver->set_video_mode)
       vk->ctx_driver->set_video_mode(vk->ctx_data,
-            width, height, fullscreen);
+            dims, fullscreen);
 }
 
 static void vulkan_set_viewport(void *data, unsigned vp_width,

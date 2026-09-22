@@ -313,9 +313,11 @@ static void sdl3_window_apply_fullscreen(SDL_Window *win,
 }
 
 bool sdl3_window_set_video_mode(SDL_Window **win,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       SDL_WindowFlags backend_flags)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    if (*win)
       SDL_SetWindowBordered(*win, config_get_ptr()->bools.video_window_show_decorations);
    else if (!(*win = sdl3_window_create(width, height, fullscreen, backend_flags)))

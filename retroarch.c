@@ -3671,7 +3671,8 @@ bool command_event(enum event_command cmd, void *data)
                size_t _len;
                char msg[128];
 
-               video_driver_set_video_mode(width, height, true);
+               video_driver_set_video_mode(
+                     VIDEO_SCALE_PACK(width, height), true);
 
                if (width == 0 || height == 0)
                   _len = strlcpy(msg, msg_hash_to_str(MSG_SCREEN_RESOLUTION_DEFAULT), sizeof(msg));

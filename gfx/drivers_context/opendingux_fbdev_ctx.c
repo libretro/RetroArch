@@ -125,9 +125,11 @@ static void gfx_ctx_opendingux_check_window(void *data, bool *quit,
 }
 
 static bool gfx_ctx_opendingux_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
 #ifdef HAVE_EGL
    static const EGLint attribs[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */

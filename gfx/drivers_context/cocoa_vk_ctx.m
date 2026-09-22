@@ -353,8 +353,10 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
 }
 
 static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen)
+      unsigned dims, bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    cocoa_vk_set_video_mode_args_t args;
 
    args.data       = data;
@@ -447,8 +449,10 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
 }
 
 static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen)
+      unsigned dims, bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    cocoa_vk_set_video_mode_args_t args;
 
    args.data   = data;

@@ -3627,7 +3627,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
       VIDEO_SCALE_PUT_H(d3d11->vp.full_dims, current_mon.rcMonitor.bottom - current_mon.rcMonitor.top);
 #endif
 
-   if (!win32_set_video_mode(d3d11, VIDEO_SCALE_W(d3d11->vp.full_dims), VIDEO_SCALE_H(d3d11->vp.full_dims), video->fullscreen))
+   if (!win32_set_video_mode(d3d11, d3d11->vp.full_dims, video->fullscreen))
    {
       RARCH_ERR("[D3D11] win32_set_video_mode failed.\n");
       goto error;

@@ -141,9 +141,11 @@ static void switch_ctx_check_window(void *data, bool *quit,
 }
 
 static bool switch_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
     /* Create an EGL rendering context */
     static const EGLint contextAttributeList[] =
         {

@@ -103,9 +103,11 @@ static void vita_destroy(void *data)
 }
 
 static bool vita_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
 #if defined(HAVE_VITAGLES)
   /* Create an EGL rendering context */
    static const EGLint 

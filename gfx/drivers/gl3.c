@@ -3352,7 +3352,8 @@ static void *gl3_init(const video_info_t *video,
 
    if (     !gl->ctx_driver->set_video_mode
          || !gl->ctx_driver->set_video_mode(gl->ctx_data,
-            win_width, win_height, (video->fullscreen || force_fullscreen)))
+            VIDEO_SCALE_PACK(win_width, win_height),
+            (video->fullscreen || force_fullscreen)))
       goto error;
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
@@ -5757,13 +5758,13 @@ static void gl3_unload_texture(void *data, bool threaded,
    glDeleteTextures(1, &glid);
 }
 
-static void gl3_set_video_mode(void *data, unsigned width, unsigned height,
+static void gl3_set_video_mode(void *data, unsigned dims,
       bool fullscreen)
 {
    gl3_t *gl = (gl3_t*)data;
    if (gl->ctx_driver->set_video_mode)
       gl->ctx_driver->set_video_mode(gl->ctx_data,
-            width, height, fullscreen);
+            dims, fullscreen);
 }
 
 static void gl3_show_mouse(void *data, bool state)

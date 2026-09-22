@@ -34,7 +34,7 @@ static void gfx_ctx_null_swap_interval(void *data, int interval) { }
 static void gfx_ctx_null_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims) { }
 static bool gfx_ctx_null_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen) { return true; }
 static void gfx_ctx_null_destroy(void *data) { }
 static void gfx_ctx_null_input_driver(void *data,

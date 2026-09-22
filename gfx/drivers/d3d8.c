@@ -2510,7 +2510,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
        * them back via video_driver_get_output_dims: nothing in the
        * codebase sets the output size between the
        * set_size above and this call except us. */
-      if (!win32_set_video_mode(d3d, new_width, new_height,
+      if (!win32_set_video_mode(d3d, VIDEO_SCALE_PACK(new_width, new_height),
             info->fullscreen))
       {
          RARCH_ERR("[D3D8] win32_set_video_mode failed.\n");
@@ -3166,7 +3166,7 @@ static void d3d8_unload_texture(void *data, bool threaded,
 }
 
 static void d3d8_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
 #ifndef _XBOX

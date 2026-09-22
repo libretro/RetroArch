@@ -172,7 +172,7 @@ static void *vg_init(const video_info_t *video,
 
    if (     !vg->ctx_driver->set_video_mode
          || !vg->ctx_driver->set_video_mode(vg->ctx_data,
-            win_width, win_height, video->fullscreen))
+            VIDEO_SCALE_PACK(win_width, win_height), video->fullscreen))
       goto error;
 
    temp_width        = 0;

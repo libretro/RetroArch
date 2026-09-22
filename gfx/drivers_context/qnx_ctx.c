@@ -279,7 +279,7 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
 }
 
 static bool gfx_ctx_qnx_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen) { return true; }
+      unsigned dims, bool fullscreen) { return true; }
 
 static void gfx_ctx_qnx_input_driver(void *data,
       const char *joypad_name,

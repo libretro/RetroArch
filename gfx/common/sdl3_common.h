@@ -76,7 +76,7 @@ void sdl3_pump_window_events(bool *quit, bool *resize);
 
 /* Creates or resizes the window, or toggles fullscreen. */
 bool sdl3_window_set_video_mode(SDL_Window **win,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       SDL_WindowFlags backend_flags);
 
 /* Retrieves the window size in pixels, or the desktop mode when the

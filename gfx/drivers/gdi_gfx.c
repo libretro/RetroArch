@@ -2390,10 +2390,10 @@ static void gfx_ctx_gdi_destroy(void)
 }
 
 static bool gfx_ctx_gdi_set_video_mode(
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
-   if (!win32_set_video_mode(NULL, width, height, fullscreen))
+   if (!win32_set_video_mode(NULL, dims, fullscreen))
    {
       gfx_ctx_gdi_destroy();
       return false;
@@ -2515,8 +2515,8 @@ static void *gdi_init(const video_info_t *video,
    mode_width      = win_width;
    mode_height     = win_height;
 
-   if (!gfx_ctx_gdi_set_video_mode(mode_width,
-            mode_height, video->fullscreen))
+   if (!gfx_ctx_gdi_set_video_mode(
+            VIDEO_SCALE_PACK(mode_width, mode_height), video->fullscreen))
       goto error;
 
    mode_width     = 0;
@@ -3298,10 +3298,10 @@ static void gdi_set_texture_frame(void *data,
    gdi->menu_bits   = rgb32 ? 32 : 16;
 }
 
-static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
+static void gdi_set_video_mode(void *data, unsigned dims,
       bool fullscreen)
 {
-   gfx_ctx_gdi_set_video_mode(width, height, fullscreen);
+   gfx_ctx_gdi_set_video_mode(dims, fullscreen);
 }
 
 static uintptr_t gdi_load_texture(void *video_data, void *data,

@@ -1377,7 +1377,7 @@ static void *gl1_init(const video_info_t *video,
     * issue that currently eludes us. */
    if (     !gl1->ctx_driver->set_video_mode
          || !gl1->ctx_driver->set_video_mode(gl1->ctx_data,
-            win_width, win_height, video->fullscreen))
+            VIDEO_SCALE_PACK(win_width, win_height), video->fullscreen))
       goto error;
 #endif
 
@@ -1425,7 +1425,7 @@ static void *gl1_init(const video_info_t *video,
 
    if (     !gl1->ctx_driver->set_video_mode
          || !gl1->ctx_driver->set_video_mode(gl1->ctx_data,
-            win_width, win_height, video->fullscreen))
+            VIDEO_SCALE_PACK(win_width, win_height), video->fullscreen))
       goto error;
 
    if (video->fullscreen)
@@ -2961,13 +2961,13 @@ static void gl1_set_texture_frame(void *data,
    gl1->menu_bits   = rgb32 ? 32 : 16;
 }
 
-static void gl1_set_video_mode(void *data, unsigned width, unsigned height,
+static void gl1_set_video_mode(void *data, unsigned dims,
       bool fullscreen)
 {
    gl1_t               *gl = (gl1_t*)data;
    if (gl->ctx_driver->set_video_mode)
       gl->ctx_driver->set_video_mode(gl->ctx_data,
-            width, height, fullscreen);
+            dims, fullscreen);
 }
 
 static unsigned gl1_wrap_type_to_enum(enum gfx_wrap_type type)

@@ -933,9 +933,11 @@ error:
 }
 
 static bool gfx_ctx_drm_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    float refresh_mod;
    int i, ret                      = 0;
    struct drm_fb *fb               = NULL;

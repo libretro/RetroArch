@@ -171,8 +171,10 @@ error:
 }
 
 static bool gfx_ctx_emscripten_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen)
+      unsigned dims, bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    platform_emscripten_set_fullscreen_state(fullscreen);
    if (!fullscreen)
       platform_emscripten_set_canvas_size(width, height);

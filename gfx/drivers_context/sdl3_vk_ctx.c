@@ -203,7 +203,7 @@ static bool sdl3_vk_ctx_set_resize(void *data,
 }
 
 static bool sdl3_vk_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
    gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)data;
@@ -213,7 +213,7 @@ static bool sdl3_vk_ctx_set_video_mode(void *data,
    if (!sdl)
       return false;
 
-   if (!sdl3_window_set_video_mode(&sdl->win, width, height, fullscreen,
+   if (!sdl3_window_set_video_mode(&sdl->win, dims, fullscreen,
             SDL_WINDOW_VULKAN))
       goto error;
 

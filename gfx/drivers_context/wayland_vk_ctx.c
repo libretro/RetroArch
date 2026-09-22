@@ -154,9 +154,11 @@ static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
 
    if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))

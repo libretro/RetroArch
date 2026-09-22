@@ -3986,7 +3986,7 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
        * them back via video_driver_get_output_dims: nothing in the
        * codebase sets the output size between the
        * set_size above and this call except us. */
-      if (!win32_set_video_mode(d3d, new_width, new_height,
+      if (!win32_set_video_mode(d3d, VIDEO_SCALE_PACK(new_width, new_height),
             info->fullscreen))
       {
          RARCH_ERR("[D3D9 Cg] win32_set_video_mode failed.\n");
@@ -4773,7 +4773,7 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
 }
 
 static void d3d9_cg_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
    /* TODO/FIXME - why is this called here? */

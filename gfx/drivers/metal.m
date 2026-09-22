@@ -6858,9 +6858,11 @@ static bool metal_update_texture(void *video_data, uintptr_t handle,
 
 /* TODO/FIXME - implement */
 static void metal_set_video_mode(void *data,
-                                 unsigned width, unsigned height,
+                                 unsigned dims,
                                  bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    RARCH_DBG("[Metal] set_video_mode res=%dx%d fullscreen=%s\n",
              width, height,
              fullscreen ? "YES" : "NO");

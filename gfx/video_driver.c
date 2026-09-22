@@ -2531,15 +2531,14 @@ bool video_driver_set_rotation(unsigned rotation)
    return true;
 }
 
-bool video_driver_set_video_mode(unsigned width,
-      unsigned height, bool fullscreen)
+bool video_driver_set_video_mode(unsigned dims, bool fullscreen)
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
    if (poke && poke->set_video_mode)
    {
       poke->set_video_mode(video_st->data,
-            width, height, fullscreen);
+            dims, fullscreen);
       return true;
    }
    return false;

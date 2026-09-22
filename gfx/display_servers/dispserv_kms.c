@@ -84,7 +84,7 @@ static bool kms_display_server_set_resolution(void *data,
 
    RARCH_DBG("[DRM] Display server set resolution - actual: %d x %d, %f Hz.\n",width, height, hz);
 
-   retval = video_driver_set_video_mode(width, height, true);
+   retval = video_driver_set_video_mode(VIDEO_SCALE_PACK(width, height), true);
 
    /* Reinitialize drivers. */
    command_event(CMD_EVENT_REINIT, &reinit_flags);
@@ -308,7 +308,8 @@ static bool kms_display_server_modeline_set(void *data,
    p_switch->hsync       = mode->hsync;
    p_switch->vsync       = mode->vsync;
 
-   return video_driver_set_video_mode(mode->width, mode->height, true);
+   return video_driver_set_video_mode(
+         VIDEO_SCALE_PACK(mode->width, mode->height), true);
 #else
    return false;
 #endif

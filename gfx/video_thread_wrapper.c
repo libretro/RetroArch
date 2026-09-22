@@ -832,8 +832,7 @@ static bool video_thread_handle_packet(
       case CMD_POKE_SET_VIDEO_MODE:
          if (thr->driver_data && thr->poke && thr->poke->set_video_mode)
             thr->poke->set_video_mode(thr->driver_data,
-                  VIDEO_SCALE_W(pkt.data.new_mode.dims),
-                  VIDEO_SCALE_H(pkt.data.new_mode.dims),
+                  pkt.data.new_mode.dims,
                   pkt.data.new_mode.fullscreen);
          video_thread_reply(thr, &pkt);
          break;
@@ -3221,7 +3220,7 @@ static void video_thread_get_overlay_interface(void *data,
 #endif
 
 static void thread_set_video_mode(void *data,
-      unsigned width, unsigned height, bool video_fullscreen)
+      unsigned dims, bool video_fullscreen)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
@@ -3229,7 +3228,7 @@ static void thread_set_video_mode(void *data,
    {
       thread_packet_t pkt;
       pkt.type                     = CMD_POKE_SET_VIDEO_MODE;
-      pkt.data.new_mode.dims       = VIDEO_SCALE_PACK(width, height);
+      pkt.data.new_mode.dims       = dims;
       pkt.data.new_mode.fullscreen = video_fullscreen;
 
       video_thread_send_and_wait_user_to_thread(thr, &pkt);
