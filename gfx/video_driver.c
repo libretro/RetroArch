@@ -5859,8 +5859,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video_display_server_init(video_st->display_type);
 
 #ifdef HAVE_D3DKMT
-   /* The output mode may have changed with the driver */
-   video_driver_scanline_init();
+   /* Scanline Sync re-reads the output lines on its next frame */
+   video_st->scanline[SCANLINE_ACTIVE] = 0;
 #endif
 
    if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
@@ -7724,6 +7724,7 @@ void video_frame_delay(video_driver_state_t *video_st,
 }
 
 /* Scanline Sync */
+#ifdef HAVE_D3DKMT
 typedef struct
 {
    uint16_t width;
@@ -7762,7 +7763,7 @@ static uint16_t video_driver_scanline_get_total(
    return scanline_total;
 }
 
-void video_driver_scanline_init(void)
+static void video_driver_scanline_init(void)
 {
    video_driver_state_t *video_st      = video_state_get_ptr();
    unsigned dims                       = 0;
@@ -7776,6 +7777,7 @@ void video_driver_scanline_init(void)
    video_st->scanline[SCANLINE_PREV]   = 0;
    video_st->scanline[SCANLINE_HOLD]   = 0;
 }
+#endif
 
 /* The beam position through the display server; a server without
  * get_scanline() reports -1 and the tuner disables itself below. */
@@ -7788,13 +7790,32 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   int16_t scanline_next   = video_st->scanline[SCANLINE_NEXT];
-   int16_t scanline_prev   = video_st->scanline[SCANLINE_PREV];
-   uint16_t scanline_hold  = video_st->scanline[SCANLINE_HOLD];
-   uint16_t video_height   = video_st->scanline[SCANLINE_ACTIVE];
-   uint16_t scanline_blank = (video_st->scanline[SCANLINE_TOTAL] >= video_height)
-         ? video_st->scanline[SCANLINE_TOTAL] - video_height : 0;
+   int16_t scanline_next;
+   int16_t scanline_prev;
+   uint16_t scanline_hold;
+   uint16_t video_height;
+   uint16_t scanline_blank;
    uint8_t scanline_margin = 2;
+
+#ifdef HAVE_D3DKMT
+   /* Output lines are read on first use and after a reinit, so
+    * nothing is fetched while Scanline Sync is off; an unknown
+    * output size is retried about once a second */
+   if (     !video_st->scanline[SCANLINE_ACTIVE]
+         && !video_st->scanline[SCANLINE_HOLD])
+   {
+      video_driver_scanline_init();
+      if (!video_st->scanline[SCANLINE_ACTIVE])
+         video_st->scanline[SCANLINE_HOLD] = 60;
+   }
+#endif
+
+   scanline_next  = video_st->scanline[SCANLINE_NEXT];
+   scanline_prev  = video_st->scanline[SCANLINE_PREV];
+   scanline_hold  = video_st->scanline[SCANLINE_HOLD];
+   video_height   = video_st->scanline[SCANLINE_ACTIVE];
+   scanline_blank = (video_st->scanline[SCANLINE_TOTAL] >= video_height)
+         ? video_st->scanline[SCANLINE_TOTAL] - video_height : 0;
 
    /* Allow change */
    if (!scanline_hold && video_height)

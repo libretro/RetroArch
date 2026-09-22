@@ -281,7 +281,6 @@ static void d3dkmt_init(void)
       if (!pD3DKMTOpenAdapterFromHdc || !pD3DKMTGetScanLine)
       {
          memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
-         video_driver_scanline_init();
          return;
       }
 
@@ -324,8 +323,6 @@ static void d3dkmt_init(void)
          d3dkmt_adapter.vb     = vb;
       }
    }
-
-   video_driver_scanline_init();
 }
 
 bool d3dkmt_wait_vblank(void)
@@ -522,10 +519,6 @@ static void win32_resize_after_display_change(HWND hwnd, HMONITOR monitor)
             info.rcMonitor.right  - info.rcMonitor.left,
             info.rcMonitor.bottom - info.rcMonitor.top,
             SWP_NOMOVE);
-#ifdef HAVE_D3DKMT
-   /* Scanline Sync's active and total lines follow the mode */
-   video_driver_scanline_init();
-#endif
 }
 
 

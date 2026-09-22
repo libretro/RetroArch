@@ -313,7 +313,6 @@ bool command_event(enum event_command action, void *data)
 
 unsigned int retroarch_get_rotation(void) { return 0; }
 float video_driver_get_aspect_ratio(void) { return 4.0f / 3.0f; }
-void video_driver_scanline_init(void) { }
 void video_monitor_set_refresh_rate(float hz) { (void)hz; }
 void video_driver_set_output_dims(unsigned dims)
 {
