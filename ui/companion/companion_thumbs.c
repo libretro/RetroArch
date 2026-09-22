@@ -343,12 +343,13 @@ static uint32_t *ct_decode_video_still(companion_thumbs_t *t,
       return NULL;
    if (!gfx_anim_preview_feed(sess)
          || !(frame = gfx_anim_preview_next(sess, &dur, &native_argb))
-         || !sess->width || !sess->height)
+         || !sess->dims)
    {
       gfx_anim_preview_close(sess);
       return NULL;
    }
-   bits = companion_thumbs_scale_ex(frame, sess->width, sess->height,
+   bits = companion_thumbs_scale_ex(frame,
+         VIDEO_SCALE_W(sess->dims), VIDEO_SCALE_H(sess->dims),
          w, h, bg, !native_argb);
 #ifdef HAVE_THREADS
    /* The animation for this path continues from this session (its
@@ -941,11 +942,12 @@ static void ct_anim_thread(void *ud)
             if (!frame)
                break;
          }
-         if (!sess->width || !sess->height)
+         if (!sess->dims)
             break;
          /* The byte order is handled on the sampled pixels only: a
           * whole-canvas swizzle was 12 ms a frame at 4K. */
-         bits = companion_thumbs_scale_ex(frame, sess->width, sess->height,
+         bits = companion_thumbs_scale_ex(frame,
+               VIDEO_SCALE_W(sess->dims), VIDEO_SCALE_H(sess->dims),
                w, h, bg, !native_argb);
          if (!bits)
             break;
