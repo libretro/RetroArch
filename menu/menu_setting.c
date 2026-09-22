@@ -5632,6 +5632,33 @@ static size_t setting_get_string_representation_uint_playlist_inline_core_displa
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_menu_file_browser_extension_display(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS),
+                  len);
+         case MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY),
+                  len);
+         case MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER),
+                  len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_playlist_entry_remove_enable(
       rarch_setting_t *setting, char *s, size_t len)
 {

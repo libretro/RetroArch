@@ -393,7 +393,14 @@ static menu_file_list_cbs_t *menu_cbs_alloc(void)
       mempool_init(&menu_cbs_pool, sizeof(menu_file_list_cbs_t), 256);
       menu_cbs_pool_ready = true;
    }
-   return (menu_file_list_cbs_t*)mempool_alloc(&menu_cbs_pool);
+   {
+      menu_file_list_cbs_t *cbs =
+            (menu_file_list_cbs_t*)mempool_alloc(&menu_cbs_pool);
+      /* Pool blocks retain their previous contents. */
+      if (cbs)
+         cbs->file_extension_state = 0;
+      return cbs;
+   }
 }
 
 static void menu_cbs_pool_deinit(void)
@@ -489,13 +496,19 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          label = menu_stack->list[menu_stack->size - 1].label;
 
       if (    (entry_flags & MENU_ENTRY_FLAG_RICH_LABEL_ENABLED)
-            && cbs->action_label)
+            && (cbs->action_label || cbs->file_extension_state))
       {
-         cbs->action_label(list,
-               entry->type, (unsigned)i,
-               label, path,
-               entry->rich_label,
-               sizeof(entry->rich_label));
+         if (cbs->action_label)
+            cbs->action_label(list,
+                  entry->type, (unsigned)i,
+                  label, path,
+                  entry->rich_label,
+                  sizeof(entry->rich_label));
+
+         if (cbs->file_extension_state)
+            menu_file_browser_format_display_name(path,
+                  cbs->file_extension_state, entry->rich_label,
+                  sizeof(entry->rich_label));
 
          if (!path_enabled && !*entry->rich_label)
             path_enabled = true;

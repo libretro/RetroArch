@@ -33,6 +33,10 @@
 
 RETRO_BEGIN_DECLS
 
+void menu_file_browser_prepare_extensions(file_list_t *list, unsigned mode);
+void menu_file_browser_format_display_name(const char *path,
+      unsigned state, char *display_name, size_t display_name_size);
+
 enum
 {
    ACTION_OK_DL_DEFAULT = 0,
