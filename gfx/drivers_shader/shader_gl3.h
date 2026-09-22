@@ -43,10 +43,10 @@ struct gl3_filter_chain_texture
 
 struct gl3_viewport
 {
-   GLint x;
-   GLint y;
-   GLsizei width;
-   GLsizei height;
+   /* The origin and the drawn area, one word each, in
+    * VIDEO_POS_PACK's and VIDEO_SCALE_PACK's layouts. */
+   unsigned pos;
+   unsigned dims;
 };
 
 struct gl3_filter_chain_pass_info

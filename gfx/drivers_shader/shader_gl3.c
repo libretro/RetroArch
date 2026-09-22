@@ -1693,7 +1693,7 @@ static void gl3_pass_get_output_size(struct gl3_pass *pass,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         width = (pass->rotation % 2 ? pass->curr_vp.height : pass->curr_vp.width) * pass->pass_info.scale_x;
+         width = (pass->rotation % 2 ? VIDEO_SCALE_H(pass->curr_vp.dims) : VIDEO_SCALE_W(pass->curr_vp.dims)) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -1715,7 +1715,7 @@ static void gl3_pass_get_output_size(struct gl3_pass *pass,
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         height = (pass->rotation % 2 ? pass->curr_vp.width : pass->curr_vp.height) * pass->pass_info.scale_y;
+         height = (pass->rotation % 2 ? VIDEO_SCALE_W(pass->curr_vp.dims) : VIDEO_SCALE_H(pass->curr_vp.dims)) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
@@ -2191,8 +2191,8 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
                        pass->current_framebuffer_size_width,
                        pass->current_framebuffer_size_height);
    gl3_pass_build_semantic_vec4(pass, buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
-                       (unsigned)(pass->curr_vp.width),
-                       (unsigned)(pass->curr_vp.height));
+                       (unsigned)(VIDEO_SCALE_W(pass->curr_vp.dims)),
+                       (unsigned)(VIDEO_SCALE_H(pass->curr_vp.dims)));
 
    gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_FRAME_COUNT,
                        pass->frame_count_period
@@ -2412,22 +2412,22 @@ static void gl3_pass_build_commands(struct gl3_pass *pass,
 
    if (pass->final_pass)
    {
-      glViewport(pass->curr_vp.x, pass->curr_vp.y,
-                 pass->curr_vp.width, pass->curr_vp.height);
+      glViewport(VIDEO_POS_X(pass->curr_vp.pos), VIDEO_POS_Y(pass->curr_vp.pos),
+                 VIDEO_SCALE_W(pass->curr_vp.dims), VIDEO_SCALE_H(pass->curr_vp.dims));
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
       if (pass->simulate_scanline)
       {
-         glScissor(  pass->curr_vp.x,
-                     (int32_t)(((float)(pass->curr_vp.height) / (float)(pass->total_subframes))
+         glScissor(  VIDEO_POS_X(pass->curr_vp.pos),
+                     (int32_t)(((float)(VIDEO_SCALE_H(pass->curr_vp.dims)) / (float)(pass->total_subframes))
                               * (float)(pass->current_subframe - 1)),
-                     pass->curr_vp.width,
-                     (uint32_t)((float)(pass->curr_vp.height) / (float)(pass->total_subframes))
+                     VIDEO_SCALE_W(pass->curr_vp.dims),
+                     (uint32_t)((float)(VIDEO_SCALE_H(pass->curr_vp.dims)) / (float)(pass->total_subframes))
          );
       }
       else
       {
-         glScissor(  pass->curr_vp.x,     pass->curr_vp.y,
-                     pass->curr_vp.width, pass->curr_vp.height);
+         glScissor(  VIDEO_POS_X(pass->curr_vp.pos),     VIDEO_POS_Y(pass->curr_vp.pos),
+                     VIDEO_SCALE_W(pass->curr_vp.dims), VIDEO_SCALE_H(pass->curr_vp.dims));
       }
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
    }

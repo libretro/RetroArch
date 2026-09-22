@@ -3498,7 +3498,7 @@ static void gdi_viewport_info(void *data, struct video_viewport *vp)
    if (!gdi || !vp)
       return;
 
-   vp->pos         = VIDEO_POS_PACK(VIDEO_POS_X(gdi->vp.pos), VIDEO_POS_Y(gdi->vp.pos));
+   vp->pos         = gdi->vp.pos;
    vp->dims        = gdi->vp.dims;
    vp->full_dims   = gdi->vp.full_dims;
 }

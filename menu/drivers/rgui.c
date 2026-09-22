@@ -7404,8 +7404,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    /* Get initial 'window' dimensions */
    video_driver_get_viewport_info(&vp);
-   rgui->window_dims                = VIDEO_SCALE_PACK(VIDEO_SCALE_W(vp.full_dims),
-         VIDEO_SCALE_H(vp.full_dims));
+   rgui->window_dims                = vp.full_dims;
    rgui->flags                     &= ~RGUI_FLAG_IGNORE_RESIZE_EVENTS;
 
    /* Set aspect ratio

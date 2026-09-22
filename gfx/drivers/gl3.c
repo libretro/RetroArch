@@ -2400,10 +2400,8 @@ static void gl3_set_viewport(gl3_t *gl,
       gl->out_vp_height = VIDEO_SCALE_H(gl->vp.dims);
    }
 
-   gl->filter_chain_vp.x      = VIDEO_POS_X(gl->vp.pos);
-   gl->filter_chain_vp.y      = VIDEO_POS_Y(gl->vp.pos);
-   gl->filter_chain_vp.width  = VIDEO_SCALE_W(gl->vp.dims);
-   gl->filter_chain_vp.height = VIDEO_SCALE_H(gl->vp.dims);
+   gl->filter_chain_vp.pos    = gl->vp.pos;
+   gl->filter_chain_vp.dims   = gl->vp.dims;
 }
 
 #ifdef HAVE_SLANG
