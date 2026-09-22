@@ -566,6 +566,29 @@ check "ui companion" "-DHAVE_RGUI -DHAVE_CONFIGFILE" $COMPANION
 check "ui companion: no threads" \
    "$(echo "$BASE" | sed 's/ -DHAVE_THREADS//') -DHAVE_RGUI -DHAVE_CONFIGFILE" \
    $COMPANION
+# Its own tests, which link the same objects and read the same structs.
+# They live outside ui/companion and a change that stops at the three
+# files above leaves them behind.
+check "ui companion: tests" "-DHAVE_RGUI -DHAVE_CONFIGFILE -Iui/companion" \
+   ui/companion/test/companion_core_test.c \
+   ui/companion/test/companion_thumbs_test.c \
+   ui/companion/test/companion_core_stubs.c
+
+# Video and shader back ends a Linux desktop job does not select. Each
+# reads the frame descriptor and the shader parameter block every other
+# driver does, and nothing else here compiles them: this configuration
+# has no Vulkan, no Cg and none of the framebuffer drivers, so a change
+# to those structs is green until a job that does have them runs.
+echo "== video back ends this configuration does not build =="
+GFXDEFS="-DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_GFX_WIDGETS"
+check "vulkan back end"  "$GFXDEFS -DHAVE_VULKAN" \
+   gfx/drivers/vulkan.c gfx/drivers_shader/shader_vulkan.c
+check "cg shader back end" "$GFXDEFS -DHAVE_CG -DHAVE_OPENGL" \
+   gfx/drivers_shader/shader_gl_cg.c
+check "framebuffer back ends" "$GFXDEFS" \
+   gfx/drivers/fpga_gfx.c gfx/drivers/hub75_gfx.c gfx/drivers/sunxi_gfx.c
+check "x11 back ends" "$GFXDEFS -DHAVE_X11 -DHAVE_XVIDEO" \
+   gfx/drivers/xshm_gfx.c gfx/drivers/xvideo.c
 
 echo "== run-ahead: the dynamic-library gates =="
 # The secondary instance exists only with HAVE_DYNAMIC; a build that
