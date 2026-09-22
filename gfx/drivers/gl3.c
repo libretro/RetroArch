@@ -302,7 +302,7 @@ static const float gl3_colors[16]          = {
  * FORWARD DECLARATIONS
  */
 static void gl3_set_viewport(gl3_t *gl,
-      unsigned vp_width, unsigned vp_height,
+      unsigned dims,
       bool force_full,   bool allow_rotate);
 
 /**
@@ -1500,7 +1500,7 @@ static void gl3_raster_font_setup_viewport(
       unsigned width, unsigned height,
       gl3_raster_t *font, bool full_screen)
 {
-   gl3_set_viewport(gl, width, height, full_screen, false);
+   gl3_set_viewport(gl, VIDEO_SCALE_PACK(width, height), full_screen, false);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1623,7 +1623,7 @@ static void gl3_raster_font_render_msg(
    if (!font->block)
    {
       glDisable(GL_BLEND);
-      gl3_set_viewport(gl, width, height, false, true);
+      gl3_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
    }
 }
 
@@ -1650,7 +1650,7 @@ static void gl3_raster_font_flush_block(unsigned width, unsigned height,
    gl3_raster_font_draw_vertices(gl, font, (video_coords_t*)&block->carr.coords);
 
    glDisable(GL_BLEND);
-   gl3_set_viewport(gl, width, height, block->fullscreen, true);
+   gl3_set_viewport(gl, VIDEO_SCALE_PACK(width, height), block->fullscreen, true);
 }
 
 static void gl3_raster_font_bind_block(void *data, void *userdata)
@@ -2381,10 +2381,10 @@ static void gl3_set_projection(gl3_t *gl,
 }
 
 static void gl3_set_viewport(gl3_t *gl,
-      unsigned vp_width, unsigned vp_height,
+      unsigned dims,
       bool force_full, bool allow_rotate)
 {
-   gl->vp.full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
+   gl->vp.full_dims   = dims;
    video_driver_update_viewport(&gl->vp, force_full,
          (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false, false);
 
@@ -3247,11 +3247,11 @@ static void gl3_begin_debug(gl3_t *gl)
 #endif
 
 static void gl3_set_viewport_wrapper(void *data,
-      unsigned vp_width, unsigned vp_height,
+      unsigned dims,
       bool force_full, bool allow_rotate)
 {
    gl3_t *gl = (gl3_t*)data;
-   gl3_set_viewport(gl, vp_width, vp_height,
+   gl3_set_viewport(gl, dims,
          force_full, allow_rotate);
 }
 
@@ -3443,8 +3443,7 @@ static void *gl3_init(const video_info_t *video,
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */
-   gl3_set_viewport_wrapper(gl, VIDEO_SCALE_W(temp_dims),
-         VIDEO_SCALE_H(temp_dims), false, true);
+   gl3_set_viewport_wrapper(gl, temp_dims, false, true);
 
    if (gl->ctx_driver->input_driver)
    {
@@ -4529,8 +4528,7 @@ static void gl3_renderchain_start_render(
    glBindFramebuffer(GL_FRAMEBUFFER, gl->chain.fbo[0]);
 
    gl3_set_viewport(gl,
-         gl->chain.fbo_rect[0].img_width,
-         gl->chain.fbo_rect[0].img_height, true, false);
+         VIDEO_SCALE_PACK(gl->chain.fbo_rect[0].img_width, gl->chain.fbo_rect[0].img_height), true, false);
 
    /* Need to preserve the "flipped" state when in FBO
     * as well to have consistent texture coordinates.
@@ -4605,7 +4603,7 @@ static void gl3_renderchain_render(
       glClear(GL_COLOR_BUFFER_BIT);
 
       /* Render to FBO with certain size. */
-      gl3_set_viewport(gl, rect->img_width, rect->img_height, true, false);
+      gl3_set_viewport(gl, VIDEO_SCALE_PACK(rect->img_width, rect->img_height), true, false);
 
       params.vp_dims       = VIDEO_SCALE_PACK(
             gl->out_vp_width, gl->out_vp_height);
@@ -4674,7 +4672,7 @@ static void gl3_renderchain_render(
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
-   gl3_set_viewport(gl, width, height, false, true);
+   gl3_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
 
    params.vp_dims       = VIDEO_SCALE_PACK(gl->out_vp_width, gl->out_vp_height);
    params.dims          = VIDEO_SCALE_PACK(
@@ -4930,7 +4928,7 @@ static bool gl3_frame(void *data, const void *frame,
          gl3_renderchain_start_render(gl);
       }
       else
-         gl3_set_viewport(gl, width, height, false, true);
+         gl3_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
    }
 
    /* Can be NULL for frame dupe / NULL render. */
@@ -5002,7 +5000,7 @@ static bool gl3_frame(void *data, const void *frame,
          {
             glBindFramebuffer(GL_FRAMEBUFFER,
                   gl3_frame_target_fbo(gl, width, height));
-            gl3_set_viewport(gl, width, height, false, true);
+            gl3_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
          }
 
          glDisable(GL_DEPTH_TEST);

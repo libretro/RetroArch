@@ -1869,13 +1869,13 @@ static void gxm_font_render_message(
    }
 }
 
-static void gxm_set_viewport_wrapper(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate)
+static void gxm_set_viewport_wrapper(void *data, unsigned dims,
+      bool force_full, bool allow_rotate)
 {
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
    vita_video_t *vita        = (vita_video_t*)data;
 
-   vita->vp.full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
+   vita->vp.full_dims   = dims;
    video_driver_update_viewport(&vita->vp, force_full,
    vita->keep_aspect, true);
 
@@ -1946,7 +1946,7 @@ static void gxm_font_render_msg(
       drop_alpha              = 1.0f;
    }
 
-   gxm_set_viewport_wrapper(vita, width, height, full_screen, false);
+   gxm_set_viewport_wrapper(vita, VIDEO_SCALE_PACK(width, height), full_screen, false);
 
    if (drop_x || drop_y)
    {
@@ -2039,7 +2039,7 @@ static void *gxm_gfx_init(const video_info_t *video,
    vita->video_height = temp_height;
 
    video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
-   gxm_set_viewport_wrapper(vita, temp_width, temp_height, false, true);
+   gxm_set_viewport_wrapper(vita, VIDEO_SCALE_PACK(temp_width, temp_height), false, true);
 
    if (input && input_data)
    {

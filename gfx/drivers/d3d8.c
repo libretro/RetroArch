@@ -2143,7 +2143,7 @@ static bool d3d8_init_base(void *data, const video_info_t *info)
 }
 
 static void d3d8_calculate_rect(void *data,
-      unsigned *width, unsigned *height,
+      unsigned *dims,
       int *x, int *y,
       bool force_full,
       bool allow_rotate)
@@ -2151,20 +2151,16 @@ static void d3d8_calculate_rect(void *data,
    struct video_viewport vp;
    d3d8_video_t *d3d         = (d3d8_video_t*)data;
 
-   *width  = VIDEO_SCALE_W(d3d->vp.full_dims);
-   *height = VIDEO_SCALE_H(d3d->vp.full_dims);
-
-   vp.full_dims   = VIDEO_SCALE_PACK(*width, *height);
+   vp.full_dims   = d3d->vp.full_dims;
    video_driver_update_viewport(&vp, force_full, d3d->keep_aspect, true);
 
    *x      = VIDEO_POS_X(vp.pos);
    *y      = VIDEO_POS_Y(vp.pos);
-   *width  = VIDEO_SCALE_W(vp.dims);
-   *height = VIDEO_SCALE_H(vp.dims);
+   *dims   = vp.dims;
 }
 
 static void d3d8_set_viewport(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool force_full,
       bool allow_rotate)
 {
@@ -2177,7 +2173,7 @@ static void d3d8_set_viewport(void *data,
       2, 0, 0,-1,   0, 2, 0,-1,   0, 0, 1, 0,   0, 0, 0, 1
    }};
 
-   d3d8_calculate_rect(data, &width, &height, &x, &y,
+   d3d8_calculate_rect(data, &dims, &x, &y,
          force_full, allow_rotate);
 
    /* D3D doesn't support negative X/Y viewports ... */
@@ -2188,8 +2184,8 @@ static void d3d8_set_viewport(void *data,
 
    d3d->out_vp.X      = x;
    d3d->out_vp.Y      = y;
-   d3d->out_vp.Width  = width;
-   d3d->out_vp.Height = height;
+   d3d->out_vp.Width  = VIDEO_SCALE_W(dims);
+   d3d->out_vp.Height = VIDEO_SCALE_H(dims);
    d3d->out_vp.MinZ   = 0.0f;
    d3d->out_vp.MaxZ   = 0.0f;
 
@@ -2265,7 +2261,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
    /* d3d->vp.full_* was written by the caller (d3d8_init_internal
     * has already called set_size at this point). */
    d3d8_set_viewport(d3d,
-	   VIDEO_SCALE_W(d3d->vp.full_dims), VIDEO_SCALE_H(d3d->vp.full_dims), false, true);
+	   d3d->vp.full_dims, false, true);
 
 
    d3d->menu_display.offset = 0;
@@ -2836,7 +2832,7 @@ static bool d3d8_frame(void *data, const void *frame,
 
    if (d3d->should_resize)
    {
-      d3d8_set_viewport(d3d, width, height, false, true);
+      d3d8_set_viewport(d3d, VIDEO_SCALE_PACK(width, height), false, true);
       d3d->should_resize = false;
    }
 

@@ -416,8 +416,8 @@ static const video_poke_interface_t caca_poke_interface = {
 
 static void caca_get_poke_interface(void *data,
       const video_poke_interface_t **iface) { *iface = &caca_poke_interface; }
-static void caca_set_viewport(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate) { }
+static void caca_set_viewport(void *data, unsigned dims,
+      bool force_full, bool allow_rotate) { }
 
 static font_renderer_t caca_font = {
    caca_font_init,

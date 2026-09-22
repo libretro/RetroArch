@@ -483,7 +483,7 @@ static const GLfloat white_color[16] = {
  * FORWARD DECLARATIONS
  */
 static void gl2_set_viewport(gl2_t *gl,
-      unsigned vp_width, unsigned vp_height,
+      unsigned dims,
       bool force_full, bool allow_rotate);
 
 #if TARGET_OS_IPHONE
@@ -1155,7 +1155,7 @@ static void gl2_raster_font_setup_viewport(
       bool full_screen,
       bool video_scale_integer)
 {
-   gl2_set_viewport(gl, width, height, full_screen, true);
+   gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), full_screen, true);
 
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1277,7 +1277,7 @@ static void gl2_raster_font_render_msg(
       /* Restore viewport */
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
       glDisable(GL_BLEND);
-      gl2_set_viewport(gl, width, height, false, true);
+      gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
    }
 }
 
@@ -1309,7 +1309,7 @@ static void gl2_raster_font_flush_block(unsigned width, unsigned height,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);
-   gl2_set_viewport(gl, width, height, block->fullscreen, true);
+   gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), block->fullscreen, true);
 }
 
 static void gl2_raster_font_bind_block(void *data, void *userdata)
@@ -1520,11 +1520,10 @@ static void gl2_set_projection(gl2_t *gl,
 }
 
 static void gl2_set_viewport(gl2_t *gl,
-      unsigned vp_width,
-      unsigned vp_height,
+      unsigned dims,
       bool force_full, bool allow_rotate)
 {
-   gl->vp.full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
+   gl->vp.full_dims   = dims;
    video_driver_update_viewport(&gl->vp, force_full,
          (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false, false);
 
@@ -1602,7 +1601,7 @@ static void gl2_renderchain_render(
 
       /* Render to FBO with certain size. */
       gl2_set_viewport(gl,
-            rect->img_width, rect->img_height, true, false);
+            VIDEO_SCALE_PACK(rect->img_width, rect->img_height), true, false);
 
       params.vp_dims       = VIDEO_SCALE_PACK(
             gl->out_vp_width, gl->out_vp_height);
@@ -1677,7 +1676,7 @@ static void gl2_renderchain_render(
       glGenerateMipmap(GL_TEXTURE_2D);
 
    glClear(GL_COLOR_BUFFER_BIT);
-   gl2_set_viewport(gl, width, height, false, true);
+   gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
 
    params.vp_dims       = VIDEO_SCALE_PACK(gl->out_vp_width, gl->out_vp_height);
    params.dims          = VIDEO_SCALE_PACK(
@@ -2105,8 +2104,7 @@ static void gl2_renderchain_start_render(gl2_t *gl,
    gl2_bind_fb(chain->fbo[0]);
 
    gl2_set_viewport(gl,
-         gl->fbo_rect[0].img_width,
-         gl->fbo_rect[0].img_height, true, false);
+         VIDEO_SCALE_PACK(gl->fbo_rect[0].img_width, gl->fbo_rect[0].img_height), true, false);
 
    /* Need to preserve the "flipped" state when in FBO
     * as well to have consistent texture coordinates.
@@ -3083,11 +3081,11 @@ static void gl2_render_overlay(gl2_t *gl)
 }
 #endif
 
-static void gl2_set_viewport_wrapper(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate)
+static void gl2_set_viewport_wrapper(void *data, unsigned dims,
+      bool force_full, bool allow_rotate)
 {
    gl2_t              *gl = (gl2_t*)data;
-   gl2_set_viewport(gl, vp_width, vp_height, force_full, allow_rotate);
+   gl2_set_viewport(gl, dims, force_full, allow_rotate);
 }
 
 /* Shaders */
@@ -3660,7 +3658,7 @@ static INLINE void gl2_set_shader_viewports(gl2_t *gl, bool video_scale_integer)
    for (i = 0; i < 2; i++)
    {
       gl->shader->use(gl, gl->shader_data, i, true);
-      gl2_set_viewport(gl, width, height, false, true);
+      gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
    }
 }
 
@@ -4448,7 +4446,7 @@ static bool gl2_frame(void *data, const void *frame,
          gl2_renderchain_start_render(gl, chain, video_scale_integer);
       }
       else
-         gl2_set_viewport(gl, width, height, false, true);
+         gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
    }
 
    if (frame)
@@ -4493,7 +4491,7 @@ static bool gl2_frame(void *data, const void *frame,
             gl2_bind_fb(gl2_frame_target_fbo(gl));
          else
             gl2_renderchain_bind_backbuffer();
-         gl2_set_viewport(gl, width, height, false, true);
+         gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
       }
 
       gl2_renderchain_restore_default_state(gl);

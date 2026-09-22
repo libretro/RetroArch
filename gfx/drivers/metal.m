@@ -250,7 +250,7 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 
 /* (Re)allocate HDR-mode offscreen textures (readback landing pad and
  * SDR UI overlay) to match a new drawable size.  Called from
- * setViewportWidth:height: on window resize; cheap no-op when the
+ * setViewportDims: on window resize; cheap no-op when the
  * current allocations already match. */
 - (void)resizeHDRResourcesForWidth:(NSUInteger)w height:(NSUInteger)h;
 
@@ -455,7 +455,7 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 
 /*! @brief setNeedsResize triggers a display resize */
 - (void)setNeedsResize;
-- (void)setViewportWidth:(unsigned)width height:(unsigned)height forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate;
+- (void)setViewportDims:(unsigned)dims forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate;
 - (void)setRotation:(unsigned)rotation;
 /*! @brief applyVideoMode sizes the window, or takes it full screen, on
  * the main thread; a zero axis means the view's current size.  Returns
@@ -4605,11 +4605,11 @@ static void metal_pull_cached_frame_cb(void *userdata,
    return YES;
 }
 
-- (void)setViewportWidth:(unsigned)width height:(unsigned)height forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate
+- (void)setViewportDims:(unsigned)dims forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate
 {
-   _viewport->full_dims    = VIDEO_SCALE_PACK(width, height);
+   _viewport->full_dims    = dims;
    video_driver_set_output_dims(_viewport->full_dims);
-   _layer.drawableSize     = CGSizeMake(width, height);
+   _layer.drawableSize     = CGSizeMake(VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
    video_driver_update_viewport(_viewport, forceFull, _keepAspect, YES);
    _context.viewport       = _viewport; /* Update matrix */
    _viewportMVP.outputSize = simd_make_float2(VIDEO_SCALE_W(_viewport->full_dims), VIDEO_SCALE_H(_viewport->full_dims));
@@ -4618,7 +4618,8 @@ static void metal_pull_cached_frame_cb(void *userdata,
    /* Keep the HDR offscreens matched to the drawable size on resize.
     * Cheap no-op when already the right size. */
    if (_context.hdrEnabled)
-      [_context resizeHDRResourcesForWidth:width height:height];
+      [_context resizeHDRResourcesForWidth:VIDEO_SCALE_W(dims)
+                                     height:VIDEO_SCALE_H(dims)];
 #endif
 }
 
@@ -4841,9 +4842,13 @@ static void metal_pull_cached_frame_cb(void *userdata,
 {
 #ifdef HAVE_COCOATOUCH
     CGFloat scale = [[UIScreen mainScreen] scale];
-    [self setViewportWidth:(unsigned int)view.bounds.size.width*scale height:(unsigned int)view.bounds.size.height*scale forceFull:NO allowRotate:YES];
+    [self setViewportDims:VIDEO_SCALE_PACK(
+          (unsigned)((unsigned int)view.bounds.size.width  * scale),
+          (unsigned)((unsigned int)view.bounds.size.height * scale))
+                forceFull:NO allowRotate:YES];
 #else
-   [self setViewportWidth:(unsigned int)size.width height:(unsigned int)size.height forceFull:NO allowRotate:YES];
+   [self setViewportDims:VIDEO_SCALE_PACK((unsigned int)size.width,
+         (unsigned int)size.height) forceFull:NO allowRotate:YES];
 #endif
 }
 
@@ -6583,12 +6588,12 @@ static void metal_free(void *data)
    }
 }
 
-static void metal_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
+static void metal_set_viewport(void *data, unsigned dims,
       bool force_full, bool allow_rotate)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (md)
-      [md setViewportWidth:vp_width height:vp_height forceFull:force_full allowRotate:allow_rotate];
+      [md setViewportDims:dims forceFull:force_full allowRotate:allow_rotate];
 }
 
 static void metal_set_rotation(void *data, unsigned rotation)

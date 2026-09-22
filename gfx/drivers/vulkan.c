@@ -2412,8 +2412,8 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
 /**
  * FORWARD DECLARATIONS
  */
-static void vulkan_set_viewport(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate);
+static void vulkan_set_viewport(void *data, unsigned dims,
+      bool force_full, bool allow_rotate);
 
 static void vulkan_lock_queue(void *handle);
 static void vulkan_unlock_queue(void *handle);
@@ -3446,7 +3446,7 @@ static void vulkan_font_render_msg(
       color[3]    = 1.0f;
    }
 
-   vulkan_set_viewport(vk, width, height, full_screen, false);
+   vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height), full_screen, false);
 
    /* Compute max glyphs for VBO allocation.
     * Line scan below discovers actual length; this uses strlen
@@ -3842,7 +3842,7 @@ static void vulkan_font_flush_block(unsigned width, unsigned height,
       return;
    vk = font->vk;
 
-   vulkan_set_viewport(vk, width, height, font->block->fullscreen, false);
+   vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height), font->block->fullscreen, false);
    vulkan_font_upload_atlas(vk, font);
 
    if (vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
@@ -6266,8 +6266,7 @@ static void *vulkan_init(const video_info_t *video,
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */
-   vulkan_set_viewport(vk, VIDEO_SCALE_W(temp_dims),
-         VIDEO_SCALE_H(temp_dims), false, true);
+   vulkan_set_viewport(vk, temp_dims, false, true);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    vk->hdr.ubo                            = vulkan_create_buffer(vk->context, sizeof(vulkan_hdr_uniform_t), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
@@ -6959,13 +6958,13 @@ static void vulkan_set_video_mode(void *data,
             dims, fullscreen);
 }
 
-static void vulkan_set_viewport(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate)
+static void vulkan_set_viewport(void *data, unsigned dims,
+      bool force_full, bool allow_rotate)
 {
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
    vk_t *vk                  = (vk_t*)data;
 
-   vk->vp.full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
+   vk->vp.full_dims   = dims;
    video_driver_update_viewport(&vk->vp, force_full,
          (vk->flags & VK_FLAG_KEEP_ASPECT) ? true : false, true);
 
@@ -8408,7 +8407,7 @@ static bool vulkan_frame(void *data, const void *frame,
             filter_chain, &input);
    }
 
-   vulkan_set_viewport(vk, width, height, false, true);
+   vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height), false, true);
 
    vulkan_filter_chain_build_offscreen_passes(
          (vulkan_filter_chain_t*)filter_chain,
@@ -8598,7 +8597,7 @@ static bool vulkan_frame(void *data, const void *frame,
             struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
             bool menu_linear_filter    = video_info->menu_linear_filter;
 
-            vulkan_set_viewport(vk, width, height, ((vk->flags &
+            vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height), ((vk->flags &
                      VK_FLAG_MENU_FULLSCREEN) > 0), false);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -10131,7 +10130,7 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
    width           = vk->video_width;
    height          = vk->video_height;
    /* Make sure we get the correct viewport. */
-   vulkan_set_viewport(vk, width, height, false, true);
+   vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height), false, true);
 
    *vp             = vk->vp;
    vp->full_dims   = VIDEO_SCALE_PACK(width, height);
@@ -10823,7 +10822,7 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
       return;
 
    vp                       = vk->vp;
-   vulkan_set_viewport(vk, width, height,
+   vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height),
          ((vk->flags & VK_FLAG_OVERLAY_FULLSCREEN) > 0),
          false);
 

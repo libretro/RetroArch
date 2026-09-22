@@ -1060,7 +1060,7 @@ typedef struct video_driver
    /* Human-readable identifier. */
    const char *ident;
 
-   void (*set_viewport)(void *data, unsigned width, unsigned height,
+   void (*set_viewport)(void *data, unsigned dims,
          bool force_full, bool allow_rotate);
 
    void (*set_rotation)(void *data, unsigned rotation);

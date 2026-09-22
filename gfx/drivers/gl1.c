@@ -438,7 +438,7 @@ static const GLfloat gl1_white_color[16]     = {
  * FORWARD DECLARATIONS
  */
 static void gl1_set_viewport(gl1_t *gl1,
-      unsigned vp_width, unsigned vp_height,
+      unsigned dims,
       bool force_full, bool allow_rotate);
 
 /**
@@ -963,7 +963,7 @@ static void gl1_raster_font_setup_viewport(
       unsigned width, unsigned height,
       gl1_raster_t *font, bool full_screen)
 {
-   gl1_set_viewport(gl, width, height, full_screen, false);
+   gl1_set_viewport(gl, VIDEO_SCALE_PACK(width, height), full_screen, false);
    glEnable(GL_BLEND);
    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
    glEnable(GL_TEXTURE_2D);
@@ -1097,7 +1097,7 @@ static void gl1_raster_font_render_msg(
          glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
          glDisable(GL_BLEND);
-         gl1_set_viewport(gl, width, height, false, true);
+         gl1_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
       }
    }
 }
@@ -1129,7 +1129,7 @@ static void gl1_raster_font_flush_block(unsigned width, unsigned height,
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
    glDisable(GL_BLEND);
-   gl1_set_viewport(gl, width, height, block->fullscreen, true);
+   gl1_set_viewport(gl, VIDEO_SCALE_PACK(width, height), block->fullscreen, true);
 }
 
 static void gl1_raster_font_bind_block(void *data, void *userdata)
@@ -1589,10 +1589,10 @@ static void gl1_set_projection(gl1_t *gl1,
 }
 
 static void gl1_set_viewport(gl1_t *gl1,
-      unsigned vp_width, unsigned vp_height,
+      unsigned dims,
       bool force_full, bool allow_rotate)
 {
-   gl1->vp.full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
+   gl1->vp.full_dims   = dims;
    video_driver_update_viewport(&gl1->vp, force_full,
          (gl1->flags & GL1_FLAG_KEEP_ASPECT) ? true : false, false);
 
@@ -2252,7 +2252,7 @@ static bool gl1_frame(void *data, const void *frame,
          gl1->ctx_driver->set_resize(gl1->ctx_data, width, height);
 
       gl1_set_viewport(gl1,
-            video_width, video_height, false, true);
+            video_info->dims, false, true);
    }
 
 #ifndef VITA
@@ -3221,11 +3221,11 @@ static void gl1_get_poke_interface(void *data,
 static bool gl1_widgets_enabled(void *data) { return true; }
 #endif
 
-static void gl1_set_viewport_wrapper(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate)
+static void gl1_set_viewport_wrapper(void *data, unsigned dims,
+      bool force_full, bool allow_rotate)
 {
    gl1_t *gl1 = (gl1_t*)data;
-   gl1_set_viewport(gl1, vp_width, vp_height, force_full, allow_rotate);
+   gl1_set_viewport(gl1, dims, force_full, allow_rotate);
 }
 
 #ifdef HAVE_OVERLAY

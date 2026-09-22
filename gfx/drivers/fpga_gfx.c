@@ -386,8 +386,8 @@ static void fpga_get_poke_interface(void *data,
 }
 
 /* TODO/FIXME - implement */
-static void fpga_set_viewport(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate) { }
+static void fpga_set_viewport(void *data, unsigned dims,
+      bool force_full, bool allow_rotate) { }
 
 video_driver_t video_fpga = {
    fpga_init,

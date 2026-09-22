@@ -951,7 +951,7 @@ static void lane_every_command_replies(void)
    drv->set_nonblock_state(data, false, true, 2);
    drv->set_nonblock_state(data, false, false, 1);
    if (drv->set_viewport)
-      drv->set_viewport(data, 640, 480, false, true);
+      drv->set_viewport(data, VIDEO_SCALE_PACK(640, 480), false, true);
    if (drv->set_rotation)
       drv->set_rotation(data, 1), drv->set_rotation(data, 0);
    if (drv->set_shader)
@@ -1100,7 +1100,7 @@ static bool reentrant_frame(void *data, const void *frame, unsigned w,
    /* As ozone/xmb do: through the frontend's current driver, which is
     * the wrapper, from the video thread. */
    if (cur && cur->set_viewport)
-      cur->set_viewport(video_st->data, w, h, false, true);
+      cur->set_viewport(video_st->data, VIDEO_SCALE_PACK(w, h), false, true);
    if (cur && cur->set_nonblock_state)
       cur->set_nonblock_state(video_st->data, false, false, 1);
    if (cur && cur->poke_interface)
@@ -1148,7 +1148,7 @@ static void lane_reentrant_from_frame(void)
       if (drv->set_rotation)
          drv->set_rotation(video_st->data, i & 3);
       if ((i % 7) == 0 && drv->set_viewport)
-         drv->set_viewport(video_st->data, 800, 600, false, true);
+         drv->set_viewport(video_st->data, VIDEO_SCALE_PACK(800, 600), false, true);
    }
    video_thread_wait_idle();
    CHECK(reentrant_frames > before,
@@ -2412,7 +2412,7 @@ static void lane_driver_reloads(void)
        * down on a real driver. */
       if (video_st->current_video->set_viewport)
          video_st->current_video->set_viewport(video_st->data,
-               320 + 64 * (i & 1), 240 + 48 * (i & 1), true, true);
+               VIDEO_SCALE_PACK(320 + 64 * (i & 1), 240 + 48 * (i & 1)), true, true);
       run_frames(2);
    }
    video_thread_wait_idle();

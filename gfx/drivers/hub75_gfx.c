@@ -1003,9 +1003,9 @@ static bool hub75_has_windowed(void *data) { (void)data; return false; }
 static bool hub75_set_shader(void *data, enum rarch_shader_type type,
       const char *path)
 { (void)data; (void)type; (void)path; return false; }
-static void hub75_set_viewport(void *data, unsigned width, unsigned height,
+static void hub75_set_viewport(void *data, unsigned dims,
       bool force_full, bool allow_rotate)
-{ (void)data; (void)width; (void)height; (void)force_full; (void)allow_rotate; }
+{ (void)data; (void)dims; (void)force_full; (void)allow_rotate; }
 
 static void hub75_set_rotation(void *data, unsigned rotation)
 {

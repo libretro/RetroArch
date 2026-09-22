@@ -802,7 +802,7 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
    /* Set viewport */
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
-            video_st->data, video_width, video_height, true, false);
+            video_st->data, video_info->dims, true, false);
 
    /* Draw background */
    gfx_display_draw_quad(
@@ -858,5 +858,5 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
    /* Unset viewport */
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
-            video_st->data, video_width, video_height, false, true);
+            video_st->data, video_info->dims, false, true);
 }

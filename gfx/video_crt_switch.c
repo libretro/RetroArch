@@ -113,7 +113,7 @@ static void crt_aspect_ratio_switch(
    video_driver_set_output_dims(VIDEO_SCALE_PACK(width, height));
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
-            video_st->data, width, height, true, true);
+            video_st->data, VIDEO_SCALE_PACK(width, height), true, true);
 
    command_event(CMD_EVENT_VIDEO_APPLY_STATE_CHANGES, NULL);
 }

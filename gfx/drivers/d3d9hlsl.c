@@ -6986,7 +6986,7 @@ static void d3d9_set_font_rect(
 }
 
 static void d3d9_hlsl_set_viewport(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool force_full,
       bool allow_rotate)
 {
@@ -6997,18 +6997,13 @@ static void d3d9_hlsl_set_viewport(void *data,
    int y               = 0;
    struct video_viewport vp;
 
-   /* Width/height parameters are intentionally overwritten here:
-    * the caller's values are not used (pre-existing behaviour). */
-   width  = VIDEO_SCALE_W(d3d->vp.full_dims);
-   height = VIDEO_SCALE_H(d3d->vp.full_dims);
-
-   vp.full_dims   = VIDEO_SCALE_PACK(width, height);
+   /* The viewport is fitted to the driver's own full size; the
+    * caller's size word is not used. */
+   vp.full_dims   = d3d->vp.full_dims;
    video_driver_update_viewport(&vp, force_full, d3d->keep_aspect, true);
 
    x      = VIDEO_POS_X(vp.pos);
    y      = VIDEO_POS_Y(vp.pos);
-   width  = VIDEO_SCALE_W(vp.dims);
-   height = VIDEO_SCALE_H(vp.dims);
 
    /* D3D doesn't support negative X/Y viewports ... */
    if (x < 0)
@@ -7037,8 +7032,8 @@ static void d3d9_hlsl_set_viewport(void *data,
 
    d3d->out_vp.X      = x;
    d3d->out_vp.Y      = y;
-   d3d->out_vp.Width  = width;
-   d3d->out_vp.Height = height;
+   d3d->out_vp.Width  = VIDEO_SCALE_W(vp.dims);
+   d3d->out_vp.Height = VIDEO_SCALE_H(vp.dims);
    d3d->out_vp.MinZ   = 0.0f;
    d3d->out_vp.MaxZ   = 1.0f;
 
@@ -7098,7 +7093,7 @@ static bool d3d9_hlsl_initialize(
    /* d3d->vp.full_* was written by the caller (d3d9_hlsl_init_internal
     * has already called set_size at this point). */
    d3d9_hlsl_set_viewport(d3d,
-      VIDEO_SCALE_W(d3d->vp.full_dims), VIDEO_SCALE_H(d3d->vp.full_dims), false, true);
+      d3d->vp.full_dims, false, true);
 
 
    {
@@ -7794,7 +7789,7 @@ static bool d3d9_hlsl_frame(void *data, const void *frame,
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
       d3d9_hlsl_renderchain_t *chain  = (d3d9_hlsl_renderchain_t*)&_chain->chain;
 
-      d3d9_hlsl_set_viewport(d3d, width, height, false, true);
+      d3d9_hlsl_set_viewport(d3d, VIDEO_SCALE_PACK(width, height), false, true);
 
       if (chain)
          chain->out_vp           = (D3DVIEWPORT9*)&d3d->out_vp;

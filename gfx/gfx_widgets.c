@@ -1957,7 +1957,7 @@ static void gfx_widgets_frame_state(void *data)
 
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
-            video_st->data, video_width, video_height, true, false);
+            video_st->data, video_info->dims, true, false);
 
    /* Font setup */
    font_driver_bind_block(p_dispwidget->gfx_widget_fonts.regular.font,
@@ -2242,7 +2242,7 @@ static void gfx_widgets_frame_state(void *data)
 
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
-            video_st->data, video_width, video_height, false, true);
+            video_st->data, video_info->dims, false, true);
 }
 
 void gfx_widgets_frame(void *data)

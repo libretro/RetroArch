@@ -673,8 +673,7 @@ static bool video_thread_handle_packet(
       case CMD_SET_VIEWPORT:
          if (thr->driver_data && thr->driver && thr->driver->set_viewport)
             thr->driver->set_viewport(thr->driver_data,
-                  VIDEO_SCALE_W(pkt.data.set_viewport.dims),
-                  VIDEO_SCALE_H(pkt.data.set_viewport.dims),
+                  pkt.data.set_viewport.dims,
                   pkt.data.set_viewport.force_full,
                   pkt.data.set_viewport.allow_rotate);
          video_thread_reply(thr, &pkt);
@@ -2875,8 +2874,8 @@ static bool video_thread_set_shader(void *data,
    return pkt.data.b;
 }
 
-static void video_thread_set_viewport(void *data, unsigned width,
-      unsigned height, bool force_full, bool video_allow_rotate)
+static void video_thread_set_viewport(void *data, unsigned dims,
+      bool force_full, bool video_allow_rotate)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
@@ -2884,7 +2883,7 @@ static void video_thread_set_viewport(void *data, unsigned width,
    {
       thread_packet_t pkt;
       pkt.type                         = CMD_SET_VIEWPORT;
-      pkt.data.set_viewport.dims       = VIDEO_SCALE_PACK(width, height);
+      pkt.data.set_viewport.dims       = dims;
       pkt.data.set_viewport.force_full = force_full;
       pkt.data.set_viewport.allow_rotate = video_allow_rotate;
       video_thread_send_and_wait_user_to_thread(thr, &pkt);

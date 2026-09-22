@@ -302,8 +302,8 @@ static const float rsx_tex_coords[8] = {
  * FORWARD DECLARATIONS
  */
 
-static void rsx_set_viewport(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate);
+static void rsx_set_viewport(void *data, unsigned dims,
+      bool force_full, bool allow_rotate);
 
 /*
  * DISPLAY DRIVER
@@ -909,7 +909,7 @@ static void rsx_font_setup_viewport(
       unsigned width, unsigned height,
       bool full_screen)
 {
-   rsx_set_viewport(rsx, width, height, full_screen, false);
+   rsx_set_viewport(rsx, VIDEO_SCALE_PACK(width, height), full_screen, false);
 
    rsxSetBlendEnable(rsx->context, GCM_TRUE);
    rsxSetBlendFunc(rsx->context, GCM_SRC_ALPHA,
@@ -1021,7 +1021,7 @@ static void rsx_font_render_msg(
       rsxTextureControl(rsx->context, font->tex_unit->index,
             GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
       rsxSetBlendEnable(rsx->context, GCM_FALSE);
-      rsx_set_viewport(rsx, width, height, false, true);
+      rsx_set_viewport(rsx, VIDEO_SCALE_PACK(width, height), false, true);
    }
    rsx->font_vert_idx = 0;
 }
@@ -1052,7 +1052,7 @@ static void rsx_font_flush_block(unsigned width, unsigned height,
    rsxTextureControl(rsx->context, font->tex_unit->index,
          GCM_TRUE, 0 << 8, 12 << 8, GCM_TEXTURE_MAX_ANISO_1);
    rsxSetBlendEnable(rsx->context, GCM_FALSE);
-   rsx_set_viewport(rsx, width, height, block->fullscreen, true);
+   rsx_set_viewport(rsx, VIDEO_SCALE_PACK(width, height), block->fullscreen, true);
    font->rsx->font_vert_idx = 0;
 }
 
@@ -1172,7 +1172,7 @@ static void rsx_set_projection(rsx_t *rsx,
    matrix_4x4_multiply(rsx->mvp, rot, rsx->mvp_no_rot);
 }
 
-static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
+static void rsx_set_viewport(void *data, unsigned dims,
       bool force_full, bool allow_rotate)
 {
    int i;
@@ -1180,7 +1180,7 @@ static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
    rsx_t *rsx                = (rsx_t*)data;
 
-   rsx->vp.full_dims          = VIDEO_SCALE_PACK(vp_width, vp_height);
+   rsx->vp.full_dims          = dims;
    video_driver_update_viewport(&rsx->vp, force_full, rsx->keep_aspect, true);
 
    vp.min                     = 0.0f;
@@ -1581,7 +1581,7 @@ static void* rsx_init(const video_info_t* video,
    rsx->vp.full_dims         = VIDEO_SCALE_PACK(rsx->width, rsx->height);
    rsx->rgb32                = video->rgb32;
    video_driver_set_output_dims(rsx->vp.dims);
-   rsx_set_viewport(rsx, VIDEO_SCALE_W(rsx->vp.dims), VIDEO_SCALE_H(rsx->vp.dims), false, true);
+   rsx_set_viewport(rsx, rsx->vp.dims, false, true);
 
    if (input && input_data)
    {
@@ -2226,7 +2226,7 @@ static void rsx_render_overlay(void *data)
 
    rsx_t *rsx = (rsx_t *)data;
 
-   rsx_set_viewport(rsx, rsx->width, rsx->height, true, true);
+   rsx_set_viewport(rsx, VIDEO_SCALE_PACK(rsx->width, rsx->height), true, true);
 
    for (i = 0; i < rsx->overlays; i++)
    {

@@ -9328,7 +9328,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
-            video_st->data, video_width, video_height, true, false);
+            video_st->data, video_info->dims, true, false);
 
    pseudo_font_length                      = xmb->icon_spacing_horizontal * 4 - xmb->icon_size / 4.0f;
    left_thumbnail_margin_width             = floorf(xmb->icon_size * (xmb->use_ps3_layout ? 3.3f : 2.0f));
@@ -10369,7 +10369,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
-            video_st->data, video_width, video_height, false, true);
+            video_st->data, video_info->dims, false, true);
 
 ctx_destroyed:
    ; /* no-op — reached if context was destroyed mid-frame */

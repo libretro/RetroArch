@@ -479,8 +479,8 @@ static const video_poke_interface_t vga_poke_interface = {
 
 static void vga_gfx_get_poke_interface(void *data,
       const video_poke_interface_t **iface) { *iface = &vga_poke_interface; }
-void vga_gfx_set_viewport(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate) { }
+void vga_gfx_set_viewport(void *data, unsigned dims,
+      bool force_full, bool allow_rotate) { }
 
 static void vga_gfx_viewport_info(void *data, struct video_viewport *vp)
 {

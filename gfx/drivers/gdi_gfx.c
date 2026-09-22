@@ -117,7 +117,7 @@ static bool gdi_ensure_menu_surface(gdi_t *gdi,
 static void gdi_release_menu_surface(gdi_t *gdi);
 /* Defined alongside the vtable near the bottom of the file, but
  * gdi_frame calls it through the should_resize path. */
-static void gdi_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
+static void gdi_set_viewport(void *data, unsigned dims,
       bool force_full, bool allow_rotate);
 #ifdef HAVE_OVERLAY
 /* Overlay impl lives near the bottom alongside the vtable; gdi_frame
@@ -2648,7 +2648,7 @@ static bool gdi_frame(void *data, const void *frame,
     * pillarbox bars.  Mirrors d3d8's should_resize pattern. */
    if (gdi->should_resize)
    {
-      gdi_set_viewport(gdi, surface_width, surface_height, false, true);
+      gdi_set_viewport(gdi, VIDEO_SCALE_PACK(surface_width, surface_height), false, true);
       gdi->should_resize = false;
    }
    /* Defensive: if vp was never populated (e.g. should_resize
@@ -3459,14 +3459,14 @@ static void gdi_get_poke_interface(void *data,
  * set, mirroring d3d8 / d3d9 timing.  vp.full_width/full_height
  * must already hold the current window size (the caller refreshes
  * those via gfx_ctx_gdi_get_video_size first). */
-static void gdi_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
+static void gdi_set_viewport(void *data, unsigned dims,
       bool force_full, bool allow_rotate)
 {
    gdi_t *gdi = (gdi_t*)data;
    if (!gdi)
       return;
 
-   gdi->vp.full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
+   gdi->vp.full_dims   = dims;
 
    video_driver_update_viewport(&gdi->vp, force_full, gdi->keep_aspect, true);
 }
