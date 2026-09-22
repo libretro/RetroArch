@@ -220,18 +220,16 @@ typedef struct gl1
 
    int version_major;
    int version_minor;
-   unsigned frame_width;
-   unsigned frame_height;
+   /* The last frame's size, the screen's, and the menu frame's, each
+    * in VIDEO_SCALE_PACK's layout. */
+   unsigned frame_dims;
    unsigned frame_pitch;
-   unsigned screen_width;
-   unsigned screen_height;
-   unsigned menu_width;
-   unsigned menu_height;
+   unsigned screen_dims;
+   unsigned menu_dims;
    unsigned menu_pitch;
    unsigned frame_bits;
    unsigned menu_bits;
-   unsigned out_vp_width;
-   unsigned out_vp_height;
+   unsigned out_vp_dims;
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
    unsigned rotation;
@@ -1038,12 +1036,11 @@ static void gl1_raster_font_render_msg(
 
    {
       /* The font viewport must cover the full window, so prefer
-       * screen_width/height (set by the context driver). Fall back
-       * to frame_width/height if the context driver hasn't reported
-       * a screen size yet. */
-      unsigned dims           = VIDEO_SCALE_PACK(
-              gl->screen_width  ? gl->screen_width  : gl->frame_width,
-              gl->screen_height ? gl->screen_height : gl->frame_height);
+       * screen_dims (set by the context driver). Fall back to
+       * frame_dims if the context driver hasn't reported a screen
+       * size yet. */
+      unsigned dims           = gl->screen_dims
+            ? gl->screen_dims : gl->frame_dims;
       float inv_tex_size_x    = 1.0f / font->tex_width;
       float inv_tex_size_y    = 1.0f / font->tex_height;
       float inv_win_width;
@@ -1165,10 +1162,10 @@ static void gl1_render_overlay(gl1_t *gl,
     * viewport, so prefer screen_width/height (set by the context
     * driver). Fall back to the passed-in width/height if the
     * context driver hasn't reported a screen size yet. */
-   if (gl->screen_width)
-      width  = gl->screen_width;
-   if (gl->screen_height)
-      height = gl->screen_height;
+   if (VIDEO_SCALE_W(gl->screen_dims))
+      width  = VIDEO_SCALE_W(gl->screen_dims);
+   if (VIDEO_SCALE_H(gl->screen_dims))
+      height = VIDEO_SCALE_H(gl->screen_dims);
 
    glEnable(GL_BLEND);
 
@@ -1331,8 +1328,7 @@ static void *gl1_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   gl1->frame_width                     = VIDEO_SCALE_W(video->dims);
-   gl1->frame_height                    = VIDEO_SCALE_H(video->dims);
+   gl1->frame_dims                      = video->dims;
 
    if (video->rgb32)
    {
@@ -1600,8 +1596,7 @@ static void gl1_set_viewport(gl1_t *gl1,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl1->out_vp_width  = VIDEO_SCALE_W(gl1->vp.dims);
-      gl1->out_vp_height = VIDEO_SCALE_H(gl1->vp.dims);
+      gl1->out_vp_dims   = gl1->vp.dims;
    }
 }
 
@@ -2274,14 +2269,12 @@ static bool gl1_frame(void *data, const void *frame,
 
    do_swap = frame || draw;
 
-   if (     (gl1->frame_width  != frame_width)
-         || (gl1->frame_height != frame_height)
+   if (     (gl1->frame_dims  != VIDEO_SCALE_PACK(frame_width, frame_height))
          || (gl1->frame_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         gl1->frame_width  = frame_width;
-         gl1->frame_height = frame_height;
+         gl1->frame_dims   = VIDEO_SCALE_PACK(frame_width, frame_height);
          gl1->frame_pitch  = pitch;
 
          pot_width         = GET_POT(frame_width);
@@ -2297,8 +2290,8 @@ static bool gl1_frame(void *data, const void *frame,
       }
    }
 
-   width         = gl1->frame_width;
-   height        = gl1->frame_height;
+   width         = VIDEO_SCALE_W(gl1->frame_dims);
+   height        = VIDEO_SCALE_H(gl1->frame_dims);
    pitch         = gl1->frame_pitch;
 
    pot_width     = GET_POT(width);
@@ -2330,18 +2323,16 @@ static bool gl1_frame(void *data, const void *frame,
       frame_to_copy = gl1->video_buf;
    }
 
-   if (gl1->frame_width != width || gl1->frame_height != height)
+   if (gl1->frame_dims != VIDEO_SCALE_PACK(width, height))
    {
-      gl1->frame_width  = width;
-      gl1->frame_height = height;
+      gl1->frame_dims   = VIDEO_SCALE_PACK(width, height);
    }
 
    if (gl1->ctx_driver->get_video_size)
       gl1->ctx_driver->get_video_size(gl1->ctx_data,
                &mode_dims);
 
-   gl1->screen_width           = VIDEO_SCALE_W(mode_dims);
-   gl1->screen_height          = VIDEO_SCALE_H(mode_dims);
+   gl1->screen_dims            = mode_dims;
 
    if (draw)
    {
@@ -2377,8 +2368,8 @@ static bool gl1_frame(void *data, const void *frame,
       unsigned bpp;
 
       frame_to_copy = NULL;
-      width         = gl1->menu_width;
-      height        = gl1->menu_height;
+      width         = VIDEO_SCALE_W(gl1->menu_dims);
+      height        = VIDEO_SCALE_H(gl1->menu_dims);
       pitch         = gl1->menu_pitch;
       bits          = gl1->menu_bits;
 
@@ -2927,14 +2918,12 @@ static void gl1_set_texture_frame(void *data,
    /* Only set MENU_SIZE_CHANGED when the dimensions the downstream
     * frame path cares about actually change; otherwise the POT-sized
     * menu_video_buf would get reallocated on every single frame. */
-   if (     gl1->menu_width  != VIDEO_SCALE_W(dims)
-         || gl1->menu_height != VIDEO_SCALE_H(dims)
+   if (     gl1->menu_dims  != dims
          || gl1->menu_pitch  != pitch)
       gl1->flags |= GL1_FLAG_MENU_SIZE_CHANGED;
 
    memcpy(gl1->menu_frame, frame, required);
-   gl1->menu_width  = VIDEO_SCALE_W(dims);
-   gl1->menu_height = VIDEO_SCALE_H(dims);
+   gl1->menu_dims   = dims;
    gl1->menu_pitch  = pitch;
    gl1->menu_bits   = rgb32 ? 32 : 16;
 }
@@ -3417,8 +3406,8 @@ static bool gl1_read_viewport_hdr(void *data, uint16_t *buffer,
    if (!is_idle)
       video_driver_cached_frame();
 
-   vw   = gl1->screen_width;
-   vh   = gl1->screen_height;
+   vw   = VIDEO_SCALE_W(gl1->screen_dims);
+   vh   = VIDEO_SCALE_H(gl1->screen_dims);
    vp_x = (VIDEO_POS_X(gl1->vp.pos) > 0) ? VIDEO_POS_X(gl1->vp.pos) : 0;
    vp_y = (VIDEO_POS_Y(gl1->vp.pos) > 0) ? VIDEO_POS_Y(gl1->vp.pos) : 0;
    w    = (VIDEO_SCALE_W(gl1->vp.dims)  > vw) ? vw : VIDEO_SCALE_W(gl1->vp.dims);
