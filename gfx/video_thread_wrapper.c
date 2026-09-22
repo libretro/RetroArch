@@ -1331,7 +1331,7 @@ void video_thread_async_poll(void)
  * freeing them. */
 static void video_thread_convert(thread_video_t *thr,
       unsigned kind, const void **data,
-      unsigned width, unsigned height, unsigned *pitch)
+      unsigned dims, unsigned *pitch)
 {
    video_driver_state_t *video_st = thr->video_st;
 
@@ -1346,7 +1346,7 @@ static void video_thread_convert(thread_video_t *thr,
             video_pixel_frame_scale(
                   video_st->scaler_ptr->scaler,
                   video_st->scaler_ptr->scaler_out,
-                  *data, width, height, *pitch);
+                  *data, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), *pitch);
             *data  = video_st->scaler_ptr->scaler_out;
             *pitch = video_st->scaler_ptr->scaler->out_stride;
          }
@@ -1355,7 +1355,7 @@ static void video_thread_convert(thread_video_t *thr,
          {
             size_t      conv_pitch = *pitch;
             const void *converted  = video_driver_convert_xrgb2101010(
-                  video_st, *data, width, height, *pitch, &conv_pitch);
+                  video_st, *data, dims, *pitch, &conv_pitch);
             if (converted)
             {
                *data  = converted;
@@ -1445,8 +1445,7 @@ typedef struct video_thread_rec
 {
    struct video_thread_rec *next;  /* the main thread's retired list */
    uint8_t *buf[3];
-   unsigned width;
-   unsigned height;
+   unsigned dims;
    /* The buffer holding the newest frame read back, with
     * VIDEO_THREAD_REC_FRESH until the main thread takes it */
    retro_atomic_int_t ready;
@@ -1456,8 +1455,7 @@ typedef struct video_thread_rec
    video_record_read_t read;
    uint8_t *source;
    size_t source_size;
-   unsigned source_width;
-   unsigned source_height;
+   unsigned source_dims;
    struct scaler_ctx scaler;
 } video_thread_rec_t;
 
@@ -1496,7 +1494,7 @@ static void video_thread_rec_read(thread_video_t *thr,
          || vp_h > INT_MAX
          || (size_t)vp_w > (size_t)-1 / 3 / vp_h)
       return;
-   if (vp_w != rec->width || vp_h != rec->height)
+   if (vp->dims != rec->dims)
    {
       struct scaler_ctx *ctx = &rec->scaler;
       size_t size = (size_t)vp_w * vp_h * 3;
@@ -1509,17 +1507,18 @@ static void video_thread_rec_read(thread_video_t *thr,
          rec->source      = source;
          rec->source_size = size;
       }
-      if (rec->source_width != vp_w || rec->source_height != vp_h)
+      if (rec->source_dims != vp->dims)
       {
          unsigned width, height;
-         if ((uint64_t)vp_w * rec->height > (uint64_t)vp_h * rec->width)
+         if (  (uint64_t)vp_w * VIDEO_SCALE_H(rec->dims)
+             > (uint64_t)vp_h * VIDEO_SCALE_W(rec->dims))
          {
-            width  = rec->width;
+            width  = VIDEO_SCALE_W(rec->dims);
             height = (unsigned)((uint64_t)vp_h * width / vp_w);
          }
          else
          {
-            height = rec->height;
+            height = VIDEO_SCALE_H(rec->dims);
             width  = (unsigned)((uint64_t)vp_w * height / vp_h);
          }
          scaler_ctx_gen_reset(ctx);
@@ -1528,23 +1527,24 @@ static void video_thread_rec_read(thread_video_t *thr,
          ctx->in_stride   = vp_w * 3;
          ctx->out_width   = width ? width : 1;
          ctx->out_height  = height ? height : 1;
-         ctx->out_stride  = rec->width * 3;
+         ctx->out_stride  = VIDEO_SCALE_W(rec->dims) * 3;
          ctx->in_fmt      = SCALER_FMT_BGR24;
          ctx->out_fmt     = SCALER_FMT_BGR24;
          ctx->scaler_type = SCALER_TYPE_BILINEAR;
          /* A failed rebuild must also invalidate the previous dimensions. */
-         rec->source_width = rec->source_height = 0;
+         rec->source_dims = 0;
          if (!scaler_ctx_gen_filter(ctx))
             return;
-         rec->source_width  = vp_w;
-         rec->source_height = vp_h;
+         rec->source_dims   = vp->dims;
       }
       if (!rec->read(thr->driver_data, rec->source))
          return;
-      x = (rec->width  - ctx->out_width)  / 2;
-      y = (rec->height - ctx->out_height) / 2;
-      memset(out, 0, (size_t)rec->width * rec->height * 3);
-      scaler_ctx_scale_direct(ctx, out + ((size_t)y * rec->width + x) * 3, rec->source);
+      x = (VIDEO_SCALE_W(rec->dims) - ctx->out_width)  / 2;
+      y = (VIDEO_SCALE_H(rec->dims) - ctx->out_height) / 2;
+      memset(out, 0, (size_t)VIDEO_SCALE_W(rec->dims)
+            * VIDEO_SCALE_H(rec->dims) * 3);
+      scaler_ctx_scale_direct(ctx, out
+            + ((size_t)y * VIDEO_SCALE_W(rec->dims) + x) * 3, rec->source);
    }
    else if (!rec->read(thr->driver_data, out))
       return;
@@ -1625,7 +1625,7 @@ void video_thread_record_stop(void *data)
    ((video_thread_private_t*)thr)->rec         = NULL;
 }
 
-int video_thread_record_take(void *data, unsigned width, unsigned height,
+int video_thread_record_take(void *data, unsigned dims,
       const uint8_t **frame)
 {
 #ifdef VIDEO_THREAD_HAS_REC
@@ -1634,15 +1634,15 @@ int video_thread_record_take(void *data, unsigned width, unsigned height,
    video_record_read_t read = thr ? video_thread_record_reader(thr) : NULL;
    if (!read)
       return -2;
-   if (!width || !height || width > INT_MAX / 4
-         || height > INT_MAX
-         || (size_t)width > (((size_t)-1 - sizeof(*rec)) / 9) / height)
+   if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || VIDEO_SCALE_W(dims) > INT_MAX / 4
+         || VIDEO_SCALE_H(dims) > INT_MAX
+         || (size_t)VIDEO_SCALE_W(dims) > (((size_t)-1 - sizeof(*rec)) / 9) / VIDEO_SCALE_H(dims))
       return -1;
    rec           = ((video_thread_private_t*)thr)->rec;
-   if (!rec || rec->width != width || rec->height != height)
+   if (!rec || rec->dims != dims)
    {
       /* One allocation: the header, then the three buffers */
-      size_t size = (size_t)width * height * 3;
+      size_t size = (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 3;
       video_thread_record_stop(thr);
       if (!(rec = (video_thread_rec_t*)malloc(sizeof(*rec) + 3 * size)))
          return -1;
@@ -1651,8 +1651,7 @@ int video_thread_record_take(void *data, unsigned width, unsigned height,
       rec->buf[0] = (uint8_t*)(rec + 1);
       rec->buf[1] = rec->buf[0] + size;
       rec->buf[2] = rec->buf[1] + size;
-      rec->width  = width;
-      rec->height = height;
+      rec->dims   = dims;
       retro_atomic_int_init(&rec->ready, 0);
       rec->front  = 1;
       rec->back   = 2;
@@ -1671,8 +1670,7 @@ int video_thread_record_take(void *data, unsigned width, unsigned height,
    return 1;
 #else
    (void)data;
-   (void)width;
-   (void)height;
+   (void)dims;
    (void)frame;
    return -2;
 #endif
@@ -1948,7 +1946,7 @@ static void video_thread_loop(void *data)
                   unsigned fpitch   = thr->frame.slot[slot].pitch;
                   if (fdata && thr->frame.slot[slot].convert)
                      video_thread_convert(thr, thr->frame.slot[slot].convert,
-                           &fdata, fwidth, fheight, &fpitch);
+                           &fdata, thr->frame.slot[slot].dims, &fpitch);
 #ifdef HAVE_VIDEO_FILTER
                   if (fdata && thr->frame.slot[slot].filter_bpp)
                      video_thread_filter(thr, &fdata, &fwidth, &fheight, &fpitch);
@@ -2431,7 +2429,8 @@ static bool video_thread_frame(void *data, const void *frame_,
       if (thr->driver_data && thr->driver && thr->driver->frame)
       {
          if (convert)
-            video_thread_convert(thr, convert, &frame_, width, height, &pitch);
+            video_thread_convert(thr, convert, &frame_,
+                  VIDEO_SCALE_PACK(width, height), &pitch);
 #ifdef HAVE_VIDEO_FILTER
          if (filter_bpp)
             video_thread_filter(thr, &frame_, &width, &height, &pitch);

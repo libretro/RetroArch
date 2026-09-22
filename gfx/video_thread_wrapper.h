@@ -866,7 +866,7 @@ void video_thread_wait_idle(void);
  * when the driver has no recording reader, for the caller to use
  * read_viewport(). Starts the readbacks on first use and again at a new
  * output size. Viewport changes are scaled and letterboxed by the worker. */
-int video_thread_record_take(void *data, unsigned width, unsigned height,
+int video_thread_record_take(void *data, unsigned dims,
       const uint8_t **frame);
 /* Stops the readbacks; the buffers go once no frame names them. */
 void video_thread_record_stop(void *data);

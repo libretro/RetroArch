@@ -1616,7 +1616,7 @@ uint64_t video_driver_presents_per_frame(const video_frame_info_t *video_info);
  * buffer; returns it and its stride, or NULL if it could not grow */
 const void *video_driver_convert_xrgb2101010(
       video_driver_state_t *video_st,
-      const void *data, unsigned width, unsigned height,
+      const void *data, unsigned dims,
       size_t in_pitch, size_t *out_pitch);
 
 /**

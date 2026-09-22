@@ -1549,8 +1549,7 @@ static void recording_dump_frame(
       int taken = -2;
       if (video_st->thread_wrapper_active)
          taken = video_thread_record_take(video_st->data,
-               VIDEO_SCALE_W(record_st->gpu_dims),
-               VIDEO_SCALE_H(record_st->gpu_dims), &gpu_frame);
+               record_st->gpu_dims, &gpu_frame);
       if (taken == -1)
          return;
       if (!taken)
@@ -5900,13 +5899,13 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
  * bits; output is 0xFFRRGGBB (XRGB8888, native endian). */
 VIDEO_NOINLINE const void *video_driver_convert_xrgb2101010(
       video_driver_state_t *video_st,
-      const void *data, unsigned width, unsigned height,
+      const void *data, unsigned dims,
       size_t in_pitch, size_t *out_pitch)
 {
    unsigned x, y;
    const uint8_t *src_row = (const uint8_t*)data;
    uint32_t      *dst;
-   size_t         needed  = (size_t)width * height;
+   size_t         needed  = (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims);
 
    if (video_st->pix10_convert_cap < needed)
    {
@@ -5919,10 +5918,10 @@ VIDEO_NOINLINE const void *video_driver_convert_xrgb2101010(
    }
 
    dst = video_st->pix10_convert_buf;
-   for (y = 0; y < height; y++)
+   for (y = 0; y < VIDEO_SCALE_H(dims); y++)
    {
       const uint32_t *src = (const uint32_t*)src_row;
-      for (x = 0; x < width; x++)
+      for (x = 0; x < VIDEO_SCALE_W(dims); x++)
       {
          uint32_t p = src[x];
          uint32_t r = (p >> 20) & 0x3ff;
@@ -5933,11 +5932,11 @@ VIDEO_NOINLINE const void *video_driver_convert_xrgb2101010(
                     | ((g >> 2) <<  8)
                     |  (b >> 2);
       }
-      dst     += width;
+      dst     += VIDEO_SCALE_W(dims);
       src_row += in_pitch;
    }
 
-   *out_pitch = (size_t)width * sizeof(uint32_t);
+   *out_pitch = (size_t)VIDEO_SCALE_W(dims) * sizeof(uint32_t);
    return video_st->pix10_convert_buf;
 }
 
@@ -6107,7 +6106,8 @@ void video_driver_frame(const void *data, unsigned width,
    {
       size_t      conv_pitch = pitch;
       const void *converted  = video_driver_convert_xrgb2101010(
-            video_st, data, width, height, pitch, &conv_pitch);
+            video_st, data, VIDEO_SCALE_PACK(width, height), pitch,
+            &conv_pitch);
       if (converted)
       {
          data  = converted;
