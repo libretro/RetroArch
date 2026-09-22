@@ -4393,7 +4393,7 @@ static void metal_pull_cached_frame_cb(void *userdata,
 #if METAL_HDR_AVAILABLE
       unsigned mode_dims =
 #endif
-      [self applyVideoMode:VIDEO_SCALE_PACK(_video.width, _video.height)
+      [self applyVideoMode:_video.dims
                 fullscreen:_video.fullscreen];
 
       *input         = NULL;
