@@ -1119,11 +1119,11 @@ static void gfx_thumbnail_anim_slot_release(void *user, gfx_surface_t *s,
  * is replaced; its texture goes with it, so the caller only asks for
  * one when a frame is about to be shown. */
 static gfx_surface_t *gfx_thumbnail_anim_surface(gfx_thumbnail_t *thumbnail,
-      unsigned width, unsigned height, unsigned num_slots)
+      unsigned dims, unsigned num_slots)
 {
    gfx_surface_t *s = (gfx_surface_t*)thumbnail->anim_surface;
    if (     s
-         && (s->dims != VIDEO_SCALE_PACK(width, height)
+         && (s->dims != dims
             || s->num_slots < num_slots
             || (!num_slots && s->num_slots)))
    {
@@ -1144,9 +1144,9 @@ static gfx_surface_t *gfx_thumbnail_anim_surface(gfx_thumbnail_t *thumbnail,
        * a surface with no storage of its own: a still, whose pixels
        * the load task owns until the upload has taken them. */
       s = num_slots
-         ? gfx_surface_new(width, height, num_slots, TEXTURE_FILTER_LINEAR,
+         ? gfx_surface_new(dims, num_slots, TEXTURE_FILTER_LINEAR,
                gfx_thumbnail_anim_slot_release, thumbnail)
-         : gfx_surface_new_static(width, height,
+         : gfx_surface_new_static(dims,
                gfx_display_texture_filter());
       thumbnail->anim_surface = s;
    }
@@ -1370,8 +1370,10 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
             /* The jobs decode straight into the surface's two slots,
              * which the video thread later uploads from where they
              * are; the block holds only the jobs. */
-            gfx_surface_t *s = gfx_thumbnail_anim_surface(thumbnail,
-                  anim_w, anim_h, 2);
+            gfx_surface_t *s = VIDEO_SCALE_FITS(anim_w, anim_h)
+               ? gfx_thumbnail_anim_surface(thumbnail,
+                  VIDEO_SCALE_PACK(anim_w, anim_h), 2)
+               : NULL;
             uint8_t *block   = s ? (uint8_t*)calloc(1,
                   2 * GFX_THUMB_ANIM_JOB_STRIDE) : NULL;
             /* Retry on a later vsync; the pair is all or nothing. */
@@ -1521,8 +1523,9 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       int num_frames  = 0, loop_count = 0;
       image_transfer_anim_stream_get_info(thumbnail->anim, type,
             &anim_w, &anim_h, &num_frames, &loop_count);
-      if (!(sync_surface = gfx_thumbnail_anim_surface(thumbnail,
-                  anim_w, anim_h, 1)))
+      if (     !VIDEO_SCALE_FITS(anim_w, anim_h)
+            || !(sync_surface = gfx_thumbnail_anim_surface(thumbnail,
+                  VIDEO_SCALE_PACK(anim_w, anim_h), 1)))
          return;
       if (sync_surface->inflight)
          return;
@@ -1653,8 +1656,10 @@ static void gfx_thumbnail_handle_upload(
     * animation below is opened either way, and its first frame
     * replaces the still if it arrives first. */
    {
-      gfx_surface_t *s = gfx_thumbnail_anim_surface(thumbnail_tag->thumbnail,
-            img->width, img->height, 0);
+      gfx_surface_t *s = VIDEO_SCALE_FITS(img->width, img->height)
+         ? gfx_thumbnail_anim_surface(thumbnail_tag->thumbnail,
+            VIDEO_SCALE_PACK(img->width, img->height), 0)
+         : NULL;
       enum gfx_surface_submit_result r = GFX_SURFACE_SUBMIT_FAILED;
 
       if (s)

@@ -85,7 +85,7 @@ int main(int argc, char **argv)
     * refuses every slot - and the handle the pages hold never
     * changes across the submits. */
    {
-      gfx_surface_t *s = gfx_surface_new(w, h, 1, TEXTURE_FILTER_LINEAR,
+      gfx_surface_t *s = gfx_surface_new(VIDEO_SCALE_PACK(w, h), 1, TEXTURE_FILTER_LINEAR,
             NULL, NULL);
       uintptr_t first  = 0;
       CHECK(s != NULL, "surface allocation failed");

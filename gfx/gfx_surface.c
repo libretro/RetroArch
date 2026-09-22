@@ -23,7 +23,7 @@
  * driver's memcpy into staging run on aligned memory. */
 #define GFX_SURFACE_SLOT_ALIGN 64
 
-gfx_surface_t *gfx_surface_new(unsigned width, unsigned height,
+gfx_surface_t *gfx_surface_new(unsigned dims,
       unsigned num_slots, enum texture_filter_type filter,
       gfx_surface_release_t release, void *user)
 {
@@ -31,12 +31,12 @@ gfx_surface_t *gfx_surface_new(unsigned width, unsigned height,
    uint8_t *base;
    size_t frame_len, i;
 
-   if (     !width || !height
+   if (     !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims)
          || !num_slots || num_slots > GFX_SURFACE_MAX_SLOTS
-         || (size_t)width > (SIZE_MAX / sizeof(uint32_t)) / height)
+         || (size_t)VIDEO_SCALE_W(dims) > (SIZE_MAX / sizeof(uint32_t)) / VIDEO_SCALE_H(dims))
       return NULL;
 
-   frame_len = ((size_t)width * height * sizeof(uint32_t)
+   frame_len = ((size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * sizeof(uint32_t)
          + GFX_SURFACE_SLOT_ALIGN - 1) & ~(size_t)(GFX_SURFACE_SLOT_ALIGN - 1);
    if (frame_len > (SIZE_MAX - sizeof(*s) - GFX_SURFACE_SLOT_ALIGN) / num_slots)
       return NULL;
@@ -53,7 +53,7 @@ gfx_surface_t *gfx_surface_new(unsigned width, unsigned height,
 
    s->release    = release;
    s->user       = user;
-   s->dims       = VIDEO_SCALE_PACK(width, height);
+   s->dims       = dims;
    s->num_slots  = num_slots;
    s->filter     = filter;
    s->rgba       = 0xff;
@@ -109,16 +109,16 @@ bool gfx_surface_supports_compressed(enum texture_gpu_format fmt)
    return video_driver_supports_texture_format(fmt);
 }
 
-gfx_surface_t *gfx_surface_new_static(unsigned width, unsigned height,
+gfx_surface_t *gfx_surface_new_static(unsigned dims,
       enum texture_filter_type filter)
 {
    gfx_surface_t *s;
 
-   if (!width || !height)
+   if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       return NULL;
    if (!(s = (gfx_surface_t*)calloc(1, sizeof(*s))))
       return NULL;
-   s->dims       = VIDEO_SCALE_PACK(width, height);
+   s->dims       = dims;
    s->num_slots  = 0;
    s->filter     = filter;
    s->rgba       = 0xff;

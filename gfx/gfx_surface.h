@@ -195,7 +195,7 @@ bool gfx_surface_supports_compressed(enum texture_gpu_format fmt);
  * caller keeps: an overlay asset, a still. Submitted through
  * gfx_surface_submit_external(), which is the only submit it takes.
  * NULL when out of memory. */
-gfx_surface_t *gfx_surface_new_static(unsigned width, unsigned height,
+gfx_surface_t *gfx_surface_new_static(unsigned dims,
       enum texture_filter_type filter);
 
 /* Upload @pixels, which the caller owns and must keep valid until the
@@ -206,10 +206,11 @@ enum gfx_surface_submit_result gfx_surface_submit_external(gfx_surface_t *s,
       const uint32_t *pixels, bool rgba,
       gfx_surface_release_t release, void *user);
 
-/* A surface of @num_slots frames of @width x @height 32-bit pixels
+/* A surface of @num_slots frames of @dims (one packed size word)
+ * 32-bit pixels
  * (1..GFX_SURFACE_MAX_SLOTS), one allocation. NULL when out of memory
  * or the arguments are out of range. */
-gfx_surface_t *gfx_surface_new(unsigned width, unsigned height,
+gfx_surface_t *gfx_surface_new(unsigned dims,
       unsigned num_slots, enum texture_filter_type filter,
       gfx_surface_release_t release, void *user);
 

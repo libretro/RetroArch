@@ -135,11 +135,15 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
        * and a surface with a submit in flight refuses every slot, so
        * a second one could never be reached - it would be a frame's
        * worth of memory per animated image, for nothing. */
-      gfx_surface_t *s = animated
-         ? gfx_surface_new(ol->images[i]->width, ol->images[i]->height,
+      gfx_surface_t *s = !VIDEO_SCALE_FITS(ol->images[i]->width,
+               ol->images[i]->height)
+         ? NULL
+         : animated
+         ? gfx_surface_new(VIDEO_SCALE_PACK(ol->images[i]->width,
+               ol->images[i]->height),
                1, TEXTURE_FILTER_LINEAR, NULL, NULL)
-         : gfx_surface_new_static(ol->images[i]->width,
-            ol->images[i]->height, TEXTURE_FILTER_LINEAR);
+         : gfx_surface_new_static(VIDEO_SCALE_PACK(ol->images[i]->width,
+            ol->images[i]->height), TEXTURE_FILTER_LINEAR);
       GFX_INSTR_INC(GFX_INSTR_OVERLAY_UPLOAD);
       GFX_INSTR_ADD(GFX_INSTR_OVERLAY_PIXEL_KIB,
             (int)(((size_t)ol->images[i]->width * ol->images[i]->height

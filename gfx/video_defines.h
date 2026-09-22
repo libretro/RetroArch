@@ -199,6 +199,11 @@ enum text_alignment
    ((VIDEO_SCALE_CLAMP(w) << 16) | VIDEO_SCALE_CLAMP(h))
 #define VIDEO_SCALE_W(d) (((unsigned)(d) >> 16) & VIDEO_SCALE_DIM_MAX)
 #define VIDEO_SCALE_H(d)  ((unsigned)(d)        & VIDEO_SCALE_DIM_MAX)
+/* Whether a size packs without clamping. Anything sized for storage
+ * from a word has to ask first: a clamped axis would allocate less
+ * than the source it holds. */
+#define VIDEO_SCALE_FITS(w, h) \
+   ((unsigned)(w) <= VIDEO_SCALE_DIM_MAX && (unsigned)(h) <= VIDEO_SCALE_DIM_MAX)
 
 /* One axis of a packed pair, leaving the other half as it stands.
  * A viewport whose axes are set apart from each other reads back
