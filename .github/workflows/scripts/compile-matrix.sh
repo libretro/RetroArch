@@ -172,6 +172,8 @@ platform_video "rs90 video"     "-DDINGUX -DRS90" "-I/usr/include/SDL" \
 # libdrm's exynos module and its G2D headers, which distros ship only
 # where the hardware exists. A runner building libdrm with -Dexynos=true
 # turns this on.
+platform_video "openvg video" "-DHAVE_VG -DHAVE_EGL" \
+   "-Itools/platform_stubs/openvg" gfx/drivers/vg.c ""
 platform_video "exynos video"   "-DHAVE_EXYNOS" "-I/usr/include/libdrm" \
    gfx/drivers/exynos_gfx.c /usr/include/exynos/exynos_fimg2d.h
 

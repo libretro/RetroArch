@@ -105,8 +105,7 @@ static INLINE bool vg_query_extension(const char *ext)
 static void *vg_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-      unsigned out_dims;
-      unsigned out_dims;
+   unsigned out_dims               = 0;
    unsigned win_width, win_height;
    VGfloat clearColor[4]           = {0, 0, 0, 1};
    int interval                    = 0;
@@ -164,12 +163,11 @@ static void *vg_init(const video_info_t *video,
    win_width  = video->width;
    win_height = video->height;
 
-   if (video->fullscreen && (win_width == 0) &&      out_dims = video_driver_get_output_dims();
-      temp_width = VIDEO_SCALE_W(out_dims);
-      temp_height = VIDEO_SCALE_H(out_dims);emp_width, &temp_height);
-
-      win_width  = temp_width;
-      win_height = temp_height;
+   if (video->fullscreen && (win_width == 0) && (win_height == 0))
+   {
+      out_dims   = video_driver_get_output_dims();
+      win_width  = VIDEO_SCALE_W(out_dims);
+      win_height = VIDEO_SCALE_H(out_dims);
    }
 
    if (     !vg->ctx_driver->set_video_mode
