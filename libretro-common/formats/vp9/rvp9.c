@@ -28,6 +28,8 @@
 #include <formats/rvp9.h>
 #ifdef HAVE_THREADS
 #include <rthreads/tpool.h>
+#include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #endif
 
 /* Tile columns decoded side by side at most; VP9 allows 64. */
@@ -42,7 +44,22 @@ typedef struct
    const uint8_t *end;
    int            col_first, col_last;
    int            rc;
+   struct rvp9_tile_group_s *group;   /* NULL for the caller's own share */
 } rvp9_tile_job;
+
+#ifdef HAVE_THREADS
+/* A frame's tile jobs and what they share: how many are still to
+ * finish, and the lock and condition the caller waits on for exactly
+ * those - never for the pool to fall idle, which would be a wait for
+ * anything else on it. Made by the first decoder given a pool. */
+typedef struct rvp9_tile_group_s
+{
+   retro_atomic_int_t left;
+} rvp9_tile_group;
+
+static slock_t *rvp9_tile_lock;
+static scond_t *rvp9_tile_cond;
+#endif
 
 #if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
 #define RVP9_SSE2 1
@@ -3369,6 +3386,23 @@ void rvp9_set_tile_pool(rvp9_dec *d, void *pool, unsigned threads)
       d->shadows     = n;
       d->num_shadows = threads - 1;
    }
+#ifdef HAVE_THREADS
+   if (!rvp9_tile_lock)
+   {
+      rvp9_tile_lock = slock_new();
+      rvp9_tile_cond = scond_new();
+      if (!rvp9_tile_lock || !rvp9_tile_cond)
+      {
+         if (rvp9_tile_lock) slock_free(rvp9_tile_lock);
+         if (rvp9_tile_cond) scond_free(rvp9_tile_cond);
+         rvp9_tile_lock = NULL;
+         rvp9_tile_cond = NULL;
+         d->tile_pool    = NULL;
+         d->tile_threads = 1;
+         return;
+      }
+   }
+#endif
    d->tile_pool    = pool;
    d->tile_threads = threads;
 }

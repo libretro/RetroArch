@@ -272,10 +272,16 @@ gfx/common/wayland/drm-lease-v1.c
 # samples/: built harness executables and objects. Each directory's
 # test is <dir>_test; nothing built there is source.
 samples/**/*_test
+samples/**/*_test_*
 samples/audio/stretch/stretch_bench
 samples/**/*.o
 libretro-common/samples/**/*_test
+libretro-common/samples/**/*_test_*
 !libretro-common/samples/**/*_test/
+!samples/**/*_test_*.c
+!libretro-common/samples/**/*_test_*.c
+!samples/**/*_test_*.h
+!libretro-common/samples/**/*_test_*.h
 # Harness executables that are not named <dir>_test. This one had been
 # committed as a built binary, which made any make clean in that
 # directory show up as a deletion.

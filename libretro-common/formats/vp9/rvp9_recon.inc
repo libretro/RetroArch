@@ -2497,6 +2497,16 @@ static void rvp9_tile_job_run(void *arg)
    rvp9_tile_job *j = (rvp9_tile_job*)arg;
    j->rc = rvp9_decode_tile_cols(j->d, j->tiles, j->end,
          j->col_first, j->col_last);
+   if (j->group)
+   {
+      /* the last job to finish wakes the caller */
+      if (retro_atomic_fetch_sub_int(&j->group->left, 1) == 1)
+      {
+         slock_lock(rvp9_tile_lock);
+         scond_broadcast(rvp9_tile_cond);
+         slock_unlock(rvp9_tile_lock);
+      }
+   }
 }
 #endif
 
@@ -2782,10 +2792,12 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
           * hands back what it counted and whether it hit corrupt
           * data; the calling thread takes the first range itself. */
          rvp9_tile_job jobs[RVP9_TILE_THREADS_MAX];
+         rvp9_tile_group group;
          rvp9_dec *shadow = (rvp9_dec*)d->shadows;
          int w, per = tile_cols / workers, extra = tile_cols % workers;
          int col = 0;
 
+         retro_atomic_int_init(&group.left, workers - 1);
          for (w = 0; w < workers; w++)
          {
             int n = per + (w < extra ? 1 : 0);
@@ -2795,6 +2807,7 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
             jobs[w].col_first = col;
             jobs[w].col_last  = col + n - 1;
             jobs[w].rc        = 0;
+            jobs[w].group     = w ? &group : NULL;
             col              += n;
             if (w)
                memcpy(&shadow[w - 1], d, sizeof(*d));
@@ -2804,7 +2817,17 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
                      &jobs[w]))
                rvp9_tile_job_run(&jobs[w]);
          rvp9_tile_job_run(&jobs[0]);
-         tpool_wait((tpool_t*)d->tile_pool);
+         /* the frame's own jobs, and only those; the caller takes
+          * queued work from the pool meanwhile rather than sit idle */
+         while (retro_atomic_load_acquire_int(&group.left) > 0)
+         {
+            if (tpool_help((tpool_t*)d->tile_pool))
+               continue;
+            slock_lock(rvp9_tile_lock);
+            if (retro_atomic_load_acquire_int(&group.left) > 0)
+               scond_wait(rvp9_tile_cond, rvp9_tile_lock);
+            slock_unlock(rvp9_tile_lock);
+         }
 
          rc = jobs[0].rc;
          for (w = 1; w < workers; w++)
