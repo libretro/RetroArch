@@ -4837,7 +4837,7 @@ static bool gl3_frame(void *data, const void *frame,
 
 #if TARGET_OS_IPHONE
    /* Apparently the viewport is lost each frame, thanks Apple. */
-   gl3_set_viewport(gl, width, height, false, true);
+   gl3_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
 #endif
 
    if (frame)

@@ -4370,7 +4370,7 @@ static bool gl2_frame(void *data, const void *frame,
 
 #if TARGET_OS_IPHONE
    /* Apparently the viewport is lost each frame, thanks Apple. */
-   gl2_set_viewport(gl, width, height, false, true);
+   gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
 #endif
 
    /* Render to texture in first pass. */
