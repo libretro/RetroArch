@@ -3329,8 +3329,6 @@ static void rgui_render_mini_thumbnail(
       bool thumbnail_background,
       bool savestate)
 {
-   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
-
    if (thumbnail->is_valid && frame_buf_data && thumbnail->data)
    {
       unsigned y;
@@ -3383,30 +3381,15 @@ static void rgui_render_mini_thumbnail(
 
          memcpy(dst, src, thumb_width * sizeof(uint16_t));
       }
-
-      /* Draw drop shadow, if required */
-      if (0 && rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
-      {
-         rgui_color_rect(frame_buf_data, fb_dims,
-               fb_x_offset + thumb_width, fb_y_offset + 1,
-               1, thumb_height, rgui->colors.shadow_color);
-         rgui_color_rect(frame_buf_data, fb_dims,
-               fb_x_offset + 1, fb_y_offset + thumb_height,
-               thumb_width, 1, rgui->colors.shadow_color);
-      }
    }
    /* Draw "not available" placeholder for unused save state thumbnails */
    else if (savestate && frame_buf_data)
    {
-      int text_x, text_y;
-      unsigned fb_x_offset, fb_y_offset;
+      unsigned fb_y_offset;
       unsigned term_width  = rgui->term_layout.width * rgui->font_width_stride;
       unsigned term_height = rgui->term_layout.height * rgui->font_height_stride;
-      const char *msg      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
       unsigned max_width   = VIDEO_SCALE_W(thumbnail->max_dims);
       unsigned max_height  = VIDEO_SCALE_H(thumbnail->max_dims);
-
-      fb_x_offset    = (rgui->term_layout.start_x + term_width) - max_width;
 
       if (     ((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !swap_thumbnails)
             || ((thumbnail_id == GFX_THUMBNAIL_LEFT)  &&  swap_thumbnails))
@@ -3414,12 +3397,9 @@ static void rgui_render_mini_thumbnail(
       else
          fb_y_offset = (rgui->term_layout.start_y + term_height) - max_height;
 
-      text_x         = (max_width  / 2) + fb_x_offset
-            - ((int)strlen(msg) * (rgui->font_width_stride / 2));
-      text_y         = (max_height / 2) + fb_y_offset
-            - (rgui->font_height_stride / 3);
-
-      /* Draw background */
+      /* Draw background. No label goes on top of it: a missing image
+       * file is not something to caption, and the one for a missing
+       * state file has yet to be written. */
       rgui_fill_rect(frame_buf_data, fb_dims,
             rgui->term_layout.start_x + term_width - max_width,
             fb_y_offset,
@@ -3427,16 +3407,6 @@ static void rgui_render_mini_thumbnail(
             rgui->colors.shadow_color,
             rgui->colors.shadow_color,
             false);
-
-      /* TODO: Reserve text label only for missing state files
-       * instead of missing image files */
-      return;
-
-      /* Draw "N/A" label */
-      rgui_blit_line(rgui, fb_width, text_x, text_y,
-            msg,
-            rgui->colors.normal_color,
-            rgui->colors.shadow_color);
    }
 }
 
