@@ -388,12 +388,12 @@ static void gl_cg_set_params(void *dat, void *shader_data)
    float originalaspectrotated;
    video_shader_ctx_params_t          *params =
       (video_shader_ctx_params_t*)dat;
-   unsigned width                             = params->width;
-   unsigned height                            = params->height;
-   unsigned tex_width                         = params->tex_width;
-   unsigned tex_height                        = params->tex_height;
-   unsigned out_width                         = params->out_width;
-   unsigned out_height                        = params->out_height;
+   unsigned width                             = VIDEO_SCALE_W(params->dims);
+   unsigned height                            = VIDEO_SCALE_H(params->dims);
+   unsigned tex_width                         = VIDEO_SCALE_W(params->tex_dims);
+   unsigned tex_height                        = VIDEO_SCALE_H(params->tex_dims);
+   unsigned out_width                         = VIDEO_SCALE_W(params->out_dims);
+   unsigned out_height                        = VIDEO_SCALE_H(params->out_dims);
    unsigned frame_count                       = params->frame_counter;
    const void *_info                          = params->info;
    const void *_prev_info                     = params->prev_info;

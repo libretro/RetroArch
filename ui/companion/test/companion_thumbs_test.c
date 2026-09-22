@@ -628,7 +628,8 @@ static void test_video_hover(void)
          if (!gfx_anim_preview_feed(p)
                || !(fr = gfx_anim_preview_next(p, &dur, &na)))
             break;
-         bits = companion_thumbs_scale_ex(fr, p->width, p->height,
+         bits = companion_thumbs_scale_ex(fr,
+               VIDEO_SCALE_W(p->dims), VIDEO_SCALE_H(p->dims),
                16, 16, 0, !na);
          ref[nref] = bits ? bits[8 * 16 + 8] : 0;
          free(bits);
