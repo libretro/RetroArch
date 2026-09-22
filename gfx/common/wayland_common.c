@@ -429,6 +429,13 @@ void gfx_ctx_wl_get_video_size_common(void *data,
    }
 }
 
+static void shm_buffer_free(shm_buffer_t *buffer)
+{
+   wl_buffer_destroy(buffer->wl_buffer);
+   munmap(buffer->data, buffer->data_size);
+   free(buffer);
+}
+
 void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 {
 #ifdef HAVE_XKBCOMMON
@@ -463,6 +470,20 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       xdg_toplevel_destroy(wl->xdg_toplevel);
    if (wl->xdg_surface)
       xdg_surface_destroy(wl->xdg_surface);
+#ifdef HAVE_LIBDECOR_H
+   /* The frame owns xdg objects built on wl->surface and the context
+    * still talks to the display, so release before both go away. */
+   if (wl->libdecor_icon)
+      xdg_toplevel_icon_v1_destroy(wl->libdecor_icon);
+   if (wl->libdecor_frame)
+      wl->libdecor_frame_unref(wl->libdecor_frame);
+   if (wl->libdecor_context)
+      wl->libdecor_unref(wl->libdecor_context);
+   if (wl->libdecor)
+      dylib_close(wl->libdecor);
+#endif
+   if (wl->icon_buffer)
+      shm_buffer_free(wl->icon_buffer);
    if (wl->surface)
       wl_surface_destroy(wl->surface);
 
@@ -564,8 +585,15 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    wl->xdg_toplevel              = NULL;
    wl->xdg_toplevel_icon         = NULL;
    wl->xdg_toplevel_icon_manager = NULL;
+   wl->icon_buffer               = NULL;
    wl->xdg_toplevel_tag_manager  = NULL;
    wl->deco                      = NULL;
+#ifdef HAVE_LIBDECOR_H
+   wl->libdecor_icon             = NULL;
+   wl->libdecor_frame            = NULL;
+   wl->libdecor_context          = NULL;
+   wl->libdecor                  = NULL;
+#endif
    wl->idle_inhibitor            = NULL;
    wl->wl_touch                  = NULL;
    wl->wl_pointer                = NULL;
@@ -852,6 +880,7 @@ static shm_buffer_t *create_shm_buffer(gfx_ctx_wayland_data_t *wl, int width,
       return NULL;
    }
 
+   buffer->wl        = wl;
    pool              = wl_shm_create_pool(wl->shm, fd, size);
    buffer->wl_buffer = wl_shm_pool_create_buffer(pool, 0,
       width, height,
@@ -914,6 +943,7 @@ static bool wl_create_toplevel_icon(gfx_ctx_wayland_data_t *wl, struct xdg_tople
       shm_buffer_paint_icon(icon_buffer, icon_size, icon_size, 1, icon_size / 16);
       xdg_toplevel_icon_v1_add_buffer(
          icon, icon_buffer->wl_buffer, 1);
+      wl->icon_buffer = icon_buffer;
    }
    else
    {
@@ -1556,9 +1586,10 @@ static void shm_buffer_handle_release(void *data,
 {
    shm_buffer_t *buffer = data;
 
-   wl_buffer_destroy(buffer->wl_buffer);
-   munmap(buffer->data, buffer->data_size);
-   free(buffer);
+   if (buffer->wl->icon_buffer == buffer)
+      buffer->wl->icon_buffer = NULL;
+
+   shm_buffer_free(buffer);
 }
 
 #if 0

@@ -184,6 +184,9 @@ typedef struct gfx_ctx_wayland_data
    struct xdg_toplevel *xdg_toplevel;
    struct xdg_toplevel_icon_v1 *xdg_toplevel_icon;
    struct xdg_toplevel_icon_manager_v1 *xdg_toplevel_icon_manager;
+   /* The compositor may hold this for as long as the icon exists, so
+    * the window frees it if wl_buffer.release never arrives. */
+   struct shm_buffer *icon_buffer;
    struct xdg_toplevel_tag_manager_v1 *xdg_toplevel_tag_manager;
    struct wp_tearing_control_manager_v1 *tearing_control_manager;
    struct wp_tearing_control_v1 *tearing_control;
