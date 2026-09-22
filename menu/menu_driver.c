@@ -1248,11 +1248,9 @@ static void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
 static float menu_input_get_dpi(
       menu_handle_t *menu,
       gfx_display_t *p_disp,
-      unsigned video_width,
-      unsigned video_height)
+      unsigned video_dims)
 {
-   static unsigned last_video_width  = 0;
-   static unsigned last_video_height = 0;
+   static unsigned last_video_dims   = 0;
    static float dpi                  = 0.0f;
    static bool dpi_cached            = false;
 
@@ -1261,8 +1259,7 @@ static float menu_input_get_dpi(
     * overheads we therefore only call video_context_driver_get_metrics()
     * on first run, or when the current video resolution changes */
    if (   (!dpi_cached)
-       || (video_width  != last_video_width)
-       || (video_height != last_video_height))
+       || (video_dims != last_video_dims))
    {
       gfx_ctx_metrics_t mets;
       /* Note: If video_context_driver_get_metrics() fails,
@@ -1279,8 +1276,7 @@ static float menu_input_get_dpi(
 #endif
 
       dpi_cached        = true;
-      last_video_width  = video_width;
-      last_video_height = video_height;
+      last_video_dims   = video_dims;
    }
 
    /* RGUI uses a framebuffer texture, which means we
@@ -1305,7 +1301,7 @@ static float menu_input_get_dpi(
           *   '1 inch' squares to get number of menu space pixels
           *   per inch
           * This is crude, but should be sufficient... */
-         return ((float)fb_height / (float)video_height) * dpi;
+         return ((float)fb_height / (float)VIDEO_SCALE_H(video_dims)) * dpi;
       }
    }
 
@@ -6082,8 +6078,6 @@ MENU_NOINLINE static int menu_input_post_iterate(
       ? (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
       : NULL;
    unsigned output_size                            = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
-   unsigned output_width                           = VIDEO_SCALE_W(output_size);
-   unsigned output_height                          = VIDEO_SCALE_H(output_size);
 
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
@@ -6175,7 +6169,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
             /* Pointer is being held down
              * (i.e. for more than one frame) */
             float dpi = menu ? menu_input_get_dpi(menu, p_disp,
-                  output_width, output_height) : 0.0f;
+                  output_size) : 0.0f;
 
             /* > Update deltas + acceleration & detect press direction
              *   Note: We only do this if the pointer has moved above
@@ -6413,7 +6407,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
                if (     menu_st->driver_ctx
                      && menu_st->driver_ctx->osk_pointer_over_textbox
                      && menu_st->driver_ctx->osk_pointer_over_textbox(
-                        menu_st->userdata, x, y, output_width, output_height))
+                        menu_st->userdata, x, y, output_size))
                   input_st->osk_textbox_focus = true;
                else
                {
@@ -6474,7 +6468,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
             {
                /* Pointer has moved - check if this is a swipe */
                float dpi = menu ? menu_input_get_dpi(menu, p_disp,
-                     output_width, output_height) : 0.0f;
+                     output_size) : 0.0f;
 
                if (     (dpi > 0.0f)
                      && (menu_input->pointer.press_duration <
@@ -7247,8 +7241,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          {
             unsigned output_size      = VIDEO_DRIVER_OUTPUT_DIMS(
                   video_state_get_ptr());
-            unsigned width            = VIDEO_SCALE_W(output_size);
-            unsigned height           = VIDEO_SCALE_H(output_size);
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
             if (!menu_st->driver_ctx || !menu_st->driver_ctx->osk_ptr_at_pos)
             {
@@ -7257,7 +7249,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             }
             point->retcode = menu_st->driver_ctx->osk_ptr_at_pos(
                   menu_st->userdata,
-                  point->x, point->y, width, height);
+                  point->x, point->y, output_size);
          }
          break;
       case MENU_NAVIGATION_CTL_CLEAR:

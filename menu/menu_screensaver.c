@@ -324,19 +324,18 @@ static int menu_ss_vortex_qsort_func(const menu_ss_particle_t *a,
  * scale based on current screen dimensions */
 static INLINE void menu_screensaver_set_dimensions(
       menu_screensaver_t *screensaver,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
-   float screen_size           = (float)((width < height) ? width : height);
+   float screen_size           = (float)((VIDEO_SCALE_W(dims) < VIDEO_SCALE_H(dims)) ? VIDEO_SCALE_W(dims) : VIDEO_SCALE_H(dims));
    screensaver->font_size      = (screen_size * MENU_SS_FONT_SIZE_FACTOR) + 0.5f;
    screensaver->particle_scale = (screen_size * MENU_SS_PARTICLE_SIZE_FACTOR) / screensaver->font_size;
-   screensaver->last_dims      = VIDEO_SCALE_PACK(width, height);
+   screensaver->last_dims      = dims;
 }
 
 static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
 {
    size_t i;
-   unsigned width;
-   unsigned height;
+   unsigned dims = screensaver->last_dims;
 
    /* Create particle array, if required */
    if (!screensaver->particles)
@@ -348,9 +347,6 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
          return false;
    }
 
-   width  = VIDEO_SCALE_W(screensaver->last_dims);
-   height = VIDEO_SCALE_H(screensaver->last_dims);
-
    /* Initialise array */
    switch (screensaver->effect)
    {
@@ -361,8 +357,8 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
                menu_ss_particle_t *particle = &screensaver->particles[i];
                float size_factor;
 
-               particle->x    = (float)(menu_ss_rand() % width);
-               particle->y    = (float)(menu_ss_rand() % height);
+               particle->x    = (float)(menu_ss_rand() % VIDEO_SCALE_W(dims));
+               particle->y    = (float)(menu_ss_rand() % VIDEO_SCALE_H(dims));
                particle->a    = (float)(menu_ss_rand() % 64 - 16) * 0.1f;
                particle->b    = (float)(menu_ss_rand() % 64 - 48) * 0.1f;
 
@@ -381,7 +377,7 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
          break;
       case MENU_SCREENSAVER_STARFIELD:
          {
-            float max_depth            = (float)(width > height ? width : height);
+            float max_depth            = (float)(VIDEO_SCALE_W(dims) > VIDEO_SCALE_H(dims) ? VIDEO_SCALE_W(dims) : VIDEO_SCALE_H(dims));
             float initial_speed_factor = 0.02f * max_depth / 240.0f;
 
             for (i = 0; i < MENU_SS_NUM_PARTICLES; i++)
@@ -389,9 +385,9 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
                menu_ss_particle_t *particle = &screensaver->particles[i];
 
                /* x pos ('physical' space) */
-               particle->a = (float)(menu_ss_rand() % width);
+               particle->a = (float)(menu_ss_rand() % VIDEO_SCALE_W(dims));
                /* y pos ('physical' space) */
-               particle->b = (float)(menu_ss_rand() % height);
+               particle->b = (float)(menu_ss_rand() % VIDEO_SCALE_H(dims));
                /* depth */
                particle->c = max_depth;
                /* speed */
@@ -407,8 +403,8 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
          break;
       case MENU_SCREENSAVER_VORTEX:
          {
-            float min_screen_dimension = (float)(width < height ? width : height);
-            float max_radius           = (float)sqrt((double)((width * width) + (height * height))) / 2.0f;
+            float min_screen_dimension = (float)(VIDEO_SCALE_W(dims) < VIDEO_SCALE_H(dims) ? VIDEO_SCALE_W(dims) : VIDEO_SCALE_H(dims));
+            float max_radius           = (float)sqrt((double)((VIDEO_SCALE_W(dims) * VIDEO_SCALE_W(dims)) + (VIDEO_SCALE_H(dims) * VIDEO_SCALE_H(dims)))) / 2.0f;
             float radial_speed_factor  = 0.001f * min_screen_dimension / 240.0f;
 
             for (i = 0; i < MENU_SS_NUM_PARTICLES; i++)
@@ -445,7 +441,7 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
 static bool menu_screensaver_update_state(
       menu_screensaver_t *screensaver, gfx_display_t *p_disp,
       enum menu_screensaver_effect effect, uint32_t particle_tint,
-      unsigned width, unsigned height, const char *dir_assets)
+      unsigned dims, const char *dir_assets)
 {
    bool init_effect = false;
 
@@ -456,9 +452,9 @@ static bool menu_screensaver_update_state(
 #endif
 
    /* Check if dimensions have changed */
-   if (VIDEO_SCALE_PACK(width, height) != screensaver->last_dims)
+   if (dims != screensaver->last_dims)
    {
-      menu_screensaver_set_dimensions(screensaver, width, height);
+      menu_screensaver_set_dimensions(screensaver, dims);
 
       /* Retire any existing font. This runs from
        * menu_screensaver_iterate(), before the video driver's frame
@@ -556,7 +552,7 @@ void menu_screensaver_iterate(
       menu_screensaver_t *screensaver,
       gfx_display_t *p_disp, gfx_animation_t *p_anim,
       enum menu_screensaver_effect effect, float effect_speed,
-      uint32_t particle_tint, unsigned width, unsigned height,
+      uint32_t particle_tint, unsigned dims,
       const char *dir_assets)
 {
    size_t i;
@@ -573,7 +569,7 @@ void menu_screensaver_iterate(
    if (!menu_screensaver_update_state(
          screensaver, p_disp,
          effect, particle_tint,
-         width, height, dir_assets)
+         dims, dir_assets)
        || (screensaver->effect == MENU_SCREENSAVER_BLANK)
        || !screensaver->particles)
       return;
@@ -624,11 +620,11 @@ void menu_screensaver_iterate(
             /* Reset particle if it has fallen off screen */
             if (particle->x < -particle_size_px)
             {
-               particle->x   = (float)width + particle_size_px;
+               particle->x   = (float)VIDEO_SCALE_W(dims) + particle_size_px;
                update_symbol = true;
             }
 
-            if (particle->y > (float)height + particle_size_px)
+            if (particle->y > (float)VIDEO_SCALE_H(dims) + particle_size_px)
             {
                particle->y   = -particle_size_px;
                update_symbol = true;
@@ -640,11 +636,11 @@ void menu_screensaver_iterate(
          break;
       case MENU_SCREENSAVER_STARFIELD:
          {
-            float max_depth            = (float)(width > height ? width : height);
+            float max_depth            = (float)(VIDEO_SCALE_W(dims) > VIDEO_SCALE_H(dims) ? VIDEO_SCALE_W(dims) : VIDEO_SCALE_H(dims));
             float initial_speed_factor = 0.02f * max_depth / 240.0f;
             float focal_length         = max_depth * 2.0f;
-            float x_centre             = (float)(width >> 1);
-            float y_centre             = (float)(height >> 1);
+            float x_centre             = (float)(VIDEO_SCALE_W(dims) >> 1);
+            float y_centre             = (float)(VIDEO_SCALE_H(dims) >> 1);
             float particle_size_px;
             float luminosity;
 
@@ -665,15 +661,15 @@ void menu_screensaver_iterate(
                 * - Dropped off the edge of the screen
                 * - Reached the screen depth */
                if (   (particle->x < -particle_size_px)
-                   || (particle->x > (float)width + particle_size_px)
+                   || (particle->x > (float)VIDEO_SCALE_W(dims) + particle_size_px)
                    || (particle->y < -particle_size_px)
-                   || (particle->y > (float)height + particle_size_px)
+                   || (particle->y > (float)VIDEO_SCALE_H(dims) + particle_size_px)
                    || (particle->c <= 0.0f))
                {
                   /* x pos ('physical' space) */
-                  particle->a = (float)(menu_ss_rand() % width);
+                  particle->a = (float)(menu_ss_rand() % VIDEO_SCALE_W(dims));
                   /* y pos ('physical' space) */
-                  particle->b = (float)(menu_ss_rand() % height);
+                  particle->b = (float)(menu_ss_rand() % VIDEO_SCALE_H(dims));
                   /* depth */
                   particle->c = max_depth;
                   /* speed */
@@ -709,11 +705,11 @@ void menu_screensaver_iterate(
          break;
       case MENU_SCREENSAVER_VORTEX:
          {
-            float min_screen_dimension = (float)(width < height ? width : height);
-            float max_radius           = (float)sqrt((double)((width * width) + (height * height))) / 2.0f;
+            float min_screen_dimension = (float)(VIDEO_SCALE_W(dims) < VIDEO_SCALE_H(dims) ? VIDEO_SCALE_W(dims) : VIDEO_SCALE_H(dims));
+            float max_radius           = (float)sqrt((double)((VIDEO_SCALE_W(dims) * VIDEO_SCALE_W(dims)) + (VIDEO_SCALE_H(dims) * VIDEO_SCALE_H(dims)))) / 2.0f;
             float radial_speed_factor  = 0.001f * min_screen_dimension / 240.0f;
-            float x_centre             = (float)(width >> 1);
-            float y_centre             = (float)(height >> 1);
+            float x_centre             = (float)(VIDEO_SCALE_W(dims) >> 1);
+            float y_centre             = (float)(VIDEO_SCALE_H(dims) >> 1);
             float r_speed;
             float theta_speed;
             float size_factor;

@@ -68,7 +68,8 @@ static void one_render(void)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
    if (menu_st->driver_ctx && menu_st->driver_ctx->render)
-      menu_st->driver_ctx->render(menu_st->userdata, 320, 240, false);
+      menu_st->driver_ctx->render(menu_st->userdata,
+            VIDEO_SCALE_PACK(320, 240), false);
 }
 
 int main(int argc, char *argv[])

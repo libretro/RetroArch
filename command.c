@@ -2937,10 +2937,7 @@ void command_event_reinit(const int flags)
          if (     menu_st->driver_ctx
                && menu_st->driver_ctx->render)
             menu_st->driver_ctx->render(
-                  menu_st->userdata,
-                  VIDEO_SCALE_W(output_size),
-                  VIDEO_SCALE_H(output_size),
-                  false);
+                  menu_st->userdata, output_size, false);
 
          if (     video_st->poke
                && video_st->poke->set_texture_enable)

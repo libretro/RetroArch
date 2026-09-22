@@ -3226,8 +3226,7 @@ static bool materialui_osk_pointer_over_textbox(
       void *data,
       int x,
       int y,
-      unsigned width,
-      unsigned height)
+      unsigned dims)
 {
    materialui_handle_t *mui = (materialui_handle_t*)data;
 
@@ -3360,13 +3359,13 @@ static uint8_t materialui_count_sublabel_lines(
  * > MUI_LIST_VIEW_DEFAULT */
 static void materialui_compute_entries_box_default(
       materialui_handle_t* mui,
-      unsigned width, unsigned height, unsigned header_height)
+      unsigned dims, unsigned header_height)
 {
    size_t i;
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
-   float node_entry_width     = (float)width -
+   float node_entry_width     = (float)VIDEO_SCALE_W(dims) -
          (float)(mui->landscape_optimization.border_width * 2) -
          (float)VIDEO_SCALE_W(mui->nav_bar_layout_dims);
    float node_x               = (float)mui->landscape_optimization.border_width;
@@ -3426,7 +3425,7 @@ static void materialui_compute_entries_box_default(
    mui->content_height = sum;
 
    /* Total height is now known - can initialise scrollbar */
-   materialui_scrollbar_init(mui, width, height, header_height);
+   materialui_scrollbar_init(mui, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), header_height);
 }
 
 /* Used for playlist 'list view' (with and without
@@ -3437,14 +3436,14 @@ static void materialui_compute_entries_box_default(
  * > MUI_LIST_VIEW_PLAYLIST_THUMB_LIST_LARGE */
 static void materialui_compute_entries_box_playlist_list(
       materialui_handle_t* mui,
-      unsigned width, unsigned height, unsigned header_height)
+      unsigned dims, unsigned header_height)
 {
    size_t i;
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
    size_t entries_end         = list ? list->size : 0;
-   float node_entry_width     = (float)width -
+   float node_entry_width     = (float)VIDEO_SCALE_W(dims) -
          (float)(mui->landscape_optimization.border_width * 2) -
          (float)VIDEO_SCALE_W(mui->nav_bar_layout_dims);
    float node_x               = (float)mui->landscape_optimization.border_width;
@@ -3514,21 +3513,21 @@ static void materialui_compute_entries_box_playlist_list(
    mui->content_height = sum;
 
    /* Total height is now known - can initialise scrollbar */
-   materialui_scrollbar_init(mui, width, height, header_height);
+   materialui_scrollbar_init(mui, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), header_height);
 }
 
 /* Used for playlist 'dual icon' entries
  * > MUI_LIST_VIEW_PLAYLIST_THUMB_DUAL_ICON */
 static void materialui_compute_entries_box_playlist_dual_icon(
       materialui_handle_t* mui,
-      unsigned width, unsigned height, unsigned header_height)
+      unsigned dims, unsigned header_height)
 {
    size_t i;
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *list          = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
    size_t entries_end         = list ? list->size : 0;
-   float node_entry_width     = (float)width -
+   float node_entry_width     = (float)VIDEO_SCALE_W(dims) -
          (float)(mui->landscape_optimization.border_width * 2) -
          (float)VIDEO_SCALE_W(mui->nav_bar_layout_dims);
    float node_x               = (float)mui->landscape_optimization.border_width;
@@ -3562,14 +3561,14 @@ static void materialui_compute_entries_box_playlist_dual_icon(
    mui->content_height = sum;
 
    /* Total height is now known - can initialise scrollbar */
-   materialui_scrollbar_init(mui, width, height, header_height);
+   materialui_scrollbar_init(mui, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), header_height);
 }
 
 /* Used for playlist 'desktop'-layout entries
  * > MUI_LIST_VIEW_PLAYLIST_THUMB_DESKTOP */
 static void materialui_compute_entries_box_playlist_desktop(
       materialui_handle_t* mui,
-      unsigned width, unsigned height, unsigned header_height)
+      unsigned dims, unsigned header_height)
 {
    size_t i;
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -3581,7 +3580,7 @@ static void materialui_compute_entries_box_playlist_desktop(
     * > Note: If landscape optimisations are enabled,
     *   need to allow space for a second divider at
     *   the left hand edge of the sidebar */
-   float node_entry_width  = (float)width -
+   float node_entry_width  = (float)VIDEO_SCALE_W(dims) -
          (float)(mui->landscape_optimization.border_width * 2) -
          (float)VIDEO_SCALE_W(mui->nav_bar_layout_dims) -
          (float)mui->thumbnail_width_max -
@@ -3630,14 +3629,14 @@ static void materialui_compute_entries_box_playlist_desktop(
    mui->content_height = sum;
 
    /* Total height is now known - can initialise scrollbar */
-   materialui_scrollbar_init(mui, width, height, header_height);
+   materialui_scrollbar_init(mui, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), header_height);
 }
 
 /* Used for savestate layout entries
  * > MUI_LIST_VIEW_SAVESTATE */
 static void materialui_compute_entries_box_savestate_list(
       materialui_handle_t* mui,
-      unsigned width, unsigned height, unsigned header_height)
+      unsigned dims, unsigned header_height)
 {
    size_t i;
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -3649,7 +3648,7 @@ static void materialui_compute_entries_box_savestate_list(
     * > Note: If landscape optimisations are enabled,
     *   need to allow space for a second divider at
     *   the left hand edge of the sidebar */
-   float node_entry_width     = (float)width -
+   float node_entry_width     = (float)VIDEO_SCALE_W(dims) -
          (float)(mui->landscape_optimization.border_width * 2) -
          (float)VIDEO_SCALE_W(mui->nav_bar_layout_dims) -
          ((mui->flags & MUI_FLAG_IS_PORTRAIT) ? 0 : (float)(mui->thumbnail_width_max) + (float)(mui->margin * 2)) -
@@ -3690,12 +3689,12 @@ static void materialui_compute_entries_box_savestate_list(
    mui->content_height = sum;
 
    /* Total height is now known - can initialise scrollbar */
-   materialui_scrollbar_init(mui, width, height, header_height);
+   materialui_scrollbar_init(mui, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), header_height);
 }
 
 static void (*materialui_compute_entries_box)(
       materialui_handle_t* mui,
-      unsigned width, unsigned height, unsigned header_height) = materialui_compute_entries_box_default;
+      unsigned dims, unsigned header_height) = materialui_compute_entries_box_default;
 
 /* ==============================
  * materialui_compute_entries_box() END
@@ -4350,8 +4349,7 @@ static void materialui_layout(
  * - Handle dynamic pointer input
  * - Handle streaming thumbnails */
 static void materialui_render(void *data,
-      unsigned width, unsigned height,
-      bool is_idle)
+      unsigned dims, bool is_idle)
 {
    size_t i;
    float scroll_y_max;
@@ -4396,10 +4394,10 @@ static void materialui_render(void *data,
    /* Check whether screen dimensions, menu scale
     * factor or layout optimisation settings have changed */
    scale_factor = gfx_display_get_dpi_scale(p_disp, settings,
-         VIDEO_SCALE_PACK(width, height), false, false);
+         dims, false, false);
 
    if (   (scale_factor != mui->last_scale_factor)
-       || (VIDEO_SCALE_PACK(width, height) != mui->last_dims)
+       || (dims != mui->last_dims)
        || ((enum materialui_landscape_layout_optimization_type)
             landscape_layout_optimization !=
                   mui->last_landscape_layout_optimization)
@@ -4409,8 +4407,7 @@ static void materialui_render(void *data,
    {
       mui->dip_base_unit_size                 = scale_factor * MUI_DIP_BASE_UNIT_SIZE;
       mui->last_scale_factor                  = scale_factor;
-      mui->last_dims                          = VIDEO_SCALE_PACK(width,
-            height);
+      mui->last_dims                          = dims;
       mui->last_landscape_layout_optimization =
             (enum materialui_landscape_layout_optimization_type)
                   landscape_layout_optimization;
@@ -4458,7 +4455,7 @@ static void materialui_render(void *data,
       }
 
       if (mui->font_data.list.font && mui->font_data.hint.font)
-         materialui_compute_entries_box(mui, width, height, header_height);
+         materialui_compute_entries_box(mui, dims, header_height);
 
       if (preserve)
       {
@@ -4490,7 +4487,7 @@ static void materialui_render(void *data,
 
    /* Need to update this each frame, otherwise touchscreen
     * input breaks when changing orientation */
-   p_disp->framebuf_dims   = VIDEO_SCALE_PACK(width, height);
+   p_disp->framebuf_dims   = dims;
 
    /* Read pointer state */
    menu_input_get_pointer_state(&mui->pointer);
@@ -4505,7 +4502,7 @@ static void materialui_render(void *data,
             (enum menu_screensaver_effect)settings->uints.menu_screensaver_animation,
             settings->floats.menu_screensaver_animation_speed,
             mui->colors.screensaver_tint,
-            width, height,
+            dims,
             settings->paths.directory_assets);
       return;
    }
@@ -4513,8 +4510,8 @@ static void materialui_render(void *data,
    /* Need to adjust/range-check scroll position first,
     * otherwise cannot determine correct entry index for
     * MENU_ENTRIES_CTL_SET_START */
-   scroll_y_max    = materialui_get_scroll_y_max(mui, height, header_height);
-   overscroll_max  = materialui_get_overscroll_max(mui, height, header_height);
+   scroll_y_max    = materialui_get_scroll_y_max(mui, VIDEO_SCALE_H(dims), header_height);
+   overscroll_max  = materialui_get_overscroll_max(mui, VIDEO_SCALE_H(dims), header_height);
    list_drag_active =
             (mui->pointer.type != MENU_POINTER_DISABLED)
          && (!(mui->flags & MUI_FLAG_SCROLLBAR_DRAGGED))
@@ -4529,7 +4526,7 @@ static void materialui_render(void *data,
        * y position */
       if (mui->flags & MUI_FLAG_SCROLLBAR_DRAGGED)
       {
-         float view_height  = (float)height - (float)header_height -
+         float view_height  = (float)VIDEO_SCALE_H(dims) - (float)header_height -
                (float)VIDEO_SCALE_H(mui->nav_bar_layout_dims) - (float)mui->status_bar.height;
          float view_y       = (float)mui->pointer.y - (float)header_height;
          float y_scroll_max = mui->content_height - view_height;
@@ -4580,7 +4577,7 @@ static void materialui_render(void *data,
 
    if (   !list_drag_active
        && (!(mui->flags & MUI_FLAG_OVERSCROLL_ACTIVE))
-       && (mui->content_height < (height - header_height - VIDEO_SCALE_H(mui->nav_bar_layout_dims) - mui->status_bar.height)))
+       && (mui->content_height < (VIDEO_SCALE_H(dims) - header_height - VIDEO_SCALE_H(mui->nav_bar_layout_dims) - mui->status_bar.height)))
       mui->scroll_y = 0.0f;
 
    /* Loop over all entries */
@@ -4613,7 +4610,7 @@ static void materialui_render(void *data,
       /* Check whether this is the last on screen entry */
       else if (!last_entry_found)
       {
-         if (entry_y > ((int)height - (int)VIDEO_SCALE_H(mui->nav_bar_layout_dims) - (int)mui->status_bar.height))
+         if (entry_y > ((int)VIDEO_SCALE_H(dims) - (int)VIDEO_SCALE_H(mui->nav_bar_layout_dims) - (int)mui->status_bar.height))
          {
             /* Current entry is off screen - get index
              * of previous entry */
@@ -4639,9 +4636,9 @@ static void materialui_render(void *data,
           * the window (i.e. exclude header, navigation bar,
           * landscape borders) */
          if (((unsigned)pointer_x >  mui->landscape_optimization.border_width) &&
-             ((unsigned)pointer_x <  width - mui->landscape_optimization.border_width - VIDEO_SCALE_W(mui->nav_bar_layout_dims)) &&
+             ((unsigned)pointer_x <  VIDEO_SCALE_W(dims) - mui->landscape_optimization.border_width - VIDEO_SCALE_W(mui->nav_bar_layout_dims)) &&
              ((unsigned)pointer_y >= header_height) &&
-             ((unsigned)pointer_y <= height - VIDEO_SCALE_H(mui->nav_bar_layout_dims) - mui->status_bar.height))
+             ((unsigned)pointer_y <= VIDEO_SCALE_H(dims) - VIDEO_SCALE_H(mui->nav_bar_layout_dims) - mui->status_bar.height))
          {
             /* Check if pointer is within the bounds of the
              * current entry */
@@ -9661,7 +9658,6 @@ static void materialui_menu_animation_update_time(float *s,
 static void *materialui_init(void **userdata, bool video_is_threaded)
 {
    unsigned out_dims;
-   unsigned width, height;
    settings_t *settings                   = config_get_ptr();
    gfx_animation_t     *p_anim            = anim_get_ptr();
    materialui_handle_t *mui               = NULL;
@@ -9689,10 +9685,8 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    /* Get DPI/screen-size-aware base unit size for
     * UI elements */
    out_dims = video_driver_get_output_dims();
-   width = VIDEO_SCALE_W(out_dims);
-   height = VIDEO_SCALE_H(out_dims);
 
-   mui->last_dims                         = VIDEO_SCALE_PACK(width, height);
+   mui->last_dims                         = out_dims;
    mui->last_scale_factor                 = gfx_display_get_dpi_scale(
          p_disp, settings, out_dims,
          false, false);
@@ -10048,7 +10042,8 @@ static void materialui_navigation_set(void *data, bool scroll)
    }
 
    if (show_sublabels && current_sel_only)
-      materialui_compute_entries_box(mui, VIDEO_SCALE_W(mui->last_dims), VIDEO_SCALE_H(mui->last_dims), p_disp->header_height);
+      materialui_compute_entries_box(mui, mui->last_dims,
+            p_disp->header_height);
 
    /* Update entry index text */
    mui->entry_index_str[0] = '\0';

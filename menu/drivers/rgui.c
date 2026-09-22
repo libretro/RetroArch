@@ -5196,8 +5196,7 @@ static bool rgui_osk_pointer_over_textbox(
       void *data,
       int x,
       int y,
-      unsigned width,
-      unsigned height)
+      unsigned dims)
 {
    rgui_t *rgui                = (rgui_t*)data;
 
@@ -5225,8 +5224,7 @@ static int rgui_osk_ptr_at_pos(
       void *data,
       int x,
       int y,
-      unsigned width,
-      unsigned height)
+      unsigned dims)
 {
    /* This is a lazy copy/paste from rgui_render_osk(),
     * but it will do for now... */
@@ -5777,7 +5775,7 @@ static bool rgui_wheel_scroll(void *data, int notches)
    return true;
 }
 
-static void rgui_render(void *data, unsigned width, unsigned height,
+static void rgui_render(void *data, unsigned dims,
       bool is_idle)
 {
    unsigned x, y;

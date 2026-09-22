@@ -450,7 +450,7 @@ bool gfx_display_reset_textures_list_buffer(
 
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
-      unsigned width, unsigned height);
+      unsigned dims);
 
 /* @dims: both axes in one word, VIDEO_SCALE_PACK's layout. */
 float gfx_display_get_dpi_scale(

@@ -7725,20 +7725,19 @@ static bool ozone_osk_pointer_over_textbox(
       void *data,
       int x,
       int y,
-      unsigned width,
-      unsigned height)
+      unsigned dims)
 {
    ozone_handle_t *ozone = (ozone_handle_t*)data;
 
    if (ozone && menu_input_dialog_get_display_kb())
    {
       unsigned margin     = 75 * ozone->last_scale_factor;
-      unsigned bottom_end = height / 2;
+      unsigned bottom_end = VIDEO_SCALE_H(dims) / 2;
 
-      if (     width > (margin * 2)
+      if (     VIDEO_SCALE_W(dims) > (margin * 2)
             && bottom_end > (margin * 2)
             && (unsigned)x > margin
-            && (unsigned)x < width - margin
+            && (unsigned)x < VIDEO_SCALE_W(dims) - margin
             && (unsigned)y > margin
             && (unsigned)y < bottom_end - margin)
          return true;
@@ -9877,7 +9876,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    unsigned out_dims;
    unsigned i;
    bool fallback_color_theme           = false;
-   unsigned width, height, color_theme = 0;
+   unsigned color_theme = 0;
    ozone_handle_t *ozone               = NULL;
    settings_t *settings                = config_get_ptr();
    gfx_animation_t *p_anim             = anim_get_ptr();
@@ -9897,15 +9896,12 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
       ozone->pure_white[i]                      = 1.00f;
 
    out_dims = video_driver_get_output_dims();
-   width = VIDEO_SCALE_W(out_dims);
-   height = VIDEO_SCALE_H(out_dims);
 
    /* Also used as a tag for cursor animation */
    ozone->default_theme                         = &ozone_theme_dark; 
 
    ozone->last_framebuffer_opacity              = -1.0f;
-   ozone->last_dims                             = VIDEO_SCALE_PACK(width,
-         height);
+   ozone->last_dims                             = out_dims;
    ozone->last_scale_factor                     = gfx_display_get_dpi_scale(p_disp,
          settings, out_dims, false, false);
    ozone->last_thumbnail_scale_factor           = settings->floats.ozone_thumbnail_scale_factor;
@@ -9955,7 +9951,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    /* TODO/FIXME - we don't use framebuffer at all
     * for Ozone, we should refactor this dependency
     * away. */
-   p_disp->framebuf_dims   = VIDEO_SCALE_PACK(width, height);
+   p_disp->framebuf_dims   = out_dims;
 
    gfx_display_init_white_texture();
 
@@ -10878,8 +10874,7 @@ static bool ozone_wheel_scroll(void *data, int notches)
 }
 
 static void ozone_render(void *data,
-      unsigned width,
-      unsigned height,
+      unsigned dims,
       bool is_idle)
 {
    size_t i;
@@ -10942,7 +10937,7 @@ static void ozone_render(void *data,
    /* Check whether screen dimensions or menu scale
     * factor have changed */
    scale_factor               = gfx_display_get_dpi_scale(p_disp, settings,
-            VIDEO_SCALE_PACK(width, height), false, false);
+            dims, false, false);
    thumbnail_scale_factor     = settings->floats.ozone_thumbnail_scale_factor;
    padding_factor             = settings->floats.ozone_padding_factor;
    font_scale_factor_global   = (font_scale == 1) ? (settings->floats.ozone_font_scale_factor_global) : 1.0f;
@@ -10963,7 +10958,7 @@ static void ozone_render(void *data,
          || (font_scale_factor_sublabel != ozone->last_font_scale_factor_sublabel)
          || (font_scale_factor_time != ozone->last_font_scale_factor_time)
          || (font_scale_factor_footer != ozone->last_font_scale_factor_footer)
-         || (VIDEO_SCALE_PACK(width, height) != ozone->last_dims)
+         || (dims != ozone->last_dims)
          || !string_is_equal(ozone->last_font_path,
                settings->paths.path_menu_ozone_font))
    {
@@ -10977,8 +10972,7 @@ static void ozone_render(void *data,
       ozone->last_font_scale_factor_sublabel = font_scale_factor_sublabel;
       ozone->last_font_scale_factor_time     = font_scale_factor_time;
       ozone->last_font_scale_factor_footer   = font_scale_factor_footer;
-      ozone->last_dims                       = VIDEO_SCALE_PACK(width,
-            height);
+      ozone->last_dims                       = dims;
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
@@ -11026,7 +11020,7 @@ static void ozone_render(void *data,
 
    /* Need to update this each frame, otherwise touchscreen
     * input breaks when changing orientation */
-   p_disp->framebuf_dims   = VIDEO_SCALE_PACK(width, height);
+   p_disp->framebuf_dims   = dims;
 
    /* Read pointer state */
    menu_input_get_pointer_state(&ozone->pointer);
@@ -11049,7 +11043,7 @@ static void ozone_render(void *data,
             (enum menu_screensaver_effect)settings->uints.menu_screensaver_animation,
             settings->floats.menu_screensaver_animation_speed,
             ozone->theme->screensaver_tint,
-            width, height,
+            dims,
             settings->paths.directory_assets);
       GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
       return;
@@ -11119,7 +11113,7 @@ static void ozone_render(void *data,
       float entry_x                 = ozone->dimensions_sidebar_width
             + ozone->sidebar_offset
             + entry_padding;
-      float entry_width             = width
+      float entry_width             = VIDEO_SCALE_W(dims)
             - ozone->dimensions_sidebar_width
             - ozone->sidebar_offset
             - entry_padding * 2
@@ -11228,7 +11222,7 @@ static void ozone_render(void *data,
        * > Entries */
       if (!(ozone->flags2 & OZONE_FLAG2_POINTER_IN_SIDEBAR))
       {
-         float entry_bottom_boundary = height
+         float entry_bottom_boundary = VIDEO_SCALE_H(dims)
                - ozone->dimensions.header_height
                - ozone->dimensions.spacer_1px
                - ozone->dimensions.footer_height
@@ -11257,7 +11251,7 @@ static void ozone_render(void *data,
        * cursor is currently *in* the sidebar */
       else if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
       {
-         float sidebar_bottom_boundary = height -
+         float sidebar_bottom_boundary = VIDEO_SCALE_H(dims) -
                (ozone->dimensions.header_height + ozone->dimensions.spacer_1px) -
                ozone->dimensions.footer_height -
                ozone->dimensions.sidebar_padding_vertical;
@@ -11320,7 +11314,7 @@ static void ozone_render(void *data,
          /* Check whether this is the last on screen entry */
          else if (!last_entry_found)
          {
-            if (entry_y > (height - ozone->dimensions.footer_height))
+            if (entry_y > (VIDEO_SCALE_H(dims) - ozone->dimensions.footer_height))
             {
                /* Current entry is off screen - get index
                 * of previous entry */
@@ -11446,7 +11440,7 @@ static void ozone_render(void *data,
          /* Check whether this is the last on screen category */
          else if (!last_category_found)
          {
-            if (category_y > (height - ozone->dimensions.footer_height))
+            if (category_y > (VIDEO_SCALE_H(dims) - ozone->dimensions.footer_height))
             {
                /* Current category is off screen - get index
                 * of previous category */

@@ -1736,8 +1736,7 @@ static bool xmb_osk_pointer_over_textbox(
       void *data,
       int x,
       int y,
-      unsigned width,
-      unsigned height)
+      unsigned dims)
 {
    xmb_handle_t *xmb = (xmb_handle_t*)data;
 
@@ -6697,7 +6696,7 @@ static void xmb_draw_items(
 }
 
 static INLINE bool xmb_use_ps3_layout(unsigned menu_xmb_layout,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
    switch (menu_xmb_layout)
    {
@@ -6711,7 +6710,7 @@ static INLINE bool xmb_use_ps3_layout(unsigned menu_xmb_layout,
    }
    /* Automatic
     * > Use PSP layout on tiny screens */
-   return (width > 320) && (height > 240);
+   return (VIDEO_SCALE_W(dims) > 320) && (VIDEO_SCALE_H(dims) > 240);
 }
 
 static INLINE float xmb_get_scale_factor(float menu_scale_factor,
@@ -8005,7 +8004,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 
 
 static void xmb_render(void *data,
-      unsigned width, unsigned height, bool is_idle)
+      unsigned dims, bool is_idle)
 {
    size_t i;
    /* c.f. https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
@@ -8081,9 +8080,9 @@ static void xmb_render(void *data,
    if (xmb->current_menu_icon_retry_until)
       xmb_set_title(xmb);
 
-   use_ps3_layout                 = xmb_use_ps3_layout(settings->uints.menu_xmb_layout, width, height);
+   use_ps3_layout                 = xmb_use_ps3_layout(settings->uints.menu_xmb_layout, dims);
    scale_factor                   = xmb_get_scale_factor(settings->floats.menu_scale_factor,
-         use_ps3_layout, width);
+         use_ps3_layout, VIDEO_SCALE_W(dims));
 
    if (     (use_ps3_layout                       != xmb->last_use_ps3_layout)
          || (xmb->margins_title                   != xmb->last_margins_title)
@@ -8115,7 +8114,7 @@ static void xmb_render(void *data,
    /* This must be set every frame when using a pointer,
     * otherwise touchscreen input breaks when changing
     * orientation */
-   p_disp->framebuf_dims       = VIDEO_SCALE_PACK(width, height);
+   p_disp->framebuf_dims       = dims;
 
    /* Read pointer state */
    menu_input_get_pointer_state(&xmb->pointer);
@@ -8246,7 +8245,7 @@ static void xmb_render(void *data,
             (enum menu_screensaver_effect)settings->uints.menu_screensaver_animation,
             settings->floats.menu_screensaver_animation_speed,
             XMB_SCREENSAVER_TINT,
-            width, height,
+            dims,
             settings->paths.directory_assets);
       GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
       return;
@@ -8257,7 +8256,7 @@ static void xmb_render(void *data,
       size_t selection     = menu_st->selection_ptr;
       int16_t margin_top   = (int16_t)xmb->margins_screen_top;
       int16_t margin_left  = (int16_t)xmb->margins_screen_left;
-      int16_t margin_right = (int16_t)((float)width - xmb->margins_screen_left);
+      int16_t margin_right = (int16_t)((float)VIDEO_SCALE_W(dims) - xmb->margins_screen_left);
       int16_t pointer_x    = xmb->pointer.x;
       int16_t pointer_y    = xmb->pointer.y;
 
@@ -8270,8 +8269,8 @@ static void xmb_render(void *data,
          unsigned first    = 0;
          unsigned last     = (unsigned)end;
 
-         if (height)
-            xmb_calculate_visible_range(xmb, height,
+         if (VIDEO_SCALE_H(dims))
+            xmb_calculate_visible_range(xmb, VIDEO_SCALE_H(dims),
                   end, (unsigned)selection, &first, &last);
 
          for (i = (size_t)first; i <= (size_t)last; i++)
@@ -8408,8 +8407,8 @@ static void xmb_render(void *data,
        * main thread responsive and animations smooth. Path
        * resolution stays inline (it's a few stat syscalls per
        * unresolved entry, cheap enough not to block a frame). */
-      if (height)
-         xmb_calculate_visible_range(xmb, height, end, (unsigned)selection, &first, &last);
+      if (VIDEO_SCALE_H(dims))
+         xmb_calculate_visible_range(xmb, VIDEO_SCALE_H(dims), end, (unsigned)selection, &first, &last);
 
       xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_NONE;
 
@@ -10452,7 +10451,6 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 {
    unsigned out_dims;
    int i;
-   unsigned width, height;
    xmb_handle_t *xmb          = NULL;
    settings_t *settings       = config_get_ptr();
    gfx_animation_t *p_anim    = anim_get_ptr();
@@ -10463,8 +10461,6 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
       return NULL;
 
    out_dims = video_driver_get_output_dims();
-   width = VIDEO_SCALE_W(out_dims);
-   height = VIDEO_SCALE_H(out_dims);
 
    if (!(xmb = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t))))
    {
@@ -10474,7 +10470,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    /* Initialise last_{width,height} from the snapshot taken
     * above; xmb_frame will refresh these every render. */
-   xmb->last_dims   = VIDEO_SCALE_PACK(width, height);
+   xmb->last_dims   = out_dims;
 
    xmb_init_scale_mod(xmb->scale_mod, settings->floats.menu_scale_factor * 100.0f);
    xmb->scale_cap = (settings->floats.menu_scale_factor > 1.0f)
@@ -10503,7 +10499,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    /* TODO/FIXME - we don't use framebuffer at all
     * for XMB, we should refactor this dependency
     * away. */
-   p_disp->framebuf_dims   = VIDEO_SCALE_PACK(width, height);
+   p_disp->framebuf_dims   = out_dims;
 
    gfx_display_init_white_texture();
 
@@ -10534,11 +10530,11 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    gfx_thumbnail_set_fade_missing(false);
 
    xmb->use_ps3_layout                        =
-         xmb_use_ps3_layout(settings->uints.menu_xmb_layout, width, height);
+         xmb_use_ps3_layout(settings->uints.menu_xmb_layout, out_dims);
    xmb->last_use_ps3_layout                   = xmb->use_ps3_layout;
    xmb->last_scale_factor                     = xmb_get_scale_factor(
          settings->floats.menu_scale_factor,
-         xmb->use_ps3_layout, width);
+         xmb->use_ps3_layout, VIDEO_SCALE_W(out_dims));
    xmb->margins_title                          = (float)settings->ints.menu_xmb_title_margin * 10.0f;
    xmb->last_margins_title                     = xmb->margins_title;
    xmb->margins_title_horizontal_offset        = (float)settings->ints.menu_xmb_title_margin_horizontal_offset * 10.0f;

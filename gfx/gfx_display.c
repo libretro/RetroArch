@@ -1163,20 +1163,20 @@ void gfx_display_draw_cursor(
 
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
    unsigned i;
-   int ptr_width  = width / 11;
-   int ptr_height = height / 10;
+   int ptr_width  = VIDEO_SCALE_W(dims) / 11;
+   int ptr_height = VIDEO_SCALE_H(dims) / 10;
 
    if (ptr_width > ptr_height)
       ptr_width = ptr_height;
 
    for (i = 0; i < 44; i++)
    {
-      int line_y    = (int)((i / 11) * height / 10);
-      int ptr_x     = (int)(width / 2 - (11 * ptr_width) / 2 + (i % 11) * ptr_width);
-      int ptr_y     = (int)(height / 2 + ptr_height * 3 / 2 + line_y - ptr_height);
+      int line_y    = (int)((i / 11) * VIDEO_SCALE_H(dims) / 10);
+      int ptr_x     = (int)(VIDEO_SCALE_W(dims) / 2 - (11 * ptr_width) / 2 + (i % 11) * ptr_width);
+      int ptr_y     = (int)(VIDEO_SCALE_H(dims) / 2 + ptr_height * 3 / 2 + line_y - ptr_height);
 
       if (x > ptr_x && x < ptr_x + ptr_width
        && y > ptr_y && y < ptr_y + ptr_height)

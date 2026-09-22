@@ -350,7 +350,7 @@ typedef struct menu_ctx_driver
    void  (*set_texture)(void *data);
    /* Render a messagebox to the screen. */
    void  (*render_messagebox)(void *data, const char *msg);
-   void  (*render)(void *data, unsigned width, unsigned height, bool is_idle);
+   void  (*render)(void *data, unsigned dims, bool is_idle);
    void  (*frame)(void *data, video_frame_info_t *video_info);
    /* Initializes the menu driver. (setup) */
    void* (*init)(void**, bool);
@@ -408,8 +408,8 @@ typedef struct menu_ctx_driver
    void (*update_thumbnail_image)(void *data);
    void (*refresh_thumbnail_image)(void *data, size_t i);
    void (*set_thumbnail_content)(void *data, const char *s);
-   int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
-   bool (*osk_pointer_over_textbox)(void *data, int x, int y, unsigned width, unsigned height);
+   int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned dims);
+   bool (*osk_pointer_over_textbox)(void *data, int x, int y, unsigned dims);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
    int (*pointer_down)(void *data, unsigned x, unsigned y, unsigned ptr,

@@ -7323,8 +7323,7 @@ static enum runloop_state_enum runloop_check_state(
                if (menu->driver_ctx->render)
                   menu->driver_ctx->render(
                         menu->userdata,
-                        VIDEO_SCALE_W(output_dims),
-                        VIDEO_SCALE_H(output_dims),
+                        output_dims,
                         (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false);
             }
 

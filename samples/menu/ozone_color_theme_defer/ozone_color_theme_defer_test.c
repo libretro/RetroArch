@@ -78,8 +78,7 @@ static void one_frame_and_render(void)
     * iteration while the menu is alive; it hosts the deferred
     * write. */
    if (menu_st->driver_ctx && menu_st->driver_ctx->render)
-      menu_st->driver_ctx->render(menu_st->userdata,
-            vinfo.width, vinfo.height, false);
+      menu_st->driver_ctx->render(menu_st->userdata, vinfo.dims, false);
 }
 
 int main(int argc, char *argv[])
