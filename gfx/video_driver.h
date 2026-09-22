@@ -1504,7 +1504,7 @@ void video_driver_cached_frame(void);
  * Safe to call from any thread.
  */
 bool video_driver_cached_frame_info(
-      unsigned *width, unsigned *height, size_t *pitch,
+      unsigned *dims, size_t *pitch,
       bool *has_cpu_pixels);
 
 /**
@@ -1533,7 +1533,7 @@ void video_driver_cached_frame_read(
       void *userdata,
       void (*cb)(void *userdata,
                  const void *data,
-                 unsigned width, unsigned height, size_t pitch));
+                 unsigned dims, size_t pitch));
 
 /**
  * video_driver_cached_frame_is_hw_render:
@@ -1568,7 +1568,7 @@ bool video_driver_cached_frame_is_hw_render(void);
  * cached_frame_read callback has returned.
  */
 void video_driver_cached_frame_publish(
-      const void *data, unsigned width, unsigned height, size_t pitch);
+      const void *data, unsigned dims, size_t pitch);
 
 /**
  * video_driver_cached_frame_invalidate:

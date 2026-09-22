@@ -2248,12 +2248,13 @@ static void lane_size_pair_round_trip(void)
    /* The cached frame's dimensions, through the seqlock the replay and
     * screenshot paths read them from. */
    memset(pix, 0x40, sizeof(pix));
-   video_driver_cached_frame_publish(pix, 320, 200,
+   video_driver_cached_frame_publish(pix, VIDEO_SCALE_PACK(320, 200),
          320 * sizeof(uint32_t));
-   CHECK(video_driver_cached_frame_info(&w, &h, &pitch, &has_pixels),
+   CHECK(video_driver_cached_frame_info(&out_dims, &pitch, &has_pixels),
          "nothing was cached by a publish of a 320x200 frame");
-   CHECK(w == 320 && h == 200,
-         "the cached frame came back %ux%u, not 320x200", w, h);
+   CHECK(out_dims == VIDEO_SCALE_PACK(320, 200),
+         "the cached frame came back %ux%u, not 320x200",
+         VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims));
    CHECK(pitch == 320 * sizeof(uint32_t),
          "the cached pitch came back %u", (unsigned)pitch);
 

@@ -9170,11 +9170,12 @@ static void general_write_handler(rarch_setting_t *setting)
                custom_vp->y         = 0;
 
                {
-                  unsigned cache_w  = 0;
-                  unsigned cache_h  = 0;
-                  video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
-                  base_width        = (geom->base_width)  ? geom->base_width  : cache_w;
-                  base_height       = (geom->base_height) ? geom->base_height : cache_h;
+                  unsigned cache_dims = 0;
+                  video_driver_cached_frame_info(&cache_dims, NULL, NULL);
+                  base_width        = (geom->base_width)
+                     ? geom->base_width  : VIDEO_SCALE_W(cache_dims);
+                  base_height       = (geom->base_height)
+                     ? geom->base_height : VIDEO_SCALE_H(cache_dims);
                }
 
                if (base_width <= 4 || base_height <= 4)
@@ -9570,11 +9571,12 @@ static void general_write_handler(rarch_setting_t *setting)
                custom_vp->y         = 0;
 
                {
-                  unsigned cache_w  = 0;
-                  unsigned cache_h  = 0;
-                  video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
-                  base_width        = (geom->base_width)  ? geom->base_width  : cache_w;
-                  base_height       = (geom->base_height) ? geom->base_height : cache_h;
+                  unsigned cache_dims = 0;
+                  video_driver_cached_frame_info(&cache_dims, NULL, NULL);
+                  base_width        = (geom->base_width)
+                     ? geom->base_width  : VIDEO_SCALE_W(cache_dims);
+                  base_height       = (geom->base_height)
+                     ? geom->base_height : VIDEO_SCALE_H(cache_dims);
                }
 
                if (base_width <= 4 || base_height <= 4)

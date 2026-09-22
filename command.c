@@ -2745,22 +2745,22 @@ struct command_reinit_snapshot_ctx
 {
    void   **buf_p;       /* static cached_snapshot in the caller */
    size_t  *cap_p;       /* static cached_snapshot_cap in the caller */
-   unsigned w, h;
+   unsigned dims;
    size_t   p, size;
 };
 
 static void command_reinit_snapshot_cb(void *userdata,
       const void *data,
-      unsigned width, unsigned height, size_t pitch)
+      unsigned dims, size_t pitch)
 {
    struct command_reinit_snapshot_ctx *ctx
       = (struct command_reinit_snapshot_ctx*)userdata;
    size_t want;
 
-   if (!ctx || !data || !width || !height || !pitch)
+   if (!ctx || !data || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   want = pitch * height;
+   want = pitch * VIDEO_SCALE_H(dims);
    if (want > *ctx->cap_p)
    {
       void *tmp = realloc(*ctx->buf_p, want);
@@ -2773,8 +2773,7 @@ static void command_reinit_snapshot_cb(void *userdata,
       return;
 
    memcpy(*ctx->buf_p, data, want);
-   ctx->w    = width;
-   ctx->h    = height;
+   ctx->dims = dims;
    ctx->p    = pitch;
    ctx->size = want;
 }
@@ -2829,8 +2828,7 @@ void command_event_reinit(const int flags)
     * we don't even allocate. */
    static void  *cached_snapshot      = NULL;
    static size_t cached_snapshot_cap  = 0;
-   unsigned      cached_snapshot_w    = 0;
-   unsigned      cached_snapshot_h    = 0;
+   unsigned      cached_snapshot_dims = 0;
    size_t        cached_snapshot_p    = 0;
    size_t        cached_snapshot_size = 0;
    /* A reinit while the video driver is down must not create a
@@ -2867,13 +2865,11 @@ void command_event_reinit(const int flags)
       struct command_reinit_snapshot_ctx ctx;
       ctx.buf_p = &cached_snapshot;
       ctx.cap_p = &cached_snapshot_cap;
-      ctx.w     = 0;
-      ctx.h     = 0;
+      ctx.dims  = 0;
       ctx.p     = 0;
       ctx.size  = 0;
       video_driver_cached_frame_read(&ctx, command_reinit_snapshot_cb);
-      cached_snapshot_w    = ctx.w;
-      cached_snapshot_h    = ctx.h;
+      cached_snapshot_dims = ctx.dims;
       cached_snapshot_p    = ctx.p;
       cached_snapshot_size = ctx.size;
    }
@@ -2891,10 +2887,10 @@ void command_event_reinit(const int flags)
     * a teardown hook would mean wiring command_event_reinit's
     * statics into retroarch_deinit_drivers; the size cap makes the
     * leak benign in practice, so we leave it. */
-   if (cached_snapshot_p && cached_snapshot_h)
+   if (cached_snapshot_p && VIDEO_SCALE_H(cached_snapshot_dims))
    {
       video_driver_cached_frame_publish(cached_snapshot,
-            cached_snapshot_w, cached_snapshot_h, cached_snapshot_p);
+            cached_snapshot_dims, cached_snapshot_p);
 
 #ifdef HAVE_MENU
       /* If the menu is alive across the reinit, the runloop's

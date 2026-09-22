@@ -4328,7 +4328,7 @@ static void frame_cache_store(const void *data,
 #endif
 
 bool video_driver_cached_frame_info(
-      unsigned *width, unsigned *height, size_t *pitch,
+      unsigned *dims, size_t *pitch,
       bool *has_cpu_pixels)
 {
    const void *data;
@@ -4338,8 +4338,7 @@ bool video_driver_cached_frame_info(
    if (     frame_cache_snapshot(&data, &d, &p)
          && data)
    {
-      if (width)          *width          = VIDEO_SCALE_W(d);
-      if (height)         *height         = VIDEO_SCALE_H(d);
+      if (dims)           *dims           = d;
       if (pitch)          *pitch          = p;
       if (has_cpu_pixels) *has_cpu_pixels =
          (data != RETRO_HW_FRAME_BUFFER_VALID);
@@ -4348,8 +4347,7 @@ bool video_driver_cached_frame_info(
 
    /* No cached frame yet, or it was invalidated.  Zero outputs
     * and report not-available so the caller can branch. */
-   if (width)          *width          = 0;
-   if (height)         *height         = 0;
+   if (dims)           *dims           = 0;
    if (pitch)          *pitch          = 0;
    if (has_cpu_pixels) *has_cpu_pixels = false;
    return false;
@@ -4359,7 +4357,7 @@ void video_driver_cached_frame_read(
       void *userdata,
       void (*cb)(void *userdata,
                  const void *data,
-                 unsigned width, unsigned height, size_t pitch))
+                 unsigned dims, size_t pitch))
 {
    const void *data;
    unsigned    dims   = 0;
@@ -4392,7 +4390,7 @@ void video_driver_cached_frame_read(
        * cached_frame_info()'s has_cpu_pixels == false. */
       if (!data || data == RETRO_HW_FRAME_BUFFER_VALID)
       {
-         cb(userdata, NULL, 0, 0, 0);
+         cb(userdata, NULL, 0, 0);
          return;
       }
 
@@ -4404,7 +4402,7 @@ void video_driver_cached_frame_read(
           * caller gets the same answer an invalidated cache would
           * give it, and nothing upstream of here is allowed to block
           * on a reader. */
-         cb(userdata, NULL, 0, 0, 0);
+         cb(userdata, NULL, 0, 0);
          return;
       }
 
@@ -4435,14 +4433,14 @@ void video_driver_cached_frame_read(
          dims   = 0;
          pitch  = 0;
       }
-      cb(userdata, data, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch);
+      cb(userdata, data, dims, pitch);
       cached_frame_lock_release();
       return;
 #endif
       break;
    }
 
-   cb(userdata, data, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch);
+   cb(userdata, data, dims, pitch);
    frame_cache_hazard_release(hazard);
 }
 
@@ -4471,13 +4469,12 @@ bool video_driver_cached_frame_is_hw_render(void)
  * writer and the replay free of a lock it would otherwise have to
  * re-enter. */
 void video_driver_cached_frame_publish(
-      const void *data, unsigned width, unsigned height, size_t pitch)
+      const void *data, unsigned dims, size_t pitch)
 {
    const void *cur;
    const void *next;
    unsigned    cur_dims;
    size_t      cur_pitch;
-   unsigned    dims = VIDEO_SCALE_PACK(width, height);
 
    frame_cache_peek(&cur, &cur_dims, &cur_pitch);
 
@@ -5861,7 +5858,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
 
    if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
-      video_driver_cached_frame_publish(&dummy_pixels, 4, 4, 8);
+      video_driver_cached_frame_publish(&dummy_pixels,
+            VIDEO_SCALE_PACK(4, 4), 8);
 
 #if defined(PSP)
    if (     video_st->poke
@@ -6083,7 +6081,8 @@ void video_driver_frame(const void *data, unsigned width,
     * (drivers' read_viewport setup, paused render) read without
     * the lock -- they're on the runloop thread same as the
     * producer here, so there's no race for them to lose. */
-   video_driver_cached_frame_publish(data, width, height, pitch);
+   video_driver_cached_frame_publish(data,
+         VIDEO_SCALE_PACK(width, height), pitch);
 
    if (
             video_st->scaler_ptr

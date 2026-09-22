@@ -351,10 +351,13 @@ static void handle_translation_response(
       int new_image_size        = (int)response->image_size;
       unsigned image_width, image_height;
       /* Get the video frame dimensions reference */
-      unsigned width  = 0;
-      unsigned height = 0;
+      unsigned dims   = 0;
+      unsigned width;
+      unsigned height;
       bool     is_hw_fb;
-      video_driver_cached_frame_info(&width, &height, NULL, NULL);
+      video_driver_cached_frame_info(&dims, NULL, NULL);
+      width           = VIDEO_SCALE_W(dims);
+      height          = VIDEO_SCALE_H(dims);
       is_hw_fb = video_driver_cached_frame_is_hw_render();
 
       /* try two different modes for text display *
@@ -865,7 +868,7 @@ struct translation_sw_ctx
 
 static void translation_sw_convert_cb(void *userdata,
       const void *data,
-      unsigned width, unsigned height, size_t pitch)
+      unsigned dims, size_t pitch)
 {
    struct translation_sw_ctx *ctx = (struct translation_sw_ctx*)userdata;
    if (!data || !ctx || !ctx->dst)
@@ -877,11 +880,11 @@ static void translation_sw_convert_cb(void *userdata,
    video_frame_convert_to_bgr24(
          ctx->scaler,
          ctx->dst,
-         (const uint8_t*)data + ((int)height - 1) * pitch,
-         width, height,
+         (const uint8_t*)data + ((int)VIDEO_SCALE_H(dims) - 1) * pitch,
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
          (int)-pitch,
-         width, height,
-         width * 3);
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+         VIDEO_SCALE_W(dims) * 3);
 }
 
 bool run_translation_service(settings_t *settings, bool paused)
@@ -948,9 +951,12 @@ bool run_translation_service(settings_t *settings, bool paused)
 
    {
       bool has_cpu_pixels = false;
-      if (!video_driver_cached_frame_info(&width, &height, &pitch,
+      unsigned dims       = 0;
+      if (!video_driver_cached_frame_info(&dims, &pitch,
                &has_cpu_pixels))
          goto finish;
+      width               = VIDEO_SCALE_W(dims);
+      height              = VIDEO_SCALE_H(dims);
 
       if (!has_cpu_pixels)
       {

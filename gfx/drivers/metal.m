@@ -4170,13 +4170,14 @@ struct metal_pull_cached_ctx
 
 static void metal_pull_cached_frame_cb(void *userdata,
       const void *data,
-      unsigned width, unsigned height, size_t pitch)
+      unsigned dims, size_t pitch)
 {
    struct metal_pull_cached_ctx *ctx
       = (struct metal_pull_cached_ctx*)userdata;
-   if (!ctx || !data || !width || !height || !pitch)
+   if (     !ctx || !data || !VIDEO_SCALE_W(dims)
+         || !VIDEO_SCALE_H(dims) || !pitch)
       return;
-   ctx->view.size = CGSizeMake(width, height);
+   ctx->view.size = CGSizeMake(VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
    [ctx->view updateFrame:data pitch:pitch];
    *ctx->uploaded_flag = true;
 }

@@ -541,17 +541,17 @@ static bool screenshot_dump(
    if (savestate)
    {
       /* Use native core output dimensions */
-      unsigned cache_w = 0, cache_h = 0;
+      unsigned cache_dims = 0;
       video_driver_state_t *video_st = video_state_get_ptr();
-      video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
+      video_driver_cached_frame_info(&cache_dims, NULL, NULL);
       if (video_st)
       {
-         state->out_width        = (cache_w <= 4)
+         state->out_width        = (VIDEO_SCALE_W(cache_dims) <= 4)
                ? video_st->av_info.geometry.base_width
-               : cache_w;
-         state->out_height       = (cache_h <= 4)
+               : VIDEO_SCALE_W(cache_dims);
+         state->out_height       = (VIDEO_SCALE_H(cache_dims) <= 4)
                ? video_st->av_info.geometry.base_height
-               : cache_h;
+               : VIDEO_SCALE_H(cache_dims);
       }
 
       /* Fallback to display size if smaller than core output */
@@ -818,28 +818,26 @@ static bool take_screenshot_viewport(
 struct ss_raw_copy
 {
    void    *buffer;
-   unsigned width;
-   unsigned height;
+   unsigned dims;
    size_t   pitch;
 };
 
 static void ss_raw_copy_cb(void *userdata,
       const void *data,
-      unsigned width, unsigned height, size_t pitch)
+      unsigned dims, size_t pitch)
 {
    struct ss_raw_copy *out = (struct ss_raw_copy*)userdata;
    size_t             size;
 
-   if (!data || !width || !height || !pitch)
+   if (!data || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   size = (size_t)height * pitch;
+   size = (size_t)VIDEO_SCALE_H(dims) * pitch;
    if (!(out->buffer = malloc(size)))
       return;
 
    memcpy(out->buffer, data, size);
-   out->width  = width;
-   out->height = height;
+   out->dims   = dims;
    out->pitch  = pitch;
 }
 
@@ -867,10 +865,13 @@ static bool take_screenshot_raw(
        * via the userbuf passthrough (existing cleanup at
        * task_finished frees state->userbuf). */
       bool has_pixels = false;
-      if (   !video_driver_cached_frame_info(&width, &height, &pitch,
+      unsigned dims   = 0;
+      if (   !video_driver_cached_frame_info(&dims, &pitch,
                   &has_pixels)
           || !has_pixels)
          return false;
+      width           = VIDEO_SCALE_W(dims);
+      height          = VIDEO_SCALE_H(dims);
       frame_ptr = userbuf;
    }
    else
@@ -881,10 +882,11 @@ static bool take_screenshot_raw(
        * thread; without copying we'd risk a UAF if the core
        * closes or the driver reinit's between this enqueue and
        * the worker dequeuing it. */
-      struct ss_raw_copy copy = { NULL, 0, 0, 0 };
+      struct ss_raw_copy copy = { NULL, 0, 0 };
       video_driver_cached_frame_read(&copy, ss_raw_copy_cb);
 
-      if (!copy.buffer || !copy.width || !copy.height || !copy.pitch)
+      if (     !copy.buffer || !VIDEO_SCALE_W(copy.dims)
+            || !VIDEO_SCALE_H(copy.dims) || !copy.pitch)
       {
          free(copy.buffer);
          return false;
@@ -892,8 +894,8 @@ static bool take_screenshot_raw(
 
       owned     = copy.buffer;
       frame_ptr = copy.buffer;
-      width     = copy.width;
-      height    = copy.height;
+      width     = VIDEO_SCALE_W(copy.dims);
+      height    = VIDEO_SCALE_H(copy.dims);
       pitch     = copy.pitch;
 
       /* Rotate the buffer according to core SET_ROTATION */
@@ -996,7 +998,8 @@ static bool take_screenshot_choice(
 
       if (frame_data)
       {
-         video_driver_cached_frame_publish(frame_data, w, h, p);
+         video_driver_cached_frame_publish(frame_data,
+               VIDEO_SCALE_PACK(w, h), p);
          return take_screenshot_raw(video_st, screenshot_dir,
                name_base, frame_data, savestate, runloop_flags, fullpath, use_thread,
                pixel_format_type);

@@ -317,7 +317,7 @@ struct game_ai_think_ctx
 
 static void runloop_game_ai_think_cb(void *userdata,
       const void *data,
-      unsigned width, unsigned height, size_t pitch)
+      unsigned dims, size_t pitch)
 {
    struct game_ai_think_ctx *ctx = (struct game_ai_think_ctx*)userdata;
    if (!ctx)
@@ -327,7 +327,7 @@ static void runloop_game_ai_think_cb(void *userdata,
          ctx->override_p2,
          ctx->show_debug,
          data,
-         width, height, pitch,
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch,
          ctx->pix_fmt);
 }
 #endif
