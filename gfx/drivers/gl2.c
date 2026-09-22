@@ -572,18 +572,20 @@ static void gfx_display_gl2_blend_end(void *data)
 static bool
 gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
       gfx_display_ctx_draw_t *draw,
-      unsigned width, unsigned height)
+      unsigned video_dims)
 {
    static bool mali_4xx_detected     = false;
    static bool scissor_inited        = false;
-   static unsigned last_video_width  = 0;
-   static unsigned last_video_height = 0;
+   static unsigned last_video_dims   = 0;
+   unsigned width                    = VIDEO_SCALE_W(video_dims);
+   unsigned height                   = VIDEO_SCALE_H(video_dims);
 
    if (!scissor_inited)
    {
       unsigned i;
-      scissor_inited                = true;
       const char *gpu_device_string = gl->device_str;
+
+      scissor_inited                = true;
 
       scissor_set_rectangle(0,
             width - 1,
@@ -605,8 +607,7 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
          }
       }
 
-      last_video_width  = width;
-      last_video_height = height;
+      last_video_dims   = video_dims;
    }
 
    /* Early out, to minimise performance impact on
@@ -616,8 +617,7 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
 
    /* Have to update scissor_set_rectangle() if the
     * video dimensions change */
-   if (   (width  != last_video_width)
-       || (height != last_video_height))
+   if (video_dims != last_video_dims)
    {
       scissor_set_rectangle(0,
             width - 1,
@@ -625,8 +625,7 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
             height - 1,
             0);
 
-      last_video_width  = width;
-      last_video_height = height;
+      last_video_dims = video_dims;
    }
 
    /* Discards not only out-of-bounds scissoring,
@@ -643,8 +642,6 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
 static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
-   unsigned video_width  = VIDEO_SCALE_W(video_dims);
-   unsigned video_height = VIDEO_SCALE_H(video_dims);
    video_coords_t     coords;
    gl2_t             *gl  = (gl2_t*)data;
 
@@ -652,8 +649,7 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       return;
 
 #ifdef MALI_BUG
-   if (gfx_display_gl2_discard_draw_rectangle(gl, draw, video_width,
-            video_height))
+   if (gfx_display_gl2_discard_draw_rectangle(gl, draw, video_dims))
    {
       /*RARCH_WARN("discarded draw rect: %.4i %.4i %.4i %.4i\n",
         VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
