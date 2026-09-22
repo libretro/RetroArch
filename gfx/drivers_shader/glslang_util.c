@@ -872,7 +872,7 @@ static bool glslang_read_shader_file_internal(const char *path,
                {
                   if (!include_optional)
                      goto cleanup;
-                  RARCH_LOG("[Slang] Optional include not found \"%s\".\n",
+                  RARCH_DBG("[Slang] Optional include not found \"%s\".\n",
                         include_path);
                }
 
