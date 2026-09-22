@@ -182,11 +182,7 @@ typedef struct gfx_ctx_wayland_data
    struct wp_fractional_scale_v1 *fractional_scale;
    struct xdg_wm_base *xdg_shell;
    struct xdg_toplevel *xdg_toplevel;
-   struct xdg_toplevel_icon_v1 *xdg_toplevel_icon;
    struct xdg_toplevel_icon_manager_v1 *xdg_toplevel_icon_manager;
-   /* The compositor may hold this for as long as the icon exists, so
-    * the window frees it if wl_buffer.release never arrives. */
-   struct shm_buffer *icon_buffer;
    struct xdg_toplevel_tag_manager_v1 *xdg_toplevel_tag_manager;
    struct wp_tearing_control_manager_v1 *tearing_control_manager;
    struct wp_tearing_control_v1 *tearing_control;
@@ -214,7 +210,6 @@ typedef struct gfx_ctx_wayland_data
 #ifdef HAVE_LIBDECOR_H
    struct libdecor *libdecor_context;
    struct libdecor_frame *libdecor_frame;
-   struct xdg_toplevel_icon_v1 *libdecor_icon;
 #ifdef HAVE_DYLIB
    dylib_t libdecor;
 #define RA_WAYLAND_SYM(rc,fn,params) rc (*fn) params;

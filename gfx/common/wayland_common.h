@@ -21,7 +21,6 @@
 
 typedef struct shm_buffer
 {
-   gfx_ctx_wayland_data_t *wl;
    struct wl_buffer *wl_buffer;
    void *data;
    size_t data_size;
