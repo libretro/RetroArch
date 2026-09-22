@@ -1722,28 +1722,28 @@ static LRESULT wnd_proc_wm_gdi_create(HWND hwnd)
  * winraw, common).  Presents gdi->bmp scaled into the
  * aspect-ratio-aware viewport rect (gdi->vp), filling the area
  * outside the rect with black to produce letterbox / pillarbox
- * bars.  Reads bmp_width / bmp_height for the source rect (the
- * DDB's actual size); when RGUI is alive bmp holds the menu image
- * at the menu's resolution while gdi->frame_width still tracks
- * the core, so frame_width is only the fallback. */
+ * bars.  Reads bmp_dims for the source rect (the DDB's actual
+ * size); when RGUI is alive bmp holds the menu image at the menu's
+ * resolution while frame_dims still tracks the core, so frame_dims
+ * is only the fallback. */
 static void wnd_proc_gdi_paint(gdi_t *gdi)
 {
    int       vp_x   = VIDEO_POS_X(gdi->vp.pos);
    int       vp_y   = VIDEO_POS_Y(gdi->vp.pos);
-   unsigned  vp_w   = VIDEO_SCALE_W(gdi->vp.dims)
-      ? VIDEO_SCALE_W(gdi->vp.dims)  : gdi->screen_width;
-   unsigned  vp_h   = VIDEO_SCALE_H(gdi->vp.dims)
-      ? VIDEO_SCALE_H(gdi->vp.dims)  : gdi->screen_height;
-   unsigned  src_w  = gdi->bmp_width  ? gdi->bmp_width  : gdi->frame_width;
-   unsigned  src_h  = gdi->bmp_height ? gdi->bmp_height : gdi->frame_height;
+   unsigned  vp_dims  = gdi->vp.dims  ? gdi->vp.dims  : gdi->screen_dims;
+   unsigned  src_dims = gdi->bmp_dims ? gdi->bmp_dims : gdi->frame_dims;
+   unsigned  vp_w   = VIDEO_SCALE_W(vp_dims);
+   unsigned  vp_h   = VIDEO_SCALE_H(vp_dims);
+   unsigned  src_w  = VIDEO_SCALE_W(src_dims);
+   unsigned  src_h  = VIDEO_SCALE_H(src_dims);
 
    /* Letterbox / pillarbox bars: paint the four areas outside the
     * viewport rect black before the StretchBlt.  We do this even
     * when the viewport happens to fill the whole window — extra
     * FillRects on zero-area regions are cheap. */
    if (vp_x > 0 || vp_y > 0
-         || vp_x + (int)vp_w  < (int)gdi->screen_width
-         || vp_y + (int)vp_h  < (int)gdi->screen_height)
+         || vp_x + (int)vp_w  < (int)VIDEO_SCALE_W(gdi->screen_dims)
+         || vp_y + (int)vp_h  < (int)VIDEO_SCALE_H(gdi->screen_dims))
    {
       RECT rect;
       HBRUSH black = (HBRUSH)GetStockObject(BLACK_BRUSH);
@@ -1751,14 +1751,15 @@ static void wnd_proc_gdi_paint(gdi_t *gdi)
       if (vp_y > 0)
       {
          rect.left = 0; rect.top = 0;
-         rect.right = (LONG)gdi->screen_width; rect.bottom = vp_y;
+         rect.right = (LONG)VIDEO_SCALE_W(gdi->screen_dims); rect.bottom = vp_y;
          FillRect(gdi->winDC, &rect, black);
       }
       /* Bottom */
-      if (vp_y + (int)vp_h < (int)gdi->screen_height)
+      if (vp_y + (int)vp_h < (int)VIDEO_SCALE_H(gdi->screen_dims))
       {
          rect.left = 0; rect.top = vp_y + (int)vp_h;
-         rect.right = (LONG)gdi->screen_width; rect.bottom = (LONG)gdi->screen_height;
+         rect.right = (LONG)VIDEO_SCALE_W(gdi->screen_dims);
+         rect.bottom = (LONG)VIDEO_SCALE_H(gdi->screen_dims);
          FillRect(gdi->winDC, &rect, black);
       }
       /* Left */
@@ -1769,10 +1770,11 @@ static void wnd_proc_gdi_paint(gdi_t *gdi)
          FillRect(gdi->winDC, &rect, black);
       }
       /* Right */
-      if (vp_x + (int)vp_w < (int)gdi->screen_width)
+      if (vp_x + (int)vp_w < (int)VIDEO_SCALE_W(gdi->screen_dims))
       {
          rect.left = vp_x + (int)vp_w; rect.top = vp_y;
-         rect.right = (LONG)gdi->screen_width; rect.bottom = vp_y + (int)vp_h;
+         rect.right = (LONG)VIDEO_SCALE_W(gdi->screen_dims);
+         rect.bottom = vp_y + (int)vp_h;
          FillRect(gdi->winDC, &rect, black);
       }
    }
