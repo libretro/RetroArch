@@ -16,6 +16,8 @@
 
 #include <formats/image.h>
 
+#include "../../../gfx/video_defines.h"
+
 #include "harness.h"
 
 harness_probe_t hp;
@@ -43,8 +45,8 @@ bool video_driver_texture_can_update(void) { return false; }
 bool video_driver_texture_update(uintptr_t id, void *data)
 { (void)id; (void)data; return false; }
 unsigned video_driver_get_disp_flags(void) { return 0; }
-void video_driver_get_video_output_size(unsigned *w, unsigned *h, char *d, size_t l)
-{ *w = 1920; *h = 1080; (void)d; (void)l; }
+void video_driver_get_video_output_size(unsigned *dims, char *d, size_t l)
+{ *dims = VIDEO_SCALE_PACK(1920, 1080); (void)d; (void)l; }
 void video_driver_get_viewport_info(void *vp) { (void)vp; }
 void *video_state_get_ptr(void) { static char b[4096]; return b; }
 unsigned gfx_display_texture_filter(void) { return 0; }

@@ -1064,7 +1064,7 @@ static void ps2_set_filtering(void *data, unsigned index, bool smooth, bool ctx_
 }
 
 static void ps2_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *dims, char *desc, size_t desc_len)
 {
    ps2_video_t *ps2 = (ps2_video_t *)data;
    if (!ps2)
@@ -1074,8 +1074,8 @@ static void ps2_get_video_output_size(void *data,
    if (ps2->vmode > PS2_RESOLUTION_LAST || ps2->vmode < 0)
       ps2->vmode = 0;
 
-   *width  = rm_mode_table[ps2->vmode].width;
-   *height = rm_mode_table[ps2->vmode].height;
+   *dims = VIDEO_SCALE_PACK(rm_mode_table[ps2->vmode].width,
+         rm_mode_table[ps2->vmode].height);
 
    strlcpy(desc, rm_mode_table[ps2->vmode].desc, desc_len);
 }

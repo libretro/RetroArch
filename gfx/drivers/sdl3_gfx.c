@@ -654,7 +654,7 @@ static const SDL_DisplayMode *sdl3_current_video_mode(sdl3_video_t *vid)
 }
 
 static void sdl3_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *dims, char *desc, size_t desc_len)
 {
    sdl3_video_t *vid = (sdl3_video_t*)data;
    const SDL_DisplayMode *mode;
@@ -666,13 +666,11 @@ static void sdl3_get_video_output_size(void *data,
    {
       int w = 0, h = 0;
       SDL_GetWindowSizeInPixels(vid->window, &w, &h);
-      *width  = (unsigned)w;
-      *height = (unsigned)h;
+      *dims = VIDEO_SCALE_PACK((unsigned)w, (unsigned)h);
       return;
    }
 
-   *width  = (unsigned)mode->w;
-   *height = (unsigned)mode->h;
+   *dims = VIDEO_SCALE_PACK((unsigned)mode->w, (unsigned)mode->h);
    SDL_snprintf(desc, desc_len, "%.2f Hz", mode->refresh_rate);
 }
 

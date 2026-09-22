@@ -1144,7 +1144,7 @@ static size_t menu_action_setting_disp_set_label_menu_video_resolution(
       char *s2, size_t len2)
 {
    size_t _len    = 0;
-   unsigned width = 0, height = 0;
+   unsigned dims  = 0;
    char desc[64]  = {0};
    *w = 19;
    *s = '\0';
@@ -1152,20 +1152,20 @@ static size_t menu_action_setting_disp_set_label_menu_video_resolution(
    if (path && *path)
       strlcpy(s2, path, len2);
 
-   if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
+   if (video_driver_get_video_output_size(&dims, desc, sizeof(desc)))
    {
 #ifdef GEKKO
-      if (width == 0 || height == 0)
+      if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
          _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DONT_CARE), len);
       else
 #endif
       {
          if (*desc)
             _len = snprintf(s, len, msg_hash_to_str(MSG_SCREEN_RESOLUTION_FORMAT_DESC),
-               width, height, desc);
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), desc);
          else
             _len = snprintf(s, len, msg_hash_to_str(MSG_SCREEN_RESOLUTION_FORMAT_NO_DESC),
-               width, height);
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
       }
    }
    else

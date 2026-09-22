@@ -1894,9 +1894,8 @@ static bool gfx_thumbnail_get_path(
 static unsigned gfx_thumbnail_downscale_cap(void)
 {
    struct video_viewport vp;
-   unsigned cap = 0;
-   unsigned w   = 0;
-   unsigned h   = 0;
+   unsigned cap  = 0;
+   unsigned dims = 0;
    char desc[64];
 
    desc[0] = '\0';
@@ -1909,9 +1908,10 @@ static unsigned gfx_thumbnail_downscale_cap(void)
     * display costs nothing while windowed (the extra texels are
     * simply downsampled) and keeps the fullscreen view sharp at any
     * window size the display can reach. */
-   if (     video_driver_get_video_output_size(&w, &h, desc, sizeof(desc))
-         && (w > 0) && (h > 0))
-      cap = (w > h) ? w : h;
+   if (     video_driver_get_video_output_size(&dims, desc, sizeof(desc))
+         && (VIDEO_SCALE_W(dims) > 0) && (VIDEO_SCALE_H(dims) > 0))
+      cap = (VIDEO_SCALE_W(dims) > VIDEO_SCALE_H(dims))
+         ? VIDEO_SCALE_W(dims) : VIDEO_SCALE_H(dims);
 
    /* The display size is not always available - it depends on the
     * driver and display server - so fall back to the viewport, and

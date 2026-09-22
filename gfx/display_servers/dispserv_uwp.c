@@ -27,12 +27,10 @@ static float uwp_display_server_get_refresh_rate(void *data)
 }
 
 static void uwp_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
-   if (width)
-      *width  = uwp_get_width();
-   if (height)
-      *height = uwp_get_height();
+   if (dims)
+      *dims = VIDEO_SCALE_PACK(uwp_get_width(), uwp_get_height());
 }
 
 static bool uwp_display_server_get_metrics(void *data,

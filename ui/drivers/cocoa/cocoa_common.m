@@ -1394,7 +1394,7 @@ float cocoa_get_refresh_rate(void)
 #endif
 }
 
-void cocoa_get_video_output_size(unsigned *width, unsigned *height,
+void cocoa_get_video_output_size(unsigned *dims,
       char *desc, size_t desc_len)
 {
 #if TARGET_OS_IPHONE
@@ -1404,8 +1404,8 @@ void cocoa_get_video_output_size(unsigned *width, unsigned *height,
    {
       /* nativeBounds is physical pixels, orientation-independent. */
       CGRect b = screen.nativeBounds;
-      *width   = (unsigned)b.size.width;
-      *height  = (unsigned)b.size.height;
+      *dims    = VIDEO_SCALE_PACK((unsigned)b.size.width,
+            (unsigned)b.size.height);
    }
    else
 #endif
@@ -1416,8 +1416,8 @@ void cocoa_get_video_output_size(unsigned *width, unsigned *height,
        * gives exact physical pixels. */
       CGRect  b = screen.bounds;
       CGFloat s = screen.scale; /* UIScreen.scale is iOS 4+ */
-      *width    = (unsigned)(b.size.width  * s);
-      *height   = (unsigned)(b.size.height * s);
+      *dims     = VIDEO_SCALE_PACK((unsigned)(b.size.width  * s),
+            (unsigned)(b.size.height * s));
    }
 
    if (desc && desc_len > 0)
@@ -1436,8 +1436,8 @@ void cocoa_get_video_output_size(unsigned *width, unsigned *height,
 #else
    /* macOS: CGDisplayPixelsWide/High is 10.0+, safe back to 10.5. */
    CGDirectDisplayID d = CGMainDisplayID();
-   *width  = (unsigned)CGDisplayPixelsWide(d);
-   *height = (unsigned)CGDisplayPixelsHigh(d);
+   *dims = VIDEO_SCALE_PACK((unsigned)CGDisplayPixelsWide(d),
+         (unsigned)CGDisplayPixelsHigh(d));
 
    if (desc && desc_len > 0)
    {

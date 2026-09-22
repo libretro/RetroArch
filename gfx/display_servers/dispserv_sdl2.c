@@ -227,16 +227,14 @@ static float sdl_display_server_get_refresh_rate(void *data)
 }
 
 static void sdl_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
    SDL_DisplayMode cur;
    memset(&cur, 0, sizeof(cur));
    if (SDL_GetCurrentDisplayMode(sdl_display_server_display_index(), &cur) != 0)
       return;
-   if (width)
-      *width  = cur.w;
-   if (height)
-      *height = cur.h;
+   if (dims)
+      *dims = VIDEO_SCALE_PACK(cur.w, cur.h);
 }
 
 static uint32_t sdl_display_server_get_flags(void *data)

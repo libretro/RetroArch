@@ -685,7 +685,7 @@ typedef struct gfx_ctx_driver
 
    float (*get_refresh_rate)(void*);
 
-   void (*get_video_output_size)(void*, unsigned*, unsigned*, char *, size_t);
+   void (*get_video_output_size)(void*, unsigned*, char *, size_t);
 
    void (*get_video_output_prev)(void*);
 
@@ -841,7 +841,7 @@ typedef struct video_poke_interface
    float (*get_refresh_rate)(void *data);
    void (*set_filtering)(void *data, unsigned index, bool smooth, bool ctx_scaling);
    void (*get_video_output_size)(void *data,
-         unsigned *width, unsigned *height, char *s, size_t len);
+         unsigned *dims, char *s, size_t len);
 
    /* Move index to previous resolution */
    void (*get_video_output_prev)(void *data);
@@ -1660,7 +1660,7 @@ bool video_driver_set_rotation(unsigned rotation);
 bool video_driver_set_video_mode(unsigned dims, bool fullscreen);
 
 bool video_driver_get_video_output_size(
-      unsigned *width, unsigned *height, char *s, size_t len);
+      unsigned *dims, char *s, size_t len);
 
 void * video_driver_read_frame_raw(unsigned *width,
    unsigned *height, size_t *pitch);

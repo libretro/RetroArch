@@ -183,15 +183,13 @@ static float wl_display_server_get_refresh_rate(void *data)
 }
 
 static void wl_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
    if (!serv || !serv->have_mode)
       return;
-   if (width)
-      *width  = serv->width;
-   if (height)
-      *height = serv->height;
+   if (dims)
+      *dims = VIDEO_SCALE_PACK(serv->width, serv->height);
 }
 
 static bool wl_display_server_get_metrics(void *data,

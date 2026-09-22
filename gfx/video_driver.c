@@ -2048,13 +2048,13 @@ unsigned video_display_server_get_swap_interval_cap(void)
 }
 
 bool video_display_server_get_video_output_size(
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
    void *data;
    const video_display_server_t *srv = video_display_server_modes(&data);
    if (srv && srv->get_video_output_size)
    {
-      srv->get_video_output_size(data, width, height, s, len);
+      srv->get_video_output_size(data, dims, s, len);
       return true;
    }
    return false;
@@ -2544,16 +2544,15 @@ bool video_driver_set_video_mode(unsigned dims, bool fullscreen)
    return false;
 }
 
-bool video_driver_get_video_output_size(unsigned *width, unsigned *height, char *s, size_t len)
+bool video_driver_get_video_output_size(unsigned *dims, char *s, size_t len)
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
-   if (video_display_server_get_video_output_size(width, height, s, len))
+   if (video_display_server_get_video_output_size(dims, s, len))
       return true;
    if (!poke || !poke->get_video_output_size)
       return false;
-   poke->get_video_output_size(video_st->data,
-         width, height, s, len);
+   poke->get_video_output_size(video_st->data, dims, s, len);
    return true;
 }
 
@@ -5541,30 +5540,31 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
              * metrics here, because the context driver
              * has not yet been initialised... */
              /* > Try explicitly configured values */
-            unsigned max_win_width  = settings->uints.window_auto_width_max;
-            unsigned max_win_height = settings->uints.window_auto_height_max;
+            unsigned max_win_dims   = VIDEO_SCALE_PACK(
+                  settings->uints.window_auto_width_max,
+                  settings->uints.window_auto_height_max);
 
             /* > Handle invalid settings */
-            if ((max_win_width == 0) || (max_win_height == 0))
+            if (!VIDEO_SCALE_W(max_win_dims) || !VIDEO_SCALE_H(max_win_dims))
             {
                /* > Try configured fullscreen width/height */
-               max_win_width = settings->uints.video_fullscreen_x;
-               max_win_height = settings->uints.video_fullscreen_y;
+               max_win_dims = VIDEO_SCALE_PACK(
+                     settings->uints.video_fullscreen_x,
+                     settings->uints.video_fullscreen_y);
 
-               if ((max_win_width == 0) || (max_win_height == 0))
+               if (!VIDEO_SCALE_W(max_win_dims) || !VIDEO_SCALE_H(max_win_dims))
                {
                   /* Maximum window width/size *must* be non-zero;
                    * try querying the display server for the actual
                    * monitor resolution before falling back to the
                    * compiled-in default */
                   if (  !video_display_server_get_video_output_size(
-                           &max_win_width, &max_win_height, NULL, 0)
-                     || (max_win_width == 0)
-                     || (max_win_height == 0))
-                  {
-                     max_win_width  = DEFAULT_WINDOW_AUTO_WIDTH_MAX;
-                     max_win_height = DEFAULT_WINDOW_AUTO_HEIGHT_MAX;
-                  }
+                           &max_win_dims, NULL, 0)
+                     || !VIDEO_SCALE_W(max_win_dims)
+                     || !VIDEO_SCALE_H(max_win_dims))
+                     max_win_dims = VIDEO_SCALE_PACK(
+                           DEFAULT_WINDOW_AUTO_WIDTH_MAX,
+                           DEFAULT_WINDOW_AUTO_HEIGHT_MAX);
                }
             }
 
@@ -5606,32 +5606,34 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
             }
 
             /* Cap window size to maximum allowed values */
-            if ((width > max_win_width) || (height > max_win_height))
+            if (     (width  > VIDEO_SCALE_W(max_win_dims))
+                  || (height > VIDEO_SCALE_H(max_win_dims)))
             {
                unsigned geom_width  = (width  > 0) ? width  : 1;
                unsigned geom_height = (height > 0) ? height : 1;
-               float geom_aspect    = (float)geom_width    / (float)geom_height;
-               float max_win_aspect = (float)max_win_width / (float)max_win_height;
+               float geom_aspect    = (float)geom_width / (float)geom_height;
+               float max_win_aspect = (float)VIDEO_SCALE_W(max_win_dims)
+                                    / (float)VIDEO_SCALE_H(max_win_dims);
 
                if (geom_aspect > max_win_aspect)
                {
-                  width     = max_win_width;
-                  height    = geom_height * max_win_width / geom_width;
+                  width     = VIDEO_SCALE_W(max_win_dims);
+                  height    = geom_height * width / geom_width;
                   /* Account for any possible rounding errors... */
                   if (height < 1)
                      height = 1;
-                  else if (height > max_win_height)
-                     height = max_win_height;
+                  else if (height > VIDEO_SCALE_H(max_win_dims))
+                     height = VIDEO_SCALE_H(max_win_dims);
                }
                else
                {
-                  height    = max_win_height;
-                  width     = geom_width * max_win_height / geom_height;
+                  height    = VIDEO_SCALE_H(max_win_dims);
+                  width     = geom_width * height / geom_height;
                   /* Account for any possible rounding errors... */
                   if (width < 1)
                      width  = 1;
-                  else if (width > max_win_width)
-                     width  = max_win_width;
+                  else if (width > VIDEO_SCALE_W(max_win_dims))
+                     width  = VIDEO_SCALE_W(max_win_dims);
                }
             }
          }

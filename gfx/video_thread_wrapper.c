@@ -3341,14 +3341,14 @@ static void thread_set_hdr_subpixel_layout(void *data, unsigned hdr_subpixel_lay
 
 
 static void thread_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *dims, char *desc, size_t desc_len)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
    if (thr && thr->driver_data &&
          thr->poke && thr->poke->get_video_output_size)
       thr->poke->get_video_output_size(thr->driver_data,
-         width, height, desc, desc_len);
+         dims, desc, desc_len);
 }
 
 static void thread_get_video_output_prev(void *data)

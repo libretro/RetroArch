@@ -6995,13 +6995,13 @@ static uint32_t metal_get_flags(void *data)
 }
 
 static void metal_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *dims, char *desc, size_t desc_len)
 {
    /* Body consolidated into cocoa_common.m.  Kept as a named
     * poke entry because video_thread_wrapper.c's
     * thread_get_video_output_size calls poke->get_video_output_size
     * directly, bypassing dispserv_apple. */
-   cocoa_get_video_output_size(width, height, desc, desc_len);
+   cocoa_get_video_output_size(dims, desc, desc_len);
 }
 
 /* HDR poke interface setters.

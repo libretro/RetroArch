@@ -188,7 +188,7 @@ bool cocoa_get_metrics(
  * funnel here so there is only one implementation per platform. */
 float cocoa_get_refresh_rate(void);
 
-void  cocoa_get_video_output_size(unsigned *width, unsigned *height,
+void  cocoa_get_video_output_size(unsigned *dims,
       char *desc, size_t desc_len);
 
 #endif

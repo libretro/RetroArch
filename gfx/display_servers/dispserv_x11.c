@@ -1478,7 +1478,7 @@ static float x11_display_server_get_refresh_rate(void *data)
 }
 
 static void x11_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
    dispserv_x11_t *dispserv       = (dispserv_x11_t*)data;
    Display *dpy                   = x11_display_server_open_display(dispserv);
@@ -1502,10 +1502,8 @@ static void x11_display_server_get_video_output_size(void *data,
 
             if (crtc)
             {
-               if (width)
-                  *width  = crtc->width;
-               if (height)
-                  *height = crtc->height;
+               if (dims)
+                  *dims = VIDEO_SCALE_PACK(crtc->width, crtc->height);
                XRRFreeCrtcInfo(crtc);
             }
 
@@ -1667,15 +1665,14 @@ static void x11_display_server_get_video_output_next(void *data)
 
 #ifndef HAVE_XRANDR
 static void x11_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
    Display *dpy = XOpenDisplay(NULL);
    if (!dpy)
       return;
-   if (width)
-      *width  = DisplayWidth(dpy, DefaultScreen(dpy));
-   if (height)
-      *height = DisplayHeight(dpy, DefaultScreen(dpy));
+   if (dims)
+      *dims = VIDEO_SCALE_PACK(DisplayWidth(dpy, DefaultScreen(dpy)),
+            DisplayHeight(dpy, DefaultScreen(dpy)));
    XCloseDisplay(dpy);
 }
 #endif

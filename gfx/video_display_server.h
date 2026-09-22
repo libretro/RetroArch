@@ -81,7 +81,7 @@ typedef struct video_display_server
    enum rotation (*get_screen_orientation)(void *data);
    float (*get_refresh_rate)(void *data);
    void (*get_video_output_size)(void *data,
-         unsigned *width, unsigned *height, char *s, size_t len);
+         unsigned *dims, char *s, size_t len);
    void (*get_video_output_prev)(void *data);
    void (*get_video_output_next)(void *data);
    bool (*get_metrics)(void *data, enum display_metric_types type,
@@ -194,7 +194,7 @@ float video_display_server_get_refresh_rate(void);
 unsigned video_display_server_get_swap_interval_cap(void);
 
 bool video_display_server_get_video_output_size(
-      unsigned *width, unsigned *height, char *s, size_t len);
+      unsigned *dims, char *s, size_t len);
 
 bool video_display_server_get_video_output_prev(void);
 

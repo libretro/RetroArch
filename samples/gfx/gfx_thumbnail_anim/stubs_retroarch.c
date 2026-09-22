@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "../../../gfx/video_defines.h"
+
 extern int      gt_uploads;
 extern unsigned gt_last_crc;
 
@@ -163,8 +165,8 @@ void gt_async_flush(void)
    }
 }
 unsigned video_driver_get_disp_flags(void) { return 0; }
-void video_driver_get_video_output_size(unsigned *w, unsigned *h,
-      char *n, size_t l) { *w = 1920; *h = 1080; (void)n; (void)l; }
+void video_driver_get_video_output_size(unsigned *dims,
+      char *n, size_t l) { *dims = VIDEO_SCALE_PACK(1920, 1080); (void)n; (void)l; }
 void video_driver_get_viewport_info(void *vp) { (void)vp; }
 
 /* --- inert frontend surface --- */

@@ -341,7 +341,7 @@ static bool android_display_server_set_resolution(void *data,
  * offers the same resolution at several rates and the resolution
  * alone would not say which one is running. */
 static void android_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
    struct video_display_config *conf = NULL;
    unsigned count                    = 0;
@@ -356,10 +356,8 @@ static void android_display_server_get_video_output_size(void *data,
       if (!conf[i].current)
          continue;
 
-      if (width)
-         *width  = conf[i].width;
-      if (height)
-         *height = conf[i].height;
+      if (dims)
+         *dims = VIDEO_SCALE_PACK(conf[i].width, conf[i].height);
       if (s && len)
          snprintf(s, len, "%.2f Hz", conf[i].refreshrate_float);
       break;

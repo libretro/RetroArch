@@ -935,7 +935,7 @@ static void lane_every_command_replies(void)
    const video_poke_interface_t *poke = NULL;
    void *data;
    unsigned last_hits = 0;
-   unsigned w = 0, h = 0;
+   unsigned dims = 0;
    float hz;
 
    command_event(CMD_EVENT_MENU_TOGGLE, NULL);
@@ -968,7 +968,7 @@ static void lane_every_command_replies(void)
    if (poke)
    {
       if (poke->set_filtering)       poke->set_filtering(data, 0, true, false);
-      if (poke->get_video_output_size) poke->get_video_output_size(data, &w, &h, NULL, 0);
+      if (poke->get_video_output_size) poke->get_video_output_size(data, &dims, NULL, 0);
       if (poke->get_video_output_prev) poke->get_video_output_prev(data);
       if (poke->get_video_output_next) poke->get_video_output_next(data);
       if (poke->set_aspect_ratio)    poke->set_aspect_ratio(data, 0);

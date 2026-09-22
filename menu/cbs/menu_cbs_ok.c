@@ -8597,11 +8597,10 @@ static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
 #if defined(GEKKO) || defined(PS2) || defined(__PS3__)
-   unsigned width   = 0;
-   unsigned  height = 0;
+   unsigned dims    = 0;
    char desc[64]    = {0};
 
-   if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
+   if (video_driver_get_video_output_size(&dims, desc, sizeof(desc)))
    {
       size_t _len;
       char msg[128];
@@ -8610,9 +8609,9 @@ static int action_ok_video_resolution(const char *path,
 #if defined(_WIN32) || defined(__PS3__)
       generic_action_ok_command(CMD_EVENT_REINIT);
 #endif
-      video_driver_set_video_mode(VIDEO_SCALE_PACK(width, height), true);
+      video_driver_set_video_mode(dims, true);
 #ifdef GEKKO
-      if (width == 0 || height == 0)
+      if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
          _len = snprintf(msg, sizeof(msg),
                msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT));
       else
@@ -8621,11 +8620,11 @@ static int action_ok_video_resolution(const char *path,
          if (*desc)
             _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DESC),
-                  width, height, desc);
+                  VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), desc);
          else
             _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC),
-                  width, height);
+                  VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
       }
       runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);

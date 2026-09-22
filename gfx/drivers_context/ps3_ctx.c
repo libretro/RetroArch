@@ -56,14 +56,11 @@ static enum gfx_ctx_api ps3_api = GFX_CTX_RSX_API;
 static enum gfx_ctx_api ps3_api = GFX_CTX_NONE;
 #endif
 
-static void gfx_ctx_ps3_get_resolution(unsigned idx,
-      unsigned *width, unsigned *height)
+static unsigned gfx_ctx_ps3_get_resolution(unsigned idx)
 {
    CellVideoOutResolution resolution;
    cellVideoOutGetResolution(idx, &resolution);
-
-   *width  = resolution.width;
-   *height = resolution.height;
+   return VIDEO_SCALE_PACK(resolution.width, resolution.height);
 }
 
 static void gfx_ctx_ps3_get_available_resolutions(void)
@@ -229,11 +226,11 @@ static void *gfx_ctx_ps3_init(void *video_driver)
 
    if (global->console.screen.resolutions.current.id)
    {
+      unsigned dims         = gfx_ctx_ps3_get_resolution(
+            global->console.screen.resolutions.current.id);
       params.enable        |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
-
-      gfx_ctx_ps3_get_resolution(
-            global->console.screen.resolutions.current.id,
-            &params.width, &params.height);
+      params.width          = VIDEO_SCALE_W(dims);
+      params.height         = VIDEO_SCALE_H(dims);
 
       global->console.screen.pal_enable = false;
 
@@ -325,17 +322,17 @@ static bool gfx_ctx_ps3_bind_api(void *data,
 }
 
 static void gfx_ctx_ps3_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *dims, char *desc, size_t desc_len)
 {
    global_t *global = global_get_ptr();
 
    if (!global)
       return;
 
-   gfx_ctx_ps3_get_resolution(global->console.screen.resolutions.current.id,
-         width, height);
+   *dims = gfx_ctx_ps3_get_resolution(
+         global->console.screen.resolutions.current.id);
 
-   if (*width == 720 && *height == 576)
+   if (*dims == VIDEO_SCALE_PACK(720, 576))
    {
       if (global->console.screen.pal_enable)
          global->console.screen.pal60_enable = true;

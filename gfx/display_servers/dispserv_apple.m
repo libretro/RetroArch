@@ -708,9 +708,9 @@ static float apple_display_server_get_refresh_rate(void *data)
 }
 
 static void apple_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *dims, char *desc, size_t desc_len)
 {
-   cocoa_get_video_output_size(width, height, desc, desc_len);
+   cocoa_get_video_output_size(dims, desc, desc_len);
 }
 
 #if TARGET_OS_OSX

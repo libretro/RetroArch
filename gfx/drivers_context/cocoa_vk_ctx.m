@@ -534,13 +534,13 @@ static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned hei
 }
 
 static void cocoa_vk_gfx_ctx_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *dims, char *desc, size_t desc_len)
 {
    /* Body consolidated into cocoa_common.m.  Kept as a named
     * vtable entry because video_thread_wrapper.c's
     * thread_get_video_output_size calls the poke / ctx hook
     * directly, bypassing dispserv_apple. */
-   cocoa_get_video_output_size(width, height, desc, desc_len);
+   cocoa_get_video_output_size(dims, desc, desc_len);
 }
 
 const gfx_ctx_driver_t gfx_ctx_cocoavk = {

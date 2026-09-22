@@ -626,7 +626,7 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 }
 
 static void gx_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *dims, char *desc, size_t desc_len)
 {
    global_t *global = global_get_ptr();
    if (!global)
@@ -636,16 +636,14 @@ static void gx_get_video_output_size(void *data,
    if (global->console.screen.resolutions.current.id > GX_RESOLUTIONS_LAST)
       global->console.screen.resolutions.current.id = 0;
 
-   *width  = menu_gx_resolutions[
-      global->console.screen.resolutions.current.id][0];
-   *height = menu_gx_resolutions[
-      global->console.screen.resolutions.current.id][1];
+   *dims = VIDEO_SCALE_PACK(
+         menu_gx_resolutions[global->console.screen.resolutions.current.id][0],
+         menu_gx_resolutions[global->console.screen.resolutions.current.id][1]);
 }
 
 static void setup_video_mode(gx_video_t *gx)
 {
-   unsigned width  = 0;
-   unsigned height = 0;
+   unsigned dims   = 0;
    char desc[64]   = {0};
 
    if (!gx->framebuf[0])
@@ -659,8 +657,8 @@ static void setup_video_mode(gx_video_t *gx)
    gx->orientation = ORIENTATION_NORMAL;
    OSInitThreadQueue(&g_video_cond);
 
-   gx_get_video_output_size(gx, &width, &height, desc, sizeof(desc));
-   gx_set_video_mode(gx, VIDEO_SCALE_PACK(width, height), true);
+   gx_get_video_output_size(gx, &dims, desc, sizeof(desc));
+   gx_set_video_mode(gx, dims, true);
 }
 
 static void init_texture(gx_video_t *gx, unsigned width, unsigned height,

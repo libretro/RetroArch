@@ -838,13 +838,12 @@ static float win32_display_server_get_refresh_rate(void *data)
 }
 
 static void win32_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
    DEVMODE dm;
    if (win32_get_video_output(&dm, -1))
    {
-      *width  = dm.dmPelsWidth;
-      *height = dm.dmPelsHeight;
+      *dims = VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight);
    }
 }
 

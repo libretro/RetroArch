@@ -64,10 +64,9 @@ static void harness_set_video_mode(void *data, unsigned dims,
 }
 
 static void harness_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
-   *width  = OUT_W;
-   *height = OUT_H;
+   *dims   = VIDEO_SCALE_PACK(OUT_W, OUT_H);
    if (len)
       *s   = '\0';
 }

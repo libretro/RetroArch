@@ -378,14 +378,12 @@ static float kms_display_server_get_refresh_rate(void *data)
 }
 
 static void kms_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
    if (!g_drm_mode)
       return;
-   if (width)
-      *width  = g_drm_mode->hdisplay;
-   if (height)
-      *height = g_drm_mode->vdisplay;
+   if (dims)
+      *dims = VIDEO_SCALE_PACK(g_drm_mode->hdisplay, g_drm_mode->vdisplay);
 }
 
 const video_display_server_t dispserv_kms = {

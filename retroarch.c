@@ -3661,20 +3661,19 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SET_PER_GAME_RESOLUTION:
 #if defined(GEKKO)
          {
-            unsigned width = 0, height = 0;
+            unsigned dims = 0;
             char desc[64] = {0};
 
             command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
-            if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
+            if (video_driver_get_video_output_size(&dims, desc, sizeof(desc)))
             {
                size_t _len;
                char msg[128];
 
-               video_driver_set_video_mode(
-                     VIDEO_SCALE_PACK(width, height), true);
+               video_driver_set_video_mode(dims, true);
 
-               if (width == 0 || height == 0)
+               if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
                   _len = strlcpy(msg, msg_hash_to_str(MSG_SCREEN_RESOLUTION_DEFAULT), sizeof(msg));
                else
                {
@@ -3682,10 +3681,10 @@ bool command_event(enum event_command cmd, void *data)
                   if (*desc)
                      _len = snprintf(msg, sizeof(msg),
                         msg_hash_to_str(MSG_SCREEN_RESOLUTION_DESC),
-                        width, height, desc);
+                        VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), desc);
                   else
                      _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_NO_DESC),
-                        width, height);
+                        VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
                }
 
                runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,

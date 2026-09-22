@@ -2060,7 +2060,7 @@ static unsigned menu_displaylist_parse_display_info(file_list_t *list)
    char entry[NAME_MAX_LENGTH];
    unsigned count = 0;
    size_t _len;
-   unsigned w = 0, h = 0;
+   unsigned dims = 0;
    float hz;
    video_output_info_t outputs[8];
    int n_out, i;
@@ -2097,13 +2097,14 @@ static unsigned menu_displaylist_parse_display_info(file_list_t *list)
    {
       char mode[64];
       mode[0] = '\0';
-      if (video_display_server_get_video_output_size(&w, &h, mode, sizeof(mode))
-            && w && h)
+      if (video_display_server_get_video_output_size(&dims, mode, sizeof(mode))
+            && VIDEO_SCALE_W(dims) && VIDEO_SCALE_H(dims))
       {
          _len  = strlcpy(entry,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION),
                sizeof(entry));
-         _len += snprintf(entry + _len, sizeof(entry) - _len, ": %ux%u", w, h);
+         _len += snprintf(entry + _len, sizeof(entry) - _len, ": %ux%u",
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
          if (menu_entries_append(list, entry, "",
                MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
                0, 0, NULL))
