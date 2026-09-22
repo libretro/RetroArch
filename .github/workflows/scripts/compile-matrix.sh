@@ -581,14 +581,20 @@ check "ui companion: tests" "-DHAVE_RGUI -DHAVE_CONFIGFILE -Iui/companion" \
 # to those structs is green until a job that does have them runs.
 echo "== video back ends this configuration does not build =="
 GFXDEFS="-DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_GFX_WIDGETS"
-check "vulkan back end"  "$GFXDEFS -DHAVE_VULKAN" \
-   gfx/drivers/vulkan.c gfx/drivers_shader/shader_vulkan.c
+VK_H=/usr/include/vulkan/vulkan.h
+platform_video "vulkan back end" "$GFXDEFS -DHAVE_VULKAN" "" \
+   gfx/drivers/vulkan.c "$VK_H"
+platform_video "vulkan shader back end" "$GFXDEFS -DHAVE_VULKAN" "" \
+   gfx/drivers_shader/shader_vulkan.c "$VK_H"
 check "cg shader back end" "$GFXDEFS -DHAVE_CG -DHAVE_OPENGL" \
    gfx/drivers_shader/shader_gl_cg.c
 check "framebuffer back ends" "$GFXDEFS" \
    gfx/drivers/fpga_gfx.c gfx/drivers/hub75_gfx.c gfx/drivers/sunxi_gfx.c
-check "x11 back ends" "$GFXDEFS -DHAVE_X11 -DHAVE_XVIDEO" \
-   gfx/drivers/xshm_gfx.c gfx/drivers/xvideo.c
+X11_H=/usr/include/X11/Xlib.h
+platform_video "x11 shm back end" "$GFXDEFS -DHAVE_X11" "" \
+   gfx/drivers/xshm_gfx.c "$X11_H"
+platform_video "xvideo back end" "$GFXDEFS -DHAVE_X11 -DHAVE_XVIDEO" "" \
+   gfx/drivers/xvideo.c "$X11_H"
 
 echo "== run-ahead: the dynamic-library gates =="
 # The secondary instance exists only with HAVE_DYNAMIC; a build that
