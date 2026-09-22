@@ -20,6 +20,10 @@ CC=${CC:-gcc}
 INC="-I. -Ilibretro-common/include -Ideps -Ideps/rcheevos/include -Iinput/include"
 WARN="-Wall -Wno-unused-function -Werror=implicit-function-declaration"
 BASE="-DRARCH_INTERNAL -DHAVE_AUDIOMIXER -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU"
+# A console lane that keeps the host identity takes the Linux branch
+# of every #if ladder and proves nothing, so this sits above the
+# lanes rather than among them.
+HOSTOFF="-U__linux__ -U__gnu_linux__ -Ulinux -U__unix__ -U__unix -Uunix"
 
 fail=0
 
@@ -172,6 +176,9 @@ platform_video "rs90 video"     "-DDINGUX -DRS90" "-I/usr/include/SDL" \
 # libdrm's exynos module and its G2D headers, which distros ship only
 # where the hardware exists. A runner building libdrm with -Dexynos=true
 # turns this on.
+platform_video "wiiu gx2 video" "-DWIIU $HOSTOFF" \
+   "-Iwiiu/include -Iwiiu" gfx/drivers/gx2_gfx.c ""
+platform_video "hub75 video" "" "" gfx/drivers/hub75_gfx.c ""
 platform_video "openvg video" "-DHAVE_VG -DHAVE_EGL" \
    "-Itools/platform_stubs/openvg" gfx/drivers/vg.c ""
 platform_video "exynos video"   "-DHAVE_EXYNOS" "-I/usr/include/libdrm" \
@@ -341,7 +348,6 @@ check "vita: psp2_audio" "-Itools/platform_stubs/vita -DVITA -DHAVE_THREADS -Wde
 # them. PSP gets _POSIX_C_SOURCE for the host libc's nanosleep, which
 # pspsdk's newlib declares unconditionally.
 FCPU_TU=libretro-common/features/features_cpu.c
-HOSTOFF="-U__linux__ -U__gnu_linux__ -Ulinux -U__unix__ -U__unix -Uunix"
 check "features_cpu: 3ds"        "$HOSTOFF -Itools/platform_stubs/ctr -D_3DS -D__3DS__ -DARM11 -DRARCH_CONSOLE" $FCPU_TU
 check "features_cpu: gekko"      "$HOSTOFF -Itools/platform_stubs/gekko -DGEKKO -DHW_RVL -DRARCH_CONSOLE" $FCPU_TU
 check "features_cpu: wiiu"       "$HOSTOFF -Itools/platform_stubs/wiiu -DWIIU -DRARCH_CONSOLE" $FCPU_TU
