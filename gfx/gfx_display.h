@@ -445,10 +445,11 @@ bool gfx_display_reset_textures_list_buffer(
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
       unsigned width, unsigned height);
 
+/* @dims: both axes in one word, VIDEO_SCALE_PACK's layout. */
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,
       void *settings_data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen,
       bool is_widget);
 

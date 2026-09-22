@@ -913,8 +913,7 @@ static INLINE bool gfx_animation_update_in(
       retro_time_t current_time,
       bool timedate_enable,
       float _ticker_speed,
-      unsigned video_width,
-      unsigned video_height)
+      unsigned video_dims)
 {
    unsigned i;
    const bool ticker_is_active                 = (p_anim->flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE) ? true : false;
@@ -990,8 +989,7 @@ static INLINE bool gfx_animation_update_in(
        *   function set by the menu driver is thus used to
        *   perform menu-specific scaling adjustments */
       if (p_anim->updatetime_cb)
-         p_anim->updatetime_cb(&ticker_pixel_increment,
-               video_width, video_height);
+         p_anim->updatetime_cb(&ticker_pixel_increment, video_dims);
 
       /* > Update accumulators */
       p_anim->ticker_pixel_accumulator           += ticker_pixel_increment;
@@ -1110,20 +1108,19 @@ bool gfx_animation_update(
       retro_time_t current_time,
       bool timedate_enable,
       float ticker_speed,
-      unsigned video_width,
-      unsigned video_height)
+      unsigned video_dims)
 {
    return gfx_animation_update_in(&anim_st, current_time, timedate_enable,
-         ticker_speed, video_width, video_height);
+         ticker_speed, video_dims);
 }
 
 void gfx_animation_update_widgets(retro_time_t current_time,
-      float ticker_speed, unsigned video_width, unsigned video_height)
+      float ticker_speed, unsigned video_dims)
 {
    /* Nothing to do while the widget tweens tick with the main list */
    if (anim_widgets == &anim_widgets_st)
       gfx_animation_update_in(&anim_widgets_st, current_time, false,
-            ticker_speed, video_width, video_height);
+            ticker_speed, video_dims);
 }
 
 /* Moves every widget tween in 'from' to the end of 'to' */

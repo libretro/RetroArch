@@ -211,8 +211,8 @@ bool gfx_display_init_first_driver(gfx_display_t *p_disp,
 { (void)p_disp; (void)video_is_threaded; return true; }
 
 float gfx_display_get_dpi_scale(gfx_display_t *p_disp, void *settings_data,
-      unsigned width, unsigned height, bool fullscreen, bool is_widget)
-{ (void)p_disp; (void)settings_data; (void)width; (void)height;
+      unsigned dims, bool fullscreen, bool is_widget)
+{ (void)p_disp; (void)settings_data; (void)dims;
   (void)fullscreen; (void)is_widget; return 1.0f; }
 
 bool gfx_display_reset_textures_list_buffer(uintptr_t *item,
@@ -249,8 +249,8 @@ void gfx_animation_timer_start_widget(float *timer,
 { (void)timer_entry; if (timer) *timer = 0.0f; }
 void gfx_animation_widgets_own(bool worker) { (void)worker; }
 void gfx_animation_update_widgets(retro_time_t current_time,
-      float ticker_speed, unsigned video_width, unsigned video_height)
-{ (void)current_time; (void)ticker_speed; (void)video_width; (void)video_height; }
+      float ticker_speed, unsigned video_dims)
+{ (void)current_time; (void)ticker_speed; (void)video_dims; }
 
 /* --- the threaded video worker's widget step and its text handoff,
  *     which no test here drives --- */

@@ -6877,8 +6877,7 @@ static enum runloop_state_enum runloop_check_state(
          current_time,
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
-         VIDEO_SCALE_W(output_dims),
-         VIDEO_SCALE_H(output_dims));
+         output_dims);
 
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)

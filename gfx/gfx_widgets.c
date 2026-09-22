@@ -1222,7 +1222,7 @@ static INLINE void gfx_widgets_update_layout(
 #endif
       scale_factor                  = gfx_display_get_dpi_scale(
             p_disp,
-            settings, width, height, fullscreen, true);
+            settings, VIDEO_SCALE_PACK(width, height), fullscreen, true);
 
    /* Check whether screen dimensions, menu scale factor or the
     * notification font have changed. The font is watched here rather
@@ -2454,9 +2454,7 @@ static void gfx_widgets_context_reset(
    else
 #endif
       p_dispwidget->last_scale_factor = gfx_display_get_dpi_scale(
-                     p_disp, settings,
-                     VIDEO_SCALE_W(p_dispwidget->last_video_dims),
-                     VIDEO_SCALE_H(p_dispwidget->last_video_dims),
+                     p_disp, settings, p_dispwidget->last_video_dims,
                      fullscreen, true);
 
    gfx_widgets_layout(p_disp, p_dispwidget,
@@ -2802,7 +2800,7 @@ void gfx_widgets_worker_step(void *data,
     * on the video thread under the threaded wrapper. */
    gfx_animation_update_widgets(cpu_features_get_time_usec(),
          video_info->menu_ticker_speed,
-         video_info->width, video_info->height);
+         VIDEO_SCALE_PACK(video_info->width, video_info->height));
    /* What the frame carried, not the settings the main thread writes:
     * this runs on the video thread under the threaded wrapper. */
    p_dispwidget->frame_menu_st_flags = (uint16_t)video_info->menu_st_flags;

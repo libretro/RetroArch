@@ -103,7 +103,7 @@ static void test_easing_types(void)
 
       /* Drive it past its duration in small steps. */
       for (i = 0; i < 32; i++)
-         gfx_animation_update(i * 1000, false, 60.0f, 1920, 1080);
+         gfx_animation_update(i * 1000, false, 60.0f, VIDEO_SCALE_PACK(1920, 1080));
 
       gfx_animation_kill_by_tag(&entry.tag);
    }
@@ -143,7 +143,7 @@ static void test_subject_freed_midflight(void)
          pushes++;
 
       /* Part-way through. */
-      gfx_animation_update((uint64_t)i * 100, false, 60.0f, 1920, 1080);
+      gfx_animation_update((uint64_t)i * 100, false, 60.0f, VIDEO_SCALE_PACK(1920, 1080));
 
       /* Kill first, then free -- the order the caller is obliged to
        * use.  Getting it wrong is the use-after-free this is looking
@@ -152,7 +152,7 @@ static void test_subject_freed_midflight(void)
       free(subject);
 
       /* Anything still referencing it would be caught here. */
-      gfx_animation_update((uint64_t)i * 100 + 50, false, 60.0f, 1920, 1080);
+      gfx_animation_update((uint64_t)i * 100 + 50, false, 60.0f, VIDEO_SCALE_PACK(1920, 1080));
    }
 
    gfx_animation_deinit();
@@ -182,7 +182,7 @@ static void test_deinit_while_running(void)
          pushes++;
    }
 
-   gfx_animation_update(1, false, 60.0f, 1920, 1080);
+   gfx_animation_update(1, false, 60.0f, VIDEO_SCALE_PACK(1920, 1080));
    gfx_animation_deinit();
 
    /* Deinit twice: the idempotent-teardown path. */
@@ -433,7 +433,7 @@ static void test_widget_handover(void)
    push_one(&menu_subject, false, &n);
    push_one(&widget_subject, true, &n);
    CHECK(n == 2, "handover: both pushes taken");
-   gfx_animation_update(1000000, false, 1.0f, 640, 480);
+   gfx_animation_update(1000000, false, 1.0f, VIDEO_SCALE_PACK(640, 480));
    CHECK(RBUF_LEN(anim_get_ptr()->list) == 2,
          "handover: both tweens in the main list while unowned");
 
@@ -447,12 +447,12 @@ static void test_widget_handover(void)
          "handover: widget tween moved to the worker");
 
    /* Each instance ticks only its own */
-   gfx_animation_update(1500000, false, 1.0f, 640, 480);
+   gfx_animation_update(1500000, false, 1.0f, VIDEO_SCALE_PACK(640, 480));
    CHECK(menu_subject > 0.45f && menu_subject < 0.55f,
          "handover: main tick advances the menu tween");
    CHECK(widget_subject == 0.0f,
          "handover: main tick leaves the worker's tween alone");
-   gfx_animation_update_widgets(1250000, 1.0f, 640, 480);
+   gfx_animation_update_widgets(1250000, 1.0f, VIDEO_SCALE_PACK(640, 480));
    CHECK(widget_subject > 0.2f && widget_subject < 0.3f,
          "handover: worker tick advances the widget tween on the shared clock");
 
@@ -495,7 +495,7 @@ static void test_widget_handover(void)
    CHECK(RBUF_LEN(anim_get_ptr()->list) == 3,
          "handover: widget tween and timer rejoin the menu tween");
    cb_start = cb_calls;
-   gfx_animation_update(3000000, false, 1.0f, 640, 480);
+   gfx_animation_update(3000000, false, 1.0f, VIDEO_SCALE_PACK(640, 480));
    CHECK(widget_subject == 1.0f && menu_subject == 1.0f,
          "handover: both tweens complete on the main tick");
    CHECK(cb_calls - cb_start == 2,

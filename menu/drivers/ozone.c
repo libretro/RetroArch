@@ -9959,8 +9959,7 @@ static int ozone_menu_entry_action(
 
 static void ozone_menu_animation_update_time(
       float *ticker_pixel_increment,
-      unsigned video_width,
-      unsigned video_height)
+      unsigned video_dims)
 {
    gfx_display_t *p_disp      = disp_get_ptr();
    settings_t *settings       = config_get_ptr();
@@ -9971,7 +9970,7 @@ static void ozone_menu_animation_update_time(
     *   default scroll speed equal to that of the
     *   non-smooth ticker */
    *(ticker_pixel_increment) *= gfx_display_get_dpi_scale(p_disp,
-         settings, video_width, video_height, false, false) * 0.5f;
+         settings, video_dims, false, false) * 0.5f;
 }
 
 static void *ozone_init(void **userdata, bool video_is_threaded)
@@ -10009,7 +10008,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->last_dims                             = VIDEO_SCALE_PACK(width,
          height);
    ozone->last_scale_factor                     = gfx_display_get_dpi_scale(p_disp,
-         settings, width, height, false, false);
+         settings, out_dims, false, false);
    ozone->last_thumbnail_scale_factor           = settings->floats.ozone_thumbnail_scale_factor;
 
    ozone->entries_old                           = NULL;
@@ -11036,7 +11035,7 @@ static void ozone_render(void *data,
    /* Check whether screen dimensions or menu scale
     * factor have changed */
    scale_factor               = gfx_display_get_dpi_scale(p_disp, settings,
-            width, height, false, false);
+            VIDEO_SCALE_PACK(width, height), false, false);
    thumbnail_scale_factor     = settings->floats.ozone_thumbnail_scale_factor;
    padding_factor             = settings->floats.ozone_padding_factor;
    font_scale_factor_global   = (font_scale == 1) ? (settings->floats.ozone_font_scale_factor_global) : 1.0f;

@@ -117,21 +117,19 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    NULL,
 };
 
-static float gfx_display_get_dpi_scale_internal(
-      unsigned width, unsigned height)
+static float gfx_display_get_dpi_scale_internal(unsigned dims)
 {
    float dpi;
    float diagonal_pixels;
    float pixel_scale;
-   static unsigned last_width  = 0;
-   static unsigned last_height = 0;
+   unsigned width              = VIDEO_SCALE_W(dims);
+   unsigned height             = VIDEO_SCALE_H(dims);
+   static unsigned last_dims   = 0;
    static float scale          = 0.0f;
    static bool scale_cached    = false;
    gfx_ctx_metrics_t metrics;
 
-   if (    scale_cached
-       && (width  == last_width)
-       && (height == last_height))
+   if (scale_cached && dims == last_dims)
       return scale;
 
    /* Determine the diagonal 'size' of the display
@@ -237,8 +235,7 @@ static float gfx_display_get_dpi_scale_internal(
       scale             = pixel_scale;
 
    scale_cached         = true;
-   last_width           = width;
-   last_height          = height;
+   last_dims            = dims;
 
    return scale;
 }
@@ -246,13 +243,12 @@ static float gfx_display_get_dpi_scale_internal(
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,
       void *settings_data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen,
       bool is_widget
 )
 {
-   static unsigned last_width                          = 0;
-   static unsigned last_height                         = 0;
+   static unsigned last_dims                           = 0;
    static float scale                                  = 0.0f;
    static bool scale_cached                            = false;
    bool scale_updated                                  = false;
@@ -300,15 +296,12 @@ float gfx_display_get_dpi_scale(
     * hardware property. To minimise performance overheads
     * we therefore only call video_context_driver_get_metrics()
     * on first run, or when the current video resolution changes */
-   if (   !scale_cached
-       || (width  != last_width)
-       || (height != last_height))
+   if (!scale_cached || dims != last_dims)
    {
-      scale         = gfx_display_get_dpi_scale_internal(width, height);
+      scale         = gfx_display_get_dpi_scale_internal(dims);
       scale_cached  = true;
       scale_updated = true;
-      last_width    = width;
-      last_height   = height;
+      last_dims     = dims;
    }
 
    /* Adjusted scale calculation may also be slow, so
@@ -322,7 +315,7 @@ float gfx_display_get_dpi_scale(
       if (p_disp->menu_driver_id == MENU_DRIVER_ID_OZONE)
       {
          /* Ozone has a capped scale factor */
-         float new_width        = (float)width * 0.3333333f;
+         float new_width        = (float)VIDEO_SCALE_W(dims) * 0.3333333f;
          if (((float)OZONE_SIDEBAR_WIDTH * adjusted_scale)
                > new_width)
             adjusted_scale      = (new_width / (float)OZONE_SIDEBAR_WIDTH);

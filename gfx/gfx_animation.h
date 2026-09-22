@@ -117,8 +117,9 @@ enum gfx_animation_flags
 
 typedef void  (*tween_cb)  (void*);
 
+/* @dims: both axes in one word, VIDEO_SCALE_PACK's layout. */
 typedef void (*update_time_cb) (float *ticker_pixel_increment,
-      unsigned width, unsigned height);
+      unsigned dims);
 
 typedef struct gfx_animation_ctx_entry
 {
@@ -274,8 +275,7 @@ bool gfx_animation_update(
       retro_time_t current_time,
       bool timedate_enable,
       float ticker_speed,
-      unsigned video_width,
-      unsigned video_height);
+      unsigned video_dims);
 
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker);
 
@@ -308,7 +308,7 @@ gfx_animation_t *anim_widgets_get_ptr(void);
 void gfx_animation_widgets_own(bool worker);
 
 void gfx_animation_update_widgets(retro_time_t current_time,
-      float ticker_speed, unsigned video_width, unsigned video_height);
+      float ticker_speed, unsigned video_dims);
 
 gfx_animation_t *anim_get_ptr(void);
 

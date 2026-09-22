@@ -7329,8 +7329,7 @@ static bool rgui_set_aspect_ratio(
 
 static void rgui_menu_animation_update_time(
       float *ticker_pixel_increment,
-      unsigned video_width,
-      unsigned video_height)
+      unsigned video_dims)
 {
    /* RGUI framebuffer size is independent of
     * display resolution, so have to use a fixed

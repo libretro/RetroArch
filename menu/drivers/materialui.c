@@ -4417,7 +4417,7 @@ static void materialui_render(void *data,
    /* Check whether screen dimensions, menu scale
     * factor or layout optimisation settings have changed */
    scale_factor = gfx_display_get_dpi_scale(p_disp, settings,
-         width, height, false, false);
+         VIDEO_SCALE_PACK(width, height), false, false);
 
    if (   (scale_factor != mui->last_scale_factor)
        || (VIDEO_SCALE_PACK(width, height) != mui->last_dims)
@@ -9729,7 +9729,7 @@ static void materialui_init_nav_bar(materialui_handle_t *mui)
 }
 
 static void materialui_menu_animation_update_time(float *s,
-      unsigned video_width, unsigned video_height)
+      unsigned video_dims)
 {
    gfx_display_t *p_disp      = disp_get_ptr();
    settings_t *settings       = config_get_ptr();
@@ -9740,7 +9740,7 @@ static void materialui_menu_animation_update_time(float *s,
     *   default scroll speed equal to that of the
     *   non-smooth ticker */
    *(s) *= gfx_display_get_dpi_scale(p_disp, settings,
-         video_width, video_height, false, false) * 0.8f;
+         video_dims, false, false) * 0.8f;
 }
 
 static void *materialui_init(void **userdata, bool video_is_threaded)
@@ -9779,7 +9779,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
 
    mui->last_dims                         = VIDEO_SCALE_PACK(width, height);
    mui->last_scale_factor                 = gfx_display_get_dpi_scale(
-         p_disp, settings, width, height,
+         p_disp, settings, out_dims,
          false, false);
    mui->dip_base_unit_size                = mui->last_scale_factor
       * MUI_DIP_BASE_UNIT_SIZE;

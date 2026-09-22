@@ -10521,7 +10521,7 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
 
 static void xmb_menu_animation_update_time(
       float *ticker_pixel_increment,
-      unsigned video_width, unsigned video_height)
+      unsigned video_dims)
 {
    xmb_handle_t *xmb   = NULL;
    menu_handle_t *menu = menu_state_get_ptr()->driver_data;
