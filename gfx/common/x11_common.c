@@ -785,14 +785,12 @@ bool x11_alive(void *data)
 void x11_check_window(void *data, bool *quit,
    bool *resize, unsigned *dims)
 {
-   unsigned new_width  = VIDEO_SCALE_W(*dims);
-   unsigned new_height = VIDEO_SCALE_H(*dims);
+   unsigned new_dims  = *dims;
+   x11_get_video_size(data, &new_dims);
 
-   x11_get_video_size(data, &new_width, &new_height);
-
-   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
+   if (new_dims != *dims)
    {
-      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
+      *dims  = new_dims;
       *resize = true;
    }
 
@@ -801,19 +799,18 @@ void x11_check_window(void *data, bool *quit,
    *quit = (bool)frontend_driver_get_signal_handler_state();
 }
 
-void x11_get_video_size(void *data, unsigned *width, unsigned *height)
+void x11_get_video_size(void *data, unsigned *dims)
 {
    if (!g_x11_dpy || g_x11_win == None)
    {
       Display *dpy = (Display*)XOpenDisplay(NULL);
-      *width       = 0;
-      *height      = 0;
+      *dims = VIDEO_SCALE_PACK(0, 0);
 
       if (dpy)
       {
          int screen = DefaultScreen(dpy);
-         *width     = DisplayWidth(dpy, screen);
-         *height    = DisplayHeight(dpy, screen);
+         *dims = VIDEO_SCALE_PACK(DisplayWidth(dpy, screen),
+               DisplayHeight(dpy, screen));
          XCloseDisplay(dpy);
       }
    }
@@ -821,16 +818,14 @@ void x11_get_video_size(void *data, unsigned *width, unsigned *height)
    {
       if (g_x11_xce.width != 0 && g_x11_xce.height != 0)
       {
-         *width  = g_x11_xce.width;
-         *height = g_x11_xce.height;
+         *dims = VIDEO_SCALE_PACK(g_x11_xce.width, g_x11_xce.height);
       }
       else
       {
          XWindowAttributes target;
          XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
 
-         *width  = target.width;
-         *height = target.height;
+         *dims = VIDEO_SCALE_PACK(target.width, target.height);
       }
    }
 }

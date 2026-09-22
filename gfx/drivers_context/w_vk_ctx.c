@@ -62,7 +62,7 @@ static void      *dinput_vk        = NULL;
 int              win32_vk_interval = 0;
 
 /* FORWARD DECLARATIONS */
-void win32_get_video_size(void *data, unsigned *width, unsigned *height);
+void win32_get_video_size(void *data, unsigned *dims);
 
 static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
 {

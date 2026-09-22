@@ -703,15 +703,14 @@ static void gfx_ctx_drm_swap_buffers(void *data)
 }
 
 static void gfx_ctx_drm_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
 
    if (!drm)
       return;
 
-   *width  = drm->fb_width;
-   *height = drm->fb_height;
+   *dims = VIDEO_SCALE_PACK(drm->fb_width, drm->fb_height);
 }
 
 static void gfx_ctx_drm_get_video_output_size(void *data,

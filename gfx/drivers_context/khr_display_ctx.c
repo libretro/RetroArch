@@ -50,11 +50,10 @@ static void gfx_ctx_khr_display_destroy(void *data)
 }
 
 static void gfx_ctx_khr_display_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
-   *width                      = khr->width;
-   *height                     = khr->height;
+   *dims = VIDEO_SCALE_PACK(khr->width, khr->height);
 }
 
 static float gfx_ctx_khr_display_get_refresh_rate(void *data)

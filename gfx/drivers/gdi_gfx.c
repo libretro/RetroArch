@@ -2315,14 +2315,13 @@ static void gdi_font_render_msg(
  */
 
 static void gfx_ctx_gdi_get_video_size(
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    HWND window                  = win32_get_window();
 
    if (window)
    {
-      *width                    = g_win32_resize_width;
-      *height                   = g_win32_resize_height;
+      *dims = VIDEO_SCALE_PACK(g_win32_resize_width, g_win32_resize_height);
    }
    else
    {
@@ -2333,8 +2332,8 @@ static void gfx_ctx_gdi_get_video_size(
 
       win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
       mon_rect = current_mon.rcMonitor;
-      *width   = mon_rect.right - mon_rect.left;
-      *height  = mon_rect.bottom - mon_rect.top;
+      *dims    = VIDEO_SCALE_PACK(mon_rect.right - mon_rect.left,
+            mon_rect.bottom - mon_rect.top);
    }
 }
 
@@ -2459,9 +2458,9 @@ static void *gdi_init(const video_info_t *video,
 {
       unsigned out_dims;
    unsigned full_x, full_y;
-   unsigned mode_width = 0, mode_height = 0;
+   unsigned mode_dims = 0;
    unsigned win_dims   = 0;
-   unsigned temp_width = 0, temp_height = 0;
+   unsigned temp_dims = 0;
    settings_t *settings                 = config_get_ptr();
    gdi_t *gdi                           = (gdi_t*)calloc(1, sizeof(*gdi));
 
@@ -2494,12 +2493,11 @@ static void *gdi_init(const video_info_t *video,
    if (!gfx_ctx_gdi_init())
       goto error;
 
-   gfx_ctx_gdi_get_video_size(&mode_width, &mode_height);
+   gfx_ctx_gdi_get_video_size(&mode_dims);
 
-   full_x      = mode_width;
-   full_y      = mode_height;
-   mode_width  = 0;
-   mode_height = 0;
+   full_x      = VIDEO_SCALE_W(mode_dims);
+   full_y      = VIDEO_SCALE_H(mode_dims);
+   mode_dims  = 0;
 
    RARCH_LOG("[GDI] Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
@@ -2509,36 +2507,30 @@ static void *gdi_init(const video_info_t *video,
    if (video->fullscreen && (win_dims == 0))
       win_dims = VIDEO_SCALE_PACK(full_x, full_y);
 
-   mode_width      = VIDEO_SCALE_W(win_dims);
-   mode_height     = VIDEO_SCALE_H(win_dims);
+   mode_dims       = win_dims;
 
    if (!gfx_ctx_gdi_set_video_mode(win_dims, video->fullscreen))
       goto error;
 
-   mode_width     = 0;
-   mode_height    = 0;
+   mode_dims     = 0;
 
-   gfx_ctx_gdi_get_video_size(&mode_width, &mode_height);
+   gfx_ctx_gdi_get_video_size(&mode_dims);
 
-   temp_width     = mode_width;
-   temp_height    = mode_height;
-   mode_width     = 0;
-   mode_height    = 0;
+   temp_dims     = mode_dims;
+   mode_dims     = 0;
 
    /* Get real known video size, which might have been altered by context. */
 
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
+   /* One axis alone is not a size, so both have to be set */
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
+      video_driver_set_output_dims(temp_dims);
    else
-   {
-      out_dims = video_driver_get_output_dims();
-      temp_width = VIDEO_SCALE_W(out_dims);
-      temp_height = VIDEO_SCALE_H(out_dims);
-   }
-   gdi->full_width  = temp_width;
-   gdi->full_height = temp_height;
+      temp_dims = video_driver_get_output_dims();
+   gdi->full_width  = VIDEO_SCALE_W(temp_dims);
+   gdi->full_height = VIDEO_SCALE_H(temp_dims);
 
-   RARCH_LOG("[GDI] Using resolution %ux%u.\n", temp_width, temp_height);
+   RARCH_LOG("[GDI] Using resolution %ux%u.\n",
+         VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
 
    gfx_ctx_gdi_input_driver(input, input_data);
 
@@ -2559,8 +2551,7 @@ static bool gdi_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    struct bitmap_info info;
-   unsigned mode_width              = 0;
-   unsigned mode_height             = 0;
+   unsigned mode_dims              = 0;
    const void *frame_to_copy        = frame;
    unsigned width                   = 0;
    unsigned height                  = 0;
@@ -2635,9 +2626,11 @@ static bool gdi_frame(void *data, const void *frame,
    }
 
    /* --- Step 2: figure out the on-screen surface size. */
-   gfx_ctx_gdi_get_video_size(&mode_width, &mode_height);
-   surface_width  = mode_width  ? mode_width  : gdi->full_width;
-   surface_height = mode_height ? mode_height : gdi->full_height;
+   gfx_ctx_gdi_get_video_size(&mode_dims);
+   surface_width  = VIDEO_SCALE_W(mode_dims)
+      ? VIDEO_SCALE_W(mode_dims)  : gdi->full_width;
+   surface_height = VIDEO_SCALE_H(mode_dims)
+      ? VIDEO_SCALE_H(mode_dims) : gdi->full_height;
    if (!surface_width)  surface_width  = frame_width;
    if (!surface_height) surface_height = frame_height;
 

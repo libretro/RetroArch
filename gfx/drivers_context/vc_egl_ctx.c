@@ -96,7 +96,7 @@ static void gfx_ctx_vc_check_window(void *data, bool *quit,
 }
 
 static void gfx_ctx_vc_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    vc_ctx_data_t    *vc  = (vc_ctx_data_t*)data;
    settings_t *settings  = config_get_ptr();
@@ -120,15 +120,14 @@ static void gfx_ctx_vc_get_video_size(void *data,
       /* If source and destination aspect ratios
        * are not equal correct source width. */
       if (src_aspect != dst_aspect)
-         *width = (unsigned)(fullscreen_y * dst_aspect);
+         *dims = VIDEO_SCALE_PACK((unsigned)(fullscreen_y * dst_aspect),
+               fullscreen_y);
       else
-         *width = fullscreen_x;
-      *height   = fullscreen_y;
+         *dims = VIDEO_SCALE_PACK(fullscreen_x, fullscreen_y);
    }
    else
    {
-      *width  = vc->fb_width;
-      *height = vc->fb_height;
+      *dims = VIDEO_SCALE_PACK(vc->fb_width, vc->fb_height);
    }
 }
 

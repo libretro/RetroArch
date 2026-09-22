@@ -57,15 +57,14 @@ static void gfx_ctx_emscripten_webgl_check_window(void *data, bool *quit,
 }
 
 static void gfx_ctx_emscripten_webgl_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
    if (!emscripten)
       return;
 
-   *width  = emscripten->fb_width;
-   *height = emscripten->fb_height;
+   *dims = VIDEO_SCALE_PACK(emscripten->fb_width, emscripten->fb_height);
 }
 
 static bool gfx_ctx_emscripten_webgl_get_metrics(void *data,

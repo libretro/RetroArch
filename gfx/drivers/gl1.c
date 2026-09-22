@@ -1309,17 +1309,15 @@ static void gl1_overlay_tex_geom(void *data,
 static void *gl1_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-      unsigned out_dims;
    unsigned full_x, full_y;
 #ifdef VITA
    static bool vgl_inited               = false;
 #endif
    void *ctx_data                       = NULL;
    const gfx_ctx_driver_t *ctx_driver   = NULL;
-   unsigned mode_width                  = 0;
-   unsigned mode_height                 = 0;
+   unsigned mode_dims                  = 0;
    unsigned win_dims                    = 0;
-   unsigned temp_width = 0, temp_height = 0;
+   unsigned temp_dims = 0;
    settings_t *settings                 = config_get_ptr();
    bool video_smooth                    = settings->bools.video_smooth;
    const char *video_context_driver     = settings->arrays.video_context_driver;
@@ -1370,7 +1368,7 @@ static void *gl1_init(const video_info_t *video,
 
    if (gl1->ctx_driver->get_video_size)
       gl1->ctx_driver->get_video_size(gl1->ctx_data,
-               &mode_width, &mode_height);
+               &mode_dims);
 
 #if defined(__APPLE__) && !TARGET_OS_IPHONE
    /* This is a hack for now to work around a very annoying
@@ -1381,10 +1379,9 @@ static void *gl1_init(const video_info_t *video,
       goto error;
 #endif
 
-   full_x      = mode_width;
-   full_y      = mode_height;
-   mode_width  = 0;
-   mode_height = 0;
+   full_x      = VIDEO_SCALE_W(mode_dims);
+   full_y      = VIDEO_SCALE_H(mode_dims);
+   mode_dims  = 0;
 #ifdef VITA
    if (!vgl_inited)
    {
@@ -1406,8 +1403,7 @@ static void *gl1_init(const video_info_t *video,
    if (video->fullscreen && (win_dims == 0))
       win_dims     = VIDEO_SCALE_PACK(full_x, full_y);
 
-   mode_width      = VIDEO_SCALE_W(win_dims);
-   mode_height     = VIDEO_SCALE_H(win_dims);
+   mode_dims       = win_dims;
 
    interval        = video->swap_interval;
 
@@ -1428,29 +1424,25 @@ static void *gl1_init(const video_info_t *video,
    if (video->fullscreen)
       gl1->flags |= GL1_FLAG_FULLSCREEN;
 
-   mode_width     = 0;
-   mode_height    = 0;
+   mode_dims     = 0;
 
    if (gl1->ctx_driver->get_video_size)
       gl1->ctx_driver->get_video_size(gl1->ctx_data,
-               &mode_width, &mode_height);
+               &mode_dims);
 
-   temp_width     = mode_width;
-   temp_height    = mode_height;
+   temp_dims     = mode_dims;
 
    /* Get real known video size, which might have been altered by context. */
 
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
+   /* One axis alone is not a size, so both have to be set */
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
+      video_driver_set_output_dims(temp_dims);
    else
-   {
-      out_dims = video_driver_get_output_dims();
-      temp_width = VIDEO_SCALE_W(out_dims);
-      temp_height = VIDEO_SCALE_H(out_dims);
-   }
-   gl1->vp.full_dims   = VIDEO_SCALE_PACK(temp_width, temp_height);
+      temp_dims = video_driver_get_output_dims();
+   gl1->vp.full_dims   = temp_dims;
 
-   RARCH_LOG("[GL1] Using resolution %ux%u.\n", temp_width, temp_height);
+   RARCH_LOG("[GL1] Using resolution %ux%u.\n",
+         VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
 
    vendor   = (const char*)glGetString(GL_VENDOR);
    renderer = (const char*)glGetString(GL_RENDERER);
@@ -2213,8 +2205,7 @@ static bool gl1_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    const void *frame_to_copy        = NULL;
-   unsigned mode_width              = 0;
-   unsigned mode_height             = 0;
+   unsigned mode_dims              = 0;
    unsigned width                   = VIDEO_SCALE_W(video_info->dims);
    unsigned height                  = VIDEO_SCALE_H(video_info->dims);
    bool draw                        = true;
@@ -2351,10 +2342,10 @@ static bool gl1_frame(void *data, const void *frame,
 
    if (gl1->ctx_driver->get_video_size)
       gl1->ctx_driver->get_video_size(gl1->ctx_data,
-               &mode_width, &mode_height);
+               &mode_dims);
 
-   gl1->screen_width           = mode_width;
-   gl1->screen_height          = mode_height;
+   gl1->screen_width           = VIDEO_SCALE_W(mode_dims);
+   gl1->screen_height          = VIDEO_SCALE_H(mode_dims);
 
    if (draw)
    {

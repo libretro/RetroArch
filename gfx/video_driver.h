@@ -680,7 +680,8 @@ typedef struct gfx_ctx_driver
 
    /* Gets current window size.
     * If not initialized yet, it returns current screen size. */
-   void (*get_video_size)(void*, unsigned*, unsigned*);
+   /* Writes the size as one word, VIDEO_SCALE_PACK's layout. */
+   void (*get_video_size)(void*, unsigned*);
 
    float (*get_refresh_rate)(void*);
 

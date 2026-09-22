@@ -155,15 +155,14 @@ error:
 }
 
 static void sdl1_ctx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    gfx_ctx_sdl1_data_t *sdl = (gfx_ctx_sdl1_data_t*)data;
 
    if (!sdl)
       return;
 
-   *width                   = sdl->width;
-   *height                  = sdl->height;
+   *dims = VIDEO_SCALE_PACK(sdl->width, sdl->height);
 
    if (!sdl->win)
    {
@@ -175,8 +174,7 @@ static void sdl1_ctx_get_video_size(void *data,
       else if (*modes)
          mode               = **modes;
 
-      *width                = mode.w;
-      *height               = mode.h;
+      *dims = VIDEO_SCALE_PACK(mode.w, mode.h);
    }
 }
 

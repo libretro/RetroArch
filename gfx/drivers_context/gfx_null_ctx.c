@@ -19,14 +19,12 @@
 #include "../../retroarch.h"
 
 static void gfx_ctx_null_get_video_size(
-      void *data, unsigned *width, unsigned *height)
+      void *data, unsigned *dims)
 {
 #ifdef VITA
-   *width  = 960;
-   *height = 544;
+   *dims = VIDEO_SCALE_PACK(960, 544);
 #else
-   *width  = 320;
-   *height = 240;
+   *dims = VIDEO_SCALE_PACK(320, 240);
 #endif
 }
 

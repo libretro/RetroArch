@@ -84,13 +84,12 @@ void orbis_ctx_destroy(void *data)
 }
 
 static void orbis_ctx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    orbis_ctx_data_t
       *ctx_orbis = (orbis_ctx_data_t *)data;
 
-   *width        = ATTR_ORBISGL_WIDTH;
-   *height       = ATTR_ORBISGL_HEIGHT;
+   *dims = VIDEO_SCALE_PACK(ATTR_ORBISGL_WIDTH, ATTR_ORBISGL_HEIGHT);
 }
 
 static void *orbis_ctx_init(void *video_driver)
@@ -180,13 +179,12 @@ error:
 static void orbis_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims)
 {
-    unsigned new_width, new_height;
+    unsigned new_dims;
+    orbis_ctx_get_video_size(data, &new_dims);
 
-    orbis_ctx_get_video_size(data, &new_width, &new_height);
-
-    if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
+    if (new_dims != *dims)
    {
-      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
+      *dims  = new_dims;
         *resize = true;
     }
 

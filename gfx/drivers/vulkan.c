@@ -6104,11 +6104,9 @@ static void *vulkan_init(const video_info_t *video,
       unsigned out_dims;
    unsigned full_x, full_y;
    unsigned win_dims;
-   unsigned mode_width                = 0;
-   unsigned mode_height               = 0;
+   unsigned mode_dims                = 0;
    int interval                       = 0;
-   unsigned temp_width                = 0;
-   unsigned temp_height               = 0;
+   unsigned temp_dims                = 0;
    bool force_fullscreen              = false;
    const gfx_ctx_driver_t *ctx_driver = NULL;
    settings_t *settings               = config_get_ptr();
@@ -6144,7 +6142,7 @@ static void *vulkan_init(const video_info_t *video,
 
    if (vk->ctx_driver->get_video_size)
       vk->ctx_driver->get_video_size(vk->ctx_data,
-            &mode_width, &mode_height);
+            &mode_dims);
 
    if (!video->fullscreen && !vk->ctx_driver->has_windowed)
    {
@@ -6153,10 +6151,9 @@ static void *vulkan_init(const video_info_t *video,
       force_fullscreen = true;
    }
 
-   full_x                             = mode_width;
-   full_y                             = mode_height;
-   mode_width                         = 0;
-   mode_height                        = 0;
+   full_x                             = VIDEO_SCALE_W(mode_dims);
+   full_y                             = VIDEO_SCALE_H(mode_dims);
+   mode_dims                         = 0;
 
    RARCH_DBG("[Vulkan] Detecting screen resolution: %ux%u.\n", full_x, full_y);
    interval = video->vsync ? video->swap_interval : 0;
@@ -6190,25 +6187,22 @@ static void *vulkan_init(const video_info_t *video,
 
    if (vk->ctx_driver->get_video_size)
       vk->ctx_driver->get_video_size(vk->ctx_data,
-            &mode_width, &mode_height);
+            &mode_dims);
 
-   temp_width  = mode_width;
-   temp_height = mode_height;
+   temp_dims  = mode_dims;
 
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
+   /* One axis alone is not a size, so both have to be set */
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
+      video_driver_set_output_dims(temp_dims);
    else
-   {
-      out_dims = video_driver_get_output_dims();
-      temp_width = VIDEO_SCALE_W(out_dims);
-      temp_height = VIDEO_SCALE_H(out_dims);
-   }
-   vk->video_width       = temp_width;
-   vk->video_height      = temp_height;
+      temp_dims = video_driver_get_output_dims();
+   vk->video_width       = VIDEO_SCALE_W(temp_dims);
+   vk->video_height      = VIDEO_SCALE_H(temp_dims);
    vk->translate_x       = 0.0;
    vk->translate_y       = 0.0;
 
-   RARCH_LOG("[Vulkan] Using resolution %ux%u.\n", temp_width, temp_height);
+   RARCH_LOG("[Vulkan] Using resolution %ux%u.\n",
+         VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
 
    if (!vk->ctx_driver || !vk->ctx_driver->get_context_data)
    {
@@ -6276,7 +6270,8 @@ static void *vulkan_init(const video_info_t *video,
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */
-   vulkan_set_viewport(vk, temp_width, temp_height, false, true);
+   vulkan_set_viewport(vk, VIDEO_SCALE_W(temp_dims),
+         VIDEO_SCALE_H(temp_dims), false, true);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    vk->hdr.ubo                            = vulkan_create_buffer(vk->context, sizeof(vulkan_hdr_uniform_t), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);

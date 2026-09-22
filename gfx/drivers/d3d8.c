@@ -1947,12 +1947,11 @@ static bool d3d8_is_windowed_enable(bool info_fullscreen)
 
 #ifdef _XBOX
 static void d3d8_get_video_size(d3d8_video_t *d3d,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    DWORD video_mode      = XGetVideoFlags();
 
-   *width                = 640;
-   *height               = 480;
+   *dims = VIDEO_SCALE_PACK(640, 480);
 
    d3d->widescreen_mode  = false;
 
@@ -1963,12 +1962,9 @@ static void d3d8_get_video_size(d3d8_video_t *d3d,
       /* Check for 16:9 mode (PAL REGION) */
       if (video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
-         *width = 720;
-         /* 60 Hz, 720x480i */
-         if (video_mode & XC_VIDEO_FLAGS_PAL_60Hz)
-            *height = 480;
-         else /* 50 Hz, 720x576i */
-            *height = 576;
+         /* 60 Hz is 720x480i, 50 Hz 720x576i */
+         *dims = VIDEO_SCALE_PACK(720,
+               (video_mode & XC_VIDEO_FLAGS_PAL_60Hz) ? 480 : 576);
          d3d->widescreen_mode = true;
       }
    }
@@ -1977,8 +1973,7 @@ static void d3d8_get_video_size(d3d8_video_t *d3d,
       /* Check for 16:9 mode (NTSC REGIONS) */
       if (video_mode & XC_VIDEO_FLAGS_WIDESCREEN)
       {
-         *width                    = 720;
-         *height                   = 480;
+         *dims = VIDEO_SCALE_PACK(720, 480);
          d3d->widescreen_mode      = true;
       }
    }
@@ -1987,20 +1982,17 @@ static void d3d8_get_video_size(d3d8_video_t *d3d,
    {
       if (video_mode & XC_VIDEO_FLAGS_HDTV_480p)
       {
-         *width                    = 640;
-         *height                   = 480;
+         *dims = VIDEO_SCALE_PACK(640, 480);
          d3d->widescreen_mode      = false;
       }
       else if (video_mode & XC_VIDEO_FLAGS_HDTV_720p)
       {
-         *width                    = 1280;
-         *height                   = 720;
+         *dims = VIDEO_SCALE_PACK(1280, 720);
          d3d->widescreen_mode      = true;
       }
       else if (video_mode & XC_VIDEO_FLAGS_HDTV_1080i)
       {
-         *width                    = 1920;
-         *height                   = 1080;
+         *dims = VIDEO_SCALE_PACK(1920, 1080);
          d3d->widescreen_mode      = true;
       }
    }
@@ -2064,14 +2056,13 @@ static void d3d8_make_d3dpp(void *data,
        * and track it in d3d->vp.full_width/full_height so subsequent
        * read sites (font_render_msg, viewport_info, etc.) can pull
        * from the local field instead of locking video_st. */
-      unsigned width              = 0;
-      unsigned height             = 0;
+      unsigned dims               = 0;
 
-      d3d8_get_video_size(d3d, &width, &height);
-      video_driver_set_output_dims(VIDEO_SCALE_PACK(width, height));
-      d3d->vp.full_dims           = VIDEO_SCALE_PACK(width, height);
-      d3dpp->BackBufferWidth      = width;
-      d3dpp->BackBufferHeight     = height;
+      d3d8_get_video_size(d3d, &dims);
+      video_driver_set_output_dims(dims);
+      d3d->vp.full_dims           = dims;
+      d3dpp->BackBufferWidth      = VIDEO_SCALE_W(dims);
+      d3dpp->BackBufferHeight     = VIDEO_SCALE_H(dims);
 #else
       /* Non-Xbox: by the time make_d3dpp runs, d3d8_init_internal
        * has already published the size and written d3d->vp.
@@ -2495,7 +2486,12 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    full_y                = (windowed_full || VIDEO_SCALE_H(info->dims) == 0) ?
       (mon_rect.bottom - mon_rect.top)  : VIDEO_SCALE_H(info->dims);
 #else
-   d3d8_get_video_size(d3d, &full_x, &full_y);
+   {
+      unsigned full_dims;
+      d3d8_get_video_size(d3d, &full_dims);
+      full_x             = VIDEO_SCALE_W(full_dims);
+      full_y             = VIDEO_SCALE_H(full_dims);
+   }
 #endif
    {
       unsigned new_width  = info->fullscreen ? full_x : VIDEO_SCALE_W(info->dims);

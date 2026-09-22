@@ -98,25 +98,24 @@ error:
 }
 
 static void gfx_ctx_opendingux_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
-   *width                     = viv->width;
-   *height                    = viv->height;
+   *dims = VIDEO_SCALE_PACK(viv->width, viv->height);
 }
 
 static void gfx_ctx_opendingux_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims)
 {
-   unsigned new_width, new_height;
+   unsigned new_dims;
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
 
 #ifdef HAVE_EGL
-   egl_get_video_size(&viv->egl, &new_width, &new_height);
+   egl_get_video_size(&viv->egl, &new_dims);
 
-   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
+   if (new_dims != *dims)
    {
-      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
+      *dims  = new_dims;
       *resize = true;
    }
 #endif

@@ -7285,7 +7285,12 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
       ? (unsigned)(mon_rect.bottom - mon_rect.top)
       : VIDEO_SCALE_H(info->dims);
 #else
-   d3d9_get_video_size(d3d, &full_x, &full_y);
+   {
+      unsigned full_dims;
+      d3d9_get_video_size(d3d, &full_dims);
+      full_x             = VIDEO_SCALE_W(full_dims);
+      full_y             = VIDEO_SCALE_H(full_dims);
+   }
 #endif
    {
       unsigned new_width  = info->fullscreen ? full_x : VIDEO_SCALE_W(info->dims);

@@ -185,7 +185,7 @@ static void gfx_ctx_ps3_swap_buffers(void *data)
 }
 
 static void gfx_ctx_ps3_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
 #if defined(HAVE_PSGL)
    if (ps3_api == GFX_CTX_OPENGL_API || ps3_api == GFX_CTX_OPENGL_ES_API)

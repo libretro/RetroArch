@@ -148,33 +148,33 @@ error:
 }
 
 static void android_gfx_ctx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
 #ifdef HAVE_EGL
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
-   egl_get_video_size(&and->egl, width, height);
+   egl_get_video_size(&and->egl, dims);
 #endif
 }
 
 static void android_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims)
 {
-   unsigned new_width       = 0;
-   unsigned new_height      = 0;
+   unsigned new_dims       = 0;
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
 
    *quit                    = false;
 
 #ifdef HAVE_EGL
-   egl_get_video_size(&and->egl, &new_width, &new_height);
+   egl_get_video_size(&and->egl, &new_dims);
 #endif
 
-   if (new_width != VIDEO_SCALE_W(*dims) || new_height != VIDEO_SCALE_H(*dims))
+   if (new_dims != *dims)
    {
       RARCH_LOG("[Android] Resizing (%u x %u) -> (%u x %u).\n",
-              VIDEO_SCALE_W(*dims), VIDEO_SCALE_H(*dims), new_width, new_height);
+              VIDEO_SCALE_W(*dims), VIDEO_SCALE_H(*dims),
+              VIDEO_SCALE_W(new_dims), VIDEO_SCALE_H(new_dims));
 
-      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
+      *dims  = new_dims;
       *resize = true;
    }
 }

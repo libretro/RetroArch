@@ -133,7 +133,7 @@ static void cocoa_vk_gfx_ctx_input_driver(void *data,
  * SDK, which left a binary built on an old SDK blurry on every Retina
  * Mac and one built on a new SDK unable to run anywhere older. */
 static void cocoa_vk_gfx_ctx_get_video_size(void *data,
-      unsigned* width, unsigned* height)
+      unsigned *dims)
 {
    static int backing              = -1;
    CocoaView *g_view               = cocoaview_get();
@@ -150,18 +150,17 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
             [g_view convertRectToBacking:bounds]);
    }
 
-   *width                          = CGRectGetWidth(cgrect);
-   *height                         = CGRectGetHeight(cgrect);
+   *dims = VIDEO_SCALE_PACK(CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
 }
 #else
 static void cocoa_vk_gfx_ctx_get_video_size(void *data,
-      unsigned* width, unsigned* height)
+      unsigned *dims)
 {
     UIView *renderView              = apple_platform.renderView;
     CGRect size                     = [renderView bounds];
     float viewScale                 = [renderView contentScaleFactor];
-    *width                          = CGRectGetWidth(size)  * viewScale;
-    *height                         = CGRectGetHeight(size) * viewScale;
+    *dims = VIDEO_SCALE_PACK(CGRectGetWidth(size)  * viewScale,
+          CGRectGetHeight(size) * viewScale);
 }
 #endif
 
@@ -170,7 +169,7 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
  * exposed directly. */
 static void cocoa_vk_live_video_size(unsigned *width, unsigned *height)
 {
-   cocoa_vk_gfx_ctx_get_video_size(NULL, width, height);
+   cocoa_vk_gfx_ctx_get_video_size(NULL, dims);
 }
 
 /* Publish the current backing size for cross-thread readers.
@@ -189,14 +188,13 @@ void cocoa_vk_gfx_ctx_publish_size(void)
  * (preserving exact non-threaded behaviour); on the worker thread it
  * reads the last value published by the main thread, lock-free. */
 static void cocoa_vk_gfx_ctx_get_video_size_ts(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
-   size_t packed;
    if (sthread_is_main_thread())
       cocoa_vk_gfx_ctx_publish_size();
-   packed  = retro_atomic_load_acquire_size(&cocoa_vk_backing_size);
-   *width  = (unsigned)((packed >> 16) & 0xFFFF);
-   *height = (unsigned)(packed & 0xFFFF);
+   /* The published word is already width in the high half, height in
+    * the low - VIDEO_SCALE_PACK's layout - so it comes out whole. */
+   *dims = (unsigned)retro_atomic_load_acquire_size(&cocoa_vk_backing_size);
 }
 
 static float cocoa_vk_gfx_ctx_get_refresh_rate(void *data)
@@ -218,17 +216,17 @@ static void cocoa_vk_gfx_ctx_bind_hw_render(void *data, bool enable) { }
 static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims)
 {
-   unsigned new_width, new_height;
+   unsigned new_dims;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
    *quit                          = false;
    *resize                        = (cocoa_ctx->vk.flags &
          VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
 
-   cocoa_vk_gfx_ctx_get_video_size_ts(data, &new_width, &new_height);
+   cocoa_vk_gfx_ctx_get_video_size_ts(data, &new_dims);
 
-   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
+   if (new_dims != *dims)
    {
-      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
+      *dims   = new_dims;
       *resize = true;
    }
 }

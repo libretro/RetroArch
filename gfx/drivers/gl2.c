@@ -5403,7 +5403,6 @@ static bool renderchain_gl2_init_first(void **renderchain_handle)
 static void *gl2_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-      unsigned out_dims_o;
    enum gfx_wrap_type wrap_type;
    unsigned full_x, full_y;
    unsigned shader_info_num;
@@ -5412,11 +5411,9 @@ static void *gl2_init(const video_info_t *video,
    bool video_scale_integer             = settings->bools.video_scale_integer;
    int interval                         = 0;
    unsigned mip_level                   = 0;
-   unsigned mode_width                  = 0;
-   unsigned mode_height                 = 0;
+   unsigned mode_dims                   = 0;
    unsigned win_dims                    = 0;
-   unsigned temp_width                  = 0;
-   unsigned temp_height                 = 0;
+   unsigned temp_dims                   = 0;
    bool force_smooth                    = false;
    bool force_fullscreen                = false;
    const char *vendor                   = NULL;
@@ -5449,7 +5446,7 @@ static void *gl2_init(const video_info_t *video,
 
    if (gl->ctx_driver->get_video_size)
       gl->ctx_driver->get_video_size(gl->ctx_data,
-               &mode_width, &mode_height);
+               &mode_dims);
 
    if (!video->fullscreen && !gl->ctx_driver->has_windowed)
    {
@@ -5459,11 +5456,10 @@ static void *gl2_init(const video_info_t *video,
    }
 
 #if defined(DINGUX)
-   mode_width  = 320;
-   mode_height = 240;
+   mode_dims   = VIDEO_SCALE_PACK(320, 240);
 #endif
-   full_x      = mode_width;
-   full_y      = mode_height;
+   full_x      = VIDEO_SCALE_W(mode_dims);
+   full_y      = VIDEO_SCALE_H(mode_dims);
    interval    = 0;
 
    RARCH_LOG("[GL] Detecting screen resolution: %ux%u.\n", full_x, full_y);
@@ -5645,34 +5641,30 @@ static void *gl2_init(const video_info_t *video,
    if (video->fullscreen || force_fullscreen)
       gl->flags  |=  GL2_FLAG_FULLSCREEN;
 
-   mode_width     = 0;
-   mode_height    = 0;
+   mode_dims      = 0;
 
    if (gl->ctx_driver->get_video_size)
       gl->ctx_driver->get_video_size(gl->ctx_data,
-            &mode_width, &mode_height);
+            &mode_dims);
 
 #if defined(DINGUX)
-   mode_width     = 320;
-   mode_height    = 240;
+   mode_dims      = VIDEO_SCALE_PACK(320, 240);
 #endif
-   temp_width     = mode_width;
-   temp_height    = mode_height;
+   temp_dims      = mode_dims;
 
-   /* Get real known video size, which might have been altered by context. */
+   /* Get real known video size, which might have been altered by context.
+    * One axis alone is not a size, so both have to be set. */
 
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
+      video_driver_set_output_dims(temp_dims);
    else
-   {
-      out_dims_o = video_driver_get_output_dims();
-      temp_width = VIDEO_SCALE_W(out_dims_o);
-      temp_height = VIDEO_SCALE_H(out_dims_o);
-   }
-   gl->video_width       = temp_width;
-   gl->video_height      = temp_height;
+      temp_dims = video_driver_get_output_dims();
 
-   RARCH_LOG("[GL] Using resolution %ux%u.\n", temp_width, temp_height);
+   gl->video_width       = VIDEO_SCALE_W(temp_dims);
+   gl->video_height      = VIDEO_SCALE_H(temp_dims);
+
+   RARCH_LOG("[GL] Using resolution %ux%u.\n",
+         VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
 
    gl->vertex_ptr        = hwr->bottom_left_origin
       ? vertexes : vertexes_flipped;

@@ -90,20 +90,18 @@ static void *android_gfx_ctx_vk_init(void *video_driver)
 }
 
 static void android_gfx_ctx_vk_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)data;
 
-   *width  = and->width;
-   *height = and->height;
+   *dims = VIDEO_SCALE_PACK(and->width, and->height);
 }
 
 static void android_gfx_ctx_vk_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims)
 {
    struct android_app *android_app      = (struct android_app*)g_android;
-   unsigned new_width                   = 0;
-   unsigned new_height                  = 0;
+   unsigned new_dims                    = 0;
    android_ctx_data_vk_t *and           = (android_ctx_data_vk_t*)data;
 
    *quit                                = false;
@@ -117,17 +115,19 @@ static void android_gfx_ctx_vk_check_window(void *data, bool *quit,
    /* Swapchains are recreated in set_resize as a
     * central place, so use that to trigger swapchain reinit. */
    *resize    = (and->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
-   new_width  = (unsigned)retro_atomic_load_acquire_int(
-         &android_app->content_rect.width);
-   new_height = (unsigned)retro_atomic_load_acquire_int(
-         &android_app->content_rect.height);
+   new_dims   = VIDEO_SCALE_PACK(
+         (unsigned)retro_atomic_load_acquire_int(
+            &android_app->content_rect.width),
+         (unsigned)retro_atomic_load_acquire_int(
+            &android_app->content_rect.height));
 
-   if (new_width != VIDEO_SCALE_W(*dims) || new_height != VIDEO_SCALE_H(*dims))
+   if (new_dims != *dims)
    {
       RARCH_LOG("[Vulkan] Resizing (%ux%u) -> (%ux%u).\n",
-              VIDEO_SCALE_W(*dims), VIDEO_SCALE_H(*dims), new_width, new_height);
+              VIDEO_SCALE_W(*dims), VIDEO_SCALE_H(*dims),
+              VIDEO_SCALE_W(new_dims), VIDEO_SCALE_H(new_dims));
 
-      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
+      *dims   = new_dims;
       *resize = true;
    }
 }

@@ -276,15 +276,14 @@ static bool osmesa_ctx_set_video_mode(void *data,
 }
 
 static void osmesa_ctx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
 
    if (!osmesa)
       return;
 
-   *width  = osmesa->width;
-   *height = osmesa->height;
+   *dims = VIDEO_SCALE_PACK(osmesa->width, osmesa->height);
 }
 
 static void osmesa_ctx_check_window(void *data, bool *quit,

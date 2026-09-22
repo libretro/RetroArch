@@ -175,7 +175,7 @@ typedef struct gfx_ctx_cgl_data
 } gfx_ctx_wgl_data_t;
 
 /* FORWARD DECLARATIONS */
-void win32_get_video_size(void *data, unsigned *width, unsigned *height);
+void win32_get_video_size(void *data, unsigned *dims);
 
 static gfx_ctx_proc_t gfx_ctx_wgl_get_proc_address(const char *symbol)
 {
@@ -927,17 +927,15 @@ static bool gfx_ctx_wgl_destroy_surface(void *data)
 /* TODO: maybe create an uwp_mesa_common.c? */
 #ifdef __WINRT__
 static void win32_get_video_size(void* data,
-   unsigned* width, unsigned* height)
+   unsigned *dims)
 {
    bool quit     = false;
    bool resize   = false;
    unsigned dims = 0;
    win32_check_window(NULL, &quit, &resize, &dims);
-   *width        = VIDEO_SCALE_W(dims);
-   *height       = VIDEO_SCALE_H(dims);
+   *dims = VIDEO_SCALE_PACK(VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
    /* Match the output res to the display resolution. */
-   *width        = uwp_get_width();
-   *height       = uwp_get_height();
+   *dims = VIDEO_SCALE_PACK(uwp_get_width(), uwp_get_height());
 }
 
 bool win32_suspend_screensaver(void* data, bool enable)

@@ -217,24 +217,22 @@ static D3DFORMAT d3d9_get_color_format_backbuffer(bool rgb32)
 }
 
 static void d3d9_get_video_size(d3d9_video_t *d3d,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    XVIDEO_MODE video_mode;
 
    XGetVideoMode(&video_mode);
 
-   *width                       = video_mode.dwDisplayWidth;
-   *height                      = video_mode.dwDisplayHeight;
+   *dims = VIDEO_SCALE_PACK(video_mode.dwDisplayWidth,
+         video_mode.dwDisplayHeight);
 
    if (video_mode.fIsHiDef)
    {
-      *width                    = 1280;
-      *height                   = 720;
+      *dims = VIDEO_SCALE_PACK(1280, 720);
    }
    else
    {
-      *width                    = 640;
-      *height                   = 480;
+      *dims = VIDEO_SCALE_PACK(640, 480);
    }
 
    d3d->widescreen_mode         = video_mode.fIsWideScreen;
@@ -338,13 +336,12 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
       /* Xbox: query the actual display size, publish it to video_st
        * and track it in d3d->vp.full_dims so subsequent read sites
        * can pull from the local field instead of locking video_st. */
-      unsigned width  = 0;
-      unsigned height = 0;
-      d3d9_get_video_size(d3d, &width, &height);
-      video_driver_set_output_dims(VIDEO_SCALE_PACK(width, height));
-      d3d->vp.full_dims       = VIDEO_SCALE_PACK(width, height);
-      d3dpp->BackBufferWidth  = width;
-      d3dpp->BackBufferHeight = height;
+      unsigned dims = 0;
+      d3d9_get_video_size(d3d, &dims);
+      video_driver_set_output_dims(dims);
+      d3d->vp.full_dims       = dims;
+      d3dpp->BackBufferWidth  = VIDEO_SCALE_W(dims);
+      d3dpp->BackBufferHeight = VIDEO_SCALE_H(dims);
 #else
       /* Non-Xbox: by the time make_d3dpp runs, d3d9_*_init_internal
        * has already published the size and written d3d->vp.full_dims;

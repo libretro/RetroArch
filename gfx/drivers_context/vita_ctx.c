@@ -49,22 +49,20 @@ static void vita_swap_interval(void *data, int interval)
 #endif
 }
 
-static void vita_get_video_size(void *data, unsigned *width, unsigned *height)
+static void vita_get_video_size(void *data, unsigned *dims)
 {
-   *width     = ATTR_VITA_WIDTH;
-   *height    = ATTR_VITA_HEIGHT;
+   *dims = VIDEO_SCALE_PACK(ATTR_VITA_WIDTH, ATTR_VITA_HEIGHT);
 }
 
 static void vita_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims)
 {
-   unsigned new_width, new_height;
+   unsigned new_dims;
+   vita_get_video_size(data, &new_dims);
 
-   vita_get_video_size(data, &new_width, &new_height);
-
-   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
+   if (new_dims != *dims)
    {
-      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
+      *dims  = new_dims;
       *resize = true;
    }
 

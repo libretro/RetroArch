@@ -234,7 +234,7 @@ error:
 }
 
 static void sdl2_ctx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    settings_t    *settings  = config_get_ptr();
    gfx_ctx_sdl2_data_t *sdl = (gfx_ctx_sdl2_data_t*)data;
@@ -242,8 +242,7 @@ static void sdl2_ctx_get_video_size(void *data,
    if (!sdl)
       return;
 
-   *width                   = sdl->width;
-   *height                  = sdl->height;
+   *dims = VIDEO_SCALE_PACK(sdl->width, sdl->height);
 
    if (!sdl->win)
    {
@@ -253,8 +252,7 @@ static void sdl2_ctx_get_video_size(void *data,
          RARCH_WARN("[SDL GL] Failed to get display #%i mode: %s.\n", i,
                     SDL_GetError());
 
-      *width               = mode.w;
-      *height              = mode.h;
+      *dims = VIDEO_SCALE_PACK(mode.w, mode.h);
    }
 }
 

@@ -217,7 +217,7 @@ static bool sdl3_vk_ctx_set_video_mode(void *data,
             SDL_WINDOW_VULKAN))
       goto error;
 
-   sdl3_window_get_video_size(sdl->win, &win_width, &win_height);
+   sdl3_window_get_video_size(sdl->win, &win_dims);
 
    if (!vulkan_surface_create(&sdl->vk, VULKAN_WSI_SDL3,
             NULL, sdl->win,

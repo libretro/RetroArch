@@ -63,15 +63,14 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
 }
 
 static void gfx_ctx_emscripten_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
    if (!emscripten)
       return;
 
-   *width  = emscripten->fb_width;
-   *height = emscripten->fb_height;
+   *dims = VIDEO_SCALE_PACK(emscripten->fb_width, emscripten->fb_height);
 }
 
 static bool gfx_ctx_emscripten_get_metrics(void *data,
@@ -157,7 +156,7 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
    if (!egl_create_surface(&emscripten->egl, 0))
       goto error;
 
-   egl_get_video_size(&emscripten->egl, &width, &height);
+   egl_get_video_size(&emscripten->egl, &dims);
 
    emscripten->fb_width  = width;
    emscripten->fb_height = height;

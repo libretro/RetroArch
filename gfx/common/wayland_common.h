@@ -26,8 +26,7 @@ typedef struct shm_buffer
    size_t data_size;
 } shm_buffer_t;
 
-void gfx_ctx_wl_get_video_size_common(void *data, unsigned *width,
-      unsigned *height);
+void gfx_ctx_wl_get_video_size_common(void *data, unsigned *dims);
 
 void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl);
 
@@ -54,5 +53,5 @@ bool gfx_ctx_wl_set_video_mode_common(gfx_ctx_wayland_data_t *wl,
 bool gfx_ctx_wl_has_focus(void *data);
 
 void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
-      void (*get_video_size)(void*, unsigned*, unsigned*), bool *quit,
+      void (*get_video_size)(void*, unsigned*), bool *quit,
       bool *resize, unsigned *dims);

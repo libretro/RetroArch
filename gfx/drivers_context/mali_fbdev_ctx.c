@@ -239,11 +239,10 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
 }
 
 static void gfx_ctx_mali_fbdev_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
-   *width                = mali->width;
-   *height               = mali->height;
+   *dims = VIDEO_SCALE_PACK(mali->width, mali->height);
 }
 
 static void *gfx_ctx_mali_fbdev_init(void *video_driver)
@@ -305,13 +304,12 @@ error:
 static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims)
 {
-   unsigned new_width, new_height;
+   unsigned new_dims;
+   gfx_ctx_mali_fbdev_get_video_size(data, &new_dims);
 
-   gfx_ctx_mali_fbdev_get_video_size(data, &new_width, &new_height);
-
-   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
+   if (new_dims != *dims)
    {
-      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
+      *dims  = new_dims;
       *resize = true;
    }
 

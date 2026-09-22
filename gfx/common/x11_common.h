@@ -51,7 +51,7 @@ void x11_exit_fullscreen(Display *dpy);
 void x11_check_window(void *data, bool *quit,
    bool *resize, unsigned *dims);
 
-void x11_get_video_size(void *data, unsigned *width, unsigned *height);
+void x11_get_video_size(void *data, unsigned *dims);
 
 bool x11_has_focus(void *data);
 

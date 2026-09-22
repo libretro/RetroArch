@@ -489,14 +489,13 @@ void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 }
 
 void win32_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    HWND         window     = win32_get_window();
 
    if (window)
    {
-      *width               = g_win32_resize_width;
-      *height              = g_win32_resize_height;
+      *dims = VIDEO_SCALE_PACK(g_win32_resize_width, g_win32_resize_height);
    }
    else
    {
@@ -507,8 +506,8 @@ void win32_get_video_size(void *data,
 
       win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
       mon_rect             = current_mon.rcMonitor;
-      *width               = mon_rect.right - mon_rect.left;
-      *height              = mon_rect.bottom - mon_rect.top;
+      *dims = VIDEO_SCALE_PACK(mon_rect.right - mon_rect.left,
+            mon_rect.bottom - mon_rect.top);
    }
 }
 

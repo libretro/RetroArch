@@ -409,10 +409,9 @@ void egl_set_swap_interval(egl_ctx_data_t *egl, int interval)
    }
 }
 
-void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height)
+void egl_get_video_size(egl_ctx_data_t *egl, unsigned *dims)
 {
-   *width  = 0;
-   *height = 0;
+   *dims = VIDEO_SCALE_PACK(0, 0);
 
    if (egl->dpy != EGL_NO_DISPLAY && egl->surf != EGL_NO_SURFACE)
    {
@@ -420,8 +419,7 @@ void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height)
 
       _egl_query_surface(egl->dpy, egl->surf, EGL_WIDTH, &gl_width);
       _egl_query_surface(egl->dpy, egl->surf, EGL_HEIGHT, &gl_height);
-      *width  = gl_width;
-      *height = gl_height;
+      *dims = VIDEO_SCALE_PACK(gl_width, gl_height);
    }
 }
 

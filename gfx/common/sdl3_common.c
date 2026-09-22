@@ -331,7 +331,7 @@ bool sdl3_window_set_video_mode(SDL_Window **win,
 }
 
 void sdl3_window_get_video_size(SDL_Window *win,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    const SDL_DisplayMode *mode;
 
@@ -339,8 +339,7 @@ void sdl3_window_get_video_size(SDL_Window *win,
    {
       int w, h;
       SDL_GetWindowSizeInPixels(win, &w, &h);
-      *width = w;
-      *height = h;
+      *dims = VIDEO_SCALE_PACK(w, h);
       return;
    }
 
@@ -348,8 +347,7 @@ void sdl3_window_get_video_size(SDL_Window *win,
    mode = SDL_GetCurrentDisplayMode(SDL_GetPrimaryDisplay());
    if (mode)
    {
-      *width = mode->w;
-      *height = mode->h;
+      *dims = VIDEO_SCALE_PACK(mode->w, mode->h);
    }
 }
 
@@ -474,10 +472,10 @@ static SDL_Window *sdl3_ctx_window(void *data)
    return data ? *(SDL_Window**)data : NULL;
 }
 
-void sdl3_ctx_get_video_size(void *data, unsigned *width, unsigned *height)
+void sdl3_ctx_get_video_size(void *data, unsigned *dims)
 {
    if (data)
-      sdl3_window_get_video_size(sdl3_ctx_window(data), width, height);
+      sdl3_window_get_video_size(sdl3_ctx_window(data), dims);
 }
 
 float sdl3_ctx_get_refresh_rate(void *data)
@@ -503,12 +501,7 @@ void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
    sdl3_pump_window_events(quit, resize);
 
    if (*resize && win)
-   {
-      unsigned w = 0;
-      unsigned h = 0;
-      sdl3_window_get_video_size(win, &w, &h);
-      *dims      = VIDEO_SCALE_PACK(w, h);
-   }
+      sdl3_window_get_video_size(win, dims);
 }
 
 bool sdl3_ctx_get_metrics(void *data,

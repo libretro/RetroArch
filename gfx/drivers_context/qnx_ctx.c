@@ -253,27 +253,27 @@ screen_error:
 }
 
 static void gfx_ctx_qnx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
 #ifdef HAVE_EGL
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
-   egl_get_video_size(&qnx->egl, width, height);
+   egl_get_video_size(&qnx->egl, dims);
 #endif
 }
 
 static void gfx_ctx_qnx_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims)
 {
-   unsigned new_width, new_height;
+   unsigned new_dims;
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
    *quit               = false;
 #ifdef HAVE_EGL
-   egl_get_video_size(&qnx->egl, &new_width, &new_height);
+   egl_get_video_size(&qnx->egl, &new_dims);
 #endif
 
-   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
+   if (new_dims != *dims)
    {
-      *dims           = VIDEO_SCALE_PACK(new_width, new_height);
+      *dims           = new_dims;
       *resize          = true;
    }
 }

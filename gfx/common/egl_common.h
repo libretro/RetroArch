@@ -91,7 +91,7 @@ void egl_swap_buffers(void *data);
 
 void egl_set_swap_interval(egl_ctx_data_t *egl, int interval);
 
-void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height);
+void egl_get_video_size(egl_ctx_data_t *egl, unsigned *dims);
 
 typedef bool (*egl_accept_config_cb_t)(void *display_data, EGLDisplay dpy, EGLConfig config);
 bool egl_default_accept_config_cb(void *display_data, EGLDisplay dpy, EGLConfig config);

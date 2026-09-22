@@ -396,8 +396,7 @@ static const struct xdg_toplevel_listener wl_xdg_toplevel_listener = {
    xdg_toplevel_handle_wm_capabilities,
 };
 
-void gfx_ctx_wl_get_video_size_common(void *data,
-      unsigned *width, unsigned *height)
+void gfx_ctx_wl_get_video_size_common(void *data, unsigned *dims)
 {
    gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
    if (!wl)
@@ -417,16 +416,18 @@ void gfx_ctx_wl_get_video_size_common(void *data,
             break;
          };
 
-      *width  = oi->width;
-      *height = oi->height;
+      *dims = VIDEO_SCALE_PACK(oi->width, oi->height);
    }
    else
-   {
-     *width  = wl->fractional_scale ?
-        FRACTIONAL_SCALE_MULT(wl->width,  wl->pending_fractional_scale_num) : wl->width  * wl->pending_buffer_scale;
-     *height = wl->fractional_scale ?
-        FRACTIONAL_SCALE_MULT(wl->height, wl->pending_fractional_scale_num) : wl->height * wl->pending_buffer_scale;
-   }
+      *dims = VIDEO_SCALE_PACK(
+            wl->fractional_scale
+            ? FRACTIONAL_SCALE_MULT(wl->width,
+               wl->pending_fractional_scale_num)
+            : wl->width  * wl->pending_buffer_scale,
+            wl->fractional_scale
+            ? FRACTIONAL_SCALE_MULT(wl->height,
+               wl->pending_fractional_scale_num)
+            : wl->height * wl->pending_buffer_scale);
 }
 
 static void shm_buffer_free(shm_buffer_t *buffer)
@@ -1536,23 +1537,22 @@ bool gfx_ctx_wl_has_focus(void *data)
 }
 
 void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
-      void (*get_video_size)(void*, unsigned*, unsigned*), bool *quit,
+      void (*get_video_size)(void*, unsigned*), bool *quit,
       bool *resize, unsigned *dims)
 {
    /* this function works with SCALED sizes, it's used from the renderer */
-   unsigned new_width, new_height;
-
+   unsigned new_dims;
    flush_wayland_fd(&wl->input);
 
-   get_video_size(wl, &new_width, &new_height);
+   get_video_size(wl, &new_dims);
 
    if (     wl->pending_buffer_scale != wl->buffer_scale
          || wl->pending_fractional_scale_num != wl->fractional_scale_num
-         || VIDEO_SCALE_PACK(new_width, new_height) != *dims)
+         || new_dims != *dims)
    {
       wl->buffer_scale         = wl->pending_buffer_scale;
       wl->fractional_scale_num = wl->pending_fractional_scale_num;
-      *dims                    = VIDEO_SCALE_PACK(new_width, new_height);
+      *dims                    = new_dims;
       *resize                  = true;
    }
 

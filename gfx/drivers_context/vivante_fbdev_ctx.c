@@ -101,28 +101,28 @@ error:
 }
 
 static void gfx_ctx_vivante_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 
 #ifdef HAVE_EGL
-   egl_get_video_size(&viv->egl, width, height);
+   egl_get_video_size(&viv->egl, dims);
 #endif
 }
 
 static void gfx_ctx_vivante_check_window(void *data, bool *quit,
       bool *resize, unsigned *dims)
 {
-   unsigned new_width, new_height;
+   unsigned new_dims;
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 
 #ifdef HAVE_EGL
-   gfx_ctx_vivante_get_video_size(&viv->egl, &new_width, &new_height);
+   gfx_ctx_vivante_get_video_size(&viv->egl, &new_dims);
 #endif
 
-   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
+   if (new_dims != *dims)
    {
-      *dims               = VIDEO_SCALE_PACK(new_width, new_height);
+      *dims               = new_dims;
       *resize              = true;
    }
 
