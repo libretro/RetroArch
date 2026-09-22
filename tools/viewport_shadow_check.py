@@ -93,6 +93,23 @@ def main():
             vp_names |= {m.group(1) for m in VP_DECL.finditer(masked[p])}
     vp_names.discard('video_viewport')
 
+    # a type that carries its own plain axes is the hazard; one already
+    # packed onto pos/dims is not, and an external type we cannot see the
+    # definition of is reported either way.
+    axes = re.compile(r'\b(?:x|y|w|h|width|height)\s*(?:,\s*\w+\s*)*;')
+    defs = {}
+    for p in files:
+        t = masked.get(p) or ''
+        for m in re.finditer(r'(?:typedef\s+)?struct(?:\s+\w+)?\s*\{'
+                             r'([^{}]*)\}\s*(\w+)\s*;', t):
+            defs[m.group(2)] = m.group(1)
+
+    def hazardous(ty):
+        body = defs.get(ty)
+        if body is None:
+            return True              # not defined here: assume plain axes
+        return bool(axes.search(body))
+
     hits = 0
     for p in files:
         text = masked.get(p)
@@ -105,12 +122,15 @@ def main():
                 continue
             if 'video_viewport' in ty:
                 continue
+            if not hazardous(ty):
+                continue
             seen.setdefault((ty, name), text[:m.start()].count('\n') + 1)
         if seen:
             print('=== %s ===' % p)
             for (ty, name), line in sorted(seen.items(),
                                            key=lambda kv: kv[1]):
-                print('  %5d  %s %s' % (line, ty, name))
+                print('  %5d  %s %s%s' % (line, ty, name,
+                      '' if ty in defs else '   (no definition here)'))
                 hits += 1
 
     print('%d name collision(s)' % hits)
