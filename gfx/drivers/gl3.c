@@ -195,23 +195,20 @@ typedef struct gl3
    } scrgb;
 #endif /* HAVE_SLANG */
 
-   unsigned video_width;
-   unsigned video_height;
+   /* In VIDEO_SCALE_PACK's layout. */
+   unsigned video_dims;
    unsigned overlays;
    unsigned version_major;
    unsigned version_minor;
-   unsigned out_vp_width;
-   unsigned out_vp_height;
+   unsigned out_vp_dims;
    unsigned rotation;
    unsigned rotation_raw;
    unsigned textures_index;
    unsigned scratch_vbo_index;
    unsigned fence_count;
    unsigned pbo_readback_index;
-   unsigned hw_render_max_width;
-   unsigned hw_render_max_height;
-   unsigned menu_texture_width;
-   unsigned menu_texture_height;
+   unsigned hw_render_max_dims;
+   unsigned menu_texture_dims;
    GLuint scratch_vbos[GL_CORE_NUM_VBOS];
    /* Static vertex buffer for the menu ribbon pipelines: their 64x64
     * grid never changes after the menu driver builds it, yet it went
@@ -1526,8 +1523,7 @@ static void gl3_raster_font_render_msg(
    bool full_screen                 = false;
    gl3_raster_t           *font     = (gl3_raster_t*)data;
    gl3_t *gl                        = (gl3_t*)userdata;
-   unsigned dims                    = VIDEO_SCALE_PACK(gl->video_width,
-         gl->video_height);
+   unsigned dims                    = gl->video_dims;
    settings_t *settings             = config_get_ptr();
    float video_msg_pos_x            = settings->floats.video_msg_pos_x;
    float video_msg_pos_y            = settings->floats.video_msg_pos_y;
@@ -2191,8 +2187,7 @@ static bool gl3_init_hw_render(gl3_t *gl, unsigned width, unsigned height)
       glClear(GL_COLOR_BUFFER_BIT);
 
    gl->flags               |= GL3_FLAG_HW_RENDER_ENABLE;
-   gl->hw_render_max_width  = width;
-   gl->hw_render_max_height = height;
+   gl->hw_render_max_dims   = VIDEO_SCALE_PACK(width, height);
 
    /* The ring's other slots: the same target again, sharing the depth
     * renderbuffer, which only the core's rendering touches and never
@@ -2389,8 +2384,7 @@ static void gl3_set_viewport(gl3_t *gl,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl->out_vp_width  = VIDEO_SCALE_W(gl->vp.dims);
-      gl->out_vp_height = VIDEO_SCALE_H(gl->vp.dims);
+      gl->out_vp_dims   = gl->vp.dims;
    }
 
    gl->filter_chain_vp.pos    = gl->vp.pos;
@@ -2940,8 +2934,8 @@ static bool gl3_create_fbo_targets(gl3_t *gl)
          gl,
          RARCH_SCALE_BASE * gl->video_info.input_scale,
          RARCH_SCALE_BASE * gl->video_info.input_scale,
-         gl->video_width,
-         gl->video_height);
+         VIDEO_SCALE_W(gl->video_dims),
+         VIDEO_SCALE_H(gl->video_dims));
 
    glGenFramebuffers(gl->chain.num_fbo_passes, gl->chain.fbo);
    glGenTextures(gl->chain.num_fbo_passes, gl->chain.fbo_texture);
@@ -3446,8 +3440,7 @@ static void *gl3_init(const video_info_t *video,
       video_driver_set_output_dims(temp_dims);
    else
       temp_dims = video_driver_get_output_dims();
-   gl->video_width  = VIDEO_SCALE_W(temp_dims);
-   gl->video_height = VIDEO_SCALE_H(temp_dims);
+   gl->video_dims   = temp_dims;
 
    RARCH_LOG("[GLCore] Using resolution %ux%u.\n",
          VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
@@ -3742,8 +3735,7 @@ static bool gl3_alive(void *data)
    bool quit            = false;
    bool resize          = false;
    gl3_t *gl        = (gl3_t*)data;
-   unsigned temp_dims  = VIDEO_SCALE_PACK(gl->video_width,
-         gl->video_height);
+   unsigned temp_dims  = gl->video_dims;
 
    gl->ctx_driver->check_window(gl->ctx_data,
          &quit, &resize, &temp_dims);
@@ -3770,8 +3762,7 @@ static bool gl3_alive(void *data)
    if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
    {
       video_driver_set_output_dims(temp_dims);
-      gl->video_width  = VIDEO_SCALE_W(temp_dims);
-      gl->video_height = VIDEO_SCALE_H(temp_dims);
+      gl->video_dims   = temp_dims;
    }
 
    return ret;
@@ -4027,8 +4018,8 @@ static void gl3_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned top_y, top_dist;
    gl3_t *gl       = (gl3_t*)data;
-   unsigned width  = gl->video_width;
-   unsigned height = gl->video_height;
+   unsigned width  = VIDEO_SCALE_W(gl->video_dims);
+   unsigned height = VIDEO_SCALE_H(gl->video_dims);
 
    *vp             = gl->vp;
    vp->full_dims   = VIDEO_SCALE_PACK(width, height);
@@ -4090,8 +4081,8 @@ static bool gl3_read_viewport_hdr(void *data, uint16_t *buffer,
 
    vp_x = (VIDEO_POS_X(gl->vp.pos) > 0) ? VIDEO_POS_X(gl->vp.pos) : 0;
    vp_y = (VIDEO_POS_Y(gl->vp.pos) > 0) ? VIDEO_POS_Y(gl->vp.pos) : 0;
-   w    = (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)  ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims);
-   h    = (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height) ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims);
+   w    = MIN(VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_W(gl->video_dims));
+   h    = MIN(VIDEO_SCALE_H(gl->vp.dims), VIDEO_SCALE_H(gl->video_dims));
    if (!w || !h)
       return false;
 
@@ -4224,10 +4215,10 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
       {
          /* Clamp to the region glReadPixels actually wrote. */
-         unsigned rb_w = (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)
-            ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims);
-         unsigned rb_h = (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height)
-            ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims);
+         unsigned rb_w = MIN(VIDEO_SCALE_W(gl->vp.dims),
+               VIDEO_SCALE_W(gl->video_dims));
+         unsigned rb_h = MIN(VIDEO_SCALE_H(gl->vp.dims),
+               VIDEO_SCALE_H(gl->video_dims));
          video_frame_convert_rgba_to_bgr(
                (const void*)gl->readback_buffer_screenshot,
                buffer,
@@ -4571,8 +4562,8 @@ static void gl3_renderchain_render(
    GLfloat yamt                           = 0.0f;
    unsigned mip_level                     = 0;
    unsigned fbo_tex_info_cnt              = 0;
-   unsigned width                         = gl->video_width;
-   unsigned height                        = gl->video_height;
+   unsigned width                         = VIDEO_SCALE_W(gl->video_dims);
+   unsigned height                        = VIDEO_SCALE_H(gl->video_dims);
 
    /* Render the rest of our passes. */
    gl->chain.coords.tex_coord = fbo_tex_coords;
@@ -4619,7 +4610,7 @@ static void gl3_renderchain_render(
       gl3_set_viewport(gl, rect->img_dims, true, false);
 
       params.vp_dims       = VIDEO_SCALE_PACK(
-            gl->out_vp_width, gl->out_vp_height);
+            VIDEO_SCALE_W(gl->out_vp_dims), VIDEO_SCALE_H(gl->out_vp_dims));
       params.dims          = prev_rect->img_dims;
       params.tex_dims      = prev_rect->dims;
       params.out_dims      = gl->vp.dims;
@@ -4672,7 +4663,9 @@ static void gl3_renderchain_render(
    /* Render our FBO texture to back buffer (or, under scRGB output,
     * into the SDR offscreen the end-of-frame encode consumes). */
    glBindFramebuffer(GL_FRAMEBUFFER,
-         gl3_frame_target_fbo(gl, gl->video_width, gl->video_height));
+         gl3_frame_target_fbo(gl,
+               VIDEO_SCALE_W(gl->video_dims),
+               VIDEO_SCALE_H(gl->video_dims)));
 
    gl->chain.shader->use(gl, gl->chain.shader_data,
          gl->chain.num_fbo_passes + 1, true);
@@ -4687,7 +4680,7 @@ static void gl3_renderchain_render(
    glClear(GL_COLOR_BUFFER_BIT);
    gl3_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
 
-   params.vp_dims       = VIDEO_SCALE_PACK(gl->out_vp_width, gl->out_vp_height);
+   params.vp_dims       = gl->out_vp_dims;
    params.dims          = prev_rect->img_dims;
    params.tex_dims      = prev_rect->dims;
    params.out_dims      = gl->vp.dims;
@@ -4862,7 +4855,7 @@ static bool gl3_frame(void *data, const void *frame,
    {
       gl3_renderchain_recompute_pass_sizes(gl,
             frame_width, frame_height,
-            gl->out_vp_width, gl->out_vp_height);
+            VIDEO_SCALE_W(gl->out_vp_dims), VIDEO_SCALE_H(gl->out_vp_dims));
 
       gl3_renderchain_start_render(gl);
    }
@@ -4963,8 +4956,8 @@ static bool gl3_frame(void *data, const void *frame,
       texture.image         = gl->hw_render_texture;
       texture.format        = gl->video_info.source_hdr10
          ? GL_RGB10_A2 : GL_RGBA8;
-      texture.padded_width  = gl->hw_render_max_width;
-      texture.padded_height = gl->hw_render_max_height;
+      texture.padded_width  = VIDEO_SCALE_W(gl->hw_render_max_dims);
+      texture.padded_height = VIDEO_SCALE_H(gl->hw_render_max_dims);
 
       if (texture.width == 0)
          texture.width      = 1;
@@ -5052,7 +5045,7 @@ static bool gl3_frame(void *data, const void *frame,
       }
 
       params.vp_dims       = VIDEO_SCALE_PACK(
-            gl->out_vp_width, gl->out_vp_height);
+            VIDEO_SCALE_W(gl->out_vp_dims), VIDEO_SCALE_H(gl->out_vp_dims));
       params.dims          = VIDEO_SCALE_PACK(frame_width, frame_height);
       params.tex_dims      = VIDEO_SCALE_PACK(
             RARCH_SCALE_BASE * gl->video_info.input_scale,
@@ -5399,8 +5392,8 @@ static bool gl3_frame(void *data, const void *frame,
       glReadPixels(
             (VIDEO_POS_X(gl->vp.pos) > 0) ? VIDEO_POS_X(gl->vp.pos) : 0,
             (VIDEO_POS_Y(gl->vp.pos) > 0) ? VIDEO_POS_Y(gl->vp.pos) : 0,
-            (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)  ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims),
-            (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height) ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims),
+            MIN(VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_W(gl->video_dims)),
+            MIN(VIDEO_SCALE_H(gl->vp.dims), VIDEO_SCALE_H(gl->video_dims)),
             GL_RGBA, GL_UNSIGNED_BYTE,
             gl->readback_buffer_screenshot);
       if (gl->scrgb.active && gl->scrgb.fbo
@@ -5797,8 +5790,7 @@ static void gl3_set_texture_frame(void *data,
     * same-size same-format updates we keep the existing texture
     * and just stream new pixel data via glTexSubImage2D. */
    recreate = (gl->menu_texture == 0)
-           || (gl->menu_texture_width  != VIDEO_SCALE_W(dims))
-           || (gl->menu_texture_height != VIDEO_SCALE_H(dims))
+           || (gl->menu_texture_dims   != dims)
            || (gl->menu_texture_rgb32  != rgb32);
 
    if (recreate)
@@ -5810,8 +5802,7 @@ static void gl3_set_texture_frame(void *data,
       glTexStorage2D(GL_TEXTURE_2D, 1, rgb32
             ? GL_RGBA8 : GL_RGBA4, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
 
-      gl->menu_texture_width  = VIDEO_SCALE_W(dims);
-      gl->menu_texture_height = VIDEO_SCALE_H(dims);
+      gl->menu_texture_dims   = dims;
       gl->menu_texture_rgb32  = rgb32;
    }
    else
