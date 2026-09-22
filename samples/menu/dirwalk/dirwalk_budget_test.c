@@ -88,17 +88,19 @@ static char fixture_root[256];
  * With clock_frozen set, the instrument stands still: no budget
  * check ever sees the window exhaust, so the deferred machinery
  * (iterator, task hand-off, resumable mergesort, callback) runs in
- * as few invocations as the queue allows.  That is the bench lane's
- * instrument.  Under the real clock the window admits 4ms of work
- * per 16.67ms period and then one item per task_queue_check() until
- * the period rolls over, so wall-clock to a result is quantised to
- * whole periods: on the CI runner a 22ms blocking walk landed the
- * deferred path across three periods (34ms, ratio 1.57) while a
- * slower box measured 27ms blocking against the same 34ms (ratio
- * 1.27) - the ratio was grading the runner's speed against the
- * period length, not the mechanism.  Holding the window open
- * removes the period from the measurement; the pacing assertion
- * keeps the real clock.
+ * as few invocations as the queue allows.  That is the instrument
+ * of the bench lane and of the fast-path and sort-only deferral
+ * lanes, whose inline-versus-deferred outcome must not depend on
+ * how fast the machine walks the small tree.  Under the real clock
+ * the window admits 4ms of work per 16.67ms period and then one
+ * item per task_queue_check() until the period rolls over, so
+ * wall-clock to a result is quantised to whole periods: on the CI
+ * runner a 22ms blocking walk landed the deferred path across
+ * three periods (34ms, ratio 1.57) while a slower box measured
+ * 27ms blocking against the same 34ms (ratio 1.27) - the ratio was
+ * grading the runner's speed against the period length, not the
+ * mechanism.  Holding the window open removes the period from the
+ * measurement; the pacing assertion keeps the real clock.
  *
  * The test's own stopwatch is real_clock_usec(), independent of
  * whatever the instrument is doing. */
@@ -503,7 +505,17 @@ int main(int argc, char *argv[])
    /* Fast path: the small tree completes on the first request.
     * SORT_NONE, because the build shrinks MENU_DIRWALK_SORT_SYNC_MAX
     * to 64 so that sort-only deferral is testable below; an unsorted
-    * request is the one whose fast path is size-independent. */
+    * request is the one whose fast path is size-independent.
+    *
+    * This lane and the sort-only deferral lane run with the window
+    * held open.  What they pin is the mechanism - a walk that fits
+    * the window completes inline with no task and no refresh, and a
+    * completed walk too large to sort inline hands only the sort to
+    * the task - not whether 200-odd entries fit 4ms of wall-clock.
+    * Under TSan on a CI runner they do not, and the lane would be
+    * grading the runner.  The pacing lane owns the wall-clock
+    * claim. */
+   clock_frozen = true;
    {
       struct string_list *out = NULL;
       unsigned had_fired      = refresh_fired;
@@ -522,8 +534,8 @@ int main(int argc, char *argv[])
    }
    fprintf(stderr, "[pass] fast path lane\n");
 
-   /* Sort-only deferral: under the real clock the small tree's walk
-    * fits one window, but with the shrunken threshold its 200+
+   /* Sort-only deferral: with the window held open the small tree's
+    * walk fits one window, but with the shrunken threshold its 200+
     * entries are "too many to sort inline".  The request must go
     * PENDING carrying a completed walk, the task must do nothing but
     * the resumable sort, and the consumed listing must have full
@@ -558,6 +570,7 @@ int main(int argc, char *argv[])
       }
    }
    fprintf(stderr, "[pass] sort-only deferral lane\n");
+   clock_frozen = false;
 
    if (!check_parity(small_dir, "parity/small"))
       goto out_queue;
