@@ -585,6 +585,9 @@ static bool task_overlay_load_desc(
    float tmp_float             = 0.0f;
    bool tmp_bool               = false;
    bool by_pixel               = false;
+   /* Every type but a button acts on a press; a button acts only
+    * if it binds something other than "nul". */
+   bool takes_input            = true;
    const char *box             = NULL;
    config_file_t *conf         = loader->conf;
 
@@ -669,7 +672,8 @@ static bool task_overlay_load_desc(
       const char *tmp;
       char *p = elems[0];
 
-      desc->type = OVERLAY_TYPE_BUTTONS;
+      desc->type  = OVERLAY_TYPE_BUTTONS;
+      takes_input = false;
 
       while (p)
       {
@@ -694,6 +698,7 @@ static bool task_overlay_load_desc(
                }
             }
             BIT256_SET(desc->button_mask, bind_id);
+            takes_input = true;
          }
       }
 
@@ -709,6 +714,8 @@ static bool task_overlay_load_desc(
    }
 
    BIT16_SET(loader->overlay_types, desc->type);
+   if (takes_input)
+      input_overlay->flags |= OVERLAY_TAKES_INPUT;
 
    width_mod  = 1.0f;
    height_mod = 1.0f;

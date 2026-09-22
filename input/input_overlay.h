@@ -139,7 +139,11 @@ enum OVERLAY_FLAGS
    OVERLAY_AUTO_X_SEPARATION  = (1 << 4),
    OVERLAY_AUTO_Y_SEPARATION  = (1 << 5),
    OVERLAY_HAS_VIEWPORT       = (1 << 6),
-   OVERLAY_VIEWPORT_FILL      = (1 << 7)
+   OVERLAY_VIEWPORT_FILL      = (1 << 7),
+   /* At least one desc on the page does something when pressed. A
+    * page of nothing but "nul" buttons (an LED or decoration overlay)
+    * takes no input, so it has no claim on the menu's mouse. */
+   OVERLAY_TAKES_INPUT        = (1 << 8)
 };
 
 enum OVERLAY_DESC_FLAGS
@@ -351,7 +355,7 @@ struct overlay
 
    char name[64];
 
-   uint8_t flags;
+   uint16_t flags;
 };
 
 typedef struct input_overlay_state

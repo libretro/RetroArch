@@ -4,7 +4,9 @@ name: CI Linux overlay on screen
 # retroarch with X11 and OpenGL, runs it under Xvfb on Mesa's software
 # rasteriser with an input overlay enabled, threaded video off and then
 # on, grabs the screen and checks the overlay is where its config puts
-# it and nowhere else.
+# it and nowhere else. It then checks the menu's mouse cursor with an
+# overlay up: a page of "nul" buttons (an LED overlay) must leave the
+# cursor to the menu, a page that takes input must not.
 #
 # Every stubbed overlay test passed while an enabled overlay covered the
 # whole screen (2026-09-19). Nothing that stubs the driver, or builds
@@ -22,6 +24,8 @@ on:
       - 'gfx/video_driver.c'
       - 'gfx/video_thread_wrapper.*'
       - 'gfx/drivers/gl2.c'
+      - 'menu/menu_driver.c'
+      - 'input/drivers/x11_input.c'
       - 'samples/input/overlay_on_screen/**'
       - '.github/workflows/Linux-overlay-on-screen.yml'
   pull_request:
@@ -33,6 +37,8 @@ on:
       - 'gfx/video_driver.c'
       - 'gfx/video_thread_wrapper.*'
       - 'gfx/drivers/gl2.c'
+      - 'menu/menu_driver.c'
+      - 'input/drivers/x11_input.c'
       - 'samples/input/overlay_on_screen/**'
       - '.github/workflows/Linux-overlay-on-screen.yml'
   workflow_dispatch:
@@ -124,3 +130,14 @@ jobs:
           # was set and the overlay covered 100% of the screen, in both
           # modes.
           timeout 180 python3 samples/input/overlay_on_screen/overlay_on_screen_test.py ./retroarch
+
+      - name: Run overlay_menu_mouse_test (display and input packs, threaded off and on)
+        shell: bash
+        run: |
+          set -eu
+          # The menu switched its mouse off whenever any overlay was
+          # alive, so an LED overlay - nothing on it to press - left a
+          # fullscreen desktop user with no menu cursor. A pack of
+          # "nul" buttons must now show the cursor where the pointer is
+          # moved; the same pack bound to "a" must still not.
+          timeout 180 python3 samples/input/overlay_on_screen/overlay_menu_mouse_test.py ./retroarch

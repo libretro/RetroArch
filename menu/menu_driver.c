@@ -5437,9 +5437,16 @@ unsigned menu_event(
    unsigned menu_scroll_delay                      = settings->uints.menu_scroll_delay;
 #ifdef HAVE_OVERLAY
    bool input_overlay_enable                       = settings->bools.input_overlay_enable;
+   /* An overlay takes the menu's pointer only if it can use it: its
+    * page has a desc that does something when pressed, or its own
+    * pointer (mouse/lightgun) mode is on. A page of "nul" buttons (an
+    * LED or decoration overlay) leaves the mouse to the menu. */
    bool overlay_active                             = input_overlay_enable
          && (input_st->overlay_ptr)
-         && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE);
+         && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
+         && (input_st->overlay_ptr->active)
+         && (   (input_st->overlay_ptr->active->flags & OVERLAY_TAKES_INPUT)
+             || settings->bools.input_overlay_pointer_enable);
 #else
    bool input_overlay_enable                       = false;
    bool overlay_active                             = false;
