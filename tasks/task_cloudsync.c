@@ -74,6 +74,12 @@ typedef struct
    /* Manifest present on the server (may be modified by other clients)*/
    file_list_t *server_manifest;
    size_t server_idx;
+   /* Server entries under a directory this sync does not cover (its
+    * toggle is off), counted once when the diff starts, and how many of
+    * them the diff has stepped over so far.  Progress leaves both out:
+    * they are carried into the updated manifest, not synced. */
+   size_t server_out_of_scope;
+   size_t server_skipped;
    /* Last-known state to compare agasint.*/
    file_list_t *local_manifest;
    size_t local_idx;
@@ -578,6 +584,36 @@ error:
    return NULL;
 }
 
+/* True when @key lies under one of the directories this sync covers. */
+static bool task_cloud_sync_key_in_scope(const struct string_list *dirlist,
+      const char *key)
+{
+   size_t i;
+   for (i = 0; i < dirlist->size; i++)
+      if (string_starts_with(key, dirlist->elems[i].data))
+         return true;
+   return false;
+}
+
+static size_t task_cloud_sync_count_out_of_scope(
+      const task_cloud_sync_state_t *sync_state)
+{
+   const struct string_list *dirlist = sync_state->dirlist;
+   const file_list_t        *server  = sync_state->server_manifest;
+   size_t                    count   = 0;
+   size_t                    i;
+
+   if (!dirlist || !server)
+      return 0;
+
+   for (i = 0; i < server->size; i++)
+      if (!task_cloud_sync_key_in_scope(dirlist,
+               CS_FILE_KEY(&server->list[i])))
+         count++;
+
+   return count;
+}
+
 /**
  * task_cloud_sync_build_current_manifest:
  * @sync_state       : pointer to the current sync state
@@ -631,6 +667,8 @@ static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync
    }
 
    file_list_sort_on_alt(sync_state->current_manifest);
+   sync_state->server_out_of_scope =
+      task_cloud_sync_count_out_of_scope(sync_state);
    task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_DIFF);
    RARCH_LOG(CSPFX "Created in-memory manifest of current disk state with %d files.\n", sync_state->current_manifest->size);
 }
@@ -657,10 +695,15 @@ static void task_cloud_sync_update_progress(retro_task_t *task)
    if (!(sync_state = (task_cloud_sync_state_t *)task->state))
       return;
 
-   val = sync_state->server_idx + sync_state->current_idx;
+   /* Entries of a directory whose sync toggle is off are stepped over
+    * in one go, so counting them would leave the bar short of 100 when
+    * they sort last - and stuck below the in-scope share otherwise. */
+   val = (sync_state->server_idx - sync_state->server_skipped)
+       + sync_state->current_idx;
 
    if (sync_state->server_manifest)
-      count += sync_state->server_manifest->size;
+      count += sync_state->server_manifest->size
+             - sync_state->server_out_of_scope;
    if (sync_state->current_manifest)
       count += sync_state->current_manifest->size;
 
@@ -1091,7 +1134,7 @@ static void task_cloud_sync_upload_cb(void *user_data, const char *path, bool su
 }
 
 /**
- * task_cloud_sync_update_progress:
+ * task_cloud_sync_upload_current_file:
  * @sync_state 	: pointer to the current sync task
  *
  * Uploads the current file to the cloud. The current file is defined
@@ -1283,7 +1326,6 @@ static void task_cloud_sync_delete_server_file(task_cloud_sync_state_t *sync_sta
 static void task_cloud_sync_maybe_ignore(task_cloud_sync_state_t *sync_state)
 {
    struct string_list *dirlist = sync_state->dirlist;
-   size_t i;
    bool found;
 
    if (!dirlist)
@@ -1295,8 +1337,7 @@ static void task_cloud_sync_maybe_ignore(task_cloud_sync_state_t *sync_state)
       {
          struct item_file *local_file  = &sync_state->local_manifest->list[sync_state->local_idx];
          const char *key = CS_FILE_KEY(local_file);
-         for (i = 0; !found && i < dirlist->size; i++)
-            found = string_starts_with(key, dirlist->elems[i].data);
+         found = task_cloud_sync_key_in_scope(dirlist, key);
          /* we have a record of doing a sync for this file but now no longer
           * wish to sync it. keep the record? might as well, in case the option
           * gets turned back on later. */
@@ -1314,13 +1355,13 @@ static void task_cloud_sync_maybe_ignore(task_cloud_sync_state_t *sync_state)
       {
          struct item_file *server_file  = &sync_state->server_manifest->list[sync_state->server_idx];
          const char *key = CS_FILE_KEY(server_file);
-         for (i = 0; !found && i < dirlist->size; i++)
-            found = string_starts_with(key, dirlist->elems[i].data);
+         found = task_cloud_sync_key_in_scope(dirlist, key);
          /* must keep the server's manifest complete */
          if (!found)
          {
             task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
             sync_state->server_idx++;
+            sync_state->server_skipped++;
          }
       }
    }
@@ -1752,8 +1793,11 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
          task_cloud_sync_build_current_manifest(sync_state);
          break;
       case CLOUD_SYNC_PHASE_DIFF:
-         task_cloud_sync_update_progress(task);
+         /* After the step, not before: the step that finishes the diff
+          * moves on to UPDATE_MANIFESTS, and a figure taken ahead of it
+          * would be the last one the bar ever shows. */
          task_cloud_sync_diff_next(sync_state);
+         task_cloud_sync_update_progress(task);
          break;
       case CLOUD_SYNC_PHASE_UPDATE_MANIFESTS:
          task_cloud_sync_update_manifests(sync_state);
