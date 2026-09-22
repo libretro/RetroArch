@@ -772,8 +772,11 @@
 #endif
 
 #include "runtime_file_defines.h"
-#ifdef HAVE_MENU
+/* Outside the HAVE_MENU gate: the single-source setting rows in
+ * configuration.c are expanded in every build, so the enums their
+ * defaults name have to be visible without the menu too. */
 #include "menu/menu_defines.h"
+#ifdef HAVE_MENU
 
 #ifdef HAVE_LIBNX
 #define DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME true
