@@ -5075,6 +5075,7 @@ struct rh264_video
     * is missing, which is what a caller that has fallen behind the
     * clock wants. */
    retro_atomic_int_t skip_nonref;  /* set from the caller's thread, read by the decode's */
+   int       skip_pic;               /* the picture whose first slice was dropped: all of it is */
    int       dropped;           /* the last decode call passed a picture over */
    /* DPB slot the pair's first field opened, so the second can fill it */
    int       pair_slot;
@@ -9708,6 +9709,22 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    { return -1; }
    kind = (sh->slice_type == RH264_SLICE_I) ? 2
         : (sh->slice_type == RH264_SLICE_B) ? 4 : 3;
+   /* A droppable picture while catching up: nothing references a
+    * picture with nal_ref_idc 0, frame_num and the POC state advance on
+    * reference pictures only, so passing it over - every slice of it,
+    * before any of its state is taken on - leaves the decoder exactly
+    * as it was, whether its pictures decode one at a time or
+    * concurrently; with the pool busy, the work not done is time
+    * caught up. */
+   if (sh->first_mb_in_slice == 0)
+      v->skip_pic = 0;
+   if (nri == 0 && (v->skip_pic || (sh->first_mb_in_slice == 0
+            && retro_atomic_load_acquire_int(&v->skip_nonref))))
+   {
+      v->skip_pic = 1;
+      v->dropped  = 1;
+      return 0;
+   }
    if (sh->first_mb_in_slice == 0)
    {
       int fld = sh->field_pic_flag ? (sh->bottom_field_flag ? 2 : 1) : 0;
@@ -10424,24 +10441,6 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
    if (type == 5 || type == 1)
    {
       if (!v->have_sps || !v->have_pps) return -1;
-      /* A droppable picture while catching up: every slice of it
-       * carries the same nal_ref_idc, so all of them are passed over
-       * and the picture never opens. frame_num and the POC state
-       * advance on reference pictures only, so nothing downstream
-       * notices it was never there. */
-      /* Catching up drops the pictures nothing references. With
-       * pictures decoding concurrently those are the ones that cost
-       * nothing - they run beside the chain of references, which is
-       * the critical path either way - so dropping them buys no time
-       * and empties the pool; a preview that fell behind would stay
-       * behind, on the pictures it has left. Threaded, the drops are
-       * declined. */
-      if (retro_atomic_load_acquire_int(&v->skip_nonref) && !v->threaded && type == 1 && ((nal[0] >> 5) & 3) == 0
-            && !v->cur->pic_open)
-      {
-         v->dropped = 1;
-         return 0;
-      }
       if (rh264_frame_alloc_if_needed(v) != 0) return -1;
       if (type == 5)
       { if (rh264_video_decode_idr(v, nal, nl, got_pic) != 0) return -1; }

@@ -1137,6 +1137,16 @@ jobs:
              ./preview_blit_bands_test fixtures/hevc_nowpp.mp4 fixtures/mbaff_h264.mp4
              RH265_PUBLISH_DELAY=200 ./preview_blit_bands_test fixtures/hevc_wpp.mp4 fixtures/bframes_hevc.mp4 fixtures/hevc_nowpp.mp4'
           echo "[pass] preview_blit_bands_test (ASan)"
+          # Catching up: behind the clock the stream drops only what
+          # nothing references, and every picture still shown is the
+          # full decode's; the threaded build does the same with four
+          # pictures in flight, the drops taken at submit.
+          test -x preview_catchup_test && test -x preview_catchup_test_threaded
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+          UBSAN_OPTIONS=print_stacktrace=1 timeout 300 bash -c '
+             ./preview_catchup_test fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
+             ./preview_catchup_test_threaded fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4'
+          echo "[pass] preview_catchup_test (ASan, one picture at a time and four in flight)"
           # clean keeps fixtures/ by design; regenerate anyway so the
           # step cannot silently run against an empty glob.
           make clean all SANITIZER=thread
@@ -1160,6 +1170,9 @@ jobs:
              ./preview_blit_bands_test fixtures/hevc_nowpp.mp4 fixtures/mbaff_h264.mp4
              RH265_PUBLISH_DELAY=200 ./preview_blit_bands_test fixtures/hevc_wpp.mp4 fixtures/bframes_hevc.mp4 fixtures/hevc_nowpp.mp4'
           echo "[pass] preview_blit_bands_test (TSan)"
+          TSAN_OPTIONS=halt_on_error=1:allocator_may_return_null=1 timeout 300 bash -c '
+             ./preview_catchup_test_threaded fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4'
+          echo "[pass] preview_catchup_test_threaded (TSan)"
           TSAN_OPTIONS=halt_on_error=1 timeout 600 bash -c '
              ./preview_audio_decode_test fixtures/trailing_large.mp4 1024 island
              ./preview_audio_decode_test fixtures/trailing_large.mp4 262144 island'

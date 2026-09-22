@@ -25,6 +25,13 @@
 #include <formats/image.h>
 #include <streams/file_stream.h>
 #include <encodings/crc32.h>
+#ifdef PREVIEW_THREADED
+#include <rthreads/tpool.h>
+/* The threaded build decodes every run with four pictures in flight
+ * on a pool: the drops must then leave the decoder exactly as they
+ * do one picture at a time. */
+static void *g_pool;
+#endif
 
 static unsigned failures;
 #define CHECK(cond, ...) do { \
@@ -45,6 +52,10 @@ static uint32_t *run(const uint8_t *buf, size_t len, int catchup,
    image_transfer_anim_stream_get_info(s, IMAGE_TYPE_MP4, w, h, &n, &loops);
    n = 0;
    image_transfer_anim_stream_set_argb(s, IMAGE_TYPE_MP4, 1);
+#ifdef PREVIEW_THREADED
+   if (g_pool)
+      image_transfer_anim_stream_set_blit_pool(s, IMAGE_TYPE_MP4, g_pool, 4);
+#endif
    if (catchup)
       image_transfer_anim_stream_set_catchup(s, IMAGE_TYPE_MP4, 1);
    while ((px = image_transfer_anim_stream_next(s, IMAGE_TYPE_MP4, &dur)))
@@ -132,6 +143,9 @@ int main(int argc, char **argv)
       printf("usage: %s fixture.mp4 [...]\n", argv[0]);
       return 2;
    }
+#ifdef PREVIEW_THREADED
+   g_pool = tpool_create_with_stack_size(3, 512 * 1024);
+#endif
    for (i = 1; i < argc; i++)
       check_fixture(argv[i]);
    printf(failures ? "FAIL\n" : "PASS\n");

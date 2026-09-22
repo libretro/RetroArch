@@ -208,13 +208,14 @@ endif
 # Defined ahead of all: a prerequisite list expands when make reads it,
 # and a variable set below it is empty there.
 THREADED_TARGET := gfx_thumbnail_preview_test_threaded
+CATCHUP_THREADED_TARGET := $(CATCHUP_TARGET)_threaded
 THREADED_DEFS   := -DHAVE_THREADS -DPREVIEW_THREADED
 THREADED_EXTRA  := $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
                    $(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
                    $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
 THREADED_OBJS   := $(SOURCES:.c=.t.o) $(THREADED_EXTRA:.c=.t.o)
 
-all: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(THREADED_TARGET)
+all: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) $(THREADED_TARGET)
 
 $(ANIM_WINDOW_TARGET): $(ANIM_WINDOW_SOURCES)
 	$(CC) -o $@ $(ANIM_WINDOW_SOURCES) $(ANIM_WINDOW_CFLAGS) $(LDFLAGS) -lz
@@ -223,6 +224,13 @@ $(ANIM_WINDOW_TARGET): $(ANIM_WINDOW_SOURCES)
 CATCHUP_SOURCES := preview_catchup_test.c $(filter-out preview_anim_window_test.c,$(ANIM_WINDOW_SOURCES))
 $(CATCHUP_TARGET): $(CATCHUP_SOURCES)
 	$(CC) -o $@ $(CATCHUP_SOURCES) $(ANIM_WINDOW_CFLAGS) $(LDFLAGS) -lz
+
+# The same oracle with four pictures decoding concurrently on a pool:
+# catching up drops pictures at submit, and what remains must still
+# be the full decode to the byte. (CATCHUP_THREADED_TARGET is set with
+# the other names ahead of all:.)
+$(CATCHUP_THREADED_TARGET): $(CATCHUP_SOURCES) $(THREADED_EXTRA)
+	$(CC) -o $@ $(CATCHUP_SOURCES) $(THREADED_EXTRA) $(ANIM_WINDOW_CFLAGS) $(THREADED_DEFS) $(LDFLAGS) -lz -lpthread
 
 
 $(DECODE_TARGET): $(DECODE_SOURCES_WEBM) preview_audio_decode_test.c
@@ -336,12 +344,13 @@ $(THREADED_TARGET): $(THREADED_OBJS) gfx_thumbnail_uut.t.o settings_layout_uut.t
 fixtures:
 	python3 mkfixtures.py fixtures
 
-check: $(TARGET) $(THREADED_TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) fixtures
+check: $(TARGET) $(THREADED_TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) fixtures
 	./$(TARGET) fixtures/*.mp4 fixtures/anim_lossless.webp
 ifneq ($(OS),Windows_NT)
 	./$(ANIM_WINDOW_TARGET) fixtures
 endif
 	./$(CATCHUP_TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
+	./$(CATCHUP_THREADED_TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=500 NOAUDIO=1 ./$(TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	THREADS=4 FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=500 NOAUDIO=1 ./$(THREADED_TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	./$(BLIT_BANDS_TARGET) fixtures/long_video.mp4
@@ -360,7 +369,7 @@ clean:
 	rm -f $(TARGET) $(THREADED_TARGET) $(THREADED_TARGET).exe $(THREADED_OBJS) \
 	      gfx_thumbnail_uut.t.o settings_layout_uut.t.o gfx_anim_preview_uut.t.o gfx_surface_uut.t.o \
 	      $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) \
-	      $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(BENCH_TARGET) \
+	      $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) $(BENCH_TARGET) \
 	      $(TARGET).exe $(CATCHUP_TARGET).exe $(BENCH_TARGET).exe $(BLIT_BANDS_TARGET).exe \
 	      $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 
