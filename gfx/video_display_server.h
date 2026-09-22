@@ -54,8 +54,7 @@ typedef struct video_output_info
 
 typedef struct video_display_config
 {
-   unsigned width;
-   unsigned height;
+   unsigned dims;
    unsigned bpp;
    unsigned refreshrate;
    unsigned idx;

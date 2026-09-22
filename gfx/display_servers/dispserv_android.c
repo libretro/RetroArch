@@ -154,8 +154,7 @@ static void *android_display_server_get_resolution_list(
       jint height   = modes[i * 4 + 2];
       jint millihz  = modes[i * 4 + 3];
 
-      conf[i].width             = (unsigned)width;
-      conf[i].height            = (unsigned)height;
+      conf[i].dims = VIDEO_SCALE_PACK((unsigned)width, (unsigned)height);
       /* Android composites 32-bit regardless of the mode. */
       conf[i].bpp               = 32;
       conf[i].refreshrate       = (unsigned)((millihz + 500) / 1000);
@@ -187,7 +186,7 @@ static void *android_display_server_get_resolution_list(
          logged_once = true;
          RARCH_LOG("[Android] Display reports %u mode(s); current is"
                " %ux%u @ %.2f Hz.\n", count,
-               conf[0].width, conf[0].height, conf[0].refreshrate_float);
+               VIDEO_SCALE_W(conf[0].dims), VIDEO_SCALE_H(conf[0].dims), conf[0].refreshrate_float);
       }
    }
 
@@ -236,8 +235,7 @@ static bool android_display_server_set_resolution(void *data,
       {
          if (!conf[i].current)
             continue;
-         VIDEO_SCALE_PUT_W(dims, conf[i].width);
-         VIDEO_SCALE_PUT_H(dims, conf[i].height);
+         dims = conf[i].dims;
          break;
       }
    }
@@ -246,7 +244,7 @@ static bool android_display_server_set_resolution(void *data,
    {
       float delta;
 
-      if (conf[i].width != VIDEO_SCALE_W(dims) || conf[i].height != VIDEO_SCALE_H(dims))
+      if (conf[i].dims != dims)
          continue;
 
       delta = conf[i].refreshrate_float - hz;
@@ -357,7 +355,7 @@ static void android_display_server_get_video_output_size(void *data,
          continue;
 
       if (dims)
-         *dims = VIDEO_SCALE_PACK(conf[i].width, conf[i].height);
+         *dims = conf[i].dims;
       if (s && len)
          snprintf(s, len, "%.2f Hz", conf[i].refreshrate_float);
       break;
@@ -414,8 +412,7 @@ static bool android_display_server_step_video_output(void *data, int dir)
    struct video_display_config *conf = NULL;
    unsigned count                    = 0;
    unsigned current                  = 0;
-   unsigned curr_width               = 0;
-   unsigned curr_height              = 0;
+   unsigned curr_dims                = 0;
    unsigned i;
    bool found                        = false;
 
@@ -428,8 +425,7 @@ static bool android_display_server_step_video_output(void *data, int dir)
       if (conf[i].current)
       {
          current     = i;
-         curr_width  = conf[i].width;
-         curr_height = conf[i].height;
+         curr_dims = conf[i].dims;
          break;
       }
    }
@@ -442,12 +438,11 @@ static bool android_display_server_step_video_output(void *data, int dir)
          ? (current + i) % count
          : (current + count - (i % count)) % count;
 
-      if (     conf[idx].width  == curr_width
-            && conf[idx].height == curr_height)
+      if (conf[idx].dims == curr_dims)
          continue;
 
       found = android_display_server_set_resolution(data,
-            VIDEO_SCALE_PACK(conf[idx].width, conf[idx].height),
+            conf[idx].dims,
             (int)conf[idx].refreshrate, conf[idx].refreshrate_float,
             0, 0, 0, 0);
       break;

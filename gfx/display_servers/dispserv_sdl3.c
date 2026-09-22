@@ -158,10 +158,10 @@ static bool sdl3_display_server_set_resolution(void *data,
 static int sdl3_display_server_resolution_list_qsort(
       const video_display_config_t *a, const video_display_config_t *b)
 {
-   if (a->width != b->width)
-      return a->width < b->width ? -1 : 1;
-   if (a->height != b->height)
-      return a->height < b->height ? -1 : 1;
+   /* The width sits in the high half, so the word orders by width,
+    * then height. */
+   if (a->dims != b->dims)
+      return a->dims < b->dims ? -1 : 1;
    if (a->refreshrate != b->refreshrate)
       return a->refreshrate < b->refreshrate ? -1 : 1;
    return 0;
@@ -194,8 +194,7 @@ static void *sdl3_display_server_get_resolution_list(void *data,
    for (i = 0, j = 0; i < n; i++)
    {
       const SDL_DisplayMode *dm = modes[i];
-      conf[j].width             = dm->w;
-      conf[j].height            = dm->h;
+      conf[j].dims = VIDEO_SCALE_PACK(dm->w, dm->h);
       conf[j].bpp               = SDL_BITSPERPIXEL(dm->format);
       conf[j].refreshrate       = sdl3_display_server_refresh_label(dm);
       conf[j].refreshrate_float = dm->refresh_rate;

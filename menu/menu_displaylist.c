@@ -10044,15 +10044,15 @@ unsigned menu_displaylist_build_list(
                   /* If there is exact refresh rate available, use it */
                   if (video_list[i].refreshrate_float > 0.0f)
                      snprintf(str, sizeof(str), "%dx%d (%.3f Hz)%s%s",
-                        video_list[i].width,
-                        video_list[i].height,
+                        VIDEO_SCALE_W(video_list[i].dims),
+                        VIDEO_SCALE_H(video_list[i].dims),
                         video_list[i].refreshrate_float,
                         video_list[i].interlaced ? "[i]":"",
                         video_list[i].dblscan    ? "[d]":"");
                   else
                      snprintf(str, sizeof(str), "%dx%d (%d Hz)%s",
-                        video_list[i].width,
-                        video_list[i].height,
+                        VIDEO_SCALE_W(video_list[i].dims),
+                        VIDEO_SCALE_H(video_list[i].dims),
                         video_list[i].refreshrate,
                         video_list[i].interlaced ? "[i]":"");
                   snprintf(val_d, sizeof(val_d), "%d", i);

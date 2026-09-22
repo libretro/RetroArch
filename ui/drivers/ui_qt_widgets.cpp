@@ -6555,7 +6555,9 @@ QWidget *VideoPage::widget()
       for (i = 0; i < size; i++)
       {
          char val_d[NAME_MAX_LENGTH], str[NAME_MAX_LENGTH];
-         snprintf(str, sizeof(str), "%dx%d (%d Hz)", list[i].width, list[i].height, list[i].refreshrate);
+         snprintf(str, sizeof(str), "%dx%d (%d Hz)",
+               VIDEO_SCALE_W(list[i].dims), VIDEO_SCALE_H(list[i].dims),
+               list[i].refreshrate);
          snprintf(val_d, sizeof(val_d), "%d", i);
 
          m_resolutionCombo->addItem(str);

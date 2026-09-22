@@ -231,18 +231,18 @@ int main(void)
    }
    for (i = 0; i < (int)nlist; i++)
    {
-      if (!list[i].current && list[i].width != (unsigned)desktop.w)
+      if (!list[i].current && VIDEO_SCALE_W(list[i].dims) != (unsigned)desktop.w)
       {
          if (!dispserv_sdl3.set_resolution(data,
-               VIDEO_SCALE_PACK(list[i].width, list[i].height),
+               VIDEO_SCALE_PACK(VIDEO_SCALE_W(list[i].dims), VIDEO_SCALE_H(list[i].dims)),
                   (int)list[i].refreshrate, list[i].refreshrate_float, 0, 0, 0, 0))
          {
-            fprintf(stderr, "FAIL: set_resolution %ux%u@%u\n", list[i].width,
-                  list[i].height, list[i].refreshrate);
+            fprintf(stderr, "FAIL: set_resolution %ux%u@%u\n", VIDEO_SCALE_W(list[i].dims),
+                  VIDEO_SCALE_H(list[i].dims), list[i].refreshrate);
             return 1;
          }
          SDL_PumpEvents();
-         if (current_mode(&cur) != 0 || cur.w != (int)list[i].width)
+         if (current_mode(&cur) != 0 || cur.w != (int)VIDEO_SCALE_W(list[i].dims))
          {
             fprintf(stderr, "FAIL: set_resolution left the display at %dx%d\n",
                   cur.w, cur.h);

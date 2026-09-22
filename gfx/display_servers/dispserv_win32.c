@@ -548,13 +548,13 @@ static int resolution_list_qsort_func(
    str_a[0] = str_b[0] = '\0';
 
    snprintf(str_a, sizeof(str_a), "%04dx%04d (%d Hz)",
-         a->width,
-         a->height,
+         VIDEO_SCALE_W(a->dims),
+         VIDEO_SCALE_H(a->dims),
          a->refreshrate);
 
    snprintf(str_b, sizeof(str_b), "%04dx%04d (%d Hz)",
-         b->width,
-         b->height,
+         VIDEO_SCALE_W(b->dims),
+         VIDEO_SCALE_H(b->dims),
          b->refreshrate);
 
    return strcasecmp(str_a, str_b);
@@ -567,8 +567,7 @@ static void *win32_display_server_get_resolution_list(
    unsigned i                 = 0;
    unsigned count             = 0;
    unsigned capacity          = 64;
-   unsigned curr_width        = 0;
-   unsigned curr_height       = 0;
+   unsigned curr_dims         = 0;
    unsigned curr_bpp          = 0;
    unsigned curr_refreshrate  = 0;
 #if _WIN32_WINNT >= 0x0500
@@ -579,8 +578,7 @@ static void *win32_display_server_get_resolution_list(
 
    if (win32_get_video_output(&dm, -1))
    {
-      curr_width        = dm.dmPelsWidth;
-      curr_height       = dm.dmPelsHeight;
+      curr_dims       = VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight);
       curr_bpp          = dm.dmBitsPerPel;
       curr_refreshrate  = dm.dmDisplayFrequency;
 #if _WIN32_WINNT >= 0x0500
@@ -626,8 +624,7 @@ static void *win32_display_server_get_resolution_list(
          conf = tmp;
       }
 
-      conf[count].width            = dm.dmPelsWidth;
-      conf[count].height           = dm.dmPelsHeight;
+      conf[count].dims = VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight);
       conf[count].bpp              = dm.dmBitsPerPel;
       conf[count].refreshrate      = dm.dmDisplayFrequency;
       /* It may be possible to get exact refresh rate via different API - for now, it is integer only */
@@ -641,8 +638,7 @@ static void *win32_display_server_get_resolution_list(
 #endif
       conf[count].dblscan          = false; /* no flag for doublescan on this platform */
 
-      if (   (conf[count].width       == curr_width)
-          && (conf[count].height      == curr_height)
+      if (   (conf[count].dims == curr_dims)
           && (conf[count].bpp         == curr_bpp)
           && (conf[count].refreshrate == curr_refreshrate)
           && (conf[count].interlaced  == curr_interlaced)
@@ -855,19 +851,16 @@ static void win32_display_server_get_video_output_prev(void *data)
    DEVMODE dm;
    DEVMODE prev_dm;
    bool have_prev        = false;
-   unsigned curr_width   = 0;
-   unsigned curr_height  = 0;
+   unsigned curr_dims    = 0;
 
    if (win32_get_video_output(&dm, -1))
    {
-      curr_width  = dm.dmPelsWidth;
-      curr_height = dm.dmPelsHeight;
+      curr_dims = VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight);
    }
 
    for (i = 0; win32_get_video_output(&dm, i); i++)
    {
-      if (   dm.dmPelsWidth  == curr_width
-          && dm.dmPelsHeight == curr_height)
+      if (   VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight) == curr_dims)
       {
          if (have_prev)
             break;
@@ -895,21 +888,18 @@ static void win32_display_server_get_video_output_next(void *data)
    int i;
    DEVMODE dm;
    bool found           = false;
-   unsigned curr_width  = 0;
-   unsigned curr_height = 0;
+   unsigned curr_dims   = 0;
 
    if (win32_get_video_output(&dm, -1))
    {
-      curr_width  = dm.dmPelsWidth;
-      curr_height = dm.dmPelsHeight;
+      curr_dims = VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight);
    }
 
    for (i = 0; win32_get_video_output(&dm, i); i++)
    {
       if (found)
       {
-         if (   dm.dmPelsWidth  != curr_width
-             || dm.dmPelsHeight != curr_height)
+         if (   VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight) != curr_dims)
          {
             win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
             win32_change_display_settings(
@@ -918,8 +908,7 @@ static void win32_display_server_get_video_output_next(void *data)
          }
       }
 
-      if (   dm.dmPelsWidth  == curr_width
-          && dm.dmPelsHeight == curr_height)
+      if (   VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight) == curr_dims)
          found = true;
    }
 }

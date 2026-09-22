@@ -1858,8 +1858,8 @@ bool video_display_server_has_refresh_rate(float hz)
           * Actual mode selection will be done in context driver,       *
           * with some logic in video_switch_refresh_rate_maybe          *
           * and in action_cb_push_dropdown_item_resolution              */
-         if (   (video_list[i].width        == video_driver_width)
-             && (video_list[i].height       == video_driver_height)
+         if (   (VIDEO_SCALE_W(video_list[i].dims)        == video_driver_width)
+             && (VIDEO_SCALE_H(video_list[i].dims)       == video_driver_height)
              && ((video_list[i].refreshrate == floor(hz)) ||
                  (fabsf(video_list[i].refreshrate_float - hz) < 0.06f)))
             rate_exists = true;

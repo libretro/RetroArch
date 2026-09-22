@@ -379,8 +379,8 @@ static int test_all_modes_reported(void)
    {
       int found = 0;
       for (j = 0; j < n; j++)
-         if (     list[j].width  == specs[i].w
-               && list[j].height == specs[i].h)
+         if (     VIDEO_SCALE_W(list[j].dims)  == specs[i].w
+               && VIDEO_SCALE_H(list[j].dims) == specs[i].h)
             found++;
       if (found != 1)
       {
@@ -437,14 +437,14 @@ static int test_list_is_sorted(void)
 
    for (i = 1; i < n; i++)
    {
-      if (list[i - 1].width <= list[i].width)
+      if (VIDEO_SCALE_W(list[i - 1].dims) <= VIDEO_SCALE_W(list[i].dims))
          continue;
       fprintf(stderr,
             "FAIL: entry %d (%ux%u) sorts after entry %d (%ux%u);"
             " the list came back in connector order, so the qsort"
             " ran over the wrong element count\n",
-            i - 1, list[i - 1].width, list[i - 1].height,
-            i,     list[i].width,     list[i].height);
+            i - 1, VIDEO_SCALE_W(list[i - 1].dims), VIDEO_SCALE_H(list[i - 1].dims),
+            i,     VIDEO_SCALE_W(list[i].dims),     VIDEO_SCALE_H(list[i].dims));
       free(list);
       return 1;
    }
@@ -495,10 +495,10 @@ static int test_current_mode_flagged(void)
       if (list[i].current)
       {
          current++;
-         if (list[i].width != specs[1].w || list[i].height != specs[1].h)
+         if (VIDEO_SCALE_W(list[i].dims) != specs[1].w || VIDEO_SCALE_H(list[i].dims) != specs[1].h)
          {
             fprintf(stderr, "FAIL: %ux%u flagged current, want %ux%u\n",
-                  list[i].width, list[i].height, specs[1].w, specs[1].h);
+                  VIDEO_SCALE_W(list[i].dims), VIDEO_SCALE_H(list[i].dims), specs[1].w, specs[1].h);
             free(list);
             free_connector(g_drm_connector);
             g_drm_connector = NULL;
