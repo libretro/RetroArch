@@ -640,12 +640,19 @@ static int action_start_video_resolution(
    {
       size_t _len;
       char msg[128];
+#if defined(GEKKO) || defined(PS2)
+      bool fullscreen = true;
+#else
+      /* The window state the frontend is in, as driver init reads it */
+      bool fullscreen = config_get_ptr()->bools.video_fullscreen
+            || (video_driver_get_disp_flags() & VIDEO_FLAG_FORCE_FULLSCREEN);
+#endif
       msg[0] = '\0';
 
 #if defined(_WIN32) || !defined(__PSL1GHT__) && !defined(__PS3__)
       generic_action_ok_command(CMD_EVENT_REINIT);
 #endif
-      video_driver_set_video_mode(VIDEO_SCALE_PACK(width, height), true);
+      video_driver_set_video_mode(VIDEO_SCALE_PACK(width, height), fullscreen);
 #ifdef GEKKO
       if (width == 0 || height == 0)
          _len = strlcpy_lit(msg, "Resetting to: DEFAULT", sizeof(msg));

@@ -22,6 +22,7 @@ on:
       - 'playlist.h'
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
+      - 'samples/menu/resolution_reset/**'
       - '.github/workflows/Linux-menu-harness.yml'
   pull_request:
     paths:
@@ -30,6 +31,7 @@ on:
       - 'playlist.h'
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
+      - 'samples/menu/resolution_reset/**'
       - '.github/workflows/Linux-menu-harness.yml'
   workflow_dispatch:
 
@@ -145,6 +147,18 @@ jobs:
           samples/menu/playlist_nav/build.sh
           ./samples/menu/playlist_nav/menu_playlist_nav_test
           make -C samples/menu/playlist_nav clean
+
+      - name: Build and run resolution_reset_test
+        shell: bash
+        run: |
+          set -eu
+          # Start on the Resolution entry reinits and sets the video
+          # mode at the output size; it must keep the window state the
+          # frontend is in rather than take a windowed desktop session
+          # full screen. Shares the non-Qt build made above.
+          samples/menu/resolution_reset/build.sh
+          ./samples/menu/resolution_reset/resolution_reset_test
+          make -C samples/menu/resolution_reset clean
 
       - name: Hot function budget
         shell: bash
