@@ -207,8 +207,7 @@ static bool sdl3_vk_ctx_set_video_mode(void *data,
       bool fullscreen)
 {
    gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)data;
-   unsigned win_width = 0;
-   unsigned win_height = 0;
+   unsigned win_dims           = 0;
 
    if (!sdl)
       return false;
@@ -221,7 +220,8 @@ static bool sdl3_vk_ctx_set_video_mode(void *data,
 
    if (!vulkan_surface_create(&sdl->vk, VULKAN_WSI_SDL3,
             NULL, sdl->win,
-            win_width, win_height, sdl->interval))
+            VIDEO_SCALE_W(win_dims), VIDEO_SCALE_H(win_dims),
+            sdl->interval))
       goto error;
 
    return true;

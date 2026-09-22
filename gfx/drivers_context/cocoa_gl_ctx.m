@@ -300,7 +300,7 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
 /* Live backing-size query.  Touches AppKit/UIKit and MUST run on the
  * main thread.  Selects the same implementation the vtable previously
  * exposed directly. */
-static void cocoa_gl_live_video_size(unsigned *width, unsigned *height)
+static void cocoa_gl_live_video_size(unsigned *dims)
 {
    cocoa_gl_gfx_ctx_get_video_size(NULL, dims);
 }
@@ -310,11 +310,9 @@ static void cocoa_gl_live_video_size(unsigned *width, unsigned *height)
  * non-threaded caller path below). */
 void cocoa_gl_gfx_ctx_publish_size(void)
 {
-   unsigned w = 0;
-   unsigned h = 0;
-   cocoa_gl_live_video_size(&w, &h);
-   retro_atomic_store_release_size(&cocoa_gl_backing_size,
-         (size_t)(((size_t)(w & 0xFFFF) << 16) | (size_t)(h & 0xFFFF)));
+   unsigned dims = 0;
+   cocoa_gl_live_video_size(&dims);
+   retro_atomic_store_release_size(&cocoa_gl_backing_size, (size_t)dims);
 }
 
 /* Thread-safe backing-size getter used by the vtable and check_window.

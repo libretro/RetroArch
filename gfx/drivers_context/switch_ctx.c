@@ -141,8 +141,6 @@ static bool switch_ctx_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
     /* Create an EGL rendering context */
     static const EGLint contextAttributeList[] =
         {
@@ -150,9 +148,12 @@ static bool switch_ctx_set_video_mode(void *data,
             EGL_NONE};
 
     switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
+    unsigned win_dims         = 0;
 
-    switch_ctx_get_video_size(data, &ctx_nx->dims);
+    switch_ctx_get_video_size(data, &win_dims);
 
+    ctx_nx->width  = VIDEO_SCALE_W(win_dims);
+    ctx_nx->height = VIDEO_SCALE_H(win_dims);
     ctx_nx->native_window.width = ctx_nx->width;
     ctx_nx->native_window.height = ctx_nx->height;
 

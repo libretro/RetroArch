@@ -140,11 +140,11 @@ static bool gfx_ctx_uwp_set_resize(void *data,
 static void gfx_ctx_uwp_get_video_size(void *data,
       unsigned *dims)
 {
-   bool quit     = false;
-   bool resize   = false;
-   unsigned dims = 0;
-   win32_check_window(NULL, &quit, &resize, &dims);
-   *dims = VIDEO_SCALE_PACK(VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   bool quit          = false;
+   bool resize        = false;
+   unsigned win_dims  = 0;
+   win32_check_window(NULL, &quit, &resize, &win_dims);
+   *dims              = win_dims;
    if (is_running_on_xbox())
    {
       /* Match the output res to the display resolution */
