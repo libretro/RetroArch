@@ -702,8 +702,17 @@ static int filebrowser_parse(
 
    dir_list_deinitialize(&str_list);
 
-   /* Duplicate hints apply only to entries in the filtered view. */
-   if (settings)
+   /* Content browsing only.  Settings file pickers (shaders,
+    * overlays, configs, fonts, playlists...) keep full names,
+    * since there the extension is what tells the files apart.
+    * Duplicate hints apply only to entries in the filtered view. */
+   if (      settings
+         && (   type == DISPLAYLIST_DEFAULT
+             || type == DISPLAYLIST_CORES_DETECTED)
+         && filebrowser_type != FILEBROWSER_SELECT_OVERLAY
+         && filebrowser_type != FILEBROWSER_SELECT_IMAGE
+         && filebrowser_type != FILEBROWSER_SELECT_VIDEO_FONT
+         && filebrowser_type != FILEBROWSER_SELECT_COLLECTION)
       menu_file_browser_prepare_extensions(info_list,
             settings->uints.menu_file_browser_extension_display);
 

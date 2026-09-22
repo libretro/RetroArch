@@ -576,6 +576,7 @@ uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
 uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	menu_thumbnail_preview_threads	1	1
+uint	menu_file_browser_extension_display	1	MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920
 uint	video_window_auto_height_max	1	1080
@@ -1237,6 +1238,7 @@ uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
 uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	menu_thumbnail_preview_threads	1	1
+uint	menu_file_browser_extension_display	1	MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920
 uint	video_window_auto_height_max	1	1080
@@ -1924,6 +1926,7 @@ uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
 uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	menu_thumbnail_preview_threads	1	1
+uint	menu_file_browser_extension_display	1	MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920
 uint	video_window_auto_height_max	1	1080

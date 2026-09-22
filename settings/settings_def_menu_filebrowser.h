@@ -9,7 +9,7 @@ S_UINT(menu_file_browser_extension_display, MENU_FILE_BROWSER_EXTENSION_DISPLAY,
       DEFAULT_MENU_FILE_BROWSER_EXTENSION_DISPLAY, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, MENU_FILE_BROWSER_EXTENSION_DISPLAY_LAST-1, 1, 0,
       setting_action_ok_uint, setting_get_string_representation_uint_menu_file_browser_extension_display,
       "File Extension Display",
-      "Specify when to show file extensions in File Browser.")
+      "Specify when to show file extensions while browsing for content. File pickers for shaders, overlays, configs and other settings files always show them.")
 S_BOOL(menu_navigation_browser_filter_supported_extensions_enable, NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
       "menu_navigation_browser_filter_supported_extensions_enable",
       true, SD_FLAG_NONE, 0, 0,
