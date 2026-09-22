@@ -389,7 +389,7 @@ void gfx_display_scissor_begin(
          width      = video_width - x;
 
       dispctx->scissor_begin(userdata, video_dims,
-            x, y, VIDEO_SCALE_PACK(width, height));
+            x, y, dims);
    }
 }
 
@@ -573,10 +573,12 @@ void gfx_display_draw_bg(
  * join, and the caller draws it itself. */
 static bool gfx_display_batch_add(gfx_display_t *p_disp,
       uintptr_t texture, const float *color, void *userdata,
-      unsigned video_width, unsigned video_height,
+      unsigned video_dims,
       float x0, float x1, float y0, float y1,
-      int px, int py, unsigned pw, unsigned ph)
+      int px, int py, unsigned dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    unsigned v, i;
    float *vert, *tex, *col;
 
@@ -645,13 +647,13 @@ static bool gfx_display_batch_add(gfx_display_t *p_disp,
    {
       p_disp->batch_first_x   = px;
       p_disp->batch_first_y   = py;
-      p_disp->batch_first_dims = VIDEO_SCALE_PACK(pw, ph);
+      p_disp->batch_first_dims = dims;
    }
    p_disp->batch_quads++;
    p_disp->stats.v[GFX_DISPLAY_STAT_QUADS]++;
    p_disp->batch_texture      = texture;
    p_disp->batch_userdata     = userdata;
-   p_disp->batch_video_dims   = VIDEO_SCALE_PACK(video_width, video_height);
+   p_disp->batch_video_dims   = video_dims;
    return true;
 }
 
@@ -793,8 +795,6 @@ void gfx_display_draw_quad(
       float *color,
       uintptr_t *texture)
 {
-   unsigned video_width  = VIDEO_SCALE_W(video_dims);
-   unsigned video_height = VIDEO_SCALE_H(video_dims);
    unsigned w            = VIDEO_SCALE_W(dims);
    unsigned h            = VIDEO_SCALE_H(dims);
    unsigned width        = VIDEO_SCALE_W(ref_dims);
@@ -816,7 +816,7 @@ void gfx_display_draw_quad(
    coords.color         = color;
 
    draw.pos             = VIDEO_POS_PACK(x, (int)height - y - (int)h);
-   draw.dims            = VIDEO_SCALE_PACK(w, h);
+   draw.dims            = dims;
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
    draw.texture         = (texture && *texture)
@@ -831,20 +831,20 @@ void gfx_display_draw_quad(
     * out before anything else draws, so the order is unchanged. */
    if (     dispctx->handles_vertex_strip
          && gfx_display_batch_add(p_disp, draw.texture, color, data,
-            video_width, video_height,
+            video_dims,
             (float)x / (float)width,
             (float)(x + (int)w) / (float)width,
             (float)VIDEO_POS_Y(draw.pos) / (float)height,
             (float)(VIDEO_POS_Y(draw.pos) + (int)h) / (float)height,
             VIDEO_POS_X(draw.pos), VIDEO_POS_Y(draw.pos),
-            VIDEO_SCALE_W(draw.dims), VIDEO_SCALE_H(draw.dims)))
+            draw.dims))
       return;
 
    gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
    if (dispctx->blend_begin)
       dispctx->blend_begin(data);
    if (dispctx->draw)
-      dispctx->draw(&draw, data, VIDEO_SCALE_PACK(video_width, video_height));
+      dispctx->draw(&draw, data, video_dims);
    if (dispctx->blend_end)
       dispctx->blend_end(data);
 }
@@ -863,8 +863,6 @@ void gfx_display_draw_texture_slice(
       math_matrix_4x4 *mymat
 )
 {
-   unsigned video_width              = VIDEO_SCALE_W(video_dims);
-   unsigned video_height             = VIDEO_SCALE_H(video_dims);
    unsigned w                        = VIDEO_SCALE_W(src_dims);
    unsigned h                        = VIDEO_SCALE_H(src_dims);
    unsigned new_w                    = VIDEO_SCALE_W(dst_dims);
@@ -966,7 +964,7 @@ void gfx_display_draw_texture_slice(
    coords.vertex            = vert_coord;
    coords.tex_coord         = tex_coord;
    coords.lut_tex_coord     = NULL;
-   draw.dims                = VIDEO_SCALE_PACK(width, height);
+   draw.dims                = dims;
    draw.coords              = &coords;
    draw.matrix_data         = mymat;
    draw.pipeline_id         = 0;
@@ -1046,7 +1044,7 @@ void gfx_display_draw_texture_slice(
                coords.vertices = v;
                coords.color    = vert_color;
                dispctx->draw(&draw, userdata,
-                     VIDEO_SCALE_PACK(video_width, video_height));
+                     video_dims);
                v = 0;
             }
             if (v)
@@ -1086,7 +1084,7 @@ void gfx_display_draw_texture_slice(
       coords.vertices = v;
       coords.color    = vert_color;
       dispctx->draw(&draw, userdata,
-            VIDEO_SCALE_PACK(video_width, video_height));
+            video_dims);
    }
 }
 
@@ -1124,8 +1122,6 @@ void gfx_display_draw_cursor(
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height)
 {
-   unsigned video_width  = VIDEO_SCALE_W(video_dims);
-   unsigned video_height = VIDEO_SCALE_H(video_dims);
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
@@ -1160,7 +1156,7 @@ void gfx_display_draw_cursor(
       dispctx->blend_begin(userdata);
    if (dispctx->draw)
       dispctx->draw(&draw, userdata,
-            VIDEO_SCALE_PACK(video_width, video_height));
+            video_dims);
    if (dispctx->blend_end)
       dispctx->blend_end(userdata);
 }
@@ -1226,11 +1222,11 @@ void gfx_display_draw_keyboard(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          0,
          (int)(video_height / 2),
          VIDEO_SCALE_PACK(video_width, video_height / 2),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          (float*)osk_dark,
          NULL);
 
@@ -1253,11 +1249,11 @@ void gfx_display_draw_keyboard(
          gfx_display_draw_quad(
            p_disp,
            userdata,
-           VIDEO_SCALE_PACK(video_width, video_height),
+           video_dims,
            (int)(video_width / 2 - (11 * ptr_width) / 2 + (i % 11) * ptr_width),
            (int)(video_height / 2 + ptr_height * 3 / 2 + line_y - ptr_height),
            VIDEO_SCALE_PACK(ptr_width, ptr_height),
-           VIDEO_SCALE_PACK(video_width, video_height),
+           video_dims,
            (float*)white,
            &hover_texture);
 
@@ -1272,7 +1268,7 @@ void gfx_display_draw_keyboard(
                + (i % 11) * ptr_width + ptr_width / 2),
             (float)(video_height / 2 + ptr_height + line_y)
                + font->size / 3.0f,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             color,
             TEXT_ALIGN_CENTER,
             1.0f,
