@@ -2705,7 +2705,7 @@ static void materialui_draw_icon(
       if (dispctx->draw)
          if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
             gfx_display_draw(dispctx, &draw, userdata,
-                  video_width, video_height);
+                  VIDEO_SCALE_PACK(video_width, video_height));
       gfx_display_blend_end(dispctx, userdata);
    }
 }
@@ -6831,7 +6831,7 @@ MUI_NOINLINE static void materialui_render_background(
       if (dispctx->draw)
          if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
             gfx_display_draw(dispctx, &draw, userdata,
-                  video_width, video_height);
+                  VIDEO_SCALE_PACK(video_width, video_height));
       gfx_display_blend_end(dispctx, userdata);
    }
 }

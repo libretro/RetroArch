@@ -1215,7 +1215,7 @@ static void xmb_draw_icon(
 #endif
       if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
          gfx_display_draw(dispctx, &draw, userdata,
-               video_width, video_height);
+               VIDEO_SCALE_PACK(video_width, video_height));
    }
 
    coords.color         = (const float*)color;
@@ -1231,7 +1231,7 @@ static void xmb_draw_icon(
 #endif
    if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
       gfx_display_draw(dispctx, &draw, userdata,
-            video_width, video_height);
+            VIDEO_SCALE_PACK(video_width, video_height));
 }
 
 static void xmb_draw_text(
@@ -8635,7 +8635,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, menu_wallpaper_opacity);
 
       gfx_display_draw(dispctx, &draw, userdata,
-            video_width, video_height);
+            VIDEO_SCALE_PACK(video_width, video_height));
    }
    /* Draw empty color theme gradient */
    else
@@ -8647,7 +8647,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, alpha);
 
       gfx_display_draw(dispctx, &draw, userdata,
-            video_width, video_height);
+            VIDEO_SCALE_PACK(video_width, video_height));
    }
 
 #ifdef HAVE_SHADERPIPELINE
@@ -8684,10 +8684,10 @@ XMB_NOINLINE static void xmb_draw_bg(
 
       if (dispctx->draw_pipeline)
          dispctx->draw_pipeline(&draw, p_disp,
-               userdata, video_width, video_height);
+               userdata, VIDEO_SCALE_PACK(video_width, video_height));
 
       gfx_display_draw(dispctx, &draw, userdata,
-            video_width, video_height);
+            VIDEO_SCALE_PACK(video_width, video_height));
    }
 #endif
 
@@ -8725,7 +8725,8 @@ XMB_NOINLINE static void xmb_draw_dark_layer(
    gfx_display_blend_begin(dispctx, userdata);
    gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, MIN(xmb->alpha, alpha));
    if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
-      gfx_display_draw(dispctx, &draw, userdata, width, height);
+      gfx_display_draw(dispctx, &draw, userdata,
+            VIDEO_SCALE_PACK(width, height));
    gfx_display_blend_end(dispctx, userdata);
 }
 

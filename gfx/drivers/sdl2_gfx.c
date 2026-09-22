@@ -1196,8 +1196,10 @@ static bool sdl2_display_geometry_reserve(sdl2_video_t *vid,
 }
 
 static void gfx_display_sdl2_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    sdl2_video_t  *vid    = (sdl2_video_t*)data;
    SDL_Vertex    *verts  = NULL;
    int           *indices = NULL;
@@ -1482,8 +1484,10 @@ static void gfx_display_sdl2_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
       void *data,
-      unsigned video_width, unsigned video_height)
+      unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    (void)draw;
    (void)p_disp;
    (void)data;

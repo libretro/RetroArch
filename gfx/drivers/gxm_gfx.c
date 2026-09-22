@@ -1535,7 +1535,7 @@ static void *gfx_display_gxm_get_default_mvp(void *data)
 }
 
 static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    gxm_texture_tint_vertex_t *vertices;
    unsigned i;

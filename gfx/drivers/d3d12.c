@@ -1191,7 +1191,7 @@ static void gfx_display_d3d12_blend_end(void *data)
 }
 
 static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    D3D12GraphicsCommandList cmd;
    int vertex_count     = 1;
@@ -1350,7 +1350,7 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
 
 static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    D3D12GraphicsCommandList cmd;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;

@@ -878,7 +878,7 @@ void gfx_widgets_draw_icon(
 
    if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
       gfx_display_draw(dispctx, &draw, userdata,
-            video_width, video_height);
+            VIDEO_SCALE_PACK(video_width, video_height));
 }
 
 void gfx_widgets_draw_text(

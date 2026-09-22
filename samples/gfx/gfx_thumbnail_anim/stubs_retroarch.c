@@ -215,8 +215,11 @@ bool task_push_image_load(const char *a, bool b, unsigned c, unsigned d,
  * with those declarations; C linkage does not carry parameter types,
  * so the symbol matches what gfx_thumbnail.c calls either way. */
 void gfx_display_draw(void *dispctx, void *draw, void *data,
-      unsigned video_width, unsigned video_height)
-{ (void)dispctx; (void)draw; (void)data;
+      unsigned video_dims)
+{
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+ (void)dispctx; (void)draw; (void)data;
   (void)video_width; (void)video_height; }
 
 /* Blending goes through gfx_display now, on the same terms as the

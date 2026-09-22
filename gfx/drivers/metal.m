@@ -3448,8 +3448,7 @@ static void gfx_display_metal_blend_end(void *data)
 
 static void gfx_display_metal_draw(gfx_display_ctx_draw_t *draw,
       void *data,
-      unsigned video_width,
-      unsigned video_height)
+      unsigned video_dims)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (md && draw)
@@ -3460,8 +3459,7 @@ static void gfx_display_metal_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
       void *data,
-      unsigned video_width,
-      unsigned video_height)
+      unsigned video_dims)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (md && draw)

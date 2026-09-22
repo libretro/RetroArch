@@ -164,8 +164,10 @@ unsigned stub_draw_count;
 
 void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *data,
-      unsigned video_width, unsigned video_height)
+      unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    if (draw)
    {
       stub_draw_dims = draw->dims;

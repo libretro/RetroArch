@@ -2500,7 +2500,7 @@ static unsigned to_menu_pipeline(unsigned pipeline)
 static void gfx_display_vk_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    static uint8_t ubo_scratch_data[768];
    static struct video_coords blank_coords;
@@ -2750,7 +2750,7 @@ static void vulkan_init_ribbon_vbo(vk_t *vk,
 }
 
 static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    int use_default_tc, use_default_color;
    bool is_ribbon;

@@ -675,9 +675,10 @@ static void gfx_display_d3d8_blend_end(void *data)
 
 static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
       void *data,
-      unsigned video_width,
-      unsigned video_height)
+      unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    static float default_mvp[] ={ 1.0f, 0.0f, 0.0f, 0.0f,
                                  0.0f, 1.0f, 0.0f, 0.0f,
                                  0.0f, 0.0f, 1.0f, 0.0f,
@@ -1027,7 +1028,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
 static void gfx_display_d3d8_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    video_coord_array_t *ca;
    d3d8_video_t *d3d = (d3d8_video_t*)data;

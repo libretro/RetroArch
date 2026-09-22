@@ -1017,8 +1017,10 @@ static bool gdi_texture_realize(gdi_t *gdi, gdi_texture_t *texture)
 }
 
 static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    gdi_t        *gdi     = (gdi_t*)data;
    gdi_texture_t *texture = NULL;
    uint32_t bl, br, tl, tr;

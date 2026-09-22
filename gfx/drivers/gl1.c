@@ -478,8 +478,7 @@ static void gfx_display_gl1_blend_end(void *data)
 
 static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
       void *data,
-      unsigned video_width,
-      unsigned video_height)
+      unsigned video_dims)
 {
    const GLfloat *mvp_matrix;
    video_coords_t     coords;

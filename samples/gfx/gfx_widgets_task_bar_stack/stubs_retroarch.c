@@ -187,8 +187,11 @@ void gfx_display_draw_text(const font_data_t *font, const char *text,
  * stub even though nothing here draws. */
 void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *data,
-      unsigned video_width, unsigned video_height)
-{ (void)dispctx; (void)draw; (void)data;
+      unsigned video_dims)
+{
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+ (void)dispctx; (void)draw; (void)data;
   (void)video_width; (void)video_height; }
 
 void gfx_display_rotate_z(gfx_display_t *p_disp, math_matrix_4x4 *matrix,

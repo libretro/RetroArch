@@ -330,7 +330,7 @@ static void *gfx_display_rsx_get_default_mvp(void *data)
 }
 
 static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    unsigned i;
    rsx_viewport_t vp;

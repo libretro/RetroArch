@@ -356,8 +356,10 @@ static bool gx2_set_shader(void *data,
  */
 
 static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    wiiu_video_t             *wiiu  = (wiiu_video_t*)data;
 
    if (!wiiu || !draw)
@@ -546,7 +548,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
 static void gfx_display_wiiu_draw_pipeline(
       gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    video_coord_array_t *ca        = NULL;
    wiiu_video_t             *wiiu = (wiiu_video_t*)data;

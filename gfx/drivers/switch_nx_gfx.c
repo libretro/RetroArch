@@ -60,7 +60,7 @@
  */
 
 static void gfx_display_switch_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height) { }
+      void *data, unsigned video_dims) { }
 
 static const float *gfx_display_switch_get_default_vertices(void)
 {

@@ -1007,8 +1007,10 @@ static INLINE void sdl3_vertex_color(SDL_Vertex *v, const float *col, unsigned i
 }
 
 static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
 #define SDL3_DISPLAY_STACK_VERTS 64
    static const int quad_idx[6] = { 0, 1, 2, 2, 1, 3 };
    SDL_Vertex verts_stack[SDL3_DISPLAY_STACK_VERTS];

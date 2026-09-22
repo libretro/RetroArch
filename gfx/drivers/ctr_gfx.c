@@ -266,7 +266,7 @@ static void ctr_set_bottom_screen_enable(bool enabled, bool idle);
  */
 
 static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    ctr_scale_vector_t scale_vector;
    int colorR, colorG, colorB, colorA;

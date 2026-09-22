@@ -708,7 +708,7 @@ static void gfx_display_flush_impl(gfx_display_t *p_disp)
          dispctx->blend_begin(p_disp->batch_userdata);
       if (dispctx->draw)
          dispctx->draw(&draw, p_disp->batch_userdata,
-               VIDEO_SCALE_W(p_disp->batch_video_dims), VIDEO_SCALE_H(p_disp->batch_video_dims));
+               p_disp->batch_video_dims);
       if (own_blend && dispctx->blend_end)
          dispctx->blend_end(p_disp->batch_userdata);
    }
@@ -777,11 +777,11 @@ void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx,
  * than drawn one at a time, where the gathered ones have to go out. */
 void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *userdata,
-      unsigned video_width, unsigned video_height)
+      unsigned video_dims)
 {
    gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_DRAW);
    if (dispctx && dispctx->draw && draw)
-      dispctx->draw(draw, userdata, video_width, video_height);
+      dispctx->draw(draw, userdata, video_dims);
 }
 
 void gfx_display_draw_quad(
@@ -839,7 +839,7 @@ void gfx_display_draw_quad(
    if (dispctx->blend_begin)
       dispctx->blend_begin(data);
    if (dispctx->draw)
-      dispctx->draw(&draw, data, video_width, video_height);
+      dispctx->draw(&draw, data, VIDEO_SCALE_PACK(video_width, video_height));
    if (dispctx->blend_end)
       dispctx->blend_end(data);
 }
@@ -1040,7 +1040,8 @@ void gfx_display_draw_texture_slice(
                 * geometry it cannot walk. */
                coords.vertices = v;
                coords.color    = vert_color;
-               dispctx->draw(&draw, userdata, video_width, video_height);
+               dispctx->draw(&draw, userdata,
+                     VIDEO_SCALE_PACK(video_width, video_height));
                v = 0;
             }
             if (v)
@@ -1079,7 +1080,8 @@ void gfx_display_draw_texture_slice(
 
       coords.vertices = v;
       coords.color    = vert_color;
-      dispctx->draw(&draw, userdata, video_width, video_height);
+      dispctx->draw(&draw, userdata,
+            VIDEO_SCALE_PACK(video_width, video_height));
    }
 }
 
@@ -1151,7 +1153,8 @@ void gfx_display_draw_cursor(
    if (dispctx->blend_begin)
       dispctx->blend_begin(userdata);
    if (dispctx->draw)
-      dispctx->draw(&draw, userdata, video_width, video_height);
+      dispctx->draw(&draw, userdata,
+            VIDEO_SCALE_PACK(video_width, video_height));
    if (dispctx->blend_end)
       dispctx->blend_end(userdata);
 }

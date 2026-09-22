@@ -651,8 +651,10 @@ static void gfx_display_d3d9_cg_bind_texture(gfx_display_ctx_draw_t *draw,
 }
 
 static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    unsigned i;
    LPDIRECT3DDEVICE9 dev;
    bool has_vertex_data;
@@ -1049,7 +1051,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
 
 static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    video_coord_array_t *ca               = NULL;
    d3d9_video_t *d3d                     = (d3d9_video_t*)data;

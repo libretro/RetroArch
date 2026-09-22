@@ -595,7 +595,7 @@ static void gfx_display_d3d10_blend_end(void *data)
 }
 
 static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    UINT offset = 0, stride = 0;
    int vertex_count        = 1;
@@ -740,7 +740,7 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
 
 static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
       gfx_display_t *p_disp,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    UINT stride = 0, offset   = 0;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;

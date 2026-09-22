@@ -114,13 +114,14 @@ typedef struct gfx_display gfx_display_t;
 
 typedef struct gfx_display_ctx_driver
 {
-   /* Draw graphics to the screen. */
+   /* Draw graphics to the screen. @video_dims carries both axes of
+    * the output size in one word, VIDEO_SCALE_PACK's layout. */
    void (*draw)(gfx_display_ctx_draw_t *draw,
-         void *data, unsigned video_width, unsigned video_height);
+         void *data, unsigned video_dims);
    /* Draw one of the menu pipeline shaders. */
    void (*draw_pipeline)(gfx_display_ctx_draw_t *draw,
          gfx_display_t *p_disp,
-         void *data, unsigned video_width, unsigned video_height);
+         void *data, unsigned video_dims);
    /* Start blending operation. */
    void (*blend_begin)(void *data);
    /* Finish blending operation. */
@@ -366,7 +367,7 @@ void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx,
 
 void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *userdata,
-      unsigned video_width, unsigned video_height);
+      unsigned video_dims);
 
 void gfx_display_draw_quad(
       gfx_display_t *p_disp,
