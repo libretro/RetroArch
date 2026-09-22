@@ -790,7 +790,8 @@ static float win32_display_server_get_refresh_rate(void *data)
             GetProcAddress(user32, "GetDisplayConfigBufferSizes");
    }
 #else
-   static QUERYDISPLAYCONFIG          pQueryDisplayConfig          = QueryDisplayConfig;
+   static QUERYDISPLAYCONFIG          pQueryDisplayConfig          =
+      (QUERYDISPLAYCONFIG)QueryDisplayConfig;
    static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes = GetDisplayConfigBufferSizes;
 #endif
 
