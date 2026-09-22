@@ -501,7 +501,12 @@ void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
    sdl3_pump_window_events(quit, resize);
 
    if (*resize && win)
-      sdl3_window_get_video_size(win, width, height);
+   {
+      unsigned w = 0;
+      unsigned h = 0;
+      sdl3_window_get_video_size(win, &w, &h);
+      *dims      = VIDEO_SCALE_PACK(w, h);
+   }
 }
 
 bool sdl3_ctx_get_metrics(void *data,

@@ -80,7 +80,7 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
    settings_t *settings     = config_get_ptr();
    float refresh_rate       = settings->floats.video_refresh_rate;
 
-   win32_check_window(NULL, quit, resize, width, height);
+   win32_check_window(NULL, quit, resize, dims);
 
    if (win32_vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN)
       *resize               = true;

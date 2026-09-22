@@ -175,7 +175,7 @@ static void sdl3_vk_ctx_check_window(void *data, bool *quit,
    if (sdl->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN)
       *resize = true;
 
-   sdl3_ctx_check_window(data, quit, resize, width, height);
+   sdl3_ctx_check_window(data, quit, resize, dims);
 }
 
 static bool sdl3_vk_ctx_set_resize(void *data,

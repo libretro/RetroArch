@@ -2534,9 +2534,11 @@ static void *gdi_init(const video_info_t *video,
    if (temp_width != 0 && temp_height != 0)
       video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
    else
+   {
       out_dims = video_driver_get_output_dims();
       temp_width = VIDEO_SCALE_W(out_dims);
       temp_height = VIDEO_SCALE_H(out_dims);
+   }
    gdi->full_width  = temp_width;
    gdi->full_height = temp_height;
 

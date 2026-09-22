@@ -198,9 +198,11 @@ static void *vg_init(const video_info_t *video,
       video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
    }
    else
+   {
       out_dims = video_driver_get_output_dims();
       temp_width = VIDEO_SCALE_W(out_dims);
       temp_height = VIDEO_SCALE_H(out_dims);
+   }
 
    vg->mScreenAspect = (float)temp_width / temp_height;
 
