@@ -47,7 +47,7 @@ typedef struct video_output_info
    int  id;             /* server-specific handle (XRandR output index,
                            EnumDisplayMonitors index, DRM connector id) */
    int  x, y;           /* placement in desktop coordinates */
-   unsigned width, height;
+   unsigned dims;
    bool primary;
    char name[64];       /* connector name (DVI-0, \\.\DISPLAY1, HDMI-A-1) */
 } video_output_info_t;

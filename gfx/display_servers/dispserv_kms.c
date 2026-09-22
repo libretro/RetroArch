@@ -244,8 +244,7 @@ static int kms_display_server_modeline_list_outputs(void *data,
       return 0;
    memset(out, 0, sizeof(*out));
    out->id      = (int)g_drm_connector->connector_id;
-   out->width   = g_drm_mode->hdisplay;
-   out->height  = g_drm_mode->vdisplay;
+   out->dims = VIDEO_SCALE_PACK(g_drm_mode->hdisplay, g_drm_mode->vdisplay);
    out->primary = true;
    snprintf(out->name, sizeof(out->name), "connector-%u",
          g_drm_connector->connector_id);

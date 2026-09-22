@@ -124,7 +124,7 @@ int main(void)
       return 1;
    }
    printf("[pass] list_outputs: %d, first '%s' %ux%u\n", nout,
-         outputs[0].name, outputs[0].width, outputs[0].height);
+         outputs[0].name, VIDEO_SCALE_W(outputs[0].dims), VIDEO_SCALE_H(outputs[0].dims));
 
    memset(&ds, 0, sizeof(ds));
    strcpy(ds.screen, "auto");

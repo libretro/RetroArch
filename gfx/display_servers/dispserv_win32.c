@@ -1017,8 +1017,7 @@ static BOOL CALLBACK win32_modeline_output_enum(HMONITOR h_monitor,
    o->id      = e->n;
    o->x       = info.rcMonitor.left;
    o->y       = info.rcMonitor.top;
-   o->width   = info.rcMonitor.right - info.rcMonitor.left;
-   o->height  = info.rcMonitor.bottom - info.rcMonitor.top;
+   o->dims = VIDEO_SCALE_PACK(info.rcMonitor.right - info.rcMonitor.left, info.rcMonitor.bottom - info.rcMonitor.top);
    o->primary = (info.dwFlags & MONITORINFOF_PRIMARY) ? true : false;
    strlcpy(o->name, info.szDevice, sizeof(o->name));
    e->n++;

@@ -141,7 +141,7 @@ int main(void)
       return 1;
    }
    printf("[pass] list_outputs: %d, first '%s' %ux%u primary %d\n", nout,
-         outputs[0].name, outputs[0].width, outputs[0].height, outputs[0].primary);
+         outputs[0].name, VIDEO_SCALE_W(outputs[0].dims), VIDEO_SCALE_H(outputs[0].dims), outputs[0].primary);
 
    memset(&ops, 0, sizeof(ops));
    ops.data       = data;

@@ -5272,7 +5272,7 @@ static size_t setting_get_string_representation_uint_video_monitor_index(
       n = video_display_server_list_outputs(outputs, 8);
       if (n > 0 && idx >= 1 && (int)idx <= n && outputs[idx - 1].name[0])
          return snprintf(s, len, "%u (%s %ux%u)", idx, outputs[idx - 1].name,
-               outputs[idx - 1].width, outputs[idx - 1].height);
+               VIDEO_SCALE_W(outputs[idx - 1].dims), VIDEO_SCALE_H(outputs[idx - 1].dims));
       return snprintf(s, len, "%u", idx);
    }
    return strlcpy_lit(s, "0 (Auto)", len);

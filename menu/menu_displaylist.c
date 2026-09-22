@@ -2085,7 +2085,7 @@ static unsigned menu_displaylist_parse_display_info(file_list_t *list)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT),
             sizeof(entry));
       _len += snprintf(entry + _len, sizeof(entry) - _len, " %d: %s %ux%u @ %d,%d%s",
-            i + 1, outputs[i].name, outputs[i].width, outputs[i].height,
+            i + 1, outputs[i].name, VIDEO_SCALE_W(outputs[i].dims), VIDEO_SCALE_H(outputs[i].dims),
             outputs[i].x, outputs[i].y, outputs[i].primary ? " *" : "");
       if (menu_entries_append(list, entry, "",
             MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,

@@ -551,7 +551,7 @@ static int test_modeline_ops(void)
    strcpy(ds.screen, "dummy");
 
    if (dispserv_kms.modeline_list_outputs(data, outputs, 4) != 1
-         || outputs[0].id != 77 || outputs[0].width != 1920 || !outputs[0].primary)
+         || outputs[0].id != 77 || VIDEO_SCALE_W(outputs[0].dims) != 1920 || !outputs[0].primary)
    {
       fprintf(stderr, "FAIL: list_outputs did not report the live connector\n");
       return 1;

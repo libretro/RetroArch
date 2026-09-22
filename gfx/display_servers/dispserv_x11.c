@@ -738,8 +738,7 @@ static int x11_display_server_modeline_list_outputs(void *data,
          {
             out[n].x      = crtc->x;
             out[n].y      = crtc->y;
-            out[n].width  = crtc->width;
-            out[n].height = crtc->height;
+            out[n].dims = VIDEO_SCALE_PACK(crtc->width, crtc->height);
             XRRFreeCrtcInfo(crtc);
          }
          out[n].primary = (n == 0);

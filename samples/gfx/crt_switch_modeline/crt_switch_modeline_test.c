@@ -243,8 +243,7 @@ int video_display_server_list_outputs(video_output_info_t *out, int max)
    {
       memset(&out[i], 0, sizeof(out[i]));
       strlcpy(out[i].name, srv_out_name[i], sizeof(out[i].name));
-      out[i].width   = 640;
-      out[i].height  = 480;
+      out[i].dims = VIDEO_SCALE_PACK(640, 480);
       out[i].primary = (i == 0);
    }
    return i;

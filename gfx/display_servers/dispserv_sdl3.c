@@ -254,8 +254,7 @@ static int sdl3_display_server_modeline_list_outputs(void *data,
       {
          out[i].x      = r.x;
          out[i].y      = r.y;
-         out[i].width  = r.w;
-         out[i].height = r.h;
+         out[i].dims = VIDEO_SCALE_PACK(r.w, r.h);
       }
       out[i].primary = (ids[i] == window_display);
       strlcpy(out[i].name, name ? name : "", sizeof(out[i].name));
