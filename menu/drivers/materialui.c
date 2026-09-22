@@ -5986,66 +5986,40 @@ static void materialui_render_menu_entry_savestate_list(
    {
       case MUI_ENTRY_VALUE_TEXT:
          {
-            int value_x_offset             = 0;
             uint32_t entry_value_color     = 0;
             unsigned entry_value_width_max = (usable_width / 2) - mui->margin;
             char value_buf[NAME_MAX_LENGTH];
+            unsigned glyph_width           = mui->font_data.list.glyph_width;
+            size_t entry_value_len         = utf8len(entry_value);
+            size_t entry_value_len_max     =
+                  (size_t)(entry_value_width_max / glyph_width);
 
             value_buf[0] = '\0';
 
-            /* Apply ticker */
-            if (0 && mui->flags & MUI_FLAG_USE_SMOOTH_TICKER)
-            {
-               mui->ticker_smooth.field_width = entry_value_width_max;
-               mui->ticker_smooth.src_str     = entry_value;
-               mui->ticker_smooth.dst_str     = value_buf;
-               mui->ticker_smooth.dst_str_len = sizeof(value_buf);
+            /* Apply ticker. The smooth ticker is not used for a value:
+             * it reads the width back in pixels, which a right-aligned
+             * value would then have to offset itself by, and the plain
+             * ticker's character count is enough for a field this
+             * narrow. */
+            if (entry_value_len_max > 0)
+               entry_value_len_max  = entry_value_len_max - 1;
+            if (entry_value_len > entry_value_len_max)
+               entry_value_len      = entry_value_len_max;
 
-               if (gfx_animation_ticker_smooth(&mui->ticker_smooth))
-               {
-                  /* If ticker is active, then value text is effectively
-                   * entry_value_width_max pixels wide... */
-                  entry_value_width = entry_value_width_max;
-                  /* ...and since value text is right aligned, have to
-                   * offset x position by the 'padding' width at the
-                   * end of the ticker string */
-                  value_x_offset =
-                        (int)(mui->ticker_x_offset + mui->ticker_str_width) -
-                              (int)entry_value_width_max;
-               }
-               /* If ticker is inactive, width of value string is
-                * exactly mui->ticker_str_width pixels, and no x offset
-                * is required */
-               else
-                  entry_value_width = mui->ticker_str_width;
-            }
-            else
-            {
-               size_t entry_value_len     = utf8len(entry_value);
-               size_t entry_value_len_max =
-                     (size_t)(entry_value_width_max / mui->font_data.list.glyph_width);
+            mui->ticker.s           = value_buf;
+            mui->ticker.s_len       = sizeof(value_buf);
+            mui->ticker.len         = entry_value_len;
+            mui->ticker.str         = entry_value;
 
-               /* Limit length of value string */
-               if (entry_value_len_max > 0)
-                  entry_value_len_max  = entry_value_len_max - 1;
-               if (entry_value_len > entry_value_len_max)
-                  entry_value_len      = entry_value_len_max;
+            gfx_animation_ticker(&mui->ticker);
 
-               mui->ticker.s           = value_buf;
-               mui->ticker.s_len       = sizeof(value_buf);
-               mui->ticker.len         = entry_value_len;
-               mui->ticker.str         = entry_value;
-
-               gfx_animation_ticker(&mui->ticker);
-
-               /* Get effective width of value string
-                * > Approximate value - only the smooth ticker
-                *   returns the actual width in pixels, and any
-                *   platform too slow to run the smooth ticker
-                *   won't appreciate the overheads of using
-                *   font_driver_get_message_width() here... */
-               entry_value_width = (entry_value_len + 1) * mui->font_data.list.glyph_width;
-            }
+            /* Get effective width of value string
+             * > Approximate value - only the smooth ticker
+             *   returns the actual width in pixels, and any
+             *   platform too slow to run the smooth ticker
+             *   won't appreciate the overheads of using
+             *   font_driver_get_message_width() here... */
+            entry_value_width = (entry_value_len + 1) * glyph_width;
 
             entry_value_color = (entry_selected || touch_feedback_active)
                   ? mui->colors.list_text_highlighted : mui->colors.list_text;
@@ -6057,7 +6031,8 @@ static void materialui_render_menu_entry_savestate_list(
 
             /* Draw value string */
             gfx_display_draw_text(mui->font_data.list.font, value_buf,
-                  entry_x + value_x_offset + node->entry_width - (int)mui->margin - (int)mui->landscape_optimization.entry_margin,
+                  entry_x + node->entry_width - (int)mui->margin
+                        - (int)mui->landscape_optimization.entry_margin,
                   label_y,
                   video_dims,
                   entry_value_color,
