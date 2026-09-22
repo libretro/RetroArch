@@ -914,7 +914,8 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
    if (!coords.color)
       coords.color                  = &gl3_colors[0];
 
-   glViewport(draw->x, draw->y, VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
+   glViewport(draw->x, draw->y,
+         VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
 
    if (gl->chain.active)
    {
@@ -4620,14 +4621,13 @@ static void gl3_renderchain_render(
       /* Render to FBO with certain size. */
       gl3_set_viewport(gl, rect->img_width, rect->img_height, true, false);
 
-      params.vp_width      = gl->out_vp_width;
-      params.vp_height     = gl->out_vp_height;
-      params.width         = prev_rect->img_width;
-      params.height        = prev_rect->img_height;
-      params.tex_width     = prev_rect->width;
-      params.tex_height    = prev_rect->height;
-      params.out_width     = gl->vp.width;
-      params.out_height    = gl->vp.height;
+      params.vp_dims       = VIDEO_SCALE_PACK(
+            gl->out_vp_width, gl->out_vp_height);
+      params.dims          = VIDEO_SCALE_PACK(
+            prev_rect->img_width, prev_rect->img_height);
+      params.tex_dims      = VIDEO_SCALE_PACK(
+            prev_rect->width, prev_rect->height);
+      params.out_dims      = VIDEO_SCALE_PACK(gl->vp.width, gl->vp.height);
       params.frame_counter = (unsigned int)frame_count;
       /* Intermediate passes of the same present: the outer frame's
        * count, read from the shared state since video_info does not
@@ -4690,14 +4690,11 @@ static void gl3_renderchain_render(
    glClear(GL_COLOR_BUFFER_BIT);
    gl3_set_viewport(gl, width, height, false, true);
 
-   params.vp_width      = gl->out_vp_width;
-   params.vp_height     = gl->out_vp_height;
-   params.width         = prev_rect->img_width;
-   params.height        = prev_rect->img_height;
-   params.tex_width     = prev_rect->width;
-   params.tex_height    = prev_rect->height;
-   params.out_width     = gl->vp.width;
-   params.out_height    = gl->vp.height;
+   params.vp_dims       = VIDEO_SCALE_PACK(gl->out_vp_width, gl->out_vp_height);
+   params.dims          = VIDEO_SCALE_PACK(
+         prev_rect->img_width, prev_rect->img_height);
+   params.tex_dims      = VIDEO_SCALE_PACK(prev_rect->width, prev_rect->height);
+   params.out_dims      = VIDEO_SCALE_PACK(gl->vp.width, gl->vp.height);
    params.frame_counter = (unsigned int)frame_count;
    params.swap_counter  = (unsigned int)video_thread_swap_count();
    params.info          = tex_info;
@@ -5055,14 +5052,13 @@ static bool gl3_frame(void *data, const void *frame,
          GL3_SET_TEXTURE_COORDS(feedback_info.coord, xamt, yamt);
       }
 
-      params.vp_width      = gl->out_vp_width;
-      params.vp_height     = gl->out_vp_height;
-      params.width         = frame_width;
-      params.height        = frame_height;
-      params.tex_width     = RARCH_SCALE_BASE * gl->video_info.input_scale;
-      params.tex_height    = RARCH_SCALE_BASE * gl->video_info.input_scale;
-      params.out_width     = gl->vp.width;
-      params.out_height    = gl->vp.height;
+      params.vp_dims       = VIDEO_SCALE_PACK(
+            gl->out_vp_width, gl->out_vp_height);
+      params.dims          = VIDEO_SCALE_PACK(frame_width, frame_height);
+      params.tex_dims      = VIDEO_SCALE_PACK(
+            RARCH_SCALE_BASE * gl->video_info.input_scale,
+            RARCH_SCALE_BASE * gl->video_info.input_scale);
+      params.out_dims      = VIDEO_SCALE_PACK(gl->vp.width, gl->vp.height);
       params.frame_counter = (unsigned int)frame_count;
       params.swap_counter  = (unsigned int)video_info->swap_count;
       params.info          = &gl->chain.tex_info;

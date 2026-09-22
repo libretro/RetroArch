@@ -289,14 +289,11 @@ typedef struct video_shader_ctx_params
    const void *prev_info;
    const void *feedback_info;
    const void *fbo_info;
-   unsigned vp_width;
-   unsigned vp_height;
-   unsigned width;
-   unsigned height;
-   unsigned tex_width;
-   unsigned tex_height;
-   unsigned out_width;
-   unsigned out_height;
+   /* Each size is one word in VIDEO_SCALE_PACK's layout. */
+   unsigned vp_dims;
+   unsigned dims;
+   unsigned tex_dims;
+   unsigned out_dims;
    unsigned frame_counter;
    /* Presents the display had seen before this frame's first one; see
     * video_frame_info_t::swap_count. Zero when the caller has none. */

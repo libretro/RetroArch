@@ -677,7 +677,8 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    if (!coords.lut_tex_coord)
       coords.lut_tex_coord = &gl2_tex_coords[0];
 
-   glViewport(draw->x, draw->y, VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
+   glViewport(draw->x, draw->y,
+         VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
    gl->shader->set_coords(gl->shader_data, &coords);
@@ -1605,14 +1606,13 @@ static void gl2_renderchain_render(
       gl2_set_viewport(gl,
             rect->img_width, rect->img_height, true, false);
 
-      params.vp_width      = gl->out_vp_width;
-      params.vp_height     = gl->out_vp_height;
-      params.width         = prev_rect->img_width;
-      params.height        = prev_rect->img_height;
-      params.tex_width     = prev_rect->width;
-      params.tex_height    = prev_rect->height;
-      params.out_width     = gl->vp.width;
-      params.out_height    = gl->vp.height;
+      params.vp_dims       = VIDEO_SCALE_PACK(
+            gl->out_vp_width, gl->out_vp_height);
+      params.dims          = VIDEO_SCALE_PACK(
+            prev_rect->img_width, prev_rect->img_height);
+      params.tex_dims      = VIDEO_SCALE_PACK(
+            prev_rect->width, prev_rect->height);
+      params.out_dims      = VIDEO_SCALE_PACK(gl->vp.width, gl->vp.height);
       params.frame_counter = (unsigned int)frame_count;
       /* Intermediate passes of the same present: the outer frame's
        * count, read from the shared state since video_info does not
@@ -1681,14 +1681,11 @@ static void gl2_renderchain_render(
    glClear(GL_COLOR_BUFFER_BIT);
    gl2_set_viewport(gl, width, height, false, true);
 
-   params.vp_width      = gl->out_vp_width;
-   params.vp_height     = gl->out_vp_height;
-   params.width         = prev_rect->img_width;
-   params.height        = prev_rect->img_height;
-   params.tex_width     = prev_rect->width;
-   params.tex_height    = prev_rect->height;
-   params.out_width     = gl->vp.width;
-   params.out_height    = gl->vp.height;
+   params.vp_dims       = VIDEO_SCALE_PACK(gl->out_vp_width, gl->out_vp_height);
+   params.dims          = VIDEO_SCALE_PACK(
+         prev_rect->img_width, prev_rect->img_height);
+   params.tex_dims      = VIDEO_SCALE_PACK(prev_rect->width, prev_rect->height);
+   params.out_dims      = VIDEO_SCALE_PACK(gl->vp.width, gl->vp.height);
    params.frame_counter = (unsigned int)frame_count;
    /* Last pass of the same present; see above. */
    params.swap_counter  = (unsigned int)video_thread_swap_count();
@@ -4544,14 +4541,11 @@ static bool gl2_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   params.vp_width         = gl->out_vp_width;
-   params.vp_height        = gl->out_vp_height;
-   params.width            = frame_width;
-   params.height           = frame_height;
-   params.tex_width        = gl->tex_w;
-   params.tex_height       = gl->tex_h;
-   params.out_width        = gl->vp.width;
-   params.out_height       = gl->vp.height;
+   params.vp_dims          = VIDEO_SCALE_PACK(
+         gl->out_vp_width, gl->out_vp_height);
+   params.dims             = VIDEO_SCALE_PACK(frame_width, frame_height);
+   params.tex_dims         = VIDEO_SCALE_PACK(gl->tex_w, gl->tex_h);
+   params.out_dims         = VIDEO_SCALE_PACK(gl->vp.width, gl->vp.height);
    params.frame_counter    = (unsigned int)frame_count;
    params.swap_counter    = (unsigned int)video_info->swap_count;
    params.info             = &gl->tex_info;
