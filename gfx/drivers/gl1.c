@@ -2257,16 +2257,10 @@ static bool gl1_frame(void *data, const void *frame,
 
    if (gl1->flags & GL1_FLAG_SHOULD_RESIZE)
    {
-      gfx_ctx_mode_t mode;
-
       gl1->flags       &= ~GL1_FLAG_SHOULD_RESIZE;
 
-      mode.width        = width;
-      mode.height       = height;
-
       if (gl1->ctx_driver->set_resize)
-         gl1->ctx_driver->set_resize(gl1->ctx_data,
-               mode.width, mode.height);
+         gl1->ctx_driver->set_resize(gl1->ctx_data, width, height);
 
       gl1_set_viewport(gl1,
             video_width, video_height, false, true);

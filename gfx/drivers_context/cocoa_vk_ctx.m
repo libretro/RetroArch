@@ -48,8 +48,6 @@ typedef struct cocoa_vk_ctx_data
 {
    gfx_ctx_vulkan_data_t vk;
    int swap_interval;
-   unsigned width;
-   unsigned height;
 } cocoa_vk_ctx_data_t;
 
 /* TODO/FIXME - static globals */
@@ -301,8 +299,7 @@ static void *cocoa_vk_gfx_ctx_get_context_data(void *data)
 typedef struct
 {
    void    *data;
-   unsigned width;
-   unsigned height;
+   unsigned dims;
    bool     fullscreen;
    bool     ok;
 } cocoa_vk_set_video_mode_args_t;
@@ -318,19 +315,17 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
    gfx_ctx_mode_t mode;
    NSView *g_view                 = apple_platform.renderView;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)args->data;
-   cocoa_ctx->width               = args->width;
-   cocoa_ctx->height              = args->height;
 
    RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
-         cocoa_ctx->width, cocoa_ctx->height);
+         VIDEO_SCALE_W(args->dims), VIDEO_SCALE_H(args->dims));
 
    if (!vulkan_surface_create(
             &cocoa_ctx->vk,
             VULKAN_WSI_MVK_MACOS,
             NULL,
             (BRIDGE void *)g_view.layer,
-            cocoa_ctx->width,
-            cocoa_ctx->height,
+            VIDEO_SCALE_W(args->dims),
+            VIDEO_SCALE_H(args->dims),
             cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
@@ -338,8 +333,7 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
       return;
    }
 
-   mode.width                     = args->width;
-   mode.height                    = args->height;
+   mode.dims                      = args->dims;
    mode.fullscreen                = args->fullscreen;
    [apple_platform setVideoMode:mode];
    cocoa_show_mouse(args->data, !args->fullscreen);
@@ -355,13 +349,10 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
 static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
       unsigned dims, bool fullscreen)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
    cocoa_vk_set_video_mode_args_t args;
 
    args.data       = data;
-   args.width      = width;
-   args.height     = height;
+   args.dims       = dims;
    args.fullscreen = fullscreen;
    args.ok         = false;
 
@@ -411,8 +402,7 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 typedef struct
 {
    void    *data;
-   unsigned width;
-   unsigned height;
+   unsigned dims;
    bool     ok;
 } cocoa_vk_set_video_mode_args_t;
 
@@ -424,15 +414,13 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
    cocoa_vk_set_video_mode_args_t *args = (cocoa_vk_set_video_mode_args_t*)userdata;
    id g_view                      = apple_platform.renderView;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)args->data;
-   cocoa_ctx->width               = args->width;
-   cocoa_ctx->height              = args->height;
 
    if (!vulkan_surface_create(&cocoa_ctx->vk,
                               VULKAN_WSI_MVK_IOS,
                               NULL,
                               (BRIDGE void *)((MetalLayerView*)g_view).metalLayer,
-                              cocoa_ctx->width,
-                              cocoa_ctx->height,
+                              VIDEO_SCALE_W(args->dims),
+                              VIDEO_SCALE_H(args->dims),
                               cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
@@ -451,13 +439,10 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
 static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
       unsigned dims, bool fullscreen)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
    cocoa_vk_set_video_mode_args_t args;
 
    args.data   = data;
-   args.width  = width;
-   args.height = height;
+   args.dims   = dims;
    args.ok     = false;
 
    cocoa_main_thread_sync(cocoa_vk_gfx_ctx_set_video_mode_mainthread, &args);
@@ -506,8 +491,7 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 typedef struct
 {
    cocoa_vk_ctx_data_t *ctx;
-   unsigned width;
-   unsigned height;
+   unsigned dims;
    bool     ok;
 } cocoa_vk_set_resize_args_t;
 
@@ -523,7 +507,8 @@ static void cocoa_vk_gfx_ctx_set_resize_mainthread(void *userdata)
    cocoa_vk_ctx_data_t *cocoa_ctx   = args->ctx;
 
    if (!vulkan_create_swapchain(&cocoa_ctx->vk,
-            args->width, args->height, cocoa_ctx->swap_interval))
+            VIDEO_SCALE_W(args->dims), VIDEO_SCALE_H(args->dims),
+            cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       args->ok                    = false;
@@ -542,14 +527,9 @@ static void cocoa_vk_gfx_ctx_set_resize_mainthread(void *userdata)
 static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
 {
    cocoa_vk_set_resize_args_t args;
-   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
-   cocoa_ctx->width               = width;
-   cocoa_ctx->height              = height;
-
-   args.ctx    = cocoa_ctx;
-   args.width  = width;
-   args.height = height;
+   args.ctx    = (cocoa_vk_ctx_data_t*)data;
+   args.dims   = VIDEO_SCALE_PACK(width, height);
    args.ok     = false;
 
    cocoa_main_thread_sync(cocoa_vk_gfx_ctx_set_resize_mainthread, &args);

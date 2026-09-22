@@ -818,8 +818,7 @@ typedef struct gfx_ctx_driver
 
 typedef struct gfx_ctx_mode
 {
-   unsigned width;
-   unsigned height;
+   unsigned dims; /* VIDEO_SCALE_PACK(width, height) */
    bool fullscreen;
 } gfx_ctx_mode_t;
 

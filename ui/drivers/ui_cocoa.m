@@ -1040,9 +1040,11 @@ static ui_application_t ui_application_cocoa = {
    }
 
    /* HACK(sgc): ensure MTKView posts a drawable resize event */
-   if (mode.width > 0)
-       [self.window setContentSize:NSMakeSize(mode.width-1, mode.height)];
-   [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
+   if (VIDEO_SCALE_W(mode.dims) > 0)
+       [self.window setContentSize:NSMakeSize(VIDEO_SCALE_W(mode.dims) - 1,
+             VIDEO_SCALE_H(mode.dims))];
+   [self.window setContentSize:NSMakeSize(VIDEO_SCALE_W(mode.dims),
+         VIDEO_SCALE_H(mode.dims))];
    [self.window displayIfNeeded];
 }
 
@@ -1068,7 +1070,8 @@ static ui_application_t ui_application_cocoa = {
       [self.window setFrame:frame display:YES];
    }
    else
-      [self.window setContentSize:NSMakeSize(mode.width, mode.height)];
+      [self.window setContentSize:NSMakeSize(VIDEO_SCALE_W(mode.dims),
+            VIDEO_SCALE_H(mode.dims))];
 }
 
 - (void)setCursorVisible:(bool)v

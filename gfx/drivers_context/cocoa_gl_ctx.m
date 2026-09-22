@@ -67,8 +67,6 @@ typedef struct cocoa_ctx_data
 #if !TARGET_OS_OSX
    int fast_forward_skips;
 #endif
-   unsigned width;
-   unsigned height;
    uint8_t flags;
 } cocoa_ctx_data_t;
 
@@ -446,8 +444,7 @@ static void cocoa_gl_gfx_ctx_init_mainthread(void *userdata)
 typedef struct
 {
    void    *data;
-   unsigned width;
-   unsigned height;
+   unsigned dims;
    bool     fullscreen;
 } cocoa_gl_set_video_mode_args_t;
 
@@ -462,14 +459,10 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
 {
    cocoa_gl_set_video_mode_args_t *args = (cocoa_gl_set_video_mode_args_t*)userdata;
    void *data                  = args->data;
-   unsigned width              = args->width;
-   unsigned height             = args->height;
    bool fullscreen             = args->fullscreen;
    gfx_ctx_mode_t mode;
    NSView *g_view              = [apple_platform renderView];
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
-   cocoa_ctx->width            = width;
-   cocoa_ctx->height           = height;
 
    /* Render at the backing store's resolution rather than at point
     * size. 10.7, deprecated in 10.14 and still honoured; asked of the
@@ -576,8 +569,7 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
    /* Window and full-screen surgery lives with the application
     * delegate, which knows whether the system has native full-screen
     * or needs the borderless-window mode. */
-   mode.width           = width;
-   mode.height          = height;
+   mode.dims            = args->dims;
    mode.fullscreen      = fullscreen;
    [apple_platform setVideoMode:mode];
    cocoa_show_mouse(data, !fullscreen);
@@ -591,13 +583,10 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
 static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
       unsigned dims, bool fullscreen)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
    cocoa_gl_set_video_mode_args_t args;
 
    args.data       = data;
-   args.width      = width;
-   args.height     = height;
+   args.dims       = dims;
    args.fullscreen = fullscreen;
 
    /* Current-context state is per-thread, so this has to happen here

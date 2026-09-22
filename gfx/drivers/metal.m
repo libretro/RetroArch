@@ -4390,26 +4390,25 @@ static void metal_pull_cached_frame_cb(void *userdata,
       _keepAspect                   = _video.force_aspect;
 
       gfx_ctx_mode_t mode = {
-         .width = _video.width,
-         .height = _video.height,
+         .dims       = VIDEO_SCALE_PACK(_video.width, _video.height),
          .fullscreen = _video.fullscreen,
       };
 
-      if (mode.width == 0 || mode.height == 0)
+      if (!VIDEO_SCALE_W(mode.dims) || !VIDEO_SCALE_H(mode.dims))
       {
          /* 0 indicates full screen, so we'll use the view's dimensions,
           * which should already be full screen
           * If this turns out to be the wrong assumption, we can use NSScreen
           * to query the dimensions */
          CGSize size = view.frame.size;
-         mode.width  = (unsigned int)size.width;
-         mode.height = (unsigned int)size.height;
+         mode.dims   = VIDEO_SCALE_PACK(size.width, size.height);
       }
 
       [apple_platform setVideoMode:mode];
 
 #ifdef HAVE_COCOATOUCH
-      [self mtkView:view drawableSizeWillChange:CGSizeMake(mode.width, mode.height)];
+      [self mtkView:view drawableSizeWillChange:CGSizeMake(
+            VIDEO_SCALE_W(mode.dims), VIDEO_SCALE_H(mode.dims))];
 #endif
 
       *input         = NULL;
@@ -4479,7 +4478,8 @@ static void metal_pull_cached_frame_cb(void *userdata,
           * will re-size if the viewport changes. */
          CGSize size = view.drawableSize;
          if (size.width == 0 || size.height == 0)
-            size = CGSizeMake(mode.width, mode.height);
+            size = CGSizeMake(VIDEO_SCALE_W(mode.dims),
+                  VIDEO_SCALE_H(mode.dims));
          [_context setHDROutputMode:_initial_hdr_mode
                     viewportWidth:(unsigned)size.width
                    viewportHeight:(unsigned)size.height];

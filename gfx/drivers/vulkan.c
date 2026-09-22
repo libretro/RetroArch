@@ -8036,7 +8036,6 @@ static bool vulkan_frame(void *data, const void *frame,
    bool end_main_pass;
    bool video_hdr_enable;
 #endif
-   gfx_ctx_mode_t mode;
    struct vk_per_frame *chain;
    struct vk_image *backbuffer;
    struct vk_descriptor_manager *manager;
@@ -8984,9 +8983,6 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
-      mode.width  = width;
-      mode.height = height;
-
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* Force swapchain recreation if the HDR format mode changed.
        * Without this, vulkan_create_swapchain's early-return check
@@ -9023,7 +9019,7 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 
       if (vk->ctx_driver->set_resize)
-         vk->ctx_driver->set_resize(vk->ctx_data, mode.width, mode.height);
+         vk->ctx_driver->set_resize(vk->ctx_data, width, height);
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       {
