@@ -27,6 +27,7 @@
 
 #include "../../gfx/gfx_anim_preview.h"
 #include <features/features_cpu.h>
+#include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
 
@@ -149,6 +150,10 @@ struct companion_thumbs
    unsigned anim_sess_gen;
    unsigned anim_audio_gen;
 #ifdef HAVE_THREADS
+   /* Whether anim_sess holds a session, for poll() to read without
+    * the lock: with nothing playing it takes none at all. Written
+    * under the lock beside anim_sess itself. */
+   retro_atomic_int_t anim_sess_live;
    /* One hover on a video is a request() for its still and an
     * animate() for the same path, back to back, on every backend.
     * The still is the first frame through a preview session; the
@@ -912,6 +917,7 @@ static void ct_anim_thread(void *ud)
       }
       t->anim_sess     = sess;          /* the UI thread may start audio */
       t->anim_sess_gen = gen;
+      retro_atomic_store_release_int(&t->anim_sess_live, 1);
       slock_unlock(t->lock);
 
       for (;;)
@@ -982,7 +988,10 @@ static void ct_anim_thread(void *ud)
        * session while it is published, under the lock. */
       slock_lock(t->lock);
       if (t->anim_sess == sess)
+      {
          t->anim_sess = NULL;
+         retro_atomic_store_release_int(&t->anim_sess_live, 0);
+      }
       slock_unlock(t->lock);
       gfx_anim_preview_close(sess);   /* audio too */
    }
@@ -1273,7 +1282,7 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
    /* Preview audio lives on the UI thread (the mixer): start it once
     * the animation thread has published its session, and feed its
     * window every poll, as gfx_thumbnail_animate does per frame. */
-   if (t->lock)
+   if (t->lock && retro_atomic_load_acquire_int(&t->anim_sess_live))
    {
       gfx_anim_preview_t *sess;
       bool start = false;
