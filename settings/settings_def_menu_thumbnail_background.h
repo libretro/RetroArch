@@ -21,4 +21,4 @@ S_UINT(menu_thumbnail_preview_threads, MENU_THUMBNAIL_PREVIEW_THREADS,
       DEFAULT_MENU_THUMBNAIL_PREVIEW_THREADS, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 1, 8, 1, 0,
       setting_action_ok_uint, NULL,
       "Animated Thumbnail Threads",
-      "How many threads convert each frame of an animated WebM or MP4 thumbnail to pixels. One keeps the whole conversion on the decode thread. More spread it across cores, which helps large previews on machines with cores to spare and costs the running core those threads on machines without.")
+      "How many threads an animated thumbnail may decode on. One keeps the whole decode on its own thread. More spread it across cores, which is what lets a large preview play at speed. While a core is running the preview keeps to one thread, so the game keeps its cores.")
