@@ -247,10 +247,10 @@ typedef struct
 typedef struct
 {
    uint16_t *data;
-   unsigned max_width;
-   unsigned max_height;
-   unsigned width;
-   unsigned height;
+   /* The largest the thumbnail may be drawn, and the size it
+    * actually is, both in VIDEO_SCALE_PACK's layout. */
+   unsigned max_dims;
+   unsigned dims;
    char path[PATH_MAX_LENGTH];
    bool is_valid;
 } thumbnail_t;
@@ -2708,8 +2708,7 @@ static bool rgui_request_thumbnail(
          return true;
 
    /* 'Reset' current thumbnail */
-   thumbnail->width    = 0;
-   thumbnail->height   = 0;
+   thumbnail->dims     = 0;
    thumbnail->is_valid = false;
    thumbnail->path[0]  = '\0';
 
@@ -2805,14 +2804,15 @@ static uint32_t *rgui_downscale_box(const uint32_t *src,
 
 static bool rgui_downscale_thumbnail(
       rgui_t *rgui,
-      unsigned max_width,
-      unsigned max_height,
+      unsigned max_dims,
       unsigned thumbnail_downscaler,
       struct texture_image *image_src,
       struct texture_image *image_dst)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    bool thumbnail_core_aspect     = *rgui->savestate_thumbnail_file_path;
+   unsigned max_width            = VIDEO_SCALE_W(max_dims);
+   unsigned max_height           = VIDEO_SCALE_H(max_dims);
    /* Determine output dimensions */
    float display_aspect_ratio    = (float)max_width / (float)max_height;
    float         aspect_ratio    = (float)image_src->width / (float)image_src->height;
@@ -2960,6 +2960,10 @@ static void rgui_process_thumbnail(
       struct texture_image *image_src)
 {
    unsigned x, y;
+   unsigned max_width                   = VIDEO_SCALE_W(thumbnail->max_dims);
+   unsigned max_height                  = VIDEO_SCALE_H(thumbnail->max_dims);
+   unsigned thumb_width                 = 0;
+   unsigned thumb_height                = 0;
    struct texture_image *image          = NULL;
    struct texture_image image_resampled = {
       NULL,
@@ -2980,11 +2984,11 @@ static void rgui_process_thumbnail(
       return;
 
    /* Downscale thumbnail if it exceeds maximum size limits */
-   if ((image_src->width > thumbnail->max_width) || (image_src->height > thumbnail->max_height))
+   if (     (image_src->width  > max_width)
+         || (image_src->height > max_height))
    {
       if (!rgui_downscale_thumbnail(rgui,
-            thumbnail->max_width,
-            thumbnail->max_height,
+            thumbnail->max_dims,
             menu_rgui_thumbnail_downscaler,
             image_src,
             &image_resampled))
@@ -2998,24 +3002,28 @@ static void rgui_process_thumbnail(
    else
       image               = image_src;
 
-   thumbnail->width       = image->width;
-   thumbnail->height      = image->height;
+   /* Read the halves back out of the packed field rather than from
+    * the image, so the copy below walks exactly the rectangle the
+    * thumbnail now claims to be even if the pack had to clamp. */
+   thumbnail->dims        = VIDEO_SCALE_PACK(image->width, image->height);
+   thumb_width            = VIDEO_SCALE_W(thumbnail->dims);
+   thumb_height           = VIDEO_SCALE_H(thumbnail->dims);
 
    /* Copy image to thumbnail buffer, performing pixel format conversion.
     * Iterate rows in the outer loop so the row-major source and
     * destination are walked sequentially. */
-   for (y = 0; y < thumbnail->height; y++)
+   for (y = 0; y < thumb_height; y++)
    {
-      uint16_t       *dst = thumbnail->data   + y * thumbnail->width;
-      const uint32_t *src = image->pixels     + y * thumbnail->width;
+      uint16_t       *dst = thumbnail->data   + y * thumb_width;
+      const uint32_t *src = image->pixels     + y * thumb_width;
       if (dither)
       {
-         for (x = 0; x < thumbnail->width; x++)
+         for (x = 0; x < thumb_width; x++)
             dst[x] = argb32_to_pixel_platform_format_dither(src[x], x, y);
       }
       else
       {
-         for (x = 0; x < thumbnail->width; x++)
+         for (x = 0; x < thumb_width; x++)
             dst[x] = argb32_to_pixel_platform_format(src[x]);
       }
    }
@@ -3194,8 +3202,8 @@ RGUI_NOINLINE static void rgui_render_fs_thumbnail(
       unsigned fb_x_offset, fb_y_offset;
       unsigned thumb_x_offset, thumb_y_offset;
       unsigned width, height;
-      unsigned fs_thumbnail_width  = rgui->fs_thumbnail.width;
-      unsigned fs_thumbnail_height = rgui->fs_thumbnail.height;
+      unsigned fs_thumbnail_width  = VIDEO_SCALE_W(rgui->fs_thumbnail.dims);
+      unsigned fs_thumbnail_height = VIDEO_SCALE_H(rgui->fs_thumbnail.dims);
       uint16_t *src                = NULL;
       uint16_t *dst                = NULL;
       uint8_t border_width         = 1;
@@ -3303,8 +3311,10 @@ static void (*rgui_blit_line)(
 
 static INLINE unsigned rgui_get_mini_thumbnail_fullwidth(rgui_t *rgui)
 {
-   unsigned width      = rgui->mini_thumbnail.is_valid ? rgui->mini_thumbnail.width : 0;
-   unsigned left_width = rgui->mini_left_thumbnail.is_valid ? rgui->mini_left_thumbnail.width : 0;
+   unsigned width      = rgui->mini_thumbnail.is_valid
+         ? VIDEO_SCALE_W(rgui->mini_thumbnail.dims) : 0;
+   unsigned left_width = rgui->mini_left_thumbnail.is_valid
+         ? VIDEO_SCALE_W(rgui->mini_left_thumbnail.dims) : 0;
    return width >= left_width ? width : left_width;
 }
 
@@ -3330,22 +3340,26 @@ static void rgui_render_mini_thumbnail(
       uint16_t *dst                = NULL;
       unsigned term_width          = rgui->term_layout.width * rgui->font_width_stride;
       unsigned term_height         = rgui->term_layout.height * rgui->font_height_stride;
+      unsigned thumb_width         = VIDEO_SCALE_W(thumbnail->dims);
+      unsigned thumb_height        = VIDEO_SCALE_H(thumbnail->dims);
+      unsigned max_height          = VIDEO_SCALE_H(thumbnail->max_dims);
 
       /* Sanity check (this can never, ever happen, so just return
        * instead of trying to crop the thumbnail image...) */
       if (     (thumbnail_fullwidth > term_width)
-            || (thumbnail->height   > term_height))
+            || (thumb_height        > term_height))
          return;
 
       fb_x_offset = (rgui->term_layout.start_x + term_width) -
-            (thumbnail->width + ((thumbnail_fullwidth - thumbnail->width) >> 1));
+            (thumb_width + ((thumbnail_fullwidth - thumb_width) >> 1));
 
       if (     ((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !swap_thumbnails)
             || ((thumbnail_id == GFX_THUMBNAIL_LEFT)  &&  swap_thumbnails))
-         fb_y_offset = rgui->term_layout.start_y + ((thumbnail->max_height - thumbnail->height) >> 1);
+         fb_y_offset = rgui->term_layout.start_y
+               + ((max_height - thumb_height) >> 1);
       else
          fb_y_offset = (rgui->term_layout.start_y + term_height) -
-               (thumbnail->height + ((thumbnail->max_height - thumbnail->height) >> 1));
+               (thumb_height + ((max_height - thumb_height) >> 1));
 
       /* Draw background */
       if (thumbnail_background)
@@ -3353,31 +3367,32 @@ static void rgui_render_mini_thumbnail(
                rgui->term_layout.start_x + term_width - thumbnail_fullwidth,
                (     ((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !swap_thumbnails)
                   || ((thumbnail_id == GFX_THUMBNAIL_LEFT)  &&  swap_thumbnails))
-                     ? fb_y_offset : fb_y_offset - ((thumbnail->max_height - thumbnail->height) >> 1),
-               thumbnail_fullwidth, thumbnail->max_height,
+                     ? fb_y_offset
+                     : fb_y_offset - ((max_height - thumb_height) >> 1),
+               thumbnail_fullwidth, max_height,
                rgui->colors.shadow_color,
                rgui->colors.shadow_color,
                false);
 
       /* Copy thumbnail to framebuffer */
-      for (y = 0; y < thumbnail->height; y++)
+      for (y = 0; y < thumb_height; y++)
       {
-         src = thumbnail->data + (y * thumbnail->width);
+         src = thumbnail->data + (y * thumb_width);
          dst = frame_buf_data + (y + fb_y_offset) *
                (fb_pitch >> 1) + fb_x_offset;
 
-         memcpy(dst, src, thumbnail->width * sizeof(uint16_t));
+         memcpy(dst, src, thumb_width * sizeof(uint16_t));
       }
 
       /* Draw drop shadow, if required */
       if (0 && rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
       {
          rgui_color_rect(frame_buf_data, fb_dims,
-               fb_x_offset + thumbnail->width, fb_y_offset + 1,
-               1, thumbnail->height, rgui->colors.shadow_color);
+               fb_x_offset + thumb_width, fb_y_offset + 1,
+               1, thumb_height, rgui->colors.shadow_color);
          rgui_color_rect(frame_buf_data, fb_dims,
-               fb_x_offset + 1, fb_y_offset + thumbnail->height,
-               thumbnail->width, 1, rgui->colors.shadow_color);
+               fb_x_offset + 1, fb_y_offset + thumb_height,
+               thumb_width, 1, rgui->colors.shadow_color);
       }
    }
    /* Draw "not available" placeholder for unused save state thumbnails */
@@ -3388,23 +3403,27 @@ static void rgui_render_mini_thumbnail(
       unsigned term_width  = rgui->term_layout.width * rgui->font_width_stride;
       unsigned term_height = rgui->term_layout.height * rgui->font_height_stride;
       const char *msg      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+      unsigned max_width   = VIDEO_SCALE_W(thumbnail->max_dims);
+      unsigned max_height  = VIDEO_SCALE_H(thumbnail->max_dims);
 
-      fb_x_offset    = (rgui->term_layout.start_x + term_width) - thumbnail->max_width;
+      fb_x_offset    = (rgui->term_layout.start_x + term_width) - max_width;
 
       if (     ((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !swap_thumbnails)
             || ((thumbnail_id == GFX_THUMBNAIL_LEFT)  &&  swap_thumbnails))
          fb_y_offset = rgui->term_layout.start_y;
       else
-         fb_y_offset = (rgui->term_layout.start_y + term_height) - thumbnail->max_height;
+         fb_y_offset = (rgui->term_layout.start_y + term_height) - max_height;
 
-      text_x         = (thumbnail->max_width  / 2) + fb_x_offset - ((int)strlen(msg) * (rgui->font_width_stride / 2));
-      text_y         = (thumbnail->max_height / 2) + fb_y_offset - (rgui->font_height_stride / 3);
+      text_x         = (max_width  / 2) + fb_x_offset
+            - ((int)strlen(msg) * (rgui->font_width_stride / 2));
+      text_y         = (max_height / 2) + fb_y_offset
+            - (rgui->font_height_stride / 3);
 
       /* Draw background */
       rgui_fill_rect(frame_buf_data, fb_dims,
-            rgui->term_layout.start_x + term_width - thumbnail->max_width,
+            rgui->term_layout.start_x + term_width - max_width,
             fb_y_offset,
-            thumbnail->max_width, thumbnail->max_height,
+            max_width, max_height,
             rgui->colors.shadow_color,
             rgui->colors.shadow_color,
             false);
@@ -6692,10 +6711,8 @@ static void rgui_framebuffer_reset(frame_buf_t *framebuffer)
 
 static void rgui_thumbnail_reset(thumbnail_t *thumbnail)
 {
-   thumbnail->max_width  = 0;
-   thumbnail->max_height = 0;
-   thumbnail->width      = 0;
-   thumbnail->height     = 0;
+   thumbnail->max_dims   = 0;
+   thumbnail->dims       = 0;
    thumbnail->is_valid   = false;
    thumbnail->path[0]    = '\0';
    thumbnail->data       = NULL;
@@ -7269,8 +7286,9 @@ static bool rgui_set_aspect_ratio(
    rgui->background_buf.height    = rgui->frame_buf.height;
 
    /* Fullscreen thumbnail */
-   rgui->fs_thumbnail.max_width   = rgui->frame_buf.width;
-   rgui->fs_thumbnail.max_height  = rgui->frame_buf.height - (unsigned)(rgui->font_height_stride * 2.0f) + 2;
+   rgui->fs_thumbnail.max_dims    = VIDEO_SCALE_PACK(rgui->frame_buf.width,
+         rgui->frame_buf.height
+               - (unsigned)(rgui->font_height_stride * 2.0f) + 2);
 
    /* Mini thumbnails */
    mini_thumbnail_term_width            = (unsigned)((float)rgui->term_layout.width * (2.0f / 5.0f));
@@ -7279,18 +7297,18 @@ static bool rgui_set_aspect_ratio(
    rgui->mini_thumbnail_max_dims        = VIDEO_SCALE_PACK(mini_thumbnail_term_width * rgui->font_width_stride,
          (unsigned)((rgui->term_layout.height * rgui->font_height_stride) * 0.5f) - 2);
 
-   rgui->mini_thumbnail.max_width       = VIDEO_SCALE_W(rgui->mini_thumbnail_max_dims);
-   rgui->mini_thumbnail.max_height      = VIDEO_SCALE_H(rgui->mini_thumbnail_max_dims);
-   rgui->mini_left_thumbnail.max_width  = VIDEO_SCALE_W(rgui->mini_thumbnail_max_dims);
-   rgui->mini_left_thumbnail.max_height = VIDEO_SCALE_H(rgui->mini_thumbnail_max_dims);
+   rgui->mini_thumbnail.max_dims        = rgui->mini_thumbnail_max_dims;
+   rgui->mini_left_thumbnail.max_dims   = rgui->mini_thumbnail_max_dims;
 
    /* One block for all five buffers, in the order above. Cursors are
     * in uint16_t elements. */
    {
       size_t n_frame  = (size_t)rgui->frame_buf.width      * rgui->frame_buf.height;
       size_t n_bg     = (size_t)rgui->background_buf.width * rgui->background_buf.height;
-      size_t n_fs     = (size_t)rgui->fs_thumbnail.max_width   * rgui->fs_thumbnail.max_height;
-      size_t n_mini   = (size_t)rgui->mini_thumbnail.max_width * rgui->mini_thumbnail.max_height;
+      size_t n_fs     = (size_t)VIDEO_SCALE_W(rgui->fs_thumbnail.max_dims)
+            * VIDEO_SCALE_H(rgui->fs_thumbnail.max_dims);
+      size_t n_mini   = (size_t)VIDEO_SCALE_W(rgui->mini_thumbnail.max_dims)
+            * VIDEO_SCALE_H(rgui->mini_thumbnail.max_dims);
       size_t off_frame = 0;
       size_t off_bg    = RGUI_ARENA_NEXT(off_frame, n_frame);
       size_t off_fs    = RGUI_ARENA_NEXT(off_bg,    n_bg);
@@ -7831,13 +7849,11 @@ static void rgui_reset_savestate_thumbnail(void *data)
    if (!*rgui->savestate_thumbnail_file_path)
       return;
 
-   rgui->mini_left_thumbnail.width    = 0;
-   rgui->mini_left_thumbnail.height   = 0;
+   rgui->mini_left_thumbnail.dims     = 0;
    rgui->mini_left_thumbnail.is_valid = false;
    rgui->mini_left_thumbnail.path[0]  = '\0';
 
-   rgui->fs_thumbnail.width    = 0;
-   rgui->fs_thumbnail.height   = 0;
+   rgui->fs_thumbnail.dims     = 0;
    rgui->fs_thumbnail.is_valid = false;
    rgui->fs_thumbnail.path[0]  = '\0';
 
@@ -7997,15 +8013,13 @@ static void rgui_toggle_fs_thumbnail(rgui_t *rgui,
 
       if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
       {
-         rgui->mini_thumbnail.width    = 0;
-         rgui->mini_thumbnail.height   = 0;
+         rgui->mini_thumbnail.dims     = 0;
          rgui->mini_thumbnail.is_valid = false;
          rgui->mini_thumbnail.path[0]  = '\0';
       }
       else
       {
-         rgui->fs_thumbnail.width      = 0;
-         rgui->fs_thumbnail.height     = 0;
+         rgui->fs_thumbnail.dims       = 0;
          rgui->fs_thumbnail.is_valid   = false;
          rgui->fs_thumbnail.path[0]    = '\0';
       }
@@ -8033,18 +8047,15 @@ static void rgui_refresh_thumbnail_image(void *userdata, size_t i)
    if ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) || rgui_inline_thumbnails)
    {
       /* In all cases, reset current thumbnails */
-      rgui->fs_thumbnail.width           = 0;
-      rgui->fs_thumbnail.height          = 0;
+      rgui->fs_thumbnail.dims            = 0;
       rgui->fs_thumbnail.is_valid        = false;
       rgui->fs_thumbnail.path[0]         = '\0';
 
-      rgui->mini_thumbnail.width         = 0;
-      rgui->mini_thumbnail.height        = 0;
+      rgui->mini_thumbnail.dims          = 0;
       rgui->mini_thumbnail.is_valid      = false;
       rgui->mini_thumbnail.path[0]       = '\0';
 
-      rgui->mini_left_thumbnail.width    = 0;
-      rgui->mini_left_thumbnail.height   = 0;
+      rgui->mini_left_thumbnail.dims     = 0;
       rgui->mini_left_thumbnail.is_valid = false;
       rgui->mini_left_thumbnail.path[0]  = '\0';
 
