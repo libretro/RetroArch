@@ -177,15 +177,12 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             0, 0,
-            (state->mute)
-                  ? state->widget_height
-                  : state->widget_width,
-            state->widget_height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(
+               (state->mute) ? state->widget_height : state->widget_width,
+               state->widget_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             backdrop_orig,
             NULL
             );
@@ -237,11 +234,11 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                bar_x + bar_percentage * bar_width, bar_y,
-               bar_width - bar_percentage * bar_width, bar_height,
-               video_width, video_height,
+               VIDEO_SCALE_PACK(bar_width - bar_percentage * bar_width,
+                     bar_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                bar_background,
                NULL
                );
@@ -249,11 +246,10 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                bar_x, bar_y,
-               bar_percentage * bar_width, bar_height,
-               video_width, video_height,
+               VIDEO_SCALE_PACK(bar_percentage * bar_width, bar_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                bar_foreground,
                NULL
                );

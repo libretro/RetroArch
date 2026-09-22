@@ -868,14 +868,11 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                0,
                0,
-               video_width,
-               video_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                bg_underlay_color,
                NULL);
 
@@ -883,28 +880,22 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->bg_x,
                state->bg_shadow_top_y,
-               state->bg_width,
-               state->bg_shadow_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(state->bg_width, state->bg_shadow_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                bg_shadow_top_color,
                NULL);
 
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->bg_x,
                state->bg_shadow_bottom_y,
-               state->bg_width,
-               state->bg_shadow_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(state->bg_width, state->bg_shadow_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                bg_shadow_bottom_color,
                NULL);
 
@@ -912,14 +903,11 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->bg_x,
                state->bg_y,
-               state->bg_width,
-               state->bg_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(state->bg_width, state->bg_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                bg_color,
                NULL);
       }
@@ -956,14 +944,11 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
             gfx_display_draw_quad(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   icon_x,
                   state->icon_y,
-                  state->icon_size,
-                  state->icon_size,
-                  video_width,
-                  video_height,
+                  VIDEO_SCALE_PACK(state->icon_size, state->icon_size),
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   icon_color,
 		  NULL);
       }
@@ -1040,8 +1025,10 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
              * text here to avoid overlaps */
             if (msg_queue_size > 0)
             {
-               gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height), font_regular);
-               gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height), font_bold);
+               gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width,
+                     video_height), font_regular);
+               gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width,
+                     video_height), font_bold);
             }
             /* Must also flush text if it overlaps the edge of
              * the screen (otherwise it will bleed through the
@@ -1050,11 +1037,13 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
             {
                if (state->system_name_width > video_width -
                      (unsigned)text_x - state->margin_shadow_width)
-                  gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height), font_regular);
+                  gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width,
+                        video_height), font_regular);
 
                if (state->content_name_width > video_width -
                      (unsigned)text_x - state->margin_shadow_width)
-                  gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height), font_bold);
+                  gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width,
+                        video_height), font_bold);
             }
          }
       }
@@ -1075,14 +1064,11 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->margin_shadow_left_x,
                state->bg_y,
-               state->margin_shadow_width,
-               state->bg_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(state->margin_shadow_width, state->bg_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                margin_shadow_left_color,
 	       NULL);
 
@@ -1090,14 +1076,11 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->margin_shadow_right_x,
                state->bg_y,
-               state->margin_shadow_width,
-               state->bg_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(state->margin_shadow_width, state->bg_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                margin_shadow_right_color,
 	       NULL);
       }

@@ -10725,14 +10725,11 @@ static void gfx_widget_netplay_ping_frame(void *data, void *userdata)
       gfx_display_draw_quad(
          p_disp,
          video_info->userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          video_width - total_width,
          video_height - p_dispwidget->simple_widget_height,
-         total_width,
-         p_dispwidget->simple_widget_height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(total_width, p_dispwidget->simple_widget_height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          p_dispwidget->backdrop_orig,
 	     NULL);
       gfx_widgets_draw_text(

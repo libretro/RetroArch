@@ -286,8 +286,7 @@ void gfx_display_init(void);
 void gfx_display_draw_cursor(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       bool cursor_visible,
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height);
@@ -327,8 +326,7 @@ gfx_display_t *disp_get_ptr(void);
 void gfx_display_draw_keyboard(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       uintptr_t hover_texture,
       const font_data_t *font,
       char *grid[], unsigned id,
@@ -372,10 +370,9 @@ void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
 void gfx_display_draw_quad(
       gfx_display_t *p_disp,
       void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned w, unsigned h,
-      unsigned width, unsigned height,
+      unsigned video_dims,
+      int x, int y, unsigned dims,
+      unsigned ref_dims,
       float *color,
       uintptr_t *texture);
 

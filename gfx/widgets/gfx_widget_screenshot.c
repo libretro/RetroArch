@@ -298,10 +298,10 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             0, state->y,
-            state->width, state->height,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(state->width, state->height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             p_dispwidget->backdrop_orig,
             NULL
             );
@@ -341,14 +341,12 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                0,
                state->y,
-               state->thumbnail_width,
-               state->thumbnail_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(state->thumbnail_width,
+                     state->thumbnail_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                background_color,
                NULL);
       }
@@ -391,11 +389,10 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             0, 0,
-            video_width, video_height,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             pure_white,
             NULL
             );

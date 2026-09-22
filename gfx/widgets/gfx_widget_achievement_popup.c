@@ -242,14 +242,11 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
          gfx_display_draw_quad(
             p_disp,
             video_info->userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             screen_pos_x,
             screen_pos_y,
-            state->height,
-            state->height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(state->height, state->height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             p_dispwidget->backdrop_orig,
             NULL);
 
@@ -284,14 +281,11 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
          gfx_display_draw_quad(
             p_disp,
             video_info->userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             screen_pos_x,
             screen_pos_y,
-            state->height,
-            state->height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(state->height, state->height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             p_dispwidget->backdrop_orig,
             NULL);
 
@@ -332,14 +326,11 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
       gfx_display_draw_quad(
          p_disp,
          video_info->userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          screen_pos_x + state->height,
          screen_pos_y,
-         state->width,
-         state->height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(state->width, state->height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          p_dispwidget->backdrop_orig,
          NULL);
 

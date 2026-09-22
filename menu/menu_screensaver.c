@@ -812,11 +812,10 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          0, 0,
-         VIDEO_SCALE_W(screensaver->last_dims), VIDEO_SCALE_H(screensaver->last_dims),
-         VIDEO_SCALE_W(screensaver->last_dims), VIDEO_SCALE_H(screensaver->last_dims),
+         screensaver->last_dims,
+         screensaver->last_dims,
          screensaver->bg_color,
          NULL);
 

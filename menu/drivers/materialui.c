@@ -2751,14 +2751,11 @@ static void materialui_draw_thumbnail(
             gfx_display_draw_quad(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   bg_x,
                   bg_y,
-                  (unsigned)bg_width,
-                  (unsigned)bg_height,
-                  video_width,
-                  video_height,
+                  VIDEO_SCALE_PACK((unsigned)bg_width, (unsigned)bg_height),
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   mui->colors.thumbnail_background,
                   NULL);
 
@@ -2813,14 +2810,12 @@ static void materialui_draw_thumbnail(
                gfx_display_draw_quad(
                      p_disp,
                      userdata,
-                     video_width,
-                     video_height,
+                     VIDEO_SCALE_PACK(video_width, video_height),
                      (int)bg_x,
                      (int)bg_y,
-                     (unsigned)(bg_width + 0.5f),
-                     (unsigned)(bg_height + 1.5f),
-                     video_width,
-                     video_height,
+                     VIDEO_SCALE_PACK((unsigned)(bg_width + 0.5f),
+                           (unsigned)(bg_height + 1.5f)),
+                     VIDEO_SCALE_PACK(video_width, video_height),
                      mui->colors.thumbnail_background,
                      NULL);
             }
@@ -3027,14 +3022,11 @@ static void materialui_render_messagebox(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          slice_x,
          slice_y,
-         slice_w,
-         slice_h,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(slice_w, slice_h),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.surface_background,
          NULL);
 
@@ -3054,14 +3046,11 @@ static void materialui_render_messagebox(
          gfx_display_draw_quad(
             p_disp, 
             userdata, 
-            video_width, 
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             cursor_x, 
             cursor_y, 
-            cursor_w, 
-            cursor_h,
-            video_width, 
-            video_height, 
+            VIDEO_SCALE_PACK(cursor_w, cursor_h),
+            VIDEO_SCALE_PACK(video_width, video_height), 
             mui->colors.list_icon, 
             NULL);
       }
@@ -3076,7 +3065,8 @@ static void materialui_render_messagebox(
                x - longest_width / 2.0f,
                y + (i * mui->font_data.list.line_height)
                   + mui->font_data.list.line_ascender,
-               VIDEO_SCALE_PACK(video_width, video_height), mui->colors.list_text,
+               VIDEO_SCALE_PACK(video_width,
+                     video_height), mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
    }
 
@@ -3084,14 +3074,11 @@ static void materialui_render_messagebox(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             x - longest_width / 2.0f + cursor_x,
             y + (cursor_line * mui->font_data.list.line_height),
-            2,
-            mui->font_data.list.line_ascender,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(2, mui->font_data.list.line_ascender),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.list_icon,
             NULL);
 
@@ -3132,14 +3119,11 @@ static void materialui_render_messagebox(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                cursor_x,
                cursor_y,
-               cursor_w,
-               cursor_h,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(cursor_w, cursor_h),
+               VIDEO_SCALE_PACK(video_width, video_height),
                frame_color,
                NULL);
       }
@@ -3192,14 +3176,11 @@ static void materialui_render_messagebox(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                cursor_x,
                cursor_y,
-               cursor_w,
-               cursor_h,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(cursor_w, cursor_h),
+               VIDEO_SCALE_PACK(video_width, video_height),
                frame_color,
                NULL);
       }
@@ -5584,14 +5565,11 @@ static void materialui_render_menu_entry_playlist_list(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             (float)(entry_x + entry_margin),
             (float)divider_y,
-            (unsigned)usable_width,
-            mui->entry_divider_width,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK((unsigned)usable_width, mui->entry_divider_width),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.entry_divider,
             NULL);
 }
@@ -5758,14 +5736,11 @@ static void materialui_render_menu_entry_playlist_dual_icon(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             entry_x + (float)mui->margin,
             divider_y,
-            (unsigned)usable_width,
-            mui->entry_divider_width,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK((unsigned)usable_width, mui->entry_divider_width),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.entry_divider,
             NULL);
 }
@@ -5861,14 +5836,12 @@ static void materialui_render_menu_entry_playlist_desktop(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             (float)entry_x,
             (float)divider_y,
-            (unsigned)node->entry_width,
-            mui->entry_divider_width,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK((unsigned)node->entry_width,
+                  mui->entry_divider_width),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.entry_divider,
             NULL);
 }
@@ -6189,14 +6162,12 @@ static void materialui_render_menu_entry_savestate_list(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             (float)entry_x,
             (float)divider_y,
-            (unsigned)node->entry_width,
-            mui->entry_divider_width,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK((unsigned)node->entry_width,
+                  mui->entry_divider_width),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.entry_divider,
             NULL);
 }
@@ -6269,14 +6240,12 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          background_x,
          background_y,
-         (unsigned)background_width,
-         (unsigned)background_height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK((unsigned)background_width,
+               (unsigned)background_height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.side_bar_background,
          NULL);
 
@@ -6284,14 +6253,12 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          background_x + (float)background_width - (float)mui->entry_divider_width,
          background_y,
-         mui->entry_divider_width,
-         (unsigned)background_height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(mui->entry_divider_width,
+               (unsigned)background_height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.entry_divider,
          NULL);
 
@@ -6300,14 +6267,12 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             background_x,
             background_y,
-            mui->entry_divider_width,
-            (unsigned)background_height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(mui->entry_divider_width,
+                  (unsigned)background_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.entry_divider,
             NULL);
 
@@ -6389,14 +6354,12 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             status_bar_x,
             status_bar_y,
-            (unsigned)status_bar_width,
-            mui->status_bar.height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK((unsigned)status_bar_width,
+                  mui->status_bar.height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.status_bar_background,
             NULL);
 
@@ -6406,14 +6369,12 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             status_bar_x,
             status_bar_y,
-            (unsigned)status_bar_width,
-            mui->header_shadow_height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK((unsigned)status_bar_width,
+                  mui->header_shadow_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.status_bar_shadow,
             NULL);
 
@@ -6564,14 +6525,12 @@ static void materialui_render_selected_entry_aux_savestate_list(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          background_x,
          background_y,
-         (unsigned)background_width,
-         (unsigned)background_height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK((unsigned)background_width,
+               (unsigned)background_height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.side_bar_background,
          NULL);
 
@@ -6579,14 +6538,12 @@ static void materialui_render_selected_entry_aux_savestate_list(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          background_x + (float)background_width - (float)mui->entry_divider_width,
          background_y,
-         mui->entry_divider_width,
-         (unsigned)background_height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(mui->entry_divider_width,
+               (unsigned)background_height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.entry_divider,
          NULL);
 
@@ -6595,14 +6552,12 @@ static void materialui_render_selected_entry_aux_savestate_list(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             background_x,
             background_y,
-            mui->entry_divider_width,
-            (unsigned)background_height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(mui->entry_divider_width,
+                  (unsigned)background_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.entry_divider,
             NULL);
 
@@ -6725,14 +6680,11 @@ MUI_NOINLINE static void materialui_render_menu_list(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->scrollbar.x,
             mui->scrollbar.y,
-            mui->scrollbar.width,
-            mui->scrollbar.height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(mui->scrollbar.width, mui->scrollbar.height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.scrollbar,
             NULL);
 }
@@ -6856,14 +6808,12 @@ MUI_NOINLINE static void materialui_render_landscape_border(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             left_x,
             y,
-            mui->landscape_optimization.border_width,
-            border_height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(mui->landscape_optimization.border_width,
+                  border_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.landscape_border_shadow_left,
             NULL);
 
@@ -6871,14 +6821,12 @@ MUI_NOINLINE static void materialui_render_landscape_border(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             right_x,
             y,
-            mui->landscape_optimization.border_width,
-            border_height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(mui->landscape_optimization.border_width,
+                  border_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.landscape_border_shadow_right,
             NULL);
    }
@@ -6924,14 +6872,12 @@ static void materialui_render_selection_highlight(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             highlight_x,
             highlight_y,
-            (unsigned)highlight_width,
-            (unsigned)highlight_height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK((unsigned)highlight_width,
+                  (unsigned)highlight_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             highlight_color,
             NULL);
 
@@ -6941,29 +6887,25 @@ static void materialui_render_selection_highlight(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                highlight_x,
                highlight_y,
-               (unsigned)highlight_width,
-               mui->selection_marker_shadow_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK((unsigned)highlight_width,
+                     mui->selection_marker_shadow_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                shadow_top_colour,
                NULL);
 
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                highlight_x,
                highlight_y + highlight_height -
                      (int)mui->selection_marker_shadow_height,
-               (unsigned)highlight_width,
-               mui->selection_marker_shadow_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK((unsigned)highlight_width,
+                     mui->selection_marker_shadow_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                shadow_bottom_colour,
                NULL);
       }
@@ -7122,14 +7064,11 @@ MUI_NOINLINE static void materialui_render_header(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          0,
          mui->sys_bar_height + mui->title_bar_height,
-         video_width,
-         mui->header_shadow_height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, mui->header_shadow_height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.header_shadow,
          NULL);
 
@@ -7137,14 +7076,12 @@ MUI_NOINLINE static void materialui_render_header(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          0,
          0,
-         video_width,
-         mui->sys_bar_height + mui->title_bar_height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width,
+               mui->sys_bar_height + mui->title_bar_height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.title_bar_background,
          NULL);
 
@@ -7152,14 +7089,11 @@ MUI_NOINLINE static void materialui_render_header(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          0,
          0,
-         video_width,
-         mui->sys_bar_height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, mui->sys_bar_height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.sys_bar_background,
          NULL);
 
@@ -7244,7 +7178,8 @@ MUI_NOINLINE static void materialui_render_header(
                   mui->sys_bar_cache.battery_percent_str,
                   (int)video_width - ((int)mui->sys_bar_cache.battery_percent_width + (int)mui->sys_bar_margin + (int)VIDEO_SCALE_W(mui->nav_bar_layout_dims)),
                   sys_bar_text_y,
-                  VIDEO_SCALE_PACK(video_width, video_height), mui->colors.sys_bar_text,
+                  VIDEO_SCALE_PACK(video_width,
+                        video_height), mui->colors.sys_bar_text,
                   TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
 
             sys_bar_battery_width = mui->sys_bar_cache.battery_percent_width +
@@ -7298,7 +7233,8 @@ MUI_NOINLINE static void materialui_render_header(
                   + (int)sys_bar_battery_width
                   + (int)VIDEO_SCALE_W(mui->nav_bar_layout_dims)),
                sys_bar_text_y,
-               VIDEO_SCALE_PACK(video_width, video_height), mui->colors.sys_bar_text,
+               VIDEO_SCALE_PACK(video_width,
+                     video_height), mui->colors.sys_bar_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
 
          usable_sys_bar_width -= sys_bar_clock_width;
@@ -7345,7 +7281,8 @@ MUI_NOINLINE static void materialui_render_header(
       gfx_display_draw_text(mui->font_data.hint.font, core_title_buf,
             (int)mui->ticker_x_offset + (int)mui->sys_bar_margin,
             sys_bar_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height), mui->colors.sys_bar_text,
+            VIDEO_SCALE_PACK(video_width,
+                  video_height), mui->colors.sys_bar_text,
             TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
 
@@ -7363,7 +7300,8 @@ MUI_NOINLINE static void materialui_render_header(
             mui->entry_index_str,
             str_x,
             sys_bar_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height), mui->colors.sys_bar_text,
+            VIDEO_SCALE_PACK(video_width,
+                  video_height), mui->colors.sys_bar_text,
             TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
 
@@ -7545,14 +7483,11 @@ static void materialui_render_nav_bar_bottom(materialui_handle_t *mui,
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          nav_bar_x,
          nav_bar_y,
-         nav_bar_width,
-         nav_bar_height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(nav_bar_width, nav_bar_height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.nav_bar_background,
          NULL);
 
@@ -7560,14 +7495,11 @@ static void materialui_render_nav_bar_bottom(materialui_handle_t *mui,
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          nav_bar_x,
          nav_bar_y,
-         nav_bar_width,
-         mui->nav_bar.divider_width,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(nav_bar_width, mui->nav_bar.divider_width),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.divider,
          NULL);
 
@@ -7631,14 +7563,11 @@ static void materialui_render_nav_bar_bottom(materialui_handle_t *mui,
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             (int)((i + 1) * tab_width_int),
             selection_marker_y,
-            selection_marker_width,
-            selection_marker_height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(selection_marker_width, selection_marker_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             draw_color,
             NULL);
    }
@@ -7668,14 +7597,11 @@ static void materialui_render_nav_bar_right(materialui_handle_t *mui,
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          nav_bar_x,
          nav_bar_y,
-         nav_bar_width,
-         nav_bar_height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(nav_bar_width, nav_bar_height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.nav_bar_background,
          NULL);
 
@@ -7683,14 +7609,11 @@ static void materialui_render_nav_bar_right(materialui_handle_t *mui,
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          nav_bar_x,
          nav_bar_y,
-         mui->nav_bar.divider_width,
-         nav_bar_height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(mui->nav_bar.divider_width, nav_bar_height),
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.divider,
          NULL);
 
@@ -7755,14 +7678,11 @@ static void materialui_render_nav_bar_right(materialui_handle_t *mui,
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             selection_marker_x,
             (int)((i + 1) * tab_height_int),
-            selection_marker_width,
-            selection_marker_height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(selection_marker_width, selection_marker_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             draw_color,
             NULL);
    }
@@ -8164,14 +8084,11 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             0,
             header_height,
-            (unsigned)view_width,
-            (unsigned)view_height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK((unsigned)view_width, (unsigned)view_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.screen_fade,
             NULL);
 
@@ -8183,16 +8100,17 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                primary_thumbnail_x - (int)(mui->margin >> 2) +
                      ((thumbnail_box_width - (int)primary_thumbnail_draw_width) >> 1),
                primary_thumbnail_y - (int)(mui->margin >> 2) +
                      ((thumbnail_box_height - (int)primary_thumbnail_draw_height) >> 1),
-               (unsigned)primary_thumbnail_draw_width + (int)(mui->margin >> 1),
-               (unsigned)primary_thumbnail_draw_height + (int)(mui->margin >> 1),
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(
+                  (unsigned)primary_thumbnail_draw_width
+                     + (int)(mui->margin >> 1),
+                  (unsigned)primary_thumbnail_draw_height
+                     + (int)(mui->margin >> 1)),
+               VIDEO_SCALE_PACK(video_width, video_height),
                mui->colors.surface_background,
                NULL);
 
@@ -8217,16 +8135,17 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                secondary_thumbnail_x - (int)(mui->margin >> 2) +
                      ((thumbnail_box_width - (int)secondary_thumbnail_draw_width) >> 1),
                secondary_thumbnail_y - (int)(mui->margin >> 2) +
                      ((thumbnail_box_height - (int)secondary_thumbnail_draw_height) >> 1),
-               (unsigned)secondary_thumbnail_draw_width + (int)(mui->margin >> 1),
-               (unsigned)secondary_thumbnail_draw_height + (int)(mui->margin >> 1),
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(
+                  (unsigned)secondary_thumbnail_draw_width
+                     + (int)(mui->margin >> 1),
+                  (unsigned)secondary_thumbnail_draw_height
+                     + (int)(mui->margin >> 1)),
+               VIDEO_SCALE_PACK(video_width, video_height),
                mui->colors.surface_background,
                NULL);
 
@@ -8258,14 +8177,11 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                (video_width - bg_w) / 2.0f,
                video_height - bg_h - (video_height - bg_h) / 2.0f,
-               bg_w,
-               bg_h,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(bg_w, bg_h),
+               VIDEO_SCALE_PACK(video_width, video_height),
                mui->colors.thumbnail_background,
                NULL);
 
@@ -8707,11 +8623,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             0, 0,
-            video_width, video_height,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.screen_fade,
             NULL);
 
@@ -8731,8 +8646,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          gfx_display_draw_keyboard(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                tex_list[MUI_TEXTURE_KEY_HOVER],
                mui->font_data.list.font,
                input_st->osk_grid,
@@ -8754,11 +8668,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             0, 0,
-            video_width, video_height,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.screen_fade,
             NULL);
 
@@ -8792,8 +8705,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
          gfx_display_draw_cursor(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                cursor_visible,
                color_white,
                mui->cursor_size,

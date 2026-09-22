@@ -787,13 +787,18 @@ void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
 void gfx_display_draw_quad(
       gfx_display_t *p_disp,
       void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned w, unsigned h,
-      unsigned width, unsigned height,
+      unsigned video_dims,
+      int x, int y, unsigned dims,
+      unsigned ref_dims,
       float *color,
       uintptr_t *texture)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+   unsigned w            = VIDEO_SCALE_W(dims);
+   unsigned h            = VIDEO_SCALE_H(dims);
+   unsigned width        = VIDEO_SCALE_W(ref_dims);
+   unsigned height       = VIDEO_SCALE_H(ref_dims);
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    gfx_display_ctx_driver_t
@@ -1114,12 +1119,13 @@ void gfx_display_rotate_z(gfx_display_t *p_disp,
 void gfx_display_draw_cursor(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       bool cursor_visible,
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
@@ -1187,13 +1193,14 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
 void gfx_display_draw_keyboard(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       uintptr_t hover_texture,
       const font_data_t *font,
       char *grid[], unsigned id,
       unsigned text_color)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    unsigned i;
    int ptr_width, ptr_height;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
@@ -1219,14 +1226,11 @@ void gfx_display_draw_keyboard(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          0,
          (int)(video_height / 2),
-         video_width,
-         video_height / 2,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height / 2),
+         VIDEO_SCALE_PACK(video_width, video_height),
          (float*)osk_dark,
          NULL);
 
@@ -1249,13 +1253,11 @@ void gfx_display_draw_keyboard(
          gfx_display_draw_quad(
            p_disp,
            userdata,
-           video_width,
-           video_height,
+           VIDEO_SCALE_PACK(video_width, video_height),
            (int)(video_width / 2 - (11 * ptr_width) / 2 + (i % 11) * ptr_width),
            (int)(video_height / 2 + ptr_height * 3 / 2 + line_y - ptr_height),
-           ptr_width, ptr_height,
-           video_width,
-           video_height,
+           VIDEO_SCALE_PACK(ptr_width, ptr_height),
+           VIDEO_SCALE_PACK(video_width, video_height),
            (float*)white,
            &hover_texture);
 

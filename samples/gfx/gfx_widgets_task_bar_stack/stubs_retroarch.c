@@ -145,10 +145,17 @@ void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx, void *data)
 
 /* --- display: signatures copied from gfx/gfx_display.h --- */
 void gfx_display_draw_quad(gfx_display_t *p_disp, void *data,
-      unsigned video_width, unsigned video_height,
-      int x, int y, unsigned w, unsigned h,
-      unsigned width, unsigned height, float *color, uintptr_t *texture)
-{ (void)p_disp; (void)data; (void)video_width; (void)video_height;
+      unsigned video_dims,
+      int x, int y, unsigned dims,
+      unsigned ref_dims, float *color, uintptr_t *texture)
+{
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+   unsigned w            = VIDEO_SCALE_W(dims);
+   unsigned h            = VIDEO_SCALE_H(dims);
+   unsigned width        = VIDEO_SCALE_W(ref_dims);
+   unsigned height       = VIDEO_SCALE_H(ref_dims);
+ (void)p_disp; (void)data; (void)video_width; (void)video_height;
   (void)x; (void)y; (void)w; (void)h; (void)width; (void)height;
   (void)color; (void)texture; }
 

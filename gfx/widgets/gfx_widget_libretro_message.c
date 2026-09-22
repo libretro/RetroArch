@@ -418,14 +418,11 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->bg_x,
                bg_y,
-               state->bg_width,
-               state->bg_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(state->bg_width, state->bg_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                bg_color, 
                NULL);
 
@@ -433,42 +430,34 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->bg_x,
                bg_y,
-               state->frame_width,
-               state->bg_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(state->frame_width, state->bg_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->frame_color,
                NULL);
 
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->bg_x,
                bg_y - (float)state->frame_width,
-               state->bg_width + state->frame_width,
-               state->frame_width,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(state->bg_width + state->frame_width,
+                     state->frame_width),
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->frame_color,
                NULL);
 
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->bg_x + (float)state->bg_width,
                bg_y,
-               state->frame_width,
-               state->bg_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(state->frame_width, state->bg_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                state->frame_color,
                NULL);
       }

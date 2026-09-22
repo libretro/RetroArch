@@ -1286,7 +1286,8 @@ static void xmb_draw_text(
    color_hp[3] = alpha_hp < 0.0f ? 0.0f : (alpha_hp > 1.0f ? 1.0f : alpha_hp);
 
    gfx_display_draw_text_hp(font, str, x, y,
-         VIDEO_SCALE_PACK(width, height), color, color_hp, text_align, scale_factor,
+         VIDEO_SCALE_PACK(width,
+               height), color, color_hp, text_align, scale_factor,
          shadows_enable,
          xmb->shadow_offset, false);
 }
@@ -1472,7 +1473,8 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             slice_x - cursor_offset,
             slice_y - cursor_offset,
             VIDEO_SCALE_PACK(256, 256),
-            VIDEO_SCALE_PACK(slice_w + (cursor_offset * 2), slice_h + (cursor_offset * 2)),
+            VIDEO_SCALE_PACK(slice_w + (cursor_offset * 2),
+                  slice_h + (cursor_offset * 2)),
             VIDEO_SCALE_PACK(video_width, video_height),
             NULL,
             xmb->margins_slice,
@@ -1519,14 +1521,11 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             slice_x,
             slice_y,
-            slice_w,
-            slice_h,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(slice_w, slice_h),
+            VIDEO_SCALE_PACK(video_width, video_height),
             frame_color,
             NULL);
    }
@@ -1554,14 +1553,11 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             x - (longest_width / 2.0) + cursor_x,
             y + ((cursor_line + 0.85) * line_height) - xmb->font->size,
-            2,
-            xmb->font->size,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(2, xmb->font->size),
+            VIDEO_SCALE_PACK(video_width, video_height),
             caret_color,
             NULL);
    }
@@ -1572,8 +1568,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       gfx_display_draw_keyboard(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             xmb->textures.list[XMB_TEXTURE_KEY_HOVER],
             xmb->font,
             input_st->osk_grid,
@@ -1619,14 +1614,11 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                cursor_x,
                cursor_y,
-               cursor_w,
-               cursor_h,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(cursor_w, cursor_h),
+               VIDEO_SCALE_PACK(video_width, video_height),
                frame_color,
                NULL);
       }
@@ -1689,14 +1681,11 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                cursor_x,
                cursor_y,
-               cursor_w,
-               cursor_h,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(cursor_w, cursor_h),
+               VIDEO_SCALE_PACK(video_width, video_height),
                frame_color,
                NULL);
       }
@@ -9010,14 +8999,11 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             0,
             0,
-            (unsigned)view_width,
-            (unsigned)view_height,
-            (unsigned)view_width,
-            (unsigned)view_height,
+            VIDEO_SCALE_PACK((unsigned)view_width, (unsigned)view_height),
+            VIDEO_SCALE_PACK((unsigned)view_width, (unsigned)view_height),
             background_color,
             NULL);
 
@@ -9028,14 +9014,11 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                0,
                0,
-               (unsigned)view_width,
-               (unsigned)header_height,
-               (unsigned)view_width,
-               (unsigned)view_height,
+               VIDEO_SCALE_PACK((unsigned)view_width, (unsigned)header_height),
+               VIDEO_SCALE_PACK((unsigned)view_width, (unsigned)view_height),
                header_color,
                NULL);
 
@@ -9121,18 +9104,17 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                  right_thumbnail_x
                - frame_width
                + ((thumbnail_box_width - (int)right_thumbnail_draw_width) >> 1),
                  thumbnail_y
                - frame_width
                + ((thumbnail_box_height - (int)right_thumbnail_draw_height) >> 1),
-               (unsigned)right_thumbnail_draw_width  + (frame_width << 1),
-               (unsigned)right_thumbnail_draw_height + (frame_width << 1),
-               (unsigned)view_width,
-               (unsigned)view_height,
+               VIDEO_SCALE_PACK(
+                  (unsigned)right_thumbnail_draw_width + (frame_width << 1),
+                  (unsigned)right_thumbnail_draw_height + (frame_width << 1)),
+               VIDEO_SCALE_PACK((unsigned)view_width, (unsigned)view_height),
                frame_color,
                NULL);
 
@@ -9157,18 +9139,17 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                  left_thumbnail_x
                - frame_width
                + ((thumbnail_box_width - (int)left_thumbnail_draw_width) >> 1),
                  thumbnail_y
                - frame_width
                + ((thumbnail_box_height - (int)left_thumbnail_draw_height) >> 1),
-               (unsigned)left_thumbnail_draw_width + (frame_width << 1),
-               (unsigned)left_thumbnail_draw_height + (frame_width << 1),
-               (unsigned)view_width,
-               (unsigned)view_height,
+               VIDEO_SCALE_PACK(
+                  (unsigned)left_thumbnail_draw_width + (frame_width << 1),
+                  (unsigned)left_thumbnail_draw_height + (frame_width << 1)),
+               VIDEO_SCALE_PACK((unsigned)view_width, (unsigned)view_height),
                frame_color,
                NULL);
 
@@ -9403,14 +9384,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             0,
             0,
-            video_width,
-            video_height,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             coord_black,
             NULL);
    }
@@ -9753,14 +9731,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             gfx_display_draw_quad(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   thumb_x,
                   thumb_y,
-                  scaled_thumb_width,
-                  scaled_thumb_height,
-                  video_width,
-                  video_height,
+                  VIDEO_SCALE_PACK(scaled_thumb_width, scaled_thumb_height),
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   background_color,
                   NULL);
 
@@ -9780,14 +9755,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                thumb_x,
                thumb_y,
-               scaled_thumb_width,
-               scaled_thumb_height,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(scaled_thumb_width, scaled_thumb_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                background_color,
                NULL);
 
@@ -9865,28 +9837,24 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   gfx_display_draw_quad(
                         p_disp,
                         userdata,
-                        video_width,
-                        video_height,
+                        VIDEO_SCALE_PACK(video_width, video_height),
                         thumb_x,
                         right_thumb_y,
-                        scaled_thumb_width,
-                        scaled_thumb_height,
-                        video_width,
-                        video_height,
+                        VIDEO_SCALE_PACK(scaled_thumb_width,
+                              scaled_thumb_height),
+                        VIDEO_SCALE_PACK(video_width, video_height),
                         background_color,
                         NULL);
 
                   gfx_display_draw_quad(
                         p_disp,
                         userdata,
-                        video_width,
-                        video_height,
+                        VIDEO_SCALE_PACK(video_width, video_height),
                         thumb_x,
                         left_thumb_y,
-                        scaled_thumb_width,
-                        scaled_thumb_height,
-                        video_width,
-                        video_height,
+                        VIDEO_SCALE_PACK(scaled_thumb_width,
+                              scaled_thumb_height),
+                        VIDEO_SCALE_PACK(video_width, video_height),
                         background_color,
                         NULL);
                }
@@ -9926,14 +9894,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   gfx_display_draw_quad(
                         p_disp,
                         userdata,
-                        video_width,
-                        video_height,
+                        VIDEO_SCALE_PACK(video_width, video_height),
                         thumb_x,
                         thumb_y,
-                        scaled_thumb_width,
-                        scaled_thumb_height,
-                        video_width,
-                        video_height,
+                        VIDEO_SCALE_PACK(scaled_thumb_width,
+                              scaled_thumb_height),
+                        VIDEO_SCALE_PACK(video_width, video_height),
                         background_color,
                         NULL);
 
@@ -9965,14 +9931,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   gfx_display_draw_quad(
                         p_disp,
                         userdata,
-                        video_width,
-                        video_height,
+                        VIDEO_SCALE_PACK(video_width, video_height),
                         thumb_x,
                         thumb_y,
-                        scaled_thumb_width,
-                        scaled_thumb_height,
-                        video_width,
-                        video_height,
+                        VIDEO_SCALE_PACK(scaled_thumb_width,
+                              scaled_thumb_height),
+                        VIDEO_SCALE_PACK(video_width, video_height),
                         background_color,
                         NULL);
 
@@ -10011,14 +9975,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                      gfx_display_draw_quad(
                            p_disp,
                            userdata,
-                           video_width,
-                           video_height,
+                           VIDEO_SCALE_PACK(video_width, video_height),
                            thumb_x,
                            thumb_y,
-                           scaled_thumb_width,
-                           scaled_thumb_height,
-                           video_width,
-                           video_height,
+                           VIDEO_SCALE_PACK(scaled_thumb_width,
+                                 scaled_thumb_height),
+                           VIDEO_SCALE_PACK(video_width, video_height),
                            background_color,
                            NULL);
 
@@ -10064,14 +10026,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                gfx_display_draw_quad(
                      p_disp,
                      userdata,
-                     video_width,
-                     video_height,
+                     VIDEO_SCALE_PACK(video_width, video_height),
                      thumb_x,
                      thumb_y,
-                     scaled_thumb_width,
-                     scaled_thumb_height,
-                     video_width,
-                     video_height,
+                     VIDEO_SCALE_PACK(scaled_thumb_width, scaled_thumb_height),
+                     VIDEO_SCALE_PACK(video_width, video_height),
                      background_color,
                      NULL);
 
@@ -10406,8 +10365,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          gfx_display_draw_cursor(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                cursor_visible,
                &coord_white[0],
                xmb->cursor_size,

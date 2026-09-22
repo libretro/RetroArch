@@ -351,9 +351,9 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
          gfx_display_draw_quad(
                p_disp,
                video_info->userdata,
-               video_width, video_height,
-               (int)x, (int)y, widget_width, widget_height,
-               video_width, video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
+               (int)x, (int)y, VIDEO_SCALE_PACK(widget_width, widget_height),
+               VIDEO_SCALE_PACK(video_width, video_height),
                p_dispwidget->backdrop_orig,
                NULL);
 
@@ -494,9 +494,10 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             gfx_display_draw_quad(
                   p_disp,
                   video_info->userdata,
-                  video_width, video_height,
-                  (int)x, (int)y, tracker_width, tracker_height,
-                  video_width, video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
+                  (int)x, (int)y, VIDEO_SCALE_PACK(tracker_width,
+                        tracker_height),
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   p_dispwidget->backdrop_orig,
                   NULL);
 
@@ -588,9 +589,10 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
          gfx_display_draw_quad(
             p_disp,
             video_info->userdata,
-            video_width, video_height,
-            (int)x, (int)y, disconnect_widget_width, disconnect_widget_height,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
+            (int)x, (int)y, VIDEO_SCALE_PACK(disconnect_widget_width,
+                  disconnect_widget_height),
+            VIDEO_SCALE_PACK(video_width, video_height),
             p_dispwidget->backdrop_orig,
             NULL);
 
