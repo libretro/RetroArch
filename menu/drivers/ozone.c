@@ -3180,8 +3180,7 @@ static float ozone_sidebar_get_scroll_y(
 static void ozone_draw_icon(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       unsigned icon_width,
       unsigned icon_height,
       uintptr_t texture,
@@ -3220,7 +3219,7 @@ static void ozone_draw_icon(
    if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
    {
       gfx_display_draw(dispctx, &draw, userdata,
-            VIDEO_SCALE_PACK(video_width, video_height));
+            video_dims);
    }
 }
 
@@ -3276,8 +3275,7 @@ static void ozone_draw_cursor_slice(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       int x_offset,
       unsigned width,
       unsigned height,
@@ -3305,12 +3303,12 @@ static void ozone_draw_cursor_slice(
    gfx_display_draw_texture_slice(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          slice_x,
          slice_y,
          VIDEO_SCALE_PACK(slice_w, slice_h),
          VIDEO_SCALE_PACK(slice_new_w, slice_new_h),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme_dynamic.cursor_alpha,
          offset,
          scale_factor,
@@ -3322,12 +3320,12 @@ static void ozone_draw_cursor_slice(
    gfx_display_draw_texture_slice(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          slice_x,
          slice_y,
          VIDEO_SCALE_PACK(slice_w, slice_h),
          VIDEO_SCALE_PACK(slice_new_w, slice_new_h),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme_dynamic.cursor_border,
          offset,
          scale_factor,
@@ -3342,8 +3340,7 @@ static void ozone_draw_cursor_fallback(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       int x_offset,
       unsigned width,
       unsigned height,
@@ -3357,11 +3354,11 @@ static void ozone_draw_cursor_fallback(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          x_offset - ozone->dimensions.spacer_3px,
          y,
          VIDEO_SCALE_PACK(width + ozone->dimensions.spacer_3px * 2, height),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme_dynamic.selection,
          NULL);
 
@@ -3371,12 +3368,12 @@ static void ozone_draw_cursor_fallback(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          x_offset - ozone->dimensions.spacer_5px,
          y - ozone->dimensions.spacer_3px,
          VIDEO_SCALE_PACK(width + 1 + ozone->dimensions.spacer_5px * 2,
                ozone->dimensions.spacer_3px),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme_dynamic.selection_border,
          NULL);
 
@@ -3384,12 +3381,12 @@ static void ozone_draw_cursor_fallback(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          x_offset - ozone->dimensions.spacer_5px,
          y + (int)height,
          VIDEO_SCALE_PACK(width + 1 + ozone->dimensions.spacer_5px * 2,
                ozone->dimensions.spacer_3px),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme_dynamic.selection_border,
          NULL);
 
@@ -3397,11 +3394,11 @@ static void ozone_draw_cursor_fallback(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          x_offset - ozone->dimensions.spacer_5px,
          y,
          VIDEO_SCALE_PACK(ozone->dimensions.spacer_3px, height),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme_dynamic.selection_border,
          NULL);
 
@@ -3409,11 +3406,11 @@ static void ozone_draw_cursor_fallback(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          x_offset + width + ozone->dimensions.spacer_3px,
          y,
          VIDEO_SCALE_PACK(ozone->dimensions.spacer_3px, height),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme_dynamic.selection_border,
          NULL);
 }
@@ -3422,8 +3419,7 @@ static void ozone_draw_cursor(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       int x_offset,
       unsigned width,
       unsigned height,
@@ -3444,8 +3440,7 @@ static void ozone_draw_cursor(
       ozone_draw_cursor_slice(ozone,
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             new_x,
             width,
             height,
@@ -3456,8 +3451,7 @@ static void ozone_draw_cursor(
       ozone_draw_cursor_fallback(ozone,
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             new_x,
             width,
             height,
@@ -3510,12 +3504,13 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
       bool use_smooth_ticker,
       enum gfx_animation_ticker_type menu_ticker_type,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       bool libretro_running,
       float menu_framebuffer_opacity,
       math_matrix_4x4 *mymat)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    static const enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] = {
       MENU_ENUM_LABEL_VALUE_MAIN_MENU,
       MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
@@ -3611,7 +3606,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
       gfx_display_scissor_begin(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             0,
             ozone->dimensions.header_height + ozone->dimensions.spacer_1px,
             VIDEO_SCALE_PACK((unsigned)ozone->dimensions_sidebar_width,
@@ -3631,37 +3626,37 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->sidebar_offset,
             ozone->dimensions.header_height,
             VIDEO_SCALE_PACK((unsigned)ozone->dimensions_sidebar_width,
                   ozone->dimensions.sidebar_gradient_height),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->sidebar_top_gradient,
             NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->sidebar_offset,
             ozone->dimensions.header_height
                   + ozone->dimensions.sidebar_gradient_height,
             VIDEO_SCALE_PACK((unsigned)ozone->dimensions_sidebar_width,
                   sidebar_height),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->sidebar_background,
             NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->sidebar_offset,
             video_height
                   - ozone->dimensions.footer_height
                   - ozone->dimensions.sidebar_gradient_height,
             VIDEO_SCALE_PACK((unsigned)ozone->dimensions_sidebar_width,
                   ozone->dimensions.sidebar_gradient_height),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->sidebar_bottom_gradient,
             NULL);
    }
@@ -3720,8 +3715,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
             ozone,
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_1px,
@@ -3735,8 +3729,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
             ozone,
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_1px,
@@ -3766,8 +3759,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
       ozone_draw_icon(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             ozone->dimensions.sidebar_entry_icon_size,
             ozone->dimensions.sidebar_entry_icon_size,
             tab_tex[icon],
@@ -3854,7 +3846,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
                      + ozone->dimensions.sidebar_entry_height / 2
                      + ozone->fonts.sidebar.line_centre_offset
                      + ozone->animations.scroll_y_sidebar,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                text_color,
                text_color_hp,
                TEXT_ALIGN_LEFT,
@@ -3875,11 +3867,11 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal,
             y + ozone->animations.scroll_y_sidebar,
             VIDEO_SCALE_PACK(entry_width, ozone->dimensions.spacer_1px),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->entries_border,
             NULL);
 
@@ -3937,8 +3929,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   ozone->dimensions.sidebar_entry_icon_size,
                   ozone->dimensions.sidebar_entry_icon_size,
                   icon_tex,
@@ -4010,7 +4001,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
                      + ozone->dimensions.sidebar_entry_height / 2
                      + ozone->fonts.sidebar.line_centre_offset
                      + ozone->animations.scroll_y_sidebar,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                text_color,
                text_color_hp,
                TEXT_ALIGN_LEFT,
@@ -4026,12 +4017,10 @@ console_iterate:
       gfx_display_blend_end(dispctx, userdata);
    }
 
-   font_flush(VIDEO_SCALE_PACK(video_width,
-         video_height), &ozone->fonts.sidebar);
+   font_flush(video_dims, &ozone->fonts.sidebar);
 
    if (dispctx && dispctx->scissor_end)
-      dispctx->scissor_end(userdata, VIDEO_SCALE_PACK(video_width,
-            video_height));
+      dispctx->scissor_end(userdata, video_dims);
 }
 
 static void ozone_thumbnail_bar_hide_end(void *userdata)
@@ -5568,14 +5557,15 @@ OZONE_NOINLINE static void ozone_draw_entry_value(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       char *value,
       unsigned x, unsigned y,
       uint32_t alpha_uint32,
       menu_entry_t *entry,
       math_matrix_4x4 *mymat)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    bool switch_is_on                 = true;
    bool do_draw_text                 = false;
    float scale_factor                = ozone->last_scale_factor;
@@ -5589,8 +5579,7 @@ OZONE_NOINLINE static void ozone_draw_entry_value(
       ozone_draw_icon(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             30 * scale_factor,
             30 * scale_factor,
             ozone->theme->name
@@ -5653,7 +5642,7 @@ OZONE_NOINLINE static void ozone_draw_entry_value(
             value,
             x,
             y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             (!strcmp(value, "null"))
                   ? COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32 >> 1)
                   : COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32),
@@ -5671,7 +5660,7 @@ OZONE_NOINLINE static void ozone_draw_entry_value(
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)),
             x,
             y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             switch_is_on
                   ? COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32)
                   : COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, alpha_uint32 >> 1),
@@ -5686,8 +5675,7 @@ static void ozone_draw_no_thumbnail_available(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       unsigned x_position,
       unsigned y_position,
       unsigned view_width,
@@ -5695,6 +5683,8 @@ static void ozone_draw_no_thumbnail_available(
       bool draw_text,
       math_matrix_4x4 *mymat)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    unsigned icon_size                = (unsigned)(ozone->dimensions.sidebar_entry_icon_size * 2.0f);
    float                        *col = ozone->theme_dynamic.entries_icon;
@@ -5713,8 +5703,7 @@ static void ozone_draw_no_thumbnail_available(
          ozone_draw_icon(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               video_dims,
                icon_size,
                icon_size,
                ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE],
@@ -5737,7 +5726,7 @@ static void ozone_draw_no_thumbnail_available(
          msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE),
          x_position + (view_width / 2),
          video_height - y_position - ((view_height - icon_size) / 2),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme->text_rgba,
          TEXT_ALIGN_CENTER,
          1.0f,
@@ -5747,8 +5736,7 @@ static void ozone_draw_no_thumbnail_available(
 }
 
 static void ozone_content_metadata_line(
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       ozone_handle_t *ozone,
       unsigned *y,
       unsigned column_x,
@@ -5756,6 +5744,7 @@ static void ozone_content_metadata_line(
       uint32_t color,
       uint8_t lines_count)
 {
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    if (*y + (lines_count * (unsigned)ozone->fonts.footer.line_height)
          > video_height - ozone->dimensions.footer_height)
       return;
@@ -5765,7 +5754,7 @@ static void ozone_content_metadata_line(
          text,
          column_x,
          *y + ozone->fonts.footer.line_ascender,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          color,
          TEXT_ALIGN_LEFT,
          1.0f,
@@ -6093,8 +6082,7 @@ static void ozone_draw_entries(
       gfx_animation_t *p_anim,
       const video_frame_info_t *video_info,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       unsigned selection,
       unsigned selection_old,
       file_list_t *selection_buf,
@@ -6104,6 +6092,8 @@ static void ozone_draw_entries(
       bool old_list,
       math_matrix_4x4 *mymat)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    size_t i;
    uint32_t alpha_uint32;
    float bottom_boundary;
@@ -6237,21 +6227,21 @@ static void ozone_draw_entries(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             border_start_x,
             border_start_y,
             VIDEO_SCALE_PACK(entry_width, ozone->dimensions.spacer_1px),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme_dynamic.entries_border,
             NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             border_start_x,
             border_start_y + button_height,
             VIDEO_SCALE_PACK(entry_width, ozone->dimensions.spacer_1px),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme_dynamic.entries_border,
             NULL);
 
@@ -6269,8 +6259,7 @@ border_iterate:
             ozone,
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             ozone->dimensions_sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             button_height + ozone->dimensions.spacer_1px,
@@ -6284,8 +6273,7 @@ border_iterate:
             ozone,
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             (unsigned)ozone->dimensions_sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             button_height + ozone->dimensions.spacer_1px,
@@ -6624,8 +6612,7 @@ border_iterate:
                ozone_draw_icon(
                      p_disp,
                      userdata,
-                     video_width,
-                     video_height,
+                     video_dims,
                      ozone->dimensions.entry_icon_size,
                      ozone->dimensions.entry_icon_size,
                      texture,
@@ -6667,7 +6654,7 @@ border_iterate:
                   + ozone->dimensions.entry_height / 2.0f
                   + ozone->fonts.entries_label.line_centre_offset
                   + scroll_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             COLOR_TEXT_ALPHA(ozone->theme->text_rgba, alpha_uint32),
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -6693,7 +6680,7 @@ border_iterate:
                               - (OZONE_NODE_SUBLABEL_LINES(node) * ozone->fonts.entries_sublabel.line_height)) / 2.0f
                         + ozone->fonts.entries_sublabel.line_ascender
                         + scroll_y,
-                  VIDEO_SCALE_PACK(video_width, video_height),
+                  video_dims,
                   COLOR_TEXT_ALPHA(ozone->theme->text_sublabel_rgba, alpha_uint32),
                   TEXT_ALIGN_LEFT,
                   1.0f,
@@ -6736,8 +6723,7 @@ border_iterate:
       ozone_draw_entry_value(ozone,
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             entry_value_ticker,
             value_x_offset
                   + (unsigned)ozone->dimensions_sidebar_width
@@ -6775,12 +6761,10 @@ border_iterate:
    }
 
    /* Text layer */
-   font_flush(VIDEO_SCALE_PACK(video_width,
-         video_height), &ozone->fonts.entries_label);
+   font_flush(video_dims, &ozone->fonts.entries_label);
 
    if (menu_show_sublabels)
-      font_flush(VIDEO_SCALE_PACK(video_width,
-            video_height), &ozone->fonts.entries_sublabel);
+      font_flush(video_dims, &ozone->fonts.entries_sublabel);
 }
 
 static void ozone_draw_thumbnail_bar(
@@ -6790,12 +6774,13 @@ static void ozone_draw_thumbnail_bar(
       gfx_animation_t *p_anim,
       const video_frame_info_t *video_info,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       bool libretro_running,
       float menu_framebuffer_opacity,
       math_matrix_4x4 *mymat)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    enum gfx_thumbnail_alignment right_thumbnail_alignment;
    enum gfx_thumbnail_alignment left_thumbnail_alignment;
    unsigned sidebar_width            = ozone->dimensions.thumbnail_bar_width;
@@ -6829,37 +6814,37 @@ static void ozone_draw_thumbnail_bar(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             x_position,
             ozone->dimensions.header_height,
             VIDEO_SCALE_PACK((unsigned)ozone->animations.thumbnail_bar_position,
                   ozone->dimensions.sidebar_gradient_height),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->sidebar_top_gradient,
             NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             x_position,
             ozone->dimensions.header_height
                   + ozone->dimensions.sidebar_gradient_height,
             VIDEO_SCALE_PACK((unsigned)ozone->animations.thumbnail_bar_position,
                   sidebar_height),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->sidebar_background,
             NULL);
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             x_position,
             video_height
                   - ozone->dimensions.footer_height
                   - ozone->dimensions.sidebar_gradient_height,
             VIDEO_SCALE_PACK((unsigned)ozone->animations.thumbnail_bar_position,
                   ozone->dimensions.sidebar_gradient_height),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->sidebar_bottom_gradient,
             NULL);
    }
@@ -6945,11 +6930,11 @@ static void ozone_draw_thumbnail_bar(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             thumbnail_x_position,
             right_thumbnail_y_position,
             VIDEO_SCALE_PACK(thumbnail_width, thumbnail_height),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             background_color,
             NULL);
 
@@ -6960,8 +6945,7 @@ static void ozone_draw_thumbnail_bar(
             ozone,
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             thumbnail_x_position,
             right_thumbnail_y_position,
             thumbnail_width,
@@ -6988,18 +6972,18 @@ static void ozone_draw_thumbnail_bar(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                thumbnail_x_position,
                right_thumbnail_y_position,
                VIDEO_SCALE_PACK(thumbnail_width, thumbnail_height),
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                background_color,
                NULL);
       }
 
       gfx_thumbnail_draw(
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             (ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE ||
              ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING)
                   ? &ozone->thumbnails.savestate
@@ -7022,8 +7006,7 @@ static void ozone_draw_thumbnail_bar(
             ozone,
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             thumbnail_x_position,
             right_thumbnail_y_position + thumbnail_height,
             thumbnail_width,
@@ -7098,11 +7081,11 @@ static void ozone_draw_thumbnail_bar(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                thumbnail_x_position,
                left_thumbnail_y_position,
                VIDEO_SCALE_PACK(thumbnail_width, thumbnail_height),
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                background_color,
                NULL);
       }
@@ -7112,7 +7095,7 @@ static void ozone_draw_thumbnail_bar(
        * metadata override is fully active) */
       gfx_thumbnail_draw(
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             &ozone->thumbnails.left,
             (float)thumbnail_x_position,
             (float)left_thumbnail_y_position,
@@ -7201,12 +7184,12 @@ static void ozone_draw_thumbnail_bar(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             x_position + separator_padding,
             y,
             VIDEO_SCALE_PACK(sidebar_width - separator_padding * 2,
                   ozone->dimensions.spacer_1px),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme_dynamic.entries_border,
             NULL);
 
@@ -7231,8 +7214,7 @@ static void ozone_draw_thumbnail_bar(
             }
 
             ozone_content_metadata_line(
-                  video_width,
-                  video_height,
+                  video_dims,
                   ozone,
                   &y,
                   ticker_x_offset + column_x,
@@ -7258,8 +7240,7 @@ static void ozone_draw_thumbnail_bar(
             }
 
             ozone_content_metadata_line(
-                  video_width,
-                  video_height,
+                  video_dims,
                   ozone,
                   &y,
                   ticker_x_offset + column_x,
@@ -7289,8 +7270,7 @@ static void ozone_draw_thumbnail_bar(
             }
 
             ozone_content_metadata_line(
-                  video_width,
-                  video_height,
+                  video_dims,
                   ozone,
                   &y,
                   ticker_x_offset + column_x,
@@ -7316,8 +7296,7 @@ static void ozone_draw_thumbnail_bar(
             }
 
             ozone_content_metadata_line(
-                  video_width,
-                  video_height,
+                  video_dims,
                   ozone,
                   &y,
                   ticker_x_offset + column_x,
@@ -7331,8 +7310,7 @@ static void ozone_draw_thumbnail_bar(
          /* Entry enumeration */
          if (show_entry_idx)
             ozone_content_metadata_line(
-                  video_width,
-                  video_height,
+                  video_dims,
                   ozone,
                   &y,
                   column_x,
@@ -7343,8 +7321,7 @@ static void ozone_draw_thumbnail_bar(
          /* Core association */
          if (show_entry_core)
             ozone_content_metadata_line(
-                  video_width,
-                  video_height,
+                  video_dims,
                   ozone,
                   &y,
                   column_x,
@@ -7355,8 +7332,7 @@ static void ozone_draw_thumbnail_bar(
          /* Playtime */
          if (show_entry_playtime)
             ozone_content_metadata_line(
-                  video_width,
-                  video_height,
+                  video_dims,
                   ozone,
                   &y,
                   column_x,
@@ -7367,8 +7343,7 @@ static void ozone_draw_thumbnail_bar(
          /* Last played */
          if (show_entry_last_played)
             ozone_content_metadata_line(
-                  video_width,
-                  video_height,
+                  video_dims,
                   ozone,
                   &y,
                   column_x,
@@ -7399,8 +7374,7 @@ static void ozone_draw_thumbnail_bar(
                ozone_draw_icon(
                      p_disp,
                      userdata,
-                     video_width,
-                     video_height,
+                     video_dims,
                      icon_size,
                      icon_size,
                      ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE],
@@ -7421,8 +7395,7 @@ static void ozone_draw_thumbnail_bar(
 OZONE_NOINLINE static void ozone_draw_backdrop(
       void *userdata,
       void *disp_data,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       float alpha)
 {
    /* Stack-local scratch — avoids data race with threaded
@@ -7439,11 +7412,11 @@ OZONE_NOINLINE static void ozone_draw_backdrop(
    gfx_display_draw_quad(
          (gfx_display_t*)disp_data,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          0,
          0,
-         VIDEO_SCALE_PACK(video_width, video_height),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
+         video_dims,
          ozone_backdrop,
          NULL);
 }
@@ -7452,10 +7425,11 @@ OZONE_NOINLINE static void ozone_draw_osk(
       ozone_handle_t *ozone,
       void *userdata,
       void *disp_userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       const char *label, const char *str)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    char message[2048];
    gfx_display_t *p_disp          = (gfx_display_t*)disp_userdata;
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -7496,12 +7470,12 @@ OZONE_NOINLINE static void ozone_draw_osk(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          margin,
          margin,
          VIDEO_SCALE_PACK(video_width - (margin * 2),
                ozone->dimensions.spacer_1px),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme->entries_border,
          NULL);
 
@@ -7509,12 +7483,12 @@ OZONE_NOINLINE static void ozone_draw_osk(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          margin,
          bottom_end - margin,
          VIDEO_SCALE_PACK(video_width - (margin * 2),
                ozone->dimensions.spacer_1px),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme->entries_border,
          NULL);
 
@@ -7522,12 +7496,12 @@ OZONE_NOINLINE static void ozone_draw_osk(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          margin,
          margin,
          VIDEO_SCALE_PACK(ozone->dimensions.spacer_1px,
                bottom_end - (margin * 2)),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme->entries_border,
          NULL);
 
@@ -7535,12 +7509,12 @@ OZONE_NOINLINE static void ozone_draw_osk(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          video_width - margin,
          margin,
          VIDEO_SCALE_PACK(ozone->dimensions.spacer_1px,
                bottom_end - (margin * 2)),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme->entries_border,
          NULL);
 
@@ -7549,13 +7523,13 @@ OZONE_NOINLINE static void ozone_draw_osk(
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          margin + ozone->dimensions.spacer_1px,
          margin + ozone->dimensions.spacer_1px,
          VIDEO_SCALE_PACK(
             video_width - (margin * 2) - ozone->dimensions.spacer_2px,
             bottom_end - (margin * 2) - ozone->dimensions.spacer_2px),
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone_osk_backdrop,
          NULL);
 
@@ -7589,11 +7563,11 @@ OZONE_NOINLINE static void ozone_draw_osk(
          gfx_display_draw_quad(
             p_disp, 
             userdata, 
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             rect_x, 
             rect_y, 
             VIDEO_SCALE_PACK(rect_w, rect_h),
-            VIDEO_SCALE_PACK(video_width, video_height), 
+            video_dims, 
             cursor_color, 
             NULL);
       }
@@ -7670,7 +7644,7 @@ OZONE_NOINLINE static void ozone_draw_osk(
                   + padding
                   + y_offset
                   + ozone->fonts.entries_label.line_height,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             text_color,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -7683,7 +7657,7 @@ OZONE_NOINLINE static void ozone_draw_osk(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                margin
                      + (padding * 2)
                      + cursor_x,
@@ -7695,7 +7669,7 @@ OZONE_NOINLINE static void ozone_draw_osk(
                      + ozone->dimensions.spacer_3px,
                VIDEO_SCALE_PACK(ozone->dimensions.spacer_1px,
                      ozone->fonts.entries_label.line_ascender),
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                ozone->pure_white,
                NULL);
 
@@ -7710,7 +7684,7 @@ OZONE_NOINLINE static void ozone_draw_osk(
       gfx_display_draw_keyboard(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->name
                   ? ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC]
                   : ozone->textures[OZONE_TEXTURE_CURSOR_BORDER],
@@ -7751,11 +7725,12 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       const video_frame_info_t *video_info,
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       const char *message,
       math_matrix_4x4 *mymat)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    size_t x, y;
    char wrapped_message[MENU_LABEL_MAX_LENGTH];
    size_t msg_len;
@@ -7879,13 +7854,13 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       gfx_display_draw_texture_slice(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             slice_x,
             slice_y,
             VIDEO_SCALE_PACK(slice_w, slice_w),
             VIDEO_SCALE_PACK((unsigned)slice_new_w,
                   (unsigned)slice_new_h),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme_dynamic.message_background,
             16,
             scale_factor,
@@ -7906,7 +7881,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                msg,
                x - (longest_width / 2),
                y + (i * line_height) + font_data.line_ascender,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                COLOR_TEXT_ALPHA(ozone->theme->text_rgba, (uint32_t)(ozone->animations.messagebox_alpha*255.0f)),
                TEXT_ALIGN_LEFT,
                1.0f,
@@ -7944,8 +7919,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                ozone,
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               video_dims,
                cursor_x,
                cursor_w,
                cursor_h,
@@ -7961,8 +7935,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       ozone_draw_icon(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             icon_size,
             icon_size,
             input_menu_swap_ok_cancel_buttons
@@ -7982,7 +7955,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
             ozone->footer_labels.back.str,
             icon_x + icon_size + icon_padding,
             label_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -8009,8 +7982,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                ozone,
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               video_dims,
                cursor_x,
                cursor_w,
                cursor_h,
@@ -8026,8 +7998,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       ozone_draw_icon(
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             icon_size,
             icon_size,
             input_menu_swap_ok_cancel_buttons
@@ -8047,7 +8018,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
             ozone->footer_labels.ok.str,
             icon_x + icon_size + icon_padding,
             label_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -8164,9 +8135,10 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
       ozone_handle_t *ozone,
       void *userdata,
       void *disp_userdata,
-      unsigned video_width,
-      unsigned video_height)
+      unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    static float right_thumbnail_draw_width_prev  = 0.0f;
    static float right_thumbnail_draw_height_prev = 0.0f;
    static float left_thumbnail_draw_width_prev   = 0.0f;
@@ -8357,11 +8329,11 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             0,
             ozone->dimensions.header_height + ozone->dimensions.spacer_1px,
             VIDEO_SCALE_PACK(view_width, (unsigned)view_height),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             background_color,
             NULL);
 
@@ -8369,22 +8341,22 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             0,
             ozone->dimensions.header_height,
             VIDEO_SCALE_PACK(view_width, ozone->dimensions.spacer_1px),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             separator_color,
             NULL);
 
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             0,
             video_height - ozone->dimensions.footer_height,
             VIDEO_SCALE_PACK(view_width, ozone->dimensions.spacer_1px),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             separator_color,
             NULL);
 
@@ -8397,7 +8369,7 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                right_thumbnail_x
                      - frame_width
                      + ((thumbnail_box_width  - (int)right_thumbnail_draw_width)  >> 1),
@@ -8407,14 +8379,14 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
                VIDEO_SCALE_PACK(
                   (unsigned)right_thumbnail_draw_width + (frame_width << 1),
                   (unsigned)right_thumbnail_draw_height + (frame_width << 1)),
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                frame_color,
                NULL);
 
          /* Thumbnail */
          gfx_thumbnail_draw(
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                right_thumbnail,
                right_thumbnail_x,
                thumbnail_y,
@@ -8433,7 +8405,7 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                left_thumbnail_x
                      - frame_width
                      + ((thumbnail_box_width  - (int)left_thumbnail_draw_width)  >> 1),
@@ -8443,14 +8415,14 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
                VIDEO_SCALE_PACK(
                   (unsigned)left_thumbnail_draw_width + (frame_width << 1),
                   (unsigned)left_thumbnail_draw_height + (frame_width << 1)),
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                frame_color,
                NULL);
 
          /* Thumbnail */
          gfx_thumbnail_draw(
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                left_thumbnail,
                left_thumbnail_x,
                thumbnail_y,
@@ -8470,8 +8442,7 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
             ozone,
             p_disp,
             userdata,
-            video_width,
-            video_height,
+            video_dims,
             0,
             thumbnail_y,
             view_width,
@@ -11564,12 +11535,13 @@ OZONE_NOINLINE static void ozone_draw_header(
       gfx_animation_t *p_anim,
       const video_frame_info_t *video_info,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       bool battery_level_enable,
       bool timedate_enable,
       math_matrix_4x4 *mymat)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    char title[NAME_MAX_LENGTH];
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
@@ -11632,14 +11604,14 @@ OZONE_NOINLINE static void ozone_draw_header(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ((separator == OZONE_HEADER_SEPARATOR_NORMAL) ? separator_margin : 0),
             ozone->dimensions.header_height,
             VIDEO_SCALE_PACK(video_width
                   - ((separator == OZONE_HEADER_SEPARATOR_NORMAL)
                      ? (separator_margin * 2) : 0),
                   ozone->dimensions.spacer_1px),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->header_footer_separator,
             NULL);
 
@@ -11652,8 +11624,7 @@ OZONE_NOINLINE static void ozone_draw_header(
          ozone_draw_icon(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               video_dims,
                logo_icon_size,
                logo_icon_size,
                ozone->header_icon,
@@ -11690,7 +11661,7 @@ OZONE_NOINLINE static void ozone_draw_header(
                msg,
                video_width - (header_margin + icon_width - text_offset),
                ozone->dimensions.header_height / 2 + ozone->fonts.time.line_centre_offset,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                ozone->theme->text_rgba,
                TEXT_ALIGN_RIGHT,
                1.0f,
@@ -11705,8 +11676,7 @@ OZONE_NOINLINE static void ozone_draw_header(
                ozone_draw_icon(
                      p_disp,
                      userdata,
-                     video_width,
-                     video_height,
+                     video_dims,
                      status_icon_size,
                      status_icon_size,
                      icons_tex[powerstate.charging
@@ -11750,7 +11720,7 @@ OZONE_NOINLINE static void ozone_draw_header(
             timedate,
             video_width - (timedate_offset + status_icon_size - icon_width - text_offset),
             ozone->dimensions.header_height / 2 + ozone->fonts.time.line_centre_offset,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_RIGHT,
             1.0f,
@@ -11765,8 +11735,7 @@ OZONE_NOINLINE static void ozone_draw_header(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   status_icon_size,
                   status_icon_size,
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_CLOCK],
@@ -11816,7 +11785,7 @@ OZONE_NOINLINE static void ozone_draw_header(
          title,
          ticker_x_offset + header_margin + (logo_icon_size ? logo_icon_size + ozone->dimensions.entry_icon_padding : 0),
          ozone->dimensions.header_height / 2 + ozone->fonts.title.line_centre_offset,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme->text_rgba,
          TEXT_ALIGN_LEFT,
          1.0f,
@@ -11832,11 +11801,12 @@ static void ozone_draw_footer(
       gfx_display_t *p_disp,
       gfx_animation_t *p_anim,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       const video_frame_info_t *video_info,
       math_matrix_4x4 *mymat)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    gfx_display_ctx_driver_t *dispctx      = p_disp->dispctx;
    bool menu_core_enable                  = video_info->menu.core_enable;
    bool input_menu_swap_ok_cancel_buttons = video_info->input_menu_swap_ok_cancel_buttons;
@@ -12009,14 +11979,14 @@ static void ozone_draw_footer(
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ((separator == OZONE_HEADER_SEPARATOR_NORMAL) ? separator_margin : 0),
             video_height - ozone->dimensions.footer_height,
             VIDEO_SCALE_PACK(video_width
                   - ((separator == OZONE_HEADER_SEPARATOR_NORMAL)
                      ? (separator_margin * 2) : 0),
                   ozone->dimensions.spacer_1px),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->header_footer_separator,
             NULL);
 
@@ -12036,8 +12006,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               video_dims,
                icon_size,
                icon_size,
                icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_RESUME],
@@ -12054,8 +12023,7 @@ static void ozone_draw_footer(
          ozone_draw_icon(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               video_dims,
                icon_size,
                icon_size,
                input_menu_swap_ok_cancel_buttons
@@ -12074,8 +12042,7 @@ static void ozone_draw_footer(
          ozone_draw_icon(
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               video_dims,
                icon_size,
                icon_size,
                input_menu_swap_ok_cancel_buttons
@@ -12095,8 +12062,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   icon_size,
                   icon_size,
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U],
@@ -12114,8 +12080,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   icon_size,
                   icon_size,
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U],
@@ -12133,8 +12098,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   icon_size,
                   icon_size,
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L],
@@ -12152,8 +12116,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   icon_size,
                   icon_size,
                   (*ozone->savestate_thumbnail_file_path)
@@ -12173,8 +12136,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   icon_size,
                   icon_size,
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SELECT],
@@ -12192,8 +12154,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   icon_size,
                   icon_size,
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START],
@@ -12211,8 +12172,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   icon_size,
                   icon_size,
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SELECT],
@@ -12230,8 +12190,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   icon_size,
                   icon_size,
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L],
@@ -12249,8 +12208,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   icon_size,
                   icon_size,
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L],
@@ -12268,8 +12226,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   icon_size,
                   icon_size,
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START],
@@ -12295,7 +12252,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.resume.str,
             ozone->footer_labels.resume.x + icon_size + icon_padding_small,
             footer_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -12309,7 +12266,7 @@ static void ozone_draw_footer(
          ozone->footer_labels.ok.str,
          ozone->footer_labels.ok.x + icon_size + icon_padding_small,
          footer_text_y,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme->text_rgba,
          TEXT_ALIGN_LEFT,
          1.0f,
@@ -12323,7 +12280,7 @@ static void ozone_draw_footer(
          ozone->footer_labels.back.str,
          ozone->footer_labels.back.x + icon_size + icon_padding_small,
          footer_text_y,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_dims,
          ozone->theme->text_rgba,
          TEXT_ALIGN_LEFT,
          1.0f,
@@ -12338,7 +12295,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.search.str,
             ozone->footer_labels.search.x + icon_size + icon_padding_small,
             footer_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -12353,7 +12310,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.cycle_thumbnails.str,
             ozone->footer_labels.cycle_thumbnails.x + icon_size + icon_padding_small,
             footer_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -12368,7 +12325,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.random_select.str,
             ozone->footer_labels.random_select.x + icon_size + icon_padding_small,
             footer_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -12383,7 +12340,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.fullscreen_thumbnails.str,
             ozone->footer_labels.fullscreen_thumbnails.x + icon_size + icon_padding_small,
             footer_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -12398,7 +12355,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.metadata_override.str,
             ozone->footer_labels.metadata_override.x + icon_size + icon_padding_small,
             footer_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -12413,7 +12370,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.reset_to_default.str,
             ozone->footer_labels.reset_to_default.x + icon_size + icon_padding_small,
             footer_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -12428,7 +12385,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.help.str,
             ozone->footer_labels.help.x + icon_size + icon_padding_small,
             footer_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -12443,7 +12400,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.clear_setting.str,
             ozone->footer_labels.clear_setting.x + icon_size + icon_padding_small,
             footer_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -12458,7 +12415,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.scan.str,
             ozone->footer_labels.scan.x + icon_size + icon_padding_small,
             footer_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -12473,7 +12430,7 @@ static void ozone_draw_footer(
             ozone->footer_labels.manage.str,
             ozone->footer_labels.manage.x + icon_size + icon_padding_small,
             footer_text_y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_dims,
             ozone->theme->text_rgba,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -12552,7 +12509,7 @@ static void ozone_draw_footer(
                core_title_buf,
                ticker_x_offset + footer_margin,
                footer_text_y,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_dims,
                ozone->theme->text_rgba,
                TEXT_ALIGN_LEFT,
                1.0f,
@@ -12571,8 +12528,7 @@ static void ozone_draw_footer(
             ozone_draw_icon(
                   p_disp,
                   userdata,
-                  video_width,
-                  video_height,
+                  video_dims,
                   69 * scale_factor,
                   30 * scale_factor,
                   ozone->theme->textures[OZONE_THEME_TEXTURE_SWITCH],
@@ -12979,8 +12935,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          p_anim,
          video_info,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          battery_level_enable,
          timedate_enable,
          &mymat);
@@ -12991,8 +12946,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          p_disp,
          p_anim,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          video_info,
          &mymat);
 
@@ -13006,8 +12960,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             video_info->menu.ticker_smooth,
             (enum gfx_animation_ticker_type)video_info->menu.ticker_type,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             libretro_running,
             menu_framebuffer_opacity,
             &mymat);
@@ -13033,8 +12986,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          p_anim,
          video_info,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          (unsigned)ozone->selection,
          (unsigned)ozone->selection_old,
          MENU_LIST_GET_SELECTION(menu_list, 0),
@@ -13052,8 +13004,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             p_anim,
             video_info,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             (unsigned)ozone->selection_old_list,
             (unsigned)ozone->selection_old_list,
             NULL,
@@ -13073,8 +13024,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             p_anim,
             video_info,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             libretro_running,
             menu_framebuffer_opacity,
             &mymat);
@@ -13099,8 +13049,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone_draw_fullscreen_thumbnails(ozone,
          userdata,
          video_info->disp_userdata,
-         video_width,
-         video_height);
+         VIDEO_SCALE_PACK(video_width, video_height));
 
    /* Message box & OSK - second layer of text */
    if (    (ozone->flags & OZONE_FLAG_SHOULD_DRAW_MSGBOX)
@@ -13165,8 +13114,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
       ozone_draw_backdrop(userdata,
             video_info->disp_userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             float_min(ozone->animations.messagebox_alpha,
             (draw_osk) ? 0.95f : 0.75f));
 
@@ -13178,8 +13126,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          ozone_draw_osk(ozone,
                userdata,
                video_info->disp_userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                label,
                str);
       }
@@ -13188,8 +13135,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
                video_info,
                p_disp,
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                ozone->pending_message,
                &mymat);
 
