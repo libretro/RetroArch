@@ -587,8 +587,9 @@ typedef struct xmb_handle
     * (selection_pointer_changed, list_open_new, list_switch_new,
     * list_cache, pointer_up, layout) can read the size without
     * locking video_st via video_driver_get_output_size. */
-   unsigned last_width;
-   unsigned last_height;
+   /* The video size this was last laid out for, one word,
+    * VIDEO_SCALE_PACK's layout. */
+   unsigned last_dims;
    /* Word-wrap scratch for the sublabel line ticker, grown on demand
     * and kept for the menu's lifetime; it was malloc'd and freed on
     * every frame the ticker ran. */
@@ -2432,7 +2433,7 @@ static void xmb_selection_pointer_changed(
    threshold                  = xmb->icon_size * 10;
    menu_st->entries.begin     = num;
 
-   height                     = xmb->last_height;
+   height                     = VIDEO_SCALE_H(xmb->last_dims);
 
    /* On cursor movement within a playlist, invalidate any in-flight
     * icon thumbnail requests (they're for the previous cursor position
@@ -2652,7 +2653,7 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i;
-   unsigned height            = xmb->last_height;
+   unsigned height            = VIDEO_SCALE_H(xmb->last_dims);
    size_t skip                = 0;
    int threshold              = xmb->icon_size * 10;
    size_t end                 = list ? list->size : 0;
@@ -2847,7 +2848,7 @@ static void xmb_list_switch_new(xmb_handle_t *xmb,
       file_list_t *list, int dir, size_t current)
 {
    unsigned i;
-   unsigned height     = xmb->last_height;
+   unsigned height     = VIDEO_SCALE_H(xmb->last_dims);
    unsigned last       = 0;
    unsigned first      = 0;
    size_t end          = 0;
@@ -9285,8 +9286,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Cache the per-frame size on the handle so non-render paths
     * can read it without locking video_st. */
-   xmb->last_width  = video_width;
-   xmb->last_height = video_height;
+   xmb->last_dims   = VIDEO_SCALE_PACK(video_width, video_height);
 
    /* Snapshot context generation — if xmb_context_destroy()
     * runs on the main thread while we are mid-render on the
@@ -10553,8 +10553,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
 
    /* Initialise last_{width,height} from the snapshot taken
     * above; xmb_frame will refresh these every render. */
-   xmb->last_width  = width;
-   xmb->last_height = height;
+   xmb->last_dims   = VIDEO_SCALE_PACK(width, height);
 
    xmb_init_scale_mod(xmb->scale_mod, settings->floats.menu_scale_factor * 100.0f);
    xmb->scale_cap = (settings->floats.menu_scale_factor > 1.0f)
@@ -10835,7 +10834,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
    if (xmb->allow_horizontal_animation)
    {
       unsigned first  = 0, last = 0;
-      unsigned height = xmb->last_height;
+      unsigned height = VIDEO_SCALE_H(xmb->last_dims);
 
       /* FIXME: this shouldn't be happening at all */
       if (selection >= selection_buf->size)
@@ -11233,8 +11232,8 @@ static int xmb_pointer_up(void *userdata,
       return 0;
    }
 
-   width        = xmb->last_width;
-   height       = xmb->last_height;
+   width        = VIDEO_SCALE_W(xmb->last_dims);
+   height       = VIDEO_SCALE_H(xmb->last_dims);
    margin_top   = (int16_t)xmb->margins_screen_top;
    margin_left  = (int16_t)xmb->margins_screen_left;
    margin_right = (int16_t)((float)width - xmb->margins_screen_left);

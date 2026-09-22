@@ -120,8 +120,9 @@ struct menu_ss_handle
 {
    float bg_color[16];
    menu_ss_font_data_t font_data;
-   unsigned last_width;
-   unsigned last_height;
+   /* The video size this was last laid out for, one word,
+    * VIDEO_SCALE_PACK's layout. */
+   unsigned last_dims;
    float font_size;
    float particle_scale;
    menu_ss_particle_tint_t particle_tint;
@@ -250,8 +251,7 @@ menu_screensaver_t *menu_screensaver_init(void)
 
    /* Initial dimensions are zeroed out - will be set
     * on first call of menu_screensaver_iterate() */
-   screensaver->last_width     = 0;
-   screensaver->last_height    = 0;
+   screensaver->last_dims      = VIDEO_SCALE_PACK(0, 0);
    screensaver->font_size      = 0.0f;
    screensaver->particle_scale = 0.0f;
 
@@ -329,8 +329,7 @@ static INLINE void menu_screensaver_set_dimensions(
    float screen_size           = (float)((width < height) ? width : height);
    screensaver->font_size      = (screen_size * MENU_SS_FONT_SIZE_FACTOR) + 0.5f;
    screensaver->particle_scale = (screen_size * MENU_SS_PARTICLE_SIZE_FACTOR) / screensaver->font_size;
-   screensaver->last_width     = width;
-   screensaver->last_height    = height;
+   screensaver->last_dims      = VIDEO_SCALE_PACK(width, height);
 }
 
 static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
@@ -349,8 +348,8 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
          return false;
    }
 
-   width  = screensaver->last_width;
-   height = screensaver->last_height;
+   width  = VIDEO_SCALE_W(screensaver->last_dims);
+   height = VIDEO_SCALE_H(screensaver->last_dims);
 
    /* Initialise array */
    switch (screensaver->effect)
@@ -457,8 +456,7 @@ static bool menu_screensaver_update_state(
 #endif
 
    /* Check if dimensions have changed */
-   if (   (screensaver->last_width  != width)
-       || (screensaver->last_height != height))
+   if (VIDEO_SCALE_PACK(width, height) != screensaver->last_dims)
    {
       menu_screensaver_set_dimensions(screensaver, width, height);
 
@@ -817,8 +815,8 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
          video_width,
          video_height,
          0, 0,
-         screensaver->last_width, screensaver->last_height,
-         screensaver->last_width, screensaver->last_height,
+         VIDEO_SCALE_W(screensaver->last_dims), VIDEO_SCALE_H(screensaver->last_dims),
+         VIDEO_SCALE_W(screensaver->last_dims), VIDEO_SCALE_H(screensaver->last_dims),
          screensaver->bg_color,
          NULL);
 

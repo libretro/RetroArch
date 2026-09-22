@@ -336,18 +336,19 @@ typedef struct
    rgui_video_settings_t pending_video_config;      /* int alignment */
    rgui_video_settings_t content_video_settings;   /* int alignment */
 
-   unsigned font_width;
-   unsigned font_height;
+   /* The glyph cell, one word, VIDEO_SCALE_PACK's layout. */
+   unsigned font_dims;
    unsigned font_width_stride;
    unsigned font_height_stride;
 
-   unsigned mini_thumbnail_max_width;
-   unsigned mini_thumbnail_max_height;
+   /* The cap a mini thumbnail is fitted into, one word. */
+   unsigned mini_thumbnail_max_dims;
    unsigned mini_thumbnail_delay;
-   unsigned last_width;
-   unsigned last_height;
-   unsigned window_width;
-   unsigned window_height;
+   /* The video size this was last laid out for, one word,
+    * VIDEO_SCALE_PACK's layout. */
+   unsigned last_dims;
+   /* The window this was laid out for, one word. */
+   unsigned window_dims;
    unsigned particle_effect;
    unsigned color_theme;
    unsigned menu_aspect_ratio;
@@ -1839,8 +1840,8 @@ static bool rgui_fonts_init(rgui_t *rgui)
             goto english;
          }
 
-         rgui->font_width         = FONT_10X10_WIDTH;
-         rgui->font_height        = FONT_10X10_HEIGHT;
+         rgui->font_dims          = VIDEO_SCALE_PACK(FONT_10X10_WIDTH,
+               FONT_10X10_HEIGHT);
          rgui->font_width_stride  = FONT_10X10_WIDTH_STRIDE;
          rgui->font_height_stride = FONT_10X10_HEIGHT_STRIDE;
          rgui->language           = language;
@@ -1864,8 +1865,8 @@ static bool rgui_fonts_init(rgui_t *rgui)
             goto english;
          }
 
-         rgui->font_width         = FONT_10X10_WIDTH;
-         rgui->font_height        = FONT_10X10_HEIGHT;
+         rgui->font_dims          = VIDEO_SCALE_PACK(FONT_10X10_WIDTH,
+               FONT_10X10_HEIGHT);
          rgui->font_width_stride  = FONT_10X10_WIDTH_STRIDE;
          rgui->font_height_stride = FONT_10X10_HEIGHT_STRIDE;
          rgui->language           = language;
@@ -1903,8 +1904,8 @@ static bool rgui_fonts_init(rgui_t *rgui)
             goto english;
          }
 
-         rgui->font_width         = FONT_6X10_WIDTH;
-         rgui->font_height        = FONT_6X10_HEIGHT;
+         rgui->font_dims          = VIDEO_SCALE_PACK(FONT_6X10_WIDTH,
+               FONT_6X10_HEIGHT);
          rgui->font_width_stride  = FONT_6X10_WIDTH_STRIDE;
          rgui->font_height_stride = FONT_6X10_HEIGHT_STRIDE;
          rgui->language           = language;
@@ -1943,8 +1944,7 @@ english:
       return false;
    }
 
-   rgui->font_width         = FONT_WIDTH;
-   rgui->font_height        = FONT_HEIGHT;
+   rgui->font_dims          = VIDEO_SCALE_PACK(FONT_WIDTH, FONT_HEIGHT);
    rgui->font_width_stride  = FONT_WIDTH_STRIDE;
    rgui->font_height_stride = FONT_HEIGHT_STRIDE;
 
@@ -3885,8 +3885,7 @@ static void rgui_prepare_colors(
  * settings internally. */
 
 /* NOTE 2: We should really be using:
- *  - rgui->font_width
- *  - rgui->font_height
+ *  - the two halves of rgui->font_dims
  *  - rgui->font_width_stride
  * ...in these functions. This would ensure compatibility
  * with any future font modifications, but unfortunately
@@ -5203,8 +5202,8 @@ static bool rgui_osk_pointer_over_textbox(
 
    {
       gfx_display_t *p_disp      = disp_get_ptr();
-      unsigned key_width         = rgui->font_width  + 16;
-      unsigned key_height        = rgui->font_height + 12;
+      unsigned key_width         = VIDEO_SCALE_W(rgui->font_dims)  + 16;
+      unsigned key_height        = VIDEO_SCALE_H(rgui->font_dims) + 12;
       unsigned keyboard_offset_y = 10 + 15 + (2 * rgui->font_height_stride);
       unsigned osk_width         = (key_width * OSK_CHARS_PER_LINE) + 20;
       unsigned osk_height        = keyboard_offset_y + (key_height * 4) + 10;
@@ -5238,8 +5237,8 @@ static int rgui_osk_ptr_at_pos(
       const unsigned ptr_offset_y       = 2;
       const unsigned keyboard_offset_x  = 10;
       gfx_display_t *p_disp             = disp_get_ptr();
-      unsigned key_width                = rgui->font_width  +(key_text_offset_x * 2);
-      unsigned key_height               = rgui->font_height +(key_text_offset_y * 2);
+      unsigned key_width                = VIDEO_SCALE_W(rgui->font_dims)  +(key_text_offset_x * 2);
+      unsigned key_height               = VIDEO_SCALE_H(rgui->font_dims) +(key_text_offset_y * 2);
       unsigned ptr_width                = key_width  - (ptr_offset_x * 2);
       unsigned ptr_height               = key_height - (ptr_offset_y * 2);
       unsigned keyboard_width           = key_width  * OSK_CHARS_PER_LINE;
@@ -5332,8 +5331,8 @@ RGUI_NOINLINE static void rgui_render_osk(
 
    key_text_offset_x      = 8;
    key_text_offset_y      = 6;
-   key_width              = rgui->font_width  + (key_text_offset_x * 2);
-   key_height             = rgui->font_height + (key_text_offset_y * 2);
+   key_width              = VIDEO_SCALE_W(rgui->font_dims)  + (key_text_offset_x * 2);
+   key_height             = VIDEO_SCALE_H(rgui->font_dims) + (key_text_offset_y * 2);
    ptr_offset_x           = 2;
    ptr_offset_y           = 2;
    ptr_width              = key_width  - (ptr_offset_x * 2);
@@ -5873,8 +5872,8 @@ static void rgui_render(void *data, unsigned width, unsigned height,
 
    /* If the framebuffer changed size, or the background config has
     * changed, recache the background buffer */
-   fb_size_changed =    (rgui->last_width  != fb_width)
-                     || (rgui->last_height != fb_height);
+   fb_size_changed   = (rgui->last_dims
+         != VIDEO_SCALE_PACK(fb_width, fb_height));
 
 #if defined(GEKKO)
    /* Wii gfx driver changes menu framebuffer size at
@@ -5903,8 +5902,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
             && (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE))
          rgui_init_particle_effect(rgui, p_disp);
 
-      rgui->last_width  = fb_width;
-      rgui->last_height = fb_height;
+      rgui->last_dims   = VIDEO_SCALE_PACK(fb_width, fb_height);
    }
 
    if (rgui->flags & RGUI_FLAG_BG_MODIFIED)
@@ -6136,7 +6134,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                ||
                   ( (rgui->flags & RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL)
                   && rgui->left_thumbnail_queue_size > 0))
-            thumbnail_panel_width = rgui->mini_thumbnail_max_width;
+            thumbnail_panel_width = VIDEO_SCALE_W(rgui->mini_thumbnail_max_dims);
 
          /* Index (relative to first displayed menu entry) of
           * the vertical centre of RGUI's 'terminal'
@@ -7269,13 +7267,13 @@ static bool rgui_set_aspect_ratio(
    mini_thumbnail_term_width            = (unsigned)((float)rgui->term_layout.width * (2.0f / 5.0f));
    if (mini_thumbnail_term_width > 19)
       mini_thumbnail_term_width         = 19;
-   rgui->mini_thumbnail_max_width       = mini_thumbnail_term_width * rgui->font_width_stride;
-   rgui->mini_thumbnail_max_height      = (unsigned)((rgui->term_layout.height * rgui->font_height_stride) * 0.5f) - 2;
+   rgui->mini_thumbnail_max_dims        = VIDEO_SCALE_PACK(mini_thumbnail_term_width * rgui->font_width_stride,
+         (unsigned)((rgui->term_layout.height * rgui->font_height_stride) * 0.5f) - 2);
 
-   rgui->mini_thumbnail.max_width       = rgui->mini_thumbnail_max_width;
-   rgui->mini_thumbnail.max_height      = rgui->mini_thumbnail_max_height;
-   rgui->mini_left_thumbnail.max_width  = rgui->mini_thumbnail_max_width;
-   rgui->mini_left_thumbnail.max_height = rgui->mini_thumbnail_max_height;
+   rgui->mini_thumbnail.max_width       = VIDEO_SCALE_W(rgui->mini_thumbnail_max_dims);
+   rgui->mini_thumbnail.max_height      = VIDEO_SCALE_H(rgui->mini_thumbnail_max_dims);
+   rgui->mini_left_thumbnail.max_width  = VIDEO_SCALE_W(rgui->mini_thumbnail_max_dims);
+   rgui->mini_left_thumbnail.max_height = VIDEO_SCALE_H(rgui->mini_thumbnail_max_dims);
 
    /* One block for all five buffers, in the order above. Cursors are
     * in uint16_t elements. */
@@ -7406,8 +7404,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    /* Get initial 'window' dimensions */
    video_driver_get_viewport_info(&vp);
-   rgui->window_width               = VIDEO_SCALE_W(vp.full_dims);
-   rgui->window_height              = VIDEO_SCALE_H(vp.full_dims);
+   rgui->window_dims                = VIDEO_SCALE_PACK(VIDEO_SCALE_W(vp.full_dims),
+         VIDEO_SCALE_H(vp.full_dims));
    rgui->flags                     &= ~RGUI_FLAG_IGNORE_RESIZE_EVENTS;
 
    /* Set aspect ratio
@@ -7456,8 +7454,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    if (settings->bools.menu_rgui_extended_ascii)
       rgui->flags             |= RGUI_FLAG_EXTENDED_ASCII_ENABLE;
 
-   rgui->last_width            = rgui->frame_buf.width;
-   rgui->last_height           = rgui->frame_buf.height;
+   rgui->last_dims             = VIDEO_SCALE_PACK(rgui->frame_buf.width,
+         rgui->frame_buf.height);
 
    rgui->flags                &= ~(RGUI_FLAG_SHOW_MOUSE
                                  | RGUI_FLAG_SHOW_SCREENSAVER);
@@ -8789,8 +8787,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* > Check for changes in window (display) dimensions */
-   if (     (rgui->window_width  != video_width)
-         || (rgui->window_height != video_height))
+   if (     (VIDEO_SCALE_W(rgui->window_dims)  != video_width)
+         || (VIDEO_SCALE_H(rgui->window_dims) != video_height))
    {
 #if !defined(GEKKO) && !defined(DINGUX)
       /* If window width or height are less than the
@@ -8836,9 +8834,9 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       }
 
       if (     (video_width < default_fb_width)
-            || (rgui->window_width < default_fb_width)
+            || (VIDEO_SCALE_W(rgui->window_dims) < default_fb_width)
             || (video_height < 240)
-            || (rgui->window_height < 240))
+            || (VIDEO_SCALE_H(rgui->window_dims) < 240))
          rgui_set_aspect_ratio(rgui, p_disp, true,
             video_info->menu.rgui_aspect_ratio,
             video_info->menu.rgui_aspect_ratio_lock);
@@ -8852,8 +8850,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          rgui_stage_video_config(rgui, &rgui->menu_video_settings);
       }
 
-      rgui->window_width  = video_width;
-      rgui->window_height = video_height;
+      rgui->window_dims   = VIDEO_SCALE_PACK(video_width, video_height);
    }
 
    /* Handle pending thumbnail load operations */

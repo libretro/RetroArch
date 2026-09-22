@@ -651,8 +651,9 @@ struct ozone_handle
    } dimensions;
 
    unsigned footer_labels_language;
-   unsigned last_width;
-   unsigned last_height;
+   /* The video size this was last laid out for, one word,
+    * VIDEO_SCALE_PACK's layout. */
+   unsigned last_dims;
    unsigned entries_height;
    unsigned theme_dynamic_cursor_state; /* 0 -> 1 -> 0 -> 1 [...] */
    unsigned selection_core_name_lines;
@@ -4952,7 +4953,7 @@ static void ozone_list_cache(void *data,
       ozone->flags           &= ~OZONE_FLAG_IS_PLAYLIST_OLD;
 
    /* Deep copy visible elements */
-   video_info_height          = ozone->last_height;
+   video_info_height          = VIDEO_SCALE_H(ozone->last_dims);
    y                          = ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical;
    entries_end                = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
    selection_buf              = MENU_LIST_GET_SELECTION(menu_list, 0);
@@ -5063,7 +5064,7 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, size_t new_selection)
 #endif
    };
 
-   unsigned video_info_height = ozone->last_height;
+   unsigned video_info_height = VIDEO_SCALE_H(ozone->last_dims);
    struct gfx_animation_ctx_entry entry;
    uintptr_t tag = (uintptr_t)ozone;
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -5820,7 +5821,7 @@ static void ozone_content_metadata_line(
 static void ozone_update_scroll(ozone_handle_t *ozone,
       bool allow_animation, ozone_node_t *node)
 {
-   unsigned video_info_height = ozone->last_height;
+   unsigned video_info_height = VIDEO_SCALE_H(ozone->last_dims);
    gfx_animation_ctx_entry_t entry;
    float new_scroll = 0, entries_middle;
    float bottom_boundary, current_selection_middle_onscreen;
@@ -5924,7 +5925,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
    /* Compute entries height and adjust scrolling if needed */
    size_t anchor_idx             = 0;
    float anchor_offset           = 0.0f;
-   unsigned video_info_width     = ozone->last_width;
+   unsigned video_info_width     = VIDEO_SCALE_W(ozone->last_dims);
    struct menu_state *menu_st    = menu_state_get_ptr();
    menu_list_t *menu_list        = menu_st->entries.list;
    file_list_t *selection_buf    = NULL;
@@ -6096,7 +6097,7 @@ compute_sublabel:
       {
          uintptr_t tag         = (uintptr_t)selection_buf;
          /* Same boundary ozone_render clamps drag and wheel to. */
-         float bottom_boundary = (float)ozone->last_height
+         float bottom_boundary = (float)VIDEO_SCALE_H(ozone->last_dims)
                - ozone->dimensions.header_height
                - ozone->dimensions.spacer_1px
                - ozone->dimensions.footer_height
@@ -6140,8 +6141,8 @@ static void ozone_draw_entries(
    size_t i;
    uint32_t alpha_uint32;
    float bottom_boundary;
-   unsigned video_info_height        = ozone->last_height;
-   unsigned video_info_width         = ozone->last_width;
+   unsigned video_info_height        = VIDEO_SCALE_H(ozone->last_dims);
+   unsigned video_info_width         = VIDEO_SCALE_W(ozone->last_dims);
    float last_border_alpha           = -1.0f;
    bool menu_show_sublabels          = video_info->menu.show_sublabels;
    bool menu_current_sel_only        = video_info->menu.show_sublabels_current_selection_only;
@@ -9222,7 +9223,7 @@ static enum menu_action ozone_parse_menu_entry_action(
                              | OZONE_FLAG_WANT_THUMBNAIL_BAR);
             ozone->flags2 |=  OZONE_FLAG2_PENDING_CURSOR_IN_SIDEBAR;
 
-            ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
+            ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, VIDEO_SCALE_H(ozone->last_dims));
             ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag, settings->uints.menu_remember_selection);
 
             menu_st->selection_ptr = 0;
@@ -9582,7 +9583,7 @@ static enum menu_action ozone_parse_menu_entry_action(
 
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          {
-            ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
+            ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, VIDEO_SCALE_H(ozone->last_dims));
             if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
                ozone_leave_sidebar(ozone, ozone_collapse_sidebar, tag,
                      settings->uints.menu_remember_selection);
@@ -10002,8 +10003,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->default_theme                         = &ozone_theme_dark; 
 
    ozone->last_framebuffer_opacity              = -1.0f;
-   ozone->last_width                            = width;
-   ozone->last_height                           = height;
+   ozone->last_dims                             = VIDEO_SCALE_PACK(width,
+         height);
    ozone->last_scale_factor                     = gfx_display_get_dpi_scale(p_disp,
          settings, width, height, false, false);
    ozone->last_thumbnail_scale_factor           = settings->floats.ozone_thumbnail_scale_factor;
@@ -10510,8 +10511,8 @@ static void ozone_set_layout(
           ozone->dimensions.sidebar_entry_icon_padding);
 
    /* Prevent thumbnail sidebar from growing too much and making the UI unusable. */
-   if (ozone->dimensions.thumbnail_bar_width > ozone->last_width / 3.0f)
-      ozone->dimensions.thumbnail_bar_width         = ozone->last_width / 3.0f;
+   if (ozone->dimensions.thumbnail_bar_width > VIDEO_SCALE_W(ozone->last_dims) / 3.0f)
+      ozone->dimensions.thumbnail_bar_width         = VIDEO_SCALE_W(ozone->last_dims) / 3.0f;
 
    ozone->dimensions.cursor_size                    = CURSOR_SIZE * scale_factor;
 
@@ -10638,7 +10639,7 @@ static void ozone_set_layout(
     * > ozone_refresh_sidebars() cancels any existing
     *   animations and 'force updates' the affected
     *   variables with newly scaled values */
-   ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
+   ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, VIDEO_SCALE_H(ozone->last_dims));
 
    /* Entry dimensions must be recalculated after
     * updating menu layout */
@@ -11053,8 +11054,7 @@ static void ozone_render(void *data,
          || (font_scale_factor_sublabel != ozone->last_font_scale_factor_sublabel)
          || (font_scale_factor_time != ozone->last_font_scale_factor_time)
          || (font_scale_factor_footer != ozone->last_font_scale_factor_footer)
-         || (width != ozone->last_width)
-         || (height != ozone->last_height)
+         || (VIDEO_SCALE_PACK(width, height) != ozone->last_dims)
          || !string_is_equal(ozone->last_font_path,
                settings->paths.path_menu_ozone_font))
    {
@@ -11068,8 +11068,8 @@ static void ozone_render(void *data,
       ozone->last_font_scale_factor_sublabel = font_scale_factor_sublabel;
       ozone->last_font_scale_factor_time     = font_scale_factor_time;
       ozone->last_font_scale_factor_footer   = font_scale_factor_footer;
-      ozone->last_width                      = width;
-      ozone->last_height                     = height;
+      ozone->last_dims                       = VIDEO_SCALE_PACK(width,
+            height);
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
@@ -13831,7 +13831,7 @@ static void ozone_populate_entries(
          && ozone->depth == 1
          && ozone->dimensions_sidebar_width == 0
          && ozone->categories_selection_ptr == 0)
-      ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, ozone->last_height);
+      ozone_refresh_sidebars(ozone, ozone_collapse_sidebar, VIDEO_SCALE_H(ozone->last_dims));
 
    if (!settings->bools.menu_horizontal_animation)
       ozone->flags2 |= OZONE_FLAG2_BLOCK_ANIMATION;
@@ -14236,8 +14236,8 @@ static int ozone_pointer_up(void *userdata,
       unsigned action)
 {
    ozone_handle_t *ozone             = (ozone_handle_t*)userdata;
-   unsigned int width                = ozone->last_width;
-   unsigned int height               = ozone->last_height;
+   unsigned int width                = VIDEO_SCALE_W(ozone->last_dims);
+   unsigned int height               = VIDEO_SCALE_H(ozone->last_dims);
    struct menu_state *menu_st        = menu_state_get_ptr();
    menu_input_t *menu_input          = &menu_st->input_state;
    menu_list_t *menu_list            = menu_st->entries.list;
