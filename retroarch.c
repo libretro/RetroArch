@@ -671,25 +671,6 @@ bool midi_driver_set_all_sounds_off(void)
    if (!rarch_midi_drv_data || !rarch_midi_drv_output_enabled)
       return false;
 
-#ifdef HAVE_WASAPI
-   /* FIXME: Due to some mysterious reason Frame Delay does not
-    * work with WASAPI unless MIDI output is active, even when
-    * MIDI is not used. Frame Delay also breaks if MIDI sounds
-    * are "set off", which happens on menu toggle, therefore
-    * skip this if WASAPI is used and Frame Delay is active.. */
-   {
-      /* audio_driver_get_ident(), not current_audio->ident: with the
-       * threaded pipeline the latter is "audio-thread" and this check
-       * silently stopped applying. */
-      const char *ident = audio_driver_get_ident();
-      if (ident && memcmp(ident, "wasapi", 6) == 0)
-      {
-         if (video_state_get_ptr()->frame_delay_target > 0 || config_get_ptr()->bools.video_scanline_sync)
-            return false;
-      }
-   }
-#endif
-
    event.data       = data;
    event.data_size  = sizeof(data);
    event.delta_time = 0;
