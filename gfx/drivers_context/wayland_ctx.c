@@ -59,7 +59,7 @@ extern bool gfx_ctx_wl_init_webos(driver_configure_handler_t, gfx_ctx_wayland_da
 extern bool gfx_ctx_wl_set_video_mode_common_size_webos(gfx_ctx_wayland_data_t*, unsigned, unsigned, bool);
 extern bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t*, bool);
 extern bool gfx_ctx_wl_suppress_screensaver_webos(void*, bool);
-extern void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t*, void (*)(void*, unsigned*, unsigned*), bool*, bool*, unsigned*, unsigned*);
+extern void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t*, void (*)(void*, unsigned*, unsigned*), bool*, bool*, unsigned*);
 
 #define gfx_ctx_wl_get_video_size_common gfx_ctx_wl_get_video_size_webos
 #define gfx_ctx_wl_destroy_resources_common gfx_ctx_wl_destroy_resources_webos

@@ -1020,7 +1020,7 @@ bool gfx_ctx_wl_suppress_screensaver_webos(void *data, bool state)
 
 void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t *wl,
       void (*get_video_size)(void*, unsigned*, unsigned*),
-      bool *quit, bool *resize, unsigned *width, unsigned *height)
+      bool *quit, bool *resize, unsigned *dims)
 {
    unsigned new_width, new_height;
 
@@ -1028,10 +1028,9 @@ void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t *wl,
 
    get_video_size(wl, &new_width, &new_height);
 
-   if (new_width != *width || new_height != *height)
+   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
    {
-      *width  = new_width;
-      *height = new_height;
+      *dims   = VIDEO_SCALE_PACK(new_width, new_height);
       *resize = true;
    }
 
