@@ -7,4 +7,5 @@ preview_anim_window_test
 preview_blit_bands_test
 preview_catchup_test
 preview_decode_bench
+preview_audio_oracle_test
 *.o

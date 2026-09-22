@@ -1147,6 +1147,14 @@ jobs:
              ./preview_catchup_test fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
              ./preview_catchup_test_threaded fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4'
           echo "[pass] preview_catchup_test (ASan, one picture at a time and four in flight)"
+          # The audio chain against ffmpeg: the track's rate exact, the
+          # resampled one within a fraction of a percent, from the first
+          # half second.
+          test -x preview_audio_oracle_test
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+          UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
+             ./preview_audio_oracle_test fixtures/trailing_small.mp4 fixtures/trailing_large.mp4
+          echo "[pass] preview_audio_oracle_test (ASan)"
           # clean keeps fixtures/ by design; regenerate anyway so the
           # step cannot silently run against an empty glob.
           make clean all SANITIZER=thread
