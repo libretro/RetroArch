@@ -194,10 +194,9 @@ void gfx_display_rotate_z(gfx_display_t *p_disp, math_matrix_4x4 *matrix,
 { (void)p_disp; (void)matrix; (void)cosine; (void)sine; (void)data; }
 
 void gfx_display_scissor_begin(gfx_display_t *p_disp, void *userdata,
-      unsigned video_width, unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
-{ (void)p_disp; (void)userdata; (void)video_width; (void)video_height;
-  (void)x; (void)y; (void)width; (void)height; }
+      unsigned video_dims, int x, int y, unsigned dims)
+{ (void)p_disp; (void)userdata; (void)video_dims;
+  (void)x; (void)y; (void)dims; }
 
 enum texture_filter_type gfx_display_texture_filter(void)
 { return TEXTURE_FILTER_LINEAR; }

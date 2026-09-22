@@ -1107,11 +1107,11 @@ static void gfx_display_d3d8_draw_pipeline(
  *
  * scissor_begin stores the rect; scissor_end clears it; the draw
  * function consults the rect when active. */
-static void gfx_display_d3d8_scissor_begin(
-      void *data,
-      unsigned video_width, unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+static void gfx_display_d3d8_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    d3d8_video_t *d3d = (d3d8_video_t*)data;
 
    if (!d3d)
@@ -1124,8 +1124,7 @@ static void gfx_display_d3d8_scissor_begin(
    d3d->menu_display.scissor_active = true;
 }
 
-static void gfx_display_d3d8_scissor_end(void *data,
-      unsigned video_width, unsigned video_height)
+static void gfx_display_d3d8_scissor_end(void *data, unsigned video_dims)
 {
    d3d8_video_t *d3d = (d3d8_video_t*)data;
 

@@ -1069,11 +1069,11 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
    }
 }
 
-void gfx_display_d3d11_scissor_begin(void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+void gfx_display_d3d11_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    D3D11_RECT rect;
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
 
@@ -1088,10 +1088,10 @@ void gfx_display_d3d11_scissor_begin(void *data,
    d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1, &rect);
 }
 
-void gfx_display_d3d11_scissor_end(void *data,
-      unsigned video_width,
-      unsigned video_height)
+void gfx_display_d3d11_scissor_end(void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    D3D11_RECT rect;
    d3d11_video_t *d3d11  = (d3d11_video_t*)data;
 

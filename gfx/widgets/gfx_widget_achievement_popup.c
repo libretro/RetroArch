@@ -320,12 +320,12 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
          gfx_display_scissor_begin(
             p_disp,
             video_info->userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             screen_pos_x + state->height,
             screen_pos_y,
-            (unsigned)((float)(state->width) * state->unfold),
-            state->height);
+            VIDEO_SCALE_PACK(
+                  (unsigned)((float)(state->width) * state->unfold),
+                  state->height));
       }
 
       /* Backdrop */
@@ -380,7 +380,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
 
          if (dispctx && dispctx->scissor_end)
             dispctx->scissor_end(video_info->userdata,
-               video_width, video_height);
+               VIDEO_SCALE_PACK(video_width, video_height));
       }
    }
 

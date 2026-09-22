@@ -617,22 +617,20 @@ static void gfx_display_wiiu_draw_pipeline(
    GX2SetPixelUniformBlock(1, sizeof(*wiiu->menu_shader_ubo), wiiu->menu_shader_ubo);
 }
 
-static void gfx_display_wiiu_scissor_begin(
-      void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y,
-      unsigned width, unsigned height)
+static void gfx_display_wiiu_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    GX2SetScissor(MAX(x, 0), MAX(y, 0), MIN(width, video_width), MIN(height, video_height));
 }
 
-static void gfx_display_wiiu_scissor_end(
-      void *data,
-      unsigned video_width,
-      unsigned video_height
-      )
+static void gfx_display_wiiu_scissor_end(void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    GX2SetScissor(0, 0, video_width, video_height);
 }
 

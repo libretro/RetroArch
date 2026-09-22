@@ -3468,12 +3468,11 @@ static void gfx_display_metal_draw_pipeline(
       [md.display drawPipeline:draw];
 }
 
-static void gfx_display_metal_scissor_begin(
-      void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+static void gfx_display_metal_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    MTLScissorRect r;
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (!md)
@@ -3486,9 +3485,7 @@ static void gfx_display_metal_scissor_begin(
    [md.display setScissorRect:r];
 }
 
-static void gfx_display_metal_scissor_end(void *data,
-      unsigned video_width,
-      unsigned video_height)
+static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (md)

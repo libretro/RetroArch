@@ -1083,19 +1083,17 @@ static void gfx_display_gl3_blend_end(void *data)
    glDisable(GL_BLEND);
 }
 
-static void gfx_display_gl3_scissor_begin(void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+static void gfx_display_gl3_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    glScissor(x, video_height - y - height, width, height);
    glEnable(GL_SCISSOR_TEST);
 }
 
-static void gfx_display_gl3_scissor_end(
-      void *data,
-      unsigned video_width,
-      unsigned video_height)
+static void gfx_display_gl3_scissor_end(void *data, unsigned video_dims)
 {
    glDisable(GL_SCISSOR_TEST);
 }

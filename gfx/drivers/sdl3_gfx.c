@@ -943,10 +943,11 @@ static void gfx_display_sdl3_blend_end(void *data)
    SDL_SetRenderDrawBlendMode(vid->renderer, SDL_BLENDMODE_NONE);
 }
 
-static void gfx_display_sdl3_scissor_begin(void *data,
-      unsigned video_width, unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+static void gfx_display_sdl3_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    SDL_Rect rect;
    sdl3_video_t *vid = (sdl3_video_t*)data;
    if (!vid)
@@ -969,8 +970,7 @@ static void gfx_display_sdl3_scissor_begin(void *data,
    SDL_SetRenderClipRect(vid->renderer, &rect);
 }
 
-static void gfx_display_sdl3_scissor_end(void *data,
-      unsigned video_width, unsigned video_height)
+static void gfx_display_sdl3_scissor_end(void *data, unsigned video_dims)
 {
    sdl3_video_t *vid = (sdl3_video_t*)data;
    if (!vid)

@@ -1669,8 +1669,8 @@ static void gfx_widgets_draw_task_msg(
 
       gfx_display_scissor_begin(p_disp,
             userdata,
-            video_width, video_height,
-            rect_x, rect_y, rect_width, rect_height);
+            VIDEO_SCALE_PACK(video_width, video_height),
+            rect_x, rect_y, VIDEO_SCALE_PACK(rect_width, rect_height));
 
       gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
             msg->msg_new,
@@ -1697,7 +1697,7 @@ static void gfx_widgets_draw_task_msg(
             &p_dispwidget->gfx_widget_fonts.msg_queue);
       if (dispctx && dispctx->scissor_end)
          dispctx->scissor_end(userdata,
-               video_width, video_height);
+               VIDEO_SCALE_PACK(video_width, video_height));
    }
 
    /* Progress text */

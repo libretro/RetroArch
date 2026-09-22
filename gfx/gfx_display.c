@@ -345,10 +345,13 @@ static void gfx_display_flush_as(gfx_display_t *p_disp,
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+      unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned video_width              = VIDEO_SCALE_W(video_dims);
+   unsigned video_height             = VIDEO_SCALE_H(video_dims);
+   unsigned width                    = VIDEO_SCALE_W(dims);
+   unsigned height                   = VIDEO_SCALE_H(dims);
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    /* What is gathered goes out before this draws */
    gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_SCISSOR);
@@ -385,9 +388,8 @@ void gfx_display_scissor_begin(
       if ((x + width) > video_width)
          width      = video_width - x;
 
-      dispctx->scissor_begin(userdata,
-            video_width, video_height,
-            x, y, width, height);
+      dispctx->scissor_begin(userdata, video_dims,
+            x, y, VIDEO_SCALE_PACK(width, height));
    }
 }
 

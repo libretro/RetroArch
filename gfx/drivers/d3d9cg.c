@@ -1212,11 +1212,11 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
     * program to be bound before setting uniforms. */
 }
 
-static void gfx_display_d3d9_cg_scissor_begin(
-      void *data,
-      unsigned video_width, unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+static void gfx_display_d3d9_cg_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    RECT rect;
    d3d9_video_t *d3d9 = (d3d9_video_t*)data;
 
@@ -1231,9 +1231,10 @@ static void gfx_display_d3d9_cg_scissor_begin(
    IDirect3DDevice9_SetScissorRect(d3d9->dev, &rect);
 }
 
-static void gfx_display_d3d9_cg_scissor_end(void *data,
-      unsigned video_width, unsigned video_height)
+static void gfx_display_d3d9_cg_scissor_end(void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    RECT rect;
    d3d9_video_t            *d3d9 = (d3d9_video_t*)data;
 

@@ -2926,12 +2926,11 @@ static void gfx_display_vk_blend_end(void *data)
       vk->flags &= ~VK_FLAG_DISPLAY_BLEND;
 }
 
-static void gfx_display_vk_scissor_begin(
-      void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+static void gfx_display_vk_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    vk_t *vk                          = (vk_t*)data;
 
    /* Clamp scissor offsets to non-negative values.
@@ -2945,9 +2944,7 @@ static void gfx_display_vk_scissor_begin(
    vk->tracker.dirty                |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
-static void gfx_display_vk_scissor_end(void *data,
-      unsigned video_width,
-      unsigned video_height)
+static void gfx_display_vk_scissor_end(void *data, unsigned video_dims)
 {
    vk_t *vk                 = (vk_t*)data;
 
@@ -6101,7 +6098,6 @@ static void *vulkan_init(const video_info_t *video,
       input_driver_t **input,
       void **input_data)
 {
-      unsigned out_dims;
    unsigned full_x, full_y;
    unsigned win_dims;
    unsigned mode_dims                = 0;

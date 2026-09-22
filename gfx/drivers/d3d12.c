@@ -1430,10 +1430,11 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
          d3d12->ubo_view.BufferLocation);
 }
 
-static void gfx_display_d3d12_scissor_begin(void *data,
-      unsigned video_width, unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+static void gfx_display_d3d12_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    D3D12_RECT rect;
    D3D12GraphicsCommandList cmd;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
@@ -1451,10 +1452,10 @@ static void gfx_display_d3d12_scissor_begin(void *data,
    cmd->lpVtbl->RSSetScissorRects(cmd, 1, &rect);
 }
 
-static void gfx_display_d3d12_scissor_end(void *data,
-      unsigned video_width,
-      unsigned video_height)
+static void gfx_display_d3d12_scissor_end(void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    D3D12_RECT rect;
    D3D12GraphicsCommandList cmd;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;

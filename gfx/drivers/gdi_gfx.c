@@ -810,10 +810,11 @@ static void gfx_display_gdi_blend_end  (void *data) { (void)data; }
  * arrive in the same conventions as the rest of the menu draw path:
  * (x,y) is the top-left of the scissor rect, with y measured from
  * the top of the screen. */
-static void gfx_display_gdi_scissor_begin(void *data,
-      unsigned video_width, unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+static void gfx_display_gdi_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    gdi_t *gdi = (gdi_t*)data;
    HRGN rgn;
 
@@ -837,8 +838,7 @@ static void gfx_display_gdi_scissor_begin(void *data,
    gdi->scissor_active = true;
 }
 
-static void gfx_display_gdi_scissor_end(void *data,
-      unsigned video_width, unsigned video_height)
+static void gfx_display_gdi_scissor_end(void *data, unsigned video_dims)
 {
    gdi_t *gdi = (gdi_t*)data;
    if (!gdi || !gdi->memDC)
@@ -2456,7 +2456,6 @@ static void gdi_create(gdi_t *gdi)
 static void *gdi_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-      unsigned out_dims;
    unsigned full_x, full_y;
    unsigned mode_dims = 0;
    unsigned win_dims   = 0;

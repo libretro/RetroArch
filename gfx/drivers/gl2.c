@@ -780,13 +780,12 @@ static void gfx_display_gl2_draw_pipeline(
 #endif
 }
 
-static void gfx_display_gl2_scissor_begin(
-      void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y,
-      unsigned width, unsigned height)
+static void gfx_display_gl2_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    glScissor(x, video_height - y - height, width, height);
    glEnable(GL_SCISSOR_TEST);
 #ifdef MALI_BUG
@@ -802,11 +801,10 @@ static void gfx_display_gl2_scissor_begin(
 #endif
 }
 
-static void gfx_display_gl2_scissor_end(
-      void *data,
-      unsigned video_width,
-      unsigned video_height)
+static void gfx_display_gl2_scissor_end(void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    glScissor(0, 0, video_width, video_height);
    glDisable(GL_SCISSOR_TEST);
 #ifdef MALI_BUG

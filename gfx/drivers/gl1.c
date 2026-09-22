@@ -547,21 +547,20 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
    gl1->coords.color = gl1->white_color_ptr;
 }
 
-static void gfx_display_gl1_scissor_begin(void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y,
-      unsigned width, unsigned height)
+static void gfx_display_gl1_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    glScissor(x, video_height - y - height, width, height);
    glEnable(GL_SCISSOR_TEST);
 }
 
-static void gfx_display_gl1_scissor_end(
-      void *data,
-      unsigned video_width,
-      unsigned video_height)
+static void gfx_display_gl1_scissor_end(void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    glScissor(0, 0, video_width, video_height);
    glDisable(GL_SCISSOR_TEST);
 }

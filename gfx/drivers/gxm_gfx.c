@@ -1586,22 +1586,20 @@ static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
          vita->mvp_no_rot.data);
 }
 
-static void gfx_display_gxm_scissor_begin(void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y,
-      unsigned width, unsigned height)
+static void gfx_display_gxm_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    gxm_set_clip_rectangle(x, y, x + width, y + height);
    sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, x, y,
          x + width, y + height);
 }
 
-static void gfx_display_gxm_scissor_end(
-      void *data,
-      unsigned video_width,
-      unsigned video_height)
+static void gfx_display_gxm_scissor_end(void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_NONE, 0, 0,
          video_width, video_height);
    clipping_enabled = 0;

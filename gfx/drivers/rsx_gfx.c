@@ -447,21 +447,20 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
    rsxDrawVertexArray(rsx->context, GCM_TYPE_TRIANGLE_STRIP, 0, draw->coords->vertices);
 }
 
-static void gfx_display_rsx_scissor_begin(void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y,
-      unsigned width, unsigned height)
+static void gfx_display_rsx_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    rsx_t *rsx = (rsx_t *)data;
    rsxSetScissor(rsx->context, x, video_height - y - height, width, height);
 }
 
-static void gfx_display_rsx_scissor_end(
-      void *data,
-      unsigned video_width,
-      unsigned video_height)
+static void gfx_display_rsx_scissor_end(void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    rsx_t *rsx = (rsx_t *)data;
    rsxSetScissor(rsx->context, 0, 0, video_width, video_height);
 }

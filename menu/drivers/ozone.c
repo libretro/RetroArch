@@ -3632,14 +3632,14 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
       gfx_display_scissor_begin(
             p_disp,
             userdata,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             0,
             ozone->dimensions.header_height + ozone->dimensions.spacer_1px,
-            (unsigned)ozone->dimensions_sidebar_width,
-            video_height
+            VIDEO_SCALE_PACK((unsigned)ozone->dimensions_sidebar_width,
+                  video_height
                   - ozone->dimensions.header_height
                   - ozone->dimensions.footer_height
-                  - ozone->dimensions.spacer_1px);
+                  - ozone->dimensions.spacer_1px));
 
    /* Background */
    sidebar_height = video_height
@@ -4059,7 +4059,7 @@ console_iterate:
    font_flush(video_width, video_height, &ozone->fonts.sidebar);
 
    if (dispctx && dispctx->scissor_end)
-      dispctx->scissor_end(userdata, video_width, video_height);
+      dispctx->scissor_end(userdata, VIDEO_SCALE_PACK(video_width, video_height));
 }
 
 static void ozone_thumbnail_bar_hide_end(void *userdata)
@@ -13117,15 +13117,16 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    if (p_disp->dispctx && p_disp->dispctx->scissor_begin)
       gfx_display_scissor_begin(p_disp,
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             ozone->sidebar_offset + (unsigned)ozone->dimensions_sidebar_width,
             ozone->dimensions.header_height + ozone->dimensions.spacer_1px,
-            video_width - (unsigned)ozone->dimensions_sidebar_width + (-ozone->sidebar_offset),
-            video_height
+            VIDEO_SCALE_PACK(video_width
+                  - (unsigned)ozone->dimensions_sidebar_width
+                  + (-ozone->sidebar_offset),
+                  video_height
                   - ozone->dimensions.header_height
                   - ozone->dimensions.footer_height
-                  - ozone->dimensions.spacer_1px);
+                  - ozone->dimensions.spacer_1px));
 
    /* Current list */
    ozone_draw_entries(ozone, icons_tex,
@@ -13180,7 +13181,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             &mymat);
 
    if (dispctx && dispctx->scissor_end)
-      dispctx->scissor_end(userdata, video_width, video_height);
+      dispctx->scissor_end(userdata, VIDEO_SCALE_PACK(video_width, video_height));
 
    /* Flush first layer of text */
    font_flush(video_width, video_height, &ozone->fonts.footer);

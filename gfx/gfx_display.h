@@ -142,11 +142,11 @@ typedef struct gfx_display_ctx_driver
     * at a time. */
    bool handles_vertex_strip;
    /* Enables and disables scissoring */
-   void (*scissor_begin)(void *data, unsigned video_width,
-         unsigned video_height,
-         int x, int y, unsigned width, unsigned height);
-   void (*scissor_end)(void *data, unsigned video_width,
-         unsigned video_height);
+   /* @video_dims and @dims: the output size and the rect's size,
+    * each with both axes in one word, VIDEO_SCALE_PACK's layout. */
+   void (*scissor_begin)(void *data, unsigned video_dims,
+         int x, int y, unsigned dims);
+   void (*scissor_end)(void *data, unsigned video_dims);
 } gfx_display_ctx_driver_t;
 
 struct gfx_display_ctx_draw
@@ -315,9 +315,8 @@ void gfx_display_draw_text_hp(
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned width, unsigned height);
+      unsigned video_dims,
+      int x, int y, unsigned dims);
 
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
