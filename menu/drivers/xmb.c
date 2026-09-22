@@ -9080,19 +9080,9 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
 
       /* Draw thumbnails */
 
-      /* > Configure shadow effect */
-      /* > Disabled for now since the images already have a background border */
-      if (0 && shadows_enable)
-      {
-         float shadow_offset            = xmb->icon_size / 24.0f;
-
-         thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_DROP;
-         thumbnail_shadow.alpha         = GFX_SHADOW_ALPHA;
-         thumbnail_shadow.drop.x_offset = shadow_offset;
-         thumbnail_shadow.drop.y_offset = shadow_offset;
-      }
-      else
-         thumbnail_shadow.type          = GFX_THUMBNAIL_SHADOW_NONE;
+      /* > No shadow effect: the thumbnails already have a background
+       *   border, so a drop shadow behind one only muddies its edge */
+      thumbnail_shadow.type             = GFX_THUMBNAIL_SHADOW_NONE;
 
       /* > Right */
       if (show_right_thumbnail)
