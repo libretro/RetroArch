@@ -804,6 +804,25 @@ static VkDevice vulkan_context_create_device_wrapper(
    return device;
 }
 
+uint32_t vulkan_select_present_queue_index(bool android_wsi,
+      uint32_t family_queue_count)
+{
+   if (android_wsi)
+      return 0;
+   return (family_queue_count >= 2) ? 1 : 0;
+}
+
+/* Android's WSI, whichever context driver brought the surface up - the
+ * SDL3 one reaches the same loader there. */
+static bool vulkan_wsi_is_android(const gfx_ctx_vulkan_data_t *vk)
+{
+#ifdef ANDROID
+   return true;
+#else
+   return vk->wsi_type == VULKAN_WSI_ANDROID;
+#endif
+}
+
 static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
    uint32_t queue_count;
@@ -936,8 +955,18 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
                      context.queue_family_index);
                return false;
             }
-            vk->context.present_queue = context.presentation_queue;
-            RARCH_LOG("[Vulkan] Core provided a separate presentation queue.\n");
+            /* Same family, so the graphics queue can present to the
+             * surface as well; behind Android's WSI it does, rather
+             * than the core's second queue (see the declaration of
+             * vulkan_select_present_queue_index()). */
+            if (vulkan_select_present_queue_index(
+                     vulkan_wsi_is_android(vk), 2))
+            {
+               vk->context.present_queue = context.presentation_queue;
+               RARCH_LOG("[Vulkan] Core provided a separate presentation queue.\n");
+            }
+            else
+               RARCH_LOG("[Vulkan] Core provided a separate presentation queue; presenting on the graphics queue under Android's WSI.\n");
          }
       }
       else
@@ -1024,9 +1053,11 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             RARCH_LOG("[Vulkan] Queue family %u supports %u sub-queues.\n",
                   i, queue_properties[i].queueCount);
             /* A second queue of the family, when there is one, takes
-             * the presents off the graphics queue and its lock. */
-            if (queue_properties[i].queueCount >= 2)
-               present_queue_index = 1;
+             * the presents off the graphics queue and its lock - except
+             * behind Android's WSI; see the declaration. */
+            present_queue_index = vulkan_select_present_queue_index(
+                  vulkan_wsi_is_android(vk),
+                  queue_properties[i].queueCount);
             found_queue = true;
             break;
          }

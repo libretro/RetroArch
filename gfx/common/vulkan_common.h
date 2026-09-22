@@ -418,6 +418,15 @@ void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type);
 
+/* Which queue of the graphics family the frontend presents on: 1 when
+ * the family has a second queue, so presents stay off the graphics
+ * queue and its lock, and 0 otherwise. Always 0 behind Android's WSI:
+ * there the loader turns a present's semaphore wait into a sync fd
+ * through the driver's QueueSignalReleaseImageANDROID, and Mali fails
+ * that call for a semaphore signalled on another queue (#19601). */
+uint32_t vulkan_select_present_queue_index(bool android_wsi,
+      uint32_t family_queue_count);
+
 #ifdef __APPLE__
 /* Returns the version string of the MoltenVK implementation in use,
  * captured at Vulkan context creation. Returns an empty string if no
