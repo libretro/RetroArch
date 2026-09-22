@@ -124,11 +124,12 @@
 #include <retro_atomic.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <rthreads/tpool.h>
 #endif
 #ifdef HAVE_THREADS
-static slock_t *rh265_rows_lock;
-static scond_t *rh265_rows_cond;
+static retro_eventcount_t rh265_rows_ec;
+static int rh265_rows_ec_ok;
 static slock_t *rh265_pool_lock;
 #endif
 
@@ -4147,19 +4148,17 @@ void rh265_video_set_thread_pool(rh265_video *v, void *pool,
     * that may be decoding and one being built. The wavefront stays
     * off then - the pool is the pictures', and a picture waits on the
     * rows of the ones it predicts from instead. */
-   if (!rh265_rows_lock)
+   if (!rh265_rows_ec_ok)
    {
-      rh265_rows_lock = slock_new();
-      rh265_rows_cond = scond_new();
       rh265_pool_lock = slock_new();
-      if (!rh265_rows_lock || !rh265_rows_cond || !rh265_pool_lock)
+      if (!rh265_pool_lock || !retro_eventcount_init(&rh265_rows_ec))
       {
-         if (rh265_rows_lock) slock_free(rh265_rows_lock);
-         if (rh265_rows_cond) scond_free(rh265_rows_cond);
          if (rh265_pool_lock) slock_free(rh265_pool_lock);
-         rh265_rows_lock = NULL; rh265_rows_cond = NULL; rh265_pool_lock = NULL;
+         rh265_pool_lock = NULL;
+         retro_eventcount_free(&rh265_rows_ec);
          return;
       }
+      rh265_rows_ec_ok = 1;
    }
    rh265_video_set_contexts(v, (int)threads + 1);
    v->threaded = v->nctx > 1;
@@ -4180,11 +4179,12 @@ int rh265_video_ref_wait_misses(void)
    return retro_atomic_load_acquire_int(&rh265_ref_wait_misses);
 }
 
-/* rh265_rows_lock / rh265_rows_cond / rh265_pool_lock: one lock and
- * condition for every row publication, every wait on one, and the
- * join of a picture, shared by the decoders in the process; and a
- * lock for the pools of buffers and jobs. Made by the first decoder
- * given a pool for its pictures; declared with the pool includes. */
+/* rh265_rows_ec / rh265_pool_lock: one eventcount for every row
+ * publication, every wait on one, and the join of a picture, shared by
+ * the decoders in the process - a publication notifies without a lock
+ * unless a thread is parked - and a lock for the pools of buffers and
+ * jobs. Made by the first decoder given a pool for its pictures;
+ * declared with the pool includes. */
 
 static void rh265_pool_lock_take(void)
 {
@@ -4234,16 +4234,12 @@ static void rh265_pic_publish_rows(rh265_pic *pic, int rows)
       while (n--)
          sthread_yield();
    }
-   if (rh265_rows_lock)
-   {
-      slock_lock(rh265_rows_lock);
-      retro_atomic_store_release_int(&pic->rows_final, rows);
-      scond_broadcast(rh265_rows_cond);
-      slock_unlock(rh265_rows_lock);
-      return;
-   }
 #endif
    retro_atomic_store_release_int(&pic->rows_final, rows);
+#ifdef HAVE_THREADS
+   if (rh265_rows_ec_ok)
+      retro_eventcount_notify(&rh265_rows_ec);
+#endif
 }
 
 /* Before a read of @ref reaches CTB row @row: the rows it reaches
@@ -4260,14 +4256,20 @@ static void rh265_ref_wait_rows(const rh265_dec *d, const rh265_pic *ref,
    if (retro_atomic_load_acquire_int(&ref->rows_final) < rows)
    {
 #ifdef HAVE_THREADS
-      if (rh265_rows_lock)
+      if (rh265_rows_ec_ok)
       {
          /* another thread is still on the reference: sleep until it
           * has published the row */
-         slock_lock(rh265_rows_lock);
          while (retro_atomic_load_acquire_int(&ref->rows_final) < rows)
-            scond_wait(rh265_rows_cond, rh265_rows_lock);
-         slock_unlock(rh265_rows_lock);
+         {
+            int key = retro_eventcount_prepare_wait(&rh265_rows_ec);
+            if (retro_atomic_load_acquire_int(&ref->rows_final) >= rows)
+            {
+               retro_eventcount_cancel_wait(&rh265_rows_ec);
+               break;
+            }
+            retro_eventcount_commit_wait(&rh265_rows_ec, key);
+         }
          return;
       }
 #endif
@@ -4597,26 +4599,26 @@ static void rh265_ctx_job(void *arg)
 {
    rh265_dec *d = (rh265_dec*)arg;
    rh265_ctx_run_slices(d->owner, d);
-   slock_lock(rh265_rows_lock);
    retro_atomic_store_release_int(&d->busy, 0);
-   scond_broadcast(rh265_rows_cond);
-   slock_unlock(rh265_rows_lock);
+   retro_eventcount_notify(&rh265_rows_ec);
 }
 
 /* Wait for the context's picture; take queued pictures from the pool
  * meanwhile rather than sit idle. */
 static void rh265_ctx_join(rh265_video *v, rh265_dec *d)
 {
-   if (!rh265_rows_lock)
+   if (!rh265_rows_ec_ok)
       return;
    while (retro_atomic_load_acquire_int(&d->busy))
    {
+      int key;
       if (v->pool && tpool_help((tpool_t*)v->pool))
          continue;
-      slock_lock(rh265_rows_lock);
+      key = retro_eventcount_prepare_wait(&rh265_rows_ec);
       if (retro_atomic_load_acquire_int(&d->busy))
-         scond_wait(rh265_rows_cond, rh265_rows_lock);
-      slock_unlock(rh265_rows_lock);
+         retro_eventcount_commit_wait(&rh265_rows_ec, key);
+      else
+         retro_eventcount_cancel_wait(&rh265_rows_ec);
    }
 }
 #endif
@@ -5149,10 +5151,16 @@ static int rh265_pop_output(rh265_video *v)
       {
          if (v->out_count < RH265_MAX_DPB - 1)
             return 0;
-         slock_lock(rh265_rows_lock);
          while (retro_atomic_load_acquire_int(&pic->rows_final) < rows)
-            scond_wait(rh265_rows_cond, rh265_rows_lock);
-         slock_unlock(rh265_rows_lock);
+         {
+            int key = retro_eventcount_prepare_wait(&rh265_rows_ec);
+            if (retro_atomic_load_acquire_int(&pic->rows_final) >= rows)
+            {
+               retro_eventcount_cancel_wait(&rh265_rows_ec);
+               break;
+            }
+            retro_eventcount_commit_wait(&rh265_rows_ec, key);
+         }
       }
    }
 #endif

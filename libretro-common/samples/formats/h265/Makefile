@@ -10,10 +10,11 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c \
 	$(LIBRETRO_COMM_DIR)/formats/h265/rh265.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/tpool.c
 
 OBJS := $(SOURCES:.c=.o)
-NOTHREADS_SOURCES := $(filter-out %/rthreads.c %/tpool.c,$(SOURCES))
+NOTHREADS_SOURCES := $(filter-out %/rthreads.c %/retro_eventcount.c %/tpool.c,$(SOURCES))
 NOTHREADS_OBJS    := $(NOTHREADS_SOURCES:.c=.nt.o)
 
 # HAVE_THREADS: the oracle decodes every case on a pool as well, and
