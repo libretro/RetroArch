@@ -3028,7 +3028,6 @@ video_driver_t video_gxm = {
    gxm_set_rotation,
    gxm_viewport_info,
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    gxm_get_overlay_interface,
 #endif

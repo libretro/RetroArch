@@ -829,76 +829,47 @@ static void ss_raw_copy_cb(void *userdata,
 static bool take_screenshot_raw(
       video_driver_state_t *video_st,
       const char *screenshot_dir,
-      const char *name_base, void *userbuf,
+      const char *name_base,
       bool savestate, uint32_t runloop_flags,
       bool fullpath, bool use_thread,
       unsigned pixel_format_type)
 {
-   const void        *frame_ptr  = NULL;
-   void              *owned      = NULL;   /* heap copy owned by us */
-   unsigned           dims       = 0;
-   size_t             pitch      = 0;
+   /* Pull a heap-owned copy of the cached frame's pixels via the
+    * lifetime-safe callback API.  The screenshot task is deferred
+    * onto a worker thread; without copying we'd risk a UAF if the
+    * core closes or the driver reinit's between this enqueue and the
+    * worker dequeuing it. */
+   struct ss_raw_copy copy = { NULL, 0, 0 };
+   video_driver_cached_frame_read(&copy, ss_raw_copy_cb);
 
-   if (userbuf)
+   if (     !copy.buffer || !VIDEO_SCALE_W(copy.dims)
+         || !VIDEO_SCALE_H(copy.dims) || !copy.pitch)
    {
-      /* The supports_read_frame_raw caller path mallocs a fresh
-       * BGR24 buffer via video_driver_read_frame_raw and passes
-       * it here, having also updated frame_cache_* to match.  The
-       * buffer is already an owned snapshot -- no need to re-copy;
-       * just use it.  Ownership transfers to the screenshot task
-       * via the userbuf passthrough (existing cleanup at
-       * task_finished frees state->userbuf). */
-      bool has_pixels = false;
-      if (   !video_driver_cached_frame_info(&dims, &pitch,
-                  &has_pixels)
-          || !has_pixels)
-         return false;
-      frame_ptr = userbuf;
+      free(copy.buffer);
+      return false;
    }
-   else
+
+   /* Rotate the buffer according to core SET_ROTATION */
    {
-      /* Standard CPU-path screenshot: pull a heap-owned copy of
-       * the cached frame's pixels via the lifetime-safe callback
-       * API.  The screenshot task is deferred onto a worker
-       * thread; without copying we'd risk a UAF if the core
-       * closes or the driver reinit's between this enqueue and
-       * the worker dequeuing it. */
-      struct ss_raw_copy copy = { NULL, 0, 0 };
-      video_driver_cached_frame_read(&copy, ss_raw_copy_cb);
+      runloop_state_t *runloop_st   = runloop_state_get_ptr();
+      rarch_system_info_t *sys_info = &runloop_st->system;
 
-      if (     !copy.buffer || !VIDEO_SCALE_W(copy.dims)
-            || !VIDEO_SCALE_H(copy.dims) || !copy.pitch)
+      if (sys_info && sys_info->rotation)
       {
-         free(copy.buffer);
-         return false;
-      }
+         uint32_t *buf = NULL;
+         uint8_t bpp   = copy.pitch / VIDEO_SCALE_W(copy.dims);
+         size_t size   = VIDEO_SCALE_W(copy.dims)
+            * VIDEO_SCALE_H(copy.dims) * bpp;
 
-      owned     = copy.buffer;
-      frame_ptr = copy.buffer;
-      dims      = copy.dims;
-      pitch     = copy.pitch;
-
-      /* Rotate the buffer according to core SET_ROTATION */
-      {
-         runloop_state_t *runloop_st   = runloop_state_get_ptr();
-         rarch_system_info_t *sys_info = &runloop_st->system;
-
-         if (sys_info && sys_info->rotation)
+         if ((buf = (uint32_t*)calloc(1, size)))
          {
-            uint32_t *buf = NULL;
-            uint8_t bpp   = pitch / VIDEO_SCALE_W(dims);
-            size_t size   = VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * bpp;
+            screenshot_rotate(buf, (uint32_t*)copy.buffer, size,
+                  &copy.dims, &copy.pitch,
+                  sys_info->rotation);
+            memcpy(copy.buffer, buf, size);
 
-            if ((buf = (uint32_t*)calloc(1, size)))
-            {
-               screenshot_rotate(buf, (uint32_t*)copy.buffer, size,
-                     &dims, &pitch,
-                     sys_info->rotation);
-               memcpy(copy.buffer, buf, size);
-
-               free(buf);
-               buf = NULL;
-            }
+            free(buf);
+            buf = NULL;
          }
       }
    }
@@ -907,11 +878,12 @@ static bool take_screenshot_raw(
     * we use top-down. */
    if (screenshot_dump(screenshot_dir,
             name_base,
-            (const uint8_t*)frame_ptr + (VIDEO_SCALE_H(dims) - 1) * pitch,
-            dims,
-            (int)(-pitch),
+            (const uint8_t*)copy.buffer
+            + (VIDEO_SCALE_H(copy.dims) - 1) * copy.pitch,
+            copy.dims,
+            (int)(-copy.pitch),
             false,
-            owned ? owned : userbuf, /* userbuf: cleanup frees it */
+            copy.buffer, /* the task frees it once written */
             savestate,
             runloop_flags,
             fullpath,
@@ -921,9 +893,8 @@ static bool take_screenshot_raw(
       return true;
 
    /* screenshot_dump only takes ownership on success; on failure
-    * we have to free our copy.  The caller-owned userbuf isn't
-    * ours to free here. */
-   free(owned);
+    * the copy is still ours to free. */
+   free(copy.buffer);
    return false;
 }
 
@@ -937,7 +908,6 @@ static bool take_screenshot_choice(
       bool fullpath,
       bool use_thread,
       bool supports_vp_read,
-      bool supports_read_frame_raw,
       unsigned pixel_format_type
       )
 {
@@ -956,34 +926,8 @@ static bool take_screenshot_choice(
 
    if (!has_valid_framebuffer)
       return take_screenshot_raw(video_st, screenshot_dir,
-            name_base, NULL, savestate, runloop_flags, fullpath, use_thread,
+            name_base, savestate, runloop_flags, fullpath, use_thread,
             pixel_format_type);
-
-   if (supports_read_frame_raw)
-   {
-      /* video_driver_read_frame_raw's w/h/p are pure out-params --
-       * the driver writes the dimensions of the buffer it
-       * returns.  On success we publish (frame_data, dims) into
-       * the cache before invoking take_screenshot_raw, which then
-       * pulls dims via cached_frame_info() and uses frame_data
-       * directly as a caller-owned snapshot.  On failure
-       * (frame_data == NULL) we leave the existing cache state
-       * untouched -- cleaner than the previous save-and-restore
-       * dance that mixed old data with new dims. */
-      unsigned w   = 0;
-      unsigned h   = 0;
-      size_t   p   = 0;
-      void *frame_data = video_driver_read_frame_raw(&w, &h, &p);
-
-      if (frame_data)
-      {
-         video_driver_cached_frame_publish(frame_data,
-               VIDEO_SCALE_PACK(w, h), p);
-         return take_screenshot_raw(video_st, screenshot_dir,
-               name_base, frame_data, savestate, runloop_flags, fullpath, use_thread,
-               pixel_format_type);
-      }
-   }
 
    return false;
 }
@@ -1004,10 +948,8 @@ bool take_screenshot(
    bool prefer_vp_read            = false;
    if (supports_vp_read)
    {
-      /* Use VP read screenshots if it's a HW context core
-       * and read_frame_raw is not implemented */
-      if (      video_driver_is_hw_context()
-            && !video_st->current_video->read_frame_raw)
+      /* Use VP read screenshots if it's a HW context core */
+      if (video_driver_is_hw_context())
          prefer_vp_read           = true;
       /* Avoid GPU screenshots with savestates */
       if (video_gpu_screenshot && !savestate)
@@ -1027,7 +969,6 @@ bool take_screenshot(
          fullpath,
          use_thread,
          prefer_vp_read,
-         (video_st->current_video->read_frame_raw != NULL),
          video_st->pix_fmt
          );
    if (       (runloop_flags & RUNLOOP_FLAG_PAUSED)

@@ -9079,7 +9079,6 @@ video_driver_t video_d3d12 = {
    d3d12_gfx_set_rotation,
    d3d12_gfx_viewport_info,
    d3d12_gfx_read_viewport,
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d12_get_overlay_interface,
 #endif

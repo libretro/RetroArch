@@ -3367,7 +3367,6 @@ video_driver_t video_d3d8 = {
    d3d8_set_rotation,
    d3d8_viewport_info,
    NULL, /* read_viewport  */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d8_get_overlay_interface,
 #endif

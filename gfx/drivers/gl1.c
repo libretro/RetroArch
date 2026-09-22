@@ -3519,7 +3519,6 @@ video_driver_t video_gl1 = {
    gl1_set_rotation,
    gl1_viewport_info,
    gl1_read_viewport,
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    gl1_get_overlay_interface,
 #endif

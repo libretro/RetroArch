@@ -4043,7 +4043,6 @@ video_driver_t video_d3d10 = {
    d3d10_gfx_set_rotation,
    d3d10_gfx_viewport_info,
    NULL, /* read_viewport  */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d10_get_overlay_interface,
 #endif

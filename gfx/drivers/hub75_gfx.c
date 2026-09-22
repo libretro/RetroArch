@@ -1260,7 +1260,6 @@ video_driver_t video_hub75 = {
    hub75_set_rotation,
    hub75_viewport_info,
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    hub75_get_overlay_interface,
 #endif

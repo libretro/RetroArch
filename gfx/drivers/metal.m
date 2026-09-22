@@ -7265,7 +7265,6 @@ video_driver_t video_metal = {
    metal_set_rotation,
    metal_viewport_info,
    metal_read_viewport,
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    metal_get_overlay_interface,
 #endif

@@ -3867,7 +3867,6 @@ video_driver_t video_gdi = {
    NULL, /* set_rotation */
    gdi_viewport_info,
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    gdi_get_overlay_interface,
 #endif

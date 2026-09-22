@@ -981,7 +981,6 @@ video_driver_t video_switch = {
    switch_set_rotation,
    switch_viewport_info,
    NULL, /* read_viewport  */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    switch_get_overlay_interface,
 #endif

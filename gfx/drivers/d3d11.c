@@ -7319,7 +7319,6 @@ video_driver_t video_d3d11 = {
    d3d11_gfx_set_rotation,
    d3d11_gfx_viewport_info,
    d3d11_gfx_read_viewport,
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d11_get_overlay_interface,
 #endif

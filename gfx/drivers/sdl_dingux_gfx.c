@@ -1136,7 +1136,6 @@ video_driver_t video_sdl_dingux = {
    NULL, /* set_rotation */
    sdl_dingux_gfx_viewport_info,
    NULL, /* read_viewport  */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

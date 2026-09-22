@@ -1069,13 +1069,6 @@ typedef struct video_driver
    /* Reads out in BGR byte order (24bpp). */
    bool (*read_viewport)(void *data, uint8_t *buffer, bool is_idle);
 
-   /* Returns a pointer to a newly allocated buffer that can
-    * (and must) be passed to free() by the caller, containing a
-    * copy of the current raw frame in the active pixel format
-    * and sets width, height and pitch to the correct values. */
-   void* (*read_frame_raw)(void *data, unsigned *width,
-   unsigned *height, size_t *pitch);
-
 #ifdef HAVE_OVERLAY
    void (*overlay_interface)(void *data,
          const video_overlay_interface_t **iface);
@@ -1661,9 +1654,6 @@ bool video_driver_set_video_mode(unsigned dims, bool fullscreen);
 
 bool video_driver_get_video_output_size(
       unsigned *dims, char *s, size_t len);
-
-void * video_driver_read_frame_raw(unsigned *width,
-   unsigned *height, size_t *pitch);
 
 void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling);
 

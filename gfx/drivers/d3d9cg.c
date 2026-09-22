@@ -5049,7 +5049,6 @@ video_driver_t video_d3d9_cg = {
    d3d9_cg_set_rotation,
    d3d9_cg_viewport_info,
    d3d9_cg_read_viewport,
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d9_cg_get_overlay_interface,
 #endif

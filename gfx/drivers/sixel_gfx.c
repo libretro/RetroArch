@@ -654,7 +654,6 @@ video_driver_t video_sixel = {
    sixel_gfx_set_rotation,
    NULL, /* viewport_info */
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

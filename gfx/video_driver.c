@@ -524,7 +524,6 @@ video_driver_t video_null = {
    NULL, /* set_rotation */
    NULL, /* viewport_info */
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 
 #ifdef HAVE_OVERLAY
   NULL, /* overlay_interface */
@@ -2557,17 +2556,6 @@ bool video_driver_get_video_output_size(unsigned *dims, char *s, size_t len)
    return true;
 }
 
-void *video_driver_read_frame_raw(unsigned *width,
-   unsigned *height, size_t *pitch)
-{
-   video_driver_state_t *video_st = &video_driver_st;
-   const video_driver_t *vid      = video_st->current_video;
-   if (vid && vid->read_frame_raw && video_st->data)
-      return vid->read_frame_raw(video_st->data, width,
-            height, pitch);
-   return NULL;
-}
-
 void video_driver_set_filtering(unsigned index,
       bool smooth, bool ctx_scaling)
 {
@@ -4456,8 +4444,7 @@ bool video_driver_cached_frame_is_hw_render(void)
 
 /* Producer-side publish: install a new cached frame metadata
  * tuple.  Called from video_driver_frame, from the
- * command_event_reinit replay path, and from the
- * task_screenshot.c::supports_read_frame_raw block.
+ * command_event_reinit replay path.
  *
  * Never waits on a reader: readers hold a hazard slot, and the tuple
  * itself is published with a seqlock the reader retries against.

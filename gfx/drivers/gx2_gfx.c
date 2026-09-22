@@ -2681,7 +2681,6 @@ video_driver_t video_wiiu =
    gx2_set_rotation,
    gx2_viewport_info,
    NULL, /* read_viewport  */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    gx2_get_overlay_interface,
 #endif

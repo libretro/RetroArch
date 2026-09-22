@@ -3026,7 +3026,6 @@ video_driver_t video_ctr =
    ctr_set_rotation,
    ctr_viewport_info,
    NULL, /* read_viewport  */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    ctr_overlay_interface,
 #endif

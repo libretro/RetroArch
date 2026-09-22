@@ -2707,7 +2707,6 @@ video_driver_t video_gcm =
    rsx_set_rotation,
    rsx_viewport_info,
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    rsx_get_overlay_interface,
 #endif

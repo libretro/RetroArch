@@ -6315,11 +6315,6 @@ video_driver_t video_gl3 = {
    gl3_set_rotation,
    gl3_viewport_info,
    gl3_read_viewport,
-#if defined(READ_RAW_GL_FRAME_TEST)
-   gl3_read_frame_raw,
-#else
-   NULL, /* read_frame_raw */
-#endif
 #ifdef HAVE_OVERLAY
    gl3_get_overlay_interface,
 #endif

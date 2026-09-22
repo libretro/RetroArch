@@ -573,7 +573,6 @@ video_driver_t video_sdl = {
    NULL, /* set_rotation */
    sdl_gfx_viewport_info,
    NULL, /* read_viewport  */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

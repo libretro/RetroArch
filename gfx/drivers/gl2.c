@@ -6156,60 +6156,6 @@ video_record_read_t gl2_get_record_read(void)
 #endif
 }
 
-#if 0
-#define READ_RAW_GL_FRAME_TEST
-#endif
-
-#if defined(READ_RAW_GL_FRAME_TEST)
-static void* gl2_read_frame_raw(void *data, unsigned *width_p,
-unsigned *height_p, size_t *pitch_p)
-{
-   gl2_t *gl             = (gl2_t*)data;
-   unsigned width       = gl->last_width[gl->tex_index];
-   unsigned height      = gl->last_height[gl->tex_index];
-   size_t pitch         = gl->tex_w * gl->base_size;
-   void* buffer         = NULL;
-   void* buffer_texture = NULL;
-
-   if (gl->flags & GL2_FLAG_HW_RENDER_USE)
-   {
-      buffer = malloc(pitch * height);
-      if (!buffer)
-         return NULL;
-   }
-
-   buffer_texture = malloc(pitch * gl->tex_h);
-
-   if (!buffer_texture)
-   {
-      if (buffer)
-         free(buffer);
-      return NULL;
-   }
-
-   glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
-   glGetTexImage(GL_TEXTURE_2D, 0,
-         gl->texture_type, gl->texture_fmt, buffer_texture);
-
-   *width_p  = width;
-   *height_p = height;
-   *pitch_p  = pitch;
-
-   if (gl->flags & GL2_FLAG_HW_RENDER_USE)
-   {
-      int i;
-      for (i = 0; i < height ; i++)
-         memcpy((uint8_t*)buffer + i * pitch,
-            (uint8_t*)buffer_texture + (height - 1 - i) * pitch, pitch);
-
-      free(buffer_texture);
-      return buffer;
-   }
-
-   return buffer_texture;
-}
-#endif
-
 #ifdef HAVE_OVERLAY
 /* The texture names and the vertex, texture and colour coordinate
  * arrays of a page's images come out of one zeroed block, each region
@@ -6965,11 +6911,6 @@ video_driver_t video_gl2 = {
    gl2_set_rotation,
    gl2_viewport_info,
    gl2_read_viewport,
-#if defined(READ_RAW_GL_FRAME_TEST)
-   gl2_read_frame_raw,
-#else
-   NULL,
-#endif
 #ifdef HAVE_OVERLAY
    gl2_get_overlay_interface,
 #endif
