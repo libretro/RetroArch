@@ -7,8 +7,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c \
 	$(LIBRETRO_COMM_DIR)/formats/h265/rh265.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
-	$(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
-	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
+	$(LIBRETRO_COMM_DIR)/rthreads/tpool.c
 
 OBJS := $(SOURCES:.c=.o)
 

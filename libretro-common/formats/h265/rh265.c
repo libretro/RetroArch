@@ -125,7 +125,6 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <rthreads/tpool.h>
-#include <rthreads/retro_eventcount.h>
 #endif
 #ifdef HAVE_THREADS
 static slock_t *rh265_rows_lock;
@@ -135,7 +134,6 @@ static slock_t *rh265_pool_lock;
 
 
 /* CTB rows decoded side by side at most. */
-#define RH265_WPP_THREADS_MAX 8
 
 #include <formats/rh265.h>
 
@@ -3820,8 +3818,7 @@ struct rh265_video
    rh265_pps pps[RH265_MAX_PPS];
    /* One decode state per picture that can be in flight; a new picture
     * takes the next one round. With one context that is the same one
-    * every time, which is the decoder as it was. The WPP shadows are
-    * the current context's row copies. */
+    * every time, which is the decoder as it was. */
    rh265_dec  ctx[RH265_MAX_CTX];
    rh265_dec *cur;
    int        nctx;
@@ -3867,15 +3864,6 @@ struct rh265_video
     * second CTB for the row below, and how many CTBs of it are done. */
    void      *pool;
    unsigned   threads;
-   rh265_dec *shadows;
-   unsigned   num_shadows;
-   size_t    *row_off;
-   uint8_t   *row_ctx;               /* rows * 2 * RH265_CTX_COUNT */
-   retro_atomic_int_t *row_prog;
-   int        row_cap;
-   retro_atomic_int_t next_row;
-   retro_atomic_int_t wpp_err;
-   unsigned  wpp_gen;              /* the picture the rows on the pool are of */
 };
 
 /* Unescape into the decoder's scratch block instead of a fresh
@@ -4117,311 +4105,6 @@ static void rh265_dpb_bump(rh265_video *v, int reorder)
    rh265_dpb_prune(v);
 }
 
-/* Decode the slice_segment_data of one I slice.  rbsp/size cover the
- * whole slice NAL payload (unescaped); data_bit is the first bit after
- * the slice header's byte alignment. */
-#ifdef HAVE_THREADS
-/* Grow the per-row arrays to @rows rows. */
-static int rh265_wpp_rows_alloc(rh265_video *v, int rows)
-{
-   if (rows <= v->row_cap)
-      return 0;
-   {
-      size_t *off = (size_t*)realloc(v->row_off, (size_t)rows * sizeof(*off));
-      uint8_t *ctx = (uint8_t*)realloc(v->row_ctx,
-            (size_t)rows * 2 * RH265_CTX_COUNT);
-      retro_atomic_int_t *prog = (retro_atomic_int_t*)realloc(v->row_prog,
-            (size_t)rows * sizeof(*prog));
-      if (off)  v->row_off  = off;
-      if (ctx)  v->row_ctx  = ctx;
-      if (prog) v->row_prog = prog;
-      if (!off || !ctx || !prog)
-         return -1;
-   }
-   v->row_cap = rows;
-   return 0;
-}
-
-/* Wait until row @row has finished @need CTBs, giving the core up
- * between looks; false when another row has failed. */
-static int rh265_wpp_wait(rh265_video *v, int row, int need)
-{
-   while (retro_atomic_load_acquire_int(&v->row_prog[row]) < need)
-   {
-      if (retro_atomic_load_acquire_int(&v->wpp_err))
-         return 0;
-      sthread_yield();
-   }
-   return !retro_atomic_load_acquire_int(&v->wpp_err);
-}
-
-/* One CTB row of a single-slice WPP picture on decoder state @d (the
- * picture's own or a shadow of it): the row's CABAC engine at its
- * entry point, contexts from the row above once that has passed its
- * second CTB, then each CTB behind the wavefront - the row above two
- * CTBs ahead - with the row's progress published after every CTB.
- * The end_of_slice_segment bit may only fire on the picture's last
- * CTB and each row closes with end_of_subset_one_bit. */
-static int rh265_wpp_row(rh265_video *v, rh265_dec *d, int ry,
-      const uint8_t *start, const uint8_t *end)
-{
-   const rh265_sps *sps = d->sps;
-   int ctb_w            = sps->ctb_w;
-   int rx;
-
-   rh265_cabac_init_engine(&d->cb, start, end);
-   if (ry == 0)
-   {
-      int init_type = 0;
-      if (d->sh.slice_type == RH265_SLICE_P)
-         init_type = d->sh.cabac_init ? 2 : 1;
-      else if (d->sh.slice_type == RH265_SLICE_B)
-         init_type = d->sh.cabac_init ? 1 : 2;
-      rh265_cabac_init_contexts(&d->cb, d->sh.slice_qp, init_type);
-   }
-   else
-   {
-      if (!rh265_wpp_wait(v, ry - 1, ctb_w < 2 ? ctb_w : 2))
-         return -1;
-      memcpy(d->cb.state, v->row_ctx + (size_t)(ry - 1) * 2 * RH265_CTX_COUNT,
-            RH265_CTX_COUNT);
-      memcpy(d->cb.mps, v->row_ctx + (size_t)(ry - 1) * 2 * RH265_CTX_COUNT
-            + RH265_CTX_COUNT, RH265_CTX_COUNT);
-   }
-   d->qp_y                = d->sh.slice_qp;
-   d->qp_y_pred           = d->sh.slice_qp;
-   d->first_qg            = 1;
-   d->cu_qp_delta         = 0;
-   d->is_cu_qp_delta_coded = 0;
-
-   for (rx = 0; rx < ctb_w; rx++)
-   {
-      int ctb_addr = ry * ctb_w + rx;
-      int x0       = rx << sps->log2_ctb;
-      int y0       = ry << sps->log2_ctb;
-      int term;
-
-      if (ry > 0 && !rh265_wpp_wait(v, ry - 1,
-               rx + 2 < ctb_w ? rx + 2 : ctb_w))
-         return -1;
-
-      d->ctb_slice[ctb_addr]     = (uint16_t)d->slice_seq;
-      d->ctb_lf_across[ctb_addr] = (uint8_t)d->sh.loop_filter_across_slices;
-      d->cur_zaddr = rh265_zaddr(d, x0, y0);
-      if (sps->sao_enabled)
-         rh265_sao_param(d, rx, ry);
-      if (rh265_coding_quadtree(d, x0, y0, sps->log2_ctb, 0) < 0)
-         return -1;
-      if (rx == 1 || (ctb_w == 1 && rx == 0))
-      {
-         uint8_t *save = v->row_ctx + (size_t)ry * 2 * RH265_CTX_COUNT;
-         memcpy(save,                   d->cb.state, RH265_CTX_COUNT);
-         memcpy(save + RH265_CTX_COUNT, d->cb.mps,   RH265_CTX_COUNT);
-      }
-      retro_atomic_store_release_int(&v->row_prog[ry], rx + 1);
-
-      term = rh265_cabac_terminate(&d->cb);
-      if (term)
-         return (ctb_addr == sps->pic_size_ctbs - 1) ? 0 : -1;
-      if (rx == ctb_w - 1 && !rh265_cabac_terminate(&d->cb))
-         return -1;
-   }
-   return (ry == sps->ctb_h - 1) ? -1 : 0; /* last row must terminate */
-}
-
-/* One picture's rows on the pool: the runners' jobs and what they
- * share - the rows still to finish, the count of holders, and the
- * picture's generation, so a runner the pool starts late, behind
- * other work, finds the picture gone and leaves without touching the
- * decoder's next one. On the heap, freed by the last holder, so such
- * a runner has something to read. The caller waits for the rows
- * alone, on a process-wide eventcount, never for the runners: a pool
- * that also carries pictures in flight must not be drained per
- * picture. */
-typedef struct rh265_wpp_group rh265_wpp_group;
-typedef struct { rh265_dec *d; rh265_wpp_group *g; } rh265_wpp_job;
-struct rh265_wpp_group
-{
-   rh265_video *v;
-   const uint8_t *rbsp;
-   size_t         size;
-   unsigned       gen;
-   retro_atomic_int_t rows_left;
-   retro_atomic_int_t refs;
-   rh265_wpp_job  job[RH265_WPP_THREADS_MAX];
-};
-
-static retro_eventcount_t  rh265_wpp_ec;
-static retro_atomic_int_t  rh265_wpp_ec_state;   /* 0 none, 1 making, 2 ready */
-
-static int rh265_wpp_ec_ready(void)
-{
-   int st = retro_atomic_load_acquire_int(&rh265_wpp_ec_state);
-   if (st == 2)
-      return 1;
-   if (st == 0 && retro_atomic_cas_int(&rh265_wpp_ec_state, 0, 1))
-   {
-      if (retro_eventcount_init(&rh265_wpp_ec))
-      {
-         retro_atomic_store_release_int(&rh265_wpp_ec_state, 2);
-         return 1;
-      }
-      retro_atomic_store_release_int(&rh265_wpp_ec_state, 0);
-   }
-   return 0;
-}
-
-/* A runner lets go of the group; the one that leaves the caller alone
- * with it wakes the caller, whose decoder state - the shadows, the row
- * counters - the next picture will reuse, and so must not be handed
- * to a picture while a runner of this one can still reach it. */
-static void rh265_wpp_group_release(rh265_wpp_group *g)
-{
-   int left = retro_atomic_fetch_sub_int(&g->refs, 1) - 1;
-   if (left == 1)
-      retro_eventcount_notify(&rh265_wpp_ec);
-   else if (left == 0)
-      free(g);
-}
-
-/* A thread's share: rows claimed in order from the shared counter,
- * so every row waits only on one claimed before it by a thread that
- * is running it. */
-/* Do rows until none are left to claim. A runner of a picture the
- * decoder has moved past does nothing: its generation no longer
- * matches. */
-static void rh265_wpp_drain(rh265_wpp_group *g, rh265_dec *d)
-{
-   rh265_video   *v     = g->v;
-   const rh265_sps *sps = d->sps;
-   if (g->gen != v->wpp_gen)
-      return;
-   for (;;)
-   {
-      int ry = retro_atomic_fetch_add_int(&v->next_row, 1);
-      if (ry >= sps->ctb_h)
-         break;
-      if (!retro_atomic_load_acquire_int(&v->wpp_err))
-      {
-         if (rh265_wpp_row(v, d, ry, g->rbsp + v->row_off[ry],
-                  g->rbsp + g->size) < 0)
-         {
-            retro_atomic_store_release_int(&v->wpp_err, 1);
-            /* let rows waiting on this one give up */
-            retro_atomic_store_release_int(&v->row_prog[ry], sps->ctb_w);
-         }
-      }
-      if (retro_atomic_fetch_sub_int(&g->rows_left, 1) == 1)
-         retro_eventcount_notify(&rh265_wpp_ec);
-   }
-}
-
-static void rh265_wpp_worker(void *arg)
-{
-   rh265_wpp_job *j = (rh265_wpp_job*)arg;
-   rh265_wpp_drain(j->g, j->d);
-   rh265_wpp_group_release(j->g);
-}
-
-/* The threaded decode of a single-slice WPP picture: every row's
- * substream located up front from the entry points, then the rows
- * dealt to the pool and the calling thread. Returns the CTB count
- * (the picture is complete) or -1. */
-static int rh265_decode_slice_data_wpp(rh265_video *v, rh265_dec *d, const uint8_t *rbsp,
-      size_t size, size_t esc_base, int esc_idx, const uint32_t *esc_pos,
-      int esc_count)
-{
-   const rh265_sps *sps = d->sps;
-   int rows             = sps->ctb_h;
-   int workers          = (int)v->threads;
-   rh265_wpp_group *g;
-   int r, w;
-
-   if (workers > rows)
-      workers = rows;
-   if (workers > (int)v->num_shadows + 1)
-      workers = (int)v->num_shadows + 1;
-   if (!rh265_wpp_ec_ready())
-      return -2;                          /* this picture on one thread */
-   if (rh265_wpp_rows_alloc(v, rows) < 0)
-      return -1;
-
-   v->row_off[0] = esc_base - (size_t)esc_idx;
-   for (r = 1; r < rows; r++)
-   {
-      size_t un;
-      esc_base += d->sh.entry_point[r - 1];
-      while (esc_idx < esc_count && esc_pos[esc_idx] < esc_base)
-         esc_idx++;
-      un = esc_base - (size_t)esc_idx;
-      if (un > size)
-         return -1;
-      v->row_off[r] = un;
-   }
-   for (r = 0; r < rows; r++)
-      retro_atomic_int_init(&v->row_prog[r], 0);
-   retro_atomic_int_init(&v->next_row, 0);
-   retro_atomic_int_init(&v->wpp_err, 0);
-
-   g = (rh265_wpp_group*)malloc(sizeof(*g));
-   if (!g)
-      return -1;
-   v->wpp_gen++;
-   g->v    = v;
-   g->rbsp = rbsp;
-   g->size = size;
-   g->gen  = v->wpp_gen;
-   retro_atomic_int_init(&g->rows_left, rows);
-   retro_atomic_int_init(&g->refs, 1);
-   for (w = 0; w < workers; w++)
-   {
-      g->job[w].d = w ? &v->shadows[w - 1] : d;
-      g->job[w].g = g;
-      if (w)
-         memcpy(&v->shadows[w - 1], d, sizeof(*d));
-   }
-   for (w = 1; w < workers; w++)
-   {
-      retro_atomic_fetch_add_int(&g->refs, 1);
-      if (!tpool_add_work((tpool_t*)v->pool, rh265_wpp_worker, &g->job[w]))
-         retro_atomic_fetch_sub_int(&g->refs, 1);
-   }
-   rh265_wpp_drain(g, d);
-   /* the rows in other hands, and only those */
-   while (retro_atomic_load_acquire_int(&g->rows_left) > 0)
-   {
-      int key = retro_eventcount_prepare_wait(&rh265_wpp_ec);
-      if (retro_atomic_load_acquire_int(&g->rows_left) <= 0)
-      {
-         retro_eventcount_cancel_wait(&rh265_wpp_ec);
-         break;
-      }
-      retro_eventcount_commit_wait(&rh265_wpp_ec, key);
-   }
-   /* and the runners themselves: one still queued behind other work
-    * would find its rows gone and leave at once, but until it has,
-    * the shadows and counters it can reach are not the next
-    * picture's to reset */
-   while (retro_atomic_load_acquire_int(&g->refs) > 1)
-   {
-      int key = retro_eventcount_prepare_wait(&rh265_wpp_ec);
-      if (retro_atomic_load_acquire_int(&g->refs) <= 1)
-      {
-         retro_eventcount_cancel_wait(&rh265_wpp_ec);
-         break;
-      }
-      retro_eventcount_commit_wait(&rh265_wpp_ec, key);
-   }
-   {
-      int err = retro_atomic_load_acquire_int(&v->wpp_err);
-      rh265_wpp_group_release(g);
-      if (err)
-         return -1;
-   }
-   return sps->pic_size_ctbs;
-}
-#endif
-
 void rh265_video_set_contexts(rh265_video *v, int n)
 {
    if (!v)
@@ -4449,27 +4132,14 @@ void rh265_video_set_thread_pool(rh265_video *v, void *pool,
       for (k = 0; k < v->nctx; k++)
          rh265_ctx_join(v, &v->ctx[k]);
    }
-   if (threads > RH265_WPP_THREADS_MAX)
-      threads = RH265_WPP_THREADS_MAX;
+   if (threads > RH265_MAX_CTX - 1)
+      threads = RH265_MAX_CTX - 1;
    if (!pool || threads <= 1)
    {
       v->pool     = NULL;
       v->threads  = 1;
       v->threaded = 0;
       return;
-   }
-   if (v->num_shadows < threads - 1)
-   {
-      rh265_dec *n = (rh265_dec*)realloc(v->shadows,
-            (size_t)(threads - 1) * sizeof(rh265_dec));
-      if (!n)
-      {
-         v->pool    = NULL;
-         v->threads = 1;
-         return;
-      }
-      v->shadows     = n;
-      v->num_shadows = threads - 1;
    }
    v->pool    = pool;
    v->threads = threads;
@@ -4714,25 +4384,8 @@ static int rh265_decode_slice_data(rh265_video *v, rh265_dec *d, const uint8_t *
    d->slice_start_zaddr = rh265_zaddr(d,
          (ctb_addr % sps->ctb_w) << sps->log2_ctb,
          (ctb_addr / sps->ctb_w) << sps->log2_ctb);
-
-#ifdef HAVE_THREADS
    if (d->sh.sao_luma || d->sh.sao_chroma)
       d->sao_wanted = 1;
-   /* One slice covering the picture, an entry point per row: the
-    * shape the wavefront threads take. */
-   if (     wpp && v->pool && v->threads > 1 && !v->threaded && ctb_addr == 0
-         && d->sh.first_slice_in_pic && sps->ctb_h > 1
-         && d->sh.num_entry_points == sps->ctb_h - 1)
-   {
-      int r = rh265_decode_slice_data_wpp(v, d, rbsp, size, esc_base, esc_idx,
-            esc_pos, esc_count);
-      if (r != -2)
-         return r;
-      /* the rows' eventcount could not be made: this picture on one
-       * thread, as below */
-   }
-#endif
-
    while (ctb_addr < sps->pic_size_ctbs)
    {
       int rx = ctb_addr % sps->ctb_w;
@@ -5433,10 +5086,6 @@ void rh265_video_close(rh265_video *v)
          free(v->ctx[k].sao_band[2]);
       }
    }
-   free(v->shadows);
-   free(v->row_off);
-   free(v->row_ctx);
-   free(v->row_prog);
    free(v);
 }
 

@@ -1,16 +1,19 @@
 /* rh265 -- self-contained H.265/HEVC decoder for libretro-common.
  *
- * This first milestone decodes Main-profile intra pictures (IDR/CRA/
- * TRAIL I slices) in 8-bit 4:2:0, with the full intra toolset: all 35
- * prediction modes, the 4x4 DST and 4/8/16/32 inverse DCTs, transform
- * skip, sign-data hiding, cu_qp_delta quantisation groups, the in-loop
- * deblocking filter and sample-adaptive offset.
+ * Main and Main 10 profile, 4:2:0 at 8 and 10 bits: I, P and B slices
+ * with the full intra toolset, merge and AMVP with temporal
+ * candidates, weighted prediction, the 4x4 DST and 4/8/16/32 inverse
+ * DCTs, transform skip, sign-data hiding, cu_qp_delta quantisation
+ * groups, explicit scaling lists, transquant bypass, constrained intra
+ * prediction, multiple slices, wavefront-coded pictures, the in-loop
+ * deblocking filter and sample-adaptive offset. Pictures decode
+ * concurrently on a thread pool (rh265_video_set_thread_pool). Every
+ * conforming stream decodes to ffmpeg's frames to the sample; the
+ * oracle in samples/formats/h265 holds it to that.
  *
  * Out-of-scope streams are refused at the parameter-set or slice level
- * rather than decoded wrongly: P and B slices (the next milestone),
- * 4:2:2/4:4:4/monochrome, high bit depths, tiles, wavefront parallel
- * processing, dependent slice segments, explicit scaling lists, PCM,
- * transquant bypass and constrained intra prediction.
+ * rather than decoded wrongly: 4:2:2/4:4:4/monochrome, other bit
+ * depths, tiles, dependent slice segments and PCM.
  *
  * The persistent video API mirrors rh264_video/rvp8_video so a demuxer
  * (e.g. the MP4 glue in rmp4_video.c) can dispatch H.265 the same way:
@@ -85,16 +88,15 @@ const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
 
 void rh265_video_close(rh265_video *v);
 
-/* Decode the CTB rows of a WPP picture (entropy_coding_sync, x265's
- * default) on up to @threads threads: the calling thread and @pool
- * (an rthreads tpool_t of at least threads - 1 threads) take rows as
- * they come free, each row starting two CTBs behind the row above -
- * the wavefront the syntax was coded for, so this changes when
- * samples are written, never what they are. Pictures without WPP,
- * with more than one slice, or with fewer than two rows decode as
- * before. NULL or threads <= 1 restores single-threaded decoding.
- * The pool is the caller's and must outlive every decode made while
- * it is set. */
+/* Decode pictures concurrently: with @pool (an rthreads tpool_t of at
+ * least @threads - 1 threads) and threads > 1, each picture's slices
+ * go to the pool when the next picture opens, up to @threads pictures
+ * decoding at once, a picture waiting for the rows of the ones it
+ * predicts from and no more. Output is the single-thread output to
+ * the sample, whatever the content - WPP or not, one slice or many.
+ * NULL or threads <= 1 restores single-threaded decoding. The pool is
+ * the caller's and must outlive every decode made while it is set.
+ * Declared here, defined below the knobs it uses. */
 /* For the decoder's own samples: how many times a reference read found
  * the rows it needed not yet final. Zero on one thread by construction;
  * a sample asserts it. */
