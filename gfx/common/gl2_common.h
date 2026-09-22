@@ -121,8 +121,8 @@ struct gl2
     * (retain_output), plus the group that frame put on screen for
     * present_last() to replay. GL 1.1 / GLES2, so every context. */
    GLuint retained_texture;
-   unsigned retained_width;
-   unsigned retained_height;
+   /* In VIDEO_SCALE_PACK's layout. */
+   unsigned retained_dims;
    unsigned retained_light;
    unsigned retained_dark;
    GLuint pbo_readback[4];
@@ -136,17 +136,17 @@ struct gl2
 
    uint32_t flags;
 
-   unsigned video_width;
-   unsigned video_height;
+   /* In VIDEO_SCALE_PACK's layout. */
+   unsigned video_dims;
 
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
    unsigned fbo_feedback_pass;
    unsigned rotation;
-   unsigned out_vp_width;
-   unsigned out_vp_height;
-   unsigned tex_w;
-   unsigned tex_h;
+   /* The viewport the last frame went out at, and the streaming
+    * texture's size, both in VIDEO_SCALE_PACK's layout. */
+   unsigned out_vp_dims;
+   unsigned tex_dims;
    unsigned base_size; /* 2 or 4 */
    unsigned overlays;
    unsigned pbo_readback_index;

@@ -1177,8 +1177,7 @@ static void gl2_raster_font_render_msg(
    bool full_screen                  = false ;
    gl2_raster_t                *font = (gl2_raster_t*)data;
    gl2_t *gl                         = (gl2_t*)userdata;
-   unsigned dims                      = VIDEO_SCALE_PACK(gl->video_width,
-         gl->video_height);
+   unsigned dims                      = gl->video_dims;
    bool video_scale_integer          = config_get_ptr()->bools.video_scale_integer;
 
    if (!font || !msg || !*msg || !gl)
@@ -1528,8 +1527,7 @@ static void gl2_set_viewport(gl2_t *gl,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl->out_vp_width  = VIDEO_SCALE_W(gl->vp.dims);
-      gl->out_vp_height = VIDEO_SCALE_H(gl->vp.dims);
+      gl->out_vp_dims   = gl->vp.dims;
    }
 }
 
@@ -1551,8 +1549,8 @@ static void gl2_renderchain_render(
    GLfloat yamt                           = 0.0f;
    unsigned mip_level                     = 0;
    unsigned fbo_tex_info_cnt              = 0;
-   unsigned width                         = gl->video_width;
-   unsigned height                        = gl->video_height;
+   unsigned width                         = VIDEO_SCALE_W(gl->video_dims);
+   unsigned height                        = VIDEO_SCALE_H(gl->video_dims);
 
    /* Render the rest of our passes. */
    gl->coords.tex_coord      = fbo_tex_coords;
@@ -1600,8 +1598,7 @@ static void gl2_renderchain_render(
       gl2_set_viewport(gl,
             rect->img_dims, true, false);
 
-      params.vp_dims       = VIDEO_SCALE_PACK(
-            gl->out_vp_width, gl->out_vp_height);
+      params.vp_dims       = gl->out_vp_dims;
       params.dims          = prev_rect->img_dims;
       params.tex_dims      = prev_rect->dims;
       params.out_dims      = gl->vp.dims;
@@ -1675,7 +1672,7 @@ static void gl2_renderchain_render(
    glClear(GL_COLOR_BUFFER_BIT);
    gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
 
-   params.vp_dims       = VIDEO_SCALE_PACK(gl->out_vp_width, gl->out_vp_height);
+   params.vp_dims       = gl->out_vp_dims;
    params.dims          = prev_rect->img_dims;
    params.tex_dims      = prev_rect->dims;
    params.out_dims      = gl->vp.dims;
@@ -1996,7 +1993,7 @@ static void gl2_renderchain_recompute_pass_sizes(
    bool size_modified      = false;
    GLint max_size          = 0;
    unsigned last_dims      = VIDEO_SCALE_PACK(width, height);
-   unsigned last_max_dims  = VIDEO_SCALE_PACK(gl->tex_w, gl->tex_h);
+   unsigned last_max_dims  = gl->tex_dims;
 
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
 
@@ -2136,8 +2133,8 @@ static void gl2_renderchain_init(
    if (!gl || shader_info_num == 0)
       return;
 
-   width        = gl->video_width;
-   height       = gl->video_height;
+   width        = VIDEO_SCALE_W(gl->video_dims);
+   height       = VIDEO_SCALE_H(gl->video_dims);
 
    scale.flags         = 0;
    scaler.scale        = &scale;
@@ -2386,10 +2383,10 @@ static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer)
    {
       /* Clamp to the region glReadPixels actually wrote
        * (see gl2_renderchain_readback). */
-      unsigned rb_w = (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)
-         ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims);
-      unsigned rb_h = (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height)
-         ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims);
+      unsigned rb_w = MIN(VIDEO_SCALE_W(gl->vp.dims),
+            VIDEO_SCALE_W(gl->video_dims));
+      unsigned rb_h = MIN(VIDEO_SCALE_H(gl->vp.dims),
+            VIDEO_SCALE_H(gl->video_dims));
       video_frame_convert_rgba_to_bgr(
             (const void*)ptr,
             buffer,
@@ -2489,10 +2486,10 @@ static bool gl2_renderchain_read_viewport(
       {
          /* Clamp to the region glReadPixels actually wrote
           * (see gl2_renderchain_readback). */
-         unsigned rb_w = (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)
-            ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims);
-         unsigned rb_h = (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height)
-            ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims);
+         unsigned rb_w = MIN(VIDEO_SCALE_W(gl->vp.dims),
+               VIDEO_SCALE_W(gl->video_dims));
+         unsigned rb_h = MIN(VIDEO_SCALE_H(gl->vp.dims),
+               VIDEO_SCALE_H(gl->video_dims));
          video_frame_convert_rgba_to_bgr(
                (const void*)gl->readback_buffer_screenshot,
                buffer,
@@ -2543,9 +2540,9 @@ static void gl2_renderchain_copy_frame(
 #if defined(HAVE_PSGL)
    {
       int h;
-      size_t buffer_addr        = gl->tex_w * gl->tex_h *
+      size_t buffer_addr        = VIDEO_SCALE_AREA(gl->tex_dims) *
          gl->tex_index * gl->base_size;
-      size_t buffer_stride      = gl->tex_w * gl->base_size;
+      size_t buffer_stride      = VIDEO_SCALE_W(gl->tex_dims) * gl->base_size;
       const uint8_t *frame_copy = frame;
       size_t frame_copy_size    = width * gl->base_size;
       uint8_t           *buffer = (uint8_t*)glMapBuffer(
@@ -2706,8 +2703,8 @@ static void gl2_renderchain_readback(
    glReadPixels(
          (VIDEO_POS_X(gl->vp.pos) > 0) ? VIDEO_POS_X(gl->vp.pos) : 0,
          (VIDEO_POS_Y(gl->vp.pos) > 0) ? VIDEO_POS_Y(gl->vp.pos) : 0,
-         (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)  ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims),
-         (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height) ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims),
+         MIN(VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_W(gl->video_dims)),
+         MIN(VIDEO_SCALE_H(gl->vp.dims), VIDEO_SCALE_H(gl->video_dims)),
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 
    if (gl->scrgb.active && gl->scrgb.fbo
@@ -2765,10 +2762,10 @@ static void gl2_renderchain_init_texture_reference(
 {
 #ifdef HAVE_PSGL
    glTextureReferenceSCE(GL_TEXTURE_2D, 1,
-         gl->tex_w, gl->tex_h, 0,
+         VIDEO_SCALE_W(gl->tex_dims), VIDEO_SCALE_H(gl->tex_dims), 0,
          (GLenum)internal_fmt,
-         gl->tex_w * gl->base_size,
-         gl->tex_w * gl->tex_h * i * gl->base_size);
+         VIDEO_SCALE_W(gl->tex_dims) * gl->base_size,
+         VIDEO_SCALE_AREA(gl->tex_dims) * i * gl->base_size);
 #else
    if (chain->flags & GL2_CHAIN_FLAG_EGL_IMAGES)
       return;
@@ -2776,7 +2773,7 @@ static void gl2_renderchain_init_texture_reference(
    gl2_load_texture_image(GL_TEXTURE_2D,
       0,
       (GLenum)internal_fmt,
-      gl->tex_w, gl->tex_h, 0,
+      VIDEO_SCALE_W(gl->tex_dims), VIDEO_SCALE_H(gl->tex_dims), 0,
       (GLenum)texture_type,
       (GLenum)texture_fmt,
       gl->empty_buf ? gl->empty_buf : NULL);
@@ -3050,8 +3047,8 @@ static void gl2_overlay_tex_geom(void *data,
 static void gl2_render_overlay(gl2_t *gl)
 {
    unsigned i;
-   unsigned width                      = gl->video_width;
-   unsigned height                     = gl->video_height;
+   unsigned width                      = VIDEO_SCALE_W(gl->video_dims);
+   unsigned height                     = VIDEO_SCALE_H(gl->video_dims);
 
    glEnable(GL_BLEND);
 
@@ -3501,11 +3498,11 @@ static void gl2_update_input_size(gl2_t *gl, unsigned width,
        * or tex_h ever reached the texture, and such a width must not
        * end up describing a read out of empty_buf. */
       unsigned old_w                 = MIN(gl->last_width[gl->tex_index],
-            gl->tex_w);
+            VIDEO_SCALE_W(gl->tex_dims));
       unsigned old_h                 = MIN(gl->last_height[gl->tex_index],
-            gl->tex_h);
-      unsigned new_w                 = MIN(width,  gl->tex_w);
-      unsigned new_h                 = MIN(height, gl->tex_h);
+            VIDEO_SCALE_H(gl->tex_dims));
+      unsigned new_w                 = MIN(width,  VIDEO_SCALE_W(gl->tex_dims));
+      unsigned new_h                 = MIN(height, VIDEO_SCALE_H(gl->tex_dims));
 
       gl->last_width[gl->tex_index]  = width;
       gl->last_height[gl->tex_index] = height;
@@ -3520,10 +3517,10 @@ static void gl2_update_input_size(gl2_t *gl, unsigned width,
       {
 #if defined(HAVE_PSGL)
          glPixelStorei(GL_UNPACK_ALIGNMENT,
-               gl2_get_alignment(gl->tex_w * gl->base_size));
+               gl2_get_alignment(VIDEO_SCALE_W(gl->tex_dims) * gl->base_size));
          glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
-               gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
-               gl->tex_w * gl->tex_h * gl->base_size,
+               VIDEO_SCALE_AREA(gl->tex_dims) * gl->tex_index * gl->base_size,
+               VIDEO_SCALE_AREA(gl->tex_dims) * gl->base_size,
                gl->empty_buf);
 #else
          /* Only the part of the old rectangle the new one stops
@@ -3570,8 +3567,8 @@ static void gl2_update_input_size(gl2_t *gl, unsigned width,
    else
       return;
 
-   xamt = (float)width  / gl->tex_w;
-   yamt = (float)height / gl->tex_h;
+   xamt = (float)width  / VIDEO_SCALE_W(gl->tex_dims);
+   yamt = (float)height / VIDEO_SCALE_H(gl->tex_dims);
    SET_TEXTURE_COORDS(gl->tex_info.coord, xamt, yamt);
 }
 
@@ -3590,10 +3587,10 @@ static void gl2_init_textures_data(gl2_t *gl)
    for (i = 0; i < gl->textures; i++)
    {
       gl->prev_info[i].tex           = gl->texture[0];
-      gl->prev_info[i].input_size[0] = gl->tex_w;
-      gl->prev_info[i].tex_size[0]   = gl->tex_w;
-      gl->prev_info[i].input_size[1] = gl->tex_h;
-      gl->prev_info[i].tex_size[1]   = gl->tex_h;
+      gl->prev_info[i].input_size[0] = VIDEO_SCALE_W(gl->tex_dims);
+      gl->prev_info[i].tex_size[0]   = VIDEO_SCALE_W(gl->tex_dims);
+      gl->prev_info[i].input_size[1] = VIDEO_SCALE_H(gl->tex_dims);
+      gl->prev_info[i].tex_size[1]   = VIDEO_SCALE_H(gl->tex_dims);
       memcpy(gl->prev_info[i].coord, tex_coords, sizeof(tex_coords));
    }
 }
@@ -3611,7 +3608,7 @@ static void gl2_init_textures(gl2_t *gl)
 
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, gl->pbo);
    glBufferData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
-         gl->tex_w * gl->tex_h * gl->base_size * gl->textures,
+         VIDEO_SCALE_AREA(gl->tex_dims) * gl->base_size * gl->textures,
          NULL, GL_STREAM_DRAW);
 #endif
 
@@ -3657,8 +3654,8 @@ static void gl2_init_textures(gl2_t *gl)
 static INLINE void gl2_set_shader_viewports(gl2_t *gl, bool video_scale_integer)
 {
    int i;
-   unsigned width                = gl->video_width;
-   unsigned height               = gl->video_height;
+   unsigned width                = VIDEO_SCALE_W(gl->video_dims);
+   unsigned height               = VIDEO_SCALE_H(gl->video_dims);
 
    for (i = 0; i < 2; i++)
    {
@@ -3742,8 +3739,8 @@ static struct video_shader *gl2_get_current_shader(void *data)
 static INLINE void gl2_draw_texture(gl2_t *gl)
 {
    GLfloat color[16];
-   unsigned width         = gl->video_width;
-   unsigned height        = gl->video_height;
+   unsigned width         = VIDEO_SCALE_W(gl->video_dims);
+   unsigned height        = VIDEO_SCALE_H(gl->video_dims);
 
    color[ 0]              = 1.0f;
    color[ 1]              = 1.0f;
@@ -4031,8 +4028,8 @@ static GLuint gl2_frame_target_fbo(gl2_t *gl)
       return 0;
 
    if (     !gl->scrgb.fbo
-         || gl->scrgb.width  != gl->video_width
-         || gl->scrgb.height != gl->video_height)
+         || gl->scrgb.width  != VIDEO_SCALE_W(gl->video_dims)
+         || gl->scrgb.height != VIDEO_SCALE_H(gl->video_dims))
    {
       if (gl->scrgb.fbo)
          gl2_delete_fb(1, &gl->scrgb.fbo);
@@ -4046,12 +4043,12 @@ static GLuint gl2_frame_target_fbo(gl2_t *gl)
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
       if (gl->video_info.source_hdr10)
          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2,
-               gl->video_width, gl->video_height, 0,
+               VIDEO_SCALE_W(gl->video_dims), VIDEO_SCALE_H(gl->video_dims), 0,
                GL_BGRA, GL_UNSIGNED_INT_2_10_10_10_REV, NULL);
       else
 #endif
          glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
-               gl->video_width, gl->video_height, 0,
+               VIDEO_SCALE_W(gl->video_dims), VIDEO_SCALE_H(gl->video_dims), 0,
                RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -4074,8 +4071,8 @@ static GLuint gl2_frame_target_fbo(gl2_t *gl)
          return 0;
       }
       gl2_bind_fb(0);
-      gl->scrgb.width  = gl->video_width;
-      gl->scrgb.height = gl->video_height;
+      gl->scrgb.width  = VIDEO_SCALE_W(gl->video_dims);
+      gl->scrgb.height = VIDEO_SCALE_H(gl->video_dims);
 
       /* UI layer, sized and lifetimed with the content offscreen.
        * Only the scRGB PQ composite needs it; the downconvert path
@@ -4095,7 +4092,7 @@ static GLuint gl2_frame_target_fbo(gl2_t *gl)
          glGenTextures(1, &gl->scrgb.ui_tex);
          glBindTexture(GL_TEXTURE_2D, gl->scrgb.ui_tex);
          glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
-               gl->video_width, gl->video_height, 0,
+               VIDEO_SCALE_W(gl->video_dims), VIDEO_SCALE_H(gl->video_dims), 0,
                RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -4164,7 +4161,9 @@ static void gl2_encode_pq_to_sdr(gl2_t *gl)
    }
 
    gl2_renderchain_bind_backbuffer();
-   glViewport(0, 0, gl->video_width, gl->video_height);
+   glViewport(0, 0,
+         VIDEO_SCALE_W(gl->video_dims),
+         VIDEO_SCALE_H(gl->video_dims));
    glDisable(GL_BLEND);
    glUseProgram(gl->scrgb.program);
    if (gl->scrgb.loc_tex >= 0)
@@ -4205,8 +4204,8 @@ static void gl2_encode_pq_to_sdr(gl2_t *gl)
  * to the window when it does not match. */
 static void gl2_retain_backbuffer(gl2_t *gl)
 {
-   unsigned width  = gl->video_width;
-   unsigned height = gl->video_height;
+   unsigned width  = VIDEO_SCALE_W(gl->video_dims);
+   unsigned height = VIDEO_SCALE_H(gl->video_dims);
 
    if (!width || !height)
       return;
@@ -4215,7 +4214,7 @@ static void gl2_retain_backbuffer(gl2_t *gl)
    if (!gl->retained_texture)
       glGenTextures(1, &gl->retained_texture);
    glBindTexture(GL_TEXTURE_2D, gl->retained_texture);
-   if (gl->retained_width != width || gl->retained_height != height)
+   if (gl->retained_dims != VIDEO_SCALE_PACK(width, height))
    {
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
             GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -4223,8 +4222,7 @@ static void gl2_retain_backbuffer(gl2_t *gl)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      gl->retained_width  = width;
-      gl->retained_height = height;
+      gl->retained_dims   = VIDEO_SCALE_PACK(width, height);
    }
    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -4242,14 +4240,15 @@ static unsigned gl2_present_last(void *data)
    gl2_t *gl     = (gl2_t*)data;
 
    if (     !gl || !gl->retained_texture
-         || gl->retained_width  != gl->video_width
-         || gl->retained_height != gl->video_height)
+         || gl->retained_dims   != gl->video_dims)
       return 0;
 
    for (i = 0; i < gl->retained_light; i++)
    {
       gl2_renderchain_bind_backbuffer();
-      glViewport(0, 0, gl->video_width, gl->video_height);
+      glViewport(0, 0,
+         VIDEO_SCALE_W(gl->video_dims),
+         VIDEO_SCALE_H(gl->video_dims));
       glBindTexture(GL_TEXTURE_2D, gl->retained_texture);
 
       gl->coords.vertex    = vertexes;
@@ -4361,8 +4360,8 @@ static bool gl2_frame(void *data, const void *frame,
     * function entry instead of returning false. gl3_frame already
     * orders it this way. */
    chain  = (gl2_renderchain_data_t*)gl->renderchain_data;
-   width  = gl->video_width;
-   height = gl->video_height;
+   width  = VIDEO_SCALE_W(gl->video_dims);
+   height = VIDEO_SCALE_H(gl->video_dims);
 
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
@@ -4385,7 +4384,7 @@ static bool gl2_frame(void *data, const void *frame,
       gl2_renderchain_recompute_pass_sizes(
             gl, chain,
             frame_width, frame_height,
-            gl->out_vp_width, gl->out_vp_height);
+            VIDEO_SCALE_W(gl->out_vp_dims), VIDEO_SCALE_H(gl->out_vp_dims));
 
       gl2_renderchain_start_render(gl, chain, video_scale_integer);
    }
@@ -4520,8 +4519,8 @@ static bool gl2_frame(void *data, const void *frame,
    gl->tex_info.tex           = gl->texture[gl->tex_index];
    gl->tex_info.input_size[0] = frame_width;
    gl->tex_info.input_size[1] = frame_height;
-   gl->tex_info.tex_size[0]   = gl->tex_w;
-   gl->tex_info.tex_size[1]   = gl->tex_h;
+   gl->tex_info.tex_size[0]   = VIDEO_SCALE_W(gl->tex_dims);
+   gl->tex_info.tex_size[1]   = VIDEO_SCALE_H(gl->tex_dims);
 
    feedback_info              = gl->tex_info;
 
@@ -4545,10 +4544,9 @@ static bool gl2_frame(void *data, const void *frame,
 
    glClear(GL_COLOR_BUFFER_BIT);
 
-   params.vp_dims          = VIDEO_SCALE_PACK(
-         gl->out_vp_width, gl->out_vp_height);
+   params.vp_dims          = gl->out_vp_dims;
    params.dims             = VIDEO_SCALE_PACK(frame_width, frame_height);
-   params.tex_dims         = VIDEO_SCALE_PACK(gl->tex_w, gl->tex_h);
+   params.tex_dims         = gl->tex_dims;
    params.out_dims         = gl->vp.dims;
    params.frame_counter    = (unsigned int)frame_count;
    params.swap_counter    = (unsigned int)video_info->swap_count;
@@ -4684,7 +4682,9 @@ static bool gl2_frame(void *data, const void *frame,
             : gl->scrgb.paper_white_nits;
 
       gl2_bind_fb(0);
-      glViewport(0, 0, gl->video_width, gl->video_height);
+      glViewport(0, 0,
+         VIDEO_SCALE_W(gl->video_dims),
+         VIDEO_SCALE_H(gl->video_dims));
       glDisable(GL_BLEND);
       glUseProgram(gl->scrgb.program);
       if (gl->scrgb.loc_tex >= 0)
@@ -5664,8 +5664,7 @@ static void *gl2_init(const video_info_t *video,
    else
       temp_dims = video_driver_get_output_dims();
 
-   gl->video_width       = VIDEO_SCALE_W(temp_dims);
-   gl->video_height      = VIDEO_SCALE_H(temp_dims);
+   gl->video_dims        = temp_dims;
 
    RARCH_LOG("[GL] Using resolution %ux%u.\n",
          VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
@@ -5732,7 +5731,8 @@ static void *gl2_init(const video_info_t *video,
    RARCH_LOG("[GL] Loaded %u program(s).\n",
          shader_info_num);
 
-   gl->tex_w = gl->tex_h = (RARCH_SCALE_BASE * video->input_scale);
+   gl->tex_dims = VIDEO_SCALE_PACK(RARCH_SCALE_BASE * video->input_scale,
+         RARCH_SCALE_BASE * video->input_scale);
    if (video->force_aspect)
       gl->flags       |=  GL2_FLAG_KEEP_ASPECT;
    else
@@ -5787,10 +5787,13 @@ static void *gl2_init(const video_info_t *video,
     * in blocks has nothing to spare past the final row. Large mappings
     * are guarded on modern allocators, so those few bytes are a fault
     * rather than a harmless read. Carry an extra row. */
-   gl->empty_buf             = calloc(gl->tex_w * (gl->tex_h + 1),
+   gl->empty_buf             = calloc(
+         (size_t)VIDEO_SCALE_W(gl->tex_dims)
+               * (VIDEO_SCALE_H(gl->tex_dims) + 1),
          sizeof(uint32_t));
 
-   gl->conv_buffer           = calloc(gl->tex_w * gl->tex_h, sizeof(uint32_t));
+   gl->conv_buffer           = calloc(VIDEO_SCALE_AREA(gl->tex_dims),
+         sizeof(uint32_t));
 
    if (!gl->conv_buffer)
       goto error;
@@ -5800,12 +5803,15 @@ static void *gl2_init(const video_info_t *video,
 
    gl2_renderchain_init(gl,
          (gl2_renderchain_data_t*)gl->renderchain_data,
-         gl->tex_w, gl->tex_h);
+         VIDEO_SCALE_W(gl->tex_dims), VIDEO_SCALE_H(gl->tex_dims));
 
    if (gl->flags & GL2_FLAG_HAVE_FBO)
    {
       if (     (gl->flags & GL2_FLAG_HW_RENDER_USE)
-            && !gl2_renderchain_init_hw_render(gl, (gl2_renderchain_data_t*)gl->renderchain_data, gl->tex_w, gl->tex_h))
+            && !gl2_renderchain_init_hw_render(gl,
+                  (gl2_renderchain_data_t*)gl->renderchain_data,
+                  VIDEO_SCALE_W(gl->tex_dims),
+                  VIDEO_SCALE_H(gl->tex_dims)))
       {
          RARCH_ERR("[GL] Hardware rendering context initialization failed.\n");
          goto error;
@@ -5866,8 +5872,7 @@ static bool gl2_alive(void *data)
    bool quit            = false;
    bool resize          = false;
    gl2_t         *gl    = (gl2_t*)data;
-   unsigned temp_dims  = VIDEO_SCALE_PACK(gl->video_width,
-         gl->video_height);
+   unsigned temp_dims  = gl->video_dims;
 
    gl->ctx_driver->check_window(gl->ctx_data,
          &quit, &resize, &temp_dims);
@@ -5890,8 +5895,7 @@ static bool gl2_alive(void *data)
    if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
    {
       video_driver_set_output_dims(temp_dims);
-      gl->video_width  = VIDEO_SCALE_W(temp_dims);
-      gl->video_height = VIDEO_SCALE_H(temp_dims);
+      gl->video_dims   = temp_dims;
    }
 
    return ret;
@@ -5968,7 +5972,8 @@ static void gl2_init_hw_render_cb(void *data)
 {
    gl2_t *gl = (gl2_t*)data;
    gl2_renderchain_init_hw_render(gl,
-         (gl2_renderchain_data_t*)gl->renderchain_data, gl->tex_w, gl->tex_h);
+         (gl2_renderchain_data_t*)gl->renderchain_data,
+         VIDEO_SCALE_W(gl->tex_dims), VIDEO_SCALE_H(gl->tex_dims));
 }
 
 static bool gl2_set_shader(void *data,
@@ -6080,7 +6085,7 @@ static bool gl2_set_shader(void *data,
 
    gl2_renderchain_init(gl,
          (gl2_renderchain_data_t*)gl->renderchain_data,
-         gl->tex_w, gl->tex_h);
+         VIDEO_SCALE_W(gl->tex_dims), VIDEO_SCALE_H(gl->tex_dims));
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl2_set_shader_viewports(gl, video_scale_integer);
@@ -6100,8 +6105,8 @@ static void gl2_viewport_info(void *data, struct video_viewport *vp)
 {
    unsigned top_y, top_dist;
    gl2_t *gl       = (gl2_t*)data;
-   unsigned width  = gl->video_width;
-   unsigned height = gl->video_height;
+   unsigned width  = VIDEO_SCALE_W(gl->video_dims);
+   unsigned height = VIDEO_SCALE_H(gl->video_dims);
 
    *vp             = gl->vp;
    vp->full_dims   = VIDEO_SCALE_PACK(width, height);
@@ -6811,8 +6816,8 @@ static bool gl2_read_viewport_hdr(void *data, uint16_t *buffer,
 
    vp_x = (VIDEO_POS_X(gl->vp.pos) > 0) ? VIDEO_POS_X(gl->vp.pos) : 0;
    vp_y = (VIDEO_POS_Y(gl->vp.pos) > 0) ? VIDEO_POS_Y(gl->vp.pos) : 0;
-   w    = (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)  ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims);
-   h    = (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height) ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims);
+   w    = MIN(VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_W(gl->video_dims));
+   h    = MIN(VIDEO_SCALE_H(gl->vp.dims), VIDEO_SCALE_H(gl->video_dims));
    if (!w || !h)
       return false;
 
