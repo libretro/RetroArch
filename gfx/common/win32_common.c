@@ -1731,8 +1731,10 @@ static void wnd_proc_gdi_paint(gdi_t *gdi)
 {
    int       vp_x   = gdi->vp.x;
    int       vp_y   = gdi->vp.y;
-   unsigned  vp_w   = gdi->vp.width  ? gdi->vp.width  : gdi->screen_width;
-   unsigned  vp_h   = gdi->vp.height ? gdi->vp.height : gdi->screen_height;
+   unsigned  vp_w   = VIDEO_SCALE_W(gdi->vp.dims)
+      ? VIDEO_SCALE_W(gdi->vp.dims)  : gdi->screen_width;
+   unsigned  vp_h   = VIDEO_SCALE_H(gdi->vp.dims)
+      ? VIDEO_SCALE_H(gdi->vp.dims)  : gdi->screen_height;
    unsigned  src_w  = gdi->bmp_width  ? gdi->bmp_width  : gdi->frame_width;
    unsigned  src_h  = gdi->bmp_height ? gdi->bmp_height : gdi->frame_height;
 
