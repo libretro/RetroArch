@@ -265,6 +265,110 @@ static void menu_displaylist_dirwalk_refresh(unsigned tag)
                               |  MENU_ST_FLAG_PREVENT_POPULATE;
 }
 
+/* One file entry of the current view, with its name length
+ * (sans extension) worked out once before sorting. */
+typedef struct menu_file_browser_stem
+{
+   menu_file_list_cbs_t *cbs;
+   const char *path;
+   size_t len;
+} menu_file_browser_stem_t;
+
+static int menu_file_browser_compare_stems(const void *a_, const void *b_)
+{
+   const menu_file_browser_stem_t *a = (const menu_file_browser_stem_t*)a_;
+   const menu_file_browser_stem_t *b = (const menu_file_browser_stem_t*)b_;
+   size_t n = (a->len < b->len) ? a->len : b->len;
+   size_t k;
+
+   for (k = 0; k < n; k++)
+   {
+      int ca = TOLOWER(a->path[k]);
+      int cb = TOLOWER(b->path[k]);
+      if (ca != cb)
+         return ca - cb;
+   }
+   return (a->len < b->len) ? -1 : (a->len != b->len);
+}
+
+static bool menu_file_browser_entry_is_file(
+      const file_list_t *list, size_t i)
+{
+   unsigned type = list->list[i].type;
+
+   return    type != FILE_TYPE_DIRECTORY
+         && type != FILE_TYPE_PARENT_DIRECTORY
+         && type != FILE_TYPE_USE_DIRECTORY
+         && type != FILE_TYPE_SCAN_DIRECTORY
+         && type != FILE_TYPE_MANUAL_SCAN_DIRECTORY
+         && type != MENU_SETTING_NO_ITEM
+         && list->list[i].actiondata
+         && list->list[i].path && *list->list[i].path;
+}
+
+static void menu_file_browser_prepare_extensions(
+      file_list_t *list, unsigned mode)
+{
+   menu_file_browser_stem_t *stems;
+   size_t i, count = 0;
+   uint8_t initial;
+
+   if (mode == MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS)
+      return;
+
+   /* Duplicates Only starts from full names, so an allocation
+    * failure below leaves every extension visible. */
+   initial = (mode == MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER)
+         ? MENU_FILE_BROWSER_EXTENSION_STATE_HIDDEN
+         : MENU_FILE_BROWSER_EXTENSION_STATE_FULL;
+
+   for (i = 0; i < list->size; i++)
+   {
+      if (menu_file_browser_entry_is_file(list, i))
+      {
+         ((menu_file_list_cbs_t*)list->list[i].actiondata)
+               ->file_extension_state = initial;
+         count++;
+      }
+   }
+
+   if (mode != MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY || !count)
+      return;
+
+   if (   count > (size_t)-1 / sizeof(*stems)
+       || !(stems = (menu_file_browser_stem_t*)
+             malloc(count * sizeof(*stems))))
+      return;
+
+   count = 0;
+   for (i = 0; i < list->size; i++)
+   {
+      if (menu_file_browser_entry_is_file(list, i))
+      {
+         menu_file_browser_stem_t *st = &stems[count++];
+         st->cbs  = (menu_file_list_cbs_t*)list->list[i].actiondata;
+         st->path = list->list[i].path;
+         st->len  = menu_file_browser_stem_length(st->path);
+         st->cbs->file_extension_state =
+               MENU_FILE_BROWSER_EXTENSION_STATE_HIDDEN;
+      }
+   }
+
+   /* Sort the side array only: the visible list keeps its order. */
+   qsort(stems, count, sizeof(*stems), menu_file_browser_compare_stems);
+   for (i = 1; i < count; i++)
+   {
+      if (menu_file_browser_compare_stems(&stems[i - 1], &stems[i]) == 0)
+      {
+         stems[i - 1].cbs->file_extension_state =
+               MENU_FILE_BROWSER_EXTENSION_STATE_HINT;
+         stems[i].cbs->file_extension_state     =
+               MENU_FILE_BROWSER_EXTENSION_STATE_HINT;
+      }
+   }
+   free(stems);
+}
+
 static int filebrowser_parse(
       file_list_t *info_list,
       const char *path,

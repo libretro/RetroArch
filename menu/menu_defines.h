@@ -183,6 +183,14 @@ enum menu_file_browser_extension_display_type
    MENU_FILE_BROWSER_EXTENSION_DISPLAY_LAST
 };
 
+/* How a single file browser entry draws its name */
+enum menu_file_browser_extension_state
+{
+   MENU_FILE_BROWSER_EXTENSION_STATE_FULL = 0, /* name.ext */
+   MENU_FILE_BROWSER_EXTENSION_STATE_HIDDEN,   /* name */
+   MENU_FILE_BROWSER_EXTENSION_STATE_HINT      /* name (ext) */
+};
+
 /* Note: These must be kept synchronised with
  * 'enum playlist_sublabel_last_played_date_separator_type'
  * in 'runtime_file.h' */

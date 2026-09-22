@@ -398,7 +398,7 @@ static menu_file_list_cbs_t *menu_cbs_alloc(void)
             (menu_file_list_cbs_t*)mempool_alloc(&menu_cbs_pool);
       /* Pool blocks retain their previous contents. */
       if (cbs)
-         cbs->file_extension_state = 0;
+         cbs->file_extension_state = MENU_FILE_BROWSER_EXTENSION_STATE_FULL;
       return cbs;
    }
 }
@@ -431,6 +431,52 @@ static bool menu_should_pop_stack(const char *label)
          string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION)))
       return true;
    return false;
+}
+
+/**
+ * menu_file_browser_stem_length:
+ *
+ * Length of @path up to (not including) the dot that starts its
+ * extension, or strlen(@path) when there is no extension.  A sole
+ * leading dot in the basename (".gitignore") is part of the name.
+ **/
+size_t menu_file_browser_stem_length(const char *path)
+{
+   const char *name = path_basename(path);
+   const char *ext  = path_get_extension(path);
+
+   return (*ext && ext > name + 1)
+         ? (size_t)(ext - path - 1) : strlen(path);
+}
+
+/* Rewrites the drawn label only; the entry path is left alone. */
+static void menu_file_browser_format_display_name(const char *path,
+      uint8_t state, char *s, size_t len)
+{
+   size_t _len;
+   size_t stem_len;
+
+   if (   !path || !*path || !len
+       || state == MENU_FILE_BROWSER_EXTENSION_STATE_FULL)
+      return;
+
+   stem_len = menu_file_browser_stem_length(path);
+   _len     = (stem_len < len) ? stem_len : len - 1;
+   strlcpy(s, path, _len + 1);
+
+   if (state != MENU_FILE_BROWSER_EXTENSION_STATE_HINT)
+      return;
+
+   _len += strlcpy(s + _len, " (", len - _len);
+   if (_len >= len)
+      return;
+   _len += strlcpy(s + _len, path[stem_len]
+         ? path + stem_len + 1
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_EXTENSION),
+         len - _len);
+   if (_len >= len)
+      return;
+   strlcpy(s + _len, ")", len - _len);
 }
 
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
@@ -496,19 +542,17 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
          label = menu_stack->list[menu_stack->size - 1].label;
 
       if (    (entry_flags & MENU_ENTRY_FLAG_RICH_LABEL_ENABLED)
-            && (cbs->action_label || cbs->file_extension_state))
+            && cbs->action_label)
       {
-         if (cbs->action_label)
-            cbs->action_label(list,
-                  entry->type, (unsigned)i,
-                  label, path,
-                  entry->rich_label,
-                  sizeof(entry->rich_label));
+         cbs->action_label(list,
+               entry->type, (unsigned)i,
+               label, path,
+               entry->rich_label,
+               sizeof(entry->rich_label));
 
-         if (cbs->file_extension_state)
-            menu_file_browser_format_display_name(path,
-                  cbs->file_extension_state, entry->rich_label,
-                  sizeof(entry->rich_label));
+         menu_file_browser_format_display_name(path,
+               cbs->file_extension_state, entry->rich_label,
+               sizeof(entry->rich_label));
 
          if (!path_enabled && !*entry->rich_label)
             path_enabled = true;

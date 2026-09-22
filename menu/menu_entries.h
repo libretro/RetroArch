@@ -173,7 +173,7 @@ typedef struct menu_file_list_cbs
    enum msg_hash_enums title_enum;
    uint8_t title_variant;
    bool checked;
-   uint8_t file_extension_state; /* 0: full name, 1: hidden, 2: hint */
+   uint8_t file_extension_state; /* enum menu_file_browser_extension_state */
 } menu_file_list_cbs_t;
 
 size_t menu_entries_get_title(char *s, size_t len);
@@ -231,6 +231,8 @@ bool menu_entries_list_search(const char *needle, size_t *idx);
  */
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation);
+
+size_t menu_file_browser_stem_length(const char *path);
 
 int menu_entry_action(
       menu_entry_t *entry, size_t i, enum menu_action action);
