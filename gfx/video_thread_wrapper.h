@@ -589,6 +589,9 @@ typedef struct thread_video
          unsigned dims;
          unsigned pitch;
          char msg[NAME_MAX_LENGTH];
+#ifdef HAVE_OZONE
+         char menu_ozone_color_theme[32];
+#endif
 #ifdef HAVE_GFX_WIDGETS
          /* The on-screen panels' text for the widgets, which this
           * thread draws; zero length leaves what they show */
