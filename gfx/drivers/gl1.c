@@ -2843,7 +2843,7 @@ static bool gl1_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    if (!gl1)
       return false;
 
-   num_pixels                      = VIDEO_SCALE_W(gl1->vp.dims) * VIDEO_SCALE_H(gl1->vp.dims);
+   num_pixels                      = VIDEO_SCALE_AREA(gl1->vp.dims);
    gl1->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
 
    if (!gl1->readback_buffer_screenshot)

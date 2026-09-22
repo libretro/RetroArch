@@ -1586,8 +1586,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       }
       else if (!sync_use_rgba && !sync_native_order)
       {
-         size_t i, n = (size_t)VIDEO_SCALE_W(s->dims)
-               * VIDEO_SCALE_H(s->dims);
+         size_t i, n = VIDEO_SCALE_AREA(s->dims);
          GFX_INSTR_INC(GFX_INSTR_ANIM_SWIZZLE);
          for (i = 0; i < n; i++)
          {

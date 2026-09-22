@@ -960,8 +960,7 @@ static void *omap_init(const video_info_t *video,
 
    omap_init_font(vid);
 
-   vid->menu.frame = calloc(VIDEO_SCALE_W(vid->dims)
-         * VIDEO_SCALE_H(vid->dims), vid->bytes_per_pixel);
+   vid->menu.frame = calloc(VIDEO_SCALE_AREA(vid->dims), vid->bytes_per_pixel);
    if (!vid->menu.frame)
       goto fail_omapfb;
 

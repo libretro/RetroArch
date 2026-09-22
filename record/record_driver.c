@@ -390,7 +390,7 @@ bool recording_init(void)
       RARCH_LOG("[Recording] %s %ux%u.\n", msg_hash_to_str(MSG_DETECTED_VIEWPORT_OF),
             VIDEO_SCALE_W(vp.dims), VIDEO_SCALE_H(vp.dims));
 
-      gpu_size = VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims) * 3;
+      gpu_size = VIDEO_SCALE_AREA(vp.dims) * 3;
       if (!(video_st->record_gpu_buffer = (uint8_t*)malloc(gpu_size)))
          return false;
    }

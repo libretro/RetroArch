@@ -1413,7 +1413,7 @@ static void menutex_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned dims, float alpha)
 {
    const uint16_t *px = (const uint16_t*)frame;
-   unsigned i, n      = VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims);
+   unsigned i, n      = VIDEO_SCALE_AREA(dims);
 
    (void)data; (void)alpha;
 
@@ -2775,7 +2775,7 @@ static void surf_release_cb(void *user, gfx_surface_t *s, unsigned slot)
 
 static void surf_fill(gfx_surface_t *s, unsigned slot, unsigned seed)
 {
-   unsigned i, n = VIDEO_SCALE_W(s->dims) * VIDEO_SCALE_H(s->dims);
+   unsigned i, n = VIDEO_SCALE_AREA(s->dims);
    for (i = 0; i < n; i++)
       s->slots[slot][i] = 0xff000000u | ((i * 7u + seed * 31u) & 0xffffffu);
 }

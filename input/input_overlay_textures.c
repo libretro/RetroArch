@@ -157,8 +157,7 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
           * it goes into a slot, and the stream advances from the
           * second on the tick below. */
          memcpy(s->slots[0], ol->images[i]->pixels,
-               (size_t)VIDEO_SCALE_W(s->dims)
-               * VIDEO_SCALE_H(s->dims) * sizeof(uint32_t));
+               VIDEO_SCALE_AREA(s->dims) * sizeof(uint32_t));
          if (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
                == GFX_SURFACE_SUBMIT_FAILED)
             return false;

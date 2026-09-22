@@ -7275,10 +7275,8 @@ static bool rgui_set_aspect_ratio(
    {
       size_t n_frame  = (size_t)rgui->frame_buf.width      * rgui->frame_buf.height;
       size_t n_bg     = (size_t)rgui->background_buf.width * rgui->background_buf.height;
-      size_t n_fs     = (size_t)VIDEO_SCALE_W(rgui->fs_thumbnail.max_dims)
-            * VIDEO_SCALE_H(rgui->fs_thumbnail.max_dims);
-      size_t n_mini   = (size_t)VIDEO_SCALE_W(rgui->mini_thumbnail.max_dims)
-            * VIDEO_SCALE_H(rgui->mini_thumbnail.max_dims);
+      size_t n_fs     = VIDEO_SCALE_AREA(rgui->fs_thumbnail.max_dims);
+      size_t n_mini   = VIDEO_SCALE_AREA(rgui->mini_thumbnail.max_dims);
       size_t off_frame = 0;
       size_t off_bg    = RGUI_ARENA_NEXT(off_frame, n_frame);
       size_t off_fs    = RGUI_ARENA_NEXT(off_bg,    n_bg);

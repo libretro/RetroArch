@@ -10213,7 +10213,7 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
       width = VIDEO_SCALE_W(vk->vp.dims);
    if (height > VIDEO_SCALE_H(vk->vp.dims))
       height = VIDEO_SCALE_H(vk->vp.dims);
-   memset(buffer, 0, (size_t)VIDEO_SCALE_W(vk->vp.dims) * VIDEO_SCALE_H(vk->vp.dims) * 3);
+   memset(buffer, 0, VIDEO_SCALE_AREA(vk->vp.dims) * 3);
    src = (const uint8_t*)mapped + staging->offset;
    for (y = 0; y < height; y++, src += staging->stride)
    {

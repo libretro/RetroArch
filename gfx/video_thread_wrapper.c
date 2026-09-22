@@ -1541,8 +1541,7 @@ static void video_thread_rec_read(thread_video_t *thr,
          return;
       x = (VIDEO_SCALE_W(rec->dims) - ctx->out_width)  / 2;
       y = (VIDEO_SCALE_H(rec->dims) - ctx->out_height) / 2;
-      memset(out, 0, (size_t)VIDEO_SCALE_W(rec->dims)
-            * VIDEO_SCALE_H(rec->dims) * 3);
+      memset(out, 0, VIDEO_SCALE_AREA(rec->dims) * 3);
       scaler_ctx_scale_direct(ctx, out
             + ((size_t)y * VIDEO_SCALE_W(rec->dims) + x) * 3, rec->source);
    }
@@ -1642,7 +1641,7 @@ int video_thread_record_take(void *data, unsigned dims,
    if (!rec || rec->dims != dims)
    {
       /* One allocation: the header, then the three buffers */
-      size_t size = (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 3;
+      size_t size = VIDEO_SCALE_AREA(dims) * 3;
       video_thread_record_stop(thr);
       if (!(rec = (video_thread_rec_t*)malloc(sizeof(*rec) + 3 * size)))
          return -1;
@@ -3387,7 +3386,7 @@ static void thread_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned dims, float alpha)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   size_t required     = VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) *
+   size_t required     = VIDEO_SCALE_AREA(dims) *
       (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
 
    if (!thr)

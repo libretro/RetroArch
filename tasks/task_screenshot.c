@@ -650,8 +650,7 @@ static bool screenshot_dump(
        && state->out_dims != dims)
    {
       if (!(state->out_buffer = (uint8_t*)malloc(
-            VIDEO_SCALE_W(state->out_dims)
-            * VIDEO_SCALE_H(state->out_dims) * 3)))
+            VIDEO_SCALE_AREA(state->out_dims) * 3)))
       {
          free(state);
          return false;
@@ -736,7 +735,7 @@ static bool take_screenshot_viewport(
    if (video_st->current_video->read_viewport_hdr)
    {
       struct rpng_hdr_metadata hdr;
-      uint16_t *hdr_buffer = (uint16_t*)malloc((size_t)VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims) * 6);
+      uint16_t *hdr_buffer = (uint16_t*)malloc(VIDEO_SCALE_AREA(vp.dims) * 6);
 
       memset(&hdr, 0, sizeof(hdr));
       if (hdr_buffer)
@@ -765,7 +764,7 @@ static bool take_screenshot_viewport(
       }
    }
 
-   if (!(buffer = (uint8_t*)malloc(VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims) * 3)))
+   if (!(buffer = (uint8_t*)malloc(VIDEO_SCALE_AREA(vp.dims) * 3)))
       return false;
 
    if ((   video_st->current_video->read_viewport
@@ -858,8 +857,7 @@ static bool take_screenshot_raw(
       {
          uint32_t *buf = NULL;
          uint8_t bpp   = copy.pitch / VIDEO_SCALE_W(copy.dims);
-         size_t size   = VIDEO_SCALE_W(copy.dims)
-            * VIDEO_SCALE_H(copy.dims) * bpp;
+         size_t size   = VIDEO_SCALE_AREA(copy.dims) * bpp;
 
          if ((buf = (uint32_t*)calloc(1, size)))
          {

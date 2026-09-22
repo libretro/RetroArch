@@ -458,8 +458,8 @@ static int exynos_g2d_init(struct exynos_data *pdata)
    for (i = 0; i < EXYNOS_IMAGE_COUNT; ++i)
    {
       const enum exynos_buffer_type buf_type = defaults[i].buf_type;
-      const unsigned buf_size = VIDEO_SCALE_W(defaults[i].dims)
-         * VIDEO_SCALE_H(defaults[i].dims) * defaults[i].bpp;
+      const unsigned buf_size = VIDEO_SCALE_AREA(defaults[i].dims)
+            * defaults[i].bpp;
       struct g2d_image *src   = (struct g2d_image*)calloc(1, sizeof(struct g2d_image));
       if (!src)
          break;
@@ -699,8 +699,8 @@ static int exynos_alloc(struct exynos_data *pdata)
 
    for (i = 0; i < EXYNOS_BUFFER_COUNT; ++i)
    {
-      const unsigned buffer_size = VIDEO_SCALE_W(defaults[i].dims)
-         * VIDEO_SCALE_H(defaults[i].dims) * defaults[i].bpp;
+      const unsigned buffer_size = VIDEO_SCALE_AREA(defaults[i].dims)
+            * defaults[i].bpp;
 
       bo = exynos_create_mapped_buffer(device, buffer_size);
       if (!bo)
@@ -1422,7 +1422,7 @@ static void exynos_set_texture_frame(void *data, const void *frame, bool rgb32,
    struct exynos_video *vid = data;
    struct exynos_data *pdata = vid->data;
    struct g2d_image *src = pdata->src[EXYNOS_IMAGE_MENU];
-   const unsigned size = VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * (rgb32 ? 4 : 2);
+   const unsigned size = VIDEO_SCALE_AREA(dims) * (rgb32 ? 4 : 2);
 
    if (exynos_realloc_buffer(pdata, buf_type, size) != 0)
       return;

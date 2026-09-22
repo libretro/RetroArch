@@ -787,7 +787,7 @@ static void switch_set_texture_frame(
     unsigned dims, float alpha)
 {
     switch_video_t *sw = data;
-    size_t sz = VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * (rgb32 ? 4 : 2);
+    size_t sz = VIDEO_SCALE_AREA(dims) * (rgb32 ? 4 : 2);
 
     if (   !sw->menu_texture.pixels
         || (sw->menu_texture.width  != VIDEO_SCALE_W(dims))

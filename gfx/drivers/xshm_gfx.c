@@ -80,7 +80,7 @@ static void *xshm_init(const video_info_t *video,
 
    if (xshm->use_shm)
    {
-      xshm->shmInfo.shmid = shmget(IPC_PRIVATE, sizeof(uint32_t) * VIDEO_SCALE_W(video->dims) * VIDEO_SCALE_H(video->dims),
+      xshm->shmInfo.shmid = shmget(IPC_PRIVATE, sizeof(uint32_t) * VIDEO_SCALE_AREA(video->dims),
 				   IPC_CREAT | 0600);
       if (xshm->shmInfo.shmid < 0)
          abort();/* seems like an OOM situation... let's just blow up. */

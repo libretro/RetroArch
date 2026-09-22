@@ -36,7 +36,7 @@ gfx_surface_t *gfx_surface_new(unsigned dims,
          || (size_t)VIDEO_SCALE_W(dims) > (SIZE_MAX / sizeof(uint32_t)) / VIDEO_SCALE_H(dims))
       return NULL;
 
-   frame_len = ((size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * sizeof(uint32_t)
+   frame_len = (VIDEO_SCALE_AREA(dims) * sizeof(uint32_t)
          + GFX_SURFACE_SLOT_ALIGN - 1) & ~(size_t)(GFX_SURFACE_SLOT_ALIGN - 1);
    if (frame_len > (SIZE_MAX - sizeof(*s) - GFX_SURFACE_SLOT_ALIGN) / num_slots)
       return NULL;
@@ -272,8 +272,7 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
        * against a wait of up to a present. */
       GFX_INSTR_INC(GFX_INSTR_SUBMIT_COPY);
       memcpy(s->slots[0], pixels,
-            (size_t)VIDEO_SCALE_W(s->dims)
-            * VIDEO_SCALE_H(s->dims) * sizeof(uint32_t));
+            VIDEO_SCALE_AREA(s->dims) * sizeof(uint32_t));
       return gfx_surface_submit(s, 0, rgba);
    }
 #endif

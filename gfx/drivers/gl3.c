@@ -1691,7 +1691,7 @@ static bool gl3_init_pbo_readback(gl3_t *gl)
    {
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[i]);
       glBufferData(GL_PIXEL_PACK_BUFFER,
-            VIDEO_SCALE_W(gl->vp.dims) * VIDEO_SCALE_H(gl->vp.dims) * sizeof(uint32_t),
+            VIDEO_SCALE_AREA(gl->vp.dims) * sizeof(uint32_t),
             NULL, GL_STREAM_READ);
    }
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
@@ -4171,7 +4171,7 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       }
    }
 
-   num_pixels = VIDEO_SCALE_W(gl->vp.dims) * VIDEO_SCALE_H(gl->vp.dims);
+   num_pixels = VIDEO_SCALE_AREA(gl->vp.dims);
 
    if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
    {

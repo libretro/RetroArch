@@ -905,7 +905,7 @@ static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb
          || (VIDEO_SCALE_H(dims) > SDL_DINGUX_MENU_HEIGHT)))
       return;
 
-   memcpy(vid->menu_texture, frame, VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * sizeof(uint16_t));
+   memcpy(vid->menu_texture, frame, VIDEO_SCALE_AREA(dims) * sizeof(uint16_t));
 }
 
 static void sdl_dingux_gfx_set_nonblock_state(void *data, bool toggle,

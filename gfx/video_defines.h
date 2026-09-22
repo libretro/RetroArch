@@ -17,6 +17,8 @@
 #ifndef __VIDEO_DEFINES__H
 #define __VIDEO_DEFINES__H
 
+#include <stddef.h>
+
 #include <retro_common_api.h>
 
 /* One-cycle alias: builds that still pass the old switch get the
@@ -204,6 +206,14 @@ enum text_alignment
  * than the source it holds. */
 #define VIDEO_SCALE_FITS(w, h) \
    ((unsigned)(w) <= VIDEO_SCALE_DIM_MAX && (unsigned)(h) <= VIDEO_SCALE_DIM_MAX)
+
+/* The pixel count, as size_t. Both axes are at most 65535, so their
+ * product reaches 0xfffe0001 -- inside 32-bit unsigned, but a buffer
+ * size is that times the bytes per pixel, and 32-bit arithmetic gives
+ * a too-small allocation rather than a failure. Widening here means a
+ * caller writing VIDEO_SCALE_AREA(d) * 4 gets the wide multiply
+ * without having to remember the cast. */
+#define VIDEO_SCALE_AREA(d) ((size_t)VIDEO_SCALE_W(d) * VIDEO_SCALE_H(d))
 
 /* One axis of a packed pair, leaving the other half as it stands.
  * A viewport whose axes are set apart from each other reads back

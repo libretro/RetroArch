@@ -1219,7 +1219,7 @@ static void sdl_rs90_set_texture_frame(void *data, const void *frame, bool rgb32
          (VIDEO_SCALE_H(dims) > SDL_RS90_HEIGHT)))
       return;
 
-   memcpy(vid->menu_texture, frame, VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * sizeof(uint16_t));
+   memcpy(vid->menu_texture, frame, VIDEO_SCALE_AREA(dims) * sizeof(uint16_t));
 }
 
 static void sdl_rs90_gfx_set_nonblock_state(void *data, bool toggle,

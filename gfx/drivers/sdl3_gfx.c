@@ -378,7 +378,7 @@ static bool sdl3_capture_viewport(sdl3_video_t *vid, uint8_t *buffer)
    h = (surf->h < (int)VIDEO_SCALE_H(vid->vp.dims)) ? surf->h : (int)VIDEO_SCALE_H(vid->vp.dims);
 
    if (w < (int)VIDEO_SCALE_W(vid->vp.dims) || h < (int)VIDEO_SCALE_H(vid->vp.dims))
-      memset(buffer, 0, (size_t)VIDEO_SCALE_W(vid->vp.dims) * VIDEO_SCALE_H(vid->vp.dims) * 3);
+      memset(buffer, 0, VIDEO_SCALE_AREA(vid->vp.dims) * 3);
 
    for (y = 0; y < h; y++)
    {

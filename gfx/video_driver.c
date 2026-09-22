@@ -2290,10 +2290,10 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
     * driver reads it back for upload, so start it on a cache line:
     * with the usual pitches every row then begins on one too. */
 #ifdef _3DS
-   buf = linearMemAlign(VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims)
+   buf = linearMemAlign(VIDEO_SCALE_AREA(dims)
          * video_st->state_out_bpp, 0x80);
 #else
-   buf = memalign_alloc(64, VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims)
+   buf = memalign_alloc(64, VIDEO_SCALE_AREA(dims)
          * video_st->state_out_bpp);
 #endif
    if (!buf)
@@ -5905,7 +5905,7 @@ VIDEO_NOINLINE const void *video_driver_convert_xrgb2101010(
    unsigned x, y;
    const uint8_t *src_row = (const uint8_t*)data;
    uint32_t      *dst;
-   size_t         needed  = (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims);
+   size_t         needed  = VIDEO_SCALE_AREA(dims);
 
    if (video_st->pix10_convert_cap < needed)
    {

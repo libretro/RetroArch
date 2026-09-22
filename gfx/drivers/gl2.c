@@ -2365,7 +2365,7 @@ static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer)
 {
    const uint8_t *ptr = NULL;
 #ifdef HAVE_OPENGLES3
-   unsigned num_pixels = VIDEO_SCALE_W(gl->vp.dims) * VIDEO_SCALE_H(gl->vp.dims);
+   unsigned num_pixels = VIDEO_SCALE_AREA(gl->vp.dims);
 #endif
 
    /* Don't readback if we're in menu mode.
@@ -2455,7 +2455,7 @@ static bool gl2_renderchain_read_viewport(
    }
 #endif
 
-   num_pixels             = VIDEO_SCALE_W(gl->vp.dims) * VIDEO_SCALE_H(gl->vp.dims);
+   num_pixels             = VIDEO_SCALE_AREA(gl->vp.dims);
 
 #ifdef HAVE_GL_ASYNC_READBACK
    if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
@@ -5167,8 +5167,7 @@ static bool gl2_init_pbo_readback(gl2_t *gl)
    for (i = 0; i < 4; i++)
    {
       gl2_renderchain_bind_pbo(gl->pbo_readback[i]);
-      gl2_renderchain_init_pbo(VIDEO_SCALE_W(gl->vp.dims) *
-            VIDEO_SCALE_H(gl->vp.dims) * sizeof(uint32_t), NULL);
+      gl2_renderchain_init_pbo(VIDEO_SCALE_AREA(gl->vp.dims) * sizeof(uint32_t), NULL);
    }
    gl2_renderchain_unbind_pbo();
 

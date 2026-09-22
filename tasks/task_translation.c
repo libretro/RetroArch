@@ -526,14 +526,14 @@ static void handle_translation_response(
 
          if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
          {
-            raw_output_data    = (uint8_t*)malloc(VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 4 * sizeof(uint8_t));
+            raw_output_data    = (uint8_t*)malloc(VIDEO_SCALE_AREA(dims) * 4 * sizeof(uint8_t));
             scaler->out_fmt    = SCALER_FMT_ARGB8888;
             pitch              = VIDEO_SCALE_W(dims) * 4;
             scaler->out_stride = (int)pitch;
          }
          else
          {
-            raw_output_data    = (uint8_t*)malloc(VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 2 * sizeof(uint8_t));
+            raw_output_data    = (uint8_t*)malloc(VIDEO_SCALE_AREA(dims) * 2 * sizeof(uint8_t));
             scaler->out_fmt    = SCALER_FMT_RGB565;
             pitch              = VIDEO_SCALE_W(dims) * 2;
             scaler->out_stride = VIDEO_SCALE_W(dims);
@@ -966,8 +966,8 @@ bool run_translation_service(settings_t *settings, bool paused)
          if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
             goto finish;
 
-         bit24_image_prev = (uint8_t*)malloc(VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims) * 3);
-         bit24_image      = (uint8_t*)malloc(VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 3);
+         bit24_image_prev = (uint8_t*)malloc(VIDEO_SCALE_AREA(vp.dims) * 3);
+         bit24_image      = (uint8_t*)malloc(VIDEO_SCALE_AREA(dims) * 3);
 
          if (!bit24_image_prev || !bit24_image)
             goto finish;
@@ -1010,7 +1010,7 @@ bool run_translation_service(settings_t *settings, bool paused)
          const enum retro_pixel_format
             video_driver_pix_fmt           = video_st->pix_fmt;
 
-         if (!(bit24_image = (uint8_t*)malloc(VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 3)))
+         if (!(bit24_image = (uint8_t*)malloc(VIDEO_SCALE_AREA(dims) * 3)))
             goto finish;
 
          if (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
