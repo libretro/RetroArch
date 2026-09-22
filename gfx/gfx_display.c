@@ -675,8 +675,8 @@ static void gfx_display_flush_impl(gfx_display_t *p_disp)
       coords.vertex        = NULL;
       coords.tex_coord     = NULL;
       coords.color         = p_disp->batch_color;
-      draw.x               = p_disp->batch_first_x;
-      draw.y               = p_disp->batch_first_y;
+      draw.pos             = VIDEO_POS_PACK(p_disp->batch_first_x,
+            p_disp->batch_first_y);
       draw.dims            = p_disp->batch_first_dims;
    }
    else
@@ -685,8 +685,7 @@ static void gfx_display_flush_impl(gfx_display_t *p_disp)
       coords.vertex        = p_disp->batch_vertex;
       coords.tex_coord     = p_disp->batch_tex;
       coords.color         = p_disp->batch_color;
-      draw.x               = 0;
-      draw.y               = 0;
+      draw.pos             = VIDEO_POS_PACK(0, 0);
       draw.dims            = p_disp->batch_video_dims;
    }
    draw.coords             = &coords;
@@ -807,8 +806,7 @@ void gfx_display_draw_quad(
    coords.lut_tex_coord = NULL;
    coords.color         = color;
 
-   draw.x               = x;
-   draw.y               = (int)height - y - (int)h;
+   draw.pos             = VIDEO_POS_PACK(x, (int)height - y - (int)h);
    draw.dims            = VIDEO_SCALE_PACK(w, h);
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
@@ -827,9 +825,10 @@ void gfx_display_draw_quad(
             video_width, video_height,
             (float)x / (float)width,
             (float)(x + (int)w) / (float)width,
-            (float)draw.y / (float)height,
-            (float)(draw.y + (int)h) / (float)height,
-            draw.x, draw.y, VIDEO_SCALE_W(draw.dims), VIDEO_SCALE_H(draw.dims)))
+            (float)VIDEO_POS_Y(draw.pos) / (float)height,
+            (float)(VIDEO_POS_Y(draw.pos) + (int)h) / (float)height,
+            VIDEO_POS_X(draw.pos), VIDEO_POS_Y(draw.pos),
+            VIDEO_SCALE_W(draw.dims), VIDEO_SCALE_H(draw.dims)))
       return;
 
    gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
@@ -958,8 +957,7 @@ void gfx_display_draw_texture_slice(
    coords.color             = (const float*)(color == NULL ? colors : color);
 
    draw.texture             = texture;
-   draw.x                   = 0;
-   draw.y                   = 0;
+   draw.pos                 = VIDEO_POS_PACK(0, 0);
    draw.scale_factor        = 1.0f;
    draw.rotation            = 0.0f;
 
@@ -1128,8 +1126,8 @@ void gfx_display_draw_cursor(
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   draw.x               = x - (cursor_size / 2);
-   draw.y               = (int)height - y - (cursor_size / 2);
+   draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x - (cursor_size / 2)),
+         VIDEO_PX((int)height - y - (cursor_size / 2)));
    draw.dims            = VIDEO_SCALE_PACK((unsigned)cursor_size,
          (unsigned)cursor_size);
    draw.coords          = &coords;

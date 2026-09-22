@@ -712,7 +712,8 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
     *
     *   - Default-vertex path (draw->coords->vertex == NULL, i.e.
     *     gfx_display_draw_quad): we have an axis-aligned screen
-    *     rect from draw->x/y/width/height, plus a 4-element UV
+    *     rect from the origin in draw->pos and the size in draw->dims,
+    *     plus a 4-element UV
     *     array (either the caller's tex_coord or the default
     *     [0..1] one).  We clip the rect against the scissor and
     *     remap the UVs proportionally so the visible portion of
@@ -730,7 +731,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
     *     the scissor rect.
     *
     * Note that gfx_display_draw_quad converts the caller's
-    * top-down Y into bottom-up via draw->y = height - y - h.  We
+    * top-down Y into bottom-up before it packs the origin.  We
     * convert back to top-down here for the comparison and back
     * again on the way out, so callers don't notice. */
    if (d3d->menu_display.scissor_active)
@@ -773,12 +774,12 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
       {
          /* Geometry-clipping path for default-vertex draws.
           * Clip the screen rect against the scissor and remap
-          * the UVs proportionally; we mutate draw->x/y/w/h and
+          * the UVs proportionally; we mutate draw->pos, draw->dims and
           * a local UV copy in place, then fall through to the
           * normal rendering code with the clipped values. */
-         int qx_left  = draw->x;
-         int qx_right = draw->x + (int)VIDEO_SCALE_W(draw->dims);
-         int qy_bot   = (int)video_height - draw->y;             /* top-down */
+         int qx_left  = VIDEO_POS_X(draw->pos);
+         int qx_right = VIDEO_POS_X(draw->pos) + (int)VIDEO_SCALE_W(draw->dims);
+         int qy_bot   = (int)video_height - VIDEO_POS_Y(draw->pos);             /* top-down */
          int qy_top   = qy_bot - (int)VIDEO_SCALE_H(draw->dims);              /* top-down */
          int new_left  = qx_left  > sx  ? qx_left  : sx;
          int new_right = qx_right < sx2 ? qx_right : sx2;
@@ -835,9 +836,9 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
             clipped_uv = d3d->menu_display.scissor_uv;
 
             /* Now mutate the screen rect to the clipped one.
-             * Convert new_bot back to bottom-up Y for draw->y. */
-            draw->x      = new_left;
-            draw->y      = (int)video_height - new_bot;
+             * Convert new_bot back to bottom-up Y for the origin. */
+            draw->pos    = VIDEO_POS_PACK(new_left,
+                  (int)video_height - new_bot);
             draw->dims   = VIDEO_SCALE_PACK((unsigned)(new_right - new_left), (unsigned)(new_bot - new_top));
          }
       }
@@ -919,8 +920,8 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
          (VIDEO_SCALE_H(draw->dims) / 2.0) / video_height, 0);
    matrix_4x4_multiply(m2, mop, m1);
    matrix_4x4_translate(mop,
-         (draw->x + (VIDEO_SCALE_W(draw->dims)  / 2.0)) / video_width,
-         (draw->y + (VIDEO_SCALE_H(draw->dims) / 2.0)) / video_height,
+         (VIDEO_POS_X(draw->pos) + (VIDEO_SCALE_W(draw->dims)  / 2.0)) / video_width,
+         (VIDEO_POS_Y(draw->pos) + (VIDEO_SCALE_H(draw->dims) / 2.0)) / video_height,
          0);
    matrix_4x4_multiply(m1, mop, m2);
    matrix_4x4_multiply(m2, d3d->mvp_transposed, m1);
@@ -1038,8 +1039,7 @@ static void gfx_display_d3d8_draw_pipeline(
 
    /* Position the geometry at the origin and clear any inherited
     * MVP — gfx_display_d3d8_draw will fall back to identity. */
-   draw->x           = 0;
-   draw->y           = 0;
+   draw->pos         = VIDEO_POS_PACK(0, 0);
    draw->matrix_data = NULL;
 
    if (ca)

@@ -890,9 +890,9 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
 
       if (vertex_count == 1)
       {
-         sprite->pos.x    = draw->x / (float)d3d11->viewport.Width;
+         sprite->pos.x    = VIDEO_POS_X(draw->pos) / (float)d3d11->viewport.Width;
          sprite->pos.y    =
-            (d3d11->viewport.Height - draw->y - VIDEO_SCALE_H(draw->dims)) / (float)d3d11->viewport.Height;
+            (d3d11->viewport.Height - VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims)) / (float)d3d11->viewport.Height;
          sprite->pos.w    = VIDEO_SCALE_W(draw->dims) / (float)d3d11->viewport.Width;
          sprite->pos.h    = VIDEO_SCALE_H(draw->dims) / (float)d3d11->viewport.Height;
 

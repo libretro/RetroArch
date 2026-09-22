@@ -301,8 +301,8 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
 
    v     = ctr->vertex_cache.current++;
 
-   v->x0 = draw->x;
-   v->y0 = 240 - VIDEO_SCALE_H(draw->dims) - draw->y;
+   v->x0 = VIDEO_POS_X(draw->pos);
+   v->y0 = 240 - VIDEO_SCALE_H(draw->dims) - VIDEO_POS_Y(draw->pos);
    v->x1 = v->x0 + VIDEO_SCALE_W(draw->dims);
    v->y1 = v->y0 + VIDEO_SCALE_H(draw->dims);
    v->u0 = 0;

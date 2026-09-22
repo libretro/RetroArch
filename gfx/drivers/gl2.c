@@ -635,8 +635,8 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
     * This is intentional.
     */
    return scissor_is_outside_rectangle(
-         draw->x, draw->x + VIDEO_SCALE_W(draw->dims) - 1,
-         draw->y, draw->y + VIDEO_SCALE_H(draw->dims) - 1);
+         VIDEO_POS_X(draw->pos), VIDEO_POS_X(draw->pos) + VIDEO_SCALE_W(draw->dims) - 1,
+         VIDEO_POS_Y(draw->pos), VIDEO_POS_Y(draw->pos) + VIDEO_SCALE_H(draw->dims) - 1);
 }
 #endif
 
@@ -654,7 +654,8 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
             video_height))
    {
       /*RARCH_WARN("discarded draw rect: %.4i %.4i %.4i %.4i\n",
-        (int)draw->x, (int)draw->y, (int)VIDEO_SCALE_W(draw->dims), (int)VIDEO_SCALE_H(draw->dims));*/
+        VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
+        (int)VIDEO_SCALE_W(draw->dims), (int)VIDEO_SCALE_H(draw->dims));*/
       return;
    }
 #endif
@@ -677,7 +678,7 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    if (!coords.lut_tex_coord)
       coords.lut_tex_coord = &gl2_tex_coords[0];
 
-   glViewport(draw->x, draw->y,
+   glViewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
@@ -706,8 +707,7 @@ static void gfx_display_gl2_draw_pipeline(
    static float t                   = 0;
    video_coord_array_t *ca          = &p_disp->dispca;
 
-   draw->x                          = 0;
-   draw->y                          = 0;
+   draw->pos                        = VIDEO_POS_PACK(0, 0);
    draw->coords                     = (struct video_coords*)(&ca->coords);
    draw->matrix_data                = NULL;
 

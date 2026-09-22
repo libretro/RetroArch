@@ -812,10 +812,10 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
 
    if (!has_vertex_data)
    {
-      /* Single-sprite path: build a quad from draw->x/y/width/height
+      /* Single-sprite path: build a quad from draw->pos and draw->dims
        * in normalized [0,1] space, using DrawPrimitiveUP.
        *
-       * Callers like ozone_draw_icon pre-flip Y (draw.y = height - y - h).
+       * Callers like ozone_draw_icon pre-flip Y before packing it.
        * We undo that flip here so that the top-down ortho matrix produces
        * the correct screen position with correct texture orientation
        * (v=0 at screen top, v=1 at screen bottom). */
@@ -842,10 +842,10 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
 
       /* Undo the Y pre-flip, then let topdown_ortho handle the mapping.
        * This matches the HLSL driver's single-sprite coordinate path. */
-      x1 = draw->x / (float)video_width;
-      y1 = ((float)video_height - draw->y - VIDEO_SCALE_H(draw->dims)) / (float)video_height;
-      x2 = (draw->x + VIDEO_SCALE_W(draw->dims))  / (float)video_width;
-      y2 = ((float)video_height - draw->y) / (float)video_height;
+      x1 = VIDEO_POS_X(draw->pos) / (float)video_width;
+      y1 = ((float)video_height - VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims)) / (float)video_height;
+      x2 = (VIDEO_POS_X(draw->pos) + VIDEO_SCALE_W(draw->dims))  / (float)video_width;
+      y2 = ((float)video_height - VIDEO_POS_Y(draw->pos)) / (float)video_height;
 
       if (draw->scale_factor && draw->scale_factor != 1.0f)
       {
@@ -1059,8 +1059,7 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
 
    ca                                    = &p_disp->dispca;
 
-   draw->x                               = 0;
-   draw->y                               = 0;
+   draw->pos                             = VIDEO_POS_PACK(0, 0);
    draw->coords                          = NULL;
    draw->matrix_data                     = NULL;
 

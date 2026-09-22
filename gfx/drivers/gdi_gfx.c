@@ -1076,13 +1076,13 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
    /* Two coordinate-input conventions in this vtable:
     *
     *   1. Plain quad:  coords->vertex is NULL, geometry comes from
-    *      draw->x / draw->y / VIDEO_SCALE_W(draw->dims) / VIDEO_SCALE_H(draw->dims).  draw->y
+    *      the origin in draw->pos and the size in draw->dims.  Its y
     *      is "Y from bottom" because gfx_display_draw_quad flips it
     *      to match GL's bottom-up convention.  This is what
     *      menu/widget code uses for the simple-rect path.
     *
     *   2. Custom geometry:  coords->vertex points to 4 (x,y) pairs
-    *      in NORMALISED 0..1 space, bottom-up.  draw->x/y/width/h
+    *      in NORMALISED 0..1 space, bottom-up.  draw->pos/dims
     *      are unrelated junk in this case (typically 0/0/full
     *      target dim).  Used by gfx_display_draw_texture_slice
     *      (9-patch), among others.  Without recognising this we
@@ -1138,11 +1138,11 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
    {
       if (VIDEO_SCALE_W(draw->dims) == 0 || VIDEO_SCALE_H(draw->dims) == 0)
          return;
-      /* Plain quad path: draw->y is bottom-up in caller's
+      /* Plain quad path: the origin's y is bottom-up in caller's
        * coordinate system (the video_height value we were
        * passed), so flip. */
-      dst_x = (int)draw->x;
-      dst_y = (int)video_height - (int)VIDEO_SCALE_H(draw->dims) - (int)draw->y;
+      dst_x = (int)VIDEO_POS_X(draw->pos);
+      dst_y = (int)video_height - (int)VIDEO_SCALE_H(draw->dims) - (int)VIDEO_POS_Y(draw->pos);
       dst_w = VIDEO_SCALE_W(draw->dims);
       dst_h = VIDEO_SCALE_H(draw->dims);
 

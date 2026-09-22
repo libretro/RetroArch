@@ -985,7 +985,7 @@ static void gfx_display_sdl3_scissor_end(void *data,
  *
  * 1. gfx_display_draw_quad - used by widgets and most menu chrome.
  *    Sets coords->vertex = NULL and encodes the quad rectangle in
- *    draw->x / draw->y / VIDEO_SCALE_W(draw->dims) / VIDEO_SCALE_H(draw->dims) (pixel coords,
+ *    the origin in draw->pos and the size in draw->dims (pixel coords,
  *    y bottom-up). We synthesize the four corners in pixel space.
  *
  * 2. The general path - menu drivers that build their own vertex
@@ -1010,7 +1010,6 @@ static INLINE void sdl3_vertex_color(SDL_Vertex *v, const float *col, unsigned i
 static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
-#define SDL3_DRAW_COORD_LIMIT 65536
 #define SDL3_DISPLAY_STACK_VERTS 64
    static const int quad_idx[6] = { 0, 1, 2, 2, 1, 3 };
    SDL_Vertex verts_stack[SDL3_DISPLAY_STACK_VERTS];
@@ -1042,13 +1041,14 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
    tex = (SDL_Texture*)(uintptr_t)draw->texture;
 
    /* Path 1: gfx_display_draw_quad - vtx is NULL, geometry comes
-    * from draw->x/y/width/height with y bottom-up.  n is always 4.
+    * from draw->pos and draw->dims with y bottom-up.  n is always 4.
     *
-    * - draw->x / y / width / height: pixel coords, y bottom-up
-    *   (gfx_display_draw_quad pre-flips: draw.y = height - y - h).
+    * - draw->pos / draw->dims: pixel coords, y bottom-up
+    *   (gfx_display_draw_quad pre-flips y before packing).
     *   To put the rect at the right spot in SDL's top-down pixel
     *   space, re-flip:
-    *      dst_y = video_height - VIDEO_SCALE_H(draw->dims) - draw->y
+    *      dst_y = video_height - VIDEO_SCALE_H(draw->dims)
+    *              - VIDEO_POS_Y(draw->pos)
     *
     * - coords->tex_coord (when non-NULL): 0..1 normalised, TOP-DOWN
     *   (opposite to the bottom-up vertex convention; documented in
@@ -1058,21 +1058,18 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
    {
       float x0, x1, y0, y1;
 
-      /* Defensive clamp: gfx_widgets_draw_icon's coordinate math
-       * can underflow during the first few frames after icon load,
-       * producing draw->y == INT_MIN. Float-converting that produces
-       * NaN vertex positions and a spurious SDL error that pollutes
-       * the renderer state for subsequent draws. */
-      if (   draw->x < -SDL3_DRAW_COORD_LIMIT || draw->x > SDL3_DRAW_COORD_LIMIT
-          || draw->y < -SDL3_DRAW_COORD_LIMIT || draw->y > SDL3_DRAW_COORD_LIMIT
-          || VIDEO_SCALE_W(draw->dims)  > SDL3_DRAW_COORD_LIMIT
-          || VIDEO_SCALE_H(draw->dims) > SDL3_DRAW_COORD_LIMIT)
-         return;
-
-      x0 = (float)draw->x;
-      x1 = (float)draw->x + (float)VIDEO_SCALE_W(draw->dims);
+      /* The rect needed a range test here once: gfx_widgets_draw_icon's
+       * coordinate math underflows in the first few frames after an icon
+       * loads, and the float the descriptor carried took that value as
+       * far as SDL_RenderGeometry, where it became NaN vertex positions
+       * and an SDL error that pollutes the renderer state for every draw
+       * after it. The descriptor's origin is a signed 16-bit pair now
+       * and its size an unsigned 16-bit one, so neither can hold a value
+       * this has to defend against. */
+      x0 = (float)VIDEO_POS_X(draw->pos);
+      x1 = (float)VIDEO_POS_X(draw->pos) + (float)VIDEO_SCALE_W(draw->dims);
       /* Re-flip Y from bottom-up to SDL top-down. */
-      y0 = (float)video_height - (float)VIDEO_SCALE_H(draw->dims) - (float)draw->y;
+      y0 = (float)video_height - (float)VIDEO_SCALE_H(draw->dims) - (float)VIDEO_POS_Y(draw->pos);
       y1 = y0 + (float)VIDEO_SCALE_H(draw->dims);
 
       /* Apply draw->scale_factor (centred scaling around the quad's
@@ -1235,7 +1232,6 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
       free(indices);
    }
 #undef SDL3_DISPLAY_STACK_VERTS
-#undef SDL3_DRAW_COORD_LIMIT
 }
 
 

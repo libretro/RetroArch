@@ -162,9 +162,15 @@ struct gfx_display_ctx_draw
    size_t backend_data_size;
    /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
    unsigned dims;
+   /* The quad's origin, one signed pair in VIDEO_POS_PACK's layout.
+    * It is bottom-up: gfx_display_draw_quad and every caller that
+    * builds its own descriptor pre-flip y, and the drivers flip it
+    * back. Whole pixels, because that is what a display has - a
+    * position that came off a scale factor or a tween rounds on its
+    * way in here, once, rather than being truncated differently by
+    * each driver on its way out. */
+   unsigned pos;
    unsigned pipeline_id;
-   float x;
-   float y;
    float rotation;
    float scale_factor;
 };

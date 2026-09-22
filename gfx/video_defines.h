@@ -230,6 +230,34 @@ enum text_alignment
 #define VIDEO_POS_PUT_Y(p, y) \
    ((p) = VIDEO_POS_PACK(VIDEO_POS_X(p), (y)))
 
+/* A float length or position as the whole pixels a display can show
+ * it in. Every menu metric is a constant times a DPI scale, and every
+ * animated position is a tween between two of those, so the value
+ * arriving here is nearly always fractional and something has to
+ * decide which pixel it means.
+ *
+ * It rounds. Truncating is what the plain conversion does, and it
+ * loses up to a pixel off every metric in the same direction: at the
+ * 1.3333 scale a 50px row became 66 rather than 67, which is two
+ * thirds of a pixel per row and thirteen down a twenty-row list.
+ * Rounding halves the worst case and stops it accumulating in one
+ * direction.
+ *
+ * It also bounds the conversion. Converting a float past INT_MAX is
+ * undefined, and widget layout has produced such a value in the
+ * frames before an icon's metrics are known: sdl2_gfx and sdl3_gfx
+ * each carry a hand-written range test against the NaN vertices it
+ * turned into downstream. A value out of range - NaN included, since
+ * neither comparison holds for it - lands at the far edge instead,
+ * which draws off-screen and is over the following frame.
+ *
+ * v is evaluated more than once, as it is in VIDEO_POS_CLAMP above;
+ * callers pass a variable or a plain arithmetic expression. */
+#define VIDEO_PX(v) \
+   (((v) >= (float)VIDEO_POS_MIN && (v) <= (float)VIDEO_POS_MAX) \
+    ? (int)((v) + ((v) < 0.0f ? -0.5f : 0.5f)) \
+    : (((v) > 0.0f) ? VIDEO_POS_MAX : VIDEO_POS_MIN))
+
 typedef struct video_viewport
 {
    /* The origin, one signed pair in VIDEO_POS_PACK's layout. */

@@ -2513,8 +2513,7 @@ static void gfx_display_vk_draw_pipeline(
    if (!vk || !draw)
       return;
 
-   draw->x                          = 0;
-   draw->y                          = 0;
+   draw->pos                        = VIDEO_POS_PACK(0, 0);
    draw->matrix_data                = NULL;
 
    output_size[0]                   = (float)vk->context->swapchain_width;
@@ -2790,8 +2789,8 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
 
    /* Per-element dynamic state, not the video viewport. Anything that
     * outlives this draw wants vk->video_vp. */
-   vk->vk_vp.x                    = draw->x;
-   vk->vk_vp.y                    = vk->context->swapchain_height - draw->y - VIDEO_SCALE_H(draw->dims);
+   vk->vk_vp.x                    = VIDEO_POS_X(draw->pos);
+   vk->vk_vp.y                    = vk->context->swapchain_height - VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims);
    vk->vk_vp.width                = VIDEO_SCALE_W(draw->dims);
    vk->vk_vp.height               = VIDEO_SCALE_H(draw->dims);
    vk->vk_vp.minDepth             = 0.0f;

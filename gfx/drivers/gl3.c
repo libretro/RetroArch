@@ -760,8 +760,7 @@ static void gfx_display_gl3_draw_pipeline(
    if (!gl || !draw)
       return;
 
-   draw->x                       = 0;
-   draw->y                       = 0;
+   draw->pos                     = VIDEO_POS_PACK(0, 0);
    draw->matrix_data             = NULL;
 
    if (gl->chain.active)
@@ -914,7 +913,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
    if (!coords.color)
       coords.color                  = &gl3_colors[0];
 
-   glViewport(draw->x, draw->y,
+   glViewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
 
    if (gl->chain.active)

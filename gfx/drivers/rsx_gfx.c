@@ -14,6 +14,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <malloc.h>
 #include <unistd.h>
@@ -356,8 +357,9 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
    if (!draw->texture)
       return;
 
-   vp.pos                   = VIDEO_POS_PACK(fabs(draw->x),
-         fabs(rsx->height - draw->y - VIDEO_SCALE_H(draw->dims)));
+   vp.pos                   = VIDEO_POS_PACK(abs(VIDEO_POS_X(draw->pos)),
+         abs((int)rsx->height - VIDEO_POS_Y(draw->pos)
+            - (int)VIDEO_SCALE_H(draw->dims)));
    vp.dims                  = VIDEO_SCALE_PACK(
          MIN(VIDEO_SCALE_W(draw->dims), rsx->width),
          MIN(VIDEO_SCALE_H(draw->dims), rsx->height));

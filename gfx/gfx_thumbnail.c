@@ -2868,8 +2868,8 @@ void gfx_thumbnail_draw(
             /* Apply shadow draw object configuration */
             coords.color = (const float*)shadow_color;
             draw.dims    = VIDEO_SCALE_PACK((unsigned)shadow_width, (unsigned)shadow_height);
-            draw.x       = shadow_x;
-            draw.y       = shadow_y;
+            draw.pos     = VIDEO_POS_PACK(VIDEO_PX(shadow_x),
+                  VIDEO_PX(shadow_y));
 
             /* Draw shadow */
             if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
@@ -2881,8 +2881,7 @@ void gfx_thumbnail_draw(
       /* Final thumbnail draw object configuration */
       coords.color = (const float*)thumbnail_color;
       draw.dims    = VIDEO_SCALE_PACK((unsigned)draw_width, (unsigned)draw_height);
-      draw.x       = draw_x;
-      draw.y       = draw_y;
+      draw.pos     = VIDEO_POS_PACK(VIDEO_PX(draw_x), VIDEO_PX(draw_y));
 
       /* Draw thumbnail */
       if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)

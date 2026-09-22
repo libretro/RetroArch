@@ -1155,7 +1155,7 @@ static void gfx_display_sdl2_scissor_end(void *data,
  *
  * 1. gfx_display_draw_quad - used by widgets and most menu chrome.
  *    Sets coords->vertex = NULL and coords->tex_coord = NULL, and
- *    encodes the quad rectangle in draw->x / draw->y / VIDEO_SCALE_W(draw->dims) /
+ *    encodes the quad rectangle in the origin draw->pos and the size
  *    VIDEO_SCALE_H(draw->dims) (pixel coords, Y already flipped to top-left
  *    origin by the caller). gl1 handles this by substituting a
  *    static 0..1 vertex array and calling glViewport with the rect,
@@ -1231,16 +1231,17 @@ static void gfx_display_sdl2_draw(gfx_display_ctx_draw_t *draw,
    verts = (SDL_Vertex*)vid->display_verts;
 
    /* Path 1: gfx_display_draw_quad - vtx is NULL, geometry comes
-    * from draw->x/y/width/height with y bottom-up.  n is always 4.
+    * from draw->pos and draw->dims with y bottom-up.  n is always 4.
     *
     * COORDINATE CONVENTIONS (cribbed from gdi_gfx.c, the canonical
     * reference for a top-down-pixel target):
     *
-    * - draw->x / y / width / height: pixel coords, y bottom-up
-    *   (gfx_display_draw_quad pre-flips: draw.y = height - y - h).
+    * - draw->pos / draw->dims: pixel coords, y bottom-up
+    *   (gfx_display_draw_quad pre-flips y before packing).
     *   To put the rect at the right spot in SDL's top-down pixel
     *   space, re-flip:
-    *      dst_y = video_height - VIDEO_SCALE_H(draw->dims) - draw->y
+    *      dst_y = video_height - VIDEO_SCALE_H(draw->dims)
+    *              - VIDEO_POS_Y(draw->pos)
     *
     * - coords->tex_coord (when non-NULL): 0..1 normalised, TOP-DOWN
     *   (yes, opposite to the bottom-up vertex convention; this is
@@ -1255,25 +1256,19 @@ static void gfx_display_sdl2_draw(gfx_display_ctx_draw_t *draw,
    {
       float x0, x1, y0, y1;
 
-      /* Defensive clamp: gfx_widgets_draw_icon's coordinate math
-       * depends on widget layout values that can underflow during
-       * the first few frames after icon load, producing
-       * draw->y == INT_MIN.  Float-converting that and feeding it
-       * to SDL_RenderGeometry produces NaN vertex positions and a
-       * spurious SDL error that pollutes the renderer state for
-       * subsequent draws, making the entire widget invisible.
-       * Reject any rect whose origin / extent can't fit in a
-       * reasonable floating point coord. */
-      if (   draw->x < -65536 || draw->x > 65536
-          || draw->y < -65536 || draw->y > 65536
-          || VIDEO_SCALE_W(draw->dims)  > 65536
-          || VIDEO_SCALE_H(draw->dims) > 65536)
-         return;
-
-      x0 = (float)draw->x;
-      x1 = (float)draw->x + (float)VIDEO_SCALE_W(draw->dims);
+      /* The rect needed a range test here once: gfx_widgets_draw_icon's
+       * coordinate math depends on widget layout values that underflow
+       * in the first few frames after an icon loads, and the float the
+       * descriptor carried took that value as far as SDL_RenderGeometry,
+       * where it became NaN vertex positions and an SDL error that
+       * pollutes the renderer state for every draw after it. The
+       * descriptor's origin is a signed 16-bit pair now and its size an
+       * unsigned 16-bit one, so neither can hold a value this has to
+       * defend against. */
+      x0 = (float)VIDEO_POS_X(draw->pos);
+      x1 = (float)VIDEO_POS_X(draw->pos) + (float)VIDEO_SCALE_W(draw->dims);
       /* Re-flip Y from bottom-up to SDL top-down. */
-      y0 = (float)video_height - (float)VIDEO_SCALE_H(draw->dims) - (float)draw->y;
+      y0 = (float)video_height - (float)VIDEO_SCALE_H(draw->dims) - (float)VIDEO_POS_Y(draw->pos);
       y1 = y0 + (float)VIDEO_SCALE_H(draw->dims);
 
       /* Apply draw->scale_factor (centred scaling around the quad's

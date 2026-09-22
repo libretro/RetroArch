@@ -3086,8 +3086,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 - (void)drawPipeline:(gfx_display_ctx_draw_t *)draw
 {
    static struct video_coords blank_coords;
-   draw->x                 = 0;
-   draw->y                 = 0;
+   draw->pos               = VIDEO_POS_PACK(0, 0);
    draw->matrix_data       = NULL;
    _uniforms.outputSize    = simd_make_float2(VIDEO_SCALE_W(_context.viewport->full_dims), VIDEO_SCALE_H(_context.viewport->full_dims));
    draw->backend_data      = &_uniforms;
@@ -3172,8 +3171,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    }
 
    MTLViewport vp = {
-      .originX = draw->x,
-      .originY = VIDEO_SCALE_H(_context.viewport->full_dims) - draw->y
+      .originX = VIDEO_POS_X(draw->pos),
+      .originY = VIDEO_SCALE_H(_context.viewport->full_dims) - VIDEO_POS_Y(draw->pos)
                - VIDEO_SCALE_H(draw->dims),
       .width   = VIDEO_SCALE_W(draw->dims),
       .height  = VIDEO_SCALE_H(draw->dims),

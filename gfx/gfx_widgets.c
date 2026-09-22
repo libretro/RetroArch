@@ -868,8 +868,8 @@ void gfx_widgets_draw_icon(
    coords.lut_tex_coord = NULL;
    coords.color         = color;
 
-   draw.x               = x;
-   draw.y               = video_height - y - icon_height;
+   draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x),
+         VIDEO_PX(video_height - y - icon_height));
    draw.dims            = VIDEO_SCALE_PACK(icon_width, icon_height);
    draw.scale_factor    = 1.0f;
    draw.rotation        = radians;

@@ -2690,8 +2690,8 @@ static void materialui_draw_icon(
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   draw.x               = x;
-   draw.y               = video_height - y - icon_size;
+   draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x),
+         VIDEO_PX(video_height - y - icon_size));
    draw.dims            = VIDEO_SCALE_PACK(icon_size, icon_size);
    draw.scale_factor    = scale_factor;
    draw.rotation        = rotation;
@@ -6787,8 +6787,7 @@ MUI_NOINLINE static void materialui_render_background(
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    /* Configure draw object */
-   draw.x                     = 0;
-   draw.y                     = 0;
+   draw.pos                   = VIDEO_POS_PACK(0, 0);
    draw.dims                  = VIDEO_SCALE_PACK(video_width, video_height);
    draw.coords                = NULL;
    draw.matrix_data           = NULL;

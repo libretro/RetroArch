@@ -866,7 +866,7 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
    }
 
    /* Determine whether caller provides explicit vertex arrays or
-    * expects us to build the quad from draw->x/y/width/height
+    * expects us to build the quad from draw->pos and draw->dims
     * (the single-sprite path used by Ozone and other modern menus).
     * Mirrors the d3d10 vertex_count==1 vs multi-vertex split. */
    has_vertex_data = draw->coords->vertex
@@ -878,7 +878,7 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
    if (!has_vertex_data)
    {
       /* Single-sprite path: no explicit vertex arrays provided.
-       * Build a quad directly from draw->x/y/width/height in
+       * Build a quad directly from draw->pos and draw->dims in
        * normalized [0,1] space, using DrawPrimitiveUP to avoid
        * any vertex buffer offset/locking issues. */
       D3DCOLOR col[4];
@@ -906,12 +906,12 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
 
       /* Normalize to [0,1] range.
        * Both ozone_draw_icon and gfx_display_draw_quad pre-flip Y
-       * (draw.y = height - y - h). The Y-flip here undoes that,
+       * (the packed y is height - y - h). The Y-flip here undoes that,
        * then topdown_ortho applies the correct top-down mapping. */
-      x1 = draw->x / (float)video_width;
-      y1 = ((float)video_height - draw->y - VIDEO_SCALE_H(draw->dims)) / (float)video_height;
-      x2 = (draw->x + VIDEO_SCALE_W(draw->dims))  / (float)video_width;
-      y2 = ((float)video_height - draw->y) / (float)video_height;
+      x1 = VIDEO_POS_X(draw->pos) / (float)video_width;
+      y1 = ((float)video_height - VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims)) / (float)video_height;
+      x2 = (VIDEO_POS_X(draw->pos) + VIDEO_SCALE_W(draw->dims))  / (float)video_width;
+      y2 = ((float)video_height - VIDEO_POS_Y(draw->pos)) / (float)video_height;
 
       /* Apply scale_factor: scale the quad around its center,
        * matching D3D10's geometry shader params.scaling behavior. */
@@ -1115,8 +1115,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
 
    ca                                    = &p_disp->dispca;
 
-   draw->x                               = 0;
-   draw->y                               = 0;
+   draw->pos                             = VIDEO_POS_PACK(0, 0);
    draw->coords                          = NULL;
    draw->matrix_data                     = NULL;
 

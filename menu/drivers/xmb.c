@@ -1202,15 +1202,16 @@ static void xmb_draw_icon(
       gfx_display_set_alpha(shadow_color, color[3] * GFX_SHADOW_ALPHA * 0.75f);
 
       coords.color      = shadow_color;
-      draw.x            = x + shadow_offset;
-      draw.y            = height - y - shadow_offset;
+      draw.pos          = VIDEO_POS_PACK(VIDEO_PX(x + shadow_offset),
+            VIDEO_PX(height - y - shadow_offset));
 
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
       if (scale_factor < 1)
-      {
-         draw.x         = draw.x + (icon_size_x-VIDEO_SCALE_W(draw.dims))/2;
-         draw.y         = draw.y + (icon_size_y-VIDEO_SCALE_H(draw.dims))/2;
-      }
+         draw.pos       = VIDEO_POS_PACK(
+               VIDEO_POS_X(draw.pos)
+                  + (icon_size_x - (int)VIDEO_SCALE_W(draw.dims)) / 2,
+               VIDEO_POS_Y(draw.pos)
+                  + (icon_size_y - (int)VIDEO_SCALE_H(draw.dims)) / 2);
 #endif
       if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
          gfx_display_draw(dispctx, &draw, userdata,
@@ -1218,15 +1219,15 @@ static void xmb_draw_icon(
    }
 
    coords.color         = (const float*)color;
-   draw.x               = x;
-   draw.y               = height - y;
+   draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x), VIDEO_PX(height - y));
 
 #if defined(VITA) || defined(WIIU) || defined(__PS3__)
    if (scale_factor < 1)
-   {
-      draw.x            = draw.x + (icon_size_x-VIDEO_SCALE_W(draw.dims))/2;
-      draw.y            = draw.y + (icon_size_y-VIDEO_SCALE_H(draw.dims))/2;
-   }
+      draw.pos          = VIDEO_POS_PACK(
+            VIDEO_POS_X(draw.pos)
+               + (icon_size_x - (int)VIDEO_SCALE_W(draw.dims)) / 2,
+            VIDEO_POS_Y(draw.pos)
+               + (icon_size_y - (int)VIDEO_SCALE_H(draw.dims)) / 2);
 #endif
    if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
       gfx_display_draw(dispctx, &draw, userdata,
@@ -8619,8 +8620,7 @@ XMB_NOINLINE static void xmb_draw_bg(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
 
-   draw.x                    = 0;
-   draw.y                    = 0;
+   draw.pos                  = VIDEO_POS_PACK(0, 0);
    draw.texture              = texture_id;
    draw.dims                 = VIDEO_SCALE_PACK(video_width, video_height);
    draw.color                = &coord_black[0];
@@ -8722,8 +8722,7 @@ XMB_NOINLINE static void xmb_draw_dark_layer(
          0, 0, 0, 1,
    };
 
-   draw.x               = 0;
-   draw.y               = 0;
+   draw.pos             = VIDEO_POS_PACK(0, 0);
    draw.dims            = VIDEO_SCALE_PACK(width, height);
    draw.color           = &black[0];
    draw.vertex          = NULL;

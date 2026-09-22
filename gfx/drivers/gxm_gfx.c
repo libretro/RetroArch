@@ -1562,7 +1562,7 @@ static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
    if (!color)
       color           = &gxm_colors[0];
 
-   gxm_set_viewport(draw->x, draw->y,
+   gxm_set_viewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
    vertices = (gxm_texture_tint_vertex_t *)
       gxm_pool_memalign(
