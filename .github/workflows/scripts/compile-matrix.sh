@@ -555,6 +555,18 @@ check "dsp filters: C89" "$C89 -DHAVE_FILTERS_BUILTIN" $DSP
 check "dsp filters: C89, no C99 math declarations" \
    "$(echo "$C89" | sed 's/ -D_GNU_SOURCE//') -DHAVE_FILTERS_BUILTIN" $DSP
 
+# The UI companion's shared core, which only a Qt or Cocoa build puts
+# in OBJ. A tree configured --disable-qt on a Linux host - which is what
+# a desktop job builds - compiles none of it, so a change to a struct it
+# reads is green everywhere until one of those jobs runs.
+echo "== ui companion: the shared core =="
+COMPANION="ui/companion/companion_core.c ui/companion/companion_thumbs.c \
+ ui/companion/companion_dock.c"
+check "ui companion" "-DHAVE_RGUI -DHAVE_CONFIGFILE" $COMPANION
+check "ui companion: no threads" \
+   "$(echo "$BASE" | sed 's/ -DHAVE_THREADS//') -DHAVE_RGUI -DHAVE_CONFIGFILE" \
+   $COMPANION
+
 echo "== run-ahead: the dynamic-library gates =="
 # The secondary instance exists only with HAVE_DYNAMIC; a build that
 # can load libraries but links its core statically (HAVE_DYLIB alone)
