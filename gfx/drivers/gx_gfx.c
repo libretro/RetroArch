@@ -23,7 +23,6 @@
 
 #include <libretro.h>
 #include <verbosity.h>
-#include <streams/interface_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -785,48 +784,6 @@ static void build_disp_list(void)
    GX_End();
    display_list_size = GX_EndDispList();
 }
-
-#if 0
-#define TAKE_EFB_SCREENSHOT_ON_EXIT
-#endif
-
-#ifdef TAKE_EFB_SCREENSHOT_ON_EXIT
-
-/* Adapted from code by Crayon for GRRLIB (http://code.google.com/p/grrlib) */
-static void gx_efb_screenshot(void)
-{
-   int x, y;
-   uint8_t tga_header[] = {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x02, 0xE0, 0x01, 0x18, 0x00};
-   intfstream_t    *out = intfstream_open("/screenshot.tga",
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!out)
-      return;
-
-   intfstream_write(out, tga_header, sizeof(tga_header));
-
-   for (y = 479; y >= 0; --y)
-   {
-      uint8_t line[640 * 3];
-      unsigned i = 0;
-
-      for (x = 0; x < 640; x++)
-      {
-         GXColor color;
-         GX_PeekARGB(x, y, &color);
-         line[i++] = color.b;
-         line[i++] = color.g;
-         line[i++] = color.r;
-      }
-      intfstream_write(out, line, sizeof(line));
-   }
-
-   intfstream_close(out);
-   free(out);
-}
-
-#endif
 
 static void *gx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
