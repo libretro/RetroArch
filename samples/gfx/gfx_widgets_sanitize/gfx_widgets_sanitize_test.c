@@ -97,7 +97,8 @@ static void pump(int frames)
       video_frame_info_t video_info;
 
       gfx_widgets_iterate(&s_disp, s_settings,
-            1920, 1080, false, "/tmp/nonexistent-assets", NULL, false);
+            VIDEO_SCALE_PACK(1920, 1080), false,
+            "/tmp/nonexistent-assets", NULL, false);
 
       memset(&video_info, 0, sizeof(video_info));
       video_info.disp_userdata    = &s_disp;

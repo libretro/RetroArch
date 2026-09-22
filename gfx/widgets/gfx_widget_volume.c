@@ -223,7 +223,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
                   state->widget_width / 2,
                   state->widget_height / 2.0f
                   + font_regular->line_centre_offset,
-                  video_width, video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   text_color, TEXT_ALIGN_CENTER,
                   true);
          }
@@ -268,7 +268,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
          gfx_widgets_draw_text(font_regular,
                msg,
                state->widget_width - padding, volume_text_y,
-               video_width, video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                text_color_db,
                TEXT_ALIGN_RIGHT,
                false);
@@ -276,7 +276,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
          gfx_widgets_draw_text(font_regular,
             percentage_msg,
             icon_size, volume_text_y,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             text_color,
             TEXT_ALIGN_LEFT,
             false);

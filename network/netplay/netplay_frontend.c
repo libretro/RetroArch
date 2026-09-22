@@ -10518,7 +10518,7 @@ static void RETRO_CALLCONV netplay_netpacket_poll_receive_cb(void)
 
 #ifdef HAVE_GFX_WIDGETS
 static void gfx_widget_netplay_chat_iterate(void *user_data,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path, bool is_threaded)
 {
    size_t i;
@@ -10633,8 +10633,7 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
          formatted_nick,
          p_dispwidget->simple_widget_padding,
          height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          color_name | (uint32_t)alpha,
          TEXT_ALIGN_LEFT,
          true);
@@ -10644,8 +10643,7 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
          formatted_msg,
          p_dispwidget->simple_widget_padding + formatted_nick_width,
          height,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          color_msg | (uint32_t)alpha,
          TEXT_ALIGN_LEFT,
          true);
@@ -10656,7 +10654,7 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
 }
 
 static void gfx_widget_netplay_ping_iterate(void *user_data,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path, bool is_threaded)
 {
    net_driver_state_t *net_st   = &networking_driver_st;
@@ -10742,8 +10740,7 @@ static void gfx_widget_netplay_ping_frame(void *data, void *userdata)
          ping_str,
          video_width - ping_width - p_dispwidget->simple_widget_padding,
          video_height - font->line_centre_offset,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          0xFFFFFFFF,
          TEXT_ALIGN_LEFT,
          true);

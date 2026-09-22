@@ -6900,8 +6900,7 @@ static enum runloop_state_enum runloop_check_state(
          gfx_widgets_iterate_layout(
                p_disp,
                settings,
-               VIDEO_SCALE_W(output_dims),
-               VIDEO_SCALE_H(output_dims),
+               output_dims,
                video_is_fullscreen,
                settings->paths.directory_assets,
                settings->paths.path_font,
@@ -6912,8 +6911,7 @@ static enum runloop_state_enum runloop_check_state(
          gfx_widgets_iterate(
                p_disp,
                settings,
-               VIDEO_SCALE_W(output_dims),
-               VIDEO_SCALE_H(output_dims),
+               output_dims,
                video_is_fullscreen,
                settings->paths.directory_assets,
                settings->paths.path_font,

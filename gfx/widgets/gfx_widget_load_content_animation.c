@@ -687,7 +687,7 @@ static void gfx_widget_load_content_animation_layout(
 /* Widget iterate() */
 
 static void gfx_widget_load_content_animation_iterate(void *user_data,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
@@ -1000,8 +1000,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                      with_progress,
                      text_x,
                      state->content_name_y,
-                     video_width,
-                     video_height,
+                     VIDEO_SCALE_PACK(video_width, video_height),
                      content_name_color,
                      TEXT_ALIGN_LEFT,
                      true);
@@ -1012,8 +1011,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                      state->content_name,
                      text_x,
                      state->content_name_y,
-                     video_width,
-                     video_height,
+                     VIDEO_SCALE_PACK(video_width, video_height),
                      content_name_color,
                      TEXT_ALIGN_LEFT,
                      true);
@@ -1028,8 +1026,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   state->system_name,
                   text_x,
                   state->system_name_y,
-                  video_width,
-                  video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   system_name_color,
                   TEXT_ALIGN_LEFT,
                   true);
@@ -1043,8 +1040,8 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
              * text here to avoid overlaps */
             if (msg_queue_size > 0)
             {
-               gfx_widgets_flush_text(video_width, video_height, font_regular);
-               gfx_widgets_flush_text(video_width, video_height, font_bold);
+               gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height), font_regular);
+               gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height), font_bold);
             }
             /* Must also flush text if it overlaps the edge of
              * the screen (otherwise it will bleed through the
@@ -1053,11 +1050,11 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
             {
                if (state->system_name_width > video_width -
                      (unsigned)text_x - state->margin_shadow_width)
-                  gfx_widgets_flush_text(video_width, video_height, font_regular);
+                  gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height), font_regular);
 
                if (state->content_name_width > video_width -
                      (unsigned)text_x - state->margin_shadow_width)
-                  gfx_widgets_flush_text(video_width, video_height, font_bold);
+                  gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height), font_bold);
             }
          }
       }

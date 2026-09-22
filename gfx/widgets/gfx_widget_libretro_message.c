@@ -256,7 +256,7 @@ static void gfx_widget_libretro_message_layout(
 /* Widget iterate() */
 
 static void gfx_widget_libretro_message_iterate(void *user_data,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
@@ -486,8 +486,7 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
                state->message,
                state->text_x,
                text_y,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                text_color,
                TEXT_ALIGN_LEFT,
                true);
@@ -495,7 +494,7 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
          /* If the message queue is active, must flush the
           * text here to avoid overlaps */
          if (msg_queue_size > 0)
-            gfx_widgets_flush_text(video_width, video_height,
+            gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height),
                   font_msg_queue);
       }
    }

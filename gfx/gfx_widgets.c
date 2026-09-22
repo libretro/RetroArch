@@ -115,10 +115,11 @@ static const gfx_widget_t* const widgets[] = {
 static float gfx_display_get_widget_pixel_scale(
       gfx_display_t *p_disp,
       settings_t *settings,
-      unsigned width, unsigned height, bool fullscreen)
+      unsigned dims, bool fullscreen)
 {
-   static unsigned last_width                          = 0;
-   static unsigned last_height                         = 0;
+   unsigned width                                      = VIDEO_SCALE_W(dims);
+   unsigned height                                     = VIDEO_SCALE_H(dims);
+   static unsigned last_dims                           = 0;
    static float scale                                  = 0.0f;
    static bool scale_cached                            = false;
    bool scale_updated                                  = false;
@@ -146,9 +147,7 @@ static float gfx_display_get_widget_pixel_scale(
     * to optimise). We therefore cache the pixel scale,
     * and only update on first run or when the video
     * size changes */
-   if (   !scale_cached
-       || (width  != last_width)
-       || (height != last_height))
+   if (!scale_cached || dims != last_dims)
    {
       /* Baseline reference is a 1080p display */
       scale = (float)(
@@ -157,8 +156,7 @@ static float gfx_display_get_widget_pixel_scale(
 
       scale_cached  = true;
       scale_updated = true;
-      last_width    = width;
-      last_height   = height;
+      last_dims     = dims;
    }
 
    /* Adjusted scale calculation may also be slow, so
@@ -887,7 +885,7 @@ void gfx_widgets_draw_text(
       gfx_widget_font_data_t* font_data,
       const char *text,
       float x, float y,
-      int width, int height,
+      unsigned dims,
       uint32_t color,
       enum text_alignment text_align,
       bool draw_outside)
@@ -899,7 +897,7 @@ void gfx_widgets_draw_text(
          font_data->font,
          text,
          x, y,
-         width, height,
+         (int)VIDEO_SCALE_W(dims), (int)VIDEO_SCALE_H(dims),
          color,
          text_align,
          1.0f,
@@ -911,7 +909,7 @@ void gfx_widgets_draw_text(
 }
 
 void gfx_widgets_flush_text(
-      unsigned video_width, unsigned video_height,
+      unsigned video_dims,
       gfx_widget_font_data_t* font_data)
 {
    /* Flushing is slow - only do it if font
@@ -929,7 +927,8 @@ void gfx_widgets_flush_text(
       return;
 
    if (font_data->font && font_data->font->renderer && font_data->font->renderer->flush)
-      font_data->font->renderer->flush(video_width, video_height, font_data->font->renderer_data);
+      font_data->font->renderer->flush(VIDEO_SCALE_W(video_dims),
+            VIDEO_SCALE_H(video_dims), font_data->font->renderer_data);
    font_data->raster_block.carr.coords.vertices = 0;
    font_data->usage_count                       = 0;
 }
@@ -1198,7 +1197,7 @@ static void gfx_widgets_layout(
 static INLINE void gfx_widgets_update_layout(
       void *data_disp,
       void *settings_data,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
@@ -1217,12 +1216,12 @@ static INLINE void gfx_widgets_update_layout(
 #ifdef HAVE_XMB
    enum menu_driver_id_type type    = p_disp->menu_driver_id;
    if (type == MENU_DRIVER_ID_XMB)
-      scale_factor                  = gfx_display_get_widget_pixel_scale(p_disp, settings, width, height, fullscreen);
+      scale_factor                  = gfx_display_get_widget_pixel_scale(p_disp, settings, dims, fullscreen);
    else
 #endif
       scale_factor                  = gfx_display_get_dpi_scale(
             p_disp,
-            settings, VIDEO_SCALE_PACK(width, height), fullscreen, true);
+            settings, dims, fullscreen, true);
 
    /* Check whether screen dimensions, menu scale factor or the
     * notification font have changed. The font is watched here rather
@@ -1230,14 +1229,13 @@ static INLINE void gfx_widgets_update_layout(
     * video driver up and the thread that drives it, which is what
     * runs once a frame here. */
    if ((scale_factor != p_dispwidget->last_scale_factor) ||
-       (width        != VIDEO_SCALE_W(p_dispwidget->last_video_dims)) ||
-       (height       != VIDEO_SCALE_H(p_dispwidget->last_video_dims)) ||
+       (dims         != p_dispwidget->last_video_dims) ||
        !string_is_equal(p_dispwidget->last_font_path,
              font_path ? font_path : ""))
    {
       gfx_widgets_state_lock();
       p_dispwidget->last_scale_factor = scale_factor;
-      p_dispwidget->last_video_dims   = VIDEO_SCALE_PACK(width, height);
+      p_dispwidget->last_video_dims   = dims;
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
@@ -1251,7 +1249,7 @@ static INLINE void gfx_widgets_update_layout(
 /* Once a frame: the widgets' own iterate() and the message queue. On
  * the threaded video worker when it draws the widgets. */
 static INLINE void gfx_widgets_iterate_frame(
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
@@ -1264,7 +1262,7 @@ static INLINE void gfx_widgets_iterate_frame(
 
       if (widget->iterate)
          widget->iterate(p_dispwidget,
-               width, height, fullscreen,
+               dims, fullscreen,
                dir_assets, font_path, is_threaded);
    }
 
@@ -1365,14 +1363,14 @@ static INLINE void gfx_widgets_iterate_frame(
 void gfx_widgets_iterate(
       void *data_disp,
       void *settings_data,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
    gfx_widgets_state_lock();
-   gfx_widgets_update_layout(data_disp, settings_data, width, height,
+   gfx_widgets_update_layout(data_disp, settings_data, dims,
          fullscreen, dir_assets, font_path, is_threaded);
-   gfx_widgets_iterate_frame(width, height, fullscreen,
+   gfx_widgets_iterate_frame(dims, fullscreen,
          dir_assets, font_path, is_threaded);
    gfx_widgets_state_unlock();
 }
@@ -1381,11 +1379,11 @@ void gfx_widgets_iterate(
 void gfx_widgets_iterate_layout(
       void *data_disp,
       void *settings_data,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
-   gfx_widgets_update_layout(data_disp, settings_data, width, height,
+   gfx_widgets_update_layout(data_disp, settings_data, dims,
          fullscreen, dir_assets, font_path, is_threaded);
 }
 #endif
@@ -1467,7 +1465,7 @@ static int gfx_widgets_draw_indicator(
             + p_dispwidget->simple_widget_padding,
             y + (height / 2.0f) +
             p_dispwidget->gfx_widget_fonts.regular.line_centre_offset,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             TEXT_COLOR_INFO, TEXT_ALIGN_LEFT,
             false);
    }
@@ -1666,7 +1664,7 @@ static void gfx_widgets_draw_task_msg(
 
    if (draw_msg_new)
    {
-      gfx_widgets_flush_text(video_width, video_height,
+      gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height),
             &p_dispwidget->gfx_widget_fonts.msg_queue);
 
       gfx_display_scissor_begin(p_disp,
@@ -1678,7 +1676,7 @@ static void gfx_widgets_draw_task_msg(
             msg->msg_new,
             p_dispwidget->msg_queue_task_text_start_x,
             text_y_base - msg_queue_height / 2.0f + msg->msg_transition_animation,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             text_color,
             TEXT_ALIGN_LEFT,
             true);
@@ -1688,14 +1686,14 @@ static void gfx_widgets_draw_task_msg(
          msg->msg,
          p_dispwidget->msg_queue_task_text_start_x,
          text_y_base + msg->msg_transition_animation,
-         video_width, video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          text_color,
          TEXT_ALIGN_LEFT,
          true);
 
    if (draw_msg_new)
    {
-      gfx_widgets_flush_text(video_width, video_height,
+      gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height),
             &p_dispwidget->gfx_widget_fonts.msg_queue);
       if (dispctx && dispctx->scissor_end)
          dispctx->scissor_end(userdata,
@@ -1710,7 +1708,7 @@ static void gfx_widgets_draw_task_msg(
             ? p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 3
             : p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width),
       text_y_base,
-      video_width, video_height,
+      VIDEO_SCALE_PACK(video_width, video_height),
       text_color,
       TEXT_ALIGN_RIGHT,
       true);
@@ -1814,7 +1812,7 @@ static void gfx_widgets_draw_regular_msg(
          ? p_dispwidget->msg_queue_task_text_start_x
          : p_dispwidget->msg_queue_regular_text_start,
       text_y_base,
-      video_width, video_height,
+      VIDEO_SCALE_PACK(video_width, video_height),
       text_color,
       TEXT_ALIGN_LEFT,
       true);
@@ -2154,7 +2152,7 @@ static void gfx_widgets_frame_state(void *data)
             status_txt_x,
             p_dispwidget->simple_widget_height / 2.0f
             + p_dispwidget->gfx_widget_fonts.regular.line_centre_offset,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             TEXT_COLOR_INFO,
             TEXT_ALIGN_LEFT,
             true);
@@ -2260,11 +2258,11 @@ static void gfx_widgets_frame_state(void *data)
    }
 
    /* Ensure all text is flushed */
-   gfx_widgets_flush_text(video_width, video_height,
+   gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height),
          &p_dispwidget->gfx_widget_fonts.regular);
-   gfx_widgets_flush_text(video_width, video_height,
+   gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height),
          &p_dispwidget->gfx_widget_fonts.bold);
-   gfx_widgets_flush_text(video_width, video_height,
+   gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height),
          &p_dispwidget->gfx_widget_fonts.msg_queue);
 
    /* Unbind fonts */
@@ -2448,9 +2446,7 @@ static void gfx_widgets_context_reset(
 #ifdef HAVE_XMB
    if (p_disp->menu_driver_id == MENU_DRIVER_ID_XMB)
       p_dispwidget->last_scale_factor = gfx_display_get_widget_pixel_scale(
-            p_disp, settings,
-            VIDEO_SCALE_W(p_dispwidget->last_video_dims),
-            VIDEO_SCALE_H(p_dispwidget->last_video_dims), fullscreen);
+            p_disp, settings, p_dispwidget->last_video_dims, fullscreen);
    else
 #endif
       p_dispwidget->last_scale_factor = gfx_display_get_dpi_scale(
@@ -2805,7 +2801,7 @@ void gfx_widgets_worker_step(void *data,
     * this runs on the video thread under the threaded wrapper. */
    p_dispwidget->frame_menu_st_flags = (uint16_t)video_info->menu_st_flags;
    gfx_widgets_iterate_frame(
-         VIDEO_SCALE_W(video_info->dims), VIDEO_SCALE_H(video_info->dims), video_info->fullscreen,
+         video_info->dims, video_info->fullscreen,
          video_info->widget_dir_assets,
          (char*)video_info->widget_path_font,
          true);

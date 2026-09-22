@@ -359,7 +359,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
                   : msg_hash_to_str(MSG_SCREENSHOT_SAVED),
             state->thumbnail_width + padding,
             padding + font_regular->line_ascender + state->y,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             TEXT_COLOR_FAINT,
             TEXT_ALIGN_LEFT,
             true);
@@ -378,7 +378,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
             shotname,
             state->thumbnail_width + padding,
             state->height - padding - font_regular->line_descender + state->y,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             TEXT_COLOR_INFO,
             TEXT_ALIGN_LEFT,
             true);
@@ -404,11 +404,12 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
 
 static void gfx_widget_screenshot_iterate(
       void *user_data,
-      unsigned width,
-      unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
+   unsigned width       = VIDEO_SCALE_W(dims);
+   unsigned height      = VIDEO_SCALE_H(dims);
    settings_t *settings = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;

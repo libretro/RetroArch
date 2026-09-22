@@ -382,7 +382,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             buffer[0] = c;
             gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
                   buffer, char_x, char_y,
-                  video_width, video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   TEXT_COLOR_INFO, TEXT_ALIGN_LEFT, true);
 
             char_x = next_char_x;
@@ -559,7 +559,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             y = (float)y + image_size / 2 + p_dispwidget->gfx_widget_fonts.regular.line_height / 2 - p_dispwidget->gfx_widget_fonts.regular.line_descender;
             gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.regular,
                   state->progress_tracker.display, x, y,
-                  video_width, video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   TEXT_COLOR_INFO, TEXT_ALIGN_LEFT, true);
          }
       }
@@ -601,7 +601,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
 
          gfx_widgets_draw_text(&p_dispwidget->gfx_widget_fonts.msg_queue,
             disconnected_text, char_x, char_y,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             TEXT_COLOR_INFO, TEXT_ALIGN_LEFT, true);
       }
    }
@@ -880,7 +880,7 @@ void gfx_widget_set_cheevos_set_loading(bool value)
 
 
 static void gfx_widget_leaderboard_display_iterate(void *user_data,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path, bool is_threaded)
 {
    mpsc_stack_node_t *link =

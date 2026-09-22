@@ -313,8 +313,7 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
             state->message,
             state->text_x,
             state->text_y,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             text_color,
             TEXT_ALIGN_CENTER,
             true);
@@ -322,7 +321,7 @@ static void gfx_widget_progress_message_frame(void *data, void *user_data)
       /* If the message queue is active, must flush the
        * text here to avoid overlaps */
       if (msg_queue_size > 0)
-         gfx_widgets_flush_text(video_width, video_height, font_regular);
+         gfx_widgets_flush_text(VIDEO_SCALE_PACK(video_width, video_height), font_regular);
    }
 }
 
