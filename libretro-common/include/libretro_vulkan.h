@@ -27,7 +27,7 @@
 #include <vulkan/vulkan.h>
 
 #define RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION 5
-#define RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION 3
+#define RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION 2
 
 struct retro_vulkan_image
 {
@@ -154,16 +154,6 @@ struct retro_hw_render_context_negotiation_interface_vulkan
     * If not, a second queue must be provided in presentation_queue and presentation_queue_index.
     * If surface is not VK_NULL_HANDLE, the instance from frontend will have been created with supported for
     * VK_KHR_surface extension.
-    *
-    * v3: presentation_queue may be another queue of queue_family_index even when presentation is supported
-    * on queue itself, which takes the frontend's present off the queue the core submits to and off its lock.
-    * Accepting it does not oblige the frontend to present there: where the window system is known not to
-    * tolerate a present on another queue, the frontend presents on queue instead, serialised with the core's
-    * submissions through lock_queue/unlock_queue as usual. A core must not depend on the separate queue being used.
-    * presentation_queue_family_index must still equal queue_family_index; another family would need an image
-    * ownership transfer around every frame and is rejected.
-    * A core must only do this when GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT reports 3 or higher:
-    * earlier frontends reject a presentation_queue that is not queue and fail context creation.
     *
     * The core is free to set its own queue priorities.
     * Device provided to frontend is owned by the frontend, but any additional device resources must be freed by core

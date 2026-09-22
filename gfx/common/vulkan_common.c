@@ -81,10 +81,6 @@ static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
 static VkDevice                      cached_device_vk;
 static retro_vulkan_destroy_device_t cached_destroy_device_vk;
-/* Index in the graphics family of the present queue the cached device
- * was created with; 0 means it shares the graphics queue. A queue is
- * only a handle, so the index is what survives a cached reuse. */
-static uint32_t                      cached_present_queue_index_vk;
 
 #ifdef __APPLE__
 /* On Apple platforms the Vulkan implementation is provided by MoltenVK
@@ -804,25 +800,6 @@ static VkDevice vulkan_context_create_device_wrapper(
    return device;
 }
 
-uint32_t vulkan_select_present_queue_index(bool android_wsi,
-      uint32_t family_queue_count)
-{
-   if (android_wsi)
-      return 0;
-   return (family_queue_count >= 2) ? 1 : 0;
-}
-
-/* Android's WSI, whichever context driver brought the surface up - the
- * SDL3 one reaches the same loader there. */
-static bool vulkan_wsi_is_android(const gfx_ctx_vulkan_data_t *vk)
-{
-#ifdef ANDROID
-   return true;
-#else
-   return vk->wsi_type == VULKAN_WSI_ANDROID;
-#endif
-}
-
 static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
    uint32_t queue_count;
@@ -830,8 +807,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    const char *enabled_device_extensions[8];
    VkDeviceCreateInfo device_info;
    VkDeviceQueueCreateInfo queue_info;
-   static const float priorities[2]        = { 1.0f, 1.0f };
-   uint32_t present_queue_index            = 0;
+   static const float one                  = 1.0f;
    bool found_queue                        = false;
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool hdr_metadata_enabled               = false;
@@ -935,38 +911,15 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          vk->context.destroy_device       = iface->destroy_device;
 
          vk->context.device               = context.device;
+         vk->context.queue                = context.queue;
          vk->context.gpu                  = context.gpu;
          vk->context.graphics_queue_index = context.queue_family_index;
          vk->context.queue                = context.queue;
-         vk->context.present_queue        = context.queue;
 
-         /* A separate presentation queue is taken when it is in the
-          * graphics family: the swapchain images then need no
-          * ownership transfer between the queue that renders them and
-          * the one that presents them. Another family would need one
-          * around every frame, and is not supported. */
          if (context.presentation_queue != context.queue)
          {
-            if (context.presentation_queue_family_index
-                  != context.queue_family_index)
-            {
-               RARCH_ERR("[Vulkan] Present queue is in queue family %u, graphics queue in %u. This is not supported.\n",
-                     context.presentation_queue_family_index,
-                     context.queue_family_index);
-               return false;
-            }
-            /* Same family, so the graphics queue can present to the
-             * surface as well; behind Android's WSI it does, rather
-             * than the core's second queue (see the declaration of
-             * vulkan_select_present_queue_index()). */
-            if (vulkan_select_present_queue_index(
-                     vulkan_wsi_is_android(vk), 2))
-            {
-               vk->context.present_queue = context.presentation_queue;
-               RARCH_LOG("[Vulkan] Core provided a separate presentation queue.\n");
-            }
-            else
-               RARCH_LOG("[Vulkan] Core provided a separate presentation queue; presenting on the graphics queue under Android's WSI.\n");
+            RARCH_ERR("[Vulkan] Present queue != graphics queue. This is currently not supported.\n");
+            return false;
          }
       }
       else
@@ -1052,12 +1005,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             vk->context.graphics_queue_index = i;
             RARCH_LOG("[Vulkan] Queue family %u supports %u sub-queues.\n",
                   i, queue_properties[i].queueCount);
-            /* A second queue of the family, when there is one, takes
-             * the presents off the graphics queue and its lock - except
-             * behind Android's WSI; see the declaration. */
-            present_queue_index = vulkan_select_present_queue_index(
-                  vulkan_wsi_is_android(vk),
-                  queue_properties[i].queueCount);
             found_queue = true;
             break;
          }
@@ -1114,8 +1061,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 #endif
 
       queue_info.queueFamilyIndex         = vk->context.graphics_queue_index;
-      queue_info.queueCount               = present_queue_index ? 2 : 1;
-      queue_info.pQueuePriorities         = priorities;
+      queue_info.queueCount               = 1;
+      queue_info.pQueuePriorities         = &one;
 
       device_info.queueCreateInfoCount    = 1;
       device_info.pQueueCreateInfos       = &queue_info;
@@ -1125,10 +1072,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
       if (cached_device_vk)
       {
-         vk->context.device  = cached_device_vk;
-         cached_device_vk    = NULL;
-         /* The device was created once, with the queues it has. */
-         present_queue_index = cached_present_queue_index_vk;
+         vk->context.device = cached_device_vk;
+         cached_device_vk   = NULL;
 
          if (cached_destroy_device_vk)
          {
@@ -1184,19 +1129,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    {
       vkGetDeviceQueue(vk->context.device,
             vk->context.graphics_queue_index, 0, &vk->context.queue);
-      vk->context.present_queue = vk->context.queue;
-      if (present_queue_index)
-      {
-         vkGetDeviceQueue(vk->context.device,
-               vk->context.graphics_queue_index, present_queue_index,
-               &vk->context.present_queue);
-         RARCH_LOG("[Vulkan] Presenting on queue %u of family %u.\n",
-               present_queue_index, vk->context.graphics_queue_index);
-      }
    }
-   else if (vk->context.present_queue == VK_NULL_HANDLE)
-      vk->context.present_queue = vk->context.queue;
-   cached_present_queue_index_vk = present_queue_index;
 
 #ifdef HAVE_THREADS
    vk->context.queue_lock = slock_new();
@@ -1646,19 +1579,16 @@ static void vulkan_context_wait_frames(gfx_ctx_vulkan_data_t *vk)
 
    /* The presents are not on those fences. vkQueuePresentKHR returns
     * before the presentation engine has waited on the frame's
-    * swapchain semaphore, and that wait is a queue operation on
-    * present_queue - on its own queue, ordered with nothing the frame
-    * fences cover, and on the shared queue behind the last frame's
-    * fence rather than under it. Destroying the semaphore, or the
-    * swapchain, while that wait is pending is what Mali's Android WSI
-    * answered with a failed QueueSignalReleaseImageANDROID on every
-    * present after (#19601). An empty submission behind the presents
-    * signals its fence once they have executed, on the present queue
-    * alone; the rest of the device is still not drained. */
+    * swapchain semaphore, and that wait is a queue operation, behind
+    * the last frame's fence rather than under it. Destroying the
+    * semaphore, or the swapchain, while that wait is pending is what
+    * Mali's Android WSI answered with a failed
+    * QueueSignalReleaseImageANDROID on every present after (#19601).
+    * An empty submission behind the presents signals its fence once
+    * they have executed; the rest of the device is still not
+    * drained. */
    if (vk->context.present_pending)
    {
-      VkQueue present_queue = vk->context.present_queue
-         ? vk->context.present_queue : vk->context.queue;
       VkFence present_fence = vk->context.present_fence;
 
       if (present_fence == VK_NULL_HANDLE)
@@ -1677,13 +1607,11 @@ static void vulkan_context_wait_frames(gfx_ctx_vulkan_data_t *vk)
       {
          VkResult res;
 #ifdef HAVE_THREADS
-         if (present_queue == vk->context.queue)
-            slock_lock(vk->context.queue_lock);
+         slock_lock(vk->context.queue_lock);
 #endif
-         res = vkQueueSubmit(present_queue, 0, NULL, present_fence);
+         res = vkQueueSubmit(vk->context.queue, 0, NULL, present_fence);
 #ifdef HAVE_THREADS
-         if (present_queue == vk->context.queue)
-            slock_unlock(vk->context.queue_lock);
+         slock_unlock(vk->context.queue_lock);
 #endif
          if (res == VK_SUCCESS)
          {
@@ -3625,7 +3553,6 @@ retro_time_t vulkan_last_present_time(gfx_ctx_vulkan_data_t *vk)
 
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
 {
-   VkQueue present_queue;
    VkPresentInfoKHR present;
    VkPresentTimesInfoGOOGLE times;
    VkPresentTimeGOOGLE ptime;
@@ -3653,18 +3580,11 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
       present.pNext              = &times;
    }
 
-   /* On its own queue the present holds no lock, and a blocking
-    * present (the exclusive-fullscreen path on some drivers waits for
-    * the display inside the call) holds nothing a hardware core's
-    * submissions need. Sharing the graphics queue it takes queue_lock,
-    * as any use of that queue must. */
-   present_queue = vk->context.present_queue
-      ? vk->context.present_queue : vk->context.queue;
+   /* Better hope QueuePresent doesn't block D: */
 #ifdef HAVE_THREADS
-   if (present_queue == vk->context.queue)
-      slock_lock(vk->context.queue_lock);
+   slock_lock(vk->context.queue_lock);
 #endif
-   err = vkQueuePresentKHR(present_queue, &present);
+   err = vkQueuePresentKHR(vk->context.queue, &present);
    /* Queued whatever it returned: a failed present has still put its
     * semaphore wait on the queue, or may have, and the fence taken
     * before the next rebuild covers either. */
@@ -3698,7 +3618,6 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
    }
 
 #ifdef HAVE_THREADS
-   if (present_queue == vk->context.queue)
-      slock_unlock(vk->context.queue_lock);
+   slock_unlock(vk->context.queue_lock);
 #endif
 }

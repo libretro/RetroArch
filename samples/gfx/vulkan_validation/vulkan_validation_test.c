@@ -659,58 +659,10 @@ static int test_memory_type_selection(void)
    return 0;
 }
 
-/* The present-queue policy (#19601): the frontend presents on the
- * family's second queue where there is one, except behind Android's
- * WSI, where Mali fails QueueSignalReleaseImageANDROID for a present
- * whose semaphore another queue signalled - every present failed, the
- * swapchain was rebuilt each frame and the menu froze. The Android WSI
- * cannot run here, so the policy is checked where it is decided. Needs
- * no device or display. */
-static int test_present_queue_policy(void)
-{
-   static const struct
-   {
-      bool     android;
-      uint32_t count;
-      uint32_t want;
-   } cases[] = {
-      { false, 1, 0 },
-      { false, 2, 1 },
-      { false, 4, 1 },
-      { true,  1, 0 },
-      { true,  2, 0 },
-      { true,  4, 0 },
-   };
-   unsigned i;
-   int fail = 0;
-
-   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
-   {
-      uint32_t got = vulkan_select_present_queue_index(
-            cases[i].android, cases[i].count);
-      if (got != cases[i].want)
-      {
-         fprintf(stderr, "FAIL: %s WSI, %u queue(s) in the family:"
-               " presents on queue %u, want %u\n",
-               cases[i].android ? "Android" : "non-Android",
-               cases[i].count, got, cases[i].want);
-         fail = 1;
-      }
-   }
-   if (!fail)
-      printf("[pass] presents stay on the graphics queue behind"
-            " Android's WSI, and take a second queue elsewhere\n");
-   return fail;
-}
-
 int main(void)
 {
    int skipped = 0;
    int ret     = 0;
-
-   /* Pure policy, ahead of the display check so it runs everywhere. */
-   if (test_present_queue_policy())
-      return 1;
 
    if (!(s_dpy = XOpenDisplay(NULL)))
    {

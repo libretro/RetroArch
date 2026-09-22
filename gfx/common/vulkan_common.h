@@ -217,15 +217,6 @@ typedef struct vulkan_context
    VkPhysicalDevice gpu;
    VkDevice device;
    VkQueue queue;
-   /* The queue presents go to. Distinct from queue where the device
-    * offers a second queue in the graphics family - requested on the
-    * default path, and accepted as presentation_queue from a core that
-    * creates the device - so vkQueuePresentKHR needs no lock at all:
-    * only the frame thread touches it, and a hardware core submitting
-    * through lock_queue is never held behind a present that is waiting
-    * on the display. Equal to queue when the family has one queue, in
-    * which case the present shares queue_lock as before. */
-   VkQueue present_queue;
 
    VkPhysicalDeviceProperties gpu_properties;
    VkPhysicalDeviceMemoryProperties memory_properties;
@@ -264,7 +255,7 @@ typedef struct vulkan_context
     * drained the whole device to be destroyed. */
    VkSemaphore swapchain_stale_acquire_semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    unsigned    num_stale_acquire_semaphores;
-   /* Fence an empty submission on present_queue signals, taken behind
+   /* Fence an empty submission on the queue signals, taken behind
     * the presents when a swapchain is rebuilt or torn down: a present
     * is a queue operation that vkQueuePresentKHR returns ahead of, its
     * wait on the frame's swapchain semaphore is not covered by any
@@ -417,15 +408,6 @@ void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
 
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type);
-
-/* Which queue of the graphics family the frontend presents on: 1 when
- * the family has a second queue, so presents stay off the graphics
- * queue and its lock, and 0 otherwise. Always 0 behind Android's WSI:
- * there the loader turns a present's semaphore wait into a sync fd
- * through the driver's QueueSignalReleaseImageANDROID, and Mali fails
- * that call for a semaphore signalled on another queue (#19601). */
-uint32_t vulkan_select_present_queue_index(bool android_wsi,
-      uint32_t family_queue_count);
 
 #ifdef __APPLE__
 /* Returns the version string of the MoltenVK implementation in use,
