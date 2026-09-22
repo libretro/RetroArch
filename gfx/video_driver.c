@@ -2034,6 +2034,19 @@ float video_display_server_get_refresh_rate(void)
    return 0.0f;
 }
 
+/* The largest swap interval that can be honoured end to end, or 0 when
+ * nothing in the chain has a limit. Asked of the video driver, which is
+ * where a limit lives today; a server that gains one of its own answers
+ * here alongside it, and the smaller of the two wins. */
+unsigned video_display_server_get_swap_interval_cap(void)
+{
+   video_driver_state_t *video_st     = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+   if (poke && poke->get_swap_interval_cap)
+      return poke->get_swap_interval_cap(video_st->data);
+   return 0;
+}
+
 bool video_display_server_get_video_output_size(
       unsigned *width, unsigned *height, char *s, size_t len)
 {

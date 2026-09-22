@@ -415,7 +415,7 @@ enum runloop_pace_source
    RUNLOOP_PACE_DISPLAY  = (1 << 6)
 };
 
-/* The three pacing decisions the runloop makes every iteration, here
+/* The pacing decisions the runloop makes every iteration, here
  * rather than in runloop.c so samples/runloop/pacing can run the
  * shipping versions instead of a copy that drifts from them. Each is
  * pure: no state, no clock, nothing to mock. */
@@ -524,6 +524,42 @@ static INLINE retro_time_t runloop_pace_margin_update(retro_time_t margin,
 static INLINE bool runloop_pace_sample_usable(retro_time_t delta_us)
 {
    return delta_us > 0 && delta_us < 250000;
+}
+
+/* The swap interval 'Auto' derives for a display/content pair: the
+ * number of display frames one content frame is held for. Meaningful
+ * only as the whole multiple the display rate actually is of the
+ * content rate, within @max_timing_skew, and only up to @ceiling, which
+ * the display drivers present a frame that many times to honour.
+ *
+ * 1 for everything else, so vsync paces at the display rate and rate
+ * control absorbs the difference. A multiple that is short of the true
+ * one is worse than none: it holds each content frame for fewer display
+ * frames than the rate calls for and paces the loop fast, so a ratio
+ * past @ceiling falls back rather than clamping into range. */
+static INLINE unsigned runloop_video_swap_interval_for(float timing_fps,
+      float input_fps, float max_timing_skew, unsigned ceiling)
+{
+   float    swap_ratio;
+   float    timing_skew;
+   unsigned swap_integer;
+
+   if (     (input_fps  <= 0.0f)
+         || (timing_fps <= 0.0f)
+         || (input_fps   > timing_fps))
+      return 1;
+
+   swap_ratio   = timing_fps / input_fps;
+   swap_integer = (unsigned)(swap_ratio + 0.5f);
+
+   if ((swap_integer < 1) || (swap_integer > ceiling))
+      return 1;
+
+   timing_skew  = 1.0f - input_fps / (timing_fps / (float)swap_integer);
+   if (timing_skew < 0.0f)
+      timing_skew = -timing_skew;
+
+   return (timing_skew <= max_timing_skew) ? swap_integer : 1;
 }
 
 /* Everything the pace decision reads, gathered once per iteration into

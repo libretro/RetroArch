@@ -34,7 +34,7 @@ S_BOOL(video_vsync, VIDEO_VSYNC,
       "Synchronize the output video of the graphics card to the refresh rate of the screen. Recommended.")
 S_UINT(video_swap_interval, VIDEO_SWAP_INTERVAL,
       "video_swap_interval",
-      DEFAULT_SWAP_INTERVAL, SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, 0, 4, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_swap_interval,
+      DEFAULT_SWAP_INTERVAL, SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, 0, MAXIMUM_SWAP_INTERVAL, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_swap_interval,
       "VSync Swap Interval",
       "Use a custom swap interval for VSync. Effectively reduces monitor refresh rate by the specified factor. 'Auto' sets factor based on core-reported frame rate, providing improved frame pacing when running e.g. 30 fps content on a 60 Hz display or 60 fps content on a 120 Hz display.")
 S_UINT_H(video_shader_subframes, VIDEO_SHADER_SUBFRAMES,

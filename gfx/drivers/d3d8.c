@@ -2025,9 +2025,10 @@ static void d3d8_make_d3dpp(void *data,
       unsigned video_swap_interval = runloop_get_video_swap_interval(
             settings->uints.video_swap_interval);
 
+      /* Four is the largest interval the presentation parameter can
+       * carry, so anything above it presents at four. */
       switch (video_swap_interval)
       {
-         default:
          case 1:
             FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_ONE;
             break;
@@ -2037,6 +2038,7 @@ static void d3d8_make_d3dpp(void *data,
          case 3:
             FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_THREE;
             break;
+         default:
          case 4:
             FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_FOUR;
             break;
@@ -3256,6 +3258,15 @@ static uintptr_t d3d8_load_texture_compressed(void *data,
    return (uintptr_t)tex;
 }
 
+/* The Direct3D 8 present interval is a presentation parameter whose
+ * largest vsync-locked value is D3DPRESENT_INTERVAL_FOUR, so this
+ * driver holds a frame for at most four display intervals. */
+static unsigned d3d8_get_swap_interval_cap(void *data)
+{
+   (void)data;
+   return 4;
+}
+
 static const video_poke_interface_t d3d_poke_interface = {
    d3d8_get_flags,
    d3d8_load_texture,
@@ -3289,7 +3300,21 @@ static const video_poke_interface_t d3d_poke_interface = {
    NULL, /* set_hdr_scanlines */
    NULL, /* set_hdr_subpixel_layout */
    d3d8_supports_texture_format,
-   d3d8_load_texture_compressed
+   d3d8_load_texture_compressed,
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   NULL, /* update_texture */
+   d3d8_get_swap_interval_cap
 };
 
 static void d3d8_get_poke_interface(void *data,

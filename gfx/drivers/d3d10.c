@@ -3932,6 +3932,15 @@ static uintptr_t d3d10_gfx_load_texture_compressed(void* video_data,
    return (uintptr_t)texture;
 }
 
+/* DXGI carries the present interval as the SyncInterval argument of
+ * Present, whose largest value is four, so this driver holds a frame
+ * for at most four display intervals. */
+static unsigned d3d10_get_swap_interval_cap(void *data)
+{
+   (void)data;
+   return 4;
+}
+
 static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_get_flags,
    d3d10_gfx_load_texture,
@@ -3975,7 +3984,21 @@ static const video_poke_interface_t d3d10_poke_interface = {
    NULL, /* set_hdr_scanlines */
    NULL, /* set_hdr_subpixel_layout */
    d3d10_gfx_supports_texture_format,
-   d3d10_gfx_load_texture_compressed
+   d3d10_gfx_load_texture_compressed,
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   NULL, /* update_texture */
+   d3d10_get_swap_interval_cap
 };
 
 static void d3d10_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

@@ -291,9 +291,10 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
       unsigned video_swap_interval = runloop_get_video_swap_interval(
             settings->uints.video_swap_interval);
 
+      /* Four is the largest interval the presentation parameter can
+       * carry, so anything above it presents at four. */
       switch (video_swap_interval)
       {
-         default:
          case 1:
             FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_ONE;
             break;
@@ -303,6 +304,7 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
          case 3:
             FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_THREE;
             break;
+         default:
          case 4:
             FS_PRESENTINTERVAL(d3dpp) = D3DPRESENT_INTERVAL_FOUR;
             break;

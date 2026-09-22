@@ -975,6 +975,15 @@ typedef struct video_poke_interface
     * reports that so callers never post updates it cannot run. */
    bool (*update_texture)(void *video_data, uintptr_t id,
          const struct texture_image *ti, bool threaded);
+
+   /* The largest swap interval this driver can hold a frame for, or 0
+    * when it has no limit of its own. The D3D APIs carry the interval
+    * as a present parameter that stops at four, so those drivers
+    * report that bound and the derived interval stays inside it - a
+    * value the driver cannot express would otherwise present at one
+    * while the audio rate was scaled for the full multiple. Drivers
+    * that hold a frame for as long as they are asked leave it NULL. */
+   unsigned (*get_swap_interval_cap)(void *data);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen

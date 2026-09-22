@@ -191,6 +191,8 @@ void video_display_server_set_screen_orientation(enum rotation rotation);
 
 float video_display_server_get_refresh_rate(void);
 
+unsigned video_display_server_get_swap_interval_cap(void);
+
 bool video_display_server_get_video_output_size(
       unsigned *width, unsigned *height, char *s, size_t len);
 

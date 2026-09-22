@@ -504,6 +504,16 @@
  */
 #define DEFAULT_SWAP_INTERVAL 1
 
+/* The range a swap interval may take, whether the user picks one or
+ * 'Auto' derives it from the display/content ratio. The ceiling covers
+ * the highest whole multiple a panel presents content at: 480 Hz
+ * against 30 fps is 16, 360 Hz against 24 fps is 15.
+ * runloop_video_swap_interval_for() reads it too, so the range offered
+ * and the range derived cannot drift apart.
+ */
+#define MINIMUM_SWAP_INTERVAL 1
+#define MAXIMUM_SWAP_INTERVAL 16
+
 /* Threaded video: the core runs on one thread and the video driver
  * presents on another. Off by default, as it has always been; the
  * Switch keeps its own default. When it is on, hardware-rendered cores

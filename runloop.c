@@ -5165,12 +5165,10 @@ void runloop_set_video_swap_interval(
    float input_fps                = video_st->av_info.timing.fps;
    float timing_fps               = retro_atomic_load_acquire_int(&video_st->crt_switching_active)
          ? input_fps : video_refresh_rate;
-   float swap_ratio               = 1;
-   float timing_skew              = 0;
    unsigned swap_interval_config  = settings->uints.video_swap_interval;
    unsigned black_frame_insertion = settings->uints.video_black_frame_insertion;
    unsigned shader_subframes      = settings->uints.video_shader_subframes;
-   unsigned swap_integer          = 1;
+   unsigned ceiling;
    bool vrr_runloop_enable        = settings->bools.vrr_runloop_enable;
 
    /* If automatic swap interval selection is
@@ -5183,43 +5181,27 @@ void runloop_set_video_swap_interval(
 
    /* > If VRR is enabled, swap interval is irrelevant,
     *   just set to 1
-    * > If core fps is higher than display refresh rate,
-    *   set swap interval to 1
-    * > If core fps or display refresh rate are zero,
-    *   set swap interval to 1
     * > If BFI is active set swap interval to 1
     * > If Shader Subframes active, set swap interval to 1 */
    if (   (vrr_runloop_enable)
        || (black_frame_insertion)
        || (shader_subframes > 1)
-       || (input_fps   > timing_fps)
-       || (input_fps  <= 0.0f)
-       || (timing_fps <= 0.0f)
       )
    {
       runloop_st->video_swap_interval_auto = 1;
       return;
    }
 
-   /* Check whether display refresh rate is an integer
-    * multiple of core fps (within timing skew tolerance) */
-   swap_ratio   = timing_fps / input_fps;
-   swap_integer = (unsigned)(swap_ratio + 0.5f);
-
-   /* > Sanity check: swap interval must be in the
-    *   range [1,4] - if we are outside this, then
-    *   bail... */
-   if ((swap_integer < 1) || (swap_integer > 4))
-   {
-      runloop_st->video_swap_interval_auto = 1;
-      return;
-   }
-
-   timing_skew = fabs(1.0f - input_fps / (timing_fps / (float)swap_integer));
+   /* A driver that cannot hold a frame for the full multiple takes the
+    * ceiling down to what it can present, so the interval derived and
+    * the interval presented are the same number. */
+   ceiling = video_display_server_get_swap_interval_cap();
+   if ((ceiling == 0) || (ceiling > MAXIMUM_SWAP_INTERVAL))
+      ceiling = MAXIMUM_SWAP_INTERVAL;
 
    runloop_st->video_swap_interval_auto =
-         (timing_skew <= audio_max_timing_skew) ?
-               swap_integer : 1;
+         runloop_video_swap_interval_for(timing_fps, input_fps,
+               audio_max_timing_skew, ceiling);
 }
 
 unsigned runloop_get_video_swap_interval(
