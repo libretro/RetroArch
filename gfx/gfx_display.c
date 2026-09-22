@@ -850,15 +850,22 @@ void gfx_display_draw_quad(
 void gfx_display_draw_texture_slice(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned w, unsigned h,
-      unsigned new_w, unsigned new_h,
-      unsigned width, unsigned height,
+      unsigned video_dims,
+      int x, int y, unsigned src_dims,
+      unsigned dst_dims,
+      unsigned dims,
       float *color, unsigned offset, float scale_factor, uintptr_t texture,
       math_matrix_4x4 *mymat
 )
 {
+   unsigned video_width              = VIDEO_SCALE_W(video_dims);
+   unsigned video_height             = VIDEO_SCALE_H(video_dims);
+   unsigned w                        = VIDEO_SCALE_W(src_dims);
+   unsigned h                        = VIDEO_SCALE_H(src_dims);
+   unsigned new_w                    = VIDEO_SCALE_W(dst_dims);
+   unsigned new_h                    = VIDEO_SCALE_H(dst_dims);
+   unsigned width                    = VIDEO_SCALE_W(dims);
+   unsigned height                   = VIDEO_SCALE_H(dims);
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
