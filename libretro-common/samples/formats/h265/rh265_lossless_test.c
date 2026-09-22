@@ -24,7 +24,9 @@
 
 #include <formats/rmp4.h>
 #include <formats/rh265.h>
+#ifdef HAVE_THREADS
 #include <rthreads/tpool.h>
+#endif
 
 static int fails;
 static char dir[256];
@@ -313,36 +315,6 @@ static void oracle_case(const char *name, const char *src, int frames,
    free(ref);
 }
 
-/* A stream the decoder is expected to refuse whole: it hands out no
- * pictures, rather than wrong ones. */
-static void refused_case(const char *name, const char *src, int frames,
-      const char *pix, const char *x265)
-{
-   char mp4[512], yuv[512], label[160];
-   uint8_t *ref;
-   size_t rlen;
-   int nf = 0;
-   long bad;
-   snprintf(mp4, sizeof(mp4), "%s/%s.mp4", dir, name);
-   snprintf(yuv, sizeof(yuv), "%s/%s.yuv", dir, name);
-   snprintf(label, sizeof(label), "%s (%s %s) refused as out of profile, no picture handed out",
-         name, pix, x265);
-   if (run("ffmpeg -v error -y -f lavfi -i \"%s\" -frames:v %d -c:v libx265 "
-           "-pix_fmt %s %s -tag:v hvc1 '%s' && "
-           "ffmpeg -v error -y -i '%s' -fps_mode passthrough -f rawvideo -pix_fmt %s '%s'",
-           src, frames, pix, x265, mp4, mp4, pix, yuv) != 0
-       || !(ref = slurp(yuv, &rlen)))
-   {
-      check(label, 0);
-      return;
-   }
-   bad = compare(mp4, ref, rlen, ref, 0, &nf);
-   printf("      %d frames handed out\n", nf);
-   check(label, nf == 0);
-   (void)bad;
-   free(ref);
-}
-
 int main(void)
 {
    /* RH265_FILE=path RH265_REF=path.yuv: decode one file against its
@@ -374,7 +346,9 @@ int main(void)
       const char *te = getenv("RH265_FILE_THREADS");
       if (!ref)
          return 2;
+      #ifdef HAVE_THREADS
       g_pool = tpool_create_with_stack_size(3, 512 * 1024);
+      #endif
       bad = compare(getenv("RH265_FILE"), ref, rlen, ref, 0, &nf);
       printf("one thread: %d frames, %ld differing samples, %d reads short of their rows\n",
             nf, bad, rh265_video_ref_wait_misses());
@@ -402,7 +376,9 @@ int main(void)
    if (run("mkdir -p '%s'", dir) != 0)
       return 2;
 
+   #ifdef HAVE_THREADS
    g_pool = tpool_create_with_stack_size(3, 512 * 1024);
+   #endif
    if (!g_pool)
       printf("no thread pool: the concurrent decodes are skipped\n");
    printf("rh265 byte-exact vs ffmpeg - one thread, four contexts, four pictures concurrently, rows held back:\n");
@@ -441,8 +417,10 @@ int main(void)
          "-x265-params crf=24:sao=1:deblock=1:bframes=3:b-pyramid=1:wpp=0:frame-threads=1");
    oracle_case("lossy_ctu16",   "mandelbrot=s=176x144:r=10", 6, "yuv420p",
          "-x265-params crf=24:ctu=16:sao=1:deblock=1:bframes=2:wpp=0:frame-threads=1");
+   #ifdef HAVE_THREADS
    if (g_pool)
       tpool_destroy((tpool_t*)g_pool);
+   #endif
    printf("rh265_lossless_test: %s (%d failure%s)\n", fails ? "FAIL" : "PASS",
          fails, fails == 1 ? "" : "s");
    return fails ? 1 : 0;

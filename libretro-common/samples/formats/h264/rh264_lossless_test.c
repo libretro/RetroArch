@@ -39,7 +39,9 @@
 
 #include <formats/rmp4.h>
 #include <formats/rh264.h>
+#ifdef HAVE_THREADS
 #include <rthreads/tpool.h>
+#endif
 
 static int fails;
 static char dir[256];
@@ -611,7 +613,9 @@ int main(void)
       const char *te = getenv("RH264_FILE_THREADS");
       if (!ref)
          return 2;
+      #ifdef HAVE_THREADS
       g_pool = tpool_create_with_stack_size(3, 512 * 1024);
+      #endif
       bad = compare(getenv("RH264_FILE"), ref, rlen, ref, 0, &nf);
       printf("one thread: %d frames, %ld differing samples, %d reads short of their rows\n",
             nf, bad, rh264_video_ref_wait_misses());
@@ -663,7 +667,9 @@ int main(void)
     * and in CABAC the contexts still see it.  Intra macroblocks amid
     * inter ones in P / B pictures exercise every neighbour position. */
    printf("constrained_intra_pred, byte-exact vs ffmpeg:\n");
+   #ifdef HAVE_THREADS
    g_pool = tpool_create_with_stack_size(3, 512 * 1024);
+   #endif
    if (!g_pool)
       printf("no thread pool: the concurrent decodes are skipped\n");
    oracle_case("cip_cabac",  "testsrc2=s=176x144:r=15",   8, "yuv420p", "-crf 20",
