@@ -485,29 +485,6 @@ void autosave_unlock(void)
    }
 }
 
-/**
- * autosave_mark_dirty:
- *
- * Marks all autosave buffers as dirty so the
- * autosave thread will compare and flush on
- * next wake-up.  Call after any SRAM write
- * that does not go through autosave_lock/unlock.
- **/
-void autosave_mark_dirty(void)
-{
-   unsigned i;
-
-   for (i = 0; i < autosave_state.num; i++)
-   {
-      autosave_t *handle = autosave_state.list[i];
-      if (handle)
-      {
-         slock_lock(handle->lock);
-         handle->flags |= AUTOSAVE_FLAG_DIRTY;
-         slock_unlock(handle->lock);
-      }
-   }
-}
 #endif
 
 static bool content_get_memory(retro_ctx_memory_info_t *mem_info,
