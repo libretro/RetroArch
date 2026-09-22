@@ -1019,8 +1019,8 @@ static void hub75_viewport_info(void *data, struct video_viewport *vp)
    hub75_t *hub75 = (hub75_t*)data;
    if (!hub75 || !vp)
       return;
-   vp->x           = (int)hub75->viewport_x;
-   vp->y           = (int)hub75->viewport_y;
+   vp->pos         = VIDEO_POS_PACK((int)hub75->viewport_x,
+         (int)hub75->viewport_y);
    vp->dims        = VIDEO_SCALE_PACK(hub75->viewport_width,
          hub75->viewport_height);
    vp->full_dims   = VIDEO_SCALE_PACK(hub75->canvas_width,

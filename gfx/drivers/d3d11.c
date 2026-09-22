@@ -2295,8 +2295,8 @@ static void d3d11_update_viewport(d3d11_video_t *d3d11, bool force_full)
    video_driver_update_viewport(&d3d11->vp, force_full,
          (d3d11->flags & D3D11_ST_FLAG_KEEP_ASPECT) ? true : false, true);
 
-   d3d11->frame.viewport.TopLeftX = d3d11->vp.x;
-   d3d11->frame.viewport.TopLeftY = d3d11->vp.y;
+   d3d11->frame.viewport.TopLeftX = VIDEO_POS_X(d3d11->vp.pos);
+   d3d11->frame.viewport.TopLeftY = VIDEO_POS_Y(d3d11->vp.pos);
    d3d11->frame.viewport.Width    = VIDEO_SCALE_W(d3d11->vp.dims);
    d3d11->frame.viewport.Height   = VIDEO_SCALE_H(d3d11->vp.dims);
    d3d11->frame.viewport.MinDepth = 0.0f;
@@ -6375,8 +6375,8 @@ static bool d3d11_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
    if (SUCCEEDED(d3d11->context->lpVtbl->Map(d3d11->context,
                BackBufferStaging, 0, D3D11_MAP_READ, 0, &Map)))
    {
-      unsigned vp_x      = (d3d11->vp.x > 0) ? d3d11->vp.x : 0;
-      unsigned vp_y      = (d3d11->vp.y > 0) ? d3d11->vp.y : 0;
+      unsigned vp_x      = (VIDEO_POS_X(d3d11->vp.pos) > 0) ? VIDEO_POS_X(d3d11->vp.pos) : 0;
+      unsigned vp_y      = (VIDEO_POS_Y(d3d11->vp.pos) > 0) ? VIDEO_POS_Y(d3d11->vp.pos) : 0;
       unsigned vp_width  = VIDEO_SCALE_W(d3d11->vp.dims);
       unsigned vp_height = VIDEO_SCALE_H(d3d11->vp.dims);
       unsigned full_w    = VIDEO_SCALE_W(d3d11->vp.full_dims);
@@ -6492,8 +6492,8 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    BackBufferData = (const uint8_t*)Map.pData;
 
    {
-      unsigned vp_x      = (d3d11->vp.x > 0) ? d3d11->vp.x : 0;
-      unsigned vp_y      = (d3d11->vp.y > 0) ? d3d11->vp.y : 0;
+      unsigned vp_x      = (VIDEO_POS_X(d3d11->vp.pos) > 0) ? VIDEO_POS_X(d3d11->vp.pos) : 0;
+      unsigned vp_y      = (VIDEO_POS_Y(d3d11->vp.pos) > 0) ? VIDEO_POS_Y(d3d11->vp.pos) : 0;
       unsigned vp_width  = VIDEO_SCALE_W(d3d11->vp.dims);
       unsigned vp_height = VIDEO_SCALE_H(d3d11->vp.dims);
       unsigned full_w    = VIDEO_SCALE_W(d3d11->vp.full_dims);

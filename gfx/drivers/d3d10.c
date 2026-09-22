@@ -1596,8 +1596,8 @@ static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
    video_driver_update_viewport(&d3d10->vp, force_full,
          (d3d10->flags & D3D10_ST_FLAG_KEEP_ASPECT) ? true : false, true);
 
-   d3d10->frame.viewport.TopLeftX  = d3d10->vp.x;
-   d3d10->frame.viewport.TopLeftY  = d3d10->vp.y;
+   d3d10->frame.viewport.TopLeftX  = VIDEO_POS_X(d3d10->vp.pos);
+   d3d10->frame.viewport.TopLeftY  = VIDEO_POS_Y(d3d10->vp.pos);
    d3d10->frame.viewport.Width     = VIDEO_SCALE_W(d3d10->vp.dims);
    d3d10->frame.viewport.Height    = VIDEO_SCALE_H(d3d10->vp.dims);
    d3d10->frame.viewport.MinDepth  = 0.0f;

@@ -322,8 +322,8 @@ static void vg_calculate_quad(vg_t *vg,
    /* OpenVG uses a bottom-left origin coordinate system */
    video_driver_update_viewport(&vp, false, vg->keep_aspect, false);
 
-   vg->x1 = vp.x;
-   vg->y1 = vp.y;
+   vg->x1 = VIDEO_POS_X(vp.pos);
+   vg->y1 = VIDEO_POS_Y(vp.pos);
    vg->x2 = VIDEO_SCALE_W(vp.dims);
    vg->y2 = VIDEO_SCALE_H(vp.dims);
 

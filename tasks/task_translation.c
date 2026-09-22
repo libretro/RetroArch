@@ -962,8 +962,7 @@ bool run_translation_service(settings_t *settings, bool paused)
           * RETRO_HW_FRAME_BUFFER_VALID is treated identically to
           * "no cached frame yet" here: in both cases there are no
           * CPU-side pixels to read directly. */
-         vp.x                           = 0;
-         vp.y                           = 0;
+         vp.pos                         = VIDEO_POS_PACK(0, 0);
          vp.dims                        = 0;
          vp.full_dims                   = 0;
 

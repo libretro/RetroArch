@@ -6724,8 +6724,8 @@ bool rgui_is_video_config_equal(
    return    (config_a->aspect_ratio_idx == config_b->aspect_ratio_idx)
           && (VIDEO_SCALE_W(config_a->vp.dims)   == VIDEO_SCALE_W(config_b->vp.dims))
           && (VIDEO_SCALE_H(config_a->vp.dims)  == VIDEO_SCALE_H(config_b->vp.dims))
-          && (config_a->vp.x       == config_b->vp.x)
-          && (config_a->vp.y       == config_b->vp.y);
+          && (VIDEO_POS_X(config_a->vp.pos)       == VIDEO_POS_X(config_b->vp.pos))
+          && (VIDEO_POS_Y(config_a->vp.pos)       == VIDEO_POS_Y(config_b->vp.pos));
 }
 
 static void rgui_get_video_config(
@@ -6739,8 +6739,8 @@ static void rgui_get_video_config(
    video_settings->aspect_ratio_idx = video_aspect_ratio_idx;
    video_settings->vp.dims          = VIDEO_SCALE_PACK(custom_vp->width,
          custom_vp->height);
-   video_settings->vp.x             = custom_vp->x;
-   video_settings->vp.y             = custom_vp->y;
+   video_settings->vp.pos           = VIDEO_POS_PACK(custom_vp->x,
+         custom_vp->y);
 }
 
 /* Main thread only: writes the aspect index and custom viewport into
@@ -6755,8 +6755,8 @@ static void rgui_apply_video_config(
    settings->uints.video_aspect_ratio_idx = video_settings->aspect_ratio_idx;
    custom_vp->width                       = VIDEO_SCALE_W(video_settings->vp.dims);
    custom_vp->height                      = VIDEO_SCALE_H(video_settings->vp.dims);
-   custom_vp->x                           = video_settings->vp.x;
-   custom_vp->y                           = video_settings->vp.y;
+   custom_vp->x                           = VIDEO_POS_X(video_settings->vp.pos);
+   custom_vp->y                           = VIDEO_POS_Y(video_settings->vp.pos);
 
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
          (float)custom_vp->width / custom_vp->height;
@@ -6913,8 +6913,7 @@ static void rgui_update_menu_viewport(
     * ASPECT_RATIO_CUSTOM path add padding * bias on top of vp.x,
     * which pushed the menu hard against the right/bottom edge on
     * wide screens. */
-   rgui->menu_video_settings.vp.x = 0;
-   rgui->menu_video_settings.vp.y = 0;
+   rgui->menu_video_settings.vp.pos = VIDEO_POS_PACK(0, 0);
 }
 
 /* Dual-context: rgui_render(), init, populate and toggle call this

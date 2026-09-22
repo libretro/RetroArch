@@ -535,8 +535,8 @@ static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
       return;
 
    /* Default fallback: center of the viewport */
-   mouse_x = viewport.x + VIDEO_SCALE_W(viewport.dims)  / 2;
-   mouse_y = viewport.y + VIDEO_SCALE_H(viewport.dims) / 2;
+   mouse_x = VIDEO_POS_X(viewport.pos) + VIDEO_SCALE_W(viewport.dims)  / 2;
+   mouse_y = VIDEO_POS_Y(viewport.pos) + VIDEO_SCALE_H(viewport.dims) / 2;
 
    /* Sync to OS cursor position; fall back to center if it fails */
    if (!winraw_sync_mouse_to_cursor(wr))

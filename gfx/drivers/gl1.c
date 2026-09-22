@@ -1230,7 +1230,7 @@ static void gl1_render_overlay(gl1_t *gl,
    gl->coords.color     = gl->white_color_ptr;
    gl->coords.vertices  = 4;
    if (gl->flags & GL1_FLAG_OVERLAY_FULLSCREEN)
-      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+      glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
 }
 
 static void gl1_free_overlay(gl1_t *gl)
@@ -1604,7 +1604,7 @@ static void gl1_set_viewport(gl1_t *gl1,
    video_driver_update_viewport(&gl1->vp, force_full,
          (gl1->flags & GL1_FLAG_KEEP_ASPECT) ? true : false, false);
 
-   glViewport(gl1->vp.x, gl1->vp.y, VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
+   glViewport(VIDEO_POS_X(gl1->vp.pos), VIDEO_POS_Y(gl1->vp.pos), VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
    gl1_set_projection(gl1, &gl1_default_ortho, allow_rotate);
 
    /* Set last backbuffer viewport. */
@@ -1918,8 +1918,8 @@ static void gl1_readback(gl1_t *gl1,
 #endif
 
    glReadPixels(
-         (gl1->vp.x > 0) ? gl1->vp.x : 0,
-         (gl1->vp.y > 0) ? gl1->vp.y : 0,
+         (VIDEO_POS_X(gl1->vp.pos) > 0) ? VIDEO_POS_X(gl1->vp.pos) : 0,
+         (VIDEO_POS_Y(gl1->vp.pos) > 0) ? VIDEO_POS_Y(gl1->vp.pos) : 0,
          (VIDEO_SCALE_W(gl1->vp.dims)  > video_width)  ? video_width  : VIDEO_SCALE_W(gl1->vp.dims),
          (VIDEO_SCALE_H(gl1->vp.dims) > video_height) ? video_height : VIDEO_SCALE_H(gl1->vp.dims),
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
@@ -2466,7 +2466,7 @@ static bool gl1_frame(void *data, const void *frame,
             glViewport(0, 0, video_width, video_height);
             gl1_draw_tex(gl1, pot_width, pot_height,
                   width, height, gl1->menu_tex, frame_to_copy, fb_4444);
-            glViewport(gl1->vp.x, gl1->vp.y, VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
+            glViewport(VIDEO_POS_X(gl1->vp.pos), VIDEO_POS_Y(gl1->vp.pos), VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
          }
          else
             gl1_draw_tex(gl1, pot_width, pot_height,
@@ -2605,7 +2605,7 @@ static bool gl1_frame(void *data, const void *frame,
        * the full window viewport still latched and the image is
        * stretched to fill, ignoring the aspect ratio. Same convention
        * as the fullscreen menu-texture branch above. */
-      glViewport(gl1->vp.x, gl1->vp.y, VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
+      glViewport(VIDEO_POS_X(gl1->vp.pos), VIDEO_POS_Y(gl1->vp.pos), VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
    }
 #endif
 
@@ -2857,9 +2857,9 @@ static void gl1_viewport_info(void *data, struct video_viewport *vp)
    *vp             = gl1->vp;
 
    /* Adjust as GL viewport is bottom-up. */
-   top_y           = vp->y + VIDEO_SCALE_H(vp->dims);
+   top_y           = VIDEO_POS_Y(vp->pos) + VIDEO_SCALE_H(vp->dims);
    top_dist        = VIDEO_SCALE_H(vp->full_dims) - top_y;
-   vp->y           = top_dist;
+   VIDEO_POS_PUT_Y(vp->pos, top_dist);
 }
 
 static bool gl1_read_viewport(void *data, uint8_t *buffer, bool is_idle)
@@ -3437,8 +3437,8 @@ static bool gl1_read_viewport_hdr(void *data, uint16_t *buffer,
 
    vw   = gl1->screen_width;
    vh   = gl1->screen_height;
-   vp_x = (gl1->vp.x > 0) ? gl1->vp.x : 0;
-   vp_y = (gl1->vp.y > 0) ? gl1->vp.y : 0;
+   vp_x = (VIDEO_POS_X(gl1->vp.pos) > 0) ? VIDEO_POS_X(gl1->vp.pos) : 0;
+   vp_y = (VIDEO_POS_Y(gl1->vp.pos) > 0) ? VIDEO_POS_Y(gl1->vp.pos) : 0;
    w    = (VIDEO_SCALE_W(gl1->vp.dims)  > vw) ? vw : VIDEO_SCALE_W(gl1->vp.dims);
    h    = (VIDEO_SCALE_H(gl1->vp.dims) > vh) ? vh : VIDEO_SCALE_H(gl1->vp.dims);
    if (!w || !h)

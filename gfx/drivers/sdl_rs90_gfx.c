@@ -1320,8 +1320,7 @@ static void sdl_rs90_gfx_viewport_info(void *data, struct video_viewport *vp)
    if (unlikely(!vid))
       return;
 
-   vp->x      = 0;
-   vp->y      = 0;
+   vp->pos    = VIDEO_POS_PACK(0, 0);
    vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(vid->frame_width,
          vid->frame_height);
 }

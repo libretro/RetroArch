@@ -686,8 +686,7 @@ void App::OnPointer(CoreWindow const& sender, PointerEventArgs const& args)
       uwp_next_input.touch[i].id = id;
 
       /* convert from event coordinates to core and screen coordinates */
-      vp.x           = 0;
-      vp.y           = 0;
+      vp.pos         = VIDEO_POS_PACK(0, 0);
       vp.dims        = 0;
       vp.full_dims   = 0;
 

@@ -1881,7 +1881,7 @@ static void gxm_set_viewport_wrapper(void *data, unsigned vp_width,
    video_driver_update_viewport(&vita->vp, force_full,
    vita->keep_aspect, true);
 
-   gxm_set_viewport(vita->vp.x, vita->vp.y, VIDEO_SCALE_W(vita->vp.dims),
+   gxm_set_viewport(VIDEO_POS_X(vita->vp.pos), VIDEO_POS_Y(vita->vp.pos), VIDEO_SCALE_W(vita->vp.dims),
    VIDEO_SCALE_H(vita->vp.dims));
    gxm_set_projection(vita, &ortho, allow_rotate);
 }
@@ -2099,9 +2099,8 @@ static void gxm_update_viewport(vita_video_t* vita)
    /* For rotated displays, swap x and y */
    if (is_rotated && vita->keep_aspect)
    {
-      unsigned tmp = vita->vp.x;
-      vita->vp.x   = vita->vp.y;
-      vita->vp.y   = tmp;
+      unsigned tmp = VIDEO_POS_X(vita->vp.pos);
+      vita->vp.pos = VIDEO_POS_PACK(VIDEO_POS_Y(vita->vp.pos), tmp);
    }
 
    /* Ensure even dimensions */
@@ -2249,8 +2248,8 @@ static bool gxm_frame(void *data, const void *frame,
          const float rad = vita->rotation * radian;
          float scalex = VIDEO_SCALE_W(vita->vp.dims)  / (float)vita->width;
          float scaley = VIDEO_SCALE_H(vita->vp.dims) / (float)vita->height;
-         gxm_draw_texture_scale_rotate(vita->texture,vita->vp.x,
-               vita->vp.y, scalex, scaley, rad);
+         gxm_draw_texture_scale_rotate(vita->texture,VIDEO_POS_X(vita->vp.pos),
+               VIDEO_POS_Y(vita->vp.pos), scalex, scaley, rad);
       }
    }
 

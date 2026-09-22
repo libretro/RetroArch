@@ -1759,7 +1759,7 @@ static void gl3_pbo_async_readback(gl3_t *gl)
       gl->pbo_readback_index = 0;
    gl->pbo_readback_valid[gl->pbo_readback_index] = true;
 
-   glReadPixels(gl->vp.x, gl->vp.y,
+   glReadPixels(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos),
                 VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims),
                 GL_RGBA, GL_UNSIGNED_BYTE, NULL);
    if (gl->scrgb.active && gl->scrgb.fbo)
@@ -1938,7 +1938,7 @@ static void gl3_render_overlay(gl3_t *gl,
    glDisable(GL_BLEND);
    glBindTexture(GL_TEXTURE_2D, 0);
    if (gl->flags & GL3_FLAG_OVERLAY_FULLSCREEN)
-      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+      glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
 }
 #endif
 
@@ -2390,7 +2390,7 @@ static void gl3_set_viewport(gl3_t *gl,
    video_driver_update_viewport(&gl->vp, force_full,
          (gl->flags & GL3_FLAG_KEEP_ASPECT) ? true : false, false);
 
-   glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+   glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
    gl3_set_projection(gl, &gl3_default_ortho, allow_rotate);
 
    /* Set last backbuffer viewport. */
@@ -2400,8 +2400,8 @@ static void gl3_set_viewport(gl3_t *gl,
       gl->out_vp_height = VIDEO_SCALE_H(gl->vp.dims);
    }
 
-   gl->filter_chain_vp.x      = gl->vp.x;
-   gl->filter_chain_vp.y      = gl->vp.y;
+   gl->filter_chain_vp.x      = VIDEO_POS_X(gl->vp.pos);
+   gl->filter_chain_vp.y      = VIDEO_POS_Y(gl->vp.pos);
    gl->filter_chain_vp.width  = VIDEO_SCALE_W(gl->vp.dims);
    gl->filter_chain_vp.height = VIDEO_SCALE_H(gl->vp.dims);
 }
@@ -4036,9 +4036,9 @@ static void gl3_viewport_info(void *data, struct video_viewport *vp)
    vp->full_dims   = VIDEO_SCALE_PACK(width, height);
 
    /* Adjust as GL viewport is bottom-up. */
-   top_y           = vp->y + VIDEO_SCALE_H(vp->dims);
+   top_y           = VIDEO_POS_Y(vp->pos) + VIDEO_SCALE_H(vp->dims);
    top_dist        = height - top_y;
-   vp->y           = top_dist;
+   VIDEO_POS_PUT_Y(vp->pos, top_dist);
 }
 
 /* CPU-side scRGB -> PQ helpers for the native HDR read-back; the math
@@ -4090,8 +4090,8 @@ static bool gl3_read_viewport_hdr(void *data, uint16_t *buffer,
    if (!is_idle)
       video_driver_cached_frame();
 
-   vp_x = (gl->vp.x > 0) ? gl->vp.x : 0;
-   vp_y = (gl->vp.y > 0) ? gl->vp.y : 0;
+   vp_x = (VIDEO_POS_X(gl->vp.pos) > 0) ? VIDEO_POS_X(gl->vp.pos) : 0;
+   vp_y = (VIDEO_POS_Y(gl->vp.pos) > 0) ? VIDEO_POS_Y(gl->vp.pos) : 0;
    w    = (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)  ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims);
    h    = (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height) ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims);
    if (!w || !h)
@@ -4349,7 +4349,7 @@ static void gl3_draw_menu_texture(gl3_t *gl,
    if (gl->flags & GL3_FLAG_MENU_TEXTURE_FULLSCREEN)
       glViewport(0, 0, width, height);
    else
-      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+      glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
 
    glActiveTexture(GL_TEXTURE0 + 1);
    glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
@@ -5396,8 +5396,8 @@ static bool gl3_frame(void *data, const void *frame,
       ;
 #endif
       glReadPixels(
-            (gl->vp.x > 0) ? gl->vp.x : 0,
-            (gl->vp.y > 0) ? gl->vp.y : 0,
+            (VIDEO_POS_X(gl->vp.pos) > 0) ? VIDEO_POS_X(gl->vp.pos) : 0,
+            (VIDEO_POS_Y(gl->vp.pos) > 0) ? VIDEO_POS_Y(gl->vp.pos) : 0,
             (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)  ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims),
             (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height) ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims),
             GL_RGBA, GL_UNSIGNED_BYTE,

@@ -2645,18 +2645,18 @@ static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
    video_driver_update_viewport(&d3d12->vp, force_full,
          (d3d12->flags & D3D12_ST_FLAG_KEEP_ASPECT) ? true : false, true);
 
-   d3d12->frame.viewport.TopLeftX = d3d12->vp.x;
-   d3d12->frame.viewport.TopLeftY = d3d12->vp.y;
+   d3d12->frame.viewport.TopLeftX = VIDEO_POS_X(d3d12->vp.pos);
+   d3d12->frame.viewport.TopLeftY = VIDEO_POS_Y(d3d12->vp.pos);
    d3d12->frame.viewport.Width    = VIDEO_SCALE_W(d3d12->vp.dims);
    d3d12->frame.viewport.Height   = VIDEO_SCALE_H(d3d12->vp.dims);
    d3d12->frame.viewport.MinDepth = 0.0f;
    d3d12->frame.viewport.MaxDepth = 1.0f;
 
    /* Needed for UWP to be happy */
-   d3d12->frame.scissorRect.top    = d3d12->vp.y;
-   d3d12->frame.scissorRect.left   = d3d12->vp.x;
-   d3d12->frame.scissorRect.right  = d3d12->vp.x + VIDEO_SCALE_W(d3d12->vp.dims);
-   d3d12->frame.scissorRect.bottom = d3d12->vp.y + VIDEO_SCALE_H(d3d12->vp.dims);
+   d3d12->frame.scissorRect.top    = VIDEO_POS_Y(d3d12->vp.pos);
+   d3d12->frame.scissorRect.left   = VIDEO_POS_X(d3d12->vp.pos);
+   d3d12->frame.scissorRect.right  = VIDEO_POS_X(d3d12->vp.pos) + VIDEO_SCALE_W(d3d12->vp.dims);
+   d3d12->frame.scissorRect.bottom = VIDEO_POS_Y(d3d12->vp.pos) + VIDEO_SCALE_H(d3d12->vp.dims);
 
    if (d3d12->shader_preset
          && (  d3d12->frame.output_size.x != VIDEO_SCALE_W(d3d12->vp.dims)
@@ -4377,10 +4377,10 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    d3d12->chain.viewport.Width                     = width;
    d3d12->chain.viewport.Height                    = height;
 
-   d3d12->chain.scissorRect.left                   = d3d12->vp.x;
-   d3d12->chain.scissorRect.top                    = d3d12->vp.y;
-   d3d12->chain.scissorRect.right                  = d3d12->vp.x + width;
-   d3d12->chain.scissorRect.bottom                 = d3d12->vp.y + height;
+   d3d12->chain.scissorRect.left                   = VIDEO_POS_X(d3d12->vp.pos);
+   d3d12->chain.scissorRect.top                    = VIDEO_POS_Y(d3d12->vp.pos);
+   d3d12->chain.scissorRect.right                  = VIDEO_POS_X(d3d12->vp.pos) + width;
+   d3d12->chain.scissorRect.bottom                 = VIDEO_POS_Y(d3d12->vp.pos) + height;
 
    return true;
 }
@@ -5280,16 +5280,16 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
 
       if (i == (d3d12->shader_preset->passes - 1))
       {
-         d3d12->pass[i].viewport.TopLeftX    = d3d12->vp.x;
-         d3d12->pass[i].viewport.TopLeftY    = d3d12->vp.y;
+         d3d12->pass[i].viewport.TopLeftX    = VIDEO_POS_X(d3d12->vp.pos);
+         d3d12->pass[i].viewport.TopLeftY    = VIDEO_POS_Y(d3d12->vp.pos);
          d3d12->pass[i].viewport.Width       = width;
          d3d12->pass[i].viewport.Height      = height;
          d3d12->pass[i].viewport.MinDepth    = 0.0f;
          d3d12->pass[i].viewport.MaxDepth    = 1.0f;
-         d3d12->pass[i].scissorRect.left     = d3d12->vp.x;
-         d3d12->pass[i].scissorRect.top      = d3d12->vp.y;
-         d3d12->pass[i].scissorRect.right    = d3d12->vp.x + width;
-         d3d12->pass[i].scissorRect.bottom   = d3d12->vp.y + height;
+         d3d12->pass[i].scissorRect.left     = VIDEO_POS_X(d3d12->vp.pos);
+         d3d12->pass[i].scissorRect.top      = VIDEO_POS_Y(d3d12->vp.pos);
+         d3d12->pass[i].scissorRect.right    = VIDEO_POS_X(d3d12->vp.pos) + width;
+         d3d12->pass[i].scissorRect.bottom   = VIDEO_POS_Y(d3d12->vp.pos) + height;
       }
       else
       {
@@ -7670,8 +7670,8 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
 
    src_pixels = mapped + footprint.Offset;
 
-   vp_x = (d3d12->vp.x > 0) ? d3d12->vp.x : 0;
-   vp_y = (d3d12->vp.y > 0) ? d3d12->vp.y : 0;
+   vp_x = (VIDEO_POS_X(d3d12->vp.pos) > 0) ? VIDEO_POS_X(d3d12->vp.pos) : 0;
+   vp_y = (VIDEO_POS_Y(d3d12->vp.pos) > 0) ? VIDEO_POS_Y(d3d12->vp.pos) : 0;
    vp_w = (VIDEO_SCALE_W(d3d12->vp.dims)  > VIDEO_SCALE_W(d3d12->vp.full_dims))
          ? VIDEO_SCALE_W(d3d12->vp.full_dims)  : VIDEO_SCALE_W(d3d12->vp.dims);
    vp_h = (VIDEO_SCALE_H(d3d12->vp.dims) > VIDEO_SCALE_H(d3d12->vp.full_dims))
@@ -7795,8 +7795,8 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 
    /* Compute the viewport clamp once so both the GPU HDR path (below)
     * and the CPU swizzle loops (at the end) can use it. */
-   vp_x = (d3d12->vp.x > 0) ? d3d12->vp.x : 0;
-   vp_y = (d3d12->vp.y > 0) ? d3d12->vp.y : 0;
+   vp_x = (VIDEO_POS_X(d3d12->vp.pos) > 0) ? VIDEO_POS_X(d3d12->vp.pos) : 0;
+   vp_y = (VIDEO_POS_Y(d3d12->vp.pos) > 0) ? VIDEO_POS_Y(d3d12->vp.pos) : 0;
    vp_w = (VIDEO_SCALE_W(d3d12->vp.dims)  > VIDEO_SCALE_W(d3d12->vp.full_dims))
          ? VIDEO_SCALE_W(d3d12->vp.full_dims)  : VIDEO_SCALE_W(d3d12->vp.dims);
    vp_h = (VIDEO_SCALE_H(d3d12->vp.dims) > VIDEO_SCALE_H(d3d12->vp.full_dims))

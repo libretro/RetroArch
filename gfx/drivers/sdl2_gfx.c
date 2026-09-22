@@ -240,8 +240,8 @@ static void sdl_refresh_renderer(sdl2_video_t *vid)
 
    SDL_RenderClear(vid->renderer);
 
-   r.x      = vid->vp.x;
-   r.y      = vid->vp.y;
+   r.x      = VIDEO_POS_X(vid->vp.pos);
+   r.y      = VIDEO_POS_Y(vid->vp.pos);
    r.w      = (int)VIDEO_SCALE_W(vid->vp.dims);
    r.h      = (int)VIDEO_SCALE_H(vid->vp.dims);
 
@@ -570,15 +570,15 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
          SDL_Rect game_vp;
          dst.w     = (int)VIDEO_SCALE_H(vid->vp.dims);
          dst.h     = (int)VIDEO_SCALE_W(vid->vp.dims);
-         dst.x     = vid->vp.x + ((int)VIDEO_SCALE_W(vid->vp.dims)  - dst.w) / 2;
-         dst.y     = vid->vp.y + ((int)VIDEO_SCALE_H(vid->vp.dims) - dst.h) / 2;
+         dst.x     = VIDEO_POS_X(vid->vp.pos) + ((int)VIDEO_SCALE_W(vid->vp.dims)  - dst.w) / 2;
+         dst.y     = VIDEO_POS_Y(vid->vp.pos) + ((int)VIDEO_SCALE_H(vid->vp.dims) - dst.h) / 2;
          SDL_RenderSetViewport(vid->renderer, NULL);
          SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, &dst,
                vid->rotation, NULL, SDL_FLIP_NONE);
          /* Restore the game viewport for the menu/widget/overlay passes,
           * which save and restore vid->vp. */
-         game_vp.x = vid->vp.x;
-         game_vp.y = vid->vp.y;
+         game_vp.x = VIDEO_POS_X(vid->vp.pos);
+         game_vp.y = VIDEO_POS_Y(vid->vp.pos);
          game_vp.w = (int)VIDEO_SCALE_W(vid->vp.dims);
          game_vp.h = (int)VIDEO_SCALE_H(vid->vp.dims);
          SDL_RenderSetViewport(vid->renderer, &game_vp);
@@ -2175,8 +2175,8 @@ static void sdl2_overlays_render(sdl2_video_t *vid)
       }
       else
       {
-         base_x = (int)vid->vp.x;
-         base_y = (int)vid->vp.y;
+         base_x = (int)VIDEO_POS_X(vid->vp.pos);
+         base_y = (int)VIDEO_POS_Y(vid->vp.pos);
          base_w = VIDEO_SCALE_W(vid->vp.dims);
          base_h = VIDEO_SCALE_H(vid->vp.dims);
       }

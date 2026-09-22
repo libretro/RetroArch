@@ -668,8 +668,7 @@ static void init_ps2_video(ps2_video_t *ps2)
    ps2->vmode                   = -1;
    rmInit(ps2);
 
-   ps2->vp.x                    = 0;
-   ps2->vp.y                    = 0;
+   ps2->vp.pos                  = VIDEO_POS_PACK(0, 0);
    ps2->vp.dims                 = VIDEO_SCALE_PACK(ps2->gsGlobal->Width,
          ps2->gsGlobal->Height);
    ps2->vp.full_dims            = VIDEO_SCALE_PACK(ps2->gsGlobal->Width,

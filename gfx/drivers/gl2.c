@@ -1529,7 +1529,7 @@ static void gl2_set_viewport(gl2_t *gl,
    video_driver_update_viewport(&gl->vp, force_full,
          (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false, false);
 
-   glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+   glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
    gl2_set_projection(gl, &default_ortho, allow_rotate);
 
    /* Set last backbuffer viewport. */
@@ -2702,8 +2702,8 @@ static void gl2_renderchain_readback(
 #endif
 
    glReadPixels(
-         (gl->vp.x > 0) ? gl->vp.x : 0,
-         (gl->vp.y > 0) ? gl->vp.y : 0,
+         (VIDEO_POS_X(gl->vp.pos) > 0) ? VIDEO_POS_X(gl->vp.pos) : 0,
+         (VIDEO_POS_Y(gl->vp.pos) > 0) ? VIDEO_POS_Y(gl->vp.pos) : 0,
          (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)  ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims),
          (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height) ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims),
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
@@ -3080,7 +3080,7 @@ static void gl2_render_overlay(gl2_t *gl)
    gl->coords.color     = gl->white_color_ptr;
    gl->coords.vertices  = 4;
    if (gl->flags & GL2_FLAG_OVERLAY_FULLSCREEN)
-      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+      glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
 }
 #endif
 
@@ -3780,7 +3780,7 @@ static INLINE void gl2_draw_texture(gl2_t *gl)
    {
       glViewport(0, 0, width, height);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+      glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
    }
    else
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -4196,7 +4196,7 @@ static void gl2_encode_pq_to_sdr(gl2_t *gl)
    /* Restore the aspect viewport - context state this driver only
     * re-establishes on resize (see the matching restore in the
     * end-of-frame encode). */
-   glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+   glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
 }
 
 /* Copies the backbuffer into the retained texture, sizing that texture
@@ -4264,7 +4264,7 @@ static unsigned gl2_present_last(void *data)
 
       gl->coords.vertex    = gl->vertex_ptr;
       gl->coords.tex_coord = gl->tex_info.coord;
-      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+      glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
       if (gl->ctx_driver->swap_buffers)
@@ -4731,7 +4731,7 @@ static bool gl2_frame(void *data, const void *frame,
        * its filter chain re-runs glViewport on the final pass every
        * frame (shader_gl3.c), so the leak never survives to a draw.
        * The gl2 GLSL path has no equivalent choke point. */
-      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+      glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
    }
 
    /* Screenshots. */
@@ -6112,9 +6112,9 @@ static void gl2_viewport_info(void *data, struct video_viewport *vp)
    vp->full_dims   = VIDEO_SCALE_PACK(width, height);
 
    /* Adjust as GL viewport is bottom-up. */
-   top_y           = vp->y + VIDEO_SCALE_H(vp->dims);
+   top_y           = VIDEO_POS_Y(vp->pos) + VIDEO_SCALE_H(vp->dims);
    top_dist        = height - top_y;
-   vp->y           = top_dist;
+   VIDEO_POS_PUT_Y(vp->pos, top_dist);
 }
 
 static bool gl2_read_viewport(void *data, uint8_t *buffer, bool is_idle)
@@ -6868,8 +6868,8 @@ static bool gl2_read_viewport_hdr(void *data, uint16_t *buffer,
    if (!is_idle)
       video_driver_cached_frame();
 
-   vp_x = (gl->vp.x > 0) ? gl->vp.x : 0;
-   vp_y = (gl->vp.y > 0) ? gl->vp.y : 0;
+   vp_x = (VIDEO_POS_X(gl->vp.pos) > 0) ? VIDEO_POS_X(gl->vp.pos) : 0;
+   vp_y = (VIDEO_POS_Y(gl->vp.pos) > 0) ? VIDEO_POS_Y(gl->vp.pos) : 0;
    w    = (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)  ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims);
    h    = (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height) ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims);
    if (!w || !h)

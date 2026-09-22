@@ -278,8 +278,7 @@ enum video_thread_stat_slot
  * cannot be read half updated even before the sequence is checked. */
 enum video_thread_vp_slot
 {
-   VIDEO_THREAD_VP_X = 0,
-   VIDEO_THREAD_VP_Y,
+   VIDEO_THREAD_VP_POS = 0,
    VIDEO_THREAD_VP_WH,
    VIDEO_THREAD_VP_FULL_WH,
    VIDEO_THREAD_VP_SLOTS

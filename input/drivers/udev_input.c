@@ -711,10 +711,10 @@ static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
       {
          mouse->x_abs += x;
 
-         if (mouse->x_abs < vp.x)
-            mouse->x_abs = vp.x;
-         else if (mouse->x_abs >= (vp.x + (int)VIDEO_SCALE_W(vp.full_dims)))
-            mouse->x_abs = vp.x + VIDEO_SCALE_W(vp.full_dims) - 1;
+         if (mouse->x_abs < VIDEO_POS_X(vp.pos))
+            mouse->x_abs = VIDEO_POS_X(vp.pos);
+         else if (mouse->x_abs >= (VIDEO_POS_X(vp.pos) + (int)VIDEO_SCALE_W(vp.full_dims)))
+            mouse->x_abs = VIDEO_POS_X(vp.pos) + VIDEO_SCALE_W(vp.full_dims) - 1;
       }
    }
 }
@@ -754,10 +754,10 @@ static void udev_mouse_set_y(udev_input_mouse_t *mouse, int32_t y, bool abs)
       {
          mouse->y_abs += y;
 
-         if (mouse->y_abs < vp.y)
-            mouse->y_abs = vp.y;
-         else if (mouse->y_abs >= (vp.y + (int)VIDEO_SCALE_H(vp.full_dims)))
-            mouse->y_abs = vp.y + VIDEO_SCALE_H(vp.full_dims) - 1;
+         if (mouse->y_abs < VIDEO_POS_Y(vp.pos))
+            mouse->y_abs = VIDEO_POS_Y(vp.pos);
+         else if (mouse->y_abs >= (VIDEO_POS_Y(vp.pos) + (int)VIDEO_SCALE_H(vp.full_dims)))
+            mouse->y_abs = VIDEO_POS_Y(vp.pos) + VIDEO_SCALE_H(vp.full_dims) - 1;
       }
    }
 }
@@ -3454,10 +3454,10 @@ static void udev_input_adopt_rel_pointer_position_from_mouse(
          && (dx || dy)
          && video_driver_display_type_get() != RARCH_DISPLAY_X11)
    {
-      int minX      = view.x;
-      int maxX      = view.x + VIDEO_SCALE_W(view.dims);
-      int minY      = view.y;
-      int maxY      = view.y + VIDEO_SCALE_H(view.dims);
+      int minX      = VIDEO_POS_X(view.pos);
+      int maxX      = VIDEO_POS_X(view.pos) + VIDEO_SCALE_W(view.dims);
+      int minY      = VIDEO_POS_Y(view.pos);
+      int maxY      = VIDEO_POS_Y(view.pos) + VIDEO_SCALE_H(view.dims);
       /* Not running in a window. */
       noX11DispX    = noX11DispX + dx;
       if (noX11DispX < minX)

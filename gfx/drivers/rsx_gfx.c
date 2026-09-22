@@ -353,8 +353,8 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
    if (!draw->texture)
       return;
 
-   vp.x                     = fabs(draw->x);
-   vp.y                     = fabs(rsx->height - draw->y - VIDEO_SCALE_H(draw->dims));
+   vp.pos                   = VIDEO_POS_PACK(fabs(draw->x),
+         fabs(rsx->height - draw->y - VIDEO_SCALE_H(draw->dims)));
    vp.w                     = MIN(VIDEO_SCALE_W(draw->dims), rsx->width);
    vp.h                     = MIN(VIDEO_SCALE_H(draw->dims), rsx->height);
    vp.min                   = 0.0f;
@@ -363,12 +363,12 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
    vp.scale[1]              = vp.h * -0.5f;
    vp.scale[2]              = (vp.max - vp.min) * 0.5f;
    vp.scale[3]              = 0.0f;
-   vp.offset[0]             = vp.x + vp.w * 0.5f;
-   vp.offset[1]             = vp.y + vp.h * 0.5f;
+   vp.offset[0]             = VIDEO_POS_X(vp.pos) + vp.w * 0.5f;
+   vp.offset[1]             = VIDEO_POS_Y(vp.pos) + vp.h * 0.5f;
    vp.offset[2]             = (vp.max + vp.min) * 0.5f;
    vp.offset[3]             = 0.0f;
 
-   rsxSetViewport(rsx->context, vp.x, vp.y, vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
+   rsxSetViewport(rsx->context, VIDEO_POS_X(vp.pos), VIDEO_POS_Y(vp.pos), vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
 
    rsxInvalidateTextureCache(rsx->context, GCM_INVALIDATE_TEXTURE);
    rsxLoadTexture(rsx->context, rsx->tex_unit[RSX_SHADER_STOCK_BLEND]->index, &texture->tex);
@@ -1175,23 +1175,23 @@ static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
 
    vp.min                     = 0.0f;
    vp.max                     = 1.0f;
-   vp.x                       = rsx->vp.x;
-   vp.y                       = rsx->height - rsx->vp.y - VIDEO_SCALE_H(rsx->vp.dims);
+   vp.pos                     = VIDEO_POS_PACK(VIDEO_POS_X(rsx->vp.pos),
+         rsx->height - VIDEO_POS_Y(rsx->vp.pos) - VIDEO_SCALE_H(rsx->vp.dims));
    vp.w                       = VIDEO_SCALE_W(rsx->vp.dims);
    vp.h                       = VIDEO_SCALE_H(rsx->vp.dims);
    vp.scale[0]                = vp.w *  0.5f;
    vp.scale[1]                = vp.h * -0.5f;
    vp.scale[2]                = (vp.max - vp.min) * 0.5f;
    vp.scale[3]                = 0.0f;
-   vp.offset[0]               = vp.x + vp.w * 0.5f;
-   vp.offset[1]               = vp.y + vp.h * 0.5f;
+   vp.offset[0]               = VIDEO_POS_X(vp.pos) + vp.w * 0.5f;
+   vp.offset[1]               = VIDEO_POS_Y(vp.pos) + vp.h * 0.5f;
    vp.offset[2]               = (vp.max + vp.min) * 0.5f;
    vp.offset[3]               = 0.0f;
 
-   rsxSetViewport(rsx->context, vp.x, vp.y, vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
+   rsxSetViewport(rsx->context, VIDEO_POS_X(vp.pos), VIDEO_POS_Y(vp.pos), vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
    for (i = 0; i < 8; i++)
       rsxSetViewportClip(rsx->context, i, rsx->width, rsx->height);
-   rsxSetScissor(rsx->context, vp.x, vp.y, vp.w, vp.h);
+   rsxSetScissor(rsx->context, VIDEO_POS_X(vp.pos), VIDEO_POS_Y(vp.pos), vp.w, vp.h);
 
    rsx_set_projection(rsx, &ortho, allow_rotate);
 }
@@ -1559,8 +1559,7 @@ static void* rsx_init(const video_info_t* video,
 
    rsx_flip(rsx->context, RSX_MAX_BUFFERS - 1);
 
-   rsx->vp.x                 = 0;
-   rsx->vp.y                 = 0;
+   rsx->vp.pos               = VIDEO_POS_PACK(0, 0);
    rsx->vp.dims              = VIDEO_SCALE_PACK(rsx->width, rsx->height);
    rsx->vp.full_dims         = VIDEO_SCALE_PACK(rsx->width, rsx->height);
    rsx->rgb32                = video->rgb32;
@@ -2284,19 +2283,19 @@ static bool rsx_frame(void* data, const void* frame,
 
    vp.min                           = 0.0f;
    vp.max                           = 1.0f;
-   vp.x                             = gcm->vp.x;
-   vp.y                             = gcm->height - gcm->vp.y - VIDEO_SCALE_H(gcm->vp.dims);
+   vp.pos                           = VIDEO_POS_PACK(VIDEO_POS_X(gcm->vp.pos),
+         gcm->height - VIDEO_POS_Y(gcm->vp.pos) - VIDEO_SCALE_H(gcm->vp.dims));
    vp.w                             = VIDEO_SCALE_W(gcm->vp.dims);
    vp.h                             = VIDEO_SCALE_H(gcm->vp.dims);
    vp.scale[0]                      = vp.w *  0.5f;
    vp.scale[1]                      = vp.h * -0.5f;
    vp.scale[2]                      = (vp.max - vp.min) * 0.5f;
    vp.scale[3]                      = 0.0f;
-   vp.offset[0]                     = vp.x + vp.w * 0.5f;
-   vp.offset[1]                     = vp.y + vp.h * 0.5f;
+   vp.offset[0]                     = VIDEO_POS_X(vp.pos) + vp.w * 0.5f;
+   vp.offset[1]                     = VIDEO_POS_Y(vp.pos) + vp.h * 0.5f;
    vp.offset[2]                     = (vp.max + vp.min) * 0.5f;
    vp.offset[3]                     = 0.0f;
-   rsxSetViewport(gcm->context, vp.x, vp.y, vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
+   rsxSetViewport(gcm->context, VIDEO_POS_X(vp.pos), VIDEO_POS_Y(vp.pos), vp.w, vp.h, vp.min, vp.max, vp.scale, vp.offset);
 
    if (frame && width && height)
    {

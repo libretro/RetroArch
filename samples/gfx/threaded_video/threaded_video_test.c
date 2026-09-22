@@ -624,8 +624,7 @@ static retro_atomic_int_t vplane_held;
 static void vplane_viewport_info(void *data, struct video_viewport *vp)
 {
    (void)data;
-   vp->x           = 3;
-   vp->y           = 5;
+   vp->pos         = VIDEO_POS_PACK(3, 5);
    vp->dims        = VIDEO_SCALE_PACK((unsigned)retro_atomic_load_acquire_int(&vplane_w),
          (unsigned)retro_atomic_load_acquire_int(&vplane_h));
    vp->full_dims   = VIDEO_SCALE_PACK(VIDEO_SCALE_W(vp->dims)  + 7, VIDEO_SCALE_H(vp->dims) + 9);
@@ -677,13 +676,13 @@ static void vplane_expect(thread_video_t *thr, unsigned w, unsigned h,
    CHECK(VIDEO_SCALE_W(vp.dims) == w && VIDEO_SCALE_H(vp.dims) == h,
          "%s: the viewport read %ux%u, the driver reported %ux%u",
          when, VIDEO_SCALE_W(vp.dims), VIDEO_SCALE_H(vp.dims), w, h);
-   CHECK(vp.x == 3 && vp.y == 5,
-         "%s: the viewport's origin read %d,%d, not 3,5", when, vp.x, vp.y);
+   CHECK(VIDEO_POS_X(vp.pos) == 3 && VIDEO_POS_Y(vp.pos) == 5,
+         "%s: the viewport's origin read %d,%d, not 3,5", when, VIDEO_POS_X(vp.pos), VIDEO_POS_Y(vp.pos));
    CHECK(VIDEO_SCALE_W(vp.full_dims) == w + 7 && VIDEO_SCALE_H(vp.full_dims) == h + 9,
          "%s: the full size read %ux%u, not %ux%u", when,
          VIDEO_SCALE_W(vp.full_dims), VIDEO_SCALE_H(vp.full_dims), w + 7, h + 9);
    CHECK(VIDEO_SCALE_W(thr->read_vp.dims) == VIDEO_SCALE_W(vp.dims) && VIDEO_SCALE_H(thr->read_vp.dims) == VIDEO_SCALE_H(vp.dims)
-         && thr->read_vp.x == vp.x && thr->read_vp.y == vp.y
+         && VIDEO_POS_X(thr->read_vp.pos) == VIDEO_POS_X(vp.pos) && VIDEO_POS_Y(thr->read_vp.pos) == VIDEO_POS_Y(vp.pos)
          && VIDEO_SCALE_W(thr->read_vp.full_dims)  == VIDEO_SCALE_W(vp.full_dims)
          && VIDEO_SCALE_H(thr->read_vp.full_dims) == VIDEO_SCALE_H(vp.full_dims),
          "%s: read_vp did not follow the reported viewport (%ux%u vs %ux%u)",

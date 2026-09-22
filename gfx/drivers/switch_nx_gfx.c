@@ -490,8 +490,7 @@ static void *switch_init(const video_info_t *video,
    framebufferCreate(&sw->fb, sw->win, 1280, 720, PIXEL_FORMAT_RGBA_8888, 2);
    framebufferMakeLinear(&sw->fb);
 
-    sw->vp.x            = 0;
-    sw->vp.y            = 0;
+    sw->vp.pos          = VIDEO_POS_PACK(0, 0);
     sw->o_width         = video->width;
     sw->o_height        = video->height;
     sw->vp.dims         = VIDEO_SCALE_PACK(sw->o_width, sw->o_height);
@@ -537,8 +536,8 @@ static void switch_update_viewport(switch_video_t *sw)
     /* Handle o_size mode (original size) specially */
     if (sw->o_size)
     {
-        sw->vp.x      = (int)(((float)VIDEO_SCALE_W(sw->vp.full_dims) - sw->o_width)) / 2;
-        sw->vp.y      = (int)(((float)VIDEO_SCALE_H(sw->vp.full_dims) - sw->o_height)) / 2;
+        sw->vp.pos    = VIDEO_POS_PACK((int)(((float)VIDEO_SCALE_W(sw->vp.full_dims) - sw->o_width)) / 2,
+              (int)(((float)VIDEO_SCALE_H(sw->vp.full_dims) - sw->o_height)) / 2);
         sw->vp.dims   = VIDEO_SCALE_PACK(sw->o_width, sw->o_height);
         return;
     }
@@ -717,7 +716,7 @@ static bool switch_frame(void *data, const void *frame,
       else
       {
          struct scaler_ctx *ctx = &sw->scaler;
-         scaler_ctx_scale(ctx, sw->image + (sw->vp.y * VIDEO_SCALE_W(sw->vp.full_dims)) + sw->vp.x, frame);
+         scaler_ctx_scale(ctx, sw->image + (VIDEO_POS_Y(sw->vp.pos) * VIDEO_SCALE_W(sw->vp.full_dims)) + VIDEO_POS_X(sw->vp.pos), frame);
          gfx_cpy_dsp_buf(out_buffer, sw->image, VIDEO_SCALE_W(sw->vp.full_dims), VIDEO_SCALE_H(sw->vp.full_dims), stride, false);
       }
 

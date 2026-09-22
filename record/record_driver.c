@@ -360,8 +360,7 @@ bool recording_init(void)
       unsigned gpu_size;
       struct video_viewport vp;
 
-      vp.x                        = 0;
-      vp.y                        = 0;
+      vp.pos                      = VIDEO_POS_PACK(0, 0);
       vp.dims                     = 0;
       vp.full_dims                = 0;
 

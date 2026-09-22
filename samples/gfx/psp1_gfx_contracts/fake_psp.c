@@ -540,8 +540,7 @@ void video_driver_update_viewport(struct video_viewport *vp,
       bool force_full, bool keep_aspect, bool y_down)
 {
    (void)force_full; (void)keep_aspect; (void)y_down;
-   vp->x      = vp_x;
-   vp->y      = vp_y;
+   vp->pos    = VIDEO_POS_PACK(vp_x, vp_y);
    vp->dims   = VIDEO_SCALE_PACK((unsigned)vp_w, (unsigned)vp_h);
 }
 

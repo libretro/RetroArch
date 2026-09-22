@@ -1036,8 +1036,8 @@ static void gx_resize(gx_video_t *gx,
             || (gx->orientation == ORIENTATION_FLIPPED_ROTATED))
          desired_aspect    = 1.0 / desired_aspect;
       video_viewport_get_scaled_aspect2(&gx->vp, width, height, true, device_aspect, desired_aspect);
-      x      = gx->vp.x;
-      y      = gx->vp.y;
+      x      = VIDEO_POS_X(gx->vp.pos);
+      y      = VIDEO_POS_Y(gx->vp.pos);
       width  = VIDEO_SCALE_W(gx->vp.dims);
       height = VIDEO_SCALE_H(gx->vp.dims);
    }
@@ -1095,8 +1095,7 @@ static void gx_resize(gx_video_t *gx,
 
    VIDEO_Configure(&gx_mode);
 
-   gx->vp.x      = x;
-   gx->vp.y      = y;
+   gx->vp.pos    = VIDEO_POS_PACK(x, y);
    gx->vp.dims   = VIDEO_SCALE_PACK(width, height);
 
    GX_SetViewportJitter(x, y, width, height, 0, 1, 1);

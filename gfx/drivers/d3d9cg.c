@@ -3681,8 +3681,8 @@ static void d3d9_cg_set_viewport(void *data,
    vp.full_dims   = VIDEO_SCALE_PACK(width, height);
    video_driver_update_viewport(&vp, force_full, d3d->keep_aspect, true);
 
-   x      = vp.x;
-   y      = vp.y;
+   x      = VIDEO_POS_X(vp.pos);
+   y      = VIDEO_POS_Y(vp.pos);
    width  = VIDEO_SCALE_W(vp.dims);
    height = VIDEO_SCALE_H(vp.dims);
 
@@ -4916,8 +4916,7 @@ void d3d9_cg_viewport_info(void *data, struct video_viewport *vp)
 {
    d3d9_video_t *d3d   = (d3d9_video_t*)data;
 
-   vp->x               = d3d->out_vp.X;
-   vp->y               = d3d->out_vp.Y;
+   vp->pos             = VIDEO_POS_PACK(d3d->out_vp.X, d3d->out_vp.Y);
    vp->dims            = VIDEO_SCALE_PACK(d3d->out_vp.Width,
          d3d->out_vp.Height);
 

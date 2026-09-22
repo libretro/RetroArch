@@ -724,7 +724,7 @@ static void oga_viewport_info(void *data, struct video_viewport *vp)
    if (unlikely(!vid))
       return;
 
-   vp->x = vp->y = 0;
+   vp->pos = VIDEO_POS_PACK(0, 0);
    vp->dims  = vp->full_dims  = VIDEO_SCALE_PACK(vid->mode.vdisplay,
          vid->mode.hdisplay);
 }

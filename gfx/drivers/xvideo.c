@@ -976,7 +976,7 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
 
    XvShmPutImage(g_x11_dpy, xv->port, g_x11_win, xv->gc, xv->image,
          0, 0, width << 1, height << 1,
-         xv->vp.x, xv->vp.y, VIDEO_SCALE_W(xv->vp.dims), VIDEO_SCALE_H(xv->vp.dims),
+         VIDEO_POS_X(xv->vp.pos), VIDEO_POS_Y(xv->vp.pos), VIDEO_SCALE_W(xv->vp.dims), VIDEO_SCALE_H(xv->vp.dims),
          true);
    XSync(g_x11_dpy, False);
 

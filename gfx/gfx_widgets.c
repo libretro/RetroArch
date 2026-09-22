@@ -2006,8 +2006,8 @@ static void gfx_widgets_frame_state(void *data)
 
       if (video_driver_get_viewport_info(&content_vp) && VIDEO_SCALE_W(content_vp.dims) && VIDEO_SCALE_H(content_vp.dims))
       {
-         overlay_x      = content_vp.x;
-         overlay_y      = content_vp.y;
+         overlay_x      = VIDEO_POS_X(content_vp.pos);
+         overlay_y      = VIDEO_POS_Y(content_vp.pos);
          overlay_width  = VIDEO_SCALE_W(content_vp.dims);
          overlay_height = VIDEO_SCALE_H(content_vp.dims);
       }

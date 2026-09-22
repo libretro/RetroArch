@@ -686,8 +686,7 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
       center_y                 = 565.0f;
    }
 
-   vp.x                        = 0;
-   vp.y                        = 0;
+   vp.pos                      = VIDEO_POS_PACK(0, 0);
    vp.dims                     = 0;
    vp.full_dims                = 0;
 

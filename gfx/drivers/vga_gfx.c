@@ -485,7 +485,7 @@ void vga_gfx_set_viewport(void *data, unsigned vp_width,
 static void vga_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
 
-   vp->x = vp->y = 0;
+   vp->pos = VIDEO_POS_PACK(0, 0);
 
    vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(VGA_WIDTH, VGA_HEIGHT);
 }

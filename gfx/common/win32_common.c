@@ -1729,8 +1729,8 @@ static LRESULT wnd_proc_wm_gdi_create(HWND hwnd)
  * the core, so frame_width is only the fallback. */
 static void wnd_proc_gdi_paint(gdi_t *gdi)
 {
-   int       vp_x   = gdi->vp.x;
-   int       vp_y   = gdi->vp.y;
+   int       vp_x   = VIDEO_POS_X(gdi->vp.pos);
+   int       vp_y   = VIDEO_POS_Y(gdi->vp.pos);
    unsigned  vp_w   = VIDEO_SCALE_W(gdi->vp.dims)
       ? VIDEO_SCALE_W(gdi->vp.dims)  : gdi->screen_width;
    unsigned  vp_h   = VIDEO_SCALE_H(gdi->vp.dims)

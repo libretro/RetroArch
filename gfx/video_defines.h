@@ -208,10 +208,32 @@ enum text_alignment
 #define VIDEO_SCALE_PUT_H(d, h) \
    ((d) = VIDEO_SCALE_PACK(VIDEO_SCALE_W(d), (h)))
 
+/* An origin in one word: x in the high half, y in the low, each a
+ * signed 16-bit offset. A viewport's origin goes negative wherever
+ * integer scaling overscans the window, so both halves sign-extend on
+ * the way back out. An offset past +-32767 is further off a display
+ * than any of these drivers places one. */
+#define VIDEO_POS_MAX    32767
+#define VIDEO_POS_MIN  (-32768)
+#define VIDEO_POS_CLAMP(v) \
+   ((int)(v) > VIDEO_POS_MAX ? VIDEO_POS_MAX \
+    : ((int)(v) < VIDEO_POS_MIN ? VIDEO_POS_MIN : (int)(v)))
+#define VIDEO_POS_PACK(x, y) \
+   ((((unsigned)VIDEO_POS_CLAMP(x) & 0xffffu) << 16) \
+    | ((unsigned)VIDEO_POS_CLAMP(y) & 0xffffu))
+#define VIDEO_POS_X(p) ((int)(int16_t)(((unsigned)(p) >> 16) & 0xffffu))
+#define VIDEO_POS_Y(p) ((int)(int16_t)( (unsigned)(p)        & 0xffffu))
+
+/* One axis of an origin, leaving the other half as it stands. */
+#define VIDEO_POS_PUT_X(p, x) \
+   ((p) = VIDEO_POS_PACK((x), VIDEO_POS_Y(p)))
+#define VIDEO_POS_PUT_Y(p, y) \
+   ((p) = VIDEO_POS_PACK(VIDEO_POS_X(p), (y)))
+
 typedef struct video_viewport
 {
-   int x;
-   int y;
+   /* The origin, one signed pair in VIDEO_POS_PACK's layout. */
+   unsigned pos;
    /* The drawn area and the window that holds it, each a size pair
     * in one word, VIDEO_SCALE_PACK's layout. */
    unsigned dims;

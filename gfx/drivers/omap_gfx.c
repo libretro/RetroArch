@@ -1048,7 +1048,7 @@ static void omap_viewport_info(void *data, struct video_viewport *vp)
    if (!vid)
       return;
 
-   vp->x = vp->y     = 0;
+   vp->pos = VIDEO_POS_PACK(0, 0);
 
    vp->dims          = vp->full_dims   = vid->dims;
 }

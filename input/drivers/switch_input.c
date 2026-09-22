@@ -191,8 +191,7 @@ static void switch_input_poll(void *data)
          sw->touch_y[i]              = touch_screen_state.touches[i].y;
 
          /* convert from event coordinates to core and screen coordinates */
-         vp.x                        = 0;
-         vp.y                        = 0;
+         vp.pos                      = VIDEO_POS_PACK(0, 0);
          vp.dims                     = 0;
          vp.full_dims                = 0;
 

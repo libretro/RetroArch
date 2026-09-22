@@ -272,8 +272,8 @@ static void psp_update_viewport(psp1_video_t* psp)
       psp->vp.dims  = VIDEO_SCALE_PACK(vp_w + (vp_w & 0x1),
             vp_h + (vp_h & 0x1));
 
-      psp_set_screen_coords(psp->frame_coords, psp->vp.x,
-            psp->vp.y, VIDEO_SCALE_W(psp->vp.dims),
+      psp_set_screen_coords(psp->frame_coords, VIDEO_POS_X(psp->vp.pos),
+            VIDEO_POS_Y(psp->vp.pos), VIDEO_SCALE_W(psp->vp.dims),
             VIDEO_SCALE_H(psp->vp.dims), psp->rotation);
    }
 
@@ -355,8 +355,7 @@ static void *psp_init(const video_info_t *video,
 
    sceGuInit();
 
-   psp->vp.x                = 0;
-   psp->vp.y                = 0;
+   psp->vp.pos              = VIDEO_POS_PACK(0, 0);
    psp->vp.dims             = VIDEO_SCALE_PACK(SCEGU_SCR_WIDTH,
          SCEGU_SCR_HEIGHT);
    psp->vp.full_dims        = VIDEO_SCALE_PACK(SCEGU_SCR_WIDTH,
@@ -945,18 +944,18 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
     * it, so anything the framebuffer does not cover reads as black. */
    memset(buffer, 0, (size_t)width * height * 3);
 
-   x0        = (psp->vp.x > 0)? psp->vp.x : 0;
-   y0        = (psp->vp.y > 0)? psp->vp.y : 0;
-   x1        = ((psp->vp.x + width)  < src_bufferwidth)? (psp->vp.x + width): src_bufferwidth;
-   y1        = ((psp->vp.y + height) < SCEGU_SCR_HEIGHT)? (psp->vp.y + height): SCEGU_SCR_HEIGHT;
+   x0        = (VIDEO_POS_X(psp->vp.pos) > 0)? VIDEO_POS_X(psp->vp.pos) : 0;
+   y0        = (VIDEO_POS_Y(psp->vp.pos) > 0)? VIDEO_POS_Y(psp->vp.pos) : 0;
+   x1        = ((VIDEO_POS_X(psp->vp.pos) + width)  < src_bufferwidth)? (VIDEO_POS_X(psp->vp.pos) + width): src_bufferwidth;
+   y1        = ((VIDEO_POS_Y(psp->vp.pos) + height) < SCEGU_SCR_HEIGHT)? (VIDEO_POS_Y(psp->vp.pos) + height): SCEGU_SCR_HEIGHT;
 
 /* Red is in the low bits of every display format, which is why the
  * frame is drawn through the CLUT passes psp_init() builds: blue comes
  * out of the high bits here. */
 
 /* Bottom-up, from the start of the row the viewport puts this line on. */
-#define PSP_VP_ROW(row) (buffer + ((size_t)(psp->vp.y + height - 1 - (row)) \
-      * width + (size_t)(x0 - psp->vp.x)) * 3)
+#define PSP_VP_ROW(row) (buffer + ((size_t)(VIDEO_POS_Y(psp->vp.pos) + height - 1 - (row)) \
+      * width + (size_t)(x0 - VIDEO_POS_X(psp->vp.pos))) * 3)
 
    switch(src_pixelformat)
    {

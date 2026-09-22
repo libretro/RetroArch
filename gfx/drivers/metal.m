@@ -1821,8 +1821,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       /* Patch CoreViewport into a local uniforms copy; caller's buffer
        * stays untouched. */
       HDRUniforms local  = *uniforms;
-      local.CoreViewport = simd_make_float4((float)_viewport.x,
-                                            (float)_viewport.y,
+      local.CoreViewport = simd_make_float4((float)VIDEO_POS_X(_viewport.pos),
+                                            (float)VIDEO_POS_Y(_viewport.pos),
                                             (float)VIDEO_SCALE_W(_viewport.dims),
                                             (float)VIDEO_SCALE_H(_viewport.dims));
       /* Core content rotation.  Both sources arrive unrotated. */
@@ -2236,8 +2236,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       int chunkEnd  = 0;  /* one past the last source row in the chunk */
       /* Output-column span [colStart, colEnd) whose source column
        * (_viewport.x + x) lands inside [0, texW). */
-      int colStart = -_viewport.x;
-      int colEnd   = texW - _viewport.x;
+      int colStart = -VIDEO_POS_X(_viewport.pos);
+      int colEnd   = texW - VIDEO_POS_X(_viewport.pos);
       if (colStart < 0)
          colStart = 0;
       if (colEnd > (int)VIDEO_SCALE_W(_viewport.dims))
@@ -2247,7 +2247,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       {
          size_t x;
          const uint8_t *src_row;
-         int    srcRow = _viewport.y + (int)y;
+         int    srcRow = VIDEO_POS_Y(_viewport.pos) + (int)y;
 
          /* Row entirely outside the texture (top/bottom overscan) or no
           * horizontally-visible columns: emit a black scanline. */
@@ -2281,7 +2281,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 
          for (x = (size_t)colStart; x < (size_t)colEnd; x++)
          {
-            int srcCol     = _viewport.x + (int)x;
+            int srcCol     = VIDEO_POS_X(_viewport.pos) + (int)x;
             dst[3 * x + 0] = src_row[4 * srcCol + 0];
             dst[3 * x + 1] = src_row[4 * srcCol + 1];
             dst[3 * x + 2] = src_row[4 * srcCol + 2];
@@ -2426,8 +2426,8 @@ static float metal_hdr_pq_to_nits(float pq)
       int texH      = (int)srcTex.height;
       int chunkBase = 0;
       int chunkEnd  = 0;
-      int colStart  = -_viewport.x;
-      int colEnd    = texW - _viewport.x;
+      int colStart  = -VIDEO_POS_X(_viewport.pos);
+      int colEnd    = texW - VIDEO_POS_X(_viewport.pos);
       if (colStart < 0)
          colStart = 0;
       if (colEnd > (int)VIDEO_SCALE_W(_viewport.dims))
@@ -2437,7 +2437,7 @@ static float metal_hdr_pq_to_nits(float pq)
       {
          size_t x;
          const uint8_t *src_row;
-         int    srcRow = _viewport.y + (int)y;
+         int    srcRow = VIDEO_POS_Y(_viewport.pos) + (int)y;
 
          if (srcRow < 0 || srcRow >= texH || colEnd <= colStart)
          {
@@ -2468,7 +2468,7 @@ static float metal_hdr_pq_to_nits(float pq)
             const uint16_t *srcPx = (const uint16_t *)src_row;
             for (x = (size_t)colStart; x < (size_t)colEnd; x++)
             {
-               int   srcCol = _viewport.x + (int)x;
+               int   srcCol = VIDEO_POS_X(_viewport.pos) + (int)x;
                float r      = metal_hdr_half_to_float(srcPx[4 * srcCol + 0]);
                float g      = metal_hdr_half_to_float(srcPx[4 * srcCol + 1]);
                float b      = metal_hdr_half_to_float(srcPx[4 * srcCol + 2]);
@@ -2492,7 +2492,7 @@ static float metal_hdr_pq_to_nits(float pq)
                /* MTLPixelFormatRGB10A2Unorm: R[9:0] G[19:10] B[29:20]
                 * A[31:30] -- same placement as DXGI R10G10B10A2 and
                 * Vulkan A2B10G10R10. */
-               uint32_t w = srcPx[_viewport.x + (int)x];
+               uint32_t w = srcPx[VIDEO_POS_X(_viewport.pos) + (int)x];
                uint32_t r = (w      ) & 0x3FF;
                uint32_t g = (w >> 10) & 0x3FF;
                uint32_t b = (w >> 20) & 0x3FF;
@@ -2607,8 +2607,8 @@ static float metal_hdr_pq_to_nits(float pq)
 {
    bool fullscreen = mode == kFullscreenViewport;
    MTLViewport vp  = {
-      .originX = fullscreen ? 0 : _viewport.x,
-      .originY = fullscreen ? 0 : _viewport.y,
+      .originX = fullscreen ? 0 : VIDEO_POS_X(_viewport.pos),
+      .originY = fullscreen ? 0 : VIDEO_POS_Y(_viewport.pos),
       .width   = fullscreen ? VIDEO_SCALE_W(_viewport.full_dims) : VIDEO_SCALE_W(_viewport.dims),
       .height  = fullscreen ? VIDEO_SCALE_H(_viewport.full_dims) : VIDEO_SCALE_H(_viewport.dims),
       .znear   = 0,
@@ -5367,8 +5367,8 @@ typedef struct MTLALIGN(16)
                ||  _engine.frame.output_size.y != VIDEO_SCALE_H(_viewport->dims)))
       resize_render_targets       = YES;
 
-   _engine.frame.viewport.originX = _viewport->x;
-   _engine.frame.viewport.originY = _viewport->y;
+   _engine.frame.viewport.originX = VIDEO_POS_X(_viewport->pos);
+   _engine.frame.viewport.originY = VIDEO_POS_Y(_viewport->pos);
    _engine.frame.viewport.width   = VIDEO_SCALE_W(_viewport->dims);
    _engine.frame.viewport.height  = VIDEO_SCALE_H(_viewport->dims);
    _engine.frame.viewport.znear   = 0.0f;

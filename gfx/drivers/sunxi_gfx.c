@@ -820,7 +820,7 @@ static void sunxi_viewport_info(void *data, struct video_viewport *vp)
    if (!vp || !_dispvars)
       return;
 
-   vp->x = vp->y = 0;
+   vp->pos = VIDEO_POS_PACK(0, 0);
 
    vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(_dispvars->src_width,
          _dispvars->src_height);

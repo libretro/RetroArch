@@ -1750,8 +1750,7 @@ static void d3d8_viewport_info(void *data, struct video_viewport *vp)
    if (!d3d || !vp)
       return;
 
-   vp->x            = d3d->out_vp.X;
-   vp->y            = d3d->out_vp.Y;
+   vp->pos          = VIDEO_POS_PACK(d3d->out_vp.X, d3d->out_vp.Y);
    vp->dims         = VIDEO_SCALE_PACK(d3d->out_vp.Width, d3d->out_vp.Height);
 
    vp->full_dims    = d3d->vp.full_dims;
@@ -2165,8 +2164,8 @@ static void d3d8_calculate_rect(void *data,
    vp.full_dims   = VIDEO_SCALE_PACK(*width, *height);
    video_driver_update_viewport(&vp, force_full, d3d->keep_aspect, true);
 
-   *x      = vp.x;
-   *y      = vp.y;
+   *x      = VIDEO_POS_X(vp.pos);
+   *y      = VIDEO_POS_Y(vp.pos);
    *width  = VIDEO_SCALE_W(vp.dims);
    *height = VIDEO_SCALE_H(vp.dims);
 }

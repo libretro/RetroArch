@@ -1345,8 +1345,7 @@ static void *gx2_init(const video_info_t *video,
    wiiu->vsync             = video->vsync;
    GX2SetSwapInterval(!!video->vsync);
 
-   wiiu->vp.x              = 0;
-   wiiu->vp.y              = 0;
+   wiiu->vp.pos            = VIDEO_POS_PACK(0, 0);
 
    if (wiiu->render_mode.height != 480 && prefer_drc)
    {
@@ -2234,7 +2233,7 @@ static bool gx2_frame(void *data, const void *frame,
                          frame_shader.ps.samplerVars[0].location);
    }
 
-   GX2SetViewport(wiiu->vp.x, wiiu->vp.y, VIDEO_SCALE_W(wiiu->vp.dims), VIDEO_SCALE_H(wiiu->vp.dims), 0.0f, 1.0f);
+   GX2SetViewport(VIDEO_POS_X(wiiu->vp.pos), VIDEO_POS_Y(wiiu->vp.pos), VIDEO_SCALE_W(wiiu->vp.dims), VIDEO_SCALE_H(wiiu->vp.dims), 0.0f, 1.0f);
    GX2SetScissor(0, 0, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height);
    GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
 
@@ -2481,8 +2480,8 @@ static void gx2_set_texture_frame(void *data,
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
                  wiiu->menu.texture.surface.imageSize);
 
-   wiiu->menu.v->pos.x        = wiiu->vp.x;
-   wiiu->menu.v->pos.y        = wiiu->vp.y;
+   wiiu->menu.v->pos.x        = VIDEO_POS_X(wiiu->vp.pos);
+   wiiu->menu.v->pos.y        = VIDEO_POS_Y(wiiu->vp.pos);
    wiiu->menu.v->pos.width    = VIDEO_SCALE_W(wiiu->vp.dims);
    wiiu->menu.v->pos.height   = VIDEO_SCALE_H(wiiu->vp.dims);
    wiiu->menu.v->coord.u      = 0.0f;

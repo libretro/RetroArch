@@ -734,8 +734,7 @@ static bool take_screenshot_viewport(
    video_driver_state_t *video_st = video_state_get_ptr();
    uint8_t *buffer                = NULL;
 
-   vp.x                           = 0;
-   vp.y                           = 0;
+   vp.pos                         = VIDEO_POS_PACK(0, 0);
    vp.dims                        = 0;
    vp.full_dims                   = 0;
 

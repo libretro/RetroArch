@@ -107,8 +107,8 @@ static void sdl3_refresh_renderer(sdl3_video_t *vid)
 
    /* We avoid clearing the screen here, since that's owned by
     * sdl3_gfx_frame(). Instead, we just update the viewport. */
-   r.x = vid->vp.x;
-   r.y = vid->vp.y;
+   r.x = VIDEO_POS_X(vid->vp.pos);
+   r.y = VIDEO_POS_Y(vid->vp.pos);
    r.w = (int)VIDEO_SCALE_W(vid->vp.dims);
    r.h = (int)VIDEO_SCALE_H(vid->vp.dims);
 
@@ -335,13 +335,13 @@ static void sdl3_blit_frame(sdl3_video_t *vid)
       SDL_Rect  game_vp;
       dst.w = (float)VIDEO_SCALE_H(vid->vp.dims);
       dst.h = (float)VIDEO_SCALE_W(vid->vp.dims);
-      dst.x = (float)(vid->vp.x + ((int)VIDEO_SCALE_W(vid->vp.dims)  - (int)VIDEO_SCALE_H(vid->vp.dims)) / 2);
-      dst.y = (float)(vid->vp.y + ((int)VIDEO_SCALE_H(vid->vp.dims) - (int)VIDEO_SCALE_W(vid->vp.dims))  / 2);
+      dst.x = (float)(VIDEO_POS_X(vid->vp.pos) + ((int)VIDEO_SCALE_W(vid->vp.dims)  - (int)VIDEO_SCALE_H(vid->vp.dims)) / 2);
+      dst.y = (float)(VIDEO_POS_Y(vid->vp.pos) + ((int)VIDEO_SCALE_H(vid->vp.dims) - (int)VIDEO_SCALE_W(vid->vp.dims))  / 2);
       SDL_SetRenderViewport(vid->renderer, NULL);
       SDL_RenderTextureRotated(vid->renderer, vid->frame.tex, NULL, &dst,
             vid->rotation, NULL, SDL_FLIP_NONE);
-      game_vp.x = vid->vp.x;
-      game_vp.y = vid->vp.y;
+      game_vp.x = VIDEO_POS_X(vid->vp.pos);
+      game_vp.y = VIDEO_POS_Y(vid->vp.pos);
       game_vp.w = (int)VIDEO_SCALE_W(vid->vp.dims);
       game_vp.h = (int)VIDEO_SCALE_H(vid->vp.dims);
       SDL_SetRenderViewport(vid->renderer, &game_vp);
@@ -450,8 +450,8 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
    if (menu_visible)
    {
       SDL_FRect menu_dst;
-      menu_dst.x = (float)vid->vp.x;
-      menu_dst.y = (float)vid->vp.y;
+      menu_dst.x = (float)VIDEO_POS_X(vid->vp.pos);
+      menu_dst.y = (float)VIDEO_POS_Y(vid->vp.pos);
       menu_dst.w = (float)VIDEO_SCALE_W(vid->vp.dims);
       menu_dst.h = (float)VIDEO_SCALE_H(vid->vp.dims);
       SDL_RenderTexture(vid->renderer, vid->menu.tex, NULL, &menu_dst);

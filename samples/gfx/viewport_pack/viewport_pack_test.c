@@ -15,8 +15,11 @@
  *   3. Clamping: neither axis can carry into the other. A size past
  *      65535 saturates rather than wrapping, which is what makes the
  *      two halves safe to sit in one word at all.
- *   4. Separation: the drawn area and the full window are different
- *      words, and writing one does not move the other.
+ *   4. Separation: the origin, the drawn area and the full window are
+ *      three different words, and writing one does not move another.
+ *   5. Sign: the origin's halves are signed, since integer scaling
+ *      overscans and pushes an axis negative, and a sign bit must not
+ *      reach the other axis.
  *
  * Header-only: the pack layout is all macros, so the harness needs
  * nothing from the tree but the header that declares them. */
@@ -129,13 +132,68 @@ static void lane_clamp(void)
          VIDEO_SCALE_W(d), VIDEO_SCALE_H(d));
 }
 
+/* 3b. the origin, which is signed: integer scaling overscans and pushes
+ *     x or y negative, so both halves sign-extend on the way out and a
+ *     sign bit never reaches the other axis */
+static void lane_origin(void)
+{
+   static const int pairs[][2] = {
+      {     0,     0 }, {     3,     5 }, {    -1,     0 }, {  0,  -1 },
+      {   -64,   -48 }, {   -64,    48 }, {    64,   -48 }, { 19, 108 },
+      {  -320,   200 }, { 32767, 32767 }, {-32768,-32768 }
+   };
+   size_t i;
+   unsigned p;
+
+   for (i = 0; i < sizeof(pairs) / sizeof(pairs[0]); i++)
+   {
+      int x = pairs[i][0];
+      int y = pairs[i][1];
+      p     = VIDEO_POS_PACK(x, y);
+
+      CHECK(VIDEO_POS_X(p) == x,
+            "origin: %d,%d read back an x of %d", x, y, VIDEO_POS_X(p));
+      CHECK(VIDEO_POS_Y(p) == y,
+            "origin: %d,%d read back a y of %d", x, y, VIDEO_POS_Y(p));
+   }
+
+   /* a negative y must not borrow into x */
+   p = VIDEO_POS_PACK(5, -1);
+   CHECK(VIDEO_POS_X(p) == 5,
+         "origin: a y of -1 moved the x to %d", VIDEO_POS_X(p));
+
+   /* the zero word is the origin, so a cleared viewport sits at 0,0 */
+   p = 0;
+   CHECK(VIDEO_POS_X(p) == 0 && VIDEO_POS_Y(p) == 0,
+         "origin: a zero word read %d,%d, not 0,0",
+         VIDEO_POS_X(p), VIDEO_POS_Y(p));
+
+   /* one axis at a time */
+   p = VIDEO_POS_PACK(10, 20);
+   VIDEO_POS_PUT_X(p, -30);
+   CHECK(VIDEO_POS_X(p) == -30 && VIDEO_POS_Y(p) == 20,
+         "origin: an x put as -30 came out %d,%d, not -30,20",
+         VIDEO_POS_X(p), VIDEO_POS_Y(p));
+   VIDEO_POS_PUT_Y(p, -40);
+   CHECK(VIDEO_POS_X(p) == -30 && VIDEO_POS_Y(p) == -40,
+         "origin: a y put as -40 came out %d,%d, not -30,-40",
+         VIDEO_POS_X(p), VIDEO_POS_Y(p));
+
+   /* an offset past a half saturates rather than wrapping, which would
+    * put the image on the opposite side of the display */
+   p = VIDEO_POS_PACK(40000, -40000);
+   CHECK(VIDEO_POS_X(p) == VIDEO_POS_MAX,
+         "origin: an x of 40000 read back %d", VIDEO_POS_X(p));
+   CHECK(VIDEO_POS_Y(p) == VIDEO_POS_MIN,
+         "origin: a y of -40000 read back %d", VIDEO_POS_Y(p));
+}
+
 /* 4. the drawn area and the window that holds it are separate words */
 static void lane_viewport(void)
 {
    video_viewport_t vp;
 
-   vp.x         = 3;
-   vp.y         = 5;
+   vp.pos       = VIDEO_POS_PACK(3, 5);
    vp.dims      = VIDEO_SCALE_PACK(640, 480);
    vp.full_dims = VIDEO_SCALE_PACK(1920, 1080);
 
@@ -152,8 +210,8 @@ static void lane_viewport(void)
          && VIDEO_SCALE_H(vp.full_dims) == 1080,
          "viewport: writing the drawn area moved the full size to %ux%u",
          VIDEO_SCALE_W(vp.full_dims), VIDEO_SCALE_H(vp.full_dims));
-   CHECK(vp.x == 3 && vp.y == 5,
-         "viewport: writing a size moved the origin to %d,%d", vp.x, vp.y);
+   CHECK(VIDEO_POS_X(vp.pos) == 3 && VIDEO_POS_Y(vp.pos) == 5,
+         "viewport: writing a size moved the origin to %d,%d", VIDEO_POS_X(vp.pos), VIDEO_POS_Y(vp.pos));
 }
 
 int main(void)
@@ -161,6 +219,7 @@ int main(void)
    lane_round_trip();
    lane_independence();
    lane_clamp();
+   lane_origin();
    lane_viewport();
 
    if (failures)

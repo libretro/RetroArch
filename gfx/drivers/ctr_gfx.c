@@ -851,31 +851,31 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
 {
    if (ctr->rotation == 0)
    {
-      ctr->frame_coords->x0 = ctr->vp.x;
-      ctr->frame_coords->y0 = ctr->vp.y;
-      ctr->frame_coords->x1 = ctr->vp.x + VIDEO_SCALE_W(ctr->vp.dims);
-      ctr->frame_coords->y1 = ctr->vp.y + VIDEO_SCALE_H(ctr->vp.dims);
+      ctr->frame_coords->x0 = VIDEO_POS_X(ctr->vp.pos);
+      ctr->frame_coords->y0 = VIDEO_POS_Y(ctr->vp.pos);
+      ctr->frame_coords->x1 = VIDEO_POS_X(ctr->vp.pos) + VIDEO_SCALE_W(ctr->vp.dims);
+      ctr->frame_coords->y1 = VIDEO_POS_Y(ctr->vp.pos) + VIDEO_SCALE_H(ctr->vp.dims);
    }
    else if (ctr->rotation == 1) /* 90° */
    {
-      ctr->frame_coords->x1 = ctr->vp.x;
-      ctr->frame_coords->y1 = ctr->vp.y;
-      ctr->frame_coords->x0 = ctr->vp.x + VIDEO_SCALE_W(ctr->vp.dims);
-      ctr->frame_coords->y0 = ctr->vp.y + VIDEO_SCALE_H(ctr->vp.dims);
+      ctr->frame_coords->x1 = VIDEO_POS_X(ctr->vp.pos);
+      ctr->frame_coords->y1 = VIDEO_POS_Y(ctr->vp.pos);
+      ctr->frame_coords->x0 = VIDEO_POS_X(ctr->vp.pos) + VIDEO_SCALE_W(ctr->vp.dims);
+      ctr->frame_coords->y0 = VIDEO_POS_Y(ctr->vp.pos) + VIDEO_SCALE_H(ctr->vp.dims);
    }
    else if (ctr->rotation == 2) /* 180° */
    {
-      ctr->frame_coords->x1 = ctr->vp.x;
-      ctr->frame_coords->y1 = ctr->vp.y;
-      ctr->frame_coords->x0 = ctr->vp.x + VIDEO_SCALE_W(ctr->vp.dims);
-      ctr->frame_coords->y0 = ctr->vp.y + VIDEO_SCALE_H(ctr->vp.dims);
+      ctr->frame_coords->x1 = VIDEO_POS_X(ctr->vp.pos);
+      ctr->frame_coords->y1 = VIDEO_POS_Y(ctr->vp.pos);
+      ctr->frame_coords->x0 = VIDEO_POS_X(ctr->vp.pos) + VIDEO_SCALE_W(ctr->vp.dims);
+      ctr->frame_coords->y0 = VIDEO_POS_Y(ctr->vp.pos) + VIDEO_SCALE_H(ctr->vp.dims);
    }
    else /* 270° */
    {
-      ctr->frame_coords->x0 = ctr->vp.x;
-      ctr->frame_coords->y0 = ctr->vp.y;
-      ctr->frame_coords->x1 = ctr->vp.x + VIDEO_SCALE_W(ctr->vp.dims);
-      ctr->frame_coords->y1 = ctr->vp.y + VIDEO_SCALE_H(ctr->vp.dims);
+      ctr->frame_coords->x0 = VIDEO_POS_X(ctr->vp.pos);
+      ctr->frame_coords->y0 = VIDEO_POS_Y(ctr->vp.pos);
+      ctr->frame_coords->x1 = VIDEO_POS_X(ctr->vp.pos) + VIDEO_SCALE_W(ctr->vp.dims);
+      ctr->frame_coords->y1 = VIDEO_POS_Y(ctr->vp.pos) + VIDEO_SCALE_H(ctr->vp.dims);
    }
 }
 
@@ -1697,8 +1697,7 @@ static void* ctr_init(const video_info_t* video,
 
    memset(ctr, 0, sizeof(ctr_video_t));
 
-   ctr->vp.x                       = 0;
-   ctr->vp.y                       = 0;
+   ctr->vp.pos                     = VIDEO_POS_PACK(0, 0);
    ctr->vp.dims                    = VIDEO_SCALE_PACK(CTR_TOP_FRAMEBUFFER_WIDTH,
          CTR_TOP_FRAMEBUFFER_HEIGHT);
    ctr->vp.full_dims               = VIDEO_SCALE_PACK(CTR_TOP_FRAMEBUFFER_WIDTH,

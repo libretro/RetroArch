@@ -1059,8 +1059,8 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
       else
       {
          /* No scissor -> viewport */
-         sci.offset.x      = vk->vp.x;
-         sci.offset.y      = vk->vp.y;
+         sci.offset.x      = VIDEO_POS_X(vk->vp.pos);
+         sci.offset.y      = VIDEO_POS_Y(vk->vp.pos);
          sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
          sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
@@ -1078,8 +1078,8 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
       else
       {
          /* No scissor -> viewport */
-         sci.offset.x      = vk->vp.x;
-         sci.offset.y      = vk->vp.y;
+         sci.offset.x      = VIDEO_POS_X(vk->vp.pos);
+         sci.offset.y      = VIDEO_POS_Y(vk->vp.pos);
          sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
          sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
@@ -3737,8 +3737,8 @@ static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font)
          sci               = vk->tracker.scissor;
       else
       {
-         sci.offset.x      = vk->vp.x;
-         sci.offset.y      = vk->vp.y;
+         sci.offset.x      = VIDEO_POS_X(vk->vp.pos);
+         sci.offset.y      = VIDEO_POS_Y(vk->vp.pos);
          sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
          sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
@@ -3754,8 +3754,8 @@ static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font)
          sci               = vk->tracker.scissor;
       else
       {
-         sci.offset.x      = vk->vp.x;
-         sci.offset.y      = vk->vp.y;
+         sci.offset.x      = VIDEO_POS_X(vk->vp.pos);
+         sci.offset.y      = VIDEO_POS_Y(vk->vp.pos);
          sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
          sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
@@ -6981,18 +6981,18 @@ static void vulkan_set_viewport(void *data, unsigned vp_width,
    video_driver_update_viewport(&vk->vp, force_full,
          (vk->flags & VK_FLAG_KEEP_ASPECT) ? true : false, true);
 
-   if (vk->vp.x < 0)
+   if (VIDEO_POS_X(vk->vp.pos) < 0)
    {
-      vk->translate_x = (float)vk->vp.x * 2;
-      vk->vp.x        = 0.0;
+      vk->translate_x = (float)VIDEO_POS_X(vk->vp.pos) * 2;
+      VIDEO_POS_PUT_X(vk->vp.pos, 0.0);
    }
    else
       vk->translate_x = 0.0;
 
-   if (vk->vp.y < 0)
+   if (VIDEO_POS_Y(vk->vp.pos) < 0)
    {
-      vk->translate_y = (float)vk->vp.y * 2;
-      vk->vp.y        = 0.0;
+      vk->translate_y = (float)VIDEO_POS_Y(vk->vp.pos) * 2;
+      VIDEO_POS_PUT_Y(vk->vp.pos, 0.0);
    }
    else
       vk->translate_y = 0.0;
@@ -7006,8 +7006,8 @@ static void vulkan_set_viewport(void *data, unsigned vp_width,
       vk->out_vp_height = VIDEO_SCALE_H(vk->vp.dims);
    }
 
-   vk->video_vp.x        = (float)vk->vp.x;
-   vk->video_vp.y        = (float)vk->vp.y;
+   vk->video_vp.x        = (float)VIDEO_POS_X(vk->vp.pos);
+   vk->video_vp.y        = (float)VIDEO_POS_Y(vk->vp.pos);
    vk->video_vp.width    = (float)VIDEO_SCALE_W(vk->vp.dims);
    vk->video_vp.height   = (float)VIDEO_SCALE_H(vk->vp.dims);
    vk->video_vp.minDepth = 0.0f;
@@ -7027,8 +7027,7 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
 
    vk->readback.record[slot].serial = 0;
 
-   vp.x                                   = 0;
-   vp.y                                   = 0;
+   vp.pos                                 = VIDEO_POS_PACK(0, 0);
    vp.dims                                = 0;
    vp.full_dims                           = 0;
 
@@ -7052,8 +7051,8 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
    region.imageSubresource.mipLevel       = 0;
    region.imageSubresource.baseArrayLayer = 0;
    region.imageSubresource.layerCount     = 1;
-   region.imageOffset.x                   = vp.x;
-   region.imageOffset.y                   = vp.y;
+   region.imageOffset.x                   = VIDEO_POS_X(vp.pos);
+   region.imageOffset.y                   = VIDEO_POS_Y(vp.pos);
    region.imageOffset.z                   = 0;
 
    /* Clamp readback extent so imageOffset + imageExtent does not
@@ -7070,10 +7069,10 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
          rw = (int)VIDEO_SCALE_W(vp.dims);
       if (rh < 1)
          rh = (int)VIDEO_SCALE_H(vp.dims);
-      if (vp.x + (unsigned)rw > sw)
-         rw = (int)(sw - vp.x);
-      if (vp.y + (unsigned)rh > sh)
-         rh = (int)(sh - vp.y);
+      if (VIDEO_POS_X(vp.pos) + (unsigned)rw > sw)
+         rw = (int)(sw - VIDEO_POS_X(vp.pos));
+      if (VIDEO_POS_Y(vp.pos) + (unsigned)rh > sh)
+         rh = (int)(sh - VIDEO_POS_Y(vp.pos));
       if (rw < 1)
          rw = 1;
       if (rh < 1)
@@ -7568,8 +7567,8 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
       else
       {
          /* No scissor -> viewport */
-         sci.offset.x      = vk->vp.x;
-         sci.offset.y      = vk->vp.y;
+         sci.offset.x      = VIDEO_POS_X(vk->vp.pos);
+         sci.offset.y      = VIDEO_POS_Y(vk->vp.pos);
          sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
          sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
@@ -7587,8 +7586,8 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
       else
       {
          /* No scissor -> viewport */
-         sci.offset.x      = vk->vp.x;
-         sci.offset.y      = vk->vp.y;
+         sci.offset.x      = VIDEO_POS_X(vk->vp.pos);
+         sci.offset.y      = VIDEO_POS_Y(vk->vp.pos);
          sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
          sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
@@ -10954,8 +10953,8 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
                   sci               = vk->tracker.scissor;
                else
                {
-                  sci.offset.x      = vk->vp.x;
-                  sci.offset.y      = vk->vp.y;
+                  sci.offset.x      = VIDEO_POS_X(vk->vp.pos);
+                  sci.offset.y      = VIDEO_POS_Y(vk->vp.pos);
                   sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
                   sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
                }
@@ -10971,8 +10970,8 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
                   sci               = vk->tracker.scissor;
                else
                {
-                  sci.offset.x      = vk->vp.x;
-                  sci.offset.y      = vk->vp.y;
+                  sci.offset.x      = VIDEO_POS_X(vk->vp.pos);
+                  sci.offset.y      = VIDEO_POS_Y(vk->vp.pos);
                   sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
                   sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
                }

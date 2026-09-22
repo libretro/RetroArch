@@ -1224,8 +1224,8 @@ bool video_driver_translate_coord_viewport(
    else if (mouse_y == 0)
       scaled_screen_y = -0x7fff;
 
-   mouse_x           -= vp->x;
-   mouse_y           -= vp->y;
+   mouse_x           -= VIDEO_POS_X(vp->pos);
+   mouse_y           -= VIDEO_POS_Y(vp->pos);
 
    if (mouse_x > 0 && mouse_x < norm_vp_width)
       scaled_x        = ((mouse_x * 0xffff)
@@ -1565,8 +1565,7 @@ static void recording_dump_frame(
       {
          struct video_viewport vp;
 
-         vp.x                        = 0;
-         vp.y                        = 0;
+         vp.pos                      = VIDEO_POS_PACK(0, 0);
          vp.dims                     = 0;
          vp.full_dims                = 0;
 
@@ -3005,8 +3004,7 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
       }
    }
 
-   vp->x      = x;
-   vp->y      = y;
+   vp->pos    = VIDEO_POS_PACK(x, y);
    vp->dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
 
    /* Statistics */
@@ -3369,8 +3367,7 @@ static void video_viewport_get_scaled_integer(
    y          += padding_y * vp_bias_y;
 
    vp->dims    = VIDEO_SCALE_PACK(width, height);
-   vp->x       = x;
-   vp->y       = y;
+   vp->pos     = VIDEO_POS_PACK(x, y);
 
    /* Statistics */
    video_st->scale_dims = vp->dims;
@@ -3501,8 +3498,7 @@ void video_driver_update_viewport(
    rotation                        = ps.rotation;
    video_driver_aspect_ratio       = ps.aspect;
 
-   vp->x                           = 0;
-   vp->y                           = 0;
+   vp->pos                         = VIDEO_POS_PACK(0, 0);
    vp->dims                        = vp->full_dims;
 
 #ifdef HAVE_OVERLAY
@@ -3548,8 +3544,7 @@ void video_driver_update_viewport(
          if (flags & OVERLAY_VIEWPORT_FILL)
          {
             /* Fill mode: stretch to fill overlay viewport exactly */
-            vp->x      = ol_x;
-            vp->y      = ol_y;
+            vp->pos    = VIDEO_POS_PACK(ol_x, ol_y);
             vp->dims   = VIDEO_SCALE_PACK(ol_w, ol_h);
          }
          else
@@ -3564,16 +3559,16 @@ void video_driver_update_viewport(
                /* Game is wider - pillarbox (bars top/bottom) */
                vp->dims   = VIDEO_SCALE_PACK(ol_w,
                      (unsigned)(ol_w / game_aspect));
-               vp->x      = ol_x;
-               vp->y      = ol_y + (int)(ol_h - VIDEO_SCALE_H(vp->dims)) / 2;
+               vp->pos    = VIDEO_POS_PACK(ol_x,
+                     ol_y + (int)(ol_h - VIDEO_SCALE_H(vp->dims)) / 2);
             }
             else
             {
                /* Game is taller - letterbox (bars left/right) */
                vp->dims   = VIDEO_SCALE_PACK((unsigned)(ol_h * game_aspect),
                      ol_h);
-               vp->x      = ol_x + (int)(ol_w - VIDEO_SCALE_W(vp->dims)) / 2;
-               vp->y      = ol_y;
+               vp->pos    = VIDEO_POS_PACK(ol_x + (int)(ol_w - VIDEO_SCALE_W(vp->dims)) / 2,
+                     ol_y);
             }
          }
          return;  /* Skip all other viewport calculations */
@@ -5827,15 +5822,14 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    {
       /* Force custom viewport to have sane parameters. */
       video_viewport_t vp;
-      vp.x       = custom_vp->x;
-      vp.y       = custom_vp->y;
+      vp.pos     = VIDEO_POS_PACK(custom_vp->x, custom_vp->y);
       vp.dims    = VIDEO_SCALE_PACK(width, height);
       vp.full_dims = 0;
 
       video_st->current_video->viewport_info(video_st->data, &vp);
 
-      custom_vp->x      = vp.x;
-      custom_vp->y      = vp.y;
+      custom_vp->x      = VIDEO_POS_X(vp.pos);
+      custom_vp->y      = VIDEO_POS_Y(vp.pos);
       custom_vp->width  = VIDEO_SCALE_W(vp.dims);
       custom_vp->height = VIDEO_SCALE_H(vp.dims);
    }

@@ -435,8 +435,7 @@ static bool sdl_gfx_has_windowed(void *data) { return true; }
 static void sdl_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
    sdl_video_t *vid = (sdl_video_t*)data;
-   vp->x      = 0;
-   vp->y      = 0;
+   vp->pos    = VIDEO_POS_PACK(0, 0);
    vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(vid->screen->w,
          vid->screen->h);
 }

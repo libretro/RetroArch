@@ -620,7 +620,7 @@ static void gdi_upload_core_frame_to_menu(gdi_t *gdi,
     * was already cleared to black in Step 4, so we leave it
     * untouched and the bars appear automatically. */
    StretchDIBits(gdi->memDC,
-         gdi->vp.x, gdi->vp.y, VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims),
+         VIDEO_POS_X(gdi->vp.pos), VIDEO_POS_Y(gdi->vp.pos), VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims),
          0, 0, frame_w, frame_h,
          src, (BITMAPINFO*)&info, DIB_RGB_COLORS, SRCCOPY);
 }
@@ -2661,8 +2661,7 @@ static bool gdi_frame(void *data, const void *frame,
     * destination so we still draw something. */
    if (VIDEO_SCALE_W(gdi->vp.dims) == 0 || VIDEO_SCALE_H(gdi->vp.dims) == 0)
    {
-      gdi->vp.x           = 0;
-      gdi->vp.y           = 0;
+      gdi->vp.pos         = VIDEO_POS_PACK(0, 0);
       gdi->vp.dims        = VIDEO_SCALE_PACK(surface_width, surface_height);
       gdi->vp.full_dims   = VIDEO_SCALE_PACK(surface_width, surface_height);
    }
@@ -2982,13 +2981,13 @@ static bool gdi_frame(void *data, const void *frame,
          if (frame_to_copy == gdi->menu_frame && bits == 16)
          {
             gdi_blit_rgui_alpha(gdi, frame_to_copy, width, height,
-                  gdi->vp.x, gdi->vp.y, VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims));
+                  VIDEO_POS_X(gdi->vp.pos), VIDEO_POS_Y(gdi->vp.pos), VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims));
          }
          else
 #endif
          {
             StretchDIBits(gdi->memDC,
-                  gdi->vp.x, gdi->vp.y, VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims),
+                  VIDEO_POS_X(gdi->vp.pos), VIDEO_POS_Y(gdi->vp.pos), VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims),
                   0, 0, width, height,
                   frame_to_copy, (BITMAPINFO*)&info, DIB_RGB_COLORS, SRCCOPY);
          }
@@ -3499,8 +3498,7 @@ static void gdi_viewport_info(void *data, struct video_viewport *vp)
    if (!gdi || !vp)
       return;
 
-   vp->x           = gdi->vp.x;
-   vp->y           = gdi->vp.y;
+   vp->pos         = VIDEO_POS_PACK(VIDEO_POS_X(gdi->vp.pos), VIDEO_POS_Y(gdi->vp.pos));
    vp->dims        = gdi->vp.dims;
    vp->full_dims   = gdi->vp.full_dims;
 }
@@ -3787,8 +3785,8 @@ static void gdi_overlays_render(gdi_t *gdi,
       }
       else
       {
-         base_x = gdi->vp.x;
-         base_y = gdi->vp.y;
+         base_x = VIDEO_POS_X(gdi->vp.pos);
+         base_y = VIDEO_POS_Y(gdi->vp.pos);
          base_w = VIDEO_SCALE_W(gdi->vp.dims)  ? VIDEO_SCALE_W(gdi->vp.dims)  : surface_width;
          base_h = VIDEO_SCALE_H(gdi->vp.dims) ? VIDEO_SCALE_H(gdi->vp.dims) : surface_height;
       }

@@ -58,8 +58,8 @@ static void video_thread_publish_vp(thread_video_t *thr,
 
    retro_atomic_store_relaxed_int(&thr->vp_seq, seq + 1);
    retro_atomic_thread_fence_release();
-   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_X], vp->x);
-   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_Y], vp->y);
+   retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_POS],
+         (int)vp->pos);
    retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_WH],
          (int)vp->dims);
    retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_FULL_WH],
@@ -83,10 +83,8 @@ static void video_thread_read_vp(thread_video_t *thr,
             &s[VIDEO_THREAD_VP_WH]);
       full            = (unsigned)retro_atomic_load_relaxed_int(
             &s[VIDEO_THREAD_VP_FULL_WH]);
-      vp->x           = retro_atomic_load_relaxed_int(
-            &s[VIDEO_THREAD_VP_X]);
-      vp->y           = retro_atomic_load_relaxed_int(
-            &s[VIDEO_THREAD_VP_Y]);
+      vp->pos         = (unsigned)retro_atomic_load_relaxed_int(
+            &s[VIDEO_THREAD_VP_POS]);
       vp->dims        = wh;
       vp->full_dims   = full;
       retro_atomic_thread_fence_acquire();
@@ -575,7 +573,7 @@ static bool video_thread_handle_packet(
             if (thr->driver_data && thr->driver->viewport_info)
             {
                struct video_viewport vp;
-               vp.x    = vp.y         = 0;
+               vp.pos  = VIDEO_POS_PACK(0, 0);
                vp.dims = vp.full_dims = 0;
                thr->driver->viewport_info(thr->driver_data, &vp);
                video_thread_publish_vp(thr, &vp);
@@ -699,8 +697,7 @@ static bool video_thread_handle_packet(
          {
             struct video_viewport vp;
 
-            vp.x           = 0;
-            vp.y           = 0;
+            vp.pos         = VIDEO_POS_PACK(0, 0);
             vp.dims        = 0;
             vp.full_dims   = 0;
 
@@ -1846,8 +1843,7 @@ static void video_thread_loop(void *data)
           * the hook keeps pacing exactly as it did. */
          bool         presentable = true;
 
-         vp.x                     = 0;
-         vp.y                     = 0;
+         vp.pos                   = VIDEO_POS_PACK(0, 0);
          vp.dims                  = 0;
          vp.full_dims             = 0;
 
