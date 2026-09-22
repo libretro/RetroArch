@@ -5121,14 +5121,18 @@ static void rgui_render_messagebox(
          const char *str_ok                     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK);
          size_t str_back_width                  = strlen(str_back) * rgui->font_width_stride;
          size_t str_ok_width                    = strlen(str_ok) * rgui->font_width_stride;
-         float icon_size                        = rgui->font_width_stride;
-         float icon_padding                     = icon_size / 2;
-         float icon_x                           = x + (icon_size * 3) + (icon_padding * 2);
-         float icon_y                           = fb_height - y + icon_size - (icon_padding * 2);
-         int cursor_x                           = icon_x - (icon_padding * 2);
-         int cursor_y                           = icon_y - icon_padding;
-         int cursor_w                           = icon_size + (icon_padding * 2) + str_back_width;
-         int cursor_h                           = icon_size + (icon_padding * 3);
+         /* Every offset here is a whole number of framebuffer
+          * pixels: the half a glyph the padding used to be always
+          * appeared in pairs that added back up to one. The two
+          * that do not - the hit box's top edge and its height -
+          * are the halves the float arithmetic truncated away. */
+         unsigned icon_size                     = rgui->font_width_stride;
+         int icon_x                             = x + (int)(icon_size * 4);
+         int icon_y                             = (int)fb_height - y;
+         int cursor_x                           = icon_x - (int)icon_size;
+         int cursor_y                           = icon_y - (int)((icon_size + 1) / 2);
+         int cursor_w                           = (int)(icon_size * 2 + str_back_width);
+         int cursor_h                           = (int)((icon_size * 5) / 2);
 
          /* Back */
          if (     rgui->pointer.x >= cursor_x
@@ -5156,10 +5160,10 @@ static void rgui_render_messagebox(
                rgui->colors.shadow_color);
 
          /* OK */
-         icon_x  += width - (icon_size * 4) - (icon_padding * 8) - str_ok_width;
+         icon_x  += (int)width - (int)(icon_size * 8) - (int)str_ok_width;
 
-         cursor_x = icon_x - (icon_padding * 2);
-         cursor_w = icon_size + (icon_padding * 2) + str_ok_width;
+         cursor_x = icon_x - (int)icon_size;
+         cursor_w = (int)(icon_size * 2 + str_ok_width);
 
          if (     rgui->pointer.x >= cursor_x
                && rgui->pointer.x <= cursor_x + cursor_w
