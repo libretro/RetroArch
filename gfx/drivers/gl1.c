@@ -2218,16 +2218,16 @@ static bool gl1_frame(void *data, const void *frame,
    const void *frame_to_copy        = NULL;
    unsigned mode_width              = 0;
    unsigned mode_height             = 0;
-   unsigned width                   = video_info->width;
-   unsigned height                  = video_info->height;
+   unsigned width                   = VIDEO_SCALE_W(video_info->dims);
+   unsigned height                  = VIDEO_SCALE_H(video_info->dims);
    bool draw                        = true;
    bool do_swap                     = false;
    gl1_t *gl1                       = (gl1_t*)data;
    unsigned bits                    = gl1->frame_bits;
    unsigned pot_width               = 0;
    unsigned pot_height              = 0;
-   unsigned video_width             = video_info->width;
-   unsigned video_height            = video_info->height;
+   unsigned video_width             = VIDEO_SCALE_W(video_info->dims);
+   unsigned video_height            = VIDEO_SCALE_H(video_info->dims);
    int bfi_light_frames;
    unsigned n;
 #ifdef HAVE_MENU

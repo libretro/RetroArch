@@ -9256,8 +9256,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    unsigned vertical_fade_factor       = video_info->menu.xmb_vertical_fade_factor;
    unsigned current_menu_icon          = video_info->menu.xmb_current_menu_icon;
    void *userdata                      = video_info->userdata;
-   unsigned video_width                = video_info->width;
-   unsigned video_height               = video_info->height;
+   unsigned video_width                = VIDEO_SCALE_W(video_info->dims);
+   unsigned video_height               = VIDEO_SCALE_H(video_info->dims);
    bool shadows_enable                 = video_info->xmb_shadows_enable;
    float alpha_factor                  = video_info->xmb_alpha_factor;
    bool timedate_enable                = video_info->timedate_enable;

@@ -4780,8 +4780,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #endif
 
    output_size                             = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
-   video_info->width                       = VIDEO_SCALE_W(output_size);
-   video_info->height                      = VIDEO_SCALE_H(output_size);
+   video_info->dims                        = output_size;
 #ifdef HAVE_THREADS
    if (is_threaded)
       video_info->scale_dims               = video_thread_get_scale(video_st);
@@ -6707,7 +6706,7 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned cache_dims                    = 0;
       size_t   cache_pitch                   = 0;
       float font_size_ratio                  = (float)(DEFAULT_FONT_SIZE / video_info.font_size);
-      float scale                            = (float)video_info.height / (video_info.font_size * 30)
+      float scale                            = (float)VIDEO_SCALE_H(video_info.dims) / (video_info.font_size * 30)
             * 0.50f * font_size_ratio;
 
       /* Divide scale evenly to maintain size and readability in small screens */
@@ -6776,8 +6775,8 @@ void video_driver_frame(const void *data, unsigned width,
                (audio_st->stat_core_is_float) ? "FLOAT" : "INT16",
                video_ident ? video_ident : "n/a",
                pixel_format_name(video_st->pix_fmt),
-               video_info.width,
-               video_info.height,
+               VIDEO_SCALE_W(video_info.dims),
+               VIDEO_SCALE_H(video_info.dims),
                VIDEO_SCALE_W(video_info.scale_dims),
                VIDEO_SCALE_H(video_info.scale_dims),
                (float)VIDEO_SCALE_W(video_info.scale_dims) / ((rotation % 2)

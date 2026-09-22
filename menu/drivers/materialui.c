@@ -8514,8 +8514,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    float menu_wallpaper_opacity   = video_info->menu_wallpaper_opacity;
    float menu_framebuffer_opacity = video_info->menu_framebuffer_opacity;
    void *userdata                 = video_info->userdata;
-   unsigned video_width           = video_info->width;
-   unsigned video_height          = video_info->height;
+   unsigned video_width           = VIDEO_SCALE_W(video_info->dims);
+   unsigned video_height          = VIDEO_SCALE_H(video_info->dims);
    unsigned
       materialui_color_theme      = video_info->materialui_color_theme;
    bool video_fullscreen          = video_info->fullscreen;

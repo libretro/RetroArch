@@ -356,8 +356,8 @@ static void gfx_widget_libretro_message_frame(void *data, void *user_data)
       gfx_display_t *p_disp                  = (gfx_display_t*)video_info->disp_userdata;
       dispgfx_widget_t *p_dispwidget         = (dispgfx_widget_t*)user_data;
 
-      unsigned video_width                   = video_info->width;
-      unsigned video_height                  = video_info->height;
+      unsigned video_width                   = VIDEO_SCALE_W(video_info->dims);
+      unsigned video_height                  = VIDEO_SCALE_H(video_info->dims);
       void *userdata                         = video_info->userdata;
 
       gfx_widget_font_data_t *font_msg_queue = &p_dispwidget->gfx_widget_fonts.msg_queue;

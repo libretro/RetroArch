@@ -381,8 +381,8 @@ static bool vg_frame(void *data, const void *frame,
       video_frame_info_t *video_info)
 {
    vg_t                           *vg = (vg_t*)data;
-   unsigned width                     = video_info->width;
-   unsigned height                    = video_info->height;
+   unsigned width                     = VIDEO_SCALE_W(video_info->dims);
+   unsigned height                    = VIDEO_SCALE_H(video_info->dims);
 #ifdef HAVE_MENU
    bool menu_is_alive                 = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif

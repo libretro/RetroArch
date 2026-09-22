@@ -4802,8 +4802,8 @@ static bool gl3_frame(void *data, const void *frame,
    gl3_filter_chain_t *filter_chain        = NULL;
 #endif
    gl3_t *gl                               = (gl3_t*)data;
-   unsigned width                          = video_info->width;
-   unsigned height                         = video_info->height;
+   unsigned width                          = VIDEO_SCALE_W(video_info->dims);
+   unsigned height                         = VIDEO_SCALE_H(video_info->dims);
    struct font_params *osd_params          = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text                   = video_info->stat_text;

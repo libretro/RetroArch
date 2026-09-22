@@ -400,7 +400,7 @@ static bool sdl3_capture_viewport(sdl3_video_t *vid, uint8_t *buffer)
 }
 
 /* Menu, statistics, widgets and OSD text all compute their
- * coordinates against video_info->width/height - the full window
+ * coordinates against VIDEO_SCALE_W(video_info->dims)/height - the full window
  * dimensions - and every viewport change flushes SDL's render batch.
  * Run all of these passes under a single full-window viewport switch,
  * restoring the game viewport at the end (readback and the next

@@ -518,9 +518,9 @@ typedef struct video_frame_info
    unsigned monitor_index;
    unsigned crt_switch_resolution;
    unsigned crt_switch_resolution_super;
-   unsigned width;
-   unsigned height;
-   /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
+   /* The output size the frame was built for, and the axes each of the
+    * three below mean, all in one word, VIDEO_SCALE_PACK's layout. */
+   unsigned dims;
    unsigned scale_dims;
    unsigned xmb_color_theme;
    unsigned menu_shader_pipeline;

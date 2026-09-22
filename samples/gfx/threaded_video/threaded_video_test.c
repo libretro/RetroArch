@@ -2017,8 +2017,8 @@ static bool rslane_frame(void *data, const void *frame,
    {
       /* Frame K+1: what size is this drawn at? The size before the
        * report may be zero in the harness, so a flag, not the value. */
-      rslane_seen_w = video_info->width;
-      rslane_seen_h = video_info->height;
+      rslane_seen_w = VIDEO_SCALE_W(video_info->dims);
+      rslane_seen_h = VIDEO_SCALE_H(video_info->dims);
       rslane_seen   = true;
    }
    return rslane_inner->frame(data, frame, width, height, frame_count,

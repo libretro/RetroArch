@@ -8612,8 +8612,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    unsigned aspect_ratio_lock          = video_info->menu.rgui_aspect_ratio_lock;
 #endif
    bool border_filler_enable           = video_info->menu.rgui_border_filler_enable;
-   unsigned video_width                = video_info->width;
-   unsigned video_height               = video_info->height;
+   unsigned video_width                = VIDEO_SCALE_W(video_info->dims);
+   unsigned video_height               = VIDEO_SCALE_H(video_info->dims);
    gfx_display_t *p_disp               = disp_get_ptr();
 
    if (bg_filler_thickness_enable != ((rgui->flags & RGUI_FLAG_BG_THICKNESS) > 0))

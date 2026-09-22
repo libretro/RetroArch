@@ -1923,8 +1923,8 @@ static void gfx_widgets_frame_state(void *data)
    bool time_show                   = video_info->time_show;
    bool onscreen_panels             = fps_show || framecount_show || memory_show || core_status_msg_show || time_show;
    void *userdata                   = video_info->userdata;
-   unsigned video_width             = video_info->width;
-   unsigned video_height            = video_info->height;
+   unsigned video_width             = VIDEO_SCALE_W(video_info->dims);
+   unsigned video_height            = VIDEO_SCALE_H(video_info->dims);
    uint32_t video_flags             = video_info->video_st_flags;
    bool widgets_is_paused           = (video_flags & VIDEO_FLAG_WIDGETS_PAUSED) != 0;
    bool widgets_is_fastmotion       = (video_flags & VIDEO_FLAG_WIDGETS_FASTMOTION) != 0;
@@ -2800,12 +2800,12 @@ void gfx_widgets_worker_step(void *data,
     * on the video thread under the threaded wrapper. */
    gfx_animation_update_widgets(cpu_features_get_time_usec(),
          video_info->menu_ticker_speed,
-         VIDEO_SCALE_PACK(video_info->width, video_info->height));
+         video_info->dims);
    /* What the frame carried, not the settings the main thread writes:
     * this runs on the video thread under the threaded wrapper. */
    p_dispwidget->frame_menu_st_flags = (uint16_t)video_info->menu_st_flags;
    gfx_widgets_iterate_frame(
-         video_info->width, video_info->height, video_info->fullscreen,
+         VIDEO_SCALE_W(video_info->dims), VIDEO_SCALE_H(video_info->dims), video_info->fullscreen,
          video_info->widget_dir_assets,
          (char*)video_info->widget_path_font,
          true);

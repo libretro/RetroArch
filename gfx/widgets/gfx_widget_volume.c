@@ -104,8 +104,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       gfx_widget_font_data_t *font_regular = &p_dispwidget->gfx_widget_fonts.regular;
 
       void *userdata                       = video_info->userdata;
-      unsigned video_width                 = video_info->width;
-      unsigned video_height                = video_info->height;
+      unsigned video_width                 = VIDEO_SCALE_W(video_info->dims);
+      unsigned video_height                = VIDEO_SCALE_H(video_info->dims);
 
       unsigned padding                     = p_dispwidget->simple_widget_padding;
 

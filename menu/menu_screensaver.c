@@ -799,8 +799,8 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
       return;
 
    font                           = screensaver->font_data.font;
-   video_width                    = video_info->width;
-   video_height                   = video_info->height;
+   video_width                    = VIDEO_SCALE_W(video_info->dims);
+   video_height                   = VIDEO_SCALE_H(video_info->dims);
    userdata                       = video_info->userdata;
 
    /* Set viewport */

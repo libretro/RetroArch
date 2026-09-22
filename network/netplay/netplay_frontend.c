@@ -10602,7 +10602,9 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
       &p_dispwidget->gfx_widget_fonts.regular;
    int line_height                          =
       font->line_height + p_dispwidget->simple_widget_padding / 3.0f;
-   int height                               = video_info->height - line_height;
+   unsigned video_width                     = VIDEO_SCALE_W(video_info->dims);
+   unsigned video_height                    = VIDEO_SCALE_H(video_info->dims);
+   int height                               = video_height - line_height;
    uint32_t color_name                      = chat_buffer->color_name;
    uint32_t color_msg                       = chat_buffer->color_msg;
 
@@ -10631,8 +10633,8 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
          formatted_nick,
          p_dispwidget->simple_widget_padding,
          height,
-         video_info->width,
-         video_info->height,
+         video_width,
+         video_height,
          color_name | (uint32_t)alpha,
          TEXT_ALIGN_LEFT,
          true);
@@ -10642,8 +10644,8 @@ static void gfx_widget_netplay_chat_frame(void *data, void *userdata)
          formatted_msg,
          p_dispwidget->simple_widget_padding + formatted_nick_width,
          height,
-         video_info->width,
-         video_info->height,
+         video_width,
+         video_height,
          color_msg | (uint32_t)alpha,
          TEXT_ALIGN_LEFT,
          true);
@@ -10707,6 +10709,8 @@ static void gfx_widget_netplay_ping_frame(void *data, void *userdata)
          (gfx_display_t*)video_info->disp_userdata;
       gfx_widget_font_data_t *font         =
          &p_dispwidget->gfx_widget_fonts.regular;
+      unsigned video_width                 = VIDEO_SCALE_W(video_info->dims);
+      unsigned video_height                = VIDEO_SCALE_H(video_info->dims);
 
       /* Limit the ping counter to 999. */
       if (ping > 999)
@@ -10723,23 +10727,23 @@ static void gfx_widget_netplay_ping_frame(void *data, void *userdata)
       gfx_display_draw_quad(
          p_disp,
          video_info->userdata,
-         video_info->width,
-         video_info->height,
-         video_info->width - total_width,
-         video_info->height - p_dispwidget->simple_widget_height,
+         video_width,
+         video_height,
+         video_width - total_width,
+         video_height - p_dispwidget->simple_widget_height,
          total_width,
          p_dispwidget->simple_widget_height,
-         video_info->width,
-         video_info->height,
+         video_width,
+         video_height,
          p_dispwidget->backdrop_orig,
 	     NULL);
       gfx_widgets_draw_text(
          font,
          ping_str,
-         video_info->width - ping_width - p_dispwidget->simple_widget_padding,
-         video_info->height - font->line_centre_offset,
-         video_info->width,
-         video_info->height,
+         video_width - ping_width - p_dispwidget->simple_widget_padding,
+         video_height - font->line_centre_offset,
+         video_width,
+         video_height,
          0xFFFFFFFF,
          TEXT_ALIGN_LEFT,
          true);

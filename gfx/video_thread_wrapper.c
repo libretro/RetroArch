@@ -1876,7 +1876,6 @@ static void video_thread_loop(void *data)
                unsigned out_dims_o;
                bool ret;
                video_frame_info_t *video_info = &thr->frame.slot[slot].video_info;
-               unsigned out_w = 0, out_h = 0;
 
                /* The frame info was built on the main thread when the
                 * frame was pushed, with the output size known then. A
@@ -1888,13 +1887,8 @@ static void video_thread_loop(void *data)
                 * and draw the menu into a corner of the window. The size
                 * the driver reported last is what it must draw to now. */
                out_dims_o = video_driver_get_output_dims();
-               out_w = VIDEO_SCALE_W(out_dims_o);
-               out_h = VIDEO_SCALE_H(out_dims_o);
-               if (out_w && out_h)
-               {
-                  video_info->width  = out_w;
-                  video_info->height = out_h;
-               }
+               if (VIDEO_SCALE_W(out_dims_o) && VIDEO_SCALE_H(out_dims_o))
+                  video_info->dims = out_dims_o;
 
                /* video_driver_build_info() resolves userdata from
                 * video_driver_st, and video_thread_free() clears

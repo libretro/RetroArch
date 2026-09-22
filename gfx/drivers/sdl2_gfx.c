@@ -633,7 +633,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
     * symmetric across menu drivers.
     *
     * Needs the full-window viewport for the same reason widgets do
-    * - OSD font math is done against video_info->width/height. */
+    * - OSD font math is done against VIDEO_SCALE_W(video_info->dims)/height. */
    {
       const char *stat_text          = video_info->stat_text;
       struct font_params *osd_params = (struct font_params*)
@@ -705,7 +705,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
     *
     * Critically, sdl_refresh_renderer set a viewport equal to
     * vid->vp (the aspect-corrected GAME area, not the window).
-    * Widgets compute coords against video_info->width/height which
+    * Widgets compute coords against VIDEO_SCALE_W(video_info->dims)/height which
     * are the full window dimensions, so without a full-window
     * viewport reset here the widget would draw in the wrong place
     * (or be clipped entirely - at 4K with a 4:3 game, the widget's

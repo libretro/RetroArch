@@ -8011,8 +8011,8 @@ static bool vulkan_frame(void *data, const void *frame,
    vk_t *vk                                      = (vk_t*)data;
    vulkan_filter_chain_t *filter_chain           = NULL;
    bool waits_for_semaphores                     = false;
-   unsigned width                                = video_info->width;
-   unsigned height                               = video_info->height;
+   unsigned width                                = VIDEO_SCALE_W(video_info->dims);
+   unsigned height                               = VIDEO_SCALE_H(video_info->dims);
    bool statistics_show                          = video_info->statistics_show;
    const char *stat_text                         = video_info->stat_text;
    unsigned black_frame_insertion                = video_info->black_frame_insertion;
@@ -8021,8 +8021,8 @@ static bool vulkan_frame(void *data, const void *frame,
    bool input_driver_nonblock_state              = video_info->input_driver_nonblock_state;
    bool runloop_is_slowmotion                    = video_info->runloop_is_slowmotion;
    bool runloop_is_paused                        = video_info->runloop_is_paused;
-   unsigned video_width                          = video_info->width;
-   unsigned video_height                         = video_info->height;
+   unsigned video_width                          = VIDEO_SCALE_W(video_info->dims);
+   unsigned video_height                         = VIDEO_SCALE_H(video_info->dims);
    struct font_params *osd_params                = (struct font_params*)
       &video_info->osd_stat_params;
 #ifdef HAVE_MENU

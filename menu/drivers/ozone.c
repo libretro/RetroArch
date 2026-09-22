@@ -12855,8 +12855,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    float *background_color                = NULL;
    float background_color_buf[16]; /* stack copy to avoid mutating static theme struct */
    void *userdata                         = video_info->userdata;
-   unsigned video_width                   = video_info->width;
-   unsigned video_height                  = video_info->height;
+   unsigned video_width                   = VIDEO_SCALE_W(video_info->dims);
+   unsigned video_height                  = VIDEO_SCALE_H(video_info->dims);
    float menu_framebuffer_opacity         = video_info->menu_framebuffer_opacity;
    bool libretro_running                  = video_info->libretro_running;
    bool video_fullscreen                  = video_info->fullscreen;

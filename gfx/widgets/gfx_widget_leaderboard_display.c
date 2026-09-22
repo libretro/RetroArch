@@ -329,8 +329,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
       dispgfx_widget_t         *p_dispwidget = (dispgfx_widget_t*)userdata;
       const video_frame_info_t *video_info   = (const video_frame_info_t*)data;
       gfx_display_t *p_disp                  = (gfx_display_t*)video_info->disp_userdata;
-      const unsigned video_width             = video_info->width;
-      const unsigned video_height            = video_info->height;
+      const unsigned video_width             = VIDEO_SCALE_W(video_info->dims);
+      const unsigned video_height            = VIDEO_SCALE_H(video_info->dims);
       const unsigned spacing                 = MIN(video_width, video_height) / 64;
       const unsigned widget_height           = p_dispwidget->gfx_widget_fonts.regular.line_height + (CHEEVO_LBOARD_DISPLAY_PADDING - 1) * 2;
       unsigned y                             = video_height;

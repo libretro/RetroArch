@@ -276,8 +276,8 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    };
    video_frame_info_t *video_info       = (video_frame_info_t*)data;
    void *userdata                       = video_info->userdata;
-   unsigned video_width                 = video_info->width;
-   unsigned video_height                = video_info->height;
+   unsigned video_width                 = VIDEO_SCALE_W(video_info->dims);
+   unsigned video_height                = VIDEO_SCALE_H(video_info->dims);
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_display_t            *p_disp     = (gfx_display_t*)video_info->disp_userdata;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;

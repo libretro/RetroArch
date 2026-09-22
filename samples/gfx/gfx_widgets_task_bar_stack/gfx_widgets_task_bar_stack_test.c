@@ -73,8 +73,7 @@ static void pump(int frames)
       memset(&video_info, 0, sizeof(video_info));
       video_info.disp_userdata    = &s_disp;
       video_info.widgets_userdata = dispwidget_get_ptr();
-      video_info.width            = 1920;
-      video_info.height           = 1080;
+      video_info.dims             = VIDEO_SCALE_PACK(1920, 1080);
 
       gfx_widgets_frame(&video_info);
       iterations++;

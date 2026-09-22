@@ -2912,8 +2912,8 @@ static bool d3d10_gfx_frame(
    d3d10_texture_t*   texture = NULL;
    d3d10_video_t      * d3d10 = (d3d10_video_t*)data;
    D3D10Device       context  = d3d10->device;
-   unsigned video_width       = video_info->width;
-   unsigned video_height      = video_info->height;
+   unsigned video_width       = VIDEO_SCALE_W(video_info->dims);
+   unsigned video_height      = VIDEO_SCALE_H(video_info->dims);
    bool statistics_show       = video_info->statistics_show;
    struct font_params
       *osd_params             = (struct font_params*)

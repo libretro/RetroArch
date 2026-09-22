@@ -2808,8 +2808,8 @@ static bool d3d8_frame(void *data, const void *frame,
    D3DVIEWPORT8 screen_vp;
    unsigned i                          = 0;
    d3d8_video_t *d3d                    = (d3d8_video_t*)data;
-   unsigned width                      = video_info->width;
-   unsigned height                     = video_info->height;
+   unsigned width                      = VIDEO_SCALE_W(video_info->dims);
+   unsigned height                     = VIDEO_SCALE_H(video_info->dims);
    struct font_params *osd_params      = (struct font_params*)
       &video_info->osd_stat_params;
    const char *stat_text               = video_info->stat_text;
