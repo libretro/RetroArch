@@ -3588,8 +3588,8 @@ static void lane_surface_4k(void)
    bool rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) != 0;
    int64_t submit_us[60];
    int64_t release_frames[60];
+   int64_t submit_total = 0;
    unsigned i, n_sub = 0, n_rel = 0;
-   unsigned frame_now = 0;
    uintptr_t first    = 0;
 
    set_threaded_via_setting(true);
@@ -3623,15 +3623,14 @@ static void lane_surface_4k(void)
       if (r == GFX_SURFACE_SUBMIT_BUSY)
       {
          run_frames(1);
-         frame_now++;
          continue;
       }
       CHECK(r == GFX_SURFACE_SUBMIT_QUEUED, "4K frame %u: submit returned %d", i, r);
       submit_us[n_sub++] = t1 - t0;
+      submit_total      += t1 - t0;
       while (surf_releases == before && waited < 8)
       {
          run_frames(1);
-         frame_now++;
          waited++;
       }
       CHECK(waited < 8, "4K frame %u: slot not released within 8 frames", i);
@@ -3646,8 +3645,9 @@ static void lane_surface_4k(void)
       qsort(submit_us, n_sub, sizeof(submit_us[0]), cmp_i64);
       qsort(release_frames, n_rel, sizeof(release_frames[0]), cmp_i64);
       fprintf(stderr, "[baseline] 4k surface: %u submits, submit us "
-            "p50 %lld p95 %lld p99 %lld; slot back in frames "
+            "mean %lld p50 %lld p95 %lld p99 %lld; slot back in frames "
             "p50 %lld p95 %lld p99 %lld\n", n_sub,
+            (long long)(submit_total / n_sub),
             (long long)submit_us[n_sub / 2],
             (long long)submit_us[(n_sub * 95) / 100],
             (long long)submit_us[(n_sub * 99) / 100],
@@ -3656,10 +3656,15 @@ static void lane_surface_4k(void)
             (long long)release_frames[(n_rel * 99) / 100]);
       /* A submit hands over a descriptor. A 4K copy on this thread
        * would be milliseconds of its own CPU time; the budget leaves
-       * room for a slow host and none for a copy. */
-      CHECK(submit_us[(n_sub * 99) / 100] < 2000,
-            "4K submit p99 is %lld us: that is a copy, not a hand-off",
-            (long long)submit_us[(n_sub * 99) / 100]);
+       * room for a slow host and none for a copy. The mean is what is
+       * checked: Windows charges thread CPU time in whole 15.625 ms
+       * scheduler ticks, so a single submit that straddles a tick
+       * reads as one full tick, while the sum over all submits still
+       * tracks the time actually spent. A copy puts milliseconds on
+       * every submit and so fails the mean on any clock. */
+      CHECK(submit_total / n_sub < 2000,
+            "4K submit mean is %lld us: that is a copy, not a hand-off",
+            (long long)(submit_total / n_sub));
    }
    CHECK(n_sub >= 30, "only %u of 60 4K submits were accepted", n_sub);
    if (s->handle && video_driver_texture_can_update())
