@@ -3334,12 +3334,12 @@ static void *gl3_init(const video_info_t *video,
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
 
-   win_dims   = VIDEO_SCALE_PACK(video->width, video->height);
+   win_dims   = VIDEO_SCALE_PACK(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
 
    /* Neither axis set is the whole word clear */
    if (video->fullscreen && (win_dims == 0))
       win_dims = VIDEO_SCALE_PACK(full_x, full_y);
-   /* If fullscreen had to be forced, video->width/height is incorrect */
+   /* If fullscreen had to be forced, VIDEO_SCALE_W(video->dims)/height is incorrect */
    else if (force_fullscreen)
       win_dims = VIDEO_SCALE_PACK(settings->uints.video_fullscreen_x,
             settings->uints.video_fullscreen_y);

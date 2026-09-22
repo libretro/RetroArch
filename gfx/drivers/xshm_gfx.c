@@ -73,14 +73,14 @@ static void *xshm_init(const video_info_t *video,
 #endif
    attributes.border_pixel = 0;
    g_x11_win               = XCreateWindow(g_x11_dpy, parent,
-			     0, 0, video->width, video->height,
+			     0, 0, VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims),
 			     0, 24, CopyFromParent, NULL, CWBorderPixel, &attributes);
    XSetWindowBackground(g_x11_dpy, g_x11_win, 0);
    XMapWindow(g_x11_dpy, g_x11_win);
 
    if (xshm->use_shm)
    {
-      xshm->shmInfo.shmid = shmget(IPC_PRIVATE, sizeof(uint32_t) * video->width * video->height,
+      xshm->shmInfo.shmid = shmget(IPC_PRIVATE, sizeof(uint32_t) * VIDEO_SCALE_W(video->dims) * VIDEO_SCALE_H(video->dims),
 				   IPC_CREAT | 0600);
       if (xshm->shmInfo.shmid < 0)
          abort();/* seems like an OOM situation... let's just blow up. */
@@ -90,26 +90,26 @@ static void *xshm_init(const video_info_t *video,
       XShmAttach(g_x11_dpy, &xshm->shmInfo);
       XSync(g_x11_dpy, False);/* no idea why this is required, but I get weird errors without it. */
       xshm->image = XShmCreateImage(g_x11_dpy, NULL, 24, ZPixmap,
-				    xshm->shmInfo.shmaddr, &xshm->shmInfo, video->width, video->height);
+				    xshm->shmInfo.shmaddr, &xshm->shmInfo, VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
       xshm->fbptr = (uint8_t*)xshm->shmInfo.shmaddr;
    }
    else
    {
-      size_t pitch = video->width * 4;
-      void *data   = malloc (pitch * video->height);
+      size_t pitch = VIDEO_SCALE_W(video->dims) * 4;
+      void *data   = malloc (pitch * VIDEO_SCALE_H(video->dims));
       if (!data)
          abort(); /* seems like an OOM situation... let's just blow up. */
       xshm->image  = XCreateImage(g_x11_dpy, NULL, 24, ZPixmap, 0,
-				 (char *) data, video->width,
-				 video->height, 8, pitch);
+				 (char *) data, VIDEO_SCALE_W(video->dims),
+				 VIDEO_SCALE_H(video->dims), 8, pitch);
       xshm->fbptr  = (uint8_t*)data;
       XSync(g_x11_dpy, False);
    }
 
    xshm->gc     = XCreateGC(g_x11_dpy, g_x11_win, 0, NULL);
 
-   xshm->width  = video->width;
-   xshm->height = video->height;
+   xshm->width  = VIDEO_SCALE_W(video->dims);
+   xshm->height = VIDEO_SCALE_H(video->dims);
 
    if (!x11_input_ctx_new(true))
       goto error;

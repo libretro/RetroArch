@@ -276,9 +276,9 @@ static void *sdl_gfx_init(const video_info_t *video,
    RARCH_LOG("[SDL] Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    if (!video->fullscreen)
-      RARCH_LOG("[SDL] Creating window @ %ux%u.\n", video->width, video->height);
+      RARCH_LOG("[SDL] Creating window @ %ux%u.\n", VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
 
-   vid->screen = SDL_SetVideoMode(video->width, video->height, 32,
+   vid->screen = SDL_SetVideoMode(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims), 32,
          SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
 
    /* We assume that SDL chooses ARGB8888.

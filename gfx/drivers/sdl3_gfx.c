@@ -255,11 +255,11 @@ static void *sdl3_gfx_init(const video_info_t *video,
       RARCH_LOG("[SDL3] \t%s\n", SDL_GetRenderDriver(i));
 
    if (!video->fullscreen)
-      RARCH_LOG("[SDL3] Creating window @ %ux%u.\n", video->width, video->height);
+      RARCH_LOG("[SDL3] Creating window @ %ux%u.\n", VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
 
    /* No backend flag: SDL_CreateRenderer picks the render driver. */
    if (!sdl3_window_set_video_mode(&vid->window,
-            VIDEO_SCALE_PACK(video->width, video->height),
+            VIDEO_SCALE_PACK(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims)),
             video->fullscreen, 0))
    {
       RARCH_ERR("[SDL3] Failed to init SDL window: %s.\n", SDL_GetError());

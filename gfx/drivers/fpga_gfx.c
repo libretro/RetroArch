@@ -141,16 +141,16 @@ static void *fpga_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   fpga->frame_width                    = video->width;
-   fpga->frame_height                   = video->height;
+   fpga->frame_width                    = VIDEO_SCALE_W(video->dims);
+   fpga->frame_height                   = VIDEO_SCALE_H(video->dims);
    fpga->rgb32                          = video->rgb32;
 
    fpga->frame_bits                     = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
-      fpga->frame_pitch = video->width * 4;
+      fpga->frame_pitch = VIDEO_SCALE_W(video->dims) * 4;
    else
-      fpga->frame_pitch = video->width * 2;
+      fpga->frame_pitch = VIDEO_SCALE_W(video->dims) * 2;
 
    fpga_create(fpga);
 

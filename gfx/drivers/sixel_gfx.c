@@ -270,9 +270,9 @@ static void *sixel_gfx_init(const video_info_t *video,
    sixel_video_bits                     = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
-      sixel_video_pitch = video->width * 4;
+      sixel_video_pitch = VIDEO_SCALE_W(video->dims) * 4;
    else
-      sixel_video_pitch = video->width * 2;
+      sixel_video_pitch = VIDEO_SCALE_W(video->dims) * 2;
 
    scale_str = getenv("SIXEL_SCALE");
 

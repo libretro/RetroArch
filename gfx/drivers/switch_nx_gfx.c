@@ -491,8 +491,8 @@ static void *switch_init(const video_info_t *video,
    framebufferMakeLinear(&sw->fb);
 
     sw->vp.pos          = VIDEO_POS_PACK(0, 0);
-    sw->o_width         = video->width;
-    sw->o_height        = video->height;
+    sw->o_width         = VIDEO_SCALE_W(video->dims);
+    sw->o_height        = VIDEO_SCALE_H(video->dims);
     sw->vp.dims         = VIDEO_SCALE_PACK(sw->o_width, sw->o_height);
     sw->overlay_enabled = false;
     sw->overlay         = NULL;

@@ -1337,19 +1337,19 @@ static void *gl1_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   gl1->frame_width                     = video->width;
-   gl1->frame_height                    = video->height;
+   gl1->frame_width                     = VIDEO_SCALE_W(video->dims);
+   gl1->frame_height                    = VIDEO_SCALE_H(video->dims);
 
    if (video->rgb32)
    {
       gl1->frame_bits                   = 32;
-      gl1->frame_pitch                  = video->width * 4;
+      gl1->frame_pitch                  = VIDEO_SCALE_W(video->dims) * 4;
       gl1->flags                       |= GL1_FLAG_RGB32;
    }
    else
    {
       gl1->frame_bits                   = 16;
-      gl1->frame_pitch                  = video->width * 2;
+      gl1->frame_pitch                  = VIDEO_SCALE_W(video->dims) * 2;
    }
 
    ctx_driver = video_context_driver_init_first(gl1,
@@ -1400,7 +1400,7 @@ static void *gl1_init(const video_info_t *video,
       goto error;
 
    RARCH_LOG("[GL1] Detecting screen resolution: %ux%u.\n", full_x, full_y);
-   win_dims        = VIDEO_SCALE_PACK(video->width, video->height);
+   win_dims        = VIDEO_SCALE_PACK(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
 
    /* Neither axis set is the whole word clear */
    if (video->fullscreen && (win_dims == 0))

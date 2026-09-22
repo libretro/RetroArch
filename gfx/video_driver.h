@@ -321,17 +321,10 @@ typedef struct video_info
    int swap_interval;
 
 
-   /* Width of window.
-    * If fullscreen mode is requested,
-    * a width of 0 means the resolution of the
-    * desktop should be used. */
-   unsigned width;
-
-   /* Height of window.
-    * If fullscreen mode is requested,
-    * a height of 0 means the resolutiof the desktop should be used.
-    */
-   unsigned height;
+   /* The window size, both axes in one word, VIDEO_SCALE_PACK's
+    * layout. If fullscreen mode is requested, a zero axis means the
+    * resolution of the desktop should be used for it. */
+   unsigned dims;
 
 #ifdef GEKKO
    /* TODO - we can't really have driver system-specific

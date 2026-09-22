@@ -4412,7 +4412,7 @@ static void metal_pull_cached_frame_cb(void *userdata,
          vd.format           = _video.source_10bit
                ? RPixelFormatBGR10A2Unorm
                : (_video.rgb32 ? RPixelFormatBGRX8Unorm : RPixelFormatB5G6R5Unorm);
-         vd.size             = CGSizeMake(video->width, video->height);
+         vd.size             = CGSizeMake(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
          vd.filter           = _video.smooth ? RTextureFilterLinear : RTextureFilterNearest;
          _frameView          = [[FrameView alloc] initWithDescriptor:vd context:_context];
          _frameView.viewport = _viewport;

@@ -2359,7 +2359,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
    win32_monitor_info(&current_mon, &hm_to_use, &d3d10->cur_mon_id);
 #endif
 
-   d3d10->vp.full_dims   = VIDEO_SCALE_PACK(video->width, video->height);
+   d3d10->vp.full_dims   = VIDEO_SCALE_PACK(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
 
 #ifdef HAVE_MONITOR
    if (!VIDEO_SCALE_W(d3d10->vp.full_dims))

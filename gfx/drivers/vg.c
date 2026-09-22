@@ -160,7 +160,7 @@ static void *vg_init(const video_info_t *video,
    vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->keep_aspect = video->force_aspect;
 
-   win_dims   = VIDEO_SCALE_PACK(video->width, video->height);
+   win_dims   = VIDEO_SCALE_PACK(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
 
    /* Neither axis set is the whole word clear */
    if (video->fullscreen && (win_dims == 0))

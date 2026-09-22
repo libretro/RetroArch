@@ -5653,8 +5653,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st),
          RARCH_SCALE_BASE * scale);
 
-   video.width                       = width;
-   video.height                      = height;
+   video.dims                        = VIDEO_SCALE_PACK(width, height);
    video.fullscreen                  = settings->bools.video_fullscreen
          || ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_FORCE_FULLSCREEN);
    video.vsync                       = settings->bools.video_vsync

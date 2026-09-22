@@ -547,9 +547,9 @@ static void *hub75_init(const video_info_t *video,
    hub75->gpio_slowdown = value ? (unsigned)value : 1;
    hub75->viewport_width  = hub75->canvas_width;
    hub75->viewport_height = hub75->canvas_height;
-   hub75->frame_width     = video->width;
-   hub75->frame_height    = video->height;
-   hub75->frame_pitch     = video->width * (video->rgb32 ? 4 : 2);
+   hub75->frame_width     = VIDEO_SCALE_W(video->dims);
+   hub75->frame_height    = VIDEO_SCALE_H(video->dims);
+   hub75->frame_pitch     = VIDEO_SCALE_W(video->dims) * (video->rgb32 ? 4 : 2);
    hub75->rgb32           = video->rgb32;
    hub75->menu_enabled    = true;
    hub75->scaling         = hub75_get_scaling_mode();

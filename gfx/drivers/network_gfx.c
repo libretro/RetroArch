@@ -112,9 +112,9 @@ static void *network_gfx_init(const video_info_t *video,
    network_video_bits                   = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
-      network_video_pitch = video->width * 4;
+      network_video_pitch = VIDEO_SCALE_W(video->dims) * 4;
    else
-      network_video_pitch = video->width * 2;
+      network_video_pitch = VIDEO_SCALE_W(video->dims) * 2;
 
    gfx_ctx_network_input_driver(joypad_driver,
          input, input_data);

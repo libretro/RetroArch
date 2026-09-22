@@ -186,18 +186,18 @@ static void *vga_gfx_init(const video_info_t *video,
    *input              = NULL;
    *input_data         = NULL;
 
-   vga->vga_frame_width    = video->width;
-   vga->vga_frame_height   = video->height;
+   vga->vga_frame_width    = VIDEO_SCALE_W(video->dims);
+   vga->vga_frame_height   = VIDEO_SCALE_H(video->dims);
    vga->vga_rgb32          = video->rgb32;
 
    if (video->rgb32)
    {
-      vga->vga_frame_pitch = video->width * 4;
+      vga->vga_frame_pitch = VIDEO_SCALE_W(video->dims) * 4;
       vga->vga_frame_bits  = 32;
    }
    else
    {
-      vga->vga_frame_pitch = video->width * 2;
+      vga->vga_frame_pitch = VIDEO_SCALE_W(video->dims) * 2;
       vga->vga_frame_bits  = 16;
    }
 

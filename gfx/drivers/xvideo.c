@@ -274,7 +274,6 @@ static void render32_yuv12(xv_t *xv, const void *input_,
       for (x = 0; x < width; x++)
       {
          uint8_t y0, u, v;
-         unsigned img_width;
          uint32_t p = *input++;
          p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0)
             | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
@@ -681,13 +680,13 @@ static void *xv_init(const video_info_t *video,
 
    if (video->fullscreen)
    {
-      width      = (((video->width  == 0) && geom) ? geom->base_width : video->width);
-      height     = (((video->height == 0) && geom) ? geom->base_height : video->height);
+      width      = (((VIDEO_SCALE_W(video->dims)  == 0) && geom) ? geom->base_width : VIDEO_SCALE_W(video->dims));
+      height     = (((VIDEO_SCALE_H(video->dims) == 0) && geom) ? geom->base_height : VIDEO_SCALE_H(video->dims));
    }
    else
    {
-      width      = video->width;
-      height     = video->height;
+      width      = VIDEO_SCALE_W(video->dims);
+      height     = VIDEO_SCALE_H(video->dims);
    }
    g_x11_win  = XCreateWindow(g_x11_dpy, DefaultRootWindow(g_x11_dpy),
          0, 0, width, height,

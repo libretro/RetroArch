@@ -2471,16 +2471,16 @@ static void *gdi_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   gdi->frame_width                     = video->width;
-   gdi->frame_height                    = video->height;
+   gdi->frame_width                     = VIDEO_SCALE_W(video->dims);
+   gdi->frame_height                    = VIDEO_SCALE_H(video->dims);
    gdi->rgb32                           = video->rgb32;
 
    gdi->frame_bits                      = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
-      gdi->frame_pitch                  = video->width * 4;
+      gdi->frame_pitch                  = VIDEO_SCALE_W(video->dims) * 4;
    else
-      gdi->frame_pitch                  = video->width * 2;
+      gdi->frame_pitch                  = VIDEO_SCALE_W(video->dims) * 2;
 
    /* Aspect-ratio handling.  Pulled from video_info_t at init the
     * same way d3d8/d3d9 do it; the user can override via the
@@ -2503,7 +2503,7 @@ static void *gdi_init(const video_info_t *video,
 
    RARCH_LOG("[GDI] Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
-   win_dims    = VIDEO_SCALE_PACK(video->width, video->height);
+   win_dims    = VIDEO_SCALE_PACK(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
 
    /* Neither axis set is the whole word clear */
    if (video->fullscreen && (win_dims == 0))

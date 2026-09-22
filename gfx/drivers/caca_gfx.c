@@ -216,14 +216,14 @@ static void *caca_init(const video_info_t *video,
    *input               = NULL;
    *input_data          = NULL;
 
-   caca->frame_width    = video->width;
-   caca->frame_height   = video->height;
+   caca->frame_width    = VIDEO_SCALE_W(video->dims);
+   caca->frame_height   = VIDEO_SCALE_H(video->dims);
    caca->rgb32          = video->rgb32;
 
    if (video->rgb32)
-      caca->frame_pitch = video->width * 4;
+      caca->frame_pitch = VIDEO_SCALE_W(video->dims) * 4;
    else
-      caca->frame_pitch = video->width * 2;
+      caca->frame_pitch = VIDEO_SCALE_W(video->dims) * 2;
 
    caca_create(caca);
 

@@ -3635,10 +3635,10 @@ static void d3d9_set_font_rect(
       font_size                  *= params->scale;
    }
 
-   d3d->font_rect.left            = d3d->video_info.width * pos_x;
-   d3d->font_rect.right           = d3d->video_info.width;
-   d3d->font_rect.top             = (1.0f - pos_y) * d3d->video_info.height - font_size;
-   d3d->font_rect.bottom          = d3d->video_info.height;
+   d3d->font_rect.left            = VIDEO_SCALE_W(d3d->video_info.dims) * pos_x;
+   d3d->font_rect.right           = VIDEO_SCALE_W(d3d->video_info.dims);
+   d3d->font_rect.top             = (1.0f - pos_y) * VIDEO_SCALE_H(d3d->video_info.dims) - font_size;
+   d3d->font_rect.bottom          = VIDEO_SCALE_H(d3d->video_info.dims);
 
    d3d->font_rect_shifted         = d3d->font_rect;
    d3d->font_rect_shifted.left   -= 2;
@@ -3961,23 +3961,23 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
    win32_monitor_info(&current_mon, &hm_to_use, &d3d->cur_mon_id);
 
    mon_rect              = current_mon.rcMonitor;
-   g_win32_resize_width  = info->width;
-   g_win32_resize_height = info->height;
+   g_win32_resize_width  = VIDEO_SCALE_W(info->dims);
+   g_win32_resize_height = VIDEO_SCALE_H(info->dims);
 
    windowed_full         = settings->bools.video_windowed_fullscreen;
 
-   full_x                = (windowed_full || info->width  == 0)
-      ? (unsigned)(mon_rect.right  - mon_rect.left) : info->width;
-   full_y                = (windowed_full || info->height == 0)
-      ? (unsigned)(mon_rect.bottom - mon_rect.top)  : info->height;
+   full_x                = (windowed_full || VIDEO_SCALE_W(info->dims)  == 0)
+      ? (unsigned)(mon_rect.right  - mon_rect.left) : VIDEO_SCALE_W(info->dims);
+   full_y                = (windowed_full || VIDEO_SCALE_H(info->dims) == 0)
+      ? (unsigned)(mon_rect.bottom - mon_rect.top)  : VIDEO_SCALE_H(info->dims);
 #else
    {
       d3d9_get_video_size(d3d, &full_x, &full_y);
    }
 #endif
    {
-      unsigned new_width  = info->fullscreen ? full_x : info->width;
-      unsigned new_height = info->fullscreen ? full_y : info->height;
+      unsigned new_width  = info->fullscreen ? full_x : VIDEO_SCALE_W(info->dims);
+      unsigned new_height = info->fullscreen ? full_y : VIDEO_SCALE_H(info->dims);
       video_driver_set_output_dims(VIDEO_SCALE_PACK(new_width, new_height));
       d3d->vp.full_dims   = VIDEO_SCALE_PACK(new_width, new_height);
 
@@ -4863,12 +4863,10 @@ static void d3d9_cg_set_resize(d3d9_video_t *d3d,
       unsigned new_width, unsigned new_height)
 {
    /* No changes? */
-   if (     (new_width  == d3d->video_info.width)
-         && (new_height == d3d->video_info.height))
+   if (d3d->video_info.dims == VIDEO_SCALE_PACK(new_width, new_height))
       return;
 
-   d3d->video_info.width  = new_width;
-   d3d->video_info.height = new_height;
+   d3d->video_info.dims   = VIDEO_SCALE_PACK(new_width, new_height);
    video_driver_set_output_dims(VIDEO_SCALE_PACK(new_width, new_height));
    d3d->vp.full_dims      = VIDEO_SCALE_PACK(new_width, new_height);
 }

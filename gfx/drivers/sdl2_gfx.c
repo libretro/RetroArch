@@ -424,7 +424,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
    }
 
    if (!video->fullscreen)
-      RARCH_LOG("[SDL2] Creating window @ %ux%u.\n", video->width, video->height);
+      RARCH_LOG("[SDL2] Creating window @ %ux%u.\n", VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
 
    if (video->fullscreen)
       flags = settings->bools.video_windowed_fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : SDL_WINDOW_FULLSCREEN;
@@ -432,7 +432,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
       flags = SDL_WINDOW_RESIZABLE;
 
    vid->window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                  video->width, video->height, flags);
+                                  VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims), flags);
 
    if (!vid->window)
    {
