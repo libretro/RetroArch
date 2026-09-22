@@ -10479,27 +10479,32 @@ static void ozone_set_layout(
    float font_scale_factor_time                     = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_time) : 1.0f;
    float font_scale_factor_footer                   = (font_scale == 2) ? (settings->floats.ozone_font_scale_factor_footer) : 1.0f;
 
-   /* Calculate dimensions */
-   ozone->dimensions.header_height                  = HEADER_HEIGHT * scale_factor;
-   ozone->dimensions.footer_height                  = FOOTER_HEIGHT * scale_factor;
+   /* Calculate dimensions. Every one of these is a constant times a
+    * scale that is almost never whole, so every one of them has to
+    * pick a pixel; VIDEO_PX picks the nearest. Truncating, which the
+    * plain conversion does, took up to a pixel off each in the same
+    * direction and stacked it down a list: at the 1.3333 scale a 50px
+    * row became 66 rather than 67, thirteen pixels over twenty rows. */
+   ozone->dimensions.header_height                  = VIDEO_PX(HEADER_HEIGHT * scale_factor);
+   ozone->dimensions.footer_height                  = VIDEO_PX(FOOTER_HEIGHT * scale_factor);
 
-   ozone->dimensions.entry_padding_horizontal_half  = ENTRY_PADDING_HORIZONTAL_HALF * scale_factor * padding_factor;
-   ozone->dimensions.entry_padding_horizontal_full  = ENTRY_PADDING_HORIZONTAL_FULL * scale_factor * padding_factor;
-   ozone->dimensions.entry_padding_vertical         = ENTRY_PADDING_VERTICAL * scale_factor;
-   ozone->dimensions.entry_height                   = ENTRY_HEIGHT * scale_factor;
-   ozone->dimensions.entry_spacing                  = ENTRY_SPACING * scale_factor;
-   ozone->dimensions.entry_icon_size                = ENTRY_ICON_SIZE * scale_factor;
-   ozone->dimensions.entry_icon_padding             = ENTRY_ICON_PADDING * scale_factor;
+   ozone->dimensions.entry_padding_horizontal_half  = VIDEO_PX(ENTRY_PADDING_HORIZONTAL_HALF * scale_factor * padding_factor);
+   ozone->dimensions.entry_padding_horizontal_full  = VIDEO_PX(ENTRY_PADDING_HORIZONTAL_FULL * scale_factor * padding_factor);
+   ozone->dimensions.entry_padding_vertical         = VIDEO_PX(ENTRY_PADDING_VERTICAL * scale_factor);
+   ozone->dimensions.entry_height                   = VIDEO_PX(ENTRY_HEIGHT * scale_factor);
+   ozone->dimensions.entry_spacing                  = VIDEO_PX(ENTRY_SPACING * scale_factor);
+   ozone->dimensions.entry_icon_size                = VIDEO_PX(ENTRY_ICON_SIZE * scale_factor);
+   ozone->dimensions.entry_icon_padding             = VIDEO_PX(ENTRY_ICON_PADDING * scale_factor);
 
-   ozone->dimensions.sidebar_entry_height           = SIDEBAR_ENTRY_HEIGHT * scale_factor;
-   ozone->dimensions.sidebar_padding_horizontal     = SIDEBAR_X_PADDING * scale_factor * padding_factor;
-   ozone->dimensions.sidebar_padding_vertical       = SIDEBAR_Y_PADDING * scale_factor;
-   ozone->dimensions.sidebar_entry_padding_vertical = SIDEBAR_ENTRY_Y_PADDING * scale_factor;
-   ozone->dimensions.sidebar_entry_icon_size        = SIDEBAR_ENTRY_ICON_SIZE * scale_factor;
-   ozone->dimensions.sidebar_entry_icon_padding     = SIDEBAR_ENTRY_ICON_PADDING * scale_factor;
-   ozone->dimensions.sidebar_gradient_height        = SIDEBAR_GRADIENT_HEIGHT * scale_factor;
+   ozone->dimensions.sidebar_entry_height           = VIDEO_PX(SIDEBAR_ENTRY_HEIGHT * scale_factor);
+   ozone->dimensions.sidebar_padding_horizontal     = VIDEO_PX(SIDEBAR_X_PADDING * scale_factor * padding_factor);
+   ozone->dimensions.sidebar_padding_vertical       = VIDEO_PX(SIDEBAR_Y_PADDING * scale_factor);
+   ozone->dimensions.sidebar_entry_padding_vertical = VIDEO_PX(SIDEBAR_ENTRY_Y_PADDING * scale_factor);
+   ozone->dimensions.sidebar_entry_icon_size        = VIDEO_PX(SIDEBAR_ENTRY_ICON_SIZE * scale_factor);
+   ozone->dimensions.sidebar_entry_icon_padding     = VIDEO_PX(SIDEBAR_ENTRY_ICON_PADDING * scale_factor);
+   ozone->dimensions.sidebar_gradient_height        = VIDEO_PX(SIDEBAR_GRADIENT_HEIGHT * scale_factor);
 
-   ozone->dimensions.sidebar_width_normal           = SIDEBAR_WIDTH * scale_factor;
+   ozone->dimensions.sidebar_width_normal           = VIDEO_PX(SIDEBAR_WIDTH * scale_factor);
    ozone->dimensions.sidebar_width_collapsed        = ozone->dimensions.sidebar_entry_icon_size
          + ozone->dimensions.sidebar_entry_icon_padding * 2
          + ozone->dimensions.sidebar_padding_horizontal * 2;
@@ -10507,24 +10512,27 @@ static void ozone_set_layout(
    if (ozone->dimensions_sidebar_width == 0)
       ozone->dimensions_sidebar_width               = (float)ozone->dimensions.sidebar_width_normal;
 
-   ozone->dimensions.thumbnail_bar_width            = ozone->last_thumbnail_scale_factor *
+   ozone->dimensions.thumbnail_bar_width            = VIDEO_PX(
+         ozone->last_thumbnail_scale_factor *
          (ozone->dimensions.sidebar_width_normal -
           ozone->dimensions.sidebar_entry_icon_size +
-          ozone->dimensions.sidebar_entry_icon_padding);
+          ozone->dimensions.sidebar_entry_icon_padding));
 
    /* Prevent thumbnail sidebar from growing too much and making the UI unusable. */
    if (ozone->dimensions.thumbnail_bar_width > VIDEO_SCALE_W(ozone->last_dims) / 3.0f)
-      ozone->dimensions.thumbnail_bar_width         = VIDEO_SCALE_W(ozone->last_dims) / 3.0f;
+      ozone->dimensions.thumbnail_bar_width         = VIDEO_PX(VIDEO_SCALE_W(ozone->last_dims) / 3.0f);
 
-   ozone->dimensions.cursor_size                    = CURSOR_SIZE * scale_factor;
+   ozone->dimensions.cursor_size                    = VIDEO_PX(CURSOR_SIZE * scale_factor);
 
-   ozone->dimensions.fullscreen_thumbnail_padding   = FULLSCREEN_THUMBNAIL_PADDING * scale_factor;
+   ozone->dimensions.fullscreen_thumbnail_padding   = VIDEO_PX(FULLSCREEN_THUMBNAIL_PADDING * scale_factor);
 
-   /* Common spacers */
-   ozone->dimensions.spacer_1px = (scale_factor > 1.0f) ? (unsigned)(scale_factor + 0.5f) : 1;
+   /* Common spacers. These rounded by hand before there was somewhere
+    * to do it; the 1px one keeps its floor of one, since a hairline
+    * that rounds to nothing is not a hairline. */
+   ozone->dimensions.spacer_1px = (scale_factor > 1.0f) ? VIDEO_PX(scale_factor) : 1;
    ozone->dimensions.spacer_2px = ozone->dimensions.spacer_1px * 2;
-   ozone->dimensions.spacer_3px = (unsigned)((scale_factor * 3.0f) + 0.5f);
-   ozone->dimensions.spacer_5px = (unsigned)((scale_factor * 5.0f) + 0.5f);
+   ozone->dimensions.spacer_3px = VIDEO_PX(scale_factor * 3.0f);
+   ozone->dimensions.spacer_5px = VIDEO_PX(scale_factor * 5.0f);
 
    /* Determine movement delta size for activating
     * pointer input (note: not a dimension as such,

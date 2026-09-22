@@ -7230,8 +7230,8 @@ static void xmb_layout_common(xmb_handle_t *xmb, float scale_factor, unsigned ne
    xmb->margins_dialog           = new_font_size * 2.0f;
    xmb->margins_slice            = new_font_size / 2.0f;
 
-   xmb->cursor_size              = 64.0f          * scale_factor;
-   xmb->icon_size                = 128.0f         * scale_factor;
+   xmb->cursor_size              = VIDEO_PX(64.0f  * scale_factor);
+   xmb->icon_size                = VIDEO_PX(128.0f * scale_factor);
 
    /* Limit minimum font size */
    xmb->font_size                = (xmb->font_size  < 7) ? 7.0f : xmb->font_size;

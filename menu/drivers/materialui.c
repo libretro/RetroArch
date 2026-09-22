@@ -3273,7 +3273,7 @@ static void materialui_scrollbar_init(
    int scrollbar_height;
 
    /* Set initial defaults */
-   mui->scrollbar.width   = mui->dip_base_unit_size / 36;
+   mui->scrollbar.width   = VIDEO_PX(mui->dip_base_unit_size / 36);
    mui->scrollbar.height  = 0;
    mui->scrollbar.x       = 0;
    mui->scrollbar.y       = 0;
@@ -9611,34 +9611,34 @@ static void materialui_layout(materialui_handle_t *mui,
    else
       mui->flags            &= ~MUI_FLAG_IS_PORTRAIT;
 
-   mui->cursor_size          = mui->dip_base_unit_size / 3;
+   mui->cursor_size          = VIDEO_PX(mui->dip_base_unit_size / 3);
 
-   mui->sys_bar_height       = mui->dip_base_unit_size / 7;
-   mui->title_bar_height     = mui->dip_base_unit_size / 3;
+   mui->sys_bar_height       = VIDEO_PX(mui->dip_base_unit_size / 7);
+   mui->title_bar_height     = VIDEO_PX(mui->dip_base_unit_size / 3);
    new_header_height         = mui->sys_bar_height + mui->title_bar_height;
 
-   title_font_size           = mui->dip_base_unit_size / 7;
-   list_font_size            = mui->dip_base_unit_size / 9;
-   hint_font_size            = mui->dip_base_unit_size / 11;
+   title_font_size           = VIDEO_PX(mui->dip_base_unit_size / 7);
+   list_font_size            = VIDEO_PX(mui->dip_base_unit_size / 9);
+   hint_font_size            = VIDEO_PX(mui->dip_base_unit_size / 11);
 
-   mui->header_shadow_height           = mui->dip_base_unit_size / 36;
-   mui->selection_marker_shadow_height = mui->dip_base_unit_size / 30;
+   mui->header_shadow_height           = VIDEO_PX(mui->dip_base_unit_size / 36);
+   mui->selection_marker_shadow_height = VIDEO_PX(mui->dip_base_unit_size / 30);
 
-   mui->margin               = mui->dip_base_unit_size / 9;
-   mui->icon_size            = mui->dip_base_unit_size / 3;
+   mui->margin               = VIDEO_PX(mui->dip_base_unit_size / 9);
+   mui->icon_size            = VIDEO_PX(mui->dip_base_unit_size / 3);
 
-   mui->sys_bar_margin       = mui->dip_base_unit_size / 12;
-   mui->sys_bar_icon_size    = mui->dip_base_unit_size / 7;
+   mui->sys_bar_margin       = VIDEO_PX(mui->dip_base_unit_size / 12);
+   mui->sys_bar_icon_size    = VIDEO_PX(mui->dip_base_unit_size / 7);
 
    mui->entry_divider_width  = (mui->last_scale_factor > 1.0f)
          ? (unsigned)(mui->last_scale_factor + 0.5f) : 1;
 
    /* Additional vertical spacing between label and
     * sublabel text */
-   mui->sublabel_gap         = mui->dip_base_unit_size / 42;
+   mui->sublabel_gap         = VIDEO_PX(mui->dip_base_unit_size / 42);
    /* Additional horizontal padding inserted at the
     * end of sublabel text to prevent line overflow */
-   mui->sublabel_padding     = mui->dip_base_unit_size / 20;
+   mui->sublabel_padding     = VIDEO_PX(mui->dip_base_unit_size / 20);
 
    /* Note: We used to set scrollbar width here, but
     * since we now have several scrollbar parameters
@@ -9651,7 +9651,7 @@ static void materialui_layout(materialui_handle_t *mui,
     *   on the right hand side
     * > When navigation bar is hidden, just set layout
     *   width and height to zero */
-   mui->nav_bar.width                  = mui->dip_base_unit_size / 3;
+   mui->nav_bar.width                  = VIDEO_PX(mui->dip_base_unit_size / 3);
    mui->nav_bar.divider_width          = mui->entry_divider_width;
    mui->nav_bar.selection_marker_width = mui->nav_bar.width / 16;
 
