@@ -1955,8 +1955,7 @@ english:
 
 static void rgui_fill_rect(
       uint16_t *data,
-      unsigned fb_width,
-      unsigned fb_height,
+      unsigned fb_dims,
       unsigned x,
       unsigned y,
       unsigned width,
@@ -1965,6 +1964,8 @@ static void rgui_fill_rect(
       uint16_t light_color,
       bool thickness)
 {
+   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
+   unsigned fb_height = VIDEO_SCALE_H(fb_dims);
    unsigned x_index, y_index;
    uint16_t scanline_even[RGUI_MAX_FB_WIDTH]; /* Initial values don't matter here */
    uint16_t scanline_odd[RGUI_MAX_FB_WIDTH];
@@ -2097,14 +2098,15 @@ static void rgui_fill_rect(
 
 static void rgui_color_rect(
       uint16_t *data,
-      unsigned fb_width,
-      unsigned fb_height,
+      unsigned fb_dims,
       unsigned x,
       unsigned y,
       unsigned width,
       unsigned height,
       uint16_t color)
 {
+   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
+   unsigned fb_height = VIDEO_SCALE_H(fb_dims);
    unsigned x_index, y_index;
    unsigned x_start = (x <= fb_width)  ? x : fb_width;
    unsigned y_start = (y <= fb_height) ? y : fb_height;
@@ -2149,24 +2151,25 @@ static void rgui_color_rect(
 static void rgui_render_border(
       rgui_t *rgui,
       uint16_t *data,
-      unsigned fb_width,
-      unsigned fb_height)
+      unsigned fb_dims)
 {
+   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
+   unsigned fb_height = VIDEO_SCALE_H(fb_dims);
    uint16_t dark_color   = rgui->colors.border_dark_color;
    uint16_t light_color  = rgui->colors.border_light_color;
    bool thickness        = (rgui->flags & RGUI_FLAG_BORDER_THICKNESS) ? true : false;
 
    /* Draw border */
-   rgui_fill_rect(data, fb_width, fb_height,
+   rgui_fill_rect(data, fb_dims,
          5, 5, fb_width - 10, 5,
          dark_color, light_color, thickness);
-   rgui_fill_rect(data, fb_width, fb_height,
+   rgui_fill_rect(data, fb_dims,
          5, fb_height - 10, fb_width - 10, 5,
          dark_color, light_color, thickness);
-   rgui_fill_rect(data, fb_width, fb_height,
+   rgui_fill_rect(data, fb_dims,
          5, 5, 5, fb_height - 10,
          dark_color, light_color, thickness);
-   rgui_fill_rect(data, fb_width, fb_height,
+   rgui_fill_rect(data, fb_dims,
          fb_width - 10, 5, 5, fb_height - 10,
          dark_color, light_color, thickness);
 
@@ -2175,13 +2178,13 @@ static void rgui_render_border(
    {
       uint16_t shadow_color = rgui->colors.shadow_color;
 
-      rgui_color_rect(data, fb_width, fb_height,
+      rgui_color_rect(data, fb_dims,
             10, 10, 1, fb_height - 20, shadow_color);
-      rgui_color_rect(data, fb_width, fb_height,
+      rgui_color_rect(data, fb_dims,
             10, 10, fb_width - 20, 1, shadow_color);
-      rgui_color_rect(data, fb_width, fb_height,
+      rgui_color_rect(data, fb_dims,
             fb_width - 5, 6, 1, fb_height - 10, shadow_color);
-      rgui_color_rect(data, fb_width, fb_height,
+      rgui_color_rect(data, fb_dims,
             6, fb_height - 5, fb_width - 10, 1, shadow_color);
    }
 }
@@ -2189,14 +2192,15 @@ static void rgui_render_border(
 /* Returns true if particle is on screen */
 static INLINE bool rgui_draw_particle(
       uint16_t *data,
-      unsigned fb_width,
-      unsigned fb_height,
+      unsigned fb_dims,
       int x,
       int y,
       unsigned width,
       unsigned height,
       uint16_t color)
 {
+   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
+   unsigned fb_height = VIDEO_SCALE_H(fb_dims);
    unsigned x_index, y_index;
 
    /* This great convoluted mess just saves us
@@ -2333,9 +2337,10 @@ RGUI_NOINLINE static void rgui_render_particle_effect(
       uint16_t *frame_buf_data,
       float particle_effect_speed,
       bool particle_effect_screensaver,
-      unsigned fb_width,
-      unsigned fb_height)
+      unsigned fb_dims)
 {
+   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
+   unsigned fb_height = VIDEO_SCALE_H(fb_dims);
    size_t i;
    uint16_t particle_color;
    /* Give speed factor a long, awkward name to minimise
@@ -2427,7 +2432,7 @@ RGUI_NOINLINE static void rgui_render_particle_effect(
                }
 
                /* Draw particle */
-               on_screen = rgui_draw_particle(frame_buf_data, fb_width, fb_height,
+               on_screen = rgui_draw_particle(frame_buf_data, fb_dims,
                                  (int)particle->a, (int)particle->b,
                                  particle_size, particle_size, particle_color);
 
@@ -2465,7 +2470,7 @@ RGUI_NOINLINE static void rgui_render_particle_effect(
 
                /* Draw particle */
                on_screen = rgui_draw_particle(
-                     frame_buf_data, fb_width, fb_height,
+                     frame_buf_data, fb_dims,
                      (int)particle->a, (int)particle->b,
                      2, (unsigned)particle->c, particle_color);
 
@@ -2510,7 +2515,7 @@ RGUI_NOINLINE static void rgui_render_particle_effect(
                particle_size = 1 + (unsigned)(((1.0f - ((max_radius - particle->a) / max_radius)) * 3.5f) + 0.5f);
 
                /* Draw particle */
-               rgui_draw_particle(frame_buf_data, fb_width, fb_height,
+               rgui_draw_particle(frame_buf_data, fb_dims,
                      x, y, particle_size, particle_size, particle_color);
 
                /* Update particle speed */
@@ -2570,7 +2575,7 @@ RGUI_NOINLINE static void rgui_render_particle_effect(
                particle_size = (unsigned)(focal_length / (2.0f * particle->c));
 
                /* Draw particle */
-               on_screen = rgui_draw_particle(frame_buf_data, fb_width, fb_height,
+               on_screen = rgui_draw_particle(frame_buf_data, fb_dims,
                                  x, y, particle_size, particle_size, particle_color);
 
                /* Update depth */
@@ -2608,7 +2613,7 @@ RGUI_NOINLINE static void rgui_render_particle_effect(
    if (       (rgui->flags & RGUI_FLAG_BORDER_ENABLE)
          && (!(rgui->flags & RGUI_FLAG_SHOW_WALLPAPER))
          && (!(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)))
-      rgui_render_border(rgui, frame_buf_data, fb_width, fb_height);
+      rgui_render_border(rgui, frame_buf_data, fb_dims);
 }
 
 static void rgui_process_wallpaper(
@@ -3136,10 +3141,11 @@ static bool rgui_load_image(
 
 RGUI_NOINLINE static void rgui_render_background(
       rgui_t *rgui,
-      unsigned fb_width,
-      unsigned fb_height,
+      unsigned fb_dims,
       size_t fb_pitch)
 {
+   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
+   unsigned fb_height = VIDEO_SCALE_H(fb_dims);
    frame_buf_t *frame_buf      = &rgui->frame_buf;
    frame_buf_t *background_buf = &rgui->background_buf;
 
@@ -3170,15 +3176,15 @@ RGUI_NOINLINE static void rgui_render_background(
 static void rgui_render_messagebox(
       rgui_t *rgui,
       const char *message,
-      unsigned fb_width,
-      unsigned fb_height);
+      unsigned fb_dims);
 
 RGUI_NOINLINE static void rgui_render_fs_thumbnail(
       rgui_t *rgui,
-      unsigned fb_width,
-      unsigned fb_height,
+      unsigned fb_dims,
       size_t fb_pitch)
 {
+   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
+   unsigned fb_height = VIDEO_SCALE_H(fb_dims);
    uint16_t *frame_buf_data    = rgui->frame_buf.data;
    uint16_t *fs_thumbnail_data = rgui->fs_thumbnail.data;
 
@@ -3236,13 +3242,13 @@ RGUI_NOINLINE static void rgui_render_fs_thumbnail(
       /* Draw border */
       /* Top */
       if ((int)(fb_y_offset - border_width) >= 0)
-         rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+         rgui_fill_rect(frame_buf_data, fb_dims,
                fb_x_offset, fb_y_offset - border_width, width, border_width,
                rgui->colors.shadow_color, rgui->colors.shadow_color, false);
 
       /* Bottom */
       if (height + border_width <= fb_height)
-         rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+         rgui_fill_rect(frame_buf_data, fb_dims,
                fb_x_offset, fb_y_offset + height, width, border_width,
                rgui->colors.shadow_color, rgui->colors.shadow_color, false);
 
@@ -3250,21 +3256,21 @@ RGUI_NOINLINE static void rgui_render_fs_thumbnail(
       if (     (int)(fb_x_offset - border_width) >= 0
             && (int)(fb_y_offset - border_width) >= 0
             && (height + border_width * 2) <= fb_height)
-         rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+         rgui_fill_rect(frame_buf_data, fb_dims,
                fb_x_offset - border_width, fb_y_offset - border_width, border_width, height + border_width * 2,
                rgui->colors.shadow_color, rgui->colors.shadow_color, false);
 
       /* Right */
       if (     (int)(fb_y_offset - border_width) >= 0
             && (height + border_width * 2) <= fb_height)
-         rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+         rgui_fill_rect(frame_buf_data, fb_dims,
                fb_x_offset + width, fb_y_offset - border_width, border_width, height + border_width * 2,
                rgui->colors.shadow_color, rgui->colors.shadow_color, false);
    }
    else
    {
       /* Draw background */
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+      rgui_fill_rect(frame_buf_data, fb_dims,
             0, 0, fb_width, fb_height,
             rgui->colors.bg_dark_color,
             rgui->colors.bg_dark_color,
@@ -3274,7 +3280,7 @@ RGUI_NOINLINE static void rgui_render_fs_thumbnail(
       if (     !(rgui->flags & RGUI_FLAG_ENTRY_HAS_THUMBNAIL)
             && !(rgui->flags & RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL))
          rgui_render_messagebox(rgui,
-            msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE), fb_width, fb_height);
+            msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE), fb_dims);
    }
 }
 
@@ -3307,13 +3313,14 @@ static void rgui_render_mini_thumbnail(
       thumbnail_t *thumbnail,
       uint16_t *frame_buf_data,
       enum gfx_thumbnail_id thumbnail_id,
-      unsigned fb_width,
-      unsigned fb_height,
+      unsigned fb_dims,
       size_t fb_pitch,
       bool swap_thumbnails,
       bool thumbnail_background,
       bool savestate)
 {
+   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
+
    if (thumbnail->is_valid && frame_buf_data && thumbnail->data)
    {
       unsigned y;
@@ -3342,7 +3349,7 @@ static void rgui_render_mini_thumbnail(
 
       /* Draw background */
       if (thumbnail_background)
-         rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+         rgui_fill_rect(frame_buf_data, fb_dims,
                rgui->term_layout.start_x + term_width - thumbnail_fullwidth,
                (     ((thumbnail_id == GFX_THUMBNAIL_RIGHT) && !swap_thumbnails)
                   || ((thumbnail_id == GFX_THUMBNAIL_LEFT)  &&  swap_thumbnails))
@@ -3365,10 +3372,10 @@ static void rgui_render_mini_thumbnail(
       /* Draw drop shadow, if required */
       if (0 && rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
       {
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                fb_x_offset + thumbnail->width, fb_y_offset + 1,
                1, thumbnail->height, rgui->colors.shadow_color);
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                fb_x_offset + 1, fb_y_offset + thumbnail->height,
                thumbnail->width, 1, rgui->colors.shadow_color);
       }
@@ -3394,7 +3401,7 @@ static void rgui_render_mini_thumbnail(
       text_y         = (thumbnail->max_height / 2) + fb_y_offset - (rgui->font_height_stride / 3);
 
       /* Draw background */
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+      rgui_fill_rect(frame_buf_data, fb_dims,
             rgui->term_layout.start_x + term_width - thumbnail->max_width,
             fb_y_offset,
             thumbnail->max_width, thumbnail->max_height,
@@ -3767,10 +3774,11 @@ end:
 
 static void rgui_cache_background(
       rgui_t *rgui,
-      unsigned fb_width,
-      unsigned fb_height,
+      unsigned fb_dims,
       size_t fb_pitch)
 {
+   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
+   unsigned fb_height = VIDEO_SCALE_H(fb_dims);
    frame_buf_t *background_buf = &rgui->background_buf;
 
    /* Sanity check */
@@ -3781,14 +3789,14 @@ static void rgui_cache_background(
       return;
 
    /* Fill background buffer with standard chequer pattern */
-   rgui_fill_rect(background_buf->data, fb_width, fb_height,
+   rgui_fill_rect(background_buf->data, fb_dims,
          0, 0, fb_width, fb_height,
          rgui->colors.bg_dark_color, rgui->colors.bg_light_color,
          (rgui->flags & RGUI_FLAG_BG_THICKNESS) ? true : false);
 
    /* Draw border, if required */
    if (rgui->flags & RGUI_FLAG_BORDER_ENABLE)
-      rgui_render_border(rgui, background_buf->data, fb_width, fb_height);
+      rgui_render_border(rgui, background_buf->data, fb_dims);
 }
 
 static void rgui_prepare_colors(
@@ -4978,9 +4986,10 @@ static void rgui_set_message(void *data, const char *message)
 static void rgui_render_messagebox(
       rgui_t *rgui,
       const char *message,
-      unsigned fb_width,
-      unsigned fb_height)
+      unsigned fb_dims)
 {
+   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
+   unsigned fb_height = VIDEO_SCALE_H(fb_dims);
    int x, y;
    size_t i;
    char wrapped_message[MENU_LABEL_MAX_LENGTH];
@@ -5058,7 +5067,7 @@ static void rgui_render_messagebox(
       uint8_t border_width        = 2;
       bool border_thickness       = (rgui->flags & RGUI_FLAG_BORDER_THICKNESS) ? true : false;
 
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+      rgui_fill_rect(frame_buf_data, fb_dims,
             x + border_width, y + border_width,
             width - border_width * 2, height - border_width * 2,
             rgui->colors.bg_dark_color, rgui->colors.bg_light_color,
@@ -5073,27 +5082,27 @@ static void rgui_render_messagebox(
       {
          uint16_t shadow_color = rgui->colors.shadow_color;
 
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                x + border_width, y + border_width, 1, height - border_width, shadow_color);
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                x + border_width, y + border_width, width - border_width, 1, shadow_color);
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                x + width, y + 1, 1, height, shadow_color);
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                x + 1, y + height, width, 1, shadow_color);
       }
 
       /* Draw border */
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+      rgui_fill_rect(frame_buf_data, fb_dims,
             x, y, width - border_width, border_width,
             border_dark_color, border_light_color, border_thickness);
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+      rgui_fill_rect(frame_buf_data, fb_dims,
             x + width - border_width, y, border_width, height - border_width,
             border_dark_color, border_light_color, border_thickness);
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+      rgui_fill_rect(frame_buf_data, fb_dims,
             x + border_width, y + height - border_width, width - border_width, border_width,
             border_dark_color, border_light_color, border_thickness);
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+      rgui_fill_rect(frame_buf_data, fb_dims,
             x, y + border_width, border_width, height - border_width,
             border_dark_color, border_light_color, border_thickness);
 
@@ -5142,7 +5151,7 @@ static void rgui_render_messagebox(
          {
             menu_st->dialog_st.confirm_hover_back = true;
 
-            rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+            rgui_fill_rect(frame_buf_data, fb_dims,
                   cursor_x,
                   cursor_y,
                   cursor_w,
@@ -5172,7 +5181,7 @@ static void rgui_render_messagebox(
          {
             menu_st->dialog_st.confirm_hover_ok = true;
 
-            rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+            rgui_fill_rect(frame_buf_data, fb_dims,
                   cursor_x,
                   cursor_y,
                   cursor_w,
@@ -5295,9 +5304,10 @@ RGUI_NOINLINE static void rgui_render_osk(
       gfx_animation_ctx_ticker_t *ticker,
       gfx_animation_ctx_ticker_smooth_t *ticker_smooth,
       bool use_smooth_ticker,
-      unsigned fb_width,
-      unsigned fb_height)
+      unsigned fb_dims)
 {
+   unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
+   unsigned fb_height = VIDEO_SCALE_H(fb_dims);
    int key_index;
 
    unsigned input_label_max_length;
@@ -5363,12 +5373,12 @@ RGUI_NOINLINE static void rgui_render_osk(
       strlcpy_append(msg, sizeof(msg), &_len, input_label);
       strlcpy_append(msg, sizeof(msg), &_len, "\n");
       strlcpy_append(msg, sizeof(msg), &_len, input_str);
-      rgui_render_messagebox(rgui, msg, fb_width, fb_height);
+      rgui_render_messagebox(rgui, msg, fb_dims);
       return;
    }
 
    /* Draw background */
-   rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+   rgui_fill_rect(frame_buf_data, fb_dims,
          osk_x + 5, osk_y + 5, osk_width - 10, osk_height - 10,
          rgui->colors.bg_dark_color, rgui->colors.bg_light_color,
          (rgui->flags & RGUI_FLAG_BG_THICKNESS) ? true : false);
@@ -5386,36 +5396,36 @@ RGUI_NOINLINE static void rgui_render_osk(
          uint16_t shadow_color    = rgui->colors.shadow_color;
 
          /* Frame */
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                osk_x + 5, osk_y + 5, osk_width - 10, 1, shadow_color);
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                osk_x + osk_width, osk_y + 1, 1, osk_height, shadow_color);
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                osk_x + 1, osk_y + osk_height, osk_width, 1, shadow_color);
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                osk_x + 5, osk_y + 5, 1, osk_height - 10, shadow_color);
          /* Divider */
          if (!native_kb)
-            rgui_color_rect(frame_buf_data, fb_width, fb_height,
+            rgui_color_rect(frame_buf_data, fb_dims,
                   osk_x + 5, osk_y + keyboard_offset_y - 5, osk_width - 10, 1, shadow_color);
       }
 
       /* Frame */
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+      rgui_fill_rect(frame_buf_data, fb_dims,
             osk_x, osk_y, osk_width - 5, 5,
             border_dark_color, border_light_color, border_thickness);
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+      rgui_fill_rect(frame_buf_data, fb_dims,
             osk_x + osk_width - 5, osk_y, 5, osk_height - 5,
             border_dark_color, border_light_color, border_thickness);
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+      rgui_fill_rect(frame_buf_data, fb_dims,
             osk_x + 5, osk_y + osk_height - 5, osk_width - 5, 5,
             border_dark_color, border_light_color, border_thickness);
-      rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+      rgui_fill_rect(frame_buf_data, fb_dims,
             osk_x, osk_y + 5, 5, osk_height - 5,
             border_dark_color, border_light_color, border_thickness);
       /* Divider */
       if (!native_kb)
-         rgui_fill_rect(frame_buf_data, fb_width, fb_height,
+         rgui_fill_rect(frame_buf_data, fb_dims,
                osk_x + 5, osk_y + keyboard_offset_y - 10, osk_width - 10, 5,
                border_dark_color, border_light_color, border_thickness);
    }
@@ -5539,8 +5549,7 @@ RGUI_NOINLINE static void rgui_render_osk(
             if (rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
                rgui_color_rect(
                   frame_buf_data,
-                  fb_width,
-                  fb_height,
+                  fb_dims,
                   rect_x + 1,
                   rect_y + 1,
                   rect_w,
@@ -5549,8 +5558,7 @@ RGUI_NOINLINE static void rgui_render_osk(
 
             rgui_color_rect(
                frame_buf_data,
-               fb_width,
-               fb_height,
+               fb_dims,
                rect_x,
                rect_y,
                rect_w,
@@ -5628,24 +5636,24 @@ RGUI_NOINLINE static void rgui_render_osk(
          /* Draw drop shadow, if required */
          if (rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
          {
-            rgui_color_rect(frame_buf_data, fb_width, fb_height,
+            rgui_color_rect(frame_buf_data, fb_dims,
                   osk_ptr_x + 1, osk_ptr_y + 1, 1, ptr_height, rgui->colors.shadow_color);
-            rgui_color_rect(frame_buf_data, fb_width, fb_height,
+            rgui_color_rect(frame_buf_data, fb_dims,
                   osk_ptr_x + 1, osk_ptr_y + 1, ptr_width, 1, rgui->colors.shadow_color);
-            rgui_color_rect(frame_buf_data, fb_width, fb_height,
+            rgui_color_rect(frame_buf_data, fb_dims,
                   osk_ptr_x + ptr_width, osk_ptr_y + 1, 1, ptr_height, rgui->colors.shadow_color);
-            rgui_color_rect(frame_buf_data, fb_width, fb_height,
+            rgui_color_rect(frame_buf_data, fb_dims,
                   osk_ptr_x + 1, osk_ptr_y + ptr_height, ptr_width, 1, rgui->colors.shadow_color);
          }
 
          /* Draw selection rectangle */
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                osk_ptr_x, osk_ptr_y, 1, ptr_height, rgui->colors.hover_color);
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                osk_ptr_x, osk_ptr_y, ptr_width, 1, rgui->colors.hover_color);
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                osk_ptr_x + ptr_width - 1, osk_ptr_y, 1, ptr_height, rgui->colors.hover_color);
-         rgui_color_rect(frame_buf_data, fb_width, fb_height,
+         rgui_color_rect(frame_buf_data, fb_dims,
                osk_ptr_x, osk_ptr_y + ptr_height - 1, ptr_width, 1, rgui->colors.hover_color);
       }
    }
@@ -5779,7 +5787,7 @@ static void rgui_render(void *data, unsigned dims,
       bool is_idle)
 {
    unsigned x, y;
-   unsigned fb_width, fb_height;
+   unsigned fb_width;
    gfx_animation_ctx_ticker_t ticker;
    size_t i, end, fb_pitch, old_start, new_start;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
@@ -5869,13 +5877,12 @@ static void rgui_render(void *data, unsigned dims,
 
    display_kb = current_display_cb;
    fb_width   = VIDEO_SCALE_W(p_disp->framebuf_dims);
-   fb_height  = VIDEO_SCALE_H(p_disp->framebuf_dims);
    fb_pitch   = p_disp->framebuf_pitch;
 
    /* If the framebuffer changed size, or the background config has
     * changed, recache the background buffer */
    fb_size_changed   = (rgui->last_dims
-         != VIDEO_SCALE_PACK(fb_width, fb_height));
+         != p_disp->framebuf_dims);
 
 #if defined(GEKKO)
    /* Wii gfx driver changes menu framebuffer size at
@@ -5897,14 +5904,14 @@ static void rgui_render(void *data, unsigned dims,
       /* Only regenerate the background if we are *not*
        * currently showing a wallpaper image */
       if (!(rgui->flags & RGUI_FLAG_SHOW_WALLPAPER))
-         rgui_cache_background(rgui, fb_width, fb_height, fb_pitch);
+         rgui_cache_background(rgui, p_disp->framebuf_dims, fb_pitch);
 
       /* Reinitialise particle effect, if required */
       if (      fb_size_changed
             && (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE))
          rgui_init_particle_effect(rgui, p_disp);
 
-      rgui->last_dims   = VIDEO_SCALE_PACK(fb_width, fb_height);
+      rgui->last_dims   = p_disp->framebuf_dims;
    }
 
    if (rgui->flags & RGUI_FLAG_BG_MODIFIED)
@@ -5966,14 +5973,14 @@ static void rgui_render(void *data, unsigned dims,
       menu_st->entries.begin = 0;
 
    /* Render background */
-   rgui_render_background(rgui, fb_width, fb_height, fb_pitch);
+   rgui_render_background(rgui, p_disp->framebuf_dims, fb_pitch);
 
    /* Render particle effect, if required */
    if (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
       rgui_render_particle_effect(rgui, p_anim, rgui->frame_buf.data,
             menu_rgui_particle_effect_speed,
             menu_rgui_particle_effect_screensaver,
-            fb_width, fb_height);
+            p_disp->framebuf_dims);
 
    /* If screensaver is active, skip drawing of
     * text/thumbnails */
@@ -6003,7 +6010,7 @@ static void rgui_render(void *data, unsigned dims,
    if (current_display_cb)
       rgui_render_osk(rgui, rgui->frame_buf.data,
             &ticker, &ticker_smooth, use_smooth_ticker,
-            fb_width, fb_height);
+            p_disp->framebuf_dims);
    else if (show_fs_thumbnail)
    {
       /* If fullscreen thumbnails are enabled and we are viewing a playlist,
@@ -6020,7 +6027,7 @@ static void rgui_render(void *data, unsigned dims,
       thumbnail_title_buf[0]      = '\0';
 
       /* Draw thumbnail */
-      rgui_render_fs_thumbnail(rgui, fb_width, fb_height, fb_pitch);
+      rgui_render_fs_thumbnail(rgui, p_disp->framebuf_dims, fb_pitch);
 
       /* Get thumbnail title */
       if (     gfx_thumbnail_get_label(menu_st->thumbnail_path_data, &thumbnail_title)
@@ -6071,7 +6078,7 @@ static void rgui_render(void *data, unsigned dims,
                             -            title_width) / 2);
 
          /* Draw thumbnail title background */
-         rgui_fill_rect(rgui->frame_buf.data, fb_width, fb_height,
+         rgui_fill_rect(rgui->frame_buf.data, p_disp->framebuf_dims,
                title_x - 5, 0, title_width + 10, rgui->font_height_stride - 1,
                rgui->colors.shadow_color, rgui->colors.shadow_color,
                (rgui->flags & RGUI_FLAG_BG_THICKNESS) ? true : false);
@@ -6528,7 +6535,7 @@ static void rgui_render(void *data, unsigned dims,
             rgui_render_mini_thumbnail(rgui, thumbnail_savestate,
                   rgui->frame_buf.data,
                   (rgui_swap_thumbnails) ? GFX_THUMBNAIL_RIGHT : GFX_THUMBNAIL_LEFT,
-                  fb_width, fb_height, fb_pitch,
+                  p_disp->framebuf_dims, fb_pitch,
                   rgui_swap_thumbnails, thumbnail_background, true);
       }
       else if (show_mini_thumbnails)
@@ -6539,13 +6546,13 @@ static void rgui_render(void *data, unsigned dims,
             rgui_render_mini_thumbnail(rgui, thumbnail1,
                   rgui->frame_buf.data,
                   GFX_THUMBNAIL_RIGHT,
-                  fb_width, fb_height, fb_pitch,
+                  p_disp->framebuf_dims, fb_pitch,
                   rgui_swap_thumbnails, thumbnail_background, false);
          if (show_left_thumbnail && thumbnail2)
             rgui_render_mini_thumbnail(rgui, thumbnail2,
                   rgui->frame_buf.data,
                   GFX_THUMBNAIL_LEFT,
-                  fb_width, fb_height, fb_pitch,
+                  p_disp->framebuf_dims, fb_pitch,
                   rgui_swap_thumbnails, thumbnail_background, false);
       }
 
@@ -6646,7 +6653,7 @@ static void rgui_render(void *data, unsigned dims,
    {
       /* Draw popup directly on top of the menu; the messagebox
        * paints its own opaque background within its footprint. */
-      rgui_render_messagebox(rgui, rgui->msgbox, fb_width, fb_height);
+      rgui_render_messagebox(rgui, rgui->msgbox, p_disp->framebuf_dims);
       rgui->msgbox[0]    = '\0';
       rgui->flags       |=  RGUI_FLAG_FORCE_REDRAW;
    }
@@ -6659,9 +6666,9 @@ static void rgui_render(void *data, unsigned dims,
       /* Blit cursor */
       if (cursor_visible && rgui->frame_buf.data)
       {
-         rgui_color_rect(rgui->frame_buf.data, fb_width, fb_height,
+         rgui_color_rect(rgui->frame_buf.data, p_disp->framebuf_dims,
                rgui->pointer.x, rgui->pointer.y - 5, 1, 11, rgui->colors.normal_color);
-         rgui_color_rect(rgui->frame_buf.data, fb_width, fb_height,
+         rgui_color_rect(rgui->frame_buf.data, p_disp->framebuf_dims,
                rgui->pointer.x - 5, rgui->pointer.y, 11, 1, rgui->colors.normal_color);
       }
    }
