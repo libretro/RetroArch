@@ -5858,10 +5858,12 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 
    video_display_server_init(video_st->display_type);
 
-#ifdef HAVE_D3DKMT
-   /* Scanline Sync re-reads the output lines on its next frame */
-   video_st->scanline[SCANLINE_ACTIVE] = 0;
-#endif
+   /* Read the output lines here, outside the frame path, when
+    * Scanline Sync is on; otherwise its first frame reads them */
+   if (settings->bools.video_scanline_sync)
+      video_driver_scanline_init();
+   else
+      video_st->scanline[SCANLINE_ACTIVE] = 0;
 
    if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
       video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
@@ -7724,7 +7726,6 @@ void video_frame_delay(video_driver_state_t *video_st,
 }
 
 /* Scanline Sync */
-#ifdef HAVE_D3DKMT
 typedef struct
 {
    uint16_t width;
@@ -7763,7 +7764,7 @@ static uint16_t video_driver_scanline_get_total(
    return scanline_total;
 }
 
-static void video_driver_scanline_init(void)
+void video_driver_scanline_init(void)
 {
    video_driver_state_t *video_st      = video_state_get_ptr();
    unsigned dims                       = 0;
@@ -7777,7 +7778,6 @@ static void video_driver_scanline_init(void)
    video_st->scanline[SCANLINE_PREV]   = 0;
    video_st->scanline[SCANLINE_HOLD]   = 0;
 }
-#endif
 
 /* The beam position through the display server; a server without
  * get_scanline() reports -1 and the tuner disables itself below. */
@@ -7797,10 +7797,10 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
    uint16_t scanline_blank;
    uint8_t scanline_margin = 2;
 
-#ifdef HAVE_D3DKMT
-   /* Output lines are read on first use and after a reinit, so
-    * nothing is fetched while Scanline Sync is off; an unknown
-    * output size is retried about once a second */
+   /* Output lines are read on first use when Scanline Sync was
+    * switched on after the driver came up, so nothing is fetched
+    * while it is off; an unknown output size is retried about once
+    * a second */
    if (     !video_st->scanline[SCANLINE_ACTIVE]
          && !video_st->scanline[SCANLINE_HOLD])
    {
@@ -7808,7 +7808,6 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       if (!video_st->scanline[SCANLINE_ACTIVE])
          video_st->scanline[SCANLINE_HOLD] = 60;
    }
-#endif
 
    scanline_next  = video_st->scanline[SCANLINE_NEXT];
    scanline_prev  = video_st->scanline[SCANLINE_PREV];

@@ -1885,6 +1885,8 @@ void video_driver_set_threaded(bool val);
 void video_frame_delay(video_driver_state_t *video_st,
       settings_t *settings);
 
+void video_driver_scanline_init(void);
+
 /**
  * video_context_driver_init:
  * @core_set_shared_context : Boolean value that tells us whether shared context

@@ -171,10 +171,7 @@ static void crt_publish_timing(videocrt_switch_t *p_switch, double vfreq)
    video_driver_state_t *video_st = video_state_get_ptr();
    p_switch->sr_core_hz           = (float)vfreq;
    video_monitor_set_refresh_rate((float)vfreq);
-#ifdef HAVE_D3DKMT
-   /* Scanline Sync re-reads the output lines on its next frame */
-   video_st->scanline[SCANLINE_ACTIVE] = 0;
-#endif
+   video_driver_scanline_init();
    if (config_get_ptr()->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
 }
