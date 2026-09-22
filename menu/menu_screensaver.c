@@ -849,7 +849,8 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
       if (screensaver->font_data.raster_block.carr.coords.vertices != 0)
       {
          if (font->renderer && font->renderer->flush)
-            font->renderer->flush(video_width, video_height, font->renderer_data);
+            font->renderer->flush(video_info->dims,
+                  font->renderer_data);
          screensaver->font_data.raster_block.carr.coords.vertices = 0;
       }
       font_driver_bind_block(font, NULL);

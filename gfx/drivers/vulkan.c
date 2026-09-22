@@ -3832,8 +3832,7 @@ static void vulkan_font_bind_block(void *data, void *userdata)
       font->block = (video_font_raster_block_t*)userdata;
 }
 
-static void vulkan_font_flush_block(unsigned width, unsigned height,
-      void *data)
+static void vulkan_font_flush_block(unsigned dims, void *data)
 {
    vulkan_raster_t *font = (vulkan_raster_t*)data;
    vk_t *vk;
@@ -3842,7 +3841,7 @@ static void vulkan_font_flush_block(unsigned width, unsigned height,
       return;
    vk = font->vk;
 
-   vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height), font->block->fullscreen, false);
+   vulkan_set_viewport(vk, dims, font->block->fullscreen, false);
    vulkan_font_upload_atlas(vk, font);
 
    if (vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,

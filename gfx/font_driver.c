@@ -1248,8 +1248,6 @@ void font_flush(
       unsigned video_dims,
       font_data_impl_t *font_data)
 {
-   unsigned video_width  = VIDEO_SCALE_W(video_dims);
-   unsigned video_height = VIDEO_SCALE_H(video_dims);
    const font_renderer_t *renderer = font_data->font ? font_data->font->renderer : NULL;
 
    /* A rebuilt font has different metrics; pick them up before
@@ -1266,7 +1264,7 @@ void font_flush(
          p_disp->stats.v[GFX_DISPLAY_STAT_FONT_DRAWS]++;
    }
    if (renderer && renderer->flush)
-      renderer->flush(video_width, video_height, font_data->font->renderer_data);
+      renderer->flush(video_dims, font_data->font->renderer_data);
    font_data->raster_block.carr.coords.vertices = 0;
 }
 

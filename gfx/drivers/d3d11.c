@@ -1720,8 +1720,7 @@ static void d3d11_font_bind_block(void *data, void *userdata)
       font->block = (video_font_raster_block_t*)userdata;
 }
 
-static void d3d11_font_flush_block(unsigned width, unsigned height,
-      void *data)
+static void d3d11_font_flush_block(unsigned dims, void *data)
 {
    D3D11_MAPPED_SUBRESOURCE mapped_vbo;
    D3D11_MAP map_type  = D3D11_MAP_WRITE_NO_OVERWRITE;

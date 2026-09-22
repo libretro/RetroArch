@@ -41,7 +41,7 @@ typedef struct font_renderer
 
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
    void (*bind_block)(void *data, void *block);
-   void (*flush)(unsigned width, unsigned height, void *data);
+   void (*flush)(unsigned dims, void *data);
 
    int (*get_message_width)(void *data, const char *msg, size_t msg_len, float scale);
    bool (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
