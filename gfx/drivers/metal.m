@@ -457,6 +457,10 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 - (void)setNeedsResize;
 - (void)setViewportWidth:(unsigned)width height:(unsigned)height forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate;
 - (void)setRotation:(unsigned)rotation;
+/*! @brief applyVideoMode sizes the window, or takes it full screen, on
+ * the main thread; a zero axis means the view's current size.  Returns
+ * the size applied. */
+- (unsigned)applyVideoMode:(unsigned)dims fullscreen:(bool)fullscreen;
 
 @end
 
@@ -4389,27 +4393,11 @@ static void metal_pull_cached_frame_cb(void *userdata,
 
       _keepAspect                   = _video.force_aspect;
 
-      gfx_ctx_mode_t mode = {
-         .dims       = VIDEO_SCALE_PACK(_video.width, _video.height),
-         .fullscreen = _video.fullscreen,
-      };
-
-      if (!VIDEO_SCALE_W(mode.dims) || !VIDEO_SCALE_H(mode.dims))
-      {
-         /* 0 indicates full screen, so we'll use the view's dimensions,
-          * which should already be full screen
-          * If this turns out to be the wrong assumption, we can use NSScreen
-          * to query the dimensions */
-         CGSize size = view.frame.size;
-         mode.dims   = VIDEO_SCALE_PACK(size.width, size.height);
-      }
-
-      [apple_platform setVideoMode:mode];
-
-#ifdef HAVE_COCOATOUCH
-      [self mtkView:view drawableSizeWillChange:CGSizeMake(
-            VIDEO_SCALE_W(mode.dims), VIDEO_SCALE_H(mode.dims))];
+#if METAL_HDR_AVAILABLE
+      unsigned mode_dims =
 #endif
+      [self applyVideoMode:VIDEO_SCALE_PACK(_video.width, _video.height)
+                fullscreen:_video.fullscreen];
 
       *input         = NULL;
       *inputData     = NULL;
@@ -4478,8 +4466,8 @@ static void metal_pull_cached_frame_cb(void *userdata,
           * will re-size if the viewport changes. */
          CGSize size = view.drawableSize;
          if (size.width == 0 || size.height == 0)
-            size = CGSizeMake(VIDEO_SCALE_W(mode.dims),
-                  VIDEO_SCALE_H(mode.dims));
+            size = CGSizeMake(VIDEO_SCALE_W(mode_dims),
+                  VIDEO_SCALE_H(mode_dims));
          [_context setHDROutputMode:_initial_hdr_mode
                     viewportWidth:(unsigned)size.width
                    viewportHeight:(unsigned)size.height];
@@ -4829,6 +4817,30 @@ static void metal_pull_cached_frame_cb(void *userdata,
 - (Uniforms *)viewportMVP { return &_viewportMVP; }
 
 #pragma mark - MTKViewDelegate
+
+- (unsigned)applyVideoMode:(unsigned)dims fullscreen:(bool)fullscreen
+{
+   gfx_ctx_mode_t mode;
+   MetalView *view = (MetalView *)apple_platform.renderView;
+
+   /* A zero axis asks for full screen, which the view already covers */
+   if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+   {
+      CGSize size  = view.frame.size;
+      dims         = VIDEO_SCALE_PACK(size.width, size.height);
+   }
+
+   mode.dims       = dims;
+   mode.fullscreen = fullscreen;
+   [apple_platform setVideoMode:mode];
+
+#ifdef HAVE_COCOATOUCH
+   [self mtkView:view drawableSizeWillChange:CGSizeMake(
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims))];
+#endif
+
+   return dims;
+}
 
 - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size
 {
@@ -6856,16 +6868,37 @@ static bool metal_update_texture(void *video_data, uintptr_t handle,
    return metal_update_texture_internal(video_data, handle, ti);
 }
 
-/* TODO/FIXME - implement */
-static void metal_set_video_mode(void *data,
-                                 unsigned dims,
-                                 bool fullscreen)
+typedef struct
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
-   RARCH_DBG("[Metal] set_video_mode res=%dx%d fullscreen=%s\n",
-             width, height,
-             fullscreen ? "YES" : "NO");
+   void    *data;
+   unsigned dims;
+   bool     fullscreen;
+} metal_set_video_mode_args_t;
+
+static void metal_set_video_mode_mainthread(void *userdata)
+{
+   metal_set_video_mode_args_t *args = (metal_set_video_mode_args_t*)userdata;
+   MetalDriver *md                   = (__bridge MetalDriver *)args->data;
+
+   [md applyVideoMode:args->dims fullscreen:args->fullscreen];
+   [apple_platform setCursorVisible:!args->fullscreen];
+}
+
+static void metal_set_video_mode(void *data, unsigned dims,
+      bool fullscreen)
+{
+   metal_set_video_mode_args_t args;
+
+   if (!data)
+      return;
+
+   args.data       = data;
+   args.dims       = dims;
+   args.fullscreen = fullscreen;
+
+   /* Window and full-screen surgery is AppKit/UIKit; with threaded
+    * video this is reached from the worker thread. */
+   cocoa_main_thread_sync(metal_set_video_mode_mainthread, &args);
 }
 
 static float metal_get_refresh_rate(void *data)
