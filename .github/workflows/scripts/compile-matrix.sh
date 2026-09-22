@@ -19,6 +19,10 @@ cd "$(dirname "$0")/../../.."
 CC=${CC:-gcc}
 INC="-I. -Ilibretro-common/include -Ideps -Ideps/rcheevos/include -Iinput/include"
 WARN="-Wall -Wno-unused-function -Werror=implicit-function-declaration"
+# gcc 14 rejects these outright and older gcc only warns; a lane on
+# an older compiler has to reject them too, or a mismatched callback
+# passes here and fails on the toolchains that build the platform.
+WARN="$WARN -Werror=incompatible-pointer-types -Werror=int-conversion"
 BASE="-DRARCH_INTERNAL -DHAVE_AUDIOMIXER -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU"
 # A console lane that keeps the host identity takes the Linux branch
 # of every #if ladder and proves nothing, so this sits above the
@@ -270,6 +274,23 @@ platform_video "ctx: sdl2 gl" "-DHAVE_SDL2 -DHAVE_OPENGL" "-I/usr/include/SDL2" 
 # qb/config.libs.sh can enable it from a pkg-config probe alone.
 platform_video "ctx: osmesa" "-DHAVE_OSMESA -DHAVE_OPENGL" "" \
    gfx/drivers_context/osmesa_ctx.c /usr/include/GL/osmesa.h
+platform_video "ctx: wayland gl" "-DHAVE_WAYLAND -DHAVE_EGL -DHAVE_OPENGL" "" \
+   gfx/drivers_context/wayland_ctx.c /usr/include/wayland-client.h
+platform_video "ctx: wayland vulkan" "-DHAVE_WAYLAND -DHAVE_VULKAN" "" \
+   gfx/drivers_context/wayland_vk_ctx.c /usr/include/wayland-client.h
+# webOS swaps its own shim in for half of the common Wayland functions,
+# and the Wayland context reaches it through prototypes of its own, so
+# the shim and the context each get a lane. The shim's webOS protocol
+# headers are wayland-scanner output of LG's webos-wayland-extensions
+# (Apache-2.0), which the SDK generates at build time; stubs/webos keeps
+# a copy laid out so the shim's ../../gfx/common/wayland includes find it.
+WEBOS="-DWEBOS -DWEBOS_APP_ID=\"com.retroarch\" -DHAVE_WAYLAND -DHAVE_EGL"
+WEBOS="$WEBOS -DHAVE_OPENGLES"
+platform_video "ctx: wayland gl (webos)" "$WEBOS" "" \
+   gfx/drivers_context/wayland_ctx.c /usr/include/wayland-client.h
+platform_video "webos wayland shim" "$WEBOS" \
+   "-I$STUBS/webos/gfx/common" \
+   input/common/wayland_common_webos.c /usr/include/wayland-client.h
 
 arm "win32"      win32      "-D_WIN32 -D_WIN32_WINNT=0x0600"
 arm "win32-old"  win32      "-D_WIN32 -D_WIN32_WINNT=0x0400"
