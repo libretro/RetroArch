@@ -33,6 +33,7 @@
 #include <retro_atomic.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <rthreads/tpool.h>
 #endif
 
@@ -1602,14 +1603,15 @@ static struct rh264_block_hdr *rh264_block_of(const void *data);
 static int rh264_block_rows_final(const void *data);
 #ifdef HAVE_THREADS
 static void rh264_ctx_join(struct rh264_video *v, struct rh264_pic_ctx *c);
-/* One lock and condition for every row publication and every wait on
- * one, shared by the decoders in the process: a publication is a
- * release store and a broadcast, a wait sleeps until the count it
- * needs is there. Made by the first decoder given a pool; the
- * thumbnail streams decode on one worker thread, which is what makes
- * that first call safe. */
-static slock_t *rh264_rows_lock;
-static scond_t *rh264_rows_cond;
+/* One eventcount for every row publication, every wait on one and the
+ * join of a picture, shared by the decoders in the process: a
+ * publication is a release store and a notify that touches no lock
+ * unless a thread is parked, and a waiter registers, re-checks the
+ * count it needs and only then sleeps. Made by the first decoder
+ * given a pool; the thumbnail streams decode on one worker thread,
+ * which is what makes that first call safe. */
+static retro_eventcount_t rh264_rows_ec;
+static int rh264_rows_ec_ok;
 #endif
 
 /* store one raw sample (I_PCM) at sample index 'i' of a plane pointer */
@@ -3091,16 +3093,22 @@ static void rh264_ref_wait_rows(const rh264_frame *f, const rh264_frame *ref,
        * that runs one thread and asserts this never happens there -
        * a short read on one thread would be a wrong counter, and
        * a wait here for a row already handed over. */
-      if (rh264_rows_lock)
+      if (rh264_rows_ec_ok)
       {
          /* a wait, not a miss: on the pool the rows arrive */
          retro_atomic_fetch_add_int(&rh264_row_waits, 1);
          retro_atomic_fetch_add_int(&rh264_row_short_sum,
                rows - rh264_block_rows_final(ref->planes));
-         slock_lock(rh264_rows_lock);
          while (rh264_block_rows_final(ref->planes) < rows)
-            scond_wait(rh264_rows_cond, rh264_rows_lock);
-         slock_unlock(rh264_rows_lock);
+         {
+            int key = retro_eventcount_prepare_wait(&rh264_rows_ec);
+            if (rh264_block_rows_final(ref->planes) >= rows)
+            {
+               retro_eventcount_cancel_wait(&rh264_rows_ec);
+               break;
+            }
+            retro_eventcount_commit_wait(&rh264_rows_ec, key);
+         }
          return;
       }
 #endif
@@ -5218,16 +5226,12 @@ static void rh264_block_publish_rows(void *data, int rows)
       while (n--)
          sthread_yield();
    }
-   if (rh264_rows_lock)
-   {
-      slock_lock(rh264_rows_lock);
-      retro_atomic_store_release_int(&b->rows_final, rows);
-      scond_broadcast(rh264_rows_cond);
-      slock_unlock(rh264_rows_lock);
-      return;
-   }
 #endif
    retro_atomic_store_release_int(&b->rows_final, rows);
+#ifdef HAVE_THREADS
+   if (rh264_rows_ec_ok)
+      retro_eventcount_notify(&rh264_rows_ec);
+#endif
 }
 
 #define RH264_FREE_BLOCKS 16
@@ -9245,10 +9249,16 @@ static int rh264_out_push(rh264_video *v, int poc, int is_idr)
          return -1;
       }
       v->st_pop_waits++;
-      slock_lock(rh264_rows_lock);
       while (rh264_block_rows_final(v->out[bi].planes) < v->out[bi].mbh)
-         scond_wait(rh264_rows_cond, rh264_rows_lock);
-      slock_unlock(rh264_rows_lock);
+      {
+         int key = retro_eventcount_prepare_wait(&rh264_rows_ec);
+         if (rh264_block_rows_final(v->out[bi].planes) >= v->out[bi].mbh)
+         {
+            retro_eventcount_cancel_wait(&rh264_rows_ec);
+            break;
+         }
+         retro_eventcount_commit_wait(&rh264_rows_ec, key);
+      }
    }
 #endif
    v->out_used[bi] = 0; v->out_len--;
@@ -10315,10 +10325,8 @@ static void rh264_ctx_job(void *arg)
    }
    rh264_ctx_run_slices(c->owner, c, c->vlc);
    retro_atomic_fetch_sub_int(&rh264_jobs_running, 1);
-   slock_lock(rh264_rows_lock);
    retro_atomic_store_release_int(&c->busy, 0);
-   scond_broadcast(rh264_rows_cond);
-   slock_unlock(rh264_rows_lock);
+   retro_eventcount_notify(&rh264_rows_ec);
 }
 
 /* Wait for the context's picture, if a pool thread still has it. The
@@ -10328,16 +10336,18 @@ static void rh264_ctx_job(void *arg)
  * only once the queue is empty and the picture is in other hands. */
 static void rh264_ctx_join(rh264_video *v, rh264_pic_ctx *c)
 {
-   if (!rh264_rows_lock)
+   if (!rh264_rows_ec_ok)
       return;
    while (retro_atomic_load_acquire_int(&c->busy))
    {
+      int key;
       if (v->pool && tpool_help((tpool_t*)v->pool))
          continue;
-      slock_lock(rh264_rows_lock);
+      key = retro_eventcount_prepare_wait(&rh264_rows_ec);
       if (retro_atomic_load_acquire_int(&c->busy))
-         scond_wait(rh264_rows_cond, rh264_rows_lock);
-      slock_unlock(rh264_rows_lock);
+         retro_eventcount_commit_wait(&rh264_rows_ec, key);
+      else
+         retro_eventcount_cancel_wait(&rh264_rows_ec);
    }
 }
 #endif
@@ -10601,19 +10611,17 @@ void rh264_video_set_thread_pool(rh264_video *v, void *pool, int threads)
       v->threaded = 0;
       return;
    }
-   if (!rh264_rows_lock)
+   if (!rh264_rows_ec_ok)
    {
-      rh264_rows_lock   = slock_new();
-      rh264_rows_cond   = scond_new();
       rh264_blocks_lock = slock_new();
-      if (!rh264_rows_lock || !rh264_rows_cond || !rh264_blocks_lock)
+      if (!rh264_blocks_lock || !retro_eventcount_init(&rh264_rows_ec))
       {
-         if (rh264_rows_lock)   slock_free(rh264_rows_lock);
-         if (rh264_rows_cond)   scond_free(rh264_rows_cond);
          if (rh264_blocks_lock) slock_free(rh264_blocks_lock);
-         rh264_rows_lock = NULL; rh264_rows_cond = NULL; rh264_blocks_lock = NULL;
+         rh264_blocks_lock = NULL;
+         retro_eventcount_free(&rh264_rows_ec);
          return;
       }
+      rh264_rows_ec_ok = 1;
    }
    /* One context per thread that may be decoding - the workers and
     * the submitter, which helps - and one for the picture being
