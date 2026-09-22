@@ -2656,8 +2656,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
             mui->icons_path, materialui_texture_path(i),
             sizeof(texpath));
       gfx_display_reset_icon_texture(texpath,
-         &mui->textures.list[i], gfx_display_texture_filter(),
-         NULL, NULL);
+         &mui->textures.list[i], gfx_display_texture_filter());
    }
 }
 
@@ -8694,9 +8693,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
                mui->cursor_size,
                tex_list[MUI_TEXTURE_POINTER],
                mui->pointer.x,
-               mui->pointer.y,
-               video_width,
-               video_height);
+               mui->pointer.y);
    }
 
    /* Undo any transparency adjustments caused

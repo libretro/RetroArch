@@ -229,14 +229,12 @@ float gfx_display_get_dpi_scale(gfx_display_t *p_disp, void *settings_data,
 bool gfx_display_reset_textures_list_buffer(uintptr_t *item,
       enum texture_filter_type filter_type, void *buffer,
       unsigned buffer_len, enum image_type_enum image_type,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    (void)item; (void)filter_type; (void)buffer; (void)buffer_len;
    (void)image_type;
-   if (width)
-      *width = 0;
-   if (height)
-      *height = 0;
+   if (dims)
+      *dims = 0;
    return false;
 }
 

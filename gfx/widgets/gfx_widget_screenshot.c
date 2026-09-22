@@ -31,8 +31,7 @@ struct gfx_widget_screenshot_state
    uintptr_t texture;
 
    unsigned video_height;
-   unsigned texture_width;
-   unsigned texture_height;
+   unsigned texture_dims;
 
    unsigned height;
    unsigned width;
@@ -64,8 +63,7 @@ typedef struct gfx_widget_screenshot_state gfx_widget_screenshot_state_t;
 static gfx_widget_screenshot_state_t p_w_screenshot_st = {
    0,             /* texture */
    0,             /* video_height */
-   0,             /* texture_width */
-   0,             /* texture_height */
+   0,             /* texture_dims */
    0,             /* height */
    0,             /* width */
    0,             /* thumbnail_width */
@@ -427,14 +425,15 @@ static void gfx_widget_screenshot_iterate(
       gfx_display_reset_textures_list(state->filename,
             "", &state->texture,
             gfx_display_texture_filter_latched(),
-            &state->texture_width, &state->texture_height);
+            &state->texture_dims);
 
       state->height = font_regular->line_height * 4;
       state->width  = width;
 
       state->scale_factor = gfx_widgets_get_thumbnail_scale_factor(
             width, state->height,
-            state->texture_width, state->texture_height
+            VIDEO_SCALE_W(state->texture_dims),
+            VIDEO_SCALE_H(state->texture_dims)
       );
 
       /* State slot is double size and at the bottom */
@@ -446,13 +445,16 @@ static void gfx_widget_screenshot_iterate(
          duration             = NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST;
       }
 
-      state->thumbnail_width  = state->texture_width * state->scale_factor;
-      state->thumbnail_height = state->texture_height * state->scale_factor;
+      state->thumbnail_width  = VIDEO_SCALE_W(state->texture_dims)
+         * state->scale_factor;
+      state->thumbnail_height = VIDEO_SCALE_H(state->texture_dims)
+         * state->scale_factor;
 
       /* Set image aspect ratio according to core geometry */
       if (video_st && video_st->av_info.geometry.aspect_ratio > 0)
       {
-         float thumbnail_aspect = (float)state->texture_width / (float)state->texture_height;
+         float thumbnail_aspect = (float)VIDEO_SCALE_W(state->texture_dims)
+            / (float)VIDEO_SCALE_H(state->texture_dims);
          float core_aspect      = video_st->av_info.geometry.aspect_ratio;
 
          state->thumbnail_width = state->thumbnail_width / (thumbnail_aspect / core_aspect);

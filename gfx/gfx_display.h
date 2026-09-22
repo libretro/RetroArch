@@ -289,7 +289,7 @@ void gfx_display_draw_cursor(
       unsigned video_dims,
       bool cursor_visible,
       float *color, float cursor_size, uintptr_t texture,
-      float x, float y, unsigned width, unsigned height);
+      float x, float y);
 
 /* @dims: the area the text is placed in, both axes in one word,
  * VIDEO_SCALE_PACK's layout. */
@@ -400,8 +400,7 @@ bool gfx_display_reset_textures_list(
       const char *iconpath,
       uintptr_t *item,
       enum texture_filter_type filter_type,
-      unsigned *width,
-      unsigned *height);
+      unsigned *dims);
 
 /* Returns the texture filter type used when uploading menu/UI
  * images (icons, thumbnails, wallpapers).  Mip-mapped filtering
@@ -416,8 +415,7 @@ enum texture_filter_type gfx_display_texture_filter_latched(void);
 
 bool gfx_display_reset_icon_texture(
       const char *texture_path,
-      uintptr_t *item, enum texture_filter_type filter_type,
-      unsigned *width, unsigned *height);
+      uintptr_t *item, enum texture_filter_type filter_type);
 
 /* Platform-adaptive icon/texture loading.
  *
@@ -445,8 +443,7 @@ bool gfx_display_reset_textures_list_buffer(
         void* buffer,
         unsigned buffer_len,
         enum image_type_enum image_type,
-        unsigned *width,
-        unsigned *height);
+        unsigned *dims);
 
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,

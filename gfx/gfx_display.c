@@ -1120,7 +1120,7 @@ void gfx_display_draw_cursor(
       unsigned video_dims,
       bool cursor_visible,
       float *color, float cursor_size, uintptr_t texture,
-      float x, float y, unsigned width, unsigned height)
+      float x, float y)
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
@@ -1142,7 +1142,7 @@ void gfx_display_draw_cursor(
    coords.color         = (const float*)color;
 
    draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x - (cursor_size / 2)),
-         VIDEO_PX((int)height - y - (cursor_size / 2)));
+         VIDEO_PX((int)VIDEO_SCALE_H(video_dims) - y - (cursor_size / 2)));
    draw.dims            = VIDEO_SCALE_PACK((unsigned)cursor_size,
          (unsigned)cursor_size);
    draw.coords          = &coords;
@@ -1280,7 +1280,7 @@ void gfx_display_draw_keyboard(
 bool gfx_display_reset_textures_list_buffer(
         uintptr_t *item, enum texture_filter_type filter_type,
         void* buffer, unsigned buffer_len, enum image_type_enum image_type,
-        unsigned *width, unsigned *height)
+        unsigned *dims)
 {
    struct texture_image ti;
 
@@ -1292,11 +1292,8 @@ bool gfx_display_reset_textures_list_buffer(
 
    if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
    {
-      if (width)
-         *width     = ti.width;
-
-      if (height)
-         *height    = ti.height;
+      if (dims)
+         *dims      = VIDEO_SCALE_PACK(ti.width, ti.height);
 
       /* If the poke interface doesn't support 
          texture load then free and return false */
@@ -1316,7 +1313,7 @@ bool gfx_display_reset_textures_list_buffer(
 bool gfx_display_reset_textures_list(
       const char *texture_path, const char *iconpath,
       uintptr_t *item, enum texture_filter_type filter_type,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    char texpath[PATH_MAX_LENGTH];
    struct texture_image ti;
@@ -1336,11 +1333,8 @@ bool gfx_display_reset_textures_list(
    if (!image_texture_load(&ti, texpath))
       return false;
 
-   if (width)
-      *width = ti.width;
-
-   if (height)
-      *height = ti.height;
+   if (dims)
+      *dims = VIDEO_SCALE_PACK(ti.width, ti.height);
 
    if (!video_driver_texture_load(&ti,
          filter_type, item))
@@ -1356,8 +1350,7 @@ bool gfx_display_reset_textures_list(
 
 bool gfx_display_reset_icon_texture(
       const char *texture_path,
-      uintptr_t *item, enum texture_filter_type filter_type,
-      unsigned *width, unsigned *height)
+      uintptr_t *item, enum texture_filter_type filter_type)
 {
    struct texture_image ti;
 
@@ -1371,11 +1364,6 @@ bool gfx_display_reset_icon_texture(
       return false;
    if (!image_texture_load(&ti, texture_path))
       return false;
-
-   if (width)
-      *width = ti.width;
-   if (height)
-      *height = ti.height;
 
    if (!video_driver_texture_load(&ti, filter_type, item))
    {
@@ -1449,7 +1437,7 @@ bool gfx_display_load_icon(
    (void)generation_ptr;
    return gfx_display_reset_icon_texture(
          fullpath, target_texture,
-         gfx_display_texture_filter(), NULL, NULL);
+         gfx_display_texture_filter());
 #else
    return task_push_icon_load(
          fullpath, supports_rgba,

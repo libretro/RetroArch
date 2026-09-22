@@ -2698,15 +2698,14 @@ bool gfx_widgets_ai_service_overlay_load(
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    if (gfx_widgets_ai_service_overlay_get_state() == 0)
    {
-      unsigned width                = 0;
-      unsigned height               = 0;
+      unsigned dims                 = 0;
       if (!gfx_display_reset_textures_list_buffer(
                &p_dispwidget->ai_service_overlay_texture,
                gfx_display_texture_filter(),
                (void *) buffer, buffer_len, image_type,
-               &width, &height))
+               &dims))
          return false;
-      p_dispwidget->ai_service_overlay_dims = VIDEO_SCALE_PACK(width, height);
+      p_dispwidget->ai_service_overlay_dims = dims;
       gfx_widgets_ai_service_overlay_set_state(1);
    }
    return true;

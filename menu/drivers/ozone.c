@@ -3112,8 +3112,7 @@ static void ozone_reset_theme_textures(ozone_handle_t *ozone)
                theme_path, OZONE_THEME_TEXTURES_FILES[i],
                sizeof(texpath));
          gfx_display_reset_icon_texture(texpath,
-            &theme->textures[i], gfx_display_texture_filter(),
-            NULL, NULL);
+            &theme->textures[i], gfx_display_texture_filter());
       }
    }
 }
@@ -5409,7 +5408,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          /* Load sidebar playlist icons at once */
          gfx_display_reset_icon_texture(
                texturepath, &node->icon,
-               gfx_display_texture_filter(), NULL, NULL);
+               gfx_display_texture_filter());
 
          strlcpy_lit(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          fill_pathname_join_special(
@@ -10567,8 +10566,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
                ozone->png_path, OZONE_TEXTURES_FILES[i],
                sizeof(texpath));
          gfx_display_reset_icon_texture(texpath,
-               &ozone->textures[i], gfx_display_texture_filter(),
-               NULL, NULL);
+               &ozone->textures[i], gfx_display_texture_filter());
       }
 
       /* Sidebar textures */
@@ -10591,8 +10589,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
                break;
          }
          gfx_display_reset_icon_texture(texpath,
-               &ozone->tab_textures[i], gfx_display_texture_filter(),
-               NULL, NULL);
+               &ozone->tab_textures[i], gfx_display_texture_filter());
       }
 
       /* Theme textures */
@@ -10606,8 +10603,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
                ozone->icons_path, ozone_entries_icon_texture_path(i),
                sizeof(texpath));
          gfx_display_reset_icon_texture(texpath,
-               &ozone->icons_textures[i], gfx_display_texture_filter(),
-               NULL, NULL);
+               &ozone->icons_textures[i], gfx_display_texture_filter());
       }
 
       gfx_display_deinit_white_texture();
@@ -13160,15 +13156,13 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       if (cursor_visible)
          gfx_display_draw_cursor(p_disp,
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_info->dims,
                cursor_visible,
                ozone->pure_white,
                ozone->dimensions.cursor_size,
                icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_POINTER],
                ozone->pointer.x,
-               ozone->pointer.y,
-               video_width,
-               video_height);
+               ozone->pointer.y);
    }
 
    /* Unbind fonts */

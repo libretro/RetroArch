@@ -203,7 +203,7 @@ static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
       uintptr_t item;
       gfx_display_reset_textures_list_buffer(&item, TEXTURE_FILTER_MIPMAP_LINEAR,
                                              (void*)[png bytes], (unsigned int)[png length], IMAGE_TYPE_PNG,
-                                             NULL, NULL);
+                                             NULL);
       textures[iconName] = [NSNumber numberWithUnsignedLong:item];
    }
 

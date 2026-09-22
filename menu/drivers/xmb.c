@@ -1820,8 +1820,7 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
             xmb_context_bg_destroy(xmb);
 
             if (!gfx_display_reset_icon_texture(path,
-                  &xmb->textures.bg, gfx_display_texture_filter(),
-                  NULL, NULL))
+                  &xmb->textures.bg, gfx_display_texture_filter()))
                task_push_image_load(path,
                      gfx_surface_wants_rgba(), 0,
                      0,
@@ -7736,8 +7735,7 @@ static void xmb_context_reset_textures(
       fill_pathname_join_special(texpath,
             iconpath, texture_path, sizeof(texpath));
       gfx_display_reset_icon_texture(texpath,
-         &xmb->textures.list[i], gfx_display_texture_filter(),
-         NULL, NULL);
+         &xmb->textures.list[i], gfx_display_texture_filter());
    }
 
    xmb->main_menu_node.icon              = 0;
@@ -10356,15 +10354,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          gfx_display_draw_cursor(
                p_disp,
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_info->dims,
                cursor_visible,
                &coord_white[0],
                xmb->cursor_size,
                tex_list[XMB_TEXTURE_POINTER],
                xmb->pointer.x,
-               xmb->pointer.y,
-               video_width,
-               video_height);
+               xmb->pointer.y);
    }
 
    if (video_st->current_video && video_st->current_video->set_viewport)

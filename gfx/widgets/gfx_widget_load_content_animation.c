@@ -233,7 +233,7 @@ static void gfx_widget_load_content_animation_load_icon(void)
       gfx_display_reset_textures_list(
             state->icon_file, state->icon_directory,
             &state->icon_texture,
-            gfx_display_texture_filter(), NULL, NULL);
+            gfx_display_texture_filter(), NULL);
 }
 
 /* Callbacks */

@@ -1049,7 +1049,7 @@ static bool ctr_load_bottom_texture(void *data)
       if (gfx_display_reset_textures_list(
          ctr_texture_path(i), dir_assets,
          &ctr->bottom_textures[i].texture,
-         TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+         TEXTURE_FILTER_MIPMAP_LINEAR, NULL))
       {
          struct ctr_bottom_texture_data *o = &ctr->bottom_textures[i];
          o->frame_coords = linearAlloc(sizeof(ctr_vertex_t));
@@ -1295,7 +1295,7 @@ static void ctr_bottom_menu_control(void* data,
                   ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL),
                   dir_get_ptr(RARCH_DIR_SAVESTATE),
                   &o->texture,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+                  TEXTURE_FILTER_MIPMAP_LINEAR, NULL))
          {
             o->frame_coords = linearAlloc(sizeof(ctr_vertex_t));
             ctr_state_thumbnail_geom(ctr);
