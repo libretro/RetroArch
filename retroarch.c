@@ -1792,8 +1792,7 @@ void drivers_init(
             settings,
             (uintptr_t)&p_dispwidget->active,
             video_is_threaded,
-            VIDEO_SCALE_W(output_size),
-            VIDEO_SCALE_H(output_size),
+            output_size,
             video_is_fullscreen,
             settings->paths.directory_assets,
             settings->paths.path_font);
@@ -4227,8 +4226,7 @@ bool command_event(enum event_command cmd, void *data)
                      settings,
                      (uintptr_t)&p_dispwidget->active,
                      VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st),
-                     VIDEO_SCALE_W(output_size),
-                     VIDEO_SCALE_H(output_size),
+                     output_size,
                      video_is_fullscreen,
                      settings->paths.directory_assets,
                      settings->paths.path_font);

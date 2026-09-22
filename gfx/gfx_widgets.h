@@ -359,7 +359,7 @@ struct gfx_widget
    /* called when the graphics context is reset
     * -> (re)load the textures here */
    void (*context_reset)(bool is_threaded,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path,
       char* menu_png_path,
       char* widgets_png_path);
@@ -394,8 +394,7 @@ struct gfx_widget
 };
 
 float gfx_widgets_get_thumbnail_scale_factor(
-      const float dst_width, const float dst_height,
-      const float image_width, const float image_height);
+      unsigned dst_dims, unsigned image_dims);
 
 void gfx_widgets_draw_icon(
       void *userdata,
@@ -432,7 +431,7 @@ bool gfx_widgets_init(
       void *settings_data,
       uintptr_t widgets_active_ptr,
       bool video_is_threaded,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path);
 
 void gfx_widgets_deinit(bool widgets_persisting);

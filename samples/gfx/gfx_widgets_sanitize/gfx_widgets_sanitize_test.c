@@ -79,7 +79,7 @@ static bool widgets_up(void)
    memset(s_settings, 0, sizeof(s_settings));
 
    return gfx_widgets_init(&s_disp, &s_anim, s_settings,
-         (uintptr_t)&s_disp, false, 1920, 1080, false,
+         (uintptr_t)&s_disp, false, VIDEO_SCALE_PACK(1920, 1080), false,
          "/tmp/nonexistent-assets", NULL);
 }
 

@@ -350,7 +350,7 @@ static void gfx_widget_volume_layout(
 static uint64_t volume_icon_load_gen = 0;
 
 static void gfx_widget_volume_context_reset(bool is_threaded,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path,
       char* menu_png_path,
       char* widgets_png_path)

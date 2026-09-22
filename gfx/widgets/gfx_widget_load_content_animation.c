@@ -1089,7 +1089,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
 
 static void gfx_widget_load_content_animation_context_reset(
       bool is_threaded,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path,
       char* menu_png_path,
       char* widgets_png_path)

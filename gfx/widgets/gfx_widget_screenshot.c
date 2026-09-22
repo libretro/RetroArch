@@ -33,10 +33,8 @@ struct gfx_widget_screenshot_state
    unsigned video_height;
    unsigned texture_dims;
 
-   unsigned height;
-   unsigned width;
-   unsigned thumbnail_width;
-   unsigned thumbnail_height;
+   unsigned dims;
+   unsigned thumbnail_dims;
    unsigned shotname_length;
 
    float scale_factor;
@@ -64,10 +62,8 @@ static gfx_widget_screenshot_state_t p_w_screenshot_st = {
    0,             /* texture */
    0,             /* video_height */
    0,             /* texture_dims */
-   0,             /* height */
-   0,             /* width */
-   0,             /* thumbnail_width */
-   0,             /* thumbnail_height */
+   0,             /* dims */
+   0,             /* thumbnail_dims */
    0,             /* shotname_length */
    0.0f,          /* scale_factor */
    0.0f,          /* y */
@@ -224,7 +220,7 @@ static void gfx_widget_screenshot_end(void *userdata)
    entry.easing_enum    = EASING_OUT_QUAD;
    entry.subject        = &state->y;
    entry.tag            = p_dispwidget->gfx_widgets_generic_tag;
-   entry.target_value   = -((float)state->height);
+   entry.target_value   = -((float)VIDEO_SCALE_H(state->dims));
    entry.userdata       = NULL;
 
    if (state->state_slot)
@@ -274,8 +270,6 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
    };
    video_frame_info_t *video_info       = (video_frame_info_t*)data;
    void *userdata                       = video_info->userdata;
-   unsigned video_width                 = VIDEO_SCALE_W(video_info->dims);
-   unsigned video_height                = VIDEO_SCALE_H(video_info->dims);
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_display_t            *p_disp     = (gfx_display_t*)video_info->disp_userdata;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
@@ -283,7 +277,8 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
     * video worker takes the widgets over */
    gfx_animation_t          *p_anim     = anim_widgets_get_ptr();
    gfx_widget_font_data_t* font_regular = &p_dispwidget->gfx_widget_fonts.regular;
-   int padding                          = (state->height - (font_regular->line_height * 2.0f)) / 2.0f;
+   int padding                          = (VIDEO_SCALE_H(state->dims)
+         - (font_regular->line_height * 2.0f)) / 2.0f;
 
    /* Screenshot */
    if (state->loaded)
@@ -296,26 +291,25 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_info->dims,
             0, state->y,
-            VIDEO_SCALE_PACK(state->width, state->height),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            state->dims,
+            video_info->dims,
             p_dispwidget->backdrop_orig,
             NULL
             );
 
       gfx_display_set_alpha(pure_white, 0.5f);
 
-      state->video_height = video_height;
+      state->video_height = VIDEO_SCALE_H(video_info->dims);
 
       if (state->texture)
       {
          gfx_widgets_draw_icon(
                userdata,
                p_disp,
-               VIDEO_SCALE_PACK(video_width, video_height),
-               VIDEO_SCALE_PACK(state->thumbnail_width,
-                     state->thumbnail_height),
+               video_info->dims,
+               state->thumbnail_dims,
                state->texture,
                0,
                state->y,
@@ -338,12 +332,11 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_info->dims,
                0,
                state->y,
-               VIDEO_SCALE_PACK(state->thumbnail_width,
-                     state->thumbnail_height),
-               VIDEO_SCALE_PACK(video_width, video_height),
+               state->thumbnail_dims,
+               video_info->dims,
                background_color,
                NULL);
       }
@@ -352,9 +345,9 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
             (state->state_slot)
                   ? msg_hash_to_str(MSG_STATE_SLOT)
                   : msg_hash_to_str(MSG_SCREENSHOT_SAVED),
-            state->thumbnail_width + padding,
+            VIDEO_SCALE_W(state->thumbnail_dims) + padding,
             padding + font_regular->line_ascender + state->y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_info->dims,
             TEXT_COLOR_FAINT,
             TEXT_ALIGN_LEFT,
             true);
@@ -371,9 +364,10 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
 
       gfx_widgets_draw_text(font_regular,
             shotname,
-            state->thumbnail_width + padding,
-            state->height - padding - font_regular->line_descender + state->y,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            VIDEO_SCALE_W(state->thumbnail_dims) + padding,
+            VIDEO_SCALE_H(state->dims) - padding
+               - font_regular->line_descender + state->y,
+            video_info->dims,
             TEXT_COLOR_INFO,
             TEXT_ALIGN_LEFT,
             true);
@@ -386,10 +380,10 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_info->dims,
             0, 0,
-            VIDEO_SCALE_PACK(video_width, video_height),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_info->dims,
+            video_info->dims,
             pure_white,
             NULL
             );
@@ -402,8 +396,6 @@ static void gfx_widget_screenshot_iterate(
       const char *dir_assets, char *font_path,
       bool is_threaded)
 {
-   unsigned width       = VIDEO_SCALE_W(dims);
-   unsigned height      = VIDEO_SCALE_H(dims);
    settings_t *settings = config_get_ptr();
    dispgfx_widget_t *p_dispwidget       = (dispgfx_widget_t*)user_data;
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
@@ -427,28 +419,25 @@ static void gfx_widget_screenshot_iterate(
             gfx_display_texture_filter_latched(),
             &state->texture_dims);
 
-      state->height = font_regular->line_height * 4;
-      state->width  = width;
+      state->dims   = VIDEO_SCALE_PACK(VIDEO_SCALE_W(dims),
+            font_regular->line_height * 4);
 
       state->scale_factor = gfx_widgets_get_thumbnail_scale_factor(
-            width, state->height,
-            VIDEO_SCALE_W(state->texture_dims),
-            VIDEO_SCALE_H(state->texture_dims)
-      );
+            state->dims, state->texture_dims);
 
       /* State slot is double size and at the bottom */
       if (state->state_slot)
       {
-         state->height       *= 2;
+         VIDEO_SCALE_PUT_H(state->dims, VIDEO_SCALE_H(state->dims) * 2);
          state->scale_factor *= 2;
-         state->y             = height - state->height;
+         state->y             = VIDEO_SCALE_H(dims)
+                              - VIDEO_SCALE_H(state->dims);
          duration             = NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST;
       }
 
-      state->thumbnail_width  = VIDEO_SCALE_W(state->texture_dims)
-         * state->scale_factor;
-      state->thumbnail_height = VIDEO_SCALE_H(state->texture_dims)
-         * state->scale_factor;
+      state->thumbnail_dims   = VIDEO_SCALE_PACK(
+            VIDEO_SCALE_W(state->texture_dims) * state->scale_factor,
+            VIDEO_SCALE_H(state->texture_dims) * state->scale_factor);
 
       /* Set image aspect ratio according to core geometry */
       if (video_st && video_st->av_info.geometry.aspect_ratio > 0)
@@ -457,10 +446,14 @@ static void gfx_widget_screenshot_iterate(
             / (float)VIDEO_SCALE_H(state->texture_dims);
          float core_aspect      = video_st->av_info.geometry.aspect_ratio;
 
-         state->thumbnail_width = state->thumbnail_width / (thumbnail_aspect / core_aspect);
+         VIDEO_SCALE_PUT_W(state->thumbnail_dims,
+               VIDEO_SCALE_W(state->thumbnail_dims)
+               / (thumbnail_aspect / core_aspect));
       }
 
-      state->shotname_length  = (width - state->thumbnail_width - padding*2) / font_regular->glyph_width;
+      state->shotname_length  = (VIDEO_SCALE_W(dims)
+            - VIDEO_SCALE_W(state->thumbnail_dims) - padding*2)
+            / font_regular->glyph_width;
 
       timer.cb                = gfx_widget_screenshot_end;
       timer.userdata          = p_dispwidget;

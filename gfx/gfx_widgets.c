@@ -934,11 +934,14 @@ void gfx_widgets_flush_text(
 }
 
 float gfx_widgets_get_thumbnail_scale_factor(
-      const float dst_width, const float dst_height,
-      const float image_width, const float image_height)
+      unsigned dst_dims, unsigned image_dims)
 {
    float dst_ratio;
    float image_ratio;
+   float dst_width    = (float)VIDEO_SCALE_W(dst_dims);
+   float dst_height   = (float)VIDEO_SCALE_H(dst_dims);
+   float image_width  = (float)VIDEO_SCALE_W(image_dims);
+   float image_height = (float)VIDEO_SCALE_H(image_dims);
 
    if (   dst_height   == 0.0f || image_height == 0.0f
        || dst_width    == 0.0f || image_width  == 0.0f)
@@ -2355,7 +2358,7 @@ static void gfx_widgets_context_reset(
       gfx_display_t *p_disp,
       settings_t *settings,
       bool is_threaded,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path)
 {
    /* Icons */
@@ -2405,14 +2408,14 @@ static void gfx_widgets_context_reset(
       const gfx_widget_t* widget = widgets[i];
 
       if (widget->context_reset)
-         widget->context_reset(is_threaded, width, height,
+         widget->context_reset(is_threaded, dims,
                fullscreen, dir_assets, font_path,
                p_dispwidget->monochrome_png_path,
                p_dispwidget->gfx_widgets_path);
    }
 
    /* Update scaling/dimensions */
-   p_dispwidget->last_video_dims      = VIDEO_SCALE_PACK(width, height);
+   p_dispwidget->last_video_dims      = dims;
 #ifdef HAVE_XMB
    if (p_disp->menu_driver_id == MENU_DRIVER_ID_XMB)
       p_dispwidget->last_scale_factor = gfx_display_get_widget_pixel_scale(
@@ -2434,7 +2437,7 @@ bool gfx_widgets_init(
       void *settings_data,
       uintptr_t widgets_active_ptr,
       bool video_is_threaded,
-      unsigned width, unsigned height, bool fullscreen,
+      unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path)
 {
    size_t i;
@@ -2531,7 +2534,7 @@ bool gfx_widgets_init(
          p_disp,
          settings,
          video_is_threaded,
-         width, height, fullscreen,
+         dims, fullscreen,
          dir_assets, font_path);
 
 #ifdef HAVE_THREADS
