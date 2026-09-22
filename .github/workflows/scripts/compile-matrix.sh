@@ -175,6 +175,14 @@ platform_video "psp1 video" "-DPSP" \
 platform_video "gxm video" "-DVITA -DRARCH_CONSOLE $HOSTOFF" \
    "-Itools/platform_stubs/vita -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast" \
    gfx/drivers/gxm_gfx.c ""
+# The PS2 driver, against gsKit and PS2SDK stubs carrying what it
+# names in the shapes the real headers give them. Makefile.ps2 turns on
+# the window offset, which the driver reads. This lane is also the only
+# one that compiles retro_atomic.h's EE interrupt-mask backend, which
+# no other platform selects.
+platform_video "ps2 video" \
+   "-DPS2 -DRARCH_CONSOLE -DHAVE_WINDOW_OFFSET -DHAVE_RGUI $HOSTOFF" \
+   "-Itools/platform_stubs/ps2" gfx/drivers/ps2_gfx.c ""
 platform_video "dingux video"   "-DDINGUX" "-I/usr/include/SDL" \
    gfx/drivers/sdl_dingux_gfx.c /usr/include/SDL/SDL.h
 platform_video "rs90 video"     "-DDINGUX -DRS90" "-I/usr/include/SDL" \
