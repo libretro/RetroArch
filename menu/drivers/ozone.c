@@ -39,6 +39,7 @@
 #include "../menu_driver.h"
 #include "../menu_str.h"
 #include "../menu_screensaver.h"
+#include "ozone_color_themes.h"
 
 #include "../../msg_hash_lbl_str.h"
 #include "../../gfx/gfx_animation.h"
@@ -1851,27 +1852,15 @@ static void ozone_restart_cursor_animation(ozone_handle_t *ozone)
 static void ozone_set_color_theme(ozone_handle_t *ozone,
       const char *color_theme)
 {
+#define OZONE_COLOR_THEME_ROW(ident, theme, label) { ident, &theme },
    static const struct
    {
       const char *ident;
       ozone_theme_t *theme;
    } ozone_color_themes[] = {
-      { "basic_white",        &ozone_theme_light },
-      { "basic_black",        &ozone_theme_dark },
-      { "nord",               &ozone_theme_nord },
-      { "gruvbox_dark",       &ozone_theme_gruvbox_dark },
-      { "boysenberry",        &ozone_theme_boysenberry },
-      { "hacking_the_kernel", &ozone_theme_hacking_the_kernel },
-      { "twilight_zone",      &ozone_theme_twilight_zone },
-      { "dracula",            &ozone_theme_dracula },
-      { "solarized_dark",     &ozone_theme_solarized_dark },
-      { "solarized_light",    &ozone_theme_solarized_light },
-      { "gray_dark",          &ozone_theme_gray_dark },
-      { "gray_light",         &ozone_theme_gray_light },
-      { "purple_rain",        &ozone_theme_purple_rain },
-      { "selenium",           &ozone_theme_selenium },
-      { "evergarden",         &ozone_theme_evergarden }
+      OZONE_COLOR_THEME_LIST(OZONE_COLOR_THEME_ROW)
    };
+#undef OZONE_COLOR_THEME_ROW
    unsigned i;
    ozone_theme_t *theme = ozone->default_theme;
 

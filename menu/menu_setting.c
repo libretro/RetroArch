@@ -47,6 +47,9 @@
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
 #endif
+#ifdef HAVE_OZONE
+#include "drivers/ozone_color_themes.h"
+#endif
 
 #if defined(HAVE_STEAM) && defined(HAVE_MIST)
 #include <mist.h>
@@ -5044,57 +5047,84 @@ static size_t setting_get_string_representation_uint_materialui_landscape_layout
 #endif
 
 #ifdef HAVE_OZONE
+#define OZONE_COLOR_THEME_ROW(ident, theme, label) { ident, label },
 static const struct ozone_color_theme_option
 {
    const char *value;
    enum msg_hash_enums label;
-} ozone_color_themes[] = {
-   { "basic_white",        MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE },
-   { "basic_black",        MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK },
-   { "nord",               MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD },
-   { "gruvbox_dark",       MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK },
-   { "boysenberry",        MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY },
-   { "hacking_the_kernel", MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL },
-   { "twilight_zone",      MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_TWILIGHT_ZONE },
-   { "dracula",            MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA },
-   { "solarized_dark",     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK },
-   { "solarized_light",    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT },
-   { "gray_dark",          MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK },
-   { "gray_light",         MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT },
-   { "purple_rain",        MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN },
-   { "selenium",           MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM },
-   { "evergarden",         MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_EVERGARDEN }
+} ozone_color_theme_options[] = {
+   OZONE_COLOR_THEME_LIST(OZONE_COLOR_THEME_ROW)
 };
+#undef OZONE_COLOR_THEME_ROW
+
+/* Position of a theme identifier in the list; ARRAY_SIZE() when it
+ * is not one of them (an old out-of-range number, a hand edit). */
+static size_t ozone_color_theme_index(const char *value)
+{
+   size_t i;
+   for (i = 0; i < ARRAY_SIZE(ozone_color_theme_options); i++)
+      if (string_is_equal(value, ozone_color_theme_options[i].value))
+         return i;
+   return ARRAY_SIZE(ozone_color_theme_options);
+}
+
+/* The '|'-separated values string ST_STRING_OPTIONS wants, built
+ * from the same list so it cannot drift from it. */
+static const char *ozone_color_theme_values(void)
+{
+   static char values[512];
+   if (!*values)
+   {
+      size_t i;
+      for (i = 0; i < ARRAY_SIZE(ozone_color_theme_options); i++)
+      {
+         if (i)
+            strlcat(values, "|", sizeof(values));
+         strlcat(values, ozone_color_theme_options[i].value, sizeof(values));
+      }
+   }
+   return values;
+}
 
 static int setting_string_action_ozone_menu_color_theme(
-      rarch_setting_t *setting, bool right, bool menu_navigation_wraparound_enable)
+      rarch_setting_t *setting, bool right)
 {
-   size_t i = 0;
-   size_t size = ARRAY_SIZE(ozone_color_themes);
+   size_t size = ARRAY_SIZE(ozone_color_theme_options);
+   size_t i;
+   /* The setting dispatcher always passes wraparound as false, so
+    * read the user's preference here, as the uint handlers do. */
+   bool wraparound = config_get_ptr()->bools.menu_navigation_wraparound_enable;
 
-   menu_navigation_wraparound_enable = config_get_ptr()->bools.menu_navigation_wraparound_enable;
+   if (!setting)
+      return -1;
 
-   while (i < size && !string_is_equal(setting->value.target.string, ozone_color_themes[i].value))
-      i++;
-   if (i < size && (menu_navigation_wraparound_enable || (right ? i < size - 1 : i)))
-   {
+   i = ozone_color_theme_index(setting->value.target.string);
+
+   /* A value that is not in the list renders as the default theme;
+    * step from there rather than leaving left/right dead. */
+   if (i >= size)
+      i = ozone_color_theme_index(DEFAULT_OZONE_COLOR_THEME);
+   if (i >= size)
+      i = 0;
+
+   if (wraparound || (right ? i < size - 1 : i > 0))
       i = right ? (i + 1) % size : (i + size - 1) % size;
-      strlcpy(setting->value.target.string, ozone_color_themes[i].value, setting->size);
-   }
 
+   strlcpy(setting->value.target.string,
+         ozone_color_theme_options[i].value, setting->size);
    return 0;
 }
 
 static int setting_string_action_left_ozone_menu_color_theme(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   return setting_string_action_ozone_menu_color_theme(setting, false, wraparound);
+   return setting_string_action_ozone_menu_color_theme(setting, false);
 }
 
 static int setting_string_action_right_ozone_menu_color_theme(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   return setting_string_action_ozone_menu_color_theme(setting, true, wraparound);
+   return setting_string_action_ozone_menu_color_theme(setting, true);
 }
 
 static size_t setting_get_string_representation_ozone_menu_color_theme(
@@ -5102,16 +5132,13 @@ static size_t setting_get_string_representation_ozone_menu_color_theme(
 {
    if (setting)
    {
-      size_t i;
-
-      for (i = 0; i < ARRAY_SIZE(ozone_color_themes); i++)
-         if (string_is_equal(setting->value.target.string,
-                  ozone_color_themes[i].value))
-            return strlcpy(s,
-                  msg_hash_to_str(ozone_color_themes[i].label), len);
-
-      return strlcpy(s, msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK), len);
+      size_t i = ozone_color_theme_index(setting->value.target.string);
+      /* Unknown values render as the default theme: show that */
+      if (i >= ARRAY_SIZE(ozone_color_theme_options))
+         i = ozone_color_theme_index(DEFAULT_OZONE_COLOR_THEME);
+      if (i < ARRAY_SIZE(ozone_color_theme_options))
+         return strlcpy(s,
+               msg_hash_to_str(ozone_color_theme_options[i].label), len);
    }
    return 0;
 }
@@ -15852,23 +15879,21 @@ static void settings_build_menu(
       if (string_is_equal(settings->arrays.menu_driver, "ozone"))
       {
             ADD_DESC(menu_desc_31);
-            (*list)[list_info->index - ARRAY_SIZE(menu_desc_31)].type   = ST_STRING_OPTIONS;
-            (*list)[list_info->index - ARRAY_SIZE(menu_desc_31)].values =
-                  "basic_white|"
-                  "basic_black|"
-                  "nord|"
-                  "gruvbox_dark|"
-                  "boysenberry|"
-                  "hacking_the_kernel|"
-                  "twilight_zone|"
-                  "dracula|"
-                  "solarized_dark|"
-                  "solarized_light|"
-                  "gray_dark|"
-                  "gray_light|"
-                  "purple_rain|"
-                  "selenium|"
-                  "evergarden";
+            {
+               /* The descriptor rows have no string-options kind:
+                * find the color theme row by its enum, not by its
+                * position in settings_def_ozone_sidebar.h. */
+               int k = list_info->index - (int)ARRAY_SIZE(menu_desc_31);
+               for (k = (k < 0) ? 0 : k; k < list_info->index; k++)
+               {
+                  if ((*list)[k].enum_idx == MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME)
+                  {
+                     (*list)[k].type   = ST_STRING_OPTIONS;
+                     (*list)[k].values = ozone_color_theme_values();
+                     break;
+                  }
+               }
+            }
 
             ADD_DESC(menu2_desc_5);
 
