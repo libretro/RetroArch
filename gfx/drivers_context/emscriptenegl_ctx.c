@@ -109,6 +109,7 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
 {
 #ifdef HAVE_EGL
    unsigned width, height;
+   unsigned dims = 0;
    EGLint major, minor;
    EGLint n;
    static const EGLint attribute_list[] =
@@ -157,6 +158,8 @@ static void *gfx_ctx_emscripten_init(void *video_driver)
       goto error;
 
    egl_get_video_size(&emscripten->egl, &dims);
+   width                 = VIDEO_SCALE_W(dims);
+   height                = VIDEO_SCALE_H(dims);
 
    emscripten->fb_width  = width;
    emscripten->fb_height = height;
