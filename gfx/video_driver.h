@@ -1703,8 +1703,8 @@ const char *video_driver_get_ident(void);
  * against the visible output area; and other video drivers for
  * cross-driver coordination.
  *
- * Threaded video: the read and write are protected by
- * video_st->display_lock; safe to call from any thread.
+ * Threaded video: published with a release store and read with an
+ * acquire load, so both are safe to call from any thread.
  */
 unsigned video_driver_get_output_dims(void);
 
