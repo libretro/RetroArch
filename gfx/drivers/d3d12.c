@@ -1613,7 +1613,6 @@ static void d3d12_font_free(void* data, bool is_threaded)
    if (font->d3d12)
    {
       d3d12_video_t *d3d12 = font->d3d12;
-      D3D12Fence     fence = d3d12->queue.fence;
       d3d12_queue_drain(d3d12);
    }
 
@@ -2619,7 +2618,6 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
       return;
 
    {
-      D3D12Fence fence = d3d12->queue.fence;
       d3d12_queue_drain(d3d12);
    }
    d3d12->frame.rotation = rotation;
@@ -4053,7 +4051,6 @@ static void d3d12_gfx_free(void* data)
       return;
 
    {
-      D3D12Fence fence = d3d12->queue.fence;
       d3d12_queue_drain(d3d12);
    }
 
@@ -5422,7 +5419,6 @@ static bool d3d12_present_retained_once(d3d12_video_t *d3d12)
    D3D12Resource backbuffer;
 
    {
-      D3D12Fence fence = d3d12->queue.fence;
       d3d12_queue_drain(d3d12);
    }
 
@@ -5514,7 +5510,6 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12)
    D3D12GraphicsCommandList cmd   = d3d12->queue.cmd;
 
    {
-      D3D12Fence fence = d3d12->queue.fence;
       d3d12_queue_drain(d3d12);
    }
 
@@ -5678,7 +5673,6 @@ static bool d3d12_gfx_frame(
             true);
 
    {
-      D3D12Fence fence = d3d12->queue.fence;
       d3d12_queue_drain(d3d12);
    }
 
@@ -8150,7 +8144,6 @@ static void d3d12_gfx_unload_texture_internal(
 
    if (d3d12)
    {
-      D3D12Fence fence = d3d12->queue.fence;
       d3d12_queue_drain(d3d12);
    }
 

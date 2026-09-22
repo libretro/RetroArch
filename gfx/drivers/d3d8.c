@@ -2697,7 +2697,6 @@ static bool d3d8_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
    unsigned i, y;
-   overlay_t *new_overlays            = NULL;
    d3d8_video_t *d3d                  = (d3d8_video_t*)data;
    const struct texture_image *images = (const struct texture_image*)image_data;
 
