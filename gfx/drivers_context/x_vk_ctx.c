@@ -173,10 +173,10 @@ static void gfx_ctx_x_vk_swap_buffers(void *data)
 }
 
 static void gfx_ctx_x_vk_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
-   x11_check_window(data, quit, resize, width, height);
+   x11_check_window(data, quit, resize, dims);
 
    if (x->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN)
       *resize = true;
@@ -459,8 +459,8 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
 
    {
       bool quit, resize;
-      unsigned width = 0, height = 0;
-      x11_check_window(x, &quit, &resize, &width, &height);
+      unsigned dims = 0;
+      x11_check_window(x, &quit, &resize, &dims);
 
       /* FIXME/TODO - threading error here */
 

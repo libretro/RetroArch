@@ -1527,7 +1527,7 @@ bool gfx_ctx_wl_has_focus(void *data)
 
 void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
       void (*get_video_size)(void*, unsigned*, unsigned*), bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    /* this function works with SCALED sizes, it's used from the renderer */
    unsigned new_width, new_height;
@@ -1538,13 +1538,11 @@ void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
 
    if (     wl->pending_buffer_scale != wl->buffer_scale
          || wl->pending_fractional_scale_num != wl->fractional_scale_num
-         || new_width  != *width
-         || new_height != *height)
+         || VIDEO_SCALE_PACK(new_width, new_height) != *dims)
    {
       wl->buffer_scale         = wl->pending_buffer_scale;
       wl->fractional_scale_num = wl->pending_fractional_scale_num;
-      *width                   = new_width;
-      *height                  = new_height;
+      *dims                    = VIDEO_SCALE_PACK(new_width, new_height);
       *resize                  = true;
    }
 

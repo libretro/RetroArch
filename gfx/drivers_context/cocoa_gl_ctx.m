@@ -373,7 +373,7 @@ static void cocoa_gl_gfx_ctx_bind_hw_render(void *data, bool enable)
 }
 
 static void cocoa_gl_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    unsigned new_width, new_height;
 
@@ -381,10 +381,9 @@ static void cocoa_gl_gfx_ctx_check_window(void *data, bool *quit,
 
    cocoa_gl_gfx_ctx_get_video_size_ts(data, &new_width, &new_height);
 
-   if (new_width != *width || new_height != *height)
+   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
    {
-      *width  = new_width;
-      *height = new_height;
+      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
       *resize = true;
    }
 }

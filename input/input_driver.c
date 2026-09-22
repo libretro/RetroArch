@@ -4079,12 +4079,12 @@ static void input_overlay_get_mouse_scale(settings_t *settings,
    if (geom->base_height)
    {
       float adj_x, adj_y;
-      unsigned output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
+      unsigned output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
       float speed          = settings->floats.input_overlay_mouse_speed;
       float swipe_thres    =
             655.35f * settings->floats.input_overlay_mouse_swipe_threshold;
-      float display_aspect = (float)VIDEO_DRIVER_OUTPUT_WIDTH(output_size)
-                           / VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
+      float display_aspect = (float)VIDEO_SCALE_W(output_size)
+                           / VIDEO_SCALE_H(output_size);
       float core_aspect    = (float)geom->base_width / geom->base_height;
 
       if (display_aspect > core_aspect)
@@ -6591,10 +6591,10 @@ static void input_overlay_enable_(bool enable)
 
       if (auto_rotate)
       {
-         unsigned output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
+         unsigned output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
          input_overlay_auto_rotate_(
-               VIDEO_DRIVER_OUTPUT_WIDTH(output_size),
-               VIDEO_DRIVER_OUTPUT_HEIGHT(output_size), true, ol);
+               VIDEO_SCALE_W(output_size),
+               VIDEO_SCALE_H(output_size), true, ol);
       }
 
       /* Enable */

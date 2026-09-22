@@ -283,9 +283,12 @@ static void video_shader_replace_wildcards_impl(
                break;
             case RARCH_WILDCARD_VIEWPORT_ASPECT_ORIENTATION:
                {
+                  unsigned out_dims;
                   unsigned viewport_width  = 0;
                   unsigned viewport_height = 0;
-                  video_driver_get_output_size(&viewport_width, &viewport_height);
+                  out_dims = video_driver_get_output_dims();
+                  viewport_width = VIDEO_SCALE_W(out_dims);
+                  viewport_height = VIDEO_SCALE_H(out_dims);
                   _len = strlcpy(replace_text,
                         (viewport_height > 0 && (float)viewport_width / viewport_height < 1)
                         ? "VIEW-ASPECT-ORIENT-VERT"

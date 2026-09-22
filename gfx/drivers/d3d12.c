@@ -5120,7 +5120,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    matrix_4x4_identity(d3d12->identity);
 
    d3d12_gfx_set_rotation(d3d12, 0);
-   video_driver_set_output_size(VIDEO_SCALE_W(d3d12->vp.full_dims), VIDEO_SCALE_H(d3d12->vp.full_dims));
+   video_driver_set_output_dims(d3d12->vp.full_dims);
    d3d12->chain.viewport.Width  = VIDEO_SCALE_W(d3d12->vp.full_dims);
    d3d12->chain.viewport.Height = VIDEO_SCALE_H(d3d12->vp.full_dims);
 
@@ -5781,7 +5781,7 @@ static bool d3d12_gfx_frame(
             d3d12->flags                       &= ~D3D12_ST_FLAG_RESIZE_CHAIN;
             d3d12->flags                       |=  D3D12_ST_FLAG_RESIZE_VIEWPORT;
 
-            video_driver_set_output_size(video_width, video_height);
+            video_driver_set_output_dims(VIDEO_SCALE_PACK(video_width, video_height));
 
 #ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
@@ -7144,12 +7144,7 @@ static bool d3d12_gfx_alive(void* data)
    bool resize_chain    = false;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   unsigned full_w      = VIDEO_SCALE_W(d3d12->vp.full_dims);
-   unsigned full_h      = VIDEO_SCALE_H(d3d12->vp.full_dims);
-
-   win32_check_window(NULL, &quit, &resize_chain, &full_w, &full_h);
-
-   d3d12->vp.full_dims = VIDEO_SCALE_PACK(full_w, full_h);
+   win32_check_window(NULL, &quit, &resize_chain, &d3d12->vp.full_dims);
 
    if (resize_chain)
       d3d12->flags |=  D3D12_ST_FLAG_RESIZE_CHAIN;
@@ -7159,7 +7154,7 @@ static bool d3d12_gfx_alive(void* data)
    if (     (d3d12->flags & D3D12_ST_FLAG_RESIZE_CHAIN)
          && (VIDEO_SCALE_W(d3d12->vp.full_dims)  != 0)
          && (VIDEO_SCALE_H(d3d12->vp.full_dims) != 0))
-      video_driver_set_output_size(VIDEO_SCALE_W(d3d12->vp.full_dims), VIDEO_SCALE_H(d3d12->vp.full_dims));
+      video_driver_set_output_dims(d3d12->vp.full_dims);
 
    return !quit;
 }

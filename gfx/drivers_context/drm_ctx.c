@@ -521,12 +521,11 @@ static void gfx_ctx_drm_swap_interval(void *data, int interval)
 }
 
 static void gfx_ctx_drm_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    *resize = false;
    *quit   = (bool)frontend_driver_get_signal_handler_state();
-   *width = g_drm_mode->hdisplay;
-   *height = g_drm_mode->vdisplay;
+   *dims = VIDEO_SCALE_PACK(g_drm_mode->hdisplay, g_drm_mode->vdisplay);
 }
 
 static void drm_flip_handler(int fd, unsigned frame,

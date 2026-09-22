@@ -6081,9 +6081,9 @@ MENU_NOINLINE static int menu_input_post_iterate(
    menu_file_list_cbs_t *cbs                       = selection_buf && selection_buf->size
       ? (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
       : NULL;
-   unsigned output_size                            = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
-   unsigned output_width                           = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
-   unsigned output_height                          = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
+   unsigned output_size                            = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
+   unsigned output_width                           = VIDEO_SCALE_W(output_size);
+   unsigned output_height                          = VIDEO_SCALE_H(output_size);
 
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
@@ -7245,10 +7245,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_OSK_PTR_AT_POS:
          {
-            unsigned output_size      = VIDEO_DRIVER_OUTPUT_SIZE(
+            unsigned output_size      = VIDEO_DRIVER_OUTPUT_DIMS(
                   video_state_get_ptr());
-            unsigned width            = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
-            unsigned height           = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
+            unsigned width            = VIDEO_SCALE_W(output_size);
+            unsigned height           = VIDEO_SCALE_H(output_size);
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
             if (!menu_st->driver_ctx || !menu_st->driver_ctx->osk_ptr_at_pos)
             {

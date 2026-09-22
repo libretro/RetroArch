@@ -316,18 +316,14 @@ unsigned int retroarch_get_rotation(void) { return 0; }
 float video_driver_get_aspect_ratio(void) { return 4.0f / 3.0f; }
 void video_driver_scanline_init(void) { }
 void video_monitor_set_refresh_rate(float hz) { (void)hz; }
-void video_driver_set_output_size(unsigned width, unsigned height)
+void video_driver_set_output_dims(unsigned dims)
 {
-   (void)width;
-   (void)height;
+   (void)dims;
 }
 
-void video_driver_get_output_size(unsigned *width, unsigned *height)
+unsigned video_driver_get_output_dims(void)
 {
-   if (width)
-      *width = 640;
-   if (height)
-      *height = 480;
+   return VIDEO_SCALE_PACK(640, 480);
 }
 
 static const char *ctx_ident = "wl";

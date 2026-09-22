@@ -313,8 +313,11 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
 
    if (rwebinput->pointerlock_active)
    {
+      unsigned out_dims;
       unsigned video_width, video_height;
-      video_driver_get_output_size(&video_width, &video_height);
+      out_dims = video_driver_get_output_dims();
+      video_width = VIDEO_SCALE_W(out_dims);
+      video_height = VIDEO_SCALE_H(out_dims);
 
       rwebinput->mouse.x += mouse_event->movementX;
       rwebinput->mouse.y += mouse_event->movementY;

@@ -116,7 +116,7 @@ float sdl3_ctx_get_refresh_rate(void *data);
 void sdl3_ctx_update_title(void *data);
 bool sdl3_ctx_has_focus(void *data);
 void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
-      unsigned *width, unsigned *height);
+      unsigned *dims);
 
 /* Retrieve the DISPLAY_METRIC_DPI for the window's display scale.
  * This usually ends up being scale * 96 DPI, or false otherwise. */

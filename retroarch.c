@@ -1784,7 +1784,7 @@ void drivers_init(
          VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
       bool video_is_fullscreen    = settings->bools.video_fullscreen
                                  || rarch_force_fullscreen;
-      unsigned output_size        = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
+      unsigned output_size        = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
 
       p_dispwidget->active= gfx_widgets_init(
             p_disp,
@@ -1792,8 +1792,8 @@ void drivers_init(
             settings,
             (uintptr_t)&p_dispwidget->active,
             video_is_threaded,
-            VIDEO_DRIVER_OUTPUT_WIDTH(output_size),
-            VIDEO_DRIVER_OUTPUT_HEIGHT(output_size),
+            VIDEO_SCALE_W(output_size),
+            VIDEO_SCALE_H(output_size),
             video_is_fullscreen,
             settings->paths.directory_assets,
             settings->paths.path_font);
@@ -4220,15 +4220,15 @@ bool command_event(enum event_command cmd, void *data)
                      VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
                bool video_is_fullscreen = settings->bools.video_fullscreen
                      || force_fs;
-               unsigned output_size     = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
+               unsigned output_size     = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
                p_dispwidget->active     = gfx_widgets_init(
                      disp_get_ptr(),
                      anim_get_ptr(),
                      settings,
                      (uintptr_t)&p_dispwidget->active,
                      VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st),
-                     VIDEO_DRIVER_OUTPUT_WIDTH(output_size),
-                     VIDEO_DRIVER_OUTPUT_HEIGHT(output_size),
+                     VIDEO_SCALE_W(output_size),
+                     VIDEO_SCALE_H(output_size),
                      video_is_fullscreen,
                      settings->paths.directory_assets,
                      settings->paths.path_font);
@@ -4473,13 +4473,13 @@ bool command_event(enum event_command cmd, void *data)
             command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
             /* Check orientation, if required */
-            output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
+            output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
             if (inp_overlay_auto_rotate)
                if (check_rotation)
                   if (*check_rotation)
                      input_overlay_auto_rotate_(
-                           VIDEO_DRIVER_OUTPUT_WIDTH(output_size),
-                           VIDEO_DRIVER_OUTPUT_HEIGHT(output_size),
+                           VIDEO_SCALE_W(output_size),
+                           VIDEO_SCALE_H(output_size),
                            settings->bools.input_overlay_enable,
                            ol);
          }
@@ -4893,11 +4893,11 @@ bool command_event(enum event_command cmd, void *data)
                layout_desc.auto_scale              = settings->bools.input_overlay_auto_scale;
             }
 
-            output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_state_get_ptr());
+            output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_state_get_ptr());
             input_overlay_set_scale_factor(ol,
                   &layout_desc,
-                  VIDEO_DRIVER_OUTPUT_WIDTH(output_size),
-                  VIDEO_DRIVER_OUTPUT_HEIGHT(output_size));
+                  VIDEO_SCALE_W(output_size),
+                  VIDEO_SCALE_H(output_size));
          }
 #endif
          break;

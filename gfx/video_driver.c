@@ -1847,9 +1847,9 @@ bool video_display_server_has_refresh_rate(float hz)
 
    if (video_list)
    {
-      unsigned output_size           = VIDEO_DRIVER_OUTPUT_SIZE(&video_driver_st);
-      unsigned video_driver_width    = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
-      unsigned video_driver_height   = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
+      unsigned output_size           = VIDEO_DRIVER_OUTPUT_DIMS(&video_driver_st);
+      unsigned video_driver_width    = VIDEO_SCALE_W(output_size);
+      unsigned video_driver_height   = VIDEO_SCALE_H(output_size);
 
       for (i = 0; i < size && !rate_exists; i++)
       {
@@ -2566,19 +2566,14 @@ void video_driver_set_filtering(unsigned index,
             index, smooth, ctx_scaling);
 }
 
-void video_driver_get_output_size(unsigned *width, unsigned *height)
+unsigned video_driver_get_output_dims(void)
 {
-   unsigned output_size = VIDEO_DRIVER_OUTPUT_SIZE(&video_driver_st);
-   if (width)
-      *width  = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
-   if (height)
-      *height = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
+   return VIDEO_DRIVER_OUTPUT_DIMS(&video_driver_st);
 }
 
-void video_driver_set_output_size(unsigned width, unsigned height)
+void video_driver_set_output_dims(unsigned dims)
 {
-   retro_atomic_store_release_int(&video_driver_st.output_size_packed,
-         (int)VIDEO_SCALE_PACK(width, height));
+   retro_atomic_store_release_int(&video_driver_st.output_dims, (int)dims);
 }
 
 #ifdef HAVE_OVERLAY
@@ -2892,9 +2887,9 @@ void video_driver_set_aspect_ratio(void)
 
       case ASPECT_RATIO_FULL:
          {
-            unsigned output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
-            unsigned width       = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
-            unsigned height      = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
+            unsigned output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
+            unsigned width       = VIDEO_SCALE_W(output_size);
+            unsigned height      = VIDEO_SCALE_H(output_size);
 
             if (width != 0 && height != 0)
                aspectratio_lut[ASPECT_RATIO_FULL].value = (float)width / (float)height;
@@ -4771,9 +4766,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->widgets_userdata            = NULL;
 #endif
 
-   output_size                             = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
-   video_info->width                       = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
-   video_info->height                      = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
+   output_size                             = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
+   video_info->width                       = VIDEO_SCALE_W(output_size);
+   video_info->height                      = VIDEO_SCALE_H(output_size);
 #ifdef HAVE_THREADS
    if (is_threaded)
       video_info->scale_dims               = video_thread_get_scale(video_st);
@@ -7736,8 +7731,8 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t video_height  = (uint16_t)VIDEO_DRIVER_OUTPUT_HEIGHT(
-         VIDEO_DRIVER_OUTPUT_SIZE(video_st));
+   uint16_t video_height  = (uint16_t)VIDEO_SCALE_H(
+         VIDEO_DRIVER_OUTPUT_DIMS(video_st));
    int16_t scanline_next  = video_st->scanline[SCANLINE_NEXT];
    int16_t scanline_hold  = video_st->scanline[SCANLINE_HOLD];
    int16_t scanline_blank = video_st->scanline[SCANLINE_TOTAL] - video_height;
@@ -7820,8 +7815,8 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t video_height   = (uint16_t)VIDEO_DRIVER_OUTPUT_HEIGHT(
-         VIDEO_DRIVER_OUTPUT_SIZE(video_st));
+   uint16_t video_height   = (uint16_t)VIDEO_SCALE_H(
+         VIDEO_DRIVER_OUTPUT_DIMS(video_st));
    int16_t scanline_next   = video_st->scanline[SCANLINE_NEXT];
    int16_t scanline_total  = video_st->scanline[SCANLINE_TOTAL];
    int16_t scanline_blank  = video_st->scanline[SCANLINE_TOTAL] - video_height;

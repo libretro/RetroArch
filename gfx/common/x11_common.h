@@ -49,7 +49,7 @@ void x11_exit_fullscreen(Display *dpy);
 #endif
 
 void x11_check_window(void *data, bool *quit,
-   bool *resize, unsigned *width, unsigned *height);
+   bool *resize, unsigned *dims);
 
 void x11_get_video_size(void *data, unsigned *width, unsigned *height);
 

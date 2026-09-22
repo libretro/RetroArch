@@ -218,7 +218,7 @@ static gfx_ctx_proc_t cocoa_vk_gfx_ctx_get_proc_address(const char *symbol_name)
 static void cocoa_vk_gfx_ctx_bind_hw_render(void *data, bool enable) { }
 
 static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    unsigned new_width, new_height;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
@@ -228,10 +228,9 @@ static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
 
    cocoa_vk_gfx_ctx_get_video_size_ts(data, &new_width, &new_height);
 
-   if (new_width != *width || new_height != *height)
+   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
    {
-      *width  = new_width;
-      *height = new_height;
+      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
       *resize = true;
    }
 }

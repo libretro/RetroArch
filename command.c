@@ -2933,13 +2933,13 @@ void command_event_reinit(const int flags)
        * premature render). */
       if (menu_st->flags & MENU_ST_FLAG_ALIVE)
       {
-         unsigned output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
+         unsigned output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
          if (     menu_st->driver_ctx
                && menu_st->driver_ctx->render)
             menu_st->driver_ctx->render(
                   menu_st->userdata,
-                  VIDEO_DRIVER_OUTPUT_WIDTH(output_size),
-                  VIDEO_DRIVER_OUTPUT_HEIGHT(output_size),
+                  VIDEO_SCALE_W(output_size),
+                  VIDEO_SCALE_H(output_size),
                   false);
 
          if (     video_st->poke

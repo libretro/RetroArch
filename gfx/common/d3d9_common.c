@@ -339,7 +339,7 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
       unsigned width  = 0;
       unsigned height = 0;
       d3d9_get_video_size(d3d, &width, &height);
-      video_driver_set_output_size(width, height);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(width, height));
       d3d->vp.full_dims       = VIDEO_SCALE_PACK(width, height);
       d3dpp->BackBufferWidth  = width;
       d3dpp->BackBufferHeight = height;

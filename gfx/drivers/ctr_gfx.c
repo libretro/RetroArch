@@ -1702,7 +1702,7 @@ static void* ctr_init(const video_info_t* video,
          CTR_TOP_FRAMEBUFFER_HEIGHT);
    ctr->vp.full_dims               = VIDEO_SCALE_PACK(CTR_TOP_FRAMEBUFFER_WIDTH,
          CTR_TOP_FRAMEBUFFER_HEIGHT);
-   video_driver_set_output_size(VIDEO_SCALE_W(ctr->vp.dims), VIDEO_SCALE_H(ctr->vp.dims));
+   video_driver_set_output_dims(ctr->vp.dims);
 
    ctr->drawbuffers.top.left       = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
    ctr->drawbuffers.top.right      = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);

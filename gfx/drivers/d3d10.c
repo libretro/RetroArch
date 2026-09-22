@@ -2402,7 +2402,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
    d3d10->device->lpVtbl->OMSetRenderTargets(d3d10->device, 1,
          &d3d10->renderTargetView, NULL);
 
-   video_driver_set_output_size(VIDEO_SCALE_W(d3d10->vp.full_dims), VIDEO_SCALE_H(d3d10->vp.full_dims));
+   video_driver_set_output_dims(d3d10->vp.full_dims);
    d3d10->viewport.Width  = VIDEO_SCALE_W(d3d10->vp.full_dims);
    d3d10->viewport.Height = VIDEO_SCALE_H(d3d10->vp.full_dims);
    d3d10->flags          |= D3D10_ST_FLAG_RESIZE_VIEWPORT;
@@ -2960,7 +2960,7 @@ static bool d3d10_gfx_frame(
       d3d10->flags                       &= ~D3D10_ST_FLAG_RESIZE_CHAIN;
       d3d10->flags                       |=  D3D10_ST_FLAG_RESIZE_VIEWPORT;
 
-      video_driver_set_output_size(video_width, video_height);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(video_width, video_height));
    }
 
 #if 0
@@ -3551,12 +3551,7 @@ static bool d3d10_gfx_alive(void* data)
    bool resize_chain    = false;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
-   unsigned full_w      = VIDEO_SCALE_W(d3d10->vp.full_dims);
-   unsigned full_h      = VIDEO_SCALE_H(d3d10->vp.full_dims);
-
-   win32_check_window(NULL, &quit, &resize_chain, &full_w, &full_h);
-
-   d3d10->vp.full_dims = VIDEO_SCALE_PACK(full_w, full_h);
+   win32_check_window(NULL, &quit, &resize_chain, &d3d10->vp.full_dims);
 
    if (resize_chain)
       d3d10->flags |=  D3D10_ST_FLAG_RESIZE_CHAIN;
@@ -3566,7 +3561,7 @@ static bool d3d10_gfx_alive(void* data)
    if (     (d3d10->flags & D3D10_ST_FLAG_RESIZE_CHAIN)
          && (VIDEO_SCALE_W(d3d10->vp.full_dims)  != 0)
          && (VIDEO_SCALE_H(d3d10->vp.full_dims) != 0))
-      video_driver_set_output_size(VIDEO_SCALE_W(d3d10->vp.full_dims), VIDEO_SCALE_H(d3d10->vp.full_dims));
+      video_driver_set_output_dims(d3d10->vp.full_dims);
 
    return !quit;
 }

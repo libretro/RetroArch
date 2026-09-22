@@ -279,7 +279,7 @@ unsigned *width, unsigned *height)
 }
 
 static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    unsigned w, h;
    gfx_ctx_go2_drm_data_t
@@ -303,10 +303,9 @@ static void gfx_ctx_go2_drm_check_window(void *data, bool *quit,
        h                = drm->native_height;
    }
 
-   if (*width != w || *height != h)
+   if (VIDEO_SCALE_W(*dims) != w || VIDEO_SCALE_H(*dims) != h)
    {
-       *width           = drm->fb_width = w;
-       *height          = drm->fb_height = h;
+       *dims           = VIDEO_SCALE_PACK(drm->fb_width = w, drm->fb_height = h);
        *resize          = false;
    }
    *quit                = (bool)frontend_driver_get_signal_handler_state();

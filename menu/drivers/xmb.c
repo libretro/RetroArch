@@ -586,7 +586,7 @@ typedef struct xmb_handle
     * from video_info->{width,height} so non-render code paths
     * (selection_pointer_changed, list_open_new, list_switch_new,
     * list_cache, pointer_up, layout) can read the size without
-    * locking video_st via video_driver_get_output_size. */
+    * locking video_st via video_driver_get_output_dims. */
    /* The video size this was last laid out for, one word,
     * VIDEO_SCALE_PACK's layout. */
    unsigned last_dims;
@@ -10532,6 +10532,7 @@ static void xmb_menu_animation_update_time(
 
 static void *xmb_init(void **userdata, bool video_is_threaded)
 {
+   unsigned out_dims;
    int i;
    unsigned width, height;
    xmb_handle_t *xmb          = NULL;
@@ -10543,7 +10544,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    if (!menu)
       return NULL;
 
-   video_driver_get_output_size(&width, &height);
+   out_dims = video_driver_get_output_dims();
+   width = VIDEO_SCALE_W(out_dims);
+   height = VIDEO_SCALE_H(out_dims);
 
    if (!(xmb = (xmb_handle_t*)calloc(1, sizeof(xmb_handle_t))))
    {

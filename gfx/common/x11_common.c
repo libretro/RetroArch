@@ -783,17 +783,16 @@ bool x11_alive(void *data)
 }
 
 void x11_check_window(void *data, bool *quit,
-   bool *resize, unsigned *width, unsigned *height)
+   bool *resize, unsigned *dims)
 {
-   unsigned new_width  = *width;
-   unsigned new_height = *height;
+   unsigned new_width  = VIDEO_SCALE_W(*dims);
+   unsigned new_height = VIDEO_SCALE_H(*dims);
 
    x11_get_video_size(data, &new_width, &new_height);
 
-   if (new_width != *width || new_height != *height)
+   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
    {
-      *width  = new_width;
-      *height = new_height;
+      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
       *resize = true;
    }
 

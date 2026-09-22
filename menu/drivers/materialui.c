@@ -3741,7 +3741,7 @@ static float materialui_get_scroll(materialui_handle_t *mui,
       return 0;
 
    /* Read cached size from mui rather than locking video_st via
-    * video_driver_get_output_size: mui->last_{width,height} is updated
+    * video_driver_get_output_dims: mui->last_{width,height} is updated
     * every frame in materialui_render. */
    height = VIDEO_SCALE_H(mui->last_dims);
 
@@ -9745,6 +9745,7 @@ static void materialui_menu_animation_update_time(float *s,
 
 static void *materialui_init(void **userdata, bool video_is_threaded)
 {
+   unsigned out_dims;
    unsigned width, height;
    settings_t *settings                   = config_get_ptr();
    gfx_animation_t     *p_anim            = anim_get_ptr();
@@ -9772,7 +9773,9 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
 
    /* Get DPI/screen-size-aware base unit size for
     * UI elements */
-   video_driver_get_output_size(&width, &height);
+   out_dims = video_driver_get_output_dims();
+   width = VIDEO_SCALE_W(out_dims);
+   height = VIDEO_SCALE_H(out_dims);
 
    mui->last_dims                         = VIDEO_SCALE_PACK(width, height);
    mui->last_scale_factor                 = gfx_display_get_dpi_scale(
@@ -11774,7 +11777,7 @@ static int materialui_pointer_up(void *userdata,
       return -1;
 
    /* Read cached size from mui rather than locking video_st via
-    * video_driver_get_output_size: mui->last_{width,height} is updated
+    * video_driver_get_output_dims: mui->last_{width,height} is updated
     * every frame in materialui_render. */
 
    /* All input is ignored if user was previously

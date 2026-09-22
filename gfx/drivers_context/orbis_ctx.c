@@ -178,16 +178,15 @@ error:
 }
 
 static void orbis_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
     unsigned new_width, new_height;
 
     orbis_ctx_get_video_size(data, &new_width, &new_height);
 
-    if (new_width != *width || new_height != *height)
-    {
-        *width  = new_width;
-        *height = new_height;
+    if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
+   {
+      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
         *resize = true;
     }
 

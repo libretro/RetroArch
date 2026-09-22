@@ -270,7 +270,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
     * relative to that tiny coordinate space, and end up drawing into
     * the top-left corner of the actual SDL framebuffer.  Most other
     * drivers (vga, gx2, d3d8, d3d9 common) make this call too. */
-   video_driver_set_output_size(win_w, win_h);
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(win_w, win_h));
 
    vid->flags &= ~SDL2_FLAG_SHOULD_RESIZE;
 

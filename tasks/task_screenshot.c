@@ -760,11 +760,11 @@ static bool take_screenshot_viewport(
                   video_st->data, hdr_buffer,
                   runloop_flags & RUNLOOP_FLAG_IDLE, &hdr))
          {
-            output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
-            if (VIDEO_SCALE_W(vp.dims) > VIDEO_DRIVER_OUTPUT_WIDTH(output_size))
-               VIDEO_SCALE_PUT_W(vp.dims, VIDEO_DRIVER_OUTPUT_WIDTH(output_size));
-            if (VIDEO_SCALE_H(vp.dims) > VIDEO_DRIVER_OUTPUT_HEIGHT(output_size))
-               VIDEO_SCALE_PUT_H(vp.dims, VIDEO_DRIVER_OUTPUT_HEIGHT(output_size));
+            output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
+            if (VIDEO_SCALE_W(vp.dims) > VIDEO_SCALE_W(output_size))
+               VIDEO_SCALE_PUT_W(vp.dims, VIDEO_SCALE_W(output_size));
+            if (VIDEO_SCALE_H(vp.dims) > VIDEO_SCALE_H(output_size))
+               VIDEO_SCALE_PUT_H(vp.dims, VIDEO_SCALE_H(output_size));
 
             /* 48-bit RGB, bottom-up (pitch = width*6, negated top-down
              * inside screenshot_dump_direct like the BGR24 path). */
@@ -788,11 +788,11 @@ static bool take_screenshot_viewport(
             video_st->data, buffer, runloop_flags & RUNLOOP_FLAG_IDLE)))
    {
       /* Limit image to screen size */
-      output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
-      if (VIDEO_SCALE_W(vp.dims) > VIDEO_DRIVER_OUTPUT_WIDTH(output_size))
-         VIDEO_SCALE_PUT_W(vp.dims, VIDEO_DRIVER_OUTPUT_WIDTH(output_size));
-      if (VIDEO_SCALE_H(vp.dims) > VIDEO_DRIVER_OUTPUT_HEIGHT(output_size))
-         VIDEO_SCALE_PUT_H(vp.dims, VIDEO_DRIVER_OUTPUT_HEIGHT(output_size));
+      output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
+      if (VIDEO_SCALE_W(vp.dims) > VIDEO_SCALE_W(output_size))
+         VIDEO_SCALE_PUT_W(vp.dims, VIDEO_SCALE_W(output_size));
+      if (VIDEO_SCALE_H(vp.dims) > VIDEO_SCALE_H(output_size))
+         VIDEO_SCALE_PUT_H(vp.dims, VIDEO_SCALE_H(output_size));
 
       /* Data read from viewport is in bottom-up order, suitable for BMP. */
       if (screenshot_dump(screenshot_dir,

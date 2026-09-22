@@ -2457,6 +2457,7 @@ static void gdi_create(gdi_t *gdi)
 static void *gdi_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
+      unsigned out_dims;
    unsigned full_x, full_y;
    unsigned mode_width = 0, mode_height = 0;
    unsigned win_width  = 0, win_height  = 0;
@@ -2531,9 +2532,11 @@ static void *gdi_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_size(temp_width, temp_height);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
    else
-      video_driver_get_output_size(&temp_width, &temp_height);
+      out_dims = video_driver_get_output_dims();
+      temp_width = VIDEO_SCALE_W(out_dims);
+      temp_height = VIDEO_SCALE_H(out_dims);
    gdi->full_width  = temp_width;
    gdi->full_height = temp_height;
 
@@ -3156,8 +3159,8 @@ static bool gdi_frame(void *data, const void *frame,
 
 static bool gdi_alive(void *data)
 {
-   unsigned temp_width  = 0;
-   unsigned temp_height = 0;
+   unsigned temp_dims  = VIDEO_SCALE_PACK(0,
+         0);
    bool quit            = false;
    bool resize          = false;
    bool ret             = false;
@@ -3166,22 +3169,22 @@ static bool gdi_alive(void *data)
    /* Read from local bookkeeping rather than video_st (which would
     * cross threads needlessly).  gdi->full_{width,height}
     * is written at every set_size call site in this driver. */
-   temp_width  = gdi->full_width;
-   temp_height = gdi->full_height;
+   temp_dims  = VIDEO_SCALE_PACK(gdi->full_width,
+         gdi->full_height);
 
    win32_check_window(NULL,
-            &quit, &resize, &temp_width, &temp_height);
+            &quit, &resize, &temp_dims);
 
    ret = !quit;
 
    if (resize)
       gdi->should_resize = true;
 
-   if (temp_width != 0 && temp_height != 0)
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
    {
-      video_driver_set_output_size(temp_width, temp_height);
-      gdi->full_width  = temp_width;
-      gdi->full_height = temp_height;
+      video_driver_set_output_dims(temp_dims);
+      gdi->full_width  = VIDEO_SCALE_W(temp_dims);
+      gdi->full_height = VIDEO_SCALE_H(temp_dims);
    }
 
    return ret;

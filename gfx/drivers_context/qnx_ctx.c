@@ -262,7 +262,7 @@ static void gfx_ctx_qnx_get_video_size(void *data,
 }
 
 static void gfx_ctx_qnx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    unsigned new_width, new_height;
    qnx_ctx_data_t *qnx = (qnx_ctx_data_t*)data;
@@ -271,10 +271,9 @@ static void gfx_ctx_qnx_check_window(void *data, bool *quit,
    egl_get_video_size(&qnx->egl, &new_width, &new_height);
 #endif
 
-   if (new_width != *width || new_height != *height)
+   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
    {
-      *width           = new_width;
-      *height          = new_height;
+      *dims           = VIDEO_SCALE_PACK(new_width, new_height);
       *resize          = true;
    }
 }

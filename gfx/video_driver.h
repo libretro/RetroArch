@@ -83,12 +83,10 @@
 #define VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st) (&video_st->hw_render)
 
 /* The output size as one value, from one load of
- * video_driver_state_t::output_size_packed. Take it once and read both
+ * video_driver_state_t::output_dims. Take it once and read both
  * halves from it: two loads could pair a width with another size's
  * height. */
-#define VIDEO_DRIVER_OUTPUT_SIZE(video_st) ((unsigned)retro_atomic_load_acquire_int(&(video_st)->output_size_packed))
-#define VIDEO_DRIVER_OUTPUT_WIDTH(size)    VIDEO_SCALE_W(size)
-#define VIDEO_DRIVER_OUTPUT_HEIGHT(size)   VIDEO_SCALE_H(size)
+#define VIDEO_DRIVER_OUTPUT_DIMS(video_st) ((unsigned)retro_atomic_load_acquire_int(&(video_st)->output_dims))
 
 #define VIDEO_HAS_FOCUS(video_st) ((video_st->current_video && video_st->data && video_st->current_video->focus) ? (video_st->current_video->focus(video_st->data)) : true)
 
@@ -711,9 +709,9 @@ typedef struct gfx_ctx_driver
    update_window_title_cb update_window_title;
 
    /* Queries for resize and quit events.
-    * Also processes events. */
-   void (*check_window)(void*, bool*, bool*,
-         unsigned*, unsigned*);
+    * Also processes events. The size is one word in
+    * VIDEO_SCALE_PACK's layout, read and written through it. */
+   void (*check_window)(void*, bool*, bool*, unsigned*);
 
    /* Acknowledge a resize event. This is needed for some APIs.
     * Most backends will ignore this. */
@@ -1255,8 +1253,8 @@ typedef struct
     * 16, one value so a reader gets a matching pair without a lock.
     * Set by the drivers - on the video thread under the threaded video
     * wrapper - and read by the main thread, the menu and tasks, through
-    * video_driver_set_output_size() / video_driver_get_output_size(). */
-   retro_atomic_int_t output_size_packed;
+    * video_driver_set_output_dims() / video_driver_get_output_dims(). */
+   retro_atomic_int_t output_dims;
    /* Where the statistics overlay's text is built, for the frame
     * descriptor to point at (video_frame_info_t::stat_text) */
    char stat_text[1536];
@@ -1670,10 +1668,11 @@ void video_driver_set_filtering(unsigned index, bool smooth, bool ctx_scaling);
 const char *video_driver_get_ident(void);
 
 /**
- * video_driver_get_output_size / video_driver_set_output_size:
+ * video_driver_get_output_dims / video_driver_set_output_dims:
  *
- * Get or set the output dimensions -- the size of the area where
- * the active video driver presents pixels to the user.
+ * Get or set the output size -- the area where the active video
+ * driver presents pixels to the user -- as one word, width in the
+ * high half and height in the low, VIDEO_SCALE_PACK's layout.
  *
  * Per-driver mapping of "output area":
  *   desktop GL/D3D/Vulkan/Metal -- the window's client area
@@ -1698,9 +1697,9 @@ const char *video_driver_get_ident(void);
  * Threaded video: the read and write are protected by
  * video_st->display_lock; safe to call from any thread.
  */
-void video_driver_get_output_size(unsigned *width, unsigned *height);
+unsigned video_driver_get_output_dims(void);
 
-void video_driver_set_output_size(unsigned width, unsigned height);
+void video_driver_set_output_dims(unsigned dims);
 
 #ifdef HAVE_OVERLAY
 struct overlay;

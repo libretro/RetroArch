@@ -190,8 +190,7 @@ static void sdl1_ctx_update_title(void *data)
 }
 
 static void sdl1_ctx_check_window(void *data, bool *quit,
-      bool *resize,unsigned *width,
-      unsigned *height)
+      bool *resize,unsigned *dims)
 {
    SDL_Event event;
    gfx_ctx_sdl1_data_t *sdl = (gfx_ctx_sdl1_data_t*)data;
@@ -218,8 +217,7 @@ static void sdl1_ctx_check_window(void *data, bool *quit,
 
    if (sdl->resized)
    {
-      *width         = sdl->new_width;
-      *height        = sdl->new_height;
+      *dims         = VIDEO_SCALE_PACK(sdl->new_width, sdl->new_height);
       *resize        = true;
       sdl->resized   = false;
    }

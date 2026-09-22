@@ -92,15 +92,14 @@ error:
 }
 
 static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
    *resize                     = (khr->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
 
-   if (khr->width != *width || khr->height != *height)
+   if (khr->width != VIDEO_SCALE_W(*dims) || khr->height != VIDEO_SCALE_H(*dims))
    {
-      *width                   = khr->width;
-      *height                  = khr->height;
+      *dims                   = VIDEO_SCALE_PACK(khr->width, khr->height);
       *resize                  = true;
    }
 

@@ -3979,12 +3979,12 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
    {
       unsigned new_width  = info->fullscreen ? full_x : info->width;
       unsigned new_height = info->fullscreen ? full_y : info->height;
-      video_driver_set_output_size(new_width, new_height);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(new_width, new_height));
       d3d->vp.full_dims   = VIDEO_SCALE_PACK(new_width, new_height);
 
 #ifdef HAVE_WINDOW
       /* Use new_width / new_height directly rather than reading
-       * them back via video_driver_get_output_size: nothing in the
+       * them back via video_driver_get_output_dims: nothing in the
        * codebase sets the output size between the
        * set_size above and this call except us. */
       if (!win32_set_video_mode(d3d, new_width, new_height,
@@ -4848,14 +4848,14 @@ static void d3d9_cg_set_resize(d3d9_video_t *d3d,
 
    d3d->video_info.width  = new_width;
    d3d->video_info.height = new_height;
-   video_driver_set_output_size(new_width, new_height);
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(new_width, new_height));
    d3d->vp.full_dims      = VIDEO_SCALE_PACK(new_width, new_height);
 }
 
 static bool d3d9_cg_alive(void *data)
 {
-   unsigned temp_width   = 0;
-   unsigned temp_height  = 0;
+   unsigned temp_dims   = VIDEO_SCALE_PACK(0,
+         0);
    bool ret              = false;
    bool        quit      = false;
    bool        resize    = false;
@@ -4864,10 +4864,9 @@ static bool d3d9_cg_alive(void *data)
    /* Read from local bookkeeping rather than video_st (which would
     * cross threads needlessly).  d3d->vp.full_* is
     * written at every set_size call site in this driver. */
-   temp_width  = VIDEO_SCALE_W(d3d->vp.full_dims);
-   temp_height = VIDEO_SCALE_H(d3d->vp.full_dims);
+   temp_dims  = d3d->vp.full_dims;
 
-   win32_check_window(NULL, &quit, &resize, &temp_width, &temp_height);
+   win32_check_window(NULL, &quit, &resize, &temp_dims);
 
    if (quit)
       d3d->quitting      = quit;
@@ -4875,17 +4874,17 @@ static bool d3d9_cg_alive(void *data)
    if (resize)
    {
       d3d->should_resize = true;
-      d3d9_cg_set_resize(d3d, temp_width, temp_height);
+      d3d9_cg_set_resize(d3d, VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
       d3d9_cg_restore(d3d);
    }
 
    ret = !quit;
 
-   if (  temp_width  != 0 &&
-         temp_height != 0)
+   if (  VIDEO_SCALE_W(temp_dims)  != 0 &&
+         VIDEO_SCALE_H(temp_dims) != 0)
    {
-      video_driver_set_output_size(temp_width, temp_height);
-      d3d->vp.full_dims   = VIDEO_SCALE_PACK(temp_width, temp_height);
+      video_driver_set_output_dims(temp_dims);
+      d3d->vp.full_dims   = temp_dims;
    }
 
    return ret;

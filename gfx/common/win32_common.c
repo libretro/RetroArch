@@ -1941,7 +1941,7 @@ void win32_show_cursor(void *data, bool state)
 
 void win32_check_window(void *data,
       bool *quit, bool *resize,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    bool video_is_threaded = video_driver_is_threaded();
    if (video_is_threaded)
@@ -1951,8 +1951,7 @@ void win32_check_window(void *data,
    if (g_win32_flags & WIN32_CMN_FLAG_RESIZED)
    {
       *resize             = true;
-      *width              = g_win32_resize_width;
-      *height             = g_win32_resize_height;
+      *dims              = VIDEO_SCALE_PACK(g_win32_resize_width, g_win32_resize_height);
       g_win32_flags      &= ~WIN32_CMN_FLAG_RESIZED;
    }
 }

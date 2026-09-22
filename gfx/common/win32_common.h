@@ -157,7 +157,7 @@ bool win32_hotplug_due(void);
 
 void win32_check_window(void *data,
       bool *quit,
-      bool *resize, unsigned *width, unsigned *height);
+      bool *resize, unsigned *dims);
 
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);

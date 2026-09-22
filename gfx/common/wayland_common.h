@@ -55,4 +55,4 @@ bool gfx_ctx_wl_has_focus(void *data);
 
 void gfx_ctx_wl_check_window_common(gfx_ctx_wayland_data_t *wl,
       void (*get_video_size)(void*, unsigned*, unsigned*), bool *quit,
-      bool *resize, unsigned *width, unsigned *height);
+      bool *resize, unsigned *dims);

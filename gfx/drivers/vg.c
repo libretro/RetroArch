@@ -105,6 +105,8 @@ static INLINE bool vg_query_extension(const char *ext)
 static void *vg_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
+      unsigned out_dims;
+      unsigned out_dims;
    unsigned win_width, win_height;
    VGfloat clearColor[4]           = {0, 0, 0, 1};
    int interval                    = 0;
@@ -145,7 +147,7 @@ static void *vg_init(const video_info_t *video,
    RARCH_LOG("[VG] Detecting screen resolution: %ux%u.\n", temp_width, temp_height);
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_size(temp_width, temp_height);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
 
    interval = video->vsync ? 1 : 0;
 
@@ -162,9 +164,9 @@ static void *vg_init(const video_info_t *video,
    win_width  = video->width;
    win_height = video->height;
 
-   if (video->fullscreen && (win_width == 0) && (win_height == 0))
-   {
-      video_driver_get_output_size(&temp_width, &temp_height);
+   if (video->fullscreen && (win_width == 0) &&      out_dims = video_driver_get_output_dims();
+      temp_width = VIDEO_SCALE_W(out_dims);
+      temp_height = VIDEO_SCALE_H(out_dims);emp_width, &temp_height);
 
       win_width  = temp_width;
       win_height = temp_height;
@@ -193,10 +195,12 @@ static void *vg_init(const video_info_t *video,
    {
       RARCH_LOG("[VG] Verified window resolution %ux%u.\n",
             temp_width, temp_height);
-      video_driver_set_output_size(temp_width, temp_height);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
    }
    else
-      video_driver_get_output_size(&temp_width, &temp_height);
+      out_dims = video_driver_get_output_dims();
+      temp_width = VIDEO_SCALE_W(out_dims);
+      temp_height = VIDEO_SCALE_H(out_dims);
 
    vg->mScreenAspect = (float)temp_width / temp_height;
 
@@ -431,15 +435,15 @@ static bool vg_alive(void *data)
 {
    bool quit            = false;
    bool resize          = false;
-   unsigned temp_width  = 0;
-   unsigned temp_height = 0;
+   unsigned temp_dims  = VIDEO_SCALE_PACK(0,
+         0);
    vg_t            *vg  = (vg_t*)data;
 
    vg->ctx_driver->check_window(vg->ctx_data,
-            &quit, &resize, &temp_width, &temp_height);
+            &quit, &resize, &temp_dims);
 
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_size(temp_width, temp_height);
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
+      video_driver_set_output_dims(temp_dims);
 
    return !quit;
 }

@@ -115,20 +115,19 @@ error:
 }
 
 static void switch_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
     unsigned new_width, new_height;
 
     switch_ctx_get_video_size(data, &new_width, &new_height);
 
-    if (new_width != *width || new_height != *height)
-    {
-        *width = new_width;
-        *height = new_height;
+    if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
+   {
+      *dims = VIDEO_SCALE_PACK(new_width, new_height);
         switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
 
-        ctx_nx->width = *width;
-        ctx_nx->height = *height;
+        ctx_nx->width = VIDEO_SCALE_W(*dims);
+        ctx_nx->height = VIDEO_SCALE_H(*dims);
 
         ctx_nx->native_window.width = ctx_nx->width;
         ctx_nx->native_window.height = ctx_nx->height;

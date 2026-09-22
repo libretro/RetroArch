@@ -1579,7 +1579,7 @@ static void* rsx_init(const video_info_t* video,
    rsx->vp.dims              = VIDEO_SCALE_PACK(rsx->width, rsx->height);
    rsx->vp.full_dims         = VIDEO_SCALE_PACK(rsx->width, rsx->height);
    rsx->rgb32                = video->rgb32;
-   video_driver_set_output_size(VIDEO_SCALE_W(rsx->vp.dims), VIDEO_SCALE_H(rsx->vp.dims));
+   video_driver_set_output_dims(rsx->vp.dims);
    rsx_set_viewport(rsx, VIDEO_SCALE_W(rsx->vp.dims), VIDEO_SCALE_H(rsx->vp.dims), false, true);
 
    if (input && input_data)

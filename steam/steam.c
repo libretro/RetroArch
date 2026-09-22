@@ -343,7 +343,7 @@ bool steam_open_osk(void)
 {
    bool                     shown = false;
    bool                   on_deck = false;
-   unsigned           output_size = VIDEO_DRIVER_OUTPUT_SIZE(
+   unsigned           output_size = VIDEO_DRIVER_OUTPUT_DIMS(
          video_state_get_ptr());
 
    /* Only open the Steam OSK if running on a Steam Deck,
@@ -356,8 +356,8 @@ bool steam_open_osk(void)
       MistFloatingGamepadTextInputMode_SingleLine,
       0,
       0,
-      VIDEO_DRIVER_OUTPUT_WIDTH(output_size),
-      VIDEO_DRIVER_OUTPUT_HEIGHT(output_size) / 2,
+      VIDEO_SCALE_W(output_size),
+      VIDEO_SCALE_H(output_size) / 2,
       &shown
    );
 

@@ -110,7 +110,7 @@ static void crt_aspect_ratio_switch(
    RARCH_LOG("[CRT] Setting aspect ratio: %f.\n", fly_aspect);
    RARCH_LOG("[CRT] Setting screen size: %dx%d.\n",
          width, height);
-   video_driver_set_output_size(width, height);
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(width, height));
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
             video_st->data, width, height, true, true);
@@ -133,7 +133,10 @@ static void crt_switch_set_aspect(
    /* used to fix aspect should the engine not find a resolution */
    if (srm_width == 0)
    {
-      video_driver_get_output_size(&patched_width, &patched_height);
+      unsigned out_dims;
+      out_dims = video_driver_get_output_dims();
+      patched_width = VIDEO_SCALE_W(out_dims);
+      patched_height = VIDEO_SCALE_H(out_dims);
       srm_xscale               = 1;
       srm_yscale               = 1;
    }
@@ -599,7 +602,7 @@ static void switch_res_crt(
             1.0f,
             1.0f,
             false);
-      video_driver_set_output_size(width , height);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(width, height));
       command_event(CMD_EVENT_VIDEO_APPLY_STATE_CHANGES, NULL);
    }
 }
@@ -747,7 +750,7 @@ void crt_switch_res_core(
                   crt_mode, corrected_width, monitor_index-1, super_width);
             crt_switch_set_aspect(p_switch, native_width, height, native_width,
                   height ,(float)1,(float)1, false);
-            video_driver_set_output_size(native_width , height);
+            video_driver_set_output_dims(VIDEO_SCALE_PACK(native_width, height));
          }
          else
             switch_res_crt(p_switch, p_switch->ra_core_width,

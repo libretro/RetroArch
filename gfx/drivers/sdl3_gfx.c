@@ -129,7 +129,7 @@ static void sdl3_refresh_viewport(sdl3_video_t *vid)
 
    /* Tell the rest of the engine about our actual window dimensions
     * (mirrors sdl2_gfx / vga / gx2). */
-   video_driver_set_output_size(win_w, win_h);
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(win_w, win_h));
 
    vid->flags &= ~SDL3_FLAG_SHOULD_RESIZE;
 

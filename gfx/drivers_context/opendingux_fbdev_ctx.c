@@ -106,7 +106,7 @@ static void gfx_ctx_opendingux_get_video_size(void *data,
 }
 
 static void gfx_ctx_opendingux_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    unsigned new_width, new_height;
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
@@ -114,10 +114,9 @@ static void gfx_ctx_opendingux_check_window(void *data, bool *quit,
 #ifdef HAVE_EGL
    egl_get_video_size(&viv->egl, &new_width, &new_height);
 
-   if (new_width != *width || new_height != *height)
+   if (VIDEO_SCALE_PACK(new_width, new_height) != *dims)
    {
-      *width  = new_width;
-      *height = new_height;
+      *dims  = VIDEO_SCALE_PACK(new_width, new_height);
       *resize = true;
    }
 #endif

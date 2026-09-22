@@ -4626,7 +4626,7 @@ static void metal_pull_cached_frame_cb(void *userdata,
 - (void)setViewportWidth:(unsigned)width height:(unsigned)height forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate
 {
    _viewport->full_dims    = VIDEO_SCALE_PACK(width, height);
-   video_driver_set_output_size(VIDEO_SCALE_W(_viewport->full_dims), VIDEO_SCALE_H(_viewport->full_dims));
+   video_driver_set_output_dims(_viewport->full_dims);
    _layer.drawableSize     = CGSizeMake(width, height);
    video_driver_update_viewport(_viewport, forceFull, _keepAspect, YES);
    _context.viewport       = _viewport; /* Update matrix */

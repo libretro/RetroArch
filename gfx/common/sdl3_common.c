@@ -494,7 +494,7 @@ bool sdl3_ctx_has_focus(void *data)
 }
 
 void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    SDL_Window *win = sdl3_ctx_window(data);
 

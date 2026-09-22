@@ -1248,8 +1248,11 @@ static int android_check_quick_tap(android_input_t *android)
 static INLINE void android_mouse_calculate_deltas(android_input_t *android,
       AInputEvent *event,size_t motion_ptr,int source)
 {
+   unsigned out_dims;
    unsigned video_width, video_height;
-   video_driver_get_output_size(&video_width, &video_height);
+   out_dims = video_driver_get_output_dims();
+   video_width = VIDEO_SCALE_W(out_dims);
+   video_height = VIDEO_SCALE_H(out_dims);
 
    float x       = 0;
    float x_delta = 0;

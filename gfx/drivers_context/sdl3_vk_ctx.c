@@ -166,7 +166,7 @@ static void sdl3_vk_ctx_swap_buffers(void *data)
 }
 
 static void sdl3_vk_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)data;
 

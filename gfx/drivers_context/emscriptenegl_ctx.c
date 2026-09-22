@@ -49,7 +49,7 @@ static void gfx_ctx_emscripten_swap_interval(void *data, int interval)
 }
 
 static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    int input_width;
    int input_height;
@@ -58,8 +58,7 @@ static void gfx_ctx_emscripten_check_window(void *data, bool *quit,
    platform_emscripten_get_canvas_size(&input_width, &input_height);
 
    *resize = (emscripten->fb_width != input_width || emscripten->fb_height != input_height);
-   *width  = emscripten->fb_width  = (unsigned)input_width;
-   *height = emscripten->fb_height = (unsigned)input_height;
+   *dims  = VIDEO_SCALE_PACK(emscripten->fb_width  = (unsigned)input_width, emscripten->fb_height = (unsigned)input_height);
    *quit   = false;
 }
 

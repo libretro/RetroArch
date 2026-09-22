@@ -5403,6 +5403,7 @@ static bool renderchain_gl2_init_first(void **renderchain_handle)
 static void *gl2_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
+      unsigned out_dims_o;
    enum gfx_wrap_type wrap_type;
    unsigned full_x, full_y;
    unsigned shader_info_num;
@@ -5667,9 +5668,11 @@ static void *gl2_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_size(temp_width, temp_height);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
    else
-      video_driver_get_output_size(&temp_width, &temp_height);
+      out_dims_o = video_driver_get_output_dims();
+      temp_width = VIDEO_SCALE_W(out_dims_o);
+      temp_height = VIDEO_SCALE_H(out_dims_o);
    gl->video_width       = temp_width;
    gl->video_height      = temp_height;
 
@@ -5871,18 +5874,18 @@ static bool gl2_alive(void *data)
    bool quit            = false;
    bool resize          = false;
    gl2_t         *gl    = (gl2_t*)data;
-   unsigned temp_width  = gl->video_width;
-   unsigned temp_height = gl->video_height;
+   unsigned temp_dims  = VIDEO_SCALE_PACK(gl->video_width,
+         gl->video_height);
 
    gl->ctx_driver->check_window(gl->ctx_data,
-         &quit, &resize, &temp_width, &temp_height);
+         &quit, &resize, &temp_dims);
 
 #ifdef __WINRT__
    if (is_running_on_xbox())
    {
       /* Match the output res to the display resolution */
-      temp_width  = uwp_get_width();
-      temp_height = uwp_get_height();
+      temp_dims  = VIDEO_SCALE_PACK(uwp_get_width(),
+            uwp_get_height());
    }
 #endif
    if (quit)
@@ -5892,11 +5895,11 @@ static bool gl2_alive(void *data)
 
    ret             = !(gl->flags & GL2_FLAG_QUITTING);
 
-   if (temp_width != 0 && temp_height != 0)
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
    {
-      video_driver_set_output_size(temp_width, temp_height);
-      gl->video_width  = temp_width;
-      gl->video_height = temp_height;
+      video_driver_set_output_dims(temp_dims);
+      gl->video_width  = VIDEO_SCALE_W(temp_dims);
+      gl->video_height = VIDEO_SCALE_H(temp_dims);
    }
 
    return ret;

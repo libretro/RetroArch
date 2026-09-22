@@ -9976,6 +9976,7 @@ static void ozone_menu_animation_update_time(
 
 static void *ozone_init(void **userdata, bool video_is_threaded)
 {
+   unsigned out_dims;
    unsigned i;
    bool fallback_color_theme           = false;
    unsigned width, height, color_theme = 0;
@@ -9997,7 +9998,9 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    for (i = 0; i < 16; i++)
       ozone->pure_white[i]                      = 1.00f;
 
-   video_driver_get_output_size(&width, &height);
+   out_dims = video_driver_get_output_dims();
+   width = VIDEO_SCALE_W(out_dims);
+   height = VIDEO_SCALE_H(out_dims);
 
    /* Also used as a tag for cursor animation */
    ozone->default_theme                         = &ozone_theme_dark; 

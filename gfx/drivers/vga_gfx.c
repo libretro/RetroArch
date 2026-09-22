@@ -337,7 +337,7 @@ static void vga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 static bool vga_gfx_alive(void *data)
 {
    /* Publish the actual VGA framebuffer dimensions as the output
-    * size, not the core's frame size.  video_driver_set_output_size
+    * size, not the core's frame size.  video_driver_set_output_dims
     * feeds the value used by menu drivers, the CRT switcher and the
     * input subsystem to size their output and absolute-coordinate
     * ranges; passing the core's frame dimensions would lie to all
@@ -345,7 +345,7 @@ static bool vga_gfx_alive(void *data)
     * VGA_HEIGHT (320x200 mode 13h); the core's frame is scaled
     * into that fixed-size framebuffer per-pixel in vga_gfx_frame. */
    (void)data;
-   video_driver_set_output_size(VGA_WIDTH, VGA_HEIGHT);
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(VGA_WIDTH, VGA_HEIGHT));
    return true;
 }
 

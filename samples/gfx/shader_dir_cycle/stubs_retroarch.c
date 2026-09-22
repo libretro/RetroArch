@@ -133,10 +133,9 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
 
 float video_driver_get_core_aspect(void) { return 4.0f / 3.0f; }
 
-void video_driver_get_output_size(unsigned *width, unsigned *height)
+unsigned video_driver_get_output_dims(void)
 {
-   *width  = 1920;
-   *height = 1080;
+   return VIDEO_SCALE_PACK(1920, 1080);
 }
 
 void video_driver_modify_disp_flags(uint32_t set_bits, uint32_t clear_bits)

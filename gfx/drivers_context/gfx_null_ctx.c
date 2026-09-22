@@ -32,7 +32,7 @@ static void gfx_ctx_null_get_video_size(
 
 static void gfx_ctx_null_swap_interval(void *data, int interval) { }
 static void gfx_ctx_null_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height) { }
+      bool *resize, unsigned *dims) { }
 static bool gfx_ctx_null_set_video_mode(void *data,
       unsigned width, unsigned height,
       bool fullscreen) { return true; }

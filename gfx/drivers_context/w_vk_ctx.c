@@ -75,7 +75,7 @@ static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
 }
 
 static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    settings_t *settings     = config_get_ptr();
    float refresh_rate       = settings->floats.video_refresh_rate;
@@ -98,8 +98,8 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
          && (g_win32_refresh_rate)
          && (g_win32_refresh_rate  != refresh_rate)
          && (fabsf(g_win32_refresh_rate - refresh_rate) > 0.1f)
-         && (g_win32_resize_width  == *width)
-         && (g_win32_resize_height == *height))
+         && (g_win32_resize_width  == VIDEO_SCALE_W(*dims))
+         && (g_win32_resize_height == VIDEO_SCALE_H(*dims)))
    {
       g_win32_refresh_rate = settings->floats.video_refresh_rate;
       command_event(CMD_EVENT_REINIT, NULL);

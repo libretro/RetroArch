@@ -6102,6 +6102,7 @@ static void *vulkan_init(const video_info_t *video,
       input_driver_t **input,
       void **input_data)
 {
+      unsigned out_dims;
    unsigned full_x, full_y;
    unsigned win_width;
    unsigned win_height;
@@ -6202,9 +6203,11 @@ static void *vulkan_init(const video_info_t *video,
    temp_height = mode_height;
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_size(temp_width, temp_height);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
    else
-      video_driver_get_output_size(&temp_width, &temp_height);
+      out_dims = video_driver_get_output_dims();
+      temp_width = VIDEO_SCALE_W(out_dims);
+      temp_height = VIDEO_SCALE_H(out_dims);
    vk->video_width       = temp_width;
    vk->video_height      = temp_height;
    vk->translate_x       = 0.0;
@@ -6595,17 +6598,16 @@ static bool vulkan_alive(void *data)
    bool quit            = false;
    bool resize          = false;
    vk_t *vk             = (vk_t*)data;
-   unsigned temp_width;
-   unsigned temp_height;
+   unsigned temp_dims   = 0;
 
    if (!vk)
       return false;
 
-   temp_width  = vk->video_width;
-   temp_height = vk->video_height;
+   temp_dims  = VIDEO_SCALE_PACK(vk->video_width,
+         vk->video_height);
 
    vk->ctx_driver->check_window(vk->ctx_data,
-            &quit, &resize, &temp_width, &temp_height);
+            &quit, &resize, &temp_dims);
 
    if (quit)
       vk->flags |= VK_FLAG_QUITTING;
@@ -6614,11 +6616,11 @@ static bool vulkan_alive(void *data)
 
    ret = (!(vk->flags & VK_FLAG_QUITTING));
 
-   if (temp_width != 0 && temp_height != 0)
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
    {
-      video_driver_set_output_size(temp_width, temp_height);
-      vk->video_width  = temp_width;
-      vk->video_height = temp_height;
+      video_driver_set_output_dims(temp_dims);
+      vk->video_width  = VIDEO_SCALE_W(temp_dims);
+      vk->video_height = VIDEO_SCALE_H(temp_dims);
    }
 
    return ret;

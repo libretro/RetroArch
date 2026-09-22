@@ -1309,6 +1309,7 @@ static void gl1_overlay_tex_geom(void *data,
 static void *gl1_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
+      unsigned out_dims;
    unsigned full_x, full_y;
 #ifdef VITA
    static bool vgl_inited               = false;
@@ -1443,9 +1444,11 @@ static void *gl1_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_size(temp_width, temp_height);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
    else
-      video_driver_get_output_size(&temp_width, &temp_height);
+      out_dims = video_driver_get_output_dims();
+      temp_width = VIDEO_SCALE_W(out_dims);
+      temp_height = VIDEO_SCALE_H(out_dims);
    gl1->vp.full_dims   = VIDEO_SCALE_PACK(temp_width, temp_height);
 
    RARCH_LOG("[GL1] Using resolution %ux%u.\n", temp_width, temp_height);
@@ -2718,8 +2721,8 @@ static void gl1_set_nonblock_state(void *data, bool state,
 
 static bool gl1_alive(void *data)
 {
-   unsigned temp_width  = 0;
-   unsigned temp_height = 0;
+   unsigned temp_dims  = VIDEO_SCALE_PACK(0,
+         0);
    bool quit            = false;
    bool resize          = false;
    bool ret             = false;
@@ -2728,21 +2731,20 @@ static bool gl1_alive(void *data)
    /* Read from local bookkeeping rather than video_st: this runs on
     * the video thread, and gl1->vp.full_* is this driver's own state,
     * written at every set_size call site in this driver. */
-   temp_width  = VIDEO_SCALE_W(gl1->vp.full_dims);
-   temp_height = VIDEO_SCALE_H(gl1->vp.full_dims);
+   temp_dims  = gl1->vp.full_dims;
 
    gl1->ctx_driver->check_window(gl1->ctx_data,
-            &quit, &resize, &temp_width, &temp_height);
+            &quit, &resize, &temp_dims);
 
    if (resize)
       gl1->flags        |= GL1_FLAG_SHOULD_RESIZE;
 
    ret = !quit;
 
-   if (temp_width != 0 && temp_height != 0)
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
    {
-      video_driver_set_output_size(temp_width, temp_height);
-      gl1->vp.full_dims   = VIDEO_SCALE_PACK(temp_width, temp_height);
+      video_driver_set_output_dims(temp_dims);
+      gl1->vp.full_dims   = temp_dims;
    }
 
    return ret;
@@ -2853,7 +2855,7 @@ static void gl1_viewport_info(void *data, struct video_viewport *vp)
 
    /* gl1->vp carries full_width/full_height (written at every
     * set_size call site), so the struct copy populates them
-    * directly without a video_driver_get_output_size round-trip. */
+    * directly without a video_driver_get_output_dims round-trip. */
    *vp             = gl1->vp;
 
    /* Adjust as GL viewport is bottom-up. */

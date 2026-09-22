@@ -357,7 +357,7 @@ static void network_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) 
 
 static bool network_gfx_alive(void *data)
 {
-   /* The video_driver_get_output_size + conditional set_size dance that
+   /* The video_driver_get_output_dims + conditional set_size dance that
     * used to live here was a copy-paste from d3d8_alive, where the
     * intermediate win32_check_window call mutates the fetched
     * size on window resize.  The network driver has no equivalent

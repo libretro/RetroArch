@@ -1873,6 +1873,7 @@ static void video_thread_loop(void *data)
          {
             if (thr->driver->frame)
             {
+               unsigned out_dims_o;
                bool ret;
                video_frame_info_t *video_info = &thr->frame.slot[slot].video_info;
                unsigned out_w = 0, out_h = 0;
@@ -1886,7 +1887,9 @@ static void video_thread_loop(void *data)
                 * from the frame info would rebuild them at the old size
                 * and draw the menu into a corner of the window. The size
                 * the driver reported last is what it must draw to now. */
-               video_driver_get_output_size(&out_w, &out_h);
+               out_dims_o = video_driver_get_output_dims();
+               out_w = VIDEO_SCALE_W(out_dims_o);
+               out_h = VIDEO_SCALE_H(out_dims_o);
                if (out_w && out_h)
                {
                   video_info->width  = out_w;

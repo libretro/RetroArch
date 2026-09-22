@@ -3261,6 +3261,7 @@ static void gl3_set_viewport_wrapper(void *data,
 static void *gl3_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
+      unsigned out_dims_o;
    unsigned full_x, full_y;
    settings_t *settings                 = config_get_ptr();
    bool video_gpu_record                = settings->bools.video_gpu_record;
@@ -3444,9 +3445,11 @@ static void *gl3_init(const video_info_t *video,
    /* Get real known video size, which might have been altered by context. */
 
    if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_size(temp_width, temp_height);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
    else
-      video_driver_get_output_size(&temp_width, &temp_height);
+      out_dims_o = video_driver_get_output_dims();
+      temp_width = VIDEO_SCALE_W(out_dims_o);
+      temp_height = VIDEO_SCALE_H(out_dims_o);
    gl->video_width  = temp_width;
    gl->video_height = temp_height;
 
@@ -3742,11 +3745,11 @@ static bool gl3_alive(void *data)
    bool quit            = false;
    bool resize          = false;
    gl3_t *gl        = (gl3_t*)data;
-   unsigned temp_width  = gl->video_width;
-   unsigned temp_height = gl->video_height;
+   unsigned temp_dims  = VIDEO_SCALE_PACK(gl->video_width,
+         gl->video_height);
 
    gl->ctx_driver->check_window(gl->ctx_data,
-         &quit, &resize, &temp_width, &temp_height);
+         &quit, &resize, &temp_dims);
 
 #ifdef __WINRT__
    if (is_running_on_xbox())
@@ -3755,8 +3758,8 @@ static bool gl3_alive(void *data)
        * to be 1920x1080 and currently there is now way to set ANGLE to
        * use a variable resolution swapchain so regardless of the size
        * the window is always 1080p */
-      temp_width  = 1920;
-      temp_height = 1080;
+      temp_dims  = VIDEO_SCALE_PACK(1920,
+            1080);
    }
 #endif
 
@@ -3767,11 +3770,11 @@ static bool gl3_alive(void *data)
 
    ret = !(gl->flags & GL3_FLAG_QUITTING);
 
-   if (temp_width != 0 && temp_height != 0)
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
    {
-      video_driver_set_output_size(temp_width, temp_height);
-      gl->video_width  = temp_width;
-      gl->video_height = temp_height;
+      video_driver_set_output_dims(temp_dims);
+      gl->video_width  = VIDEO_SCALE_W(temp_dims);
+      gl->video_height = VIDEO_SCALE_H(temp_dims);
    }
 
    return ret;

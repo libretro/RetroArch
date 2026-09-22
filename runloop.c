@@ -6432,9 +6432,8 @@ static enum runloop_state_enum runloop_check_state(
    bool focused                        = true;
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
    /* Snapshot of the output size. The video thread sets it through
-    * video_driver_set_output_size() while this function runs. */
-   unsigned output_width               = 0;
-   unsigned output_height              = 0;
+    * video_driver_set_output_dims() while this function runs. */
+   unsigned output_dims                = 0;
 #endif
    bool rarch_is_initialized           = !!runloop_is_inited();
    bool runloop_paused                 = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
@@ -6578,15 +6577,13 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_OVERLAY
    if (settings->bools.input_overlay_enable)
    {
-      static unsigned last_width                     = 0;
-      static unsigned last_height                    = 0;
-      unsigned video_driver_width                    = 0;
-      unsigned video_driver_height                   = 0;
+      static unsigned last_dims                      = 0;
+      unsigned video_driver_dims                     = 0;
       bool check_next_rotation                       = true;
       bool input_overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
       bool input_overlay_auto_rotate                 = settings->bools.input_overlay_auto_rotate;
 
-      video_driver_get_output_size(&video_driver_width, &video_driver_height);
+      video_driver_dims = video_driver_get_output_dims();
 
       /* Check whether overlay should be hidden
        * when a gamepad is connected */
@@ -6621,8 +6618,7 @@ static enum runloop_state_enum runloop_check_state(
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
 
       /* Check whether video aspect has changed */
-      if (   (video_driver_width  != last_width)
-          || (video_driver_height != last_height))
+      if (video_driver_dims != last_dims)
       {
          /* Update scaling/offset factors */
          command_event(CMD_EVENT_OVERLAY_SET_SCALE_FACTOR, NULL);
@@ -6630,13 +6626,12 @@ static enum runloop_state_enum runloop_check_state(
          /* Check overlay rotation, if required */
          if (input_overlay_auto_rotate)
             input_overlay_auto_rotate_(
-                  video_driver_width,
-                  video_driver_height,
+                  VIDEO_SCALE_W(video_driver_dims),
+                  VIDEO_SCALE_H(video_driver_dims),
                   settings->bools.input_overlay_enable,
                   input_st->overlay_ptr);
 
-         last_width  = video_driver_width;
-         last_height = video_driver_height;
+         last_dims = video_driver_dims;
       }
 
       /* Check OSK hotkey */
@@ -6655,22 +6650,17 @@ static enum runloop_state_enum runloop_check_state(
    */
    if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_FULL)
    {
-      static unsigned last_width                     = 0;
-      static unsigned last_height                    = 0;
-      unsigned video_driver_width                    = 0;
-      unsigned video_driver_height                   = 0;
-
-      video_driver_get_output_size(&video_driver_width, &video_driver_height);
+      static unsigned last_dims                      = 0;
+      unsigned video_driver_dims                     =
+            video_driver_get_output_dims();
 
       /* Check whether video aspect has changed */
-      if (   (video_driver_width  != last_width)
-          || (video_driver_height != last_height))
+      if (video_driver_dims != last_dims)
       {
          /* Update set aspect ratio so the full matches the current video width & height */
          command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
-         last_width  = video_driver_width;
-         last_height = video_driver_height;
+         last_dims = video_driver_dims;
       }
    }
 
@@ -6899,14 +6889,14 @@ static enum runloop_state_enum runloop_check_state(
 #endif
 
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
-   video_driver_get_output_size(&output_width, &output_height);
+   output_dims = video_driver_get_output_dims();
 
    gfx_animation_update(
          current_time,
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
-         output_width,
-         output_height);
+         VIDEO_SCALE_W(output_dims),
+         VIDEO_SCALE_H(output_dims));
 
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
@@ -6929,8 +6919,8 @@ static enum runloop_state_enum runloop_check_state(
          gfx_widgets_iterate_layout(
                p_disp,
                settings,
-               output_width,
-               output_height,
+               VIDEO_SCALE_W(output_dims),
+               VIDEO_SCALE_H(output_dims),
                video_is_fullscreen,
                settings->paths.directory_assets,
                settings->paths.path_font,
@@ -6941,8 +6931,8 @@ static enum runloop_state_enum runloop_check_state(
          gfx_widgets_iterate(
                p_disp,
                settings,
-               output_width,
-               output_height,
+               VIDEO_SCALE_W(output_dims),
+               VIDEO_SCALE_H(output_dims),
                video_is_fullscreen,
                settings->paths.directory_assets,
                settings->paths.path_font,
@@ -7354,8 +7344,8 @@ static enum runloop_state_enum runloop_check_state(
                if (menu->driver_ctx->render)
                   menu->driver_ctx->render(
                         menu->userdata,
-                        output_width,
-                        output_height,
+                        VIDEO_SCALE_W(output_dims),
+                        VIDEO_SCALE_H(output_dims),
                         (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false);
             }
 

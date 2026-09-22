@@ -198,13 +198,11 @@ static void caca_create(caca_t *caca)
             0xF800, 0x7E0, 0x1F, 0x0);
 
    /* Publish the canvas (terminal grid) size as the surface size,
-    * not the core's frame size.  video_driver_set_output_size feeds the
+    * not the core's frame size.  video_driver_set_output_dims feeds the
     * value used by menu drivers, the CRT switcher and the input
     * subsystem to size their output; passing the core's frame
     * dimensions instead would lie to all of them. */
-   video_driver_set_output_size(
-         caca_get_canvas_width(caca->cv),
-         caca_get_canvas_height(caca->cv));
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(caca_get_canvas_width(caca->cv), caca_get_canvas_height(caca->cv)));
 }
 
 static void *caca_init(const video_info_t *video,
@@ -327,9 +325,7 @@ static bool caca_alive(void *data)
 {
    caca_t *caca              = (caca_t*)data;
    /* Canvas size, not core frame size -- see comment in caca_create. */
-   video_driver_set_output_size(
-         caca_get_canvas_width(caca->cv),
-         caca_get_canvas_height(caca->cv));
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(caca_get_canvas_width(caca->cv), caca_get_canvas_height(caca->cv)));
    return true;
 }
 

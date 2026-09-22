@@ -2010,7 +2010,7 @@ static bool rslane_frame(void *data, const void *frame,
       unsigned spins = 0;
       while (RSLANE_GET() == 1 && spins++ < 2000)
          retro_sleep(1);
-      video_driver_set_output_size(rslane_report_w, rslane_report_h);
+      video_driver_set_output_dims(VIDEO_SCALE_PACK(rslane_report_w, rslane_report_h));
       RSLANE_SET(3);
    }
    else if (RSLANE_GET() == 3 && !rslane_seen)
@@ -2027,6 +2027,7 @@ static bool rslane_frame(void *data, const void *frame,
 
 static void lane_resize_under_wrapper(void)
 {
+   unsigned out_dims;
    unsigned had = failures;
    thread_video_t *thr;
    unsigned before_w = 0, before_h = 0;
@@ -2048,7 +2049,9 @@ static void lane_resize_under_wrapper(void)
    rslane_driver.frame = rslane_frame;
    thr->driver   = &rslane_driver;
 
-   video_driver_get_output_size(&before_w, &before_h);
+   out_dims = video_driver_get_output_dims();
+   before_w = VIDEO_SCALE_W(out_dims);
+   before_h = VIDEO_SCALE_H(out_dims);
    rslane_report_w = before_w + 320;
    rslane_report_h = before_h + 200;
    rslane_seen_w   = rslane_seen_h = 0;
@@ -2076,7 +2079,7 @@ static void lane_resize_under_wrapper(void)
    thr->driver  = rslane_inner;
    RSLANE_SET(0);
    /* Put the size and the menu back for the lanes that follow. */
-   video_driver_set_output_size(before_w, before_h);
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(before_w, before_h));
    if (!menu_is_up())
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    run_frames(2);
@@ -2213,6 +2216,7 @@ static void lane_dupe_under_wrapper(void)
 
 static void lane_size_pair_round_trip(void)
 {
+   unsigned out_dims;
    unsigned had = failures;
    unsigned w, h;
    size_t   pitch;
@@ -2220,13 +2224,17 @@ static void lane_size_pair_round_trip(void)
    static uint8_t pix[320 * 200 * sizeof(uint32_t)];
 
    /* The output size. */
-   video_driver_set_output_size(1280, 720);
-   video_driver_get_output_size(&w, &h);
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(1280, 720));
+   out_dims = video_driver_get_output_dims();
+   w = VIDEO_SCALE_W(out_dims);
+   h = VIDEO_SCALE_H(out_dims);
    CHECK(w == 1280 && h == 720,
          "the output size came back %ux%u, not 1280x720", w, h);
 
-   video_driver_set_output_size(VIDEO_SCALE_DIM_MAX + 1, 720);
-   video_driver_get_output_size(&w, &h);
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(VIDEO_SCALE_DIM_MAX + 1, 720));
+   out_dims = video_driver_get_output_dims();
+   w = VIDEO_SCALE_W(out_dims);
+   h = VIDEO_SCALE_H(out_dims);
    CHECK(w == VIDEO_SCALE_DIM_MAX && h == 720,
          "an out-of-range output width came back as %u, not clamped to %u",
          w, VIDEO_SCALE_DIM_MAX);
