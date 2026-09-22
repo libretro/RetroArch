@@ -660,7 +660,6 @@ struct ozone_handle
    unsigned theme_dynamic_cursor_state; /* 0 -> 1 -> 0 -> 1 [...] */
    unsigned selection_core_name_lines;
    unsigned old_list_offset_y;
-   unsigned draw_entry_delay;
 
    uint32_t flags;
 
@@ -1863,6 +1862,9 @@ static void ozone_set_color_theme(ozone_handle_t *ozone,
 #undef OZONE_COLOR_THEME_ROW
    unsigned i;
    ozone_theme_t *theme = ozone->default_theme;
+
+   if (!color_theme)
+      color_theme = DEFAULT_OZONE_COLOR_THEME;
 
    for (i = 0; i < ARRAY_SIZE(ozone_color_themes); i++)
       if (string_is_equal(color_theme, ozone_color_themes[i].ident))
