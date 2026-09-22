@@ -5472,8 +5472,8 @@ XMB_NOINLINE static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_ani
 
    if (  !line_ticker->font
        || (!line_ticker->src_str || !*line_ticker->src_str)
-       || (line_ticker->field_width < 1)
-       || (line_ticker->field_height < 1))
+       || (VIDEO_SCALE_W(line_ticker->field_dims) < 1)
+       || (VIDEO_SCALE_H(line_ticker->field_dims) < 1))
    {
       if (line_ticker->dst_str_len > 0)
          line_ticker->dst_str[0] = '\0';
@@ -5517,8 +5517,10 @@ XMB_NOINLINE static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_ani
       goto fail;
 
    /* Determine line wrap parameters */
-   line_len          = (size_t)(line_ticker->field_width  / glyph_width);
-   max_display_lines = (size_t)(line_ticker->field_height / glyph_height);
+   line_len          = (size_t)(VIDEO_SCALE_W(line_ticker->field_dims)
+         / glyph_width);
+   max_display_lines = (size_t)(VIDEO_SCALE_H(line_ticker->field_dims)
+         / glyph_height);
 
    if ((line_len < 1) || (max_display_lines < 1))
       goto fail;
@@ -5814,8 +5816,8 @@ XMB_NOINLINE static void xmb_draw_item_sublabel(
       line_ticker_smooth.font                 = xmb->font2;
       line_ticker_smooth.font_scale           = 1.0f;
 
-      line_ticker_smooth.field_width          = (unsigned)(xmb->font2_size * 0.5f * line_ticker_width);
-      line_ticker_smooth.field_height         = (unsigned)(
+      line_ticker_smooth.field_dims           = VIDEO_SCALE_PACK(
+            xmb->font2_size * 0.5f * line_ticker_width,
             (xmb->icon_spacing_vertical * ((1 + xmb->under_item_offset) - xmb->active_item_factor)) -
                (xmb->margins_label_top * 3.5f) - xmb->under_item_offset);
 

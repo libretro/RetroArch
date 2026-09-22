@@ -194,8 +194,8 @@ typedef struct gfx_animation_ctx_line_ticker_smooth
    float *bottom_fade_alpha;
    char *bottom_fade_str;
    size_t bottom_fade_str_len;
-   unsigned field_width;
-   unsigned field_height;
+   /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
+   unsigned field_dims;
    float font_scale;
    enum gfx_animation_ticker_type type_enum;
    bool fade_enabled;

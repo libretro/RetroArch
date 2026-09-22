@@ -337,8 +337,14 @@ gfx_anim_preview_t *gfx_anim_preview_open(const char *path, int png_probe)
    p->windowed   = reserved;
    p->audio_slot = -1;
    p->path       = strldup(path, strlen(path) + 1);
-   image_transfer_anim_stream_get_info(stream, type, &p->width, &p->height,
-         &p->num_frames, &p->loop_count);
+   {
+      /* The stream fills the axes separately; they are one word here. */
+      unsigned sw = 0;
+      unsigned sh = 0;
+      image_transfer_anim_stream_get_info(stream, type, &sw, &sh,
+            &p->num_frames, &p->loop_count);
+      p->dims    = VIDEO_SCALE_PACK(sw, sh);
+   }
    /* Ask for ARGB once, before any frame: the answer holds for the
     * animation's life (a repeat ask after the first frame is refused by
     * APNG even though the order stands - deciding per frame here once
@@ -817,8 +823,14 @@ gfx_anim_preview_t *gfx_anim_preview_wrap(void *stream,
    p->windowed   = windowed;
    p->audio_slot = -1;
    p->path       = path ? strldup(path, strlen(path) + 1) : NULL;
-   image_transfer_anim_stream_get_info(stream, type, &p->width, &p->height,
-         &p->num_frames, &p->loop_count);
+   {
+      /* The stream fills the axes separately; they are one word here. */
+      unsigned sw = 0;
+      unsigned sh = 0;
+      image_transfer_anim_stream_get_info(stream, type, &sw, &sh,
+            &p->num_frames, &p->loop_count);
+      p->dims    = VIDEO_SCALE_PACK(sw, sh);
+   }
    /* gfx_thumbnail's worker asks the stream itself per job; the answer
     * recorded here is for callers that draw through the session. */
    p->native_argb = image_transfer_anim_stream_set_argb(stream, type, 1);

@@ -46,6 +46,8 @@
 #include <formats/image.h>
 #include <retro_common_api.h>
 
+#include "video_defines.h"   /* VIDEO_SCALE_PACK */
+
 RETRO_BEGIN_DECLS
 
 struct data_transfer;
@@ -79,7 +81,8 @@ typedef struct gfx_anim_preview
    const uint8_t *base;          /* mapping base (dt) */
    size_t len;                   /* full logical file length */
    enum image_type_enum type;
-   unsigned width, height;
+   /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
+   unsigned dims;
    int num_frames, loop_count;
    bool windowed;                /* dt is a sliding window (reserved) */
    /* Feed geometry for this session. The video types size these to
