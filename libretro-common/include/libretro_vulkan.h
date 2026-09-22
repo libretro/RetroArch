@@ -157,6 +157,9 @@ struct retro_hw_render_context_negotiation_interface_vulkan
     *
     * v3: presentation_queue may be another queue of queue_family_index even when presentation is supported
     * on queue itself, which takes the frontend's present off the queue the core submits to and off its lock.
+    * Accepting it does not oblige the frontend to present there: where the window system is known not to
+    * tolerate a present on another queue, the frontend presents on queue instead, serialised with the core's
+    * submissions through lock_queue/unlock_queue as usual. A core must not depend on the separate queue being used.
     * presentation_queue_family_index must still equal queue_family_index; another family would need an image
     * ownership transfer around every frame and is rejected.
     * A core must only do this when GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT reports 3 or higher:
