@@ -610,24 +610,21 @@ static bool sdl3_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
  * down the entire driver. */
 static void sdl3_poke_set_video_mode(void *data, unsigned dims, bool fullscreen)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
    sdl3_video_t *vid = (sdl3_video_t*)data;
 
    if (!vid || !vid->window)
       return;
 
-   if (!sdl3_window_set_video_mode(&vid->window,
-            VIDEO_SCALE_PACK(width, height), fullscreen, 0))
+   if (!sdl3_window_set_video_mode(&vid->window, dims, fullscreen, 0))
    {
       RARCH_WARN("[SDL3] Failed to set video mode: %s.\n", SDL_GetError());
       return;
    }
 
    /* On the next frame, recompute the viewport pixel size. */
-   vid->flags |= SDL3_FLAG_SHOULD_RESIZE;
-   vid->video.dims = VIDEO_SCALE_PACK(width, height);
-   vid->video.fullscreen = fullscreen;
+   vid->flags            |= SDL3_FLAG_SHOULD_RESIZE;
+   vid->video.dims        = dims;
+   vid->video.fullscreen  = fullscreen;
 }
 
 static void sdl3_poke_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)

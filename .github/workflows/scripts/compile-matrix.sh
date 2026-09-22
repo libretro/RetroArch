@@ -183,6 +183,14 @@ platform_video "gxm video" "-DVITA -DRARCH_CONSOLE $HOSTOFF" \
 platform_video "ps2 video" \
    "-DPS2 -DRARCH_CONSOLE -DHAVE_WINDOW_OFFSET -DHAVE_RGUI $HOSTOFF" \
    "-Itools/platform_stubs/ps2" gfx/drivers/ps2_gfx.c ""
+# The two SDL video drivers. Nothing else here compiled them, which is
+# how a field they read through video_info_t went on being read after it
+# had been packed away. Each skips where its headers are absent, as the
+# dingux lanes below do.
+platform_video "sdl2 video" "-DHAVE_SDL2" "-I/usr/include/SDL2" \
+   gfx/drivers/sdl2_gfx.c /usr/include/SDL2/SDL.h
+platform_video "sdl3 video" "-DHAVE_SDL3" "-I/usr/include/SDL3" \
+   gfx/drivers/sdl3_gfx.c /usr/include/SDL3/SDL.h
 platform_video "dingux video"   "-DDINGUX" "-I/usr/include/SDL" \
    gfx/drivers/sdl_dingux_gfx.c /usr/include/SDL/SDL.h
 platform_video "rs90 video"     "-DDINGUX -DRS90" "-I/usr/include/SDL" \
