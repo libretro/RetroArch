@@ -158,7 +158,7 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
 #endif
    viv->native_window = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
 #ifdef HAVE_EGL
-   if (!egl_create_surface(&viv->egl, viv->native_window))
+   if (!egl_create_surface(&viv->egl, (void*)viv->native_window))
       goto error;
 #endif
 
@@ -230,7 +230,7 @@ static bool gfx_ctx_vivante_create_surface(void *data)
 {
 #ifdef HAVE_EGL
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
-   return egl_create_surface(&viv->egl, viv->native_window);
+   return egl_create_surface(&viv->egl, (void*)viv->native_window);
 #else
    return false;
 #endif

@@ -131,7 +131,7 @@ static void fpga_create(fpga_t *fpga)
 }
 
 static void *fpga_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
