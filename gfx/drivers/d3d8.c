@@ -570,9 +570,9 @@ static bool d3d8_setup_init(void *data,
    LPDIRECT3DDEVICE8 d3dr                 = (LPDIRECT3DDEVICE8)d3d->dev;
    d3d8_renderchain_t *chain              = (d3d8_renderchain_t*)d3d->renderchain_data;
    unsigned fmt                           = (rgb32) ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
-   video_viewport_t *custom_vp            = &settings->video_vp_custom;
-   unsigned width                         = d3d->vp.full_width;
-   unsigned height                        = d3d->vp.full_height;
+   video_viewport_settings_t *custom_vp            = &settings->video_vp_custom;
+   unsigned width                         = VIDEO_SCALE_W(d3d->vp.full_dims);
+   unsigned height                        = VIDEO_SCALE_H(d3d->vp.full_dims);
 
    chain->dev                             = dev_data;
    chain->pixel_size                      = (fmt == RETRO_PIXEL_FORMAT_RGB565)
@@ -1555,8 +1555,8 @@ static void d3d8_font_render_msg(
    if (!d3d)
       return;
 
-   width  = d3d->vp.full_width;
-   height = d3d->vp.full_height;
+   width  = VIDEO_SCALE_W(d3d->vp.full_dims);
+   height = VIDEO_SCALE_H(d3d->vp.full_dims);
    if (!width || !height)
       return;
 
@@ -1752,11 +1752,9 @@ static void d3d8_viewport_info(void *data, struct video_viewport *vp)
 
    vp->x            = d3d->out_vp.X;
    vp->y            = d3d->out_vp.Y;
-   vp->width        = d3d->out_vp.Width;
-   vp->height       = d3d->out_vp.Height;
+   vp->dims         = VIDEO_SCALE_PACK(d3d->out_vp.Width, d3d->out_vp.Height);
 
-   vp->full_width   = d3d->vp.full_width;
-   vp->full_height  = d3d->vp.full_height;
+   vp->full_dims    = d3d->vp.full_dims;
 }
 
 static void d3d8_overlay_render(d3d8_video_t *d3d,
@@ -2070,16 +2068,15 @@ static void d3d8_make_d3dpp(void *data,
 
       d3d8_get_video_size(d3d, &width, &height);
       video_driver_set_output_size(width, height);
-      d3d->vp.full_width          = width;
-      d3d->vp.full_height         = height;
+      d3d->vp.full_dims           = VIDEO_SCALE_PACK(width, height);
       d3dpp->BackBufferWidth      = width;
       d3dpp->BackBufferHeight     = height;
 #else
       /* Non-Xbox: by the time make_d3dpp runs, d3d8_init_internal
        * has already published the size and written d3d->vp.
        * full_width/full_height; read from there. */
-      d3dpp->BackBufferWidth      = d3d->vp.full_width;
-      d3dpp->BackBufferHeight     = d3d->vp.full_height;
+      d3dpp->BackBufferWidth      = VIDEO_SCALE_W(d3d->vp.full_dims);
+      d3dpp->BackBufferHeight     = VIDEO_SCALE_H(d3d->vp.full_dims);
 #endif
    }
 
@@ -2162,17 +2159,16 @@ static void d3d8_calculate_rect(void *data,
    struct video_viewport vp;
    d3d8_video_t *d3d         = (d3d8_video_t*)data;
 
-   *width  = d3d->vp.full_width;
-   *height = d3d->vp.full_height;
+   *width  = VIDEO_SCALE_W(d3d->vp.full_dims);
+   *height = VIDEO_SCALE_H(d3d->vp.full_dims);
 
-   vp.full_width  = *width;
-   vp.full_height = *height;
+   vp.full_dims   = VIDEO_SCALE_PACK(*width, *height);
    video_driver_update_viewport(&vp, force_full, d3d->keep_aspect, true);
 
    *x      = vp.x;
    *y      = vp.y;
-   *width  = vp.width;
-   *height = vp.height;
+   *width  = VIDEO_SCALE_W(vp.dims);
+   *height = VIDEO_SCALE_H(vp.dims);
 }
 
 static void d3d8_set_viewport(void *data,
@@ -2277,7 +2273,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
    /* d3d->vp.full_* was written by the caller (d3d8_init_internal
     * has already called set_size at this point). */
    d3d8_set_viewport(d3d,
-	   d3d->vp.full_width, d3d->vp.full_height, false, true);
+	   VIDEO_SCALE_W(d3d->vp.full_dims), VIDEO_SCALE_H(d3d->vp.full_dims), false, true);
 
 
    d3d->menu_display.offset = 0;
@@ -2368,8 +2364,7 @@ static void d3d8_set_resize(d3d8_video_t *d3d,
    d3d->video_info.width  = new_width;
    d3d->video_info.height = new_height;
    video_driver_set_output_size(new_width, new_height);
-   d3d->vp.full_width     = new_width;
-   d3d->vp.full_height    = new_height;
+   d3d->vp.full_dims      = VIDEO_SCALE_PACK(new_width, new_height);
 }
 
 static bool d3d8_alive(void *data)
@@ -2386,8 +2381,8 @@ static bool d3d8_alive(void *data)
     * this driver, so it stays in sync with the output size as
     * long as no other code path sets it.  In practice nothing
     * does -- see video_driver.c audit. */
-   temp_width  = d3d->vp.full_width;
-   temp_height = d3d->vp.full_height;
+   temp_width  = VIDEO_SCALE_W(d3d->vp.full_dims);
+   temp_height = VIDEO_SCALE_H(d3d->vp.full_dims);
 
    win32_check_window(NULL, &quit, &resize, &temp_width, &temp_height);
 
@@ -2406,8 +2401,7 @@ static bool d3d8_alive(void *data)
    if (temp_width != 0 && temp_height != 0)
    {
       video_driver_set_output_size(temp_width, temp_height);
-      d3d->vp.full_width  = temp_width;
-      d3d->vp.full_height = temp_height;
+      d3d->vp.full_dims   = VIDEO_SCALE_PACK(temp_width, temp_height);
    }
 
    return ret;
@@ -2509,8 +2503,7 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
       unsigned new_width  = info->fullscreen ? full_x : info->width;
       unsigned new_height = info->fullscreen ? full_y : info->height;
       video_driver_set_output_size(new_width, new_height);
-      d3d->vp.full_width  = new_width;
-      d3d->vp.full_height = new_height;
+      d3d->vp.full_dims   = VIDEO_SCALE_PACK(new_width, new_height);
 
 #ifdef HAVE_WINDOW
       /* Use new_width / new_height directly rather than reading

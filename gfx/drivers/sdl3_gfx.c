@@ -109,8 +109,8 @@ static void sdl3_refresh_renderer(sdl3_video_t *vid)
     * sdl3_gfx_frame(). Instead, we just update the viewport. */
    r.x = vid->vp.x;
    r.y = vid->vp.y;
-   r.w = (int)vid->vp.width;
-   r.h = (int)vid->vp.height;
+   r.w = (int)VIDEO_SCALE_W(vid->vp.dims);
+   r.h = (int)VIDEO_SCALE_H(vid->vp.dims);
 
    SDL_SetRenderViewport(vid->renderer, &r);
 }
@@ -124,8 +124,7 @@ static void sdl3_refresh_viewport(sdl3_video_t *vid)
     * SDL_GetWindowSize - size the viewport in pixels to match. */
    SDL_GetWindowSizeInPixels(vid->window, &win_w, &win_h);
 
-   vid->vp.full_width  = win_w;
-   vid->vp.full_height = win_h;
+   vid->vp.full_dims   = VIDEO_SCALE_PACK(win_w, win_h);
    video_driver_update_viewport(&vid->vp, false, vid->video.force_aspect, true);
 
    /* Tell the rest of the engine about our actual window dimensions
@@ -308,8 +307,8 @@ static void sdl3_viewport_push_full(sdl3_video_t *vid, SDL_Rect *saved)
 
    full.x = 0;
    full.y = 0;
-   full.w = (int)vid->vp.full_width;
-   full.h = (int)vid->vp.full_height;
+   full.w = (int)VIDEO_SCALE_W(vid->vp.full_dims);
+   full.h = (int)VIDEO_SCALE_H(vid->vp.full_dims);
    SDL_SetRenderViewport(vid->renderer, &full);
 }
 
@@ -334,17 +333,17 @@ static void sdl3_blit_frame(sdl3_video_t *vid)
    {
       SDL_FRect dst;
       SDL_Rect  game_vp;
-      dst.w = (float)vid->vp.height;
-      dst.h = (float)vid->vp.width;
-      dst.x = (float)(vid->vp.x + ((int)vid->vp.width  - (int)vid->vp.height) / 2);
-      dst.y = (float)(vid->vp.y + ((int)vid->vp.height - (int)vid->vp.width)  / 2);
+      dst.w = (float)VIDEO_SCALE_H(vid->vp.dims);
+      dst.h = (float)VIDEO_SCALE_W(vid->vp.dims);
+      dst.x = (float)(vid->vp.x + ((int)VIDEO_SCALE_W(vid->vp.dims)  - (int)VIDEO_SCALE_H(vid->vp.dims)) / 2);
+      dst.y = (float)(vid->vp.y + ((int)VIDEO_SCALE_H(vid->vp.dims) - (int)VIDEO_SCALE_W(vid->vp.dims))  / 2);
       SDL_SetRenderViewport(vid->renderer, NULL);
       SDL_RenderTextureRotated(vid->renderer, vid->frame.tex, NULL, &dst,
             vid->rotation, NULL, SDL_FLIP_NONE);
       game_vp.x = vid->vp.x;
       game_vp.y = vid->vp.y;
-      game_vp.w = (int)vid->vp.width;
-      game_vp.h = (int)vid->vp.height;
+      game_vp.w = (int)VIDEO_SCALE_W(vid->vp.dims);
+      game_vp.h = (int)VIDEO_SCALE_H(vid->vp.dims);
       SDL_SetRenderViewport(vid->renderer, &game_vp);
    }
    else
@@ -374,11 +373,11 @@ static bool sdl3_capture_viewport(sdl3_video_t *vid, uint8_t *buffer)
 
    /* Clamp against the viewport dimensions the caller sized its
     * buffer from, so a mismatch can never overrun it. */
-   w = (surf->w < (int)vid->vp.width)  ? surf->w : (int)vid->vp.width;
-   h = (surf->h < (int)vid->vp.height) ? surf->h : (int)vid->vp.height;
+   w = (surf->w < (int)VIDEO_SCALE_W(vid->vp.dims))  ? surf->w : (int)VIDEO_SCALE_W(vid->vp.dims);
+   h = (surf->h < (int)VIDEO_SCALE_H(vid->vp.dims)) ? surf->h : (int)VIDEO_SCALE_H(vid->vp.dims);
 
-   if (w < (int)vid->vp.width || h < (int)vid->vp.height)
-      memset(buffer, 0, (size_t)vid->vp.width * vid->vp.height * 3);
+   if (w < (int)VIDEO_SCALE_W(vid->vp.dims) || h < (int)VIDEO_SCALE_H(vid->vp.dims))
+      memset(buffer, 0, (size_t)VIDEO_SCALE_W(vid->vp.dims) * VIDEO_SCALE_H(vid->vp.dims) * 3);
 
    for (y = 0; y < h; y++)
    {
@@ -386,8 +385,8 @@ static bool sdl3_capture_viewport(sdl3_video_t *vid, uint8_t *buffer)
             (const uint8_t*)surf->pixels + (size_t)y * surf->pitch,
             surf->pitch,
             SDL_PIXELFORMAT_BGR24,
-            buffer + (size_t)(h - 1 - y) * vid->vp.width * 3,
-            (int)vid->vp.width * 3))
+            buffer + (size_t)(h - 1 - y) * VIDEO_SCALE_W(vid->vp.dims) * 3,
+            (int)VIDEO_SCALE_W(vid->vp.dims) * 3))
       {
          RARCH_WARN("[SDL3] Failed to convert viewport data to BGR24: %s.\n",
                SDL_GetError());
@@ -453,8 +452,8 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
       SDL_FRect menu_dst;
       menu_dst.x = (float)vid->vp.x;
       menu_dst.y = (float)vid->vp.y;
-      menu_dst.w = (float)vid->vp.width;
-      menu_dst.h = (float)vid->vp.height;
+      menu_dst.w = (float)VIDEO_SCALE_W(vid->vp.dims);
+      menu_dst.h = (float)VIDEO_SCALE_H(vid->vp.dims);
       SDL_RenderTexture(vid->renderer, vid->menu.tex, NULL, &menu_dst);
    }
 
@@ -1593,8 +1592,8 @@ static void sdl3_raster_font_render_msg(
    if (!font || !msg || !*msg || !vid)
       return;
 
-   width  = vid->vp.full_width  ? vid->vp.full_width  : vid->video.width;
-   height = vid->vp.full_height ? vid->vp.full_height : vid->video.height;
+   width  = VIDEO_SCALE_W(vid->vp.full_dims)  ? VIDEO_SCALE_W(vid->vp.full_dims)  : vid->video.width;
+   height = VIDEO_SCALE_H(vid->vp.full_dims) ? VIDEO_SCALE_H(vid->vp.full_dims) : vid->video.height;
    if (!width || !height)
    {
       /* viewport not set up yet (very early frames) - skip rather

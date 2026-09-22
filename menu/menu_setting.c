@@ -6226,7 +6226,7 @@ static int setting_uint_action_left_custom_vp_width(
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
 
    if (!settings || !av_info)
       return -1;
@@ -6270,7 +6270,7 @@ static int setting_uint_action_left_custom_vp_height(
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
 
    if (!settings || !av_info)
       return -1;
@@ -6569,7 +6569,7 @@ static int setting_uint_action_right_custom_vp_width(
    settings_t                 *settings = config_get_ptr();
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
 
    if (!settings || !av_info)
       return -1;
@@ -6601,7 +6601,7 @@ static int setting_uint_action_right_custom_vp_height(
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
 
    if (!av_info)
       return -1;
@@ -8479,7 +8479,7 @@ static int setting_action_start_custom_vp_width(rarch_setting_t *setting)
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
 
    if (!settings || !av_info)
       return -1;
@@ -8499,7 +8499,7 @@ static int setting_action_start_custom_vp_width(rarch_setting_t *setting)
                geom->base_width) * geom->base_width;
    }
    else
-      custom->width = vp.full_width - custom->x;
+      custom->width = VIDEO_SCALE_W(vp.full_dims) - custom->x;
 
    /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
     * is updated in general_write_handler() */
@@ -8513,7 +8513,7 @@ static int setting_action_start_custom_vp_height(rarch_setting_t *setting)
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
    bool video_scale_integer             = settings->bools.video_scale_integer;
 
    if (!av_info)
@@ -8534,7 +8534,7 @@ static int setting_action_start_custom_vp_height(rarch_setting_t *setting)
                geom->base_height) * geom->base_height;
    }
    else
-      custom->height = vp.full_height - custom->y;
+      custom->height = VIDEO_SCALE_H(vp.full_dims) - custom->y;
 
    /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
     * is updated in general_write_handler() */
@@ -9157,7 +9157,7 @@ static void general_write_handler(rarch_setting_t *setting)
          {
             video_driver_state_t *video_st       = video_state_get_ptr();
             struct retro_system_av_info *av_info = &video_st->av_info;
-            struct video_viewport *custom_vp     = &settings->video_vp_custom;
+            video_viewport_settings_t *custom_vp     = &settings->video_vp_custom;
 
             if (*setting->value.target.boolean)
             {
@@ -9552,7 +9552,7 @@ static void general_write_handler(rarch_setting_t *setting)
             rarch_system_info_t *sys_info        = &runloop_state_get_ptr()->system;
             video_driver_state_t *video_st       = video_state_get_ptr();
             struct retro_system_av_info *av_info = &video_st->av_info;
-            video_viewport_t *custom_vp          = &settings->video_vp_custom;
+            video_viewport_settings_t *custom_vp          = &settings->video_vp_custom;
 
             if (sys_info)
             {
@@ -9961,7 +9961,7 @@ static void general_write_handler(rarch_setting_t *setting)
             /* Whenever custom viewport dimensions are
              * changed, ASPECT_RATIO_CUSTOM must be
              * recalculated */
-            video_viewport_t *custom_vp = &settings->video_vp_custom;
+            video_viewport_settings_t *custom_vp = &settings->video_vp_custom;
             float default_aspect        = aspectratio_lut[ASPECT_RATIO_CORE].value;
 
             aspectratio_lut[ASPECT_RATIO_CUSTOM].value =

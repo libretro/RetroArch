@@ -1019,7 +1019,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 - (void)setViewport:(video_viewport_t *)viewport
 {
    _viewport            = *viewport;
-   _uniforms.outputSize = simd_make_float2(_viewport.full_width, _viewport.full_height);
+   _uniforms.outputSize = simd_make_float2(VIDEO_SCALE_W(_viewport.full_dims), VIDEO_SCALE_H(_viewport.full_dims));
 }
 
 - (Uniforms *)uniforms
@@ -1823,8 +1823,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       HDRUniforms local  = *uniforms;
       local.CoreViewport = simd_make_float4((float)_viewport.x,
                                             (float)_viewport.y,
-                                            (float)_viewport.width,
-                                            (float)_viewport.height);
+                                            (float)VIDEO_SCALE_W(_viewport.dims),
+                                            (float)VIDEO_SCALE_H(_viewport.dims));
       /* Core content rotation.  Both sources arrive unrotated. */
       local.Rotation     = rotation & 3u;
 
@@ -2217,8 +2217,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       }
    }
 
-   dstStride = _viewport.width * 3;
-   dst       = buffer + (_viewport.height - 1) * dstStride;
+   dstStride = VIDEO_SCALE_W(_viewport.dims) * 3;
+   dst       = buffer + (VIDEO_SCALE_H(_viewport.dims) - 1) * dstStride;
 
    /* With "Smart"/"Overscale" integer scaling the viewport deliberately
     * overscans the drawable: _viewport.x / _viewport.y may be negative and
@@ -2240,10 +2240,10 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       int colEnd   = texW - _viewport.x;
       if (colStart < 0)
          colStart = 0;
-      if (colEnd > (int)_viewport.width)
-         colEnd   = (int)_viewport.width;
+      if (colEnd > (int)VIDEO_SCALE_W(_viewport.dims))
+         colEnd   = (int)VIDEO_SCALE_W(_viewport.dims);
 
-      for (y = 0; y < _viewport.height; y++, dst -= dstStride)
+      for (y = 0; y < VIDEO_SCALE_H(_viewport.dims); y++, dst -= dstStride)
       {
          size_t x;
          const uint8_t *src_row;
@@ -2276,7 +2276,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
          src_row = row + (size_t)(srcRow - chunkBase) * rowBytes;
 
          /* Black out left/right overscan before copying the visible span. */
-         if (colStart > 0 || colEnd < (int)_viewport.width)
+         if (colStart > 0 || colEnd < (int)VIDEO_SCALE_W(_viewport.dims))
             memset(dst, 0, dstStride);
 
          for (x = (size_t)colStart; x < (size_t)colEnd; x++)
@@ -2416,8 +2416,8 @@ static float metal_hdr_pq_to_nits(float pq)
       }
    }
 
-   dstStride = (size_t)_viewport.width * 3;
-   dst       = buffer + (size_t)(_viewport.height - 1) * dstStride;
+   dstStride = (size_t)VIDEO_SCALE_W(_viewport.dims) * 3;
+   dst       = buffer + (size_t)(VIDEO_SCALE_H(_viewport.dims) - 1) * dstStride;
 
    /* Same overscan clamping as readViewport: (issue #19038): off-texture
     * rows / columns are written as black (PQ code 0). */
@@ -2430,10 +2430,10 @@ static float metal_hdr_pq_to_nits(float pq)
       int colEnd    = texW - _viewport.x;
       if (colStart < 0)
          colStart = 0;
-      if (colEnd > (int)_viewport.width)
-         colEnd   = (int)_viewport.width;
+      if (colEnd > (int)VIDEO_SCALE_W(_viewport.dims))
+         colEnd   = (int)VIDEO_SCALE_W(_viewport.dims);
 
-      for (y = 0; y < _viewport.height; y++, dst -= dstStride)
+      for (y = 0; y < VIDEO_SCALE_H(_viewport.dims); y++, dst -= dstStride)
       {
          size_t x;
          const uint8_t *src_row;
@@ -2460,7 +2460,7 @@ static float metal_hdr_pq_to_nits(float pq)
          }
          src_row = row + (size_t)(srcRow - chunkBase) * rowBytes;
 
-         if (colStart > 0 || colEnd < (int)_viewport.width)
+         if (colStart > 0 || colEnd < (int)VIDEO_SCALE_W(_viewport.dims))
             memset(dst, 0, dstStride * sizeof(uint16_t));
 
          if (isSCRGB)
@@ -2516,9 +2516,9 @@ static float metal_hdr_pq_to_nits(float pq)
    if (outMaxCLL)
       *outMaxCLL  = maxCLL;
    if (outMaxFALL)
-      *outMaxFALL = (_viewport.width && _viewport.height)
-            ? (float)(sumFALL / ((double)_viewport.width
-                               * (double)_viewport.height))
+      *outMaxFALL = (VIDEO_SCALE_W(_viewport.dims) && VIDEO_SCALE_H(_viewport.dims))
+            ? (float)(sumFALL / ((double)VIDEO_SCALE_W(_viewport.dims)
+                               * (double)VIDEO_SCALE_H(_viewport.dims)))
             : 0.0f;
    if (outIsSCRGB)
       *outIsSCRGB = isSCRGB;
@@ -2609,8 +2609,8 @@ static float metal_hdr_pq_to_nits(float pq)
    MTLViewport vp  = {
       .originX = fullscreen ? 0 : _viewport.x,
       .originY = fullscreen ? 0 : _viewport.y,
-      .width   = fullscreen ? _viewport.full_width : _viewport.width,
-      .height  = fullscreen ? _viewport.full_height : _viewport.height,
+      .width   = fullscreen ? VIDEO_SCALE_W(_viewport.full_dims) : VIDEO_SCALE_W(_viewport.dims),
+      .height  = fullscreen ? VIDEO_SCALE_H(_viewport.full_dims) : VIDEO_SCALE_H(_viewport.dims),
       .znear   = 0,
       .zfar    = 1,
    };
@@ -2622,8 +2622,8 @@ static float metal_hdr_pq_to_nits(float pq)
    MTLScissorRect sr = {
       .x       = 0,
       .y       = 0,
-      .width   = _viewport.full_width,
-      .height  = _viewport.full_height,
+      .width   = VIDEO_SCALE_W(_viewport.full_dims),
+      .height  = VIDEO_SCALE_H(_viewport.full_dims),
    };
    [self.rce setScissorRect:sr];
 }
@@ -3089,7 +3089,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    draw->x                 = 0;
    draw->y                 = 0;
    draw->matrix_data       = NULL;
-   _uniforms.outputSize    = simd_make_float2(_context.viewport->full_width, _context.viewport->full_height);
+   _uniforms.outputSize    = simd_make_float2(VIDEO_SCALE_W(_context.viewport->full_dims), VIDEO_SCALE_H(_context.viewport->full_dims));
    draw->backend_data      = &_uniforms;
    draw->backend_data_size = sizeof(_uniforms);
 
@@ -3173,7 +3173,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 
    MTLViewport vp = {
       .originX = draw->x,
-      .originY = _context.viewport->full_height - draw->y
+      .originY = VIDEO_SCALE_H(_context.viewport->full_dims) - draw->y
                - VIDEO_SCALE_H(draw->dims),
       .width   = VIDEO_SCALE_W(draw->dims),
       .height  = VIDEO_SCALE_H(draw->dims),
@@ -3828,14 +3828,14 @@ static INLINE void write_quad6(SpriteVertex *pv,
       return;
 
    msg_end          = msg + length;
-   x                = (int)roundf(posX * _driver.viewport->full_width);
-   y                = (int)roundf((1.0f - posY) * _driver.viewport->full_height);
+   x                = (int)roundf(posX * VIDEO_SCALE_W(_driver.viewport->full_dims));
+   y                = (int)roundf((1.0f - posY) * VIDEO_SCALE_H(_driver.viewport->full_dims));
    delta_x          = 0;
    delta_y          = 0;
    inv_tex_size_x   = 1.0f / _texture.width;
    inv_tex_size_y   = 1.0f / _texture.height;
-   inv_win_width    = 1.0f / _driver.viewport->full_width;
-   inv_win_height   = 1.0f / _driver.viewport->full_height;
+   inv_win_width    = 1.0f / VIDEO_SCALE_W(_driver.viewport->full_dims);
+   inv_win_height   = 1.0f / VIDEO_SCALE_H(_driver.viewport->full_dims);
 
    switch (aligned)
    {
@@ -4099,8 +4099,8 @@ static void metal_raster_font_render_msg(
    MetalRaster *r       = (__bridge MetalRaster *)data;
    MetalDriver *d       = (__bridge MetalDriver *)userdata;
    video_viewport_t *vp = [d viewport];
-   unsigned width       = vp->full_width;
-   unsigned height      = vp->full_height;
+   unsigned width       = VIDEO_SCALE_W(vp->full_dims);
+   unsigned height      = VIDEO_SCALE_H(vp->full_dims);
    [r renderMessage:msg width:width height:height params:params];
 }
 
@@ -4625,13 +4625,12 @@ static void metal_pull_cached_frame_cb(void *userdata,
 
 - (void)setViewportWidth:(unsigned)width height:(unsigned)height forceFull:(BOOL)forceFull allowRotate:(BOOL)allowRotate
 {
-   _viewport->full_width   = width;
-   _viewport->full_height  = height;
-   video_driver_set_output_size(_viewport->full_width, _viewport->full_height);
+   _viewport->full_dims    = VIDEO_SCALE_PACK(width, height);
+   video_driver_set_output_size(VIDEO_SCALE_W(_viewport->full_dims), VIDEO_SCALE_H(_viewport->full_dims));
    _layer.drawableSize     = CGSizeMake(width, height);
    video_driver_update_viewport(_viewport, forceFull, _keepAspect, YES);
    _context.viewport       = _viewport; /* Update matrix */
-   _viewportMVP.outputSize = simd_make_float2(_viewport->full_width, _viewport->full_height);
+   _viewportMVP.outputSize = simd_make_float2(VIDEO_SCALE_W(_viewport->full_dims), VIDEO_SCALE_H(_viewport->full_dims));
 
 #if METAL_HDR_AVAILABLE
    /* Keep the HDR offscreens matched to the drawable size on resize.
@@ -5364,20 +5363,20 @@ typedef struct MTLALIGN(16)
 
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch
 {
-   if (_shader && (_engine.frame.output_size.x != _viewport->width
-               ||  _engine.frame.output_size.y != _viewport->height))
+   if (_shader && (_engine.frame.output_size.x != VIDEO_SCALE_W(_viewport->dims)
+               ||  _engine.frame.output_size.y != VIDEO_SCALE_H(_viewport->dims)))
       resize_render_targets       = YES;
 
    _engine.frame.viewport.originX = _viewport->x;
    _engine.frame.viewport.originY = _viewport->y;
-   _engine.frame.viewport.width   = _viewport->width;
-   _engine.frame.viewport.height  = _viewport->height;
+   _engine.frame.viewport.width   = VIDEO_SCALE_W(_viewport->dims);
+   _engine.frame.viewport.height  = VIDEO_SCALE_H(_viewport->dims);
    _engine.frame.viewport.znear   = 0.0f;
    _engine.frame.viewport.zfar    = 1.0f;
-   _engine.frame.output_size.x    = _viewport->width;
-   _engine.frame.output_size.y    = _viewport->height;
-   _engine.frame.output_size.z    = 1.0f / _viewport->width;
-   _engine.frame.output_size.w    = 1.0f / _viewport->height;
+   _engine.frame.output_size.x    = VIDEO_SCALE_W(_viewport->dims);
+   _engine.frame.output_size.y    = VIDEO_SCALE_H(_viewport->dims);
+   _engine.frame.output_size.z    = 1.0f / VIDEO_SCALE_W(_viewport->dims);
+   _engine.frame.output_size.w    = 1.0f / VIDEO_SCALE_H(_viewport->dims);
 
    if (resize_render_targets)
       [self _updateRenderTargets];
@@ -5609,7 +5608,7 @@ typedef struct MTLALIGN(16)
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               width = (NSUInteger)((rot % 2 ? _viewport->height : _viewport->width) * shader_pass->fbo.scale_x);
+               width = (NSUInteger)((rot % 2 ? VIDEO_SCALE_H(_viewport->dims) : VIDEO_SCALE_W(_viewport->dims)) * shader_pass->fbo.scale_x);
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -5621,7 +5620,7 @@ typedef struct MTLALIGN(16)
          }
 
          if (!width)
-            width = _viewport->width;
+            width = VIDEO_SCALE_W(_viewport->dims);
 
          switch (shader_pass->fbo.type_y)
          {
@@ -5630,7 +5629,7 @@ typedef struct MTLALIGN(16)
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               height = (NSUInteger)((rot % 2 ? _viewport->width : _viewport->height) * shader_pass->fbo.scale_y);
+               height = (NSUInteger)((rot % 2 ? VIDEO_SCALE_W(_viewport->dims) : VIDEO_SCALE_H(_viewport->dims)) * shader_pass->fbo.scale_y);
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -5642,12 +5641,12 @@ typedef struct MTLALIGN(16)
          }
 
          if (!height)
-            height = _viewport->height;
+            height = VIDEO_SCALE_H(_viewport->dims);
       }
       else if (i == (_shader->passes - 1))
       {
-         width  = rot % 2 ? _viewport->height : _viewport->width;
-         height = rot % 2 ? _viewport->width : _viewport->height;
+         width  = rot % 2 ? VIDEO_SCALE_H(_viewport->dims) : VIDEO_SCALE_W(_viewport->dims);
+         height = rot % 2 ? VIDEO_SCALE_W(_viewport->dims) : VIDEO_SCALE_H(_viewport->dims);
       }
 
       /* Updating framebuffer size */
@@ -5677,8 +5676,8 @@ typedef struct MTLALIGN(16)
       if (   (!lastPass)
           || forceAllocForHDR
           || shader_pass->feedback
-          || (width  != _viewport->width)
-          || (height != _viewport->height)
+          || (width  != VIDEO_SCALE_W(_viewport->dims))
+          || (height != VIDEO_SCALE_H(_viewport->dims))
           || fmt != MTLPixelFormatBGRA8Unorm)
       {
          _engine.pass[i].viewport.width  = width;

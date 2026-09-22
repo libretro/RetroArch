@@ -626,10 +626,9 @@ static void vplane_viewport_info(void *data, struct video_viewport *vp)
    (void)data;
    vp->x           = 3;
    vp->y           = 5;
-   vp->width       = (unsigned)retro_atomic_load_acquire_int(&vplane_w);
-   vp->height      = (unsigned)retro_atomic_load_acquire_int(&vplane_h);
-   vp->full_width  = vp->width  + 7;
-   vp->full_height = vp->height + 9;
+   vp->dims        = VIDEO_SCALE_PACK((unsigned)retro_atomic_load_acquire_int(&vplane_w),
+         (unsigned)retro_atomic_load_acquire_int(&vplane_h));
+   vp->full_dims   = VIDEO_SCALE_PACK(VIDEO_SCALE_W(vp->dims)  + 7, VIDEO_SCALE_H(vp->dims) + 9);
 }
 
 static float vplane_refresh(void *data)
@@ -672,23 +671,23 @@ static void vplane_expect(thread_video_t *thr, unsigned w, unsigned h,
       run_frames(1);
       video_thread_wait_idle();
       video_driver_get_viewport_info(&vp);
-      if (vp.width == w && vp.height == h)
+      if (VIDEO_SCALE_W(vp.dims) == w && VIDEO_SCALE_H(vp.dims) == h)
          break;
    }
-   CHECK(vp.width == w && vp.height == h,
+   CHECK(VIDEO_SCALE_W(vp.dims) == w && VIDEO_SCALE_H(vp.dims) == h,
          "%s: the viewport read %ux%u, the driver reported %ux%u",
-         when, vp.width, vp.height, w, h);
+         when, VIDEO_SCALE_W(vp.dims), VIDEO_SCALE_H(vp.dims), w, h);
    CHECK(vp.x == 3 && vp.y == 5,
          "%s: the viewport's origin read %d,%d, not 3,5", when, vp.x, vp.y);
-   CHECK(vp.full_width == w + 7 && vp.full_height == h + 9,
+   CHECK(VIDEO_SCALE_W(vp.full_dims) == w + 7 && VIDEO_SCALE_H(vp.full_dims) == h + 9,
          "%s: the full size read %ux%u, not %ux%u", when,
-         vp.full_width, vp.full_height, w + 7, h + 9);
-   CHECK(thr->read_vp.width == vp.width && thr->read_vp.height == vp.height
+         VIDEO_SCALE_W(vp.full_dims), VIDEO_SCALE_H(vp.full_dims), w + 7, h + 9);
+   CHECK(VIDEO_SCALE_W(thr->read_vp.dims) == VIDEO_SCALE_W(vp.dims) && VIDEO_SCALE_H(thr->read_vp.dims) == VIDEO_SCALE_H(vp.dims)
          && thr->read_vp.x == vp.x && thr->read_vp.y == vp.y
-         && thr->read_vp.full_width  == vp.full_width
-         && thr->read_vp.full_height == vp.full_height,
+         && VIDEO_SCALE_W(thr->read_vp.full_dims)  == VIDEO_SCALE_W(vp.full_dims)
+         && VIDEO_SCALE_H(thr->read_vp.full_dims) == VIDEO_SCALE_H(vp.full_dims),
          "%s: read_vp did not follow the reported viewport (%ux%u vs %ux%u)",
-         when, thr->read_vp.width, thr->read_vp.height, vp.width, vp.height);
+         when, VIDEO_SCALE_W(thr->read_vp.dims), VIDEO_SCALE_H(thr->read_vp.dims), VIDEO_SCALE_W(vp.dims), VIDEO_SCALE_H(vp.dims));
 }
 
 static void lane_viewport_publish(void)
@@ -793,8 +792,8 @@ static void lane_viewport_publish(void)
                "takes it", (long long)took);
          /* The values are still the driver's, not zeroed by the timing
           * path above. */
-         CHECK(vp.width == 640 && vp.height == 480,
-               "the timed read gave %ux%u", vp.width, vp.height);
+         CHECK(VIDEO_SCALE_W(vp.dims) == 640 && VIDEO_SCALE_H(vp.dims) == 480,
+               "the timed read gave %ux%u", VIDEO_SCALE_W(vp.dims), VIDEO_SCALE_H(vp.dims));
          CHECK(rate > 99.9f && rate < 100.1f,
                "the timed read gave rate %.3f", (double)rate);
          (void)repeats; (void)swaps; (void)avg; (void)worst;

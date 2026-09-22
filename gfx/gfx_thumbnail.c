@@ -1917,13 +1917,14 @@ static unsigned gfx_thumbnail_downscale_cap(void)
     * driver and display server - so fall back to the viewport, and
     * take the larger of the two when both are known rather than
     * assuming either bounds the other. */
-   vp.width  = 0;
-   vp.height = 0;
+   vp.dims   = 0;
 
    if (     video_driver_get_viewport_info(&vp)
-         && (vp.width > 0) && (vp.height > 0))
+         && (VIDEO_SCALE_W(vp.dims) > 0) && (VIDEO_SCALE_H(vp.dims) > 0))
    {
-      unsigned v = (vp.width > vp.height) ? vp.width : vp.height;
+      unsigned vp_w = VIDEO_SCALE_W(vp.dims);
+      unsigned vp_h = VIDEO_SCALE_H(vp.dims);
+      unsigned v    = (vp_w > vp_h) ? vp_w : vp_h;
 
       if (v > cap)
          cap = v;

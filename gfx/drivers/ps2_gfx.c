@@ -387,8 +387,8 @@ static void ps2_font_render_msg(
    unsigned color, r, g, b, alpha;
    ps2_font_t                * font = (ps2_font_t*)data;
    ps2_video_t                *ps2  = (ps2_video_t*)userdata;
-   unsigned width                   = ps2->vp.full_width;
-   unsigned height                  = ps2->vp.full_height;
+   unsigned width                   = VIDEO_SCALE_W(ps2->vp.full_dims);
+   unsigned height                  = VIDEO_SCALE_H(ps2->vp.full_dims);
 
    if (!font || !msg || !*msg)
       return;
@@ -670,10 +670,10 @@ static void init_ps2_video(ps2_video_t *ps2)
 
    ps2->vp.x                    = 0;
    ps2->vp.y                    = 0;
-   ps2->vp.width                = ps2->gsGlobal->Width;
-   ps2->vp.height               = ps2->gsGlobal->Height;
-   ps2->vp.full_width           = ps2->gsGlobal->Width;
-   ps2->vp.full_height          = ps2->gsGlobal->Height;
+   ps2->vp.dims                 = VIDEO_SCALE_PACK(ps2->gsGlobal->Width,
+         ps2->gsGlobal->Height);
+   ps2->vp.full_dims            = VIDEO_SCALE_PACK(ps2->gsGlobal->Width,
+         ps2->gsGlobal->Height);
 
    ps2->menuTexture             = (GSTEXTURE*)calloc(1, sizeof(GSTEXTURE));
    ps2->coreTexture             = (GSTEXTURE*)calloc(1, sizeof(GSTEXTURE));

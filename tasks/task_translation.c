@@ -964,17 +964,15 @@ bool run_translation_service(settings_t *settings, bool paused)
           * CPU-side pixels to read directly. */
          vp.x                           = 0;
          vp.y                           = 0;
-         vp.width                       = 0;
-         vp.height                      = 0;
-         vp.full_width                  = 0;
-         vp.full_height                 = 0;
+         vp.dims                        = 0;
+         vp.full_dims                   = 0;
 
          video_driver_get_viewport_info(&vp);
 
-         if (!vp.width || !vp.height)
+         if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
             goto finish;
 
-         bit24_image_prev = (uint8_t*)malloc(vp.width * vp.height * 3);
+         bit24_image_prev = (uint8_t*)malloc(VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims) * 3);
          bit24_image      = (uint8_t*)malloc(width * height * 3);
 
          if (!bit24_image_prev || !bit24_image)
@@ -992,13 +990,13 @@ bool run_translation_service(settings_t *settings, bool paused)
          scaler->in_fmt      = SCALER_FMT_BGR24;
          scaler->out_fmt     = SCALER_FMT_BGR24;
          scaler->scaler_type = SCALER_TYPE_POINT;
-         scaler->in_width    = vp.width;
-         scaler->in_height   = vp.height;
+         scaler->in_width    = VIDEO_SCALE_W(vp.dims);
+         scaler->in_height   = VIDEO_SCALE_H(vp.dims);
          scaler->out_width   = width;
          scaler->out_height  = height;
          scaler_ctx_gen_filter(scaler);
 
-         scaler->in_stride   = vp.width*3;
+         scaler->in_stride   = VIDEO_SCALE_W(vp.dims)*3;
          scaler->out_stride  = width*3;
          scaler_ctx_scale_direct(scaler, bit24_image, bit24_image_prev);
       }

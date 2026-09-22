@@ -1061,8 +1061,8 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
          /* No scissor -> viewport */
          sci.offset.x      = vk->vp.x;
          sci.offset.y      = vk->vp.y;
-         sci.extent.width  = vk->vp.width;
-         sci.extent.height = vk->vp.height;
+         sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
+         sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
 
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
@@ -1080,8 +1080,8 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
          /* No scissor -> viewport */
          sci.offset.x      = vk->vp.x;
          sci.offset.y      = vk->vp.y;
-         sci.extent.width  = vk->vp.width;
-         sci.extent.height = vk->vp.height;
+         sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
+         sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
 
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
@@ -3498,13 +3498,13 @@ static void vulkan_font_render_msg(
       font->needs_update = true;
    }
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height      = line_metrics->height * scale / vk->vp.height;
+   line_height      = line_metrics->height * scale / VIDEO_SCALE_H(vk->vp.dims);
 
    /* Hoist reciprocals, function pointer, and pre-multiplied factors. */
    inv_tex_size_x   = 1.0f / font->texture.width;
    inv_tex_size_y   = 1.0f / font->texture.height;
-   inv_win_width    = 1.0f / vk->vp.width;
-   inv_win_height   = 1.0f / vk->vp.height;
+   inv_win_width    = 1.0f / VIDEO_SCALE_W(vk->vp.dims);
+   inv_win_height   = 1.0f / VIDEO_SCALE_H(vk->vp.dims);
    scale_iww        = scale * inv_win_width;
    scale_iwh        = scale * inv_win_height;
    get_glyph        = font->font_driver->get_glyph;
@@ -3526,7 +3526,7 @@ static void vulkan_font_render_msg(
       vk_color.b       = color[2];
       vk_color.a       = color[3];
 
-      fg_base_x        = roundf(x * vk->vp.width) * inv_win_width;
+      fg_base_x        = roundf(x * VIDEO_SCALE_W(vk->vp.dims)) * inv_win_width;
 
       sh_base_x        = 0.0f;
       sh_y_origin      = 0.0f;
@@ -3537,7 +3537,7 @@ static void vulkan_font_render_msg(
          vk_color_dark.b = color[2] * drop_mod;
          vk_color_dark.a = color[3] * drop_alpha;
          sh_base_x       = roundf((x + scale * drop_x
-                              * inv_win_width) * vk->vp.width)
+                              * inv_win_width) * VIDEO_SCALE_W(vk->vp.dims))
                               * inv_win_width;
          sh_y_origin     = y + scale * drop_y * inv_win_height;
       }
@@ -3597,7 +3597,7 @@ static void vulkan_font_render_msg(
          /* Per-line Y in NDC (pixel-snapped), X adjusted for alignment. */
          {
             float fg_pos_y = y - (float)line_num * line_height;
-            fg_y = roundf((1.0f - fg_pos_y) * vk->vp.height)
+            fg_y = roundf((1.0f - fg_pos_y) * VIDEO_SCALE_H(vk->vp.dims))
                * inv_win_height;
             fg_x = fg_base_x - align_ndc;
          }
@@ -3607,7 +3607,7 @@ static void vulkan_font_render_msg(
          if (has_drop)
          {
             float sh_pos_y = sh_y_origin - (float)line_num * line_height;
-            sh_y = roundf((1.0f - sh_pos_y) * vk->vp.height)
+            sh_y = roundf((1.0f - sh_pos_y) * VIDEO_SCALE_H(vk->vp.dims))
                * inv_win_height;
             sh_x = sh_base_x - align_ndc;
          }
@@ -3739,8 +3739,8 @@ static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font)
       {
          sci.offset.x      = vk->vp.x;
          sci.offset.y      = vk->vp.y;
-         sci.extent.width  = vk->vp.width;
-         sci.extent.height = vk->vp.height;
+         sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
+         sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
 
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
@@ -3756,8 +3756,8 @@ static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font)
       {
          sci.offset.x      = vk->vp.x;
          sci.offset.y      = vk->vp.y;
-         sci.extent.width  = vk->vp.width;
-         sci.extent.height = vk->vp.height;
+         sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
+         sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
 
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
@@ -6063,18 +6063,18 @@ static void vulkan_init_readback(vk_t *vk, bool video_gpu_record,
    scaler_ctx_gen_reset(&vk->readback.scaler_rgb);
    vk->flags                          |=  VK_FLAG_READBACK_STREAMED;
 
-   vk->readback.scaler_bgr.in_width    = vk->vp.width;
-   vk->readback.scaler_bgr.in_height   = vk->vp.height;
-   vk->readback.scaler_bgr.out_width   = vk->vp.width;
-   vk->readback.scaler_bgr.out_height  = vk->vp.height;
+   vk->readback.scaler_bgr.in_width    = VIDEO_SCALE_W(vk->vp.dims);
+   vk->readback.scaler_bgr.in_height   = VIDEO_SCALE_H(vk->vp.dims);
+   vk->readback.scaler_bgr.out_width   = VIDEO_SCALE_W(vk->vp.dims);
+   vk->readback.scaler_bgr.out_height  = VIDEO_SCALE_H(vk->vp.dims);
    vk->readback.scaler_bgr.in_fmt      = SCALER_FMT_ARGB8888;
    vk->readback.scaler_bgr.out_fmt     = SCALER_FMT_BGR24;
    vk->readback.scaler_bgr.scaler_type = SCALER_TYPE_POINT;
 
-   vk->readback.scaler_rgb.in_width    = vk->vp.width;
-   vk->readback.scaler_rgb.in_height   = vk->vp.height;
-   vk->readback.scaler_rgb.out_width   = vk->vp.width;
-   vk->readback.scaler_rgb.out_height  = vk->vp.height;
+   vk->readback.scaler_rgb.in_width    = VIDEO_SCALE_W(vk->vp.dims);
+   vk->readback.scaler_rgb.in_height   = VIDEO_SCALE_H(vk->vp.dims);
+   vk->readback.scaler_rgb.out_width   = VIDEO_SCALE_W(vk->vp.dims);
+   vk->readback.scaler_rgb.out_height  = VIDEO_SCALE_H(vk->vp.dims);
    vk->readback.scaler_rgb.in_fmt      = SCALER_FMT_ABGR8888;
    vk->readback.scaler_rgb.out_fmt     = SCALER_FMT_BGR24;
    vk->readback.scaler_rgb.scaler_type = SCALER_TYPE_POINT;
@@ -6920,8 +6920,8 @@ static void vulkan_set_projection(vk_t *vk,
          0.0f,     0.0f,    0.0f,    1.0f }
    };
 
-   MAT_ELEM_4X4(trn, 0, 3) = vk->translate_x / (float)vk->vp.width;
-   MAT_ELEM_4X4(trn, 1, 3) = vk->translate_y / (float)vk->vp.height;
+   MAT_ELEM_4X4(trn, 0, 3) = vk->translate_x / (float)VIDEO_SCALE_W(vk->vp.dims);
+   MAT_ELEM_4X4(trn, 1, 3) = vk->translate_y / (float)VIDEO_SCALE_H(vk->vp.dims);
 
    /* Calculate projection. */
    matrix_4x4_ortho(vk->mvp_no_rot, ortho->left, ortho->right,
@@ -6977,8 +6977,7 @@ static void vulkan_set_viewport(void *data, unsigned vp_width,
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
    vk_t *vk                  = (vk_t*)data;
 
-   vk->vp.full_width  = vp_width;
-   vk->vp.full_height = vp_height;
+   vk->vp.full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
    video_driver_update_viewport(&vk->vp, force_full,
          (vk->flags & VK_FLAG_KEEP_ASPECT) ? true : false, true);
 
@@ -7003,14 +7002,14 @@ static void vulkan_set_viewport(void *data, unsigned vp_width,
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      vk->out_vp_width  = vk->vp.width;
-      vk->out_vp_height = vk->vp.height;
+      vk->out_vp_width  = VIDEO_SCALE_W(vk->vp.dims);
+      vk->out_vp_height = VIDEO_SCALE_H(vk->vp.dims);
    }
 
    vk->video_vp.x        = (float)vk->vp.x;
    vk->video_vp.y        = (float)vk->vp.y;
-   vk->video_vp.width    = (float)vk->vp.width;
-   vk->video_vp.height   = (float)vk->vp.height;
+   vk->video_vp.width    = (float)VIDEO_SCALE_W(vk->vp.dims);
+   vk->video_vp.height   = (float)VIDEO_SCALE_H(vk->vp.dims);
    vk->video_vp.minDepth = 0.0f;
    vk->video_vp.maxDepth = 1.0f;
    vk->vk_vp             = vk->video_vp;
@@ -7030,10 +7029,8 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
 
    vp.x                                   = 0;
    vp.y                                   = 0;
-   vp.width                               = 0;
-   vp.height                              = 0;
-   vp.full_width                          = 0;
-   vp.full_height                         = 0;
+   vp.dims                                = 0;
+   vp.full_dims                           = 0;
 
    vulkan_viewport_info(vk, &vp);
 
@@ -7049,8 +7046,8 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
     * is a constant per-row shear of (vp.width - imageExtent.width) pixels
     * across the whole screenshot.  State the destination pitch explicitly so
     * the two sides agree no matter how the extent is clamped. */
-   region.bufferRowLength                 = vk->vp.width;
-   region.bufferImageHeight               = vk->vp.height;
+   region.bufferRowLength                 = VIDEO_SCALE_W(vk->vp.dims);
+   region.bufferImageHeight               = VIDEO_SCALE_H(vk->vp.dims);
    region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
    region.imageSubresource.mipLevel       = 0;
    region.imageSubresource.baseArrayLayer = 0;
@@ -7065,14 +7062,14 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
     * otherwise produce an invalid (or wrapped-to-huge) extent.
     * VUID-VkBufferImageCopy-imageOffset-00197 */
    {
-      int rw      = (int)(vp.width  + vk->translate_x);
-      int rh      = (int)(vp.height + vk->translate_y);
+      int rw      = (int)(VIDEO_SCALE_W(vp.dims)  + vk->translate_x);
+      int rh      = (int)(VIDEO_SCALE_H(vp.dims) + vk->translate_y);
       unsigned sw = vk->context->swapchain_width;
       unsigned sh = vk->context->swapchain_height;
       if (rw < 1)
-         rw = (int)vp.width;
+         rw = (int)VIDEO_SCALE_W(vp.dims);
       if (rh < 1)
-         rh = (int)vp.height;
+         rh = (int)VIDEO_SCALE_H(vp.dims);
       if (vp.x + (unsigned)rw > sw)
          rw = (int)(sw - vp.x);
       if (vp.y + (unsigned)rh > sh)
@@ -7105,7 +7102,7 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
 #endif
       *staging = vulkan_create_texture(vk,
             staging->memory != VK_NULL_HANDLE ? staging : NULL,
-            vk->vp.width, vk->vp.height,
+            VIDEO_SCALE_W(vk->vp.dims), VIDEO_SCALE_H(vk->vp.dims),
             staging_format,
             NULL, NULL, VULKAN_TEXTURE_READBACK);
    }
@@ -7573,8 +7570,8 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
          /* No scissor -> viewport */
          sci.offset.x      = vk->vp.x;
          sci.offset.y      = vk->vp.y;
-         sci.extent.width  = vk->vp.width;
-         sci.extent.height = vk->vp.height;
+         sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
+         sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
 
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
@@ -7592,8 +7589,8 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
          /* No scissor -> viewport */
          sci.offset.x      = vk->vp.x;
          sci.offset.y      = vk->vp.y;
-         sci.extent.width  = vk->vp.width;
-         sci.extent.height = vk->vp.height;
+         sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
+         sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
       }
 
       vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
@@ -10158,8 +10155,7 @@ static void vulkan_viewport_info(void *data, struct video_viewport *vp)
    vulkan_set_viewport(vk, width, height, false, true);
 
    *vp             = vk->vp;
-   vp->full_width  = width;
-   vp->full_height = height;
+   vp->full_dims   = VIDEO_SCALE_PACK(width, height);
 }
 
 static bool vulkan_record_read(void *data, uint8_t *buffer)
@@ -10173,7 +10169,7 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
    unsigned width, height, x, y;
    VkFormat format;
 
-   if (!vk || !vk->vp.width || !vk->vp.height)
+   if (!vk || !VIDEO_SCALE_W(vk->vp.dims) || !VIDEO_SCALE_H(vk->vp.dims))
       return false;
    if (vk->context->flags & VK_CTX_FLAG_INVALID_SWAPCHAIN)
    {
@@ -10181,8 +10177,8 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
       return false;
    }
    if (     !(vk->flags & VK_FLAG_READBACK_STREAMED)
-         || (unsigned)vk->readback.scaler_bgr.in_width != vk->vp.width
-         || (unsigned)vk->readback.scaler_bgr.in_height != vk->vp.height)
+         || (unsigned)vk->readback.scaler_bgr.in_width != VIDEO_SCALE_W(vk->vp.dims)
+         || (unsigned)vk->readback.scaler_bgr.in_height != VIDEO_SCALE_H(vk->vp.dims))
    {
       vulkan_init_readback(vk, true,
             (vk->flags & VK_FLAG_GPU_RECORDING) ? true : false);
@@ -10195,8 +10191,8 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
       VkFence fence = vk->context->swapchain_fences[i];
       if (vk->readback.record[i].serial <= newest
             || !vk->readback.staging[i].memory
-            || vk->readback.staging[i].width != vk->vp.width
-            || vk->readback.staging[i].height != vk->vp.height)
+            || vk->readback.staging[i].width != VIDEO_SCALE_W(vk->vp.dims)
+            || vk->readback.staging[i].height != VIDEO_SCALE_H(vk->vp.dims))
          continue;
       /* Acquire already waited and reset the current slot's fence.
        * Other submitted slots must be polled before touching memory. */
@@ -10240,15 +10236,15 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
    }
    width  = vk->readback.record[slot].width;
    height = vk->readback.record[slot].height;
-   if (width > vk->vp.width)
-      width = vk->vp.width;
-   if (height > vk->vp.height)
-      height = vk->vp.height;
-   memset(buffer, 0, (size_t)vk->vp.width * vk->vp.height * 3);
+   if (width > VIDEO_SCALE_W(vk->vp.dims))
+      width = VIDEO_SCALE_W(vk->vp.dims);
+   if (height > VIDEO_SCALE_H(vk->vp.dims))
+      height = VIDEO_SCALE_H(vk->vp.dims);
+   memset(buffer, 0, (size_t)VIDEO_SCALE_W(vk->vp.dims) * VIDEO_SCALE_H(vk->vp.dims) * 3);
    src = (const uint8_t*)mapped + staging->offset;
    for (y = 0; y < height; y++, src += staging->stride)
    {
-      uint8_t *dst = buffer + (size_t)(vk->vp.height - 1 - y) * vk->vp.width * 3;
+      uint8_t *dst = buffer + (size_t)(VIDEO_SCALE_H(vk->vp.dims) - 1 - y) * VIDEO_SCALE_W(vk->vp.dims) * 3;
       for (x = 0; x < width; x++)
       {
          dst[3 * x + 0] = src[4 * x + (format == VK_FORMAT_B8G8R8A8_UNORM ? 0 : 2)];
@@ -10278,8 +10274,8 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    /* Lazy init / reinit: (re)initialize streamed readback when recording
     * starts after driver init, or when viewport dimensions change. */
    if (  !(vk->flags & VK_FLAG_READBACK_STREAMED)
-       || (unsigned)vk->readback.scaler_bgr.in_width  != vk->vp.width
-       || (unsigned)vk->readback.scaler_bgr.in_height != vk->vp.height)
+       || (unsigned)vk->readback.scaler_bgr.in_width  != VIDEO_SCALE_W(vk->vp.dims)
+       || (unsigned)vk->readback.scaler_bgr.in_height != VIDEO_SCALE_H(vk->vp.dims))
    {
       if (vk->flags & VK_FLAG_GPU_RECORDING)
       {
@@ -10322,7 +10318,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          if (staging->memory == VK_NULL_HANDLE)
             return false;
 
-         buffer += 3 * (vk->vp.height - 1) * vk->vp.width;
+         buffer += 3 * (VIDEO_SCALE_H(vk->vp.dims) - 1) * VIDEO_SCALE_W(vk->vp.dims);
          vkMapMemory(vk->context->device, staging->memory,
                staging->offset, staging->size, 0, (void**)&src);
 
@@ -10339,7 +10335,7 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          }
 
          ctx->in_stride  =  (int)staging->stride;
-         ctx->out_stride = -(int)vk->vp.width * 3;
+         ctx->out_stride = -(int)VIDEO_SCALE_W(vk->vp.dims) * 3;
          scaler_ctx_scale_direct(ctx, buffer, src);
 
          vkUnmapMemory(vk->context->device, staging->memory);
@@ -10407,8 +10403,8 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
       {
          int y;
-         unsigned vp_width   = (vk->vp.width  > vk->video_width)  ? vk->video_width  : vk->vp.width;
-         unsigned vp_height  = (vk->vp.height > vk->video_height) ? vk->video_height : vk->vp.height;
+         unsigned vp_width   = (VIDEO_SCALE_W(vk->vp.dims)  > vk->video_width)  ? vk->video_width  : VIDEO_SCALE_W(vk->vp.dims);
+         unsigned vp_height  = (VIDEO_SCALE_H(vk->vp.dims) > vk->video_height) ? vk->video_height : VIDEO_SCALE_H(vk->vp.dims);
          unsigned cp_width   = vk->readback.copied_width;
          unsigned cp_height  = vk->readback.copied_height;
          const uint8_t *src  = (const uint8_t*)staging->mapped;
@@ -10644,8 +10640,8 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
 
    {
       int y;
-      unsigned vp_width  = (vk->vp.width  > vk->video_width)  ? vk->video_width  : vk->vp.width;
-      unsigned vp_height = (vk->vp.height > vk->video_height) ? vk->video_height : vk->vp.height;
+      unsigned vp_width  = (VIDEO_SCALE_W(vk->vp.dims)  > vk->video_width)  ? vk->video_width  : VIDEO_SCALE_W(vk->vp.dims);
+      unsigned vp_height = (VIDEO_SCALE_H(vk->vp.dims) > vk->video_height) ? vk->video_height : VIDEO_SCALE_H(vk->vp.dims);
       const uint8_t *src = (const uint8_t*)staging->mapped;
       /* Per-pixel light level (nits of the brightest channel), accumulated
        * to derive MaxCLL (peak) and MaxFALL (frame average) for the cLLI
@@ -10960,8 +10956,8 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
                {
                   sci.offset.x      = vk->vp.x;
                   sci.offset.y      = vk->vp.y;
-                  sci.extent.width  = vk->vp.width;
-                  sci.extent.height = vk->vp.height;
+                  sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
+                  sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
                }
 
                vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);
@@ -10977,8 +10973,8 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
                {
                   sci.offset.x      = vk->vp.x;
                   sci.offset.y      = vk->vp.y;
-                  sci.extent.width  = vk->vp.width;
-                  sci.extent.height = vk->vp.height;
+                  sci.extent.width  = VIDEO_SCALE_W(vk->vp.dims);
+                  sci.extent.height = VIDEO_SCALE_H(vk->vp.dims);
                }
 
                vkCmdSetViewport(vk->cmd, 0, 1, &vk->vk_vp);

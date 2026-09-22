@@ -61,9 +61,9 @@ static void video_thread_publish_vp(thread_video_t *thr,
    retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_X], vp->x);
    retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_Y], vp->y);
    retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_WH],
-         (int)VIDEO_SCALE_PACK(vp->width, vp->height));
+         (int)vp->dims);
    retro_atomic_store_relaxed_int(&s[VIDEO_THREAD_VP_FULL_WH],
-         (int)VIDEO_SCALE_PACK(vp->full_width, vp->full_height));
+         (int)vp->full_dims);
    retro_atomic_thread_fence_release();
    retro_atomic_store_release_int(&thr->vp_seq, seq + 2);
 }
@@ -87,10 +87,8 @@ static void video_thread_read_vp(thread_video_t *thr,
             &s[VIDEO_THREAD_VP_X]);
       vp->y           = retro_atomic_load_relaxed_int(
             &s[VIDEO_THREAD_VP_Y]);
-      vp->width       = VIDEO_SCALE_W(wh);
-      vp->height      = VIDEO_SCALE_H(wh);
-      vp->full_width  = VIDEO_SCALE_W(full);
-      vp->full_height = VIDEO_SCALE_H(full);
+      vp->dims        = wh;
+      vp->full_dims   = full;
       retro_atomic_thread_fence_acquire();
       if (retro_atomic_load_relaxed_int(&thr->vp_seq) == s1)
          break;
@@ -577,8 +575,8 @@ static bool video_thread_handle_packet(
             if (thr->driver_data && thr->driver->viewport_info)
             {
                struct video_viewport vp;
-               vp.x = vp.y = 0;
-               vp.width = vp.height = vp.full_width = vp.full_height = 0;
+               vp.x    = vp.y         = 0;
+               vp.dims = vp.full_dims = 0;
                thr->driver->viewport_info(thr->driver_data, &vp);
                video_thread_publish_vp(thr, &vp);
             }
@@ -703,10 +701,8 @@ static bool video_thread_handle_packet(
 
             vp.x           = 0;
             vp.y           = 0;
-            vp.width       = 0;
-            vp.height      = 0;
-            vp.full_width  = 0;
-            vp.full_height = 0;
+            vp.dims        = 0;
+            vp.full_dims   = 0;
 
             thr->driver->viewport_info(thr->driver_data, &vp);
             if (!memcmp(&vp, &thr->read_vp, sizeof(vp)))
@@ -1499,15 +1495,17 @@ static video_record_read_t video_thread_record_reader(thread_video_t *thr)
 static void video_thread_rec_read(thread_video_t *thr,
       video_thread_rec_t *rec, const struct video_viewport *vp)
 {
-   uint8_t *out = rec->buf[rec->back];
-   if (!vp->width || !vp->height || vp->width > INT_MAX / 4
-         || vp->height > INT_MAX
-         || (size_t)vp->width > (size_t)-1 / 3 / vp->height)
+   uint8_t *out  = rec->buf[rec->back];
+   unsigned vp_w = VIDEO_SCALE_W(vp->dims);
+   unsigned vp_h = VIDEO_SCALE_H(vp->dims);
+   if (!vp_w || !vp_h || vp_w > INT_MAX / 4
+         || vp_h > INT_MAX
+         || (size_t)vp_w > (size_t)-1 / 3 / vp_h)
       return;
-   if (vp->width != rec->width || vp->height != rec->height)
+   if (vp_w != rec->width || vp_h != rec->height)
    {
       struct scaler_ctx *ctx = &rec->scaler;
-      size_t size = (size_t)vp->width * vp->height * 3;
+      size_t size = (size_t)vp_w * vp_h * 3;
       unsigned x, y;
       if (size > rec->source_size)
       {
@@ -1517,23 +1515,23 @@ static void video_thread_rec_read(thread_video_t *thr,
          rec->source      = source;
          rec->source_size = size;
       }
-      if (rec->source_width != vp->width || rec->source_height != vp->height)
+      if (rec->source_width != vp_w || rec->source_height != vp_h)
       {
          unsigned width, height;
-         if ((uint64_t)vp->width * rec->height > (uint64_t)vp->height * rec->width)
+         if ((uint64_t)vp_w * rec->height > (uint64_t)vp_h * rec->width)
          {
             width  = rec->width;
-            height = (unsigned)((uint64_t)vp->height * width / vp->width);
+            height = (unsigned)((uint64_t)vp_h * width / vp_w);
          }
          else
          {
             height = rec->height;
-            width  = (unsigned)((uint64_t)vp->width * height / vp->height);
+            width  = (unsigned)((uint64_t)vp_w * height / vp_h);
          }
          scaler_ctx_gen_reset(ctx);
-         ctx->in_width    = vp->width;
-         ctx->in_height   = vp->height;
-         ctx->in_stride   = vp->width * 3;
+         ctx->in_width    = vp_w;
+         ctx->in_height   = vp_h;
+         ctx->in_stride   = vp_w * 3;
          ctx->out_width   = width ? width : 1;
          ctx->out_height  = height ? height : 1;
          ctx->out_stride  = rec->width * 3;
@@ -1544,8 +1542,8 @@ static void video_thread_rec_read(thread_video_t *thr,
          rec->source_width = rec->source_height = 0;
          if (!scaler_ctx_gen_filter(ctx))
             return;
-         rec->source_width  = vp->width;
-         rec->source_height = vp->height;
+         rec->source_width  = vp_w;
+         rec->source_height = vp_h;
       }
       if (!rec->read(thr->driver_data, rec->source))
          return;
@@ -1850,10 +1848,8 @@ static void video_thread_loop(void *data)
 
          vp.x                     = 0;
          vp.y                     = 0;
-         vp.width                 = 0;
-         vp.height                = 0;
-         vp.full_width            = 0;
-         vp.full_height           = 0;
+         vp.dims                  = 0;
+         vp.full_dims             = 0;
 
          /* Only the handoff needs the lock. The driver takes the menu
           * texture's pixels inside its own set_texture_frame() - it

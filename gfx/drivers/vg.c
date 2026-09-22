@@ -312,8 +312,7 @@ static void vg_calculate_quad(vg_t *vg,
 {
    video_viewport_t vp;
 
-   vp.full_width   = vp_width;
-   vp.full_height  = vp_height;
+   vp.full_dims    = VIDEO_SCALE_PACK(vp_width, vp_height);
 
    /* Calculate device_aspect for mScreenAspect (used elsewhere) */
    vg->mScreenAspect = (float)vp_width / vp_height;
@@ -325,8 +324,8 @@ static void vg_calculate_quad(vg_t *vg,
 
    vg->x1 = vp.x;
    vg->y1 = vp.y;
-   vg->x2 = vp.width;
-   vg->y2 = vp.height;
+   vg->x2 = VIDEO_SCALE_W(vp.dims);
+   vg->y2 = VIDEO_SCALE_H(vp.dims);
 
    vg->scissor[0] = vg->x1;
    vg->scissor[1] = vg->y1;

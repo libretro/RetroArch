@@ -435,7 +435,7 @@ typedef struct settings
       size_t rewind_buffer_size;
    } sizes;
 
-   video_viewport_t video_vp_custom; /* int alignment */
+   video_viewport_settings_t video_vp_custom; /* int alignment */
 
    struct
    {

@@ -487,8 +487,7 @@ static void vga_gfx_viewport_info(void *data, struct video_viewport *vp)
 
    vp->x = vp->y = 0;
 
-   vp->width  = vp->full_width  = VGA_WIDTH;
-   vp->height = vp->full_height = VGA_HEIGHT;
+   vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(VGA_WIDTH, VGA_HEIGHT);
 }
 
 static font_renderer_t vga_font = {

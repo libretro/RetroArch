@@ -688,10 +688,8 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
 
    vp.x                        = 0;
    vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
+   vp.dims                     = 0;
+   vp.full_dims                = 0;
 
    /* tracking mode 1: laser pointer mode (this is closest 
       to actual lightgun behavior) */

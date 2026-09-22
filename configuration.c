@@ -5378,7 +5378,7 @@ void config_set_defaults(void *data, settings_t *target)
    const char *def_ai_service_backend = config_get_default_ai_service_backend();
 #endif
    const char *def_mitm             = DEFAULT_NETPLAY_MITM_SERVER;
-   struct video_viewport *custom_vp = &settings->video_vp_custom;
+   video_viewport_settings_t *custom_vp = &settings->video_vp_custom;
    struct config_float_setting      *float_settings = populate_settings_float (settings, &float_settings_size);
    struct config_bool_setting       *bool_settings  = populate_settings_bool  (settings, &bool_settings_size);
    struct config_int_setting        *int_settings   = populate_settings_int   (settings, &int_settings_size);

@@ -893,7 +893,7 @@ static void gx2_font_render_message(
    const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    int x                                  = roundf(pos_x * width);
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / wiiu->vp.height;
+   line_height = line_metrics->height * scale / VIDEO_SCALE_H(wiiu->vp.dims);
    for (;;)
    {
       size_t msg_len = 0;
@@ -932,8 +932,8 @@ static void gx2_font_render_msg(
    unsigned color, r, g, b, alpha;
    wiiu_video_t *wiiu         = (wiiu_video_t*)userdata;
    gx2_font_t *font           = (gx2_font_t*)data;
-   unsigned width             = wiiu->vp.full_width;
-   unsigned height            = wiiu->vp.full_height;
+   unsigned width             = VIDEO_SCALE_W(wiiu->vp.full_dims);
+   unsigned height            = VIDEO_SCALE_H(wiiu->vp.full_dims);
 
    if (!font || !wiiu || !msg || !*msg)
       return;
@@ -1060,8 +1060,8 @@ static void gx2_set_projection(wiiu_video_t *wiiu)
 
 static void gx2_update_viewport(wiiu_video_t *wiiu)
 {
-   wiiu->vp.full_width  = wiiu->color_buffer.surface.width;
-   wiiu->vp.full_height = wiiu->color_buffer.surface.height;
+   wiiu->vp.full_dims   = VIDEO_SCALE_PACK(wiiu->color_buffer.surface.width,
+         wiiu->color_buffer.surface.height);
    video_driver_update_viewport(&wiiu->vp, false, wiiu->keep_aspect, true);
 
    gx2_set_projection(wiiu);
@@ -1350,20 +1350,18 @@ static void *gx2_init(const video_info_t *video,
 
    if (wiiu->render_mode.height != 480 && prefer_drc)
    {
-      wiiu->vp.width       = 1708;
-      wiiu->vp.height      = 960;
-      wiiu->vp.full_width  = 1708;
-      wiiu->vp.full_height = 960;
+      wiiu->vp.dims        = VIDEO_SCALE_PACK(1708, 960);
+      wiiu->vp.full_dims   = VIDEO_SCALE_PACK(1708, 960);
    }
    else
    {
-      wiiu->vp.width       = wiiu->render_mode.width;
-      wiiu->vp.height      = wiiu->render_mode.height;
-      wiiu->vp.full_width  = wiiu->render_mode.width;
-      wiiu->vp.full_height = wiiu->render_mode.height;
+      wiiu->vp.dims        = VIDEO_SCALE_PACK(wiiu->render_mode.width,
+            wiiu->render_mode.height);
+      wiiu->vp.full_dims   = VIDEO_SCALE_PACK(wiiu->render_mode.width,
+            wiiu->render_mode.height);
    }
 
-   video_driver_set_output_size(wiiu->vp.width, wiiu->vp.height);
+   video_driver_set_output_size(VIDEO_SCALE_W(wiiu->vp.dims), VIDEO_SCALE_H(wiiu->vp.dims));
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
 
@@ -1677,7 +1675,7 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               width = wiiu->vp.width * pass->fbo.scale_x;
+               width = VIDEO_SCALE_W(wiiu->vp.dims) * pass->fbo.scale_x;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -1695,7 +1693,7 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               height = wiiu->vp.height * pass->fbo.scale_y;
+               height = VIDEO_SCALE_H(wiiu->vp.dims) * pass->fbo.scale_y;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -1735,8 +1733,8 @@ static bool wiiu_init_frame_textures(wiiu_video_t *wiiu, unsigned width, unsigne
          GX2InitTextureRegs(&wiiu->pass[i].texture);
 
          if (     (i      != (wiiu->shader_preset->passes - 1))
-               || (width  != wiiu->vp.width)
-               || (height != wiiu->vp.height))
+               || (width  != VIDEO_SCALE_W(wiiu->vp.dims))
+               || (height != VIDEO_SCALE_H(wiiu->vp.dims)))
          {
             wiiu->pass[i].mem1 = true;
             wiiu->pass[i].texture.surface.image = MEM1_alloc(wiiu->pass[i].texture.surface.imageSize,
@@ -1806,10 +1804,10 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
 
       if (string_is_equal(id, "FinalViewportSize"))
       {
-         ((GX2_vec4 *)dst)->x = wiiu->vp.width;
-         ((GX2_vec4 *)dst)->y = wiiu->vp.height;
-         ((GX2_vec4 *)dst)->z = 1.0f / wiiu->vp.width;
-         ((GX2_vec4 *)dst)->w = 1.0f / wiiu->vp.height;
+         ((GX2_vec4 *)dst)->x = VIDEO_SCALE_W(wiiu->vp.dims);
+         ((GX2_vec4 *)dst)->y = VIDEO_SCALE_H(wiiu->vp.dims);
+         ((GX2_vec4 *)dst)->z = 1.0f / VIDEO_SCALE_W(wiiu->vp.dims);
+         ((GX2_vec4 *)dst)->w = 1.0f / VIDEO_SCALE_H(wiiu->vp.dims);
          continue;
       }
 
@@ -2236,7 +2234,7 @@ static bool gx2_frame(void *data, const void *frame,
                          frame_shader.ps.samplerVars[0].location);
    }
 
-   GX2SetViewport(wiiu->vp.x, wiiu->vp.y, wiiu->vp.width, wiiu->vp.height, 0.0f, 1.0f);
+   GX2SetViewport(wiiu->vp.x, wiiu->vp.y, VIDEO_SCALE_W(wiiu->vp.dims), VIDEO_SCALE_H(wiiu->vp.dims), 0.0f, 1.0f);
    GX2SetScissor(0, 0, wiiu->color_buffer.surface.width, wiiu->color_buffer.surface.height);
    GX2DrawEx(GX2_PRIMITIVE_MODE_QUADS, 4, 0, 1);
 
@@ -2485,8 +2483,8 @@ static void gx2_set_texture_frame(void *data,
 
    wiiu->menu.v->pos.x        = wiiu->vp.x;
    wiiu->menu.v->pos.y        = wiiu->vp.y;
-   wiiu->menu.v->pos.width    = wiiu->vp.width;
-   wiiu->menu.v->pos.height   = wiiu->vp.height;
+   wiiu->menu.v->pos.width    = VIDEO_SCALE_W(wiiu->vp.dims);
+   wiiu->menu.v->pos.height   = VIDEO_SCALE_H(wiiu->vp.dims);
    wiiu->menu.v->coord.u      = 0.0f;
    wiiu->menu.v->coord.v      = 0.0f;
    wiiu->menu.v->coord.width  = (float)width / wiiu->menu.texture.surface.width;

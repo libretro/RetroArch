@@ -713,8 +713,8 @@ static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
 
          if (mouse->x_abs < vp.x)
             mouse->x_abs = vp.x;
-         else if (mouse->x_abs >= (vp.x + (int)vp.full_width))
-            mouse->x_abs = vp.x + vp.full_width - 1;
+         else if (mouse->x_abs >= (vp.x + (int)VIDEO_SCALE_W(vp.full_dims)))
+            mouse->x_abs = vp.x + VIDEO_SCALE_W(vp.full_dims) - 1;
       }
    }
 }
@@ -731,9 +731,9 @@ static int16_t udev_mouse_get_x(const udev_input_mouse_t *mouse)
    if (mouse->abs) /* mouse coords are absolute */
       src_width = mouse->x_max - mouse->x_min + 1;
    else
-      src_width = vp.full_width;
+      src_width = VIDEO_SCALE_W(vp.full_dims);
 
-   x = (double)vp.width / src_width * mouse->x_rel;
+   x = (double)VIDEO_SCALE_W(vp.dims) / src_width * mouse->x_rel;
 
    return x + (x < 0 ? -0.5 : 0.5);
 }
@@ -756,8 +756,8 @@ static void udev_mouse_set_y(udev_input_mouse_t *mouse, int32_t y, bool abs)
 
          if (mouse->y_abs < vp.y)
             mouse->y_abs = vp.y;
-         else if (mouse->y_abs >= (vp.y + (int)vp.full_height))
-            mouse->y_abs = vp.y + vp.full_height - 1;
+         else if (mouse->y_abs >= (vp.y + (int)VIDEO_SCALE_H(vp.full_dims)))
+            mouse->y_abs = vp.y + VIDEO_SCALE_H(vp.full_dims) - 1;
       }
    }
 }
@@ -774,9 +774,9 @@ static int16_t udev_mouse_get_y(const udev_input_mouse_t *mouse)
    if (mouse->abs) /* mouse coords are absolute */
       src_height = mouse->y_max - mouse->y_min + 1;
    else
-      src_height = vp.full_height;
+      src_height = VIDEO_SCALE_H(vp.full_dims);
 
-   y = (double)vp.height / src_height * mouse->y_rel;
+   y = (double)VIDEO_SCALE_H(vp.dims) / src_height * mouse->y_rel;
 
    return y + (y < 0 ? -0.5 : 0.5);
 }
@@ -800,8 +800,8 @@ static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
    {
       /* mouse coordinates are relative to the full screen; convert them
        * to be relative to the viewport */
-      scaled_x = vp.full_width  * (mouse->x_abs - mouse->x_min) / (mouse->x_max - mouse->x_min + 1);
-      scaled_y = vp.full_height * (mouse->y_abs - mouse->y_min) / (mouse->y_max - mouse->y_min + 1);
+      scaled_x = VIDEO_SCALE_W(vp.full_dims)  * (mouse->x_abs - mouse->x_min) / (mouse->x_max - mouse->x_min + 1);
+      scaled_y = VIDEO_SCALE_H(vp.full_dims) * (mouse->y_abs - mouse->y_min) / (mouse->y_max - mouse->y_min + 1);
    }
    else /* mouse coords are viewport relative */
    {
@@ -1852,8 +1852,8 @@ static bool udev_translate_touch_pos(
     *   One way to fix this is to add or remove 0.5, but this needs floating
     *   point operations which might not be desirable.
     */
-   int32_t ma_pos_x   = (((((pointer_pos_x + src_touch->info_x_limits.min) * 0x7fff) / src_touch->info_x_limits.range) * target_vp->full_width) / 0x7fff);
-   int32_t ma_pos_y   = (((((pointer_pos_y + src_touch->info_y_limits.min) * 0x7fff) / src_touch->info_y_limits.range) * target_vp->full_height) / 0x7fff);
+   int32_t ma_pos_x   = (((((pointer_pos_x + src_touch->info_x_limits.min) * 0x7fff) / src_touch->info_x_limits.range) * VIDEO_SCALE_W(target_vp->full_dims)) / 0x7fff);
+   int32_t ma_pos_y   = (((((pointer_pos_y + src_touch->info_y_limits.min) * 0x7fff) / src_touch->info_y_limits.range) * VIDEO_SCALE_H(target_vp->full_dims)) / 0x7fff);
 
    /* Calculate relative offsets. */
    *pointer_ma_rel_x += ma_pos_x - *pointer_ma_pos_x;
@@ -2518,13 +2518,13 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   touch->touchpad_pos_x   += touch->pointer_ma_rel_x * touch->touchpad_sensitivity;
                   if (touch->touchpad_pos_x < 0.0f)
                      touch->touchpad_pos_x = 0.0f;
-                  else if (touch->touchpad_pos_x > vp.full_width)
-                     touch->touchpad_pos_x = vp.full_width;
+                  else if (touch->touchpad_pos_x > VIDEO_SCALE_W(vp.full_dims))
+                     touch->touchpad_pos_x = VIDEO_SCALE_W(vp.full_dims);
                   touch->touchpad_pos_y += touch->pointer_ma_rel_y * touch->touchpad_sensitivity;
                   if (touch->touchpad_pos_y < 0.0f)
                      touch->touchpad_pos_y = 0.0f;
-                  else if (touch->touchpad_pos_y > vp.full_height)
-                     touch->touchpad_pos_y = vp.full_height;
+                  else if (touch->touchpad_pos_y > VIDEO_SCALE_H(vp.full_dims))
+                     touch->touchpad_pos_y = VIDEO_SCALE_H(vp.full_dims);
 
                   /* Backup last values for delta. */
                   last_mouse_pos_x   = touch->mouse_pos_x;
@@ -3455,9 +3455,9 @@ static void udev_input_adopt_rel_pointer_position_from_mouse(
          && video_driver_display_type_get() != RARCH_DISPLAY_X11)
    {
       int minX      = view.x;
-      int maxX      = view.x + view.width;
+      int maxX      = view.x + VIDEO_SCALE_W(view.dims);
       int minY      = view.y;
-      int maxY      = view.y + view.height;
+      int maxY      = view.y + VIDEO_SCALE_H(view.dims);
       /* Not running in a window. */
       noX11DispX    = noX11DispX + dx;
       if (noX11DispX < minX)
@@ -3573,9 +3573,9 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
    bool r = video_driver_get_viewport_info(&view);
    if (r)
       return (udev->pointer_x < 0
-           || udev->pointer_x >= (int)view.full_width
+           || udev->pointer_x >= (int)VIDEO_SCALE_W(view.full_dims)
            || udev->pointer_y < 0
-           || udev->pointer_y >= (int)view.full_height);
+           || udev->pointer_y >= (int)VIDEO_SCALE_H(view.full_dims));
 #endif
    return false;
 }

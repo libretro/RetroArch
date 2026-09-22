@@ -200,15 +200,36 @@ enum text_alignment
 #define VIDEO_SCALE_W(d) (((unsigned)(d) >> 16) & VIDEO_SCALE_DIM_MAX)
 #define VIDEO_SCALE_H(d)  ((unsigned)(d)        & VIDEO_SCALE_DIM_MAX)
 
+/* One axis of a packed pair, leaving the other half as it stands.
+ * A viewport whose axes are set apart from each other reads back
+ * through VIDEO_SCALE_W/H either way. */
+#define VIDEO_SCALE_PUT_W(d, w) \
+   ((d) = VIDEO_SCALE_PACK((w), VIDEO_SCALE_H(d)))
+#define VIDEO_SCALE_PUT_H(d, h) \
+   ((d) = VIDEO_SCALE_PACK(VIDEO_SCALE_W(d), (h)))
+
 typedef struct video_viewport
+{
+   int x;
+   int y;
+   /* The drawn area and the window that holds it, each a size pair
+    * in one word, VIDEO_SCALE_PACK's layout. */
+   unsigned dims;
+   unsigned full_dims;
+} video_viewport_t;
+
+/* The custom viewport as the settings hold it. Its axes are bound by
+ * address - configuration.c's SETTING_UINT rows and the menu's
+ * offsetof rows both write an unsigned in place - so this pair stays
+ * as two members where video_viewport_t's is one word. Do not pack
+ * it: a packed half has no address for those rows to bind. */
+typedef struct video_viewport_settings
 {
    int x;
    int y;
    unsigned width;
    unsigned height;
-   unsigned full_width;
-   unsigned full_height;
-} video_viewport_t;
+} video_viewport_settings_t;
 
 typedef struct gfx_ctx_flags
 {

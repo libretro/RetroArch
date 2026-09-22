@@ -1025,14 +1025,14 @@ static void gl2_raster_font_render_line(gl2_t *gl,
    GLfloat color_block[4 * 6];
    int n;
    const char* msg_end  = msg + msg_len;
-   int x                = roundf(pos_x * gl->vp.width);
-   int y                = roundf(pos_y * gl->vp.height);
+   int x                = roundf(pos_x * VIDEO_SCALE_W(gl->vp.dims));
+   int y                = roundf(pos_y * VIDEO_SCALE_H(gl->vp.dims));
    int delta_x          = 0;
    int delta_y          = 0;
    float inv_tex_size_x = 1.0f / font->tex_width;
    float inv_tex_size_y = 1.0f / font->tex_height;
-   float inv_win_width  = 1.0f / gl->vp.width;
-   float inv_win_height = 1.0f / gl->vp.height;
+   float inv_win_width  = 1.0f / VIDEO_SCALE_W(gl->vp.dims);
+   float inv_win_height = 1.0f / VIDEO_SCALE_H(gl->vp.dims);
    const struct font_glyph* (*get_glyph)(void*, uint32_t) = font->font_driver->get_glyph;
    void *font_data      = font->font_data;
 
@@ -1132,7 +1132,7 @@ static void gl2_raster_font_render_message(gl2_t *gl,
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / gl->vp.height;
+   line_height = line_metrics->height * scale / VIDEO_SCALE_H(gl->vp.dims);
    for (;;)
    {
       const char *end = msg;
@@ -1264,8 +1264,8 @@ static void gl2_raster_font_render_msg(
          color_dark[3] = color[3] * drop_alpha;
 
          gl2_raster_font_render_message(gl, font, msg, scale, color_dark,
-               x + scale * drop_x / gl->vp.width,
-               y + scale * drop_y / gl->vp.height,
+               x + scale * drop_x / VIDEO_SCALE_W(gl->vp.dims),
+               y + scale * drop_y / VIDEO_SCALE_H(gl->vp.dims),
                text_align);
       }
 
@@ -1525,19 +1525,18 @@ static void gl2_set_viewport(gl2_t *gl,
       unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
-   gl->vp.full_width  = vp_width;
-   gl->vp.full_height = vp_height;
+   gl->vp.full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
    video_driver_update_viewport(&gl->vp, force_full,
          (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false, false);
 
-   glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+   glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
    gl2_set_projection(gl, &default_ortho, allow_rotate);
 
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl->out_vp_width  = gl->vp.width;
-      gl->out_vp_height = gl->vp.height;
+      gl->out_vp_width  = VIDEO_SCALE_W(gl->vp.dims);
+      gl->out_vp_height = VIDEO_SCALE_H(gl->vp.dims);
    }
 }
 
@@ -1612,7 +1611,7 @@ static void gl2_renderchain_render(
             prev_rect->img_width, prev_rect->img_height);
       params.tex_dims      = VIDEO_SCALE_PACK(
             prev_rect->width, prev_rect->height);
-      params.out_dims      = VIDEO_SCALE_PACK(gl->vp.width, gl->vp.height);
+      params.out_dims      = gl->vp.dims;
       params.frame_counter = (unsigned int)frame_count;
       /* Intermediate passes of the same present: the outer frame's
        * count, read from the shared state since video_info does not
@@ -1685,7 +1684,7 @@ static void gl2_renderchain_render(
    params.dims          = VIDEO_SCALE_PACK(
          prev_rect->img_width, prev_rect->img_height);
    params.tex_dims      = VIDEO_SCALE_PACK(prev_rect->width, prev_rect->height);
-   params.out_dims      = VIDEO_SCALE_PACK(gl->vp.width, gl->vp.height);
+   params.out_dims      = gl->vp.dims;
    params.frame_counter = (unsigned int)frame_count;
    /* Last pass of the same present; see above. */
    params.swap_counter  = (unsigned int)video_thread_swap_count();
@@ -2364,7 +2363,7 @@ static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer)
 {
    const uint8_t *ptr = NULL;
 #ifdef HAVE_OPENGLES3
-   unsigned num_pixels = gl->vp.width * gl->vp.height;
+   unsigned num_pixels = VIDEO_SCALE_W(gl->vp.dims) * VIDEO_SCALE_H(gl->vp.dims);
 #endif
 
    /* Don't readback if we're in menu mode.
@@ -2385,10 +2384,10 @@ static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer)
    {
       /* Clamp to the region glReadPixels actually wrote
        * (see gl2_renderchain_readback). */
-      unsigned rb_w = (gl->vp.width  > gl->video_width)
-         ? gl->video_width  : gl->vp.width;
-      unsigned rb_h = (gl->vp.height > gl->video_height)
-         ? gl->video_height : gl->vp.height;
+      unsigned rb_w = (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)
+         ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims);
+      unsigned rb_h = (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height)
+         ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims);
       video_frame_convert_rgba_to_bgr(
             (const void*)ptr,
             buffer,
@@ -2436,8 +2435,8 @@ static bool gl2_renderchain_read_viewport(
    /* Lazy init / reinit: (re)initialize PBO readback when recording
     * starts after driver init, or when viewport dimensions change. */
    if (  !(gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
-       || (unsigned)gl->pbo_readback_scaler.in_width  != gl->vp.width
-       || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
+       || (unsigned)gl->pbo_readback_scaler.in_width  != VIDEO_SCALE_W(gl->vp.dims)
+       || (unsigned)gl->pbo_readback_scaler.in_height != VIDEO_SCALE_H(gl->vp.dims))
    {
       if (gl->flags & GL2_FLAG_GPU_RECORDING)
       {
@@ -2454,7 +2453,7 @@ static bool gl2_renderchain_read_viewport(
    }
 #endif
 
-   num_pixels             = gl->vp.width * gl->vp.height;
+   num_pixels             = VIDEO_SCALE_W(gl->vp.dims) * VIDEO_SCALE_H(gl->vp.dims);
 
 #ifdef HAVE_GL_ASYNC_READBACK
    if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
@@ -2488,10 +2487,10 @@ static bool gl2_renderchain_read_viewport(
       {
          /* Clamp to the region glReadPixels actually wrote
           * (see gl2_renderchain_readback). */
-         unsigned rb_w = (gl->vp.width  > gl->video_width)
-            ? gl->video_width  : gl->vp.width;
-         unsigned rb_h = (gl->vp.height > gl->video_height)
-            ? gl->video_height : gl->vp.height;
+         unsigned rb_w = (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)
+            ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims);
+         unsigned rb_h = (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height)
+            ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims);
          video_frame_convert_rgba_to_bgr(
                (const void*)gl->readback_buffer_screenshot,
                buffer,
@@ -2705,8 +2704,8 @@ static void gl2_renderchain_readback(
    glReadPixels(
          (gl->vp.x > 0) ? gl->vp.x : 0,
          (gl->vp.y > 0) ? gl->vp.y : 0,
-         (gl->vp.width  > gl->video_width)  ? gl->video_width  : gl->vp.width,
-         (gl->vp.height > gl->video_height) ? gl->video_height : gl->vp.height,
+         (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)  ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims),
+         (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height) ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims),
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 
    if (gl->scrgb.active && gl->scrgb.fbo
@@ -3081,7 +3080,7 @@ static void gl2_render_overlay(gl2_t *gl)
    gl->coords.color     = gl->white_color_ptr;
    gl->coords.vertices  = 4;
    if (gl->flags & GL2_FLAG_OVERLAY_FULLSCREEN)
-      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
 }
 #endif
 
@@ -3781,7 +3780,7 @@ static INLINE void gl2_draw_texture(gl2_t *gl)
    {
       glViewport(0, 0, width, height);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
    }
    else
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -3806,8 +3805,8 @@ static void gl2_pbo_async_readback(gl2_t *gl)
 
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    /* Resize the destination before issuing a copy at the new extent. */
-   if ((unsigned)gl->pbo_readback_scaler.in_width != gl->vp.width
-         || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
+   if ((unsigned)gl->pbo_readback_scaler.in_width != VIDEO_SCALE_W(gl->vp.dims)
+         || (unsigned)gl->pbo_readback_scaler.in_height != VIDEO_SCALE_H(gl->vp.dims))
    {
       glDeleteBuffers(4, gl->pbo_readback);
       scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
@@ -3825,7 +3824,7 @@ static void gl2_pbo_async_readback(gl2_t *gl)
    gl->pbo_readback_index = (gl->pbo_readback_index + 1) & 3;
 
    gl2_renderchain_readback(gl, gl->renderchain_data,
-         gl2_get_alignment(gl->vp.width * sizeof(uint32_t)),
+         gl2_get_alignment(VIDEO_SCALE_W(gl->vp.dims) * sizeof(uint32_t)),
          fmt, type, NULL);
    gl2_renderchain_unbind_pbo();
 }
@@ -4197,7 +4196,7 @@ static void gl2_encode_pq_to_sdr(gl2_t *gl)
    /* Restore the aspect viewport - context state this driver only
     * re-establishes on resize (see the matching restore in the
     * end-of-frame encode). */
-   glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+   glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
 }
 
 /* Copies the backbuffer into the retained texture, sizing that texture
@@ -4265,7 +4264,7 @@ static unsigned gl2_present_last(void *data)
 
       gl->coords.vertex    = gl->vertex_ptr;
       gl->coords.tex_coord = gl->tex_info.coord;
-      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
       glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
 
       if (gl->ctx_driver->swap_buffers)
@@ -4545,7 +4544,7 @@ static bool gl2_frame(void *data, const void *frame,
          gl->out_vp_width, gl->out_vp_height);
    params.dims             = VIDEO_SCALE_PACK(frame_width, frame_height);
    params.tex_dims         = VIDEO_SCALE_PACK(gl->tex_w, gl->tex_h);
-   params.out_dims         = VIDEO_SCALE_PACK(gl->vp.width, gl->vp.height);
+   params.out_dims         = gl->vp.dims;
    params.frame_counter    = (unsigned int)frame_count;
    params.swap_counter    = (unsigned int)video_info->swap_count;
    params.info             = &gl->tex_info;
@@ -4732,7 +4731,7 @@ static bool gl2_frame(void *data, const void *frame,
        * its filter chain re-runs glViewport on the final pass every
        * frame (shader_gl3.c), so the leak never survives to a draw.
        * The gl2 GLSL path has no equivalent choke point. */
-      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
    }
 
    /* Screenshots. */
@@ -5163,20 +5162,20 @@ static bool gl2_init_pbo_readback(gl2_t *gl)
    for (i = 0; i < 4; i++)
    {
       gl2_renderchain_bind_pbo(gl->pbo_readback[i]);
-      gl2_renderchain_init_pbo(gl->vp.width *
-            gl->vp.height * sizeof(uint32_t), NULL);
+      gl2_renderchain_init_pbo(VIDEO_SCALE_W(gl->vp.dims) *
+            VIDEO_SCALE_H(gl->vp.dims) * sizeof(uint32_t), NULL);
    }
    gl2_renderchain_unbind_pbo();
 
 #ifndef HAVE_OPENGLES3
    {
       struct scaler_ctx *scaler = &gl->pbo_readback_scaler;
-      scaler->in_width          = gl->vp.width;
-      scaler->in_height         = gl->vp.height;
-      scaler->out_width         = gl->vp.width;
-      scaler->out_height        = gl->vp.height;
-      scaler->in_stride         = gl->vp.width * sizeof(uint32_t);
-      scaler->out_stride        = gl->vp.width * 3;
+      scaler->in_width          = VIDEO_SCALE_W(gl->vp.dims);
+      scaler->in_height         = VIDEO_SCALE_H(gl->vp.dims);
+      scaler->out_width         = VIDEO_SCALE_W(gl->vp.dims);
+      scaler->out_height        = VIDEO_SCALE_H(gl->vp.dims);
+      scaler->in_stride         = VIDEO_SCALE_W(gl->vp.dims) * sizeof(uint32_t);
+      scaler->out_stride        = VIDEO_SCALE_W(gl->vp.dims) * 3;
       scaler->in_fmt            = SCALER_FMT_ARGB8888;
       scaler->out_fmt           = SCALER_FMT_BGR24;
       scaler->scaler_type       = SCALER_TYPE_POINT;
@@ -6110,11 +6109,10 @@ static void gl2_viewport_info(void *data, struct video_viewport *vp)
    unsigned height = gl->video_height;
 
    *vp             = gl->vp;
-   vp->full_width  = width;
-   vp->full_height = height;
+   vp->full_dims   = VIDEO_SCALE_PACK(width, height);
 
    /* Adjust as GL viewport is bottom-up. */
-   top_y           = vp->y + vp->height;
+   top_y           = vp->y + VIDEO_SCALE_H(vp->dims);
    top_dist        = height - top_y;
    vp->y           = top_dist;
 }
@@ -6133,11 +6131,11 @@ static bool gl2_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 static bool gl2_record_read(void *data, uint8_t *buffer)
 {
    gl2_t *gl = (gl2_t*)data;
-   if (!gl || !gl->vp.width || !gl->vp.height)
+   if (!gl || !VIDEO_SCALE_W(gl->vp.dims) || !VIDEO_SCALE_H(gl->vp.dims))
       return false;
    if (     !(gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
-         || (unsigned)gl->pbo_readback_scaler.in_width != gl->vp.width
-         || (unsigned)gl->pbo_readback_scaler.in_height != gl->vp.height)
+         || (unsigned)gl->pbo_readback_scaler.in_width != VIDEO_SCALE_W(gl->vp.dims)
+         || (unsigned)gl->pbo_readback_scaler.in_height != VIDEO_SCALE_H(gl->vp.dims))
    {
       if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
       {
@@ -6872,8 +6870,8 @@ static bool gl2_read_viewport_hdr(void *data, uint16_t *buffer,
 
    vp_x = (gl->vp.x > 0) ? gl->vp.x : 0;
    vp_y = (gl->vp.y > 0) ? gl->vp.y : 0;
-   w    = (gl->vp.width  > gl->video_width)  ? gl->video_width  : gl->vp.width;
-   h    = (gl->vp.height > gl->video_height) ? gl->video_height : gl->vp.height;
+   w    = (VIDEO_SCALE_W(gl->vp.dims)  > gl->video_width)  ? gl->video_width  : VIDEO_SCALE_W(gl->vp.dims);
+   h    = (VIDEO_SCALE_H(gl->vp.dims) > gl->video_height) ? gl->video_height : VIDEO_SCALE_H(gl->vp.dims);
    if (!w || !h)
       return false;
 

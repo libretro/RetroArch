@@ -725,8 +725,8 @@ static void oga_viewport_info(void *data, struct video_viewport *vp)
       return;
 
    vp->x = vp->y = 0;
-   vp->width = vp->full_width = vid->mode.vdisplay;
-   vp->height = vp->full_height = vid->mode.hdisplay;
+   vp->dims  = vp->full_dims  = VIDEO_SCALE_PACK(vid->mode.vdisplay,
+         vid->mode.hdisplay);
 }
 
 static bool oga_set_shader(void *data, enum rarch_shader_type type, const char *path)

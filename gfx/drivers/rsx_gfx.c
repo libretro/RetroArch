@@ -766,7 +766,7 @@ static void rsx_font_render_line(rsx_t *rsx,
    int n;
    const char* msg_end  = msg + msg_len;
    int x                = pre_x;
-   int y                = roundf(pos_y * rsx->vp.height);
+   int y                = roundf(pos_y * VIDEO_SCALE_H(rsx->vp.dims));
    int delta_x          = 0;
    int delta_y          = 0;
 
@@ -864,13 +864,13 @@ static void rsx_font_render_message(rsx_t *rsx,
    struct font_line_metrics *line_metrics = NULL;
    const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    int lines                              = 0;
-   int x                                  = roundf(pos_x * rsx->vp.width);
+   int x                                  = roundf(pos_x * VIDEO_SCALE_W(rsx->vp.dims));
    float inv_tex_size_x                   = 1.0f / font->tex_width;
    float inv_tex_size_y                   = 1.0f / font->tex_height;
-   float inv_win_width                    = 1.0f / rsx->vp.width;
-   float inv_win_height                   = 1.0f / rsx->vp.height;
+   float inv_win_width                    = 1.0f / VIDEO_SCALE_W(rsx->vp.dims);
+   float inv_win_height                   = 1.0f / VIDEO_SCALE_H(rsx->vp.dims);
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / rsx->vp.height;
+   line_height = line_metrics->height * scale / VIDEO_SCALE_H(rsx->vp.dims);
    for (;;)
    {
       const char *delim = msg;
@@ -997,8 +997,8 @@ static void rsx_font_render_msg(
          color_dark[3] = color[3] * drop_alpha;
 
          rsx_font_render_message(rsx, font, msg, scale, color_dark,
-               x + scale * drop_x / rsx->vp.width, y +
-               scale * drop_y / rsx->vp.height, text_align);
+               x + scale * drop_x / VIDEO_SCALE_W(rsx->vp.dims), y +
+               scale * drop_y / VIDEO_SCALE_H(rsx->vp.dims), text_align);
       }
 
       rsx_font_render_message(rsx, font, msg, scale, color,
@@ -1170,16 +1170,15 @@ static void rsx_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
    rsx_t *rsx                = (rsx_t*)data;
 
-   rsx->vp.full_width         = vp_width;
-   rsx->vp.full_height        = vp_height;
+   rsx->vp.full_dims          = VIDEO_SCALE_PACK(vp_width, vp_height);
    video_driver_update_viewport(&rsx->vp, force_full, rsx->keep_aspect, true);
 
    vp.min                     = 0.0f;
    vp.max                     = 1.0f;
    vp.x                       = rsx->vp.x;
-   vp.y                       = rsx->height - rsx->vp.y - rsx->vp.height;
-   vp.w                       = rsx->vp.width;
-   vp.h                       = rsx->vp.height;
+   vp.y                       = rsx->height - rsx->vp.y - VIDEO_SCALE_H(rsx->vp.dims);
+   vp.w                       = VIDEO_SCALE_W(rsx->vp.dims);
+   vp.h                       = VIDEO_SCALE_H(rsx->vp.dims);
    vp.scale[0]                = vp.w *  0.5f;
    vp.scale[1]                = vp.h * -0.5f;
    vp.scale[2]                = (vp.max - vp.min) * 0.5f;
@@ -1562,13 +1561,11 @@ static void* rsx_init(const video_info_t* video,
 
    rsx->vp.x                 = 0;
    rsx->vp.y                 = 0;
-   rsx->vp.width             = rsx->width;
-   rsx->vp.height            = rsx->height;
-   rsx->vp.full_width        = rsx->width;
-   rsx->vp.full_height       = rsx->height;
+   rsx->vp.dims              = VIDEO_SCALE_PACK(rsx->width, rsx->height);
+   rsx->vp.full_dims         = VIDEO_SCALE_PACK(rsx->width, rsx->height);
    rsx->rgb32                = video->rgb32;
-   video_driver_set_output_size(rsx->vp.width, rsx->vp.height);
-   rsx_set_viewport(rsx, rsx->vp.width, rsx->vp.height, false, true);
+   video_driver_set_output_size(VIDEO_SCALE_W(rsx->vp.dims), VIDEO_SCALE_H(rsx->vp.dims));
+   rsx_set_viewport(rsx, VIDEO_SCALE_W(rsx->vp.dims), VIDEO_SCALE_H(rsx->vp.dims), false, true);
 
    if (input && input_data)
    {
@@ -1587,8 +1584,7 @@ static void* rsx_init(const video_info_t* video,
 
 static void rsx_update_viewport(rsx_t* rsx)
 {
-   rsx->vp.full_width  = rsx->width;
-   rsx->vp.full_height = rsx->height;
+   rsx->vp.full_dims   = VIDEO_SCALE_PACK(rsx->width, rsx->height);
    video_driver_update_viewport(&rsx->vp, false, rsx->keep_aspect, true);
 
    rsx->should_resize  = false;
@@ -2289,9 +2285,9 @@ static bool rsx_frame(void* data, const void* frame,
    vp.min                           = 0.0f;
    vp.max                           = 1.0f;
    vp.x                             = gcm->vp.x;
-   vp.y                             = gcm->height - gcm->vp.y - gcm->vp.height;
-   vp.w                             = gcm->vp.width;
-   vp.h                             = gcm->vp.height;
+   vp.y                             = gcm->height - gcm->vp.y - VIDEO_SCALE_H(gcm->vp.dims);
+   vp.w                             = VIDEO_SCALE_W(gcm->vp.dims);
+   vp.h                             = VIDEO_SCALE_H(gcm->vp.dims);
    vp.scale[0]                      = vp.w *  0.5f;
    vp.scale[1]                      = vp.h * -0.5f;
    vp.scale[2]                      = (vp.max - vp.min) * 0.5f;

@@ -1397,8 +1397,7 @@ static void exynos_viewport_info(void *data, struct video_viewport *vp)
 
    vp->x = vp->y = 0;
 
-   vp->width  = vp->full_width  = VIDEO_SCALE_W(vid->dims);
-   vp->height = vp->full_height = VIDEO_SCALE_H(vid->dims);
+   vp->dims   = vp->full_dims   = vid->dims;
 }
 
 static void exynos_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)

@@ -853,29 +853,29 @@ static INLINE void ctr_set_screen_coords(ctr_video_t * ctr)
    {
       ctr->frame_coords->x0 = ctr->vp.x;
       ctr->frame_coords->y0 = ctr->vp.y;
-      ctr->frame_coords->x1 = ctr->vp.x + ctr->vp.width;
-      ctr->frame_coords->y1 = ctr->vp.y + ctr->vp.height;
+      ctr->frame_coords->x1 = ctr->vp.x + VIDEO_SCALE_W(ctr->vp.dims);
+      ctr->frame_coords->y1 = ctr->vp.y + VIDEO_SCALE_H(ctr->vp.dims);
    }
    else if (ctr->rotation == 1) /* 90° */
    {
       ctr->frame_coords->x1 = ctr->vp.x;
       ctr->frame_coords->y1 = ctr->vp.y;
-      ctr->frame_coords->x0 = ctr->vp.x + ctr->vp.width;
-      ctr->frame_coords->y0 = ctr->vp.y + ctr->vp.height;
+      ctr->frame_coords->x0 = ctr->vp.x + VIDEO_SCALE_W(ctr->vp.dims);
+      ctr->frame_coords->y0 = ctr->vp.y + VIDEO_SCALE_H(ctr->vp.dims);
    }
    else if (ctr->rotation == 2) /* 180° */
    {
       ctr->frame_coords->x1 = ctr->vp.x;
       ctr->frame_coords->y1 = ctr->vp.y;
-      ctr->frame_coords->x0 = ctr->vp.x + ctr->vp.width;
-      ctr->frame_coords->y0 = ctr->vp.y + ctr->vp.height;
+      ctr->frame_coords->x0 = ctr->vp.x + VIDEO_SCALE_W(ctr->vp.dims);
+      ctr->frame_coords->y0 = ctr->vp.y + VIDEO_SCALE_H(ctr->vp.dims);
    }
    else /* 270° */
    {
       ctr->frame_coords->x0 = ctr->vp.x;
       ctr->frame_coords->y0 = ctr->vp.y;
-      ctr->frame_coords->x1 = ctr->vp.x + ctr->vp.width;
-      ctr->frame_coords->y1 = ctr->vp.y + ctr->vp.height;
+      ctr->frame_coords->x1 = ctr->vp.x + VIDEO_SCALE_W(ctr->vp.dims);
+      ctr->frame_coords->y1 = ctr->vp.y + VIDEO_SCALE_H(ctr->vp.dims);
    }
 }
 
@@ -1699,11 +1699,11 @@ static void* ctr_init(const video_info_t* video,
 
    ctr->vp.x                       = 0;
    ctr->vp.y                       = 0;
-   ctr->vp.width                   = CTR_TOP_FRAMEBUFFER_WIDTH;
-   ctr->vp.height                  = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   ctr->vp.full_width              = CTR_TOP_FRAMEBUFFER_WIDTH;
-   ctr->vp.full_height             = CTR_TOP_FRAMEBUFFER_HEIGHT;
-   video_driver_set_output_size(ctr->vp.width, ctr->vp.height);
+   ctr->vp.dims                    = VIDEO_SCALE_PACK(CTR_TOP_FRAMEBUFFER_WIDTH,
+         CTR_TOP_FRAMEBUFFER_HEIGHT);
+   ctr->vp.full_dims               = VIDEO_SCALE_PACK(CTR_TOP_FRAMEBUFFER_WIDTH,
+         CTR_TOP_FRAMEBUFFER_HEIGHT);
+   video_driver_set_output_size(VIDEO_SCALE_W(ctr->vp.dims), VIDEO_SCALE_H(ctr->vp.dims));
 
    ctr->drawbuffers.top.left       = vramAlloc(CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT * 2 * sizeof(uint32_t));
    ctr->drawbuffers.top.right      = (void*)((uint32_t*)ctr->drawbuffers.top.left + CTR_TOP_FRAMEBUFFER_WIDTH * CTR_TOP_FRAMEBUFFER_HEIGHT);

@@ -1743,8 +1743,8 @@ static void d3d12_font_render_msg(
    if (!d3d12 || (!(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE)))
       return;
 
-   width  = d3d12->vp.full_width;
-   height = d3d12->vp.full_height;
+   width  = VIDEO_SCALE_W(d3d12->vp.full_dims);
+   height = VIDEO_SCALE_H(d3d12->vp.full_dims);
 
    if (params)
    {
@@ -2647,26 +2647,26 @@ static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
 
    d3d12->frame.viewport.TopLeftX = d3d12->vp.x;
    d3d12->frame.viewport.TopLeftY = d3d12->vp.y;
-   d3d12->frame.viewport.Width    = d3d12->vp.width;
-   d3d12->frame.viewport.Height   = d3d12->vp.height;
+   d3d12->frame.viewport.Width    = VIDEO_SCALE_W(d3d12->vp.dims);
+   d3d12->frame.viewport.Height   = VIDEO_SCALE_H(d3d12->vp.dims);
    d3d12->frame.viewport.MinDepth = 0.0f;
    d3d12->frame.viewport.MaxDepth = 1.0f;
 
    /* Needed for UWP to be happy */
    d3d12->frame.scissorRect.top    = d3d12->vp.y;
    d3d12->frame.scissorRect.left   = d3d12->vp.x;
-   d3d12->frame.scissorRect.right  = d3d12->vp.x + d3d12->vp.width;
-   d3d12->frame.scissorRect.bottom = d3d12->vp.y + d3d12->vp.height;
+   d3d12->frame.scissorRect.right  = d3d12->vp.x + VIDEO_SCALE_W(d3d12->vp.dims);
+   d3d12->frame.scissorRect.bottom = d3d12->vp.y + VIDEO_SCALE_H(d3d12->vp.dims);
 
    if (d3d12->shader_preset
-         && (  d3d12->frame.output_size.x != d3d12->vp.width
-            || d3d12->frame.output_size.y != d3d12->vp.height))
+         && (  d3d12->frame.output_size.x != VIDEO_SCALE_W(d3d12->vp.dims)
+            || d3d12->frame.output_size.y != VIDEO_SCALE_H(d3d12->vp.dims)))
       d3d12->flags           |= D3D12_ST_FLAG_RESIZE_RTS;
 
-   d3d12->frame.output_size.x = d3d12->vp.width;
-   d3d12->frame.output_size.y = d3d12->vp.height;
-   d3d12->frame.output_size.z = 1.0f / d3d12->vp.width;
-   d3d12->frame.output_size.w = 1.0f / d3d12->vp.height;
+   d3d12->frame.output_size.x = VIDEO_SCALE_W(d3d12->vp.dims);
+   d3d12->frame.output_size.y = VIDEO_SCALE_H(d3d12->vp.dims);
+   d3d12->frame.output_size.z = 1.0f / VIDEO_SCALE_W(d3d12->vp.dims);
+   d3d12->frame.output_size.w = 1.0f / VIDEO_SCALE_H(d3d12->vp.dims);
 
    d3d12->flags              &= ~D3D12_ST_FLAG_RESIZE_VIEWPORT;
 }
@@ -4953,17 +4953,16 @@ static void *d3d12_gfx_init(const video_info_t* video,
    win32_monitor_info(&current_mon, &hm_to_use, &d3d12->cur_mon_id);
 #endif
 
-   d3d12->vp.full_width  = video->width;
-   d3d12->vp.full_height = video->height;
+   d3d12->vp.full_dims   = VIDEO_SCALE_PACK(video->width, video->height);
 
 #ifdef HAVE_MONITOR
-   if (!d3d12->vp.full_width)
-      d3d12->vp.full_width = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
-   if (!d3d12->vp.full_height)
-      d3d12->vp.full_height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+   if (!VIDEO_SCALE_W(d3d12->vp.full_dims))
+      VIDEO_SCALE_PUT_W(d3d12->vp.full_dims, current_mon.rcMonitor.right - current_mon.rcMonitor.left);
+   if (!VIDEO_SCALE_H(d3d12->vp.full_dims))
+      VIDEO_SCALE_PUT_H(d3d12->vp.full_dims, current_mon.rcMonitor.bottom - current_mon.rcMonitor.top);
 #endif
 
-   if (!win32_set_video_mode(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, video->fullscreen))
+   if (!win32_set_video_mode(d3d12, VIDEO_SCALE_W(d3d12->vp.full_dims), VIDEO_SCALE_H(d3d12->vp.full_dims), video->fullscreen))
    {
       RARCH_ERR("[D3D12] win32_set_video_mode failed.\n");
       goto error;
@@ -5006,10 +5005,10 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12_init_queue(d3d12);
 
 #ifdef __WINRT__
-   if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, uwp_get_corewindow()))
+   if (!d3d12_init_swapchain(d3d12, VIDEO_SCALE_W(d3d12->vp.full_dims), VIDEO_SCALE_H(d3d12->vp.full_dims), uwp_get_corewindow()))
       goto error;
 #else
-   if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, main_window.hwnd))
+   if (!d3d12_init_swapchain(d3d12, VIDEO_SCALE_W(d3d12->vp.full_dims), VIDEO_SCALE_H(d3d12->vp.full_dims), main_window.hwnd))
       goto error;
 #endif
 
@@ -5121,9 +5120,9 @@ static void *d3d12_gfx_init(const video_info_t* video,
    matrix_4x4_identity(d3d12->identity);
 
    d3d12_gfx_set_rotation(d3d12, 0);
-   video_driver_set_output_size(d3d12->vp.full_width, d3d12->vp.full_height);
-   d3d12->chain.viewport.Width  = d3d12->vp.full_width;
-   d3d12->chain.viewport.Height = d3d12->vp.full_height;
+   video_driver_set_output_size(VIDEO_SCALE_W(d3d12->vp.full_dims), VIDEO_SCALE_H(d3d12->vp.full_dims));
+   d3d12->chain.viewport.Width  = VIDEO_SCALE_W(d3d12->vp.full_dims);
+   d3d12->chain.viewport.Height = VIDEO_SCALE_H(d3d12->vp.full_dims);
 
    d3d12->flags                |=  D3D12_ST_FLAG_RESIZE_VIEWPORT;
 
@@ -5236,7 +5235,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               width = d3d12->vp.width * pass->fbo.scale_x;
+               width = VIDEO_SCALE_W(d3d12->vp.dims) * pass->fbo.scale_x;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -5248,7 +5247,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          }
 
          if (!width)
-            width = d3d12->vp.width;
+            width = VIDEO_SCALE_W(d3d12->vp.dims);
 
          switch (pass->fbo.type_y)
          {
@@ -5257,7 +5256,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               height = d3d12->vp.height * pass->fbo.scale_y;
+               height = VIDEO_SCALE_H(d3d12->vp.dims) * pass->fbo.scale_y;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -5269,12 +5268,12 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          }
 
          if (!height)
-            height = d3d12->vp.height;
+            height = VIDEO_SCALE_H(d3d12->vp.dims);
       }
       else if (i == (d3d12->shader_preset->passes - 1))
       {
-         width  = d3d12->vp.width;
-         height = d3d12->vp.height;
+         width  = VIDEO_SCALE_W(d3d12->vp.dims);
+         height = VIDEO_SCALE_H(d3d12->vp.dims);
       }
 
       RARCH_DBG("[D3D12] Updating framebuffer size %ux%u.\n", width, height);
@@ -5307,8 +5306,8 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
       }
 
       if (     (i != (d3d12->shader_preset->passes - 1))
-            || (width  != d3d12->vp.width)
-            || (height != d3d12->vp.height))
+            || (width  != VIDEO_SCALE_W(d3d12->vp.dims))
+            || (height != VIDEO_SCALE_H(d3d12->vp.dims)))
       {
          d3d12->pass[i].rt.desc.Width      = width;
          d3d12->pass[i].rt.desc.Height     = height;
@@ -5773,8 +5772,8 @@ static bool d3d12_gfx_frame(
 
             d3d12->chain.scissorRect.left       = 0;
             d3d12->chain.scissorRect.top        = 0;
-            d3d12->chain.scissorRect.right      = d3d12->vp.full_width;
-            d3d12->chain.scissorRect.bottom     = d3d12->vp.full_height;
+            d3d12->chain.scissorRect.right      = VIDEO_SCALE_W(d3d12->vp.full_dims);
+            d3d12->chain.scissorRect.bottom     = VIDEO_SCALE_H(d3d12->vp.full_dims);
 
             d3d12->ubo_values.OutputSize.width  = d3d12->chain.viewport.Width;
             d3d12->ubo_values.OutputSize.height = d3d12->chain.viewport.Height;
@@ -7145,11 +7144,12 @@ static bool d3d12_gfx_alive(void* data)
    bool resize_chain    = false;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   win32_check_window(NULL,
-         &quit,
-         &resize_chain,
-         &d3d12->vp.full_width,
-         &d3d12->vp.full_height);
+   unsigned full_w      = VIDEO_SCALE_W(d3d12->vp.full_dims);
+   unsigned full_h      = VIDEO_SCALE_H(d3d12->vp.full_dims);
+
+   win32_check_window(NULL, &quit, &resize_chain, &full_w, &full_h);
+
+   d3d12->vp.full_dims = VIDEO_SCALE_PACK(full_w, full_h);
 
    if (resize_chain)
       d3d12->flags |=  D3D12_ST_FLAG_RESIZE_CHAIN;
@@ -7157,9 +7157,9 @@ static bool d3d12_gfx_alive(void* data)
       d3d12->flags &= ~D3D12_ST_FLAG_RESIZE_CHAIN;
 
    if (     (d3d12->flags & D3D12_ST_FLAG_RESIZE_CHAIN)
-         && (d3d12->vp.full_width  != 0)
-         && (d3d12->vp.full_height != 0))
-      video_driver_set_output_size(d3d12->vp.full_width, d3d12->vp.full_height);
+         && (VIDEO_SCALE_W(d3d12->vp.full_dims)  != 0)
+         && (VIDEO_SCALE_H(d3d12->vp.full_dims) != 0))
+      video_driver_set_output_size(VIDEO_SCALE_W(d3d12->vp.full_dims), VIDEO_SCALE_H(d3d12->vp.full_dims));
 
    return !quit;
 }
@@ -7672,10 +7672,10 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
 
    vp_x = (d3d12->vp.x > 0) ? d3d12->vp.x : 0;
    vp_y = (d3d12->vp.y > 0) ? d3d12->vp.y : 0;
-   vp_w = (d3d12->vp.width  > d3d12->vp.full_width)
-         ? d3d12->vp.full_width  : d3d12->vp.width;
-   vp_h = (d3d12->vp.height > d3d12->vp.full_height)
-         ? d3d12->vp.full_height : d3d12->vp.height;
+   vp_w = (VIDEO_SCALE_W(d3d12->vp.dims)  > VIDEO_SCALE_W(d3d12->vp.full_dims))
+         ? VIDEO_SCALE_W(d3d12->vp.full_dims)  : VIDEO_SCALE_W(d3d12->vp.dims);
+   vp_h = (VIDEO_SCALE_H(d3d12->vp.dims) > VIDEO_SCALE_H(d3d12->vp.full_dims))
+         ? VIDEO_SCALE_H(d3d12->vp.full_dims) : VIDEO_SCALE_H(d3d12->vp.dims);
    dxgi_readback_clamp_window(
          (unsigned)tex_desc.Width, (unsigned)tex_desc.Height,
          &vp_x, &vp_y, &vp_w, &vp_h);
@@ -7797,10 +7797,10 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
     * and the CPU swizzle loops (at the end) can use it. */
    vp_x = (d3d12->vp.x > 0) ? d3d12->vp.x : 0;
    vp_y = (d3d12->vp.y > 0) ? d3d12->vp.y : 0;
-   vp_w = (d3d12->vp.width  > d3d12->vp.full_width)
-         ? d3d12->vp.full_width  : d3d12->vp.width;
-   vp_h = (d3d12->vp.height > d3d12->vp.full_height)
-         ? d3d12->vp.full_height : d3d12->vp.height;
+   vp_w = (VIDEO_SCALE_W(d3d12->vp.dims)  > VIDEO_SCALE_W(d3d12->vp.full_dims))
+         ? VIDEO_SCALE_W(d3d12->vp.full_dims)  : VIDEO_SCALE_W(d3d12->vp.dims);
+   vp_h = (VIDEO_SCALE_H(d3d12->vp.dims) > VIDEO_SCALE_H(d3d12->vp.full_dims))
+         ? VIDEO_SCALE_H(d3d12->vp.full_dims) : VIDEO_SCALE_H(d3d12->vp.dims);
    dxgi_readback_clamp_window(
          (unsigned)tex_desc.Width, (unsigned)tex_desc.Height,
          &vp_x, &vp_y, &vp_w, &vp_h);

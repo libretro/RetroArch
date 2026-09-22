@@ -1013,8 +1013,8 @@ static void d3d10_font_render_msg(
    float inv_tex_w, inv_tex_h;
    d3d10_font_t *font          = (d3d10_font_t*)data;
    d3d10_video_t *d3d10        = (d3d10_video_t*)userdata;
-   unsigned width              = d3d10->vp.full_width;
-   unsigned height             = d3d10->vp.full_height;
+   unsigned width              = VIDEO_SCALE_W(d3d10->vp.full_dims);
+   unsigned height             = VIDEO_SCALE_H(d3d10->vp.full_dims);
 
    if (!font || !msg || !*msg)
       return;
@@ -1598,19 +1598,19 @@ static void d3d10_update_viewport(d3d10_video_t *d3d10, bool force_full)
 
    d3d10->frame.viewport.TopLeftX  = d3d10->vp.x;
    d3d10->frame.viewport.TopLeftY  = d3d10->vp.y;
-   d3d10->frame.viewport.Width     = d3d10->vp.width;
-   d3d10->frame.viewport.Height    = d3d10->vp.height;
+   d3d10->frame.viewport.Width     = VIDEO_SCALE_W(d3d10->vp.dims);
+   d3d10->frame.viewport.Height    = VIDEO_SCALE_H(d3d10->vp.dims);
    d3d10->frame.viewport.MinDepth  = 0.0f;
    d3d10->frame.viewport.MaxDepth  = 1.0f;
 
-   if (d3d10->shader_preset && (d3d10->frame.output_size.x != d3d10->vp.width
-            || d3d10->frame.output_size.y != d3d10->vp.height))
+   if (d3d10->shader_preset && (d3d10->frame.output_size.x != VIDEO_SCALE_W(d3d10->vp.dims)
+            || d3d10->frame.output_size.y != VIDEO_SCALE_H(d3d10->vp.dims)))
       d3d10->flags                |= D3D10_ST_FLAG_RESIZE_RTS;
 
-   d3d10->frame.output_size.x      = d3d10->vp.width;
-   d3d10->frame.output_size.y      = d3d10->vp.height;
-   d3d10->frame.output_size.z      = 1.0f / d3d10->vp.width;
-   d3d10->frame.output_size.w      = 1.0f / d3d10->vp.height;
+   d3d10->frame.output_size.x      = VIDEO_SCALE_W(d3d10->vp.dims);
+   d3d10->frame.output_size.y      = VIDEO_SCALE_H(d3d10->vp.dims);
+   d3d10->frame.output_size.z      = 1.0f / VIDEO_SCALE_W(d3d10->vp.dims);
+   d3d10->frame.output_size.w      = 1.0f / VIDEO_SCALE_H(d3d10->vp.dims);
    d3d10->flags                   &= ~D3D10_ST_FLAG_RESIZE_VIEWPORT;
 }
 
@@ -2359,20 +2359,19 @@ static void *d3d10_gfx_init(const video_info_t* video,
    win32_monitor_info(&current_mon, &hm_to_use, &d3d10->cur_mon_id);
 #endif
 
-   d3d10->vp.full_width  = video->width;
-   d3d10->vp.full_height = video->height;
+   d3d10->vp.full_dims   = VIDEO_SCALE_PACK(video->width, video->height);
 
 #ifdef HAVE_MONITOR
-   if (!d3d10->vp.full_width)
-      d3d10->vp.full_width =
-         current_mon.rcMonitor.right - current_mon.rcMonitor.left;
-   if (!d3d10->vp.full_height)
-      d3d10->vp.full_height =
-         current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+   if (!VIDEO_SCALE_W(d3d10->vp.full_dims))
+      VIDEO_SCALE_PUT_W(d3d10->vp.full_dims,
+            current_mon.rcMonitor.right - current_mon.rcMonitor.left);
+   if (!VIDEO_SCALE_H(d3d10->vp.full_dims))
+      VIDEO_SCALE_PUT_H(d3d10->vp.full_dims,
+            current_mon.rcMonitor.bottom - current_mon.rcMonitor.top);
 #endif
 
    if (!win32_set_video_mode(d3d10,
-            d3d10->vp.full_width, d3d10->vp.full_height, video->fullscreen))
+            VIDEO_SCALE_W(d3d10->vp.full_dims), VIDEO_SCALE_H(d3d10->vp.full_dims), video->fullscreen))
    {
       RARCH_ERR("[D3D10] win32_set_video_mode failed.\n");
       goto error;
@@ -2381,8 +2380,8 @@ static void *d3d10_gfx_init(const video_info_t* video,
    d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
 
    if (!d3d10_init_swapchain(d3d10,
-            d3d10->vp.full_width,
-            d3d10->vp.full_height,
+            VIDEO_SCALE_W(d3d10->vp.full_dims),
+            VIDEO_SCALE_H(d3d10->vp.full_dims),
 #ifdef HAVE_WINDOW
             main_window.hwnd
 #else
@@ -2403,9 +2402,9 @@ static void *d3d10_gfx_init(const video_info_t* video,
    d3d10->device->lpVtbl->OMSetRenderTargets(d3d10->device, 1,
          &d3d10->renderTargetView, NULL);
 
-   video_driver_set_output_size(d3d10->vp.full_width, d3d10->vp.full_height);
-   d3d10->viewport.Width  = d3d10->vp.full_width;
-   d3d10->viewport.Height = d3d10->vp.full_height;
+   video_driver_set_output_size(VIDEO_SCALE_W(d3d10->vp.full_dims), VIDEO_SCALE_H(d3d10->vp.full_dims));
+   d3d10->viewport.Width  = VIDEO_SCALE_W(d3d10->vp.full_dims);
+   d3d10->viewport.Height = VIDEO_SCALE_H(d3d10->vp.full_dims);
    d3d10->flags          |= D3D10_ST_FLAG_RESIZE_VIEWPORT;
    if (video->force_aspect)
       d3d10->flags       |=  D3D10_ST_FLAG_KEEP_ASPECT;
@@ -2819,7 +2818,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               width = d3d10->vp.width * pass->fbo.scale_x;
+               width = VIDEO_SCALE_W(d3d10->vp.dims) * pass->fbo.scale_x;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -2831,7 +2830,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
          }
 
          if (!width)
-            width = d3d10->vp.width;
+            width = VIDEO_SCALE_W(d3d10->vp.dims);
 
          switch (pass->fbo.type_y)
          {
@@ -2840,7 +2839,7 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               height = d3d10->vp.height * pass->fbo.scale_y;
+               height = VIDEO_SCALE_H(d3d10->vp.dims) * pass->fbo.scale_y;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -2852,19 +2851,19 @@ static void d3d10_init_render_targets(d3d10_video_t* d3d10,
          }
 
          if (!height)
-            height = d3d10->vp.height;
+            height = VIDEO_SCALE_H(d3d10->vp.dims);
       }
       else if (i == (d3d10->shader_preset->passes - 1))
       {
-         width  = d3d10->vp.width;
-         height = d3d10->vp.height;
+         width  = VIDEO_SCALE_W(d3d10->vp.dims);
+         height = VIDEO_SCALE_H(d3d10->vp.dims);
       }
 
       RARCH_LOG("[D3D10] Updating framebuffer size %ux%u.\n", width, height);
 
       if (     (i != (d3d10->shader_preset->passes - 1))
-            || (width  != d3d10->vp.width)
-            || (height != d3d10->vp.height))
+            || (width  != VIDEO_SCALE_W(d3d10->vp.dims))
+            || (height != VIDEO_SCALE_H(d3d10->vp.dims)))
       {
          d3d10->pass[i].viewport.Width    = width;
          d3d10->pass[i].viewport.Height   = height;
@@ -3552,9 +3551,12 @@ static bool d3d10_gfx_alive(void* data)
    bool resize_chain    = false;
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
-   win32_check_window(NULL,
-         &quit, &resize_chain, &d3d10->vp.full_width,
-         &d3d10->vp.full_height);
+   unsigned full_w      = VIDEO_SCALE_W(d3d10->vp.full_dims);
+   unsigned full_h      = VIDEO_SCALE_H(d3d10->vp.full_dims);
+
+   win32_check_window(NULL, &quit, &resize_chain, &full_w, &full_h);
+
+   d3d10->vp.full_dims = VIDEO_SCALE_PACK(full_w, full_h);
 
    if (resize_chain)
       d3d10->flags |=  D3D10_ST_FLAG_RESIZE_CHAIN;
@@ -3562,9 +3564,9 @@ static bool d3d10_gfx_alive(void* data)
       d3d10->flags &= ~D3D10_ST_FLAG_RESIZE_CHAIN;
 
    if (     (d3d10->flags & D3D10_ST_FLAG_RESIZE_CHAIN)
-         && (d3d10->vp.full_width  != 0)
-         && (d3d10->vp.full_height != 0))
-      video_driver_set_output_size(d3d10->vp.full_width, d3d10->vp.full_height);
+         && (VIDEO_SCALE_W(d3d10->vp.full_dims)  != 0)
+         && (VIDEO_SCALE_H(d3d10->vp.full_dims) != 0))
+      video_driver_set_output_size(VIDEO_SCALE_W(d3d10->vp.full_dims), VIDEO_SCALE_H(d3d10->vp.full_dims));
 
    return !quit;
 }

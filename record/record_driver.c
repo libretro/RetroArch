@@ -362,39 +362,36 @@ bool recording_init(void)
 
       vp.x                        = 0;
       vp.y                        = 0;
-      vp.width                    = 0;
-      vp.height                   = 0;
-      vp.full_width               = 0;
-      vp.full_height              = 0;
+      vp.dims                     = 0;
+      vp.full_dims                = 0;
 
       video_driver_get_viewport_info(&vp);
 
-      if (!vp.width || !vp.height)
+      if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
       {
          RARCH_ERR("[Recording] Failed to get viewport information from video driver. "
                "Cannot start recording.\n");
          return false;
       }
 
-      params.out_width                    = vp.width;
-      params.out_height                   = vp.height;
-      params.fb_width                     = next_pow2(vp.width);
-      params.fb_height                    = next_pow2(vp.height);
+      params.out_width                    = VIDEO_SCALE_W(vp.dims);
+      params.out_height                   = VIDEO_SCALE_H(vp.dims);
+      params.fb_width                     = next_pow2(VIDEO_SCALE_W(vp.dims));
+      params.fb_height                    = next_pow2(VIDEO_SCALE_H(vp.dims));
 
       if (video_force_aspect &&
             (VIDEO_DRIVER_ASPECT_RATIO(video_st) > 0.0f))
          params.aspect_ratio              = VIDEO_DRIVER_ASPECT_RATIO(video_st);
       else
-         params.aspect_ratio              = (float)vp.width / vp.height;
+         params.aspect_ratio              = (float)VIDEO_SCALE_W(vp.dims) / VIDEO_SCALE_H(vp.dims);
 
       params.pix_fmt                      = FFEMU_PIX_BGR24;
-      recording_st->gpu_dims              = VIDEO_SCALE_PACK(vp.width,
-            vp.height);
+      recording_st->gpu_dims              = vp.dims;
 
       RARCH_LOG("[Recording] %s %ux%u.\n", msg_hash_to_str(MSG_DETECTED_VIEWPORT_OF),
-            vp.width, vp.height);
+            VIDEO_SCALE_W(vp.dims), VIDEO_SCALE_H(vp.dims));
 
-      gpu_size = vp.width * vp.height * 3;
+      gpu_size = VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims) * 3;
       if (!(video_st->record_gpu_buffer = (uint8_t*)malloc(gpu_size)))
          return false;
    }

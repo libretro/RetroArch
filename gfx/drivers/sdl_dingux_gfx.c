@@ -996,8 +996,8 @@ static void sdl_dingux_gfx_viewport_info(void *data, struct video_viewport *vp)
 
    vp->x      = 0;
    vp->y      = 0;
-   vp->width  = vp->full_width  = vid->frame_width;
-   vp->height = vp->full_height = vid->frame_height;
+   vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(vid->frame_width,
+         vid->frame_height);
 }
 
 static float sdl_dingux_get_refresh_rate(void *data)

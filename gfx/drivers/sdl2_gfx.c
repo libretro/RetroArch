@@ -176,8 +176,8 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg,
 
    delta_x   = 0;
    delta_y   = 0;
-   width     = vid->vp.width;
-   height    = vid->vp.height;
+   width     = VIDEO_SCALE_W(vid->vp.dims);
+   height    = VIDEO_SCALE_H(vid->vp.dims);
    x         = (int)(msg_pos_x * width);
    y         = (int)((1.0f - msg_pos_y) * height);
 
@@ -242,14 +242,14 @@ static void sdl_refresh_renderer(sdl2_video_t *vid)
 
    r.x      = vid->vp.x;
    r.y      = vid->vp.y;
-   r.w      = (int)vid->vp.width;
-   r.h      = (int)vid->vp.height;
+   r.w      = (int)VIDEO_SCALE_W(vid->vp.dims);
+   r.h      = (int)VIDEO_SCALE_H(vid->vp.dims);
 
    SDL_RenderSetViewport(vid->renderer, &r);
 
    /* breaks int scaling */
 #if 0
-   SDL_RenderSetLogicalSize(vid->renderer, vid->vp.width, vid->vp.height);
+   SDL_RenderSetLogicalSize(vid->renderer, VIDEO_SCALE_W(vid->vp.dims), VIDEO_SCALE_H(vid->vp.dims));
 #endif
 }
 
@@ -259,8 +259,7 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
 
    SDL_GetWindowSize(vid->window, &win_w, &win_h);
 
-   vid->vp.full_width  = win_w;
-   vid->vp.full_height = win_h;
+   vid->vp.full_dims   = VIDEO_SCALE_PACK(win_w, win_h);
    video_driver_update_viewport(&vid->vp, false, vid->video.force_aspect, true);
 
    /* Tell the rest of the engine about our actual window dimensions.
@@ -569,10 +568,10 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       {
          SDL_Rect dst;
          SDL_Rect game_vp;
-         dst.w     = (int)vid->vp.height;
-         dst.h     = (int)vid->vp.width;
-         dst.x     = vid->vp.x + ((int)vid->vp.width  - dst.w) / 2;
-         dst.y     = vid->vp.y + ((int)vid->vp.height - dst.h) / 2;
+         dst.w     = (int)VIDEO_SCALE_H(vid->vp.dims);
+         dst.h     = (int)VIDEO_SCALE_W(vid->vp.dims);
+         dst.x     = vid->vp.x + ((int)VIDEO_SCALE_W(vid->vp.dims)  - dst.w) / 2;
+         dst.y     = vid->vp.y + ((int)VIDEO_SCALE_H(vid->vp.dims) - dst.h) / 2;
          SDL_RenderSetViewport(vid->renderer, NULL);
          SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, &dst,
                vid->rotation, NULL, SDL_FLIP_NONE);
@@ -580,8 +579,8 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
           * which save and restore vid->vp. */
          game_vp.x = vid->vp.x;
          game_vp.y = vid->vp.y;
-         game_vp.w = (int)vid->vp.width;
-         game_vp.h = (int)vid->vp.height;
+         game_vp.w = (int)VIDEO_SCALE_W(vid->vp.dims);
+         game_vp.h = (int)VIDEO_SCALE_H(vid->vp.dims);
          SDL_RenderSetViewport(vid->renderer, &game_vp);
       }
       else
@@ -604,8 +603,8 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       SDL_RenderGetViewport(vid->renderer, &saved_vp_menu);
       screen_vp_menu.x = 0;
       screen_vp_menu.y = 0;
-      screen_vp_menu.w = (int)vid->vp.full_width;
-      screen_vp_menu.h = (int)vid->vp.full_height;
+      screen_vp_menu.w = (int)VIDEO_SCALE_W(vid->vp.full_dims);
+      screen_vp_menu.h = (int)VIDEO_SCALE_H(vid->vp.full_dims);
       SDL_RenderSetViewport(vid->renderer, &screen_vp_menu);
 
       menu_driver_frame(menu_is_alive, video_info);
@@ -652,8 +651,8 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
          SDL_RenderGetViewport(vid->renderer, &saved_vp_stats);
          screen_vp_stats.x = 0;
          screen_vp_stats.y = 0;
-         screen_vp_stats.w = (int)vid->vp.full_width;
-         screen_vp_stats.h = (int)vid->vp.full_height;
+         screen_vp_stats.w = (int)VIDEO_SCALE_W(vid->vp.full_dims);
+         screen_vp_stats.h = (int)VIDEO_SCALE_H(vid->vp.full_dims);
          SDL_RenderSetViewport(vid->renderer, &screen_vp_stats);
 
          font_driver_render_msg(vid, stat_text, video_info->stat_text_len, osd_params, NULL);
@@ -685,8 +684,8 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       SDL_RenderGetViewport(vid->renderer, &saved_vp_ov);
       screen_vp_ov.x = 0;
       screen_vp_ov.y = 0;
-      screen_vp_ov.w = (int)vid->vp.full_width;
-      screen_vp_ov.h = (int)vid->vp.full_height;
+      screen_vp_ov.w = (int)VIDEO_SCALE_W(vid->vp.full_dims);
+      screen_vp_ov.h = (int)VIDEO_SCALE_H(vid->vp.full_dims);
       SDL_RenderSetViewport(vid->renderer, &screen_vp_ov);
 
       sdl2_overlays_render(vid);
@@ -727,8 +726,8 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
 
       screen_vp.x = 0;
       screen_vp.y = 0;
-      screen_vp.w = (int)vid->vp.full_width;
-      screen_vp.h = (int)vid->vp.full_height;
+      screen_vp.w = (int)VIDEO_SCALE_W(vid->vp.full_dims);
+      screen_vp.h = (int)VIDEO_SCALE_H(vid->vp.full_dims);
       SDL_RenderSetViewport(vid->renderer, &screen_vp);
 
       gfx_widgets_frame(video_info);
@@ -1863,8 +1862,8 @@ static void sdl2_raster_font_render_msg(
    if (!font || !msg || !*msg || !vid)
       return;
 
-   width  = vid->vp.full_width  ? vid->vp.full_width  : vid->video.width;
-   height = vid->vp.full_height ? vid->vp.full_height : vid->video.height;
+   width  = VIDEO_SCALE_W(vid->vp.full_dims)  ? VIDEO_SCALE_W(vid->vp.full_dims)  : vid->video.width;
+   height = VIDEO_SCALE_H(vid->vp.full_dims) ? VIDEO_SCALE_H(vid->vp.full_dims) : vid->video.height;
    if (!width || !height)
    {
       /* viewport not set up yet (very early frames) - skip rather
@@ -2171,15 +2170,15 @@ static void sdl2_overlays_render(sdl2_video_t *vid)
       {
          base_x = 0;
          base_y = 0;
-         base_w = vid->vp.full_width;
-         base_h = vid->vp.full_height;
+         base_w = VIDEO_SCALE_W(vid->vp.full_dims);
+         base_h = VIDEO_SCALE_H(vid->vp.full_dims);
       }
       else
       {
          base_x = (int)vid->vp.x;
          base_y = (int)vid->vp.y;
-         base_w = vid->vp.width;
-         base_h = vid->vp.height;
+         base_w = VIDEO_SCALE_W(vid->vp.dims);
+         base_h = VIDEO_SCALE_H(vid->vp.dims);
       }
 
       dst.x = base_x + (int)(vx * (float)base_w);

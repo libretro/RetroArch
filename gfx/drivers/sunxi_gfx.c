@@ -822,8 +822,8 @@ static void sunxi_viewport_info(void *data, struct video_viewport *vp)
 
    vp->x = vp->y = 0;
 
-   vp->width  = vp->full_width  = _dispvars->src_width;
-   vp->height = vp->full_height = _dispvars->src_height;
+   vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(_dispvars->src_width,
+         _dispvars->src_height);
 }
 
 static bool sunxi_set_shader(void *data,

@@ -1587,8 +1587,8 @@ static void d3d9_font_render_msg(
    if (!d3d)
       return;
 
-   width  = d3d->vp.full_width;
-   height = d3d->vp.full_height;
+   width  = VIDEO_SCALE_W(d3d->vp.full_dims);
+   height = VIDEO_SCALE_H(d3d->vp.full_dims);
    if (!width || !height)
       return;
 
@@ -6997,17 +6997,16 @@ static void d3d9_hlsl_set_viewport(void *data,
 
    /* Width/height parameters are intentionally overwritten here:
     * the caller's values are not used (pre-existing behaviour). */
-   width  = d3d->vp.full_width;
-   height = d3d->vp.full_height;
+   width  = VIDEO_SCALE_W(d3d->vp.full_dims);
+   height = VIDEO_SCALE_H(d3d->vp.full_dims);
 
-   vp.full_width  = width;
-   vp.full_height = height;
+   vp.full_dims   = VIDEO_SCALE_PACK(width, height);
    video_driver_update_viewport(&vp, force_full, d3d->keep_aspect, true);
 
    x      = vp.x;
    y      = vp.y;
-   width  = vp.width;
-   height = vp.height;
+   width  = VIDEO_SCALE_W(vp.dims);
+   height = VIDEO_SCALE_H(vp.dims);
 
    /* D3D doesn't support negative X/Y viewports ... */
    if (x < 0)
@@ -7097,7 +7096,7 @@ static bool d3d9_hlsl_initialize(
    /* d3d->vp.full_* was written by the caller (d3d9_hlsl_init_internal
     * has already called set_size at this point). */
    d3d9_hlsl_set_viewport(d3d,
-      d3d->vp.full_width, d3d->vp.full_height, false, true);
+      VIDEO_SCALE_W(d3d->vp.full_dims), VIDEO_SCALE_H(d3d->vp.full_dims), false, true);
 
 
    {
@@ -7293,8 +7292,7 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
       unsigned new_width  = info->fullscreen ? full_x : info->width;
       unsigned new_height = info->fullscreen ? full_y : info->height;
       video_driver_set_output_size(new_width, new_height);
-      d3d->vp.full_width  = new_width;
-      d3d->vp.full_height = new_height;
+      d3d->vp.full_dims   = VIDEO_SCALE_PACK(new_width, new_height);
 
 #ifdef HAVE_WINDOW
       /* Use new_width / new_height directly rather than reading
@@ -7384,11 +7382,10 @@ static void d3d9_hlsl_viewport_info(void *data, struct video_viewport *vp)
 
    vp->x               = d3d->out_vp.X;
    vp->y               = d3d->out_vp.Y;
-   vp->width           = d3d->out_vp.Width;
-   vp->height          = d3d->out_vp.Height;
+   vp->dims            = VIDEO_SCALE_PACK(d3d->out_vp.Width,
+         d3d->out_vp.Height);
 
-   vp->full_width      = d3d->vp.full_width;
-   vp->full_height     = d3d->vp.full_height;
+   vp->full_dims       = d3d->vp.full_dims;
 }
 
 #ifdef HAVE_OVERLAY
@@ -8277,8 +8274,7 @@ static void d3d9_hlsl_set_resize(d3d9_video_t *d3d,
    d3d->video_info.width  = new_width;
    d3d->video_info.height = new_height;
    video_driver_set_output_size(new_width, new_height);
-   d3d->vp.full_width     = new_width;
-   d3d->vp.full_height    = new_height;
+   d3d->vp.full_dims      = VIDEO_SCALE_PACK(new_width, new_height);
 }
 
 static bool d3d9_hlsl_alive(void *data)
@@ -8293,8 +8289,8 @@ static bool d3d9_hlsl_alive(void *data)
    /* Read from local bookkeeping rather than video_st (which would
     * cross threads needlessly).  d3d->vp.full_* is
     * written at every set_size call site in this driver. */
-   temp_width  = d3d->vp.full_width;
-   temp_height = d3d->vp.full_height;
+   temp_width  = VIDEO_SCALE_W(d3d->vp.full_dims);
+   temp_height = VIDEO_SCALE_H(d3d->vp.full_dims);
 
    win32_check_window(NULL, &quit, &resize, &temp_width, &temp_height);
 
@@ -8314,8 +8310,7 @@ static bool d3d9_hlsl_alive(void *data)
          temp_height != 0)
    {
       video_driver_set_output_size(temp_width, temp_height);
-      d3d->vp.full_width  = temp_width;
-      d3d->vp.full_height = temp_height;
+      d3d->vp.full_dims   = VIDEO_SCALE_PACK(temp_width, temp_height);
    }
 
    return ret;
@@ -8383,8 +8378,8 @@ static bool d3d9_hlsl_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    bool ret                  = true;
    d3d9_video_t *d3d         = (d3d9_video_t*)data;
    LPDIRECT3DDEVICE9 d3dr    = d3d->dev;
-   unsigned width            = d3d->vp.full_width;
-   unsigned height           = d3d->vp.full_height;
+   unsigned width            = VIDEO_SCALE_W(d3d->vp.full_dims);
+   unsigned height           = VIDEO_SCALE_H(d3d->vp.full_dims);
 
    if (
             !(d3dr &&

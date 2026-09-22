@@ -6722,8 +6722,8 @@ bool rgui_is_video_config_equal(
       rgui_video_settings_t *config_b)
 {
    return    (config_a->aspect_ratio_idx == config_b->aspect_ratio_idx)
-          && (config_a->vp.width   == config_b->vp.width)
-          && (config_a->vp.height  == config_b->vp.height)
+          && (VIDEO_SCALE_W(config_a->vp.dims)   == VIDEO_SCALE_W(config_b->vp.dims))
+          && (VIDEO_SCALE_H(config_a->vp.dims)  == VIDEO_SCALE_H(config_b->vp.dims))
           && (config_a->vp.x       == config_b->vp.x)
           && (config_a->vp.y       == config_b->vp.y);
 }
@@ -6735,10 +6735,10 @@ static void rgui_get_video_config(
 {
    /* Could use settings->video_vp_custom directly,
     * but this seems to be the standard way of doing it... */
-   video_viewport_t *custom_vp      = &settings->video_vp_custom;
+   video_viewport_settings_t *custom_vp      = &settings->video_vp_custom;
    video_settings->aspect_ratio_idx = video_aspect_ratio_idx;
-   video_settings->vp.width         = custom_vp->width;
-   video_settings->vp.height        = custom_vp->height;
+   video_settings->vp.dims          = VIDEO_SCALE_PACK(custom_vp->width,
+         custom_vp->height);
    video_settings->vp.x             = custom_vp->x;
    video_settings->vp.y             = custom_vp->y;
 }
@@ -6751,10 +6751,10 @@ static void rgui_apply_video_config(
    settings_t *settings                   = config_get_ptr();
    /* Could use settings->video_vp_custom directly,
     * but this seems to be the standard way of doing it... */
-   video_viewport_t *custom_vp            = &settings->video_vp_custom;
+   video_viewport_settings_t *custom_vp            = &settings->video_vp_custom;
    settings->uints.video_aspect_ratio_idx = video_settings->aspect_ratio_idx;
-   custom_vp->width                       = video_settings->vp.width;
-   custom_vp->height                      = video_settings->vp.height;
+   custom_vp->width                       = VIDEO_SCALE_W(video_settings->vp.dims);
+   custom_vp->height                      = VIDEO_SCALE_H(video_settings->vp.dims);
    custom_vp->x                           = video_settings->vp.x;
    custom_vp->y                           = video_settings->vp.y;
 
@@ -6820,7 +6820,7 @@ static void rgui_update_menu_viewport(
    rgui->menu_video_settings.aspect_ratio_idx = ASPECT_RATIO_CUSTOM;
 
    /* Determine custom viewport layout */
-   if (fb_width > 0 && fb_height > 0 && vp.full_width > 0 && vp.full_height > 0)
+   if (fb_width > 0 && fb_height > 0 && VIDEO_SCALE_W(vp.full_dims) > 0 && VIDEO_SCALE_H(vp.full_dims) > 0)
    {
 #if defined(GEKKO)
       /* The Wii is a special case, since it uses anamorphic
@@ -6839,14 +6839,14 @@ static void rgui_update_menu_viewport(
       if (device_aspect > desired_aspect)
       {
          delta = (desired_aspect / device_aspect - 1.0f) / 2.0f + 0.5f;
-         rgui->menu_video_settings.vp.width  = (unsigned)(2.0f * (float)vp.full_width * delta);
-         rgui->menu_video_settings.vp.height = vp.full_height;
+         rgui->menu_video_settings.vp.dims   = VIDEO_SCALE_PACK((unsigned)(2.0f * (float)VIDEO_SCALE_W(vp.full_dims) * delta),
+               VIDEO_SCALE_H(vp.full_dims));
       }
       else
       {
          delta = (device_aspect / desired_aspect - 1.0f) / 2.0f + 0.5f;
-         rgui->menu_video_settings.vp.height = (unsigned)(2.0f * (float)vp.full_height * delta);
-         rgui->menu_video_settings.vp.width  = vp.full_width;
+         rgui->menu_video_settings.vp.dims   = VIDEO_SCALE_PACK(VIDEO_SCALE_W(vp.full_dims),
+               (unsigned)(2.0f * (float)VIDEO_SCALE_H(vp.full_dims) * delta));
       }
 #else
       /* Check whether we need to perform integer scaling */
@@ -6854,16 +6854,16 @@ static void rgui_update_menu_viewport(
 
       if (do_integer_scaling)
       {
-         unsigned width_scale  = (vp.full_width / fb_width);
-         unsigned height_scale = (vp.full_height / fb_height);
+         unsigned width_scale  = (VIDEO_SCALE_W(vp.full_dims) / fb_width);
+         unsigned height_scale = (VIDEO_SCALE_H(vp.full_dims) / fb_height);
          unsigned        scale = (width_scale <= height_scale)
                ? width_scale
                : height_scale;
 
          if (scale > 0)
          {
-            rgui->menu_video_settings.vp.width  = scale * fb_width;
-            rgui->menu_video_settings.vp.height = scale * fb_height;
+            rgui->menu_video_settings.vp.dims   = VIDEO_SCALE_PACK(scale * fb_width,
+                  scale * fb_height);
          }
          else
             do_integer_scaling = false;
@@ -6874,38 +6874,36 @@ static void rgui_update_menu_viewport(
        * aspect ratio */
       if (menu_rgui_aspect_ratio_lock == RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN)
       {
-         rgui->menu_video_settings.vp.width  = vp.full_width;
-         rgui->menu_video_settings.vp.height = vp.full_height;
+         rgui->menu_video_settings.vp.dims   = vp.full_dims;
       }
       /* Normal non-integer aspect-ratio-correct scaling */
       else if (!do_integer_scaling)
       {
-         float display_aspect_ratio = (float)vp.full_width / (float)vp.full_height;
+         float display_aspect_ratio = (float)VIDEO_SCALE_W(vp.full_dims) / (float)VIDEO_SCALE_H(vp.full_dims);
          float         aspect_ratio = (float)fb_width / (float)fb_height;
 
          if (aspect_ratio > display_aspect_ratio)
          {
-            rgui->menu_video_settings.vp.width  = vp.full_width;
-            rgui->menu_video_settings.vp.height = fb_height * vp.full_width / fb_width;
+            rgui->menu_video_settings.vp.dims   = VIDEO_SCALE_PACK(VIDEO_SCALE_W(vp.full_dims),
+                  fb_height * VIDEO_SCALE_W(vp.full_dims) / fb_width);
          }
          else
          {
-            rgui->menu_video_settings.vp.height = vp.full_height;
-            rgui->menu_video_settings.vp.width  = fb_width * vp.full_height / fb_height;
+            rgui->menu_video_settings.vp.dims   = VIDEO_SCALE_PACK(fb_width * VIDEO_SCALE_H(vp.full_dims) / fb_height,
+                  VIDEO_SCALE_H(vp.full_dims));
          }
       }
 #endif
 
       /* Sanity check */
-      if (rgui->menu_video_settings.vp.width < 1)
-         rgui->menu_video_settings.vp.width = 1;
-      if (rgui->menu_video_settings.vp.height < 1)
-         rgui->menu_video_settings.vp.height = 1;
+      if (VIDEO_SCALE_W(rgui->menu_video_settings.vp.dims) < 1)
+         VIDEO_SCALE_PUT_W(rgui->menu_video_settings.vp.dims, 1);
+      if (VIDEO_SCALE_H(rgui->menu_video_settings.vp.dims) < 1)
+         VIDEO_SCALE_PUT_H(rgui->menu_video_settings.vp.dims, 1);
    }
    else
    {
-      rgui->menu_video_settings.vp.width  = 1;
-      rgui->menu_video_settings.vp.height = 1;
+      rgui->menu_video_settings.vp.dims   = VIDEO_SCALE_PACK(1, 1);
    }
 
    /* Leave the viewport at the origin and let the video driver's
@@ -6986,9 +6984,9 @@ static bool rgui_set_aspect_ratio(
     * 'shrink' to a minimum height of 192 */
    rgui->frame_buf.height = 240;
    video_driver_get_viewport_info(&vp);
-   if (vp.full_height < rgui->frame_buf.height)
-      rgui->frame_buf.height = (vp.full_height > RGUI_MIN_FB_HEIGHT)
-            ? vp.full_height
+   if (VIDEO_SCALE_H(vp.full_dims) < rgui->frame_buf.height)
+      rgui->frame_buf.height = (VIDEO_SCALE_H(vp.full_dims) > RGUI_MIN_FB_HEIGHT)
+            ? VIDEO_SCALE_H(vp.full_dims)
             : RGUI_MIN_FB_HEIGHT;
 #endif
 
@@ -7154,10 +7152,10 @@ static bool rgui_set_aspect_ratio(
          ? rgui->frame_buf.width
          : base_term_width;
 #if !(defined(GEKKO) || defined(DINGUX) || defined(DJGPP))
-   if (vp.full_width < rgui->frame_buf.width)
+   if (VIDEO_SCALE_W(vp.full_dims) < rgui->frame_buf.width)
    {
-      rgui->frame_buf.width = (vp.full_width > RGUI_MIN_FB_WIDTH)
-            ? RGUI_ROUND_FB_WIDTH(vp.full_width)
+      rgui->frame_buf.width = (VIDEO_SCALE_W(vp.full_dims) > RGUI_MIN_FB_WIDTH)
+            ? RGUI_ROUND_FB_WIDTH(VIDEO_SCALE_W(vp.full_dims))
             : RGUI_MIN_FB_WIDTH;
 
       /* An annoyance: have to rescale the frame buffer
@@ -7409,8 +7407,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    /* Get initial 'window' dimensions */
    video_driver_get_viewport_info(&vp);
-   rgui->window_width               = vp.full_width;
-   rgui->window_height              = vp.full_height;
+   rgui->window_width               = VIDEO_SCALE_W(vp.full_dims);
+   rgui->window_height              = VIDEO_SCALE_H(vp.full_dims);
    rgui->flags                     &= ~RGUI_FLAG_IGNORE_RESIZE_EVENTS;
 
    /* Set aspect ratio
@@ -7572,7 +7570,7 @@ static void rgui_set_texture(void *data)
 
       /* If viewport is currently the same size (or smaller)
        * than the menu framebuffer, no scaling is required */
-      if ((vp.width <= fb_width) && (vp.height <= fb_height))
+      if ((VIDEO_SCALE_W(vp.dims) <= fb_width) && (VIDEO_SCALE_H(vp.dims) <= fb_height))
          rgui_set_texture_frame(video_st, rgui->frame_buf.data,
                false, fb_width, fb_height, 1.0f);
       else
@@ -7588,8 +7586,8 @@ static void rgui_set_texture(void *data)
          /* Determine output size */
          if (internal_upscale_level == RGUI_UPSCALE_AUTO)
          {
-            out_width  = ((vp.width / fb_width) + 1) * fb_width;
-            out_height = ((vp.height / fb_height) + 1) * fb_height;
+            out_width  = ((VIDEO_SCALE_W(vp.dims) / fb_width) + 1) * fb_width;
+            out_height = ((VIDEO_SCALE_H(vp.dims) / fb_height) + 1) * fb_height;
          }
          else
          {

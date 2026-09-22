@@ -683,7 +683,7 @@ static void gfx_display_flush_impl(gfx_display_t *p_disp)
       coords.color         = p_disp->batch_color;
       draw.x               = p_disp->batch_first_x;
       draw.y               = p_disp->batch_first_y;
-      draw.dims            = VIDEO_SCALE_PACK(VIDEO_SCALE_W(p_disp->batch_first_dims), VIDEO_SCALE_H(p_disp->batch_first_dims));
+      draw.dims            = p_disp->batch_first_dims;
    }
    else
    {
@@ -693,7 +693,7 @@ static void gfx_display_flush_impl(gfx_display_t *p_disp)
       coords.color         = p_disp->batch_color;
       draw.x               = 0;
       draw.y               = 0;
-      draw.dims            = VIDEO_SCALE_PACK(VIDEO_SCALE_W(p_disp->batch_video_dims), VIDEO_SCALE_H(p_disp->batch_video_dims));
+      draw.dims            = p_disp->batch_video_dims;
    }
    draw.coords             = &coords;
    draw.matrix_data        = NULL;
@@ -1495,7 +1495,7 @@ void gfx_display_free(void)
 
    p_disp->flags               = 0;
    p_disp->header_height       = 0;
-   p_disp->framebuf_dims       = VIDEO_SCALE_PACK(0, 0);
+   p_disp->framebuf_dims       = 0;
    p_disp->framebuf_pitch      = 0;
    p_disp->menu_driver_id      = MENU_DRIVER_ID_UNKNOWN;
    p_disp->dispctx             = NULL;

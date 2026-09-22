@@ -193,10 +193,8 @@ static void switch_input_poll(void *data)
          /* convert from event coordinates to core and screen coordinates */
          vp.x                        = 0;
          vp.y                        = 0;
-         vp.width                    = 0;
-         vp.height                   = 0;
-         vp.full_width               = 0;
-         vp.full_height              = 0;
+         vp.dims                     = 0;
+         vp.full_dims                = 0;
 
          video_driver_translate_coord_viewport_wrap(
             &vp,

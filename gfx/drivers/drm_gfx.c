@@ -959,8 +959,8 @@ static void drm_viewport_info(void *data, struct video_viewport *vp)
 
    vp->x = vp->y = 0;
 
-   vp->width  = vp->full_width  = vid->core_width;
-   vp->height = vp->full_height = vid->core_height;
+   vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(vid->core_width,
+         vid->core_height);
 }
 
 static bool drm_suppress_screensaver(void *a, bool b) { return false; }

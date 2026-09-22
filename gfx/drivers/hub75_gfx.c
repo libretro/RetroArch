@@ -1021,10 +1021,10 @@ static void hub75_viewport_info(void *data, struct video_viewport *vp)
       return;
    vp->x           = (int)hub75->viewport_x;
    vp->y           = (int)hub75->viewport_y;
-   vp->width       = hub75->viewport_width;
-   vp->height      = hub75->viewport_height;
-   vp->full_width  = hub75->canvas_width;
-   vp->full_height = hub75->canvas_height;
+   vp->dims        = VIDEO_SCALE_PACK(hub75->viewport_width,
+         hub75->viewport_height);
+   vp->full_dims   = VIDEO_SCALE_PACK(hub75->canvas_width,
+         hub75->canvas_height);
 }
 
 #ifdef HAVE_OVERLAY

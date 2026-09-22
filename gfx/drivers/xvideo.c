@@ -549,8 +549,7 @@ static void xv_calc_out_rect(bool keep_aspect,
       struct video_viewport *vp,
       unsigned vp_width, unsigned vp_height)
 {
-   vp->full_width  = vp_width;
-   vp->full_height = vp_height;
+   vp->full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
    video_driver_update_viewport(vp, false, keep_aspect, true);
 }
 
@@ -799,8 +798,7 @@ static void *xv_init(const video_info_t *video,
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
    xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
-   xv->vp.full_width = target.width;
-   xv->vp.full_height = target.height;
+   xv->vp.full_dims  = VIDEO_SCALE_PACK(target.width, target.height);
 
    return xv;
 
@@ -971,15 +969,14 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
       xv->render_func16(xv, frame, width, height, pitch);
 
    xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
-   xv->vp.full_width  = target.width;
-   xv->vp.full_height = target.height;
+   xv->vp.full_dims   = VIDEO_SCALE_PACK(target.width, target.height);
 
    if (msg)
       xv_render_msg(xv, msg, width << 1, height << 1, video_info);
 
    XvShmPutImage(g_x11_dpy, xv->port, g_x11_win, xv->gc, xv->image,
          0, 0, width << 1, height << 1,
-         xv->vp.x, xv->vp.y, xv->vp.width, xv->vp.height,
+         xv->vp.x, xv->vp.y, VIDEO_SCALE_W(xv->vp.dims), VIDEO_SCALE_H(xv->vp.dims),
          true);
    XSync(g_x11_dpy, False);
 

@@ -2004,12 +2004,12 @@ static void gfx_widgets_frame_state(void *data)
       0.00, 1.00, 0.00, 1.00,
       };
 
-      if (video_driver_get_viewport_info(&content_vp) && content_vp.width && content_vp.height)
+      if (video_driver_get_viewport_info(&content_vp) && VIDEO_SCALE_W(content_vp.dims) && VIDEO_SCALE_H(content_vp.dims))
       {
          overlay_x      = content_vp.x;
          overlay_y      = content_vp.y;
-         overlay_width  = content_vp.width;
-         overlay_height = content_vp.height;
+         overlay_width  = VIDEO_SCALE_W(content_vp.dims);
+         overlay_height = VIDEO_SCALE_H(content_vp.dims);
       }
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
 

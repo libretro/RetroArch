@@ -535,8 +535,8 @@ static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
       return;
 
    /* Default fallback: center of the viewport */
-   mouse_x = viewport.x + viewport.width  / 2;
-   mouse_y = viewport.y + viewport.height / 2;
+   mouse_x = viewport.x + VIDEO_SCALE_W(viewport.dims)  / 2;
+   mouse_y = viewport.y + VIDEO_SCALE_H(viewport.dims) / 2;
 
    /* Sync to OS cursor position; fall back to center if it fails */
    if (!winraw_sync_mouse_to_cursor(wr))
@@ -548,8 +548,8 @@ static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
       }
    }
 
-   wr->view_abs_ratio_x   = (double)viewport.full_width  / 65535.0;
-   wr->view_abs_ratio_y   = (double)viewport.full_height / 65535.0;
+   wr->view_abs_ratio_x   = (double)VIDEO_SCALE_W(viewport.full_dims)  / 65535.0;
+   wr->view_abs_ratio_y   = (double)VIDEO_SCALE_H(viewport.full_dims) / 65535.0;
 
    wr->flags             |= WRAW_INP_FLG_MOUSE_XY_MAPPING_READY;
 }

@@ -437,8 +437,8 @@ static void sdl_gfx_viewport_info(void *data, struct video_viewport *vp)
    sdl_video_t *vid = (sdl_video_t*)data;
    vp->x      = 0;
    vp->y      = 0;
-   vp->width  = vp->full_width  = vid->screen->w;
-   vp->height = vp->full_height = vid->screen->h;
+   vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(vid->screen->w,
+         vid->screen->h);
 }
 
 static void sdl_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)

@@ -554,8 +554,8 @@ static int16_t vita_input_state(
                float tmp_x, tmp_y;
 
                video_driver_get_viewport_info(&vp);
-               tmp_x = (psp->touch[0].report[idx].x - psp->panelInfo[0].minAaX) * vp.width/(psp->panelInfo[0].maxAaX - psp->panelInfo[0].minAaX);
-               tmp_y = (psp->touch[0].report[idx].y - psp->panelInfo[0].minAaY) * vp.height/(psp->panelInfo[0].maxAaY - psp->panelInfo[0].minAaY);
+               tmp_x = (psp->touch[0].report[idx].x - psp->panelInfo[0].minAaX) * VIDEO_SCALE_W(vp.dims)/(psp->panelInfo[0].maxAaX - psp->panelInfo[0].minAaX);
+               tmp_y = (psp->touch[0].report[idx].y - psp->panelInfo[0].minAaY) * VIDEO_SCALE_H(vp.dims)/(psp->panelInfo[0].maxAaY - psp->panelInfo[0].minAaY);
 
                if (video_driver_translate_coord_viewport_confined_wrap(
                         &vp,

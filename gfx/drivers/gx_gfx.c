@@ -506,8 +506,7 @@ static void gx_set_video_mode(void *data, unsigned fbWidth, unsigned lines,
       gx_mode.vfilter[6] = 0;
    }
 
-   gx->vp.full_width  = gx_mode.fbWidth;
-   gx->vp.full_height = gx_mode.xfbHeight;
+   gx->vp.full_dims   = VIDEO_SCALE_PACK(gx_mode.fbWidth, gx_mode.xfbHeight);
    gx->double_strike  = (modetype == VI_NON_INTERLACE);
    gx->should_resize  = true;
 
@@ -852,8 +851,7 @@ static void *gx_init(const video_info_t *video,
    init_vtx(gx, video, video_smooth);
    build_disp_list();
 
-   gx->vp.full_width  = gx_mode.fbWidth;
-   gx->vp.full_height = gx_mode.xfbHeight;
+   gx->vp.full_dims   = VIDEO_SCALE_PACK(gx_mode.fbWidth, gx_mode.xfbHeight);
    gx->should_resize  = true;
    gx->old_width      = 0;
    gx->old_height     = 0;
@@ -1005,8 +1003,8 @@ static void gx_resize(gx_video_t *gx,
    float top = 1, bottom = -1, left = -1, right = 1;
    int x = 0, y = 0;
    const global_t           *global = global_get_ptr();
-   unsigned width                   = gx->vp.full_width;
-   unsigned height                  = gx->vp.full_height;
+   unsigned width                   = VIDEO_SCALE_W(gx->vp.full_dims);
+   unsigned height                  = VIDEO_SCALE_H(gx->vp.full_dims);
 
    if (!gx)
       return;
@@ -1040,8 +1038,8 @@ static void gx_resize(gx_video_t *gx,
       video_viewport_get_scaled_aspect2(&gx->vp, width, height, true, device_aspect, desired_aspect);
       x      = gx->vp.x;
       y      = gx->vp.y;
-      width  = gx->vp.width;
-      height = gx->vp.height;
+      width  = VIDEO_SCALE_W(gx->vp.dims);
+      height = VIDEO_SCALE_H(gx->vp.dims);
    }
 
    /* Overscan correction */
@@ -1099,8 +1097,7 @@ static void gx_resize(gx_video_t *gx,
 
    gx->vp.x      = x;
    gx->vp.y      = y;
-   gx->vp.width  = width;
-   gx->vp.height = height;
+   gx->vp.dims   = VIDEO_SCALE_PACK(width, height);
 
    GX_SetViewportJitter(x, y, width, height, 0, 1, 1);
 
@@ -1735,7 +1732,7 @@ static bool gx_frame(void *data, const void *frame,
    if (msg && !gx->menu_texture_enable)
    {
       unsigned x = 7 * (gx->double_strike ? 1 : 2);
-      unsigned y = gx->vp.full_height - (35 * (gx->double_strike ? 1 : 2));
+      unsigned y = VIDEO_SCALE_H(gx->vp.full_dims) - (35 * (gx->double_strike ? 1 : 2));
 
       gx_blit_line(gx, x, y, msg);
       clear_efb = GX_TRUE;

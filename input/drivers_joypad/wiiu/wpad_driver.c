@@ -115,8 +115,8 @@ static void wpad_get_calibrated_point(VPADTouchData *point,
    VPADTouchData calibrated720p = {0};
 
    VPADGetTPCalibratedPoint(channel, &calibrated720p, &(vpad->tpNormal));
-   point->x = wpad_scale_touchpad(12, 1268, 0, viewport->full_width, calibrated720p.x);
-   point->y = wpad_scale_touchpad(12, 708, 0, viewport->full_height, calibrated720p.y);
+   point->x = wpad_scale_touchpad(12, 1268, 0, VIDEO_SCALE_W(viewport->full_dims), calibrated720p.x);
+   point->y = wpad_scale_touchpad(12, 708, 0, VIDEO_SCALE_H(viewport->full_dims), calibrated720p.y);
 }
 
 static void wpad_apply_clamping(VPADTouchData *point, struct video_viewport *viewport, bool *clamped)
@@ -127,9 +127,9 @@ static void wpad_apply_clamping(VPADTouchData *point, struct video_viewport *vie
       point->x = viewport->x;
       *clamped = true;
    }
-   else if (point->x > (viewport->x + viewport->width))
+   else if (point->x > (viewport->x + VIDEO_SCALE_W(viewport->dims)))
    {
-      point->x = viewport->x + viewport->width;
+      point->x = viewport->x + VIDEO_SCALE_W(viewport->dims);
       *clamped = true;
    }
 
@@ -139,9 +139,9 @@ static void wpad_apply_clamping(VPADTouchData *point, struct video_viewport *vie
       point->y = viewport->y;
       *clamped = true;
    }
-   else if (point->y > (viewport->y + viewport->height))
+   else if (point->y > (viewport->y + VIDEO_SCALE_H(viewport->dims)))
    {
-      point->y =  viewport->y + viewport->height;
+      point->y =  viewport->y + VIDEO_SCALE_H(viewport->dims);
       *clamped = true;
    }
 }
@@ -170,9 +170,9 @@ static void wpad_update_touch_state(int16_t state[3][2],
    wpad_get_touch_coordinates(&point, vpad, channel, &viewport, &touch_clamped);
 
    state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X] = wpad_scale_touchpad(
-         viewport.x, viewport.x + viewport.width, -0x7fff, 0x7fff, point.x);
+         viewport.x, viewport.x + VIDEO_SCALE_W(viewport.dims), -0x7fff, 0x7fff, point.x);
    state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = wpad_scale_touchpad(
-         viewport.y, viewport.y + viewport.height, -0x7fff, 0x7fff, point.y);
+         viewport.y, viewport.y + VIDEO_SCALE_H(viewport.dims), -0x7fff, 0x7fff, point.y);
 
    if (!touch_clamped)
       *buttons |= VPAD_BUTTON_TOUCH;

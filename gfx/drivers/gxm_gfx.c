@@ -1852,7 +1852,7 @@ static void gxm_font_render_message(
    int x                                  = roundf(pos_x * width);
    const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / vita->vp.height;
+   line_height = line_metrics->height * scale / VIDEO_SCALE_H(vita->vp.dims);
    for (;;)
    {
       size_t msg_len;
@@ -1877,13 +1877,12 @@ static void gxm_set_viewport_wrapper(void *data, unsigned vp_width,
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
    vita_video_t *vita        = (vita_video_t*)data;
 
-   vita->vp.full_width  = vp_width;
-   vita->vp.full_height = vp_height;
+   vita->vp.full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
    video_driver_update_viewport(&vita->vp, force_full,
    vita->keep_aspect, true);
 
-   gxm_set_viewport(vita->vp.x, vita->vp.y, vita->vp.width,
-   vita->vp.height);
+   gxm_set_viewport(vita->vp.x, vita->vp.y, VIDEO_SCALE_W(vita->vp.dims),
+   VIDEO_SCALE_H(vita->vp.dims));
    gxm_set_projection(vita, &ortho, allow_rotate);
 }
 
@@ -2088,13 +2087,11 @@ static void gxm_update_viewport(vita_video_t* vita)
    /* For rotated displays, swap dimensions before viewport calculation */
    if (is_rotated && vita->keep_aspect)
    {
-      vita->vp.full_width  = temp_height;
-      vita->vp.full_height = temp_width;
+      vita->vp.full_dims   = VIDEO_SCALE_PACK(temp_height, temp_width);
    }
    else
    {
-      vita->vp.full_width  = temp_width;
-      vita->vp.full_height = temp_height;
+      vita->vp.full_dims   = VIDEO_SCALE_PACK(temp_width, temp_height);
    }
 
    video_driver_update_viewport(&vita->vp, false, vita->keep_aspect, true);
@@ -2108,8 +2105,12 @@ static void gxm_update_viewport(vita_video_t* vita)
    }
 
    /* Ensure even dimensions */
-   vita->vp.width      += vita->vp.width & 0x1;
-   vita->vp.height     += vita->vp.height & 0x1;
+   {
+      unsigned vp_w        = VIDEO_SCALE_W(vita->vp.dims);
+      unsigned vp_h        = VIDEO_SCALE_H(vita->vp.dims);
+      vita->vp.dims        = VIDEO_SCALE_PACK(vp_w + (vp_w & 0x1),
+            vp_h + (vp_h & 0x1));
+   }
 
    vita->should_resize  = false;
 }
@@ -2246,8 +2247,8 @@ static bool gxm_frame(void *data, const void *frame,
       {
          const float radian = 270 * 0.0174532925f;
          const float rad = vita->rotation * radian;
-         float scalex = vita->vp.width  / (float)vita->width;
-         float scaley = vita->vp.height / (float)vita->height;
+         float scalex = VIDEO_SCALE_W(vita->vp.dims)  / (float)vita->width;
+         float scaley = VIDEO_SCALE_H(vita->vp.dims) / (float)vita->height;
          gxm_draw_texture_scale_rotate(vita->texture,vita->vp.x,
                vita->vp.y, scalex, scaley, rad);
       }

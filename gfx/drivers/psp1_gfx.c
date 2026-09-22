@@ -262,16 +262,20 @@ static INLINE void psp_set_tex_coords (psp1_sprite_t* framecoords,
 
 static void psp_update_viewport(psp1_video_t* psp)
 {
-   psp->vp.full_width  = SCEGU_SCR_WIDTH;
-   psp->vp.full_height = SCEGU_SCR_HEIGHT;
+   psp->vp.full_dims   = VIDEO_SCALE_PACK(SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
    video_driver_update_viewport(&psp->vp, false, psp->keep_aspect, true);
 
    /* Ensure even dimensions */
-   psp->vp.width  += psp->vp.width  & 0x1;
-   psp->vp.height += psp->vp.height & 0x1;
+   {
+      unsigned vp_w = VIDEO_SCALE_W(psp->vp.dims);
+      unsigned vp_h = VIDEO_SCALE_H(psp->vp.dims);
+      psp->vp.dims  = VIDEO_SCALE_PACK(vp_w + (vp_w & 0x1),
+            vp_h + (vp_h & 0x1));
 
-   psp_set_screen_coords(psp->frame_coords, psp->vp.x,
-         psp->vp.y, psp->vp.width, psp->vp.height, psp->rotation);
+      psp_set_screen_coords(psp->frame_coords, psp->vp.x,
+            psp->vp.y, VIDEO_SCALE_W(psp->vp.dims),
+            VIDEO_SCALE_H(psp->vp.dims), psp->rotation);
+   }
 
    psp->should_resize = false;
 }
@@ -353,10 +357,10 @@ static void *psp_init(const video_info_t *video,
 
    psp->vp.x                = 0;
    psp->vp.y                = 0;
-   psp->vp.width            = SCEGU_SCR_WIDTH;
-   psp->vp.height           = SCEGU_SCR_HEIGHT;
-   psp->vp.full_width       = SCEGU_SCR_WIDTH;
-   psp->vp.full_height      = SCEGU_SCR_HEIGHT;
+   psp->vp.dims             = VIDEO_SCALE_PACK(SCEGU_SCR_WIDTH,
+         SCEGU_SCR_HEIGHT);
+   psp->vp.full_dims        = VIDEO_SCALE_PACK(SCEGU_SCR_WIDTH,
+         SCEGU_SCR_HEIGHT);
 
    /* Make sure anything using uncached pointers reserves
     * whole cachelines (memory address and size need to be a multiple of 64)
@@ -934,8 +938,8 @@ static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    /* The GE wrote this buffer, so read it through the uncached alias. */
    src_buffer = TO_UNCACHED_PTR(src_buffer);
 
-   width     = psp->vp.width;
-   height    = psp->vp.height;
+   width     = VIDEO_SCALE_W(psp->vp.dims);
+   height    = VIDEO_SCALE_H(psp->vp.dims);
 
    /* The caller sizes its buffer from the viewport and encodes all of
     * it, so anything the framebuffer does not cover reads as black. */

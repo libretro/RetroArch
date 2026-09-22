@@ -830,7 +830,7 @@ static void gl1_raster_font_render_line(gl1_t *gl,
    int n;
    const char* msg_end  = msg + msg_len;
    int x                = pre_x;
-   int y                = roundf(pos_y * gl->vp.height);
+   int y                = roundf(pos_y * VIDEO_SCALE_H(gl->vp.dims));
    int delta_x          = 0;
    int delta_y          = 0;
    const struct font_glyph* (*get_glyph)(void*, uint32_t) = font->font_driver->get_glyph;
@@ -933,9 +933,9 @@ static void gl1_raster_font_render_message(gl1_t *gl,
    struct font_line_metrics *line_metrics = NULL;
    int lines                              = 0;
    const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
-   int x                                  = roundf(pos_x * gl->vp.width);
+   int x                                  = roundf(pos_x * VIDEO_SCALE_W(gl->vp.dims));
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / gl->vp.height;
+   line_height = line_metrics->height * scale / VIDEO_SCALE_H(gl->vp.dims);
    for (;;)
    {
       size_t msg_len;
@@ -1058,8 +1058,8 @@ static void gl1_raster_font_render_msg(
        * gl->vp as-is. */
       if (!font->block)
          gl1_raster_font_setup_viewport(gl, width, height, font, full_screen);
-      inv_win_width           = 1.0f / gl->vp.width;
-      inv_win_height          = 1.0f / gl->vp.height;
+      inv_win_width           = 1.0f / VIDEO_SCALE_W(gl->vp.dims);
+      inv_win_height          = 1.0f / VIDEO_SCALE_H(gl->vp.dims);
 
       if (msg && *msg
             && font->font_data  && font->font_driver)
@@ -1074,8 +1074,8 @@ static void gl1_raster_font_render_msg(
             color_dark[3] = color[3] * drop_alpha;
 
             gl1_raster_font_render_message(gl, font, msg, scale, color_dark,
-                  x + scale * drop_x / gl->vp.width,
-                  y + scale * drop_y / gl->vp.height,
+                  x + scale * drop_x / VIDEO_SCALE_W(gl->vp.dims),
+                  y + scale * drop_y / VIDEO_SCALE_H(gl->vp.dims),
                   inv_tex_size_x,
                   inv_tex_size_y,
                   inv_win_width,
@@ -1230,7 +1230,7 @@ static void gl1_render_overlay(gl1_t *gl,
    gl->coords.color     = gl->white_color_ptr;
    gl->coords.vertices  = 4;
    if (gl->flags & GL1_FLAG_OVERLAY_FULLSCREEN)
-      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+      glViewport(gl->vp.x, gl->vp.y, VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
 }
 
 static void gl1_free_overlay(gl1_t *gl)
@@ -1446,8 +1446,7 @@ static void *gl1_init(const video_info_t *video,
       video_driver_set_output_size(temp_width, temp_height);
    else
       video_driver_get_output_size(&temp_width, &temp_height);
-   gl1->vp.full_width  = temp_width;
-   gl1->vp.full_height = temp_height;
+   gl1->vp.full_dims   = VIDEO_SCALE_PACK(temp_width, temp_height);
 
    RARCH_LOG("[GL1] Using resolution %ux%u.\n", temp_width, temp_height);
 
@@ -1601,19 +1600,18 @@ static void gl1_set_viewport(gl1_t *gl1,
       unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate)
 {
-   gl1->vp.full_width  = vp_width;
-   gl1->vp.full_height = vp_height;
+   gl1->vp.full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
    video_driver_update_viewport(&gl1->vp, force_full,
          (gl1->flags & GL1_FLAG_KEEP_ASPECT) ? true : false, false);
 
-   glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
+   glViewport(gl1->vp.x, gl1->vp.y, VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
    gl1_set_projection(gl1, &gl1_default_ortho, allow_rotate);
 
    /* Set last backbuffer viewport. */
    if (!force_full)
    {
-      gl1->out_vp_width  = gl1->vp.width;
-      gl1->out_vp_height = gl1->vp.height;
+      gl1->out_vp_width  = VIDEO_SCALE_W(gl1->vp.dims);
+      gl1->out_vp_height = VIDEO_SCALE_H(gl1->vp.dims);
    }
 }
 
@@ -1922,8 +1920,8 @@ static void gl1_readback(gl1_t *gl1,
    glReadPixels(
          (gl1->vp.x > 0) ? gl1->vp.x : 0,
          (gl1->vp.y > 0) ? gl1->vp.y : 0,
-         (gl1->vp.width  > video_width)  ? video_width  : gl1->vp.width,
-         (gl1->vp.height > video_height) ? video_height : gl1->vp.height,
+         (VIDEO_SCALE_W(gl1->vp.dims)  > video_width)  ? video_width  : VIDEO_SCALE_W(gl1->vp.dims),
+         (VIDEO_SCALE_H(gl1->vp.dims) > video_height) ? video_height : VIDEO_SCALE_H(gl1->vp.dims),
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
 
 #ifndef VITA
@@ -2468,7 +2466,7 @@ static bool gl1_frame(void *data, const void *frame,
             glViewport(0, 0, video_width, video_height);
             gl1_draw_tex(gl1, pot_width, pot_height,
                   width, height, gl1->menu_tex, frame_to_copy, fb_4444);
-            glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
+            glViewport(gl1->vp.x, gl1->vp.y, VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
          }
          else
             gl1_draw_tex(gl1, pot_width, pot_height,
@@ -2607,7 +2605,7 @@ static bool gl1_frame(void *data, const void *frame,
        * the full window viewport still latched and the image is
        * stretched to fill, ignoring the aspect ratio. Same convention
        * as the fullscreen menu-texture branch above. */
-      glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
+      glViewport(gl1->vp.x, gl1->vp.y, VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
    }
 #endif
 
@@ -2730,8 +2728,8 @@ static bool gl1_alive(void *data)
    /* Read from local bookkeeping rather than video_st: this runs on
     * the video thread, and gl1->vp.full_* is this driver's own state,
     * written at every set_size call site in this driver. */
-   temp_width  = gl1->vp.full_width;
-   temp_height = gl1->vp.full_height;
+   temp_width  = VIDEO_SCALE_W(gl1->vp.full_dims);
+   temp_height = VIDEO_SCALE_H(gl1->vp.full_dims);
 
    gl1->ctx_driver->check_window(gl1->ctx_data,
             &quit, &resize, &temp_width, &temp_height);
@@ -2744,8 +2742,7 @@ static bool gl1_alive(void *data)
    if (temp_width != 0 && temp_height != 0)
    {
       video_driver_set_output_size(temp_width, temp_height);
-      gl1->vp.full_width  = temp_width;
-      gl1->vp.full_height = temp_height;
+      gl1->vp.full_dims   = VIDEO_SCALE_PACK(temp_width, temp_height);
    }
 
    return ret;
@@ -2860,8 +2857,8 @@ static void gl1_viewport_info(void *data, struct video_viewport *vp)
    *vp             = gl1->vp;
 
    /* Adjust as GL viewport is bottom-up. */
-   top_y           = vp->y + vp->height;
-   top_dist        = vp->full_height - top_y;
+   top_y           = vp->y + VIDEO_SCALE_H(vp->dims);
+   top_dist        = VIDEO_SCALE_H(vp->full_dims) - top_y;
    vp->y           = top_dist;
 }
 
@@ -2873,7 +2870,7 @@ static bool gl1_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    if (!gl1)
       return false;
 
-   num_pixels                      = gl1->vp.width * gl1->vp.height;
+   num_pixels                      = VIDEO_SCALE_W(gl1->vp.dims) * VIDEO_SCALE_H(gl1->vp.dims);
    gl1->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
 
    if (!gl1->readback_buffer_screenshot)
@@ -2889,10 +2886,10 @@ static bool gl1_read_viewport(void *data, uint8_t *buffer, bool is_idle)
        * come from the surface size kept in gl1->vp.full_*.
        * gl1->video_{width,height} holds the core's frame size, not the
        * window size, so we read the surface size from gl1->vp.full_*. */
-      unsigned vd_w = gl1->vp.full_width;
-      unsigned vd_h = gl1->vp.full_height;
-      unsigned rb_w = (gl1->vp.width  > vd_w) ? vd_w : gl1->vp.width;
-      unsigned rb_h = (gl1->vp.height > vd_h) ? vd_h : gl1->vp.height;
+      unsigned vd_w = VIDEO_SCALE_W(gl1->vp.full_dims);
+      unsigned vd_h = VIDEO_SCALE_H(gl1->vp.full_dims);
+      unsigned rb_w = (VIDEO_SCALE_W(gl1->vp.dims)  > vd_w) ? vd_w : VIDEO_SCALE_W(gl1->vp.dims);
+      unsigned rb_h = (VIDEO_SCALE_H(gl1->vp.dims) > vd_h) ? vd_h : VIDEO_SCALE_H(gl1->vp.dims);
       video_frame_convert_rgba_to_bgr(
             (const void*)gl1->readback_buffer_screenshot,
             buffer,
@@ -3442,8 +3439,8 @@ static bool gl1_read_viewport_hdr(void *data, uint16_t *buffer,
    vh   = gl1->screen_height;
    vp_x = (gl1->vp.x > 0) ? gl1->vp.x : 0;
    vp_y = (gl1->vp.y > 0) ? gl1->vp.y : 0;
-   w    = (gl1->vp.width  > vw) ? vw : gl1->vp.width;
-   h    = (gl1->vp.height > vh) ? vh : gl1->vp.height;
+   w    = (VIDEO_SCALE_W(gl1->vp.dims)  > vw) ? vw : VIDEO_SCALE_W(gl1->vp.dims);
+   h    = (VIDEO_SCALE_H(gl1->vp.dims) > vh) ? vh : VIDEO_SCALE_H(gl1->vp.dims);
    if (!w || !h)
       return false;
 

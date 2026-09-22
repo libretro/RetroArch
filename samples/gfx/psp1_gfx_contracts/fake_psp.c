@@ -542,8 +542,7 @@ void video_driver_update_viewport(struct video_viewport *vp,
    (void)force_full; (void)keep_aspect; (void)y_down;
    vp->x      = vp_x;
    vp->y      = vp_y;
-   vp->width  = (unsigned)vp_w;
-   vp->height = (unsigned)vp_h;
+   vp->dims   = VIDEO_SCALE_PACK((unsigned)vp_w, (unsigned)vp_h);
 }
 
 video_driver_state_t *video_state_get_ptr(void)

@@ -736,14 +736,12 @@ static bool take_screenshot_viewport(
 
    vp.x                           = 0;
    vp.y                           = 0;
-   vp.width                       = 0;
-   vp.height                      = 0;
-   vp.full_width                  = 0;
-   vp.full_height                 = 0;
+   vp.dims                        = 0;
+   vp.full_dims                   = 0;
 
    video_driver_get_viewport_info(&vp);
 
-   if (!vp.width || !vp.height)
+   if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
       return false;
 
    /* Prefer a native HDR read-back when the driver offers one. This path is
@@ -754,7 +752,7 @@ static bool take_screenshot_viewport(
    if (video_st->current_video->read_viewport_hdr)
    {
       struct rpng_hdr_metadata hdr;
-      uint16_t *hdr_buffer = (uint16_t*)malloc((size_t)vp.width * vp.height * 6);
+      uint16_t *hdr_buffer = (uint16_t*)malloc((size_t)VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims) * 6);
 
       memset(&hdr, 0, sizeof(hdr));
       if (hdr_buffer)
@@ -764,17 +762,17 @@ static bool take_screenshot_viewport(
                   runloop_flags & RUNLOOP_FLAG_IDLE, &hdr))
          {
             output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
-            if (vp.width > VIDEO_DRIVER_OUTPUT_WIDTH(output_size))
-               vp.width = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
-            if (vp.height > VIDEO_DRIVER_OUTPUT_HEIGHT(output_size))
-               vp.height = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
+            if (VIDEO_SCALE_W(vp.dims) > VIDEO_DRIVER_OUTPUT_WIDTH(output_size))
+               VIDEO_SCALE_PUT_W(vp.dims, VIDEO_DRIVER_OUTPUT_WIDTH(output_size));
+            if (VIDEO_SCALE_H(vp.dims) > VIDEO_DRIVER_OUTPUT_HEIGHT(output_size))
+               VIDEO_SCALE_PUT_H(vp.dims, VIDEO_DRIVER_OUTPUT_HEIGHT(output_size));
 
             /* 48-bit RGB, bottom-up (pitch = width*6, negated top-down
              * inside screenshot_dump_direct like the BGR24 path). */
             if (screenshot_dump(screenshot_dir,
                      name_base,
-                     hdr_buffer, vp.width, vp.height,
-                     vp.width * 6, false, hdr_buffer,
+                     hdr_buffer, VIDEO_SCALE_W(vp.dims), VIDEO_SCALE_H(vp.dims),
+                     VIDEO_SCALE_W(vp.dims) * 6, false, hdr_buffer,
                      savestate, runloop_flags, fullpath, use_thread,
                      pixel_format_type, &hdr))
                return true;
@@ -783,7 +781,7 @@ static bool take_screenshot_viewport(
       }
    }
 
-   if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
+   if (!(buffer = (uint8_t*)malloc(VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims) * 3)))
       return false;
 
    if ((   video_st->current_video->read_viewport
@@ -792,16 +790,16 @@ static bool take_screenshot_viewport(
    {
       /* Limit image to screen size */
       output_size = VIDEO_DRIVER_OUTPUT_SIZE(video_st);
-      if (vp.width > VIDEO_DRIVER_OUTPUT_WIDTH(output_size))
-         vp.width = VIDEO_DRIVER_OUTPUT_WIDTH(output_size);
-      if (vp.height > VIDEO_DRIVER_OUTPUT_HEIGHT(output_size))
-         vp.height = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
+      if (VIDEO_SCALE_W(vp.dims) > VIDEO_DRIVER_OUTPUT_WIDTH(output_size))
+         VIDEO_SCALE_PUT_W(vp.dims, VIDEO_DRIVER_OUTPUT_WIDTH(output_size));
+      if (VIDEO_SCALE_H(vp.dims) > VIDEO_DRIVER_OUTPUT_HEIGHT(output_size))
+         VIDEO_SCALE_PUT_H(vp.dims, VIDEO_DRIVER_OUTPUT_HEIGHT(output_size));
 
       /* Data read from viewport is in bottom-up order, suitable for BMP. */
       if (screenshot_dump(screenshot_dir,
                name_base,
-               buffer, vp.width, vp.height,
-               vp.width * 3, true, buffer,
+               buffer, VIDEO_SCALE_W(vp.dims), VIDEO_SCALE_H(vp.dims),
+               VIDEO_SCALE_W(vp.dims) * 3, true, buffer,
                savestate, runloop_flags, fullpath, use_thread,
                pixel_format_type, NULL))
          return true;

@@ -448,8 +448,8 @@ static int16_t sdl3_input_state(
             {
                if ((int)idx >= sdl->num_touches)
                   return 0;
-               abs_x = (int)(sdl->touches[idx].x * (float)vp.full_width);
-               abs_y = (int)(sdl->touches[idx].y * (float)vp.full_height);
+               abs_x = (int)(sdl->touches[idx].x * (float)VIDEO_SCALE_W(vp.full_dims));
+               abs_y = (int)(sdl->touches[idx].y * (float)VIDEO_SCALE_H(vp.full_dims));
                pressed = 1;
             }
             else

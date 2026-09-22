@@ -620,7 +620,7 @@ static void gdi_upload_core_frame_to_menu(gdi_t *gdi,
     * was already cleared to black in Step 4, so we leave it
     * untouched and the bars appear automatically. */
    StretchDIBits(gdi->memDC,
-         gdi->vp.x, gdi->vp.y, gdi->vp.width, gdi->vp.height,
+         gdi->vp.x, gdi->vp.y, VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims),
          0, 0, frame_w, frame_h,
          src, (BITMAPINFO*)&info, DIB_RGB_COLORS, SRCCOPY);
 }
@@ -2659,14 +2659,12 @@ static bool gdi_frame(void *data, const void *frame,
    /* Defensive: if vp was never populated (e.g. should_resize
     * cleared without us recomputing), fall back to full-window
     * destination so we still draw something. */
-   if (gdi->vp.width == 0 || gdi->vp.height == 0)
+   if (VIDEO_SCALE_W(gdi->vp.dims) == 0 || VIDEO_SCALE_H(gdi->vp.dims) == 0)
    {
       gdi->vp.x           = 0;
       gdi->vp.y           = 0;
-      gdi->vp.width       = surface_width;
-      gdi->vp.height      = surface_height;
-      gdi->vp.full_width  = surface_width;
-      gdi->vp.full_height = surface_height;
+      gdi->vp.dims        = VIDEO_SCALE_PACK(surface_width, surface_height);
+      gdi->vp.full_dims   = VIDEO_SCALE_PACK(surface_width, surface_height);
    }
 
    /* --- Step 3: detect whether any window-resolution content needs
@@ -2984,13 +2982,13 @@ static bool gdi_frame(void *data, const void *frame,
          if (frame_to_copy == gdi->menu_frame && bits == 16)
          {
             gdi_blit_rgui_alpha(gdi, frame_to_copy, width, height,
-                  gdi->vp.x, gdi->vp.y, gdi->vp.width, gdi->vp.height);
+                  gdi->vp.x, gdi->vp.y, VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims));
          }
          else
 #endif
          {
             StretchDIBits(gdi->memDC,
-                  gdi->vp.x, gdi->vp.y, gdi->vp.width, gdi->vp.height,
+                  gdi->vp.x, gdi->vp.y, VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims),
                   0, 0, width, height,
                   frame_to_copy, (BITMAPINFO*)&info, DIB_RGB_COLORS, SRCCOPY);
          }
@@ -3474,8 +3472,7 @@ static void gdi_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
    if (!gdi)
       return;
 
-   gdi->vp.full_width  = vp_width;
-   gdi->vp.full_height = vp_height;
+   gdi->vp.full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
 
    video_driver_update_viewport(&gdi->vp, force_full, gdi->keep_aspect, true);
 }
@@ -3504,10 +3501,8 @@ static void gdi_viewport_info(void *data, struct video_viewport *vp)
 
    vp->x           = gdi->vp.x;
    vp->y           = gdi->vp.y;
-   vp->width       = gdi->vp.width;
-   vp->height      = gdi->vp.height;
-   vp->full_width  = gdi->vp.full_width;
-   vp->full_height = gdi->vp.full_height;
+   vp->dims        = gdi->vp.dims;
+   vp->full_dims   = gdi->vp.full_dims;
 }
 
 #ifdef HAVE_OVERLAY
@@ -3794,8 +3789,8 @@ static void gdi_overlays_render(gdi_t *gdi,
       {
          base_x = gdi->vp.x;
          base_y = gdi->vp.y;
-         base_w = gdi->vp.width  ? gdi->vp.width  : surface_width;
-         base_h = gdi->vp.height ? gdi->vp.height : surface_height;
+         base_w = VIDEO_SCALE_W(gdi->vp.dims)  ? VIDEO_SCALE_W(gdi->vp.dims)  : surface_width;
+         base_h = VIDEO_SCALE_H(gdi->vp.dims) ? VIDEO_SCALE_H(gdi->vp.dims) : surface_height;
       }
 
       dst_x = base_x + (int)(vx * (float)base_w + 0.5f);

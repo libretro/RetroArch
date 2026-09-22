@@ -1190,10 +1190,10 @@ bool video_driver_translate_coord_viewport(
       int16_t *res_screen_x, int16_t *res_screen_y,
       bool report_oob)
 {
-   int norm_vp_width         = (int)vp->width;
-   int norm_vp_height        = (int)vp->height;
-   int norm_full_vp_width    = (int)vp->full_width;
-   int norm_full_vp_height   = (int)vp->full_height;
+   int norm_vp_width         = (int)VIDEO_SCALE_W(vp->dims);
+   int norm_vp_height        = (int)VIDEO_SCALE_H(vp->dims);
+   int norm_full_vp_width    = (int)VIDEO_SCALE_W(vp->full_dims);
+   int norm_full_vp_height   = (int)VIDEO_SCALE_H(vp->full_dims);
    int scaled_screen_x       = -0x8000; /* OOB */
    int scaled_screen_y       = -0x8000; /* OOB */
    int scaled_x              = -0x8000; /* OOB */
@@ -1567,15 +1567,13 @@ static void recording_dump_frame(
 
          vp.x                        = 0;
          vp.y                        = 0;
-         vp.width                    = 0;
-         vp.height                   = 0;
-         vp.full_width               = 0;
-         vp.full_height              = 0;
+         vp.dims                     = 0;
+         vp.full_dims                = 0;
 
          if (vid && vid->viewport_info && video_st->data)
             vid->viewport_info(video_st->data, &vp);
 
-         if (!vp.width || !vp.height)
+         if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
          {
             RARCH_WARN("[Recording] %s\n",
                   msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
@@ -1586,7 +1584,7 @@ static void recording_dump_frame(
          }
 
          /* User has resized. We kinda have a problem now. */
-         if (VIDEO_SCALE_PACK(vp.width, vp.height) != record_st->gpu_dims)
+         if (vp.dims != record_st->gpu_dims)
          {
             const char *_msg =
                msg_hash_to_str(MSG_RECORDING_TERMINATED_DUE_TO_RESIZE);
@@ -3009,11 +3007,10 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 
    vp->x      = x;
    vp->y      = y;
-   vp->width  = vp_width;
-   vp->height = vp_height;
+   vp->dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
 
    /* Statistics */
-   video_st->scale_dims = VIDEO_SCALE_PACK(vp->width, vp->height);
+   video_st->scale_dims = vp->dims;
 }
 
 /**
@@ -3371,13 +3368,12 @@ static void video_viewport_get_scaled_integer(
    x          += padding_x * vp_bias_x;
    y          += padding_y * vp_bias_y;
 
-   vp->width   = width;
-   vp->height  = height;
+   vp->dims    = VIDEO_SCALE_PACK(width, height);
    vp->x       = x;
    vp->y       = y;
 
    /* Statistics */
-   video_st->scale_dims = VIDEO_SCALE_PACK(vp->width, vp->height);
+   video_st->scale_dims = vp->dims;
 }
 
 
@@ -3507,8 +3503,7 @@ void video_driver_update_viewport(
 
    vp->x                           = 0;
    vp->y                           = 0;
-   vp->width                       = vp->full_width;
-   vp->height                      = vp->full_height;
+   vp->dims                        = vp->full_dims;
 
 #ifdef HAVE_OVERLAY
    /* The active overlay's viewport override, if it has one: from the
@@ -3545,18 +3540,17 @@ void video_driver_update_viewport(
       if (flags & OVERLAY_HAS_VIEWPORT)
       {
          /* Calculate overlay's viewport bounds in pixels */
-         int ol_x      = (int)(ol_vp[0] * vp->full_width);
-         int ol_y      = (int)(ol_vp[1] * vp->full_height);
-         unsigned ol_w = (unsigned)(ol_vp[2] * vp->full_width);
-         unsigned ol_h = (unsigned)(ol_vp[3] * vp->full_height);
+         int ol_x      = (int)(ol_vp[0] * VIDEO_SCALE_W(vp->full_dims));
+         int ol_y      = (int)(ol_vp[1] * VIDEO_SCALE_H(vp->full_dims));
+         unsigned ol_w = (unsigned)(ol_vp[2] * VIDEO_SCALE_W(vp->full_dims));
+         unsigned ol_h = (unsigned)(ol_vp[3] * VIDEO_SCALE_H(vp->full_dims));
 
          if (flags & OVERLAY_VIEWPORT_FILL)
          {
             /* Fill mode: stretch to fill overlay viewport exactly */
             vp->x      = ol_x;
             vp->y      = ol_y;
-            vp->width  = ol_w;
-            vp->height = ol_h;
+            vp->dims   = VIDEO_SCALE_PACK(ol_w, ol_h);
          }
          else
          {
@@ -3568,17 +3562,17 @@ void video_driver_update_viewport(
             if (game_aspect > ol_aspect)
             {
                /* Game is wider - pillarbox (bars top/bottom) */
-               vp->width  = ol_w;
-               vp->height = (unsigned)(ol_w / game_aspect);
+               vp->dims   = VIDEO_SCALE_PACK(ol_w,
+                     (unsigned)(ol_w / game_aspect));
                vp->x      = ol_x;
-               vp->y      = ol_y + (int)(ol_h - vp->height) / 2;
+               vp->y      = ol_y + (int)(ol_h - VIDEO_SCALE_H(vp->dims)) / 2;
             }
             else
             {
                /* Game is taller - letterbox (bars left/right) */
-               vp->height = ol_h;
-               vp->width  = (unsigned)(ol_h * game_aspect);
-               vp->x      = ol_x + (int)(ol_w - vp->width) / 2;
+               vp->dims   = VIDEO_SCALE_PACK((unsigned)(ol_h * game_aspect),
+                     ol_h);
+               vp->x      = ol_x + (int)(ol_w - VIDEO_SCALE_W(vp->dims)) / 2;
                vp->y      = ol_y;
             }
          }
@@ -3591,18 +3585,18 @@ void video_driver_update_viewport(
       video_viewport_get_scaled_integer(video_st,
             &ps,
             vp,
-            vp->full_width,
-            vp->full_height,
+            VIDEO_SCALE_W(vp->full_dims),
+            VIDEO_SCALE_H(vp->full_dims),
             video_driver_aspect_ratio, keep_aspect, y_down, rotation);
    else if (keep_aspect && !force_full)
    {
       /* Calculate device_aspect, using translate_aspect if available
        * (e.g. for SD TV detection on Raspberry Pi) */
-      float device_aspect = (float)vp->full_width / vp->full_height;
+      float device_aspect = (float)VIDEO_SCALE_W(vp->full_dims) / VIDEO_SCALE_H(vp->full_dims);
       if (ctx->translate_aspect)
          device_aspect = ctx->translate_aspect(ctx_data,
-            vp->full_width, vp->full_height);
-      video_viewport_get_scaled_aspect2(vp, vp->full_width, vp->full_height,
+            VIDEO_SCALE_W(vp->full_dims), VIDEO_SCALE_H(vp->full_dims));
+      video_viewport_get_scaled_aspect2(vp, VIDEO_SCALE_W(vp->full_dims), VIDEO_SCALE_H(vp->full_dims),
             y_down, device_aspect, video_driver_aspect_ratio);
    }
 }
@@ -4667,7 +4661,7 @@ void video_driver_update_title(void *data)
 
 void video_driver_build_info(video_frame_info_t *video_info)
 {
-   video_viewport_t *custom_vp             = NULL;
+   video_viewport_settings_t *custom_vp             = NULL;
    runloop_state_t *runloop_st             = runloop_state_get_ptr();
    settings_t *settings                    = config_get_ptr();
    video_driver_state_t *video_st          = &video_driver_st;
@@ -5410,7 +5404,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 {
    video_info_t video;
    unsigned max_dim, scale, width, height;
-   video_viewport_t *custom_vp            = NULL;
+   video_viewport_settings_t *custom_vp            = NULL;
    input_driver_t *tmp                    = NULL;
    static uint16_t dummy_pixels[32]       = {0};
    runloop_state_t *runloop_st            = runloop_state_get_ptr();
@@ -5832,10 +5826,18 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
           !custom_vp->height))
    {
       /* Force custom viewport to have sane parameters. */
-      custom_vp->width = width;
-      custom_vp->height = height;
+      video_viewport_t vp;
+      vp.x       = custom_vp->x;
+      vp.y       = custom_vp->y;
+      vp.dims    = VIDEO_SCALE_PACK(width, height);
+      vp.full_dims = 0;
 
-      video_st->current_video->viewport_info(video_st->data, custom_vp);
+      video_st->current_video->viewport_info(video_st->data, &vp);
+
+      custom_vp->x      = vp.x;
+      custom_vp->y      = vp.y;
+      custom_vp->width  = VIDEO_SCALE_W(vp.dims);
+      custom_vp->height = VIDEO_SCALE_H(vp.dims);
    }
 
    video_driver_set_rotation(rotation % 4);
