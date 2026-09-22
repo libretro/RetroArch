@@ -937,21 +937,12 @@ static void *video_thread_get_ptr(video_driver_state_t *video_st)
 /* Content scale is computed by the viewport maths, which runs on the
  * video thread when threading is active. Read the copy the worker
  * publishes under its lock instead of racing video_driver_st. */
-static void video_thread_get_scale(video_driver_state_t *video_st,
-      unsigned *width, unsigned *height)
+static unsigned video_thread_get_scale(video_driver_state_t *video_st)
 {
    thread_video_t *thr = (thread_video_t*)video_st->data;
    if (!thr)
-   {
-      *width  = VIDEO_SCALE_W(video_st->scale_dims);
-      *height = VIDEO_SCALE_H(video_st->scale_dims);
-      return;
-   }
-   {
-      unsigned packed = (unsigned)retro_atomic_load_acquire_int(&thr->scale_packed);
-      *width          = VIDEO_SCALE_W(packed);
-      *height         = VIDEO_SCALE_H(packed);
-   }
+      return video_st->scale_dims;
+   return (unsigned)retro_atomic_load_acquire_int(&thr->scale_packed);
 }
 #endif
 
@@ -4780,10 +4771,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->font_msg_color_b            = settings->floats.video_msg_color_b;
    video_info->custom_vp_x                 = custom_vp->x;
    video_info->custom_vp_y                 = custom_vp->y;
-   video_info->custom_vp_width             = custom_vp->width;
-   video_info->custom_vp_height            = custom_vp->height;
-   video_info->custom_vp_full_width        = custom_vp->full_width;
-   video_info->custom_vp_full_height       = custom_vp->full_height;
+   video_info->custom_vp_dims              = VIDEO_SCALE_PACK(
+         custom_vp->width, custom_vp->height);
 
    video_info->video_st_flags              = disp_flags
                                            | video_st->main_flags;
@@ -4798,16 +4787,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->height                      = VIDEO_DRIVER_OUTPUT_HEIGHT(output_size);
 #ifdef HAVE_THREADS
    if (is_threaded)
-      video_thread_get_scale(video_st,
-            &video_info->scale_width, &video_info->scale_height);
+      video_info->scale_dims               = video_thread_get_scale(video_st);
    else
 #endif
-   {
-      video_info->scale_width              = VIDEO_SCALE_W(
-            video_st->scale_dims);
-      video_info->scale_height             = VIDEO_SCALE_H(
-            video_st->scale_dims);
-   }
+      video_info->scale_dims               = video_st->scale_dims;
 
    video_info->shader_active               = !(menu_shdr_flags & SHDR_FLAG_DISABLED) ? true : false;
    video_info->hdr_mode                    = settings->uints.video_hdr_mode;
@@ -6791,12 +6774,12 @@ void video_driver_frame(const void *data, unsigned width,
                pixel_format_name(video_st->pix_fmt),
                video_info.width,
                video_info.height,
-               video_info.scale_width,
-               video_info.scale_height,
-               (float)video_info.scale_width  / ((rotation % 2)
+               VIDEO_SCALE_W(video_info.scale_dims),
+               VIDEO_SCALE_H(video_info.scale_dims),
+               (float)VIDEO_SCALE_W(video_info.scale_dims) / ((rotation % 2)
                      ? (float)VIDEO_SCALE_H(cache_dims)
                      : (float)VIDEO_SCALE_W(cache_dims)),
-               (float)video_info.scale_height / ((rotation % 2)
+               (float)VIDEO_SCALE_H(video_info.scale_dims) / ((rotation % 2)
                      ? (float)VIDEO_SCALE_W(cache_dims)
                      : (float)VIDEO_SCALE_H(cache_dims)),
                video_info.refresh_rate,

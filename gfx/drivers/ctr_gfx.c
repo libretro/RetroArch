@@ -1910,8 +1910,8 @@ static bool ctr_frame(void* data, const void* frame,
       &video_info->osd_stat_params;
    int custom_vp_x                = video_info->custom_vp_x;
    int custom_vp_y                = video_info->custom_vp_y;
-   unsigned custom_vp_width       = video_info->custom_vp_width;
-   unsigned custom_vp_height      = video_info->custom_vp_height;
+   unsigned custom_vp_width       = VIDEO_SCALE_W(video_info->custom_vp_dims);
+   unsigned custom_vp_height      = VIDEO_SCALE_H(video_info->custom_vp_dims);
 #ifdef HAVE_MENU
    bool menu_is_alive             = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif

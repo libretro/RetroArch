@@ -522,15 +522,13 @@ typedef struct video_frame_info
    unsigned crt_switch_resolution_super;
    unsigned width;
    unsigned height;
-   unsigned scale_width;
-   unsigned scale_height;
+   /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
+   unsigned scale_dims;
    unsigned xmb_color_theme;
    unsigned menu_shader_pipeline;
    unsigned materialui_color_theme;
-   unsigned custom_vp_width;
-   unsigned custom_vp_height;
-   unsigned custom_vp_full_width;
-   unsigned custom_vp_full_height;
+   /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
+   unsigned custom_vp_dims;
    unsigned black_frame_insertion;
    unsigned bfi_dark_frames;
    unsigned shader_subframes;
