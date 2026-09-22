@@ -3273,11 +3273,16 @@ static bool frontend_unix_set_gamemode(bool on)
     * not change for the lifetime of the process, and each probe emits
     * a warning. Latch the unavailable state and short-circuit. */
    static bool gamemode_unavailable = false;
+   /* Only leave GameMode if this process entered it, so shutdown
+    * with the setting off never loads libgamemode. */
+   static bool gamemode_entered     = false;
    int gamemode_status;
    bool gamemode_active;
 
    if (gamemode_unavailable)
       return false;
+   if (!on && !gamemode_entered)
+      return true;
 
    gamemode_status  = gamemode_query_status();
    gamemode_active  = (gamemode_status == 2);
@@ -3294,7 +3299,10 @@ static bool frontend_unix_set_gamemode(bool on)
    }
 
    if (gamemode_active == on)
+   {
+      gamemode_entered = on;
       return true;
+   }
 
    if (on)
    {
@@ -3303,6 +3311,7 @@ static bool frontend_unix_set_gamemode(bool on)
          RARCH_WARN("[GameMode] Failed to enter GameMode: %s.\n", gamemode_error_string());
          return false;
       }
+      gamemode_entered = true;
    }
    else
    {
@@ -3311,6 +3320,7 @@ static bool frontend_unix_set_gamemode(bool on)
          RARCH_WARN("[GameMode] Failed to exit GameMode: %s.\n", gamemode_error_string());
          return false;
       }
+      gamemode_entered = false;
    }
 
    return true;
