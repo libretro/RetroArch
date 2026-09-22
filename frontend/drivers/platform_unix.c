@@ -30,10 +30,6 @@
 
 #ifdef __linux__
 #include <linux/version.h>
-#if __STDC_VERSION__ >= 199901L && !defined(ANDROID)
-#include "../../deps/feralgamemode/gamemode_client.h"
-#define FERAL_GAMEMODE
-#endif
 #endif
 
 #include <signal.h>
@@ -41,6 +37,14 @@
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
+#endif
+
+/* Builds without config.h keep GameMode; configure builds follow
+ * --enable/--disable-gamemode. */
+#if defined(__linux__) && !defined(ANDROID) && __STDC_VERSION__ >= 199901L \
+      && (!defined(HAVE_CONFIG_H) || defined(HAVE_GAMEMODE))
+#include "../../deps/feralgamemode/gamemode_client.h"
+#define FERAL_GAMEMODE
 #endif
 
 #ifdef ANDROID
