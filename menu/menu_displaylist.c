@@ -12045,7 +12045,9 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE:
                      build_list[i].checked = input_overlay_enable &&
                          (BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_LEFT)
-                          || BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_RIGHT));
+                          || BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_RIGHT)
+                          || BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_L2)
+                          || BIT16_GET(menu_st->overlay_types, OVERLAY_TYPE_ANALOG_R2));
                      break;
                   case MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS:
                   case MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS:
