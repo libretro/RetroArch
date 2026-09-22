@@ -117,10 +117,12 @@ ARMWARN="$WARN -Wno-deprecated-declarations"
 # a lane whose headers are absent says so and is not a failure.
 platform_video() {
    name="$1"; defs="$2"; extra="$3"; tu="$4"; probe="$5"
-   if [ -n "$probe" ] && [ ! -f "$probe" ]; then
-      echo "skip  $name (no $probe)"
-      return
-   fi
+   for pr in $probe; do
+      if [ ! -f "$pr" ]; then
+         echo "skip  $name (no $pr)"
+         return
+      fi
+   done
    if ! out=$($CC $WARN $extra $INC $BASE $defs -fsyntax-only "$tu" 2>&1); then
       echo "FAIL  $name"
       echo "      $tu"
@@ -274,10 +276,14 @@ platform_video "ctx: sdl2 gl" "-DHAVE_SDL2 -DHAVE_OPENGL" "-I/usr/include/SDL2" 
 # qb/config.libs.sh can enable it from a pkg-config probe alone.
 platform_video "ctx: osmesa" "-DHAVE_OSMESA -DHAVE_OPENGL" "" \
    gfx/drivers_context/osmesa_ctx.c /usr/include/GL/osmesa.h
+# The Wayland protocol headers are generated into gfx/common/wayland by
+# configure, so these lanes run only in a tree that has been configured
+# with Wayland.
+WL_H="/usr/include/wayland-client.h gfx/common/wayland/content-type-v1.h"
 platform_video "ctx: wayland gl" "-DHAVE_WAYLAND -DHAVE_EGL -DHAVE_OPENGL" "" \
-   gfx/drivers_context/wayland_ctx.c /usr/include/wayland-client.h
+   gfx/drivers_context/wayland_ctx.c "$WL_H"
 platform_video "ctx: wayland vulkan" "-DHAVE_WAYLAND -DHAVE_VULKAN" "" \
-   gfx/drivers_context/wayland_vk_ctx.c /usr/include/wayland-client.h
+   gfx/drivers_context/wayland_vk_ctx.c "$WL_H /usr/include/vulkan/vulkan.h"
 # webOS swaps its own shim in for half of the common Wayland functions,
 # and the Wayland context reaches it through prototypes of its own, so
 # the shim and the context each get a lane. The shim's webOS protocol
@@ -287,10 +293,10 @@ platform_video "ctx: wayland vulkan" "-DHAVE_WAYLAND -DHAVE_VULKAN" "" \
 WEBOS="-DWEBOS -DWEBOS_APP_ID=\"com.retroarch\" -DHAVE_WAYLAND -DHAVE_EGL"
 WEBOS="$WEBOS -DHAVE_OPENGLES"
 platform_video "ctx: wayland gl (webos)" "$WEBOS" "" \
-   gfx/drivers_context/wayland_ctx.c /usr/include/wayland-client.h
+   gfx/drivers_context/wayland_ctx.c "$WL_H"
 platform_video "webos wayland shim" "$WEBOS" \
    "-I$STUBS/webos/gfx/common" \
-   input/common/wayland_common_webos.c /usr/include/wayland-client.h
+   input/common/wayland_common_webos.c "$WL_H"
 
 arm "win32"      win32      "-D_WIN32 -D_WIN32_WINNT=0x0600"
 arm "win32-old"  win32      "-D_WIN32 -D_WIN32_WINNT=0x0400"
