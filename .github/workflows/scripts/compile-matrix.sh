@@ -169,6 +169,12 @@ platform_video "psp1 video" "-DPSP" \
    "-Itools/platform_stubs/psp -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast \
     -Wdeclaration-after-statement -Werror=declaration-after-statement" \
    gfx/drivers/psp1_gfx.c ""
+# The Vita driver, against psp2 stubs carrying the SceGxm declarations it
+# names in the shapes the real headers give them. Same narrowing as the
+# PSP driver above: its pool addresses are 32-bit on the target.
+platform_video "gxm video" "-DVITA -DRARCH_CONSOLE $HOSTOFF" \
+   "-Itools/platform_stubs/vita -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast" \
+   gfx/drivers/gxm_gfx.c ""
 platform_video "dingux video"   "-DDINGUX" "-I/usr/include/SDL" \
    gfx/drivers/sdl_dingux_gfx.c /usr/include/SDL/SDL.h
 platform_video "rs90 video"     "-DDINGUX -DRS90" "-I/usr/include/SDL" \
