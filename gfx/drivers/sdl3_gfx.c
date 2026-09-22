@@ -626,8 +626,7 @@ static void sdl3_poke_set_video_mode(void *data, unsigned dims, bool fullscreen)
 
    /* On the next frame, recompute the viewport pixel size. */
    vid->flags |= SDL3_FLAG_SHOULD_RESIZE;
-   vid->video.width = width;
-   vid->video.height = height;
+   vid->video.dims = VIDEO_SCALE_PACK(width, height);
    vid->video.fullscreen = fullscreen;
 }
 
@@ -1591,8 +1590,8 @@ static void sdl3_raster_font_render_msg(
    if (!font || !msg || !*msg || !vid)
       return;
 
-   width  = VIDEO_SCALE_W(vid->vp.full_dims)  ? VIDEO_SCALE_W(vid->vp.full_dims)  : vid->video.width;
-   height = VIDEO_SCALE_H(vid->vp.full_dims) ? VIDEO_SCALE_H(vid->vp.full_dims) : vid->video.height;
+   width  = VIDEO_SCALE_W(vid->vp.full_dims)  ? VIDEO_SCALE_W(vid->vp.full_dims)  : VIDEO_SCALE_W(vid->video.dims);
+   height = VIDEO_SCALE_H(vid->vp.full_dims) ? VIDEO_SCALE_H(vid->vp.full_dims) : VIDEO_SCALE_H(vid->video.dims);
    if (!width || !height)
    {
       /* viewport not set up yet (very early frames) - skip rather
