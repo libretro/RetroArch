@@ -339,13 +339,12 @@ const struct wl_registry_listener registry_listener_webos = {
    .global_remove = wl_registry_handle_global_remove_webos,
 };
 
-void gfx_ctx_wl_get_video_size_webos(void *data,
-      unsigned *width, unsigned *height)
+void gfx_ctx_wl_get_video_size_webos(void *data, unsigned *dims)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    if (!wl)
       return;
-      
+
    if (!wl->reported_display_size)
    {
       display_output_t *od;
@@ -361,21 +360,14 @@ void gfx_ctx_wl_get_video_size_webos(void *data,
          }
 
       if (oi)
-      {
-         *width  = oi->width;
-         *height = oi->height;
-      }
+         *dims = VIDEO_SCALE_PACK(oi->width, oi->height);
       else
-      {
-         *width  = DEFAULT_WINDOW_WIDTH;
-         *height = DEFAULT_WINDOW_HEIGHT;
-      }
+         *dims = VIDEO_SCALE_PACK(DEFAULT_WINDOW_WIDTH,
+               DEFAULT_WINDOW_HEIGHT);
    }
    else
-   {
-      *width  = wl->width  * wl->buffer_scale;
-      *height = wl->height * wl->buffer_scale;
-   }
+      *dims = VIDEO_SCALE_PACK(wl->width  * wl->buffer_scale,
+            wl->height * wl->buffer_scale);
 }
 
 /* webOS hands the screen back to the Home dashboard the moment a native
