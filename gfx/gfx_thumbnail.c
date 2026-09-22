@@ -2581,9 +2581,11 @@ void gfx_thumbnail_process_streams(
  * scaling within a rectangle of (width x height) */
 void gfx_thumbnail_get_draw_dimensions(
       gfx_thumbnail_t *thumbnail,
-      unsigned width, unsigned height, float scale_factor,
+      unsigned dims, float scale_factor,
       float *draw_width, float *draw_height)
 {
+   unsigned width                 = VIDEO_SCALE_W(dims);
+   unsigned height                = VIDEO_SCALE_H(dims);
    float core_aspect;
    float display_aspect;
    float thumbnail_aspect;
@@ -2670,14 +2672,17 @@ void gfx_thumbnail_get_draw_dimensions(
 
 void gfx_thumbnail_draw(
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       gfx_thumbnail_t *thumbnail,
-      float x, float y, unsigned width, unsigned height,
+      float x, float y, unsigned dims,
       enum gfx_thumbnail_alignment alignment,
       float alpha, float scale_factor,
       gfx_thumbnail_shadow_t *shadow)
 {
+   unsigned video_width              = VIDEO_SCALE_W(video_dims);
+   unsigned video_height             = VIDEO_SCALE_H(video_dims);
+   unsigned width                    = VIDEO_SCALE_W(dims);
+   unsigned height                   = VIDEO_SCALE_H(dims);
    gfx_display_t            *p_disp  = disp_get_ptr();
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    /* Sanity check */
@@ -2748,7 +2753,7 @@ void gfx_thumbnail_draw(
          retro_atomic_int_init(&thumb_snapshot.status, GFX_THUMBNAIL_STATUS_AVAILABLE);
          thumb_snapshot.delay_timer = 0.0f;
          gfx_thumbnail_get_draw_dimensions(
-               &thumb_snapshot, width, height, scale_factor,
+               &thumb_snapshot, dims, scale_factor,
                &draw_width, &draw_height);
       }
 

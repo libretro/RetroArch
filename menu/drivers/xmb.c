@@ -6469,7 +6469,7 @@ XMB_NOINLINE static int xmb_draw_item(
 
          gfx_thumbnail_get_draw_dimensions(
                &node->thumbnail_icon->icon,
-               gfx_icon_width, gfx_icon_height, 1.0f,
+               VIDEO_SCALE_PACK(gfx_icon_width, gfx_icon_height), 1.0f,
                &gfx_icon_width_draw, &gfx_icon_height_draw);
 
          gfx_icon_width_draw  = ceil(gfx_icon_width_draw);
@@ -8936,7 +8936,7 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
             && right_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
       {
          gfx_thumbnail_get_draw_dimensions(right_thumbnail,
-               thumbnail_box_width, thumbnail_box_height, 1.0f,
+               VIDEO_SCALE_PACK(thumbnail_box_width, thumbnail_box_height), 1.0f,
                &right_thumbnail_draw_width, &right_thumbnail_draw_height);
 
          right_thumbnail_draw_width_prev  = right_thumbnail_draw_width;
@@ -8958,7 +8958,7 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
       {
          gfx_thumbnail_get_draw_dimensions(
                left_thumbnail,
-               thumbnail_box_width, thumbnail_box_height, 1.0f,
+               VIDEO_SCALE_PACK(thumbnail_box_width, thumbnail_box_height), 1.0f,
                &left_thumbnail_draw_width, &left_thumbnail_draw_height);
 
          left_thumbnail_draw_width_prev  = left_thumbnail_draw_width;
@@ -9139,13 +9139,11 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
          /* Thumbnail */
          gfx_thumbnail_draw(
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                right_thumbnail,
                right_thumbnail_x,
                thumbnail_y,
-               (unsigned)thumbnail_box_width,
-               (unsigned)thumbnail_box_height,
+               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width, (unsigned)thumbnail_box_height),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                xmb->fullscreen_thumbnail_alpha,
                1.0f,
@@ -9177,13 +9175,11 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
          /* Thumbnail */
          gfx_thumbnail_draw(
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                left_thumbnail,
                left_thumbnail_x,
                thumbnail_y,
-               (unsigned)thumbnail_box_width,
-               (unsigned)thumbnail_box_height,
+               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width, (unsigned)thumbnail_box_height),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                xmb->fullscreen_thumbnail_alpha,
                1.0f,
@@ -9501,7 +9497,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          gfx_thumbnail_get_draw_dimensions(
                icon_thumbnail,
-               gfx_icon_width, gfx_icon_height, 1.0f,
+               VIDEO_SCALE_PACK(gfx_icon_width, gfx_icon_height), 1.0f,
                &gfx_icon_width_draw, &gfx_icon_height_draw);
 
          playlist_extra_x = xmb->icon_size + fabs(gfx_icon_width - gfx_icon_width_draw) / 2;
@@ -9519,13 +9515,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          gfx_thumbnail_draw(
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                icon_thumbnail,
                gfx_icon_x,
                gfx_icon_y,
-               gfx_icon_width,
-               gfx_icon_height,
+               VIDEO_SCALE_PACK(gfx_icon_width, gfx_icon_height),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                1.0f,
                1.0f,
@@ -9772,13 +9766,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          gfx_thumbnail_draw(
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                &xmb->thumbnails.savestate,
                thumb_x,
                thumb_y,
-               scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
-               scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0,
+               VIDEO_SCALE_PACK(scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0, scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                1.0f, 1.0f, &thumbnail_shadow);
       }
@@ -9901,25 +9893,21 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
                gfx_thumbnail_draw(
                      userdata,
-                     video_width,
-                     video_height,
+                     VIDEO_SCALE_PACK(video_width, video_height),
                      &xmb->thumbnails.right,
                      thumb_x,
                      right_thumb_y,
-                     (scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0,
-                     (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0,
+                     VIDEO_SCALE_PACK((scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0, (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0),
                      GFX_THUMBNAIL_ALIGN_CENTRE,
                      1.0f, 1.0f, &thumbnail_shadow);
 
                gfx_thumbnail_draw(
                      userdata,
-                     video_width,
-                     video_height,
+                     VIDEO_SCALE_PACK(video_width, video_height),
                      &xmb->thumbnails.left,
                      thumb_x,
                      left_thumb_y,
-                     (scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0,
-                     (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0,
+                     VIDEO_SCALE_PACK((scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0, (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0),
                      GFX_THUMBNAIL_ALIGN_CENTRE,
                      1.0f, 1.0f, &thumbnail_shadow);
             }
@@ -9951,13 +9939,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
                gfx_thumbnail_draw(
                      userdata,
-                     video_width,
-                     video_height,
+                     VIDEO_SCALE_PACK(video_width, video_height),
                      (show_right_thumbnail) ? &xmb->thumbnails.right : &xmb->thumbnails.left,
                      thumb_x,
                      thumb_y,
-                     (scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0,
-                     (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0,
+                     VIDEO_SCALE_PACK((scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0, (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0),
                      (thumbnail_background) ? GFX_THUMBNAIL_ALIGN_CENTRE : GFX_THUMBNAIL_ALIGN_TOP,
                      1.0f, 1.0f, &thumbnail_shadow);
             }
@@ -9992,13 +9978,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
                gfx_thumbnail_draw(
                      userdata,
-                     video_width,
-                     video_height,
+                     VIDEO_SCALE_PACK(video_width, video_height),
                      &xmb->thumbnails.right,
                      thumb_x,
                      thumb_y,
-                     (scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0,
-                     (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0,
+                     VIDEO_SCALE_PACK((scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0, (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0),
                      (thumbnail_background) ? GFX_THUMBNAIL_ALIGN_CENTRE : GFX_THUMBNAIL_ALIGN_TOP,
                      1.0f, 1.0f, &thumbnail_shadow);
             }
@@ -10040,13 +10024,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
                   gfx_thumbnail_draw(
                         userdata,
-                        video_width,
-                        video_height,
+                        VIDEO_SCALE_PACK(video_width, video_height),
                         &xmb->thumbnails.left,
                         thumb_x,
                         thumb_y,
-                        (scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0,
-                        (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0,
+                        VIDEO_SCALE_PACK((scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0, (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0),
                         (thumbnail_background) ? GFX_THUMBNAIL_ALIGN_CENTRE : GFX_THUMBNAIL_ALIGN_TOP,
                         1.0f, 1.0f, &thumbnail_shadow);
                }
@@ -10095,13 +10077,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
             gfx_thumbnail_draw(
                   userdata,
-                  video_width,
-                  video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   (show_left_thumbnail) ? &xmb->thumbnails.left : &xmb->thumbnails.right,
                   thumb_x,
                   thumb_y,
-                  (scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0,
-                  (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0,
+                  VIDEO_SCALE_PACK((scaled_thumb_width  > 0.0f) ? (unsigned)scaled_thumb_width  : 0, (scaled_thumb_height > 0.0f) ? (unsigned)scaled_thumb_height : 0),
                   (thumbnail_background) ? GFX_THUMBNAIL_ALIGN_CENTRE : GFX_THUMBNAIL_ALIGN_TOP,
                   1.0f, 1.0f, &thumbnail_shadow);
          }

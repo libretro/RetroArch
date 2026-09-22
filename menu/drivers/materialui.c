@@ -2828,10 +2828,9 @@ static void materialui_draw_thumbnail(
             /* Thumbnail */
             gfx_thumbnail_draw(
                   userdata,
-                  video_width,
-                  video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   thumbnail,
-                  x, y, mui->thumbnail_width_max, mui->thumbnail_height_max,
+                  x, y, VIDEO_SCALE_PACK(mui->thumbnail_width_max, mui->thumbnail_height_max),
                   GFX_THUMBNAIL_ALIGN_CENTRE,
                   mui->transition_alpha, scale_factor, NULL);
          }
@@ -8111,7 +8110,7 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
       {
          gfx_thumbnail_get_draw_dimensions(
                primary_thumbnail,
-               thumbnail_box_width, thumbnail_box_height, 1.0f,
+               VIDEO_SCALE_PACK(thumbnail_box_width, thumbnail_box_height), 1.0f,
                &primary_thumbnail_draw_width, &primary_thumbnail_draw_height);
       }
 
@@ -8119,7 +8118,7 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
       {
          gfx_thumbnail_get_draw_dimensions(
                secondary_thumbnail,
-               thumbnail_box_width, thumbnail_box_height, 1.0f,
+               VIDEO_SCALE_PACK(thumbnail_box_width, thumbnail_box_height), 1.0f,
                &secondary_thumbnail_draw_width, &secondary_thumbnail_draw_height);
       }
 
@@ -8200,13 +8199,11 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
          /* Thumbnail */
          gfx_thumbnail_draw(
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                primary_thumbnail,
                primary_thumbnail_x,
                primary_thumbnail_y,
-               (unsigned)thumbnail_box_width,
-               (unsigned)thumbnail_box_height,
+               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width, (unsigned)thumbnail_box_height),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                mui->fullscreen_thumbnail_alpha,
                1.0f,
@@ -8236,13 +8233,11 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
          /* Thumbnail */
          gfx_thumbnail_draw(
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                secondary_thumbnail,
                secondary_thumbnail_x,
                secondary_thumbnail_y,
-               (unsigned)thumbnail_box_width,
-               (unsigned)thumbnail_box_height,
+               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width, (unsigned)thumbnail_box_height),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                mui->fullscreen_thumbnail_alpha,
                1.0f,

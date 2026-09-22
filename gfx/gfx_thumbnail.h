@@ -598,7 +598,7 @@ void gfx_thumbnail_process_streams(
  * scaling within a rectangle of (width x height) */
 void gfx_thumbnail_get_draw_dimensions(
       gfx_thumbnail_t *thumbnail,
-      unsigned width, unsigned height, float scale_factor,
+      unsigned dims, float scale_factor,
       float *draw_width, float *draw_height);
 
 /* Draws specified thumbnail with specified alignment
@@ -610,12 +610,14 @@ void gfx_thumbnail_get_draw_dimensions(
  *       size of the thumbnail beyond the limits of the
  *       (width x height) rectangle (alignment + aspect
  *       correct scaling is preserved). Use with caution */
+/* @video_dims and @dims: the output size and the rectangle the
+ * thumbnail is fitted into, each with both axes in one word,
+ * VIDEO_SCALE_PACK's layout. */
 void gfx_thumbnail_draw(
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       gfx_thumbnail_t *thumbnail,
-      float x, float y, unsigned width, unsigned height,
+      float x, float y, unsigned dims,
       enum gfx_thumbnail_alignment alignment,
       float alpha, float scale_factor,
       gfx_thumbnail_shadow_t *shadow);

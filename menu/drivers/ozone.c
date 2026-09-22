@@ -7035,16 +7035,14 @@ static void ozone_draw_thumbnail_bar(
 
       gfx_thumbnail_draw(
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             (ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE ||
              ozone->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING)
                   ? &ozone->thumbnails.savestate
                   : &ozone->thumbnails.right,
             (float)thumbnail_x_position,
             (float)right_thumbnail_y_position,
-            thumbnail_width,
-            thumbnail_height,
+            VIDEO_SCALE_PACK(thumbnail_width, thumbnail_height),
             right_thumbnail_alignment,
             1.0f,
             1.0f,
@@ -7153,13 +7151,11 @@ static void ozone_draw_thumbnail_bar(
        * metadata override is fully active) */
       gfx_thumbnail_draw(
             userdata,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             &ozone->thumbnails.left,
             (float)thumbnail_x_position,
             (float)left_thumbnail_y_position,
-            thumbnail_width,
-            thumbnail_height,
+            VIDEO_SCALE_PACK(thumbnail_width, thumbnail_height),
             left_thumbnail_alignment,
             left_thumbnail_alpha,
             1.0f,
@@ -8340,8 +8336,7 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
       {
          gfx_thumbnail_get_draw_dimensions(
                right_thumbnail,
-               thumbnail_box_width,
-               thumbnail_box_height,
+               VIDEO_SCALE_PACK(thumbnail_box_width, thumbnail_box_height),
                1.0f,
                &right_thumbnail_draw_width,
                &right_thumbnail_draw_height);
@@ -8365,8 +8360,7 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
       {
          gfx_thumbnail_get_draw_dimensions(
                left_thumbnail,
-               thumbnail_box_width,
-               thumbnail_box_height,
+               VIDEO_SCALE_PACK(thumbnail_box_width, thumbnail_box_height),
                1.0f,
                &left_thumbnail_draw_width,
                &left_thumbnail_draw_height);
@@ -8490,13 +8484,11 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
          /* Thumbnail */
          gfx_thumbnail_draw(
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                right_thumbnail,
                right_thumbnail_x,
                thumbnail_y,
-               (unsigned)thumbnail_box_width,
-               (unsigned)thumbnail_box_height,
+               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width, (unsigned)thumbnail_box_height),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                ozone->animations.fullscreen_thumbnail_alpha,
                1.0f,
@@ -8528,13 +8520,11 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
          /* Thumbnail */
          gfx_thumbnail_draw(
                userdata,
-               video_width,
-               video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                left_thumbnail,
                left_thumbnail_x,
                thumbnail_y,
-               (unsigned)thumbnail_box_width,
-               (unsigned)thumbnail_box_height,
+               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width, (unsigned)thumbnail_box_height),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                ozone->animations.fullscreen_thumbnail_alpha,
                1.0f,
