@@ -9259,7 +9259,7 @@ static bool vulkan_get_hw_render_interface(void *data,
 }
 
 static void vulkan_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
    size_t y;
@@ -9303,8 +9303,8 @@ static void vulkan_set_texture_frame(void *data,
            texture->memory
          ? texture
          : NULL,
-         width,
-         height,
+         VIDEO_SCALE_W(dims),
+         VIDEO_SCALE_H(dims),
          fmt,
          NULL,
          ptr_swizzle,
@@ -9317,21 +9317,21 @@ static void vulkan_set_texture_frame(void *data,
 
    dst       = ptr;
    src       = (const uint8_t*)frame;
-   stride    = (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)) * width;
+   stride    = (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)) * VIDEO_SCALE_W(dims);
 
    if (do_memcpy)
    {
-      for (y = 0; y < height; y++, dst += texture->stride, src += stride)
+      for (y = 0; y < VIDEO_SCALE_H(dims); y++, dst += texture->stride, src += stride)
          memcpy(dst, src, stride);
    }
    else
    {
-      for (y = 0; y < height; y++, dst += texture->stride, src += stride)
+      for (y = 0; y < VIDEO_SCALE_H(dims); y++, dst += texture->stride, src += stride)
       {
          size_t x;
          uint16_t *srcpix = (uint16_t*)src;
          uint32_t *dstpix = (uint32_t*)dst;
-         for (x = 0; x < width; x++, srcpix++, dstpix++)
+         for (x = 0; x < VIDEO_SCALE_W(dims); x++, srcpix++, dstpix++)
          {
             uint32_t pix = *srcpix;
             *dstpix      = (
@@ -9351,8 +9351,8 @@ static void vulkan_set_texture_frame(void *data,
               texture_optimal->memory
             ? texture_optimal
             : NULL,
-            width,
-            height,
+            VIDEO_SCALE_W(dims),
+            VIDEO_SCALE_H(dims),
             fmt,
             NULL,
             ptr_swizzle,

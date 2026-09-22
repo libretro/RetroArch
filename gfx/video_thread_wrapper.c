@@ -523,8 +523,7 @@ static void thread_update_driver_state(thread_video_t *thr)
       if (thr->driver_data && thr->poke && thr->poke->set_texture_frame)
          thr->poke->set_texture_frame(thr->driver_data,
                thr->texture.frame, thr->texture.rgb32,
-               VIDEO_SCALE_W(thr->texture.dims), VIDEO_SCALE_H(thr->texture.dims),
-               thr->texture.alpha);
+               thr->texture.dims, thr->texture.alpha);
       thr->texture.frame_updated = false;
    }
 
@@ -3386,10 +3385,10 @@ static void thread_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 }
 
 static void thread_set_texture_frame(void *data, const void *frame,
-      bool rgb32, unsigned width, unsigned height, float alpha)
+      bool rgb32, unsigned dims, float alpha)
 {
    thread_video_t *thr = (thread_video_t*)data;
-   size_t required     = width * height *
+   size_t required     = VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) *
       (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
 
    if (!thr)
@@ -3414,7 +3413,7 @@ static void thread_set_texture_frame(void *data, const void *frame,
    memcpy(thr->texture.frame, frame, required);
 
    thr->texture.rgb32         = rgb32;
-   thr->texture.dims          = VIDEO_SCALE_PACK(width, height);
+   thr->texture.dims          = dims;
    thr->texture.alpha         = alpha;
    thr->texture.frame_updated = true;
 

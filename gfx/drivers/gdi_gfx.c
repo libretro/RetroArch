@@ -3260,17 +3260,17 @@ static void gdi_set_texture_enable(
 }
 
 static void gdi_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
    gdi_t   *gdi     = (gdi_t*)data;
-   unsigned pitch   = width * (rgb32 ? 4 : 2);
+   unsigned pitch   = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    size_t   required;
 
-   if (!frame || !width || !height || !pitch)
+   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   required = (size_t)pitch * (size_t)height;
+   required = (size_t)pitch * (size_t)VIDEO_SCALE_H(dims);
 
    if (required > gdi->menu_frame_cap)
    {
@@ -3282,8 +3282,8 @@ static void gdi_set_texture_frame(void *data,
    }
 
    memcpy(gdi->menu_frame, frame, required);
-   gdi->menu_width  = width;
-   gdi->menu_height = height;
+   gdi->menu_width  = VIDEO_SCALE_W(dims);
+   gdi->menu_height = VIDEO_SCALE_H(dims);
    gdi->menu_pitch  = pitch;
    gdi->menu_bits   = rgb32 ? 32 : 16;
 }

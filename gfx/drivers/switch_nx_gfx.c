@@ -784,14 +784,14 @@ static void switch_viewport_info(void *data, struct video_viewport *vp)
 
 static void switch_set_texture_frame(
     void *data, const void *frame, bool rgb32,
-    unsigned width, unsigned height, float alpha)
+    unsigned dims, float alpha)
 {
     switch_video_t *sw = data;
-    size_t sz = width * height * (rgb32 ? 4 : 2);
+    size_t sz = VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * (rgb32 ? 4 : 2);
 
     if (   !sw->menu_texture.pixels
-        || (sw->menu_texture.width  != width)
-        || (sw->menu_texture.height != height))
+        || (sw->menu_texture.width  != VIDEO_SCALE_W(dims))
+        || (sw->menu_texture.height != VIDEO_SCALE_H(dims)))
     {
         int xsf, ysf, sf;
         struct scaler_ctx *sctx = NULL;
@@ -815,24 +815,24 @@ static void switch_set_texture_frame(
         if (!sw->menu_texture.pixels)
             return;
 
-        xsf = 1280 / width;
-        ysf = 720 / height;
+        xsf = 1280 / VIDEO_SCALE_W(dims);
+        ysf = 720 / VIDEO_SCALE_H(dims);
         sf  = xsf;
 
         if (ysf < sf)
             sf = ysf;
 
-        sw->menu_texture.width  = width;
-        sw->menu_texture.height = height;
-        sw->menu_texture.tgtw   = width * sf;
-        sw->menu_texture.tgth   = height * sf;
+        sw->menu_texture.width  = VIDEO_SCALE_W(dims);
+        sw->menu_texture.height = VIDEO_SCALE_H(dims);
+        sw->menu_texture.tgtw   = VIDEO_SCALE_W(dims) * sf;
+        sw->menu_texture.tgth   = VIDEO_SCALE_H(dims) * sf;
 
         sctx                    = &sw->menu_texture.scaler;
         scaler_ctx_gen_reset(sctx);
 
-        sctx->in_width          = width;
-        sctx->in_height         = height;
-        sctx->in_stride         = width * (rgb32 ? 4 : 2);
+        sctx->in_width          = VIDEO_SCALE_W(dims);
+        sctx->in_height         = VIDEO_SCALE_H(dims);
+        sctx->in_stride         = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
         sctx->in_fmt            = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGB565;
         sctx->out_width         = sw->menu_texture.tgtw;
         sctx->out_height        = sw->menu_texture.tgth;

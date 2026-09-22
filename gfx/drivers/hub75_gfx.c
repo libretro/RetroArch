@@ -1165,19 +1165,19 @@ static void hub75_get_overlay_interface(void *data,
 
 #ifdef HAVE_MENU
 static void hub75_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    hub75_t *hub75 = (hub75_t*)data;
-   unsigned pitch = width * (rgb32 ? 4 : 2);
+   unsigned pitch = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    size_t required;
    unsigned char *new_frame;
    (void)alpha;
 
-   if (!hub75 || !frame || !width || !height)
+   if (!hub75 || !frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       return;
-   if ((size_t)height > SIZE_MAX / pitch)
+   if ((size_t)VIDEO_SCALE_H(dims) > SIZE_MAX / pitch)
       return;
-   required = (size_t)pitch * height;
+   required = (size_t)pitch * VIDEO_SCALE_H(dims);
    if (required > hub75->menu_frame_cap)
    {
       new_frame = (unsigned char*)realloc(hub75->menu_frame, required);
@@ -1187,8 +1187,8 @@ static void hub75_set_texture_frame(void *data, const void *frame, bool rgb32,
       hub75->menu_frame_cap = required;
    }
    memcpy(hub75->menu_frame, frame, required);
-   hub75->menu_width  = width;
-   hub75->menu_height = height;
+   hub75->menu_width  = VIDEO_SCALE_W(dims);
+   hub75->menu_height = VIDEO_SCALE_H(dims);
    hub75->menu_pitch  = pitch;
    hub75->menu_bits   = rgb32 ? 32 : 16;
 }

@@ -391,13 +391,13 @@ static bool vga_gfx_set_shader(void *data,
 }
 
 static void vga_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
    vga_t     *vga = (vga_t*)data;
-   unsigned pitch = width * (rgb32 ? 4 : 2);
+   unsigned pitch = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
 
-   if (!frame || !width || !height || !pitch)
+   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
    /* vga_menu_frame is always VGA_WIDTH*VGA_HEIGHT regardless of the
@@ -425,9 +425,9 @@ static void vga_set_texture_frame(void *data,
             for (x = 0; x < VGA_WIDTH; x++)
             {
                /* scale incoming frame to fit the screen */
-               unsigned scaled_x    = (width * x) / VGA_WIDTH;
-               unsigned scaled_y    = (height * y) / VGA_HEIGHT;
-               unsigned short pixel = video_frame[width * scaled_y + scaled_x];
+               unsigned scaled_x    = (VIDEO_SCALE_W(dims) * x) / VGA_WIDTH;
+               unsigned scaled_y    = (VIDEO_SCALE_H(dims) * y) / VGA_HEIGHT;
+               unsigned short pixel = video_frame[VIDEO_SCALE_W(dims) * scaled_y + scaled_x];
                unsigned r           = ((pixel & 0xF000) >> 13);
                unsigned g           = ((pixel & 0xF00) >> 9);
                unsigned b           = ((pixel & 0xF0) >> 6);
@@ -439,8 +439,8 @@ static void vga_set_texture_frame(void *data,
        * stale/uninitialized content for the renderer.  Separate pre-
        * existing bug, not fixed here. */
 
-      vga->vga_menu_width  = width;
-      vga->vga_menu_height = height;
+      vga->vga_menu_width  = VIDEO_SCALE_W(dims);
+      vga->vga_menu_height = VIDEO_SCALE_H(dims);
       vga->vga_menu_pitch  = pitch;
       vga->vga_menu_bits   = rgb32 ? 32 : 16;
    }

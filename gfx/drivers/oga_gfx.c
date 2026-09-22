@@ -662,7 +662,7 @@ static bool oga_frame(void *data, const void *frame, unsigned width,
 }
 
 static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    oga_video_t *vid             = (oga_video_t*)data;
    unsigned i, j;
@@ -671,22 +671,22 @@ static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
     * We have to go on a pixel format conversion adventure
     * for now, until we can convince RGUI to output
     * in an 8888 format. */
-   unsigned int src_pitch        = width * 2;
-   unsigned int dst_pitch        = width * 4;
+   unsigned int src_pitch        = VIDEO_SCALE_W(dims) * 2;
+   unsigned int dst_pitch        = VIDEO_SCALE_W(dims) * 4;
    char *frame_output;
 
-   if (     vid->menu_surface->width  != (int)width
-         || vid->menu_surface->height != (int)height)
+   if (     vid->menu_surface->width  != (int)VIDEO_SCALE_W(dims)
+         || vid->menu_surface->height != (int)VIDEO_SCALE_H(dims))
    {
       oga_destroy_surface(vid->menu_surface);
-      vid->menu_surface = oga_create_surface(vid->fd, width, height,
+      vid->menu_surface = oga_create_surface(vid->fd, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
             RK_FORMAT_BGRA_8888);
    }
 
    /* The output pixel array with the converted pixels. */
    frame_output = (char*)vid->menu_surface->map;
 
-   for (i = 0; i < height; i++)
+   for (i = 0; i < VIDEO_SCALE_H(dims); i++)
    {
       const uint16_t *src_row = (const uint16_t*)frame + (src_pitch / 2 * i);
       uint32_t *dst_row       = (uint32_t*)(void*)

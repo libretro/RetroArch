@@ -540,16 +540,16 @@ static void sixel_gfx_set_rotation(void *data,
 }
 
 static void sixel_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
-   unsigned pitch = width * (rgb32 ? 4 : 2);
+   unsigned pitch = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    size_t   required;
 
-   if (!frame || !width || !height || !pitch)
+   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   required = (size_t)pitch * (size_t)height;
+   required = (size_t)pitch * (size_t)VIDEO_SCALE_H(dims);
 
    if (required > sixel_menu_frame_cap)
    {
@@ -562,8 +562,8 @@ static void sixel_set_texture_frame(void *data,
    }
 
    memcpy(sixel_menu_frame, frame, required);
-   sixel_menu_width  = width;
-   sixel_menu_height = height;
+   sixel_menu_width  = VIDEO_SCALE_W(dims);
+   sixel_menu_height = VIDEO_SCALE_H(dims);
    sixel_menu_pitch  = pitch;
    sixel_menu_bits   = rgb32 ? 32 : 16;
 }

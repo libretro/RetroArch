@@ -173,7 +173,7 @@ static void xshm_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx) { 
 static void xshm_poke_apply_state_changes(void *data) { }
 static void xshm_poke_set_texture_frame(void *data,
       const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha) { }
+      unsigned dims, float alpha) { }
 static void xshm_poke_texture_enable(void *data,
       bool enable, bool full_screen) { }
 static void xshm_poke_set_osd_msg(void *data,

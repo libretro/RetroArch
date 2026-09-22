@@ -544,7 +544,7 @@ static void dispmanx_set_texture_enable(void *data, bool state, bool full_screen
 }
 
 static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    struct dispmanx_video *_dispvars = data;
 
@@ -554,14 +554,14 @@ static void dispmanx_set_texture_frame(void *data, const void *frame, bool rgb32
    /* If menu is active in this frame but our menu surface is NULL, we allocate a new one.*/
    if (!_dispvars->menu_surface)
    {
-      _dispvars->menu_width  = width;
-      _dispvars->menu_height = height;
-      _dispvars->menu_pitch  = width * (rgb32 ? 4 : 2);
+      _dispvars->menu_width  = VIDEO_SCALE_W(dims);
+      _dispvars->menu_height = VIDEO_SCALE_H(dims);
+      _dispvars->menu_pitch  = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
 
       /* Menu surface only needs a page as it will be updated asynchronously. */
       dispmanx_surface_setup(_dispvars,
-            width,
-            height,
+            VIDEO_SCALE_W(dims),
+            VIDEO_SCALE_H(dims),
             _dispvars->menu_pitch,
             16,
             VC_IMAGE_RGBA16,

@@ -2888,17 +2888,17 @@ static bool gl1_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 }
 
 static void gl1_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
-   unsigned pitch            = width * (rgb32 ? 4 : 2);
+   unsigned pitch            = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    gl1_t              *gl1   = (gl1_t*)data;
    size_t required;
    /* What the last frame carried, not what the setting says now: the
     * video thread applies this in thread_update_driver_state(). */
    bool menu_linear_filter;
 
-   if (!gl1 || !frame || !width || !height || !pitch)
+   if (!gl1 || !frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
    menu_linear_filter        = gl1->frame_menu_linear_filter;
@@ -2908,7 +2908,7 @@ static void gl1_set_texture_frame(void *data,
    else
       gl1->flags            &= ~GL1_FLAG_MENU_SMOOTH;
 
-   required = (size_t)pitch * (size_t)height;
+   required = (size_t)pitch * (size_t)VIDEO_SCALE_H(dims);
 
    if (required > gl1->menu_frame_cap)
    {
@@ -2927,14 +2927,14 @@ static void gl1_set_texture_frame(void *data,
    /* Only set MENU_SIZE_CHANGED when the dimensions the downstream
     * frame path cares about actually change; otherwise the POT-sized
     * menu_video_buf would get reallocated on every single frame. */
-   if (     gl1->menu_width  != width
-         || gl1->menu_height != height
+   if (     gl1->menu_width  != VIDEO_SCALE_W(dims)
+         || gl1->menu_height != VIDEO_SCALE_H(dims)
          || gl1->menu_pitch  != pitch)
       gl1->flags |= GL1_FLAG_MENU_SIZE_CHANGED;
 
    memcpy(gl1->menu_frame, frame, required);
-   gl1->menu_width  = width;
-   gl1->menu_height = height;
+   gl1->menu_width  = VIDEO_SCALE_W(dims);
+   gl1->menu_height = VIDEO_SCALE_H(dims);
    gl1->menu_pitch  = pitch;
    gl1->menu_bits   = rgb32 ? 32 : 16;
 }

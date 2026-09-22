@@ -402,10 +402,9 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 
 - (void)updateFrame:(void const *)source;
 
-- (void)updateWidth:(int)width
-                  height:(int)height
-                  format:(RPixelFormat)format
-                  filter:(RTextureFilter)filter;
+- (void)updateDims:(unsigned)dims
+                 format:(RPixelFormat)format
+                 filter:(RTextureFilter)filter;
 @end
 
 @interface Overlay : NSObject
@@ -4890,12 +4889,11 @@ static void metal_pull_cached_frame_cb(void *userdata,
 
 - (bool)enabled { return _enabled; }
 
-- (void)updateWidth:(int)width
-             height:(int)height
-             format:(RPixelFormat)format
-             filter:(RTextureFilter)filter
+- (void)updateDims:(unsigned)dims
+            format:(RPixelFormat)format
+            filter:(RTextureFilter)filter
 {
-   CGSize size = CGSizeMake(width, height);
+   CGSize size = CGSizeMake(VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
 
    if (_view)
    {
@@ -6930,7 +6928,7 @@ static void metal_apply_state_changes(void *data)
 }
 
 static void metal_set_texture_frame(void *data, const void *frame,
-      bool rgb32, unsigned width, unsigned height,
+      bool rgb32, unsigned dims,
       float alpha)
 {
    MetalDriver *md         = (__bridge MetalDriver *)data;
@@ -6941,10 +6939,9 @@ static void metal_set_texture_frame(void *data, const void *frame,
     * video thread applies this from thread_update_driver_state(). */
    menu_linear_filter      = md.frameMenuLinearFilter;
 
-   [md.menu updateWidth:width
-                 height:height
-                 format:rgb32 ? RPixelFormatBGRA8Unorm : RPixelFormatBGRA4Unorm
-                 filter:menu_linear_filter ? RTextureFilterLinear : RTextureFilterNearest];
+   [md.menu updateDims:dims
+                format:rgb32 ? RPixelFormatBGRA8Unorm : RPixelFormatBGRA4Unorm
+                filter:menu_linear_filter ? RTextureFilterLinear : RTextureFilterNearest];
    [md.menu updateFrame:frame];
    md.menu.alpha = alpha;
 }

@@ -1105,13 +1105,13 @@ static void ps2_get_video_output_next(void *data)
 }
 
 static void ps2_set_texture_frame(void *data, const void *frame, bool rgb32,
-                                  unsigned width, unsigned height, float alpha)
+                                  unsigned dims, float alpha)
 {
    ps2_video_t *ps2 = (ps2_video_t *)data;
 
    int PSM          = (rgb32 ? GS_PSM_CT32 : GS_PSM_CT16);
 
-   set_texture(ps2->menuTexture, frame, width, height, PSM, ps2->menu_filter);
+   set_texture(ps2->menuTexture, frame, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), PSM, ps2->menu_filter);
    gsKit_TexManager_invalidate(ps2->gsGlobal, ps2->menuTexture);
    gsKit_TexManager_bind(ps2->gsGlobal, ps2->menuTexture);
 }

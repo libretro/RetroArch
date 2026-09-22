@@ -4683,7 +4683,7 @@ void d3d9_cg_set_menu_texture_enable(void *data,
 }
 
 static void d3d9_cg_set_menu_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
    D3DLOCKED_RECT d3dlr;
@@ -4693,8 +4693,8 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
       return;
 
    if (       (!d3d->menu->tex)
-            || (d3d->menu->tex_w != width)
-            || (d3d->menu->tex_h != height)
+            || (d3d->menu->tex_w != VIDEO_SCALE_W(dims))
+            || (d3d->menu->tex_h != VIDEO_SCALE_H(dims))
             || (d3d->menu_tex_rgb32 != rgb32))
    {
       if (d3d->menu->tex)
@@ -4711,7 +4711,7 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
           * such caller exists, but the API contract supports it. */
          void *_tbuf = NULL;
          if (SUCCEEDED(IDirect3DDevice9_CreateTexture(d3d->dev,
-                     width, height, 1, 0,
+                     VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), 1, 0,
                      rgb32 ? D3DFMT_A8R8G8B8 : D3D9_ARGB4444_FORMAT,
                      D3DPOOL_MANAGED,
                      (struct IDirect3DTexture9**)&_tbuf, NULL)))
@@ -4724,8 +4724,8 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
          return;
       }
 
-      d3d->menu->tex_w          = width;
-      d3d->menu->tex_h          = height;
+      d3d->menu->tex_w          = VIDEO_SCALE_W(dims);
+      d3d->menu->tex_h          = VIDEO_SCALE_H(dims);
       d3d->menu_tex_rgb32       = rgb32;
    }
 
@@ -4742,11 +4742,11 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
          uint8_t        *dst = (uint8_t*)d3dlr.pBits;
          const uint32_t *src = (const uint32_t*)frame;
 
-         for (h = 0; h < height; h++, dst += d3dlr.Pitch, src += width)
+         for (h = 0; h < VIDEO_SCALE_H(dims); h++, dst += d3dlr.Pitch, src += VIDEO_SCALE_W(dims))
          {
-            memcpy(dst, src, width * sizeof(uint32_t));
-            memset(dst + width * sizeof(uint32_t), 0,
-                  d3dlr.Pitch - width * sizeof(uint32_t));
+            memcpy(dst, src, VIDEO_SCALE_W(dims) * sizeof(uint32_t));
+            memset(dst + VIDEO_SCALE_W(dims) * sizeof(uint32_t), 0,
+                  d3dlr.Pitch - VIDEO_SCALE_W(dims) * sizeof(uint32_t));
          }
       }
       else
@@ -4760,10 +4760,10 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
           * without a byte swap. */
          uint8_t        *dst = (uint8_t*)d3dlr.pBits;
          const uint8_t  *src = (const uint8_t*)frame;
-         unsigned src_pitch  = width * sizeof(uint16_t);
-         unsigned row_bytes  = width * sizeof(uint16_t);
+         unsigned src_pitch  = VIDEO_SCALE_W(dims) * sizeof(uint16_t);
+         unsigned row_bytes  = VIDEO_SCALE_W(dims) * sizeof(uint16_t);
 
-         for (h = 0; h < height; h++, dst += d3dlr.Pitch, src += src_pitch)
+         for (h = 0; h < VIDEO_SCALE_H(dims); h++, dst += d3dlr.Pitch, src += src_pitch)
          {
             memcpy(dst, src, row_bytes);
             if (d3dlr.Pitch > (int)row_bytes)

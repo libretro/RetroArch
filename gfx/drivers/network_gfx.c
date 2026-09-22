@@ -399,16 +399,16 @@ static void network_gfx_set_rotation(void *data,
       unsigned rotation) { }
 
 static void network_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
-   unsigned pitch = width * (rgb32 ? 4 : 2);
+   unsigned pitch = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    size_t   required;
 
-   if (!frame || !width || !height || !pitch)
+   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   required = (size_t)pitch * (size_t)height;
+   required = (size_t)pitch * (size_t)VIDEO_SCALE_H(dims);
 
    if (required > network_menu_frame_cap)
    {
@@ -421,8 +421,8 @@ static void network_set_texture_frame(void *data,
    }
 
    memcpy(network_menu_frame, frame, required);
-   network_menu_width  = width;
-   network_menu_height = height;
+   network_menu_width  = VIDEO_SCALE_W(dims);
+   network_menu_height = VIDEO_SCALE_H(dims);
    network_menu_pitch  = pitch;
    network_menu_bits   = rgb32 ? 32 : 16;
 }

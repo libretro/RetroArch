@@ -1184,7 +1184,7 @@ static void gx_set_rotation(void *data, unsigned orientation)
 }
 
 static void gx_set_texture_frame(void *data, const void *frame,
-      bool rgb32, unsigned width, unsigned height, float alpha)
+      bool rgb32, unsigned dims, float alpha)
 {
    gx_video_t *gx = (gx_video_t*)data;
    if (gx)

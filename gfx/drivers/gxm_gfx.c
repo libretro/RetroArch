@@ -2523,7 +2523,7 @@ static void gxm_apply_state_changes(void *data)
 
 static void gxm_set_texture_frame(void *data,
       const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    unsigned i;
    void *tex_p;
@@ -2539,8 +2539,8 @@ static void gxm_set_texture_frame(void *data,
     * old texture's allocation (new size > old) or leave stale border
     * pixels (new size < old). */
    if (     vita->menu.texture
-         && (   width  != (unsigned)vita->menu.width
-             || height != (unsigned)vita->menu.height))
+         && (   VIDEO_SCALE_W(dims)  != (unsigned)vita->menu.width
+             || VIDEO_SCALE_H(dims) != (unsigned)vita->menu.height))
    {
       if (gxm_initialized)
          sceGxmFinish(gxm_context);
@@ -2551,13 +2551,13 @@ static void gxm_set_texture_frame(void *data,
    if (!vita->menu.texture)
    {
       if (rgb32)
-         vita->menu.texture = gxm_create_empty_texture_format(width,
-               height, SCE_GXM_TEXTURE_FORMAT_A8B8G8R8);
+         vita->menu.texture = gxm_create_empty_texture_format(VIDEO_SCALE_W(dims),
+               VIDEO_SCALE_H(dims), SCE_GXM_TEXTURE_FORMAT_A8B8G8R8);
       else
          vita->menu.texture = gxm_create_empty_texture_format(
-               width, height, SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA);
-      vita->menu.width      = width;
-      vita->menu.height     = height;
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA);
+      vita->menu.width      = VIDEO_SCALE_W(dims);
+      vita->menu.height     = VIDEO_SCALE_H(dims);
    }
 
    gxm_texture_set_filters(vita->menu.texture,
@@ -2577,21 +2577,21 @@ static void gxm_set_texture_frame(void *data,
    {
       uint32_t       *tex32   = (uint32_t*)tex_p;
       const uint32_t *frame32 = (const uint32_t*)frame;
-      size_t          rowlen  = (size_t)width * 4;
+      size_t          rowlen  = (size_t)VIDEO_SCALE_W(dims) * 4;
 
       stride /= 4;
-      for (i = 0; i < height; i++)
-         memcpy(tex32 + i * stride, frame32 + i * width, rowlen);
+      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
+         memcpy(tex32 + i * stride, frame32 + i * VIDEO_SCALE_W(dims), rowlen);
    }
    else
    {
       uint16_t       *tex16   = (uint16_t*)tex_p;
       const uint16_t *frame16 = (const uint16_t*)frame;
-      size_t          rowlen  = (size_t)width * 2;
+      size_t          rowlen  = (size_t)VIDEO_SCALE_W(dims) * 2;
 
       stride /= 2;
-      for (i = 0; i < height; i++)
-         memcpy(tex16 + i * stride, frame16 + i * width, rowlen);
+      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
+         memcpy(tex16 + i * stride, frame16 + i * VIDEO_SCALE_W(dims), rowlen);
    }
 }
 

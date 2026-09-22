@@ -747,36 +747,36 @@ static void psp_free(void *data)
 }
 
 static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
-                               unsigned width, unsigned height, float alpha)
+                               unsigned dims, float alpha)
 {
    unsigned max_height, dest_stride, src_stride;
    bool     rows_at_a_time = false;
    psp1_video_t *psp = (psp1_video_t*)data;
 
-   if (!psp || !frame || !width || !height)
+   if (!psp || !frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       return;
 
    /* No side of a GE transfer reaches past 1023. */
-   if (width > 1023)
-      width = 1023;
-   if (height > 1023)
-      height = 1023;
+   if (VIDEO_SCALE_W(dims) > 1023)
+      VIDEO_SCALE_PUT_W(dims, 1023);
+   if (VIDEO_SCALE_H(dims) > 1023)
+      VIDEO_SCALE_PUT_H(dims, 1023);
 
-   dest_stride = (width + 7) & ~7u;
-   src_stride  = width;
+   dest_stride = (VIDEO_SCALE_W(dims) + 7) & ~7u;
+   src_stride  = VIDEO_SCALE_W(dims);
 
    /* psp->menu.frame holds one screen of 4444. */
    max_height  = (SCEGU_SCR_WIDTH * SCEGU_SCR_HEIGHT) / dest_stride;
-   if (height > max_height)
-      height = max_height;
-   if (!height)
+   if (VIDEO_SCALE_H(dims) > max_height)
+      VIDEO_SCALE_PUT_H(dims, max_height);
+   if (!VIDEO_SCALE_H(dims))
       return;
 
    psp_set_screen_coords(psp->menu.frame_coords, 0, 0,
          SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, 0);
-   psp_set_tex_coords(psp->menu.frame_coords, width, height);
+   psp_set_tex_coords(psp->menu.frame_coords, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
 
-   sceKernelDcacheWritebackRange(frame, src_stride * height * 2);
+   sceKernelDcacheWritebackRange(frame, src_stride * VIDEO_SCALE_H(dims) * 2);
 
    /* The menu pushes a texture between frames, so the GE may still be
     * on the list psp_frame() left it. */
@@ -784,7 +784,7 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
 
    if (src_stride > 1024 || (src_stride & 0x7))
    {
-      if (!psp_build_row_blit(psp, frame, width, height, src_stride * 2,
+      if (!psp_build_row_blit(psp, frame, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), src_stride * 2,
                dest_stride, psp->menu.frame, GU_PSM_4444))
          return;
       rows_at_a_time = true;
@@ -794,7 +794,7 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
    if (rows_at_a_time)
       sceGuCallList(psp->blit_dList);
    else
-      sceGuCopyImage(GU_PSM_4444, 0, 0, width, height, src_stride,
+      sceGuCopyImage(GU_PSM_4444, 0, 0, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), src_stride,
             (void*)frame, 0, 0, dest_stride, psp->menu.frame);
    sceGuFinish();
 
@@ -802,7 +802,7 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
    sceGuTexMode(GU_PSM_4444, 0, 0, GU_FALSE);
    sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
    sceGuTexFilter(GU_LINEAR, GU_LINEAR);
-   sceGuTexImage(0, next_pow2(width), next_pow2(height), dest_stride,
+   sceGuTexImage(0, next_pow2(VIDEO_SCALE_W(dims)), next_pow2(VIDEO_SCALE_H(dims)), dest_stride,
          psp->menu.frame);
    sceGuEnable(GU_BLEND);
 

@@ -262,7 +262,7 @@ static void test_menu_texture_waits_for_the_ge(void)
    driver_frame(psp, NULL, 320, 240, 640, NULL);
    /* The menu pushes a texture between frames, which is when RGUI does
     * it, so the frame's list is still outstanding. */
-   p->set_texture_frame(psp, menu_tex, false, 64, 64, 1.0f);
+   p->set_texture_frame(psp, menu_tex, false, VIDEO_SCALE_PACK(64, 64), 1.0f);
 
    CHECK(psp1_fake.refilled_busy_list == 0,
          "a list the GE was executing was refilled %d time(s)",
@@ -288,7 +288,7 @@ static void test_ge_written_buffers_are_reserved(void)
       return;
    p = poke(psp);
 
-   p->set_texture_frame(psp, menu_tex, false, 64, 64, 1.0f);
+   p->set_texture_frame(psp, menu_tex, false, VIDEO_SCALE_PACK(64, 64), 1.0f);
    CHECK(psp1_fake.copy_dest != NULL, "the menu texture was never written");
    CHECK(((uintptr_t)psp1_fake.copy_dest & 63) == 0,
          "menu texture at %p is not 64-byte aligned", psp1_fake.copy_dest);
@@ -350,7 +350,7 @@ static void test_menu_texture_stays_in_its_buffer(void)
       return;
    p = poke(psp);
 
-   p->set_texture_frame(psp, big, false, 1024, 1024, 1.0f);
+   p->set_texture_frame(psp, big, false, VIDEO_SCALE_PACK(1024, 1024), 1.0f);
    CHECK(psp1_fake.copy_past_dest == 0,
          "the menu blit ran past the end of its buffer");
 

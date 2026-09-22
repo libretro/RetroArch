@@ -7968,21 +7968,21 @@ static void d3d12_gfx_viewport_info(void* data, struct video_viewport* vp)
 
 static void d3d12_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    d3d12_video_t* d3d12    = (d3d12_video_t*)data;
    settings_t*    settings = config_get_ptr();
-   int            pitch    = width *
+   int            pitch    = VIDEO_SCALE_W(dims) *
       (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
    DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM
       : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (
-         d3d12->menu.texture.desc.Width  != width ||
-         d3d12->menu.texture.desc.Height != height)
+         d3d12->menu.texture.desc.Width  != VIDEO_SCALE_W(dims) ||
+         d3d12->menu.texture.desc.Height != VIDEO_SCALE_H(dims))
    {
-      d3d12->menu.texture.desc.Width  = width;
-      d3d12->menu.texture.desc.Height = height;
+      d3d12->menu.texture.desc.Width  = VIDEO_SCALE_W(dims);
+      d3d12->menu.texture.desc.Height = VIDEO_SCALE_H(dims);
       d3d12->menu.texture.desc.Format = format;
       d3d12->menu.texture.srv_heap    = &d3d12->desc.srv_heap;
       d3d12_release_texture(&d3d12->menu.texture);
@@ -7990,7 +7990,7 @@ static void d3d12_set_menu_texture_frame(
    }
 
    if (d3d12->menu.texture.upload_buffer)
-      d3d12_update_texture(width, height, pitch,
+      d3d12_update_texture(VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch,
             format, frame, &d3d12->menu.texture);
 
    d3d12->menu.alpha = alpha;

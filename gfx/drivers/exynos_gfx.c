@@ -1416,20 +1416,20 @@ static void exynos_apply_state_changes(void *data)
 }
 
 static void exynos_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    const enum exynos_buffer_type buf_type = defaults[EXYNOS_IMAGE_MENU].buf_type;
    struct exynos_video *vid = data;
    struct exynos_data *pdata = vid->data;
    struct g2d_image *src = pdata->src[EXYNOS_IMAGE_MENU];
-   const unsigned size = width * height * (rgb32 ? 4 : 2);
+   const unsigned size = VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * (rgb32 ? 4 : 2);
 
    if (exynos_realloc_buffer(pdata, buf_type, size) != 0)
       return;
 
-   src->width = width;
-   src->height = height;
-   src->stride = width * (rgb32 ? 4 : 2);
+   src->width = VIDEO_SCALE_W(dims);
+   src->height = VIDEO_SCALE_H(dims);
+   src->stride = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    src->color_mode = rgb32 ? G2D_COLOR_FMT_ARGB8888 | G2D_ORDER_RGBAX :
       G2D_COLOR_FMT_ARGB4444 | G2D_ORDER_RGBAX;
 

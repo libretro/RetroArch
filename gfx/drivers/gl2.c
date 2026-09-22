@@ -3662,7 +3662,7 @@ static INLINE void gl2_set_shader_viewports(gl2_t *gl, bool video_scale_integer)
 }
 
 static void gl2_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
    enum texture_filter_type menu_filter;
@@ -3685,8 +3685,8 @@ static void gl2_set_texture_frame(void *data,
 
    gl_load_texture_data(gl->menu_texture,
          RARCH_WRAP_EDGE, menu_filter,
-         gl2_get_alignment(width * base_size),
-         width, height, frame,
+         gl2_get_alignment(VIDEO_SCALE_W(dims) * base_size),
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), frame,
          base_size);
 
    gl->menu_texture_alpha = alpha;

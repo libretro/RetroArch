@@ -5866,7 +5866,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    if (     video_st->poke
          && video_st->poke->set_texture_frame)
       video_st->poke->set_texture_frame(video_st->data,
-            &dummy_pixels, false, 1, 1, 1.0f);
+            &dummy_pixels, false, VIDEO_SCALE_PACK(1, 1), 1.0f);
 #endif
 
    video_context_driver_reset();

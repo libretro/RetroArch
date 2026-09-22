@@ -894,18 +894,18 @@ static void sdl_dingux_set_texture_enable(void *data, bool state, bool full_scre
 }
 
 static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
 
    if (unlikely(
            !vid
          || rgb32
-         || (width > SDL_DINGUX_MENU_WIDTH)
-         || (height > SDL_DINGUX_MENU_HEIGHT)))
+         || (VIDEO_SCALE_W(dims) > SDL_DINGUX_MENU_WIDTH)
+         || (VIDEO_SCALE_H(dims) > SDL_DINGUX_MENU_HEIGHT)))
       return;
 
-   memcpy(vid->menu_texture, frame, width * height * sizeof(uint16_t));
+   memcpy(vid->menu_texture, frame, VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * sizeof(uint16_t));
 }
 
 static void sdl_dingux_gfx_set_nonblock_state(void *data, bool toggle,

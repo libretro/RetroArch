@@ -7525,12 +7525,12 @@ static void rgui_free(void *data)
 
 static void rgui_set_texture_frame(video_driver_state_t *video_st,
       const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    if (     video_st->poke
          && video_st->poke->set_texture_frame)
       video_st->poke->set_texture_frame(video_st->data,
-            frame, rgb32, width, height, alpha);
+            frame, rgb32, dims, alpha);
 }
 
 static void rgui_set_texture(void *data)
@@ -7557,7 +7557,7 @@ static void rgui_set_texture(void *data)
 
    if (internal_upscale_level == RGUI_UPSCALE_NONE)
       rgui_set_texture_frame(video_st, rgui->frame_buf.data,
-            false, fb_width, fb_height, 1.0f);
+            false, p_disp->framebuf_dims, 1.0f);
    else
    {
       struct video_viewport vp;
@@ -7569,7 +7569,7 @@ static void rgui_set_texture(void *data)
        * than the menu framebuffer, no scaling is required */
       if ((VIDEO_SCALE_W(vp.dims) <= fb_width) && (VIDEO_SCALE_H(vp.dims) <= fb_height))
          rgui_set_texture_frame(video_st, rgui->frame_buf.data,
-               false, fb_width, fb_height, 1.0f);
+               false, p_disp->framebuf_dims, 1.0f);
       else
       {
          unsigned out_width;
@@ -7616,7 +7616,7 @@ static void rgui_set_texture(void *data)
                      settings->uints.menu_rgui_internal_upscale_level,
                      RGUI_UPSCALE_NONE);
                rgui_set_texture_frame(video_st, frame_buf->data,
-                     false, fb_width, fb_height, 1.0f);
+                     false, p_disp->framebuf_dims, 1.0f);
                return;
             }
          }
@@ -7639,7 +7639,7 @@ static void rgui_set_texture(void *data)
 
          /* Draw upscaled texture */
          rgui_set_texture_frame(video_st, upscale_buf->data,
-            false, out_width, out_height, 1.0f);
+            false, VIDEO_SCALE_PACK(out_width, out_height), 1.0f);
       }
    }
 }

@@ -857,7 +857,7 @@ static void drm_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    unsigned int i;
    struct drm_video    *_drmvars = data;
@@ -873,9 +873,9 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
    if (!_drmvars->menu_surface)
    {
       drm_surface_setup(_drmvars,
-            width,
-            height,
-            width * 4,
+            VIDEO_SCALE_W(dims),
+            VIDEO_SCALE_H(dims),
+            VIDEO_SCALE_W(dims) * 4,
             4,
             DRM_FORMAT_XRGB8888,
             210,
@@ -901,8 +901,8 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
    {
       unsigned int max_w = (unsigned int)surface->src_width;
       unsigned int max_h = (unsigned int)surface->src_height;
-      if (width  > max_w) width  = max_w;
-      if (height > max_h) height = max_h;
+      if (VIDEO_SCALE_W(dims)  > max_w) VIDEO_SCALE_PUT_W(dims, max_w);
+      if (VIDEO_SCALE_H(dims) > max_h) VIDEO_SCALE_PUT_H(dims, max_h);
    }
 
    if (rgb32)
@@ -910,10 +910,10 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
       /* Source is already XRGB8888 -- just copy row by row to handle
        * any difference between source stride and dst stride. */
       const uint8_t *src      = (const uint8_t*)frame;
-      unsigned int   src_pitch = width * 4;
+      unsigned int   src_pitch = VIDEO_SCALE_W(dims) * 4;
       unsigned int   row_bytes = (src_pitch < dst_pitch) ? src_pitch : dst_pitch;
 
-      for (i = 0; i < height; i++)
+      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
          memcpy(dst_base + (dst_pitch * i), src + (src_pitch * i), row_bytes);
    }
    else
@@ -922,13 +922,13 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
        *   R = bits 15..12, G = 11..8, B = 7..4, A = 3..0
        * Expand each 4-bit channel to 8 bits via nibble replication
        * (x | (x << 4)) and pack into XRGB8888 for the dumb buffer. */
-      for (i = 0; i < height; i++)
+      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
       {
-         const uint16_t *src_row = (const uint16_t*)frame + (width * i);
+         const uint16_t *src_row = (const uint16_t*)frame + (VIDEO_SCALE_W(dims) * i);
          uint32_t       *dst_row = (uint32_t*)(dst_base + (dst_pitch * i));
          unsigned int    j;
 
-         for (j = 0; j < width; j++)
+         for (j = 0; j < VIDEO_SCALE_W(dims); j++)
          {
             uint16_t src_pix = src_row[j];
             uint32_t r4      = (src_pix >> 12) & 0xF;

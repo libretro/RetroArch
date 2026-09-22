@@ -5757,7 +5757,7 @@ static void gl3_show_mouse(void *data, bool state)
 }
 
 static void gl3_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
    unsigned base_size   = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
@@ -5781,8 +5781,8 @@ static void gl3_set_texture_frame(void *data,
     * same-size same-format updates we keep the existing texture
     * and just stream new pixel data via glTexSubImage2D. */
    recreate = (gl->menu_texture == 0)
-           || (gl->menu_texture_width  != width)
-           || (gl->menu_texture_height != height)
+           || (gl->menu_texture_width  != VIDEO_SCALE_W(dims))
+           || (gl->menu_texture_height != VIDEO_SCALE_H(dims))
            || (gl->menu_texture_rgb32  != rgb32);
 
    if (recreate)
@@ -5792,10 +5792,10 @@ static void gl3_set_texture_frame(void *data,
       glGenTextures(1, &gl->menu_texture);
       glBindTexture(GL_TEXTURE_2D, gl->menu_texture);
       glTexStorage2D(GL_TEXTURE_2D, 1, rgb32
-            ? GL_RGBA8 : GL_RGBA4, width, height);
+            ? GL_RGBA8 : GL_RGBA4, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
 
-      gl->menu_texture_width  = width;
-      gl->menu_texture_height = height;
+      gl->menu_texture_width  = VIDEO_SCALE_W(dims);
+      gl->menu_texture_height = VIDEO_SCALE_H(dims);
       gl->menu_texture_rgb32  = rgb32;
    }
    else
@@ -5805,7 +5805,7 @@ static void gl3_set_texture_frame(void *data,
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-                   width, height, GL_RGBA, rgb32
+                   VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), GL_RGBA, rgb32
                    ? GL_UNSIGNED_BYTE
                    : GL_UNSIGNED_SHORT_4_4_4_4, frame);
 

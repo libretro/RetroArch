@@ -884,14 +884,14 @@ static void sdl2_poke_apply_state_changes(void *data)
 
 static void sdl2_poke_set_texture_frame(void *data,
       const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    if (frame)
    {
       sdl2_video_t *vid = (sdl2_video_t*)data;
 
-      sdl_refresh_input_size(vid, true, rgb32, width, height,
-            width * (rgb32 ? 4 : 2));
+      sdl_refresh_input_size(vid, true, rgb32, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+            VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2));
 
       SDL_UpdateTexture(vid->menu.tex, NULL, frame, (int)vid->menu.pitch);
    }

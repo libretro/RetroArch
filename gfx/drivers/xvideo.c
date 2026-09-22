@@ -1026,14 +1026,14 @@ static uint32_t xv_poke_get_flags(void *data)
 
 static void xv_poke_set_texture_frame(void *data,
       const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    xv_t *xv  = (xv_t*)data;
    xv->tex_frame = (void*)frame;
    xv->tex_rgb32 = rgb32;
-   xv->tex_width = width;
-   xv->tex_height = height;
-   xv->tex_pitch = width * (rgb32 ? 4 : 2);
+   xv->tex_width = VIDEO_SCALE_W(dims);
+   xv->tex_height = VIDEO_SCALE_H(dims);
+   xv->tex_pitch = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
 }
 
 static video_poke_interface_t xv_video_poke_interface = {

@@ -747,13 +747,13 @@ static void sdl3_poke_apply_state_changes(void *data)
 
 static void sdl3_poke_set_texture_frame(void *data,
       const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    sdl3_video_t *vid = (sdl3_video_t*)data;
    if (!vid || !frame)
       return;
-   sdl3_refresh_input_size(vid, true, rgb32, width, height);
-   sdl3_stream_upload(&vid->menu, frame, width * (rgb32 ? 4 : 2));
+   sdl3_refresh_input_size(vid, true, rgb32, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
+   sdl3_stream_upload(&vid->menu, frame, VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2));
 }
 
 static void sdl3_poke_texture_enable(void *data, bool enable, bool full_screen)

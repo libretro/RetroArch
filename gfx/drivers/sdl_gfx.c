@@ -452,7 +452,7 @@ static void sdl_apply_state_changes(void *data)
 }
 
 static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    enum scaler_pix_fmt format = rgb32
       ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
@@ -466,9 +466,9 @@ static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
          vid->menu.frame->w,
          vid->menu.frame->h,
          vid->menu.frame->pitch,
-         width,
-         height,
-         width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t))
+         VIDEO_SCALE_W(dims),
+         VIDEO_SCALE_H(dims),
+         VIDEO_SCALE_W(dims) * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t))
          );
 
    SDL_SetAlpha(vid->menu.frame, SDL_SRCALPHA, 255.0 * alpha);

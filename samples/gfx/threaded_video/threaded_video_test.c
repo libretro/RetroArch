@@ -1410,17 +1410,17 @@ static bool menutex_frame(void *data, const void *frame, unsigned width,
  * interleaving, so a buffer is wholly one push's or wholly the other's -
  * a marked buffer holding two generations is the tear this looks for. */
 static void menutex_set_texture_frame(void *data, const void *frame,
-      bool rgb32, unsigned width, unsigned height, float alpha)
+      bool rgb32, unsigned dims, float alpha)
 {
    const uint16_t *px = (const uint16_t*)frame;
-   unsigned i, n      = width * height;
+   unsigned i, n      = VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims);
 
    (void)data; (void)alpha;
 
    if (!px || !n)
       return;
    /* Not one of ours: the menu's own framebuffer. */
-   if (rgb32 || width != MENUTEX_W || height != MENUTEX_H)
+   if (rgb32 || dims != VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H))
       return;
    if ((px[0] & MENUTEX_MARK_MASK) != MENUTEX_MARK)
       return;
@@ -1482,7 +1482,7 @@ static void lane_menu_texture(void)
          buf[i] = (uint16_t)(MENUTEX_MARK | gen);
 
       video_st->poke->set_texture_frame(video_st->data, buf, false,
-            MENUTEX_W, MENUTEX_H, 1.0f);
+            VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), 1.0f);
 
       /* One frame through the real path, then the drain the menu
        * texture asks for must have happened: the worker holds no slot

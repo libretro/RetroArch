@@ -357,17 +357,17 @@ static bool caca_set_shader(void *data,
 static void caca_set_rotation(void *a, unsigned b) { }
 
 static void caca_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
    caca_t  *caca    = (caca_t*)data;
-   unsigned pitch   = width * (rgb32 ? 4 : 2);
+   unsigned pitch   = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    size_t   required;
 
-   if (!frame || !width || !height || !pitch)
+   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   required = (size_t)pitch * (size_t)height;
+   required = (size_t)pitch * (size_t)VIDEO_SCALE_H(dims);
 
    if (required > caca->menu_frame_cap)
    {
@@ -380,8 +380,8 @@ static void caca_set_texture_frame(void *data,
    }
 
    memcpy(caca->menu_frame, frame, required);
-   caca->menu_width  = width;
-   caca->menu_height = height;
+   caca->menu_width  = VIDEO_SCALE_W(dims);
+   caca->menu_height = VIDEO_SCALE_H(dims);
    caca->menu_pitch  = pitch;
 }
 

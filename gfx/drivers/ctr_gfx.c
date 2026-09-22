@@ -2526,13 +2526,13 @@ static void ctr_free(void* data)
 #endif
 }
 static void ctr_set_texture_frame(void* data, const void* frame, bool rgb32,
-                                  unsigned width, unsigned height, float alpha)
+                                  unsigned dims, float alpha)
 {
    unsigned int i;
    uint16_t *dst;
    const uint16_t *src;
    ctr_video_t *ctr = (ctr_video_t*)data;
-   int line_width   = width;
+   int line_width   = VIDEO_SCALE_W(dims);
 
    if (!ctr || !frame)
       return;
@@ -2540,26 +2540,26 @@ static void ctr_set_texture_frame(void* data, const void* frame, bool rgb32,
    if (line_width > ctr->menu.texture_width)
       line_width = ctr->menu.texture_width;
 
-   if (height > (unsigned)ctr->menu.texture_height)
-      height = (unsigned)ctr->menu.texture_height;
+   if (VIDEO_SCALE_H(dims) > (unsigned)ctr->menu.texture_height)
+      VIDEO_SCALE_PUT_H(dims, (unsigned)ctr->menu.texture_height);
 
    src = frame;
    dst = (uint16_t*)ctr->menu.texture_linear;
-   for (i = 0; i < height; i++)
+   for (i = 0; i < VIDEO_SCALE_H(dims); i++)
    {
       memcpy(dst, src, line_width * sizeof(uint16_t));
       dst += ctr->menu.texture_width;
-      src += width;
+      src += VIDEO_SCALE_W(dims);
    }
 
-   ctr->menu.frame_coords->x0 = (CTR_TOP_FRAMEBUFFER_WIDTH - width) / 2;
-   ctr->menu.frame_coords->y0 = (CTR_TOP_FRAMEBUFFER_HEIGHT - height) / 2;
-   ctr->menu.frame_coords->x1 = ctr->menu.frame_coords->x0 + width;
-   ctr->menu.frame_coords->y1 = ctr->menu.frame_coords->y0 + height;
+   ctr->menu.frame_coords->x0 = (CTR_TOP_FRAMEBUFFER_WIDTH - VIDEO_SCALE_W(dims)) / 2;
+   ctr->menu.frame_coords->y0 = (CTR_TOP_FRAMEBUFFER_HEIGHT - VIDEO_SCALE_H(dims)) / 2;
+   ctr->menu.frame_coords->x1 = ctr->menu.frame_coords->x0 + VIDEO_SCALE_W(dims);
+   ctr->menu.frame_coords->y1 = ctr->menu.frame_coords->y0 + VIDEO_SCALE_H(dims);
    ctr->menu.frame_coords->u0 = 0;
    ctr->menu.frame_coords->v0 = 0;
-   ctr->menu.frame_coords->u1 = width;
-   ctr->menu.frame_coords->v1 = height;
+   ctr->menu.frame_coords->u1 = VIDEO_SCALE_W(dims);
+   ctr->menu.frame_coords->v1 = VIDEO_SCALE_H(dims);
    GSPGPU_FlushDataCache(ctr->menu.frame_coords, sizeof(ctr_vertex_t));
    ctr->menu_texture_frame_enable = true;
    GSPGPU_FlushDataCache(ctr->menu.texture_linear,

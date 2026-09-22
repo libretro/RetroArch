@@ -2437,13 +2437,13 @@ static void rsx_free(void* data)
 }
 
 static void rsx_set_texture_frame(void* data, const void* frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    rsx_t* gcm              = (rsx_t*)data;
    gcm->menu_texture_alpha = alpha;
-   gcm->menu_width         = width;
-   gcm->menu_height        = height;
-   rsx_load_texture_data(gcm, &gcm->menu_texture, frame, width, height, width * (rgb32 ? 4 : 2),
+   gcm->menu_width         = VIDEO_SCALE_W(dims);
+   gcm->menu_height        = VIDEO_SCALE_H(dims);
+   rsx_load_texture_data(gcm, &gcm->menu_texture, frame, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2),
                          rgb32, true, gcm->smooth ? TEXTURE_FILTER_LINEAR : TEXTURE_FILTER_NEAREST);
 }
 

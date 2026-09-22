@@ -2445,7 +2445,7 @@ static void gx2_apply_state_changes(void *data)
 
 static void gx2_set_texture_frame(void *data,
       const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    uint32_t i;
    const uint16_t *src = NULL;
@@ -2455,26 +2455,26 @@ static void gx2_set_texture_frame(void *data,
    if (!wiiu)
       return;
 
-   if (!frame || !width || !height)
+   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       return;
 
-   if (width > wiiu->menu.texture.surface.width)
-      width = wiiu->menu.texture.surface.width;
+   if (VIDEO_SCALE_W(dims) > wiiu->menu.texture.surface.width)
+      VIDEO_SCALE_PUT_W(dims, wiiu->menu.texture.surface.width);
 
-   if (height > wiiu->menu.texture.surface.height)
-      height = wiiu->menu.texture.surface.height;
+   if (VIDEO_SCALE_H(dims) > wiiu->menu.texture.surface.height)
+      VIDEO_SCALE_PUT_H(dims, wiiu->menu.texture.surface.height);
 
-   wiiu->menu.width  = width;
-   wiiu->menu.height = height;
+   wiiu->menu.width  = VIDEO_SCALE_W(dims);
+   wiiu->menu.height = VIDEO_SCALE_H(dims);
 
    src               = frame;
    dst               = (uint16_t *)wiiu->menu.texture.surface.image;
 
-   for (i = 0; i < height; i++)
+   for (i = 0; i < VIDEO_SCALE_H(dims); i++)
    {
-      memcpy(dst, src, width * sizeof(uint16_t));
+      memcpy(dst, src, VIDEO_SCALE_W(dims) * sizeof(uint16_t));
       dst += wiiu->menu.texture.surface.pitch;
-      src += width;
+      src += VIDEO_SCALE_W(dims);
    }
 
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
@@ -2486,8 +2486,8 @@ static void gx2_set_texture_frame(void *data,
    wiiu->menu.v->pos.height   = VIDEO_SCALE_H(wiiu->vp.dims);
    wiiu->menu.v->coord.u      = 0.0f;
    wiiu->menu.v->coord.v      = 0.0f;
-   wiiu->menu.v->coord.width  = (float)width / wiiu->menu.texture.surface.width;
-   wiiu->menu.v->coord.height = (float)height / wiiu->menu.texture.surface.height;
+   wiiu->menu.v->coord.width  = (float)VIDEO_SCALE_W(dims) / wiiu->menu.texture.surface.width;
+   wiiu->menu.v->coord.height = (float)VIDEO_SCALE_H(dims) / wiiu->menu.texture.surface.height;
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu.v, 4 * sizeof(*wiiu->menu.v));
 
 }

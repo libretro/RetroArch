@@ -1208,18 +1208,18 @@ static void sdl_rs90_set_texture_enable(void *data, bool state, bool full_screen
 }
 
 static void sdl_rs90_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    sdl_rs90_video_t *vid = (sdl_rs90_video_t*)data;
 
    if (unlikely(
          !vid ||
          rgb32 ||
-         (width > SDL_RS90_WIDTH) ||
-         (height > SDL_RS90_HEIGHT)))
+         (VIDEO_SCALE_W(dims) > SDL_RS90_WIDTH) ||
+         (VIDEO_SCALE_H(dims) > SDL_RS90_HEIGHT)))
       return;
 
-   memcpy(vid->menu_texture, frame, width * height * sizeof(uint16_t));
+   memcpy(vid->menu_texture, frame, VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * sizeof(uint16_t));
 }
 
 static void sdl_rs90_gfx_set_nonblock_state(void *data, bool toggle,
