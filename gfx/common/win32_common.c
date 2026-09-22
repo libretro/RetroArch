@@ -277,8 +277,7 @@ static void d3dkmt_init(void)
        * loop below, so a missing export was a call through NULL on the
        * first display device. Leave the scanline state zeroed and let
        * d3dkmt_scanline_get() report -1, which
-       * video_driver_scanline_before_frame() already treats as
-       * unsupported. */
+       * video_driver_scanline_after_frame() treats as unsupported. */
       if (!pD3DKMTOpenAdapterFromHdc || !pD3DKMTGetScanLine)
       {
          memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
@@ -523,6 +522,10 @@ static void win32_resize_after_display_change(HWND hwnd, HMONITOR monitor)
             info.rcMonitor.right  - info.rcMonitor.left,
             info.rcMonitor.bottom - info.rcMonitor.top,
             SWP_NOMOVE);
+#ifdef HAVE_D3DKMT
+   /* Scanline Sync's active and total lines follow the mode */
+   video_driver_scanline_init();
+#endif
 }
 
 
