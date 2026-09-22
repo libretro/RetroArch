@@ -125,10 +125,6 @@ typedef struct gl3
       GLuint fbo_feedback;
       unsigned fbo_feedback_pass;
       GLuint fbo_feedback_texture;
-      unsigned last_width[GL_CORE_NUM_TEXTURES];
-      unsigned last_height[GL_CORE_NUM_TEXTURES];
-      unsigned hw_render_last_width;
-      unsigned hw_render_last_height;
       GLuint fbo[GFX_MAX_SHADERS];
       GLuint fbo_texture[GFX_MAX_SHADERS];
       struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];
