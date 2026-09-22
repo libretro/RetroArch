@@ -7673,19 +7673,18 @@ int action_cb_push_dropdown_item_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char *end            = NULL;
-   unsigned width       = 0;
-   unsigned height      = 0;
+   unsigned dims        = 0;
    float refreshrate    = 0.0f;
 
    if (!path)
       return -1;
 
-   width = (unsigned)strtoul(path, &end, 0);
+   VIDEO_SCALE_PUT_W(dims, (unsigned)strtoul(path, &end, 0));
    if (end == path || *end != 'x')
       return -1;
 
    ++end;
-   height = (unsigned)strtoul(end, &end, 0);
+   VIDEO_SCALE_PUT_H(dims, (unsigned)strtoul(end, &end, 0));
    /* Skip whitespace and opening parenthesis: "2160 (120 Hz)" → "120 Hz)" */
    while (*end == ' ' || *end == '(')
       ++end;
@@ -7693,7 +7692,7 @@ int action_cb_push_dropdown_item_resolution(const char *path,
    refreshrate = (float)rstrtod(end, NULL);
 
 
-   if (video_display_server_set_resolution(width, height,
+   if (video_display_server_set_resolution(dims,
          floor(refreshrate), refreshrate, 0, 0, 0, 0))
    {
       settings_t *settings = config_get_ptr();
@@ -7724,8 +7723,8 @@ int action_cb_push_dropdown_item_resolution(const char *path,
        * applies changes this way. */
       driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_exact);
 
-      settings->uints.video_fullscreen_x = width;
-      settings->uints.video_fullscreen_y = height;
+      settings->uints.video_fullscreen_x = VIDEO_SCALE_W(dims);
+      settings->uints.video_fullscreen_y = VIDEO_SCALE_H(dims);
 
       action_cancel_pop_default(NULL, NULL, 0, 0);
    }

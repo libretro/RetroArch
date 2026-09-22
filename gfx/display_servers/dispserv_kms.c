@@ -51,7 +51,7 @@ typedef struct
 } dispserv_kms_t;
 
 static bool kms_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz,
+      unsigned dims, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
 {
    unsigned curr_width               = 0;
@@ -70,21 +70,21 @@ static bool kms_display_server_set_resolution(void *data,
       curr_width       = g_drm_mode->hdisplay;
       curr_height      = g_drm_mode->vdisplay;
    }
-   RARCH_DBG("[DRM] Display server set resolution - incoming: %d x %d, %f Hz.\n",width, height, hz);
+   RARCH_DBG("[DRM] Display server set resolution - incoming: %d x %d, %f Hz.\n",VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), hz);
 
-   if (width == 0)
-      width = curr_width;
-   if (height == 0)
-      height = curr_height;
+   if (VIDEO_SCALE_W(dims) == 0)
+      VIDEO_SCALE_PUT_W(dims, curr_width);
+   if (VIDEO_SCALE_H(dims) == 0)
+      VIDEO_SCALE_PUT_H(dims, curr_height);
    if (hz == 0)
       hz = curr_refreshrate;
 
    /* set core refresh from hz */
    video_monitor_set_refresh_rate(hz);
 
-   RARCH_DBG("[DRM] Display server set resolution - actual: %d x %d, %f Hz.\n",width, height, hz);
+   RARCH_DBG("[DRM] Display server set resolution - actual: %d x %d, %f Hz.\n",VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), hz);
 
-   retval = video_driver_set_video_mode(VIDEO_SCALE_PACK(width, height), true);
+   retval = video_driver_set_video_mode(dims, true);
 
    /* Reinitialize drivers. */
    command_event(CMD_EVENT_REINIT, &reinit_flags);

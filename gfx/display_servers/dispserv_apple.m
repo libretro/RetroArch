@@ -193,7 +193,7 @@ static bool apple_display_server_set_window_decorations(void *data, bool on)
 
 #if TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
 static bool apple_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz,
+      unsigned dims, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
 {
    CocoaView *view = [CocoaView get];
@@ -212,7 +212,7 @@ static bool apple_display_server_set_resolution(void *data,
    }
 
    /* macOS: Support resolution changes in addition to refresh rate */
-   if (width > 0 && height > 0)
+   if (VIDEO_SCALE_W(dims) > 0 && VIDEO_SCALE_H(dims) > 0)
    {
       CGDirectDisplayID mainDisplayID = CGMainDisplayID();
       CFArrayRef displayModes = CGDisplayCopyAllDisplayModes(mainDisplayID, NULL);
@@ -227,7 +227,7 @@ static bool apple_display_server_set_resolution(void *data,
          return false;
       }
 
-      RARCH_LOG("[Video] Looking for display mode: %ux%u @ %.3f Hz\n", width, height, hz);
+      RARCH_LOG("[Video] Looking for display mode: %ux%u @ %.3f Hz\n", VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), hz);
 
       /* Find the best matching display mode */
       for (CFIndex i = 0; i < CFArrayGetCount(displayModes); i++)
@@ -238,13 +238,13 @@ static bool apple_display_server_set_resolution(void *data,
          double refreshRate = CGDisplayModeGetRefreshRate(mode);
 
          /* Exact match preferred */
-         if (modeWidth == width && modeHeight == height && fabs(refreshRate - hz) < 0.1)
+         if (modeWidth == VIDEO_SCALE_W(dims) && modeHeight == VIDEO_SCALE_H(dims) && fabs(refreshRate - hz) < 0.1)
          {
             bestMode = mode;
             break;
          }
          /* Fallback: match resolution, any refresh rate */
-         else if (modeWidth == width && modeHeight == height && !bestMode)
+         else if (modeWidth == VIDEO_SCALE_W(dims) && modeHeight == VIDEO_SCALE_H(dims) && !bestMode)
             bestMode = mode;
       }
 
@@ -254,7 +254,7 @@ static bool apple_display_server_set_resolution(void *data,
          if (result == kCGErrorSuccess)
          {
             RARCH_LOG("[Video] Successfully changed display mode to %ux%u @ %.3f Hz\n",
-                     width, height, hz);
+                     VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), hz);
 
             /* Notify the window and video context about the resolution change */
             NSWindow *window = ((RetroArch_OSX*)[[NSApplication sharedApplication] delegate]).window;
@@ -289,7 +289,7 @@ static bool apple_display_server_set_resolution(void *data,
       else
       {
          RARCH_WARN("[Video] No matching display mode found for %ux%u @ %.3f Hz\n",
-                    width, height, hz);
+                    VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), hz);
          CFRelease(displayModes);
          return false;
       }
@@ -306,7 +306,7 @@ static bool apple_display_server_set_resolution(void *data,
 }
 #elif TARGET_OS_IPHONE
 static bool apple_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz,
+      unsigned dims, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
 {
    CocoaView *view = [CocoaView get];

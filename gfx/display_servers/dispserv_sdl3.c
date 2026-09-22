@@ -123,7 +123,7 @@ static bool sdl3_display_server_apply(dispserv_sdl3_t *dispserv,
 }
 
 static bool sdl3_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz,
+      unsigned dims, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
 {
    const SDL_DisplayMode *cur;
@@ -144,15 +144,15 @@ static bool sdl3_display_server_set_resolution(void *data,
    cur = SDL_GetCurrentDisplayMode(dispserv->display);
    if (cur)
    {
-      if (width == 0)
-         width = cur->w;
-      if (height == 0)
-         height = cur->h;
+      if (VIDEO_SCALE_W(dims) == 0)
+         VIDEO_SCALE_PUT_W(dims, cur->w);
+      if (VIDEO_SCALE_H(dims) == 0)
+         VIDEO_SCALE_PUT_H(dims, cur->h);
       if (int_hz == 0)
          int_hz = sdl3_display_server_refresh_label(cur);
    }
 
-   return sdl3_display_server_apply(dispserv, (int)width, (int)height, int_hz);
+   return sdl3_display_server_apply(dispserv, (int)VIDEO_SCALE_W(dims), (int)VIDEO_SCALE_H(dims), int_hz);
 }
 
 static int sdl3_display_server_resolution_list_qsort(

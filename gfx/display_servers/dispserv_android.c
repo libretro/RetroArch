@@ -204,7 +204,7 @@ static void *android_display_server_get_resolution_list(
  *
  * A request, not a guarantee: the system may stay where it is. */
 static bool android_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz,
+      unsigned dims, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
 {
    struct video_display_config *conf = NULL;
@@ -230,14 +230,14 @@ static bool android_display_server_set_resolution(void *data,
     * zero and only the rate filled in.  Matching those literally
     * matched nothing, so every rate-only switch failed silently.
     * Zero means "whatever size is current". */
-   if (width == 0 || height == 0)
+   if (VIDEO_SCALE_W(dims) == 0 || VIDEO_SCALE_H(dims) == 0)
    {
       for (i = 0; i < count; i++)
       {
          if (!conf[i].current)
             continue;
-         width  = conf[i].width;
-         height = conf[i].height;
+         VIDEO_SCALE_PUT_W(dims, conf[i].width);
+         VIDEO_SCALE_PUT_H(dims, conf[i].height);
          break;
       }
    }
@@ -246,7 +246,7 @@ static bool android_display_server_set_resolution(void *data,
    {
       float delta;
 
-      if (conf[i].width != width || conf[i].height != height)
+      if (conf[i].width != VIDEO_SCALE_W(dims) || conf[i].height != VIDEO_SCALE_H(dims))
          continue;
 
       delta = conf[i].refreshrate_float - hz;
@@ -282,7 +282,7 @@ static bool android_display_server_set_resolution(void *data,
     * between "it did not work" and knowing why. */
    RARCH_LOG("[Android] Display mode %d requested for %ux%u @ %.2f Hz"
          " (accepted: %s).\n",
-         best_id, width, height, hz, (ok == JNI_TRUE) ? "yes" : "no");
+         best_id, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), hz, (ok == JNI_TRUE) ? "yes" : "no");
 
    /* Tell SurfaceFlinger what this window wants, as well as asking
     * the framework for the mode.
@@ -447,7 +447,7 @@ static bool android_display_server_step_video_output(void *data, int dir)
          continue;
 
       found = android_display_server_set_resolution(data,
-            conf[idx].width, conf[idx].height,
+            VIDEO_SCALE_PACK(conf[idx].width, conf[idx].height),
             (int)conf[idx].refreshrate, conf[idx].refreshrate_float,
             0, 0, 0, 0);
       break;

@@ -132,8 +132,7 @@ typedef struct
    win32_modeline_t ml;
 #endif
    int crt_center;
-   unsigned orig_width;
-   unsigned orig_height;
+   unsigned orig_dims;
    unsigned orig_refresh;
    uint8_t flags;
 } dispserv_win32_t;
@@ -313,12 +312,11 @@ static void win32_display_server_destroy(void *data)
    win32_display_server_modeline_close(dispserv);
 #endif
 
-   if (   dispserv->orig_width   > 0
-       && dispserv->orig_height  > 0
+   if (   VIDEO_SCALE_W(dispserv->orig_dims) > 0
+       && VIDEO_SCALE_H(dispserv->orig_dims) > 0
        && dispserv->orig_refresh > 0)
       video_display_server_set_resolution(
-            dispserv->orig_width,
-            dispserv->orig_height,
+            dispserv->orig_dims,
             dispserv->orig_refresh,
             (float)dispserv->orig_refresh,
             dispserv->crt_center, 0, 0, 0);
@@ -444,7 +442,7 @@ static bool win32_get_video_output(DEVMODE *dm, int mode)
 }
 
 static bool win32_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
+      unsigned dims, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    MONITORINFOEX current_mon;
    HMONITOR hm_to_use         = NULL;
@@ -463,21 +461,21 @@ static bool win32_display_server_set_resolution(void *data,
 
    win32_get_video_output(&dm, -1);
 
-   if (serv->orig_width == 0)
-      serv->orig_width   = GetSystemMetrics(SM_CXSCREEN);
-   if (serv->orig_height == 0)
-      serv->orig_height  = GetSystemMetrics(SM_CYSCREEN);
+   if (!VIDEO_SCALE_W(serv->orig_dims))
+      VIDEO_SCALE_PUT_W(serv->orig_dims, GetSystemMetrics(SM_CXSCREEN));
+   if (!VIDEO_SCALE_H(serv->orig_dims))
+      VIDEO_SCALE_PUT_H(serv->orig_dims, GetSystemMetrics(SM_CYSCREEN));
    if (serv->orig_refresh == 0)
       serv->orig_refresh = video_driver_get_refresh_rate();
 
    /* Used to stop super resolution bug */
-   if (width == dm.dmPelsWidth)
-      width = 0;
+   if (VIDEO_SCALE_W(dims) == dm.dmPelsWidth)
+      VIDEO_SCALE_PUT_W(dims, 0);
 
-   if (width == 0)
-      width = dm.dmPelsWidth;
-   if (height == 0)
-      height = dm.dmPelsHeight;
+   if (VIDEO_SCALE_W(dims) == 0)
+      VIDEO_SCALE_PUT_W(dims, dm.dmPelsWidth);
+   if (VIDEO_SCALE_H(dims) == 0)
+      VIDEO_SCALE_PUT_H(dims, dm.dmPelsHeight);
    if (curr_bpp == 0)
       curr_bpp = dm.dmBitsPerPel;
    if (int_hz == 0)
@@ -489,9 +487,9 @@ static bool win32_display_server_set_resolution(void *data,
 
    for (i = 0; win32_get_video_output(&dm, i); i++)
    {
-      if (dm.dmPelsWidth        != width)
+      if (dm.dmPelsWidth        != VIDEO_SCALE_W(dims))
          continue;
-      if (dm.dmPelsHeight       != height)
+      if (dm.dmPelsHeight       != VIDEO_SCALE_H(dims))
          continue;
       if (dm.dmBitsPerPel       != curr_bpp)
          continue;

@@ -222,7 +222,8 @@ int main(void)
    {
       if (!list[i].current && list[i].width != (unsigned)desktop.w)
       {
-         if (!dispserv_sdl2.set_resolution(data, list[i].width, list[i].height,
+         if (!dispserv_sdl2.set_resolution(data,
+               VIDEO_SCALE_PACK(list[i].width, list[i].height),
                   (int)list[i].refreshrate, list[i].refreshrate_float, 0, 0, 0, 0))
          {
             fprintf(stderr, "FAIL: set_resolution %ux%u@%u\n", list[i].width,

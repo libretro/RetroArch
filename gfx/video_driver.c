@@ -1772,14 +1772,15 @@ bool video_display_server_set_window_decorations(bool on)
    return false;
 }
 
-bool video_display_server_set_resolution(unsigned width, unsigned height,
+bool video_display_server_set_resolution(unsigned dims,
       int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
-   RARCH_DBG("[Video] Display server set resolution to %ux%u %.3f Hz.\n", width, height, hz);
+   RARCH_DBG("[Video] Display server set resolution to %ux%u %.3f Hz.\n",
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), hz);
    if (current_display_server && current_display_server->set_resolution)
       return current_display_server->set_resolution(
-            video_st->current_display_server_data, width, height, int_hz,
+            video_st->current_display_server_data, dims, int_hz,
             hz, center, monitor_index, xoffset, padjust);
    return false;
 }
@@ -1944,7 +1945,7 @@ bool video_display_server_set_refresh_rate(float hz)
    RARCH_DBG("[Video] Display server set refresh rate to %.3f Hz.\n", hz);
    if (current_display_server && current_display_server->set_resolution)
       return current_display_server->set_resolution(
-            video_st->current_display_server_data, 0, 0, (int)hz,
+            video_st->current_display_server_data, 0, (int)hz,
             hz, 0, 0, 0, 0);
    return false;
 }

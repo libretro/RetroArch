@@ -73,10 +73,10 @@ STUB_LOG(RARCH_ERR, 1)
 
 /* RetroArch-side symbols the driver refers to outside the modeline
  * path; none of them is reached by this test. */
-bool video_display_server_set_resolution(unsigned w, unsigned h,
+bool video_display_server_set_resolution(unsigned dims,
       int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
-   (void)w; (void)h; (void)int_hz; (void)hz; (void)center; (void)monitor_index;
+   (void)dims; (void)int_hz; (void)hz; (void)center; (void)monitor_index;
    (void)xoffset; (void)padjust;
    return false;
 }
