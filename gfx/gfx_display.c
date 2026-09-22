@@ -314,11 +314,12 @@ float gfx_display_get_dpi_scale(
 #ifdef HAVE_OZONE
       if (p_disp->menu_driver_id == MENU_DRIVER_ID_OZONE)
       {
-         /* Ozone has a capped scale factor */
-         float new_width        = (float)VIDEO_SCALE_W(dims) * 0.3333333f;
+         /* Ozone's sidebar may take a third of the screen and no
+          * more, so the scale is capped at whatever puts it there. */
+         float sidebar_max      = (float)VIDEO_SCALE_W(dims) / 3.0f;
          if (((float)OZONE_SIDEBAR_WIDTH * adjusted_scale)
-               > new_width)
-            adjusted_scale      = (new_width / (float)OZONE_SIDEBAR_WIDTH);
+               > sidebar_max)
+            adjusted_scale      = (sidebar_max / (float)OZONE_SIDEBAR_WIDTH);
       }
 #endif
       adjusted_scale            = (adjusted_scale > 0.0001f) ? adjusted_scale : 1.0f;
