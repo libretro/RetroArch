@@ -897,7 +897,7 @@ void gfx_widgets_draw_text(
          font_data->font,
          text,
          x, y,
-         (int)VIDEO_SCALE_W(dims), (int)VIDEO_SCALE_H(dims),
+         dims,
          color,
          text_align,
          1.0f,

@@ -3077,7 +3077,7 @@ static void materialui_render_messagebox(
                x - longest_width / 2.0f,
                y + (i * mui->font_data.list.line_height)
                   + mui->font_data.list.line_ascender,
-               video_width, video_height, mui->colors.list_text,
+               VIDEO_SCALE_PACK(video_width, video_height), mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
    }
 
@@ -3167,8 +3167,7 @@ static void materialui_render_messagebox(
             str_back,
             icon_x + icon_size + icon_padding,
             label_y,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.list_text,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -3228,8 +3227,7 @@ static void materialui_render_messagebox(
             str_ok,
             icon_x + icon_size + icon_padding,
             label_y,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             mui->colors.list_text,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -5147,7 +5145,7 @@ static void materialui_render_menu_entry_default(
       gfx_display_draw_text(mui->font_data.hint.font, wrapped_sublabel,
             entry_x + entry_margin,
             sublabel_y,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             (entry_selected || touch_feedback_active) ?
                   mui->colors.list_hint_text_highlighted : mui->colors.list_hint_text,
             TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
@@ -5239,7 +5237,7 @@ static void materialui_render_menu_entry_default(
             gfx_display_draw_text(mui->font_data.list.font, value_buf,
                   entry_x + value_x_offset + node->entry_width - (int)mui->margin - (int)mui->landscape_optimization.entry_margin,
                   label_y,
-                  video_width, video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   entry_value_color,
                   TEXT_ALIGN_RIGHT, 1.0f, false, 0.0f, draw_text_outside);
          }
@@ -5329,7 +5327,7 @@ static void materialui_render_menu_entry_default(
          gfx_display_draw_text(mui->font_data.list.font, label_buf,
                (int)mui->ticker_x_offset + entry_x + entry_margin,
                label_y,
-               video_width, video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                (entry_selected || touch_feedback_active) ?
                      mui->colors.list_text_highlighted : mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, draw_text_outside);
@@ -5510,7 +5508,7 @@ static void materialui_render_menu_entry_playlist_list(
       gfx_display_draw_text(mui->font_data.hint.font, wrapped_sublabel,
             entry_x + entry_margin,
             sublabel_y,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             (entry_selected || touch_feedback_active) ?
                   mui->colors.list_hint_text_highlighted : mui->colors.list_hint_text,
             TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
@@ -5556,7 +5554,7 @@ static void materialui_render_menu_entry_playlist_list(
          gfx_display_draw_text(mui->font_data.list.font, label_buf,
                (int)mui->ticker_x_offset + entry_x + entry_margin,
                label_y,
-               video_width, video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                (entry_selected || touch_feedback_active) ?
                      mui->colors.list_text_highlighted : mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
@@ -5748,7 +5746,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
          gfx_display_draw_text(mui->font_data.list.font, label_buf,
                label_x,
                label_y,
-               video_width, video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                (entry_selected || touch_feedback_active) ?
                      mui->colors.list_text_highlighted : mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
@@ -5851,7 +5849,7 @@ static void materialui_render_menu_entry_playlist_desktop(
          gfx_display_draw_text(mui->font_data.list.font, label_buf,
                (int)mui->ticker_x_offset + entry_x + entry_margin,
                label_y,
-               video_width, video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                (entry_selected || touch_feedback_active) ?
                mui->colors.list_text_highlighted : mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
@@ -6017,7 +6015,7 @@ static void materialui_render_menu_entry_savestate_list(
       gfx_display_draw_text(mui->font_data.hint.font, wrapped_sublabel,
             entry_x + entry_margin,
             sublabel_y,
-            video_width, video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             (entry_selected || touch_feedback_active) ?
                   mui->colors.list_hint_text_highlighted : mui->colors.list_hint_text,
             TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
@@ -6109,7 +6107,7 @@ static void materialui_render_menu_entry_savestate_list(
             gfx_display_draw_text(mui->font_data.list.font, value_buf,
                   entry_x + value_x_offset + node->entry_width - (int)mui->margin - (int)mui->landscape_optimization.entry_margin,
                   label_y,
-                  video_width, video_height,
+                  VIDEO_SCALE_PACK(video_width, video_height),
                   entry_value_color,
                   TEXT_ALIGN_RIGHT, 1.0f, false, 0.0f, draw_text_outside);
          }
@@ -6179,7 +6177,7 @@ static void materialui_render_menu_entry_savestate_list(
          gfx_display_draw_text(mui->font_data.list.font, label_buf,
                (int)mui->ticker_x_offset + entry_x + entry_margin,
                label_y,
-               video_width, video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                (entry_selected || touch_feedback_active) ?
                      mui->colors.list_text_highlighted : mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
@@ -6475,7 +6473,7 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
                text_x,
                status_bar_y + ((float)mui->status_bar.height * 0.5f) +
                      (float)mui->font_data.hint.line_centre_offset,
-               video_width, video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                text_color,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f,
                draw_text_outside);
@@ -7247,7 +7245,7 @@ MUI_NOINLINE static void materialui_render_header(
                   mui->sys_bar_cache.battery_percent_str,
                   (int)video_width - ((int)mui->sys_bar_cache.battery_percent_width + (int)mui->sys_bar_margin + (int)VIDEO_SCALE_W(mui->nav_bar_layout_dims)),
                   sys_bar_text_y,
-                  video_width, video_height, mui->colors.sys_bar_text,
+                  VIDEO_SCALE_PACK(video_width, video_height), mui->colors.sys_bar_text,
                   TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
 
             sys_bar_battery_width = mui->sys_bar_cache.battery_percent_width +
@@ -7301,7 +7299,7 @@ MUI_NOINLINE static void materialui_render_header(
                   + (int)sys_bar_battery_width
                   + (int)VIDEO_SCALE_W(mui->nav_bar_layout_dims)),
                sys_bar_text_y,
-               video_width, video_height, mui->colors.sys_bar_text,
+               VIDEO_SCALE_PACK(video_width, video_height), mui->colors.sys_bar_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
 
          usable_sys_bar_width -= sys_bar_clock_width;
@@ -7348,7 +7346,7 @@ MUI_NOINLINE static void materialui_render_header(
       gfx_display_draw_text(mui->font_data.hint.font, core_title_buf,
             (int)mui->ticker_x_offset + (int)mui->sys_bar_margin,
             sys_bar_text_y,
-            video_width, video_height, mui->colors.sys_bar_text,
+            VIDEO_SCALE_PACK(video_width, video_height), mui->colors.sys_bar_text,
             TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
 
@@ -7366,7 +7364,7 @@ MUI_NOINLINE static void materialui_render_header(
             mui->entry_index_str,
             str_x,
             sys_bar_text_y,
-            video_width, video_height, mui->colors.sys_bar_text,
+            VIDEO_SCALE_PACK(video_width, video_height), mui->colors.sys_bar_text,
             TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
 
@@ -7517,7 +7515,7 @@ MUI_NOINLINE static void materialui_render_header(
    gfx_display_draw_text(mui->font_data.title.font, menu_title_buf,
          title_x,
          (int)(mui->sys_bar_height + (mui->title_bar_height / 2.0f) + mui->font_data.title.line_centre_offset),
-         video_width, video_height, mui->colors.header_text,
+         VIDEO_SCALE_PACK(video_width, video_height), mui->colors.header_text,
          TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
 }
 
@@ -7975,8 +7973,7 @@ MUI_NOINLINE static void materialui_draw_no_thumbnail_available(
          msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE),
          x_position + (view_width / 2),
          video_height - y_position - ((view_height - icon_size * 1.50f) / 2),
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          mui->colors.list_text | (a8 << 0),
          TEXT_ALIGN_CENTER,
          1.0f,

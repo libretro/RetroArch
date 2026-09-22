@@ -167,10 +167,10 @@ float text_record_x(int i) { return s_rec_x[i]; }
 float text_record_y(int i) { return s_rec_y[i]; }
 
 void gfx_display_draw_text(const font_data_t *font, const char *text,
-      float x, float y, int width, int height, uint32_t color,
+      float x, float y, unsigned dims, uint32_t color,
       enum text_alignment text_align, float scale,
       bool shadows_enable, float shadow_offset, bool draw_outside)
-{ (void)font; (void)width; (void)height;
+{ (void)font; (void)dims;
   (void)color; (void)text_align; (void)scale; (void)shadows_enable;
   (void)shadow_offset; (void)draw_outside;
   if (text && s_rec_count < TEXT_RECORD_MAX)

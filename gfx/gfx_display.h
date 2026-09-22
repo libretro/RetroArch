@@ -291,9 +291,11 @@ void gfx_display_draw_cursor(
       float *color, float cursor_size, uintptr_t texture,
       float x, float y, unsigned width, unsigned height);
 
+/* @dims: the area the text is placed in, both axes in one word,
+ * VIDEO_SCALE_PACK's layout. */
 void gfx_display_draw_text(
       const font_data_t *font, const char *text,
-      float x, float y, int width, int height,
+      float x, float y, unsigned dims,
       uint32_t color, enum text_alignment text_align,
       float scale_factor, bool shadows_enable, float shadow_offset,
       bool draw_outside);
@@ -304,7 +306,7 @@ void gfx_display_draw_text(
  * 8-bit 'color', so supply an equivalent packed value there. */
 void gfx_display_draw_text_hp(
       const font_data_t *font, const char *text,
-      float x, float y, int width, int height,
+      float x, float y, unsigned dims,
       uint32_t color, const float *color_rgba,
       enum text_alignment text_align,
       float scale_factor, bool shadows_enable, float shadow_offset,

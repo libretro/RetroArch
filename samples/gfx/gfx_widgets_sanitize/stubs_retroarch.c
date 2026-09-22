@@ -143,10 +143,10 @@ void gfx_display_draw_quad(gfx_display_t *p_disp, void *data,
   (void)color; (void)texture; }
 
 void gfx_display_draw_text(const font_data_t *font, const char *text,
-      float x, float y, int width, int height, uint32_t color,
+      float x, float y, unsigned dims, uint32_t color,
       enum text_alignment text_align, float scale,
       bool shadows_enable, float shadow_offset, bool draw_outside)
-{ (void)font; (void)text; (void)x; (void)y; (void)width; (void)height;
+{ (void)font; (void)text; (void)x; (void)y; (void)dims;
   (void)color; (void)text_align; (void)scale; (void)shadows_enable;
   (void)shadow_offset; (void)draw_outside; }
 

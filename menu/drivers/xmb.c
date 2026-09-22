@@ -1286,7 +1286,7 @@ static void xmb_draw_text(
    color_hp[3] = alpha_hp < 0.0f ? 0.0f : (alpha_hp > 1.0f ? 1.0f : alpha_hp);
 
    gfx_display_draw_text_hp(font, str, x, y,
-         width, height, color, color_hp, text_align, scale_factor,
+         VIDEO_SCALE_PACK(width, height), color, color_hp, text_align, scale_factor,
          shadows_enable,
          xmb->shadow_offset, false);
 }
@@ -1546,7 +1546,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
          gfx_display_draw_text(xmb->font, msg,
                x - (longest_width / 2.0),
                y + ((i + 0.85) * line_height),
-               video_width, video_height, 0x444444ff,
+               VIDEO_SCALE_PACK(video_width, video_height), 0x444444ff,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
 
@@ -1671,8 +1671,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             str_back,
             icon_x + icon_size + icon_padding,
             label_y,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             0x444444ff,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -1742,8 +1741,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             str_ok,
             icon_x + icon_size + icon_padding,
             label_y,
-            video_width,
-            video_height,
+            VIDEO_SCALE_PACK(video_width, video_height),
             0x444444ff,
             TEXT_ALIGN_LEFT,
             1.0f,
@@ -9083,8 +9081,7 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
                   title_buf,
                   title_x,
                   xmb->font_size * 1.33f,
-                  (unsigned)view_width,
-                  (unsigned)view_height,
+                  VIDEO_SCALE_PACK(view_width, view_height),
                   title_color,
                   TEXT_ALIGN_LEFT,
                   1.0f, false, 0.0f, false);
@@ -9102,8 +9099,7 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
                   xmb->fullscreen_thumbnail_label,
                   view_width >> 1,
                   xmb->font_size * 1.33f,
-                  (unsigned)view_width,
-                  (unsigned)view_height,
+                  VIDEO_SCALE_PACK(view_width, view_height),
                   title_color,
                   TEXT_ALIGN_CENTER,
                   1.0f, false, 0.0f, false);
