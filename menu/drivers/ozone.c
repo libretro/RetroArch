@@ -4026,7 +4026,8 @@ console_iterate:
       gfx_display_blend_end(dispctx, userdata);
    }
 
-   font_flush(video_width, video_height, &ozone->fonts.sidebar);
+   font_flush(VIDEO_SCALE_PACK(video_width,
+         video_height), &ozone->fonts.sidebar);
 
    if (dispctx && dispctx->scissor_end)
       dispctx->scissor_end(userdata, VIDEO_SCALE_PACK(video_width,
@@ -6774,10 +6775,12 @@ border_iterate:
    }
 
    /* Text layer */
-   font_flush(video_width, video_height, &ozone->fonts.entries_label);
+   font_flush(VIDEO_SCALE_PACK(video_width,
+         video_height), &ozone->fonts.entries_label);
 
    if (menu_show_sublabels)
-      font_flush(video_width, video_height, &ozone->fonts.entries_sublabel);
+      font_flush(VIDEO_SCALE_PACK(video_width,
+            video_height), &ozone->fonts.entries_sublabel);
 }
 
 static void ozone_draw_thumbnail_bar(
@@ -8416,7 +8419,8 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
                right_thumbnail,
                right_thumbnail_x,
                thumbnail_y,
-               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width, (unsigned)thumbnail_box_height),
+               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width,
+                     (unsigned)thumbnail_box_height),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                ozone->animations.fullscreen_thumbnail_alpha,
                1.0f,
@@ -8451,7 +8455,8 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
                left_thumbnail,
                left_thumbnail_x,
                thumbnail_y,
-               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width, (unsigned)thumbnail_box_height),
+               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width,
+                     (unsigned)thumbnail_box_height),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                ozone->animations.fullscreen_thumbnail_alpha,
                1.0f,
@@ -13085,12 +13090,16 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             video_height));
 
    /* Flush first layer of text */
-   font_flush(video_width, video_height, &ozone->fonts.footer);
-   font_flush(video_width, video_height, &ozone->fonts.title);
-   font_flush(video_width, video_height, &ozone->fonts.time);
-   font_flush(video_width, video_height, &ozone->fonts.entries_label);
-   font_flush(video_width, video_height, &ozone->fonts.entries_sublabel);
-   font_flush(video_width, video_height, &ozone->fonts.sidebar);
+   font_flush(VIDEO_SCALE_PACK(video_width,
+         video_height), &ozone->fonts.footer);
+   font_flush(VIDEO_SCALE_PACK(video_width, video_height), &ozone->fonts.title);
+   font_flush(VIDEO_SCALE_PACK(video_width, video_height), &ozone->fonts.time);
+   font_flush(VIDEO_SCALE_PACK(video_width,
+         video_height), &ozone->fonts.entries_label);
+   font_flush(VIDEO_SCALE_PACK(video_width,
+         video_height), &ozone->fonts.entries_sublabel);
+   font_flush(VIDEO_SCALE_PACK(video_width,
+         video_height), &ozone->fonts.sidebar);
 
    /* Draw fullscreen thumbnails, if required */
    ozone_draw_fullscreen_thumbnails(ozone,
@@ -13195,8 +13204,10 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          goto ctx_destroyed;
 
       /* Flush second layer of text */
-      font_flush(video_width, video_height, &ozone->fonts.footer);
-      font_flush(video_width, video_height, &ozone->fonts.entries_label);
+      font_flush(VIDEO_SCALE_PACK(video_width,
+            video_height), &ozone->fonts.footer);
+      font_flush(VIDEO_SCALE_PACK(video_width,
+            video_height), &ozone->fonts.entries_label);
    }
 
    /* Cursor */

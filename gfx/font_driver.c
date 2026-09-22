@@ -1245,10 +1245,11 @@ void font_driver_sync_impl(font_data_impl_t *font_data)
 }
 
 void font_flush(
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       font_data_impl_t *font_data)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    const font_renderer_t *renderer = font_data->font ? font_data->font->renderer : NULL;
 
    /* A rebuilt font has different metrics; pick them up before

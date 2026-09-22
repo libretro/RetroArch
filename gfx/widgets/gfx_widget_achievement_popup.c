@@ -258,10 +258,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             gfx_widgets_draw_icon(
                video_info->userdata,
                p_disp,
-               video_width,
-               video_height,
-               state->height,
-               state->height,
+               VIDEO_SCALE_PACK(video_width, video_height),
+               VIDEO_SCALE_PACK(state->height, state->height),
                p_dispwidget->gfx_widgets_icons_textures[
                   MENU_WIDGETS_ICON_ACHIEVEMENT],
                screen_pos_x,
@@ -294,10 +292,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
          gfx_widgets_draw_icon(
             video_info->userdata,
             p_disp,
-            video_width,
-            video_height,
-            state->height,
-            state->height,
+            VIDEO_SCALE_PACK(video_width, video_height),
+            VIDEO_SCALE_PACK(state->height, state->height),
             state->queue[state->queue_read_index].badge,
             screen_pos_x,
             screen_pos_y,

@@ -266,8 +266,7 @@ uint32_t font_driver_get_generation(void);
 void font_driver_sync_impl(font_data_impl_t *font_data);
 
 void font_flush(
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       font_data_impl_t *font_data);
 
 /* Main thread, at video init before the wrapper spawns; see the

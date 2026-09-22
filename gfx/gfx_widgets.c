@@ -830,10 +830,8 @@ static void gfx_widgets_msg_queue_kill(
 void gfx_widgets_draw_icon(
       void *userdata,
       void *data_disp,
-      unsigned video_width,
-      unsigned video_height,
-      unsigned icon_width,
-      unsigned icon_height,
+      unsigned video_dims,
+      unsigned icon_dims,
       uintptr_t texture,
       float x, float y,
       float radians,
@@ -841,6 +839,8 @@ void gfx_widgets_draw_icon(
       float sine,
       float *color)
 {
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+   unsigned icon_height  = VIDEO_SCALE_H(icon_dims);
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat;
@@ -868,7 +868,7 @@ void gfx_widgets_draw_icon(
 
    draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x),
          VIDEO_PX(video_height - y - icon_height));
-   draw.dims            = VIDEO_SCALE_PACK(icon_width, icon_height);
+   draw.dims            = icon_dims;
    draw.scale_factor    = 1.0f;
    draw.rotation        = radians;
    draw.coords          = &coords;
@@ -878,7 +878,7 @@ void gfx_widgets_draw_icon(
 
    if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
       gfx_display_draw(dispctx, &draw, userdata,
-            VIDEO_SCALE_PACK(video_width, video_height));
+            video_dims);
 }
 
 void gfx_widgets_draw_text(
@@ -1424,10 +1424,8 @@ static int gfx_widgets_draw_indicator(
       gfx_widgets_draw_icon(
             userdata,
             p_disp,
-            video_width,
-            video_height,
-            width,
-            height,
+            VIDEO_SCALE_PACK(video_width, video_height),
+            VIDEO_SCALE_PACK(width, height),
             icon,
             top_right_x_advance - width, y,
             0.0f, /* rad */
@@ -1643,10 +1641,8 @@ static void gfx_widgets_draw_task_msg(
       gfx_widgets_draw_icon(
             userdata,
             p_disp,
-            video_width,
-            video_height,
-            msg_queue_height / 2.5f,
-            msg_queue_height / 2.5f,
+            VIDEO_SCALE_PACK(video_width, video_height),
+            VIDEO_SCALE_PACK(msg_queue_height / 2.5f, msg_queue_height / 2.5f),
             p_dispwidget->gfx_widgets_icons_textures[texture],
             rect_x + (msg_queue_height / 12.0f) + (msg_queue_height / MSG_QUEUE_FONT_SIZE),
             rect_y + (msg_queue_height / MSG_QUEUE_FONT_SIZE),
@@ -1827,10 +1823,8 @@ static void gfx_widgets_draw_regular_msg(
       gfx_widgets_draw_icon(
             userdata,
             p_disp,
-            video_width,
-            video_height,
-            icon_size,
-            icon_size,
+            VIDEO_SCALE_PACK(video_width, video_height),
+            VIDEO_SCALE_PACK(icon_size, icon_size),
             p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO],
             p_dispwidget->msg_queue_rect_start_x
                   + (p_dispwidget->msg_queue_height / 10.0f),
@@ -2011,10 +2005,8 @@ static void gfx_widgets_frame_state(void *data)
          gfx_widgets_draw_icon(
                userdata,
                p_disp,
-               video_width,
-               video_height,
-               overlay_width,
-               overlay_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
+               VIDEO_SCALE_PACK(overlay_width, overlay_height),
                p_dispwidget->ai_service_overlay_texture,
                overlay_x,
                overlay_y,

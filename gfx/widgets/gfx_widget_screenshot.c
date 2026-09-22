@@ -315,10 +315,9 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
          gfx_widgets_draw_icon(
                userdata,
                p_disp,
-               video_width,
-               video_height,
-               state->thumbnail_width,
-               state->thumbnail_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
+               VIDEO_SCALE_PACK(state->thumbnail_width,
+                     state->thumbnail_height),
                state->texture,
                0,
                state->y,

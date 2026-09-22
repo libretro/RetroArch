@@ -2825,7 +2825,8 @@ static void materialui_draw_thumbnail(
                   userdata,
                   VIDEO_SCALE_PACK(video_width, video_height),
                   thumbnail,
-                  x, y, VIDEO_SCALE_PACK(mui->thumbnail_width_max, mui->thumbnail_height_max),
+                  x, y, VIDEO_SCALE_PACK(mui->thumbnail_width_max,
+                        mui->thumbnail_height_max),
                   GFX_THUMBNAIL_ALIGN_CENTRE,
                   mui->transition_alpha, scale_factor, NULL);
          }
@@ -6347,7 +6348,8 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
       /* Status bar overlaps list entries
        * > Must flush list font before attempting
        *   to draw it */
-      font_flush(video_width, video_height, &mui->font_data.list);
+      font_flush(VIDEO_SCALE_PACK(video_width,
+            video_height), &mui->font_data.list);
 
       /* Background
        * > Surface */
@@ -8030,7 +8032,8 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
       {
          gfx_thumbnail_get_draw_dimensions(
                primary_thumbnail,
-               VIDEO_SCALE_PACK(thumbnail_box_width, thumbnail_box_height), 1.0f,
+               VIDEO_SCALE_PACK(thumbnail_box_width,
+                     thumbnail_box_height), 1.0f,
                &primary_thumbnail_draw_width, &primary_thumbnail_draw_height);
       }
 
@@ -8038,7 +8041,8 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
       {
          gfx_thumbnail_get_draw_dimensions(
                secondary_thumbnail,
-               VIDEO_SCALE_PACK(thumbnail_box_width, thumbnail_box_height), 1.0f,
+               VIDEO_SCALE_PACK(thumbnail_box_width,
+                     thumbnail_box_height), 1.0f,
                &secondary_thumbnail_draw_width, &secondary_thumbnail_draw_height);
       }
 
@@ -8121,7 +8125,8 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
                primary_thumbnail,
                primary_thumbnail_x,
                primary_thumbnail_y,
-               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width, (unsigned)thumbnail_box_height),
+               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width,
+                     (unsigned)thumbnail_box_height),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                mui->fullscreen_thumbnail_alpha,
                1.0f,
@@ -8156,7 +8161,8 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
                secondary_thumbnail,
                secondary_thumbnail_x,
                secondary_thumbnail_y,
-               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width, (unsigned)thumbnail_box_height),
+               VIDEO_SCALE_PACK((unsigned)thumbnail_box_width,
+                     (unsigned)thumbnail_box_height),
                GFX_THUMBNAIL_ALIGN_CENTRE,
                mui->fullscreen_thumbnail_alpha,
                1.0f,
@@ -8585,8 +8591,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    /* Flush first layer of text
     * > Menu list only uses list and hint fonts */
-   font_flush(video_width, video_height, &mui->font_data.list);
-   font_flush(video_width, video_height, &mui->font_data.hint);
+   font_flush(VIDEO_SCALE_PACK(video_width,
+         video_height), &mui->font_data.list);
+   font_flush(VIDEO_SCALE_PACK(video_width,
+         video_height), &mui->font_data.hint);
 
    /* Draw fullscreen thumbnails, if currently active
     * > Must be done *after* we flush the first layer
@@ -8605,8 +8613,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
    /* Flush second layer of text
     * > Title + system bar only use title and hint fonts */
-   font_flush(video_width, video_height, &mui->font_data.title);
-   font_flush(video_width, video_height, &mui->font_data.hint);
+   font_flush(VIDEO_SCALE_PACK(video_width,
+         video_height), &mui->font_data.title);
+   font_flush(VIDEO_SCALE_PACK(video_width,
+         video_height), &mui->font_data.hint);
 
    /* Handle onscreen keyboard */
    if (menu_input_dialog_get_display_kb())
@@ -8656,7 +8666,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       /* Flush message box & osk text
        * > Message box & osk only use list font */
-      font_flush(video_width, video_height, &mui->font_data.list);
+      font_flush(VIDEO_SCALE_PACK(video_width,
+            video_height), &mui->font_data.list);
    }
 
    /* Draw message box */
@@ -8685,7 +8696,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
 
       /* Flush message box text
        * > Message box only uses list font */
-      font_flush(video_width, video_height, &mui->font_data.list);
+      font_flush(VIDEO_SCALE_PACK(video_width,
+            video_height), &mui->font_data.list);
    }
 
    /* Draw mouse cursor */

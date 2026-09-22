@@ -196,9 +196,8 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
          gfx_widgets_draw_icon(
                userdata,
                p_disp,
-               video_width,
-               video_height,
-               icon_size, icon_size,
+               VIDEO_SCALE_PACK(video_width, video_height),
+               VIDEO_SCALE_PACK(icon_size, icon_size),
                volume_icon,
                0,
                0,

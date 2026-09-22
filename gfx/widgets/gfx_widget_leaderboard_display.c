@@ -423,10 +423,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                   gfx_widgets_draw_icon(
                         video_info->userdata,
                         p_disp,
-                        video_width,
-                        video_height,
-                        widget_size,
-                        widget_size,
+                        VIDEO_SCALE_PACK(video_width, video_height),
+                        VIDEO_SCALE_PACK(widget_size, widget_size),
                         p_dispwidget->gfx_widgets_icons_textures[
                               MENU_WIDGETS_ICON_ACHIEVEMENT],
                         x,
@@ -448,10 +446,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                gfx_widgets_draw_icon(
                      video_info->userdata,
                      p_disp,
-                     video_width,
-                     video_height,
-                     widget_size,
-                     widget_size,
+                     VIDEO_SCALE_PACK(video_width, video_height),
+                     VIDEO_SCALE_PACK(widget_size, widget_size),
                      state->challenge_info[i].image,
                      x,
                      y,
@@ -516,10 +512,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                   gfx_widgets_draw_icon(
                         video_info->userdata,
                         p_disp,
-                        video_width,
-                        video_height,
-                        image_size,
-                        image_size,
+                        VIDEO_SCALE_PACK(video_width, video_height),
+                        VIDEO_SCALE_PACK(image_size, image_size),
                         p_dispwidget->gfx_widgets_icons_textures[
                               MENU_WIDGETS_ICON_ACHIEVEMENT],
                         x,
@@ -541,10 +535,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                gfx_widgets_draw_icon(
                      video_info->userdata,
                      p_disp,
-                     video_width,
-                     video_height,
-                     image_size,
-                     image_size,
+                     VIDEO_SCALE_PACK(video_width, video_height),
+                     VIDEO_SCALE_PACK(image_size, image_size),
                      state->progress_tracker.image,
                      x,
                      y,

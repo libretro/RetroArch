@@ -258,7 +258,8 @@ static void test_icon_draw_size(void)
    stub_draw_dims  = 0;
    /* A texture handle of 0 is the one early return; any non-zero
     * value reaches the descriptor. */
-   gfx_widgets_draw_icon(NULL, &s_disp, 640, 480, 64, 16,
+   gfx_widgets_draw_icon(NULL, &s_disp, VIDEO_SCALE_PACK(640,
+         480), VIDEO_SCALE_PACK(64, 16),
          (uintptr_t)1, 8.0f, 8.0f, 0.0f, 1.0f, 0.0f, NULL);
 
    CHECK(stub_draw_count > before, "the icon draw never reached the driver");
