@@ -761,7 +761,9 @@ jobs:
           # overrun; and that a start puts the model back at the top
           # of the loop with the hardware; and that the resync margin is
           # the FIFO the pin reports plus half a millisecond, two
-          # milliseconds where it reports none.
+          # milliseconds where it reports none; and that gaps in the
+          # audio are counted once each, neither a start nor every
+          # sample of a pause.
           if ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1 \
                 || ! command -v wine >/dev/null 2>&1; then
              sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine64 \

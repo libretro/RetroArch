@@ -20,6 +20,8 @@
  *   a full loop is not an overrun-> the cursor a frame behind the
  *                                   write cursor is left alone
  *   laps went by unobserved      -> the loop is cleared and resynced
+ *   underruns                    -> one per gap in the audio: not the
+ *                                   start, not every sample of a pause
  *   the margin                   -> the pin's reported FIFO plus half a
  *                                   millisecond where it reports one,
  *                                   two milliseconds where it does not
@@ -96,6 +98,8 @@ static void loop_setup(wdmks_t *w)
    w->rt_written_bytes = 0;
    w->rt_have_last     = false;
    w->rt_origin        = true;
+   w->rt_fed           = false;
+   retro_atomic_size_init(&w->rt_underruns, 0);
    w->rt_ring_size     = w->rt_size;
    retro_spsc_init(&w->rt_ring, w->rt_ring_size);
    retro_eventcount_init(&w->rt_park);
@@ -218,6 +222,7 @@ static void run_contract(const char *name, put_fn put, bool pump)
          "the first write fills the loop from a margin ahead of the hardware");
    check(region_matches(&w, at, tone, placed), "and the audio is in it");
    check(region_is_silent(&w, fake_pos, margin), "behind that margin of silence");
+   check(wdmks_underruns(&w) == 0, "and a start is not an underrun");
 
    /* Half a loop plays. What was played is silence now; what was not
     * is untouched. */
@@ -239,6 +244,11 @@ static void run_contract(const char *name, put_fn put, bool pump)
    sample(&w, pump);
    check(region_is_silent(&w, 0, LOOP_BYTES),
          "the audio ran out: the whole loop is silence, not its tail again");
+   check(wdmks_underruns(&w) == 1, "and that is one underrun");
+   hw_play(LOOP_BYTES / 2);
+   sample(&w, pump);
+   check(wdmks_underruns(&w) == 1,
+         "the pause goes on: still one, not one per sample");
 
    /* Audio resumes. It has to land just ahead of where the hardware
     * is now, not where the write cursor was left - a loop behind. */
@@ -287,6 +297,7 @@ static void run_contract(const char *name, put_fn put, bool pump)
          "laps lost to a stall: the loop is silence");
    check(w.rt_write == (size_t)((fake_pos + margin) % LOOP_BYTES),
          "and the write cursor resynced ahead of the hardware");
+   check(wdmks_underruns(&w) == 2, "counted as the second underrun");
 
    /* A stop and a start: the pin goes through ACQUIRE and the
     * hardware is back at the top of the loop, wherever the model had
@@ -300,6 +311,7 @@ static void run_contract(const char *name, put_fn put, bool pump)
          "after a start the loop is silence");
    check(w.rt_write == margin && wdmks_rt_room(&w) == LOOP_BYTES - FRAME - margin,
          "and the model starts over a margin ahead of the top");
+   check(wdmks_underruns(&w) == 2, "without counting the start as an underrun");
 
    loop_teardown(&w);
 }

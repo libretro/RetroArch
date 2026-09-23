@@ -1606,9 +1606,10 @@ typedef struct
     * and the play offset is read on every write, every write_avail
     * and every lap of the wait, which is far more often than once a
     * frame. It is still a poll, and a process the scheduler has
-    * stopped favouring can outrun it; that is the same shortcoming as
-    * the write path's, and the same answer - a thread of this
-    * driver's own - which is not here yet. */
+    * stopped favouring can outrun it; where threads are built the
+    * refill thread reads it at the device's pace instead, and
+    * wdmks_rt_advance() treats a gap longer than a lap as laps lost
+    * rather than as one step. */
    uint64_t        rt_played;
    /* The count is kept in bytes and converted on demand: a position
     * that lands mid-frame would otherwise lose its remainder to the
@@ -1636,6 +1637,16 @@ typedef struct
     * how far ahead of the register the DMA has already fetched. Zero
     * where the pin reports none. */
    size_t          rt_fifo_bytes;
+   /* Whether audio has been placed in the loop since the last resync:
+    * the hardware running past the write cursor is a dropout only
+    * when there was audio to run out of. Once it has, every further
+    * sample of a pause finds it out again, and that is one gap in the
+    * audio, not one per sample. */
+   bool            rt_fed;
+   /* Gaps in the audio: times the hardware ran past the write cursor,
+    * or laps went by unobserved, while audio had been queued. One
+    * atomic add where it happens; read by the statistics each frame. */
+   retro_atomic_size_t rt_underruns;
 
    /* AC-3 over IEC 61937, where the device takes it and the frontend
     * asked for it: the frontend's float frames are gathered a block
@@ -1748,6 +1759,8 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
    w->rt_written_bytes = 0;
    w->rt_have_last = false;
    w->rt_origin    = true;
+   w->rt_fed       = false;
+   retro_atomic_size_init(&w->rt_underruns, 0);
 #ifdef HAVE_THREADS
    /* One device loop's worth of frontend ring: the only frontend
     * buffer, per the notes - packets or the mapped loop stay the
@@ -2159,6 +2172,8 @@ static void wdmks_rt_resync(wdmks_t *w, ULONG v, bool whole)
    }
    w->rt_write         = (size_t)((v + margin) % w->rt_size);
    w->rt_written_bytes = w->rt_played_bytes + margin;
+   /* The margin is silence, not audio: it does not count as fed. */
+   w->rt_fed           = false;
 }
 
 /* Where the hardware is, as a byte offset into the buffer. The
@@ -2181,9 +2196,11 @@ static void wdmks_rt_advance(wdmks_t *w, ULONG v)
    {
       /* Nothing before this sample counts: the hardware started, or
        * started again from the top of the loop, and whatever the loop
-       * held was for the cursor as it was. */
+       * held was for the cursor as it was. A start is not a gap in
+       * the audio, so it is not counted as one below. */
       w->rt_origin    = false;
       w->rt_have_last = false;
+      w->rt_fed       = false;
       lost            = true;
    }
 
@@ -2235,7 +2252,11 @@ static void wdmks_rt_advance(wdmks_t *w, ULONG v)
    /* Round more than once unobserved is an overrun whatever the loop
     * held, since it held less than one lap; the count says the rest. */
    if (lost || w->rt_written_bytes < w->rt_played_bytes)
+   {
+      if (w->rt_fed)
+         retro_atomic_fetch_add_size(&w->rt_underruns, 1);
       wdmks_rt_resync(w, v, lost);
+   }
 }
 
 static bool wdmks_rt_play_offset(wdmks_t *w, ULONG *offset)
@@ -2395,6 +2416,7 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
 
       w->rt_write          = (w->rt_write + chunk) % w->rt_size;
       w->rt_written_bytes += chunk;
+      w->rt_fed            = true;
       done                += chunk;
       room                -= chunk;
    }
@@ -2450,6 +2472,7 @@ static size_t wdmks_rt_pump_once(wdmks_t *w)
          MemoryBarrier();
       w->rt_write          = (w->rt_write + first) % w->rt_size;
       w->rt_written_bytes += first;
+      w->rt_fed            = true;
       moved               += first;
       have                -= first;
    }
@@ -2918,6 +2941,17 @@ static size_t wdmks_frames_consumed(void *data)
       return (size_t)frames;
    }
    return 0;
+}
+
+/* Gaps in the audio on the loop. The packet path has nothing to say:
+ * a packet the device found nothing behind is the port driver's to
+ * fill, and it does not report doing so. */
+static size_t wdmks_underruns(void *data)
+{
+   wdmks_t *w = (wdmks_t*)data;
+   if (!w || !w->stream.looped)
+      return 0;
+   return retro_atomic_load_acquire_size(&w->rt_underruns);
 }
 
 static bool wdmks_device_clock_ppm(void *data, double *ppm)
@@ -3591,7 +3625,7 @@ audio_driver_t audio_wdmks = {
    NULL, /* write_raw */
    wdmks_wait_writable,
    wdmks_frames_consumed,
-   NULL, /* underruns */
+   wdmks_underruns,
    wdmks_layout,
    NULL, /* frames_consumed_fallback */
    wdmks_device_clock_ppm
