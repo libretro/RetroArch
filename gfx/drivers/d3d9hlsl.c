@@ -151,7 +151,8 @@ struct lut_info
 
 struct shader_pass
 {
-   unsigned last_width, last_height;
+   /* The frame size the pass last built vertices for, packed. */
+   unsigned last_dims;
    struct LinkInfo info;
    D3DPOOL pool;
    LPDIRECT3DTEXTURE9 tex;
@@ -193,8 +194,7 @@ typedef struct d3d9_hlsl_renderchain
       LPDIRECT3DTEXTURE9 tex[TEXTURES];
       LPDIRECT3DVERTEXBUFFER9 vertex_buf[TEXTURES];
       unsigned ptr;
-      unsigned last_width[TEXTURES];
-      unsigned last_height[TEXTURES];
+      unsigned last_dims[TEXTURES];
    } prev;
    LPDIRECT3DDEVICE9 dev;
    D3DVIEWPORT9 *out_vp;
@@ -2203,8 +2203,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       : D3D9_XRGB8888_FORMAT;
 
    pass.info                     = *info;
-   pass.last_width               = 0;
-   pass.last_height              = 0;
+   pass.last_dims                = 0;
    pass.attrib_map               = (struct unsigned_vector_list*)
       unsigned_vector_list_new();
 
@@ -2214,8 +2213,7 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
       int32_t filter             = d3d_translate_filter(info->pass->filter);
       for (i = 0; i < TEXTURES; i++)
       {
-         chain->prev.last_width[i]  = 0;
-         chain->prev.last_height[i] = 0;
+         chain->prev.last_dims[i]   = 0;
          chain->prev.vertex_buf[i]  = NULL;
             if (!SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
                         chain->dev,
@@ -2310,7 +2308,7 @@ static void d3d9_hlsl_renderchain_render_pass(
    }
 
    /* === Set vertices === */
-   if (pass->last_width != width || pass->last_height != height)
+   if (pass->last_dims != VIDEO_SCALE_PACK(width, height))
    {
       struct Vertex vert[4];
       void *verts       = NULL;
@@ -2319,8 +2317,7 @@ static void d3d9_hlsl_renderchain_render_pass(
       float _v          = (float)(height)
          / VIDEO_SCALE_H(pass->info.tex_dims);
 
-      pass->last_width  = width;
-      pass->last_height = height;
+      pass->last_dims   = VIDEO_SCALE_PACK(width, height);
 
       vert[0].x        =  0.0f;
       vert[0].y        =  1.0f;
@@ -2411,8 +2408,8 @@ static void d3d9_hlsl_renderchain_render_pass(
          float output_size[2];
          float frame_cnt;
 
-         video_size[0]   = (float)pass->last_width;
-         video_size[1]   = (float)pass->last_height;
+         video_size[0]   = (float)VIDEO_SCALE_W(pass->last_dims);
+         video_size[1]   = (float)VIDEO_SCALE_H(pass->last_dims);
          texture_size[0] = (float)VIDEO_SCALE_W(pass->info.tex_dims);
          texture_size[1] = (float)VIDEO_SCALE_H(pass->info.tex_dims);
          output_size[0]  = (float)vp_width;
@@ -2571,8 +2568,8 @@ static void d3d9_hlsl_renderchain_render_pass(
          {
             float vs[4];
             float ts[4];
-            vs[0] = (float)first_pass->last_width;
-            vs[1] = (float)first_pass->last_height;
+            vs[0] = (float)VIDEO_SCALE_W(first_pass->last_dims);
+            vs[1] = (float)VIDEO_SCALE_H(first_pass->last_dims);
             vs[2] = 0.0f;
             vs[3] = 0.0f;
             ts[0] = (float)VIDEO_SCALE_W(first_pass->info.tex_dims);
@@ -2621,10 +2618,10 @@ static void d3d9_hlsl_renderchain_render_pass(
 
             {
                float vs[4];
-               vs[0] = (float)chain->chain.prev.last_width[
-                     (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK];
-               vs[1] = (float)chain->chain.prev.last_height[
-                     (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK];
+               vs[0] = (float)VIDEO_SCALE_W(chain->chain.prev.last_dims[
+                     (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK]);
+               vs[1] = (float)VIDEO_SCALE_H(chain->chain.prev.last_dims[
+                     (chain->chain.prev.ptr - (i + 1)) & TEXTURESMASK]);
                vs[2] = 0.0f;
                vs[3] = 0.0f;
                d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.prev_video_size[i],   vs, 1);
@@ -2681,8 +2678,8 @@ static void d3d9_hlsl_renderchain_render_pass(
             {
                float vs[4];
                float ts[4];
-               vs[0] = (float)cp->last_width;
-               vs[1] = (float)cp->last_height;
+               vs[0] = (float)VIDEO_SCALE_W(cp->last_dims);
+               vs[1] = (float)VIDEO_SCALE_H(cp->last_dims);
                vs[2] = 0.0f;
                vs[3] = 0.0f;
                ts[0] = (float)VIDEO_SCALE_W(cp->info.tex_dims);
@@ -2910,9 +2907,7 @@ static void hlsl_d3d9_renderchain_render(
       chain->chain.prev.ptr];
    chain->chain.passes->data[0].vertex_buf  = chain->chain.prev.vertex_buf[
       chain->chain.prev.ptr];
-   chain->chain.passes->data[0].last_width  = chain->chain.prev.last_width[
-      chain->chain.prev.ptr];
-   chain->chain.passes->data[0].last_height = chain->chain.prev.last_height[
+   chain->chain.passes->data[0].last_dims   = chain->chain.prev.last_dims[
       chain->chain.prev.ptr];
 
    current_width                  = width;
@@ -2930,7 +2925,7 @@ static void hlsl_d3d9_renderchain_render(
 
       IDirect3DTexture9_LockRect(first_pass->tex, 0, &d3dlr, NULL, 0);
 
-      if (first_pass->last_width != width || first_pass->last_height != height)
+      if (first_pass->last_dims != VIDEO_SCALE_PACK(width, height))
          memset(d3dlr.pBits, 0,
                VIDEO_SCALE_H(first_pass->info.tex_dims) * d3dlr.Pitch);
 
@@ -3059,8 +3054,7 @@ static void hlsl_d3d9_renderchain_render(
    if (back_buffer)
       IDirect3DSurface9_Release(back_buffer);
 
-   chain->chain.prev.last_width[chain->chain.prev.ptr]  = chain->chain.passes->data[0].last_width;
-   chain->chain.prev.last_height[chain->chain.prev.ptr] = chain->chain.passes->data[0].last_height;
+   chain->chain.prev.last_dims[chain->chain.prev.ptr]   = chain->chain.passes->data[0].last_dims;
    chain->chain.prev.ptr                                = (chain->chain.prev.ptr + 1) & TEXTURESMASK;
 
    IDirect3DDevice9_SetVertexShader(chain->chain.dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
@@ -3080,8 +3074,7 @@ static bool hlsl_d3d9_renderchain_add_pass(
    LPDIRECT3DVERTEXBUFFER9 vertbuf = NULL;
 
    pass.info                   = *info;
-   pass.last_width             = 0;
-   pass.last_height            = 0;
+   pass.last_dims              = 0;
    pass.attrib_map             = (struct unsigned_vector_list*)
       unsigned_vector_list_new();
    pass.pool                   = D3DPOOL_DEFAULT;

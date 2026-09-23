@@ -145,7 +145,8 @@ struct lut_info
 
 struct shader_pass
 {
-   unsigned last_width, last_height;
+   /* The frame size the pass last built vertices for, packed. */
+   unsigned last_dims;
    struct LinkInfo info;
    D3DPOOL pool;
    LPDIRECT3DTEXTURE9 tex;
@@ -187,8 +188,7 @@ typedef struct d3d9_cg_renderchain
       LPDIRECT3DTEXTURE9 tex[TEXTURES];
       LPDIRECT3DVERTEXBUFFER9 vertex_buf[TEXTURES];
       unsigned ptr;
-      unsigned last_width[TEXTURES];
-      unsigned last_height[TEXTURES];
+      unsigned last_dims[TEXTURES];
    } prev;
    LPDIRECT3DDEVICE9 dev;
    D3DVIEWPORT9 *out_vp;
@@ -2334,8 +2334,8 @@ static void d3d9_cg_renderchain_bind_orig(
    struct shader_pass *first_pass = (struct shader_pass*)&chain->passes->data[0];
    CGprogram fprg             = (CGprogram)pass->fprg;
    CGprogram vprg             = (CGprogram)pass->vprg;
-   video_size[0]              = first_pass->last_width;
-   video_size[1]              = first_pass->last_height;
+   video_size[0]              = VIDEO_SCALE_W(first_pass->last_dims);
+   video_size[1]              = VIDEO_SCALE_H(first_pass->last_dims);
    texture_size[0]            = VIDEO_SCALE_W(first_pass->info.tex_dims);
    texture_size[1]            = VIDEO_SCALE_H(first_pass->info.tex_dims);
 
@@ -2414,10 +2414,10 @@ static void d3d9_cg_renderchain_bind_prev(d3d9_cg_renderchain_t *chain,
       CGprogram vprg = (CGprogram)pass->vprg;
       size_t _len    = strlcpy(attr, prev_names[i], sizeof(attr));
 
-      video_size[0]  = chain->prev.last_width[
-         (chain->prev.ptr - (i + 1)) & TEXTURESMASK];
-      video_size[1]  = chain->prev.last_height[
-         (chain->prev.ptr - (i + 1)) & TEXTURESMASK];
+      video_size[0]  = VIDEO_SCALE_W(chain->prev.last_dims[
+            (chain->prev.ptr - (i + 1)) & TEXTURESMASK]);
+      video_size[1]  = VIDEO_SCALE_H(chain->prev.last_dims[
+            (chain->prev.ptr - (i + 1)) & TEXTURESMASK]);
 
       strlcpy_lit(attr + _len, ".texture", sizeof(attr) - _len);
       param = cgGetNamedParameter(fprg, attr);
@@ -2492,8 +2492,8 @@ static void d3d9_cg_renderchain_bind_pass(
       struct shader_pass *curr_pass = (struct shader_pass*)&chain->passes->data[i];
       size_t _len = snprintf(pass_base, sizeof(pass_base), "PASS%u", i);
 
-      video_size[0]   = curr_pass->last_width;
-      video_size[1]   = curr_pass->last_height;
+      video_size[0]   = VIDEO_SCALE_W(curr_pass->last_dims);
+      video_size[1]   = VIDEO_SCALE_H(curr_pass->last_dims);
       texture_size[0] = VIDEO_SCALE_W(curr_pass->info.tex_dims);
       texture_size[1] = VIDEO_SCALE_H(curr_pass->info.tex_dims);
 
@@ -2662,8 +2662,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
    IDirect3DDevice9_SetTransform(dev, D3DTS_VIEW,  (D3DMATRIX*)&ident);
 
    pass.info        = *info;
-   pass.last_width  = 0;
-   pass.last_height = 0;
+   pass.last_dims   = 0;
    pass.attrib_map  = (struct unsigned_vector_list*)
       unsigned_vector_list_new();
 
@@ -2673,8 +2672,7 @@ static bool d3d9_cg_renderchain_create_first_pass(
       int32_t init_filter = d3d_translate_filter(info->pass->filter);
       for (i = 0; i < TEXTURES; i++)
       {
-         chain->prev.last_width[i]  = 0;
-         chain->prev.last_height[i] = 0;
+         chain->prev.last_dims[i]   = 0;
          chain->prev.vertex_buf[i]  = NULL;
             {
                void *_vbuf = NULL;
@@ -2899,7 +2897,7 @@ static void d3d9_cg_renderchain_render_pass(
    IDirect3DDevice9_SetViewport(chain->dev, vp);
 
    /* Update vertex buffer if dimensions changed */
-   if (pass->last_width != width || pass->last_height != height)
+   if (pass->last_dims != VIDEO_SCALE_PACK(width, height))
    {
       struct D3D9CGVertex vert[4];
       void *verts        = NULL;
@@ -2908,8 +2906,7 @@ static void d3d9_cg_renderchain_render_pass(
       float          _v  = (float)(height)
          / VIDEO_SCALE_H(pass->info.tex_dims);
 
-      pass->last_width   = width;
-      pass->last_height  = height;
+      pass->last_dims    = VIDEO_SCALE_PACK(width, height);
 
       vert[0].x         = 0.0f;
       vert[0].y         = out_height;
@@ -3135,8 +3132,7 @@ static void d3d9_cg_renderchain_render(
    /* Start render: copy prev frame state into pass 0 */
    chain->passes->data[0].tex         = chain->prev.tex[chain->prev.ptr];
    chain->passes->data[0].vertex_buf  = chain->prev.vertex_buf[chain->prev.ptr];
-   chain->passes->data[0].last_width  = chain->prev.last_width[chain->prev.ptr];
-   chain->passes->data[0].last_height = chain->prev.last_height[chain->prev.ptr];
+   chain->passes->data[0].last_dims   = chain->prev.last_dims[chain->prev.ptr];
 
    current_width              = width;
    current_height             = height;
@@ -3175,12 +3171,12 @@ static void d3d9_cg_renderchain_render(
       d3dlr.pBits = NULL;
 
       if (SUCCEEDED(IDirect3DTexture9_LockRect(first_pass->tex, 0, &d3dlr, NULL,
-            (first_pass->last_width == width && first_pass->last_height == height)
+            (first_pass->last_dims == VIDEO_SCALE_PACK(width, height))
             ? 0 : D3DLOCK_NOSYSLOCK)) && d3dlr.pBits)
       {
          unsigned y;
 
-         if (first_pass->last_width != width || first_pass->last_height != height)
+         if (first_pass->last_dims != VIDEO_SCALE_PACK(width, height))
             memset(d3dlr.pBits, 0,
                   VIDEO_SCALE_H(first_pass->info.tex_dims) * d3dlr.Pitch);
 
@@ -3304,8 +3300,7 @@ static void d3d9_cg_renderchain_render(
       IDirect3DSurface9_Release(back_buffer);
 
    /* End render: save pass 0 dimensions and advance prev pointer */
-   chain->prev.last_width[chain->prev.ptr]  = chain->passes->data[0].last_width;
-   chain->prev.last_height[chain->prev.ptr] = chain->passes->data[0].last_height;
+   chain->prev.last_dims[chain->prev.ptr]   = chain->passes->data[0].last_dims;
    chain->prev.ptr                          = (chain->prev.ptr + 1) & TEXTURESMASK;
 
    cgD3D9BindProgram((CGprogram)_chain->stock_shader.fprg);
