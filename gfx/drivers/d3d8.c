@@ -2349,21 +2349,20 @@ static void d3d8_set_nonblock_state(void *data, bool state,
 }
 
 static void d3d8_set_resize(d3d8_video_t *d3d,
-      unsigned new_width, unsigned new_height)
+      unsigned dims)
 {
    /* No changes? */
-   if (d3d->video_info.dims == VIDEO_SCALE_PACK(new_width, new_height))
+   if (d3d->video_info.dims == dims)
       return;
 
-   d3d->video_info.dims   = VIDEO_SCALE_PACK(new_width, new_height);
-   video_driver_set_output_dims(VIDEO_SCALE_PACK(new_width, new_height));
-   d3d->vp.full_dims      = VIDEO_SCALE_PACK(new_width, new_height);
+   d3d->video_info.dims   = dims;
+   video_driver_set_output_dims(dims);
+   d3d->vp.full_dims      = dims;
 }
 
 static bool d3d8_alive(void *data)
 {
-   unsigned temp_dims  = VIDEO_SCALE_PACK(0,
-         0);
+   unsigned temp_dims  = 0;
    bool ret             = false;
    d3d8_video_t *d3d    = (d3d8_video_t*)data;
    bool        quit     = false;
@@ -2384,7 +2383,7 @@ static bool d3d8_alive(void *data)
    if (resize)
    {
       d3d->should_resize = true;
-      d3d8_set_resize(d3d, VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
+      d3d8_set_resize(d3d, temp_dims);
       d3d8_restore(d3d);
    }
 

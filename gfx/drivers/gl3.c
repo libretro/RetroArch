@@ -4880,8 +4880,7 @@ static bool gl3_frame(void *data, const void *frame,
    if (gl->flags & GL3_FLAG_SHOULD_RESIZE)
    {
       if (gl->ctx_driver->set_resize)
-         gl->ctx_driver->set_resize(gl->ctx_data,
-               width, height);
+         gl->ctx_driver->set_resize(gl->ctx_data, video_info->dims);
       gl->flags            &= ~GL3_FLAG_SHOULD_RESIZE;
 
       if (gl->chain.active && gl->chain.num_fbo_passes != 0)

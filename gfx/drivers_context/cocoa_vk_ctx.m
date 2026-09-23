@@ -520,12 +520,12 @@ static void cocoa_vk_gfx_ctx_set_resize_mainthread(void *userdata)
    args->ok                       = true;
 }
 
-static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned dims)
 {
    cocoa_vk_set_resize_args_t args;
 
    args.ctx    = (cocoa_vk_ctx_data_t*)data;
-   args.dims   = VIDEO_SCALE_PACK(width, height);
+   args.dims   = dims;
    args.ok     = false;
 
    cocoa_main_thread_sync(cocoa_vk_gfx_ctx_set_resize_mainthread, &args);

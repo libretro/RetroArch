@@ -656,7 +656,7 @@ typedef struct video_frame_info
 typedef void (*update_window_title_cb)(void*);
 typedef bool (*get_metrics_cb)(void *data, enum display_metric_types type,
       float *value);
-typedef bool (*set_resize_cb)(void*, unsigned, unsigned);
+typedef bool (*set_resize_cb)(void*, unsigned dims);
 
 typedef struct gfx_ctx_driver
 {

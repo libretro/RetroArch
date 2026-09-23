@@ -4394,8 +4394,7 @@ static bool gl2_frame(void *data, const void *frame,
    if (gl->flags & GL2_FLAG_SHOULD_RESIZE)
    {
       if (gl->ctx_driver->set_resize)
-         gl->ctx_driver->set_resize(gl->ctx_data,
-            width, height);
+         gl->ctx_driver->set_resize(gl->ctx_data, gl->video_dims);
       gl->flags &= ~GL2_FLAG_SHOULD_RESIZE;
 
       if (gl->flags & GL2_FLAG_FBO_INITED)

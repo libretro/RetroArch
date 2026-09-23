@@ -105,14 +105,13 @@ static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
       *quit                    = true;
 }
 
-static bool gfx_ctx_khr_display_set_resize(void *data,
-      unsigned width, unsigned height)
+static bool gfx_ctx_khr_display_set_resize(void *data, unsigned dims)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
 
-   khr->dims                   = VIDEO_SCALE_PACK(width, height);
+   khr->dims                   = dims;
 
-   if (!vulkan_create_swapchain(&khr->vk, width, height,
+   if (!vulkan_create_swapchain(&khr->vk, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
             khr->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");

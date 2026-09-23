@@ -179,8 +179,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
    }
 }
 
-static bool android_gfx_ctx_set_resize(void *data,
-      unsigned width, unsigned height) { return false; }
+static bool android_gfx_ctx_set_resize(void *data, unsigned dims) { return false; }
 
 static bool android_gfx_ctx_set_video_mode(void *data,
       unsigned dims,

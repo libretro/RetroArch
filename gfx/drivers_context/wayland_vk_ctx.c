@@ -67,7 +67,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
 
 }
 
-static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
+static bool gfx_ctx_wl_set_resize(void *data, unsigned dims)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
@@ -76,7 +76,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    if (!wl->fractional_scale)
       wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
-   if (vulkan_create_swapchain(&wl->vk, width, height, wl->swap_interval))
+   if (vulkan_create_swapchain(&wl->vk, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), wl->swap_interval))
    {
       wl->ignore_configuration = false;
       if (wl->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)

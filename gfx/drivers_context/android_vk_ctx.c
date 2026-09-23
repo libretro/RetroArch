@@ -125,8 +125,7 @@ static void android_gfx_ctx_vk_check_window(void *data, bool *quit,
    }
 }
 
-static bool android_gfx_ctx_vk_set_resize(void *data,
-      unsigned width, unsigned height)
+static bool android_gfx_ctx_vk_set_resize(void *data, unsigned dims)
 {
    android_ctx_data_vk_t        *and  = (android_ctx_data_vk_t*)data;
    struct android_app *android_app    = (struct android_app*)g_android;

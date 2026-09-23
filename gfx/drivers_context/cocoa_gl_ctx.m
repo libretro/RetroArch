@@ -710,7 +710,7 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
 }
 #endif
 
-static bool cocoa_gl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static bool cocoa_gl_gfx_ctx_set_resize(void *data, unsigned dims)
 {
    return true;
 }

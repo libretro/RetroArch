@@ -547,8 +547,7 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    }
 }
 
-static bool gfx_ctx_wgl_set_resize(void *data,
-      unsigned width, unsigned height) { return false; }
+static bool gfx_ctx_wgl_set_resize(void *data, unsigned dims) { return false; }
 
 static void gfx_ctx_wgl_destroy(void *data)
 {

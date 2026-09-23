@@ -134,8 +134,7 @@ static gfx_ctx_proc_t gfx_ctx_uwp_get_proc_address(const char* symbol)
 
 static void gfx_ctx_uwp_swap_buffers(void *data) { egl_swap_buffers(&uwp_egl); }
 
-static bool gfx_ctx_uwp_set_resize(void *data,
-      unsigned width, unsigned height) { return false; }
+static bool gfx_ctx_uwp_set_resize(void *data, unsigned dims) { return false; }
 
 static void gfx_ctx_uwp_get_video_size(void *data,
       unsigned *dims)

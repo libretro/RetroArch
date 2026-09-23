@@ -222,8 +222,7 @@ static void gfx_ctx_x_vk_check_window(void *data, bool *quit,
       *resize = true;
 }
 
-static bool gfx_ctx_x_vk_set_resize(void *data,
-      unsigned width, unsigned height)
+static bool gfx_ctx_x_vk_set_resize(void *data, unsigned dims)
 {
    gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
 
@@ -237,12 +236,13 @@ static bool gfx_ctx_x_vk_set_resize(void *data,
    if (x->is_fullscreen)
    {
       XMapRaised(g_x11_dpy, g_x11_win);
-      RARCH_LOG("[Vulkan] Resized fullscreen resolution to %dx%d.\n", width, height);
+      RARCH_LOG("[Vulkan] Resized fullscreen resolution to %ux%u.\n",
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
    }
 
    /* FIXME/TODO - threading error here */
 
-   if (!vulkan_create_swapchain(&x->vk, width, height, x->interval))
+   if (!vulkan_create_swapchain(&x->vk, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), x->interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       x->vk.swapchain              = VK_NULL_HANDLE;

@@ -6506,9 +6506,6 @@ static void vulkan_check_swapchain(vk_t *vk)
 
 static bool vulkan_recreate_context_swapchain(vk_t *vk)
 {
-   unsigned width  = VIDEO_SCALE_W(vk->context->swapchain_dims);
-   unsigned height = VIDEO_SCALE_H(vk->context->swapchain_dims);
-
    if (!vk->ctx_driver->set_resize)
       return false;
 
@@ -6516,7 +6513,8 @@ static bool vulkan_recreate_context_swapchain(vk_t *vk)
     * swapchain before returning, releasing any acquired image that cannot be
     * submitted safely by this frame. */
    vk->context->flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
-   if (!vk->ctx_driver->set_resize(vk->ctx_data, width, height))
+   if (!vk->ctx_driver->set_resize(vk->ctx_data,
+            vk->context->swapchain_dims))
       return false;
 
    vulkan_check_swapchain(vk);
@@ -8958,7 +8956,7 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 
       if (vk->ctx_driver->set_resize)
-         vk->ctx_driver->set_resize(vk->ctx_data, width, height);
+         vk->ctx_driver->set_resize(vk->ctx_data, video_info->dims);
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       {

@@ -178,15 +178,14 @@ static void sdl3_vk_ctx_check_window(void *data, bool *quit,
    sdl3_ctx_check_window(data, quit, resize, dims);
 }
 
-static bool sdl3_vk_ctx_set_resize(void *data,
-      unsigned width, unsigned height)
+static bool sdl3_vk_ctx_set_resize(void *data, unsigned dims)
 {
    gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)data;
 
    if (!sdl)
       return false;
 
-   if (!vulkan_create_swapchain(&sdl->vk, width, height, sdl->interval))
+   if (!vulkan_create_swapchain(&sdl->vk, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), sdl->interval))
    {
       RARCH_ERR("[SDL3 Vulkan] Failed to update swapchain.\n");
       sdl->vk.swapchain           = VK_NULL_HANDLE;

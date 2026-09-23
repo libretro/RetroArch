@@ -2244,7 +2244,7 @@ static bool gl1_frame(void *data, const void *frame,
       gl1->flags       &= ~GL1_FLAG_SHOULD_RESIZE;
 
       if (gl1->ctx_driver->set_resize)
-         gl1->ctx_driver->set_resize(gl1->ctx_data, width, height);
+         gl1->ctx_driver->set_resize(gl1->ctx_data, video_info->dims);
 
       gl1_set_viewport(gl1,
             video_info->dims, false, true);

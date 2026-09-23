@@ -135,10 +135,9 @@ static void gfx_ctx_w_vk_swap_buffers(void *data)
    vulkan_acquire_next_image(&win32_vk);
 }
 
-static bool gfx_ctx_w_vk_set_resize(void *data,
-      unsigned width, unsigned height)
+static bool gfx_ctx_w_vk_set_resize(void *data, unsigned dims)
 {
-   if (vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval))
+   if (vulkan_create_swapchain(&win32_vk, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), win32_vk_interval))
    {
       if (win32_vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       {

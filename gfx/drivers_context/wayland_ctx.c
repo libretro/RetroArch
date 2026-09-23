@@ -118,7 +118,7 @@ static void gfx_ctx_wl_check_window(void *data, bool *quit,
          quit, resize, dims);
 }
 
-static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
+static bool gfx_ctx_wl_set_resize(void *data, unsigned dims)
 {
    gfx_ctx_wayland_data_t *wl    = (gfx_ctx_wayland_data_t*)data;
    wl->last_buffer_scale         = wl->buffer_scale;
@@ -128,7 +128,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
        WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
       wl->ignore_configuration = false;
 #ifdef HAVE_EGL
-   wl_egl_window_resize(wl->win, width, height, 0, 0);
+   wl_egl_window_resize(wl->win, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), 0, 0);
 #endif
 
    return true;
