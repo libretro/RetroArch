@@ -3068,7 +3068,9 @@ const char *companion_core_browse_name(companion_core_t *core, size_t i)
          if (!GetVolumeInformationA(p, label, sizeof(label), NULL, NULL,
                   NULL, NULL, 0))
             label[0] = '\0';
-         snprintf(drive_name, sizeof(drive_name), "%s (%c:)",
+         /* Volume labels are at most 32 characters; the precision
+          * bounds the label so " (C:)" always fits in drive_name. */
+         snprintf(drive_name, sizeof(drive_name), "%.56s (%c:)",
                label[0] ? label : "Local Disk", p[0]);
          return drive_name;
       }

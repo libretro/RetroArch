@@ -5316,13 +5316,13 @@ static ozone_node_t *ozone_alloc_node(void)
    if (!node)
       return NULL;
    node->position_y     = 0;
-   OZONE_NODE_SET_HEIGHT(node, 0);
    node->console_name   = NULL;
    node->icon           = 0;
    node->content_icon   = 0;
    node->fullpath       = NULL;
-   OZONE_NODE_SET_SUBLABEL_LINES(node, 0);
-   OZONE_NODE_SET_WRAP(node, false);
+   /* Height, sublabel line count and wrap flag all live in attr;
+    * zero the whole word so no field reads indeterminate bits. */
+   node->attr           = 0;
    return node;
 }
 
