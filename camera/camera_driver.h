@@ -22,6 +22,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "../gfx/video_defines.h"
+
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif /* HAVE_CONFIG_H */
@@ -34,8 +36,10 @@ typedef struct camera_driver
 {
    /* FIXME: params for initialization - queries for resolution,
     * framerate, color format which might or might not be honored. */
+   /* @dims is the requested frame size, packed with VIDEO_SCALE_PACK;
+    * an axis of 0 leaves it to the device. */
    void *(*init)(const char *device, uint64_t buffer_types,
-         unsigned width, unsigned height);
+         unsigned dims);
 
    void (*free)(void *data);
 

@@ -611,8 +611,10 @@ static void generateColorBars(uint32_t *buffer, size_t width, size_t height) {
 }
 
 static void *avfoundation_init(const char *device, uint64_t caps,
-                             unsigned width, unsigned height)
+                             unsigned dims)
 {
+    unsigned width      = VIDEO_SCALE_W(dims);
+    unsigned height     = VIDEO_SCALE_H(dims);
     avfoundation_t *avf = (avfoundation_t*)calloc(1, sizeof(avfoundation_t));
     RARCH_LOG("[Camera] Initializing AVFoundation camera %ux%u.\n", width, height);
     if (!avf)

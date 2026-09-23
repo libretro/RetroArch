@@ -55,7 +55,7 @@ static uintptr_t frame_gl_cb(void) { return 0; }
 
 static void *open_camera(void)
 {
-   return camera_ffmpeg.init(SRC, CAPS, 320, 240);
+   return camera_ffmpeg.init(SRC, CAPS, VIDEO_SCALE_PACK(320, 240));
 }
 
 /* Polls until a frame arrives or the patience runs out. The first
@@ -92,7 +92,8 @@ int main(void)
    CHECK(camera_ffmpeg.start(h), "start failed");
    CHECK(poll_until_frame(h, 100), "no frame arrived");
    printf("      %u frame(s), %ux%u\n", frames_seen, last_width, last_height);
-   CHECK(last_width > 0 && last_height > 0, "a frame of %ux%u", last_width, last_height);
+   CHECK(last_width == 320 && last_height == 240,
+         "a frame of %ux%u, not the 320x240 asked for", last_width, last_height);
    camera_ffmpeg.stop(h);
    camera_ffmpeg.free(h);
 
@@ -166,7 +167,7 @@ int main(void)
 
    printf("   a source that does not exist\n");
    current = "bad source";
-   h = camera_ffmpeg.init("this-is-not-a-filter-graph", CAPS, 320, 240);
+   h = camera_ffmpeg.init("this-is-not-a-filter-graph", CAPS, VIDEO_SCALE_PACK(320, 240));
    if (h)
    {
       /* Taken at init, so start has to be the one that refuses. */

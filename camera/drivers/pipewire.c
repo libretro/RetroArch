@@ -90,8 +90,10 @@ static uint32_t id_to_scaler_format(uint32_t id)
 }
 
 static int build_format(struct spa_pod_builder *b, const struct spa_pod **params,
-      uint32_t width, uint32_t height)
+      unsigned dims)
 {
+   uint32_t width  = VIDEO_SCALE_W(dims);
+   uint32_t height = VIDEO_SCALE_H(dims);
    struct spa_pod_frame frame[2];
 
    /* make an object of type SPA_TYPE_OBJECT_Format and id SPA_PARAM_EnumFormat.
@@ -365,7 +367,7 @@ static void pipewire_free(void *data)
 }
 
 static void *pipewire_init(const char *device, uint64_t caps,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
    int               res, n_params;
    const struct spa_pod *params[3];
@@ -399,7 +401,7 @@ static void *pipewire_init(const char *device, uint64_t caps,
    /* build the extra parameters to connect with. To connect, we can provide
     * a list of supported formats. We use a builder that writes the param
     * object to the stack. */
-   n_params = build_format(&b, params, width, height);
+   n_params = build_format(&b, params, dims);
    {
       struct spa_pod_frame f;
       struct spa_dict_item items[1];

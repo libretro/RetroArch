@@ -87,12 +87,10 @@ typedef struct ffmpeg_camera
    AVDictionary *options;
    AVPacket *packet;
    AVFrame *camera_frame;
-   unsigned requested_width;
-   unsigned requested_height;
+   unsigned requested_dims;          /* VIDEO_SCALE_PACK */
    uint8_t *target_planes[4];
    int target_linesizes[4];
-   unsigned target_width;
-   unsigned target_height;
+   unsigned target_dims;             /* VIDEO_SCALE_PACK */
    struct SwsContext *scale_context;
 
    /* "name" for the camera device.
@@ -120,8 +118,7 @@ static int ffmpeg_camera_get_initial_options(
    const AVInputFormat *backend,
    AVDictionary **options,
    uint64_t caps,
-   unsigned width,
-   unsigned height
+   unsigned dims
 )
 {
    int ret = 0;
@@ -135,10 +132,11 @@ static int ffmpeg_camera_get_initial_options(
 #endif
 
    /* If the core is letting the frontend pick the size... */
-   if (width != 0 && height != 0)
+   if (VIDEO_SCALE_W(dims) != 0 && VIDEO_SCALE_H(dims) != 0)
    {
       char dimensions[128];
-      snprintf(dimensions, sizeof(dimensions), "%ux%u", width, height);
+      snprintf(dimensions, sizeof(dimensions), "%ux%u",
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
 
       ret = av_dict_set(options, "video_size", dimensions, 0);
 
@@ -215,12 +213,13 @@ static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
       char dimensions[128];
 
       /* Set video size if requested */
-      if (ffmpeg->requested_width != 0 && ffmpeg->requested_height != 0)
+      if (     VIDEO_SCALE_W(ffmpeg->requested_dims) != 0
+            && VIDEO_SCALE_H(ffmpeg->requested_dims) != 0)
       {
          /* Use a resolution that the device likely supports */
          /* Common resolutions: 640x480, 1280x720, 1920x1080 */
-         unsigned width = ffmpeg->requested_width;
-         unsigned height = ffmpeg->requested_height;
+         unsigned width = VIDEO_SCALE_W(ffmpeg->requested_dims);
+         unsigned height = VIDEO_SCALE_H(ffmpeg->requested_dims);
 
          /* If the requested resolution is too small, use a minimum supported size */
          if (width < 640 || height < 480)
@@ -228,7 +227,8 @@ static int ffmpeg_camera_open_device(ffmpeg_camera_t *ffmpeg)
             width = 640;
             height = 480;
             RARCH_LOG("[FFMPEG] Requested resolution %ux%u too small, using %ux%u instead.\n",
-                     ffmpeg->requested_width, ffmpeg->requested_height, width, height);
+                     VIDEO_SCALE_W(ffmpeg->requested_dims),
+                     VIDEO_SCALE_H(ffmpeg->requested_dims), width, height);
          }
 
          snprintf(dimensions, sizeof(dimensions), "%ux%u", width, height);
@@ -318,7 +318,7 @@ done:
    return ret;
 }
 
-static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned width, unsigned height)
+static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned dims)
 {
    ffmpeg_camera_t *ffmpeg = NULL;
    AVDeviceInfoList *device_list = NULL;
@@ -339,8 +339,7 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
       return NULL;
    }
 
-   ffmpeg->requested_width  = width;
-   ffmpeg->requested_height = height;
+   ffmpeg->requested_dims   = dims;
 
    avdevice_register_all();
    RARCH_LOG("[FFMPEG] Initialized libavdevice.\n");
@@ -354,7 +353,7 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned widt
 
    RARCH_LOG("[FFMPEG] Using camera backend: %s (%s, flags=0x%x).\n", ffmpeg->input_format->name, ffmpeg->input_format->long_name, ffmpeg->input_format->flags);
 
-   ret = ffmpeg_camera_get_initial_options(ffmpeg->input_format, &ffmpeg->options, caps, width, height);
+   ret = ffmpeg_camera_get_initial_options(ffmpeg->input_format, &ffmpeg->options, caps, dims);
    if (ret < 0)
    {
       char msg[AV_ERROR_MAX_STRING_SIZE];
@@ -562,14 +561,19 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   ffmpeg->target_width = ffmpeg->requested_width ? ffmpeg->requested_width : (unsigned)ffmpeg->decoder_context->width;
-   ffmpeg->target_height = ffmpeg->requested_height ? ffmpeg->requested_height : (unsigned)ffmpeg->decoder_context->height;
+   ffmpeg->target_dims = VIDEO_SCALE_PACK(
+         VIDEO_SCALE_W(ffmpeg->requested_dims)
+         ? VIDEO_SCALE_W(ffmpeg->requested_dims)
+         : (unsigned)ffmpeg->decoder_context->width,
+         VIDEO_SCALE_H(ffmpeg->requested_dims)
+         ? VIDEO_SCALE_H(ffmpeg->requested_dims)
+         : (unsigned)ffmpeg->decoder_context->height);
 
    target_buffer_length = av_image_alloc(
       ffmpeg->target_planes,
       ffmpeg->target_linesizes,
-      ffmpeg->target_width,
-      ffmpeg->target_height,
+      VIDEO_SCALE_W(ffmpeg->target_dims),
+      VIDEO_SCALE_H(ffmpeg->target_dims),
       AV_PIX_FMT_BGRA,
       1
    );
@@ -608,8 +612,8 @@ static bool ffmpeg_camera_start(void *data)
       ffmpeg->decoder_context->width,
       ffmpeg->decoder_context->height,
       ffmpeg->decoder_context->pix_fmt,
-      ffmpeg->target_width,
-      ffmpeg->target_height,
+      VIDEO_SCALE_W(ffmpeg->target_dims),
+      VIDEO_SCALE_H(ffmpeg->target_dims),
       AV_PIX_FMT_BGRA,
       SWS_BILINEAR,
       NULL, NULL, NULL
@@ -683,8 +687,7 @@ static void ffmpeg_camera_stop(void *data)
    ffmpeg->target_buffers[0] = NULL;
    ffmpeg->target_buffers[1] = NULL;
    ffmpeg->target_buffer_length = 0;
-   ffmpeg->target_width = 0;
-   ffmpeg->target_height = 0;
+   ffmpeg->target_dims = 0;
 
    av_frame_free(&ffmpeg->camera_frame);
    av_freep(&ffmpeg->target_buffers[0]);
@@ -778,8 +781,8 @@ static void ffmpeg_camera_poll_thread(void *data)
          (const uint8_t *const *)ffmpeg->target_planes,
          ffmpeg->target_linesizes,
          AV_PIX_FMT_BGRA,
-         ffmpeg->target_width,
-         ffmpeg->target_height,
+         VIDEO_SCALE_W(ffmpeg->target_dims),
+         VIDEO_SCALE_H(ffmpeg->target_dims),
          1
       );
       if (ret >= 0)
@@ -820,7 +823,9 @@ static bool ffmpeg_camera_poll(void *data,
    }
 
    slock_lock(ffmpeg->target_buffer_lock);
-   frame_raw_cb((uint32_t*)ffmpeg->active_buffer, ffmpeg->target_width, ffmpeg->target_height, ffmpeg->target_linesizes[0]);
+   frame_raw_cb((uint32_t*)ffmpeg->active_buffer,
+         VIDEO_SCALE_W(ffmpeg->target_dims), VIDEO_SCALE_H(ffmpeg->target_dims),
+         ffmpeg->target_linesizes[0]);
    slock_unlock(ffmpeg->target_buffer_lock);
 
    return true;

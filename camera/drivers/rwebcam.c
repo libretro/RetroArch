@@ -32,10 +32,11 @@ bool RWebCamPoll(void *data, retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb);
 
 static void *rwebcam_init(const char *device, uint64_t caps,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
    (void)device;
-   return RWebCamInit(caps, width, height, !!getenv("RWEBCAM_DEBUG"));
+   return RWebCamInit(caps, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+         !!getenv("RWEBCAM_DEBUG"));
 }
 
 static void rwebcam_free(void *data)
