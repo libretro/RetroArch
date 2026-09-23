@@ -3344,7 +3344,6 @@ static void vulkan_font_render_msg(
    float color[4];
    int drop_x, drop_y;
    bool full_screen;
-   unsigned width, height;
    enum text_alignment text_align;
    const struct font_glyph *glyph_q;
    float x, y, scale, drop_mod, drop_alpha;
@@ -3365,8 +3364,6 @@ static void vulkan_font_render_msg(
    if (!font || !msg || !*msg || !vk)
       return;
 
-   width          = VIDEO_SCALE_W(vk->video_dims);
-   height         = VIDEO_SCALE_H(vk->video_dims);
 
    if (params)
    {
@@ -3417,7 +3414,7 @@ static void vulkan_font_render_msg(
       color[3]    = 1.0f;
    }
 
-   vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height), full_screen, false);
+   vulkan_set_viewport(vk, vk->video_dims, full_screen, false);
 
    /* Compute max glyphs for VBO allocation.
     * Line scan below discovers actual length; this uses strlen

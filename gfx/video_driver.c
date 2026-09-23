@@ -109,8 +109,8 @@ struct video_vp_param_snap
 #endif
    unsigned rotation, core_req_rotation;
    unsigned aspect_ratio_idx, si_scaling, si_axis;
-   int      custom_x, custom_y;
-   unsigned custom_w, custom_h;
+   unsigned custom_pos;  /* VIDEO_POS_PACK */
+   unsigned custom_dims; /* VIDEO_SCALE_PACK */
    bool     scale_integer;
 };
 
@@ -2996,14 +2996,14 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
          int padding_x     = 0;
          int padding_y     = 0;
 
-         x                 = ps.custom_x;
-         y                 = ps.custom_y;
+         x                 = VIDEO_POS_X(ps.custom_pos);
+         y                 = VIDEO_POS_Y(ps.custom_pos);
 
          if (!y_down)
             y = -y;
 
-         padding_x         = vp_width - (int)ps.custom_w;
-         padding_y         = vp_height - (int)ps.custom_h;
+         padding_x         = vp_width - (int)VIDEO_SCALE_W(ps.custom_dims);
+         padding_y         = vp_height - (int)VIDEO_SCALE_H(ps.custom_dims);
 
          if (padding_x < 0)
          {
@@ -3016,8 +3016,8 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
             padding_y *= 2;
          }
 
-         vp_width          = ps.custom_w;
-         vp_height         = ps.custom_h;
+         vp_width          = VIDEO_SCALE_W(ps.custom_dims);
+         vp_height         = VIDEO_SCALE_H(ps.custom_dims);
          x                += padding_x * vp_bias_x;
          y                += padding_y * vp_bias_y;
       }
@@ -3144,14 +3144,14 @@ static void video_viewport_get_scaled_integer(
    if (video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
    {
       {
-         x         = ps->custom_x;
-         y         = ps->custom_y;
+         x         = VIDEO_POS_X(ps->custom_pos);
+         y         = VIDEO_POS_Y(ps->custom_pos);
 
          if (!y_down)
             y = -y;
 
-         padding_x = width - (int)ps->custom_w;
-         padding_y = height - (int)ps->custom_h;
+         padding_x = width - (int)VIDEO_SCALE_W(ps->custom_dims);
+         padding_y = height - (int)VIDEO_SCALE_H(ps->custom_dims);
 
          if (padding_x < 0)
          {
@@ -3164,8 +3164,8 @@ static void video_viewport_get_scaled_integer(
             padding_y *= 2;
          }
 
-         width     = ps->custom_w;
-         height    = ps->custom_h;
+         width     = VIDEO_SCALE_W(ps->custom_dims);
+         height    = VIDEO_SCALE_H(ps->custom_dims);
       }
    }
    /* Make sure that we don't get 0x scale ... */
@@ -3523,10 +3523,8 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps)
          ps->aspect            = video_bits_float(v[3]);
          ps->bias_x            = video_bits_float(v[4]);
          ps->bias_y            = video_bits_float(v[5]);
-         ps->custom_x          = VIDEO_POS_X(v[6]);
-         ps->custom_y          = VIDEO_POS_Y(v[6]);
-         ps->custom_w          = VIDEO_SCALE_W(v[7]);
-         ps->custom_h          = VIDEO_SCALE_H(v[7]);
+         ps->custom_pos        = (unsigned)v[6];
+         ps->custom_dims       = (unsigned)v[7];
 #if defined(RARCH_MOBILE)
          ps->bias_portrait_x   =
                video_bits_float(v[VIDEO_VP_SLOT_BIAS_PORTRAIT_X]);
