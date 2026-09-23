@@ -371,8 +371,8 @@ typedef struct
        * COPY_SOURCE between uses, and the group that frame put on
        * screen for present_last() to replay. */
       D3D12Resource               retained;
-      unsigned                    retained_width;
-      unsigned                    retained_height;
+      /* The back buffer size the copy was made at, packed. */
+      unsigned                    retained_dims;
       unsigned                    retained_light;
       unsigned                    retained_dark;
 #ifdef HAVE_DXGI_HDR
@@ -426,8 +426,8 @@ typedef struct
       D3D12_PLACED_SUBRESOURCE_FOOTPRINT  layout;
       void                               *mapped;
       UINT64                              total_bytes;
-      UINT                                width;
-      UINT                                height;
+      /* The size the buffer was laid out for, packed. */
+      unsigned                            dims;
       DXGI_FORMAT                         format;
    } sw_fb;
 
@@ -5357,8 +5357,8 @@ static void d3d12_retain_backbuffer(d3d12_video_t *d3d12,
       return;
 
    if (     !d3d12->chain.retained
-         || d3d12->chain.retained_width  != sc.Width
-         || d3d12->chain.retained_height != sc.Height)
+         || d3d12->chain.retained_dims != VIDEO_SCALE_PACK(sc.Width,
+               sc.Height))
    {
       D3D12_HEAP_PROPERTIES heap_props;
       D3D12_RESOURCE_DESC   desc;
@@ -5393,8 +5393,8 @@ static void d3d12_retain_backbuffer(d3d12_video_t *d3d12,
          d3d12->chain.retained = NULL;
          return;
       }
-      d3d12->chain.retained_width  = sc.Width;
-      d3d12->chain.retained_height = sc.Height;
+      d3d12->chain.retained_dims   = VIDEO_SCALE_PACK(sc.Width,
+            sc.Height);
    }
    else
       D3D12_RESOURCE_TRANSITION(cmd, d3d12->chain.retained,
@@ -5461,8 +5461,7 @@ static unsigned d3d12_present_last(void *data)
       return 0;
    if (FAILED(d3d12->chain.handle->lpVtbl->GetDesc1(d3d12->chain.handle, &sc)))
       return 0;
-   if (     sc.Width  != d3d12->chain.retained_width
-         || sc.Height != d3d12->chain.retained_height)
+   if (d3d12->chain.retained_dims != VIDEO_SCALE_PACK(sc.Width, sc.Height))
       return 0;
 
    for (i = 0; i < d3d12->chain.retained_light; i++)
@@ -8600,8 +8599,7 @@ static bool d3d12_sw_fb_ensure(d3d12_video_t* d3d12,
    HRESULT                            hr;
 
    if (     d3d12->sw_fb.buffer
-         && d3d12->sw_fb.width  == width
-         && d3d12->sw_fb.height == height
+         && d3d12->sw_fb.dims   == VIDEO_SCALE_PACK(width, height)
          && d3d12->sw_fb.format == format)
       return true;
 
@@ -8699,8 +8697,7 @@ static bool d3d12_sw_fb_ensure(d3d12_video_t* d3d12,
    memset(d3d12->sw_fb.mapped, 0, (size_t)total_bytes);
 
    d3d12->sw_fb.total_bytes = total_bytes;
-   d3d12->sw_fb.width       = width;
-   d3d12->sw_fb.height      = height;
+   d3d12->sw_fb.dims        = VIDEO_SCALE_PACK(width, height);
    d3d12->sw_fb.format      = format;
    return true;
 }
