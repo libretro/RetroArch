@@ -414,7 +414,7 @@ typedef struct gfx_thumb_anim_job
                                         NULL when not windowed        */
    uint32_t *frame;                  /* a surface slot: upload-ready
                                         pixels, job i writes slot i   */
-   unsigned  width, height;
+   unsigned  dims;                   /* VIDEO_SCALE_PACK, the surface's */
    int       duration_ms;            /* of the READY frame             */
    int32_t   loops_left;             /* worker-maintained, -1 infinite */
    /* enum gfx_thumb_anim_job_status. Atomic: the per-vsync poll
@@ -534,7 +534,7 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
          return false;
    }
 
-   n = (size_t)job->width * job->height;
+   n = (size_t)VIDEO_SCALE_W(job->dims) * VIDEO_SCALE_H(job->dims);
    GFX_INSTR_INC(GFX_INSTR_ANIM_FRAME);
    if (direct && frame == job->frame)
    {
@@ -1393,10 +1393,8 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          j1->sess       = thumbnail->anim_sess;
          j0->type       = thumbnail->anim_type;
          j1->type       = thumbnail->anim_type;
-         j0->width      = anim_w;
-         j1->width      = anim_w;
-         j0->height     = anim_h;
-         j1->height     = anim_h;
+         j0->dims       = VIDEO_SCALE_PACK(anim_w, anim_h);
+         j1->dims       = j0->dims;
          j0->loops_left = thumbnail->anim_loops_left;
          j0->use_rgba   = gfx_thumbnail_use_rgba();
          retro_atomic_store_relaxed_int(&j1->status,
