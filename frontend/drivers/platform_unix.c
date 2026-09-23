@@ -576,13 +576,11 @@ static void onContentRectChanged(ANativeActivity *activity,
    int width                    = rect->right  - rect->left;
    int height                   = rect->bottom - rect->top;
 
-   /* Store the dimensions before publishing the flag, so a reader that
-    * observes @changed cannot still see the previous size and build a
-    * swapchain at the wrong resolution. The old code set @changed first
-    * and used plain stores, leaving both the ordering and the visibility
-    * to chance. */
-   retro_atomic_store_release_int(&instance->content_rect.width,  width);
-   retro_atomic_store_release_int(&instance->content_rect.height, height);
+   /* The size before the flag, so a reader that observes @changed
+    * cannot still see the previous size and build a swapchain at the
+    * wrong resolution. */
+   retro_atomic_store_release_int(&instance->content_rect.dims,
+         (int)VIDEO_SCALE_PACK(width, height));
    retro_atomic_store_release_int(&instance->content_rect.changed, 1);
 }
 

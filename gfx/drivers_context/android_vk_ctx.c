@@ -36,8 +36,7 @@
 typedef struct
 {
    gfx_ctx_vulkan_data_t vk;
-   unsigned width;
-   unsigned height;
+   unsigned dims;                /* VIDEO_SCALE_PACK */
    int swap_interval;
    bool surface_lost;
 } android_ctx_data_vk_t;
@@ -94,7 +93,7 @@ static void android_gfx_ctx_vk_get_video_size(void *data,
 {
    android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)data;
 
-   *dims = VIDEO_SCALE_PACK(and->width, and->height);
+   *dims = and->dims;
 }
 
 static void android_gfx_ctx_vk_check_window(void *data, bool *quit,
@@ -106,20 +105,14 @@ static void android_gfx_ctx_vk_check_window(void *data, bool *quit,
 
    *quit                                = false;
 
-   if (retro_atomic_load_acquire_int(&android_app->content_rect.changed))
-   {
+   if (retro_atomic_exchange_int(&android_app->content_rect.changed, 0))
       and->vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
-      retro_atomic_store_release_int(&android_app->content_rect.changed, 0);
-   }
 
    /* Swapchains are recreated in set_resize as a
     * central place, so use that to trigger swapchain reinit. */
    *resize    = (and->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
-   new_dims   = VIDEO_SCALE_PACK(
-         (unsigned)retro_atomic_load_acquire_int(
-            &android_app->content_rect.width),
-         (unsigned)retro_atomic_load_acquire_int(
-            &android_app->content_rect.height));
+   new_dims   = (unsigned)retro_atomic_load_acquire_int(
+         &android_app->content_rect.dims);
 
    if (new_dims != *dims)
    {
@@ -138,12 +131,12 @@ static bool android_gfx_ctx_vk_set_resize(void *data,
    android_ctx_data_vk_t        *and  = (android_ctx_data_vk_t*)data;
    struct android_app *android_app    = (struct android_app*)g_android;
 
-   and->width  = (unsigned)retro_atomic_load_acquire_int(
-         &android_app->content_rect.width);
-   and->height = (unsigned)retro_atomic_load_acquire_int(
-         &android_app->content_rect.height);
-   RARCH_LOG("[Vulkan] Native window size: %ux%u.\n", and->width, and->height);
-   if (!vulkan_create_swapchain(&and->vk, and->width, and->height, and->swap_interval))
+   and->dims = (unsigned)retro_atomic_load_acquire_int(
+         &android_app->content_rect.dims);
+   RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
+         VIDEO_SCALE_W(and->dims), VIDEO_SCALE_H(and->dims));
+   if (!vulkan_create_swapchain(&and->vk, VIDEO_SCALE_W(and->dims),
+            VIDEO_SCALE_H(and->dims), and->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       return false;
@@ -163,27 +156,28 @@ static bool android_gfx_ctx_vk_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
    struct android_app *android_app = (struct android_app*)g_android;
    android_ctx_data_vk_t *and      = (android_ctx_data_vk_t*)data;
-   and->width                      = ANativeWindow_getWidth(android_app->window);
-   and->height                     = ANativeWindow_getHeight(android_app->window);
+   int32_t w                       = ANativeWindow_getWidth(android_app->window);
+   int32_t h                       = ANativeWindow_getHeight(android_app->window);
+   and->dims                       = VIDEO_SCALE_PACK(w, h);
    if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
             NULL, android_app->window,
-            and->width, and->height, and->swap_interval))
+            VIDEO_SCALE_W(and->dims), VIDEO_SCALE_H(and->dims),
+            and->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
       return false;
    }
    and->surface_lost = false;
    RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
-         and->width, and->height);
+         VIDEO_SCALE_W(and->dims), VIDEO_SCALE_H(and->dims));
    return true;
 }
 
 static bool android_gfx_ctx_vk_create_surface(void *data)
 {
+   int32_t w, h;
    struct android_app *android_app = (struct android_app*)g_android;
    android_ctx_data_vk_t *and      = (android_ctx_data_vk_t*)data;
 
@@ -199,12 +193,14 @@ static bool android_gfx_ctx_vk_create_surface(void *data)
    if (!android_app || !android_app->window || !and)
       return false;
 
-   and->width  = ANativeWindow_getWidth(android_app->window);
-   and->height = ANativeWindow_getHeight(android_app->window);
+   w         = ANativeWindow_getWidth(android_app->window);
+   h         = ANativeWindow_getHeight(android_app->window);
+   and->dims = VIDEO_SCALE_PACK(w, h);
 
    if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
             NULL, android_app->window,
-            and->width, and->height, and->swap_interval))
+            VIDEO_SCALE_W(and->dims), VIDEO_SCALE_H(and->dims),
+            and->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to recreate Android surface.\n");
       return false;
@@ -212,7 +208,7 @@ static bool android_gfx_ctx_vk_create_surface(void *data)
 
    and->surface_lost = false;
    RARCH_LOG("[Vulkan] Recreated Android surface: %ux%u.\n",
-         and->width, and->height);
+         VIDEO_SCALE_W(and->dims), VIDEO_SCALE_H(and->dims));
    return true;
 }
 

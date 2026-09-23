@@ -252,15 +252,16 @@ struct android_app
 
    /* Written by the Android UI thread in onContentRectChanged(), read by
     * the video thread in the context drivers, with no lock on either
-    * side. Publication is ordered: the dimensions are stored first, then
-    * @changed with a release store, and the reader acquires @changed
-    * before consuming them.
+    * side. @dims is the size as one VIDEO_SCALE_PACK word, so a reader
+    * never pairs one report's width with another's height. It is stored
+    * before @changed is raised, and the reader takes @changed with an
+    * exchange, so a change raised while it reads is not cleared unseen.
     *
     * The atomic type makes this struct C-only; see the __cplusplus
     * guard at the top of the ANDROID block. */
    struct
    {
-      retro_atomic_int_t width, height;
+      retro_atomic_int_t dims;
       retro_atomic_int_t changed;
    } content_rect;
    uint16_t rumble_last_strength_strong[MAX_USERS];
