@@ -1543,8 +1543,7 @@ static struct vulkan_filter_chain *slang_chain_new(
    chain->unlock_queue      = info->unlock_queue;
    common_resources_init(&chain->common, info->device,
          info->memory_properties);
-   chain->max_input_size_dims   = VIDEO_SCALE_PACK(
-         info->max_input_size.width, info->max_input_size.height);
+   chain->max_input_size_dims   = info->max_input_dims;
    chain->deferred_source_dims  = chain->max_input_size_dims;
    slang_chain_set_swapchain_info(chain, info->swapchain);
    slang_chain_set_num_passes(chain, info->num_passes);

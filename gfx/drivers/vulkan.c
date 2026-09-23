@@ -5214,8 +5214,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.num_passes            = 0;
    info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
-   info.max_input_size.width  = VIDEO_SCALE_W(vk->tex_dims);
-   info.max_input_size.height = VIDEO_SCALE_H(vk->tex_dims);
+   info.max_input_dims        = vk->tex_dims;
    info.swapchain.vp          = vk->video_vp;
    info.swapchain.format      = vk->context->swapchain_format;
    info.swapchain.render_pass = vk->render_pass;
@@ -5323,8 +5322,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    info.command_pool          = vk->swapchain[vk->context->current_frame_index].cmd_pool;
    info.num_passes            = 0;
    info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
-   info.max_input_size.width  = VIDEO_SCALE_W(vk->tex_dims);
-   info.max_input_size.height = VIDEO_SCALE_H(vk->tex_dims);
+   info.max_input_dims        = vk->tex_dims;
    info.swapchain.vp          = vk->video_vp;
    info.swapchain.format      = vk->context->swapchain_format;
    info.swapchain.render_pass = vk->render_pass;
@@ -6639,8 +6637,7 @@ static bool vulkan_shader_load_begin(void *data,
          vk->context->current_frame_index].cmd_pool;
       info.num_passes            = 0;
       info.original_format       = VK_REMAP_TO_TEXFMT(vk->tex_fmt);
-      info.max_input_size.width  = VIDEO_SCALE_W(vk->tex_dims);
-      info.max_input_size.height = VIDEO_SCALE_H(vk->tex_dims);
+      info.max_input_dims        = vk->tex_dims;
       info.swapchain.vp          = vk->video_vp;
       info.swapchain.format      = vk->context->swapchain_format;
       info.swapchain.render_pass = vk->render_pass;
