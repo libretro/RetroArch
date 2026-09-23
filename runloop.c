@@ -436,19 +436,17 @@ struct runloop_deferred_msg
    bool core_status;
 };
 
+#ifdef HAVE_THREADS
 /* True when the caller is not the thread the message queue belongs
  * to; such a caller hands its message to the deferral stack and the
  * main thread replays it at the top of the next iterate. */
 static bool runloop_msg_queue_off_main(runloop_state_t *runloop_st)
 {
-#ifdef HAVE_THREADS
    return    runloop_st->msg_queue_main_id
           && sthread_get_current_thread_id()
                 != runloop_st->msg_queue_main_id;
-#else
-   return false;
-#endif
 }
+#endif
 
 
 /* GLOBAL POINTER GETTERS */

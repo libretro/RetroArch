@@ -381,6 +381,7 @@ static void iir_filter_init(struct iir_data *iir,
          A = exp(log(10.0) * -9.477 / 40.0);
          beta = sqrt(A + A);
          (void)a1pha;
+         /* fall through - RIAA CD de-emphasis is a high shelf */
       case HSH:
          b0 = A * ((A + 1.0) + (A - 1.0) * cs + beta * sn);
          b1 = -2.0 * A * ((A - 1.0) + (A + 1.0) * cs);

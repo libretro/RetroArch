@@ -336,6 +336,33 @@ check "gl3: GLES3" \
 C89="-std=c89 -ansi -pedantic -Werror=pedantic -Werror=declaration-after-statement -Wno-long-long -Wno-variadic-macros -D_GNU_SOURCE -DC89_BUILD"
 check "gl3: desktop, C89" \
    "$GL3DEFS $GLINC $C89" gfx/drivers/gl3.c
+
+# WASAPI is in the Windows C89_BUILD lane, which no job here builds, and
+# its error-string helper serves only the microphone path, so both halves
+# are compiled: C89 flags, with and without HAVE_MICROPHONE, unused
+# functions as errors. A real compile rather than -fsyntax-only, which
+# stops before GCC looks for unused static functions.
+win32_audio() {
+   name="$1"; defs="$2"; tu="$3"
+   if ! command -v "$MINGW_CC" > /dev/null 2>&1; then
+      echo "skip  $name (no $MINGW_CC)"
+      return
+   fi
+   if ! out=$($MINGW_CC $WARN -Wunused-function -Werror=unused-function \
+         $INC $BASE $C89 \
+         $defs -c -o /dev/null "$tu" 2>&1); then
+      echo "FAIL  $name"
+      echo "      $tu"
+      show_out "$out"
+      fail=1
+   else
+      echo "ok    $name"
+   fi
+}
+win32_audio "wasapi: C89, microphone" "-DHAVE_WASAPI -DHAVE_MICROPHONE" \
+   audio/drivers/wasapi.c
+win32_audio "wasapi: C89, no microphone" "-DHAVE_WASAPI" \
+   audio/drivers/wasapi.c
 check "hw ring: OpenGL only" \
    "-DHAVE_OPENGL $GLINC" gfx/video_thread_hw.c
 check "hw ring: GLES only" \

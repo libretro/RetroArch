@@ -48,7 +48,13 @@ static void frame_raw_cb(const uint32_t *buffer, unsigned width,
          checksum += buffer[y * (pitch / sizeof(uint32_t)) + x];
 }
 
-static uintptr_t frame_gl_cb(void) { return 0; }
+static void frame_gl_cb(unsigned texture_id, unsigned texture_target,
+      const float *affine)
+{
+   (void)texture_id;
+   (void)texture_target;
+   (void)affine;
+}
 
 #define CAPS (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)
 #define SRC  "testsrc=size=320x240:rate=30"

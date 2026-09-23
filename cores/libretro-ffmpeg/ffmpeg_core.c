@@ -295,6 +295,9 @@ static void video_buffer_return_open_slot(
    slock_unlock(video_buffer->lock);
 }
 
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+/* The GL video path hands a slot back once its texture holds the
+ * frame; the software path keeps its slot (see below). */
 static void video_buffer_open_slot(
       video_buffer_t *video_buffer,
       video_decoder_context_t *context)
@@ -323,6 +326,7 @@ static void video_buffer_get_finished_slot(
 
    slock_unlock(video_buffer->lock);
 }
+#endif
 
 /* The software video path shows a frame straight out of its slot
  * instead of copying it somewhere first, so it has to keep the slot
@@ -3594,10 +3598,12 @@ static void decode_thread(void *data)
 
    for (i = 0; (int)i < AUDIO_STREAMS_NUM_STR; i++)
    {
+#if HAVE_CH_LAYOUT
+      AVChannelLayout out_chlayout = AV_CHANNEL_LAYOUT_STEREO;
+#endif
       swr[i] = swr_alloc();
 
 #if HAVE_CH_LAYOUT
-      AVChannelLayout out_chlayout = AV_CHANNEL_LAYOUT_STEREO;
       av_opt_set_chlayout(swr[i], "in_chlayout", &ACTX_STR[i]->ch_layout, 0);
       av_opt_set_chlayout(swr[i], "out_chlayout", &out_chlayout, 0);
 #else
