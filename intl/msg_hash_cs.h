@@ -1030,6 +1030,8 @@ static const struct
    char s_136eaaf4[25];
    char s_68d27147[16];
    char s_f02f73fc[37];
+   char s_e5b971a0[6];
+   char s_17615fcf[6];
    char s_3a0a3fef[18];
    char s_1e09db79[15];
    char s_400523e5[23];
@@ -5079,6 +5081,8 @@ static const struct
    "Zak\303\241zat re\305\276im Prodejna",
    "Re\305\276im prodejna",
    "Omezen\303\255 sn\303\255mkov\303\251 frekvence v menu",
+   "V\305\276dy",
+   "Nikdy",
    "Spr\303\241vce soubor\305\257",
    "Nepr\305\257hlednost",
    "Horizont\303\241ln\303\255 animace",
@@ -8796,7 +8800,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162562u
+      (sizeof(msg_hash_cs_blob) == (162574u
 #ifdef ANDROID
        + 390u
 #endif
@@ -10176,6 +10180,8 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,

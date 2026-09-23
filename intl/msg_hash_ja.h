@@ -1007,6 +1007,8 @@ static const struct
    char s_8d3a8b68[13];
    char s_68d27147[22];
    char s_f02f73fc[40];
+   char s_e5b971a0[7];
+   char s_17615fcf[7];
    char s_3a0a3fef[25];
    char s_1e09db79[13];
    char s_400523e5[28];
@@ -6051,6 +6053,8 @@ static const struct
    "\343\202\255\343\202\252\343\202\271\343\202\257\343\203\242\343\203\274\343\203\211",
    "\343\203\241\343\203\213\343\203\245\343\203\274\343\203\225\343\203\254\343\203\274\343\203\240"
    "\343\203\254\343\203\274\343\203\210\345\210\266\345\276\241",
+   "\345\270\270\343\201\253",
+   "\343\201\252\343\201\227",
    "\343\203\225\343\202\241\343\202\244\343\203\253\343\203\226\343\203\251\343\202\246\343\202\266",
    "\344\270\215\351\200\217\346\230\216\345\272\246",
    "\346\260\264\345\271\263\343\202\242\343\203\213\343\203\241\343\203\274\343\202\267\343\203\247"
@@ -13953,7 +13957,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (200617u
+      (sizeof(msg_hash_ja_blob) == (200631u
 #ifdef ANDROID
        + 484u
 #endif
@@ -15285,6 +15289,8 @@ static const uint32_t msg_hash_ja_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,

@@ -1084,6 +1084,8 @@ static const struct
    char s_8d3a8b68[6];
    char s_68d27147[12];
    char s_f02f73fc[34];
+   char s_e5b971a0[7];
+   char s_17615fcf[5];
    char s_3a0a3fef[17];
    char s_1b6ed818[27];
    char s_89a75c21[28];
@@ -3451,7 +3453,6 @@ static const struct
    char s_eec252b5[131];
    char s_f4e4e921[249];
    char s_7968f59d[34];
-   char s_8cee3615[185];
    char s_58c80718[304];
    char s_67d549fd[30];
    char s_afac733c[43];
@@ -5475,6 +5476,8 @@ static const struct
    "Men\303\274",
    "Kioszk m\303\263d",
    "Men\303\274 k\303\251psebess\303\251g korl\303\241toz\303\241sa",
+   "Mindig",
+   "Soha",
    "F\303\241jlb\303\266ng\303\251sz\305\221",
    "Bet\305\261sz\303\255n, k\303\251k komponens",
    "Bet\305\261sz\303\255n, z\303\266ld komponens",
@@ -8898,9 +8901,6 @@ static const struct
    "ev\303\241gva, \303\251s vissza\303\241ll line\303\241ris m\303\251retez\303\251sre, ha a marg"
    "\303\263 \303\255gy t\303\272l nagy lenne.",
    "A k\303\251pm\303\251retez\303\251s be\303\241ll\303\255t\303\241sai.",
-   "A videomegjelen\303\255t\303\251s szinkroniz\303\241l\303\241sa a scanline (letapogat\303\241si "
-   "sor) helyzet\303\251hez. Cs\303\266kkenti a k\303\251sleltet\303\251s, a tearing nagyobb kock"
-   "\303\241zata mellett. A VSync ki kell legyen kapcsolva.",
    "FIGYELEM: a gyors vill\303\263dz\303\241s bizonyos kijelz\305\221k\303\266n k\303\251pvisszatart"
    "\303\241st okozhat. Csak saj\303\241t felel\305\221ss\303\251gre. // Egyszer\305\261 g\303\266rd"
    "\303\274l\305\221 elektronsug\303\241r szimul\303\241ci\303\263 t\303\266bb alk\303\251pkock\303"
@@ -9711,7 +9711,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (188428u
+      (sizeof(msg_hash_hu_blob) == (188255u
 #ifdef ANDROID
        + 316u
 #endif
@@ -11185,6 +11185,8 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
@@ -13549,7 +13551,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,

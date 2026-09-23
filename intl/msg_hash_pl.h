@@ -1175,6 +1175,8 @@ static const struct
    char s_136eaaf4[21];
    char s_68d27147[12];
    char s_f02f73fc[34];
+   char s_e5b971a0[7];
+   char s_17615fcf[6];
    char s_3a0a3fef[22];
    char s_1b6ed818[26];
    char s_89a75c21[24];
@@ -3666,7 +3668,6 @@ static const struct
    char s_eec252b5[147];
    char s_f4e4e921[239];
    char s_7968f59d[36];
-   char s_8cee3615[166];
    char s_58c80718[317];
    char s_894ecb9a[346];
    char s_67d549fd[34];
@@ -5725,6 +5726,8 @@ static const struct
    "Wy\305\202\304\205cz tryb kiosku",
    "Tryb kiosku",
    "D\305\202awienie szybko\305\233ci klatek menu",
+   "Zawsze",
+   "Nigdy",
    "Przegl\304\205darka plik\303\263w",
    "Kolor czcionki: niebieski",
    "Kolor czcionki: zielony",
@@ -9046,9 +9049,6 @@ static const struct
    "\231ty, i ko\305\204cowo wraca do skalowania nieca\305\202kowitego, je\305\274eli kraw\304\231dz"
    "ie przy zani\305\274onym s\304\205 zbyt du\305\274e.",
    "Zmie\305\204 ustawienia skalowania wideo.",
-   "Synchronizuj prezentowane wideo z pozycj\304\205 linii skanowania. Zmniejsza op\303\263\305\272n"
-   "ienie kosztem wi\304\231kszego ryzyka tearingu. Synchronizacja pionowa musi by\304\207 wy\305"
-   "\202\304\205czona.",
    "OSTRZE\305\273ENIE: Szybkie migotanie mo\305\274e spowodowa\304\207 utrzymywanie si\304\231 obra"
    "zu na niekt\303\263rych wy\305\233wietlaczach. U\305\274wa\304\207 na w\305\202asne ryzyko // Sy"
    "muluje prost\304\205 krocz\304\205c\304\205 lini\304\231 skanuj\304\205c\304\205 nad wieloma pod"
@@ -9820,7 +9820,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (196050u
+      (sizeof(msg_hash_pl_blob) == (195897u
 #ifdef ANDROID
        + 385u
 #endif
@@ -11408,6 +11408,8 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
@@ -13895,7 +13897,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,

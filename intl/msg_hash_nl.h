@@ -1044,6 +1044,8 @@ static const struct
    char s_136eaaf4[24];
    char s_68d27147[21];
    char s_f02f73fc[45];
+   char s_e5b971a0[7];
+   char s_17615fcf[6];
    char s_3a0a3fef[15];
    char s_1e09db79[14];
    char s_0d2d8eef[11];
@@ -3353,7 +3355,6 @@ static const struct
    char s_eec252b5[106];
    char s_f4e4e921[219];
    char s_7968f59d[37];
-   char s_8cee3615[155];
    char s_58c80718[296];
    char s_67d549fd[42];
    char s_afac733c[35];
@@ -5171,6 +5172,8 @@ static const struct
    "Kioskmodus uitschakelen",
    "Kioskmodus Activeren",
    "Beperk de Vernieuwingsfrequentie in het Menu",
+   "Altijd",
+   "Nooit",
    "Bestandsbeheer",
    "Transparantie",
    "Helderheid",
@@ -7891,8 +7894,6 @@ static const struct
    "nneer afbeelding te veel wordt bijgesneden en valt terug naar niet-integer schalen als de onders"
    "chaalmarges te groot zijn.",
    "Video-schalen instellingen wijzigen.",
-   "Synchroniseer videopresentatie met de scanlijnpositie. Vermindert vertraging ten koste van een h"
-   "oger risico om te tearen. VSync moet worden uitgeschakeld.",
    "WAARSCHUWING: Een snelle knippering kan afbeeldingen in sommige schermen inbranden. Gebruik op e"
    "igen risico // Simuleert een standaard scanlijn over meerdere sub-frames door het scherm vertica"
    "al omhoog te delen en elk deel van het scherm weer te geven afhankelijk van hoeveel sub-frames e"
@@ -8565,7 +8566,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (173829u
+      (sizeof(msg_hash_nl_blob) == (173687u
 #ifdef ANDROID
        + 375u
 #endif
@@ -10002,6 +10003,8 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
@@ -12310,7 +12313,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,

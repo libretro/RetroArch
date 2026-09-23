@@ -1108,6 +1108,8 @@ static const struct
    char s_8d3a8b68[6];
    char s_68d27147[16];
    char s_f02f73fc[35];
+   char s_e5b971a0[6];
+   char s_17615fcf[7];
    char s_3a0a3fef[16];
    char s_1b6ed818[22];
    char s_89a75c21[23];
@@ -3535,7 +3537,6 @@ static const struct
    char s_eec252b5[96];
    char s_f4e4e921[195];
    char s_7968f59d[36];
-   char s_8cee3615[177];
    char s_58c80718[291];
    char s_67d549fd[37];
    char s_afac733c[35];
@@ -5455,6 +5456,8 @@ static const struct
    "Menuo",
    "Publika re\304\235imo",
    "Trafik-limigi menuan filmerrapidon",
+   "\304\210iam",
+   "Neniam",
    "Dosieresplorilo",
    "Tipara koloro: blueco",
    "Tipara koloro: verdeco",
@@ -8351,8 +8354,6 @@ static const struct
    "aladon kiam la bildo estas tro stucita, kaj, \304\211u la mar\304\235enoj estu tro grandaj, male"
    "bligas la entjeran skaladon.",
    "\305\234an\304\235i agordojn pri videa skalado.",
-   "Sinkronigi videan prezenton kun la pozicioj de la skanlinioj. Malpliigas respondotempon kontra"
-   "\305\255 pli da risko de bilda \305\235irado. Oni bezonas malebligi la vertikalan sinkronigon.",
    "AVERTO: Rapida flagro povus ka\305\255zi bildan da\305\255ron (\"image presistence\") en kelkaj "
    "ekranoj. Uzu \304\235in je via propra risko. // Imitas bazan rulantan skanlinion sur pluraj subf"
    "ilmeroj dividante la ekranon supren vertikale kaj bildigante \304\211iun parton de la ekrano la"
@@ -9055,7 +9056,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172019u
+      (sizeof(msg_hash_eo_blob) == (171855u
 #ifdef ANDROID
        + 312u
 #endif
@@ -10553,6 +10554,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
@@ -12979,7 +12982,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,

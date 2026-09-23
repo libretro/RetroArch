@@ -1196,6 +1196,8 @@ static const struct
    char s_8d3a8b68[11];
    char s_68d27147[11];
    char s_f02f73fc[34];
+   char s_e5b971a0[11];
+   char s_17615fcf[6];
    char s_3a0a3fef[20];
    char s_1b6ed818[16];
    char s_89a75c21[16];
@@ -2778,6 +2780,7 @@ static const struct
    char s_79b8ce4a[80];
    char s_a1a8257e[112];
    char s_282f7955[106];
+   char s_d5231783[240];
    char s_a68d6d11[61];
    char s_74022c02[96];
    char s_8abad013[90];
@@ -3167,7 +3170,6 @@ static const struct
    char s_5aa622cc[232];
    char s_2b908073[292];
    char s_64bea160[205];
-   char s_2826de99[406];
    char s_97c62766[199];
    char s_6f458a85[129];
    char s_41702fdc[59];
@@ -3727,7 +3729,6 @@ static const struct
    char s_eec252b5[125];
    char s_f4e4e921[257];
    char s_7968f59d[40];
-   char s_8cee3615[160];
    char s_58c80718[334];
    char s_894ecb9a[411];
    char s_67d549fd[34];
@@ -5890,6 +5891,8 @@ static const struct
    "Roghchl\303\241r",
    "M\303\263d Ciosc",
    "R\303\241ta Fr\303\241ma Roghchl\303\241ir Throttle",
+   "I gc\303\263na\303\255",
+   "Riamh",
    "Brabhs\303\241la\303\255 Comhad",
    "Dath Cl\303\263: Gorm",
    "Dath Cl\303\263: Glas",
@@ -7758,6 +7761,10 @@ static const struct
    "uair nach bhfuil aon \303\241bhar l\303\263d\303\241ilte.",
    "Roghnaigh na roghanna seo chun na socruithe cothrom\303\241nacha a choigeart\303\272 agus m\303"
    "\251id na h\303\255omh\303\241 a athr\303\272.",
+   "Gin m\303\263d f\303\255se a fhreagra\303\255onn do r\303\251iteach agus do r\303\241ta athnuach"
+   "ana an \303\241bhair. T\303\241 15/31 KHz le haghaidh sc\303\241ile\303\241n CRT; n\303\255 bhai"
+   "neann na feidhmeanna \"Match Display\" agus \"Match Refresh\" a gcuid teorainneacha ach as EDID "
+   "an sc\303\241ile\303\241in.",
    "Athraigh idir r\303\251iteach s\303\241r-dh\303\272chasach agus ultra-leathan.",
    "Bain \303\272s\303\241id as r\303\241ta athnuachana saincheaptha at\303\241 sonraithe sa chomhad"
    " cumra\303\255ochta m\303\241s g\303\241.",
@@ -8507,13 +8514,6 @@ static const struct
    "Seinneann s\303\251 rian fuaime mionsamhlacha beoite WebM agus iad \303\241 thaispe\303\241int. "
    "Taca\303\255tear le fuaim Vorbis agus Opus. L\303\272ba\303\255onn an fhuaim leis an mbeochan ag"
    "us stopann s\303\251 nuair a dh\303\272nann an mionsamhlach.",
-   "C\303\251 mh\303\251ad sn\303\241ithe a thionta\303\255onn gach fr\303\241ma de mhionsamhail Web"
-   "M n\303\263 MP4 beoite go picteil\303\255n\303\255. Coinn\303\255onn ceann amh\303\241in an tion"
-   "t\303\272 ioml\303\241n ar an sn\303\241ithe d\303\255ch\303\263daithe. Scaipeann n\303\255os m"
-   "\303\263 \303\251 trasna cro\303\255leac\303\241in, rud a chabhra\303\255onn le r\303\251amhamha"
-   "irc mh\303\263ra ar mheais\303\255n\303\255 le cro\303\255leac\303\241in chun na sn\303\241ithea"
-   "nna sin a sp\303\241r\303\241il agus a chosna\303\255onn an cro\303\255 at\303\241 ag rith ar mh"
-   "eais\303\255n\303\255 gan cro\303\255leac\303\241in.",
    "D\303\251anann s\303\251 mionsamhlacha a uasghr\303\241d\303\272 go huathoibr\303\255och le leit"
    "head/airde n\303\255os l\303\272 n\303\241 an luach sonraithe. Feabhsa\303\255onn s\303\251 c"
    "\303\241il\303\255ocht na picti\303\272r. T\303\241 tionchar measartha aige ar fheidhm\303\255oc"
@@ -9592,9 +9592,6 @@ static const struct
    "\303\241nuimhreach m\303\241 t\303\241 na corrlaigh \303\255seal-sc\303\241la r\303\263-mh\303"
    "\263r.",
    "Athraigh socruithe sc\303\241l\303\272ch\303\241in f\303\255se.",
-   "Sioncr\303\263naigh cur i l\303\241thair f\303\255se le su\303\255omh na l\303\255ne scanadh. La"
-   "ghda\303\255onn s\303\251 moill ar chostas riosca n\303\255os airde str\303\263iceadh. N\303\255"
-   " m\303\263r VSync a dh\303\255chumas\303\272.",
    "RABHADH: D\342\200\231fh\303\251adfadh caochadh tapa a bheith ina ch\303\272is le buanseasmhacht"
    " \303\255omh\303\241 ar roinnt taispe\303\241ntais. \303\232s\303\241id ar do phriacal f\303\251"
    "in // Insamhladh l\303\255ne scanadh rollta bhun\303\272sach thar ilfho-fhr\303\241ma\303\255 tr"
@@ -10430,7 +10427,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (222014u
+      (sizeof(msg_hash_ga_blob) == (221705u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12030,6 +12027,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
@@ -13605,6 +13604,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -13994,7 +13994,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -14553,7 +14552,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,

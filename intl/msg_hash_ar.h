@@ -702,6 +702,8 @@ static const struct
    char s_8d3a8b68[15];
    char s_68d27147[17];
    char s_f02f73fc[31];
+   char s_e5b971a0[11];
+   char s_17615fcf[11];
    char s_3a0a3fef[28];
    char s_400523e5[34];
    char s_2696c793[64];
@@ -3637,6 +3639,8 @@ static const struct
    "\331\210\330\266\330\271\331\212\330\251 kiosk",
    "\330\245\330\267\330\247\330\261 \331\202\330\247\330\246\331\205\330\251 \330\256\330\247\331"
    "\206\331\202\330\251",
+   "\330\257\330\247\330\246\331\205\330\247",
+   "\330\247\330\250\330\257\330\247\331\213",
    "\331\205\330\263\330\252\330\271\330\261\330\266 \330\247\331\204\331\205\331\204\331\201\330"
    "\247\330\252",
    "\330\247\331\204\330\252\330\255\330\261\331\212\331\203\330\247\330\252 \330\247\331\204\330"
@@ -7915,7 +7919,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ar_blob_check[
-      (sizeof(msg_hash_ar_blob) == (107207u
+      (sizeof(msg_hash_ar_blob) == (107229u
 #ifdef HAVE_LAKKA
        + 287u
 #endif
@@ -8816,6 +8820,8 @@ static const uint32_t msg_hash_ar_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,

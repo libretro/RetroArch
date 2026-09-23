@@ -619,16 +619,37 @@ static const struct
    char s_15f24ff4[13];
    char s_ec7e8026[7];
    char s_5d29b870[20];
+   char s_bdea22f3[23];
+   char s_54250975[22];
    char s_558faf3a[12];
    char s_5fb85af7[12];
    char s_6996339b[5];
+   char s_bfba8cdb[11];
    char s_08e9410c[22];
    char s_d95824aa[22];
    char s_639f529e[17];
    char s_4927597c[15];
    char s_77b74366[13];
+   char s_5266be65[19];
+   char s_8aeea24b[5];
+   char s_146397b0[10];
+   char s_2821fa51[8];
+   char s_a10cbab5[5];
+   char s_a1381a82[12];
+   char s_f3a18a9f[9];
+   char s_14691293[16];
+   char s_cab4e5d1[13];
+   char s_f3b9b113[14];
    char s_ab49119c[8];
+   char s_94ab8f8c[20];
+   char s_deed0812[18];
+   char s_dfa3c8c3[10];
+   char s_a3825f18[12];
+   char s_ef2d0a03[22];
+   char s_ad17a194[12];
    char s_ddf679b9[8];
+   char s_7137e7c2[23];
+   char s_f9fe3b9c[10];
    char s_3b7e9d77[12];
    char s_10342503[12];
    char s_d31f6d88[16];
@@ -1079,6 +1100,8 @@ static const struct
    char s_136eaaf4[24];
    char s_68d27147[14];
    char s_f02f73fc[37];
+   char s_e5b971a0[6];
+   char s_17615fcf[6];
    char s_3a0a3fef[18];
    char s_1b6ed818[21];
    char s_89a75c21[22];
@@ -2255,6 +2278,7 @@ static const struct
    char s_b9e24170[27];
    char s_30140cb5[13];
    char s_25a21976[72];
+   char s_95a59dc0[18];
    char s_7f2380a0[9];
    char s_e0609921[15];
    char s_b3c7fa93[18];
@@ -3452,7 +3476,6 @@ static const struct
    char s_eec252b5[124];
    char s_f4e4e921[227];
    char s_7968f59d[31];
-   char s_8cee3615[145];
    char s_58c80718[304];
    char s_67d549fd[33];
    char s_afac733c[34];
@@ -4961,20 +4984,41 @@ static const struct
    "Pozastaven\303\251",
    "Hranie",
    "Inform\303\241cie o disku",
+   "D\303\241tum uverejnenia: %s",
+   "S\303\251riov\303\251 \304\215\303\255slo: %s",
    "Syst\303\251m: %s",
    "Titulok: %s",
    "Zvuk",
+   "Verzia: %s",
    "Na\304\215\303\255ta\305\245 nov\303\275 disk",
    "Aktu\303\241lny index disku",
    "Ovl\303\241danie disku",
    "Vysun\303\272\305\245 disk",
    "Vlo\305\276te disk",
+   "Kontroln\303\275 s\303\272\304\215et",
+   "Zl\303\251",
+   "Vyroben\303\251",
+   "Funkcie",
+   "Gama",
+   "Vstup videa",
+   "V\303\275robca",
+   "N\303\241zov monitora",
+   "preferovan\303\251",
+   "K\303\263d produktu",
    "\304\214ist\303\251",
+   "Ve\304\276kos\305\245 obrazovky",
+   "S\303\251riov\303\251 \304\215\303\255slo",
+   "\304\214\303\255tanie",
+   "Verzia EDID",
+   "Zobrazi\305\245 inform\303\241cie",
+   "Orient\303\241cia",
    "V\303\275stup",
+   "Obnovovacia frekvencia",
+   "Rie\305\241enie",
    "Predvolen\303\251",
    "S\305\245ahovanie",
    "Stiahnu\305\245 jadro",
-   "Stiahnutie Obsahu",
+   "Stiahnutie obsahu",
    "Stiahnutie jadra syst\303\251mu",
    "Stiahnu\305\245 miniat\303\272ry",
    "Dolu + Select",
@@ -5421,6 +5465,8 @@ static const struct
    "Zak\303\241za\305\245 re\305\276im kiosku",
    "Re\305\276im kiosku",
    "Obmedzi\305\245 sn\303\255mkov\303\272 frekvenciu menu",
+   "V\305\276dy",
+   "Nikdy",
    "Spr\303\241vca s\303\272borov",
    "Farba p\303\255sma: modr\303\241",
    "Farba p\303\255sma: zelen\303\241",
@@ -6616,6 +6662,7 @@ static const struct
    "\305\240\303\255rka okna",
    "Synchronizova\305\245 na presn\303\272 r\303\275chlos\305\245 sn\303\255kov obsahu (G-Sync, Free"
    "Sync)",
+   "Oneskorenie zvuku",
    "Odpoji\305\245",
    "Povoli\305\245 Wi-Fi",
    "Pripoji\305\245 k sieti",
@@ -8669,8 +8716,6 @@ static const struct
    " orezan\303\275, a nakoniec sa vr\303\241ti k nececel\303\251mu \305\241k\303\241lovaniu, ak s"
    "\303\272 pod\305\241k\303\241lovacie okraje pr\303\255li\305\241 ve\304\276k\303\251.",
    "Zmena nastavenia \305\241k\303\241lovania.",
-   "Synchronizuje prezent\303\241ciu videa s polohou skenovacieho riadku. Zni\305\276uje latenciu za"
-   " cenu vy\305\241\305\241ieho rizika tearingu. VSync mus\303\255 by\305\245 vypnut\303\275.",
    "VAROVANIE: R\303\275chle blikanie m\303\264\305\276e na niektor\303\275ch displejoch sp\303\264s"
    "obi\305\245 pretrv\303\241vanie obrazu. Pou\305\276\303\255vate na vlastn\303\251 riziko // Simu"
    "luje z\303\241kladn\303\275 roluj\303\272ci skenovac\303\255 riadok cez viacero pod-sn\303\255mo"
@@ -9430,7 +9475,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (178970u
+      (sizeof(msg_hash_sk_blob) == (179149u
 #ifdef ANDROID
        + 389u
 #endif
@@ -10452,16 +10497,37 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SERIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PREFERRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PRODUCT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SCREEN_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -10912,6 +10978,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
@@ -12087,6 +12155,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
@@ -13282,7 +13351,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,

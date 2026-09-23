@@ -1172,6 +1172,8 @@ static const struct
    char s_8d3a8b68[6];
    char s_68d27147[12];
    char s_f02f73fc[43];
+   char s_e5b971a0[7];
+   char s_17615fcf[4];
    char s_3a0a3fef[21];
    char s_1b6ed818[22];
    char s_89a75c21[22];
@@ -2731,6 +2733,7 @@ static const struct
    char s_79b8ce4a[99];
    char s_a1a8257e[106];
    char s_282f7955[104];
+   char s_d5231783[220];
    char s_a68d6d11[58];
    char s_74022c02[111];
    char s_8abad013[82];
@@ -3120,7 +3123,6 @@ static const struct
    char s_5aa622cc[217];
    char s_2b908073[217];
    char s_64bea160[173];
-   char s_2826de99[392];
    char s_97c62766[170];
    char s_6f458a85[125];
    char s_41702fdc[61];
@@ -3681,7 +3683,6 @@ static const struct
    char s_eec252b5[106];
    char s_f4e4e921[176];
    char s_7968f59d[44];
-   char s_8cee3615[163];
    char s_58c80718[313];
    char s_894ecb9a[416];
    char s_67d549fd[41];
@@ -5715,6 +5716,8 @@ static const struct
    "Men\303\272",
    "Mode Quiosc",
    "Limita la velocitat de fotogrames al men\303\272",
+   "Sempre",
+   "Mai",
    "Navegador de fitxers",
    "Color blau de la font",
    "Color verd de la font",
@@ -7464,6 +7467,9 @@ static const struct
    "quan no hi ha contingut carregat.",
    "Roteu entre aquestes opcions per ajustar la configuraci\303\263 horitzontal per canviar la mida "
    "de la imatge.",
+   "Genera un mode de v\303\255deo que coincideixi amb la resoluci\303\263 i la freq\303\274\303\250"
+   "ncia d'actualitzaci\303\263 del contingut. 15/31 KHz s\303\263n per a CRT; Match Display i Match"
+   " Refresh Only prenen els seus l\303\255mits de l'EDID de la pantalla.",
    "Canvia entre s\303\272per-resolucions nativa i ultra-allargada.",
    "Utilitza, si cal, una freq\303\274\303\250ncia d'actualitzaci\303\263 personalitzada especificad"
    "a en el fitxer de configuraci\303\263.",
@@ -8079,11 +8085,6 @@ static const struct
    "res de continguts i mides diferents.",
    "Reprodueix un so de les miniatures animades WebM quan es mostrin. Els formats Vorbis i Opus func"
    "ionen correctament. El so i l'animaci\303\263 s'aturen quan es tanca la miniatura.",
-   "Determina quants fils s'utilitzen per convertir a p\303\255xels cada fotograma d'una miniatura a"
-   "nimada en format WebM o MP4. Una opci\303\263 mant\303\251 tota la conversi\303\263 al fil de de"
-   "scodificaci\303\263; l'altra la distribueix entre diversos nuclis, fet que agilitza les previsua"
-   "litzacions grans en equips amb nuclis de sobres, per\303\262 que consumeix recursos del nucli en"
-   " execuci\303\263 en equips que no en tenen tants.",
    "Escala autom\303\240ticament les imatges amb una amplada/al\303\247ada m\303\251s petita que el "
    "valor especificat. Millora la qualitat de la imatge. T\303\251 un efecte moderat en el rendiment"
    ".",
@@ -8997,8 +8998,6 @@ static const struct
    "Arrodoneix al seg\303\274ent nombre enter. 'Smart' redeueix l'escala quan la imatge est\303\240 "
    "massa retallada, i acaba en un escalat no enter si els marges de reescalat son massa grans.",
    "Canvia les opcions de l'escalat del v\303\255deo.",
-   "Sincronitza el v\303\255deo per la posici\303\263 Scanline. Redueix la lat\303\250ncia a costa d"
-   "'augmentar el risc d'estrebades. La sincronitzaci\303\263 vertical ha d'estar desactivada.",
    "AV\303\215S: El parpelleig r\303\240pid pot causar errors gr\303\240fics en algunes pantalles. F"
    "es servir aquesta opci\303\263 sota la teva responsabilitat // Simula una l\303\255nia d'escanei"
    "g en moviment b\303\240sica sobre m\303\272ltiples subfotogrames dividint la pantalla en vertica"
@@ -9772,7 +9771,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (218068u
+      (sizeof(msg_hash_ca_blob) == (217744u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11351,6 +11350,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
@@ -12903,6 +12904,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -13292,7 +13294,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -13852,7 +13853,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,

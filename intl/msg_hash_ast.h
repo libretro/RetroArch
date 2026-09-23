@@ -296,6 +296,8 @@ static const struct
    char s_d3574e33[12];
    char s_9da5609f[16];
    char s_8d3a8b68[6];
+   char s_e5b971a0[8];
+   char s_17615fcf[9];
    char s_3a0a3fef[23];
    char s_1e09db79[9];
    char s_400523e5[22];
@@ -1303,6 +1305,8 @@ static const struct
    "Iconu doble",
    "Men\303\272 principal",
    "Men\303\272",
+   "Siempre",
+   "Enxam\303\241s",
    "Restolador de ficheros",
    "Opacid\303\241",
    "Animaci\303\263n horizontal",
@@ -2070,7 +2074,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24536u
+      (sizeof(msg_hash_ast_blob) == (24553u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2440,6 +2444,8 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,

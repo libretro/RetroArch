@@ -1184,6 +1184,8 @@ static const struct
    char s_8d3a8b68[6];
    char s_68d27147[13];
    char s_f02f73fc[34];
+   char s_e5b971a0[9];
+   char s_17615fcf[7];
    char s_3a0a3fef[23];
    char s_1b6ed818[28];
    char s_89a75c21[28];
@@ -2752,6 +2754,7 @@ static const struct
    char s_79b8ce4a[113];
    char s_a1a8257e[123];
    char s_282f7955[100];
+   char s_d5231783[314];
    char s_a68d6d11[75];
    char s_74022c02[121];
    char s_8abad013[78];
@@ -3143,7 +3146,6 @@ static const struct
    char s_5aa622cc[284];
    char s_2b908073[283];
    char s_64bea160[220];
-   char s_2826de99[481];
    char s_97c62766[178];
    char s_6f458a85[120];
    char s_41702fdc[73];
@@ -3707,7 +3709,6 @@ static const struct
    char s_eec252b5[155];
    char s_f4e4e921[212];
    char s_7968f59d[53];
-   char s_8cee3615[211];
    char s_58c80718[347];
    char s_894ecb9a[400];
    char s_67d549fd[41];
@@ -5797,6 +5798,8 @@ static const struct
    "Menu ",
    "Mode kiosque",
    "Limiter les images/s dans le menu",
+   "Toujours",
+   "Jamais",
    "Navigateur de fichiers",
    "Couleur de la police : Bleu",
    "Couleur de la police : Vert",
@@ -7594,6 +7597,11 @@ static const struct
    "\251solution quand aucun contenu n'est charg\303\251.",
    "Parcourez ces options pour ajuster les r\303\251glages horizontaux afin de modifier la taille de"
    " l'image.",
+   "G\303\251n\303\251rer un mode vid\303\251o correspondant \303\240 la r\303\251solution et \303"
+   "\240 la fr\303\251quence de rafra\303\256chissement du contenu. Les modes 15/31 kHz sont destin"
+   "\303\251s aux \303\251crans CRT ; Correspondre \303\240 l'\303\251cran et Correspondre \303\240 "
+   "la fr\303\251quence de rafra\303\256chissement uniquement se basent sur les limites d\303\251fin"
+   "ies dans l'EDID de l'\303\251cran.",
    "Basculer entre les super r\303\251solutions natives et ultra-larges (UltraWide).",
    "Utiliser une fr\303\251quence de rafra\303\256chissement personnalis\303\251e sp\303\251cifi\303"
    "\251e dans le fichier de configuration si n\303\251cessaire.",
@@ -8260,13 +8268,6 @@ static const struct
    "Lit la piste audio des miniatures WebM anim\303\251es pendant leur affichage. Compatible avec le"
    "s formats audio Vorbis et Opus. La lecture audio est synchronis\303\251e avec l'animation et s'a"
    "rr\303\252te \303\240 la fermeture de la miniature.",
-   "Combien de fils d'ex\303\251cution sont utilis\303\251s pour convertir en pixels chaque image d'"
-   "une miniature anim\303\251e au format WebM ou MP4. Une valeur de 1 maintient l'int\303\251gralit"
-   "\303\251 de la conversion sur le fil d'ex\303\251cution de d\303\251codage. Une valeur plus \303"
-   "\251lev\303\251e r\303\251partit la t\303\242che entre plusieurs c\305\223urs, ce qui acc\303"
-   "\251l\303\250re la g\303\251n\303\251ration de grandes pr\303\251visualisations sur les machines"
-   " disposant de c\305\223urs inutilis\303\251s, mais monopolise ces fils d'ex\303\251cution sur le"
-   "s machines qui en manquent.",
    "Agrandit automatiquement les miniatures \303\240 une largeur/hauteur inf\303\251rieure \303\240 "
    "la valeur sp\303\251cifi\303\251e. Am\303\251liore la qualit\303\251 de l'image. A un impact mod"
    "\303\251r\303\251 sur les performances.",
@@ -9250,9 +9251,6 @@ static const struct
    "rsque l'image est trop recadr\303\251e, et revient finalement \303\240 l'\303\251chelle non enti"
    "\303\250re si les marges de sous-dimension sont trop grandes.",
    "Modifier les r\303\251glages de mise \303\240 l'\303\251chelle vid\303\251o.",
-   "Synchronisation de la pr\303\251sentation vid\303\251o \303\240 la position de la ligne de balay"
-   "age. R\303\251duit la latence au prix d'un risque plus \303\251lev\303\251 de saccades. La synch"
-   "ronisation verticale (V-Sync) doit \303\252tre d\303\251sactiv\303\251e.",
    "AVERTISSEMENT : Un scintillement rapide peut causer une persistance de l'image sur certains \303"
    "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Simule une ligne de balaya"
    "ge roulante basique au cours de plusieurs sous-images en divisant l'\303\251cran verticalement e"
@@ -10052,7 +10050,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (235901u
+      (sizeof(msg_hash_fr_blob) == (235539u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11636,6 +11634,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
@@ -13193,6 +13193,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -13582,7 +13583,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -14142,7 +14142,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,

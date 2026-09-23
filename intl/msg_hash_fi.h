@@ -916,6 +916,8 @@ static const struct
    char s_8d3a8b68[8];
    char s_68d27147[11];
    char s_f02f73fc[30];
+   char s_e5b971a0[5];
+   char s_17615fcf[11];
    char s_3a0a3fef[15];
    char s_1b6ed818[22];
    char s_89a75c21[22];
@@ -4401,6 +4403,8 @@ static const struct
    "Valikko",
    "Kioskitila",
    "Rajoita valikon kuvataajuutta",
+   "Aina",
+   "Ei koskaan",
    "Tiedostoselain",
    "Fontin v\303\244ri: sininen",
    "Fontin v\303\244ri: vihre\303\244",
@@ -7453,7 +7457,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123756u
+      (sizeof(msg_hash_fi_blob) == (123772u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -8660,6 +8664,8 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,

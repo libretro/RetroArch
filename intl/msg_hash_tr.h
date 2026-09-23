@@ -1067,6 +1067,8 @@ static const struct
    char s_8d3a8b68[6];
    char s_68d27147[11];
    char s_f02f73fc[28];
+   char s_e5b971a0[6];
+   char s_17615fcf[5];
    char s_3a0a3fef[20];
    char s_1e09db79[11];
    char s_0d2d8eef[11];
@@ -5296,6 +5298,8 @@ static const struct
    "Men\303\274",
    "Kiosk Kipi",
    "Men\303\274 Kare H\304\261z\304\261 S\304\261n\304\261r\304\261",
+   "Daima",
+   "Asla",
    "Dosya Taray\304\261c\304\261s\304\261",
    "Saydaml\304\261k",
    "Parlakl\304\261k",
@@ -9172,7 +9176,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170359u
+      (sizeof(msg_hash_tr_blob) == (170370u
 #ifdef ANDROID
        + 340u
 #endif
@@ -10598,6 +10602,8 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,

@@ -1072,6 +1072,8 @@ static const struct
    char s_136eaaf4[29];
    char s_68d27147[24];
    char s_f02f73fc[26];
+   char s_e5b971a0[7];
+   char s_17615fcf[4];
    char s_3a0a3fef[13];
    char s_1e09db79[9];
    char s_0d2d8eef[12];
@@ -3385,7 +3387,6 @@ static const struct
    char s_eec252b5[127];
    char s_f4e4e921[193];
    char s_7968f59d[43];
-   char s_8cee3615[184];
    char s_58c80718[320];
    char s_67d549fd[43];
    char s_afac733c[34];
@@ -5267,6 +5268,8 @@ static const struct
    "Disabilita modalit\303\240 chiosco",
    "Abilita modalit\303\240 Kiosk",
    "Limita framerate del menu",
+   "Sempre",
+   "Mai",
    "Sfoglia file",
    "Opacit\303\240",
    "Luminosit\303\240",
@@ -8030,8 +8033,6 @@ static const struct
    "Arrotonda o fino al prossimo numero intero. 'Smart' scende in sottoscala quando l'immagine viene"
    " ritagliata troppo, e infine cade a scala non-interi se i margini sottoscala sono troppo grandi.",
    "Cambia le impostazioni per l'uscita video.",
-   "Sincronizza la presentazione del video con la posizione della scanline. Riduce la latenza al cos"
-   "to di un pi\303\271 elevato rischio di tearing dell'immagine. VSync deve essere disabilitato.",
    "ATTENZIONE: Il lampeggiamento rapido pu\303\262 causare persistenza dell'immagine su alcuni sche"
    "rmi. Utilizzare a proprio rischio. // Simula una semplice linea di scansione a scorrimento su pi"
    "\303\271 sub-fotogrammi, suddividendo verticalmente lo schermo e renderizzando ciascuna parte in"
@@ -8732,7 +8733,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183497u
+      (sizeof(msg_hash_it_blob) == (183324u
 #ifdef ANDROID
        + 376u
 #endif
@@ -10195,6 +10196,8 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
@@ -12507,7 +12510,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
