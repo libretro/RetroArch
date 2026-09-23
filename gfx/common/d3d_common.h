@@ -54,7 +54,8 @@ typedef struct
    /* The quad last written to vert_buf (valid while vert_sent_ok):
     * the draw locks the buffer only when the quad has changed. */
    Vertex vert_sent[4];
-   unsigned tex_w, tex_h;
+   /* The texture's pixel size, packed. */
+   unsigned tex_dims;
    float tex_coords[4];
    float vert_coords[4];
    float alpha_mod;

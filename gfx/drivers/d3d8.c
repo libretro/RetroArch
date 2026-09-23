@@ -2672,10 +2672,14 @@ static void d3d8_overlay_tex_geom(
    d3d->overlays[index].tex_coords[2]  = w;
    d3d->overlays[index].tex_coords[3]  = h;
 #ifdef _XBOX
-   d3d->overlays[index].tex_coords[0] *= d3d->overlays[index].tex_w;
-   d3d->overlays[index].tex_coords[1] *= d3d->overlays[index].tex_h;
-   d3d->overlays[index].tex_coords[2] *= d3d->overlays[index].tex_w;
-   d3d->overlays[index].tex_coords[3] *= d3d->overlays[index].tex_h;
+   d3d->overlays[index].tex_coords[0] *=
+      VIDEO_SCALE_W(d3d->overlays[index].tex_dims);
+   d3d->overlays[index].tex_coords[1] *=
+      VIDEO_SCALE_H(d3d->overlays[index].tex_dims);
+   d3d->overlays[index].tex_coords[2] *=
+      VIDEO_SCALE_W(d3d->overlays[index].tex_dims);
+   d3d->overlays[index].tex_coords[3] *=
+      VIDEO_SCALE_H(d3d->overlays[index].tex_dims);
 #endif
 }
 
@@ -2751,8 +2755,7 @@ static bool d3d8_overlay_load(void *data,
          IDirect3DTexture8_UnlockRect(tex, 0);
       }
 
-      overlay->tex_w         = width;
-      overlay->tex_h         = height;
+      overlay->tex_dims      = VIDEO_SCALE_PACK(width, height);
 
       /* Default. Stretch to whole screen. */
       d3d8_overlay_tex_geom(d3d, i, 0, 0, 1, 1);
@@ -2991,8 +2994,7 @@ static void d3d8_set_menu_texture_frame(void *data,
       return;
 
    if (    !d3d->menu->tex                  ||
-            d3d->menu->tex_w   != VIDEO_SCALE_W(dims)     ||
-            d3d->menu->tex_h   != VIDEO_SCALE_H(dims)    ||
+            d3d->menu->tex_dims != dims                  ||
             d3d->menu_tex_rgb32 != rgb32)
    {
       LPDIRECT3DTEXTURE8 tex = d3d->menu->tex;
@@ -3014,8 +3016,7 @@ static void d3d8_set_menu_texture_frame(void *data,
       if (!d3d->menu->tex)
          return;
 
-      d3d->menu->tex_w          = VIDEO_SCALE_W(dims);
-      d3d->menu->tex_h          = VIDEO_SCALE_H(dims);
+      d3d->menu->tex_dims       = dims;
       d3d->menu_tex_rgb32       = rgb32;
 #ifdef _XBOX
       d3d->menu->tex_coords [2] = VIDEO_SCALE_W(dims);

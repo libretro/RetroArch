@@ -4192,8 +4192,7 @@ static bool d3d9_cg_overlay_load(void *data,
          IDirect3DTexture9_UnlockRect((LPDIRECT3DTEXTURE9)overlay->tex, 0);
       }
 
-      overlay->tex_w         = width;
-      overlay->tex_h         = height;
+      overlay->tex_dims      = VIDEO_SCALE_PACK(width, height);
 
       /* Default. Stretch to whole screen. */
       d3d9_cg_overlay_tex_geom(d3d, i, 0, 0, 1, 1);
@@ -4693,8 +4692,7 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
       return;
 
    if (       (!d3d->menu->tex)
-            || (d3d->menu->tex_w != VIDEO_SCALE_W(dims))
-            || (d3d->menu->tex_h != VIDEO_SCALE_H(dims))
+            || (d3d->menu->tex_dims != dims)
             || (d3d->menu_tex_rgb32 != rgb32))
    {
       if (d3d->menu->tex)
@@ -4724,8 +4722,7 @@ static void d3d9_cg_set_menu_texture_frame(void *data,
          return;
       }
 
-      d3d->menu->tex_w          = VIDEO_SCALE_W(dims);
-      d3d->menu->tex_h          = VIDEO_SCALE_H(dims);
+      d3d->menu->tex_dims       = dims;
       d3d->menu_tex_rgb32       = rgb32;
    }
 
