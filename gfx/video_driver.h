@@ -1139,8 +1139,21 @@ typedef struct video_driver
 
 /* Slots of video_driver_state_t::vp_params_bits in use. The array has
  * headroom above this so a parameter can be added without moving
- * anything after it; the count is what the publish and the read walk. */
+ * anything after it; the count is what the publish and the read walk.
+ *
+ * The portrait bias pair is read only under RARCH_MOBILE -- the two
+ * sites that reach for it pick it on the window being taller than it
+ * is wide, and both are inside that #if -- so off mobile it is not
+ * published at all rather than published as a copy of the landscape
+ * pair. Those two sit last so every other slot keeps its index on
+ * both. */
+#if defined(RARCH_MOBILE)
+#define VIDEO_VP_SLOT_BIAS_PORTRAIT_X 8
+#define VIDEO_VP_SLOT_BIAS_PORTRAIT_Y 9
 #define VIDEO_VP_PARAM_SLOTS 10
+#else
+#define VIDEO_VP_PARAM_SLOTS 8
+#endif
 
 typedef struct
 {

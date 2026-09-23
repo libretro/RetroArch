@@ -100,7 +100,12 @@ struct video_vp_param_snap
 {
    float    aspect;
    float    bias_x, bias_y;
+#if defined(RARCH_MOBILE)
+   /* Guarded with the publish and the read: off mobile nothing sets
+    * these, so a reader added outside the #if has to fail the build
+    * rather than pick up whatever the stack held. */
    float    bias_portrait_x, bias_portrait_y;
+#endif
    unsigned rotation, core_req_rotation;
    unsigned aspect_ratio_idx, si_scaling, si_axis;
    int      custom_x, custom_y;
@@ -3429,22 +3434,19 @@ void video_driver_publish_vp_params(void)
    v[3]  = video_float_bits(VIDEO_DRIVER_ASPECT_RATIO(video_st));
    v[4]  = video_float_bits(settings->floats.video_vp_bias_x);
    v[5]  = video_float_bits(settings->floats.video_vp_bias_y);
-#if defined(RARCH_MOBILE)
-   v[6]  = video_float_bits(settings->floats.video_vp_bias_portrait_x);
-   v[7]  = video_float_bits(settings->floats.video_vp_bias_portrait_y);
-#else
-   /* The portrait bias fields only exist in mobile builds; mirror
-    * the landscape values so the slots are never unpublished. */
-   v[6]  = video_float_bits(settings->floats.video_vp_bias_x);
-   v[7]  = video_float_bits(settings->floats.video_vp_bias_y);
-#endif
    /* The custom viewport's own setting rows bound it to -9999..9999
     * on each axis of the origin and 1..9999 on each of the size, so
     * neither pack can reach its clamp. */
-   v[8]  = (int)VIDEO_POS_PACK(settings->video_vp_custom.x,
+   v[6]  = (int)VIDEO_POS_PACK(settings->video_vp_custom.x,
          settings->video_vp_custom.y);
-   v[9]  = (int)VIDEO_SCALE_PACK(settings->video_vp_custom.width,
+   v[7]  = (int)VIDEO_SCALE_PACK(settings->video_vp_custom.width,
          settings->video_vp_custom.height);
+#if defined(RARCH_MOBILE)
+   v[VIDEO_VP_SLOT_BIAS_PORTRAIT_X] =
+         video_float_bits(settings->floats.video_vp_bias_portrait_x);
+   v[VIDEO_VP_SLOT_BIAS_PORTRAIT_Y] =
+         video_float_bits(settings->floats.video_vp_bias_portrait_y);
+#endif
 
    /* Compare before writing. This runs once per frame as the catch-all,
     * and what it publishes changes on a settings toggle, a rotation or
@@ -3499,12 +3501,16 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps)
          ps->aspect            = video_bits_float(v[3]);
          ps->bias_x            = video_bits_float(v[4]);
          ps->bias_y            = video_bits_float(v[5]);
-         ps->bias_portrait_x   = video_bits_float(v[6]);
-         ps->bias_portrait_y   = video_bits_float(v[7]);
-         ps->custom_x          = VIDEO_POS_X(v[8]);
-         ps->custom_y          = VIDEO_POS_Y(v[8]);
-         ps->custom_w          = VIDEO_SCALE_W(v[9]);
-         ps->custom_h          = VIDEO_SCALE_H(v[9]);
+         ps->custom_x          = VIDEO_POS_X(v[6]);
+         ps->custom_y          = VIDEO_POS_Y(v[6]);
+         ps->custom_w          = VIDEO_SCALE_W(v[7]);
+         ps->custom_h          = VIDEO_SCALE_H(v[7]);
+#if defined(RARCH_MOBILE)
+         ps->bias_portrait_x   =
+               video_bits_float(v[VIDEO_VP_SLOT_BIAS_PORTRAIT_X]);
+         ps->bias_portrait_y   =
+               video_bits_float(v[VIDEO_VP_SLOT_BIAS_PORTRAIT_Y]);
+#endif
          return;
       }
    }
