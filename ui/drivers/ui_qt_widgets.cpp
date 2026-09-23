@@ -146,6 +146,9 @@ static int qt_setting_bound(const rarch_setting_t *setting,
    return (int)value;
 }
 
+/* The most choices a radio-button group lays out. */
+#define QT_RADIO_BUTTONS_MAX 256
+
 /* The value a spin box can show for a stored value: the stored value
  * clamped to the box's range. The paint-time resync compares against
  * this, so an out-of-range stored value is shown at the nearest bound
@@ -767,27 +770,43 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
    ,m_buttonGroup(new QButtonGroup(this))
 {
    QVBoxLayout *layout = new QVBoxLayout(this);
-   /* from menu_displaylist */
-   float i;
+   /* The choices are enumerated in unsigned integers: a float counter
+    * stops advancing past 2^24, and a missing or non-positive step
+    * would never reach the end. The button id is an int, so the range
+    * is bounded to [0, INT_MAX], and at most QT_RADIO_BUTTONS_MAX
+    * buttons are made, which also bounds a row with no enforced
+    * maximum. */
    unsigned orig_value = *setting->value.target.unsigned_integer;
-   float          step = setting->step;
-   float           min = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
-   float           max = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : UINT_MAX;
+   unsigned        min = (unsigned)qt_setting_bound(setting,
+         SD_FLAG_ENFORCE_MINRANGE, setting->min < 0.0f ? 0.0 : setting->min, 0);
+   unsigned        max = (unsigned)qt_setting_bound(setting,
+         SD_FLAG_ENFORCE_MAXRANGE, setting->max < 0.0f ? 0.0 : setting->max,
+         INT_MAX);
+   unsigned       step = 1;
    bool  checked_found = false;
 
-   if (setting->actions->repr)
+   if (setting->step >= (float)INT_MAX)
+      step = INT_MAX;
+   else if (setting->step >= 1.0f)
+      step = (unsigned)setting->step;
+
+   if (setting->actions->repr && min <= max)
    {
-      for (i = min; i <= max; i += step)
+      unsigned i     = min;
+      unsigned count = 0;
+
+      for (;;)
       {
          char val_s[NAME_MAX_LENGTH];
+         QRadioButton *button = NULL;
 
          *setting->value.target.unsigned_integer = i;
 
          setting->actions->repr(setting, val_s, sizeof(val_s));
 
-         QRadioButton *button = new QRadioButton(QString(val_s), this);
+         button = new QRadioButton(QString(val_s), this);
 
-         m_buttonGroup->addButton(button, i);
+         m_buttonGroup->addButton(button, (int)i);
 
          layout->addWidget(button);
 
@@ -796,6 +815,10 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
             button->setChecked(true);
             checked_found = true;
          }
+
+         if (++count >= QT_RADIO_BUTTONS_MAX || max - i < step)
+            break;
+         i += step;
       }
 
       *setting->value.target.unsigned_integer = orig_value;
