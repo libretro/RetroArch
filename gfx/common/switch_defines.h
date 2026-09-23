@@ -28,19 +28,19 @@ typedef struct
 
       uint32_t *pixels;
 
-      uint32_t width;
-      uint32_t height;
-
-      unsigned tgtw;
-      unsigned tgth;
+      /* The size the frame arrives at, and the size it is scaled
+       * to on screen, each packed. */
+      uint32_t dims;
+      unsigned tgt_dims;
 
       struct scaler_ctx scaler;
    } menu_texture;
 
    struct
    {
-      uint32_t width;
-      uint32_t height;
+      /* The window size the scaler asks the compositor for, packed;
+       * x_offset is where the frame sits inside it. */
+      uint32_t dims;
       uint32_t x_offset;
    } hw_scale;
 
@@ -48,8 +48,8 @@ typedef struct
    uint32_t tmp_image[1280 * 720];
    u32 cnt;
    struct scaler_ctx scaler;
-   uint32_t last_width;
-   uint32_t last_height;
+   /* The frame size the scaler was last built for, packed. */
+   uint32_t last_dims;
    bool keep_aspect;
    /* What the last frame said integer scaling should be:
     * set_aspect_ratio() runs on the video thread under the threaded
