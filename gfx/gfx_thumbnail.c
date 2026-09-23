@@ -2586,17 +2586,19 @@ void gfx_thumbnail_get_draw_dimensions(
       unsigned dims, float scale_factor,
       float *draw_width, float *draw_height)
 {
-   unsigned width                 = VIDEO_SCALE_W(dims);
-   unsigned height                = VIDEO_SCALE_H(dims);
-   float core_aspect;
-   float display_aspect;
+   float width                    = (float)VIDEO_SCALE_W(dims);
+   float height                   = (float)VIDEO_SCALE_H(dims);
+   float thumb_w, thumb_h, dw, dh;
    float thumbnail_aspect;
+   /* thumbnail_aspect / core_aspect: 1 when the core's aspect is not
+    * applied, which leaves the sizes below as they are. */
+   float core_ratio               = 1.0f;
    video_driver_state_t *video_st = video_state_get_ptr();
 
    /* Sanity check */
    if (   !thumbnail
-       || (width             < 1)
-       || (height            < 1)
+       || (width  < 1.0f)
+       || (height < 1.0f)
        || (VIDEO_SCALE_W(thumbnail->dims) < 1)
        || (VIDEO_SCALE_H(thumbnail->dims) < 1))
    {
@@ -2607,48 +2609,35 @@ void gfx_thumbnail_get_draw_dimensions(
 
    /* Account for display/thumbnail/core aspect ratio
     * differences */
-   display_aspect   = (float)width            / (float)height;
-   thumbnail_aspect = (float)VIDEO_SCALE_W(thumbnail->dims)
-                    / (float)VIDEO_SCALE_H(thumbnail->dims);
-   core_aspect      = ((thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
-         && video_st && video_st->av_info.geometry.aspect_ratio > 0)
-               ? video_st->av_info.geometry.aspect_ratio
-               : thumbnail_aspect;
+   thumb_w          = (float)VIDEO_SCALE_W(thumbnail->dims);
+   thumb_h          = (float)VIDEO_SCALE_H(thumbnail->dims);
+   thumbnail_aspect = thumb_w / thumb_h;
+   if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
+      core_ratio    = (video_st && video_st->av_info.geometry.aspect_ratio > 0)
+         ? thumbnail_aspect / video_st->av_info.geometry.aspect_ratio
+         : 1.0f;
 
-   if (thumbnail_aspect > display_aspect)
+   if (thumbnail_aspect > width / height)
    {
-      *draw_width  = (float)width;
-      *draw_height = (float)VIDEO_SCALE_H(thumbnail->dims) * (*draw_width / (float)VIDEO_SCALE_W(thumbnail->dims));
-
-      if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
+      dw = width;
+      dh = thumb_h * (dw / thumb_w) * core_ratio;
+      if ((thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT) && dh > height)
       {
-         *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
-
-         if (*draw_height > height)
-         {
-            *draw_height = (float)height;
-            *draw_width  = (float)VIDEO_SCALE_W(thumbnail->dims) * (*draw_height / (float)VIDEO_SCALE_H(thumbnail->dims));
-            *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
-         }
+         dh = height;
+         dw = thumb_w * (dh / thumb_h) / core_ratio;
       }
    }
    else
    {
-      *draw_height = (float)height;
-      *draw_width  = (float)VIDEO_SCALE_W(thumbnail->dims) * (*draw_height / (float)VIDEO_SCALE_H(thumbnail->dims));
-
-      if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
-         *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
+      dh = height;
+      dw = thumb_w * (dh / thumb_h) / core_ratio;
    }
 
    /* Final overwidth check */
-   if (*draw_width > width)
+   if (dw > width)
    {
-      *draw_width  = (float)width;
-      *draw_height = (float)VIDEO_SCALE_H(thumbnail->dims) * (*draw_width / (float)VIDEO_SCALE_W(thumbnail->dims));
-
-      if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
-         *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
+      dw = width;
+      dh = thumb_h * (dw / thumb_w) * core_ratio;
    }
 
    /* Account for scale factor
@@ -2658,8 +2647,8 @@ void gfx_thumbnail_get_draw_dimensions(
     *   that extends beyond the bounding box. But even if
     *   it didn't, we can't get real screen dimensions
     *   without scaling manually... */
-   *draw_width  *= scale_factor;
-   *draw_height *= scale_factor;
+   *draw_width  = dw * scale_factor;
+   *draw_height = dh * scale_factor;
 }
 
 /* Draws specified thumbnail with specified alignment

@@ -6019,6 +6019,8 @@ static void vulkan_init_hw_render(vk_t *vk)
 static void vulkan_init_readback(vk_t *vk, bool video_gpu_record,
       bool recording)
 {
+   unsigned width, height;
+
    if (!(video_gpu_record && recording))
    {
       vk->flags                       &= ~VK_FLAG_READBACK_STREAMED;
@@ -6030,18 +6032,20 @@ static void vulkan_init_readback(vk_t *vk, bool video_gpu_record,
    scaler_ctx_gen_reset(&vk->readback.scaler_rgb);
    vk->flags                          |=  VK_FLAG_READBACK_STREAMED;
 
-   vk->readback.scaler_bgr.in_width    = VIDEO_SCALE_W(vk->vp.dims);
-   vk->readback.scaler_bgr.in_height   = VIDEO_SCALE_H(vk->vp.dims);
-   vk->readback.scaler_bgr.out_width   = VIDEO_SCALE_W(vk->vp.dims);
-   vk->readback.scaler_bgr.out_height  = VIDEO_SCALE_H(vk->vp.dims);
+   width                               = VIDEO_SCALE_W(vk->vp.dims);
+   height                              = VIDEO_SCALE_H(vk->vp.dims);
+   vk->readback.scaler_bgr.in_width    = width;
+   vk->readback.scaler_bgr.in_height   = height;
+   vk->readback.scaler_bgr.out_width   = width;
+   vk->readback.scaler_bgr.out_height  = height;
    vk->readback.scaler_bgr.in_fmt      = SCALER_FMT_ARGB8888;
    vk->readback.scaler_bgr.out_fmt     = SCALER_FMT_BGR24;
    vk->readback.scaler_bgr.scaler_type = SCALER_TYPE_POINT;
 
-   vk->readback.scaler_rgb.in_width    = VIDEO_SCALE_W(vk->vp.dims);
-   vk->readback.scaler_rgb.in_height   = VIDEO_SCALE_H(vk->vp.dims);
-   vk->readback.scaler_rgb.out_width   = VIDEO_SCALE_W(vk->vp.dims);
-   vk->readback.scaler_rgb.out_height  = VIDEO_SCALE_H(vk->vp.dims);
+   vk->readback.scaler_rgb.in_width    = width;
+   vk->readback.scaler_rgb.in_height   = height;
+   vk->readback.scaler_rgb.out_width   = width;
+   vk->readback.scaler_rgb.out_height  = height;
    vk->readback.scaler_rgb.in_fmt      = SCALER_FMT_ABGR8888;
    vk->readback.scaler_rgb.out_fmt     = SCALER_FMT_BGR24;
    vk->readback.scaler_rgb.scaler_type = SCALER_TYPE_POINT;
