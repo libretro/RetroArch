@@ -118,6 +118,14 @@ S_ACTION(CHEEVOS_VISIBILITY_SETTINGS,
       "Visibility",
       "Change which messages and on-screen elements are shown. Does not disable functionality.")
 #endif
+/* Descriptor and configuration rows are #ifdef HAVE_CHEEVOS; the string
+ * tables always carry this row via the strings pass. */
+#if defined(HAVE_CHEEVOS) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_ACTION(CHEEVOS_ACHIEVEMENT_LIST_SETTINGS,
+      "cheevos_achievement_list_settings",
+      "Achievement List",
+      "Customize the achievement list in the Quick Menu.")
+#endif
 S_ACTION(UPDATER_SETTINGS,
       "updater_settings",
       "Updater Settings",
