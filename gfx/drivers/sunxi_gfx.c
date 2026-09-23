@@ -518,9 +518,8 @@ struct sunxi_video
    /* Sunxi framebuffer information struct */
    sunxi_disp_t *sunxi_disp;
 
-   /* current dimensions of the emulator fb */
-   unsigned int src_width;
-   unsigned int src_height;
+   /* current dimensions of the emulator fb, packed */
+   unsigned int src_dims;
    unsigned int src_pitch;
    unsigned int src_bpp;
    unsigned int src_bytes_per_pixel;
@@ -549,11 +548,7 @@ struct sunxi_video
    retro_eventcount_t vsync_ec;
 
    /* menu data */
-   unsigned int menu_rotation;
    bool menu_active;
-   unsigned int menu_width;
-   unsigned int menu_height;
-   unsigned int menu_pitch;
 
    float aspect_ratio;
 };
@@ -721,8 +716,8 @@ static void sunxi_update_main(const void *frame, struct sunxi_video *_dispvars)
 
    /* Frame blitting */
    pixman_blit(
-      _dispvars->src_width,
-      _dispvars->src_height,
+      VIDEO_SCALE_W(_dispvars->src_dims),
+      VIDEO_SCALE_H(_dispvars->src_dims),
       _dispvars->nextPage->address,
       _dispvars->dst_pixels_per_line,
       (uint16_t*)frame,
@@ -732,20 +727,20 @@ static void sunxi_update_main(const void *frame, struct sunxi_video *_dispvars)
    /* Issue pageflip. Will flip on next vsync. */
    sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp, _dispvars->sunxi_disp->bits_per_pixel,
       _dispvars->nextPage->offset,
-      _dispvars->src_width, _dispvars->src_height, _dispvars->sunxi_disp->xres);
+      VIDEO_SCALE_W(_dispvars->src_dims),
+      VIDEO_SCALE_H(_dispvars->src_dims), _dispvars->sunxi_disp->xres);
 
    retro_atomic_store_release_int(&_dispvars->pageflip_pending, 1);
 }
 
 static void sunxi_setup_scale (void *data,
-      unsigned width, unsigned height, unsigned pitch)
+      unsigned dims, unsigned pitch)
 {
    int i;
    unsigned int xpos, visible_width;
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
 
-   _dispvars->src_width  = width;
-   _dispvars->src_height = height;
+   _dispvars->src_dims   = dims;
 
    /* Total pitch, including things the
     * cores render between "visible" scanlines. */
@@ -760,8 +755,13 @@ static void sunxi_setup_scale (void *data,
     * be adjusted when internal resolution changes. */
    for (i = 0; i < NUMPAGES; i++)
    {
-      _dispvars->pages[i].offset = (_dispvars->sunxi_disp->yres + i * _dispvars->src_height) * _dispvars->sunxi_disp->xres * 4;
-      _dispvars->pages[i].address = ((uint32_t*) _dispvars->sunxi_disp->framebuffer_addr + (_dispvars->sunxi_disp->yres + i * _dispvars->src_height) * _dispvars->dst_pitch/4);
+      _dispvars->pages[i].offset = (_dispvars->sunxi_disp->yres
+            + i * VIDEO_SCALE_H(_dispvars->src_dims))
+         * _dispvars->sunxi_disp->xres * 4;
+      _dispvars->pages[i].address = ((uint32_t*) _dispvars->sunxi_disp->framebuffer_addr
+            + (_dispvars->sunxi_disp->yres
+               + i * VIDEO_SCALE_H(_dispvars->src_dims))
+            * _dispvars->dst_pitch/4);
    }
 
    visible_width = _dispvars->sunxi_disp->yres * _dispvars->aspect_ratio;
@@ -783,13 +783,13 @@ static bool sunxi_frame(void *data, const void *frame, unsigned width,
    bool menu_is_alive            = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (_dispvars->src_width != width || _dispvars->src_height != height)
+   if (_dispvars->src_dims != VIDEO_SCALE_PACK(width, height))
    {
       /* Sanity check on new dimensions */
       if (width == 0 || height == 0)
          return true;
 
-      sunxi_setup_scale(_dispvars, width, height, pitch);
+      sunxi_setup_scale(_dispvars, VIDEO_SCALE_PACK(width, height), pitch);
    }
 
 #ifdef HAVE_MENU
@@ -822,8 +822,7 @@ static void sunxi_viewport_info(void *data, struct video_viewport *vp)
 
    vp->pos = VIDEO_POS_PACK(0, 0);
 
-   vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(_dispvars->src_width,
-         _dispvars->src_height);
+   vp->dims   = vp->full_dims   = _dispvars->src_dims;
 }
 
 static bool sunxi_set_shader(void *data,
@@ -872,7 +871,7 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
     * Don't run off the end if the caller's frame is bigger. */
    {
       unsigned int max_w = _dispvars->sunxi_disp->xres;
-      unsigned int max_h = (unsigned int)_dispvars->src_height;
+      unsigned int max_h = VIDEO_SCALE_H(_dispvars->src_dims);
       if (VIDEO_SCALE_W(dims)  > max_w) VIDEO_SCALE_PUT_W(dims, max_w);
       if (VIDEO_SCALE_H(dims) > max_h) VIDEO_SCALE_PUT_H(dims, max_h);
    }
@@ -929,7 +928,8 @@ static void sunxi_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    {
       /* Here we set the new aspect ratio. */
       _dispvars->aspect_ratio = new_aspect;
-      sunxi_setup_scale(_dispvars, _dispvars->src_width, _dispvars->src_height, _dispvars->src_pitch);
+      sunxi_setup_scale(_dispvars, _dispvars->src_dims,
+            _dispvars->src_pitch);
    }
 }
 
