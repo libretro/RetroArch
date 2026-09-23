@@ -290,17 +290,19 @@ typedef struct video_viewport
    unsigned full_dims;
 } video_viewport_t;
 
-/* The custom viewport as the settings hold it. Its axes are bound by
- * address - configuration.c's SETTING_UINT rows and the menu's
- * offsetof rows both write an unsigned in place - so this pair stays
- * as two members where video_viewport_t's is one word. Do not pack
- * it: a packed half has no address for those rows to bind. */
+/* The custom viewport as the settings hold it: an origin in
+ * VIDEO_POS_PACK's layout and a size in VIDEO_SCALE_PACK's, the same
+ * two words video_viewport_t carries.
+ *
+ * The config file still keeps custom_viewport_x/_y/_width/_height as
+ * four keys and the menu still shows four rows. Neither binds a half
+ * by address any more: a config row carries which half of the word it
+ * is (CFG_HALF_HI / CFG_HALF_LO in configuration.c) and a menu row
+ * carries the same in its SD_FREE_FLAG_PACKED_HI / _LO bit. */
 typedef struct video_viewport_settings
 {
-   int x;
-   int y;
-   unsigned width;
-   unsigned height;
+   unsigned pos;
+   unsigned dims;
 } video_viewport_settings_t;
 
 typedef struct gfx_ctx_flags

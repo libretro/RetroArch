@@ -609,11 +609,11 @@ static bool d3d8_setup_init(void *data,
    IDirect3DDevice8_SetRenderState(d3dr, D3DRS_ZENABLE,  FALSE);
 
    /* FIXME */
-   if (custom_vp->width == 0)
-      custom_vp->width = width;
+   if (!VIDEO_SCALE_W(custom_vp->dims))
+      VIDEO_SCALE_PUT_W(custom_vp->dims, width);
 
-   if (custom_vp->height == 0)
-      custom_vp->height = height;
+   if (!VIDEO_SCALE_H(custom_vp->dims))
+      VIDEO_SCALE_PUT_H(custom_vp->dims, height);
 
    return true;
 }

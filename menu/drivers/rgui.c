@@ -6731,10 +6731,8 @@ static void rgui_get_video_config(
     * but this seems to be the standard way of doing it... */
    video_viewport_settings_t *custom_vp      = &settings->video_vp_custom;
    video_settings->aspect_ratio_idx = video_aspect_ratio_idx;
-   video_settings->vp.dims          = VIDEO_SCALE_PACK(custom_vp->width,
-         custom_vp->height);
-   video_settings->vp.pos           = VIDEO_POS_PACK(custom_vp->x,
-         custom_vp->y);
+   video_settings->vp.dims          = custom_vp->dims;
+   video_settings->vp.pos           = custom_vp->pos;
 }
 
 /* Main thread only: writes the aspect index and custom viewport into
@@ -6747,13 +6745,12 @@ static void rgui_apply_video_config(
     * but this seems to be the standard way of doing it... */
    video_viewport_settings_t *custom_vp            = &settings->video_vp_custom;
    settings->uints.video_aspect_ratio_idx = video_settings->aspect_ratio_idx;
-   custom_vp->width                       = VIDEO_SCALE_W(video_settings->vp.dims);
-   custom_vp->height                      = VIDEO_SCALE_H(video_settings->vp.dims);
-   custom_vp->x                           = VIDEO_POS_X(video_settings->vp.pos);
-   custom_vp->y                           = VIDEO_POS_Y(video_settings->vp.pos);
+   custom_vp->dims                        = video_settings->vp.dims;
+   custom_vp->pos                         = video_settings->vp.pos;
 
    aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-         (float)custom_vp->width / custom_vp->height;
+         (float)VIDEO_SCALE_W(custom_vp->dims)
+               / VIDEO_SCALE_H(custom_vp->dims);
 }
 
 /* Stage a video configuration for rgui_render() to apply. The frame

@@ -169,24 +169,24 @@ int main(int argc, char *argv[])
          " %u (custom)",
          settings->uints.video_aspect_ratio_idx,
          (unsigned)ASPECT_RATIO_CUSTOM);
-   CHECK(settings->video_vp_custom.width  > 0
-      && settings->video_vp_custom.height > 0,
+   CHECK(VIDEO_SCALE_W(settings->video_vp_custom.dims)  > 0
+      && VIDEO_SCALE_H(settings->video_vp_custom.dims) > 0,
          "custom viewport not populated (%ux%u)",
-         settings->video_vp_custom.width,
-         settings->video_vp_custom.height);
+         VIDEO_SCALE_W(settings->video_vp_custom.dims),
+         VIDEO_SCALE_H(settings->video_vp_custom.dims));
 
    /* Lane 3: settled - further rounds leave the settings alone. */
    {
       unsigned idx_now = settings->uints.video_aspect_ratio_idx;
-      unsigned w = settings->video_vp_custom.width;
-      unsigned h = settings->video_vp_custom.height;
+      unsigned w = VIDEO_SCALE_W(settings->video_vp_custom.dims);
+      unsigned h = VIDEO_SCALE_H(settings->video_vp_custom.dims);
       one_frame();
       one_render();
       one_frame();
       one_render();
       CHECK(settings->uints.video_aspect_ratio_idx == idx_now
-         && settings->video_vp_custom.width  == w
-         && settings->video_vp_custom.height == h,
+         && VIDEO_SCALE_W(settings->video_vp_custom.dims)  == w
+         && VIDEO_SCALE_H(settings->video_vp_custom.dims) == h,
             "aspect config kept moving after settling");
    }
 

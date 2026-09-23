@@ -3437,10 +3437,8 @@ void video_driver_publish_vp_params(void)
    /* The custom viewport's own setting rows bound it to -9999..9999
     * on each axis of the origin and 1..9999 on each of the size, so
     * neither pack can reach its clamp. */
-   v[6]  = (int)VIDEO_POS_PACK(settings->video_vp_custom.x,
-         settings->video_vp_custom.y);
-   v[7]  = (int)VIDEO_SCALE_PACK(settings->video_vp_custom.width,
-         settings->video_vp_custom.height);
+   v[6]  = (int)settings->video_vp_custom.pos;
+   v[7]  = (int)settings->video_vp_custom.dims;
 #if defined(RARCH_MOBILE)
    v[VIDEO_VP_SLOT_BIAS_PORTRAIT_X] =
          video_float_bits(settings->floats.video_vp_bias_portrait_x);
@@ -4801,10 +4799,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->font_msg_color_r            = settings->floats.video_msg_color_r;
    video_info->font_msg_color_g            = settings->floats.video_msg_color_g;
    video_info->font_msg_color_b            = settings->floats.video_msg_color_b;
-   video_info->custom_vp_x                 = custom_vp->x;
-   video_info->custom_vp_y                 = custom_vp->y;
+   video_info->custom_vp_x                 = VIDEO_POS_X(custom_vp->pos);
+   video_info->custom_vp_y                 = VIDEO_POS_Y(custom_vp->pos);
    video_info->custom_vp_dims              = VIDEO_SCALE_PACK(
-         custom_vp->width, custom_vp->height);
+         VIDEO_SCALE_W(custom_vp->dims), VIDEO_SCALE_H(custom_vp->dims));
 
    video_info->video_st_flags              = disp_flags
                                            | video_st->main_flags;
@@ -5516,8 +5514,11 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    {
       float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
       aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-         (custom_vp->width && custom_vp->height) ?
-         (float)custom_vp->width / custom_vp->height : default_aspect;
+         (custom_vp->dims
+          && VIDEO_SCALE_W(custom_vp->dims)
+          && VIDEO_SCALE_H(custom_vp->dims))
+         ? (float)VIDEO_SCALE_W(custom_vp->dims)
+               / VIDEO_SCALE_H(custom_vp->dims) : default_aspect;
    }
 
    {
@@ -5861,21 +5862,19 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
 
    if (video_st->current_video->viewport_info &&
-         (!custom_vp->width  ||
-          !custom_vp->height))
+         (   !VIDEO_SCALE_W(custom_vp->dims)
+          || !VIDEO_SCALE_H(custom_vp->dims)))
    {
       /* Force custom viewport to have sane parameters. */
       video_viewport_t vp;
-      vp.pos     = VIDEO_POS_PACK(custom_vp->x, custom_vp->y);
+      vp.pos     = custom_vp->pos;
       vp.dims    = VIDEO_SCALE_PACK(width, height);
       vp.full_dims = 0;
 
       video_st->current_video->viewport_info(video_st->data, &vp);
 
-      custom_vp->x      = VIDEO_POS_X(vp.pos);
-      custom_vp->y      = VIDEO_POS_Y(vp.pos);
-      custom_vp->width  = VIDEO_SCALE_W(vp.dims);
-      custom_vp->height = VIDEO_SCALE_H(vp.dims);
+      custom_vp->pos    = vp.pos;
+      custom_vp->dims   = vp.dims;
    }
 
    video_driver_set_rotation(rotation % 4);

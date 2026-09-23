@@ -98,8 +98,23 @@ enum settings_free_flags
     * string the callbacks compared against - equality with the main
     * menu label was the only thing that string was ever read for.
     * Lives here because the byte has spare bits. */
-   SD_FREE_FLAG_MAIN_MENU_GROUP = (1 << 3)
+   SD_FREE_FLAG_MAIN_MENU_GROUP = (1 << 3),
+   /* Also not ownership bits. A row carrying one of these has a
+    * target that addresses a packed word rather than a value of its
+    * own, and the bit says which half of it the row edits: the high
+    * half for a width or an x, the low half for a height or a y.
+    * Set on the custom viewport's four rows, whose settings_t pair
+    * is one word each for the origin and the size.
+    *
+    * Reads and writes of such a row go through setting_uint_get /
+    * setting_uint_set and the signed pair, never through
+    * value.target directly. */
+   SD_FREE_FLAG_PACKED_HI       = (1 << 4),
+   SD_FREE_FLAG_PACKED_LO       = (1 << 5)
 };
+
+#define SD_FREE_FLAG_PACKED_ANY \
+   (SD_FREE_FLAG_PACKED_HI | SD_FREE_FLAG_PACKED_LO)
 
 typedef struct rarch_setting rarch_setting_t;
 typedef struct setting_actions setting_actions_t;

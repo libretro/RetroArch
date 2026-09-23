@@ -840,6 +840,10 @@ struct config_int_setting
    int def;
    enum rarch_override_setting override;
    uint8_t flags;
+   /* CFG_HALF_*: when set, ptr addresses a packed word and this row
+    * is one half of it. The config file keeps a key per half either
+    * way, so a file written before the pair was packed still loads. */
+   uint8_t half;
 };
 
 struct config_uint_setting
@@ -849,7 +853,55 @@ struct config_uint_setting
    unsigned def;
    enum rarch_override_setting override;
    uint8_t flags;
+   uint8_t half;   /* CFG_HALF_*, as for config_int_setting */
 };
+
+#define CFG_HALF_NONE 0
+#define CFG_HALF_HI   1
+#define CFG_HALF_LO   2
+
+/* A row's value, whole word or half of one. The signed pair rides
+ * VIDEO_POS_PACK's layout and the unsigned pair VIDEO_SCALE_PACK's,
+ * so the halves come back out through the same macros the rest of
+ * the tree reads them with. */
+static INLINE unsigned cfg_uint_get(const struct config_uint_setting *s)
+{
+   if (s->half == CFG_HALF_HI)
+      return VIDEO_SCALE_W(*s->ptr);
+   if (s->half == CFG_HALF_LO)
+      return VIDEO_SCALE_H(*s->ptr);
+   return *s->ptr;
+}
+
+static INLINE void cfg_uint_set(const struct config_uint_setting *s,
+      unsigned v)
+{
+   if (s->half == CFG_HALF_HI)
+      VIDEO_SCALE_PUT_W(*s->ptr, v);
+   else if (s->half == CFG_HALF_LO)
+      VIDEO_SCALE_PUT_H(*s->ptr, v);
+   else
+      *s->ptr = v;
+}
+
+static INLINE int cfg_int_get(const struct config_int_setting *s)
+{
+   if (s->half == CFG_HALF_HI)
+      return VIDEO_POS_X(*s->ptr);
+   if (s->half == CFG_HALF_LO)
+      return VIDEO_POS_Y(*s->ptr);
+   return *s->ptr;
+}
+
+static INLINE void cfg_int_set(const struct config_int_setting *s, int v)
+{
+   if (s->half == CFG_HALF_HI)
+      VIDEO_POS_PUT_X(*s->ptr, v);
+   else if (s->half == CFG_HALF_LO)
+      VIDEO_POS_PUT_Y(*s->ptr, v);
+   else
+      *s->ptr = v;
+}
 
 struct config_size_setting
 {
@@ -911,6 +963,20 @@ struct config_path_setting
 
 #define SETTING_UINT(key, configval, default_enable, default_setting, handle_setting) \
    GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_uint_setting, handle_setting)
+
+/* A row that is one half of a packed word: 'which' is CFG_HALF_HI or
+ * CFG_HALF_LO and configval addresses the whole word. */
+#define SETTING_UINT_HALF(key, configval, which, default_enable, default_setting, handle_setting) \
+{ \
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_uint_setting, handle_setting) \
+   tmp[count - 1].half = (which); \
+}
+
+#define SETTING_INT_HALF(key, configval, which, default_enable, default_setting, handle_setting) \
+{ \
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_int_setting, handle_setting) \
+   tmp[count - 1].half = (which); \
+}
 
 #define SETTING_SIZE(key, configval, default_enable, default_setting, handle_setting) \
    GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_size_setting, handle_setting)
@@ -3357,10 +3423,8 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("microphone_rate",               &settings->uints.microphone_sample_rate, true, DEFAULT_INPUT_RATE, false);
 #endif
 
-   SETTING_UINT("custom_viewport_width",         &settings->video_vp_custom.width, false, 0 /* TODO */, false);
-   SETTING_UINT("custom_viewport_height",        &settings->video_vp_custom.height, false, 0 /* TODO */, false);
-   SETTING_UINT("custom_viewport_x",             (unsigned*)&settings->video_vp_custom.x, false, 0 /* TODO */, false);
-   SETTING_UINT("custom_viewport_y",             (unsigned*)&settings->video_vp_custom.y, false, 0 /* TODO */, false);
+   SETTING_UINT_HALF("custom_viewport_width",    &settings->video_vp_custom.dims, CFG_HALF_HI, false, 0 /* TODO */, false);
+   SETTING_UINT_HALF("custom_viewport_height",   &settings->video_vp_custom.dims, CFG_HALF_LO, false, 0 /* TODO */, false);
    SETTING_UINT("video_windowed_position_x",     &settings->uints.window_position_x,    true, 0, false);
    SETTING_UINT("video_windowed_position_y",     &settings->uints.window_position_y,    true, 0, false);
    SETTING_UINT("video_windowed_position_width", &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
@@ -4072,6 +4136,14 @@ static struct config_int_setting *populate_settings_int(
 
 
 
+   /* The custom viewport's origin. Signed, so it rides
+    * VIDEO_POS_PACK's layout in one word with its partner axis and
+    * the half accessors sign-extend it back out; a uint row would
+    * clamp a negative x to zero. */
+   SETTING_INT_HALF("custom_viewport_x", (int*)&settings->video_vp_custom.pos,
+         CFG_HALF_HI, false, 0, false);
+   SETTING_INT_HALF("custom_viewport_y", (int*)&settings->video_vp_custom.pos,
+         CFG_HALF_LO, false, 0, false);
    SETTING_INT("crt_switch_center_adjust",       &settings->ints.crt_switch_center_adjust, false, DEFAULT_CRT_SWITCH_CENTER_ADJUST, false);
    SETTING_INT("crt_switch_porch_adjust",        &settings->ints.crt_switch_porch_adjust, false, DEFAULT_CRT_SWITCH_PORCH_ADJUST, false);
    SETTING_INT("crt_switch_vertical_adjust",     &settings->ints.crt_switch_vertical_adjust, false, DEFAULT_CRT_SWITCH_VERTICAL_ADJUST, false);
@@ -5404,7 +5476,7 @@ void config_set_defaults(void *data, settings_t *target)
       for (i = 0; i < (unsigned)int_settings_size; i++)
       {
          if (int_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
-            *int_settings[i].ptr = int_settings[i].def;
+            cfg_int_set(&int_settings[i], int_settings[i].def);
       }
 
       free(int_settings);
@@ -5415,7 +5487,7 @@ void config_set_defaults(void *data, settings_t *target)
       for (i = 0; i < (unsigned)uint_settings_size; i++)
       {
          if (uint_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
-            *uint_settings[i].ptr = uint_settings[i].def;
+            cfg_uint_set(&uint_settings[i], uint_settings[i].def);
       }
 
       free(uint_settings);
@@ -5662,10 +5734,8 @@ void config_set_defaults(void *data, settings_t *target)
       settings->uints.input_mouse_index[i] = (unsigned)i;
    }
 
-   custom_vp->width  = 0;
-   custom_vp->height = 0;
-   custom_vp->x      = 0;
-   custom_vp->y      = 0;
+   custom_vp->dims   = 0;
+   custom_vp->pos    = 0;
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
@@ -6622,14 +6692,14 @@ static bool config_load_file(global_t *global,
    {
       int tmp = 0;
       if (config_get_int(conf, int_settings[i].ident, &tmp))
-         *int_settings[i].ptr = tmp;
+         cfg_int_set(&int_settings[i], tmp);
    }
 
    for (i = 0; i < (unsigned)uint_settings_size; i++)
    {
       int tmp = 0;
       if (config_get_int(conf, uint_settings[i].ident, &tmp))
-         *uint_settings[i].ptr = tmp;
+         cfg_uint_set(&uint_settings[i], (unsigned)tmp);
    }
 
    for (i = 0; i < (unsigned)size_settings_size; i++)
@@ -9003,11 +9073,12 @@ bool config_save_file(const char *path)
          {
             /* In minimal mode, only save if value differs from default */
             if (   !minimal
-                || *int_settings[i].ptr != *int_defaults[i].ptr)
+                || cfg_int_get(&int_settings[i])
+                      != cfg_int_get(&int_defaults[i]))
             {
                config_set_int(conf,
                      int_settings[i].ident,
-                     *int_settings[i].ptr);
+                     cfg_int_get(&int_settings[i]));
             }
             else
             {
@@ -9040,7 +9111,7 @@ bool config_save_file(const char *path)
                }
                else
                {
-                  default_val = *uint_defaults[i].ptr;
+                  default_val = cfg_uint_get(&uint_defaults[i]);
                   has_default = true;
                }
             }
@@ -9048,11 +9119,11 @@ bool config_save_file(const char *path)
             /* In minimal mode, only save if value differs from default */
             if (   !minimal
                 || !has_default
-                || *uint_settings[i].ptr != default_val)
+                || cfg_uint_get(&uint_settings[i]) != default_val)
             {
                config_set_int(conf,
                      uint_settings[i].ident,
-                     *uint_settings[i].ptr);
+                     cfg_uint_get(&uint_settings[i]));
             }
             else
             {
@@ -9560,12 +9631,13 @@ int8_t config_save_overrides(enum override_type type,
          if (string_starts_with(int_settings[i].ident, "state_slot"))
             continue;
 
-         if ((*int_settings[i].ptr) != (*int_overrides[i].ptr))
+         if (cfg_int_get(&int_settings[i])
+               != cfg_int_get(&int_overrides[i]))
          {
             config_set_int(conf, int_overrides[i].ident,
-                  (*int_overrides[i].ptr));
+                  cfg_int_get(&int_overrides[i]));
             RARCH_DBG("[Override] %s = \"%d\"\n",
-                  int_overrides[i].ident, *int_overrides[i].ptr);
+                  int_overrides[i].ident, cfg_int_get(&int_overrides[i]));
          }
       }
       for (i = 0; i < (unsigned)uint_settings_size; i++)
@@ -9573,12 +9645,14 @@ int8_t config_save_overrides(enum override_type type,
          if (string_starts_with(uint_settings[i].ident, "input_turbo"))
             continue;
 
-         if ((*uint_settings[i].ptr) != (*uint_overrides[i].ptr))
+         if (cfg_uint_get(&uint_settings[i])
+               != cfg_uint_get(&uint_overrides[i]))
          {
             config_set_int(conf, uint_overrides[i].ident,
-                  (*uint_overrides[i].ptr));
+                  cfg_uint_get(&uint_overrides[i]));
             RARCH_DBG("[Override] %s = \"%d\"\n",
-                  uint_overrides[i].ident, *uint_overrides[i].ptr);
+                  uint_overrides[i].ident,
+                  cfg_uint_get(&uint_overrides[i]));
          }
       }
       for (i = 0; i < (unsigned)size_settings_size; i++)
