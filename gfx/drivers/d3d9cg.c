@@ -1461,7 +1461,7 @@ static void d3d9_cg_font_render_msg(
    enum text_alignment text_align;
    int drop_x, drop_y;
    unsigned r, g, b, alpha;
-   D3DCOLOR color, color_dark;
+   D3DCOLOR color, color_dark = 0;
    struct font_line_metrics *line_metrics = NULL;
    float line_height;
    d3d9_cg_font_t *font  = (d3d9_cg_font_t*)data;
