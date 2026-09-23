@@ -89,8 +89,7 @@
 struct gl3_streamed_texture
 {
    GLuint tex;
-   unsigned width;
-   unsigned height;
+   unsigned dims;
 };
 
 typedef struct gl3
@@ -185,8 +184,7 @@ typedef struct gl3
        * likewise composites the menu in its own HDR pass. */
       GLuint   ui_fbo;
       GLuint   ui_tex;
-      unsigned width;
-      unsigned height;
+      unsigned dims;
       bool     active;
       /* The HDR settings this frame carried (video_frame_info_t), so the
        * thread that draws never reads what the menu writes */
@@ -4256,8 +4254,10 @@ error:
 
 static void gl3_update_cpu_texture(gl3_t *gl,
       struct gl3_streamed_texture *streamed,
-      const void *frame, unsigned width, unsigned height, unsigned pitch)
+      const void *frame, unsigned dims, unsigned pitch)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    if (gl->chain.active)
    {
       /* The input texture is expected to be square with a power of 2 size when not using Slang */
@@ -4265,9 +4265,10 @@ static void gl3_update_cpu_texture(gl3_t *gl,
       unsigned pow2_size = next_pow2(max);
       width = pow2_size;
       height = pow2_size;
+      dims  = VIDEO_SCALE_PACK(width, height);
    }
 
-   if (width != streamed->width || height != streamed->height)
+   if (dims != streamed->dims)
    {
       if (streamed->tex != 0)
          glDeleteTextures(1, &streamed->tex);
@@ -4280,8 +4281,7 @@ static void gl3_update_cpu_texture(gl3_t *gl,
                ? GL_RGBA8
                : GL_RGB565),
             width, height);
-      streamed->width = width;
-      streamed->height = height;
+      streamed->dims = dims;
 
       /* Both 32-bit source formats arrive with the red and blue channels
        * the other way round from what GL reads back out of the packed
@@ -4405,15 +4405,15 @@ static bool gl3_needs_pq_downconvert(gl3_t *gl)
    return gl->video_info.source_hdr10 && !gl->scrgb.active;
 }
 
-static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned width, unsigned height)
+static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned dims)
 {
    if (!gl->scrgb.active && !gl3_needs_pq_downconvert(gl))
       return 0;
 
-   if (     !gl->scrgb.fbo
-         || gl->scrgb.width  != width
-         || gl->scrgb.height != height)
+   if (!gl->scrgb.fbo || gl->scrgb.dims != dims)
    {
+      unsigned width  = VIDEO_SCALE_W(dims);
+      unsigned height = VIDEO_SCALE_H(dims);
       if (gl->scrgb.fbo)
          glDeleteFramebuffers(1, &gl->scrgb.fbo);
       if (gl->scrgb.tex)
@@ -4450,8 +4450,7 @@ static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned width, unsigned height)
          return 0;
       }
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
-      gl->scrgb.width  = width;
-      gl->scrgb.height = height;
+      gl->scrgb.dims   = dims;
 
       /* Sized and lifetimed with the content offscreen; only the PQ
        * path allocates it (SDR keeps the single-target behaviour and
@@ -4499,9 +4498,9 @@ static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned width, unsigned height)
  * separate UI layer, cleared to transparent once per frame here; the
  * encode pass composites it over the decoded content at its own
  * brightness. Otherwise it is the frame target, unchanged. */
-static GLuint gl3_ui_target_fbo(gl3_t *gl, unsigned width, unsigned height)
+static GLuint gl3_ui_target_fbo(gl3_t *gl, unsigned dims)
 {
-   GLuint fbo = gl3_frame_target_fbo(gl, width, height);
+   GLuint fbo = gl3_frame_target_fbo(gl, dims);
 
    if (gl->video_info.source_hdr10 && gl->scrgb.ui_fbo
          && !gl3_needs_pq_downconvert(gl))
@@ -4669,9 +4668,7 @@ static void gl3_renderchain_render(
    /* Render our FBO texture to back buffer (or, under scRGB output,
     * into the SDR offscreen the end-of-frame encode consumes). */
    glBindFramebuffer(GL_FRAMEBUFFER,
-         gl3_frame_target_fbo(gl,
-               VIDEO_SCALE_W(gl->video_dims),
-               VIDEO_SCALE_H(gl->video_dims)));
+         gl3_frame_target_fbo(gl, gl->video_dims));
 
    gl->chain.shader->use(gl, gl->chain.shader_data,
          gl->chain.num_fbo_passes + 1, true);
@@ -4873,12 +4870,10 @@ static bool gl3_frame(void *data, const void *frame,
    {
       if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
       {
-         streamed->width    = frame_width;
-         streamed->height   = frame_height;
+         streamed->dims     = dims;
       }
       else
-         gl3_update_cpu_texture(gl, streamed, frame,
-               frame_width, frame_height, pitch);
+         gl3_update_cpu_texture(gl, streamed, frame, dims, pitch);
    }
 
    if (gl->flags & GL3_FLAG_SHOULD_RESIZE)
@@ -4952,10 +4947,8 @@ static bool gl3_frame(void *data, const void *frame,
    }
 
    texture.image            = 0;
-   texture.width            = streamed->width;
-   texture.height           = streamed->height;
-   texture.padded_width     = 0;
-   texture.padded_height    = 0;
+   texture.dims             = streamed->dims;
+   texture.padded_dims      = 0;
    texture.format           = 0;
 
    if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
@@ -4963,13 +4956,12 @@ static bool gl3_frame(void *data, const void *frame,
       texture.image         = gl->hw_render_texture;
       texture.format        = gl->video_info.source_hdr10
          ? GL_RGB10_A2 : GL_RGBA8;
-      texture.padded_width  = VIDEO_SCALE_W(gl->hw_render_max_dims);
-      texture.padded_height = VIDEO_SCALE_H(gl->hw_render_max_dims);
+      texture.padded_dims   = gl->hw_render_max_dims;
 
-      if (texture.width == 0)
-         texture.width      = 1;
-      if (texture.height == 0)
-         texture.height     = 1;
+      if (!VIDEO_SCALE_W(texture.dims))
+         VIDEO_SCALE_PUT_W(texture.dims, 1);
+      if (!VIDEO_SCALE_H(texture.dims))
+         VIDEO_SCALE_PUT_H(texture.dims, 1);
 
       /* Scissor is global context state, so a core that returns
        * with the test still enabled clips every frontend draw that
@@ -4985,8 +4977,7 @@ static bool gl3_frame(void *data, const void *frame,
       texture.format        = gl->video_info.source_10bit
          ? GL_RGB10_A2
          : (gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565);
-      texture.padded_width  = streamed->width;
-      texture.padded_height = streamed->height;
+      texture.padded_dims   = streamed->dims;
    }
 
    /* No point regenerating mipmaps
@@ -5012,7 +5003,7 @@ static bool gl3_frame(void *data, const void *frame,
          if (gl->chain.num_fbo_passes == 0)
          {
             glBindFramebuffer(GL_FRAMEBUFFER,
-                  gl3_frame_target_fbo(gl, width, height));
+                  gl3_frame_target_fbo(gl, video_info->dims));
             gl3_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
          }
 
@@ -5194,7 +5185,7 @@ static bool gl3_frame(void *data, const void *frame,
             &gl->filter_chain_vp);
 
       glBindFramebuffer(GL_FRAMEBUFFER,
-            gl3_frame_target_fbo(gl, width, height));
+            gl3_frame_target_fbo(gl, video_info->dims));
       glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       glClear(GL_COLOR_BUFFER_BIT);
       gl3_filter_chain_build_viewport_pass(filter_chain,
@@ -5218,7 +5209,7 @@ static bool gl3_frame(void *data, const void *frame,
     * invariant without chasing every restore site. No-op in SDR. */
    if (gl->scrgb.active)
       glBindFramebuffer(GL_FRAMEBUFFER,
-            gl3_ui_target_fbo(gl, width, height));
+            gl3_ui_target_fbo(gl, video_info->dims));
    else if (gl3_needs_pq_downconvert(gl))
    {
       /* Convert the PQ frame to SDR now, straight into the backbuffer,

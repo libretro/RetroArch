@@ -732,8 +732,7 @@ static void gl3_static_texture_init(struct gl3_static_texture *tex,
    texture->filter            = GLSLANG_FILTER_CHAIN_NEAREST;
    texture->mip_filter        = GLSLANG_FILTER_CHAIN_NEAREST;
    texture->address           = address;
-   texture->texture.width     = width;
-   texture->texture.height    = height;
+   texture->texture.dims      = VIDEO_SCALE_PACK(width, height);
    texture->texture.format    = 0;
    texture->texture.image     = image_;
 
@@ -893,9 +892,9 @@ static struct gl3_framebuffer *gl3_framebuffer_new(GLenum format_,
 }
 
 static void gl3_framebuffer_set_size(struct gl3_framebuffer *fb,
-      unsigned width_, unsigned height_, GLenum format_)
+      unsigned dims, GLenum format_)
 {
-   fb->size_dims   = VIDEO_SCALE_PACK(width_, height_);
+   fb->size_dims   = dims;
    if (format_ != 0)
       fb->format = format_;
 
@@ -1135,11 +1134,10 @@ static void gl3_pass_reflect_parameter_array(struct gl3_pass *pass, const char *
 static bool gl3_pass_init_pipeline(struct gl3_pass *pass);
 static void gl3_pass_set_pass_info(struct gl3_pass *pass, const gl3_filter_chain_pass_info info);
 static unsigned gl3_pass_get_output_size(struct gl3_pass *pass,
-      unsigned original_width, unsigned original_height,
-      unsigned source_width, unsigned source_height);
+      unsigned original_dims, unsigned source_dims);
 static void gl3_pass_end_frame(struct gl3_pass *pass);
 static void gl3_pass_build_semantic_vec4(struct gl3_pass *pass, uint8_t *data, enum slang_semantic semantic,
-      unsigned width, unsigned height);
+      unsigned dims);
 static void gl3_pass_build_semantic_parameter(struct gl3_pass *pass, uint8_t *data, unsigned index, float value);
 static void gl3_pass_build_semantic_uint(struct gl3_pass *pass, uint8_t *data, enum slang_semantic semantic,
                                uint32_t value);
@@ -1152,9 +1150,9 @@ static void gl3_pass_build_semantic_vec3(struct gl3_pass *pass, uint8_t *data, e
 static void gl3_pass_build_semantic_texture(struct gl3_pass *pass, uint8_t *buffer,
       enum slang_texture_semantic semantic, const gl3_texture_t *texture);
 static void gl3_pass_build_semantic_texture_array_vec4(struct gl3_pass *pass, uint8_t *data, enum slang_texture_semantic semantic,
-      unsigned index, unsigned width, unsigned height);
+      unsigned index, unsigned dims);
 static void gl3_pass_build_semantic_texture_vec4(struct gl3_pass *pass, uint8_t *data, enum slang_texture_semantic semantic,
-      unsigned width, unsigned height);
+      unsigned dims);
 static bool gl3_pass_init_feedback(struct gl3_pass *pass);
 static void gl3_pass_set_shader(struct gl3_pass *pass, GLenum stage,
       const uint32_t *spirv,
@@ -1681,19 +1679,18 @@ static void gl3_pass_set_pass_info(struct gl3_pass *pass, const gl3_filter_chain
  * layout. The two axes scale independently of each other, so they are
  * worked out separately and joined only on the way out. */
 static unsigned gl3_pass_get_output_size(struct gl3_pass *pass,
-      unsigned original_width, unsigned original_height,
-      unsigned source_width, unsigned source_height)
+      unsigned original_dims, unsigned source_dims)
 {
    float width  = 0.0f;
    float height = 0.0f;
    switch (pass->pass_info.scale_type_x)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         width = (float)(original_width) * pass->pass_info.scale_x;
+         width = (float)VIDEO_SCALE_W(original_dims) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         width = (float)(source_width) * pass->pass_info.scale_x;
+         width = (float)VIDEO_SCALE_W(source_dims) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
@@ -1711,11 +1708,11 @@ static unsigned gl3_pass_get_output_size(struct gl3_pass *pass,
    switch (pass->pass_info.scale_type_y)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         height = (float)(original_height) * pass->pass_info.scale_y;
+         height = (float)VIDEO_SCALE_H(original_dims) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         height = (float)(source_height) * pass->pass_info.scale_y;
+         height = (float)VIDEO_SCALE_H(source_dims) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
@@ -1744,8 +1741,10 @@ static void gl3_pass_end_frame(struct gl3_pass *pass)
 }
 
 static void gl3_pass_build_semantic_vec4(struct gl3_pass *pass, uint8_t *data, enum slang_semantic semantic,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    slang_semantic_meta *refl = (slang_semantic_meta*)
       &pass->reflection.semantics[semantic];
 
@@ -1965,13 +1964,15 @@ static void gl3_pass_build_semantic_texture(struct gl3_pass *pass, uint8_t *buff
       enum slang_texture_semantic semantic, const gl3_texture_t *texture)
 {
    gl3_pass_build_semantic_texture_vec4(pass, buffer, semantic,
-         texture->texture.width, texture->texture.height);
+         texture->texture.dims);
    gl3_pass_set_semantic_texture(pass, semantic, texture);
 }
 
 static void gl3_pass_build_semantic_texture_array_vec4(struct gl3_pass *pass, uint8_t *data, enum slang_texture_semantic semantic,
-      unsigned index, unsigned width, unsigned height)
+      unsigned index, unsigned dims)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    const slang_texture_semantic_array *arr =
       &pass->reflection.semantic_textures[semantic];
    const slang_texture_semantic_meta *refl;
@@ -2029,9 +2030,9 @@ static void gl3_pass_build_semantic_texture_array_vec4(struct gl3_pass *pass, ui
 }
 
 static void gl3_pass_build_semantic_texture_vec4(struct gl3_pass *pass, uint8_t *data, enum slang_texture_semantic semantic,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
-   gl3_pass_build_semantic_texture_array_vec4(pass, data, semantic, 0, width, height);
+   gl3_pass_build_semantic_texture_array_vec4(pass, data, semantic, 0, dims);
 }
 
 static bool gl3_pass_init_feedback(struct gl3_pass *pass)
@@ -2146,7 +2147,7 @@ static void gl3_pass_build_semantic_texture_array(struct gl3_pass *pass, uint8_t
       enum slang_texture_semantic semantic, unsigned index, const gl3_texture_t *texture)
 {
    gl3_pass_build_semantic_texture_array_vec4(pass, buffer, semantic, index,
-         texture->texture.width, texture->texture.height);
+         texture->texture.dims);
 
    if (index < pass->reflection.semantic_textures[semantic].size &&
          pass->reflection.semantic_textures[semantic].data[index].texture)
@@ -2194,11 +2195,9 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
 
    /* Output information */
    gl3_pass_build_semantic_vec4(pass, buffer, SLANG_SEMANTIC_OUTPUT,
-                       VIDEO_SCALE_W(pass->current_framebuffer_size_dims),
-                       VIDEO_SCALE_H(pass->current_framebuffer_size_dims));
+                       pass->current_framebuffer_size_dims);
    gl3_pass_build_semantic_vec4(pass, buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
-                       (unsigned)(VIDEO_SCALE_W(pass->curr_vp.dims)),
-                       (unsigned)(VIDEO_SCALE_H(pass->curr_vp.dims)));
+                       pass->curr_vp.dims);
 
    gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_FRAME_COUNT,
                        pass->frame_count_period
@@ -2297,16 +2296,14 @@ static void gl3_pass_build_commands(struct gl3_pass *pass,
 
    pass->curr_vp    = *vp;
    size_dims        = gl3_pass_get_output_size(pass,
-         original->texture.width, original->texture.height,
-         source->texture.width, source->texture.height);
+         original->texture.dims, source->texture.dims);
 
    /* gl3_framebuffer_new() only reserves the name; nothing is attached
     * until a set_size. Build an unbuilt one even at the 1x1 seed size. */
    if (     pass->framebuffer
          && (  !pass->framebuffer->complete
             || size_dims != pass->framebuffer->size_dims))
-      gl3_framebuffer_set_size(pass->framebuffer,
-            VIDEO_SCALE_W(size_dims), VIDEO_SCALE_H(size_dims), 0);
+      gl3_framebuffer_set_size(pass->framebuffer, size_dims, 0);
 
    pass->current_framebuffer_size_dims = size_dims;
 
@@ -2615,10 +2612,7 @@ static void gl3_chain_update_history_info(struct gl3_filter_chain *chain)
          continue;
 
       source->texture.image  = chain->original_history[i]->image;
-      source->texture.width  =
-            VIDEO_SCALE_W(chain->original_history[i]->size_dims);
-      source->texture.height =
-            VIDEO_SCALE_H(chain->original_history[i]->size_dims);
+      source->texture.dims   = chain->original_history[i]->size_dims;
       source->filter         = gl3_pass_get_source_filter(chain->passes[0]);
       source->mip_filter     = gl3_pass_get_mip_filter(chain->passes[0]);
       source->address        = gl3_pass_get_address_mode(chain->passes[0]);
@@ -2642,8 +2636,7 @@ static void gl3_chain_update_feedback_info(struct gl3_filter_chain *chain)
          continue;
 
       source->texture.image  = fb->image;
-      source->texture.width  = VIDEO_SCALE_W(fb->size_dims);
-      source->texture.height = VIDEO_SCALE_H(fb->size_dims);
+      source->texture.dims   = fb->size_dims;
       source->filter         = gl3_pass_get_source_filter(chain->passes[i]);
       source->mip_filter     = gl3_pass_get_mip_filter(chain->passes[i]);
       source->address        = gl3_pass_get_address_mode(chain->passes[i]);
@@ -2683,8 +2676,7 @@ static void gl3_chain_build_offscreen_passes(struct gl3_filter_chain *chain, con
       fb = gl3_pass_get_framebuffer(chain->passes[i]);
 
       source.texture.image             = fb->image;
-      source.texture.width             = VIDEO_SCALE_W(fb->size_dims);
-      source.texture.height            = VIDEO_SCALE_H(fb->size_dims);
+      source.texture.dims              = fb->size_dims;
       source.filter                    = gl3_pass_get_source_filter(chain->passes[i + 1]);
       source.mip_filter                = gl3_pass_get_mip_filter(chain->passes[i + 1]);
       source.address                   = gl3_pass_get_address_mode(chain->passes[i + 1]);
@@ -2707,12 +2699,10 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
          chain->original_history[chain->num_original_history - 1];
       chain->original_history[chain->num_original_history - 1] = NULL;
 
-      if (     VIDEO_SCALE_PACK(chain->input_texture.width,
-                  chain->input_texture.height) != tmp->size_dims
+      if (     chain->input_texture.dims != tmp->size_dims
             || (   chain->input_texture.format != 0
                 && chain->input_texture.format != tmp->format))
-         gl3_framebuffer_set_size(tmp,
-               chain->input_texture.width, chain->input_texture.height,
+         gl3_framebuffer_set_size(tmp, chain->input_texture.dims,
                chain->input_texture.format);
 
       if (tmp->complete)
@@ -2763,8 +2753,7 @@ static void gl3_chain_build_viewport_pass(struct gl3_filter_chain *chain, const 
       const struct gl3_framebuffer *fb =
          gl3_pass_get_framebuffer(chain->passes[chain->num_passes - 2]);
       source.texture.image           = fb->image;
-      source.texture.width           = VIDEO_SCALE_W(fb->size_dims);
-      source.texture.height          = VIDEO_SCALE_H(fb->size_dims);
+      source.texture.dims            = fb->size_dims;
       source.filter                  = gl3_pass_get_source_filter(chain->passes[chain->num_passes - 1]);
       source.mip_filter              = gl3_pass_get_mip_filter(chain->passes[chain->num_passes - 1]);
       source.address                 = gl3_pass_get_address_mode(chain->passes[chain->num_passes - 1]);
@@ -3365,23 +3354,20 @@ static void gl3_chain_set_input_texture(struct gl3_filter_chain *chain, const gl
 
    /* Need a copy to remove padding.
     * GL HW render interface in libretro is kinda garbage now ... */
-   if (chain->input_texture.padded_width  != chain->input_texture.width ||
-       chain->input_texture.padded_height != chain->input_texture.height)
+   if (chain->input_texture.padded_dims != chain->input_texture.dims)
    {
       if (!chain->copy_framebuffer)
          chain->copy_framebuffer = gl3_framebuffer_new(texture.format, 1);
       if (!chain->copy_framebuffer)
          return;
 
-      if (     VIDEO_SCALE_PACK(chain->input_texture.width,
-                  chain->input_texture.height)
+      if (     chain->input_texture.dims
                      != chain->copy_framebuffer->size_dims
             || (   chain->input_texture.format != 0
                 && chain->input_texture.format
                      != chain->copy_framebuffer->format))
          gl3_framebuffer_set_size(chain->copy_framebuffer,
-               chain->input_texture.width, chain->input_texture.height,
-               chain->input_texture.format);
+               chain->input_texture.dims, chain->input_texture.format);
 
       if (chain->copy_framebuffer->complete)
          gl3_framebuffer_copy_partial(
@@ -3391,10 +3377,10 @@ static void gl3_chain_set_input_texture(struct gl3_filter_chain *chain, const gl
                VIDEO_SCALE_W(chain->copy_framebuffer->size_dims),
                VIDEO_SCALE_H(chain->copy_framebuffer->size_dims),
                chain->input_texture.image,
-               (float)(chain->input_texture.width)
-               / chain->input_texture.padded_width,
-               (float)(chain->input_texture.height)
-               / chain->input_texture.padded_height);
+               (float)VIDEO_SCALE_W(chain->input_texture.dims)
+               / VIDEO_SCALE_W(chain->input_texture.padded_dims),
+               (float)VIDEO_SCALE_H(chain->input_texture.dims)
+               / VIDEO_SCALE_H(chain->input_texture.padded_dims));
       chain->input_texture.image = chain->copy_framebuffer->image;
    }
 }

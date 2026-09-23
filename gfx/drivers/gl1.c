@@ -284,8 +284,7 @@ typedef struct gl1
       GLint  loc_mode;
       GLint  loc_ui_nits;
       gl1_scrgb_glActiveTexture_t ActiveTexture;
-      unsigned width;
-      unsigned height;
+      unsigned dims;
       bool   active;
       /* The HDR settings this frame carried (video_frame_info_t), so the
        * thread that draws never reads what the menu writes */
@@ -2102,16 +2101,15 @@ static bool gl1_scrgb_init_program(gl1_t *gl1)
    return true;
 }
 
-static GLuint gl1_frame_target_fbo(gl1_t *gl1,
-      unsigned width, unsigned height)
+static GLuint gl1_frame_target_fbo(gl1_t *gl1, unsigned dims)
 {
    if (!gl1->scrgb.active)
       return 0;
 
-   if (     !gl1->scrgb.fbo
-         || gl1->scrgb.width  != width
-         || gl1->scrgb.height != height)
+   if (!gl1->scrgb.fbo || gl1->scrgb.dims != dims)
    {
+      unsigned width  = VIDEO_SCALE_W(dims);
+      unsigned height = VIDEO_SCALE_H(dims);
       if (gl1->scrgb.fbo)
          gl1->scrgb.DeleteFramebuffers(1, &gl1->scrgb.fbo);
       if (gl1->scrgb.tex)
@@ -2148,8 +2146,7 @@ static GLuint gl1_frame_target_fbo(gl1_t *gl1,
          return 0;
       }
       gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
-      gl1->scrgb.width  = width;
-      gl1->scrgb.height = height;
+      gl1->scrgb.dims   = dims;
 
       /* UI layer, sized and lifetimed with the content offscreen;
        * only the PQ composite needs it. */
@@ -2209,8 +2206,9 @@ static bool gl1_frame(void *data, const void *frame,
    unsigned bits                    = gl1->frame_bits;
    unsigned pot_width               = 0;
    unsigned pot_height              = 0;
-   unsigned video_width             = VIDEO_SCALE_W(video_info->dims);
-   unsigned video_height            = VIDEO_SCALE_H(video_info->dims);
+   unsigned video_dims              = video_info->dims;
+   unsigned video_width             = VIDEO_SCALE_W(video_dims);
+   unsigned video_height            = VIDEO_SCALE_H(video_dims);
    int bfi_light_frames;
    unsigned n;
 #ifdef HAVE_MENU
@@ -2259,7 +2257,7 @@ static bool gl1_frame(void *data, const void *frame,
     * FBOs, so this single bind holds for the entire frame. */
    if (gl1->scrgb.active)
       gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER,
-            gl1_frame_target_fbo(gl1, video_width, video_height));
+            gl1_frame_target_fbo(gl1, video_dims));
 #endif
 
    if (     !frame

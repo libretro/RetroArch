@@ -4023,8 +4023,7 @@ static GLuint gl2_frame_target_fbo(gl2_t *gl)
       return 0;
 
    if (     !gl->scrgb.fbo
-         || gl->scrgb.width  != VIDEO_SCALE_W(gl->video_dims)
-         || gl->scrgb.height != VIDEO_SCALE_H(gl->video_dims))
+         || gl->scrgb.dims != gl->video_dims)
    {
       if (gl->scrgb.fbo)
          gl2_delete_fb(1, &gl->scrgb.fbo);
@@ -4066,8 +4065,7 @@ static GLuint gl2_frame_target_fbo(gl2_t *gl)
          return 0;
       }
       gl2_bind_fb(0);
-      gl->scrgb.width  = VIDEO_SCALE_W(gl->video_dims);
-      gl->scrgb.height = VIDEO_SCALE_H(gl->video_dims);
+      gl->scrgb.dims   = gl->video_dims;
 
       /* UI layer, sized and lifetimed with the content offscreen.
        * Only the scRGB PQ composite needs it; the downconvert path
