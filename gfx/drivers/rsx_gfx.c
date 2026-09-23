@@ -2280,10 +2280,12 @@ static void rsx_update_screen(rsx_t* gcm)
 }
 
 static bool rsx_frame(void* data, const void* frame,
-      unsigned width, unsigned height,
+      unsigned dims,
       uint64_t frame_count,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    rsx_viewport_t vp;
    rsx_t *gcm                       = (rsx_t*)data;
 #ifdef HAVE_MENU

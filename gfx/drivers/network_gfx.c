@@ -175,9 +175,11 @@ try_connect:
 }
 
 static bool network_gfx_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    const void *frame_to_copy = frame;
    unsigned width            = 0;
    unsigned height           = 0;

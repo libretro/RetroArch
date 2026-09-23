@@ -358,10 +358,12 @@ static void sdl_gfx_check_window(sdl_video_t *vid)
    }
 }
 
-static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+static bool sdl_gfx_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    char title[128];
    sdl_video_t   *vid = (sdl_video_t*)data;
 #ifdef HAVE_MENU

@@ -1070,9 +1070,11 @@ static void sdl_rs90_blit_frame32(sdl_rs90_video_t *vid,
 }
 
 static bool sdl_rs90_gfx_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    sdl_rs90_video_t* vid = (sdl_rs90_video_t*)data;
 #ifdef HAVE_MENU
    bool menu_is_alive    = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;

@@ -863,9 +863,11 @@ static void *ps2_init(const video_info_t *video,
 }
 
 static bool ps2_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    ps2_video_t *ps2               = (ps2_video_t *)data;
    GSGLOBAL *gsGlobal             = ps2->gsGlobal;
    struct font_params *osd_params = (struct font_params *)&video_info->osd_stat_params;

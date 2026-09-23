@@ -1126,8 +1126,8 @@ static video_driver_t reentrant_driver;
 static const video_driver_t *reentrant_inner;
 static unsigned reentrant_frames;
 
-static bool reentrant_frame(void *data, const void *frame, unsigned w,
-      unsigned h, uint64_t count, unsigned pitch, const char *msg,
+static bool reentrant_frame(void *data, const void *frame,
+      unsigned dims, uint64_t count, unsigned pitch, const char *msg,
       video_frame_info_t *info)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
@@ -1138,7 +1138,7 @@ static bool reentrant_frame(void *data, const void *frame, unsigned w,
    /* As ozone/xmb do: through the frontend's current driver, which is
     * the wrapper, from the video thread. */
    if (cur && cur->set_viewport)
-      cur->set_viewport(video_st->data, VIDEO_SCALE_PACK(w, h), false, true);
+      cur->set_viewport(video_st->data, dims, false, true);
    if (cur && cur->set_nonblock_state)
       cur->set_nonblock_state(video_st->data, false, false, 1);
    if (cur && cur->poke_interface)
@@ -1150,7 +1150,7 @@ static bool reentrant_frame(void *data, const void *frame, unsigned w,
    if (poke && poke->get_refresh_rate)
       (void)poke->get_refresh_rate(video_st->data);
 
-   ret = reentrant_inner->frame(data, frame, w, h, count, pitch, msg, info);
+   ret = reentrant_inner->frame(data, frame, dims, count, pitch, msg, info);
    reentrant_frames++;
    return ret;
 }
@@ -1224,7 +1224,7 @@ static unsigned             wintick_alive_calls;
 static uint64_t             wintick_main_thread;
 
 static bool wintick_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    uint64_t self = (uint64_t)sthread_get_current_thread_id();
@@ -1237,7 +1237,7 @@ static bool wintick_frame(void *data, const void *frame,
       wintick_thread_mismatch++;
    wintick_frames++;
 
-   return wintick_inner->frame(data, frame, width, height,
+   return wintick_inner->frame(data, frame, dims,
          frame_count, pitch, msg, video_info);
 }
 
@@ -1421,8 +1421,8 @@ static retro_atomic_int_t menutex_torn;
 static retro_atomic_int_t menutex_frames;
 static bool               menutex_slow;
 
-static bool menutex_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t count, unsigned pitch, const char *msg,
+static bool menutex_frame(void *data, const void *frame,
+      unsigned dims, uint64_t count, unsigned pitch, const char *msg,
       video_frame_info_t *info)
 {
    if (menutex_slow)
@@ -1431,7 +1431,7 @@ static bool menutex_frame(void *data, const void *frame, unsigned width,
       retro_sleep(MENUTEX_RENDER_MS);
    }
    if (menutex_inner->frame)
-      return menutex_inner->frame(data, frame, width, height, count,
+      return menutex_inner->frame(data, frame, dims, count,
             pitch, msg, info);
    return true;
 }
@@ -1862,7 +1862,7 @@ static retro_time_t vslane_grid_after(retro_time_t t)
 }
 
 static bool vslane_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    retro_time_t now  = cpu_features_get_time_usec();
@@ -1880,7 +1880,7 @@ static bool vslane_frame(void *data, const void *frame,
    vslane_next_slot = slot + vslane_period;
    vslane_last_out  = slot;
    vslane_presents++;
-   return vslane_inner->frame(data, frame, width, height, frame_count,
+   return vslane_inner->frame(data, frame, dims, frame_count,
          pitch, msg, video_info);
 }
 
@@ -2201,7 +2201,7 @@ static retro_atomic_size_t   rslane_stage;
 #define RSLANE_SET(v)  retro_atomic_store_release_size(&rslane_stage, (v))
 
 static bool rslane_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    if (RSLANE_GET() == 1)
@@ -2222,7 +2222,7 @@ static bool rslane_frame(void *data, const void *frame,
       rslane_seen_h = VIDEO_SCALE_H(video_info->dims);
       rslane_seen   = true;
    }
-   return rslane_inner->frame(data, frame, width, height, frame_count,
+   return rslane_inner->frame(data, frame, dims, frame_count,
          pitch, msg, video_info);
 }
 
@@ -2310,7 +2310,7 @@ static retro_atomic_size_t   duplane_count;
 static retro_atomic_size_t   duplane_on;
 
 static bool duplane_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    if (retro_atomic_load_acquire_size(&duplane_on))
@@ -2323,7 +2323,7 @@ static bool duplane_frame(void *data, const void *frame,
       }
    }
    /* The inner driver is not given the test pattern to draw. */
-   return duplane_inner->frame(data, NULL, width, height, frame_count,
+   return duplane_inner->frame(data, NULL, dims, frame_count,
          pitch, msg, video_info);
 }
 

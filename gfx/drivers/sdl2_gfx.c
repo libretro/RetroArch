@@ -78,7 +78,8 @@ static INLINE void sdl_tex_zero(sdl2_tex_t *t)
       SDL_DestroyTexture(t->tex);
 
    t->tex = NULL;
-   t->w = t->h = t->pitch = 0;
+   t->dims  = 0;
+   t->pitch = 0;
 }
 
 static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
@@ -140,8 +141,7 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
 
    if (vid->font.tex)
    {
-      vid->font.w      = atlas->width;
-      vid->font.h      = atlas->height;
+      vid->font.dims   = VIDEO_SCALE_PACK(atlas->width, atlas->height);
       vid->font.active = true;
 
       SDL_SetTextureBlendMode(vid->font.tex, SDL_BLENDMODE_ADD);
@@ -278,11 +278,11 @@ static void sdl_refresh_viewport(sdl2_video_t *vid)
 }
 
 static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
-      unsigned width, unsigned height, unsigned pitch)
+      unsigned dims, unsigned pitch)
 {
    sdl2_tex_t *target = menu ? &vid->menu : &vid->frame;
 
-   if (!target->tex || target->w != width || target->h != height
+   if (!target->tex || target->dims != dims
        || target->rgb32 != rgb32 || target->pitch != pitch)
    {
       unsigned format;
@@ -299,7 +299,8 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
                               SDL_HINT_OVERRIDE);
 
       target->tex = SDL_CreateTexture(vid->renderer, format,
-                                      SDL_TEXTUREACCESS_STREAMING, width, height);
+                                      SDL_TEXTUREACCESS_STREAMING,
+                                      VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
 
       if (!target->tex)
       {
@@ -311,8 +312,7 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
       if (menu)
          SDL_SetTextureBlendMode(target->tex, SDL_BLENDMODE_BLEND);
 
-      target->w = width;
-      target->h = height;
+      target->dims  = dims;
       target->pitch = pitch;
       target->rgb32 = rgb32;
 
@@ -530,8 +530,8 @@ static void check_window(sdl2_video_t *vid)
    }
 }
 
-static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+static bool sdl2_gfx_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    char title[128];
@@ -546,7 +546,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
    if (frame)
    {
       SDL_RenderClear(vid->renderer);
-      sdl_refresh_input_size(vid, false, vid->video.rgb32, width, height, pitch);
+      sdl_refresh_input_size(vid, false, vid->video.rgb32, dims, pitch);
       SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
    }
 
@@ -890,7 +890,7 @@ static void sdl2_poke_set_texture_frame(void *data,
    {
       sdl2_video_t *vid = (sdl2_video_t*)data;
 
-      sdl_refresh_input_size(vid, true, rgb32, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+      sdl_refresh_input_size(vid, true, rgb32, dims,
             VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2));
 
       SDL_UpdateTexture(vid->menu.tex, NULL, frame, (int)vid->menu.pitch);

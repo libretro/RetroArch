@@ -564,10 +564,12 @@ static void oga_calc_bounds(oga_rect_t* r, int dw, int dh, int sw, int sh, float
    }
 }
 
-static bool oga_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+static bool oga_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    oga_video_t *vid            = (oga_video_t*)data;
    oga_framebuf_t* page        = vid->pages[vid->cur_page];
    oga_surface_t *page_surface = page->surface;

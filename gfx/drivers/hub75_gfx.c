@@ -915,9 +915,11 @@ static void hub75_render(hub75_t *hub75, const void *frame,
 }
 
 static bool hub75_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    hub75_t *hub75 = (hub75_t*)data;
    const void *source = frame;
    unsigned width;
@@ -950,7 +952,7 @@ static bool hub75_frame(void *data, const void *frame,
 
    if (frame_width > 4 && frame_height > 4)
    {
-      hub75->frame_dims   = VIDEO_SCALE_PACK(frame_width, frame_height);
+      hub75->frame_dims   = dims;
       hub75->frame_pitch  = pitch;
    }
 

@@ -35,8 +35,7 @@ typedef struct sdl2_tex
 {
    SDL_Texture *tex;
 
-   unsigned w;
-   unsigned h;
+   unsigned dims;
    size_t pitch;
    bool active;
    bool rgb32;

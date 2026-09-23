@@ -570,9 +570,11 @@ static void *psp_init(const video_info_t *video,
 }
 
 static bool psp_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    unsigned dest_stride    = 0;
    bool     rows_at_a_time  = false;
    psp1_video_t *psp  = (psp1_video_t*)data;

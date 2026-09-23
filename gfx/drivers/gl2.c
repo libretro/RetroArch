@@ -1988,13 +1988,11 @@ static void gl2_create_fbo_textures(gl2_t *gl,
 static void gl2_renderchain_recompute_pass_sizes(
       gl2_t *gl,
       gl2_renderchain_data_t *chain,
-      unsigned width, unsigned height,
-      unsigned vp_width, unsigned vp_height)
+      unsigned last_dims, unsigned vp_dims)
 {
    size_t i;
    bool size_modified      = false;
    GLint max_size          = 0;
-   unsigned last_dims      = VIDEO_SCALE_PACK(width, height);
    unsigned last_max_dims  = gl->tex_dims;
 
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
@@ -2028,9 +2026,9 @@ static void gl2_renderchain_recompute_pass_sizes(
 
          case RARCH_SCALE_VIEWPORT:
             if (gl->rotation % 180 == 90)
-               img_w  = max_img_w = fbo_scale->scale_x * vp_height;
+               img_w  = max_img_w = fbo_scale->scale_x * VIDEO_SCALE_H(vp_dims);
             else
-               img_w  = max_img_w = fbo_scale->scale_x * vp_width;
+               img_w  = max_img_w = fbo_scale->scale_x * VIDEO_SCALE_W(vp_dims);
             break;
       }
 
@@ -2047,9 +2045,9 @@ static void gl2_renderchain_recompute_pass_sizes(
 
          case RARCH_SCALE_VIEWPORT:
             if (gl->rotation % 180 == 90)
-               img_h  = max_img_h = fbo_scale->scale_y * vp_width;
+               img_h  = max_img_h = fbo_scale->scale_y * VIDEO_SCALE_W(vp_dims);
             else
-               img_h  = max_img_h = fbo_scale->scale_y * vp_height;
+               img_h  = max_img_h = fbo_scale->scale_y * VIDEO_SCALE_H(vp_dims);
             break;
       }
 
@@ -2121,11 +2119,9 @@ static void gl2_renderchain_start_render(gl2_t *gl,
 /* Set up render to texture. */
 static void gl2_renderchain_init(
       gl2_t *gl,
-      gl2_renderchain_data_t *chain,
-      unsigned fbo_width, unsigned fbo_height)
+      gl2_renderchain_data_t *chain)
 {
    int i;
-   unsigned width, height;
    video_shader_ctx_scale_t scaler;
    unsigned shader_info_num;
    struct gfx_fbo_scale scale, scale_last;
@@ -2134,9 +2130,6 @@ static void gl2_renderchain_init(
 
    if (!gl || shader_info_num == 0)
       return;
-
-   width        = VIDEO_SCALE_W(gl->video_dims);
-   height       = VIDEO_SCALE_H(gl->video_dims);
 
    scale.flags         = 0;
    scaler.scale        = &scale;
@@ -2189,8 +2182,8 @@ static void gl2_renderchain_init(
       }
    }
 
-   gl2_renderchain_recompute_pass_sizes(gl,
-         chain, fbo_width, fbo_height, width, height);
+   gl2_renderchain_recompute_pass_sizes(gl, chain, gl->tex_dims,
+         gl->video_dims);
 
    for (i = 0; i < chain->fbo_pass; i++)
    {
@@ -4296,11 +4289,13 @@ static retro_time_t gl2_get_last_present_time(void *data)
 }
 
 static bool gl2_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height,
+      unsigned dims,
       uint64_t frame_count,
       unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    video_shader_ctx_params_t params;
    struct video_tex_info feedback_info;
    gl2_t                            *gl = (gl2_t*)data;
@@ -4383,10 +4378,8 @@ static bool gl2_frame(void *data, const void *frame,
    /* Render to texture in first pass. */
    if (gl->flags & GL2_FLAG_FBO_INITED)
    {
-      gl2_renderchain_recompute_pass_sizes(
-            gl, chain,
-            frame_width, frame_height,
-            VIDEO_SCALE_W(gl->out_vp_dims), VIDEO_SCALE_H(gl->out_vp_dims));
+      gl2_renderchain_recompute_pass_sizes(gl, chain, dims,
+            gl->out_vp_dims);
 
       gl2_renderchain_start_render(gl, chain, video_scale_integer);
    }
@@ -4546,7 +4539,7 @@ static bool gl2_frame(void *data, const void *frame,
    glClear(GL_COLOR_BUFFER_BIT);
 
    params.vp_dims          = gl->out_vp_dims;
-   params.dims             = VIDEO_SCALE_PACK(frame_width, frame_height);
+   params.dims             = dims;
    params.tex_dims         = gl->tex_dims;
    params.out_dims         = gl->vp.dims;
    params.frame_counter    = (unsigned int)frame_count;
@@ -4808,7 +4801,7 @@ static bool gl2_frame(void *data, const void *frame,
 
          while (bfi_light_frames > 0)
          {
-            if (!(gl2_frame(gl, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            if (!(gl2_frame(gl, NULL, 0, frame_count, 0, msg, video_info)))
             {
                gl->flags &= ~GL2_FLAG_FRAME_DUPE_LOCK;
                return false;
@@ -5803,8 +5796,7 @@ static void *gl2_init(const video_info_t *video,
    gl2_init_textures_data(gl);
 
    gl2_renderchain_init(gl,
-         (gl2_renderchain_data_t*)gl->renderchain_data,
-         VIDEO_SCALE_W(gl->tex_dims), VIDEO_SCALE_H(gl->tex_dims));
+         (gl2_renderchain_data_t*)gl->renderchain_data);
 
    if (gl->flags & GL2_FLAG_HAVE_FBO)
    {
@@ -6085,8 +6077,7 @@ static bool gl2_set_shader(void *data,
    }
 
    gl2_renderchain_init(gl,
-         (gl2_renderchain_data_t*)gl->renderchain_data,
-         VIDEO_SCALE_W(gl->tex_dims), VIDEO_SCALE_H(gl->tex_dims));
+         (gl2_renderchain_data_t*)gl->renderchain_data);
 
    /* Apparently need to set viewport for passes when we aren't using FBOs. */
    gl2_set_shader_viewports(gl, video_scale_integer);

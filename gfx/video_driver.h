@@ -983,11 +983,10 @@ typedef struct video_poke_interface
    unsigned (*get_swap_interval_cap)(void *data);
 } video_poke_interface_t;
 
-/* msg is for showing a message on the screen
- * along with the video frame. */
+/* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
+ * message on the screen along with the video frame. */
 typedef bool (*video_driver_frame_t)(void *data,
-      const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+      const void *frame, unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info);
 
 /* ---- Deferred (per-frame) shader loading ---- */

@@ -1887,10 +1887,12 @@ static void* ctr_init(const video_info_t* video,
 #endif
 
 static bool ctr_frame(void* data, const void* frame,
-      unsigned width, unsigned height,
+      unsigned dims,
       uint64_t frame_count,
       unsigned pitch, const char* msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    static uint64_t current_tick, last_tick;
    extern GSPGPU_FramebufferInfo topFramebufferInfo, bottomFramebufferInfo;
    extern u8* gfxSharedMemory;

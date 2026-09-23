@@ -5566,13 +5566,14 @@ static INLINE void d3d12_wait_for_vblank(d3d12_video_t* d3d12)
 static bool d3d12_gfx_frame(
       void*               data,
       const void*         frame,
-      unsigned            width,
-      unsigned            height,
+      unsigned dims,
       uint64_t            frame_count,
       unsigned            pitch,
       const char*         msg,
       video_frame_info_t* video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    unsigned i, k, m;
    d3d12_texture_t* texture       = NULL;
    d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
@@ -7044,7 +7045,7 @@ static bool d3d12_gfx_frame(
          d3d12->flags |= D3D12_ST_FLAG_FRAME_DUPE_LOCK;
          while (bfi_light_frames > 0)
          {
-            if (!(d3d12_gfx_frame(d3d12, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            if (!(d3d12_gfx_frame(d3d12, NULL, 0, frame_count, 0, msg, video_info)))
             {
                d3d12->flags &= ~D3D12_ST_FLAG_FRAME_DUPE_LOCK;
                return false;
@@ -7098,7 +7099,7 @@ static bool d3d12_gfx_frame(
                d3d12->pass[m].current_subframe = k+1;
                d3d12->pass[m].swap_count       = (uint32_t)(video_info->swap_count + k);
             }
-         if (!d3d12_gfx_frame(d3d12, NULL, 0, 0, frame_count, 0, msg,
+         if (!d3d12_gfx_frame(d3d12, NULL, 0, frame_count, 0, msg,
                   video_info))
          {
             d3d12->flags &= ~D3D12_ST_FLAG_FRAME_DUPE_LOCK;

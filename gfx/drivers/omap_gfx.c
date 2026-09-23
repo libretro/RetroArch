@@ -979,12 +979,13 @@ fail:
    return NULL;
 }
 
-static bool omap_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
+static bool omap_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    omap_video_t  *vid = (omap_video_t*)data;
-   unsigned      dims = VIDEO_SCALE_PACK(width, height);
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif

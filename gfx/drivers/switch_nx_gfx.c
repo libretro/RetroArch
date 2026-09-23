@@ -584,10 +584,12 @@ static void switch_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 }
 
 static bool switch_frame(void *data, const void *frame,
-      unsigned width, unsigned height,
+      unsigned dims,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    uint32_t stride;
    switch_video_t   *sw = data;
    uint32_t *out_buffer = NULL;
@@ -617,7 +619,7 @@ static bool switch_frame(void *data, const void *frame,
    }
 
    if (     sw->should_resize
-         || (sw->last_dims != VIDEO_SCALE_PACK(width, height)))
+         || (sw->last_dims != dims))
    {
       switch_update_viewport(sw);
 
@@ -672,7 +674,7 @@ static bool switch_frame(void *data, const void *frame,
       if (!scaler_ctx_gen_filter(&sw->scaler))
          return false;
 
-      sw->last_dims          = VIDEO_SCALE_PACK(width, height);
+      sw->last_dims          = dims;
 
       sw->should_resize      = false;
    }

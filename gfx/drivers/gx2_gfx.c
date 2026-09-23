@@ -1965,9 +1965,11 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
 }
 
 static bool gx2_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    uint32_t i;
    wiiu_video_t *wiiu             = (wiiu_video_t *) data;
 #ifdef HAVE_MENU

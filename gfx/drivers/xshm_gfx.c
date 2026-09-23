@@ -134,10 +134,12 @@ static void *xshm_init(const video_info_t *video,
    return NULL;
 }
 
-static bool xshm_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+static bool xshm_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    unsigned y;
    xshm_t      *xshm  = (xshm_t*)data;
 #ifdef HAVE_MENU

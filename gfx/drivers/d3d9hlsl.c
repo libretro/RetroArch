@@ -7751,10 +7751,12 @@ static void d3d9_hlsl_free(void *data)
 }
 
 static bool d3d9_hlsl_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height,
+      unsigned dims,
       uint64_t frame_count, unsigned pitch,
       const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    D3DVIEWPORT9 screen_vp;
    unsigned i                          = 0;
    d3d9_video_t *d3d                   = (d3d9_video_t*)data;

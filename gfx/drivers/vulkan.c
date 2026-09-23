@@ -7937,7 +7937,7 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
 }
 
 static bool vulkan_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height,
+      unsigned dims,
       uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
@@ -8132,16 +8132,17 @@ static bool vulkan_frame(void *data, const void *frame,
     * validation layer rejects, and only kept working because the old
     * texture's memory was silently reused. The texture that is there
     * stays, and draws as it did. */
-   if (frame && frame_width && frame_height
+   if (frame && VIDEO_SCALE_W(dims) && VIDEO_SCALE_H(dims)
          && (!(vk->flags & VK_FLAG_HW_ENABLE)))
    {
       unsigned y;
+      unsigned frame_width  = VIDEO_SCALE_W(dims);
+      unsigned frame_height = VIDEO_SCALE_H(dims);
       uint8_t *dst        = NULL;
       const uint8_t *src  = (const uint8_t*)frame;
       unsigned bpp        = vk->video.rgb32 ? 4 : 2;
 
-      if (     VIDEO_SCALE_W(chain->texture.dims) != frame_width
-            || VIDEO_SCALE_H(chain->texture.dims) != frame_height)
+      if (chain->texture.dims != dims)
       {
          chain->texture = vulkan_create_texture(vk, &chain->texture,
                frame_width, frame_height, chain->texture.format, NULL, NULL,
@@ -8302,9 +8303,7 @@ static bool vulkan_frame(void *data, const void *frame,
          /* Does this make that this can happen at all? */
          if (vk->hw.image && vk->hw.image->create_info.image)
          {
-            input.dims         = frame
-               ? VIDEO_SCALE_PACK(frame_width, frame_height)
-               : vk->hw.last_dims;
+            input.dims         = frame ? dims : vk->hw.last_dims;
 
             input.image        = vk->hw.image->create_info.image;
             input.view         = vk->hw.image->image_view;
@@ -9004,7 +9003,7 @@ static bool vulkan_frame(void *data, const void *frame,
          vk->context->flags |= VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
          while (bfi_light_frames > 0)
          {
-            if (!(vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            if (!(vulkan_frame(vk, NULL, 0, frame_count, 0, msg, video_info)))
             {
                vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
                return false;
@@ -9056,7 +9055,7 @@ static bool vulkan_frame(void *data, const void *frame,
                (vulkan_filter_chain_t*)filter_chain, video_info->shader_subframes);
          vulkan_filter_chain_set_current_shader_subframe(
                (vulkan_filter_chain_t*)filter_chain, j+1);
-         if (!vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg,
+         if (!vulkan_frame(vk, NULL, 0, frame_count, 0, msg,
                   video_info))
          {
             vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
@@ -9079,7 +9078,7 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->context->flags |= VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
       for (k = 1; k < (int) vk->context->swap_interval; k++)
       {
-         if (!vulkan_frame(vk, NULL, 0, 0, frame_count, 0, msg,
+         if (!vulkan_frame(vk, NULL, 0, frame_count, 0, msg,
                   video_info))
          {
             vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;

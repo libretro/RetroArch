@@ -2194,9 +2194,11 @@ static GLuint gl1_frame_target_fbo(gl1_t *gl1,
 #endif /* !VITA */
 
 static bool gl1_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    const void *frame_to_copy        = NULL;
    unsigned mode_dims              = 0;
    unsigned width                   = VIDEO_SCALE_W(video_info->dims);
@@ -2271,12 +2273,12 @@ static bool gl1_frame(void *data, const void *frame,
 
    do_swap = frame || draw;
 
-   if (     (gl1->frame_dims  != VIDEO_SCALE_PACK(frame_width, frame_height))
+   if (     (gl1->frame_dims  != dims)
          || (gl1->frame_pitch  != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         gl1->frame_dims   = VIDEO_SCALE_PACK(frame_width, frame_height);
+         gl1->frame_dims   = dims;
          gl1->frame_pitch  = pitch;
 
          pot_width         = GET_POT(frame_width);
@@ -2627,7 +2629,7 @@ static bool gl1_frame(void *data, const void *frame,
 
          while (bfi_light_frames > 0)
          {
-            if (!(gl1_frame(gl1, frame, 0, 0, frame_count, 0, msg, video_info)))
+            if (!(gl1_frame(gl1, frame, 0, frame_count, 0, msg, video_info)))
             {
                gl1->flags &= ~GL1_FLAG_FRAME_DUPE_LOCK;
                return false;

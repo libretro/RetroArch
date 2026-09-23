@@ -4751,7 +4751,7 @@ static void d3d11_hw_direct_free(d3d11_video_t *d3d11)
 }
 
 static bool d3d11_gfx_frame_body(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info);
 
 /* The lock is recursive: the frame calls itself for black frame
@@ -4760,8 +4760,7 @@ static bool d3d11_gfx_frame_body(void *data, const void *frame,
 static bool d3d11_gfx_frame(
       void*               data,
       const void*         frame,
-      unsigned            width,
-      unsigned            height,
+      unsigned dims,
       uint64_t            frame_count,
       unsigned            pitch,
       const char*         msg,
@@ -4772,7 +4771,7 @@ static bool d3d11_gfx_frame(
    if (!d3d11)
       return false;
    d3d11_hw_v2_enter(d3d11);
-   ret = d3d11_gfx_frame_body(data, frame, width, height, frame_count,
+   ret = d3d11_gfx_frame_body(data, frame, dims, frame_count,
          pitch, msg, video_info);
    d3d11_hw_v2_leave(d3d11);
    return ret;
@@ -4781,13 +4780,14 @@ static bool d3d11_gfx_frame(
 static bool d3d11_gfx_frame_body(
       void*               data,
       const void*         frame,
-      unsigned            width,
-      unsigned            height,
+      unsigned dims,
       uint64_t            frame_count,
       unsigned            pitch,
       const char*         msg,
       video_frame_info_t* video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    unsigned i, k, m;
    d3d11_texture_t* texture       = NULL;
    D3D11RenderTargetView rtv      = NULL;
@@ -5945,7 +5945,7 @@ static bool d3d11_gfx_frame_body(
          d3d11->flags |= D3D11_ST_FLAG_FRAME_DUPE_LOCK;
          while (bfi_light_frames > 0)
          {
-            if (!(d3d11_gfx_frame(d3d11, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            if (!(d3d11_gfx_frame(d3d11, NULL, 0, frame_count, 0, msg, video_info)))
             {
                d3d11->flags &= ~D3D11_ST_FLAG_FRAME_DUPE_LOCK;
                return false;
@@ -6001,7 +6001,7 @@ static bool d3d11_gfx_frame_body(
                d3d11->pass[m].current_subframe = k+1;
                d3d11->pass[m].swap_count       = (uint32_t)(video_info->swap_count + k);
             }
-         if (!d3d11_gfx_frame(d3d11, NULL, 0, 0, frame_count, 0, msg,
+         if (!d3d11_gfx_frame(d3d11, NULL, 0, frame_count, 0, msg,
                   video_info))
          {
             d3d11->flags &= ~D3D11_ST_FLAG_FRAME_DUPE_LOCK;

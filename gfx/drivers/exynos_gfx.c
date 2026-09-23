@@ -1283,10 +1283,12 @@ static void exynos_free(void *data)
    free(vid);
 }
 
-static bool exynos_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
+static bool exynos_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    struct exynos_video *vid = data;
    struct exynos_page *page = NULL;
 #ifdef HAVE_MENU
@@ -1298,7 +1300,7 @@ static bool exynos_frame(void *data, const void *frame, unsigned width,
 
    if (frame)
    {
-      if (vid->dims != VIDEO_SCALE_PACK(width, height))
+      if (vid->dims != dims)
       {
          /* Sanity check on new dimension parameters. */
          if (width == 0 || height == 0)
@@ -1309,7 +1311,7 @@ static bool exynos_frame(void *data, const void *frame, unsigned width,
                width, height);
          exynos_setup_scale(vid->data, width, height, vid->bytes_per_pixel);
 
-         vid->dims   = VIDEO_SCALE_PACK(width, height);
+         vid->dims   = dims;
       }
 
       page = exynos_free_page(vid->data);

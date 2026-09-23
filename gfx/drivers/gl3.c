@@ -4782,11 +4782,13 @@ static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
 }
 
 static bool gl3_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height,
+      unsigned dims,
       uint64_t frame_count,
       unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    struct gl3_filter_chain_texture texture;
    struct gl3_streamed_texture *streamed   = NULL;
 #ifdef HAVE_SLANG
@@ -5047,7 +5049,7 @@ static bool gl3_frame(void *data, const void *frame,
       }
 
       params.vp_dims       = gl->out_vp_dims;
-      params.dims          = VIDEO_SCALE_PACK(frame_width, frame_height);
+      params.dims          = dims;
       params.tex_dims      = VIDEO_SCALE_PACK(
             RARCH_SCALE_BASE * gl->video_info.input_scale,
             RARCH_SCALE_BASE * gl->video_info.input_scale);
@@ -5448,7 +5450,7 @@ static bool gl3_frame(void *data, const void *frame,
 
          while (bfi_light_frames > 0)
          {
-            if (!(gl3_frame(gl, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            if (!(gl3_frame(gl, NULL, 0, frame_count, 0, msg, video_info)))
             {
                gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;
                return false;
@@ -5497,7 +5499,7 @@ static bool gl3_frame(void *data, const void *frame,
          }
 #endif
 
-         if (!gl3_frame(gl, NULL, 0, 0, frame_count, 0, msg,
+         if (!gl3_frame(gl, NULL, 0, frame_count, 0, msg,
                   video_info))
          {
             gl->flags &= ~GL3_FLAG_FRAME_DUPE_LOCK;

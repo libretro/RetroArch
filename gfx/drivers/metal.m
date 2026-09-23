@@ -6448,11 +6448,13 @@ static bool metal_swap_interval_lock = false;
 static unsigned metal_swap_interval = 1;
 
 static bool metal_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height,
+      unsigned dims,
       uint64_t frame_count,
       unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    int j;
    MetalDriver *md = (__bridge MetalDriver *)data;
 
@@ -6487,7 +6489,7 @@ static bool metal_frame(void *data, const void *frame,
          /* Re-render and present with NULL frame data (reuse previous
           * frame); the index tells the shader which sub-frame this is */
          video_info->current_subframe = (unsigned)j;
-         if (!metal_frame(data, NULL, 0, 0, frame_count, 0, msg, video_info))
+         if (!metal_frame(data, NULL, 0, frame_count, 0, msg, video_info))
          {
             video_info->current_subframe = 0;
             metal_subframe_lock = false;
@@ -6514,7 +6516,7 @@ static bool metal_frame(void *data, const void *frame,
       metal_swap_interval_lock = true;
       for (j = 1; j < (int)metal_swap_interval; j++)
       {
-         if (!metal_frame(data, NULL, 0, 0, frame_count, 0, msg, video_info))
+         if (!metal_frame(data, NULL, 0, frame_count, 0, msg, video_info))
          {
             metal_swap_interval_lock = false;
             return false;

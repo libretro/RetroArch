@@ -1538,11 +1538,13 @@ static void gx_free(void *data)
 }
 
 static bool gx_frame(void *data, const void *frame,
-      unsigned width, unsigned height,
+      unsigned dims,
       uint64_t frame_count, unsigned pitch,
       const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    char fps_text_buf[128];
    gx_video_t *gx                     = (gx_video_t*)data;
    u8                       clear_efb = GX_FALSE;

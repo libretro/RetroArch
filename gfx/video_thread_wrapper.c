@@ -1961,8 +1961,7 @@ static void video_thread_loop(void *data)
                   video_thread_hw_before_frame(thr, thr->frame.slot[slot].hw_slot);
                   ret = thr->driver->frame(thr->driver_data,
                      RETRO_HW_FRAME_BUFFER_VALID,
-                     VIDEO_SCALE_W(thr->frame.slot[slot].dims),
-                     VIDEO_SCALE_H(thr->frame.slot[slot].dims),
+                     thr->frame.slot[slot].dims,
                      thr->frame.slot[slot].count,
                      thr->frame.slot[slot].pitch,
                      *thr->frame.slot[slot].msg
@@ -1986,7 +1985,7 @@ static void video_thread_loop(void *data)
                      video_thread_filter(thr, &fdata, &fdims, &fpitch);
 #endif
                   ret = thr->driver->frame(thr->driver_data,
-                     fdata, VIDEO_SCALE_W(fdims), VIDEO_SCALE_H(fdims),
+                     fdata, fdims,
                      thr->frame.slot[slot].count,
                      fpitch,
                      *thr->frame.slot[slot].msg
@@ -2415,9 +2414,11 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
 }
 
 static bool video_thread_frame(void *data, const void *frame_,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    unsigned slot       = 0;
    int hw_slot         = -1;
    bool dropped        = false;
@@ -2470,7 +2471,6 @@ static bool video_thread_frame(void *data, const void *frame_,
 
       if (thr->driver_data && thr->driver && thr->driver->frame)
       {
-         unsigned dims = VIDEO_SCALE_PACK(width, height);
          if (convert)
             video_thread_convert(thr, convert, &frame_, dims, &pitch);
 #ifdef HAVE_VIDEO_FILTER
@@ -2478,8 +2478,7 @@ static bool video_thread_frame(void *data, const void *frame_,
             video_thread_filter(thr, &frame_, &dims, &pitch);
 #endif
          return thr->driver->frame(thr->driver_data, frame_,
-            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
-            frame_count, pitch, msg, video_info);
+            dims, frame_count, pitch, msg, video_info);
       }
 
       return false;

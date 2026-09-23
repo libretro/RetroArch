@@ -2139,9 +2139,11 @@ static void gxm_common_dialog_update(void)
 }
 
 static bool gxm_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    void *tex_p;
    gxm_display_data_t displayData;
    vita_video_t *vita                     = (vita_video_t *)data;
@@ -2163,7 +2165,7 @@ static bool gxm_frame(void *data, const void *frame,
          unsigned i;
          unsigned int stride;
 
-         if (vita->dims != VIDEO_SCALE_PACK(width, height) && vita->texture)
+         if (vita->dims != dims && vita->texture)
          {
             if (gxm_initialized)
                sceGxmFinish(gxm_context);
@@ -2173,7 +2175,7 @@ static bool gxm_frame(void *data, const void *frame,
 
          if (!vita->texture)
          {
-            vita->dims    = VIDEO_SCALE_PACK(width, height);
+            vita->dims    = dims;
             vita->texture = gxm_create_empty_texture_format(width, height,
                   vita->format);
             gxm_texture_set_filters(vita->texture, vita->tex_filter,

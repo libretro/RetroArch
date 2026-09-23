@@ -2560,9 +2560,11 @@ error:
 }
 
 static bool gdi_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    struct bitmap_info info;
    unsigned mode_dims              = 0;
    const void *frame_to_copy        = frame;
@@ -2632,8 +2634,8 @@ static bool gdi_frame(void *data, const void *frame,
        * with whatever size the core has just announced. */
       gdi->bmp          = CreateCompatibleBitmap(
             gdi->winDC, frame_width, frame_height);
-      gdi->bmp_dims = VIDEO_SCALE_PACK(frame_width, frame_height);
-      gdi->frame_dims = VIDEO_SCALE_PACK(frame_width, frame_height);
+      gdi->bmp_dims     = dims;
+      gdi->frame_dims   = dims;
    }
 
    /* --- Step 2: figure out the on-screen surface size. */
@@ -2794,13 +2796,12 @@ static bool gdi_frame(void *data, const void *frame,
    /* --- Step 6: track core-frame size changes (needed for both the
     * RGUI-overlay path and the no-menu path).  We resize bmp here
     * if the core's announced dimensions changed. */
-   if (     (VIDEO_SCALE_W(gdi->frame_dims)  != frame_width)
-         || (VIDEO_SCALE_H(gdi->frame_dims) != frame_height)
-         || (gdi->frame_pitch  != pitch))
+   if (     (gdi->frame_dims  != dims)
+         || (gdi->frame_pitch != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         gdi->frame_dims = VIDEO_SCALE_PACK(frame_width, frame_height);
+         gdi->frame_dims   = dims;
          gdi->frame_pitch  = pitch;
       }
    }

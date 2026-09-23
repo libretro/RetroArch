@@ -364,10 +364,12 @@ static void vg_copy_frame(void *data, const void *frame,
 }
 
 static bool vg_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height,
+      unsigned dims,
       uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    vg_t                           *vg = (vg_t*)data;
    unsigned width                     = VIDEO_SCALE_W(video_info->dims);
    unsigned height                    = VIDEO_SCALE_H(video_info->dims);

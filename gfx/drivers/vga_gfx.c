@@ -210,9 +210,11 @@ static void *vga_gfx_init(const video_info_t *video,
 }
 
 static bool vga_gfx_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    unsigned width, height, bits;
    const void *frame_to_copy = frame;
    bool draw                 = true;

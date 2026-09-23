@@ -490,7 +490,7 @@ static void *video_null_init(const video_info_t *video,
  * not - which is how every real driver learns the value too. */
 static unsigned video_null_bfi;
 
-static bool video_null_frame(void *a, const void *b, unsigned c, unsigned d,
+static bool video_null_frame(void *a, const void *b, unsigned dims,
 uint64_t e, unsigned f, const char *g, video_frame_info_t *h)
 {
    if (h)
@@ -6429,6 +6429,7 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
    char status_text[256];
+   unsigned dims        = VIDEO_SCALE_PACK(width, height);
    settings_t *settings = config_get_ptr();
    static char video_driver_msg[256];
    static retro_time_t last_time;
@@ -6500,8 +6501,7 @@ void video_driver_frame(const void *data, unsigned width,
     * (drivers' read_viewport setup, paused render) read without
     * the lock -- they're on the runloop thread same as the
     * producer here, so there's no race for them to lose. */
-   video_driver_cached_frame_publish(data,
-         VIDEO_SCALE_PACK(width, height), pitch);
+   video_driver_cached_frame_publish(data, dims, pitch);
 
    if (
             video_st->scaler_ptr
@@ -6539,7 +6539,7 @@ void video_driver_frame(const void *data, unsigned width,
    {
       size_t      conv_pitch = pitch;
       const void *converted  = video_driver_convert_xrgb2101010(
-            video_st, data, VIDEO_SCALE_PACK(width, height), pitch,
+            video_st, data, dims, pitch,
             &conv_pitch);
       if (converted)
       {
@@ -7025,8 +7025,7 @@ void video_driver_frame(const void *data, unsigned width,
            && recording_st->driver
            && recording_st->driver->push_video)
       recording_dump_frame(
-            data, VIDEO_SCALE_PACK(width, height),
-            pitch, runloop_idle);
+            data, dims, pitch, runloop_idle);
 
 #ifdef HAVE_VIDEO_FILTER
    if (     settings->bools.video_filter_enable
@@ -7039,18 +7038,17 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
       )
    {
-      unsigned in_dims                                  = VIDEO_SCALE_PACK(width, height);
-      unsigned output_dims                              = 0;
-      unsigned output_pitch                             = 0;
+      unsigned output_dims  = 0;
+      unsigned output_pitch = 0;
 
       rarch_softfilter_get_output_size(video_st->state_filter,
-            &output_dims, in_dims);
+            &output_dims, dims);
 
       output_pitch = VIDEO_SCALE_W(output_dims) * video_st->state_out_bpp;
 
       rarch_softfilter_process(video_st->state_filter,
             video_st->state_buffer, output_pitch,
-            data, in_dims, pitch);
+            data, dims, pitch);
 
       if (     video_info.post_filter_record
             && recording_st->data
@@ -7061,8 +7059,7 @@ void video_driver_frame(const void *data, unsigned width,
                runloop_idle);
 
       data   = video_st->state_buffer;
-      width  = VIDEO_SCALE_W(output_dims);
-      height = VIDEO_SCALE_H(output_dims);
+      dims   = output_dims;
       pitch  = output_pitch;
    }
 #endif
@@ -7153,7 +7150,7 @@ void video_driver_frame(const void *data, unsigned width,
          gfx_widgets_status_text_to_frame(&video_info, status_text);
 #endif
       if (vid->frame(
-               video_st->data, data, width, height,
+               video_st->data, data, dims,
                video_st->frame_count, (unsigned)pitch,
 #if HAVE_MENU
                   ((video_info.menu_st_flags & MENU_ST_FLAG_SCREENSAVER_ACTIVE) > 0)

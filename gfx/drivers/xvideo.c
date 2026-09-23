@@ -932,10 +932,12 @@ static void xv_render_msg(xv_t *xv, const char *msg,
    }
 }
 
-static bool xv_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+static bool xv_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;
    bool rgb32                = (video_info->video_st_flags & VIDEO_FLAG_USE_RGBA) ? true : false;

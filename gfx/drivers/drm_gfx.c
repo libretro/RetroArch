@@ -780,22 +780,24 @@ static void *drm_init(const video_info_t *video,
    return _drmvars;
 }
 
-static bool drm_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
+static bool drm_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    struct drm_video *_drmvars = data;
 #ifdef HAVE_MENU
    bool menu_is_alive         = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (_drmvars->core_dims != VIDEO_SCALE_PACK(width, height))
+   if (_drmvars->core_dims != dims)
    {
       /* Sanity check. */
       if (width == 0 || height == 0)
          return true;
 
-      _drmvars->core_dims   = VIDEO_SCALE_PACK(width, height);
+      _drmvars->core_dims   = dims;
       _drmvars->core_pitch  = pitch;
 
       if (_drmvars->main_surface)
@@ -803,7 +805,7 @@ static bool drm_frame(void *data, const void *frame, unsigned width,
 
       /* We need to recreate the main surface and it's pages (buffers). */
       drm_surface_setup(_drmvars,
-            VIDEO_SCALE_PACK(width, height),
+            dims,
             pitch,
             _drmvars->rgb32 ? 4 : 2,
             _drmvars->rgb32 ? DRM_FORMAT_XRGB8888 : DRM_FORMAT_RGB565,

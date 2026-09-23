@@ -478,10 +478,12 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
    SDL_SetRenderViewport(vid->renderer, &saved_vp);
 }
 
-static bool sdl3_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+static bool sdl3_gfx_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    sdl3_video_t *vid = (sdl3_video_t*)data;
 
    if (vid->flags & SDL3_FLAG_SHOULD_RESIZE)
