@@ -1,0 +1,108 @@
+name: CI removed struct members
+
+# When a struct member goes away, the compiler finds every reader it
+# compiles. The readers it does not compile are the ones no Linux box
+# sees - the Objective-C drivers above all, and anything behind a
+# platform #ifdef - so each of those is found by whichever job builds
+# that platform, one round trip at a time.
+#
+# window_position_x and window_position_y went that way. Packing the
+# pair into one word updated the Win32 and SDL3 users, which is what a
+# grep of the .c and .h files turns up; ui_cocoa.m kept reading both
+# and took out the macOS job and both PowerPC cross jobs at once. Those
+# three are among the slowest jobs in the tree, and the answer they
+# eventually gave was four lines in one file.
+#
+# tools/packed_field_check.py does not cover this. It knows the six
+# names a size or origin pair is spelled with, and window_position_x is
+# not one of them; on the broken tree it printed 1184 lines, none of
+# them ui_cocoa.m. The question here is not what a member is called,
+# it is whether anything still reaches for one the change took away.
+#
+# So this lane reads the change rather than the tree's vocabulary: the
+# members a push or a pull request removes, minus the ones something
+# still declares, against every reader in every language the tree is
+# written in. It reads files rather than building them, so one job
+# covers what the platform jobs between them would only find one at a
+# time.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  removed-member-check:
+    name: readers of a removed member
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # Both ends of the range have to be present, and a pull
+          # request's base can be behind by any amount.
+          fetch-depth: 0
+
+      - name: Checker self-test
+        shell: bash
+        run: |
+          set -eu
+          # Fixture pass: a member removed along with its readers is
+          # clean, one left behind in a language no lane here compiles
+          # is caught, and a member that merely moved, one whose name
+          # another struct still declares, one that was renamed, one
+          # named only in a comment or a log string, one declared in a
+          # declarator list, and a name too common to reason about are
+          # each left alone.
+          #
+          # The fixtures are handed to the checker directly rather than
+          # taken from the tree, so this reports the same thing whether
+          # or not the tree currently passes - it measures the checker.
+          python3 tools/removed_member_check.py --selftest
+
+      - name: Range check
+        shell: bash
+        run: |
+          set -eu
+          # A pull request is measured against its base; a push against
+          # what was there before it. A force push or a first push
+          # leaves 'before' as zeroes, and a merge has more than one
+          # parent, so fall back to the first parent in either case.
+          if [ -n "${PR_BASE:-}" ]; then
+             base="$PR_BASE"; head="$PR_HEAD"
+          else
+             base="${EVENT_BEFORE:-}"; head="$GITHUB_SHA"
+             case "$base" in
+                ''|*[!0]*) ;;
+                *) base= ;;
+             esac
+             if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+                base="$(git rev-parse "$head^" 2>/dev/null || true)"
+             fi
+          fi
+          if [ -z "$base" ]; then
+             echo "no base commit to compare against; nothing to check"
+             exit 0
+          fi
+          echo "range: $base..$head"
+          # Every struct member the range removes, minus the ones the
+          # tree still declares somewhere, against every .c .h .m .mm
+          # .cpp .hpp and .inc reader of one.
+          python3 tools/removed_member_check.py --range "$base..$head"
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          EVENT_BEFORE: ${{ github.event.before }}
