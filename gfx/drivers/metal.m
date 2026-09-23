@@ -6531,7 +6531,10 @@ static void metal_set_nonblock_state(void *data, bool non_block,
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    md.context.displaySyncEnabled = !non_block;
-   metal_swap_interval = swap_interval;
+   /* Presenting a frame again only holds it for another display frame
+    * while presents wait on the display; without that it is a second,
+    * unpaced present. */
+   metal_swap_interval = non_block ? 1 : swap_interval;
 }
 
 static bool metal_alive(void *data) { return true; }
