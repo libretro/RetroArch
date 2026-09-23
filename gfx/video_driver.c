@@ -2589,6 +2589,11 @@ void video_driver_set_overlay_viewport(const struct overlay *active)
    {
       int seq0 = retro_atomic_load_relaxed_int(&video_st->overlay_vp_seq);
       retro_atomic_store_release_int(&video_st->overlay_vp_seq, seq0 + 1);
+      /* Keeps the field stores below from being hoisted above the odd
+       * stamp, which is what tells a reader the rectangle is in flux.
+       * A store-release orders what comes before it, not what comes
+       * after, so the stamp alone does not hold them down. */
+      retro_atomic_thread_fence_release();
       retro_atomic_store_relaxed_int(&video_st->overlay_vp_bits[0],
             video_float_bits(active->viewport.x));
       retro_atomic_store_relaxed_int(&video_st->overlay_vp_bits[1],
