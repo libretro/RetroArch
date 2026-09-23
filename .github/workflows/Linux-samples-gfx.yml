@@ -918,6 +918,25 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 60 ./modeline_edid_parse_test
 
+      - name: Build and run integer_scale_axis_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/integer_scale_axis
+        run: |
+          set -eu
+          # video_viewport_get_scaled_integer(), pulled out of
+          # gfx/video_driver.c by extract_integer.awk, swept over
+          # viewport sizes, frame sizes, every axis mode that touches
+          # X and every scaling mode. Y+X has to be integer on both
+          # axes: the X axis was once multiplied from the
+          # aspect-corrected width (256x224 at 64:49 is 293), giving
+          # 1172x896 at 1080p - a 4.58x horizontal scale and uneven
+          # pixel columns - on every video driver.
+          make clean all SANITIZER=address,undefined
+          test -x integer_scale_axis_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 60 ./integer_scale_axis_test
+          make clean
+
       - name: Build and run font_lifecycle_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/font_lifecycle

@@ -342,3 +342,5 @@ samples/audio/embedded_alsa/ealsa_abi.h
 __pycache__/
 *.pyc
 samples/audio/asio_clock/asio_clock_driver.h
+samples/gfx/integer_scale_axis/integer_scale_driver.h
+samples/gfx/integer_scale_axis/integer_scale_axis_test

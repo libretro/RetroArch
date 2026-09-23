@@ -3089,10 +3089,15 @@ static void video_viewport_get_scaled_integer(
    unsigned cache_dims             = 0;
    unsigned content_width          = 0;
    unsigned content_height         = 0;
+   /* The frame's own size, before rotation and the aspect correction
+    * below overwrite content_width/height. The X axis of Y+X and the
+    * X-only modes multiply this, not the aspect-corrected width. */
+   unsigned frame_width            = 0;
+   unsigned frame_height           = 0;
    size_t   cache_pitch            = 0;
    frame_cache_peek(&cache_data, &cache_dims, &cache_pitch);
-   content_width                   = VIDEO_SCALE_W(cache_dims);
-   content_height                  = VIDEO_SCALE_H(cache_dims);
+   frame_width                     = VIDEO_SCALE_W(cache_dims);
+   frame_height                    = VIDEO_SCALE_H(cache_dims);
 #if defined(RARCH_MOBILE)
    if (width < height)
    {
@@ -3101,8 +3106,10 @@ static void video_viewport_get_scaled_integer(
    }
 #endif
 
-   content_width  = (content_width  <= 4) ? video_st->av_info.geometry.base_width  : content_width;
-   content_height = (content_height <= 4) ? video_st->av_info.geometry.base_height : content_height;
+   frame_width    = (frame_width  <= 4) ? video_st->av_info.geometry.base_width  : frame_width;
+   frame_height   = (frame_height <= 4) ? video_st->av_info.geometry.base_height : frame_height;
+   content_width  = frame_width;
+   content_height = frame_height;
 
    if (!y_down)
       vp_bias_y = 1.0 - vp_bias_y;
@@ -3235,10 +3242,13 @@ static void video_viewport_get_scaled_integer(
             bool hires_w              = false;
             bool hires_h              = false;
 
-            /* Reset width to exact width */
-            content_width = (rotation % 2)
-                  ? ((content_height <= 4) ? video_st->av_info.geometry.base_height : content_height)
-                  : ((content_width  <= 4) ? video_st->av_info.geometry.base_width  : content_width);
+            /* Reset width to the frame's exact width. By now
+             * content_width has been replaced by the aspect-corrected
+             * width and content_height by the rotated height, so they
+             * cannot be used here: a 256 wide frame at 8:7 would be
+             * multiplied as 293, giving 1172 instead of a 4x or 5x
+             * multiple of 256. */
+            content_width = (rotation % 2) ? frame_height : frame_width;
 
             overscale_w   = (width / content_width) + !!(width % content_width);
 
