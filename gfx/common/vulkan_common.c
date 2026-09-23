@@ -2179,8 +2179,10 @@ retry:
    if (vk->swapchain == VK_NULL_HANDLE)
    {
       /* We don't have a swapchain, try to create one now. */
-      if (!vulkan_create_swapchain(vk, vk->context.swapchain_width,
-               vk->context.swapchain_height, vk->context.swap_interval))
+      if (!vulkan_create_swapchain(vk,
+               VIDEO_SCALE_W(vk->context.swapchain_dims),
+               VIDEO_SCALE_H(vk->context.swapchain_dims),
+               vk->context.swap_interval))
       {
 #ifdef VULKAN_DEBUG
          RARCH_ERR("[Vulkan] Failed to create new swapchain.\n");
@@ -2509,8 +2511,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    if (       (vk->swapchain != VK_NULL_HANDLE)
          && (!(vk->context.flags & VK_CTX_FLAG_INVALID_SWAPCHAIN))
-         &&   (vk->context.swapchain_width  == width)
-         &&   (vk->context.swapchain_height == height)
+         &&   (vk->context.swapchain_dims == VIDEO_SCALE_PACK(width, height))
          &&   (   (vk->context.swap_interval          == swap_interval)
                || (vk->context.swapchain_present_mode == swapchain_present_mode)))
    {
@@ -2900,8 +2901,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       if (vk->swapchain != VK_NULL_HANDLE)
          vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
       vk->swapchain                    = VK_NULL_HANDLE;
-      vk->context.swapchain_width      = width;
-      vk->context.swapchain_height     = height;
+      vk->context.swapchain_dims       = VIDEO_SCALE_PACK(width, height);
       vk->context.num_swapchain_images = 1;
 
       memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
@@ -3071,8 +3071,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       vkDestroySwapchainKHR(vk->context.device, old_swapchain, NULL);
 #endif
 
-   vk->context.swapchain_width        = swapchain_size.width;
-   vk->context.swapchain_height       = swapchain_size.height;
+   vk->context.swapchain_dims         = VIDEO_SCALE_PACK(swapchain_size.width,
+         swapchain_size.height);
    vk->context.swapchain_present_mode = swapchain_present_mode;
 #ifdef VULKAN_HDR_SWAPCHAIN
    vk->context.swapchain_colour_space = format.colorSpace;

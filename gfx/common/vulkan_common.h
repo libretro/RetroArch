@@ -274,8 +274,7 @@ typedef struct vulkan_context
    uint32_t current_swapchain_index;
    uint32_t current_frame_index;
 
-   unsigned swapchain_width;
-   unsigned swapchain_height;
+   unsigned swapchain_dims;      /* VIDEO_SCALE_PACK */
    unsigned num_recycled_acquire_semaphores;
    /* Present mode the current swapchain was created with; compared
     * against the mode a new swap_interval resolves to so a request

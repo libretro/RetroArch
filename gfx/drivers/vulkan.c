@@ -2493,8 +2493,8 @@ static void gfx_display_vk_draw_pipeline(
    draw->pos                        = VIDEO_POS_PACK(0, 0);
    draw->matrix_data                = NULL;
 
-   output_size[0]                   = (float)vk->context->swapchain_width;
-   output_size[1]                   = (float)vk->context->swapchain_height;
+   output_size[0]                   = (float)VIDEO_SCALE_W(vk->context->swapchain_dims);
+   output_size[1]                   = (float)VIDEO_SCALE_H(vk->context->swapchain_dims);
 
    switch (draw->pipeline_id)
    {
@@ -2760,7 +2760,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
    /* Per-element dynamic state, not the video viewport. Anything that
     * outlives this draw wants vk->video_vp. */
    vk->vk_vp.x                    = VIDEO_POS_X(draw->pos);
-   vk->vk_vp.y                    = vk->context->swapchain_height - VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims);
+   vk->vk_vp.y                    = VIDEO_SCALE_H(vk->context->swapchain_dims) - VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims);
    vk->vk_vp.width                = VIDEO_SCALE_W(draw->dims);
    vk->vk_vp.height               = VIDEO_SCALE_H(draw->dims);
    vk->vk_vp.minDepth             = 0.0f;
@@ -4198,8 +4198,8 @@ static void vulkan_init_framebuffers(
       info.renderPass      = vk->render_pass;
       info.attachmentCount = 1;
       info.pAttachments    = &vk->backbuffers[i].view;
-      info.width           = vk->context->swapchain_width;
-      info.height          = vk->context->swapchain_height;
+      info.width           = VIDEO_SCALE_W(vk->context->swapchain_dims);
+      info.height          = VIDEO_SCALE_H(vk->context->swapchain_dims);
       info.layers          = 1;
 
       vkCreateFramebuffer(vk->context->device,
@@ -6133,7 +6133,7 @@ static void *vulkan_init(const video_info_t *video,
       ctx_driver->swap_interval(vk->ctx_data, interval);
    }
 
-   win_dims  = VIDEO_SCALE_PACK(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
+   win_dims  = video->dims;
 
    /* Neither axis set is the whole word clear */
    if (video->fullscreen && (win_dims == 0))
@@ -6505,8 +6505,8 @@ static void vulkan_check_swapchain(vk_t *vk)
 
 static bool vulkan_recreate_context_swapchain(vk_t *vk)
 {
-   unsigned width  = vk->context->swapchain_width;
-   unsigned height = vk->context->swapchain_height;
+   unsigned width  = VIDEO_SCALE_W(vk->context->swapchain_dims);
+   unsigned height = VIDEO_SCALE_H(vk->context->swapchain_dims);
 
    if (!vk->ctx_driver->set_resize)
       return false;
@@ -7016,8 +7016,8 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
    {
       int rw      = (int)(VIDEO_SCALE_W(vp.dims)  + vk->translate_x);
       int rh      = (int)(VIDEO_SCALE_H(vp.dims) + vk->translate_y);
-      unsigned sw = vk->context->swapchain_width;
-      unsigned sh = vk->context->swapchain_height;
+      unsigned sw = VIDEO_SCALE_W(vk->context->swapchain_dims);
+      unsigned sh = VIDEO_SCALE_H(vk->context->swapchain_dims);
       if (rw < 1)
          rw = (int)VIDEO_SCALE_W(vp.dims);
       if (rh < 1)
@@ -7112,19 +7112,19 @@ static void vulkan_retained_free(vk_t *vk)
 static void vulkan_retain_backbuffer(vk_t *vk, struct vk_image *backbuffer)
 {
    VkImageCopy region;
-   unsigned width           = vk->context->swapchain_width;
-   unsigned height          = vk->context->swapchain_height;
+   unsigned width           = VIDEO_SCALE_W(vk->context->swapchain_dims);
+   unsigned height          = VIDEO_SCALE_H(vk->context->swapchain_dims);
    VkImageLayout old_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
    if (     vk->retained.image == VK_NULL_HANDLE
-         || vk->retained_dims   != VIDEO_SCALE_PACK(width, height))
+         || vk->retained_dims   != vk->context->swapchain_dims)
    {
       vulkan_retained_free(vk);
       vulkan_init_render_target(&vk->retained, width, height,
             vk->context->swapchain_format, vk->render_pass, vk->context);
       if (vk->retained.image == VK_NULL_HANDLE)
          return;
-      vk->retained_dims   = VIDEO_SCALE_PACK(width, height);
+      vk->retained_dims   = vk->context->swapchain_dims;
       old_layout          = VK_IMAGE_LAYOUT_UNDEFINED;
    }
 
@@ -7208,9 +7208,7 @@ static bool vulkan_present_retained_once(vk_t *vk)
    struct vk_image *backbuffer;
 
    if (     !(vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
-         || vk->retained_dims   != VIDEO_SCALE_PACK(
-               vk->context->swapchain_width,
-               vk->context->swapchain_height))
+         || vk->retained_dims   != vk->context->swapchain_dims)
       return false;
 
    frame_index                         = vk->context->current_frame_index;
@@ -7696,7 +7694,7 @@ static void vulkan_init_render_target(struct vk_image* image, uint32_t width, ui
    info.attachmentCount = 1;
    info.pAttachments    = &image->view;
    /* Use the image dimensions, not swapchain dimensions.
-    * When width/height differ from ctx->swapchain_width/Height
+    * When width/height differ from ctx->swapchain_dims
     * (e.g. during resize), the validation layer flags
     * VUID-VkFramebufferCreateInfo-pAttachments-00882. */
    info.width           = width;
@@ -7811,8 +7809,8 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
    rp_info.framebuffer              = render_target->framebuffer;
    rp_info.renderArea.offset.x      = 0;
    rp_info.renderArea.offset.y      = 0;
-   rp_info.renderArea.extent.width  = vk->context->swapchain_width;
-   rp_info.renderArea.extent.height = vk->context->swapchain_height;
+   rp_info.renderArea.extent.width  = VIDEO_SCALE_W(vk->context->swapchain_dims);
+   rp_info.renderArea.extent.height = VIDEO_SCALE_H(vk->context->swapchain_dims);
    rp_info.clearValueCount          = 1;
    rp_info.pClearValues             = &clear_color;
 
@@ -7887,8 +7885,8 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
 
       vp.x                   = 0.0f;
       vp.y                   = 0.0f;
-      vp.width               = vk->context->swapchain_width;
-      vp.height              = vk->context->swapchain_height;
+      vp.width               = VIDEO_SCALE_W(vk->context->swapchain_dims);
+      vp.height              = VIDEO_SCALE_H(vk->context->swapchain_dims);
       vp.minDepth            = 0.0f;
       vp.maxDepth            = 1.0f;
 
@@ -8435,8 +8433,8 @@ static bool vulkan_frame(void *data, const void *frame,
       rp_info.framebuffer              = backbuffer->framebuffer;
       rp_info.renderArea.offset.x      = 0;
       rp_info.renderArea.offset.y      = 0;
-      rp_info.renderArea.extent.width  = vk->context->swapchain_width;
-      rp_info.renderArea.extent.height = vk->context->swapchain_height;
+      rp_info.renderArea.extent.width  = VIDEO_SCALE_W(vk->context->swapchain_dims);
+      rp_info.renderArea.extent.height = VIDEO_SCALE_H(vk->context->swapchain_dims);
       rp_info.clearValueCount          = 1;
       rp_info.pClearValues             = &clear_color;
 

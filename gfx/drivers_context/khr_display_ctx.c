@@ -30,8 +30,7 @@ typedef struct
 {
    gfx_ctx_vulkan_data_t vk;
    int swap_interval;
-   unsigned width;
-   unsigned height;
+   unsigned dims;                /* VIDEO_SCALE_PACK */
    unsigned refresh_rate_x1000;
 } khr_display_ctx_data_t;
 
@@ -53,7 +52,7 @@ static void gfx_ctx_khr_display_get_video_size(void *data,
       unsigned *dims)
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
-   *dims = VIDEO_SCALE_PACK(khr->width, khr->height);
+   *dims = khr->dims;
 }
 
 static float gfx_ctx_khr_display_get_refresh_rate(void *data)
@@ -96,9 +95,9 @@ static void gfx_ctx_khr_display_check_window(void *data, bool *quit,
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
    *resize                     = (khr->vk.flags & VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
 
-   if (khr->width != VIDEO_SCALE_W(*dims) || khr->height != VIDEO_SCALE_H(*dims))
+   if (khr->dims != *dims)
    {
-      *dims                   = VIDEO_SCALE_PACK(khr->width, khr->height);
+      *dims                   = khr->dims;
       *resize                  = true;
    }
 
@@ -111,10 +110,9 @@ static bool gfx_ctx_khr_display_set_resize(void *data,
 {
    khr_display_ctx_data_t *khr = (khr_display_ctx_data_t*)data;
 
-   khr->width                  = width;
-   khr->height                 = height;
+   khr->dims                   = VIDEO_SCALE_PACK(width, height);
 
-   if (!vulkan_create_swapchain(&khr->vk, khr->width, khr->height,
+   if (!vulkan_create_swapchain(&khr->vk, width, height,
             khr->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
@@ -161,8 +159,7 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
       return false;
    }
 
-   khr->width                     = khr->vk.context.swapchain_width;
-   khr->height                    = khr->vk.context.swapchain_height;
+   khr->dims                      = khr->vk.context.swapchain_dims;
    khr->refresh_rate_x1000        = info.refresh_rate_x1000;
 
    return true;
