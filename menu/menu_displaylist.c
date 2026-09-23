@@ -2887,14 +2887,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          0, 0, NULL))
       count++;
 
-   /* Display Information submenu */
-   if (menu_entries_append(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION),
-         MENU_ENUM_LABEL_DISPLAY_INFORMATION_STR,
-         MENU_ENUM_LABEL_DISPLAY_INFORMATION,
-         MENU_SETTING_ACTION, 0, 0, NULL))
-      count++;
-
 #ifdef ANDROID
    /* Internal Storage Status */
    {
@@ -5073,6 +5065,13 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION),
          MENU_ENUM_LABEL_SYSTEM_INFORMATION_STR,
          MENU_ENUM_LABEL_SYSTEM_INFORMATION,
+         MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (menu_entries_append(info_list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION),
+         MENU_ENUM_LABEL_DISPLAY_INFORMATION_STR,
+         MENU_ENUM_LABEL_DISPLAY_INFORMATION,
          MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 
