@@ -93,10 +93,7 @@ typedef struct gdi_texture
    HBITMAP bmp_old;
    void *data;            /* Owned BGRA premultiplied pixel buffer. */
 
-   int width;
-   int height;
-   int active_width;
-   int active_height;
+   unsigned dims;         /* Pixel size of `data`, packed. */
 
    bool has_alpha;
    bool premultiplied;
@@ -871,8 +868,8 @@ static void gdi_blit_texture_modulated(
    {
       src_x = 0;
       src_y = 0;
-      src_w = (unsigned)texture->width;
-      src_h = (unsigned)texture->height;
+      src_w = VIDEO_SCALE_W(texture->dims);
+      src_h = VIDEO_SCALE_H(texture->dims);
    }
 
    /* Fast path: no RGB tint, only an alpha multiplier.  The texture
@@ -922,7 +919,7 @@ static void gdi_blit_texture_modulated(
    for (y_idx = 0; y_idx < src_h; y_idx++)
    {
       const uint32_t *src_row = src
-         + ((size_t)src_y + y_idx) * (size_t)texture->width
+         + ((size_t)src_y + y_idx) * (size_t)VIDEO_SCALE_W(texture->dims)
          + (size_t)src_x;
       uint32_t       *dst_row = dst + y_idx * stride;
       for (x_idx = 0; x_idx < src_w; x_idx++)
@@ -983,8 +980,8 @@ static bool gdi_texture_realize(gdi_t *gdi, gdi_texture_t *texture)
 
    memset(&bmi, 0, sizeof(bmi));
    bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-   bmi.bmiHeader.biWidth       = texture->width;
-   bmi.bmiHeader.biHeight      = -texture->height;
+   bmi.bmiHeader.biWidth       =  (LONG)VIDEO_SCALE_W(texture->dims);
+   bmi.bmiHeader.biHeight      = -(LONG)VIDEO_SCALE_H(texture->dims);
    bmi.bmiHeader.biPlanes      = 1;
    bmi.bmiHeader.biBitCount    = 32;
    bmi.bmiHeader.biCompression = BI_RGB;
@@ -1001,7 +998,7 @@ static bool gdi_texture_realize(gdi_t *gdi, gdi_texture_t *texture)
    /* texture->data was already premultiplied at load time
     * (gdi_load_texture).  Just copy it into the DIB-backed memory. */
    memcpy(pixels, texture->data,
-         (size_t)texture->width * (size_t)texture->height * sizeof(uint32_t));
+         VIDEO_SCALE_AREA(texture->dims) * sizeof(uint32_t));
 
    texture->bmp = bmp;
    return true;
@@ -1195,7 +1192,9 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
     * the cursor texture.  Without this we'd sample the full source
     * for every slice, which would re-tile the entire cursor PNG
     * onto each section. */
-   if (have_tex_coords && texture && texture->width > 0 && texture->height > 0)
+   if (have_tex_coords && texture
+         && VIDEO_SCALE_W(texture->dims) > 0
+         && VIDEO_SCALE_H(texture->dims) > 0)
    {
       const float *t = draw->coords->tex_coord;
       float min_u, max_u, min_v, max_v;
@@ -1217,11 +1216,11 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
          if (tv[i] > max_v) max_v = tv[i];
       }
 
-      src_x = (int)(min_u * (float)texture->width  + 0.5f);
-      src_y = (int)(min_v * (float)texture->height + 0.5f);
+      src_x = (int)(min_u * (float)VIDEO_SCALE_W(texture->dims) + 0.5f);
+      src_y = (int)(min_v * (float)VIDEO_SCALE_H(texture->dims) + 0.5f);
       {
-         int x_end = (int)(max_u * (float)texture->width  + 0.5f);
-         int y_end = (int)(max_v * (float)texture->height + 0.5f);
+         int x_end = (int)(max_u * (float)VIDEO_SCALE_W(texture->dims) + 0.5f);
+         int y_end = (int)(max_v * (float)VIDEO_SCALE_H(texture->dims) + 0.5f);
          src_w = (x_end > src_x) ? (unsigned)(x_end - src_x) : 0;
          src_h = (y_end > src_y) ? (unsigned)(y_end - src_y) : 0;
       }
@@ -1238,7 +1237,9 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
     * "draw a textured quad with the white texture" as its idiom
     * for solid-colour rectangles.  Detect that case so we can
     * skip the (much more expensive) blit path entirely. */
-   is_white_texture = (!texture || (texture->width <= 1 && texture->height <= 1));
+   is_white_texture = (!texture
+         || (   VIDEO_SCALE_W(texture->dims) <= 1
+             && VIDEO_SCALE_H(texture->dims) <= 1));
 
    if (is_white_texture)
    {
@@ -1561,9 +1562,9 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
       int  bx_src = have_tex_coords ? src_x : 0;
       int  by_src = have_tex_coords ? src_y : 0;
       unsigned bw_src = (have_tex_coords && src_w) ? src_w
-         : (unsigned)texture->width;
+         : VIDEO_SCALE_W(texture->dims);
       unsigned bh_src = (have_tex_coords && src_h) ? src_h
-         : (unsigned)texture->height;
+         : VIDEO_SCALE_H(texture->dims);
       if (!gdi->texDC)
          gdi->texDC        = CreateCompatibleDC(gdi->winDC);
       texture->bmp_old     = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
@@ -1617,16 +1618,14 @@ typedef struct
     * dirty flag is set.  Sized to atlas width × height, top-down. */
    HBITMAP                       atlas_bmp;
    uint32_t                     *atlas_pixels;
-   unsigned                      atlas_width;
-   unsigned                      atlas_height;
+   unsigned                      atlas_dims;
    /* Scratch DIB used to bake an RGB tint into a copy of the atlas
     * for one render_msg call.  Sized to the largest line we've
     * encountered; we reuse it across calls to keep allocations
     * bounded. */
    HBITMAP                       scratch_bmp;
    uint32_t                     *scratch_pixels;
-   unsigned                      scratch_width;
-   unsigned                      scratch_height;
+   unsigned                      scratch_dims;
 } gdi_raster_t;
 
 /* Build / refresh the BGRA premultiplied DIB that mirrors the A8
@@ -1638,14 +1637,23 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
    BITMAPINFO bmi;
    void *pixels = NULL;
    unsigned i, j;
+   unsigned atlas_dims;
    bool recreated = false;
 
    if (!font || !font->atlas || !font->gdi || !font->gdi->memDC)
       return false;
 
+   /* The mirror's size has to survive the round trip through the
+    * word: the row stride below is read back out of it, and a
+    * clamped axis would index the DIB with a stride the DIB does
+    * not have. */
+   if (!VIDEO_SCALE_FITS(font->atlas->width, font->atlas->height))
+      return false;
+
+   atlas_dims = VIDEO_SCALE_PACK(font->atlas->width, font->atlas->height);
+
    if (     !font->atlas_bmp
-         || font->atlas_width  != font->atlas->width
-         || font->atlas_height != font->atlas->height)
+         || font->atlas_dims != atlas_dims)
    {
       recreated = true;
       if (font->atlas_bmp)
@@ -1674,8 +1682,7 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
       }
 
       font->atlas_pixels = (uint32_t*)pixels;
-      font->atlas_width  = font->atlas->width;
-      font->atlas_height = font->atlas->height;
+      font->atlas_dims   = atlas_dims;
    }
 
    /* Expand A8 -> BGRA premultiplied: A=atlas[i], R=G=B=A.  This
@@ -1704,7 +1711,7 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
       for (j = y0; j < y1; j++)
       {
          uint32_t      *dst = font->atlas_pixels
-            + (size_t)j * font->atlas_width + x0;
+            + (size_t)j * VIDEO_SCALE_W(font->atlas_dims) + x0;
          const uint8_t *src = font->atlas->buffer
             + (size_t)j * font->atlas->width + x0;
          for (i = 0; i < x1 - x0; i++)
@@ -1723,13 +1730,20 @@ static bool gdi_font_ensure_scratch(gdi_raster_t *font,
 {
    BITMAPINFO bmi;
    void *pixels = NULL;
+   unsigned sw, sh;
 
    if (!font || !font->gdi || !font->gdi->memDC)
       return false;
 
+   /* A line past what a word holds would be recorded as a smaller
+    * capacity than the DIB it describes, and every later call would
+    * find that capacity short and rebuild. */
+   if (!VIDEO_SCALE_FITS(width, height))
+      return false;
+
    if (     font->scratch_bmp
-         && font->scratch_width  >= width
-         && font->scratch_height >= height)
+         && VIDEO_SCALE_W(font->scratch_dims) >= width
+         && VIDEO_SCALE_H(font->scratch_dims) >= height)
       return true;
 
    /* Grow only - never shrink, so a long line followed by short
@@ -1741,15 +1755,20 @@ static bool gdi_font_ensure_scratch(gdi_raster_t *font,
       font->scratch_bmp    = NULL;
       font->scratch_pixels = NULL;
    }
-   if (font->scratch_width  < width)
-      font->scratch_width  = width  + width  / 2 + 1;
-   if (font->scratch_height < height)
-      font->scratch_height = height + height / 2 + 1;
+   sw = VIDEO_SCALE_W(font->scratch_dims);
+   sh = VIDEO_SCALE_H(font->scratch_dims);
+   if (sw < width)
+      sw = width  + width  / 2 + 1;
+   if (sh < height)
+      sh = height + height / 2 + 1;
+   /* The geometric step can overshoot what the word holds; the
+    * clamp still leaves it at or above the size asked for. */
+   font->scratch_dims = VIDEO_SCALE_PACK(sw, sh);
 
    memset(&bmi, 0, sizeof(bmi));
    bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-   bmi.bmiHeader.biWidth       = (LONG)font->scratch_width;
-   bmi.bmiHeader.biHeight      = -(LONG)font->scratch_height;
+   bmi.bmiHeader.biWidth       =  (LONG)VIDEO_SCALE_W(font->scratch_dims);
+   bmi.bmiHeader.biHeight      = -(LONG)VIDEO_SCALE_H(font->scratch_dims);
    bmi.bmiHeader.biPlanes      = 1;
    bmi.bmiHeader.biBitCount    = 32;
    bmi.bmiHeader.biCompression = BI_RGB;
@@ -2000,7 +2019,7 @@ static void gdi_font_render_line(
 
       /* Clear scratch pixels to fully transparent. */
       {
-         size_t total = (size_t)font->scratch_width * (size_t)font->scratch_height;
+         size_t total = VIDEO_SCALE_AREA(font->scratch_dims);
          memset(font->scratch_pixels, 0, total * sizeof(uint32_t));
       }
 
@@ -2044,15 +2063,15 @@ static void gdi_font_render_line(
                int src_y2;
                uint32_t *dst_row;
                const uint8_t *src_row;
-               if (dst_y2 < 0 || dst_y2 >= (int)font->scratch_height)
+               if (dst_y2 < 0 || dst_y2 >= (int)VIDEO_SCALE_H(font->scratch_dims))
                   continue;
                src_y2  = gy_src + (int)((float)yy * (float)glyph->height
                      / (float)gh);
-               if (src_y2 < 0 || src_y2 >= (int)font->atlas_height)
+               if (src_y2 < 0 || src_y2 >= (int)VIDEO_SCALE_H(font->atlas_dims))
                   continue;
 
                dst_row = font->scratch_pixels
-                  + (size_t)dst_y2 * font->scratch_width;
+                  + (size_t)dst_y2 * VIDEO_SCALE_W(font->scratch_dims);
                src_row = font->atlas->buffer
                   + (size_t)src_y2 * font->atlas->width;
 
@@ -2062,11 +2081,11 @@ static void gdi_font_render_line(
                   int src_x2;
                   uint8_t  alpha;
                   uint32_t out_a, out_r, out_g, out_b;
-                  if (dst_x2 < 0 || dst_x2 >= (int)font->scratch_width)
+                  if (dst_x2 < 0 || dst_x2 >= (int)VIDEO_SCALE_W(font->scratch_dims))
                      continue;
                   src_x2 = gx_src + (int)((float)xx * (float)glyph->width
                         / (float)gw);
-                  if (src_x2 < 0 || src_x2 >= (int)font->atlas_width)
+                  if (src_x2 < 0 || src_x2 >= (int)VIDEO_SCALE_W(font->atlas_dims))
                      continue;
 
                   alpha = src_row[src_x2];
@@ -3298,12 +3317,9 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
    if (!texture)
       return 0;
 
-   texture->width              = image->width;
-   texture->height             = image->height;
-   texture->active_width       = image->width;
-   texture->active_height      = image->height;
+   texture->dims               = VIDEO_SCALE_PACK(image->width, image->height);
    texture->type               = filter_type;
-   total                       = (size_t)texture->width * (size_t)texture->height;
+   total                       = VIDEO_SCALE_AREA(texture->dims);
    texture->data               = calloc(1, total * sizeof(uint32_t));
 
    if (!texture->data)
