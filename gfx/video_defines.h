@@ -215,6 +215,13 @@ enum text_alignment
  * without having to remember the cast. */
 #define VIDEO_SCALE_AREA(d) ((size_t)VIDEO_SCALE_W(d) * VIDEO_SCALE_H(d))
 
+/* An alpha modulation as an 8-bit channel, saturated. An overlay's
+ * alpha is its opacity times a per-desc alpha_mod, which packs set
+ * above 1 to brighten a pressed button; packed straight into a byte
+ * that product wraps, so 1.4 comes out as 0x65. */
+#define VIDEO_ALPHA_BYTE(a) \
+   ((a) <= 0.0f ? 0u : (a) >= 1.0f ? 0xFFu : (unsigned)((a) * 0xFF))
+
 /* One axis of a packed pair, leaving the other half as it stands.
  * A viewport whose axes are set apart from each other reads back
  * through VIDEO_SCALE_W/H either way. */

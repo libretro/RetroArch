@@ -1783,7 +1783,7 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
    for (i = 0; i < 4; i++)
    {
       vert[i].z    = 0.5f;
-      vert[i].color   = (((uint32_t)(overlay->alpha_mod * 0xFF)) << 24) | 0xFFFFFF;
+      vert[i].color   = (((uint32_t)VIDEO_ALPHA_BYTE(overlay->alpha_mod)) << 24) | 0xFFFFFF;
    }
 
    d3d8_viewport_info(d3d, &vp);

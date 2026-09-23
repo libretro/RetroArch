@@ -3369,6 +3369,10 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
 }
 #endif
 
+static enum overlay_visibility input_overlay_get_visibility(
+      enum overlay_visibility *visibility,
+      int overlay_idx);
+
 /**
  * input_overlay_post_poll:
  *
@@ -3388,9 +3392,13 @@ static void input_overlay_post_poll(
    {
       struct overlay_desc *desc = &ol->active->descs[i];
 
+      /* A pressed desc is lit, unless the LED driver has hidden its
+       * image: that stays hidden whatever is pressed. */
       if (     desc->touch_mask != 0
             && show_input && OVERLAY_HAS_IMAGE(&desc->image)
-            && ol->iface->set_alpha)
+            && ol->iface->set_alpha
+            && input_overlay_get_visibility(visibility,
+                  (int)desc->image_index) != OVERLAY_VISIBILITY_HIDDEN)
          ol->iface->set_alpha(ol->iface_data, desc->image_index,
                desc->alpha_mod * opacity);
 

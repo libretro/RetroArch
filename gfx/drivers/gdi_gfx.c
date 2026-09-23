@@ -3779,9 +3779,7 @@ static void gdi_overlays_render(gdi_t *gdi,
       if (dst_w <= 0 || dst_h <= 0)
          continue;
 
-      alpha_byte = (unsigned)(o->alpha_mod * 255.0f);
-      if (alpha_byte > 255)
-         alpha_byte = 255;
+      alpha_byte = VIDEO_ALPHA_BYTE(o->alpha_mod);
 
       /* The overlay's own per-pixel alpha was premultiplied at
        * load.  alpha_mod is applied as SourceConstantAlpha so the

@@ -1956,7 +1956,7 @@ static void d3d11_overlay_set_alpha(void* data, unsigned index, float mod)
    if (!sprites)
       return;
 
-   sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, mod * 0xFF);
+   sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, VIDEO_ALPHA_BYTE(mod));
    sprites[index].colors[1] = sprites[index].colors[0];
    sprites[index].colors[2] = sprites[index].colors[0];
    sprites[index].colors[3] = sprites[index].colors[0];

@@ -2982,7 +2982,7 @@ static void gxm_render_overlay(void *data)
             vita->overlay[i].tex_h,
             vita->overlay[i].w,
             vita->overlay[i].h,
-            RGBA8(0xFF,0xFF,0xFF,(uint8_t)(vita->overlay[i].alpha_mod * 255.0f)));
+            RGBA8(0xFF,0xFF,0xFF,(uint8_t)VIDEO_ALPHA_BYTE(vita->overlay[i].alpha_mod)));
 }
 
 static const video_overlay_interface_t gxm_overlay_interface = {

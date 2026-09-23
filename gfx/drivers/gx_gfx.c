@@ -1437,25 +1437,25 @@ static void gx_render_overlay(void *data)
       GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
       GX_Position3f32(gx->overlay[i].vertex_coord[0],
             gx->overlay[i].vertex_coord[1],  -0.5);
-      GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
+      GX_Color4u8(255, 255, 255, (u8)VIDEO_ALPHA_BYTE(gx->overlay[i].alpha_mod));
       GX_TexCoord2f32(gx->overlay[i].tex_coord[0],
             gx->overlay[i].tex_coord[1]);
 
       GX_Position3f32(gx->overlay[i].vertex_coord[2],
             gx->overlay[i].vertex_coord[3],  -0.5);
-      GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
+      GX_Color4u8(255, 255, 255, (u8)VIDEO_ALPHA_BYTE(gx->overlay[i].alpha_mod));
       GX_TexCoord2f32(gx->overlay[i].tex_coord[2],
             gx->overlay[i].tex_coord[3]);
 
       GX_Position3f32(gx->overlay[i].vertex_coord[4],
             gx->overlay[i].vertex_coord[5],  -0.5);
-      GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
+      GX_Color4u8(255, 255, 255, (u8)VIDEO_ALPHA_BYTE(gx->overlay[i].alpha_mod));
       GX_TexCoord2f32(gx->overlay[i].tex_coord[4],
             gx->overlay[i].tex_coord[5]);
 
       GX_Position3f32(gx->overlay[i].vertex_coord[6],
             gx->overlay[i].vertex_coord[7],  -0.5);
-      GX_Color4u8(255, 255, 255, (u8)(gx->overlay[i].alpha_mod * 255.0f));
+      GX_Color4u8(255, 255, 255, (u8)VIDEO_ALPHA_BYTE(gx->overlay[i].alpha_mod));
       GX_TexCoord2f32(gx->overlay[i].tex_coord[6],
             gx->overlay[i].tex_coord[7]);
       GX_End();

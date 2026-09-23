@@ -1506,7 +1506,7 @@ static void gx2_overlay_set_alpha(void *data, unsigned image, float mod)
    if (gx2)
    {
       gx2->overlay[image].alpha_mod = mod;
-      gx2->overlay[image].v.color = COLOR_RGBA(0xFF, 0xFF, 0xFF, 0xFF * gx2->overlay[image].alpha_mod);
+      gx2->overlay[image].v.color = COLOR_RGBA(0xFF, 0xFF, 0xFF, VIDEO_ALPHA_BYTE(gx2->overlay[image].alpha_mod));
       GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, &gx2->overlay[image].v,
                     sizeof(gx2->overlay[image].v));
    }

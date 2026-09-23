@@ -2191,7 +2191,7 @@ static void sdl2_overlays_render(sdl2_video_t *vid)
       if (dst.w <= 0 || dst.h <= 0)
          continue;
 
-      alpha_byte = (Uint8)(o->alpha_mod * 255.0f);
+      alpha_byte = (Uint8)VIDEO_ALPHA_BYTE(o->alpha_mod);
       SDL_SetTextureAlphaMod(o->tex, alpha_byte);
 
       /* tex_coords sub-rect into the source texture.  Most touch

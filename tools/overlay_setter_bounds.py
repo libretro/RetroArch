@@ -18,6 +18,14 @@ index against the page's count before it writes.
 Covers the drivers that have been audited (DRIVERS below); add a
 driver to the table when its setters are brought into line.
 
+Every driver in gfx/drivers is also read for the alpha set_alpha hands
+it being packed into a byte unsaturated. The frontend's alpha is the
+page opacity times a desc's alpha_mod, and packs set alpha_mod above 1
+to brighten a pressed button: "mod * 0xFF" packed as a byte wraps
+(1.4 comes out as 0x65, a pressed button drawn dimmer than a released
+one), and cast straight to u8 it is undefined. The conversion goes
+through VIDEO_ALPHA_BYTE(), which saturates.
+
 Exit status 0 when every setter passes, 1 otherwise.
 """
 
@@ -122,9 +130,38 @@ def check_metal(code):
     return problems
 
 
+# "mod * 0xFF", "alpha_mod * 255.0f", "0xFF * x->alpha_mod"
+UNSATURATED = re.compile(
+    r"\b(?:mod|alpha_mod)\s*\*\s*(?:0x[fF]{2}|255(?:\.0*f?)?)\b"
+    r"|\b(?:0x[fF]{2}|255(?:\.0*f?)?)\s*\*\s*[\w>.\-\[\]]*\balpha_mod\b")
+
+
+def check_alpha_bytes():
+    """Every overlay alpha packed as a byte goes through
+    VIDEO_ALPHA_BYTE()."""
+    problems = []
+    for name in sorted(os.listdir(DIR)):
+        if not name.endswith((".c", ".m")):
+            continue
+        with open(os.path.join(DIR, name), encoding="utf-8",
+                  errors="replace") as f:
+            # Comments blanked line for line, so a match keeps its line.
+            code = re.sub(r"/\*.*?\*/",
+                          lambda c: re.sub(r"[^\n]", " ", c.group(0)),
+                          f.read(), flags=re.S)
+        for m in UNSATURATED.finditer(code):
+            line = code.count("\n", 0, m.start()) + 1
+            problems.append("%s:%d: overlay alpha packed as a byte without "
+                            "VIDEO_ALPHA_BYTE(): %s" % (name, line, m.group(0)))
+    return problems
+
+
 def main():
     failed = 0
     total  = 0
+    unsaturated = check_alpha_bytes()
+    for p in unsaturated:
+        print("[FAIL] " + p)
     for name in DRIVERS + ["metal.m"]:
         path = os.path.join(DIR, name)
         if not os.path.isfile(path):
@@ -142,8 +179,9 @@ def main():
                 print("[FAIL] %s: %s" % (name, p))
         else:
             print("[pass] %s" % name)
-    if failed:
-        print("FAIL overlay_setter_bounds (%d of %d drivers)" % (failed, total))
+    if failed or unsaturated:
+        print("FAIL overlay_setter_bounds (%d of %d drivers, %d unsaturated "
+              "alpha bytes)" % (failed, total, len(unsaturated)))
         return 1
     print("PASS overlay_setter_bounds (%d drivers)" % total)
     return 0

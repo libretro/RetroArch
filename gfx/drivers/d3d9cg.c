@@ -4329,7 +4329,7 @@ static void d3d9_cg_overlay_render(
    w     = overlay->vert_coords[2];
    h     = overlay->vert_coords[3];
    color = D3DCOLOR_ARGB(
-         (int)(overlay->alpha_mod * 0xFF),
+         (int)VIDEO_ALPHA_BYTE(overlay->alpha_mod),
          0xFF, 0xFF, 0xFF);
 
    /* Set the stock Cg program and the MVP via the Cg API.
