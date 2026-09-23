@@ -43,6 +43,7 @@
 #else
 #include <cmath>
 #endif
+#include <cstring>
 
 namespace {
 
@@ -1130,9 +1131,10 @@ static void OutputDouble(TInfoSink& out, double value, TOutputTraverser::EExtraO
         case TOutputTraverser::BinaryDoubleOutput:
         {
             out.debug << " : ";
-            long long b = *reinterpret_cast<long long*>(&value);
-            for (size_t i = 0; i < 8 * sizeof(value); ++i, ++b) {
-                out.debug << ((b & 0x8000000000000000) != 0 ? "1" : "0");
+            unsigned long long b;
+            std::memcpy(&b, &value, sizeof(b));
+            for (size_t i = 0; i < 8 * sizeof(value); ++i) {
+                out.debug << ((b & 0x8000000000000000ULL) != 0 ? "1" : "0");
                 b <<= 1;
             }
             break;
