@@ -197,7 +197,7 @@ struct vk_texture
    size_t stride;
    size_t size;
    uint32_t memory_type;
-   unsigned width, height;
+   unsigned dims;                /* VIDEO_SCALE_PACK */
 
    VkImageLayout layout;         /* enum alignment */
    VkFormat format;              /* enum alignment */
@@ -1134,8 +1134,7 @@ static void vulkan_destroy_texture(
    tex->type                          = VULKAN_TEXTURE_STREAMED;
    tex->flags                         = 0;
    tex->memory_type                   = 0;
-   tex->width                         = 0;
-   tex->height                        = 0;
+   tex->dims                          = 0;
    tex->offset                        = 0;
    tex->stride                        = 0;
    tex->size                          = 0;
@@ -2025,8 +2024,7 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    tex.size   = layout.size;
    tex.layout = info.initialLayout;
 
-   tex.width  = width;
-   tex.height = height;
+   tex.dims   = VIDEO_SCALE_PACK(width, height);
    tex.format = format;
    tex.type   = type;
 
@@ -2045,14 +2043,14 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                /* Source stride and per-row copy size in size_t to keep
                 * the pointer math and memcpy length safe even when
                 * width*bpp would otherwise wrap a 32-bit unsigned. */
-               size_t stride      = (size_t)tex.width * (size_t)bpp;
+               size_t stride      = (size_t)VIDEO_SCALE_W(tex.dims) * (size_t)bpp;
                size_t row_bytes   = (size_t)width     * (size_t)bpp;
 
                vkMapMemory(device, tex.memory, tex.offset, tex.size, 0, &ptr);
 
                dst                = (uint8_t*)ptr;
                src                = (const uint8_t*)initial;
-               for (y = 0; y < tex.height; y++, dst += tex.stride, src += stride)
+               for (y = 0; y < VIDEO_SCALE_H(tex.dims); y++, dst += tex.stride, src += stride)
                   memcpy(dst, src, row_bytes);
 
                if (     (tex.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
@@ -2262,8 +2260,8 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
       struct vk_buffer_range range;
       VkDescriptorSet set;
 
-      ubo[0] = dynamic->width;
-      ubo[1] = dynamic->height;
+      ubo[0] = VIDEO_SCALE_W(dynamic->dims);
+      ubo[1] = VIDEO_SCALE_H(dynamic->dims);
       ubo[2] = (uint32_t)(staging->stride / 4); /* in terms of u32 words */
 
       VULKAN_IMAGE_LAYOUT_TRANSITION(
@@ -2328,7 +2326,8 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
 
       vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vk->pipelines.rgb565_to_rgba8888);
       vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vk->pipelines.layout, 0, 1, &set, 0, NULL);
-      vkCmdDispatch(cmd, (dynamic->width + 15) / 16, (dynamic->height + 7) / 8, 1);
+      vkCmdDispatch(cmd, (VIDEO_SCALE_W(dynamic->dims) + 15) / 16,
+            (VIDEO_SCALE_H(dynamic->dims) + 7) / 8, 1);
 
       VULKAN_IMAGE_LAYOUT_TRANSITION(
             cmd,
@@ -2363,8 +2362,8 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
       region.imageOffset.x                   = 0;
       region.imageOffset.y                   = 0;
       region.imageOffset.z                   = 0;
-      region.imageExtent.width               = dynamic->width;
-      region.imageExtent.height              = dynamic->height;
+      region.imageExtent.width               = VIDEO_SCALE_W(dynamic->dims);
+      region.imageExtent.height              = VIDEO_SCALE_H(dynamic->dims);
       region.imageExtent.depth               = 1;
       vkCmdCopyBufferToImage(
             cmd,
@@ -3204,15 +3203,17 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
          unsigned dy = font->dirty_y_min;
          unsigned dw = font->dirty_x_max - dx;
          unsigned dh = font->dirty_y_max - dy;
+         unsigned sw = VIDEO_SCALE_W(staging_tex->dims);
+         unsigned sh = VIDEO_SCALE_H(staging_tex->dims);
 
-         if (dx >= staging_tex->width || dy >= staging_tex->height)
+         if (dx >= sw || dy >= sh)
             dw = dh = 0;
          else
          {
-            if (dx + dw > staging_tex->width)
-               dw = staging_tex->width - dx;
-            if (dy + dh > staging_tex->height)
-               dh = staging_tex->height - dy;
+            if (dx + dw > sw)
+               dw = sw - dx;
+            if (dy + dh > sh)
+               dh = sh - dy;
          }
 
          if (dw > 0 && dh > 0)
@@ -3228,8 +3229,8 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
              * glyph, and must preserve what lies outside them. */
             bool full_copy              = (   dx == 0
                                            && dy == 0
-                                           && dw == dynamic_tex->width
-                                           && dh == dynamic_tex->height);
+                                           && dw == VIDEO_SCALE_W(dynamic_tex->dims)
+                                           && dh == VIDEO_SCALE_H(dynamic_tex->dims));
             VkImageLayout old_layout    = full_copy
                ? VK_IMAGE_LAYOUT_UNDEFINED
                : dynamic_tex->layout;
@@ -3467,8 +3468,8 @@ static void vulkan_font_render_msg(
    line_height      = line_metrics->height * scale / VIDEO_SCALE_H(vk->vp.dims);
 
    /* Hoist reciprocals, function pointer, and pre-multiplied factors. */
-   inv_tex_size_x   = 1.0f / font->texture.width;
-   inv_tex_size_y   = 1.0f / font->texture.height;
+   inv_tex_size_x   = 1.0f / VIDEO_SCALE_W(font->texture.dims);
+   inv_tex_size_y   = 1.0f / VIDEO_SCALE_H(font->texture.dims);
    inv_win_width    = 1.0f / VIDEO_SCALE_W(vk->vp.dims);
    inv_win_height   = 1.0f / VIDEO_SCALE_H(vk->vp.dims);
    scale_iww        = scale * inv_win_width;
@@ -8140,8 +8141,8 @@ static bool vulkan_frame(void *data, const void *frame,
       const uint8_t *src  = (const uint8_t*)frame;
       unsigned bpp        = vk->video.rgb32 ? 4 : 2;
 
-      if (     chain->texture.width  != frame_width
-            || chain->texture.height != frame_height)
+      if (     VIDEO_SCALE_W(chain->texture.dims) != frame_width
+            || VIDEO_SCALE_H(chain->texture.dims) != frame_height)
       {
          chain->texture = vulkan_create_texture(vk, &chain->texture,
                frame_width, frame_height, chain->texture.format, NULL, NULL,
@@ -8325,8 +8326,8 @@ static bool vulkan_frame(void *data, const void *frame,
             /* Fall back to the default, black texture.
              * This can happen if we restart the video
              * driver while in the menu. */
-            input.width        = vk->default_texture.width;
-            input.height       = vk->default_texture.height;
+            input.width        = VIDEO_SCALE_W(vk->default_texture.dims);
+            input.height       = VIDEO_SCALE_H(vk->default_texture.dims);
             input.image        = vk->default_texture.image;
             input.view         = vk->default_texture.view;
             input.layout       = vk->default_texture.layout;
@@ -8354,8 +8355,8 @@ static bool vulkan_frame(void *data, const void *frame,
          input.image  = tex->image;
          input.view   = tex->view;
          input.layout = tex->layout;
-         input.width  = tex->width;
-         input.height = tex->height;
+         input.width  = VIDEO_SCALE_W(tex->dims);
+         input.height = VIDEO_SCALE_H(tex->dims);
          input.format = VK_FORMAT_UNDEFINED; /* It's already configured. */
       }
 
@@ -9146,8 +9147,8 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
    if (!framebuffer->width || !framebuffer->height)
       return false;
 
-   if (chain->texture.width != framebuffer->width ||
-         chain->texture.height != framebuffer->height)
+   if (VIDEO_SCALE_W(chain->texture.dims) != framebuffer->width ||
+         VIDEO_SCALE_H(chain->texture.dims) != framebuffer->height)
    {
       /* vulkan_create_texture() parks the old texture and its mapping
        * on the deferred list. If the core rendered the previous frame
@@ -9537,8 +9538,8 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
 
    if (     !vk || !vk->context || !texture || !image || !image->pixels
          || texture->image == VK_NULL_HANDLE
-         || texture->width  != image->width
-         || texture->height != image->height
+         || VIDEO_SCALE_W(texture->dims) != image->width
+         || VIDEO_SCALE_H(texture->dims) != image->height
          || texture->layout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
          || vulkan_format_to_bpp(texture->format) != 4)
       return false;
@@ -9566,7 +9567,8 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
       for (i = 0; i < VK_STREAM_SLOTS; i++)
       {
          st->staging[i] = vulkan_create_texture(vk, NULL,
-               texture->width, texture->height, texture->format,
+               VIDEO_SCALE_W(texture->dims), VIDEO_SCALE_H(texture->dims),
+               texture->format,
                NULL, NULL, VULKAN_TEXTURE_STAGING);
          if (     st->staging[i].memory == VK_NULL_HANDLE
                || vkCreateFence(device, &fence_info, NULL,
@@ -9931,8 +9933,8 @@ static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
    view.subresourceRange.layerCount = 1;
    vkCreateImageView(device, &view, NULL, &texture->view);
 
-   texture->width  = tc->mips[0].width;
-   texture->height = tc->mips[0].height;
+   texture->dims   = VIDEO_SCALE_PACK(tc->mips[0].width,
+         tc->mips[0].height);
    texture->format = vkfmt;
    texture->type   = VULKAN_TEXTURE_STATIC;
    texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -10127,8 +10129,7 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
       VkFence fence = vk->context->swapchain_fences[i];
       if (vk->readback.record[i].serial <= newest
             || !vk->readback.staging[i].memory
-            || vk->readback.staging[i].width != VIDEO_SCALE_W(vk->vp.dims)
-            || vk->readback.staging[i].height != VIDEO_SCALE_H(vk->vp.dims))
+            || vk->readback.staging[i].dims != vk->vp.dims)
          continue;
       /* Acquire already waited and reset the current slot's fence.
        * Other submitted slots must be polled before touching memory. */
