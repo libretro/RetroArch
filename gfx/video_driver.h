@@ -1140,7 +1140,7 @@ typedef struct video_driver
 /* Slots of video_driver_state_t::vp_params_bits in use. The array has
  * headroom above this so a parameter can be added without moving
  * anything after it; the count is what the publish and the read walk. */
-#define VIDEO_VP_PARAM_SLOTS 15
+#define VIDEO_VP_PARAM_SLOTS 10
 
 typedef struct
 {

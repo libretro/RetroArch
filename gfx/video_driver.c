@@ -62,6 +62,37 @@ static INLINE float video_bits_float(int b)
    return f;
 }
 
+/* The four bounded selectors of the viewport-parameter publish, in
+ * one slot. Each is an enum index or a flag, none of them near its
+ * field's width; the sizing check below fails the build if an enum
+ * grows past what its field holds.
+ *
+ * Deliberately not here: rotation and core_req_rotation. Both come
+ * from a core's RETRO_ENVIRONMENT_SET_ROTATION, which is an unsigned
+ * a core may set to anything, and shader_glsl / shader_gl_cg hand the
+ * value to a shader uniform unreduced -- so neither can be narrowed
+ * or taken modulo four without changing what a shader sees. */
+#define VIDEO_VP_FLAG_SI_BIT      0          /* scale_integer     */
+#define VIDEO_VP_ASPECT_IDX_SHIFT 1          /* aspect_ratio_idx  */
+#define VIDEO_VP_ASPECT_IDX_BITS  6
+#define VIDEO_VP_SI_SCALING_SHIFT 7
+#define VIDEO_VP_SI_SCALING_BITS  3
+#define VIDEO_VP_SI_AXIS_SHIFT    10
+#define VIDEO_VP_SI_AXIS_BITS     3
+
+#define VIDEO_VP_FIELD(v, shift, bits) \
+   (((int)(v) & ((1 << (bits)) - 1)) << (shift))
+#define VIDEO_VP_GET(w, shift, bits) \
+   (((unsigned)(w) >> (shift)) & ((1u << (bits)) - 1u))
+
+/* Build-time sizing check: each enum has to fit the field it goes
+ * into. A negative array size is the C89 way to say so. */
+typedef char video_vp_flag_fields_fit[
+      (  ASPECT_RATIO_END                 <= (1 << VIDEO_VP_ASPECT_IDX_BITS)
+      && VIDEO_SCALE_INTEGER_SCALING_LAST <= (1 << VIDEO_VP_SI_SCALING_BITS)
+      && VIDEO_SCALE_INTEGER_AXIS_LAST    <= (1 << VIDEO_VP_SI_AXIS_BITS))
+      ? 1 : -1];
+
 /* Everything video_driver_update_viewport() and its integer-scaling
  * helper need from settings and runloop state, snapshotted so the
  * video thread's frame closures never read either live. */
@@ -3385,28 +3416,35 @@ void video_driver_publish_vp_params(void)
    int i;
    int seq;
 
-   v[0]  = settings->bools.video_scale_integer ? 1 : 0;
+   v[0]  = (settings->bools.video_scale_integer
+               ? (1 << VIDEO_VP_FLAG_SI_BIT) : 0)
+         | VIDEO_VP_FIELD(settings->uints.video_aspect_ratio_idx,
+               VIDEO_VP_ASPECT_IDX_SHIFT, VIDEO_VP_ASPECT_IDX_BITS)
+         | VIDEO_VP_FIELD(settings->uints.video_scale_integer_scaling,
+               VIDEO_VP_SI_SCALING_SHIFT, VIDEO_VP_SI_SCALING_BITS)
+         | VIDEO_VP_FIELD(settings->uints.video_scale_integer_axis,
+               VIDEO_VP_SI_AXIS_SHIFT, VIDEO_VP_SI_AXIS_BITS);
    v[1]  = (int)retroarch_get_rotation();
    v[2]  = (int)retroarch_get_core_requested_rotation();
    v[3]  = video_float_bits(VIDEO_DRIVER_ASPECT_RATIO(video_st));
-   v[4]  = (int)settings->uints.video_aspect_ratio_idx;
-   v[5]  = (int)settings->uints.video_scale_integer_scaling;
-   v[6]  = (int)settings->uints.video_scale_integer_axis;
-   v[7]  = video_float_bits(settings->floats.video_vp_bias_x);
-   v[8]  = video_float_bits(settings->floats.video_vp_bias_y);
+   v[4]  = video_float_bits(settings->floats.video_vp_bias_x);
+   v[5]  = video_float_bits(settings->floats.video_vp_bias_y);
 #if defined(RARCH_MOBILE)
-   v[9]  = video_float_bits(settings->floats.video_vp_bias_portrait_x);
-   v[10] = video_float_bits(settings->floats.video_vp_bias_portrait_y);
+   v[6]  = video_float_bits(settings->floats.video_vp_bias_portrait_x);
+   v[7]  = video_float_bits(settings->floats.video_vp_bias_portrait_y);
 #else
    /* The portrait bias fields only exist in mobile builds; mirror
     * the landscape values so the slots are never unpublished. */
-   v[9]  = video_float_bits(settings->floats.video_vp_bias_x);
-   v[10] = video_float_bits(settings->floats.video_vp_bias_y);
+   v[6]  = video_float_bits(settings->floats.video_vp_bias_x);
+   v[7]  = video_float_bits(settings->floats.video_vp_bias_y);
 #endif
-   v[11] = settings->video_vp_custom.x;
-   v[12] = settings->video_vp_custom.y;
-   v[13] = (int)settings->video_vp_custom.width;
-   v[14] = (int)settings->video_vp_custom.height;
+   /* The custom viewport's own setting rows bound it to -9999..9999
+    * on each axis of the origin and 1..9999 on each of the size, so
+    * neither pack can reach its clamp. */
+   v[8]  = (int)VIDEO_POS_PACK(settings->video_vp_custom.x,
+         settings->video_vp_custom.y);
+   v[9]  = (int)VIDEO_SCALE_PACK(settings->video_vp_custom.width,
+         settings->video_vp_custom.height);
 
    /* Compare before writing. This runs once per frame as the catch-all,
     * and what it publishes changes on a settings toggle, a rotation or
@@ -3448,21 +3486,25 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps)
       retro_atomic_thread_fence_acquire();
       if (retro_atomic_load_relaxed_int(&video_st->vp_params_seq) == s1)
       {
-         ps->scale_integer     = (v[0] != 0);
+         ps->scale_integer     =
+               (v[0] & (1 << VIDEO_VP_FLAG_SI_BIT)) != 0;
+         ps->aspect_ratio_idx  = VIDEO_VP_GET(v[0],
+               VIDEO_VP_ASPECT_IDX_SHIFT, VIDEO_VP_ASPECT_IDX_BITS);
+         ps->si_scaling        = VIDEO_VP_GET(v[0],
+               VIDEO_VP_SI_SCALING_SHIFT, VIDEO_VP_SI_SCALING_BITS);
+         ps->si_axis           = VIDEO_VP_GET(v[0],
+               VIDEO_VP_SI_AXIS_SHIFT, VIDEO_VP_SI_AXIS_BITS);
          ps->rotation          = (unsigned)v[1];
          ps->core_req_rotation = (unsigned)v[2];
          ps->aspect            = video_bits_float(v[3]);
-         ps->aspect_ratio_idx  = (unsigned)v[4];
-         ps->si_scaling        = (unsigned)v[5];
-         ps->si_axis           = (unsigned)v[6];
-         ps->bias_x            = video_bits_float(v[7]);
-         ps->bias_y            = video_bits_float(v[8]);
-         ps->bias_portrait_x   = video_bits_float(v[9]);
-         ps->bias_portrait_y   = video_bits_float(v[10]);
-         ps->custom_x          = v[11];
-         ps->custom_y          = v[12];
-         ps->custom_w          = (unsigned)v[13];
-         ps->custom_h          = (unsigned)v[14];
+         ps->bias_x            = video_bits_float(v[4]);
+         ps->bias_y            = video_bits_float(v[5]);
+         ps->bias_portrait_x   = video_bits_float(v[6]);
+         ps->bias_portrait_y   = video_bits_float(v[7]);
+         ps->custom_x          = VIDEO_POS_X(v[8]);
+         ps->custom_y          = VIDEO_POS_Y(v[8]);
+         ps->custom_w          = VIDEO_SCALE_W(v[9]);
+         ps->custom_h          = VIDEO_SCALE_H(v[9]);
          return;
       }
    }
