@@ -4068,6 +4068,132 @@ end:
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the grabbed mouse                                            */
+/*   Grabbed, the X input driver reads the pointer, takes its offset  */
+/*   from the window's centre as the motion and warps it back. The    */
+/*   pointer is moved from a connection of our own between polls; the */
+/*   motion must come out exactly, and a poll must cost the server    */
+/*   only its keymap query, its pointer query and the warp - the size */
+/*   is the one the event pump recorded, and the warp is not waited   */
+/*   for. Direct and under the wrapper.                               */
+/* ------------------------------------------------------------------ */
+
+#define GRABLANE_POLLS 20
+
+static void lane_x11_grabbed_mouse(void)
+{
+#ifdef HAVE_X11
+   unsigned had            = failures;
+   unsigned i;
+   unsigned pass;
+   unsigned long before    = 0;
+   unsigned long sent      = 0;
+   unsigned long most      = 0;
+   unsigned dims           = 0;
+   int cx, cy;
+   input_driver_state_t *input_st;
+   Display *dpy;
+   Window win;
+
+   if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
+   {
+      fprintf(stderr, "[skip] x11 grabbed mouse lane (not an X11 display)\n");
+      return;
+   }
+   input_st = input_state_get_ptr();
+   win      = g_x11_win;
+   if (     win == None
+         || !input_st->current_driver
+         || strcmp(input_st->current_driver->ident, "x")
+         || !input_st->current_driver->grab_mouse)
+   {
+      fprintf(stderr, "[skip] x11 grabbed mouse lane (input driver %s)\n",
+            input_st->current_driver
+            ? input_st->current_driver->ident : "none");
+      return;
+   }
+   if (!(dpy = XOpenDisplay(NULL)))
+   {
+      fprintf(stderr, "[skip] x11 grabbed mouse lane (no X connection)\n");
+      return;
+   }
+
+   /* Directly, then under the wrapper, where the size is recorded on
+    * the video thread and read by the poll on this one. */
+   for (pass = 0; pass < 2; pass++)
+   {
+   set_threaded_via_setting(pass == 1);
+   run_frames(3);
+   expect_wrapper(pass == 1, "x11 grabbed mouse");
+   /* The toggle rebuilt the driver and its window. */
+   win = g_x11_win;
+   if (     win == None
+         || !input_st->current_driver
+         || strcmp(input_st->current_driver->ident, "x"))
+      break;
+   x11_get_video_size(NULL, &dims);
+   cx = (int)(VIDEO_SCALE_W(dims) >> 1);
+   cy = (int)(VIDEO_SCALE_H(dims) >> 1);
+
+   /* Inside the window, as the pointer is when a core grabs it. */
+   x11_send(dpy, win, EnterNotify, 0);
+   XWarpPointer(dpy, None, win, 0, 0, 0, 0, cx, cy);
+   XSync(dpy, False);
+   run_frames(2);
+   input_st->current_driver->grab_mouse(input_st->current_data, true);
+
+   for (i = 0; i < GRABLANE_POLLS; i++)
+   {
+      int16_t dx, dy;
+      /* Everything the last poll sent has been done, so the move below
+       * is relative to the centre it warped back to. */
+      XSync(g_x11_dpy, False);
+      XWarpPointer(dpy, None, win, 0, 0, 0, 0, cx + 7, cy - 3);
+      XSync(dpy, False);
+
+      before = NextRequest(g_x11_dpy);
+      input_st->current_driver->poll(input_st->current_data);
+      XSync(g_x11_dpy, False);
+      /* Less the XSync that reads the count. */
+      sent   = NextRequest(g_x11_dpy) - before - 1;
+      if (sent > most)
+         most = sent;
+
+      dx = input_st->current_driver->input_state(input_st->current_data,
+            NULL, NULL, NULL, NULL, false, 0,
+            RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
+      dy = input_st->current_driver->input_state(input_st->current_data,
+            NULL, NULL, NULL, NULL, false, 0,
+            RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
+      /* The first poll may still be taking the pointer to the centre. */
+      if (i > 0)
+         CHECK(dx == 7 && dy == -3,
+               "x11 grabbed mouse: poll %u read motion (%d,%d), moved (7,-3)",
+               i, (int)dx, (int)dy);
+   }
+
+   CHECK(most <= 3,
+         "x11 grabbed mouse: a poll sent %lu requests, want keymap,"
+         " pointer and warp only", most);
+
+   input_st->current_driver->grab_mouse(input_st->current_data, false);
+   }
+   CHECK(pass == 2, "x11 grabbed mouse: pass %u lost the X input driver", pass);
+
+   x11_send(dpy, win, LeaveNotify, 0);
+   XSync(dpy, False);
+   XCloseDisplay(dpy);
+   set_threaded_via_setting(false);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] x11 grabbed mouse lane (%u polls direct and"
+            " threaded, at most %lu requests each)\n",
+            (unsigned)GRABLANE_POLLS, most);
+#endif
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: the Vulkan swapchain has an X connection of its own          */
 /*   Every request on a connection is numbered, and a present on the  */
 /*   frontend's connection (a software WSI's image data every frame)  */
@@ -4287,6 +4413,8 @@ int main(int argc, char *argv[])
       lane_x11_event_pump();
    if (real_driver())
       lane_x11_wsi_connection();
+   if (real_driver())
+      lane_x11_grabbed_mouse();
    if (!real_driver())
    {
       lane_waiter_call();

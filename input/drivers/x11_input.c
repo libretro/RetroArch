@@ -71,8 +71,10 @@ typedef struct x11_input
 #endif
 } x11_input_t;
 
-/* Public global variable, owned by x11_common.c */
+/* Public global variables, owned by x11_common.c */
 extern retro_atomic_int_t g_x11_entered;
+extern retro_atomic_int_t g_x11_size;
+extern Window             g_x11_win;
 
 static void *x_input_init(const char *joypad_driver)
 {
@@ -667,23 +669,37 @@ static void x_input_poll(void *data)
       {
          /* Mouse is grabbed - all pointer movement
           * must be considered 'relative' */
-         XWindowAttributes win_attr;
          int centre_x, centre_y;
+         int win_w, win_h;
          int warp_x            = win_x;
          int warp_y            = win_y;
          bool do_warp          = false;
+         /* The size the event pump recorded for the frontend's
+          * window; the server is asked only for a window it has not
+          * seen. */
+         unsigned size         = (x11->win == g_x11_win)
+            ? (unsigned)retro_atomic_load_relaxed_int(&g_x11_size) : 0;
 
-         /* Get dimensions/centre coordinates of
-          * application window */
-         if (!XGetWindowAttributes(x11->display, x11->win, &win_attr))
+         if (VIDEO_SCALE_W(size) && VIDEO_SCALE_H(size))
          {
-            x11->mouse_delta_x[mouse_port] = 0;
-            x11->mouse_delta_y[mouse_port] = 0;
-            return;
+            win_w              = (int)VIDEO_SCALE_W(size);
+            win_h              = (int)VIDEO_SCALE_H(size);
+         }
+         else
+         {
+            XWindowAttributes win_attr;
+            if (!XGetWindowAttributes(x11->display, x11->win, &win_attr))
+            {
+               x11->mouse_delta_x[mouse_port] = 0;
+               x11->mouse_delta_y[mouse_port] = 0;
+               return;
+            }
+            win_w              = win_attr.width;
+            win_h              = win_attr.height;
          }
 
-         centre_x              = win_attr.width  >> 1;
-         centre_y              = win_attr.height >> 1;
+         centre_x              = win_w >> 1;
+         centre_y              = win_h >> 1;
 
          /* Get relative movement delta since last
           * poll event */
@@ -699,14 +715,14 @@ static void x_input_poll(void *data)
          /* Clamp X */
          if (x11->mouse_x[mouse_port] < 0)
             x11->mouse_x[mouse_port] = 0;
-         if (x11->mouse_x[mouse_port] >= win_attr.width)
-            x11->mouse_x[mouse_port] = (win_attr.width - 1);
+         if (x11->mouse_x[mouse_port] >= win_w)
+            x11->mouse_x[mouse_port] = (win_w - 1);
 
          /* Clamp Y */
          if (x11->mouse_y[mouse_port] < 0)
             x11->mouse_y[mouse_port] = 0;
-         if (x11->mouse_y[mouse_port] >= win_attr.height)
-            x11->mouse_y[mouse_port] = (win_attr.height - 1);
+         if (x11->mouse_y[mouse_port] >= win_h)
+            x11->mouse_y[mouse_port] = (win_h - 1);
 
          /* Hack/workaround:
           * - X11 gives absolute pointer coordinates
@@ -732,10 +748,13 @@ static void x_input_poll(void *data)
 
          if (do_warp)
          {
+            /* Sent now, not waited for: the next poll's pointer query
+             * follows it on the connection, so it reads the warped
+             * position. */
             XWarpPointer(x11->display, None,
                   x11->win, 0, 0, 0, 0,
                   warp_x, warp_y);
-            XSync(x11->display, False);
+            XFlush(x11->display);
          }
       }
    }

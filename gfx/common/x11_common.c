@@ -73,6 +73,10 @@
 retro_atomic_int_t g_x11_entered;
 /* Keyboard focus on the window itself, from FocusIn/FocusOut. */
 static retro_atomic_int_t g_x11_focused;
+/* The window's size as VIDEO_SCALE_PACK, 0 while unknown. Written by
+ * the event pump and read by the input driver's poll on the runloop
+ * thread, so it is one word. */
+retro_atomic_int_t g_x11_size;
 Display *g_x11_dpy                          = NULL;
 unsigned g_x11_screen                       = 0;
 Window   g_x11_win                          = None;
@@ -89,7 +93,6 @@ static bool xdg_screensaver_available       = true;
  * is g_x11_focused. */
 static bool g_x11_mapped                    = false;
 static bool g_x11_true_full                 = false;
-static XConfigureEvent g_x11_xce            = {0};
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
@@ -748,7 +751,9 @@ bool x11_alive(void *data)
 
          case ConfigureNotify:
             if (event.xconfigure.window == g_x11_win)
-               g_x11_xce = event.xconfigure;
+               retro_atomic_store_relaxed_int(&g_x11_size,
+                     (int)VIDEO_SCALE_PACK(event.xconfigure.width,
+                        event.xconfigure.height));
             break;
 
          /* Grabs leave the focus where it was. */
@@ -868,10 +873,9 @@ void x11_get_video_size(void *data, unsigned *dims)
    }
    else
    {
-      if (g_x11_xce.width != 0 && g_x11_xce.height != 0)
-      {
-         *dims = VIDEO_SCALE_PACK(g_x11_xce.width, g_x11_xce.height);
-      }
+      unsigned size = (unsigned)retro_atomic_load_relaxed_int(&g_x11_size);
+      if (VIDEO_SCALE_W(size) && VIDEO_SCALE_H(size))
+         *dims = size;
       else
       {
          XWindowAttributes target;
@@ -919,7 +923,7 @@ bool x11_connect(void)
    dbus_ensure_connection();
 #endif
 
-   memset(&g_x11_xce, 0, sizeof(XConfigureEvent));
+   retro_atomic_store_relaxed_int(&g_x11_size, 0);
    retro_atomic_store_relaxed_int(&g_x11_focused, 0);
 
    return true;
@@ -994,7 +998,7 @@ void x11_window_destroy(bool fullscreen)
    if (!fullscreen)
       XDestroyWindow(g_x11_dpy, g_x11_win);
    g_x11_win = None;
-   memset(&g_x11_xce, 0, sizeof(XConfigureEvent));
+   retro_atomic_store_relaxed_int(&g_x11_size, 0);
    retro_atomic_store_relaxed_int(&g_x11_focused, 0);
 
 #ifdef HAVE_DBUS
@@ -1031,10 +1035,8 @@ void x11_event_queue_check(XEvent *event)
    XWindowAttributes target;
    XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
    if (XGetWindowAttributes(g_x11_dpy, g_x11_win, &target))
-   {
-      g_x11_xce.width  = target.width;
-      g_x11_xce.height = target.height;
-   }
+      retro_atomic_store_relaxed_int(&g_x11_size,
+            (int)VIDEO_SCALE_PACK(target.width, target.height));
 }
 
 static bool x11_check_atom_supported(Display *dpy, Atom atom)
