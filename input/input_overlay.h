@@ -30,7 +30,6 @@
 #define OVERLAY_GET_KEY(state, key) (((state)->keys[(key) / 32] >> ((key) % 32)) & 1)
 #define OVERLAY_SET_KEY(state, key) (state)->keys[(key) / 32] |= 1 << ((key) % 32)
 
-#define MAX_VISIBILITY 32
 
 #define CUSTOM_BINDS_U32_COUNT ((RARCH_CUSTOM_BIND_LIST_END - 1) / 32 + 1)
 
@@ -86,13 +85,6 @@ enum overlay_image_transfer_status
    OVERLAY_IMAGE_TRANSFER_ERROR
 };
 
-enum overlay_visibility
-{
-   OVERLAY_VISIBILITY_DEFAULT = 0,
-   OVERLAY_VISIBILITY_VISIBLE,
-   OVERLAY_VISIBILITY_HIDDEN
-};
-
 enum overlay_orientation
 {
    OVERLAY_ORIENTATION_NONE = 0,
@@ -115,7 +107,9 @@ enum OVERLAY_LOADER_FLAGS
    /* The driver samples XRGB2101010, so a 16-bit PNG in the pack is
     * decoded at ten bits a channel instead of being flattened to
     * eight. An 8-bit image decodes as it always did. */
-   OVERLAY_LOADER_10BIT        = (1 << 2)
+   OVERLAY_LOADER_10BIT        = (1 << 2),
+   /* A desc of the pack names the LED its image shows (_led). */
+   OVERLAY_LOADER_HAS_LEDS     = (1 << 3)
 };
 
 enum INPUT_OVERLAY_FLAGS
@@ -127,7 +121,10 @@ enum INPUT_OVERLAY_FLAGS
    INPUT_OVERLAY_GAMEPAD_HIDDEN = (1 << 4),
    /* The driver declined the pack's textures (load_textures): pages
     * go through load() until the next enable. */
-   INPUT_OVERLAY_TEXTURES_DECLINED = (1 << 5)
+   INPUT_OVERLAY_TEXTURES_DECLINED = (1 << 5),
+   /* The pack names its LED images (overlayN_descM_led): the overlay
+    * LED driver shows and hides those, and ledN_map is not used. */
+   INPUT_OVERLAY_HAS_LEDS = (1 << 6)
 };
 
 enum OVERLAY_FLAGS
@@ -152,7 +149,10 @@ enum OVERLAY_DESC_FLAGS
    /* If true, blocks input from overlapped hitboxes */
    OVERLAY_DESC_EXCLUSIVE           = (1 << 1),
    /* Similar, but only applies after range_mod takes effect */
-   OVERLAY_DESC_RANGE_MOD_EXCLUSIVE = (1 << 2)
+   OVERLAY_DESC_RANGE_MOD_EXCLUSIVE = (1 << 2),
+   /* A "nul" button: nothing happens when it is pressed. Only such a
+    * desc's image is a slot ledN_map may show and hide. */
+   OVERLAY_DESC_DISPLAY_ONLY        = (1 << 3)
 };
 
 enum overlay_lightgun_action
@@ -288,6 +288,9 @@ struct overlay_desc
    uint32_t touch_mask;
    uint32_t old_touch_mask;
 
+   /* The LED (1-based, as ledN_map counts) whose state this desc's
+    * image shows under the overlay LED driver; 0 for none. */
+   uint8_t led;
    uint8_t flags;
 };
 
@@ -522,7 +525,24 @@ typedef struct
 
 void input_overlay_free_overlay(struct overlay *overlay);
 
-void input_overlay_set_visibility(int overlay_idx,enum overlay_visibility vis);
+/* The overlay LED driver's entry points: whether it is the LED
+ * driver, and a core's LED going on or off. */
+void input_overlay_leds_enable(bool enable);
+void input_overlay_set_led(int led, bool lit);
+
+/* Whether the LED driver hides image @image of the active page: the
+ * image of a desc naming an unlit LED (_led) when the pack names its
+ * LED images, else the image of a "nul" desc an unlit LED's @led_map
+ * entry points at - a button that does something is never an LED.
+ * @led_map is NULL when the overlay LED driver is not in use, and
+ * nothing is hidden. Bit n of @lit is LED n + 1. */
+bool input_overlay_image_hidden(const input_overlay_t *ol,
+      unsigned image, uint32_t lit, const unsigned *led_map);
+
+/* Sets alpha 0 on every image of the active page that
+ * input_overlay_image_hidden() would hide. */
+void input_overlay_hide_leds(input_overlay_t *ol,
+      uint32_t lit, const unsigned *led_map);
 
 /* Attempts to automatically rotate the specified overlay.
  * Depends upon proper naming conventions in overlay
@@ -606,9 +626,7 @@ bool input_overlay_promote_textures(input_overlay_t *ol);
  * on whatever driver comes up. */
 void input_overlay_video_teardown(void);
 
-void input_overlay_load_active(
-      enum overlay_visibility *visibility,
-      input_overlay_t *ol, float opacity);
+void input_overlay_load_active(input_overlay_t *ol, float opacity);
 
 /**
  * input_overlay_next_move_touch_masks
@@ -640,9 +658,7 @@ void input_overlay_set_scale_factor(
  * Sets a modulating factor for alpha channel. Default is 1.0.
  * The alpha factor is applied for all overlays.
  **/
-void input_overlay_set_alpha_mod(
-      enum overlay_visibility *visibility,
-      input_overlay_t *ol, float mod);
+void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod);
 
 /**
  * input_overlay_set_eightway_diagonal_sensitivity:

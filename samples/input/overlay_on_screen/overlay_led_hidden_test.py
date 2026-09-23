@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
-"""An image the LED driver hides stays hidden while its button is held.
+"""The overlay LED driver hides LED images, and nothing else.
 
 Runs the real retroarch binary under Xvfb with software GL, the menu
 up, the overlay LED driver on and "Show Inputs on Overlay" set to the
 physical controller, holds a key through XTEST and looks at the screen.
 
-led_driver = "overlay" hides the images its ledN_map names until a core
-lights them. The highlight of a pressed desc set that desc's alpha
-without asking whether its image was hidden, so a hidden image showed
-for as long as its button was held - with a gamepad pack loaded, the
-d-pad arms at the mapped slots were gone except while pressed.
+led_driver = "overlay" hides an LED's image until a core lights it.
+ledN_map names that image as a slot of whatever page is loaded, so a
+config made for an LED pack blanked the controls at those slots of a
+gamepad pack; and a pressed desc was lit whether or not its image was
+hidden. Each pack is three solid magenta squares at full opacity, no
+core lights anything, and Up is held for the second look:
 
-The pack is two solid magenta squares at full opacity: square 0 is a
-"nul" button at image slot 0, square 1 is bound to "up" at slot 1, and
-led1_map = 1 hides slot 1. With Up held, for video_threaded off and on:
+  map pack   square 0 "nul"                  - shown (the overlay is up)
+             square 1 "nul", led1_map = 1    - hidden: an LED image
+             square 2 "up",  led2_map = 2    - shown: a control is never
+                                               an LED, pressed or not
+  led pack   square 0 "nul"                  - shown
+             square 1 "up",  _led = 1        - hidden, and stays hidden
+                                               while Up is held
+             square 2 "nul", led2_map = 2    - shown: a pack that names
+                                               its LEDs is not mapped
 
-  - square 0 is on the screen      (the overlay is up)
-  - square 1 is not                (hidden stays hidden)
+each for video_threaded off and on.
 
 Usage: overlay_led_hidden_test.py /path/to/retroarch
 Needs Xvfb, xwd (x11-apps), libX11, libXtst and a software GL (Mesa
@@ -36,22 +42,31 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import overlay_on_screen_test as screen  # noqa: E402
 
 W, H    = screen.W, screen.H
-# centre x, centre y, half width, half height, bind
-SQUARES = [(0.15, 0.20, 0.10, 0.10, "nul"), (0.85, 0.80, 0.10, 0.10, "up")]
+# centre x, centre y, half width, half height, bind, _led, expected shown
+PACKS = {
+    "map": [(0.15, 0.20, 0.10, 0.10, "nul", 0, True),
+            (0.85, 0.80, 0.10, 0.10, "nul", 0, False),
+            (0.85, 0.20, 0.10, 0.10, "up",  0, True)],
+    "led": [(0.15, 0.20, 0.10, 0.10, "nul", 0, True),
+            (0.85, 0.80, 0.10, 0.10, "up",  1, False),
+            (0.85, 0.20, 0.10, 0.10, "nul", 0, True)],
+}
 HOLD_S  = 1.5      # Up held this long before the screen is looked at
 XK_UP   = 0xff52
 
 
-def write_overlay(d):
+def write_overlay(d, squares):
     screen.png_solid(os.path.join(d, "sq.png"), (255, 0, 255, 255))
     lines = ["overlays = 1",
              "overlay0_full_screen = true",
              "overlay0_normalized = true",
-             "overlay0_descs = %d" % len(SQUARES)]
-    for i, (x, y, w, h, bind) in enumerate(SQUARES):
+             "overlay0_descs = %d" % len(squares)]
+    for i, (x, y, w, h, bind, led, _) in enumerate(squares):
         lines.append('overlay0_desc%d = "%s,%f,%f,rect,%f,%f"'
                      % (i, bind, x, y, w, h))
         lines.append('overlay0_desc%d_overlay = "sq.png"' % i)
+        if led:
+            lines.append('overlay0_desc%d_led = %d' % (i, led))
     path = os.path.join(d, "test.cfg")
     with open(path, "w") as f:
         f.write("\n".join(lines) + "\n")
@@ -73,6 +88,7 @@ def write_config(d, overlay, threaded):
             'pause_nonactive = "false"',
             'led_driver = "overlay"',
             'led1_map = "1"',
+            'led2_map = "2"',
             'input_overlay = "%s"' % overlay,
             'input_overlay_enable = "true"',
             'input_overlay_hide_in_menu = "false"',
@@ -114,18 +130,33 @@ class Keyboard(object):
         self.x.XCloseDisplay(self.dpy)
 
 
-def run(retroarch, threaded):
-    label = "threaded %s" % ("on" if threaded else "off")
-    d     = tempfile.mkdtemp(prefix="overlay_led_")
-    disp  = ":%d" % (94 + int(threaded))
-    xvfb  = subprocess.Popen(["Xvfb", disp, "-screen", "0", "%dx%dx24" % (W, H)],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    ra    = None
-    kbd   = None
+def look(label, when, squares, w, h, rows):
     fails = []
+    for i, sq in enumerate(squares):
+        x, y, shown = sq[0], sq[1], sq[6]
+        px = rows[int(y * h)][int(x * w)]
+        if screen.magenta(px) != shown:
+            fails.append("%s, %s: square %d (%s%s) is %s, it should be %s"
+                         % (label, when, i, sq[4],
+                            ", _led = %d" % sq[5] if sq[5] else "",
+                            "shown" if screen.magenta(px) else "hidden",
+                            "shown" if shown else "hidden"))
+    return fails
+
+
+def run(retroarch, pack, threaded, disp_no):
+    squares = PACKS[pack]
+    label   = "%s pack, threaded %s" % (pack, "on" if threaded else "off")
+    d       = tempfile.mkdtemp(prefix="overlay_led_")
+    disp    = ":%d" % disp_no
+    xvfb    = subprocess.Popen(["Xvfb", disp, "-screen", "0", "%dx%dx24" % (W, H)],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    ra      = None
+    kbd     = None
+    fails   = []
     try:
         time.sleep(1.5)
-        cfg = write_config(d, write_overlay(d), threaded)
+        cfg = write_config(d, write_overlay(d, squares), threaded)
         env = dict(os.environ, DISPLAY=disp, LIBGL_ALWAYS_SOFTWARE="1",
                    HOME=d, XDG_CONFIG_HOME=d)
         log = open(os.path.join(d, "log.txt"), "w")
@@ -136,28 +167,14 @@ def run(retroarch, threaded):
             return ["%s: retroarch exited early (%s)" % (label, ra.returncode)]
         if not ok:
             fails.append("%s: the screen never held still" % label)
-
-        # Released: slot 1 is hidden, slot 0 is not.
-        at = [rows[int(y * h)][int(x * w)] for (x, y, _, _, _) in SQUARES]
-        if not screen.magenta(at[0]):
-            fails.append("%s: square 0 is not on the screen (%s)" % (label, at[0]))
-        if screen.magenta(at[1]):
-            fails.append("%s: square 1 shows before anything is pressed - "
-                         "the LED driver did not hide it" % label)
+        fails += look(label, "released", squares, w, h, rows)
 
         kbd = Keyboard(disp)
         kbd.key(XK_UP, True)
         time.sleep(HOLD_S)
         w, h, rows = screen.grab(disp, os.path.join(d, "held.xwd"))
         kbd.key(XK_UP, False)
-
-        at = [rows[int(y * h)][int(x * w)] for (x, y, _, _, _) in SQUARES]
-        if not screen.magenta(at[0]):
-            fails.append("%s: square 0 went while Up was held (%s)"
-                         % (label, at[0]))
-        if screen.magenta(at[1]):
-            fails.append("%s: square 1, hidden by the LED driver, shows "
-                         "while its button is held" % label)
+        fails += look(label, "Up held", squares, w, h, rows)
         print("[%s] %s" % ("fail" if fails else "pass", label))
     finally:
         if kbd:
@@ -174,8 +191,11 @@ def main():
         print("usage: overlay_led_hidden_test.py /path/to/retroarch")
         return 2
     fails = []
-    for threaded in (False, True):
-        fails += run(os.path.abspath(sys.argv[1]), threaded)
+    disp  = 94
+    for pack in ("map", "led"):
+        for threaded in (False, True):
+            fails += run(os.path.abspath(sys.argv[1]), pack, threaded, disp)
+            disp += 1
     for f in fails:
         print("[FAIL] " + f)
     print("%s overlay_led_hidden_test" % ("FAIL" if fails else "PASS"))

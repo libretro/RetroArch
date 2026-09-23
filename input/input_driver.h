@@ -200,7 +200,10 @@ enum input_driver_state_flags
    /* Background controller input is off and the window is not
     * focused: the joypad read paths see an idle controller. Set once
     * per poll; read through input_driver_joypad_for_read(). */
-   INP_FLAG_JOYPAD_UNFOCUSED         = (1 << 14)
+   INP_FLAG_JOYPAD_UNFOCUSED         = (1 << 14),
+   /* led_driver is "overlay": the overlay shows the LEDs'
+    * state (overlay_leds_lit). */
+   INP_FLAG_OVERLAY_LEDS             = (1 << 15)
 };
 
 #ifdef HAVE_BSV_MOVIE
@@ -616,12 +619,13 @@ typedef struct
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
    input_overlay_t *overlay_cache_ptr;
-   enum overlay_visibility *overlay_visibility;
    float overlay_eightway_dpad_slopes[2];
    float overlay_eightway_abxy_slopes[2];
 
    /* touch pointer indexes from previous poll */
    int old_touch_index_lut[OVERLAY_MAX_TOUCH];
+   /* Bit n: LED n + 1 is lit, for the overlay LED driver. */
+   uint32_t overlay_leds_lit;
 #endif
    uint16_t flags;
    /* Read and written every poll; kept beside flags so the per-poll

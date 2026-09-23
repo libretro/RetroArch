@@ -37,6 +37,9 @@
 #endif
 
 #include "input_driver.h"
+#ifdef HAVE_OVERLAY
+#include "../led/led_defines.h"
+#endif
 #include "../gfx/gfx_instrument.h"
 #include "../gfx/gfx_surface.h"
 #ifdef HAVE_RPNG
@@ -3369,9 +3372,14 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
 }
 #endif
 
-static enum overlay_visibility input_overlay_get_visibility(
-      enum overlay_visibility *visibility,
-      int overlay_idx);
+/* ledN_map while the overlay LED driver is the LED driver, else NULL:
+ * nothing is hidden. */
+static const unsigned *input_overlay_led_map(void)
+{
+   if (!(input_driver_st.flags & INP_FLAG_OVERLAY_LEDS))
+      return NULL;
+   return config_get_ptr()->uints.led_map;
+}
 
 /**
  * input_overlay_post_poll:
@@ -3380,13 +3388,13 @@ static enum overlay_visibility input_overlay_get_visibility(
  * update alpha mods for pressed/unpressed controls
  **/
 static void input_overlay_post_poll(
-      enum overlay_visibility *visibility,
       input_overlay_t *ol,
       bool show_input, float opacity)
 {
    size_t i;
+   const unsigned *led_map = input_overlay_led_map();
 
-   input_overlay_set_alpha_mod(visibility, ol, opacity);
+   input_overlay_set_alpha_mod(ol, opacity);
 
    for (i = 0; i < ol->active->size; i++)
    {
@@ -3397,8 +3405,8 @@ static void input_overlay_post_poll(
       if (     desc->touch_mask != 0
             && show_input && OVERLAY_HAS_IMAGE(&desc->image)
             && ol->iface->set_alpha
-            && input_overlay_get_visibility(visibility,
-                  (int)desc->image_index) != OVERLAY_VISIBILITY_HIDDEN)
+            && !input_overlay_image_hidden(ol, desc->image_index,
+                  input_driver_st.overlay_leds_lit, led_map))
          ol->iface->set_alpha(ol->iface_data, desc->image_index,
                desc->alpha_mod * opacity);
 
@@ -3695,26 +3703,22 @@ void input_overlay_video_teardown(void)
 }
 
 static void input_overlay_load_active_geom(
-      enum overlay_visibility *visibility,
       input_overlay_t *ol, float opacity);
 
-void input_overlay_load_active(
-      enum overlay_visibility *visibility,
-      input_overlay_t *ol, float opacity)
+void input_overlay_load_active(input_overlay_t *ol, float opacity)
 {
    /* No page in the driver, no per-image state to set on it: the
     * setters would index whatever the driver held before. */
    if (input_overlay_load_page(ol) != INPUT_OVERLAY_PAGE_NONE)
-      input_overlay_load_active_geom(visibility, ol, opacity);
+      input_overlay_load_active_geom(ol, opacity);
 }
 
 /* The per-page state that follows either load: alpha, geometry,
  * full-screen. */
 static void input_overlay_load_active_geom(
-      enum overlay_visibility *visibility,
       input_overlay_t *ol, float opacity)
 {
-   input_overlay_set_alpha_mod(visibility, ol, opacity);
+   input_overlay_set_alpha_mod(ol, opacity);
    input_overlay_set_vertex_geom(ol);
 
    if (ol->iface->full_screen)
@@ -3764,14 +3768,13 @@ void input_overlay_next_move_touch_masks(input_overlay_t *ol)
  * clear certain state.
  **/
 static void input_overlay_poll_clear(
-      enum overlay_visibility *visibility,
       input_overlay_t *ol, float opacity)
 {
    size_t i;
 
    ol->flags &= ~INPUT_OVERLAY_BLOCKED;
 
-   input_overlay_set_alpha_mod(visibility, ol, opacity);
+   input_overlay_set_alpha_mod(ol, opacity);
 
    for (i = 0; i < ol->active->size; i++)
    {
@@ -3788,22 +3791,10 @@ static void input_overlay_poll_clear(
 #endif
 }
 
-static enum overlay_visibility input_overlay_get_visibility(
-      enum overlay_visibility *visibility,
-      int overlay_idx)
-{
-    if (!visibility)
-       return OVERLAY_VISIBILITY_DEFAULT;
-    if ((overlay_idx < 0) || (overlay_idx >= MAX_VISIBILITY))
-       return OVERLAY_VISIBILITY_DEFAULT;
-    return visibility[overlay_idx];
-}
-
-void input_overlay_set_alpha_mod(
-      enum overlay_visibility *visibility,
-      input_overlay_t *ol, float mod)
+void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 {
    unsigned i;
+   const unsigned *led_map;
 
    if (!ol)
       return;
@@ -3811,14 +3802,17 @@ void input_overlay_set_alpha_mod(
    if (ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN)
       mod = 0.0f;
 
-   for (i = 0; i < ol->active->load_images_size; i++)
+   if (!(led_map = input_overlay_led_map()))
    {
-      if (input_overlay_get_visibility(visibility, i)
-            == OVERLAY_VISIBILITY_HIDDEN)
-          ol->iface->set_alpha(ol->iface_data, i, 0.0);
-      else
-          ol->iface->set_alpha(ol->iface_data, i, mod);
+      for (i = 0; i < ol->active->load_images_size; i++)
+         ol->iface->set_alpha(ol->iface_data, i, mod);
+      return;
    }
+
+   for (i = 0; i < ol->active->load_images_size; i++)
+      ol->iface->set_alpha(ol->iface_data, i,
+            input_overlay_image_hidden(ol, i,
+               input_driver_st.overlay_leds_lit, led_map) ? 0.0f : mod);
 }
 
 static void input_overlay_free_images(input_overlay_t *ol)
@@ -4406,7 +4400,6 @@ INPUT_NOINLINE static void input_poll_overlay(
       bool keyboard_mapping_blocked,
       settings_t *settings,
       void *ol_data,
-      enum overlay_visibility *overlay_visibility,
       float opacity,
       unsigned analog_dpad_mode,
       float axis_threshold)
@@ -4785,10 +4778,10 @@ INPUT_NOINLINE static void input_poll_overlay(
    }
 
    if (button_pressed || ol_state->touch_count)
-      input_overlay_post_poll(overlay_visibility, ol,
+      input_overlay_post_poll(ol,
             button_pressed, opacity);
    else
-      input_overlay_poll_clear(overlay_visibility, ol, opacity);
+      input_overlay_poll_clear(ol, opacity);
 
    /* Create haptic feedback for any change in button/key state,
     * unless touch_count decreased. */
@@ -6591,7 +6584,7 @@ static void input_overlay_enable_(bool enable)
 
       /* Load last-active overlay */
       ol->flags &= ~INPUT_OVERLAY_TEXTURES_DECLINED;
-      input_overlay_load_active(input_st->overlay_visibility, ol, opacity);
+      input_overlay_load_active(ol, opacity);
 
       /* Adjust to current settings */
       command_event(CMD_EVENT_OVERLAY_SET_SCALE_FACTOR, NULL);
@@ -6708,49 +6701,48 @@ void input_overlay_unload(void)
       input_overlay_move_to_cache();
 }
 
-void input_overlay_set_visibility(int overlay_idx,
-      enum overlay_visibility vis)
+void input_overlay_leds_enable(bool enable)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+
+   input_st->overlay_leds_lit = 0;
+   if (enable)
+      input_st->flags |=  INP_FLAG_OVERLAY_LEDS;
+   else
+      input_st->flags &= ~INP_FLAG_OVERLAY_LEDS;
+
+   if (input_st->overlay_ptr && input_st->overlay_ptr->active)
+   {
+      settings_t *settings = config_get_ptr();
+      input_overlay_set_alpha_mod(input_st->overlay_ptr,
+            (input_st->overlay_ptr->flags & INPUT_OVERLAY_IS_OSK)
+            ? settings->floats.input_osk_overlay_opacity
+            : settings->floats.input_overlay_opacity);
+   }
+}
+
+void input_overlay_set_led(int led, bool lit)
 {
    input_driver_state_t *input_st = &input_driver_st;
    input_overlay_t      *ol       = input_st->overlay_ptr;
+   uint32_t              was      = input_st->overlay_leds_lit;
 
-   /* The index arrives from a caller's own mapping - the overlay LED
-    * driver passes settings->uints.led_map[], which is read from the
-    * config with no range of its own - so it is bounded here, where the
-    * array size is known, and on the same terms as
-    * input_overlay_get_visibility(). */
-   if (overlay_idx < 0 || overlay_idx >= MAX_VISIBILITY)
+   /* The LED number is the core's (retro_led_interface), with no range
+    * of its own. */
+   if (led < 0 || led >= MAX_LEDS)
       return;
 
-   if (!input_st->overlay_visibility)
-   {
-      unsigned i;
-      input_st->overlay_visibility = (enum overlay_visibility *)calloc(
-            MAX_VISIBILITY, sizeof(enum overlay_visibility));
+   if (lit)
+      input_st->overlay_leds_lit |=  (1u << led);
+   else
+      input_st->overlay_leds_lit &= ~(1u << led);
 
-      /* NULL-check: the init loop below and the later
-       * overlay_visibility[overlay_idx] = vis write NULL-deref
-       * on OOM.  Bail early - on failure the overlay stays at
-       * its compile-time default visibility rather than being
-       * explicitly set, which is strictly better than crashing. */
-      if (!input_st->overlay_visibility)
-         return;
-
-      for (i = 0; i < MAX_VISIBILITY; i++)
-         input_st->overlay_visibility[i] = OVERLAY_VISIBILITY_DEFAULT;
-   }
-
-   input_st->overlay_visibility[overlay_idx] = vis;
-
-   if (!ol)
-      return;
-   /* set_alpha() indexes the driver's own per-image storage, which is
-    * sized by the images the active overlay loaded, so that is the
-    * bound it gets - the same one input_overlay_set_alpha_mod() walks. */
-   if (     vis == OVERLAY_VISIBILITY_HIDDEN
-         && ol->active
-         && (unsigned)overlay_idx < ol->active->load_images_size)
-      ol->iface->set_alpha(ol->iface_data, overlay_idx, 0.0);
+   /* A light going out is shown at once; one coming on shows at the
+    * next poll's alpha pass, as every other image does. */
+   if (     ol && ol->active
+         && input_st->overlay_leds_lit != was)
+      input_overlay_hide_leds(ol, input_st->overlay_leds_lit,
+            input_overlay_led_map());
 }
 
 static bool input_overlay_want_hidden(void)
@@ -6952,6 +6944,8 @@ static void input_overlay_loaded(retro_task_t *task,
    ol->flags      |= INPUT_OVERLAY_ALIVE;
    if (data->flags & OVERLAY_LOADER_IS_OSK)
       ol->flags   |= INPUT_OVERLAY_IS_OSK;
+   if (data->flags & OVERLAY_LOADER_HAS_LEDS)
+      ol->flags   |= INPUT_OVERLAY_HAS_LEDS;
 #ifdef HAVE_MENU
    overlay_types   = data->overlay_types;
 #endif
@@ -7853,7 +7847,7 @@ void input_driver_poll(void)
       /* Under threaded video the pack's textures arrive after the
        * page was first shown; the page moves over to them here. */
       if (input_overlay_promote_textures(input_st->overlay_ptr))
-         input_overlay_load_active_geom(input_st->overlay_visibility,
+         input_overlay_load_active_geom(
                input_st->overlay_ptr, input_overlay_opacity);
 #ifdef HAVE_RPNG
       input_overlay_animate(input_st->overlay_ptr, cpu_features_get_time_usec());
@@ -7862,7 +7856,6 @@ void input_driver_poll(void)
             !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
             settings,
             input_st->overlay_ptr,
-            input_st->overlay_visibility,
             input_overlay_opacity,
             input_analog_dpad_mode,
             settings->floats.input_axis_threshold);

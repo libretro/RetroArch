@@ -4442,8 +4442,7 @@ bool command_event(enum event_command cmd, void *data)
                   ? settings->floats.input_osk_overlay_opacity
                   : settings->floats.input_overlay_opacity;
 
-            input_overlay_load_active(input_st->overlay_visibility,
-                  ol, input_overlay_opacity);
+            input_overlay_load_active(ol, input_overlay_opacity);
 
             ol->next_index                 =
                   (unsigned)((ol->index + 1) % ol->size);
@@ -4894,8 +4893,7 @@ bool command_event(enum event_command cmd, void *data)
                      ? settings->floats.input_osk_overlay_opacity
                      : settings->floats.input_overlay_opacity;
 
-               input_overlay_set_alpha_mod(input_st->overlay_visibility,
-                        ol, input_overlay_opacity);
+               input_overlay_set_alpha_mod(ol, input_overlay_opacity);
             }
          }
 #endif

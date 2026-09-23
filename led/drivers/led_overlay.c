@@ -4,50 +4,24 @@
 
 #include "../../input/input_overlay.h"
 
-#include "../../configuration.h"
-
-typedef struct
-{
-   int setup[MAX_LEDS];
-   int map[MAX_LEDS];
-} overlayled_t;
-
-/* TODO/FIXME - static globals */
-static overlayled_t ledoverlay_curins;
-static overlayled_t *ledoverlay_cur = &ledoverlay_curins;
+/* The overlay shows the LEDs: a pack's _led images, or for a pack that
+ * names none, the slots ledN_map points at. Which images those are is
+ * the overlay's to work out (input_overlay_image_hidden()); this only
+ * reports the core's LEDs. */
 
 static void overlay_init(void)
 {
-   int i;
-   settings_t *settings = config_get_ptr();
-
-   for (i = 0; i < MAX_LEDS; i++)
-   {
-      ledoverlay_cur->setup[i] = 0;
-      ledoverlay_cur->map[i]   = settings->uints.led_map[i];
-
-      if (ledoverlay_cur->map[i] >= 0)
-         input_overlay_set_visibility(ledoverlay_cur->map[i],
-               OVERLAY_VISIBILITY_HIDDEN);
-   }
+   input_overlay_leds_enable(true);
 }
 
 static void overlay_free(void)
 {
+   input_overlay_leds_enable(false);
 }
 
 static void overlay_set(int led, int state)
 {
-   int gpio = 0;
-   if ((led < 0) || (led >= MAX_LEDS))
-      return;
-
-   if ((gpio = ledoverlay_cur->map[led]) < 0)
-      return;
-
-   input_overlay_set_visibility(gpio,
-         state ? OVERLAY_VISIBILITY_VISIBLE
-         : OVERLAY_VISIBILITY_HIDDEN);
+   input_overlay_set_led(led, state != 0);
 }
 
 const led_driver_t overlay_led_driver = {

@@ -38,6 +38,7 @@
 #include "../input/input_driver.h"
 #include "../input/input_overlay.h"
 #include "../input/input_remapping.h"
+#include "../led/led_defines.h"
 #include "../verbosity.h"
 #include <string/rstrtod.h>
 
@@ -715,7 +716,12 @@ static bool task_overlay_load_desc(
 
    BIT16_SET(loader->overlay_types, desc->type);
    if (takes_input)
+   {
+      desc->flags          &= ~OVERLAY_DESC_DISPLAY_ONLY;
       input_overlay->flags |= OVERLAY_TAKES_INPUT;
+   }
+   else
+      desc->flags          |=  OVERLAY_DESC_DISPLAY_ONLY;
 
    width_mod  = 1.0f;
    height_mod = 1.0f;
@@ -798,6 +804,19 @@ static bool task_overlay_load_desc(
    if (config_get_bool(conf, conf_key, &tmp_bool)
          && tmp_bool)
       desc->flags |= OVERLAY_DESC_MOVABLE;
+
+   /* The LED this desc's image shows, counted as ledN_map counts. */
+   strlcpy_lit(conf_key + _len, "_led", sizeof(conf_key) - _len);
+   desc->led = 0;
+   {
+      unsigned led = 0;
+      if (     config_get_uint(conf, conf_key, &led)
+            && led >= 1 && led <= MAX_LEDS)
+      {
+         desc->led      = (uint8_t)led;
+         loader->flags |= OVERLAY_LOADER_HAS_LEDS;
+      }
+   }
 
    strlcpy_lit(conf_key + _len, "_reach_up", sizeof(conf_key) - _len);
    if (config_get_float(conf, conf_key, &tmp_float))
