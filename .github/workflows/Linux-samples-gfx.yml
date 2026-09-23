@@ -669,7 +669,10 @@ jobs:
           # cannot stand in).  The X11 sample runs the modeline engine
           # end to end - generate a 15 kHz timing, put it on the wire
           # through dispserv_x11, read the crtc back and compare every
-          # field, switch again, restore - and the SDL sample switches
+          # field, switch again, restore - then the Screen Resolution
+          # callbacks: the listed modes, a smaller, a larger and a
+          # rate-only switch with the framebuffer following, an
+          # unlisted size refused, and back.  The SDL sample switches
           # a real SDL2 window among the listed modes through
           # dispserv_sdl2 (and dispserv_sdl3 on an SDL3 build), for the
           # modeline path and the menu picker.

@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
@@ -322,6 +323,236 @@ static int check_on_wire(Display *dpy, const video_modeline_t *mode,
    return 0;
 }
 
+/* What the managed head scans out now: size, field rate, and the
+ * framebuffer size from the root window geometry */
+typedef struct
+{
+   unsigned w, h, fb_w, fb_h;
+   float rate;
+   RRMode id;
+} res_state_t;
+
+static int res_read(Display *dpy, res_state_t *st)
+{
+   int o;
+   Window root = DefaultRootWindow(dpy), groot;
+   int gx, gy;
+   unsigned gb, gd;
+   XRRScreenResources *res = XRRGetScreenResourcesCurrent(dpy, root);
+   memset(st, 0, sizeof(*st));
+   if (!res)
+      return -1;
+   XGetGeometry(dpy, root, &groot, &gx, &gy, &st->fb_w, &st->fb_h, &gb, &gd);
+   for (o = 0; o < res->noutput && !st->id; o++)
+   {
+      XRROutputInfo *oi = XRRGetOutputInfo(dpy, res, res->outputs[o]);
+      XRRCrtcInfo *ci;
+      if (!oi)
+         continue;
+      if (oi->connection == RR_Connected && oi->crtc
+            && (ci = XRRGetCrtcInfo(dpy, res, oi->crtc)))
+      {
+         int m;
+         for (m = 0; m < res->nmode; m++)
+         {
+            XRRModeInfo *mi = &res->modes[m];
+            if (mi->id != ci->mode)
+               continue;
+            st->id = mi->id;
+            st->w  = mi->width;
+            st->h  = mi->height;
+            if (mi->hTotal && mi->vTotal)
+               st->rate = (float)((double)mi->dotClock
+                     / ((double)mi->hTotal * (double)mi->vTotal));
+            break;
+         }
+         XRRFreeCrtcInfo(ci);
+      }
+      XRRFreeOutputInfo(oi);
+   }
+   XRRFreeScreenResources(res);
+   return st->id ? 0 : -1;
+}
+
+static int res_expect(Display *dpy, unsigned w, unsigned h, float hz,
+      const char *what)
+{
+   res_state_t st;
+   if (res_read(dpy, &st) < 0)
+   {
+      fprintf(stderr, "FAIL: %s: no lit head to read back\n", what);
+      return 1;
+   }
+   if (st.w != w || st.h != h || fabs(st.rate - hz) > 0.01)
+   {
+      fprintf(stderr, "FAIL: %s: head scans out %ux%u %.3f Hz, wanted %ux%u %.3f Hz\n",
+            what, st.w, st.h, st.rate, w, h, hz);
+      return 1;
+   }
+   /* One head: the framebuffer follows it, growing and shrinking */
+   if (st.fb_w != w || st.fb_h != h)
+   {
+      fprintf(stderr, "FAIL: %s: framebuffer is %ux%u, head is %ux%u\n",
+            what, st.fb_w, st.fb_h, w, h);
+      return 1;
+   }
+   printf("[pass] %s: %ux%u %.3f Hz, framebuffer %ux%u\n",
+         what, st.w, st.h, st.rate, st.fb_w, st.fb_h);
+   return 0;
+}
+
+/* Settings > Video > Output > Screen Resolution, and the refresh rate
+ * autoswitch that rides on the same two callbacks. Without them the
+ * menu hides the entry on X11 (video_display_server_has_resolution_list)
+ * and the autoswitch never runs. The list must describe the lit head,
+ * mark exactly its mode current, and every switch - smaller, larger,
+ * rate only, back - must land on the wire with the framebuffer
+ * following. A size the head does not list must fail and change
+ * nothing. */
+static int test_screen_resolution(Display *dpy, void *data)
+{
+   unsigned i, j, n = 0, ncur = 0;
+   int small = -1, big = -1, multi_a = -1, multi_b = -1;
+   res_state_t orig, now;
+   video_display_config_t *list;
+
+   if (!dispserv_x11.get_resolution_list || !dispserv_x11.set_resolution)
+   {
+      fprintf(stderr, "FAIL: dispserv_x11 has no get_resolution_list/set_resolution;"
+            " the Screen Resolution entry is hidden on X11\n");
+      return 1;
+   }
+   if (res_read(dpy, &orig) < 0)
+      return 1;
+
+   list = (video_display_config_t*)dispserv_x11.get_resolution_list(data, &n);
+   if (!list || n < 2)
+   {
+      fprintf(stderr, "FAIL: get_resolution_list returned %u entries\n", n);
+      free(list);
+      return 1;
+   }
+   for (i = 0; i < n; i++)
+   {
+      unsigned w = VIDEO_SCALE_W(list[i].dims), h = VIDEO_SCALE_H(list[i].dims);
+      if (list[i].current)
+      {
+         ncur++;
+         if (w != orig.w || h != orig.h
+               || fabs(list[i].refreshrate_float - orig.rate) > 0.01)
+         {
+            fprintf(stderr, "FAIL: entry %u %ux%u %.3f marked current, head is %ux%u %.3f\n",
+                  i, w, h, list[i].refreshrate_float, orig.w, orig.h, orig.rate);
+            free(list);
+            return 1;
+         }
+      }
+      if (list[i].idx != i
+            || (i && list[i - 1].dims > list[i].dims)
+            || list[i].refreshrate != (unsigned)floor(list[i].refreshrate_float + 0.001f))
+      {
+         fprintf(stderr, "FAIL: entry %u out of order or mislabelled\n", i);
+         free(list);
+         return 1;
+      }
+      for (j = 0; j < i; j++)
+         if (list[j].dims == list[i].dims
+               && list[j].interlaced == list[i].interlaced
+               && fabs(list[j].refreshrate_float - list[i].refreshrate_float) < 0.005)
+         {
+            fprintf(stderr, "FAIL: %ux%u %.3f listed twice\n",
+                  w, h, list[i].refreshrate_float);
+            free(list);
+            return 1;
+         }
+      if (list[i].interlaced || list[i].dblscan)
+         continue;
+      if (w < orig.w && h < orig.h)
+      {
+         /* The smallest size with two progressive rates doubles as
+          * the rate-only case */
+         if (small < 0)
+            small = (int)i;
+         if (multi_a < 0 && i + 1 < n && list[i + 1].dims == list[i].dims
+               && !list[i + 1].interlaced && !list[i + 1].dblscan)
+         {
+            multi_a = (int)i;
+            multi_b = (int)i + 1;
+         }
+      }
+      if (w > orig.w && h > orig.h && big < 0)
+         big = (int)i;
+   }
+   if (ncur != 1 || small < 0 || big < 0 || multi_a < 0)
+   {
+      fprintf(stderr, "FAIL: %u current entries, smaller %d larger %d multi-rate %d\n",
+            ncur, small, big, multi_a);
+      free(list);
+      return 1;
+   }
+   printf("[pass] get_resolution_list: %u entries, current %ux%u %.3f Hz\n",
+         n, orig.w, orig.h, orig.rate);
+
+   /* Smaller: crtc first, then the framebuffer shrinks */
+   if (!dispserv_x11.set_resolution(data, list[small].dims,
+            (int)list[small].refreshrate, list[small].refreshrate_float, 0, 0, 0, 0)
+         || res_expect(dpy, VIDEO_SCALE_W(list[small].dims),
+            VIDEO_SCALE_H(list[small].dims), list[small].refreshrate_float,
+            "switch to a smaller mode"))
+      goto fail;
+
+   /* Larger: the framebuffer grows first */
+   if (!dispserv_x11.set_resolution(data, list[big].dims,
+            (int)list[big].refreshrate, list[big].refreshrate_float, 0, 0, 0, 0)
+         || res_expect(dpy, VIDEO_SCALE_W(list[big].dims),
+            VIDEO_SCALE_H(list[big].dims), list[big].refreshrate_float,
+            "switch to a larger mode"))
+      goto fail;
+
+   /* Rate only, the way video_display_server_set_refresh_rate() asks:
+    * no size, the size stays */
+   if (!dispserv_x11.set_resolution(data, list[multi_a].dims,
+            (int)list[multi_a].refreshrate, list[multi_a].refreshrate_float, 0, 0, 0, 0)
+         || !dispserv_x11.set_resolution(data, 0,
+            (int)list[multi_b].refreshrate, list[multi_b].refreshrate_float, 0, 0, 0, 0)
+         || res_expect(dpy, VIDEO_SCALE_W(list[multi_b].dims),
+            VIDEO_SCALE_H(list[multi_b].dims), list[multi_b].refreshrate_float,
+            "refresh rate only"))
+      goto fail;
+
+   /* Whole hertz from the menu label alone still finds the mode */
+   if (!dispserv_x11.set_resolution(data, list[multi_a].dims,
+            (int)list[multi_a].refreshrate, 0.0f, 0, 0, 0, 0)
+         || res_expect(dpy, VIDEO_SCALE_W(list[multi_a].dims),
+            VIDEO_SCALE_H(list[multi_a].dims), list[multi_a].refreshrate_float,
+            "whole-hertz rate"))
+      goto fail;
+
+   /* A size the head does not list: refused, nothing moves */
+   res_read(dpy, &now);
+   if (dispserv_x11.set_resolution(data, VIDEO_SCALE_PACK(1234, 567),
+            60, 60.0f, 0, 0, 0, 0))
+   {
+      fprintf(stderr, "FAIL: an unlisted 1234x567 was accepted\n");
+      goto fail;
+   }
+   if (res_expect(dpy, now.w, now.h, now.rate, "unlisted size refused"))
+      goto fail;
+
+   /* Back to where the head started */
+   if (!dispserv_x11.set_resolution(data, VIDEO_SCALE_PACK(orig.w, orig.h),
+            (int)floor(orig.rate + 0.001f), orig.rate, 0, 0, 0, 0)
+         || res_expect(dpy, orig.w, orig.h, orig.rate, "restore"))
+      goto fail;
+
+   free(list);
+   return 0;
+
+fail:
+   free(list);
+   return 1;
+}
+
 int main(void)
 {
    Display *dpy;
@@ -487,6 +718,9 @@ int main(void)
       if (res)
          XRRFreeScreenResources(res);
    }
+
+   if (test_screen_resolution(dpy, data))
+      return 1;
 
    dispserv_x11.destroy(data);
    modeline_gen_free(gen);
