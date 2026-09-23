@@ -379,16 +379,24 @@ jobs:
         shell: bash
         run: |
           set -u
-          # With no X display only the null GL context is left. The
-          # driver must refuse it and the frontend exit with an error,
-          # never fault tearing down GL objects it never made.
+          # The driver must refuse the null GL context and the frontend
+          # exit with an error, never fault tearing down GL objects it
+          # never made. The context is pinned: left to probe with no
+          # display, a build with SDL2 finds its offscreen EGL backend
+          # and a VM with a DRM device finds KMS, and the run then tests
+          # whatever context the runner image happens to offer.
           dir=$(mktemp -d)
           for threaded in false true; do
-             printf 'video_driver = "%s"\nvideo_threaded = "%s"\naudio_driver = "null"\nmenu_driver = "rgui"\nconfig_save_on_exit = "false"\n' \
+             printf 'video_driver = "%s"\nvideo_context_driver = "null"\nvideo_threaded = "%s"\naudio_driver = "null"\nmenu_driver = "rgui"\nconfig_save_on_exit = "false"\n' \
                 ${{ matrix.driver }} $threaded > $dir/retroarch.cfg
              env -u DISPLAY -u WAYLAND_DISPLAY ASAN_OPTIONS=detect_leaks=0 \
                 timeout 60 ./retroarch --config $dir/retroarch.cfg -v > $dir/run.log 2>&1
              rc=$?
+             if ! grep -q 'Found GL context: "null"' $dir/run.log; then
+                tail -40 $dir/run.log
+                echo "::error::${{ matrix.driver }} (threaded $threaded) did not take the null context (exit $rc)"
+                exit 1
+             fi
              if [ $rc -ne 1 ]; then
                 tail -40 $dir/run.log
                 echo "::error::${{ matrix.driver }} (threaded $threaded) with no display exited $rc, want 1"
