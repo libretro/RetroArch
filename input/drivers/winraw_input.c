@@ -82,7 +82,7 @@ extern "C" {
  * thread owns the window, while winraw_poll() is called from
  * input_driver_poll() in the runloop, always on the main thread. Every
  * field the two share crosses a thread boundary. dlt_x/dlt_y,
- * whl_u/whl_d, pos_pending, abs_pending and abs_x/abs_y are
+ * whl_u/whl_d, pos_pending, abs_pending and abs_pos are
  * retro_atomic_int_t for that reason.
  *
  * x and y are plain LONG because they have exactly one writer:
@@ -156,10 +156,11 @@ typedef struct
     * the system cursor, drained once per frame by winraw_poll(). */
    retro_atomic_int_t pos_pending;
    /* Set by the wndproc for a MOUSE_MOVE_ABSOLUTE report, with the
-    * scaled position alongside. Takes precedence over the accumulated
-    * delta, and yields to pos_pending. */
+    * scaled position alongside as one VIDEO_POS_PACK word, so poll
+    * never pairs one report's x with another's y. Takes precedence
+    * over the accumulated delta, and yields to pos_pending. */
    retro_atomic_int_t abs_pending;
-   retro_atomic_int_t abs_x, abs_y;
+   retro_atomic_int_t abs_pos;
    int device;
    uint8_t flags;
 } winraw_mouse_t;
@@ -574,8 +575,8 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
                state->lLastY - mouse->abs_ref_y);
          mouse->abs_ref_x = state->lLastX;
          mouse->abs_ref_y = state->lLastY;
-         retro_atomic_store_release_int(&mouse->abs_x, state->lLastX);
-         retro_atomic_store_release_int(&mouse->abs_y, state->lLastY);
+         retro_atomic_store_release_int(&mouse->abs_pos,
+               (int)VIDEO_POS_PACK(state->lLastX, state->lLastY));
          retro_atomic_store_release_int(&mouse->abs_pending, 1);
       }
       else
@@ -967,8 +968,10 @@ static void winraw_poll(void *data)
       }
       else if (retro_atomic_exchange_int(&g_mice[i].abs_pending, 0))
       {
-         g_mice[i].x = (LONG)retro_atomic_load_acquire_int(&g_mice[i].abs_x);
-         g_mice[i].y = (LONG)retro_atomic_load_acquire_int(&g_mice[i].abs_y);
+         unsigned pos = (unsigned)retro_atomic_load_acquire_int(
+               &g_mice[i].abs_pos);
+         g_mice[i].x  = (LONG)VIDEO_POS_X(pos);
+         g_mice[i].y  = (LONG)VIDEO_POS_Y(pos);
       }
       else if (dx || dy)
       {
