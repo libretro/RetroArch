@@ -5999,6 +5999,352 @@ static bool video_driver_convert_on_worker(video_driver_state_t *video_st,
 }
 #endif
 
+/* The statistics overlay's text. Cold, so out of the frame body. */
+VIDEO_NOINLINE static void video_driver_frame_statistics(
+      video_driver_state_t *video_st, runloop_state_t *runloop_st,
+      settings_t *settings, video_frame_info_t *video_info,
+      float last_fps, float frame_time, unsigned rotation,
+      bool menu_is_alive)
+{
+   struct retro_system_av_info *av_info   = &video_st->av_info;
+   audio_driver_state_t *audio_st         = audio_state_get_ptr();
+   audio_statistics_t audio_stats;
+   double stddev                          = 0.0;
+   /* The driver's name, not the wrapper's under threaded video. */
+   const char *video_ident                = video_driver_get_ident();
+   const void *cache_data                 = NULL;
+   unsigned cache_dims                    = 0;
+   size_t   cache_pitch                   = 0;
+   float font_size_ratio                  = (float)(DEFAULT_FONT_SIZE / video_info->font_size);
+   float scale                            = (float)VIDEO_SCALE_H(video_info->dims) / (video_info->font_size * 30)
+         * 0.50f * font_size_ratio;
+
+   /* Divide scale evenly to maintain size and readability in small screens */
+   if (font_size_ratio && scale < 0.20f)
+      scale                               = 0.25f;
+   else if (scale < 0.55f)
+      scale                               = 0.50f;
+   else
+      scale                               = 1.00f;
+
+   audio_stats.samples                    = 0;
+   audio_stats.average_buffer_saturation  = 0.0f;
+   audio_stats.std_deviation_percentage   = 0.0f;
+   audio_stats.close_to_underrun          = 0.0f;
+   audio_stats.close_to_blocking          = 0.0f;
+
+   audio_compute_buffer_statistics(&audio_stats);
+   video_monitor_fps_statistics(NULL, &stddev, NULL);
+   frame_cache_peek(&cache_data, &cache_dims, &cache_pitch);
+
+   video_info->osd_stat_params.x           = 0.001f;
+   video_info->osd_stat_params.y           = 0.970f;
+   video_info->osd_stat_params.text_align  = TEXT_ALIGN_LEFT;
+   video_info->osd_stat_params.scale       = scale;
+   video_info->osd_stat_params.full_screen = true;
+   video_info->osd_stat_params.drop_x      = 2;
+   video_info->osd_stat_params.drop_y      = -2;
+   video_info->osd_stat_params.drop_mod    = 0.0f;
+   video_info->osd_stat_params.drop_alpha  = 1.0f;
+   video_info->osd_stat_params.color       = COLOR_ABGR(255,
+         (int)(settings->floats.video_msg_color_b * 255.0f),
+         (int)(settings->floats.video_msg_color_g * 255.0f),
+         (int)(settings->floats.video_msg_color_r * 255.0f));
+   video_info->osd_stat_params.color_hp    = NULL;
+
+   {
+      size_t __len = snprintf(video_st->stat_text, sizeof(video_st->stat_text),
+            "CORE AV_INFO\n"
+            " Size:       %ux%u\n"
+            " -Base:      %ux%u\n"
+            " -Max:       %ux%u\n"
+            " Aspect:     %3.5f\n"
+            " FPS:        %3.4f\n"
+            " SampleRate: %.0f\n"
+            " -Format:    %s\n"
+            "VIDEO: %s %s\n"
+            " Viewport:   %ux%u\n"
+            " Scale:      %ux%u\n"
+            " Scale X/Y:  %2.2f/%2.2f\n"
+            " Refresh:  %7.2f hz\n"
+            " FrameRate:%7.2f fps\n"
+            " FrameTime:%7.2f ms (%s)\n"
+            " -Deviation:%6.2f %%\n"
+            " Frames:  %8" PRIu64"\n"
+            " -Dropped:  %6u\n"
+            ,
+            VIDEO_SCALE_W(cache_dims),
+            VIDEO_SCALE_H(cache_dims),
+            av_info->geometry.base_width,
+            av_info->geometry.base_height,
+            av_info->geometry.max_width,
+            av_info->geometry.max_height,
+            av_info->geometry.aspect_ratio,
+            av_info->timing.fps,
+            av_info->timing.sample_rate,
+            (audio_st->stat_core_is_float) ? "FLOAT" : "INT16",
+            video_ident ? video_ident : "n/a",
+            pixel_format_name(video_st->pix_fmt),
+            VIDEO_SCALE_W(video_info->dims),
+            VIDEO_SCALE_H(video_info->dims),
+            VIDEO_SCALE_W(video_info->scale_dims),
+            VIDEO_SCALE_H(video_info->scale_dims),
+            (float)VIDEO_SCALE_W(video_info->scale_dims) / ((rotation % 2)
+                  ? (float)VIDEO_SCALE_H(cache_dims)
+                  : (float)VIDEO_SCALE_W(cache_dims)),
+            (float)VIDEO_SCALE_H(video_info->scale_dims) / ((rotation % 2)
+                  ? (float)VIDEO_SCALE_W(cache_dims)
+                  : (float)VIDEO_SCALE_H(cache_dims)),
+            video_info->refresh_rate,
+            last_fps,
+            frame_time / 1000.0f,
+            video_st->frame_time_from_display ? "display" : "loop",
+            100.0f * stddev,
+            video_st->frame_count,
+            video_st->frame_drop_count);
+
+#ifdef HAVE_THREADS
+      {
+         /* What handing the frame to the video thread costs the
+          * runloop, with the slot wait - pacing, not handoff -
+          * on its own line. */
+         video_thread_handoff_stats_t ho;
+         if (video_thread_get_handoff_stats(&ho))
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                  " Handoff:  %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
+                  " -Copy:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ") %" PRIu64 " KB/frame\n"
+                  " -Wait:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
+                  " -Frames:  %u copied, %u zero-copy, %u hw, %u waited, %u dropped, %u drains\n"
+                  " -Lend:    %u asked, %u lent, %u lapsed, %u ring, %u size\n",
+                  ho.handoff_avg_x100 / 100, ho.handoff_avg_x100 % 100, ho.handoff_worst,
+                  ho.copy_avg_x100 / 100, ho.copy_avg_x100 % 100, ho.copy_worst,
+                  ho.bytes_per_frame / 1024,
+                  ho.wait_avg_x100 / 100, ho.wait_avg_x100 % 100, ho.wait_worst,
+                  ho.frames_copied, ho.frames_zero_copy, ho.frames_hw,
+                  ho.waits, ho.dropped, ho.drains, ho.asked, ho.lent, ho.lapsed,
+                  ho.declined_ring, ho.declined_size);
+      }
+#endif
+
+#ifdef HAVE_MENU
+      if (menu_is_alive)
+      {
+         /* What the menu's quad batching did in the last menu
+          * frame drawn: how many strips its quads went out in,
+          * and what ended each strip. */
+         gfx_display_stats_t ui;
+         gfx_display_stats_get(&ui);
+         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               "MENU UI\n"
+               " Quads:   %5u in %u strips (max %u)\n"
+               " Ended by text %u tex %u blend %u sciss %u draw %u full %u end %u\n"
+               " Text:    %5u calls, %u bytes, %u font draws\n"
+               ,
+               ui.v[GFX_DISPLAY_STAT_QUADS],
+               ui.v[GFX_DISPLAY_STAT_BATCHES],
+               ui.v[GFX_DISPLAY_STAT_BATCH_MAX],
+               ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_TEXT],
+               ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_TEXTURE],
+               ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_BLEND],
+               ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_SCISSOR],
+               ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_DRAW],
+               ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_CAPACITY],
+               ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_EXPLICIT],
+               ui.v[GFX_DISPLAY_STAT_TEXT_CALLS],
+               ui.v[GFX_DISPLAY_STAT_TEXT_BYTES],
+               ui.v[GFX_DISPLAY_STAT_FONT_DRAWS]);
+      }
+#endif
+
+      /* Split from the block above: a single concatenated format
+       * literal exceeded the 509-byte minimum ISO C90 guarantees
+       * (-Werror=overlength-strings in the C89 lane). */
+      {
+         /* The driver's name, not the wrapper's under the threaded
+          * pipeline. */
+         const char *audio_ident   = audio_driver_get_ident();
+         /* The buffer the driver opened with. Half is where rate
+          * control holds the fill. */
+         double      buffer_ms     = audio_driver_get_buffer_latency_ms();
+         char        layout_desc[48];
+         audio_driver_get_layout_desc(layout_desc, sizeof(layout_desc));
+         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               "AUDIO: %s %s\n"
+               " SampleRate: %u %s\n"
+               " Speakers: %s\n"
+               ,
+               audio_ident ? audio_ident : "n/a",
+               (audio_st->stat_frontend_is_float) ? "FLOAT" : "INT16",
+               settings->uints.audio_output_sample_rate,
+               (audio_st->src_ratio_orig == 1.0) ? "" : "R",
+               layout_desc);
+         {
+            /* The device stage behind the buffer, where the driver
+             * reports one: the part of the path the setting cannot
+             * reach, and what differs most between devices. Shown as
+             * ring+device so the sum is what leaves RetroArch. */
+            double device_ms = audio_driver_get_device_latency_ms();
+            char   stage[24];
+            if (buffer_ms > 0.0 && device_ms > 0.0)
+               snprintf(stage, sizeof(stage), "%.1f+%.1f", buffer_ms, device_ms);
+            else if (buffer_ms > 0.0)
+               snprintf(stage, sizeof(stage), "%.1f", buffer_ms);
+            else
+               strlcpy(stage, "n/a", sizeof(stage));
+            if (buffer_ms > 0.0 && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
+               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                     " Buffer:  %s ms (held ~%.0f)\n",
+                     stage, buffer_ms / 2.0);
+            else
+               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                     " Buffer:  %s ms\n",
+                     stage);
+         }
+         {
+            /* The device's and the core's real rates against the
+             * host clock, as ppm off the output rate on the line
+             * above, and the bias the resampler carries for the
+             * sink; once a window has measured. */
+            double sink_bias = 1.0, source_hz = 0.0;
+            double sink_hz   = audio_driver_get_sink_rate_hz(&sink_bias, &source_hz);
+            if (sink_hz > 0.0)
+            {
+               /* Where the driver keeps a second, approximate count
+                * of the device's consumption beside the clock it
+                * reads, how far apart they are. Nothing acts on it;
+                * it says what the approximation would have cost. */
+               double alt_ppm = audio_driver_get_sink_alt_ppm();
+               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                     " Sink/Src: %+.0f/%+.0f ppm (bias %+.0f)\n",
+                     (sink_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
+                     (source_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
+                     (sink_bias - 1.0) * 1e6);
+               if (alt_ppm != 0.0)
+                  __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                        " Clock vs events: %+.0f ppm\n", alt_ppm);
+               /* What the device's own clock says it is doing,
+                * where the driver can measure it - fitted from
+                * whatever pairing of position and time its API
+                * provides. Nothing acts on it. It is here so it
+                * can be watched settle against the sink figure
+                * above, live, on real hardware. */
+               {
+                  double dev_ppm = 0.0;
+                  if (audio_driver_get_device_clock_ppm(&dev_ppm))
+                     __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                           " Device clock: %+.0f ppm\n", dev_ppm);
+               }
+            }
+         }
+      }
+
+      if (audio_st->rate_control_delta)
+         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               " Saturation:%6.2f %%\n"
+               " Deviation: %6.2f %%\n"
+               " Underrun:  %6.2f %%\n"
+               " Blocking:  %6.2f %%\n"
+               " Samples: %8d\n"
+               ,
+               audio_stats.average_buffer_saturation,
+               audio_stats.std_deviation_percentage,
+               audio_stats.close_to_underrun,
+               audio_stats.close_to_blocking,
+               audio_stats.samples);
+
+      /* Periods the device played silence for want of audio, from
+       * the driver's own count where it keeps one: the number that
+       * says whether a stutter was heard, against the percentages
+       * above that say how near the buffer came. */
+      if (audio_st->current_audio && audio_st->current_audio->underruns)
+         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               " Dropouts: %8u\n", (unsigned)audio_driver_get_underruns());
+
+      __len += strlcpy_lit(video_st->stat_text + __len, "LATENCY\n",
+            sizeof(video_st->stat_text) - __len);
+
+      __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+            " Core:       %5.2f ms\n",
+            runloop_st->core_run_time / 1000.0f);
+
+      if (video_info->scanline_sync)
+         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               " Scanline:   %5d\n"
+               " -Total/Hold:%5d/%d\n",
+               video_st->scanline[SCANLINE_NEXT],
+               video_st->scanline[SCANLINE_TOTAL],
+               video_st->scanline[SCANLINE_HOLD]);
+
+      /* Which sources held the loop on the last frame, with the
+       * measured rate; the same string System Information shows. */
+      {
+         char pbuf[64];
+         runloop_pace_string(pbuf, sizeof(pbuf));
+         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               " Pacing:     %s\n", pbuf);
+      }
+
+#ifdef HAVE_THREADS
+      {
+         uint64_t repeats;
+         bool display_phase;
+         if (video_thread_presenter_stats(&repeats, &display_phase))
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                  " Repeat:     %llu (%s phase)\n",
+                  (unsigned long long)repeats,
+                  display_phase ? "display" : "timer");
+      }
+      {
+         bool display_pacing;
+         retro_time_t core_time, render_time;
+         if (     video_thread_pacing_stats(&display_pacing, &core_time, &render_time)
+               && display_pacing)
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                  " Core Start: display (core %.2f ms, render %.2f ms)\n",
+                  core_time / 1000.0f, render_time / 1000.0f);
+      }
+      {
+         retro_time_t lat_avg, lat_max;
+         bool lat_display;
+         if (video_thread_latency_stats(&lat_avg, &lat_max, &lat_display))
+            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                  " Latency:    %.2f ms to vblank%s (worst %.2f ms, last 2 s)\n",
+                  lat_avg / 1000.0f,
+                  lat_display ? "" : " (est.)",
+                  lat_max / 1000.0f);
+      }
+#endif
+
+      if (video_st->frame_delay_target > 0)
+         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               " Frame Delay:%2u.00 ms\n"
+               " -Target:    %2u.00 ms\n"
+               " -Idle:      %5.2f ms\n"
+               " -Reserve:   %5.2f ms\n",
+               video_st->frame_delay_effective,
+               video_st->frame_delay_target,
+               (1000.0f / video_info->refresh_rate) - video_st->frame_delay_effective - (runloop_st->core_run_time / 1000.0f),
+               video_st->frame_time_reserve / 1000.0f);
+
+      if (video_info->runahead && !video_info->runahead_second_instance)
+         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               " Run-Ahead: %u SinInst\n",
+               video_info->runahead_frames);
+      else if (video_info->runahead && video_info->runahead_second_instance)
+         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               " Run-Ahead: %u SecInst\n",
+               video_info->runahead_frames);
+      else if (video_info->preemptive_frames)
+         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               " Run-Ahead: %u Preempt\n",
+               video_info->runahead_frames);
+
+      /* Tracked length of stat_text; consumed by driver frame()
+       * callbacks instead of strlen on every frame. */
+      video_info->stat_text_len = __len;
+   }
+}
+
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -6694,345 +7040,8 @@ void video_driver_frame(const void *data, unsigned width,
    }
 
    if (render_frame && video_info.statistics_show)
-   {
-      struct retro_system_av_info *av_info   = &video_st->av_info;
-      audio_driver_state_t *audio_st         = audio_state_get_ptr();
-      audio_statistics_t audio_stats;
-      double stddev                          = 0.0;
-      /* The driver's name, not the wrapper's under threaded video. */
-      const char *video_ident                = video_driver_get_ident();
-      const void *cache_data                 = NULL;
-      unsigned cache_dims                    = 0;
-      size_t   cache_pitch                   = 0;
-      float font_size_ratio                  = (float)(DEFAULT_FONT_SIZE / video_info.font_size);
-      float scale                            = (float)VIDEO_SCALE_H(video_info.dims) / (video_info.font_size * 30)
-            * 0.50f * font_size_ratio;
-
-      /* Divide scale evenly to maintain size and readability in small screens */
-      if (font_size_ratio && scale < 0.20f)
-         scale                               = 0.25f;
-      else if (scale < 0.55f)
-         scale                               = 0.50f;
-      else
-         scale                               = 1.00f;
-
-      audio_stats.samples                    = 0;
-      audio_stats.average_buffer_saturation  = 0.0f;
-      audio_stats.std_deviation_percentage   = 0.0f;
-      audio_stats.close_to_underrun          = 0.0f;
-      audio_stats.close_to_blocking          = 0.0f;
-
-      audio_compute_buffer_statistics(&audio_stats);
-      video_monitor_fps_statistics(NULL, &stddev, NULL);
-      frame_cache_peek(&cache_data, &cache_dims, &cache_pitch);
-
-      video_info.osd_stat_params.x           = 0.001f;
-      video_info.osd_stat_params.y           = 0.970f;
-      video_info.osd_stat_params.text_align  = TEXT_ALIGN_LEFT;
-      video_info.osd_stat_params.scale       = scale;
-      video_info.osd_stat_params.full_screen = true;
-      video_info.osd_stat_params.drop_x      = 2;
-      video_info.osd_stat_params.drop_y      = -2;
-      video_info.osd_stat_params.drop_mod    = 0.0f;
-      video_info.osd_stat_params.drop_alpha  = 1.0f;
-      video_info.osd_stat_params.color       = COLOR_ABGR(255,
-            (int)(settings->floats.video_msg_color_b * 255.0f),
-            (int)(settings->floats.video_msg_color_g * 255.0f),
-            (int)(settings->floats.video_msg_color_r * 255.0f));
-      video_info.osd_stat_params.color_hp    = NULL;
-
-      {
-         size_t __len = snprintf(video_st->stat_text, sizeof(video_st->stat_text),
-               "CORE AV_INFO\n"
-               " Size:       %ux%u\n"
-               " -Base:      %ux%u\n"
-               " -Max:       %ux%u\n"
-               " Aspect:     %3.5f\n"
-               " FPS:        %3.4f\n"
-               " SampleRate: %.0f\n"
-               " -Format:    %s\n"
-               "VIDEO: %s %s\n"
-               " Viewport:   %ux%u\n"
-               " Scale:      %ux%u\n"
-               " Scale X/Y:  %2.2f/%2.2f\n"
-               " Refresh:  %7.2f hz\n"
-               " FrameRate:%7.2f fps\n"
-               " FrameTime:%7.2f ms (%s)\n"
-               " -Deviation:%6.2f %%\n"
-               " Frames:  %8" PRIu64"\n"
-               " -Dropped:  %6u\n"
-               ,
-               VIDEO_SCALE_W(cache_dims),
-               VIDEO_SCALE_H(cache_dims),
-               av_info->geometry.base_width,
-               av_info->geometry.base_height,
-               av_info->geometry.max_width,
-               av_info->geometry.max_height,
-               av_info->geometry.aspect_ratio,
-               av_info->timing.fps,
-               av_info->timing.sample_rate,
-               (audio_st->stat_core_is_float) ? "FLOAT" : "INT16",
-               video_ident ? video_ident : "n/a",
-               pixel_format_name(video_st->pix_fmt),
-               VIDEO_SCALE_W(video_info.dims),
-               VIDEO_SCALE_H(video_info.dims),
-               VIDEO_SCALE_W(video_info.scale_dims),
-               VIDEO_SCALE_H(video_info.scale_dims),
-               (float)VIDEO_SCALE_W(video_info.scale_dims) / ((rotation % 2)
-                     ? (float)VIDEO_SCALE_H(cache_dims)
-                     : (float)VIDEO_SCALE_W(cache_dims)),
-               (float)VIDEO_SCALE_H(video_info.scale_dims) / ((rotation % 2)
-                     ? (float)VIDEO_SCALE_W(cache_dims)
-                     : (float)VIDEO_SCALE_H(cache_dims)),
-               video_info.refresh_rate,
-               last_fps,
-               frame_time / 1000.0f,
-               video_st->frame_time_from_display ? "display" : "loop",
-               100.0f * stddev,
-               video_st->frame_count,
-               video_st->frame_drop_count);
-
-#ifdef HAVE_THREADS
-         {
-            /* What handing the frame to the video thread costs the
-             * runloop, with the slot wait - pacing, not handoff -
-             * on its own line. */
-            video_thread_handoff_stats_t ho;
-            if (video_thread_get_handoff_stats(&ho))
-               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                     " Handoff:  %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
-                     " -Copy:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ") %" PRIu64 " KB/frame\n"
-                     " -Wait:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
-                     " -Frames:  %u copied, %u zero-copy, %u hw, %u waited, %u dropped, %u drains\n"
-                     " -Lend:    %u asked, %u lent, %u lapsed, %u ring, %u size\n",
-                     ho.handoff_avg_x100 / 100, ho.handoff_avg_x100 % 100, ho.handoff_worst,
-                     ho.copy_avg_x100 / 100, ho.copy_avg_x100 % 100, ho.copy_worst,
-                     ho.bytes_per_frame / 1024,
-                     ho.wait_avg_x100 / 100, ho.wait_avg_x100 % 100, ho.wait_worst,
-                     ho.frames_copied, ho.frames_zero_copy, ho.frames_hw,
-                     ho.waits, ho.dropped, ho.drains, ho.asked, ho.lent, ho.lapsed,
-                     ho.declined_ring, ho.declined_size);
-         }
-#endif
-
-#ifdef HAVE_MENU
-         if (menu_is_alive)
-         {
-            /* What the menu's quad batching did in the last menu
-             * frame drawn: how many strips its quads went out in,
-             * and what ended each strip. */
-            gfx_display_stats_t ui;
-            gfx_display_stats_get(&ui);
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                  "MENU UI\n"
-                  " Quads:   %5u in %u strips (max %u)\n"
-                  " Ended by text %u tex %u blend %u sciss %u draw %u full %u end %u\n"
-                  " Text:    %5u calls, %u bytes, %u font draws\n"
-                  ,
-                  ui.v[GFX_DISPLAY_STAT_QUADS],
-                  ui.v[GFX_DISPLAY_STAT_BATCHES],
-                  ui.v[GFX_DISPLAY_STAT_BATCH_MAX],
-                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_TEXT],
-                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_TEXTURE],
-                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_BLEND],
-                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_SCISSOR],
-                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_DRAW],
-                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_CAPACITY],
-                  ui.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_EXPLICIT],
-                  ui.v[GFX_DISPLAY_STAT_TEXT_CALLS],
-                  ui.v[GFX_DISPLAY_STAT_TEXT_BYTES],
-                  ui.v[GFX_DISPLAY_STAT_FONT_DRAWS]);
-         }
-#endif
-
-         /* Split from the block above: a single concatenated format
-          * literal exceeded the 509-byte minimum ISO C90 guarantees
-          * (-Werror=overlength-strings in the C89 lane). */
-         {
-            /* The driver's name, not the wrapper's under the threaded
-             * pipeline. */
-            const char *audio_ident   = audio_driver_get_ident();
-            /* The buffer the driver opened with. Half is where rate
-             * control holds the fill. */
-            double      buffer_ms     = audio_driver_get_buffer_latency_ms();
-            char        layout_desc[48];
-            audio_driver_get_layout_desc(layout_desc, sizeof(layout_desc));
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                  "AUDIO: %s %s\n"
-                  " SampleRate: %u %s\n"
-                  " Speakers: %s\n"
-                  ,
-                  audio_ident ? audio_ident : "n/a",
-                  (audio_st->stat_frontend_is_float) ? "FLOAT" : "INT16",
-                  settings->uints.audio_output_sample_rate,
-                  (audio_st->src_ratio_orig == 1.0) ? "" : "R",
-                  layout_desc);
-            {
-               /* The device stage behind the buffer, where the driver
-                * reports one: the part of the path the setting cannot
-                * reach, and what differs most between devices. Shown as
-                * ring+device so the sum is what leaves RetroArch. */
-               double device_ms = audio_driver_get_device_latency_ms();
-               char   stage[24];
-               if (buffer_ms > 0.0 && device_ms > 0.0)
-                  snprintf(stage, sizeof(stage), "%.1f+%.1f", buffer_ms, device_ms);
-               else if (buffer_ms > 0.0)
-                  snprintf(stage, sizeof(stage), "%.1f", buffer_ms);
-               else
-                  strlcpy(stage, "n/a", sizeof(stage));
-               if (buffer_ms > 0.0 && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
-                  __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                        " Buffer:  %s ms (held ~%.0f)\n",
-                        stage, buffer_ms / 2.0);
-               else
-                  __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                        " Buffer:  %s ms\n",
-                        stage);
-            }
-            {
-               /* The device's and the core's real rates against the
-                * host clock, as ppm off the output rate on the line
-                * above, and the bias the resampler carries for the
-                * sink; once a window has measured. */
-               double sink_bias = 1.0, source_hz = 0.0;
-               double sink_hz   = audio_driver_get_sink_rate_hz(&sink_bias, &source_hz);
-               if (sink_hz > 0.0)
-               {
-                  /* Where the driver keeps a second, approximate count
-                   * of the device's consumption beside the clock it
-                   * reads, how far apart they are. Nothing acts on it;
-                   * it says what the approximation would have cost. */
-                  double alt_ppm = audio_driver_get_sink_alt_ppm();
-                  __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                        " Sink/Src: %+.0f/%+.0f ppm (bias %+.0f)\n",
-                        (sink_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
-                        (source_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
-                        (sink_bias - 1.0) * 1e6);
-                  if (alt_ppm != 0.0)
-                     __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                           " Clock vs events: %+.0f ppm\n", alt_ppm);
-                  /* What the device's own clock says it is doing,
-                   * where the driver can measure it - fitted from
-                   * whatever pairing of position and time its API
-                   * provides. Nothing acts on it. It is here so it
-                   * can be watched settle against the sink figure
-                   * above, live, on real hardware. */
-                  {
-                     double dev_ppm = 0.0;
-                     if (audio_driver_get_device_clock_ppm(&dev_ppm))
-                        __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                              " Device clock: %+.0f ppm\n", dev_ppm);
-                  }
-               }
-            }
-         }
-
-         if (audio_st->rate_control_delta)
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                  " Saturation:%6.2f %%\n"
-                  " Deviation: %6.2f %%\n"
-                  " Underrun:  %6.2f %%\n"
-                  " Blocking:  %6.2f %%\n"
-                  " Samples: %8d\n"
-                  ,
-                  audio_stats.average_buffer_saturation,
-                  audio_stats.std_deviation_percentage,
-                  audio_stats.close_to_underrun,
-                  audio_stats.close_to_blocking,
-                  audio_stats.samples);
-
-         /* Periods the device played silence for want of audio, from
-          * the driver's own count where it keeps one: the number that
-          * says whether a stutter was heard, against the percentages
-          * above that say how near the buffer came. */
-         if (audio_st->current_audio && audio_st->current_audio->underruns)
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                  " Dropouts: %8u\n", (unsigned)audio_driver_get_underruns());
-
-         __len += strlcpy_lit(video_st->stat_text + __len, "LATENCY\n",
-               sizeof(video_st->stat_text) - __len);
-
-         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-               " Core:       %5.2f ms\n",
-               runloop_st->core_run_time / 1000.0f);
-
-         if (video_info.scanline_sync)
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                  " Scanline:   %5d\n"
-                  " -Total/Hold:%5d/%d\n",
-                  video_st->scanline[SCANLINE_NEXT],
-                  video_st->scanline[SCANLINE_TOTAL],
-                  video_st->scanline[SCANLINE_HOLD]);
-
-         /* Which sources held the loop on the last frame, with the
-          * measured rate; the same string System Information shows. */
-         {
-            char pbuf[64];
-            runloop_pace_string(pbuf, sizeof(pbuf));
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                  " Pacing:     %s\n", pbuf);
-         }
-
-#ifdef HAVE_THREADS
-         {
-            uint64_t repeats;
-            bool display_phase;
-            if (video_thread_presenter_stats(&repeats, &display_phase))
-               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                     " Repeat:     %llu (%s phase)\n",
-                     (unsigned long long)repeats,
-                     display_phase ? "display" : "timer");
-         }
-         {
-            bool display_pacing;
-            retro_time_t core_time, render_time;
-            if (     video_thread_pacing_stats(&display_pacing, &core_time, &render_time)
-                  && display_pacing)
-               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                     " Core Start: display (core %.2f ms, render %.2f ms)\n",
-                     core_time / 1000.0f, render_time / 1000.0f);
-         }
-         {
-            retro_time_t lat_avg, lat_max;
-            bool lat_display;
-            if (video_thread_latency_stats(&lat_avg, &lat_max, &lat_display))
-               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                     " Latency:    %.2f ms to vblank%s (worst %.2f ms, last 2 s)\n",
-                     lat_avg / 1000.0f,
-                     lat_display ? "" : " (est.)",
-                     lat_max / 1000.0f);
-         }
-#endif
-
-         if (video_st->frame_delay_target > 0)
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                  " Frame Delay:%2u.00 ms\n"
-                  " -Target:    %2u.00 ms\n"
-                  " -Idle:      %5.2f ms\n"
-                  " -Reserve:   %5.2f ms\n",
-                  video_st->frame_delay_effective,
-                  video_st->frame_delay_target,
-                  (1000.0f / video_info.refresh_rate) - video_st->frame_delay_effective - (runloop_st->core_run_time / 1000.0f),
-                  video_st->frame_time_reserve / 1000.0f);
-
-         if (video_info.runahead && !video_info.runahead_second_instance)
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                  " Run-Ahead: %u SinInst\n",
-                  video_info.runahead_frames);
-         else if (video_info.runahead && video_info.runahead_second_instance)
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                  " Run-Ahead: %u SecInst\n",
-                  video_info.runahead_frames);
-         else if (video_info.preemptive_frames)
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
-                  " Run-Ahead: %u Preempt\n",
-                  video_info.runahead_frames);
-
-         /* Tracked length of stat_text; consumed by driver frame()
-          * callbacks instead of strlen on every frame. */
-         video_info.stat_text_len = __len;
-      }
-   }
+      video_driver_frame_statistics(video_st, runloop_st, settings,
+            &video_info, last_fps, frame_time, rotation, menu_is_alive);
 
    if (video_info.scanline_sync && !video_info.input_driver_nonblock_state)
       video_driver_scanline_before_frame(video_st,
