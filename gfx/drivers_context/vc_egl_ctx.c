@@ -57,7 +57,7 @@ typedef struct
    bool vsync_callback_set;
    bool resize;
    unsigned res;
-   unsigned fb_width, fb_height;
+   unsigned fb_dims;             /* VIDEO_SCALE_PACK */
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
@@ -115,7 +115,8 @@ static void gfx_ctx_vc_get_video_size(void *data,
       /*  Calculate source and destination aspect ratios. */
 
       float src_aspect = (float)fullscreen_x / (float)fullscreen_y;
-      float dst_aspect = (float)vc->fb_width / (float)vc->fb_height;
+      float dst_aspect = (float)VIDEO_SCALE_W(vc->fb_dims)
+         / (float)VIDEO_SCALE_H(vc->fb_dims);
 
       /* If source and destination aspect ratios
        * are not equal correct source width. */
@@ -127,7 +128,7 @@ static void gfx_ctx_vc_get_video_size(void *data,
    }
    else
    {
-      *dims = VIDEO_SCALE_PACK(vc->fb_width, vc->fb_height);
+      *dims = vc->fb_dims;
    }
 }
 
@@ -274,6 +275,7 @@ static void *gfx_ctx_vc_init(void *video_driver)
    DISPMANX_DISPLAY_HANDLE_T dispman_display;
    DISPMANX_UPDATE_HANDLE_T dispman_update;
    DISPMANX_MODEINFO_T dispman_modeinfo;
+   uint32_t fb_width, fb_height;
    EGLint n, major, minor;
    settings_t *settings                      = config_get_ptr();
    unsigned max_swapchain_images             = settings->uints.video_max_swapchain_images;
@@ -328,13 +330,14 @@ static void *gfx_ctx_vc_init(void *video_driver)
 
    /* Create an EGL window surface. */
    if (graphics_get_display_size(0 /* LCD */,
-            &vc->fb_width, &vc->fb_height) < 0)
+            &fb_width, &fb_height) < 0)
       goto error;
+   vc->fb_dims                               = VIDEO_SCALE_PACK(fb_width, fb_height);
 
    dst_rect.x                                = 0;
    dst_rect.y                                = 0;
-   dst_rect.width                            = vc->fb_width;
-   dst_rect.height                           = vc->fb_height;
+   dst_rect.width                            = fb_width;
+   dst_rect.height                           = fb_height;
 
    src_rect.x                                = 0;
    src_rect.y                                = 0;
@@ -349,7 +352,7 @@ static void *gfx_ctx_vc_init(void *video_driver)
 
       /* Calculate source and destination aspect ratios. */
       float src_aspect                       = (float)fullscreen_x / (float)fullscreen_y;
-      float dst_aspect                       = (float)vc->fb_width / (float)vc->fb_height;
+      float dst_aspect                       = (float)fb_width / (float)fb_height;
       /* If source and destination aspect ratios are not equal correct source width. */
       if (src_aspect != dst_aspect)
          src_rect.width                      = (unsigned)(fullscreen_y * dst_aspect) << 16;
@@ -359,8 +362,8 @@ static void *gfx_ctx_vc_init(void *video_driver)
    }
    else
    {
-      src_rect.width                         = vc->fb_width << 16;
-      src_rect.height                        = vc->fb_height << 16;
+      src_rect.width                         = fb_width << 16;
+      src_rect.height                        = fb_height << 16;
    }
 
    dispman_display                           = vc_dispmanx_display_open(0 /* LCD */);
@@ -399,7 +402,7 @@ static void *gfx_ctx_vc_init(void *video_driver)
 
       /* Calculate source and destination aspect ratios. */
       float src_aspect                       = (float)fullscreen_x / (float)fullscreen_y;
-      float dst_aspect                       = (float)vc->fb_width / (float)vc->fb_height;
+      float dst_aspect                       = (float)fb_width / (float)fb_height;
 
       /* If source and destination aspect ratios are not equal correct source width. */
       if (src_aspect != dst_aspect)
@@ -410,8 +413,8 @@ static void *gfx_ctx_vc_init(void *video_driver)
    }
    else
    {
-      vc->native_window.width                = vc->fb_width;
-      vc->native_window.height               = vc->fb_height;
+      vc->native_window.width                = fb_width;
+      vc->native_window.height               = fb_height;
    }
    vc_dispmanx_update_submit_sync(dispman_update);
 

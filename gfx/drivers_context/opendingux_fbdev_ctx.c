@@ -34,8 +34,8 @@ typedef struct
    egl_ctx_data_t egl;
    EGLNativeWindowType native_window;
 #endif
+   unsigned dims;                /* VIDEO_SCALE_PACK */
    bool resize;
-   unsigned width, height;
 } opendingux_ctx_data_t;
 
 static void gfx_ctx_opendingux_destroy(void *data)
@@ -101,7 +101,7 @@ static void gfx_ctx_opendingux_get_video_size(void *data,
       unsigned *dims)
 {
    opendingux_ctx_data_t *viv = (opendingux_ctx_data_t*)data;
-   *dims = VIDEO_SCALE_PACK(viv->width, viv->height);
+   *dims = viv->dims;
 }
 
 static void gfx_ctx_opendingux_check_window(void *data, bool *quit,
@@ -143,8 +143,7 @@ static bool gfx_ctx_opendingux_set_video_mode(void *data,
    if (!height || !fullscreen)
       height                     = 1024;
 
-   viv->width                    = width;
-   viv->height                   = height;
+   viv->dims                     = VIDEO_SCALE_PACK(width, height);
 
 #ifdef HAVE_EGL
    if (!egl_create_context(&viv->egl, attribs))

@@ -34,7 +34,6 @@ typedef struct
    egl_ctx_data_t egl;
 #endif
    EGLNativeWindowType native_window;
-   unsigned width, height;
    bool resize;
 } vivante_ctx_data_t;
 
@@ -59,12 +58,7 @@ static void *gfx_ctx_vivante_init(void *video_driver)
 #ifdef HAVE_EGL
    EGLint n;
    EGLint major, minor;
-   EGLint format;
    static const EGLint attribs[] = {
-#if 0
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-#endif
       EGL_BLUE_SIZE, 5,
       EGL_GREEN_SIZE, 6,
       EGL_RED_SIZE, 5,
@@ -133,8 +127,6 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
 #ifdef HAVE_EGL
    static const EGLint attribs[] = {
       EGL_CONTEXT_CLIENT_VERSION, 2, /* Use version 2, even for GLES3. */
@@ -142,15 +134,6 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
    };
 #endif
    vivante_ctx_data_t *viv       = (vivante_ctx_data_t*)data;
-
-   /* Pick some arbitrary default. */
-   if (!width || !fullscreen)
-      width                      = 1280;
-   if (!height || !fullscreen)
-      height                     = 1024;
-
-   viv->width                    = width;
-   viv->height                   = height;
 
 #ifdef HAVE_EGL
    if (!egl_create_context(&viv->egl, attribs))

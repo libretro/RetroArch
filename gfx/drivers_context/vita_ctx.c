@@ -31,7 +31,6 @@ typedef struct
 #endif
    int native_window;
    bool resize;
-   unsigned width, height;
    float refresh_rate;
 } vita_ctx_data_t;
 
@@ -114,8 +113,6 @@ static bool vita_set_video_mode(void *data,
       EGL_NONE
    };
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
-   ctx_vita->width           = ATTR_VITA_WIDTH;
-   ctx_vita->height          = ATTR_VITA_HEIGHT;
    ctx_vita->native_window   = VITA_WINDOW_960X544;
    ctx_vita->refresh_rate    = 60;
 
