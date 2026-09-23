@@ -2014,9 +2014,13 @@ static void gl3_destroy_resources(gl3_t *gl)
       gl->chain.fbo_feedback_texture = 0;
    }
 
-   glBindVertexArray(0);
+   /* Nothing was made on a context that never came up, and on the
+    * null context there are no GL entry points to call. */
    if (gl->vao != 0)
+   {
+      glBindVertexArray(0);
       glDeleteVertexArrays(1, &gl->vao);
+   }
 
    for (i = 0; i < GL_CORE_NUM_TEXTURES; i++)
    {
