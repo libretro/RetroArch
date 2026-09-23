@@ -1706,10 +1706,12 @@ void drivers_init(
                      *settings->arrays.camera_device
                      ? settings->arrays.camera_device : NULL,
                      camera_st->cb.caps,
-                     settings->uints.camera_width
-                     ? settings->uints.camera_width  : camera_st->cb.width,
-                     settings->uints.camera_height
-                     ? settings->uints.camera_height : camera_st->cb.height);
+                     VIDEO_SCALE_W(settings->uints.camera_dims)
+                     ? VIDEO_SCALE_W(settings->uints.camera_dims)
+                     : camera_st->cb.width,
+                     VIDEO_SCALE_H(settings->uints.camera_dims)
+                     ? VIDEO_SCALE_H(settings->uints.camera_dims)
+                     : camera_st->cb.height);
 
                if (!camera_st->data)
                {

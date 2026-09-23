@@ -339,11 +339,12 @@ typedef struct settings
       unsigned desktop_menu_all_playlists_list_max_count;
       unsigned desktop_menu_all_playlists_grid_max_count;
       unsigned desktop_menu_theme;
-      /* Window geometry, plain ints (was a Qt QByteArray blob). 0 = unset. */
-      unsigned desktop_menu_window_x;
-      unsigned desktop_menu_window_y;
-      unsigned desktop_menu_window_width;
-      unsigned desktop_menu_window_height;
+      /* Window geometry, two packed words (was a Qt QByteArray blob).
+       * 0 = unset. Both writers clamp the origin at zero, so it fits
+       * VIDEO_POS_PACK's range without ever going negative, and the
+       * setting rows bound every axis to 32767. */
+      unsigned desktop_menu_window_pos;
+      unsigned desktop_menu_window_dims;
       unsigned menu_content_show_add_entry;
       unsigned menu_content_show_contentless_cores;
       unsigned menu_content_show_netplay;
@@ -359,8 +360,9 @@ typedef struct settings
       unsigned playlist_sublabel_runtime_type;
       unsigned playlist_sublabel_last_played_style;
 
-      unsigned camera_width;
-      unsigned camera_height;
+      /* In VIDEO_SCALE_PACK's layout. Runtime only: no config key and
+       * no menu row binds either axis. */
+      unsigned camera_dims;
 
 #ifdef HAVE_OVERLAY
       unsigned input_overlay_show_inputs;

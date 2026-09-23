@@ -3933,10 +3933,10 @@ void MainWindow::persistSettings()
          && width() > 0 && height() > 0)
    {
       QRect g = geometry();
-      settings->uints.desktop_menu_window_x      = (unsigned)(g.x()      < 0 ? 0 : g.x());
-      settings->uints.desktop_menu_window_y      = (unsigned)(g.y()      < 0 ? 0 : g.y());
-      settings->uints.desktop_menu_window_width  = (unsigned)g.width();
-      settings->uints.desktop_menu_window_height = (unsigned)g.height();
+      settings->uints.desktop_menu_window_pos    = VIDEO_POS_PACK(
+            (g.x() < 0 ? 0 : g.x()), (g.y() < 0 ? 0 : g.y()));
+      settings->uints.desktop_menu_window_dims   = VIDEO_SCALE_PACK(
+            g.width(), g.height());
    }
    if (settings->bools.desktop_menu_save_last_tab)
       settings->uints.desktop_menu_last_tab =
@@ -5060,13 +5060,13 @@ static void qt_companion_restore_settings(MainWindow *mainwindow)
          (int)settings->uints.desktop_menu_thumbnail_cache_limit);
 
    if (     settings->bools.desktop_menu_save_geometry
-         && settings->uints.desktop_menu_window_width  > 0
-         && settings->uints.desktop_menu_window_height > 0)
+         && VIDEO_SCALE_W(settings->uints.desktop_menu_window_dims) > 0
+         && VIDEO_SCALE_H(settings->uints.desktop_menu_window_dims) > 0)
       mainwindow->setGeometry(
-            (int)settings->uints.desktop_menu_window_x,
-            (int)settings->uints.desktop_menu_window_y,
-            (int)settings->uints.desktop_menu_window_width,
-            (int)settings->uints.desktop_menu_window_height);
+            VIDEO_POS_X(settings->uints.desktop_menu_window_pos),
+            VIDEO_POS_Y(settings->uints.desktop_menu_window_pos),
+            (int)VIDEO_SCALE_W(settings->uints.desktop_menu_window_dims),
+            (int)VIDEO_SCALE_H(settings->uints.desktop_menu_window_dims));
 
    mainwindow->fileTableView()->horizontalHeader()->resizeSection(0, 300);
 

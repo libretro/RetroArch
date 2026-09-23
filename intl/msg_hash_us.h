@@ -11571,6 +11571,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
 MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
@@ -11644,6 +11647,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_BOOL_H
 #undef S_BOOL_NS_H
 #undef S_UINT
+#undef S_UINT_AT_EX
 #undef S_UINT_NS
 #undef S_UINT_H
 #undef S_UINT_NS_H

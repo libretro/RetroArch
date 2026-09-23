@@ -169,28 +169,32 @@ S_UINT_EX(desktop_menu_theme, DESKTOP_MENU_THEME,
       "0 = system default, 1 = dark, 2 = custom stylesheet.")
 #endif
 #if (defined(HAVE_QT) || defined(HAVE_COCOA) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))) || defined(SETTINGS_DEF_STRINGS_PASS)
-S_UINT_EX(desktop_menu_window_x, DESKTOP_MENU_WINDOW_X,
+S_UINT_AT_EX(offsetof(settings_t, uints.desktop_menu_window_pos)
+      | SDESC_OFF_HALF_HI, DESKTOP_MENU_WINDOW_X,
       "desktop_menu_window_x",
       0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 32767, 1, 0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
       "Desktop Menu: Window X",
       "Saved window position; used when Remember Window Geometry is on.")
 #endif
 #if (defined(HAVE_QT) || defined(HAVE_COCOA) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))) || defined(SETTINGS_DEF_STRINGS_PASS)
-S_UINT_EX(desktop_menu_window_y, DESKTOP_MENU_WINDOW_Y,
+S_UINT_AT_EX(offsetof(settings_t, uints.desktop_menu_window_pos)
+      | SDESC_OFF_HALF_LO, DESKTOP_MENU_WINDOW_Y,
       "desktop_menu_window_y",
       0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 32767, 1, 0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
       "Desktop Menu: Window Y",
       "Saved window position; used when Remember Window Geometry is on.")
 #endif
 #if (defined(HAVE_QT) || defined(HAVE_COCOA) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))) || defined(SETTINGS_DEF_STRINGS_PASS)
-S_UINT_EX(desktop_menu_window_width, DESKTOP_MENU_WINDOW_WIDTH,
+S_UINT_AT_EX(offsetof(settings_t, uints.desktop_menu_window_dims)
+      | SDESC_OFF_HALF_HI, DESKTOP_MENU_WINDOW_WIDTH,
       "desktop_menu_window_width",
       0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 32767, 1, 0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
       "Desktop Menu: Window Width",
       "Saved window size; used when Remember Window Geometry is on.")
 #endif
 #if (defined(HAVE_QT) || defined(HAVE_COCOA) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))) || defined(SETTINGS_DEF_STRINGS_PASS)
-S_UINT_EX(desktop_menu_window_height, DESKTOP_MENU_WINDOW_HEIGHT,
+S_UINT_AT_EX(offsetof(settings_t, uints.desktop_menu_window_dims)
+      | SDESC_OFF_HALF_LO, DESKTOP_MENU_WINDOW_HEIGHT,
       "desktop_menu_window_height",
       0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 32767, 1, 0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
       "Desktop Menu: Window Height",

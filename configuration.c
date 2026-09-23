@@ -3434,6 +3434,16 @@ static struct config_uint_setting *populate_settings_uint(
     * word now, so these two rows are literal like the pair above. */
    SETTING_UINT_HALF("video_window_auto_width_max",  &settings->uints.window_auto_dims_max, CFG_HALF_HI, true, DEFAULT_WINDOW_AUTO_WIDTH_MAX, false);
    SETTING_UINT_HALF("video_window_auto_height_max", &settings->uints.window_auto_dims_max, CFG_HALF_LO, true, DEFAULT_WINDOW_AUTO_HEIGHT_MAX, false);
+#if (defined(HAVE_QT) || defined(HAVE_COCOA) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)))
+   /* The desktop companion's saved geometry, bound through the
+    * S_UINT_EX pass until its two pairs became two words. The four
+    * keys are unchanged -- tools/companion_qt_persist_test.sh reads
+    * them out of the written retroarch.cfg by name. */
+   SETTING_UINT_HALF("desktop_menu_window_x",      &settings->uints.desktop_menu_window_pos,  CFG_HALF_HI, true, 0, false);
+   SETTING_UINT_HALF("desktop_menu_window_y",      &settings->uints.desktop_menu_window_pos,  CFG_HALF_LO, true, 0, false);
+   SETTING_UINT_HALF("desktop_menu_window_width",  &settings->uints.desktop_menu_window_dims, CFG_HALF_HI, true, 0, false);
+   SETTING_UINT_HALF("desktop_menu_window_height", &settings->uints.desktop_menu_window_dims, CFG_HALF_LO, true, 0, false);
+#endif
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
 #endif

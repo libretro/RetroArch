@@ -472,10 +472,9 @@ int main(void)
       strlcpy(test_settings.arrays.desktop_menu_dock_core_info,  "right,0,0,0,-,0,3", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_log,        "bottom,1,0,150,-,0,0", 64);
       test_settings.bools.desktop_menu_save_geometry = true;
-      test_settings.uints.desktop_menu_window_x      = 20;
-      test_settings.uints.desktop_menu_window_y      = 30;
-      test_settings.uints.desktop_menu_window_width  = 1000;
-      test_settings.uints.desktop_menu_window_height = 700;
+      test_settings.uints.desktop_menu_window_pos    = VIDEO_POS_PACK(20, 30);
+      test_settings.uints.desktop_menu_window_dims   =
+            VIDEO_SCALE_PACK(1000, 700);
       d2 = ui_companion_wimp_win32.init();
       CHECK(d2 != NULL, "second driver init from a saved layout");
       if (d2)
@@ -518,9 +517,15 @@ int main(void)
          CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,1,", 9) == 0
                && strstr(test_settings.arrays.desktop_menu_dock_log, ",150,-,0,0") != NULL,
                "log row re-saved shown at 150 (%s)", test_settings.arrays.desktop_menu_dock_log);
-         CHECK(test_settings.uints.desktop_menu_window_width == 1000 && test_settings.uints.desktop_menu_window_x == 20,
-               "window geometry re-saved (%u,%u %ux%u)", test_settings.uints.desktop_menu_window_x, test_settings.uints.desktop_menu_window_y,
-               test_settings.uints.desktop_menu_window_width, test_settings.uints.desktop_menu_window_height);
+         CHECK(VIDEO_SCALE_W(
+                     test_settings.uints.desktop_menu_window_dims) == 1000
+               && VIDEO_POS_X(
+                     test_settings.uints.desktop_menu_window_pos) == 20,
+               "window geometry re-saved (%d,%d %ux%u)",
+               VIDEO_POS_X(test_settings.uints.desktop_menu_window_pos),
+               VIDEO_POS_Y(test_settings.uints.desktop_menu_window_pos),
+               VIDEO_SCALE_W(test_settings.uints.desktop_menu_window_dims),
+               VIDEO_SCALE_H(test_settings.uints.desktop_menu_window_dims));
          /* Core Info back on: below the thumbnails, in the slot its
           * row kept for it. */
          SendMessageA(h2, WM_COMMAND, IDM_CW_TOGGLE_INFO, 0);

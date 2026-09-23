@@ -1451,10 +1451,12 @@ static void cw_geometry_store(ui_companion_win32_wimp_t *w)
       return;
    if (r.right <= r.left || r.bottom <= r.top)
       return;
-   settings->uints.desktop_menu_window_x      = (unsigned)(r.left < 0 ? 0 : CW_TO_LOGICAL(w, r.left));
-   settings->uints.desktop_menu_window_y      = (unsigned)(r.top  < 0 ? 0 : CW_TO_LOGICAL(w, r.top));
-   settings->uints.desktop_menu_window_width  = (unsigned)CW_TO_LOGICAL(w, r.right - r.left);
-   settings->uints.desktop_menu_window_height = (unsigned)CW_TO_LOGICAL(w, r.bottom - r.top);
+   settings->uints.desktop_menu_window_pos    = VIDEO_POS_PACK(
+         (r.left < 0 ? 0 : CW_TO_LOGICAL(w, r.left)),
+         (r.top  < 0 ? 0 : CW_TO_LOGICAL(w, r.top)));
+   settings->uints.desktop_menu_window_dims   = VIDEO_SCALE_PACK(
+         CW_TO_LOGICAL(w, r.right  - r.left),
+         CW_TO_LOGICAL(w, r.bottom - r.top));
 }
 
 /* A floating pane's window: position from the model (a fresh float
@@ -4796,13 +4798,15 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
           * still reachable. */
          settings_t *settings = config_get_ptr();
          if (     settings->bools.desktop_menu_save_geometry
-               && settings->uints.desktop_menu_window_width  > 0
-               && settings->uints.desktop_menu_window_height > 0)
+               && VIDEO_SCALE_W(settings->uints.desktop_menu_window_dims) > 0
+               && VIDEO_SCALE_H(settings->uints.desktop_menu_window_dims) > 0)
          {
-            ww = CW_S(w, (int)settings->uints.desktop_menu_window_width);
-            wh = CW_S(w, (int)settings->uints.desktop_menu_window_height);
-            wx = CW_S(w, (int)settings->uints.desktop_menu_window_x);
-            wy = CW_S(w, (int)settings->uints.desktop_menu_window_y);
+            ww = CW_S(w,
+                  (int)VIDEO_SCALE_W(settings->uints.desktop_menu_window_dims));
+            wh = CW_S(w,
+                  (int)VIDEO_SCALE_H(settings->uints.desktop_menu_window_dims));
+            wx = CW_S(w, VIDEO_POS_X(settings->uints.desktop_menu_window_pos));
+            wy = CW_S(w, VIDEO_POS_Y(settings->uints.desktop_menu_window_pos));
             if (ww > sw) ww = sw;
             if (wh > sh) wh = sh;
             if (wx + ww > wa.right)  wx = wa.right  - ww;

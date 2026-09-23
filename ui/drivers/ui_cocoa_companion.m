@@ -1283,18 +1283,22 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
        * still reachable. */
       settings_t *settings = config_get_ptr();
       if (     settings->bools.desktop_menu_save_geometry
-            && settings->uints.desktop_menu_window_width  > 0
-            && settings->uints.desktop_menu_window_height > 0)
+            && VIDEO_SCALE_W(settings->uints.desktop_menu_window_dims) > 0
+            && VIDEO_SCALE_H(settings->uints.desktop_menu_window_dims) > 0)
       {
          NSRect vis = [[NSScreen mainScreen] visibleFrame];
          NSRect r;
-         r.size.width  = (CGFloat)settings->uints.desktop_menu_window_width;
-         r.size.height = (CGFloat)settings->uints.desktop_menu_window_height;
+         r.size.width  = (CGFloat)
+               VIDEO_SCALE_W(settings->uints.desktop_menu_window_dims);
+         r.size.height = (CGFloat)
+               VIDEO_SCALE_H(settings->uints.desktop_menu_window_dims);
          if (r.size.width  > vis.size.width)  r.size.width  = vis.size.width;
          if (r.size.height > vis.size.height) r.size.height = vis.size.height;
-         r.origin.x    = (CGFloat)settings->uints.desktop_menu_window_x;
+         r.origin.x    = (CGFloat)
+               VIDEO_POS_X(settings->uints.desktop_menu_window_pos);
          r.origin.y    = screen.size.height
-            - (CGFloat)settings->uints.desktop_menu_window_y - r.size.height;
+            - (CGFloat)VIDEO_POS_Y(settings->uints.desktop_menu_window_pos)
+            - r.size.height;
          if (r.origin.x + r.size.width  > vis.origin.x + vis.size.width)
             r.origin.x = vis.origin.x + vis.size.width  - r.size.width;
          if (r.origin.y + r.size.height > vis.origin.y + vis.size.height)
@@ -2261,11 +2265,15 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    screen = [([window screen] ? [window screen] : [NSScreen mainScreen]) frame];
    if (r.size.width <= 0 || r.size.height <= 0)
       return;
-   settings->uints.desktop_menu_window_x      = (unsigned)(r.origin.x < 0 ? 0 : r.origin.x);
-   settings->uints.desktop_menu_window_y      = (unsigned)(screen.size.height - r.origin.y - r.size.height < 0
-         ? 0 : screen.size.height - r.origin.y - r.size.height);
-   settings->uints.desktop_menu_window_width  = (unsigned)r.size.width;
-   settings->uints.desktop_menu_window_height = (unsigned)r.size.height;
+   {
+      CGFloat flipped_y = screen.size.height - r.origin.y - r.size.height;
+
+      settings->uints.desktop_menu_window_pos  = VIDEO_POS_PACK(
+            (int)(r.origin.x < 0 ? 0 : r.origin.x),
+            (int)(flipped_y  < 0 ? 0 : flipped_y));
+      settings->uints.desktop_menu_window_dims = VIDEO_SCALE_PACK(
+            (unsigned)r.size.width, (unsigned)r.size.height);
+   }
 }
 
 /* Which floating pane a delegate notification is about, or -1. */

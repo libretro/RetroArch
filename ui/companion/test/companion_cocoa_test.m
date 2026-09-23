@@ -987,10 +987,9 @@ int main(int argc, char **argv)
       strlcpy(test_settings.arrays.desktop_menu_dock_core_info,  "right,0,0,0,-,0,3", 64);
       strlcpy(test_settings.arrays.desktop_menu_dock_log,        "bottom,1,0,150,-,0,0", 64);
       test_settings.bools.desktop_menu_save_geometry = true;
-      test_settings.uints.desktop_menu_window_x      = 20;
-      test_settings.uints.desktop_menu_window_y      = 30;
-      test_settings.uints.desktop_menu_window_width  = 1000;
-      test_settings.uints.desktop_menu_window_height = 700;
+      test_settings.uints.desktop_menu_window_pos    = VIDEO_POS_PACK(20, 30);
+      test_settings.uints.desktop_menu_window_dims   =
+            VIDEO_SCALE_PACK(1000, 700);
       d2 = ui_companion_wimp_cocoa.init();
       CHECK(d2 != NULL, "second driver init from a saved layout");
       if (d2)
@@ -1038,8 +1037,15 @@ int main(int argc, char **argv)
                && strstr(test_settings.arrays.desktop_menu_dock_log, ",150,-,0,0") != NULL,
                "log row re-saved shown at 150 (%s)", test_settings.arrays.desktop_menu_dock_log);
          [c2 performSelector:NSSelectorFromString(@"geometryStore")];
-         CHECK(test_settings.uints.desktop_menu_window_width == 1000 && abs((int)test_settings.uints.desktop_menu_window_height - want_h) <= 1,
-               "window geometry re-saved (%ux%u, wanted %d)", test_settings.uints.desktop_menu_window_width, test_settings.uints.desktop_menu_window_height, want_h);
+         CHECK(VIDEO_SCALE_W(
+                     test_settings.uints.desktop_menu_window_dims) == 1000
+               && abs((int)VIDEO_SCALE_H(
+                     test_settings.uints.desktop_menu_window_dims)
+                           - want_h) <= 1,
+               "window geometry re-saved (%ux%u, wanted %d)",
+               VIDEO_SCALE_W(test_settings.uints.desktop_menu_window_dims),
+               VIDEO_SCALE_H(test_settings.uints.desktop_menu_window_dims),
+               want_h);
          /* Core Info back on: below the thumbnails, in the slot its row
           * kept for it. */
          [c2 performSelector:NSSelectorFromString(@"toggleInfo:") withObject:nil];
