@@ -107,8 +107,9 @@ typedef struct
    int main_loop_blockers;
    int deferred_sleep_ms;
    int raf_interval;
-   int canvas_width;
-   int canvas_height;
+   /* One word, stored and loaded whole: JS sets it from its own
+    * thread, so two halves could be read from different resizes. */
+   unsigned canvas_dims;
    int power_state_discharge_time;
    float power_state_level;
    bool has_async_atomics;
@@ -281,8 +282,8 @@ void platform_emscripten_update_canvas_dimensions_cb(int width, int height, doub
    emscripten_set_canvas_element_size("#canvas", width, height);
    if (!emscripten_platform_data)
       return;
-   PLATFORM_SETVAL(u32, &emscripten_platform_data->canvas_width,        width);
-   PLATFORM_SETVAL(u32, &emscripten_platform_data->canvas_height,       height);
+   PLATFORM_SETVAL(u32, &emscripten_platform_data->canvas_dims,
+         VIDEO_SCALE_PACK(width, height));
    PLATFORM_SETVAL(f64, &emscripten_platform_data->device_pixel_ratio, *dpr);
 }
 
@@ -404,17 +405,15 @@ size_t platform_emscripten_command_read(char **into, size_t max_len)
     }, &emscripten_platform_data->command_flag, into, max_len);
 }
 
-void platform_emscripten_get_canvas_size(int *width, int *height)
+unsigned platform_emscripten_get_canvas_dims(void)
 {
-   *width  = PLATFORM_GETVAL(u32, &emscripten_platform_data->canvas_width);
-   *height = PLATFORM_GETVAL(u32, &emscripten_platform_data->canvas_height);
+   unsigned dims = PLATFORM_GETVAL(u32, &emscripten_platform_data->canvas_dims);
 
-   if (*width != 0 || *height != 0)
-      return;
+   if (dims)
+      return dims;
 
-   *width  = 800;
-   *height = 600;
    RARCH_ERR("[EMSCRIPTEN] Could not get screen dimensions.\n");
+   return VIDEO_SCALE_PACK(800, 600);
 }
 
 double platform_emscripten_get_dpr(void)
@@ -583,12 +582,13 @@ void platform_emscripten_set_wake_lock(bool state)
    PlatformEmscriptenSetWakeLock(state);
 }
 
-void platform_emscripten_set_canvas_size(int width, int height)
+void platform_emscripten_set_canvas_size(unsigned dims)
 {
    if (!emscripten_platform_data->enable_set_canvas_size)
       return;
 
-   PlatformEmscriptenSetCanvasSize(width, height);
+   PlatformEmscriptenSetCanvasSize((int)VIDEO_SCALE_W(dims),
+         (int)VIDEO_SCALE_H(dims));
 }
 
 enum platform_emscripten_browser platform_emscripten_get_browser(void)
