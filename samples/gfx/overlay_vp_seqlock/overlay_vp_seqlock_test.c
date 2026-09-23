@@ -52,15 +52,6 @@ static void writer(void *arg)
       int i;
       int s0 = retro_atomic_load_relaxed_int(&g_seq);
       retro_atomic_store_release_int(&g_seq, s0 + 1);
-      /* The driver's fence, reproduced: a store-release orders what
-       * precedes it, so without this the field stores below may be
-       * hoisted above the odd stamp on a weakly ordered machine and
-       * a reader sees an even stamp either side of a half-written
-       * tuple. x86 does not reorder store with store, so no lane
-       * here can make that visible - the fence is carried so this
-       * harness reproduces the protocol rather than only the shape
-       * that happens to work on the host. */
-      retro_atomic_thread_fence_release();
       for (i = 0; i < 4; i++)
       {
          retro_atomic_store_relaxed_int(&g_bits[i],
