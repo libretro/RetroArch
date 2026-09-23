@@ -301,10 +301,10 @@ bool recording_init(void)
    params.video_record_threads      = settings->uints.video_record_threads;
    params.streaming_mode            = settings->uints.streaming_mode;
 
-   params.out_width                 = av_info->geometry.base_width;
-   params.out_height                = av_info->geometry.base_height;
-   params.fb_width                  = av_info->geometry.max_width;
-   params.fb_height                 = av_info->geometry.max_height;
+   params.out_dims                  = VIDEO_SCALE_PACK(
+         av_info->geometry.base_width, av_info->geometry.base_height);
+   params.fb_dims                   = VIDEO_SCALE_PACK(
+         av_info->geometry.max_width, av_info->geometry.max_height);
    /* A core delivering a wider layout than stereo through the
     * multi-channel batch entry is recorded in it, where the container
     * has a default layout for the count - quad, 5.1 with the pair at
@@ -373,10 +373,10 @@ bool recording_init(void)
          return false;
       }
 
-      params.out_width                    = VIDEO_SCALE_W(vp.dims);
-      params.out_height                   = VIDEO_SCALE_H(vp.dims);
-      params.fb_width                     = next_pow2(VIDEO_SCALE_W(vp.dims));
-      params.fb_height                    = next_pow2(VIDEO_SCALE_H(vp.dims));
+      params.out_dims                     = vp.dims;
+      params.fb_dims                      = VIDEO_SCALE_PACK(
+            next_pow2(VIDEO_SCALE_W(vp.dims)),
+            next_pow2(VIDEO_SCALE_H(vp.dims)));
 
       if (video_force_aspect &&
             (VIDEO_DRIVER_ASPECT_RATIO(video_st) > 0.0f))
@@ -397,16 +397,14 @@ bool recording_init(void)
    else
    {
       if (recording_state.out_dims)
-      {
-         params.out_width  = VIDEO_SCALE_W(recording_state.out_dims);
-         params.out_height = VIDEO_SCALE_H(recording_state.out_dims);
-      }
+         params.out_dims   = recording_state.out_dims;
 
       if (video_force_aspect &&
             (VIDEO_DRIVER_ASPECT_RATIO(video_st) > 0.0f))
          params.aspect_ratio = VIDEO_DRIVER_ASPECT_RATIO(video_st);
       else
-         params.aspect_ratio = (float)params.out_width / params.out_height;
+         params.aspect_ratio = (float)VIDEO_SCALE_W(params.out_dims)
+               / VIDEO_SCALE_H(params.out_dims);
 
 #ifdef HAVE_VIDEO_FILTER
       if (settings->bools.video_post_filter_record
@@ -421,8 +419,9 @@ bool recording_init(void)
 
          rarch_softfilter_get_max_output_size(
                video_st->state_filter, &max_dims);
-         params.fb_width  = next_pow2(VIDEO_SCALE_W(max_dims));
-         params.fb_height = next_pow2(VIDEO_SCALE_H(max_dims));
+         params.fb_dims   = VIDEO_SCALE_PACK(
+               next_pow2(VIDEO_SCALE_W(max_dims)),
+               next_pow2(VIDEO_SCALE_H(max_dims)));
       }
 #endif
    }
@@ -430,8 +429,8 @@ bool recording_init(void)
    RARCH_LOG("[Recording] %s %s @ %ux%u (FB size: %ux%u pix_fmt: %u).\n",
          msg_hash_to_str(MSG_RECORDING_TO),
          output,
-         params.out_width, params.out_height,
-         params.fb_width, params.fb_height,
+         VIDEO_SCALE_W(params.out_dims), VIDEO_SCALE_H(params.out_dims),
+         VIDEO_SCALE_W(params.fb_dims), VIDEO_SCALE_H(params.fb_dims),
          (unsigned)params.pix_fmt);
 
    if (!record_driver_init(&params))

@@ -224,8 +224,8 @@ typedef struct ffmpeg
    /* The three queues to the encoder thread.  Single producer (the
     * main thread in ffmpeg_push_video / ffmpeg_push_audio), single
     * consumer (ffmpeg_thread), so lock-free retro_spsc rings: the
-    * push of a frame - up to MAX_FRAMES frames of fb_width x
-    * fb_height in video_fifo - and the encoder's read of one no
+    * push of a frame - up to MAX_FRAMES frames of fb_dims in
+    * video_fifo - and the encoder's read of one no
     * longer exclude each other, where before both copied the whole
     * frame under one lock.  cond/cond_lock stay for the sleeps.
     * After deinit_thread() has joined the encoder, the main thread
@@ -518,6 +518,7 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    struct ff_video_info *video     = &handle->video;
    struct record_params *param     = &handle->params;
    const AVCodec *codec            = NULL;
+   unsigned out_w, out_h;
 
    if (*params->vcodec)
       codec = avcodec_find_encoder_by_name(params->vcodec);
@@ -599,8 +600,8 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    /* Useful to set scale_factor to 2 for chroma subsampled formats to
     * maintain full chroma resolution. (Or just use 4:4:4 or RGB ...)
     */
-   param->out_width  = (float)param->out_width  * params->scale_factor;
-   param->out_height = (float)param->out_height * params->scale_factor;
+   out_w = (float)VIDEO_SCALE_W(param->out_dims) * params->scale_factor;
+   out_h = (float)VIDEO_SCALE_H(param->out_dims) * params->scale_factor;
 
    /* Ensure even dimensions for chroma-subsampled pixel formats.
     * Odd dimensions cause encoder init failure with e.g. libx264.
@@ -608,17 +609,18 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    if (     video->pix_fmt == AV_PIX_FMT_YUV420P
          || video->pix_fmt == AV_PIX_FMT_YUV422P)
    {
-      param->out_width  = (param->out_width  + 1) & ~1;
-      param->out_height = (param->out_height + 1) & ~1;
+      out_w = (out_w + 1) & ~1;
+      out_h = (out_h + 1) & ~1;
    }
+   param->out_dims = VIDEO_SCALE_PACK(out_w, out_h);
 
    video->codec->codec_type          = AVMEDIA_TYPE_VIDEO;
-   video->codec->width               = param->out_width;
-   video->codec->height              = param->out_height;
+   video->codec->width               = out_w;
+   video->codec->height              = out_h;
    video->codec->time_base           = av_d2q((double)
          params->frame_drop_ratio /param->fps, 1000000); /* Arbitrary big number. */
    video->codec->sample_aspect_ratio = av_d2q(
-         param->aspect_ratio * param->out_height / param->out_width, 255);
+         param->aspect_ratio * out_h / out_w, 255);
    video->codec->pix_fmt             = video->pix_fmt;
 
    video->codec->thread_count = params->threads;
@@ -640,8 +642,7 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 
    video->frame_drop_ratio = params->frame_drop_ratio;
 
-   size = av_image_get_buffer_size(video->pix_fmt, param->out_width,
-         param->out_height, 1);
+   size = av_image_get_buffer_size(video->pix_fmt, out_w, out_h, 1);
    video->conv_frame_buf   = (uint8_t*)av_malloc(size);
    /* NULL-check conv_frame_buf: the memset on the next line
     * NULL-derefs on OOM, as does av_image_fill_arrays below
@@ -656,10 +657,10 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 
    frame = video->conv_frame;
    av_image_fill_arrays(frame->data, frame->linesize, video->conv_frame_buf,
-         video->pix_fmt, param->out_width, param->out_height, 1);
+         video->pix_fmt, out_w, out_h, 1);
 
-   video->conv_frame->width  = param->out_width;
-   video->conv_frame->height = param->out_height;
+   video->conv_frame->width  = out_w;
+   video->conv_frame->height = out_h;
    video->conv_frame->format = video->pix_fmt;
 
    return true;
@@ -1048,7 +1049,8 @@ static bool init_thread(ffmpeg_t *handle)
          retro_spsc_init(&handle->audio_fifo, 32000 * sizeof(int16_t) *
                handle->params.channels * MAX_FRAMES / 60) /* Some arbitrary max size. */
       && retro_spsc_init(&handle->attr_fifo, sizeof(struct record_video_data) * MAX_FRAMES)
-      && retro_spsc_init(&handle->video_fifo, handle->params.fb_width * handle->params.fb_height *
+      && retro_spsc_init(&handle->video_fifo,
+               VIDEO_SCALE_AREA(handle->params.fb_dims) *
                handle->video.pix_size * MAX_FRAMES);
    if (!handle->fifos_init)
    {
@@ -1415,10 +1417,10 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
    unsigned src_h = VIDEO_SCALE_H(vid->dims);
    /* When output was padded to even dimensions, clamp the scaling
     * destination to the source size. */
-   unsigned dst_w = (src_w < handle->params.out_width)
-      ? src_w : handle->params.out_width;
-   unsigned dst_h = (src_h < handle->params.out_height)
-      ? src_h : handle->params.out_height;
+   unsigned out_w = VIDEO_SCALE_W(handle->params.out_dims);
+   unsigned out_h = VIDEO_SCALE_H(handle->params.out_dims);
+   unsigned dst_w = (src_w < out_w) ? src_w : out_w;
+   unsigned dst_h = (src_h < out_h) ? src_h : out_h;
 
    /* Attempt to preserve more information if we scale down. */
    bool shrunk = dst_w < src_w || dst_h < src_h;
@@ -1848,8 +1850,8 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 {
    void *audio_buf       = NULL;
    bool did_work         = false;
-   void *video_buf       = av_malloc(2 * handle->params.fb_width *
-         handle->params.fb_height * handle->video.pix_size);
+   void *video_buf       = av_malloc(2 *
+         VIDEO_SCALE_AREA(handle->params.fb_dims) * handle->video.pix_size);
    size_t audio_buf_size = handle->config.audio_enable ?
       (handle->audio.codec->frame_size *
        handle->params.channels * sizeof(int16_t)) : 0;
@@ -1939,8 +1941,8 @@ static void ffmpeg_thread(void *data)
    ffmpeg_t *ff          = (ffmpeg_t*)data;
    /* For some reason, FFmpeg has a tendency to crash
     * if we don't overallocate a bit. */
-   void *video_buf       = av_malloc(2 * ff->params.fb_width *
-         ff->params.fb_height * ff->video.pix_size);
+   void *video_buf       = av_malloc(2 *
+         VIDEO_SCALE_AREA(ff->params.fb_dims) * ff->video.pix_size);
    size_t audio_buf_size = ff->config.audio_enable ?
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf       = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
