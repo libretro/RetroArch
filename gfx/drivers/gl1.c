@@ -369,7 +369,7 @@ typedef struct
 {
    gl1_t *gl;
    GLuint tex;
-   unsigned tex_width, tex_height;
+   unsigned tex_dims;            /* VIDEO_SCALE_PACK, the atlas texture */
 
    const font_renderer_driver_t *font_driver;
    void *font_data;
@@ -597,16 +597,18 @@ static void gl1_raster_font_upload_atlas(gl1_raster_t *font,
       unsigned y0, unsigned y1, bool respecify)
 {
    unsigned i, j;
+   unsigned tex_w              = VIDEO_SCALE_W(font->tex_dims);
+   unsigned tex_h              = VIDEO_SCALE_H(font->tex_dims);
    GLint  gl_internal = GL_LUMINANCE_ALPHA;
    GLenum gl_format   = GL_LUMINANCE_ALPHA;
    size_t ncomponents = 2;
-   unsigned band      = respecify ? font->tex_height : (y1 - y0);
+   unsigned band      = respecify ? tex_h : (y1 - y0);
    uint8_t *tmp;
 
    if (!respecify && (y1 <= y0 || y1 > (unsigned)font->atlas->height))
       return;
 
-   tmp = (uint8_t*)calloc(band, font->tex_width * ncomponents);
+   tmp = (uint8_t*)calloc(band, tex_w * ncomponents);
    if (!tmp)
       return;
 
@@ -622,7 +624,7 @@ static void gl1_raster_font_upload_atlas(gl1_raster_t *font,
          for (i = y0; i < y1; ++i)
          {
             const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
-            uint8_t       *dst = &tmp[(i - y0) * font->tex_width * ncomponents];
+            uint8_t       *dst = &tmp[(i - y0) * tex_w * ncomponents];
 
             memcpy(dst, src, font->atlas->width);
          }
@@ -631,7 +633,7 @@ static void gl1_raster_font_upload_atlas(gl1_raster_t *font,
          for (i = y0; i < y1; ++i)
          {
             const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
-            uint8_t       *dst = &tmp[(i - y0) * font->tex_width * ncomponents];
+            uint8_t       *dst = &tmp[(i - y0) * tex_w * ncomponents];
 
             for (j = 0; j < font->atlas->width; ++j)
             {
@@ -643,7 +645,7 @@ static void gl1_raster_font_upload_atlas(gl1_raster_t *font,
    }
 
    /* The temp buffer is a tightly packed POT-sized GL_LUMINANCE_ALPHA
-    * image: each row is exactly font->tex_width * 2 bytes with no
+    * image: each row is exactly tex_w * 2 bytes with no
     * padding. Force the pixel-unpack state to match that before
     * uploading. Without this, the upload inherits whatever state the
     * GL context happens to be in at the time of the first font init.
@@ -663,11 +665,11 @@ static void gl1_raster_font_upload_atlas(gl1_raster_t *font,
 
    if (respecify)
       glTexImage2D(GL_TEXTURE_2D, 0, gl_internal,
-            font->tex_width, font->tex_height,
+            tex_w, tex_h,
             0, gl_format, GL_UNSIGNED_BYTE, tmp);
    else
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, (GLint)y0,
-            font->tex_width, band,
+            tex_w, band,
             gl_format, GL_UNSIGNED_BYTE, tmp);
 
    free(tmp);
@@ -707,8 +709,8 @@ static void *gl1_raster_font_init(void *data,
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
    font->atlas      = font->font_driver->get_atlas(font->font_data);
-   font->tex_width  = next_pow2(font->atlas->width);
-   font->tex_height = next_pow2(font->atlas->height);
+   font->tex_dims   = VIDEO_SCALE_PACK(next_pow2(font->atlas->width),
+         next_pow2(font->atlas->height));
 
    gl1_raster_font_upload_atlas(font, 0, 0, true);
 
@@ -1041,8 +1043,8 @@ static void gl1_raster_font_render_msg(
        * size yet. */
       unsigned dims           = gl->screen_dims
             ? gl->screen_dims : gl->frame_dims;
-      float inv_tex_size_x    = 1.0f / font->tex_width;
-      float inv_tex_size_y    = 1.0f / font->tex_height;
+      float inv_tex_size_x    = 1.0f / VIDEO_SCALE_W(font->tex_dims);
+      float inv_tex_size_y    = 1.0f / VIDEO_SCALE_H(font->tex_dims);
       float inv_win_width;
       float inv_win_height;
       /* setup_viewport may change gl->vp, so capture inv_win_width/height
