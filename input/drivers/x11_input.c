@@ -46,14 +46,26 @@
 
 typedef struct x11_input
 {
+#ifdef HAVE_XI2
+   /* Each master pointer's position in the window, as of the last
+    * event on event_display. */
+   double ptr_x[MAX_MOUSE_IDX];
+   double ptr_y[MAX_MOUSE_IDX];
+#endif
    Display *display;
-   /* The driver's own connection, carrying only key and focus events
-    * for the window, or NULL when it could not be opened. */
-   Display *key_display;
+   /* The driver's own connection, carrying the window's key and focus
+    * events and, with XInput 2, its pointer events; NULL when it
+    * could not be opened. */
+   Display *event_display;
    Window win;
 
 #ifdef HAVE_XI2
+   /* First request after a warp: older events are from before it. */
+   unsigned long ptr_warp_serial[MAX_MOUSE_IDX];
    int mouse_dev_list[MAX_MOUSE_IDX];
+   int xi_opcode;
+   /* Buttons held, bit n for button n. */
+   unsigned ptr_buttons[MAX_MOUSE_IDX];
 #endif
    int mouse_x[MAX_MOUSE_IDX];
    int mouse_y[MAX_MOUSE_IDX];
@@ -61,8 +73,14 @@ typedef struct x11_input
    int mouse_delta_y[MAX_MOUSE_IDX];
    bool mouse_grabbed;
    char state[32];
-   /* Keys held, kept from the events on key_display. */
+   /* Keys held, kept from the events on event_display. */
    char keys[32];
+#ifdef HAVE_XI2
+   bool ptr_inside[MAX_MOUSE_IDX];
+   bool ptr_warp_pending[MAX_MOUSE_IDX];
+   /* The pointer is read from events rather than queried. */
+   bool ptr_events;
+#endif
    bool mouse_l[MAX_MOUSE_IDX];
    bool mouse_r[MAX_MOUSE_IDX];
    bool mouse_m[MAX_MOUSE_IDX];
@@ -88,7 +106,7 @@ extern Window             g_x11_win;
  * the shared connection is a round trip queued behind whatever the
  * video thread is presenting through it. Events are drained at the
  * poll, so a key reads as of the poll. */
-static Display *x_keys_open(x11_input_t *x11)
+static Display *x_events_open(x11_input_t *x11)
 {
    Display *dpy = XOpenDisplay(DisplayString(x11->display));
 
@@ -111,9 +129,182 @@ static Display *x_keys_open(x11_input_t *x11)
    return dpy;
 }
 
-static void x_keys_drain(x11_input_t *x11)
+#ifdef HAVE_XI2
+static Display *x_select_dpy;
+static int      x_select_error_code;
+static int    (*x_select_prev)(Display*, XErrorEvent*);
+
+/* XI_ButtonPress is one client's per window; a refusal on the
+ * driver's own connection is reported here rather than ending the
+ * process. Errors on other connections go to the handler before. */
+static int x_select_error(Display *dpy, XErrorEvent *event)
 {
-   Display *dpy = x11->key_display;
+   if (dpy == x_select_dpy)
+   {
+      x_select_error_code = event->error_code;
+      return 0;
+   }
+   return x_select_prev ? x_select_prev(dpy, event) : 0;
+}
+
+static unsigned x_button_word(const XIButtonState *state)
+{
+   unsigned word = 0;
+   if (state->mask_len > 0)
+      word  = state->mask[0];
+   if (state->mask_len > 1)
+      word |= (unsigned)state->mask[1] << 8;
+   return word;
+}
+
+static int x_pointer_index(const x11_input_t *x11, int deviceid)
+{
+   int i;
+   for (i = 0; i < MAX_MOUSE_IDX; i++)
+      if (x11->mouse_dev_list[i] == deviceid)
+         return i;
+   return -1;
+}
+
+/* The master pointers' motion, buttons and crossings on the window
+ * come to event_display, which then holds the window's implicit grab
+ * and gets the button events the pump would; the wheel is latched
+ * from here instead. Each pointer is asked once, here, where it
+ * starts. */
+static bool x_pointer_open(x11_input_t *x11, int xi_opcode)
+{
+   int i;
+   XIEventMask event_mask;
+   XWindowAttributes attr;
+   unsigned char mask[XIMaskLen(XI_LASTEVENT)];
+   Display *dpy = x11->event_display;
+
+   memset(mask, 0, sizeof(mask));
+   XISetMask(mask, XI_Motion);
+   XISetMask(mask, XI_ButtonPress);
+   XISetMask(mask, XI_ButtonRelease);
+   XISetMask(mask, XI_Enter);
+   XISetMask(mask, XI_Leave);
+   event_mask.deviceid = XIAllMasterDevices;
+   event_mask.mask_len = sizeof(mask);
+   event_mask.mask     = mask;
+
+   x_select_dpy        = dpy;
+   x_select_error_code = 0;
+   x_select_prev       = XSetErrorHandler(x_select_error);
+   XISelectEvents(dpy, x11->win, &event_mask, 1);
+   XSync(dpy, False);
+   XSetErrorHandler(x_select_prev);
+   x_select_prev       = NULL;
+   x_select_dpy        = NULL;
+
+   if (x_select_error_code || !XGetWindowAttributes(dpy, x11->win, &attr))
+   {
+      event_mask.mask_len = 0;
+      XISelectEvents(dpy, x11->win, &event_mask, 1);
+      return false;
+   }
+
+   for (i = 0; i < MAX_MOUSE_IDX; i++)
+   {
+      Window root_win, child_win;
+      double root_x, root_y, win_x, win_y;
+      XIButtonState buttons;
+      XIModifierState mods;
+      XIGroupState group;
+
+      if (x11->mouse_dev_list[i] < 0)
+         continue;
+      if (XIQueryPointer(dpy, x11->mouse_dev_list[i], x11->win,
+               &root_win, &child_win, &root_x, &root_y,
+               &win_x, &win_y, &buttons, &mods, &group))
+      {
+         x11->ptr_x[i]       = win_x;
+         x11->ptr_y[i]       = win_y;
+         x11->ptr_buttons[i] = x_button_word(&buttons);
+         x11->ptr_inside[i]  =    win_x >= 0 && win_x < attr.width
+                               && win_y >= 0 && win_y < attr.height;
+         /* Allocated for the caller, on success only */
+         XFree(buttons.mask);
+      }
+   }
+
+   x11->xi_opcode = xi_opcode;
+   return true;
+}
+
+/* A position older than the last warp is one the warp replaced. */
+static void x_pointer_move(x11_input_t *x11, int i,
+      unsigned long serial, double x, double y)
+{
+   if (x11->ptr_warp_pending[i])
+   {
+      if ((long)(serial - x11->ptr_warp_serial[i]) < 0)
+         return;
+      x11->ptr_warp_pending[i] = false;
+   }
+   x11->ptr_x[i] = x;
+   x11->ptr_y[i] = y;
+}
+
+static void x_pointer_event(x11_input_t *x11, XGenericEventCookie *cookie)
+{
+   int i;
+   XIDeviceEvent *de = (XIDeviceEvent*)cookie->data;
+
+   if (de->event != x11->win || (i = x_pointer_index(x11, de->deviceid)) < 0)
+      return;
+
+   switch (de->evtype)
+   {
+      case XI_Motion:
+         x_pointer_move(x11, i, de->serial, de->event_x, de->event_y);
+         x11->ptr_buttons[i] = x_button_word(&de->buttons);
+         break;
+
+      case XI_ButtonPress:
+      case XI_ButtonRelease:
+         x_pointer_move(x11, i, de->serial, de->event_x, de->event_y);
+         if (de->detail > 0 && de->detail < 16)
+         {
+            if (de->evtype == XI_ButtonPress)
+               x11->ptr_buttons[i] |=  (1u << de->detail);
+            else
+               x11->ptr_buttons[i] &= ~(1u << de->detail);
+         }
+         /* Wheel notches and buttons 8 and 9 as the pump latches
+          * them from core events. */
+         if (     de->detail >= 4 && de->detail <= 9
+               && (de->evtype == XI_ButtonPress || de->detail >= 8))
+         {
+            XButtonEvent button;
+            memset(&button, 0, sizeof(button));
+            button.type   = (de->evtype == XI_ButtonPress)
+               ? ButtonPress : ButtonRelease;
+            button.button = (unsigned)de->detail;
+            x_input_poll_wheel(&button, true);
+         }
+         break;
+
+      case XI_Enter:
+      case XI_Leave:
+         {
+            XIEnterEvent *ee = (XIEnterEvent*)de;
+            x_pointer_move(x11, i, ee->serial, ee->event_x, ee->event_y);
+            x11->ptr_buttons[i] = x_button_word(&ee->buttons);
+            x11->ptr_inside[i]  = (ee->evtype == XI_Enter);
+         }
+         break;
+
+      default:
+         break;
+   }
+}
+#endif
+
+static void x_events_drain(x11_input_t *x11)
+{
+   Display *dpy = x11->event_display;
 
    while (XPending(dpy))
    {
@@ -151,6 +342,18 @@ static void x_keys_drain(x11_input_t *x11)
                memset(x11->keys, 0, sizeof(x11->keys));
             break;
 
+#ifdef HAVE_XI2
+         case GenericEvent:
+            if (     x11->ptr_events
+                  && event.xcookie.extension == x11->xi_opcode
+                  && XGetEventData(dpy, &event.xcookie))
+            {
+               x_pointer_event(x11, &event.xcookie);
+               XFreeEventData(dpy, &event.xcookie);
+            }
+            break;
+#endif
+
          default:
             break;
       }
@@ -180,7 +383,7 @@ static void *x_input_init(const char *joypad_driver)
    input_keymaps_init_keyboard_lut(rarch_key_map_x11);
 
    if (x11->win != None)
-      x11->key_display = x_keys_open(x11);
+      x11->event_display = x_events_open(x11);
 
 #ifdef HAVE_XI2
    for (i = 0; i < MAX_MOUSE_IDX; i++)
@@ -203,6 +406,8 @@ static void *x_input_init(const char *joypad_driver)
          x11->mouse_dev_list[j++] = dev->deviceid;
       }
    }
+   if (j && x11->event_display)
+      x11->ptr_events = x_pointer_open(x11, xi_opcode);
 #else
    RARCH_DBG("[X11] XInput2 support not compiled in, using only 1 mouse.\n");
 #endif
@@ -568,8 +773,8 @@ static void x_input_free(void *data)
 #ifdef __linux__
       linux_close_illuminance_sensor(x11->illuminance_sensor);
 #endif
-      if (x11->key_display)
-         XCloseDisplay(x11->key_display);
+      if (x11->event_display)
+         XCloseDisplay(x11->event_display);
       free(x11);
    }
 }
@@ -649,7 +854,7 @@ static void x_input_poll(void *data)
    XIModifierState modifiers_return;
    XIGroupState group_return;
    settings_t *settings     = config_get_ptr();
-   unsigned mouse_dev_idx;
+   unsigned mouse_dev_idx   = 0;
    unsigned mouse_ports     = x11->di ? MAX_MOUSE_IDX : 1;
 #else
    int win_x                = 0;
@@ -676,17 +881,22 @@ static void x_input_poll(void *data)
    }
 
    /* Process keyboard */
-   if (x11->key_display)
+   if (x11->event_display)
    {
-      x_keys_drain(x11);
+      x_events_drain(x11);
       memcpy(x11->state, x11->keys, sizeof(x11->state));
    }
    else
       XQueryKeymap(x11->display, x11->state);
 
    /* If pointer is not inside the application
-    * window, ignore mouse input */
-   if (!retro_atomic_load_relaxed_int(&g_x11_entered))
+    * window, ignore mouse input. From events, each
+    * pointer is tested on its own below. */
+   if (
+#ifdef HAVE_XI2
+            !x11->ptr_events &&
+#endif
+            !retro_atomic_load_relaxed_int(&g_x11_entered))
    {
       memset(x11->mouse_delta_x, 0, sizeof(x11->mouse_delta_x));
       memset(x11->mouse_delta_y, 0, sizeof(x11->mouse_delta_y));
@@ -716,26 +926,54 @@ static void x_input_poll(void *data)
          if (mouse_dev_idx >= MAX_INPUT_DEVICES || x11->mouse_dev_list[mouse_dev_idx] < 0)
             return;
 
-         /* Process mouse */
-         if (!XIQueryPointer( x11->display,
-                        x11->mouse_dev_list[mouse_dev_idx],
-                        x11->win,
-                        &root_win, &child_win,
-                        &root_x, &root_y,
-                        &win_x, &win_y,
-                        &buttons_return,
-                        &modifiers_return,
-                        &group_return))
-            return;
+         if (x11->ptr_events)
+         {
+            unsigned buttons = x11->ptr_buttons[mouse_dev_idx];
 
-         /* > Mouse buttons - fixed map (1,2,3,8,9) */
-         x11->mouse_l[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<1 : 0;
-         x11->mouse_m[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<2 : 0;
-         x11->mouse_r[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<3 : 0;
-         x11->mouse_4[mouse_port] = buttons_return.mask_len > 1 ? buttons_return.mask[1] & 1<<0 : 0;
-         x11->mouse_5[mouse_port] = buttons_return.mask_len > 1 ? buttons_return.mask[1] & 1<<1 : 0;
-         /* XIQueryPointer() allocates the button mask for the caller */
-         XFree(buttons_return.mask);
+            if (!x11->ptr_inside[mouse_dev_idx])
+            {
+               x11->mouse_delta_x[mouse_port] = 0;
+               x11->mouse_delta_y[mouse_port] = 0;
+               x11->mouse_l[mouse_port]       = false;
+               x11->mouse_m[mouse_port]       = false;
+               x11->mouse_r[mouse_port]       = false;
+               x11->mouse_4[mouse_port]       = false;
+               x11->mouse_5[mouse_port]       = false;
+               continue;
+            }
+
+            win_x = x11->ptr_x[mouse_dev_idx];
+            win_y = x11->ptr_y[mouse_dev_idx];
+            /* > Mouse buttons - fixed map (1,2,3,8,9) */
+            x11->mouse_l[mouse_port] = (buttons & (1u << 1)) != 0;
+            x11->mouse_m[mouse_port] = (buttons & (1u << 2)) != 0;
+            x11->mouse_r[mouse_port] = (buttons & (1u << 3)) != 0;
+            x11->mouse_4[mouse_port] = (buttons & (1u << 8)) != 0;
+            x11->mouse_5[mouse_port] = (buttons & (1u << 9)) != 0;
+         }
+         else
+         {
+            /* Process mouse */
+            if (!XIQueryPointer( x11->display,
+                           x11->mouse_dev_list[mouse_dev_idx],
+                           x11->win,
+                           &root_win, &child_win,
+                           &root_x, &root_y,
+                           &win_x, &win_y,
+                           &buttons_return,
+                           &modifiers_return,
+                           &group_return))
+               return;
+
+            /* > Mouse buttons - fixed map (1,2,3,8,9) */
+            x11->mouse_l[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<1 : 0;
+            x11->mouse_m[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<2 : 0;
+            x11->mouse_r[mouse_port] = buttons_return.mask_len > 0 ? buttons_return.mask[0] & 1<<3 : 0;
+            x11->mouse_4[mouse_port] = buttons_return.mask_len > 1 ? buttons_return.mask[1] & 1<<0 : 0;
+            x11->mouse_5[mouse_port] = buttons_return.mask_len > 1 ? buttons_return.mask[1] & 1<<1 : 0;
+            /* XIQueryPointer() allocates the button mask for the caller */
+            XFree(buttons_return.mask);
+         }
       }
 #else
       if (!x_query_core_pointer(x11, &win_x, &win_y))
@@ -840,13 +1078,31 @@ static void x_input_poll(void *data)
 
          if (do_warp)
          {
-            /* Sent now, not waited for: the next poll's pointer query
-             * follows it on the connection, so it reads the warped
-             * position. */
-            XWarpPointer(x11->display, None,
-                  x11->win, 0, 0, 0, 0,
-                  warp_x, warp_y);
-            XFlush(x11->display);
+#ifdef HAVE_XI2
+            /* On the connection the pointer events come on: the
+             * position is the warp's until one newer than it. */
+            if (x11->ptr_events)
+            {
+               x11->ptr_warp_serial[mouse_dev_idx]  = NextRequest(x11->event_display);
+               x11->ptr_warp_pending[mouse_dev_idx] = true;
+               x11->ptr_x[mouse_dev_idx]            = warp_x;
+               x11->ptr_y[mouse_dev_idx]            = warp_y;
+               XWarpPointer(x11->event_display, None,
+                     x11->win, 0, 0, 0, 0,
+                     warp_x, warp_y);
+               XFlush(x11->event_display);
+            }
+            else
+#endif
+            {
+               /* Sent now, not waited for: the next poll's pointer
+                * query follows it on the connection, so it reads the
+                * warped position. */
+               XWarpPointer(x11->display, None,
+                     x11->win, 0, 0, 0, 0,
+                     warp_x, warp_y);
+               XFlush(x11->display);
+            }
          }
       }
    }

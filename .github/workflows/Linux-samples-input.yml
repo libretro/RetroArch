@@ -65,30 +65,34 @@ jobs:
           ccache -M 500M
           ccache -z
 
-      - name: X11 keyboard poll sends no requests (Xvfb, ASan + UBSan, TSan)
+      - name: X11 input poll sends no requests (Xvfb, ASan + UBSan, TSan)
         shell: bash
-        working-directory: samples/input/x11_key_poll
+        working-directory: samples/input/x11_input_poll
         run: |
           set -eu
-          # The X input driver's poll runs every frame. Keys come from
-          # events on the driver's own connection, drained at the poll,
-          # so it sends no request on either connection; a query on the
-          # shared one waits behind whatever the video thread presents
-          # through it. XTEST drives the keyboard: held before init,
-          # through auto-repeat, across a change of focus and another
-          # client's keyboard grab, and the query fallback.
+          # The X input driver's poll runs every frame. Keys, and with
+          # XInput 2 the pointer, come from events on the driver's own
+          # connection, drained at the poll, so it sends no request on
+          # either connection; a query on the shared one waits behind
+          # whatever the video thread presents through it. XTEST drives
+          # the keyboard (held before init, auto-repeat, focus changes,
+          # another client's keyboard grab) and the pointer (a press
+          # without motion, buttons 1, 3 and 8, the wheel, a drag out of
+          # the window, a new driver over a held button, and grabbed
+          # motion across a warp the server holds back behind a server
+          # grab - where any wait on the server would hang the test).
           Xvfb :96 -screen 0 1024x768x24 > /tmp/xvfb96.log 2>&1 &
           XVFB_PID=$!
           sleep 1
           make clean all SANITIZER=address,undefined
           DISPLAY=:96 ASAN_OPTIONS=detect_leaks=1 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
-             timeout 120 ./x11_key_poll_test
+             timeout 120 ./x11_input_poll_test
           make clean all SANITIZER=thread
-          DISPLAY=:96 TSAN_OPTIONS=halt_on_error=1 timeout 120 ./x11_key_poll_test
+          DISPLAY=:96 TSAN_OPTIONS=halt_on_error=1 timeout 120 ./x11_input_poll_test
           make clean
           kill $XVFB_PID
-          echo "[pass] x11_key_poll_test (ASan, TSan)"
+          echo "[pass] x11_input_poll_test (ASan, TSan)"
 
       - name: Build and run illuminance_sensor_test (ASan + UBSan)
         shell: bash

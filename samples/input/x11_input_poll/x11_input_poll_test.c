@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2026 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (x11_key_poll_test.c).
+ * The following license statement only applies to this file (x11_input_poll_test.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -21,10 +21,12 @@
 
 /* The X input driver's poll runs every frame and must not wait on the
  * server: the test requires it to send no requests on either
- * connection, and drives the keyboard through XTEST to check that
- * keys still read as held and released - across auto-repeat, a
- * change of focus and a keyboard grab by another client. Needs an X
- * server without a window manager (Xvfb) with the XTEST extension. */
+ * connection, and drives the keyboard and pointer through XTEST to
+ * check that they still read as they did - keys across auto-repeat,
+ * a change of focus and a keyboard grab by another client; buttons,
+ * the wheel, a drag out of the window, and the grabbed pointer's
+ * motion across a warp the server has not yet made. Needs an X server
+ * without a window manager (Xvfb) with XTEST and XInput 2. */
 
 #define _POSIX_C_SOURCE 199309L
 
@@ -67,9 +69,6 @@ void frontend_driver_destroy_signal_handler_state(void) { stub_signal_state = 0;
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device)
 { (void)down; (void)code; (void)character; (void)mod; (void)device; }
-void x_input_poll_wheel(XButtonEvent *event, bool latch)
-{ (void)event; (void)latch; }
-int16_t x_mouse_state_wheel(unsigned id) { (void)id; return 0; }
 void input_keymaps_init_keyboard_lut(const struct rarch_key_map *map)
 { (void)map; }
 void input_config_set_mouse_display_name(unsigned port, const char *name)
@@ -96,8 +95,9 @@ float linux_get_illuminance_reading(const linux_illuminance_sensor_t *sensor)
 void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor,
       unsigned rate)
 { (void)sensor; (void)rate; }
-/* Only reached for pointer reads, which the test does not make. */
-settings_t *config_get_ptr(void) { return NULL; }
+/* Every mouse port reads the first master pointer. */
+static settings_t stub_settings;
+settings_t *config_get_ptr(void) { return &stub_settings; }
 bool video_driver_has_focus(void) { return x11_has_focus(NULL); }
 enum rarch_display_type video_driver_display_type_get(void)
 { return RARCH_DISPLAY_X11; }
@@ -195,6 +195,66 @@ static void focus(Window w)
    XSync(inj, False);
 }
 
+static void move_to(int x, int y)
+{
+   XWarpPointer(inj, None, DefaultRootWindow(inj), 0, 0, 0, 0, x, y);
+   XSync(inj, False);
+}
+
+static void button(unsigned b, bool down)
+{
+   XTestFakeButtonEvent(inj, b, down ? True : False, CurrentTime);
+   XSync(inj, False);
+}
+
+static int want_x, want_y;
+static bool at_want(x11_input_t *x11)
+{ return x11->mouse_x[0] == want_x && x11->mouse_y[0] == want_y; }
+static bool left_held(x11_input_t *x11) { return x11->mouse_l[0]; }
+static bool left_free(x11_input_t *x11) { return !x11->mouse_l[0]; }
+static bool right_held(x11_input_t *x11) { return x11->mouse_r[0]; }
+static bool right_free(x11_input_t *x11) { return !x11->mouse_r[0]; }
+static bool b8_held(x11_input_t *x11) { return x11->mouse_4[0]; }
+static bool b8_free(x11_input_t *x11) { return !x11->mouse_4[0]; }
+static bool wheel_up(x11_input_t *x11)
+{ (void)x11; return x_mouse_state_wheel(RETRO_DEVICE_ID_MOUSE_WHEELUP) != 0; }
+
+static bool until(x11_input_t *x11, bool (*cond)(x11_input_t*))
+{
+   unsigned i;
+   for (i = 0; i < 400; i++)
+   {
+      frame(x11);
+      if (cond(x11))
+         return true;
+      nap_ms(5);
+   }
+   return false;
+}
+
+/* Frames until the grabbed deltas add up to (dx, dy), then 20 more
+ * that must add nothing. */
+static bool grabbed_sums_to(x11_input_t *x11, int dx, int dy,
+      int *sx, int *sy)
+{
+   unsigned i;
+   for (i = 0; i < 400 && (*sx != dx || *sy != dy); i++)
+   {
+      frame(x11);
+      *sx += x11->mouse_delta_x[0];
+      *sy += x11->mouse_delta_y[0];
+      nap_ms(5);
+   }
+   for (i = 0; i < 20; i++)
+   {
+      frame(x11);
+      *sx += x11->mouse_delta_x[0];
+      *sy += x11->mouse_delta_y[0];
+      nap_ms(2);
+   }
+   return *sx == dx && *sy == dy;
+}
+
 static Bool is_key_release(Display *dpy, XEvent *ev, XPointer arg)
 {
    (void)dpy; (void)arg;
@@ -249,8 +309,8 @@ int main(void)
    /* A key already down when the driver starts reads as held. */
    key(true);
    x11 = (x11_input_t*)input_x.init(NULL);
-   CHECK(x11 && x11->key_display, "driver opens its key connection");
-   if (!x11 || !x11->key_display)
+   CHECK(x11 && x11->event_display, "driver opens its key connection");
+   if (!x11 || !x11->event_display)
       return 1;
    CHECK(settles_to(x11, true), "key held before init reads held");
    key(false);
@@ -261,15 +321,15 @@ int main(void)
    CHECK(settles_to(x11, true), "press reads held");
    XSync(g_x11_dpy, False);
    before     = NextRequest(g_x11_dpy);
-   key_before = NextRequest(x11->key_display);
+   key_before = NextRequest(x11->event_display);
    for (i = 0; i < 200; i++)
       frame(x11);
    printf("[info] 200 frames sent %lu + %lu requests\n",
          NextRequest(g_x11_dpy) - before,
-         NextRequest(x11->key_display) - key_before);
+         NextRequest(x11->event_display) - key_before);
    CHECK(NextRequest(g_x11_dpy) == before,
          "200 polls send no requests on the shared connection");
-   CHECK(NextRequest(x11->key_display) == key_before,
+   CHECK(NextRequest(x11->event_display) == key_before,
          "200 polls send no requests on the key connection");
    CHECK(held(x11), "key still reads held after 200 polls");
    key(false);
@@ -288,8 +348,8 @@ int main(void)
    key(true);
    CHECK(settles_to(x11, true), "press reads held");
    nap_ms(400);
-   XSync(x11->key_display, False);
-   CHECK(!XCheckIfEvent(x11->key_display, &ev, is_key_release, NULL),
+   XSync(x11->event_display, False);
+   CHECK(!XCheckIfEvent(x11->event_display, &ev, is_key_release, NULL),
          "held through auto-repeat, the key connection gets no release");
    for (i = 0; i < 20; i++)
    {
@@ -353,9 +413,161 @@ int main(void)
       frame(x11);
    CHECK(!held(x11), "and stays released");
 
+   /* The pointer. */
+   CHECK(x11->ptr_events, "the pointer comes from events");
+   move_to(1000, 700);
+   frame(x11);
+   want_x = 100; want_y = 100;
+   move_to(100, 100);
+   CHECK(until(x11, at_want), "motion into the window reads its position");
+
+   XSync(g_x11_dpy, False);
+   before     = NextRequest(g_x11_dpy);
+   key_before = NextRequest(x11->event_display);
+   for (i = 0; i < 200; i++)
+   {
+      if (i % 10 == 0)
+         move_to(100 + (int)i / 10, 100);
+      frame(x11);
+   }
+   printf("[info] 200 frames with the pointer moving sent %lu + %lu requests\n",
+         NextRequest(g_x11_dpy) - before,
+         NextRequest(x11->event_display) - key_before);
+   CHECK(NextRequest(g_x11_dpy) == before
+         && NextRequest(x11->event_display) == key_before,
+         "200 polls with the pointer inside send no requests");
+   want_x = 119;
+   CHECK(until(x11, at_want), "and read where it went");
+
+   button(1, true);
+   CHECK(until(x11, left_held), "press without motion reads held");
+   button(1, false);
+   CHECK(until(x11, left_free), "release reads released");
+   button(3, true);
+   CHECK(until(x11, right_held), "right button reads held");
+   button(3, false);
+   CHECK(until(x11, right_free), "and released");
+   button(8, true);
+   CHECK(until(x11, b8_held), "button 8 reads as mouse button 4");
+   button(8, false);
+   CHECK(until(x11, b8_free), "and released");
+   button(4, true);
+   button(4, false);
+   CHECK(until(x11, wheel_up), "a wheel notch is latched");
+   frame(x11);
+   CHECK(!wheel_up(x11), "once");
+
+   /* Out of the window a button reads released, dragged or not. */
+   button(1, true);
+   CHECK(until(x11, left_held), "press reads held");
+   move_to(500, 500);
+   CHECK(until(x11, left_free), "dragged out of the window reads released");
+   move_to(50, 50);
+   CHECK(until(x11, left_held), "back in while held reads held");
+   move_to(500, 500);
+   CHECK(until(x11, left_free), "out again reads released");
+   button(1, false);
+   want_x = 100; want_y = 100;
+   move_to(100, 100);
+   CHECK(until(x11, at_want) && !x11->mouse_l[0],
+         "released outside reads released on return");
+
+   /* Grabbed: deltas from the centre, the pointer warped back. */
+   {
+      int sx = 0, sy = 0;
+      want_x = 60; want_y = 60;
+      move_to(60, 60);
+      CHECK(until(x11, at_want), "pointer at (60,60)");
+      x_grab_mouse(x11, true);
+      CHECK(grabbed_sums_to(x11, 60 - 160, 60 - 120, &sx, &sy),
+            "grabbed: the first poll reads the offset from the centre");
+
+      XSync(x11->event_display, False);
+      XSync(g_x11_dpy, False);
+      before     = NextRequest(g_x11_dpy);
+      key_before = NextRequest(x11->event_display);
+      for (i = 0; i < 100; i++)
+         frame(x11);
+      CHECK(NextRequest(g_x11_dpy) == before
+            && NextRequest(x11->event_display) == key_before,
+            "grabbed and still: 100 polls send no requests");
+
+      sx = sy = 0;
+      XTestFakeRelativeMotionEvent(inj, 7, 3, CurrentTime);
+      XSync(inj, False);
+      CHECK(grabbed_sums_to(x11, 7, 3, &sx, &sy),
+            "grabbed motion reads as the motion made");
+
+      /* The server holds the warp back: motion it reports from before
+       * the warp is what the warp undoes, and is not read again. With
+       * the server grabbed any wait on it would hang here. */
+      sx = sy = 0;
+      XGrabServer(inj);
+      XTestFakeRelativeMotionEvent(inj, 20, 0, CurrentTime);
+      XSync(inj, False);
+      CHECK(grabbed_sums_to(x11, 20, 0, &sx, &sy),
+            "motion before a warp reads once");
+      XTestFakeRelativeMotionEvent(inj, 10, 0, CurrentTime);
+      XSync(inj, False);
+      nap_ms(20);
+      for (i = 0; i < 20; i++)
+      {
+         frame(x11);
+         sx += x11->mouse_delta_x[0];
+         sy += x11->mouse_delta_y[0];
+         nap_ms(2);
+      }
+      XUngrabServer(inj);
+      XSync(inj, False);
+      for (i = 0; i < 50; i++)
+      {
+         frame(x11);
+         sx += x11->mouse_delta_x[0];
+         sy += x11->mouse_delta_y[0];
+         nap_ms(2);
+      }
+      printf("[info] held-back warp: deltas summed to (%d,%d)\n", sx, sy);
+      CHECK(sx == 20 && sy == 0,
+            "motion the warp replaces is not read twice");
+      x_grab_mouse(x11, false);
+   }
+
+   /* A second driver on the window: a server that keeps XI2 button
+    * presses to one client refuses it and it asks the server
+    * instead; one that does not gives it the events too. Either way
+    * the process lives and the pointer reads. */
+   {
+      x11_input_t *second = (x11_input_t*)input_x.init(NULL);
+      printf("[info] second driver reads the pointer %s\n",
+            second && second->ptr_events ? "from events" : "by asking");
+      want_x = 110; want_y = 100;
+      move_to(110, 100);
+      CHECK(second && until(second, at_want),
+            "a second driver on the window reads the pointer");
+      input_x.free(second);
+   }
+
+   /* A pointer already in the window, a button held, reads as such on
+    * the first poll of a new driver. */
+   {
+      x11_input_t *fresh;
+      move_to(80, 90);
+      button(1, true);
+      input_x.free(x11);
+      fresh = (x11_input_t*)input_x.init(NULL);
+      CHECK(fresh && fresh->ptr_events, "a new driver reads events");
+      input_x.poll(fresh);
+      CHECK(fresh->mouse_x[0] == 80 && fresh->mouse_y[0] == 90
+            && fresh->mouse_l[0],
+            "the first poll reads where the pointer is and what is held");
+      button(1, false);
+      x11 = fresh;
+   }
+
    /* Without its own connection the driver asks the server. */
-   XCloseDisplay(x11->key_display);
-   x11->key_display = NULL;
+   XCloseDisplay(x11->event_display);
+   x11->event_display = NULL;
+   x11->ptr_events    = false;
    key(true);
    CHECK(settles_to(x11, true), "fallback: press reads held");
    key(false);
