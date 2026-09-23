@@ -360,7 +360,7 @@ void gfx_ctx_wl_get_video_size_webos(void *data, unsigned *dims)
          }
 
       if (oi)
-         *dims = VIDEO_SCALE_PACK(oi->width, oi->height);
+         *dims = oi->dims;
       else
          *dims = VIDEO_SCALE_PACK(DEFAULT_WINDOW_WIDTH,
                DEFAULT_WINDOW_HEIGHT);

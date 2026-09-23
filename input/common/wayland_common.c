@@ -688,8 +688,6 @@ static void wl_output_handle_geometry(void *data,
       int transform)
 {
    output_info_t *oi   = (output_info_t*)data;
-   oi->physical_width  = physical_width;
-   oi->physical_height = physical_height;
    oi->make            = strdup(make);
    oi->model           = strdup(model);
 }
@@ -702,8 +700,7 @@ static void wl_output_handle_mode(void *data,
       int refresh)
 {
    output_info_t *oi = (output_info_t*)data;
-   oi->width         = width;
-   oi->height        = height;
+   oi->dims          = VIDEO_SCALE_PACK(width, height);
    oi->refresh_rate  = refresh;
 }
 

@@ -416,7 +416,7 @@ void gfx_ctx_wl_get_video_size_common(void *data, unsigned *dims)
             break;
          };
 
-      *dims = VIDEO_SCALE_PACK(oi->width, oi->height);
+      *dims = oi->dims;
    }
    else
       *dims = VIDEO_SCALE_PACK(

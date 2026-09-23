@@ -99,10 +99,8 @@ typedef struct output_info
    struct wl_output *output;
    int refresh_rate;
    uint32_t global_id;
-   unsigned width;
-   unsigned height;
-   unsigned physical_width;
-   unsigned physical_height;
+   /* The mode the output is running, packed. */
+   unsigned dims;
    unsigned scale;
    char *make;
    char *model;
