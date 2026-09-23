@@ -90,6 +90,7 @@ static int failures;
 
 static void          *dispserv;
 static retro_atomic_int_t reader_stop;
+static retro_atomic_int_t reader_done;
 static unsigned long  reader_calls;
 
 /* What a core polling the throttle state does from the runloop while
@@ -101,7 +102,20 @@ static void reader_thread(void *arg)
    {
       (void)dispserv_x11.get_refresh_rate(dispserv);
       reader_calls++;
+      retro_atomic_inc_int(&reader_done);
    }
+}
+
+/* The reader's asks that began before the last pump may still be
+ * reading the server, and one that raced the pump withdraws what it
+ * kept when it finishes. Both land on g_x11_dpy, which is where the
+ * requests are counted, so a count starts only once an ask that began
+ * after the pump has finished: every ask before it is then done. */
+static void reader_settle(void)
+{
+   int seen = retro_atomic_load_acquire_int(&reader_done);
+   while (retro_atomic_load_acquire_int(&reader_done) - seen < 2)
+      sthread_yield();
 }
 
 static void pump(void)
@@ -281,6 +295,7 @@ int main(void)
    XRRFreeScreenResources(res);
 
    retro_atomic_int_init(&reader_stop, 0);
+   retro_atomic_int_init(&reader_done, 0);
    reader = sthread_create(reader_thread, NULL);
 
    CHECK(other_client_sets(other, test_mode), "other client sets 50 Hz");
@@ -288,6 +303,8 @@ int main(void)
    r = rate();
    printf("after the switch %.3f Hz\n", r);
    CHECK(fabs(r - 50.0f) < 0.1f, "the switch reaches the rate at the next pump");
+   reader_settle();
+   (void)rate();
    CHECK(requests_over(100) == 0, "50 Hz: answered from memory again");
 
    CHECK(other_client_sets(other, desktop_mode), "other client restores the desktop");
