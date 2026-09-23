@@ -474,6 +474,11 @@ typedef struct thread_video
     * thread out of its frame call, so plain reads of both are safe
     * everywhere. */
    retro_atomic_int_t *alpha_mod;
+   /* Video thread only: the float bits last handed to the driver for
+    * each image, alpha_mods of them, so an apply passes on only what
+    * changed. NULL when it could not be had, and every image is set
+    * at every apply. */
+   int *alpha_applied;
 
    struct
    {
@@ -655,6 +660,10 @@ typedef struct thread_video
    } frame;
 
    bool apply_state_changes;
+   /* Video thread only: the driver was handed a page since the last
+    * apply, so it holds none of alpha_applied - the next apply sets
+    * every image. */
+   bool alpha_reset;
 
    /* Textures the frontend has released since the last frame was handed
     * over, waiting for one to carry them to the video thread. Held

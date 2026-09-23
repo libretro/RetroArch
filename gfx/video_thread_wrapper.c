@@ -539,10 +539,21 @@ static void thread_update_driver_state(thread_video_t *thr)
       if (thr->driver_data && thr->overlay && thr->overlay->set_alpha)
       {
          int i;
+         /* Only an image whose alpha changed is set: a driver may pay
+          * per set (D3D10/11/12 map the sprite buffer for each). */
          for (i = 0; i < (int)thr->alpha_mods; i++)
+         {
+            int bits = retro_atomic_load_relaxed_int(&thr->alpha_mod[i]);
+            if (thr->alpha_applied)
+            {
+               if (!thr->alpha_reset && thr->alpha_applied[i] == bits)
+                  continue;
+               thr->alpha_applied[i] = bits;
+            }
             thr->overlay->set_alpha(thr->driver_data, i,
-                  video_thread_bits_float(retro_atomic_load_relaxed_int(
-                        &thr->alpha_mod[i])));
+                  video_thread_bits_float(bits));
+         }
+         thr->alpha_reset = false;
       }
    }
 #endif
@@ -787,13 +798,20 @@ static bool video_thread_handle_packet(
                   thr->alpha_mods = tmp_alpha_mods;
                   thr->alpha_mod  = tmp_alpha_mod;
                }
+               free(thr->alpha_applied);
+               thr->alpha_applied = (int*)malloc(
+                     thr->alpha_mods * sizeof(int));
             }
             else
             {
                free((void*)thr->alpha_mod);
-               thr->alpha_mods = 0;
-               thr->alpha_mod  = NULL;
+               free(thr->alpha_applied);
+               thr->alpha_mods    = 0;
+               thr->alpha_mod     = NULL;
+               thr->alpha_applied = NULL;
             }
+            /* Whatever the driver holds now, it is not alpha_applied. */
+            thr->alpha_reset = true;
          }
          video_thread_reply(thr, &pkt);
          break;
@@ -3038,6 +3056,7 @@ static void video_thread_free(void *data)
       memalign_free(thr->frame.slot[1].buffer);
 #endif
       free((void*)thr->alpha_mod);
+      free(thr->alpha_applied);
 
       slock_free(thr->frame.lock);
       slock_free(thr->lock);

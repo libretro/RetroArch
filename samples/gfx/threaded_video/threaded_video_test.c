@@ -3504,6 +3504,45 @@ static void lane_overlay_textures_pass(bool threaded)
             "saw %.3f, not 0.375", (double)ovl_alpha[0]);
    }
 
+   /* An apply hands the driver only the images whose alpha changed:
+    * a driver may pay per set (D3D10/11/12 map the sprite buffer for
+    * each), and one press on a page of twenty images is one change.
+    * After a new page the driver holds nothing the wrapper sent, so
+    * the next apply sets every image. */
+   if (ovl_installed && threaded)
+   {
+      unsigned before;
+
+      video_thread_wait_idle();
+      before = ovl_alpha_sets;
+      iface->set_alpha(video_st->data, 1, 0.25f);
+      run_frames(3);
+      video_thread_wait_idle();
+      CHECK(ovl_alpha_sets - before == 1 && ovl_alpha[1] == 0.25f,
+            "one changed alpha reached the driver as %u sets",
+            ovl_alpha_sets - before);
+
+      before = ovl_alpha_sets;
+      iface->set_alpha(video_st->data, 1, 0.25f);
+      run_frames(3);
+      video_thread_wait_idle();
+      CHECK(ovl_alpha_sets == before,
+            "an alpha set to what the driver already has reached it "
+            "(%u sets)", ovl_alpha_sets - before);
+
+      CHECK(iface->load_textures(video_st->data, tex, 2),
+            "load_textures refused page three");
+      run_frames(2);
+      video_thread_wait_idle();
+      before = ovl_alpha_sets;
+      iface->set_alpha(video_st->data, 0, 1.0f);
+      run_frames(3);
+      video_thread_wait_idle();
+      CHECK(ovl_alpha_sets - before == 2,
+            "after a new page the apply set %u of its 2 images",
+            ovl_alpha_sets - before);
+   }
+
    iface->enable(video_st->data, false);
    run_frames(2);
    if (ovl_installed)
