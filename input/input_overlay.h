@@ -149,10 +149,7 @@ enum OVERLAY_DESC_FLAGS
    /* If true, blocks input from overlapped hitboxes */
    OVERLAY_DESC_EXCLUSIVE           = (1 << 1),
    /* Similar, but only applies after range_mod takes effect */
-   OVERLAY_DESC_RANGE_MOD_EXCLUSIVE = (1 << 2),
-   /* A "nul" button: nothing happens when it is pressed. Only such a
-    * desc's image is a slot ledN_map may show and hide. */
-   OVERLAY_DESC_DISPLAY_ONLY        = (1 << 3)
+   OVERLAY_DESC_RANGE_MOD_EXCLUSIVE = (1 << 2)
 };
 
 enum overlay_lightgun_action

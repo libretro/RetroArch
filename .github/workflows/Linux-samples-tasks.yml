@@ -729,11 +729,10 @@ jobs:
           set -eu
           # Builds the shipping input/input_overlay_alpha.c and
           # led/drivers/led_overlay.c against a stub driver. Which images
-          # the overlay LED driver hides: a pack's _led images, else a
-          # ledN_map slot only when a "nul" button owns it (a gamepad
-          # pack's controls are never LEDs), and never an index off the
-          # page - led_map comes from the config with no range of its
-          # own. And the per-poll alpha pass: an image is set only when
+          # the overlay LED driver hides: a pack's _led images, else the
+          # image at a ledN_map slot whatever its desc does, and never an
+          # index off the page - led_map comes from the config with no
+          # range of its own. And the per-poll alpha pass: an image is set only when
           # its alpha changes, a page load sets them all again, and an
           # LED going out and back on between polls is shown again.
           make -f Makefile.visibility clean >/dev/null

@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""The overlay LED driver hides LED images, and nothing else.
+"""The overlay LED driver hides the images it is told are LEDs.
 
 Runs the real retroarch binary under Xvfb with software GL, the menu
 up, the overlay LED driver on and "Show Inputs on Overlay" set to the
 physical controller, holds a key through XTEST and looks at the screen.
 
 led_driver = "overlay" hides an LED's image until a core lights it.
-ledN_map names that image as a slot of whatever page is loaded, so a
-config made for an LED pack blanked the controls at those slots of a
-gamepad pack; and a pressed desc was lit whether or not its image was
-hidden. Each pack is three solid magenta squares at full opacity, no
-core lights anything, and Up is held for the second look:
+ledN_map names that image as a slot of whatever page is loaded, whatever
+the desc at that slot does when pressed (an LED pack may put its lights
+on keys); and a hidden image stays hidden while its desc is pressed.
+Each pack is three solid magenta squares at full opacity, no core
+lights anything, and Up is held for the second look:
 
   map pack   square 0 "nul"                  - shown (the overlay is up)
              square 1 "nul", led1_map = 1    - hidden: an LED image
-             square 2 "up",  led2_map = 2    - shown: a control is never
-                                               an LED, pressed or not
+             square 2 "up",  led2_map = 2    - hidden, and stays hidden
+                                               while Up is held
   led pack   square 0 "nul"                  - shown
              square 1 "up",  _led = 1        - hidden, and stays hidden
                                                while Up is held
@@ -46,7 +46,7 @@ W, H    = screen.W, screen.H
 PACKS = {
     "map": [(0.15, 0.20, 0.10, 0.10, "nul", 0, True),
             (0.85, 0.80, 0.10, 0.10, "nul", 0, False),
-            (0.85, 0.20, 0.10, 0.10, "up",  0, True)],
+            (0.85, 0.20, 0.10, 0.10, "up",  0, False)],
     "led": [(0.15, 0.20, 0.10, 0.10, "nul", 0, True),
             (0.85, 0.80, 0.10, 0.10, "up",  1, False),
             (0.85, 0.20, 0.10, 0.10, "nul", 0, True)],

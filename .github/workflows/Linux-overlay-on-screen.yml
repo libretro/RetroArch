@@ -150,11 +150,8 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # ledN_map names a slot of whatever page is loaded, so a config
-          # made for an LED overlay blanked a gamepad pack's d-pad arms,
-          # which then showed only while pressed. With the overlay LED
-          # driver on and Up held through XTEST: an LED image ("nul",
-          # mapped or named with _led) stays hidden, a control at a
-          # mapped slot stays shown, and a pack that names its LEDs is
-          # not mapped.
+          # With the overlay LED driver on and Up held through XTEST: an
+          # image at a ledN_map slot, "nul" or a control, stays hidden,
+          # as does one named with _led, and a pack that names its LEDs
+          # is not mapped.
           timeout 300 python3 samples/input/overlay_on_screen/overlay_led_hidden_test.py ./retroarch

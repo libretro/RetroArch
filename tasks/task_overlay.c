@@ -716,12 +716,7 @@ static bool task_overlay_load_desc(
 
    BIT16_SET(loader->overlay_types, desc->type);
    if (takes_input)
-   {
-      desc->flags          &= ~OVERLAY_DESC_DISPLAY_ONLY;
       input_overlay->flags |= OVERLAY_TAKES_INPUT;
-   }
-   else
-      desc->flags          |=  OVERLAY_DESC_DISPLAY_ONLY;
 
    width_mod  = 1.0f;
    height_mod = 1.0f;

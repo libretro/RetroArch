@@ -27,9 +27,9 @@
  * A pack that names its LED images (overlayN_descM_led = K) is the
  * only source: the image of a desc naming LED K shows while K is lit.
  * ledN_map, which names a slot of whatever page is loaded, is for a
- * pack that names none, and reaches only the images of "nul" buttons:
- * the same config applied to a gamepad pack would otherwise blank
- * whichever controls sit at those slots. */
+ * pack that names none, and reaches the image at that slot whatever
+ * its desc does when pressed: an LED pack may put its lights on keys
+ * or buttons. */
 
 #include <boolean.h>
 
@@ -65,22 +65,6 @@ void input_overlay_alpha_forget(input_overlay_t *ol)
       ol->alpha_sent[i] = -1.0f;
 }
 
-/* Image @image of @page belongs to a desc nothing happens to when it
- * is pressed. */
-static bool input_overlay_image_display_only(const struct overlay *page,
-      unsigned image)
-{
-   size_t i;
-   for (i = 0; i < page->size; i++)
-   {
-      const struct overlay_desc *desc = &page->descs[i];
-      if (     desc->image_index == image
-            && OVERLAY_HAS_IMAGE(&desc->image))
-         return (desc->flags & OVERLAY_DESC_DISPLAY_ONLY) != 0;
-   }
-   return false;
-}
-
 bool input_overlay_image_hidden(const input_overlay_t *ol,
       unsigned image, uint32_t lit, const unsigned *led_map)
 {
@@ -105,7 +89,7 @@ bool input_overlay_image_hidden(const input_overlay_t *ol,
 
    for (i = 0; i < MAX_LEDS; i++)
       if (led_map[i] == image && !(lit & (1u << i)))
-         return input_overlay_image_display_only(ol->active, image);
+         return true;
    return false;
 }
 
@@ -134,8 +118,7 @@ void input_overlay_hide_leds(input_overlay_t *ol,
     * (unmapped is (unsigned)-1): only a slot the page has is touched. */
    for (i = 0; i < MAX_LEDS; i++)
       if (     led_map[i] < ol->active->load_images_size
-            && !(lit & (1u << i))
-            && input_overlay_image_display_only(ol->active, led_map[i]))
+            && !(lit & (1u << i)))
          input_overlay_set_image_alpha(ol, led_map[i], 0.0f);
 }
 
