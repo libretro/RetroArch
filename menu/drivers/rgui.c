@@ -2757,25 +2757,24 @@ static bool rgui_request_thumbnail(
  * discarded - so this costs nothing in quality, and it is faster
  * besides, the expensive filter seeing far fewer input pixels. */
 static uint32_t *rgui_downscale_box(const uint32_t *src,
-      unsigned sw, unsigned sh, unsigned f,
-      unsigned *dw, unsigned *dh)
+      unsigned src_dims, unsigned f, unsigned *out_dims)
 {
    unsigned x, y, i, j;
-   unsigned n = f * f;
+   unsigned n  = f * f;
+   unsigned sw = VIDEO_SCALE_W(src_dims);
+   unsigned dw = sw / f;
+   unsigned dh = VIDEO_SCALE_H(src_dims) / f;
    uint32_t *d;
 
-   *dw = sw / f;
-   *dh = sh / f;
-
-   if ((*dw < 1) || (*dh < 1))
+   if ((dw < 1) || (dh < 1))
       return NULL;
 
-   if (!(d = (uint32_t*)malloc((size_t)*dw * *dh * sizeof(uint32_t))))
+   if (!(d = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t))))
       return NULL;
 
-   for (y = 0; y < *dh; y++)
+   for (y = 0; y < dh; y++)
    {
-      for (x = 0; x < *dw; x++)
+      for (x = 0; x < dw; x++)
       {
          unsigned a = 0, r = 0, g = 0, b = 0;
 
@@ -2793,12 +2792,13 @@ static uint32_t *rgui_downscale_box(const uint32_t *src,
             }
          }
 
-         d[(size_t)y * *dw + x] =
+         d[(size_t)y * dw + x] =
                ((a / n) << 24) | ((r / n) << 16)
              | ((g / n) <<  8) |  (b / n);
       }
    }
 
+   *out_dims = VIDEO_SCALE_PACK(dw, dh);
    return d;
 }
 
@@ -2901,16 +2901,16 @@ static bool rgui_downscale_thumbnail(
        * rgui_downscale_box(). */
       for (f = 1; (scale_width / (f * 2)) >= image_dst->width; f *= 2) ;
 
-      if (f > 1)
+      if (f > 1 && VIDEO_SCALE_FITS(scale_width, scale_height))
       {
-         unsigned bw, bh;
+         unsigned box_dims;
 
          if ((box_buf = rgui_downscale_box(scale_src,
-               scale_width, scale_height, f, &bw, &bh)))
+               VIDEO_SCALE_PACK(scale_width, scale_height), f, &box_dims)))
          {
             scale_src    = box_buf;
-            scale_width  = bw;
-            scale_height = bh;
+            scale_width  = VIDEO_SCALE_W(box_dims);
+            scale_height = VIDEO_SCALE_H(box_dims);
          }
       }
 
