@@ -259,7 +259,7 @@ static void *sdl3_gfx_init(const video_info_t *video,
 
    /* No backend flag: SDL_CreateRenderer picks the render driver. */
    if (!sdl3_window_set_video_mode(&vid->window,
-            VIDEO_SCALE_PACK(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims)),
+            video->dims,
             video->fullscreen, 0))
    {
       RARCH_ERR("[SDL3] Failed to init SDL window: %s.\n", SDL_GetError());

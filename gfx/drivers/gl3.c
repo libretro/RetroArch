@@ -4613,8 +4613,7 @@ static void gl3_renderchain_render(
       /* Render to FBO with certain size. */
       gl3_set_viewport(gl, rect->img_dims, true, false);
 
-      params.vp_dims       = VIDEO_SCALE_PACK(
-            VIDEO_SCALE_W(gl->out_vp_dims), VIDEO_SCALE_H(gl->out_vp_dims));
+      params.vp_dims       = gl->out_vp_dims;
       params.dims          = prev_rect->img_dims;
       params.tex_dims      = prev_rect->dims;
       params.out_dims      = gl->vp.dims;
@@ -5047,8 +5046,7 @@ static bool gl3_frame(void *data, const void *frame,
          GL3_SET_TEXTURE_COORDS(feedback_info.coord, xamt, yamt);
       }
 
-      params.vp_dims       = VIDEO_SCALE_PACK(
-            VIDEO_SCALE_W(gl->out_vp_dims), VIDEO_SCALE_H(gl->out_vp_dims));
+      params.vp_dims       = gl->out_vp_dims;
       params.dims          = VIDEO_SCALE_PACK(frame_width, frame_height);
       params.tex_dims      = VIDEO_SCALE_PACK(
             RARCH_SCALE_BASE * gl->video_info.input_scale,

@@ -4809,8 +4809,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->font_msg_color_b            = settings->floats.video_msg_color_b;
    video_info->custom_vp_x                 = VIDEO_POS_X(custom_vp->pos);
    video_info->custom_vp_y                 = VIDEO_POS_Y(custom_vp->pos);
-   video_info->custom_vp_dims              = VIDEO_SCALE_PACK(
-         VIDEO_SCALE_W(custom_vp->dims), VIDEO_SCALE_H(custom_vp->dims));
+   video_info->custom_vp_dims              = custom_vp->dims;
 
    video_info->video_st_flags              = disp_flags
                                            | video_st->main_flags;
@@ -5586,9 +5585,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
              * metrics here, because the context driver
              * has not yet been initialised... */
              /* > Try explicitly configured values */
-            unsigned max_win_dims   = VIDEO_SCALE_PACK(
-                  VIDEO_SCALE_W(settings->uints.window_auto_dims_max),
-                  VIDEO_SCALE_H(settings->uints.window_auto_dims_max));
+            unsigned max_win_dims   = settings->uints.window_auto_dims_max;
 
             /* > Handle invalid settings */
             if (!VIDEO_SCALE_W(max_win_dims) || !VIDEO_SCALE_H(max_win_dims))

@@ -1391,7 +1391,7 @@ static void *gl1_init(const video_info_t *video,
       goto error;
 
    RARCH_LOG("[GL1] Detecting screen resolution: %ux%u.\n", full_x, full_y);
-   win_dims        = VIDEO_SCALE_PACK(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
+   win_dims        = video->dims;
 
    /* Neither axis set is the whole word clear */
    if (video->fullscreen && (win_dims == 0))
