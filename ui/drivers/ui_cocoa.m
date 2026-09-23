@@ -690,8 +690,9 @@ static ui_application_t ui_application_cocoa = {
       return;
 
    contentRect                            = [_window contentRectForFrameRect:[_window frame]];
-   settings->uints.window_position_x      = (unsigned)contentRect.origin.x;
-   settings->uints.window_position_y      = (unsigned)contentRect.origin.y;
+   settings->uints.window_position_pos    = VIDEO_POS_PACK(
+         (int)contentRect.origin.x,
+         (int)contentRect.origin.y);
    settings->uints.window_position_dims   = VIDEO_SCALE_PACK(
          (unsigned)contentRect.size.width,
          (unsigned)contentRect.size.height);
@@ -1063,8 +1064,10 @@ static ui_application_t ui_application_cocoa = {
    {
       NSRect contentRect;
       NSRect frame;
-      contentRect.origin.x    = settings->uints.window_position_x;
-      contentRect.origin.y    = settings->uints.window_position_y;
+      contentRect.origin.x    =
+            VIDEO_POS_X(settings->uints.window_position_pos);
+      contentRect.origin.y    =
+            VIDEO_POS_Y(settings->uints.window_position_pos);
       contentRect.size.width  =
             VIDEO_SCALE_W(settings->uints.window_position_dims);
       contentRect.size.height =
