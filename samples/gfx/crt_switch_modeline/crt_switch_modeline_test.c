@@ -381,13 +381,13 @@ static void check_eq(const char *what, int got, int want)
 /* 15 kHz, three geometry changes, as a core that changes mode does */
 static void run_switches(videocrt_switch_t *p_switch, int monitor_index)
 {
-   crt_switch_res_core(p_switch, 320, 320, 240, 59.94f, false,
+   crt_switch_res_core(p_switch, 320, VIDEO_SCALE_PACK(320, 240), 59.94f, false,
          CRT_SWITCH_15KHZ, 0, 0, monitor_index, false, 0, false,
          ASPECT_RATIO_CORE, 0);
-   crt_switch_res_core(p_switch, 256, 256, 224, 60.10f, false,
+   crt_switch_res_core(p_switch, 256, VIDEO_SCALE_PACK(256, 224), 60.10f, false,
          CRT_SWITCH_15KHZ, 0, 0, monitor_index, false, 0, false,
          ASPECT_RATIO_CORE, 0);
-   crt_switch_res_core(p_switch, 384, 384, 224, 59.64f, false,
+   crt_switch_res_core(p_switch, 384, VIDEO_SCALE_PACK(384, 224), 59.64f, false,
          CRT_SWITCH_15KHZ, 0, 0, monitor_index, false, 0, false,
          ASPECT_RATIO_CORE, 0);
 }
@@ -414,6 +414,13 @@ static void test_no_modeline_path(void)
          log_hits("[Modeline] Error switching"), 0);
    check("the mode list is still generated",
          log_hits("[CRT] Setting aspect ratio") >= 1);
+   /* The size published is the size asked for, each switch once. */
+   check_eq("publishes 320x240",
+         log_hits("[CRT] Setting screen size: 320x240."), 1);
+   check_eq("publishes 256x224",
+         log_hits("[CRT] Setting screen size: 256x224."), 1);
+   check_eq("publishes 384x224",
+         log_hits("[CRT] Setting screen size: 384x224."), 1);
 
    crt_destroy_modes(&sw);
 }
@@ -542,7 +549,7 @@ static void test_edid_preset_matches_content_refresh(void)
    srv_sets = 0;
    memset(&srv_last_set, 0, sizeof(srv_last_set));
 
-   crt_switch_res_core(&sw, 640, 640, 400, 70.086f, false,
+   crt_switch_res_core(&sw, 640, VIDEO_SCALE_PACK(640, 400), 70.086f, false,
          CRT_SWITCH_EDID, 0, 0, 0, false, 0, false, ASPECT_RATIO_CORE, 0);
 
    check("the display's own ranges were used",
@@ -576,7 +583,7 @@ static void test_lcd_preset_keeps_native_lines(void)
    srv_sets = 0;
    memset(&srv_last_set, 0, sizeof(srv_last_set));
 
-   crt_switch_res_core(&sw, 640, 640, 400, 70.086f, false,
+   crt_switch_res_core(&sw, 640, VIDEO_SCALE_PACK(640, 400), 70.086f, false,
          CRT_SWITCH_LCD, 0, 0, 0, false, 0, false, ASPECT_RATIO_CORE, 0);
 
    check("the refresh band came off the EDID",
@@ -586,6 +593,8 @@ static void test_lcd_preset_keeps_native_lines(void)
          srv_last_set.vfreq > 69.5 && srv_last_set.vfreq < 70.5);
    check("keeping the panel's line count",
          srv_last_set.vactive == 1080);
+   check_eq("and publishes the panel's size",
+         log_hits("[CRT] Setting screen size: 1920x1080."), 1);
 
    crt_destroy_modes(&sw);
    srv_have_edid    = false;

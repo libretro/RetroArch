@@ -38,14 +38,10 @@ typedef struct videocrt_switch
    video_modeline_gen_t *gen;
    video_modeline_ops_t ops;
 
-   unsigned ra_core_width;
-   unsigned ra_core_height;
-   unsigned ra_tmp_width;
-   unsigned ra_tmp_height;
+   unsigned ra_core_dims;
+   unsigned ra_tmp_dims;
    unsigned ra_set_core_hz;
    unsigned index;
-   unsigned int fb_width;
-   unsigned int fb_height;
 
    float ra_core_hz;
    float sr_core_hz;
@@ -84,9 +80,8 @@ typedef struct videocrt_switch
 
 void crt_switch_res_core(
       videocrt_switch_t *p_switch,
-      unsigned naitive_width,
-      unsigned width,
-      unsigned height,
+      unsigned native_width,
+      unsigned dims,
       float hz,
       bool rotated,
       unsigned crt_mode,

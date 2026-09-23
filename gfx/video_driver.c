@@ -7247,8 +7247,7 @@ void video_driver_frame(const void *data, unsigned width,
 
       crt_switch_res_core(
             &video_st->crt_switch_st,
-            native_width, width,
-            height,
+            native_width, VIDEO_SCALE_PACK(width, height),
             video_st->core_hz,
             rotation & 1,
             video_info.crt_switch_resolution,
