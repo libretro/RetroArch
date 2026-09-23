@@ -479,8 +479,7 @@ static bool slang_static_texture_init(struct slang_static_texture *tex,
    tex->texture.texture.image  = image;
    tex->texture.texture.view   = view;
    tex->texture.texture.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-   tex->texture.texture.width  = width;
-   tex->texture.texture.height = height;
+   tex->texture.texture.dims   = VIDEO_SCALE_PACK(width, height);
 
    if (linear)
       tex->texture.filter      = GLSLANG_FILTER_CHAIN_LINEAR;
@@ -714,8 +713,7 @@ struct slang_framebuffer
 static bool slang_framebuffer_build(struct slang_framebuffer *fb);
 static bool slang_framebuffer_set_size(struct slang_framebuffer *fb,
       struct deferred_disposes *disposer,
-      unsigned width, unsigned height,
-      VkFormat format);
+      unsigned dims, VkFormat format);
 static void slang_framebuffer_free(struct slang_framebuffer *fb);
 /* Allocates and fully initializes; returns NULL on any failure. */
 static struct slang_framebuffer *slang_framebuffer_new(VkDevice device,
@@ -1689,10 +1687,8 @@ static void slang_chain_update_history_info(struct vulkan_filter_chain *chain)
 
       source->texture.view     = chain->original_history[ring_slot]->view;
       source->texture.image    = chain->original_history[ring_slot]->image;
-      source->texture.width    =
-            VIDEO_SCALE_W(chain->original_history[ring_slot]->size_dims);
-      source->texture.height   =
-            VIDEO_SCALE_H(chain->original_history[ring_slot]->size_dims);
+      source->texture.dims     =
+            chain->original_history[ring_slot]->size_dims;
       source->filter           = chain->passes[0]->pass_info.source_filter;
       source->mip_filter       = chain->passes[0]->pass_info.mip_filter;
       source->address          = chain->passes[0]->pass_info.address;
@@ -1717,8 +1713,7 @@ static void slang_chain_update_feedback_info(struct vulkan_filter_chain *chain)
       source->texture.image   = fb->image;
       source->texture.view    = fb->view;
       source->texture.layout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      source->texture.width   = VIDEO_SCALE_W(fb->size_dims);
-      source->texture.height  = VIDEO_SCALE_H(fb->size_dims);
+      source->texture.dims    = fb->size_dims;
       source->filter          = chain->passes[i]->pass_info.source_filter;
       source->mip_filter      = chain->passes[i]->pass_info.mip_filter;
       source->address         = chain->passes[i]->pass_info.address;
@@ -1776,8 +1771,7 @@ static void slang_chain_build_offscreen_passes(struct vulkan_filter_chain *chain
       source.texture.image    = fb->image;
       source.texture.view     = fb->view;
       source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      source.texture.width    = VIDEO_SCALE_W(fb->size_dims);
-      source.texture.height   = VIDEO_SCALE_H(fb->size_dims);
+      source.texture.dims     = fb->size_dims;
       source.filter           = chain->passes[i + 1]->pass_info.source_filter;
       source.mip_filter       = chain->passes[i + 1]->pass_info.mip_filter;
       source.address          = chain->passes[i + 1]->pass_info.address;
@@ -1822,16 +1816,11 @@ static void slang_chain_update_history(struct vulkan_filter_chain *chain,
    target       = chain->original_history[next_history_ring_index];
    copy_history = true;
 
-   if   (    chain->input_texture.width  != VIDEO_SCALE_W(target->size_dims)
-         ||  chain->input_texture.height != VIDEO_SCALE_H(target->size_dims)
+   if   (    chain->input_texture.dims   != target->size_dims
          || (chain->input_texture.format != VK_FORMAT_UNDEFINED
          &&  chain->input_texture.format != target->format))
-   {
-      unsigned new_width  = chain->input_texture.width;
-      unsigned new_height = chain->input_texture.height;
       copy_history    = slang_framebuffer_set_size(target, disposer,
-            new_width, new_height, chain->input_texture.format);
-   }
+            chain->input_texture.dims, chain->input_texture.format);
 
    if (copy_history)
    {
@@ -1899,8 +1888,7 @@ static void slang_chain_build_viewport_pass(struct vulkan_filter_chain *chain,
       source.texture.image   = fb->image;
       source.texture.view    = fb->view;
       source.texture.layout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-      source.texture.width   = VIDEO_SCALE_W(fb->size_dims);
-      source.texture.height  = VIDEO_SCALE_H(fb->size_dims);
+      source.texture.dims    = fb->size_dims;
       source.filter          = chain->passes[chain->pass_count - 1]->pass_info.source_filter;
       source.mip_filter      = chain->passes[chain->pass_count - 1]->pass_info.mip_filter;
       source.address         = chain->passes[chain->pass_count - 1]->pass_info.address;
@@ -2896,19 +2884,18 @@ static void slang_pass_set_shader(struct slang_pass *pass,
  * layout. The two axes scale independently of each other, so they are
  * worked out separately and joined only on the way out. */
 static unsigned slang_pass_get_output_size(struct slang_pass *pass,
-      unsigned original_width, unsigned original_height,
-      unsigned source_width, unsigned source_height)
+      unsigned original_dims, unsigned source_dims)
 {
    float width  = 0.0f;
    float height = 0.0f;
    switch (pass->pass_info.scale_type_x)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         width = (float)(original_width) * pass->pass_info.scale_x;
+         width = (float)VIDEO_SCALE_W(original_dims) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         width = (float)(source_width) * pass->pass_info.scale_x;
+         width = (float)VIDEO_SCALE_W(source_dims) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
@@ -2926,11 +2913,11 @@ static unsigned slang_pass_get_output_size(struct slang_pass *pass,
    switch (pass->pass_info.scale_type_y)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         height = (float)(original_height) * pass->pass_info.scale_y;
+         height = (float)VIDEO_SCALE_H(original_dims) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         height = (float)(source_height) * pass->pass_info.scale_y;
+         height = (float)VIDEO_SCALE_H(source_dims) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
@@ -2967,8 +2954,7 @@ static unsigned slang_pass_set_pass_info(struct slang_pass *pass,
    pass->sync_index               = 0;
 
    pass->current_framebuffer_size_dims = slang_pass_get_output_size(pass,
-         VIDEO_SCALE_W(max_original_dims), VIDEO_SCALE_H(max_original_dims),
-         VIDEO_SCALE_W(max_source_dims), VIDEO_SCALE_H(max_source_dims));
+         max_original_dims, max_source_dims);
    pass->swapchain_render_pass    = swapchain.render_pass;
 
    return pass->current_framebuffer_size_dims;
@@ -3687,8 +3673,10 @@ static void slang_pass_set_semantic_texture_array(struct slang_pass *pass,
 
 static void slang_pass_build_semantic_texture_array_vec4(struct slang_pass *pass,
       uint8_t *data, enum slang_texture_semantic semantic,
-      unsigned index, unsigned width, unsigned height)
+      unsigned index, unsigned dims)
 {
+   float width  = (float)VIDEO_SCALE_W(dims);
+   float height = (float)VIDEO_SCALE_H(dims);
    const slang_texture_semantic_array *arr =
       &pass->reflection.semantic_textures[semantic];
    const slang_texture_semantic_meta *refl;
@@ -3700,27 +3688,27 @@ static void slang_pass_build_semantic_texture_array_vec4(struct slang_pass *pass
    if (data && refl->uniform)
    {
       float *_data = ((float *)(data + refl->ubo_offset));
-      _data[0]     = (float)(width);
-      _data[1]     = (float)(height);
-      _data[2]     = 1.0f / (float)(width);
-      _data[3]     = 1.0f / (float)(height);
+      _data[0]     = width;
+      _data[1]     = height;
+      _data[2]     = 1.0f / width;
+      _data[3]     = 1.0f / height;
    }
 
    if (refl->push_constant)
    {
       float *_data = ((float *)(pass->push.buffer + (refl->push_constant_offset >> 2)));
-      _data[0]     = (float)(width);
-      _data[1]     = (float)(height);
-      _data[2]     = 1.0f / (float)(width);
-      _data[3]     = 1.0f / (float)(height);
+      _data[0]     = width;
+      _data[1]     = height;
+      _data[2]     = 1.0f / width;
+      _data[3]     = 1.0f / height;
    }
 }
 
 static void slang_pass_build_semantic_texture_vec4(struct slang_pass *pass,
       uint8_t *data, enum slang_texture_semantic semantic,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
-   slang_pass_build_semantic_texture_array_vec4(pass, data, semantic, 0, width, height);
+   slang_pass_build_semantic_texture_array_vec4(pass, data, semantic, 0, dims);
 }
 
 static void slang_pass_build_semantic_vec4(struct slang_pass *pass,
@@ -3822,7 +3810,7 @@ static void slang_pass_build_semantic_texture(struct slang_pass *pass,
       unsigned *write_count)
 {
    slang_pass_build_semantic_texture_vec4(pass, buffer, semantic,
-         texture->texture.width, texture->texture.height);
+         texture->texture.dims);
    slang_pass_set_semantic_texture(pass, set, semantic, texture,
          image_infos, writes, write_count);
 }
@@ -3834,7 +3822,7 @@ static void slang_pass_build_semantic_texture_array(struct slang_pass *pass,
       unsigned *write_count)
 {
    slang_pass_build_semantic_texture_array_vec4(pass, buffer, semantic, index,
-         texture->texture.width, texture->texture.height);
+         texture->texture.dims);
    slang_pass_set_semantic_texture_array(pass, set, semantic, index, texture,
          image_infos, writes, write_count);
 }
@@ -4013,15 +4001,13 @@ static void slang_pass_build_commands(struct slang_pass *pass,
 
    pass->curr_vp          = *vp;
    size_dims              = slang_pass_get_output_size(pass,
-         original->texture.width, original->texture.height,
-         source->texture.width, source->texture.height);
+         original->texture.dims, source->texture.dims);
 
    if (     pass->framebuffer
          && size_dims != pass->framebuffer->size_dims)
    {
       if (!slang_framebuffer_set_size(pass->framebuffer, disposer,
-               VIDEO_SCALE_W(size_dims), VIDEO_SCALE_H(size_dims),
-               VK_FORMAT_UNDEFINED))
+               size_dims, VK_FORMAT_UNDEFINED))
       {
          RARCH_ERR("[Vulkan] Failed to resize shader pass->framebuffer.\n");
          return;
@@ -4392,8 +4378,7 @@ error:
 
 static bool slang_framebuffer_set_size(struct slang_framebuffer *fb,
       struct deferred_disposes *disposer,
-      unsigned width, unsigned height,
-      VkFormat format)
+      unsigned dims, VkFormat format)
 {
    unsigned old_size_dims        = fb->size_dims;
    VkFormat old_format           = fb->format;
@@ -4408,11 +4393,11 @@ static bool slang_framebuffer_set_size(struct slang_framebuffer *fb,
    VkFormat new_format           = format == VK_FORMAT_UNDEFINED ? old_format : format;
    bool format_changed           = new_format != old_format;
 
-   fb->size_dims               = VIDEO_SCALE_PACK(width, height);
+   fb->size_dims               = dims;
    fb->format                  = new_format;
 
    RARCH_LOG("[Vulkan] Updating fb->framebuffer size %ux%u (format: %u).\n",
-         width, height, (unsigned)fb->format);
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), (unsigned)fb->format);
 
    if (format_changed)
    {

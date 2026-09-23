@@ -8303,16 +8303,9 @@ static bool vulkan_frame(void *data, const void *frame,
          /* Does this make that this can happen at all? */
          if (vk->hw.image && vk->hw.image->create_info.image)
          {
-            if (frame)
-            {
-               input.width     = frame_width;
-               input.height    = frame_height;
-            }
-            else
-            {
-               input.width     = VIDEO_SCALE_W(vk->hw.last_dims);
-               input.height    = VIDEO_SCALE_H(vk->hw.last_dims);
-            }
+            input.dims         = frame
+               ? VIDEO_SCALE_PACK(frame_width, frame_height)
+               : vk->hw.last_dims;
 
             input.image        = vk->hw.image->create_info.image;
             input.view         = vk->hw.image->image_view;
@@ -8326,16 +8319,14 @@ static bool vulkan_frame(void *data, const void *frame,
             /* Fall back to the default, black texture.
              * This can happen if we restart the video
              * driver while in the menu. */
-            input.width        = VIDEO_SCALE_W(vk->default_texture.dims);
-            input.height       = VIDEO_SCALE_H(vk->default_texture.dims);
+            input.dims         = vk->default_texture.dims;
             input.image        = vk->default_texture.image;
             input.view         = vk->default_texture.view;
             input.layout       = vk->default_texture.layout;
             input.format       = vk->default_texture.format;
          }
 
-         vk->hw.last_dims      = VIDEO_SCALE_PACK(
-               input.width, input.height);
+         vk->hw.last_dims      = input.dims;
       }
       else
       {
@@ -8355,8 +8346,7 @@ static bool vulkan_frame(void *data, const void *frame,
          input.image  = tex->image;
          input.view   = tex->view;
          input.layout = tex->layout;
-         input.width  = VIDEO_SCALE_W(tex->dims);
-         input.height = VIDEO_SCALE_H(tex->dims);
+         input.dims   = tex->dims;
          input.format = VK_FORMAT_UNDEFINED; /* It's already configured. */
       }
 

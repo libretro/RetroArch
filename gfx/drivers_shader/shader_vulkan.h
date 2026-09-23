@@ -39,8 +39,7 @@ struct vulkan_filter_chain_texture
    VkImage image;
    VkImageView view;
    VkImageLayout layout;
-   unsigned width;
-   unsigned height;
+   unsigned dims;                /* VIDEO_SCALE_PACK */
    VkFormat format;
 };
 
