@@ -633,6 +633,30 @@ jobs:
           timeout 60 ./display_servers_test
           echo "[pass] display_servers_test"
 
+      - name: X11 window poll sends no requests (Xvfb, ASan + UBSan)
+        shell: bash
+        run: |
+          set -eu
+          # x11_check_window() and x11_has_focus() run every frame; a
+          # reply-bearing request there waits behind whatever else is
+          # queued on the connection (a software Vulkan WSI's whole
+          # PutImage frame). Focus comes from FocusIn/FocusOut, so the
+          # X contexts must select FocusChangeMask.
+          for f in x_ctx.c x_vk_ctx.c xegl_ctx.c; do
+             grep -q FocusChangeMask gfx/drivers_context/$f \
+                || { echo "::error::$f does not select FocusChangeMask"; exit 1; }
+          done
+          sudo apt-get install -y -qq xvfb > /dev/null
+          Xvfb :97 -screen 0 1024x768x24 > /tmp/xvfb97.log 2>&1 &
+          XVFB_PID=$!
+          sleep 1
+          (cd samples/gfx/x11_frame_poll \
+             && make clean all SANITIZER=address,undefined \
+             && DISPLAY=:97 ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+                timeout 60 ./x11_frame_poll_test)
+          kill $XVFB_PID
+          echo "[pass] x11_frame_poll_test"
+
       - name: Live mode switching on an Xorg dummy server (X11 + SDL)
         shell: bash
         run: |

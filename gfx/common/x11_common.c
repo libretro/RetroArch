@@ -67,6 +67,8 @@
  * in x11_alive(), which runs on the video thread under the threaded
  * wrapper, and read by the input driver's poll on the runloop thread. */
 retro_atomic_int_t g_x11_entered;
+/* Keyboard focus on the window itself, from FocusIn/FocusOut. */
+static retro_atomic_int_t g_x11_focused;
 Display *g_x11_dpy                          = NULL;
 unsigned g_x11_screen                       = 0;
 Window   g_x11_win                          = None;
@@ -80,8 +82,7 @@ static bool xdg_screensaver_available       = true;
 /* Whether the window is mapped - the compositor or WM has it on
  * screen. Written only by MapNotify and UnmapNotify below, and once at
  * input-context creation; nothing to do with keyboard focus, which
- * x11_has_focus() asks the server for. The old name said focus and
- * misled a reader into thinking an unfocused window cleared it. */
+ * is g_x11_focused. */
 static bool g_x11_mapped                    = false;
 static bool g_x11_true_full                 = false;
 static XConfigureEvent g_x11_xce            = {0};
@@ -722,6 +723,25 @@ bool x11_alive(void *data)
                g_x11_xce = event.xconfigure;
             break;
 
+         /* Grabs leave the focus where it was. */
+         case FocusIn:
+            if (     event.xfocus.window == g_x11_win
+                  && event.xfocus.mode   != NotifyGrab
+                  && event.xfocus.mode   != NotifyUngrab
+                  && (   event.xfocus.detail == NotifyAncestor
+                      || event.xfocus.detail == NotifyInferior
+                      || event.xfocus.detail == NotifyNonlinear))
+               retro_atomic_store_relaxed_int(&g_x11_focused, 1);
+            break;
+
+         case FocusOut:
+            if (     event.xfocus.window == g_x11_win
+                  && event.xfocus.mode   != NotifyGrab
+                  && event.xfocus.mode   != NotifyUngrab
+                  && event.xfocus.detail != NotifyPointer)
+               retro_atomic_store_relaxed_int(&g_x11_focused, 0);
+            break;
+
          case ButtonPress:
             switch (event.xbutton.button)
             {
@@ -852,12 +872,9 @@ bool x11_presentable(void *data)
 
 bool x11_has_focus(void *data)
 {
-   Window win;
-   int rev;
-
-   XGetInputFocus(g_x11_dpy, &win, &rev);
-
-   return (win == g_x11_win && g_x11_mapped) || g_x11_true_full;
+   return (   retro_atomic_load_relaxed_int(&g_x11_focused)
+           && g_x11_mapped)
+      || g_x11_true_full;
 }
 
 bool x11_connect(void)
@@ -875,6 +892,7 @@ bool x11_connect(void)
 #endif
 
    memset(&g_x11_xce, 0, sizeof(XConfigureEvent));
+   retro_atomic_store_relaxed_int(&g_x11_focused, 0);
 
    return true;
 }
@@ -948,6 +966,8 @@ void x11_window_destroy(bool fullscreen)
    if (!fullscreen)
       XDestroyWindow(g_x11_dpy, g_x11_win);
    g_x11_win = None;
+   memset(&g_x11_xce, 0, sizeof(XConfigureEvent));
+   retro_atomic_store_relaxed_int(&g_x11_focused, 0);
 
 #ifdef HAVE_DBUS
     dbus_screensaver_uninhibit();
@@ -977,9 +997,16 @@ static Bool x11_wait_notify(Display *d, XEvent *e, char *arg)
    return e->type == MapNotify && e->xmap.window == g_x11_win;
 }
 
+/* Without a window manager no ConfigureNotify follows the map. */
 void x11_event_queue_check(XEvent *event)
 {
+   XWindowAttributes target;
    XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
+   if (XGetWindowAttributes(g_x11_dpy, g_x11_win, &target))
+   {
+      g_x11_xce.width  = target.width;
+      g_x11_xce.height = target.height;
+   }
 }
 
 static bool x11_check_atom_supported(Display *dpy, Atom atom)

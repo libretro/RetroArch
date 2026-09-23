@@ -552,7 +552,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          RootWindow(g_x11_dpy, vi->screen), vi->visual, AllocNone);
    swa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask |
       LeaveWindowMask | EnterWindowMask |
-      ButtonReleaseMask | ButtonPressMask;
+      ButtonReleaseMask | ButtonPressMask | FocusChangeMask;
    swa.override_redirect = False;
 
    x->is_fullscreen = fullscreen;

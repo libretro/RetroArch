@@ -313,7 +313,8 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
 				     | ButtonReleaseMask
 				     | KeyReleaseMask
                                      | EnterWindowMask
-				     | LeaveWindowMask;
+				     | LeaveWindowMask
+                                     | FocusChangeMask;
    swa.override_redirect             = False;
 
 #ifdef HAVE_XF86VM

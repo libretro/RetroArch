@@ -303,7 +303,8 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
                              | LeaveWindowMask 
 			     | EnterWindowMask
                              | ButtonReleaseMask 
-			     | ButtonPressMask;
+			     | ButtonPressMask
+                             | FocusChangeMask;
    swa.override_redirect     = False;
 
    x->is_fullscreen          = fullscreen;
