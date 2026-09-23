@@ -3242,9 +3242,9 @@ static bool materialui_osk_pointer_over_textbox(
 /* Initialises scrollbar parameters (width/height) */
 static void materialui_scrollbar_init(
       materialui_handle_t* mui,
-      unsigned width, unsigned height, unsigned header_height)
+      unsigned dims, unsigned header_height)
 {
-   int view_height = (int)height - (int)header_height -
+   int view_height = (int)VIDEO_SCALE_H(dims) - (int)header_height -
          (int)VIDEO_SCALE_H(mui->nav_bar_layout_dims) - (int)mui->status_bar.height;
    int scrollbar_height;
 
@@ -3423,7 +3423,7 @@ static void materialui_compute_entries_box_default(
    mui->content_height = sum;
 
    /* Total height is now known - can initialise scrollbar */
-   materialui_scrollbar_init(mui, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), header_height);
+   materialui_scrollbar_init(mui, dims, header_height);
 }
 
 /* Used for playlist 'list view' (with and without
@@ -3511,7 +3511,7 @@ static void materialui_compute_entries_box_playlist_list(
    mui->content_height = sum;
 
    /* Total height is now known - can initialise scrollbar */
-   materialui_scrollbar_init(mui, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), header_height);
+   materialui_scrollbar_init(mui, dims, header_height);
 }
 
 /* Used for playlist 'dual icon' entries
@@ -3559,7 +3559,7 @@ static void materialui_compute_entries_box_playlist_dual_icon(
    mui->content_height = sum;
 
    /* Total height is now known - can initialise scrollbar */
-   materialui_scrollbar_init(mui, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), header_height);
+   materialui_scrollbar_init(mui, dims, header_height);
 }
 
 /* Used for playlist 'desktop'-layout entries
@@ -3627,7 +3627,7 @@ static void materialui_compute_entries_box_playlist_desktop(
    mui->content_height = sum;
 
    /* Total height is now known - can initialise scrollbar */
-   materialui_scrollbar_init(mui, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), header_height);
+   materialui_scrollbar_init(mui, dims, header_height);
 }
 
 /* Used for savestate layout entries
@@ -3687,7 +3687,7 @@ static void materialui_compute_entries_box_savestate_list(
    mui->content_height = sum;
 
    /* Total height is now known - can initialise scrollbar */
-   materialui_scrollbar_init(mui, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), header_height);
+   materialui_scrollbar_init(mui, dims, header_height);
 }
 
 static void (*materialui_compute_entries_box)(
@@ -8306,16 +8306,16 @@ static void materialui_colors_reset_transition_alpha(materialui_handle_t *mui)
 
 /* Updates scrollbar draw position */
 static void materialui_update_scrollbar(materialui_handle_t *mui,
-      unsigned width, unsigned height,
-      unsigned header_height, int x_offset)
+      unsigned video_dims, unsigned header_height, int x_offset)
 {
-   int view_height = (int)height - (int)header_height -
+   int view_height = (int)VIDEO_SCALE_H(video_dims) - (int)header_height -
       (int)VIDEO_SCALE_H(mui->nav_bar_layout_dims) - (int)mui->status_bar.height;
    int y_max       = view_height + (int)header_height -
       (int)(mui->scrollbar.width + mui->scrollbar.height);
 
    /* Get X position */
-   mui->scrollbar.x = x_offset + (int)width - (int)mui->scrollbar.width -
+   mui->scrollbar.x = x_offset + (int)VIDEO_SCALE_W(video_dims)
+      - (int)mui->scrollbar.width -
       (int)mui->landscape_optimization.border_width -
       (int)VIDEO_SCALE_W(mui->nav_bar_layout_dims);
 
@@ -8529,7 +8529,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
     *   position in order to enable fast navigation
     *   via scrollbar 'dragging' */
    if (mui->flags & MUI_FLAG_SCROLLBAR_ACTIVE)
-      materialui_update_scrollbar(mui, video_width, video_height,
+      materialui_update_scrollbar(mui, video_info->dims,
             header_height, list_x_offset);
 
    if (list && list->size)

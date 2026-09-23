@@ -1113,8 +1113,6 @@ static void xmb_draw_icon(
       uintptr_t texture,
       float x,
       float y,
-      unsigned width,
-      unsigned height,
       float alpha,
       float rotation,
       float scale_factor,
@@ -1125,6 +1123,8 @@ static void xmb_draw_icon(
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    math_matrix_4x4 mymat_tmp;
+   unsigned width  = VIDEO_SCALE_W(video_dims);
+   unsigned height = VIDEO_SCALE_H(video_dims);
 
    /* Skip drawing when the texture hasn't loaded yet
     * (async loads start at 0 and are written on completion) */
@@ -1242,7 +1242,7 @@ static void xmb_draw_text(
       float scale_factor,
       float alpha,
       enum text_alignment text_align,
-      unsigned width, unsigned height,
+      unsigned video_dims,
       font_data_t* font)
 {
    uint32_t color;
@@ -1285,8 +1285,7 @@ static void xmb_draw_text(
    color_hp[3] = alpha_hp < 0.0f ? 0.0f : (alpha_hp > 1.0f ? 1.0f : alpha_hp);
 
    gfx_display_draw_text_hp(font, str, x, y,
-         VIDEO_SCALE_PACK(width,
-               height), color, color_hp, text_align, scale_factor,
+         video_dims, color, color_hp, text_align, scale_factor,
          shadows_enable,
          xmb->shadow_offset, false);
 }
@@ -1640,8 +1639,6 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
                   : xmb->textures.list[XMB_TEXTURE_INPUT_BTN_D],
             icon_x,
             icon_y,
-            video_width,
-            video_height,
             xmb->alpha,
             0,
             1,
@@ -1706,8 +1703,6 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
                   : xmb->textures.list[XMB_TEXTURE_INPUT_BTN_R],
             icon_x,
             icon_y,
-            video_width,
-            video_height,
             xmb->alpha,
             0,
             1,
@@ -5762,8 +5757,6 @@ XMB_NOINLINE static void xmb_draw_item_sublabel(
    xmb_handle_t *xmb      = ctx->xmb;
    const video_frame_info_t *video_info = ctx->video_info;
    bool shadows_enable    = ctx->shadows_enable;
-   unsigned width         = VIDEO_SCALE_W(ctx->video_dims);
-   unsigned height        = VIDEO_SCALE_H(ctx->video_dims);
    char entry_sublabel[MENU_LABEL_MAX_LENGTH];
    char entry_sublabel_top_fade[MENU_LABEL_MAX_LENGTH >> 2];
    char entry_sublabel_bottom_fade[MENU_LABEL_MAX_LENGTH >> 2];
@@ -5842,7 +5835,7 @@ XMB_NOINLINE static void xmb_draw_item_sublabel(
          sublabel_x,
          ticker_y_offset + sublabel_y,
          1, node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
-         width, height, xmb->font2);
+         ctx->video_dims, xmb->font2);
 
    /* Draw top/bottom line fade effect, if required */
    if (use_smooth_ticker)
@@ -5853,7 +5846,7 @@ XMB_NOINLINE static void xmb_draw_item_sublabel(
                entry_sublabel_top_fade,
                sublabel_x, ticker_top_fade_y_offset + sublabel_y,
                1, ticker_top_fade_alpha * node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
-               width, height, xmb->font2);
+               ctx->video_dims, xmb->font2);
 
       if (     *entry_sublabel_bottom_fade
             && ticker_bottom_fade_alpha > 0.0f)
@@ -5861,7 +5854,7 @@ XMB_NOINLINE static void xmb_draw_item_sublabel(
                entry_sublabel_bottom_fade,
                sublabel_x, ticker_bottom_fade_y_offset + sublabel_y,
                1, ticker_bottom_fade_alpha * node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
-               width, height, xmb->font2);
+               ctx->video_dims, xmb->font2);
    }
 }
 
@@ -5883,8 +5876,6 @@ XMB_NOINLINE static int xmb_draw_item(
    file_list_t              *list           = ctx->list;
    float                    *color          = ctx->color;
    unsigned                  video_dims     = ctx->video_dims;
-   unsigned                  video_width    = VIDEO_SCALE_W(video_dims);
-   unsigned                  video_height   = VIDEO_SCALE_H(video_dims);
    unsigned                  width          = VIDEO_SCALE_W(video_dims);
    unsigned                  height         = VIDEO_SCALE_H(video_dims);
    bool                      shadows_enable = ctx->shadows_enable;
@@ -6195,13 +6186,13 @@ XMB_NOINLINE static int xmb_draw_item(
          && *xmb->entry_index_str)
    {
       float entry_idx_margin = 12 * xmb->last_scale_factor;
-      float x_position       = video_width - entry_idx_margin;
-      float y_position       = video_height - entry_idx_margin;
+      float x_position       = width - entry_idx_margin;
+      float y_position       = height - entry_idx_margin;
 
       xmb_draw_text(shadows_enable, xmb, video_info,
             xmb->entry_index_str, x_position, y_position,
             1, vertical_thumbnails ? node->label_alpha : 1,
-            TEXT_ALIGN_RIGHT, width, height, xmb->font);
+            TEXT_ALIGN_RIGHT, video_dims, xmb->font);
    }
 
    /* Entry label */
@@ -6216,7 +6207,7 @@ XMB_NOINLINE static int xmb_draw_item(
                + node->y
                + label_offset,
          1, node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
-         width, height, xmb->font);
+         video_dims, xmb->font);
 
    /* Entry value */
    tmp[0]                       = '\0';
@@ -6257,7 +6248,7 @@ XMB_NOINLINE static int xmb_draw_item(
                   + node->y
                   + xmb->margins_label_top,
             1, node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
-            width, height, xmb->font);
+            video_dims, xmb->font);
 
    gfx_display_set_alpha(color, MIN(node->alpha * xmb->alpha_list, xmb->alpha));
 
@@ -6517,8 +6508,6 @@ XMB_NOINLINE static int xmb_draw_item(
             texture,
             gfx_icon_x,
             gfx_icon_y,
-            width,
-            height,
             xmb->alpha,
             0,
             scale_factor,
@@ -6552,7 +6541,6 @@ XMB_NOINLINE static int xmb_draw_item(
                + xmb->icon_size / 2.0
                + xmb->margins_setting_left,
             xmb->margins_screen_top + node->y + xmb->icon_size / 2.0,
-            width, height,
             node->alpha,
             0,
             1,
@@ -6597,8 +6585,6 @@ XMB_NOINLINE static int xmb_draw_item(
                tex,
                current_x,
                current_y,
-               video_width,
-               video_height,
                node->alpha,
                (entry.flags & MENU_ENTRY_FLAG_CHECKED) ? 0 : M_PI,
                0.5f,
@@ -6617,8 +6603,7 @@ XMB_NOINLINE static int xmb_draw_item(
                   1,
                   node->label_alpha * xmb->alpha_list,
                   TEXT_ALIGN_LEFT,
-                  video_width,
-                  video_height,
+                  video_dims,
                   xmb->font);
 
          if (entry.flags & MENU_ENTRY_FLAG_CHECKED)
@@ -6629,8 +6614,7 @@ XMB_NOINLINE static int xmb_draw_item(
                   1,
                   node->label_alpha * xmb->alpha_list,
                   TEXT_ALIGN_LEFT,
-                  video_width,
-                  video_height,
+                  video_dims,
                   xmb->font);
       }
    }
@@ -8683,8 +8667,7 @@ XMB_NOINLINE static void xmb_draw_dark_layer(
       gfx_display_t *p_disp,
       gfx_display_ctx_driver_t *dispctx,
       void *userdata,
-      unsigned width,
-      unsigned height,
+      unsigned video_dims,
       float alpha)
 {
    gfx_display_ctx_draw_t draw;
@@ -8697,7 +8680,7 @@ XMB_NOINLINE static void xmb_draw_dark_layer(
    };
 
    draw.pos             = VIDEO_POS_PACK(0, 0);
-   draw.dims            = VIDEO_SCALE_PACK(width, height);
+   draw.dims            = video_dims;
    draw.color           = &black[0];
    draw.vertex          = NULL;
    draw.matrix_data     = NULL;
@@ -8709,8 +8692,7 @@ XMB_NOINLINE static void xmb_draw_dark_layer(
    gfx_display_blend_begin(dispctx, userdata);
    gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true, MIN(xmb->alpha, alpha));
    if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
-      gfx_display_draw(dispctx, &draw, userdata,
-            VIDEO_SCALE_PACK(width, height));
+      gfx_display_draw(dispctx, &draw, userdata, video_dims);
    gfx_display_blend_end(dispctx, userdata);
 }
 
@@ -8729,7 +8711,6 @@ static void xmb_draw_no_thumbnail_available(
       float *color,
       math_matrix_4x4 *mymat)
 {
-   unsigned video_width  = VIDEO_SCALE_W(video_dims);
    unsigned video_height = VIDEO_SCALE_H(video_dims);
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    unsigned icon_size                = (unsigned)xmb->icon_size;
@@ -8760,8 +8741,6 @@ static void xmb_draw_no_thumbnail_available(
                xmb->textures.list[XMB_TEXTURE_IMAGE],
                x_position + ((view_width - icon_size) / 2),
                y_position + ((view_height - icon_size) / 2) + icon_size,
-               video_width,
-               video_height,
                xmb->alpha,
                0,
                1,
@@ -8779,7 +8758,7 @@ static void xmb_draw_no_thumbnail_available(
          x_position + (view_width / 2),
          video_height - y_position - ((view_height - icon_size) / 2),
          1, 1, TEXT_ALIGN_CENTER,
-         video_width, video_height,
+         video_dims,
          xmb->font2);
 }
 
@@ -9240,7 +9219,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    /* Cache the per-frame size on the handle so non-render paths
     * can read it without locking video_st. */
-   xmb->last_dims   = VIDEO_SCALE_PACK(video_width, video_height);
+   xmb->last_dims   = video_info->dims;
 
    /* Snapshot context generation — if xmb_context_destroy()
     * runs on the main thread while we are mid-render on the
@@ -9373,11 +9352,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       gfx_display_draw_quad(
             p_disp,
             userdata,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_info->dims,
             0,
             0,
-            VIDEO_SCALE_PACK(video_width, video_height),
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_info->dims,
+            video_info->dims,
             coord_black,
             NULL);
    }
@@ -9390,7 +9369,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             userdata,
             p_disp,
             dispctx,
-            VIDEO_SCALE_PACK(video_width, video_height),
+            video_info->dims,
             menu_shader_pipeline,
             color_theme,
             MIN(xmb->alpha, menu_wallpaper_opacity),
@@ -9420,7 +9399,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          p_anim,
          menu_st,
          video_info,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_info->dims,
          shadows_enable,
          xmb,
          selection_buf,
@@ -9480,7 +9459,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          gfx_thumbnail_draw(
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_info->dims,
                icon_thumbnail,
                gfx_icon_x,
                gfx_icon_y,
@@ -9538,15 +9517,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                userdata,
                p_disp,
                dispctx,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_info->dims,
                shadows_enable,
                icon_size,
                icon_size,
                xmb->current_menu_icon,
                current_x,
                current_y,
-               video_width,
-               video_height,
                xmb->alpha,
                0,
                1,
@@ -9562,15 +9539,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                userdata,
                p_disp,
                dispctx,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_info->dims,
                shadows_enable,
                xmb->icon_size,
                xmb->icon_size,
                tex_list[XMB_TEXTURE_ARROW],
                current_x + (xmb->use_ps3_layout ? (icon_size * 1.1f) : (icon_size * 0.70f)),
                current_y,
-               video_width,
-               video_height,
                xmb->alpha,
                0,
                0.5f,
@@ -9630,15 +9605,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   userdata,
                   p_disp,
                   dispctx,
-                  VIDEO_SCALE_PACK(video_width, video_height),
+                  video_info->dims,
                   shadows_enable,
                   xmb->icon_size,
                   xmb->icon_size,
                   texture,
                   x,
                   y,
-                  video_width,
-                  video_height,
                   xmb->alpha,
                   0,
                   scale_factor,
@@ -9715,17 +9688,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             gfx_display_draw_quad(
                   p_disp,
                   userdata,
-                  VIDEO_SCALE_PACK(video_width, video_height),
+                  video_info->dims,
                   thumb_x,
                   thumb_y,
                   VIDEO_SCALE_PACK(scaled_thumb_width, scaled_thumb_height),
-                  VIDEO_SCALE_PACK(video_width, video_height),
+                  video_info->dims,
                   background_color,
                   NULL);
 
          gfx_thumbnail_draw(
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_info->dims,
                &xmb->thumbnails.savestate,
                thumb_x,
                thumb_y,
@@ -9739,11 +9712,11 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          gfx_display_draw_quad(
                p_disp,
                userdata,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_info->dims,
                thumb_x,
                thumb_y,
                VIDEO_SCALE_PACK(scaled_thumb_width, scaled_thumb_height),
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_info->dims,
                background_color,
                NULL);
 
@@ -9753,7 +9726,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   video_info,
                   p_disp,
                   userdata,
-                  VIDEO_SCALE_PACK(video_width, video_height),
+                  video_info->dims,
                   thumb_x,
                   thumb_y,
                   scaled_thumb_width,
@@ -9820,31 +9793,31 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   gfx_display_draw_quad(
                         p_disp,
                         userdata,
-                        VIDEO_SCALE_PACK(video_width, video_height),
+                        video_info->dims,
                         thumb_x,
                         right_thumb_y,
                         VIDEO_SCALE_PACK(scaled_thumb_width,
                               scaled_thumb_height),
-                        VIDEO_SCALE_PACK(video_width, video_height),
+                        video_info->dims,
                         background_color,
                         NULL);
 
                   gfx_display_draw_quad(
                         p_disp,
                         userdata,
-                        VIDEO_SCALE_PACK(video_width, video_height),
+                        video_info->dims,
                         thumb_x,
                         left_thumb_y,
                         VIDEO_SCALE_PACK(scaled_thumb_width,
                               scaled_thumb_height),
-                        VIDEO_SCALE_PACK(video_width, video_height),
+                        video_info->dims,
                         background_color,
                         NULL);
                }
 
                gfx_thumbnail_draw(
                      userdata,
-                     VIDEO_SCALE_PACK(video_width, video_height),
+                     video_info->dims,
                      &xmb->thumbnails.right,
                      thumb_x,
                      right_thumb_y,
@@ -9854,7 +9827,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
                gfx_thumbnail_draw(
                      userdata,
-                     VIDEO_SCALE_PACK(video_width, video_height),
+                     video_info->dims,
                      &xmb->thumbnails.left,
                      thumb_x,
                      left_thumb_y,
@@ -9877,18 +9850,18 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   gfx_display_draw_quad(
                         p_disp,
                         userdata,
-                        VIDEO_SCALE_PACK(video_width, video_height),
+                        video_info->dims,
                         thumb_x,
                         thumb_y,
                         VIDEO_SCALE_PACK(scaled_thumb_width,
                               scaled_thumb_height),
-                        VIDEO_SCALE_PACK(video_width, video_height),
+                        video_info->dims,
                         background_color,
                         NULL);
 
                gfx_thumbnail_draw(
                      userdata,
-                     VIDEO_SCALE_PACK(video_width, video_height),
+                     video_info->dims,
                      (show_right_thumbnail) ? &xmb->thumbnails.right : &xmb->thumbnails.left,
                      thumb_x,
                      thumb_y,
@@ -9914,18 +9887,18 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   gfx_display_draw_quad(
                         p_disp,
                         userdata,
-                        VIDEO_SCALE_PACK(video_width, video_height),
+                        video_info->dims,
                         thumb_x,
                         thumb_y,
                         VIDEO_SCALE_PACK(scaled_thumb_width,
                               scaled_thumb_height),
-                        VIDEO_SCALE_PACK(video_width, video_height),
+                        video_info->dims,
                         background_color,
                         NULL);
 
                gfx_thumbnail_draw(
                      userdata,
-                     VIDEO_SCALE_PACK(video_width, video_height),
+                     video_info->dims,
                      &xmb->thumbnails.right,
                      thumb_x,
                      thumb_y,
@@ -9958,18 +9931,18 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                      gfx_display_draw_quad(
                            p_disp,
                            userdata,
-                           VIDEO_SCALE_PACK(video_width, video_height),
+                           video_info->dims,
                            thumb_x,
                            thumb_y,
                            VIDEO_SCALE_PACK(scaled_thumb_width,
                                  scaled_thumb_height),
-                           VIDEO_SCALE_PACK(video_width, video_height),
+                           video_info->dims,
                            background_color,
                            NULL);
 
                   gfx_thumbnail_draw(
                         userdata,
-                        VIDEO_SCALE_PACK(video_width, video_height),
+                        video_info->dims,
                         &xmb->thumbnails.left,
                         thumb_x,
                         thumb_y,
@@ -10009,17 +9982,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                gfx_display_draw_quad(
                      p_disp,
                      userdata,
-                     VIDEO_SCALE_PACK(video_width, video_height),
+                     video_info->dims,
                      thumb_x,
                      thumb_y,
                      VIDEO_SCALE_PACK(scaled_thumb_width, scaled_thumb_height),
-                     VIDEO_SCALE_PACK(video_width, video_height),
+                     video_info->dims,
                      background_color,
                      NULL);
 
             gfx_thumbnail_draw(
                   userdata,
-                  VIDEO_SCALE_PACK(video_width, video_height),
+                  video_info->dims,
                   (show_left_thumbnail) ? &xmb->thumbnails.left : &xmb->thumbnails.right,
                   thumb_x,
                   thumb_y,
@@ -10062,7 +10035,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   userdata,
                   p_disp,
                   dispctx,
-                  VIDEO_SCALE_PACK(video_width, video_height),
+                  video_info->dims,
                   shadows_enable,
                   icon_size,
                   icon_size,
@@ -10076,8 +10049,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                   ],
                   video_width - xmb->margins_title_left + margin_offset,
                   icon_size + xmb->margins_title_top + margin_offset,
-                  video_width,
-                  video_height,
                   xmb->alpha,
                   0,
                   scale_factor,
@@ -10096,7 +10067,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          xmb_draw_text(shadows_enable, xmb, video_info, msg,
                video_width - xmb->margins_title_left - x_pos,
                xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
-               video_width, video_height, xmb->font);
+               video_info->dims, xmb->font);
       }
    }
 
@@ -10128,15 +10099,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                userdata,
                p_disp,
                dispctx,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_info->dims,
                shadows_enable,
                icon_size,
                icon_size,
                tex_list[XMB_TEXTURE_CLOCK],
                video_width - xmb->margins_title_left + margin_offset - x_pos,
                icon_size + xmb->margins_title_top + margin_offset,
-               video_width,
-               video_height,
                xmb->alpha,
                0,
                scale_factor,
@@ -10157,7 +10126,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             video_width - xmb->margins_title_left - x_pos
                   - (!xmb->assets_missing ? xmb->icon_size / 4 * scale_factor : 0),
             xmb->margins_title_top, 1, 1, TEXT_ALIGN_RIGHT,
-            video_width, video_height, xmb->font);
+            video_info->dims, xmb->font);
    }
 
    /* Use alternative title if available */
@@ -10246,7 +10215,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             (float)ticker_x_offset + xmb->margins_title_left + icon_len,
             xmb->margins_title_top,
             1, 1, TEXT_ALIGN_LEFT,
-            video_width, video_height, xmb->font);
+            video_info->dims, xmb->font);
    }
 
    if (menu_core_enable)
@@ -10257,7 +10226,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             xmb->margins_title_left,
             video_height - xmb->margins_title_bottom,
             1, 1, TEXT_ALIGN_LEFT,
-            video_width, video_height, xmb->font);
+            video_info->dims, xmb->font);
    }
 
    /* Guard: bail if context was destroyed during the draw pass */
@@ -10292,7 +10261,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          p_anim,
          p_disp,
          userdata,
-         VIDEO_SCALE_PACK(video_width, video_height),
+         video_info->dims,
          shadows_enable,
          color_theme,
          xmb_item_color,
@@ -10325,12 +10294,12 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       if (dispctx)
          xmb_draw_dark_layer(xmb, p_disp, dispctx,
-               userdata, video_width, video_height,
+               userdata, video_info->dims,
                (input_dialog_display_kb) ? 0.95f : 0.75f);
       if (xmb->font && *msg)
          xmb_render_messagebox_internal(userdata, video_info, p_disp,
                dispctx,
-               VIDEO_SCALE_PACK(video_width, video_height),
+               video_info->dims,
                xmb, msg, draw_caret, &mymat);
    }
 

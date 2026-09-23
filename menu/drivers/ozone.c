@@ -3150,7 +3150,6 @@ static void ozone_draw_icon(
       unsigned icon_height,
       uintptr_t texture,
       float x, float y,
-      unsigned width, unsigned height,
       float rotation, float scale_factor,
       float *color,
       math_matrix_4x4 *mymat)
@@ -3172,7 +3171,7 @@ static void ozone_draw_icon(
    coords.color         = (const float*)color;
 
    draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x),
-         VIDEO_PX(height - y - icon_height));
+         VIDEO_PX(VIDEO_SCALE_H(video_dims) - y - icon_height));
    draw.dims            = VIDEO_SCALE_PACK(icon_width, icon_height);
    draw.scale_factor    = scale_factor;
    draw.rotation        = rotation;
@@ -3474,7 +3473,6 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
       float menu_framebuffer_opacity,
       math_matrix_4x4 *mymat)
 {
-   unsigned video_width  = VIDEO_SCALE_W(video_dims);
    unsigned video_height = VIDEO_SCALE_H(video_dims);
    static const enum msg_hash_enums ozone_system_tabs_value[OZONE_SYSTEM_TAB_LAST] = {
       MENU_ENUM_LABEL_VALUE_MAIN_MENU,
@@ -3735,8 +3733,6 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
                   + ozone->dimensions.sidebar_entry_height / 2
                   - ozone->dimensions.sidebar_entry_icon_size / 2
                   + ozone->animations.scroll_y_sidebar,
-            video_width,
-            video_height,
             0.0f,
             1.0f,
             col,
@@ -3905,8 +3901,6 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
                      + ozone->dimensions.sidebar_entry_height / 2
                      - ozone->dimensions.sidebar_entry_icon_size / 2
                      + ozone->animations.scroll_y_sidebar,
-               video_width,
-               video_height,
                0.0f,
                1.0f,
                col,
@@ -5529,8 +5523,6 @@ OZONE_NOINLINE static void ozone_draw_entry_value(
       menu_entry_t *entry,
       math_matrix_4x4 *mymat)
 {
-   unsigned video_width  = VIDEO_SCALE_W(video_dims);
-   unsigned video_height = VIDEO_SCALE_H(video_dims);
    bool switch_is_on                 = true;
    bool do_draw_text                 = false;
    float scale_factor                = ozone->last_scale_factor;
@@ -5552,8 +5544,6 @@ OZONE_NOINLINE static void ozone_draw_entry_value(
                   : ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK],
             x - 20 * scale_factor,
             y - 22 * scale_factor,
-            video_width,
-            video_height,
             0.0f,
             1.0f,
             col,
@@ -5648,7 +5638,6 @@ static void ozone_draw_no_thumbnail_available(
       bool draw_text,
       math_matrix_4x4 *mymat)
 {
-   unsigned video_width  = VIDEO_SCALE_W(video_dims);
    unsigned video_height = VIDEO_SCALE_H(video_dims);
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
    unsigned icon_size                = (unsigned)(ozone->dimensions.sidebar_entry_icon_size * 2.0f);
@@ -5674,8 +5663,6 @@ static void ozone_draw_no_thumbnail_available(
                ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE],
                x_position + ((view_width - icon_size) / 2),
                video_height - y_position - icon_size - ((view_height - icon_size) / 2),
-               video_width,
-               video_height,
                0.0f,
                1.0f,
                col,
@@ -6058,7 +6045,6 @@ static void ozone_draw_entries(
       math_matrix_4x4 *mymat)
 {
    unsigned video_width  = VIDEO_SCALE_W(video_dims);
-   unsigned video_height = VIDEO_SCALE_H(video_dims);
    size_t i;
    uint32_t alpha_uint32;
    float bottom_boundary;
@@ -6589,8 +6575,6 @@ border_iterate:
                            + scroll_y
                            + ozone->dimensions.entry_height / 2
                            - ozone->dimensions.entry_icon_size / 2,
-                     video_width,
-                     video_height,
                      0.0f,
                      1.0f,
                      icon_color,
@@ -7345,8 +7329,6 @@ static void ozone_draw_thumbnail_bar(
                      ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_IMAGE],
                      x_position + sidebar_width - separator_padding - icon_size,
                      video_height - ozone->dimensions.footer_height - ozone->dimensions.sidebar_entry_icon_padding - icon_size,
-                     video_width,
-                     video_height,
                      0.0f,
                      1.0f,
                      col,
@@ -7909,8 +7891,6 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                   : ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D],
             icon_x,
             icon_y,
-            video_width,
-            video_height,
             0.0f,
             1.0f,
             col,
@@ -7972,8 +7952,6 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
                   : ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R],
             icon_x,
             icon_y,
-            video_width,
-            video_height,
             0.0f,
             1.0f,
             col,
@@ -11501,7 +11479,6 @@ OZONE_NOINLINE static void ozone_draw_header(
       math_matrix_4x4 *mymat)
 {
    unsigned video_width  = VIDEO_SCALE_W(video_dims);
-   unsigned video_height = VIDEO_SCALE_H(video_dims);
    char title[NAME_MAX_LENGTH];
    gfx_animation_ctx_ticker_t ticker;
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
@@ -11590,8 +11567,6 @@ OZONE_NOINLINE static void ozone_draw_header(
                ozone->header_icon,
                header_margin - (logo_icon_size / 12),
                (ozone->dimensions.header_height - logo_icon_size) / 2,
-               video_width,
-               video_height,
                0.0f,
                1.0f,
                col,
@@ -11648,8 +11623,6 @@ OZONE_NOINLINE static void ozone_draw_header(
                            : OZONE_ENTRIES_ICONS_TEXTURE_BATTERY_20],
                      video_width - (header_margin + status_icon_size - icon_width),
                      (6 * scale_factor),
-                     video_width,
-                     video_height,
                      0.0f,
                      1.0f,
                      col,
@@ -11701,8 +11674,6 @@ OZONE_NOINLINE static void ozone_draw_header(
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_CLOCK],
                   video_width - (timedate_offset + status_icon_size - icon_width),
                   (6 * scale_factor),
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   col,
@@ -11972,8 +11943,6 @@ static void ozone_draw_footer(
                icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_RESUME],
                ozone->footer_labels.resume.x,
                icon_y,
-               video_width,
-               video_height,
                0.0f,
                1.0f,
                col,
@@ -11991,8 +11960,6 @@ static void ozone_draw_footer(
                      : icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_R],
                ozone->footer_labels.ok.x,
                icon_y,
-               video_width,
-               video_height,
                0.0f,
                1.0f,
                col,
@@ -12010,8 +11977,6 @@ static void ozone_draw_footer(
                      : icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_D],
                ozone->footer_labels.back.x,
                icon_y,
-               video_width,
-               video_height,
                0.0f,
                1.0f,
                col,
@@ -12028,8 +11993,6 @@ static void ozone_draw_footer(
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U],
                   ozone->footer_labels.search.x,
                   icon_y,
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   col,
@@ -12046,8 +12009,6 @@ static void ozone_draw_footer(
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_U],
                   ozone->footer_labels.cycle_thumbnails.x,
                   icon_y,
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   col,
@@ -12064,8 +12025,6 @@ static void ozone_draw_footer(
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L],
                   ozone->footer_labels.random_select.x,
                   icon_y,
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   col,
@@ -12084,8 +12043,6 @@ static void ozone_draw_footer(
                         : icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START],
                   ozone->footer_labels.fullscreen_thumbnails.x,
                   icon_y,
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   col,
@@ -12102,8 +12059,6 @@ static void ozone_draw_footer(
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SELECT],
                   ozone->footer_labels.metadata_override.x,
                   icon_y,
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   col,
@@ -12120,8 +12075,6 @@ static void ozone_draw_footer(
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START],
                   ozone->footer_labels.reset_to_default.x,
                   icon_y,
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   col,
@@ -12138,8 +12091,6 @@ static void ozone_draw_footer(
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SELECT],
                   ozone->footer_labels.help.x,
                   icon_y,
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   col,
@@ -12156,8 +12107,6 @@ static void ozone_draw_footer(
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L],
                   ozone->footer_labels.clear_setting.x,
                   icon_y,
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   col,
@@ -12174,8 +12123,6 @@ static void ozone_draw_footer(
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_BTN_L],
                   ozone->footer_labels.scan.x,
                   icon_y,
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   col,
@@ -12192,8 +12139,6 @@ static void ozone_draw_footer(
                   icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_START],
                   ozone->footer_labels.manage.x,
                   icon_y,
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   col,
@@ -12494,8 +12439,6 @@ static void ozone_draw_footer(
                   ozone->theme->textures[OZONE_THEME_TEXTURE_SWITCH],
                   footer_margin,
                   video_height - ozone->dimensions.footer_height / 2 - 15 * scale_factor,
-                  video_width,
-                  video_height,
                   0.0f,
                   1.0f,
                   ozone->pure_white,
