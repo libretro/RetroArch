@@ -575,11 +575,12 @@ static int test_modeline_ops(void)
    /* A generated 15 kHz timing */
    memset(&mode, 0, sizeof(mode));
    mode.pclock     = 6514560;
-   mode.width      = mode.hactive = 320;
+   mode.dims       = VIDEO_SCALE_PACK(320, 240);
+   mode.hactive    = 320;
    mode.hbegin     = 333;
    mode.hend       = 364;
    mode.htotal     = 416;
-   mode.height     = mode.vactive = 240;
+   mode.vactive    = 240;
    mode.vbegin     = 242;
    mode.vend       = 245;
    mode.vtotal     = 261;
@@ -643,7 +644,8 @@ static int test_modeline_ops(void)
 
    /* A second set: the mirror is rewritten, never REINIT'd around */
    mode.interlace = 1;
-   mode.vactive   = mode.height = 480;
+   mode.vactive   = 480;
+   mode.dims      = VIDEO_SCALE_PACK(VIDEO_SCALE_W(mode.dims), 480);
    mode.vbegin    = 483;
    mode.vend      = 489;
    mode.vtotal    = 523;

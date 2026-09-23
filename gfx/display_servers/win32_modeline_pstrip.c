@@ -128,8 +128,7 @@ static void ps_pstiming_to_modeline(const ps_timing_t *t, video_modeline_t *m)
    m->vbegin  = m->vactive + t->VerticalFrontPorch;
    m->vend    = m->vbegin + t->VerticalSyncWidth;
    m->vtotal  = m->vend + t->VerticalBackPorch;
-   m->width   = m->hactive;
-   m->height  = m->vactive;
+   m->dims    = VIDEO_SCALE_PACK(m->hactive, m->vactive);
    m->pclock  = (uint64_t)t->PixelClockInKiloHertz * 1000;
    if (!(t->TimingFlags & PS_NEGATIVE_H_POLARITY))
       m->hsync = 1;
@@ -263,7 +262,7 @@ static bool pstrip_get_timing(void *ctx, video_modeline_t *mode)
    /* A custom_timing string locks every mode that does not match it */
    if (c->user_mode.hactive)
    {
-      if (mode->width != c->user_mode.width || mode->height != c->user_mode.height)
+      if (mode->dims != c->user_mode.dims)
       {
          mode->type |= MODELINE_DISABLED;
          return false;
@@ -277,7 +276,7 @@ static bool pstrip_get_timing(void *ctx, video_modeline_t *mode)
    ps_pstiming_to_modeline(&t, &m_temp);
 
    /* Only the current desktop mode's timing is readable */
-   if (m_temp.width == mode->width && m_temp.height == mode->height
+   if (m_temp.dims == mode->dims
          && m_temp.refresh == mode->refresh)
       *mode = m_temp;
    mode->type |= MODELINE_TIMING_POWERSTRIP;

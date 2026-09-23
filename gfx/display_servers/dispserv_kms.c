@@ -285,11 +285,11 @@ static bool kms_display_server_modeline_set(void *data,
    videocrt_switch_t *p_switch    = &video_st->crt_switch_st;
 
    p_switch->clock       = (uint32_t)(mode->pclock / 1000);
-   p_switch->hdisplay    = mode->width;
+   p_switch->hdisplay    = VIDEO_SCALE_W(mode->dims);
    p_switch->hsync_start = mode->hbegin;
    p_switch->hsync_end   = mode->hend;
    p_switch->htotal      = mode->htotal;
-   p_switch->vdisplay    = mode->height;
+   p_switch->vdisplay    = VIDEO_SCALE_H(mode->dims);
    p_switch->vsync_start = mode->vbegin;
    p_switch->vsync_end   = mode->vend;
    p_switch->vtotal      = mode->vtotal;
@@ -301,8 +301,7 @@ static bool kms_display_server_modeline_set(void *data,
    p_switch->hsync       = mode->hsync;
    p_switch->vsync       = mode->vsync;
 
-   return video_driver_set_video_mode(
-         VIDEO_SCALE_PACK(mode->width, mode->height), true);
+   return video_driver_set_video_mode(mode->dims, true);
 #else
    return false;
 #endif

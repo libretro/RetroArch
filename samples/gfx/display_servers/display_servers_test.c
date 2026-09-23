@@ -886,11 +886,12 @@ static int test_modeline_lifecycle(void)
 
    memset(&mode, 0, sizeof(mode));
    mode.pclock  = 6700000;
-   mode.width   = mode.hactive = 320;
+   mode.dims    = VIDEO_SCALE_PACK(320, 240);
+   mode.hactive = 320;
    mode.hbegin  = 336;
    mode.hend    = 367;
    mode.htotal  = 426;
-   mode.height  = mode.vactive = 240;
+   mode.vactive = 240;
    mode.vbegin  = 244;
    mode.vend    = 247;
    mode.vtotal  = 262;

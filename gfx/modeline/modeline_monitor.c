@@ -372,8 +372,9 @@ int modeline_monitor_fill_vesa_range(video_modeline_range_t *range,
    video_modeline_t mode;
    memset(&mode, 0, sizeof(mode));
 
-   mode.width       = modeline_real_res((int)(MODELINE_STANDARD_CRT_ASPECT * lines_max));
-   mode.height      = lines_max;
+   mode.dims        = VIDEO_SCALE_PACK(
+         modeline_real_res((int)(MODELINE_STANDARD_CRT_ASPECT * lines_max)),
+         lines_max);
    mode.refresh     = 60;
    range->vfreq_min = 50;
    range->vfreq_max = 65;

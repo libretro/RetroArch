@@ -369,8 +369,9 @@ static bool adl_mode_info_to_modeline(adl_ctx_t *c,
    m->hsync      = ((dt.sTimingFlags & ADL_DL_TIMINGFLAG_H_SYNC_POLARITY) ? 1 : 0) ^ adl_invert_pol(c, true);
    m->vsync      = ((dt.sTimingFlags & ADL_DL_TIMINGFLAG_V_SYNC_POLARITY) ? 1 : 0) ^ adl_invert_pol(c, true);
    m->pclock     = (uint64_t)dt.sPixelClock * 10000;
-   m->height     = m->height  ? m->height  : dmi->iPelsHeight;
-   m->width      = m->width   ? m->width   : dmi->iPelsWidth;
+   m->dims       = VIDEO_SCALE_PACK(
+         VIDEO_SCALE_W(m->dims) ? (int)VIDEO_SCALE_W(m->dims) : dmi->iPelsWidth,
+         VIDEO_SCALE_H(m->dims) ? (int)VIDEO_SCALE_H(m->dims) : dmi->iPelsHeight);
    m->refresh    = m->refresh ? m->refresh
       : dmi->iRefreshRate / adl_interlace_factor(c, m->interlace ? true : false, true);
    /* Whole hertz for the line rate, as the driver lists it */
@@ -392,7 +393,8 @@ static bool adl_get_timing_from_cache(adl_ctx_t *c, video_modeline_t *m)
    for (i = 0; i < c->m_num_of_adl_modes; i++)
    {
       ADLDisplayModeInfo *mode = &c->adl_mode[i];
-      if (mode->iPelsWidth == m->width && mode->iPelsHeight == m->height
+      if (   mode->iPelsWidth  == (int)VIDEO_SCALE_W(m->dims)
+          && mode->iPelsHeight == (int)VIDEO_SCALE_H(m->dims)
             && mode->iRefreshRate == m->refresh)
       {
          if (m->interlace
@@ -411,8 +413,8 @@ static bool adl_get_timing(void *ctx, video_modeline_t *m)
    ADLDisplayModeInfo mode_info_out;
    video_modeline_t m_temp = *m;
 
-   mode_in.iPelsHeight       = m->height;
-   mode_in.iPelsWidth        = m->width;
+   mode_in.iPelsHeight       = (int)VIDEO_SCALE_H(m->dims);
+   mode_in.iPelsWidth        = (int)VIDEO_SCALE_W(m->dims);
    mode_in.iBitsPerPel       = 32;
    mode_in.iDisplayFrequency = m->refresh
       * adl_interlace_factor(c, m->interlace ? true : false, true);
@@ -453,8 +455,8 @@ static bool adl_set_timing_override(adl_ctx_t *c, video_modeline_t *m,
    mode_info.iPossibleStandard = 0;
    mode_info.iRefreshRate      = m->refresh
       * adl_interlace_factor(c, m->interlace ? true : false, false);
-   mode_info.iPelsWidth        = m->width;
-   mode_info.iPelsHeight       = m->height;
+   mode_info.iPelsWidth        = (int)VIDEO_SCALE_W(m->dims);
+   mode_info.iPelsHeight       = (int)VIDEO_SCALE_H(m->dims);
 
    dt                   = &mode_info.sDetailedTiming;
    dt->sTimingFlags     = (short)((m->interlace ? ADL_DL_TIMINGFLAG_INTERLACED : 0)

@@ -164,16 +164,17 @@ static bool ati_get_timing(void *ctx, video_modeline_t *mode)
       return false;
    }
 
-   snprintf(lp_name, sizeof(lp_name), "DALDTMCRTBCD%dx%dx0x%d",
-         mode->width, mode->height, refresh_label);
+   snprintf(lp_name, sizeof(lp_name), "DALDTMCRTBCD%ux%ux0x%d",
+         VIDEO_SCALE_W(mode->dims), VIDEO_SCALE_H(mode->dims), refresh_label);
    length = sizeof(lp_data);
    if (RegQueryValueExA(hkey, lp_name, NULL, NULL, (LPBYTE)lp_data, &length)
          == ERROR_SUCCESS && length == sizeof(lp_data))
       found = true;
    else if (c->win_version > 5 && mode->interlace)
    {
-      snprintf(lp_name, sizeof(lp_name), "DALDTMCRTBCD%dx%dx0x%d",
-            mode->width, mode->height, refresh_label + 1);
+      snprintf(lp_name, sizeof(lp_name), "DALDTMCRTBCD%ux%ux0x%d",
+            VIDEO_SCALE_W(mode->dims), VIDEO_SCALE_H(mode->dims),
+            refresh_label + 1);
       length = sizeof(lp_data);
       if (RegQueryValueExA(hkey, lp_name, NULL, NULL, (LPBYTE)lp_data, &length)
             == ERROR_SUCCESS && length == sizeof(lp_data))
@@ -246,14 +247,15 @@ static bool ati_set_timing(ati_ctx_t *c, video_modeline_t *mode)
       return false;
    }
 
-   snprintf(lp_name, sizeof(lp_name), "DALDTMCRTBCD%dx%dx0x%d",
-         mode->width, mode->height, refresh_label);
+   snprintf(lp_name, sizeof(lp_name), "DALDTMCRTBCD%ux%ux0x%d",
+         VIDEO_SCALE_W(mode->dims), VIDEO_SCALE_H(mode->dims), refresh_label);
    if (RegQueryValueExA(hkey, lp_name, NULL, NULL, NULL, NULL) == ERROR_SUCCESS)
       found = true;
    else if (c->win_version > 5 && mode->interlace)
    {
-      snprintf(lp_name, sizeof(lp_name), "DALDTMCRTBCD%dx%dx0x%d",
-            mode->width, mode->height, refresh_label + 1);
+      snprintf(lp_name, sizeof(lp_name), "DALDTMCRTBCD%ux%ux0x%d",
+            VIDEO_SCALE_W(mode->dims), VIDEO_SCALE_H(mode->dims),
+            refresh_label + 1);
       if (RegQueryValueExA(hkey, lp_name, NULL, NULL, NULL, NULL) == ERROR_SUCCESS)
          found = true;
    }

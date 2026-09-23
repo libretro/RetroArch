@@ -110,8 +110,7 @@ static void make_timing(video_modeline_t *m)
    m->vactive = 240;
    m->vfreq   = 60.0;
    modeline_create(&s, m, &range[0], &gen);
-   m->width   = m->hactive;
-   m->height  = m->vactive;
+   m->dims    = VIDEO_SCALE_PACK(m->hactive, m->vactive);
    m->refresh = (int)m->vfreq;
 }
 
@@ -178,8 +177,9 @@ static int test_adl(void)
    /* A listed 320x240@60 system mode gets the generated timing */
    make_timing(&m);
    memset(&listed, 0, sizeof(listed));
-   listed.width   = listed.hactive = 320;
-   listed.height  = listed.vactive = 240;
+   listed.dims    = VIDEO_SCALE_PACK(320, 240);
+   listed.hactive = 320;
+   listed.vactive = 240;
    listed.refresh = 60;
    listed.vfreq   = 60;
    if (b.get_timing(b.ctx, &listed))
@@ -224,7 +224,8 @@ static int test_adl(void)
          (unsigned long)(t1 - t0));
 
    /* What the driver holds is the generated timing */
-   if (table[0].iPelsWidth != m.width || table[0].iPelsHeight != m.height
+   if (   table[0].iPelsWidth  != (int)VIDEO_SCALE_W(m.dims)
+       || table[0].iPelsHeight != (int)VIDEO_SCALE_H(m.dims)
          || table[0].iRefreshRate != m.refresh
          || table[0].sDetailedTiming.sHTotal != m.htotal
          || table[0].sDetailedTiming.sHDisplay != m.hactive
@@ -317,7 +318,8 @@ static int test_ati(void)
    /* The driver only rewrites values that exist: seed the mode's entry */
    memset(data, 0, sizeof(data));
    make_timing(&m);
-   snprintf(name, sizeof(name), "DALDTMCRTBCD%dx%dx0x%d", m.width, m.height, m.refresh);
+   snprintf(name, sizeof(name), "DALDTMCRTBCD%ux%ux0x%d",
+         VIDEO_SCALE_W(m.dims), VIDEO_SCALE_H(m.dims), m.refresh);
    RegSetValueExA(key, name, 0, REG_BINARY, data, sizeof(data));
    RegCloseKey(key);
 
@@ -382,8 +384,7 @@ static int test_ati(void)
    printf("[pass] ATI legacy: %s written in the driver's BCD layout with its checksum\n", name);
 
    memset(&back, 0, sizeof(back));
-   back.width   = m.width;
-   back.height  = m.height;
+   back.dims    = m.dims;
    back.refresh = m.refresh;
    if (!b.get_timing(b.ctx, &back) || !(back.type & MODELINE_TIMING_ATI_LEGACY))
    {
@@ -468,7 +469,7 @@ static int test_pstrip(void)
 
    /* get_timing reports the current desktop timing for its own mode */
    memset(&listed, 0, sizeof(listed));
-   listed.width = 1280; listed.height = 720; listed.refresh = 60;
+   listed.dims = VIDEO_SCALE_PACK(1280, 720); listed.refresh = 60;
    if (!b.get_timing(b.ctx, &listed) || listed.htotal != 1280 + 110 + 40 + 220
          || listed.pclock != 74250000ull)
    {

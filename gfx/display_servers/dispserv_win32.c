@@ -1222,12 +1222,10 @@ static int win32_display_server_modeline_enum(void *data,
       return -1;
 
    memset(&desktop, 0, sizeof(desktop));
-   desktop.width     = (ml->devmode.dmDisplayOrientation == DMDO_DEFAULT
+   desktop.dims      = (ml->devmode.dmDisplayOrientation == DMDO_DEFAULT
          || ml->devmode.dmDisplayOrientation == DMDO_180)
-      ? ml->devmode.dmPelsWidth : ml->devmode.dmPelsHeight;
-   desktop.height    = (ml->devmode.dmDisplayOrientation == DMDO_DEFAULT
-         || ml->devmode.dmDisplayOrientation == DMDO_180)
-      ? ml->devmode.dmPelsHeight : ml->devmode.dmPelsWidth;
+      ? VIDEO_SCALE_PACK(ml->devmode.dmPelsWidth, ml->devmode.dmPelsHeight)
+      : VIDEO_SCALE_PACK(ml->devmode.dmPelsHeight, ml->devmode.dmPelsWidth);
    desktop.refresh   = ml->devmode.dmDisplayFrequency;
    desktop.interlace = (ml->devmode.dmDisplayFlags & DM_INTERLACED) ? 1 : 0;
 
@@ -1247,22 +1245,20 @@ static int win32_display_server_modeline_enum(void *data,
 
       memset(&m, 0, sizeof(m));
       m.interlace = (dm.dmDisplayFlags & DM_INTERLACED) ? 1 : 0;
-      m.width     = (dm.dmDisplayOrientation == DMDO_DEFAULT
+      m.dims      = (dm.dmDisplayOrientation == DMDO_DEFAULT
             || dm.dmDisplayOrientation == DMDO_180)
-         ? dm.dmPelsWidth : dm.dmPelsHeight;
-      m.height    = (dm.dmDisplayOrientation == DMDO_DEFAULT
-            || dm.dmDisplayOrientation == DMDO_180)
-         ? dm.dmPelsHeight : dm.dmPelsWidth;
+         ? VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight)
+         : VIDEO_SCALE_PACK(dm.dmPelsHeight, dm.dmPelsWidth);
       m.refresh   = dm.dmDisplayFrequency;
-      m.hactive   = m.width;
-      m.vactive   = m.height;
+      m.hactive   = (int)VIDEO_SCALE_W(m.dims);
+      m.vactive   = (int)VIDEO_SCALE_H(m.dims);
       m.vfreq     = m.refresh;
       m.type     |= (dm.dmDisplayOrientation == DMDO_90
             || dm.dmDisplayOrientation == DMDO_270) ? MODELINE_ROTATED : MODELINE_OK;
 
       for (i = 0; i < n; i++)
       {
-         if (modes[i].width == m.width && modes[i].height == m.height
+         if (modes[i].dims == m.dims
                && modes[i].refresh == m.refresh && modes[i].interlace == m.interlace)
          {
             dup = true;
@@ -1272,7 +1268,7 @@ static int win32_display_server_modeline_enum(void *data,
       if (dup)
          continue;
 
-      if (m.width == desktop.width && m.height == desktop.height
+      if (m.dims == desktop.dims
             && m.refresh == desktop.refresh && m.interlace == desktop.interlace)
          m.type |= MODELINE_DESKTOP;
 
@@ -1344,8 +1340,10 @@ static bool win32_display_server_modeline_set(void *data,
 
    memset(&dm, 0, sizeof(dm));
    dm.dmSize             = sizeof(dm);
-   dm.dmPelsWidth        = (mode->type & MODELINE_ROTATED) ? mode->height : mode->width;
-   dm.dmPelsHeight       = (mode->type & MODELINE_ROTATED) ? mode->width : mode->height;
+   dm.dmPelsWidth        = (mode->type & MODELINE_ROTATED)
+      ? VIDEO_SCALE_H(mode->dims) : VIDEO_SCALE_W(mode->dims);
+   dm.dmPelsHeight       = (mode->type & MODELINE_ROTATED)
+      ? VIDEO_SCALE_W(mode->dims) : VIDEO_SCALE_H(mode->dims);
    dm.dmDisplayFrequency = mode->refresh;
    dm.dmDisplayFlags     = mode->interlace ? DM_INTERLACED : 0;
    dm.dmFields           = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY | DM_DISPLAYFLAGS;

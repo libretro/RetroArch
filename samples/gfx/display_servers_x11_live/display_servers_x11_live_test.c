@@ -175,7 +175,8 @@ static int test_head_selection(Display *dpy, video_modeline_ops_t *ops,
       return 1;
    }
    printf("[pass] open(auto): head under the window (%s), desktop %dx%d\n",
-         under, modes[i].width, modes[i].height);
+         under, (int)VIDEO_SCALE_W(modes[i].dims),
+         (int)VIDEO_SCALE_H(modes[i].dims));
    ops->close(data);
 
    /* Monitor index 1 -> Xinerama screen 0 */
@@ -404,11 +405,12 @@ int main(void)
       return 1;
    }
    printf("[pass] open + enum: %d listed modes, desktop %dx%d@%d\n",
-         gen->num_modes, gen->desktop_mode.width, gen->desktop_mode.height,
+         gen->num_modes, (int)VIDEO_SCALE_W(gen->desktop_mode.dims),
+         (int)VIDEO_SCALE_H(gen->desktop_mode.dims),
          gen->desktop_mode.refresh);
 
    /* A 320x240@60 core: generated, added, set, verified on the wire */
-   mode = modeline_get(gen, &ops, 320, 240, 60.0, 0);
+   mode = modeline_get(gen, &ops, VIDEO_SCALE_PACK(320, 240), 60.0, 0);
    if (!mode || !(mode->type & MODELINE_ADD))
    {
       fprintf(stderr, "FAIL: get did not produce a new mode for 320x240@60\n");
@@ -430,7 +432,7 @@ int main(void)
 
    /* A second core resolution: a second generated mode, then the
     * switch, with the first one still in the server's list */
-   mode = modeline_get(gen, &ops, 256, 224, 60.0988, 0);
+   mode = modeline_get(gen, &ops, VIDEO_SCALE_PACK(256, 224), 60.0988, 0);
    if (!mode || !modeline_flush(gen, &ops) || !modeline_set(gen, &ops, mode))
    {
       fprintf(stderr, "FAIL: second switch failed\n");

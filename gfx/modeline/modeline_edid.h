@@ -104,7 +104,8 @@ typedef struct video_edid_timing
 
 typedef struct video_edid_std_timing
 {
-   unsigned width, height, refresh;
+   unsigned dims;            /* VIDEO_SCALE_PACK */
+   unsigned refresh;
 } video_edid_std_timing_t;
 
 /* Extension block tags (byte 0 of the block) */

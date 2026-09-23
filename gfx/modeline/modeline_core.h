@@ -24,6 +24,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "../video_defines.h"
+
 RETRO_BEGIN_DECLS
 
 /* Video modeline engine.
@@ -104,8 +106,9 @@ typedef struct video_modeline_result
 /* The full timing. Every field has a consumer after generation:
  * pclock/porches/totals are the mode itself, hsync/vsync/interlace/
  * doublescan become backend flags, vfreq/hfreq feed the runloop and
- * range checks, width/height/refresh are the labels the OS lists the
- * mode under (refresh is vfreq truncated toward zero on purpose),
+ * range checks, dims (VIDEO_SCALE_PACK) and refresh are the labels the
+ * OS lists the mode under (refresh is vfreq truncated toward zero on
+ * purpose),
  * result carries the scale factors for aspect and the compromise
  * bits, id/type/platform_data/range tie the entry to the backend's
  * list and to the range it was generated from. */
@@ -128,8 +131,7 @@ typedef struct video_modeline
    int      doublescan;
    int      hsync;
    int      vsync;
-   int      width;
-   int      height;
+   unsigned dims;
    int      refresh;
    int      refresh_label;
    int      id;

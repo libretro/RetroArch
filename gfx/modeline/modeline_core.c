@@ -526,29 +526,32 @@ int modeline_vesa_gtf(video_modeline_t *m)
 
    interlace            = m->interlace ? 0.5 : 0;
    h_period             = ((1.0 / v_freq) - (v_sync_v_back_porch / 1000000))
-      / ((double)m->height + v_front_porch_lines + interlace) * 1000000;
+      / ((double)VIDEO_SCALE_H(m->dims) + v_front_porch_lines + interlace)
+      * 1000000;
    v_sync_v_back_porch_lines = modeline_round_near(v_sync_v_back_porch / h_period);
    v_back_porch_lines   = v_sync_v_back_porch_lines - v_sync_lines;
-   v_total_lines        = m->height + v_front_porch_lines + v_sync_lines
+   v_total_lines        = (int)VIDEO_SCALE_H(m->dims) + v_front_porch_lines
+      + v_sync_lines
       + v_back_porch_lines;
    v_freq_est           = (1.0 / h_period) / v_total_lines * 1000000;
    h_period_real        = h_period / (v_freq / v_freq_est);
    v_freq_real          = (1.0 / h_period_real) / v_total_lines * 1000000;
    h_ideal_blanking     = (double)(C - (M * h_period_real / 1000));
-   h_blanking_pixels    = modeline_round_near(m->width * h_ideal_blanking
+   h_blanking_pixels    = modeline_round_near(
+         (int)VIDEO_SCALE_W(m->dims) * h_ideal_blanking
          / (100 - h_ideal_blanking) / (2 * 8)) * (2 * 8);
-   h_total_pixels       = m->width + h_blanking_pixels;
+   h_total_pixels       = (int)VIDEO_SCALE_W(m->dims) + h_blanking_pixels;
    pixel_freq           = h_total_pixels / h_period_real * 1000000;
    h_freq               = 1000000 / h_period_real;
    h_sync_width_pixels  = modeline_round_near(
          h_sync_width_percent * h_total_pixels / 100 / 8) * 8;
    h_front_porch_pixels = (h_blanking_pixels / 2) - h_sync_width_pixels;
 
-   m->hactive = m->width;
+   m->hactive = (int)VIDEO_SCALE_W(m->dims);
    m->hbegin  = m->hactive + h_front_porch_pixels;
    m->hend    = m->hbegin + h_sync_width_pixels;
    m->htotal  = h_total_pixels;
-   m->vactive = m->height;
+   m->vactive = (int)VIDEO_SCALE_H(m->dims);
    m->vbegin  = m->vactive + v_front_porch_lines;
    m->vend    = m->vbegin + v_sync_lines;
    m->vtotal  = v_total_lines;
@@ -605,8 +608,7 @@ int modeline_parse(const char *user_modeline, video_modeline_t *mode)
    mode->hfreq   = (double)(mode->pclock / (uint64_t)mode->htotal);
    mode->vfreq   = mode->hfreq / mode->vtotal * (mode->interlace ? 2 : 1);
    mode->refresh = (int)mode->vfreq;
-   mode->width   = mode->hactive;
-   mode->height  = mode->vactive;
+   mode->dims    = VIDEO_SCALE_PACK(mode->hactive, mode->vactive);
    RARCH_DBG("[Modeline] User modeline %s\n",
          modeline_print(mode, txt, sizeof(txt), MODELINE_PRINT_FULL));
 

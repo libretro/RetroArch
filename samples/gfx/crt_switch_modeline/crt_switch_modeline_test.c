@@ -198,8 +198,7 @@ static int srv_enum(void *data, video_modeline_t *modes, int max)
    modes[0].pclock  = 148500000;
    modes[0].vfreq   = 60.0;
    modes[0].hfreq   = 67500.0;
-   modes[0].width   = 1920;
-   modes[0].height  = 1080;
+   modes[0].dims    = VIDEO_SCALE_PACK(1920, 1080);
    modes[0].refresh = 60;
    modes[0].hactive = 1920;
    modes[0].hbegin  = 2008;
@@ -267,8 +266,7 @@ int video_display_server_get_edid(uint8_t *out, size_t max)
    mode.pclock  = 148500000;
    mode.vfreq   = 60.0;
    mode.hfreq   = 67500.0;
-   mode.width   = 1920;
-   mode.height  = 1080;
+   mode.dims    = VIDEO_SCALE_PACK(1920, 1080);
    mode.refresh = 60;
    mode.hactive = 1920;
    mode.hbegin  = 2008;

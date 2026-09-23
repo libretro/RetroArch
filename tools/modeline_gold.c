@@ -150,6 +150,9 @@ static const char *gold_monitor(gold_ctx *c) { return c->disp->monitor(); }
 typedef modeline gold_mode;
 #define GM_STRETCH(m) (((m)->result.weight & R_RES_STRETCH) ? 1 : 0)
 #define GM_VOFF(m)    (((m)->result.weight & R_V_FREQ_OFF) ? 1 : 0)
+#define GM_W(m)       ((m)->width)
+#define GM_H(m)       ((m)->height)
+#define GM_SET_WH(m, w, h) ((m)->width = (w), (m)->height = (h))
 #define GOLD_FLAG_ROT SR_MODE_ROTATED
 #define GOLD_FLAG_INT SR_MODE_INTERLACED
 #define GOLD_DESKTOP  MODE_DESKTOP
@@ -241,7 +244,7 @@ static void gold_list(gold_ctx *c, const video_modeline_t *list, int n)
 static const video_modeline_t *gold_get(gold_ctx *c, int w, int h,
       double hz, int flags)
 {
-   video_modeline_t *m = modeline_get(c->gen, &c->ops, w, h, hz, flags);
+   video_modeline_t *m = modeline_get(c->gen, &c->ops, VIDEO_SCALE_PACK(w, h), hz, flags);
    if (m)
       modeline_flush(c->gen, &c->ops);
    return m;
@@ -257,6 +260,9 @@ static const char *gold_monitor(gold_ctx *c) { return c->gen->monitor; }
 typedef video_modeline_t gold_mode;
 #define GM_STRETCH(m) (((m)->result.weight & MODELINE_R_RES_STRETCH) ? 1 : 0)
 #define GM_VOFF(m)    (((m)->result.weight & MODELINE_R_V_FREQ_OFF) ? 1 : 0)
+#define GM_W(m)       ((int)VIDEO_SCALE_W((m)->dims))
+#define GM_H(m)       ((int)VIDEO_SCALE_H((m)->dims))
+#define GM_SET_WH(m, w, h) ((m)->dims = VIDEO_SCALE_PACK(w, h))
 #define GOLD_FLAG_ROT MODELINE_REQ_ROTATED
 #define GOLD_FLAG_INT MODELINE_REQ_INTERLACED
 #define GOLD_DESKTOP  MODELINE_DESKTOP
@@ -347,7 +353,7 @@ static void gold_print(const char *tag, const gold_src *s, const gold_mode *m)
          m->hactive, m->hbegin, m->hend, m->htotal,
          m->vactive, m->vbegin, m->vend, m->vtotal,
          m->interlace, m->doublescan, m->hsync, m->vsync,
-         m->vfreq, m->hfreq, m->width, m->height, m->refresh,
+         m->vfreq, m->hfreq, GM_W(m), GM_H(m), m->refresh,
          m->result.x_scale, m->result.y_scale, m->result.v_scale,
          GM_STRETCH(m), GM_VOFF(m), (unsigned)m->type);
 }
@@ -401,8 +407,9 @@ static void gold_fill_listed(gold_mode *m, int w, int h, int r,
       int interlace, int type)
 {
    memset(m, 0, sizeof(*m));
-   m->width = m->hactive = w;
-   m->height = m->vactive = h;
+   GM_SET_WH(m, w, h);
+   m->hactive = w;
+   m->vactive = h;
    m->refresh = r;
    m->vfreq = r;
    m->interlace = interlace;

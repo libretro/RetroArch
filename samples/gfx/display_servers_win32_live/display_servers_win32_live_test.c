@@ -190,10 +190,10 @@ int main(void)
             gen->num_modes, !!(gen->desktop_mode.type & MODELINE_DESKTOP));
       return 1;
    }
-   if (gen->desktop_mode.width != dw || gen->desktop_mode.height != dh)
+   if ((int)VIDEO_SCALE_W(gen->desktop_mode.dims) != dw || (int)VIDEO_SCALE_H(gen->desktop_mode.dims) != dh)
    {
       fprintf(stderr, "FAIL: desktop entry is %dx%d, current settings say %dx%d\n",
-            gen->desktop_mode.width, gen->desktop_mode.height, dw, dh);
+            (int)VIDEO_SCALE_W(gen->desktop_mode.dims), (int)VIDEO_SCALE_H(gen->desktop_mode.dims), dw, dh);
       return 1;
    }
    for (i = 0; i < gen->num_modes; i++)
@@ -204,11 +204,11 @@ int main(void)
          return 1;
       }
       if (pick < 0 && !(gen->modes[i].type & MODELINE_DESKTOP)
-            && gen->modes[i].refresh == dhz && gen->modes[i].width < dw)
+            && gen->modes[i].refresh == dhz && (int)VIDEO_SCALE_W(gen->modes[i].dims) < dw)
          pick = i;
    }
    printf("[pass] enum: %d listed modes, desktop %dx%d@%d flagged\n",
-         gen->num_modes, gen->desktop_mode.width, gen->desktop_mode.height,
+         gen->num_modes, (int)VIDEO_SCALE_W(gen->desktop_mode.dims), (int)VIDEO_SCALE_H(gen->desktop_mode.dims),
          gen->desktop_mode.refresh);
 
    if (pick < 0)
@@ -222,24 +222,24 @@ int main(void)
 
    /* The consumer's path: get picks the listed mode, flush has
     * nothing to add, set switches through CDS */
-   mode = modeline_get(gen, &ops, gen->modes[pick].width, gen->modes[pick].height,
+   mode = modeline_get(gen, &ops, gen->modes[pick].dims,
          (double)gen->modes[pick].refresh, 0);
    if (!mode || (mode->type & MODELINE_ADD))
    {
       fprintf(stderr, "FAIL: get did not pick a listed mode for %dx%d@%d\n",
-            gen->modes[pick].width, gen->modes[pick].height, gen->modes[pick].refresh);
+            (int)VIDEO_SCALE_W(gen->modes[pick].dims), (int)VIDEO_SCALE_H(gen->modes[pick].dims), gen->modes[pick].refresh);
       return 1;
    }
    if (!modeline_flush(gen, &ops) || !modeline_set(gen, &ops, mode))
    {
-      fprintf(stderr, "FAIL: switch to %dx%d@%d\n", mode->width, mode->height, mode->refresh);
+      fprintf(stderr, "FAIL: switch to %dx%d@%d\n", (int)VIDEO_SCALE_W(mode->dims), (int)VIDEO_SCALE_H(mode->dims), mode->refresh);
       return 1;
    }
    read_current(&cw, &ch, &chz);
-   if (cw != mode->width || ch != mode->height)
+   if (cw != (int)VIDEO_SCALE_W(mode->dims) || ch != (int)VIDEO_SCALE_H(mode->dims))
    {
       fprintf(stderr, "FAIL: current settings read %dx%d@%d after set of %dx%d@%d\n",
-            cw, ch, chz, mode->width, mode->height, mode->refresh);
+            cw, ch, chz, (int)VIDEO_SCALE_W(mode->dims), (int)VIDEO_SCALE_H(mode->dims), mode->refresh);
       return 1;
    }
    printf("[pass] set: current settings now %dx%d@%d\n", cw, ch, chz);

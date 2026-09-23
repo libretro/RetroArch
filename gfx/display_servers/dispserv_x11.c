@@ -1077,8 +1077,7 @@ static int x11_display_server_modeline_enum(void *data,
             mode->vfreq   = mode->hfreq / mode->vtotal * (mode->interlace ? 2 : 1);
             mode->refresh = (int)mode->vfreq;
          }
-         mode->width      = pxmode->width;
-         mode->height     = pxmode->height;
+         mode->dims       = VIDEO_SCALE_PACK(pxmode->width, pxmode->height);
          mode->type      |= ml->crtc_flags;
          mode->type      |= MODELINE_TIMING_XRANDR;
          if (strncmp(pxmode->name, "SR-", 3) == 0 || strncmp(pxmode->name, "RA-", 3) == 0)

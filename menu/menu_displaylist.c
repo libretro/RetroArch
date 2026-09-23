@@ -2609,8 +2609,9 @@ static unsigned menu_displaylist_parse_display_edid(file_list_t *list)
       for (i = 0; i < (int)info->n_std; i++)
       {
          char one[32];
-         snprintf(one, sizeof(one), "%ux%u @ %u Hz", info->std[i].width,
-               info->std[i].height, info->std[i].refresh);
+         snprintf(one, sizeof(one), "%ux%u @ %u Hz",
+               VIDEO_SCALE_W(info->std[i].dims),
+               VIDEO_SCALE_H(info->std[i].dims), info->std[i].refresh);
          _len = menu_displaylist_edid_cat(value, _len, sizeof(value), one);
       }
       if (menu_displaylist_edid_line(list,

@@ -63,8 +63,8 @@ void modeline_parse_options(video_modeline_gen_t *gen);
 void modeline_set_monitor(video_modeline_gen_t *gen, const char *preset);
 
 /* Lock resolution and/or refresh; 0 leaves that axis free. */
-void modeline_set_user_mode(video_modeline_gen_t *gen, int width,
-      int height, int refresh);
+void modeline_set_user_mode(video_modeline_gen_t *gen, unsigned dims,
+      int refresh);
 
 /* Enumerate the display's modes through ops and rebuild the list; on
  * an LCD preset this also derives the range from the desktop mode.
@@ -77,7 +77,7 @@ bool modeline_list_init(video_modeline_gen_t *gen,
  * MODELINE_ADD or MODELINE_UPDATE when it needs flushing, or NULL when
  * nothing in range. */
 video_modeline_t *modeline_get(video_modeline_gen_t *gen,
-      const video_modeline_ops_t *ops, int width, int height,
+      const video_modeline_ops_t *ops, unsigned dims,
       double refresh, int flags);
 
 /* Push pending adds/updates/deletes to the server and then

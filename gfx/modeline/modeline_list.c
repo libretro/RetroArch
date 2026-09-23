@@ -74,15 +74,16 @@ static void modeline_filter_modes(video_modeline_gen_t *gen)
          mode->type &= ~MODELINE_DISABLED;
 
       /* Lock every mode that does not match the user's resolution rules */
-      if (gen->user_mode.width != 0 || gen->user_mode.height != 0
-            || gen->user_mode.refresh != 0)
+      if (gen->user_mode.dims != 0 || gen->user_mode.refresh != 0)
       {
-         if (!(   (mode->width == gen->user_mode.width
+         unsigned user_w = VIDEO_SCALE_W(gen->user_mode.dims);
+         unsigned user_h = VIDEO_SCALE_H(gen->user_mode.dims);
+         if (!(   (VIDEO_SCALE_W(mode->dims) == user_w
                      || (mode->type & MODELINE_X_RES_EDITABLE)
-                     || gen->user_mode.width == 0)
-               && (mode->height == gen->user_mode.height
+                     || user_w == 0)
+               && (VIDEO_SCALE_H(mode->dims) == user_h
                   || (mode->type & MODELINE_Y_RES_EDITABLE)
-                  || gen->user_mode.height == 0)
+                  || user_h == 0)
                && (mode->refresh == gen->user_mode.refresh
                   || (mode->type & MODELINE_V_FREQ_EDITABLE)
                   || gen->user_mode.refresh == 0)))
@@ -165,13 +166,12 @@ void modeline_set_monitor(video_modeline_gen_t *gen, const char *preset)
    modeline_set_preset(gen);
 }
 
-void modeline_set_user_mode(video_modeline_gen_t *gen, int width,
-      int height, int refresh)
+void modeline_set_user_mode(video_modeline_gen_t *gen, unsigned dims,
+      int refresh)
 {
    video_modeline_t user_mode;
    memset(&user_mode, 0, sizeof(user_mode));
-   user_mode.width   = width;
-   user_mode.height  = height;
+   user_mode.dims    = dims;
    user_mode.refresh = refresh;
    modeline_apply_user_mode(gen, &user_mode);
 }
@@ -255,12 +255,13 @@ void modeline_set_option(video_modeline_gen_t *gen, const char *key,
       memset(&user_mode, 0, sizeof(user_mode));
       if (strcmp(value, "auto"))
       {
-         if (sscanf(value, "%dx%d@%d", &user_mode.width, &user_mode.height,
-                  &user_mode.refresh) < 1)
+         int w = 0, h = 0;
+         if (sscanf(value, "%dx%d@%d", &w, &h, &user_mode.refresh) < 1)
          {
             RARCH_ERR("[Modeline] user_mode must be <w>x<h>@<r>\n");
             return;
          }
+         user_mode.dims = VIDEO_SCALE_PACK(w, h);
       }
       modeline_apply_user_mode(gen, &user_mode);
    }
@@ -384,11 +385,13 @@ static bool modeline_auto_specs(video_modeline_gen_t *gen)
 {
    video_modeline_t user_mode;
 
-   if (gen->desktop_mode.width == 0 || gen->desktop_mode.height == 0
+   if (     !VIDEO_SCALE_W(gen->desktop_mode.dims)
+         || !VIDEO_SCALE_H(gen->desktop_mode.dims)
          || gen->desktop_mode.refresh == 0)
    {
-      RARCH_ERR("[Modeline] Invalid desktop mode %dx%d@%d\n",
-            gen->desktop_mode.width, gen->desktop_mode.height,
+      RARCH_ERR("[Modeline] Invalid desktop mode %ux%u@%d\n",
+            VIDEO_SCALE_W(gen->desktop_mode.dims),
+            VIDEO_SCALE_H(gen->desktop_mode.dims),
             gen->desktop_mode.refresh);
       return false;
    }
@@ -410,8 +413,7 @@ static bool modeline_auto_specs(video_modeline_gen_t *gen)
    modeline_monitor_show_range(gen->range);
 
    memset(&user_mode, 0, sizeof(user_mode));
-   user_mode.width   = gen->desktop_mode.width;
-   user_mode.height  = gen->desktop_mode.height;
+   user_mode.dims    = gen->desktop_mode.dims;
    user_mode.refresh = gen->desktop_mode.refresh;
    modeline_apply_user_mode(gen, &user_mode);
 
@@ -450,8 +452,9 @@ bool modeline_list_init(video_modeline_gen_t *gen,
          if (mode->type & MODELINE_ROTATED)
             gen->desktop_is_rotated = true;
       }
-      RARCH_DBG("[Modeline] [%3d] %4dx%4d @%3d%s%s %s: ", i + 1,
-            mode->width, mode->height, mode->refresh,
+      RARCH_DBG("[Modeline] [%3d] %4ux%4u @%3d%s%s %s: ", i + 1,
+            VIDEO_SCALE_W(mode->dims), VIDEO_SCALE_H(mode->dims),
+            mode->refresh,
             mode->interlace ? "i" : "p",
             (mode->type & MODELINE_DESKTOP) ? "*" : "",
             (mode->type & MODELINE_ROTATED) ? "rot" : "");
@@ -478,9 +481,11 @@ video_modeline_t *modeline_find_id(video_modeline_gen_t *gen, int id)
 }
 
 video_modeline_t *modeline_get(video_modeline_gen_t *gen,
-      const video_modeline_ops_t *ops, int width, int height,
+      const video_modeline_ops_t *ops, unsigned dims,
       double refresh, int flags)
 {
+   int width       = (int)VIDEO_SCALE_W(dims);
+   int height      = (int)VIDEO_SCALE_H(dims);
    int i;
    video_modeline_t s_mode;
    video_modeline_t t_mode;
@@ -548,10 +553,12 @@ video_modeline_t *modeline_get(video_modeline_gen_t *gen,
       int r;
       video_modeline_t *mode = &gen->modes[i];
 
-      RARCH_DBG("[Modeline] %s%4d%sx%s%4d%s_%s%d=%.6fHz%s%s\n",
-            (mode->type & MODELINE_X_RES_EDITABLE) ? "(" : "[", mode->width,
+      RARCH_DBG("[Modeline] %s%4u%sx%s%4u%s_%s%d=%.6fHz%s%s\n",
+            (mode->type & MODELINE_X_RES_EDITABLE) ? "(" : "[",
+            VIDEO_SCALE_W(mode->dims),
             (mode->type & MODELINE_X_RES_EDITABLE) ? ")" : "]",
-            (mode->type & MODELINE_Y_RES_EDITABLE) ? "(" : "[", mode->height,
+            (mode->type & MODELINE_Y_RES_EDITABLE) ? "(" : "[",
+            VIDEO_SCALE_H(mode->dims),
             (mode->type & MODELINE_Y_RES_EDITABLE) ? ")" : "]",
             (mode->type & MODELINE_V_FREQ_EDITABLE) ? "(" : "[", mode->refresh,
             mode->vfreq,
@@ -570,12 +577,12 @@ video_modeline_t *modeline_get(video_modeline_gen_t *gen,
 
          /* Editable fields start from the source or the user values */
          if (t_mode.type & MODELINE_X_RES_EDITABLE)
-            t_mode.hactive = gen->user_mode.width
-               ? gen->user_mode.width : s_mode.hactive;
+            t_mode.hactive = VIDEO_SCALE_W(gen->user_mode.dims)
+               ? (int)VIDEO_SCALE_W(gen->user_mode.dims) : s_mode.hactive;
 
          if (t_mode.type & MODELINE_Y_RES_EDITABLE)
-            t_mode.vactive = gen->user_mode.height
-               ? gen->user_mode.height : s_mode.vactive;
+            t_mode.vactive = VIDEO_SCALE_H(gen->user_mode.dims)
+               ? (int)VIDEO_SCALE_H(gen->user_mode.dims) : s_mode.vactive;
 
          if (t_mode.type & MODELINE_V_FREQ_EDITABLE)
          {
@@ -586,9 +593,9 @@ video_modeline_t *modeline_get(video_modeline_gen_t *gen,
                t_mode.vfreq = s_mode.vfreq;
          }
 
-         if (gen->user_mode.width)
+         if (VIDEO_SCALE_W(gen->user_mode.dims))
             t_mode.type &= ~MODELINE_X_RES_EDITABLE;
-         if (gen->user_mode.height)
+         if (VIDEO_SCALE_H(gen->user_mode.dims))
             t_mode.type &= ~MODELINE_Y_RES_EDITABLE;
          if (gen->user_mode.vfreq)
             t_mode.type &= ~MODELINE_V_FREQ_EDITABLE;
@@ -633,8 +640,8 @@ video_modeline_t *modeline_get(video_modeline_gen_t *gen,
    {
       if (best_mode.type & MODELINE_ADD)
       {
-         best_mode.width   = best_mode.hactive;
-         best_mode.height  = best_mode.vactive;
+         best_mode.dims    = VIDEO_SCALE_PACK(best_mode.hactive,
+               best_mode.vactive);
          best_mode.refresh = (int)best_mode.vfreq;
          /* A new mode is locked once generated */
          best_mode.type   &= ~(MODELINE_X_RES_EDITABLE | MODELINE_Y_RES_EDITABLE);

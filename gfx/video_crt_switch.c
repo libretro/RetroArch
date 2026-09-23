@@ -202,7 +202,7 @@ static void crt_apply_menu_preset(videocrt_switch_t *p_switch,
 
    if (super_width > 2)
    {
-      modeline_set_user_mode(p_switch->gen, super_width, 0, 0);
+      modeline_set_user_mode(p_switch->gen, VIDEO_SCALE_PACK(super_width, 0), 0);
       p_switch->gen->super_width = super_width;
    }
 }
@@ -228,10 +228,10 @@ static void crt_apply_server_policy(videocrt_switch_t *p_switch)
    if (string_is_equal(p_switch->ops.name, "videocore"))
    {
       p_switch->gen->doublescan = 0;
-      if (!p_switch->gen->user_mode.width)
+      if (!VIDEO_SCALE_W(p_switch->gen->user_mode.dims))
       {
          RARCH_LOG("[CRT] VideoCore: 1920 super resolution.\n");
-         modeline_set_user_mode(p_switch->gen, 1920, 0, 0);
+         modeline_set_user_mode(p_switch->gen, VIDEO_SCALE_PACK(1920, 0), 0);
          p_switch->gen->super_width = 1920;
       }
    }
@@ -393,7 +393,7 @@ static bool crt_engine_init(videocrt_switch_t *p_switch,
                {
                   RARCH_LOG("[CRT] Super width %d exceeds the display's stated pixel clock at %.1f kHz; using %d.\n",
                         want, hmax / 1000.0, fit);
-                  modeline_set_user_mode(gen, fit, 0, 0);
+                  modeline_set_user_mode(gen, VIDEO_SCALE_PACK(fit, 0), 0);
                   gen->super_width = fit;
                }
             }
@@ -536,7 +536,7 @@ static void switch_res_crt(
          else
             RARCH_LOG("[CRT] Temporary mode for windows geometry adjustment (640x400).\n");
 
-         mode = modeline_get(gen, &p_switch->ops, tempw, temph, rr, flags);
+         mode = modeline_get(gen, &p_switch->ops, VIDEO_SCALE_PACK(tempw, temph), rr, flags);
          if (!mode)
             RARCH_ERR("[CRT] Failed to add temporary mode for windows geometry adjustment.\n");
          else
@@ -554,7 +554,7 @@ static void switch_res_crt(
       gen->v_shift = p_switch->vert_adjust;
 
       RARCH_DBG("[CRT] %dx%d rotation: %d rotated: %d core rotation:%d\n", w, h, p_switch->rotated, flags & MODELINE_REQ_ROTATED, retroarch_get_rotation());
-      mode = modeline_get(gen, &p_switch->ops, w, h, rr, flags);
+      mode = modeline_get(gen, &p_switch->ops, VIDEO_SCALE_PACK(w, h), rr, flags);
       if (!mode)
       {
          RARCH_ERR("[CRT] Engine failed to add mode.\n");

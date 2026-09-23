@@ -158,7 +158,7 @@ bool modeline_edid_for_gen(video_modeline_gen_t *gen,
    memset(&ops, 0, sizeof(ops));
    ops.name = "edid";
    modeline_list_init(gen, &ops);
-   mode = modeline_get(gen, &ops, 320, 240, 60.0, 0);
+   mode = modeline_get(gen, &ops, VIDEO_SCALE_PACK(320, 240), 60.0, 0);
    if (!mode)
       return false;
    return modeline_edid_build(mode, &gen->range[mode->range], gen->monitor, out);
@@ -264,21 +264,21 @@ static void edid_add_std(video_edid_info_t *info, uint8_t b1, uint8_t b2,
       bool pre13)
 {
    video_edid_std_timing_t *s;
-   unsigned w;
+   unsigned w, h;
    if ((b1 == 0x01 && b2 == 0x01) || b1 == 0
          || info->n_std >= MODELINE_EDID_MAX_STD)
       return;
    s  = &info->std[info->n_std];
    w  = (b1 + 31) * 8;
-   s->width   = w;
    s->refresh = (b2 & 0x3f) + 60;
    switch (b2 >> 6)
    {
-      case 0:  s->height = pre13 ? w : w * 10 / 16; break;
-      case 1:  s->height = w * 3 / 4;  break;
-      case 2:  s->height = w * 4 / 5;  break;
-      default: s->height = w * 9 / 16; break;
+      case 0:  h = pre13 ? w : w * 10 / 16; break;
+      case 1:  h = w * 3 / 4;  break;
+      case 2:  h = w * 4 / 5;  break;
+      default: h = w * 9 / 16; break;
    }
+   s->dims    = VIDEO_SCALE_PACK(w, h);
    info->n_std++;
 }
 

@@ -165,7 +165,7 @@ int main(void)
       if ((modes[i].type & MODELINE_DESKTOP) && pick2 < 0)
          pick2 = i;
       else if (!(modes[i].type & MODELINE_DESKTOP) && pick < 0
-            && modes[i].width != desktop.w)
+            && (int)VIDEO_SCALE_W(modes[i].dims) != desktop.w)
          pick = i;
    }
    if (pick2 < 0)
@@ -188,15 +188,15 @@ int main(void)
    /* Switch to a listed non-desktop mode and read the display back */
    if (!dispserv_sdl3.modeline_set(data, &modes[pick]))
    {
-      fprintf(stderr, "FAIL: modeline_set %dx%d@%d\n", modes[pick].width,
-            modes[pick].height, modes[pick].refresh);
+      fprintf(stderr, "FAIL: modeline_set %dx%d@%d\n", (int)VIDEO_SCALE_W(modes[pick].dims),
+            (int)VIDEO_SCALE_H(modes[pick].dims), modes[pick].refresh);
       return 1;
    }
    SDL_PumpEvents();
-   if (current_mode(&cur) != 0 || cur.w != modes[pick].width || cur.h != modes[pick].height)
+   if (current_mode(&cur) != 0 || cur.w != (int)VIDEO_SCALE_W(modes[pick].dims) || cur.h != (int)VIDEO_SCALE_H(modes[pick].dims))
    {
       fprintf(stderr, "FAIL: display reads %dx%d@%d after set of %dx%d@%d\n",
-            cur.w, cur.h, refresh_label(&cur), modes[pick].width, modes[pick].height,
+            cur.w, cur.h, refresh_label(&cur), (int)VIDEO_SCALE_W(modes[pick].dims), (int)VIDEO_SCALE_H(modes[pick].dims),
             modes[pick].refresh);
       return 1;
    }

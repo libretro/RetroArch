@@ -148,7 +148,8 @@ static bool videocore_display_server_modeline_set(void *data,
    if (mode->doublescan)
    {
       RARCH_ERR("[VideoCore] hdmi_timings cannot scan a line twice, "
-            "%dx%d doublescan rejected.\n", mode->width, mode->height);
+            "%ux%u doublescan rejected.\n",
+            VIDEO_SCALE_W(mode->dims), VIDEO_SCALE_H(mode->dims));
       return false;
    }
 
