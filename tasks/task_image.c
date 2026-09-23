@@ -170,12 +170,11 @@ static int cb_image_upload_generic(void *data, size_t len)
    return 0;
 }
 
-static int task_image_process(
-      struct nbio_image_handle *image,
-      unsigned *width,
-      unsigned *height)
+static int task_image_process(struct nbio_image_handle *image)
 {
    int retval;
+   unsigned width  = 0;
+   unsigned height = 0;
 
    if (!image_transfer_is_valid(image->handle, image->type))
       return IMAGE_PROCESS_ERROR;
@@ -183,12 +182,12 @@ static int task_image_process(
    if ((retval = image_transfer_process(
          image->handle,
          image->type,
-         &image->ti.pixels, image->size, width, height,
+         &image->ti.pixels, image->size, &width, &height,
          image->ti.supports_rgba)) == IMAGE_PROCESS_ERROR)
       return IMAGE_PROCESS_ERROR;
 
-   image->ti.width  = *width;
-   image->ti.height = *height;
+   image->ti.width  = width;
+   image->ti.height = height;
    image->ti.pix10  = image_transfer_is_10bit(image->handle, image->type);
 
    return retval;
@@ -196,11 +195,9 @@ static int task_image_process(
 
 static int cb_image_thumbnail(void *data, size_t len)
 {
-   unsigned width                   = 0;
-   unsigned height                  = 0;
    nbio_handle_t        *nbio       = (nbio_handle_t*)data;
    struct nbio_image_handle *image  = (struct nbio_image_handle*)nbio->data;
-   int retval                       = image ? task_image_process(image, &width, &height) : IMAGE_PROCESS_ERROR;
+   int retval                       = image ? task_image_process(image) : IMAGE_PROCESS_ERROR;
 
    if (   (retval == IMAGE_PROCESS_ERROR)
        || (retval == IMAGE_PROCESS_ERROR_END)
@@ -223,16 +220,13 @@ static int cb_image_thumbnail(void *data, size_t len)
 static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 {
    int retval                      = 0;
-   unsigned width                  = 0;
-   unsigned height                 = 0;
    retro_time_t start_time;
    retro_time_t allowance          = task_image_decode_slice_open(
          image->frame_duration, &start_time);
 
    do
    {
-      if ((retval = task_image_process(image, &width, &height)) 
-          != IMAGE_PROCESS_NEXT)
+      if ((retval = task_image_process(image)) != IMAGE_PROCESS_NEXT)
          break;
    }while (cpu_features_get_time_usec() - start_time < allowance);
    task_image_decode_slice_close(start_time);
@@ -508,25 +502,24 @@ static bool upscale_image(
 }
 
 static uint32_t *downscale_box(const uint32_t *src,
-      unsigned sw, unsigned sh, unsigned f, bool pix10,
-      unsigned *dw, unsigned *dh)
+      unsigned src_dims, unsigned f, bool pix10, unsigned *out_dims)
 {
    unsigned x, y, i, j;
    unsigned n  = f * f;
+   unsigned sw = VIDEO_SCALE_W(src_dims);
+   unsigned dw = sw / f;
+   unsigned dh = VIDEO_SCALE_H(src_dims) / f;
    uint32_t *d;
 
-   *dw = sw / f;
-   *dh = sh / f;
-
-   if ((*dw < 1) || (*dh < 1))
+   if ((dw < 1) || (dh < 1))
       return NULL;
 
-   if (!(d = (uint32_t*)malloc((size_t)*dw * *dh * sizeof(uint32_t))))
+   if (!(d = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t))))
       return NULL;
 
-   for (y = 0; y < *dh; y++)
+   for (y = 0; y < dh; y++)
    {
-      for (x = 0; x < *dw; x++)
+      for (x = 0; x < dw; x++)
       {
          unsigned a = 0, r = 0, g = 0, b = 0;
 
@@ -558,15 +551,16 @@ static uint32_t *downscale_box(const uint32_t *src,
          }
 
          if (pix10)
-            d[(size_t)y * *dw + x] = 0xc0000000u
+            d[(size_t)y * dw + x] = 0xc0000000u
                   | ((r / n) << 20) | ((g / n) << 10) | (b / n);
          else
-            d[(size_t)y * *dw + x] =
+            d[(size_t)y * dw + x] =
                   ((a / n) << 24) | ((r / n) << 16)
                 | ((g / n) <<  8) |  (b / n);
       }
    }
 
+   *out_dims = VIDEO_SCALE_PACK(dw, dh);
    return d;
 }
 
@@ -621,15 +615,16 @@ static bool downscale_image(unsigned cap, struct texture_image *img)
     * tap. */
    for (f = 1; (sw / (f * 2)) >= dw; f *= 2) ;
 
-   if (f > 1)
+   if (f > 1 && VIDEO_SCALE_FITS(sw, sh))
    {
-      unsigned bw, bh;
+      unsigned box_dims;
 
-      if ((mid = downscale_box(src, sw, sh, f, img->pix10, &bw, &bh)))
+      if ((mid = downscale_box(src, VIDEO_SCALE_PACK(sw, sh), f,
+                  img->pix10, &box_dims)))
       {
          src = mid;
-         sw  = bw;
-         sh  = bh;
+         sw  = VIDEO_SCALE_W(box_dims);
+         sh  = VIDEO_SCALE_H(box_dims);
       }
    }
 
