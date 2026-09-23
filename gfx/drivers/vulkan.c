@@ -2397,7 +2397,7 @@ static void vulkan_chain_wait_submissions(void *handle);
 
 #ifdef HAVE_OVERLAY
 static void vulkan_overlay_free(vk_t *vk);
-static void vulkan_render_overlay(vk_t *vk, unsigned width, unsigned height);
+static void vulkan_render_overlay(vk_t *vk, unsigned dims);
 #endif
 static void vulkan_viewport_info(void *data, struct video_viewport *vp);
 
@@ -6061,7 +6061,7 @@ static void vulkan_init_readback(vk_t *vk, bool video_gpu_record,
 
 #ifdef VULKAN_HDR_SWAPCHAIN
 static void vulkan_init_render_target(struct vk_image* image,
-      uint32_t width, uint32_t height, VkFormat format,
+      unsigned dims, VkFormat format,
       VkRenderPass render_pass, vulkan_context_t* ctx);
 #endif
 
@@ -6353,11 +6353,9 @@ static void *vulkan_init(const video_info_t *video,
     * mismatch. The end-of-frame resize handler will recreate these. */
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
    {
-      vulkan_init_render_target(&vk->offscreen_buffer,
-            VIDEO_SCALE_W(vk->video_dims), VIDEO_SCALE_H(vk->video_dims),
+      vulkan_init_render_target(&vk->offscreen_buffer, vk->video_dims,
             VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
-      vulkan_init_render_target(&vk->readback_image,
-            VIDEO_SCALE_W(vk->video_dims), VIDEO_SCALE_H(vk->video_dims),
+      vulkan_init_render_target(&vk->readback_image, vk->video_dims,
             VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
    }
 #endif
@@ -7092,7 +7090,7 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
 }
 
 static void vulkan_init_render_target(struct vk_image* image,
-      uint32_t width, uint32_t height, VkFormat format,
+      unsigned dims, VkFormat format,
       VkRenderPass render_pass, vulkan_context_t* ctx);
 static void vulkan_destroy_hdr_buffer(VkDevice device, struct vk_image *img);
 
@@ -7119,7 +7117,7 @@ static void vulkan_retain_backbuffer(vk_t *vk, struct vk_image *backbuffer)
          || vk->retained_dims   != vk->context->swapchain_dims)
    {
       vulkan_retained_free(vk);
-      vulkan_init_render_target(&vk->retained, width, height,
+      vulkan_init_render_target(&vk->retained, vk->context->swapchain_dims,
             vk->context->swapchain_format, vk->render_pass, vk->context);
       if (vk->retained.image == VK_NULL_HANDLE)
          return;
@@ -7618,7 +7616,8 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
 }
 #endif
 
-static void vulkan_init_render_target(struct vk_image* image, uint32_t width, uint32_t height, VkFormat format, VkRenderPass render_pass, vulkan_context_t* ctx)
+static void vulkan_init_render_target(struct vk_image* image, unsigned dims,
+      VkFormat format, VkRenderPass render_pass, vulkan_context_t* ctx)
 {
    VkMemoryRequirements mem_reqs;
    VkImageCreateInfo image_info;
@@ -7634,8 +7633,8 @@ static void vulkan_init_render_target(struct vk_image* image, uint32_t width, ui
    image_info.flags                = 0;
    image_info.imageType            = VK_IMAGE_TYPE_2D;
    image_info.format               = format;
-   image_info.extent.width         = width;
-   image_info.extent.height        = height;
+   image_info.extent.width         = VIDEO_SCALE_W(dims);
+   image_info.extent.height        = VIDEO_SCALE_H(dims);
    image_info.extent.depth         = 1;
    image_info.mipLevels            = 1;
    image_info.arrayLayers          = 1;
@@ -7693,11 +7692,11 @@ static void vulkan_init_render_target(struct vk_image* image, uint32_t width, ui
    info.attachmentCount = 1;
    info.pAttachments    = &image->view;
    /* Use the image dimensions, not swapchain dimensions.
-    * When width/height differ from ctx->swapchain_dims
+    * When they differ from ctx->swapchain_dims
     * (e.g. during resize), the validation layer flags
     * VUID-VkFramebufferCreateInfo-pAttachments-00882. */
-   info.width           = width;
-   info.height          = height;
+   info.width           = VIDEO_SCALE_W(dims);
+   info.height          = VIDEO_SCALE_H(dims);
    info.layers          = 1;
 
    vkCreateFramebuffer(ctx->device, &info, NULL, &image->framebuffer);
@@ -7959,8 +7958,6 @@ static bool vulkan_frame(void *data, const void *frame,
    bool input_driver_nonblock_state              = video_info->input_driver_nonblock_state;
    bool runloop_is_slowmotion                    = video_info->runloop_is_slowmotion;
    bool runloop_is_paused                        = video_info->runloop_is_paused;
-   unsigned video_width                          = VIDEO_SCALE_W(video_info->dims);
-   unsigned video_height                         = VIDEO_SCALE_H(video_info->dims);
    struct font_params *osd_params                = (struct font_params*)
       &video_info->osd_stat_params;
 #ifdef HAVE_MENU
@@ -8527,7 +8524,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef HAVE_OVERLAY
       if ((vk->flags & VK_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
-         vulkan_render_overlay(vk, video_width, video_height);
+         vulkan_render_overlay(vk, video_info->dims);
 #endif
 
 #if defined(HAVE_MENU)
@@ -8585,7 +8582,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef HAVE_OVERLAY
       if ((vk->flags & VK_FLAG_OVERLAY_ENABLE) && !overlay_behind_menu)
-         vulkan_render_overlay(vk, video_width, video_height);
+         vulkan_render_overlay(vk, video_info->dims);
 #endif
 
       if (message_visible)
@@ -8964,11 +8961,11 @@ static bool vulkan_frame(void *data, const void *frame,
           * In HDR10 mode the game also renders through this buffer;
           * in HDR16 (scRGB) mode only the menu/overlay uses it so
           * that the copy pass can linearize sRGB content. */
-         vulkan_init_render_target(&vk->offscreen_buffer, video_width, video_height,
-                                  VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
+         vulkan_init_render_target(&vk->offscreen_buffer, video_info->dims,
+               VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
          /* Create image for readback target in bgra8 format */
-         vulkan_init_render_target(&vk->readback_image, video_width, video_height,
-                                    VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
+         vulkan_init_render_target(&vk->readback_image, video_info->dims,
+               VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
       vk->flags &= ~VK_FLAG_SHOULD_RESIZE;
@@ -10762,8 +10759,7 @@ static void vulkan_overlay_set_alpha(void *data,
       pv[i].color = color;
 }
 
-static void vulkan_render_overlay(vk_t *vk, unsigned width,
-      unsigned height)
+static void vulkan_render_overlay(vk_t *vk, unsigned dims)
 {
    int i;
    struct video_viewport vp;
@@ -10772,7 +10768,7 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
       return;
 
    vp                       = vk->vp;
-   vulkan_set_viewport(vk, VIDEO_SCALE_PACK(width, height),
+   vulkan_set_viewport(vk, dims,
          ((vk->flags & VK_FLAG_OVERLAY_FULLSCREEN) > 0),
          false);
 
