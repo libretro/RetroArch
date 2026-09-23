@@ -3392,23 +3392,13 @@ static void input_overlay_post_poll(
       bool show_input, float opacity)
 {
    size_t i;
-   const unsigned *led_map = input_overlay_led_map();
 
-   input_overlay_set_alpha_mod(ol, opacity);
+   input_overlay_alpha_pass(ol, opacity, show_input, opacity,
+         input_driver_st.overlay_leds_lit, input_overlay_led_map());
 
    for (i = 0; i < ol->active->size; i++)
    {
       struct overlay_desc *desc = &ol->active->descs[i];
-
-      /* A pressed desc is lit, unless the LED driver has hidden its
-       * image: that stays hidden whatever is pressed. */
-      if (     desc->touch_mask != 0
-            && show_input && OVERLAY_HAS_IMAGE(&desc->image)
-            && ol->iface->set_alpha
-            && !input_overlay_image_hidden(ol, desc->image_index,
-                  input_driver_st.overlay_leds_lit, led_map))
-         ol->iface->set_alpha(ol->iface_data, desc->image_index,
-               desc->alpha_mod * opacity);
 
 #ifdef HAVE_RPNG
       /* A two-frame APNG shares its press state across every desc
@@ -3793,26 +3783,8 @@ static void input_overlay_poll_clear(
 
 void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 {
-   unsigned i;
-   const unsigned *led_map;
-
-   if (!ol)
-      return;
-
-   if (ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN)
-      mod = 0.0f;
-
-   if (!(led_map = input_overlay_led_map()))
-   {
-      for (i = 0; i < ol->active->load_images_size; i++)
-         ol->iface->set_alpha(ol->iface_data, i, mod);
-      return;
-   }
-
-   for (i = 0; i < ol->active->load_images_size; i++)
-      ol->iface->set_alpha(ol->iface_data, i,
-            input_overlay_image_hidden(ol, i,
-               input_driver_st.overlay_leds_lit, led_map) ? 0.0f : mod);
+   input_overlay_alpha_pass(ol, mod, false, mod,
+         input_driver_st.overlay_leds_lit, input_overlay_led_map());
 }
 
 static void input_overlay_free_images(input_overlay_t *ol)
@@ -3921,6 +3893,9 @@ static void input_overlay_free(input_overlay_t *ol)
       free(ol->path);
       ol->path = NULL;
    }
+
+   /* alpha_want is the second half of the same block. */
+   free(ol->alpha_sent);
 
    free(ol);
 }
@@ -6946,6 +6921,22 @@ static void input_overlay_loaded(retro_task_t *task,
       ol->flags   |= INPUT_OVERLAY_IS_OSK;
    if (data->flags & OVERLAY_LOADER_HAS_LEDS)
       ol->flags   |= INPUT_OVERLAY_HAS_LEDS;
+
+   /* One block for the sent alphas and the pass's scratch, sized for
+    * the page with the most images. Without it every alpha is set
+    * every pass, as before. */
+   {
+      size_t i, cap = 0;
+      for (i = 0; i < ol->size; i++)
+         if (ol->overlays[i].load_images_size > cap)
+            cap = ol->overlays[i].load_images_size;
+      if (cap && (ol->alpha_sent = (float*)malloc(2 * cap * sizeof(float))))
+      {
+         ol->alpha_want = ol->alpha_sent + cap;
+         ol->alpha_cap  = cap;
+         input_overlay_alpha_forget(ol);
+      }
+   }
 #ifdef HAVE_MENU
    overlay_types   = data->overlay_types;
 #endif

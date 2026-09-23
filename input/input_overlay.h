@@ -461,6 +461,16 @@ struct input_overlay
     * is a copy rather than a decode. NULL for every other image. */
    uint32_t **anim_2frame_pix;
 
+   /* The alpha last handed to the driver for each image of the active
+    * page, and the pass's scratch, alpha_cap entries each in one block
+    * (alpha_cap = the most images any page has). An image whose alpha
+    * has not changed is not set again. A page load forgets them all:
+    * the driver resets its own. NULL when the block could not be had;
+    * every alpha is then set every pass. */
+   float *alpha_sent;
+   float *alpha_want;
+   size_t alpha_cap;
+
    size_t num_images;
    size_t index;
    size_t size;
@@ -543,6 +553,17 @@ bool input_overlay_image_hidden(const input_overlay_t *ol,
  * input_overlay_image_hidden() would hide. */
 void input_overlay_hide_leds(input_overlay_t *ol,
       uint32_t lit, const unsigned *led_map);
+
+/* Every image of the active page to its alpha: @mod, 0 for one the LED
+ * driver hides, and with @show_input a pressed desc's
+ * alpha_mod * @opacity. Only an image whose alpha differs from the
+ * last one handed to the driver is set. */
+void input_overlay_alpha_pass(input_overlay_t *ol, float mod,
+      bool show_input, float opacity,
+      uint32_t lit, const unsigned *led_map);
+
+/* The driver was handed a page: nothing it holds is known any more. */
+void input_overlay_alpha_forget(input_overlay_t *ol);
 
 /* Attempts to automatically rotate the specified overlay.
  * Depends upon proper naming conventions in overlay

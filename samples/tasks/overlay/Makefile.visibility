@@ -1,6 +1,6 @@
 TARGET := overlay_visibility_bounds_test
 
-# The units under test are the shipping input/input_overlay_leds.c
+# The units under test are the shipping input/input_overlay_alpha.c
 # (which images the overlay LED driver hides) and
 # led/drivers/led_overlay.c in front of it, both built from the tree.
 # The LED driver's two frontend entry points live in input_driver.c,
@@ -10,7 +10,7 @@ REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 SOURCES := overlay_visibility_bounds_test.c \
-           $(REPO_ROOT)/input/input_overlay_leds.c \
+           $(REPO_ROOT)/input/input_overlay_alpha.c \
            $(REPO_ROOT)/led/drivers/led_overlay.c
 
 OBJS := $(SOURCES:.c=.o)

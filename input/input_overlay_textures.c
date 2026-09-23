@@ -381,6 +381,8 @@ static void input_overlay_drop_pixels(input_overlay_t *ol)
 
 enum input_overlay_page input_overlay_load_page(input_overlay_t *ol)
 {
+   /* Whatever the driver ends up with, it is not what it held. */
+   input_overlay_alpha_forget(ol);
    if (     ol->iface->load_textures
          && !(ol->flags & INPUT_OVERLAY_TEXTURES_DECLINED)
          && input_overlay_upload_textures(ol))
@@ -424,6 +426,7 @@ bool input_overlay_promote_textures(input_overlay_t *ol)
       return false;
    if (!input_overlay_upload_textures(ol))
       return false;
+   input_overlay_alpha_forget(ol);
    if (ol->iface->load_textures(ol->iface_data,
             ol->active->textures, ol->active->load_images_size))
    {

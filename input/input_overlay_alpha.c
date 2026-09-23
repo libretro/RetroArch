@@ -13,9 +13,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Which images of the overlay the LED driver hides. Kept apart from
- * input_driver.c so that samples/tasks/overlay can compile this file
- * as it is against a stub driver.
+/* The alpha each image of the overlay's page is handed: the page's
+ * opacity, a pressed desc's highlight, and 0 for an image the LED
+ * driver hides. Kept apart from input_driver.c so that
+ * samples/tasks/overlay can compile this file as it is against a stub
+ * driver.
+ *
+ * The pass runs at every input poll; an image is set only when its
+ * alpha has changed since it was last handed over. A driver may pay
+ * for a set - D3D10/11/12 map the sprite buffer for each one, and the
+ * threaded wrapper replays every image's alpha when any is set.
  *
  * A pack that names its LED images (overlayN_descM_led = K) is the
  * only source: the image of a desc naming LED K shows while K is lit.
@@ -34,6 +41,29 @@
 
 #include "input_overlay.h"
 #include "../led/led_defines.h"
+
+/* Hands image @i its alpha, unless it already has it. */
+static void input_overlay_set_image_alpha(input_overlay_t *ol,
+      unsigned i, float alpha)
+{
+   if (ol->alpha_sent && i < ol->alpha_cap)
+   {
+      if (ol->alpha_sent[i] == alpha)
+         return;
+      ol->alpha_sent[i] = alpha;
+   }
+   ol->iface->set_alpha(ol->iface_data, i, alpha);
+}
+
+void input_overlay_alpha_forget(input_overlay_t *ol)
+{
+   size_t i;
+   if (!ol || !ol->alpha_sent)
+      return;
+   /* No alpha is negative: every image is set at the next pass. */
+   for (i = 0; i < ol->alpha_cap; i++)
+      ol->alpha_sent[i] = -1.0f;
+}
 
 /* Image @image of @page belongs to a desc nothing happens to when it
  * is pressed. */
@@ -95,7 +125,7 @@ void input_overlay_hide_leds(input_overlay_t *ol,
          if (     desc->led
                && OVERLAY_HAS_IMAGE(&desc->image)
                && !(lit & (1u << (desc->led - 1))))
-            ol->iface->set_alpha(ol->iface_data, desc->image_index, 0.0f);
+            input_overlay_set_image_alpha(ol, desc->image_index, 0.0f);
       }
       return;
    }
@@ -106,7 +136,61 @@ void input_overlay_hide_leds(input_overlay_t *ol,
       if (     led_map[i] < ol->active->load_images_size
             && !(lit & (1u << i))
             && input_overlay_image_display_only(ol->active, led_map[i]))
-         ol->iface->set_alpha(ol->iface_data, led_map[i], 0.0f);
+         input_overlay_set_image_alpha(ol, led_map[i], 0.0f);
+}
+
+void input_overlay_alpha_pass(input_overlay_t *ol, float mod,
+      bool show_input, float opacity,
+      uint32_t lit, const unsigned *led_map)
+{
+   size_t i;
+   size_t n;
+   float *want;
+
+   if (!ol || !ol->active || !ol->iface->set_alpha)
+      return;
+
+   if (ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN)
+      mod  = 0.0f;
+   n       = ol->active->load_images_size;
+   want    = (ol->alpha_want && n <= ol->alpha_cap) ? ol->alpha_want : NULL;
+
+   /* Without the scratch, every image is set as it is worked out, and
+    * a pressed one twice. */
+   for (i = 0; i < n; i++)
+   {
+      float a = (led_map && input_overlay_image_hidden(ol,
+                  (unsigned)i, lit, led_map)) ? 0.0f : mod;
+      if (want)
+         want[i] = a;
+      else
+         ol->iface->set_alpha(ol->iface_data, (unsigned)i, a);
+   }
+
+   /* A pressed desc is lit, unless the LED driver has hidden its
+    * image: that stays hidden whatever is pressed. */
+   if (show_input)
+   {
+      for (i = 0; i < ol->active->size; i++)
+      {
+         const struct overlay_desc *desc = &ol->active->descs[i];
+         if (     !desc->touch_mask
+               || !OVERLAY_HAS_IMAGE(&desc->image)
+               || desc->image_index >= n
+               || (led_map && input_overlay_image_hidden(ol,
+                     desc->image_index, lit, led_map)))
+            continue;
+         if (want)
+            want[desc->image_index] = desc->alpha_mod * opacity;
+         else
+            ol->iface->set_alpha(ol->iface_data, desc->image_index,
+                  desc->alpha_mod * opacity);
+      }
+   }
+
+   if (want)
+      for (i = 0; i < n; i++)
+         input_overlay_set_image_alpha(ol, (unsigned)i, want[i]);
 }
 
 #endif

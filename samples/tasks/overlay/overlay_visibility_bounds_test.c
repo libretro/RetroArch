@@ -1,5 +1,5 @@
 /* Regression test for which overlay images the overlay LED driver
- * hides: input/input_overlay_leds.c, built from the tree, and the
+ * hides: input/input_overlay_alpha.c, built from the tree, and the
  * shipping led/drivers/led_overlay.c in front of it.
  *
  * ledN_map names a slot of whatever page is loaded. Applied to every
@@ -14,6 +14,19 @@
  *   3. a pack that names its LED images (_led) is not mapped at all:
  *      those images, and only those, show their LED's state;
  *   4. with the overlay LED driver off (no map), nothing is hidden.
+ *
+ * The same file hands each image its alpha at every input poll, and
+ * sets only what changed: D3D10/11/12 map the sprite buffer for every
+ * set, and the threaded wrapper replays the page's alphas whenever one
+ * is set, so a pass that re-sent all of them cost a page of maps per
+ * frame for nothing. Pinned here:
+ *
+ *   5. a pass that changes nothing sets nothing;
+ *   6. a press sets its image once, and the release sets it back;
+ *   7. after a page load (forget) every image is set again;
+ *   8. an image the LED driver hid between passes is not left hidden
+ *      when its LED comes back on before the next pass;
+ *   9. without the cache block every image is set every pass.
  */
 
 #include <stdio.h>
@@ -79,10 +92,12 @@ static void test_led_driver(void)
 
 static float alpha[IMAGES];
 static unsigned calls_off_page;
+static unsigned calls;
 
 static void stub_set_alpha(void *data, unsigned image, float mod)
 {
    (void)data;
+   calls++;
    if (image >= IMAGES)
       calls_off_page++;
    else
@@ -92,6 +107,7 @@ static void stub_set_alpha(void *data, unsigned image, float mod)
 static video_overlay_interface_t stub_iface;
 
 static struct overlay_desc descs[IMAGES];
+static float               alpha_block[2 * IMAGES];
 static struct overlay      page;
 static input_overlay_t     pack;
 static unsigned            led_map[MAX_LEDS];
@@ -132,6 +148,24 @@ static void build(unsigned nul, const uint8_t *leds)
    for (i = 0; i < IMAGES; i++)
       alpha[i] = 1.0f;
    calls_off_page = 0;
+   calls          = 0;
+}
+
+/* The cache block, as input_overlay_loaded() makes it. */
+static void with_cache(void)
+{
+   pack.alpha_sent = alpha_block;
+   pack.alpha_want = alpha_block + IMAGES;
+   pack.alpha_cap  = IMAGES;
+   input_overlay_alpha_forget(&pack);
+}
+
+static unsigned pass(float mod, bool show_input, uint32_t lit,
+      const unsigned *map)
+{
+   unsigned before = calls;
+   input_overlay_alpha_pass(&pack, mod, show_input, mod, lit, map);
+   return calls - before;
 }
 
 static bool hidden(unsigned image, uint32_t lit, const unsigned *map)
@@ -213,6 +247,71 @@ static void test_driver_off(void)
    check(alpha[1] == 1.0f, "hide_leds does nothing without a map");
 }
 
+static void test_alpha_cache(void)
+{
+   unsigned n;
+
+   printf("the alpha pass sets what changed\n");
+
+   build(0, NULL);
+   with_cache();
+   descs[2].alpha_mod = 2.0f;
+
+   check(pass(0.7f, true, 0, NULL) == IMAGES,
+         "the first pass after a load sets every image");
+   check(pass(0.7f, true, 0, NULL) == 0, "the same pass again sets none");
+
+   descs[2].touch_mask = 1;
+   n = pass(0.7f, true, 0, NULL);
+   check(n == 1 && alpha[2] == 2.0f * 0.7f,
+         "a press sets its image once, to alpha_mod * opacity");
+   check(pass(0.7f, true, 0, NULL) == 0, "held, nothing more is set");
+   descs[2].touch_mask = 0;
+   n = pass(0.7f, true, 0, NULL);
+   check(n == 1 && alpha[2] == 0.7f, "the release sets it back");
+
+   check(pass(0.5f, false, 0, NULL) == IMAGES,
+         "an opacity change sets every image");
+
+   input_overlay_alpha_forget(&pack);
+   check(pass(0.5f, false, 0, NULL) == IMAGES,
+         "after a page load every image is set again");
+}
+
+static void test_alpha_cache_leds(void)
+{
+   printf("the alpha pass and the LED driver\n");
+
+   /* Image 4 is a nul LED image at led1_map's slot. */
+   build(1u << 4, NULL);
+   with_cache();
+   led_map[0] = 4;
+
+   pass(1.0f, false, 1u << 0, led_map);
+   check(alpha[4] == 1.0f, "lit, the LED image is shown");
+
+   /* The LED goes off and on again between two passes: the hide is
+    * immediate, and the pass after must show the image again. */
+   input_overlay_hide_leds(&pack, 0, led_map);
+   check(alpha[4] == 0.0f, "going out, it is hidden at once");
+   pass(1.0f, false, 1u << 0, led_map);
+   check(alpha[4] == 1.0f, "lit again before the next pass, it is shown");
+}
+
+static void test_alpha_no_cache(void)
+{
+   printf("the alpha pass without its cache block\n");
+
+   build(0, NULL);
+   check(pass(0.7f, false, 0, NULL) == IMAGES
+         && pass(0.7f, false, 0, NULL) == IMAGES,
+         "every image is set every pass");
+   descs[1].touch_mask = 1;
+   descs[1].alpha_mod  = 2.0f;
+   pass(0.7f, true, 0, NULL);
+   check(alpha[1] == 2.0f * 0.7f, "a press is still lit");
+}
+
 int main(void)
 {
    test_led_driver();
@@ -220,6 +319,9 @@ int main(void)
    test_map_off_the_page();
    test_named_leds();
    test_driver_off();
+   test_alpha_cache();
+   test_alpha_cache_leds();
+   test_alpha_no_cache();
 
    if (failures)
    {
