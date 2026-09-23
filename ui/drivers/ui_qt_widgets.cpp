@@ -129,6 +129,36 @@ static inline void add_sublabel_and_whats_this(
       widget->setWhatsThis(tmp);
 }
 
+/* A setting's range is stored as float; converting a float outside
+ * int range to int is undefined, and on x86 it produces INT_MIN, which
+ * collapses a spin box's range to a single unreachable value. Bounds are
+ * therefore clamped in double, where every int is exact, and an
+ * unenforced or NaN bound takes the widget's own default. */
+static int qt_setting_bound(const rarch_setting_t *setting,
+      unsigned flag, double value, int fallback)
+{
+   if (!(setting->flags & flag) || value != value)
+      return fallback;
+   if (value >= (double)INT_MAX)
+      return INT_MAX;
+   if (value <= (double)INT_MIN)
+      return INT_MIN;
+   return (int)value;
+}
+
+/* The value a spin box can show for a stored value: the stored value
+ * clamped to the box's range. The paint-time resync compares against
+ * this, so an out-of-range stored value is shown at the nearest bound
+ * once instead of being re-set (and repainted) on every paint. */
+static int qt_spinbox_shown(const QSpinBox *box, double value)
+{
+   if (value >= (double)box->maximum())
+      return box->maximum();
+   if (value <= (double)box->minimum())
+      return box->minimum();
+   return (int)value;
+}
+
 static inline QString sanitize_ampersand(QString input)
 {
    return input.replace("&", "&&");
@@ -599,8 +629,9 @@ UIntSpinBox::UIntSpinBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.unsigned_integer)
 {
-   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f);
-   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : INT_MAX);
+   setRange(
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MINRANGE, setting->min, 0),
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MAXRANGE, setting->max, INT_MAX));
 
    setSingleStep(setting->step);
 
@@ -620,11 +651,13 @@ void UIntSpinBox::onValueChanged(int value)
 
 void UIntSpinBox::paintEvent(QPaintEvent *event)
 {
-   if ((unsigned)value() != *m_value)
+   int shown = qt_spinbox_shown(this, (double)*m_value);
+
+   if (value() != shown)
    {
       blockSignals(true);
 
-      setValue(*m_value);
+      setValue(shown);
 
       blockSignals(false);
    }
@@ -638,10 +671,11 @@ SizeSpinBox::SizeSpinBox(rarch_setting_t *setting, unsigned scale, QWidget *pare
    ,m_value(setting->value.target.sizet)
    ,m_scale(scale)
 {
-   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE)
-		   ? setting->min / m_scale : 0.00f);
-   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
-		   ? setting->max / m_scale : INT_MAX);
+   setRange(
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MINRANGE,
+            (double)setting->min / m_scale, 0),
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MAXRANGE,
+            (double)setting->max / m_scale, INT_MAX));
 
    setSingleStep(setting->step / m_scale);
 
@@ -663,11 +697,13 @@ void SizeSpinBox::onValueChanged(int value)
 
 void SizeSpinBox::paintEvent(QPaintEvent *event)
 {
-   if ((value() * m_scale) != *m_value)
+   int shown = qt_spinbox_shown(this, (double)(*m_value / m_scale));
+
+   if (value() != shown)
    {
       blockSignals(true);
 
-      setValue(*m_value / m_scale);
+      setValue(shown);
 
       blockSignals(false);
    }
@@ -787,8 +823,9 @@ IntSpinBox::IntSpinBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.integer)
 {
-   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : INT_MIN);
-   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : INT_MAX);
+   setRange(
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MINRANGE, setting->min, INT_MIN),
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MAXRANGE, setting->max, INT_MAX));
 
    setSingleStep(setting->step);
 
@@ -805,10 +842,12 @@ void IntSpinBox::onValueChanged(int value)
 
 void IntSpinBox::paintEvent(QPaintEvent *event)
 {
-   if (value() != *m_value)
+   int shown = qt_spinbox_shown(this, (double)*m_value);
+
+   if (value() != shown)
    {
       blockSignals(true);
-      setValue(*m_value);
+      setValue(shown);
       blockSignals(false);
    }
 
