@@ -1,16 +1,16 @@
-# gfx/common/rgba8_pack.h: the vector path against the scalar one.
+# gfx/common/rgba16_pack.h: the vector path against the scalar one.
 #
 # Two binaries: the pack as this target compiles it (SSE2 on x86, NEON
-# on ARM) and the scalar path forced with RGBA8_PACK_NO_SIMD. Both are
+# on ARM) and the scalar path forced with RGBA16_PACK_NO_SIMD. Both are
 # held to the same reference. The NEON path on an x86 host:
 #    make CC=arm-linux-gnueabihf-gcc EXTRA_CFLAGS="-mfpu=neon -static"
-#    qemu-arm-static ./rgba8_pack_test
-TARGET := rgba8_pack_test
+#    qemu-arm-static ./rgba16_pack_test
+TARGET := rgba16_pack_test
 
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
-# The reference is c * 255 + 0.5 as two roundings; a contracted
+# The reference is c * 65535 + 0.5 as two roundings; a contracted
 # multiply-add would move the boundaries it is checking.
 CFLAGS  += -Wall -std=c89 -pedantic -Wno-long-long \
            -Wdeclaration-after-statement -ffp-contract=off -g -O2 \
@@ -24,11 +24,11 @@ endif
 
 all: $(TARGET) $(TARGET)_scalar
 
-$(TARGET): rgba8_pack_test.c $(CORE_DIR)/gfx/common/rgba8_pack.h
-	$(CC) $(CFLAGS) -o $@ rgba8_pack_test.c $(LDFLAGS) -lm
+$(TARGET): rgba16_pack_test.c $(CORE_DIR)/gfx/common/rgba16_pack.h
+	$(CC) $(CFLAGS) -o $@ rgba16_pack_test.c $(LDFLAGS) -lm
 
-$(TARGET)_scalar: rgba8_pack_test.c $(CORE_DIR)/gfx/common/rgba8_pack.h
-	$(CC) $(CFLAGS) -DRGBA8_PACK_NO_SIMD -o $@ rgba8_pack_test.c $(LDFLAGS) -lm
+$(TARGET)_scalar: rgba16_pack_test.c $(CORE_DIR)/gfx/common/rgba16_pack.h
+	$(CC) $(CFLAGS) -DRGBA16_PACK_NO_SIMD -o $@ rgba16_pack_test.c $(LDFLAGS) -lm
 
 check: all
 	./$(TARGET)
