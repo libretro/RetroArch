@@ -1520,8 +1520,8 @@ typedef struct
    const font_renderer_driver_t  *font_driver;
    void                          *font_data;
    struct font_atlas             *atlas;
-   int                            tex_width;
-   int                            tex_height;
+   /* The atlas texture's pixel size, packed. */
+   unsigned                       tex_dims;
    bool                           atlas_dirty;
 
    /* The chunk a line is built into before it is handed over. Here
@@ -1548,17 +1548,18 @@ static void sdl2_raster_font_upload_atlas(sdl2_raster_t *font)
       font->tex = NULL;
    }
 
-   font->tex_width  = (int)font->atlas->width;
-   font->tex_height = (int)font->atlas->height;
+   font->tex_dims   = VIDEO_SCALE_PACK(font->atlas->width,
+         font->atlas->height);
 
    font->tex = SDL_CreateTexture(font->vid->renderer,
          SDL_PIXELFORMAT_ABGR8888,
          SDL_TEXTUREACCESS_STATIC,
-         font->tex_width, font->tex_height);
+         VIDEO_SCALE_W(font->tex_dims),
+         VIDEO_SCALE_H(font->tex_dims));
    if (!font->tex)
       return;
 
-   total = font->tex_width * font->tex_height;
+   total = VIDEO_SCALE_AREA(font->tex_dims);
    rgba  = (uint32_t*)malloc(total * sizeof(uint32_t));
    if (!rgba)
    {
@@ -1578,7 +1579,8 @@ static void sdl2_raster_font_upload_atlas(sdl2_raster_t *font)
       rgba[i] = (a << 24) | 0x00FFFFFFu;
    }
 
-   SDL_UpdateTexture(font->tex, NULL, rgba, font->tex_width * sizeof(uint32_t));
+   SDL_UpdateTexture(font->tex, NULL, rgba,
+         VIDEO_SCALE_W(font->tex_dims) * sizeof(uint32_t));
    SDL_SetTextureBlendMode(font->tex, SDL_BLENDMODE_BLEND);
 
    free(rgba);
@@ -1715,8 +1717,8 @@ static void sdl2_raster_font_render_line(
       x -= sdl2_raster_font_get_message_width(font, msg, msg_len, scale)
          * 0.5f;
 
-   inv_w = 1.0f / (float)font->tex_width;
-   inv_h = 1.0f / (float)font->tex_height;
+   inv_w = 1.0f / (float)VIDEO_SCALE_W(font->tex_dims);
+   inv_h = 1.0f / (float)VIDEO_SCALE_H(font->tex_dims);
 
    /* Decode UTF-8 code points like every other raster font backend;
     * localized UI text is not ASCII-only and byte-wise lookups turned

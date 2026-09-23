@@ -337,8 +337,8 @@ typedef struct vk
       struct
       {
          uint64_t serial;
-         unsigned width;
-         unsigned height;
+         /* The extent the copy was made at, packed. */
+         unsigned dims;
          VkFormat format;
       } record[VULKAN_MAX_SWAPCHAIN_IMAGES];
       uint64_t serial;
@@ -7073,8 +7073,8 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
       else if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
          format = VK_FORMAT_B8G8R8A8_UNORM;
 #endif
-      vk->readback.record[slot].width  = region.imageExtent.width;
-      vk->readback.record[slot].height = region.imageExtent.height;
+      vk->readback.record[slot].dims   = VIDEO_SCALE_PACK(
+            region.imageExtent.width, region.imageExtent.height);
       vk->readback.record[slot].format = format;
       vk->readback.record[slot].serial = ++vk->readback.serial;
    }
@@ -10175,8 +10175,8 @@ static bool vulkan_record_read(void *data, uint8_t *buffer)
          return false;
       }
    }
-   width  = vk->readback.record[slot].width;
-   height = vk->readback.record[slot].height;
+   width  = VIDEO_SCALE_W(vk->readback.record[slot].dims);
+   height = VIDEO_SCALE_H(vk->readback.record[slot].dims);
    if (width > VIDEO_SCALE_W(vk->vp.dims))
       width = VIDEO_SCALE_W(vk->vp.dims);
    if (height > VIDEO_SCALE_H(vk->vp.dims))
