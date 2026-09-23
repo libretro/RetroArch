@@ -992,7 +992,7 @@ static void gx_resize(gx_video_t *gx,
       if (     (gx->orientation == ORIENTATION_VERTICAL)
             || (gx->orientation == ORIENTATION_FLIPPED_ROTATED))
          desired_aspect    = 1.0 / desired_aspect;
-      video_viewport_get_scaled_aspect2(&gx->vp, width, height, true, device_aspect, desired_aspect);
+      video_viewport_get_scaled_aspect2(&gx->vp, gx->vp.full_dims, true, device_aspect, desired_aspect);
       x      = VIDEO_POS_X(gx->vp.pos);
       y      = VIDEO_POS_Y(gx->vp.pos);
       width  = VIDEO_SCALE_W(gx->vp.dims);

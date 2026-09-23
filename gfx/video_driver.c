@@ -2954,7 +2954,7 @@ void video_driver_set_aspect_ratio(void)
 }
 
 void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
-      unsigned vp_width, unsigned vp_height, bool y_down,
+      unsigned dims, bool y_down,
       float device_aspect, float desired_aspect)
 {
    /* Reached from the drivers' frame closures (resize handling), so
@@ -2966,6 +2966,8 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
       *video_st         = &video_driver_st;
    int x                = 0;
    int y                = 0;
+   unsigned vp_width    = VIDEO_SCALE_W(dims);
+   unsigned vp_height   = VIDEO_SCALE_H(dims);
    float vp_bias_x;
    float vp_bias_y;
    unsigned video_aspect_ratio_idx;
@@ -3050,8 +3052,7 @@ void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
 /**
  * video_viewport_get_scaled_integer:
  * @vp            : Viewport handle
- * @width         : Width.
- * @height        : Height.
+ * @dims          : Viewport size, packed with VIDEO_SCALE_PACK.
  * @aspect_ratio  : Aspect ratio (in float).
  * @keep_aspect   : Preserve aspect ratio?
  * @y_down        : Positive y points down?
@@ -3063,13 +3064,15 @@ static void video_viewport_get_scaled_integer(
       video_driver_state_t *video_st,
       const struct video_vp_param_snap *ps,
       struct video_viewport *vp,
-      unsigned width, unsigned height,
+      unsigned dims,
       float aspect_ratio, bool keep_aspect,
       bool y_down,
       unsigned int rotation)
 {
    int x                           = 0;
    int y                           = 0;
+   unsigned width                  = VIDEO_SCALE_W(dims);
+   unsigned height                 = VIDEO_SCALE_H(dims);
    unsigned video_aspect_ratio_idx = ps->aspect_ratio_idx;
    unsigned scaling                = ps->si_scaling;
    unsigned axis                   = ps->si_axis;
@@ -3118,7 +3121,7 @@ static void video_viewport_get_scaled_integer(
    {
       float device_aspect      = (float)width / height;
       float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
-      video_viewport_get_scaled_aspect2(vp, width, height,
+      video_viewport_get_scaled_aspect2(vp, dims,
             y_down, device_aspect, desired_aspect);
       return;
    }
@@ -3245,7 +3248,7 @@ static void video_viewport_get_scaled_integer(
                {
                   float device_aspect      = (float)width / height;
                   float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
-                  video_viewport_get_scaled_aspect2(vp, width, height,
+                  video_viewport_get_scaled_aspect2(vp, dims,
                         y_down, device_aspect, desired_aspect);
                   return;
                }
@@ -3371,7 +3374,7 @@ static void video_viewport_get_scaled_integer(
             {
                float device_aspect      = (float)width / height;
                float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
-               video_viewport_get_scaled_aspect2(vp, width, height,
+               video_viewport_get_scaled_aspect2(vp, dims,
                      y_down, device_aspect, desired_aspect);
                return;
             }
@@ -3383,7 +3386,7 @@ static void video_viewport_get_scaled_integer(
          {
             float device_aspect      = (float)width / height;
             float desired_aspect     = VIDEO_DRIVER_ASPECT_RATIO(video_st);
-            video_viewport_get_scaled_aspect2(vp, width, height,
+            video_viewport_get_scaled_aspect2(vp, dims,
                   y_down, device_aspect, desired_aspect);
             return;
          }
@@ -3626,8 +3629,7 @@ void video_driver_update_viewport(
       video_viewport_get_scaled_integer(video_st,
             &ps,
             vp,
-            VIDEO_SCALE_W(vp->full_dims),
-            VIDEO_SCALE_H(vp->full_dims),
+            vp->full_dims,
             video_driver_aspect_ratio, keep_aspect, y_down, rotation);
    else if (keep_aspect && !force_full)
    {
@@ -3637,7 +3639,7 @@ void video_driver_update_viewport(
       if (ctx->translate_aspect)
          device_aspect = ctx->translate_aspect(ctx_data,
             VIDEO_SCALE_W(vp->full_dims), VIDEO_SCALE_H(vp->full_dims));
-      video_viewport_get_scaled_aspect2(vp, VIDEO_SCALE_W(vp->full_dims), VIDEO_SCALE_H(vp->full_dims),
+      video_viewport_get_scaled_aspect2(vp, vp->full_dims,
             y_down, device_aspect, video_driver_aspect_ratio);
    }
 }

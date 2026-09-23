@@ -1751,8 +1751,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
 /**
  * video_viewport_get_scaled_aspect2:
  * @vp            : Viewport handle. Fields x, y, width, height will be written, and full_width or full_height might be read.
- * @width         : Viewport width.
- * @height        : Viewport height.
+ * @dims          : Viewport size, packed with VIDEO_SCALE_PACK.
  * @ydown         : Positive y goes "down".
  * @device_aspect : Device aspect ratio.
  * @desired_aspect: Target aspect ratio.
@@ -1761,7 +1760,7 @@ void video_driver_menu_settings(void **list_data, void *list_info_data,
  * scaled non-integer aspect ratio.
  **/
 void video_viewport_get_scaled_aspect2(struct video_viewport *vp,
-      unsigned width, unsigned height, bool ydown,
+      unsigned dims, bool ydown,
       float device_aspect, float desired_aspect);
 
 /**
