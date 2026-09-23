@@ -7799,12 +7799,13 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       unsigned slice_margin = 50 * scale_factor;
       unsigned slice_new_w  = longest_width + (slice_margin * 2);
       unsigned slice_new_h  = line_height * (line_count + 2) + (slice_margin / 2);
-      unsigned slice_w      = 256;
+      /* The edge of dialog-slice.png, which is square */
+      unsigned slice_size   = 256;
       int slice_x           = (int)(x - (longest_width / 2) - slice_margin);
       int slice_y           = y - line_height - (slice_margin / 4)
-            + ((slice_new_h >= slice_w)
+            + ((slice_new_h >= slice_size)
                   ? (16.0f * scale_factor)
-                  : (16.0f * ((float)slice_new_h / (float)slice_w)));
+                  : (16.0f * ((float)slice_new_h / (float)slice_size)));
 
       /* Extra room for confirm buttons */
       if (confirm_dialog)
@@ -7822,7 +7823,7 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
             video_dims,
             slice_x,
             slice_y,
-            VIDEO_SCALE_PACK(slice_w, slice_w),
+            VIDEO_SCALE_PACK(slice_size, slice_size),
             VIDEO_SCALE_PACK((unsigned)slice_new_w,
                   (unsigned)slice_new_h),
             video_dims,
