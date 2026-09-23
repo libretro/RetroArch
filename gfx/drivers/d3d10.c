@@ -241,7 +241,12 @@ typedef struct
    {
       D3D10Buffer      vbo;
       d3d10_texture_t* textures;
+      /* The page's sprites as the setters leave them; uploaded whole
+       * by the draw when dirty, so a setter is a store and a frame is
+       * at most one map. */
+      d3d10_sprite_t*  shadow;
       int              count;
+      bool             dirty;
    } overlays;
 #endif
 
@@ -1323,83 +1328,71 @@ static void d3d10_free_overlays(d3d10_video_t* d3d10)
    /* The array as well as what it holds: every page load made a new
     * one over this one. */
    free(d3d10->overlays.textures);
+   free(d3d10->overlays.shadow);
    d3d10->overlays.textures = NULL;
+   d3d10->overlays.shadow   = NULL;
    d3d10->overlays.count    = 0;
+   d3d10->overlays.dirty    = false;
 
    Release(d3d10->overlays.vbo);
    d3d10->overlays.vbo      = NULL;
 }
 
-/* A page's sprite buffer, mapped to write sprite @index - or NULL
- * when there is no such sprite: no page loaded, a page whose load
- * failed, an index off the end of it, a device that will not map. The
- * setters below are called whenever the frontend likes, not only
- * after a load that worked. */
-static d3d10_sprite_t *d3d10_overlay_sprite_map(d3d10_video_t *d3d10,
+/* Sprite @index of the page, to be written - or NULL when there is no
+ * such sprite: no page loaded, a page whose load failed, an index off
+ * the end of it. The setters are called whenever the frontend likes,
+ * not only after a load that worked. */
+static d3d10_sprite_t *d3d10_overlay_sprite(d3d10_video_t *d3d10,
       unsigned index)
 {
-   d3d10_sprite_t *sprites = NULL;
    if (     !d3d10
-         || !d3d10->overlays.vbo
+         || !d3d10->overlays.shadow
          || (int)index >= d3d10->overlays.count)
       return NULL;
-   if (FAILED(d3d10->overlays.vbo->lpVtbl->Map(d3d10->overlays.vbo,
-               D3D10_MAP_WRITE_NO_OVERWRITE, 0, (void**)&sprites)))
-      return NULL;
-   if (!sprites)
-      d3d10->overlays.vbo->lpVtbl->Unmap(d3d10->overlays.vbo);
-   return sprites;
+   d3d10->overlays.dirty = true;
+   return &d3d10->overlays.shadow[index];
 }
 
 static void
 d3d10_overlay_vertex_geom(void* data,
       unsigned index, float x, float y, float w, float h)
 {
-   d3d10_video_t*  d3d10   = (d3d10_video_t*)data;
-   d3d10_sprite_t* sprites = d3d10_overlay_sprite_map(d3d10, index);
+   d3d10_sprite_t* sprite = d3d10_overlay_sprite((d3d10_video_t*)data, index);
 
-   if (!sprites)
+   if (!sprite)
       return;
 
-   sprites[index].pos.x = x;
-   sprites[index].pos.y = y;
-   sprites[index].pos.w = w;
-   sprites[index].pos.h = h;
-
-   d3d10->overlays.vbo->lpVtbl->Unmap(d3d10->overlays.vbo);
+   sprite->pos.x = x;
+   sprite->pos.y = y;
+   sprite->pos.w = w;
+   sprite->pos.h = h;
 }
 
 static void d3d10_overlay_tex_geom(void* data,
       unsigned index, float u, float v, float w, float h)
 {
-   d3d10_video_t*  d3d10   = (d3d10_video_t*)data;
-   d3d10_sprite_t* sprites = d3d10_overlay_sprite_map(d3d10, index);
+   d3d10_sprite_t* sprite = d3d10_overlay_sprite((d3d10_video_t*)data, index);
 
-   if (!sprites)
+   if (!sprite)
       return;
 
-   sprites[index].coords.u = u;
-   sprites[index].coords.v = v;
-   sprites[index].coords.w = w;
-   sprites[index].coords.h = h;
-
-   d3d10->overlays.vbo->lpVtbl->Unmap(d3d10->overlays.vbo);
+   sprite->coords.u = u;
+   sprite->coords.v = v;
+   sprite->coords.w = w;
+   sprite->coords.h = h;
 }
 
 static void d3d10_overlay_set_alpha(void* data, unsigned index, float mod)
 {
-   d3d10_video_t*  d3d10   = (d3d10_video_t*)data;
-   d3d10_sprite_t* sprites = d3d10_overlay_sprite_map(d3d10, index);
+   d3d10_sprite_t* sprite = d3d10_overlay_sprite((d3d10_video_t*)data, index);
 
-   if (!sprites)
+   if (!sprite)
       return;
 
-   sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, VIDEO_ALPHA_BYTE(mod));
-   sprites[index].colors[1] = sprites[index].colors[0];
-   sprites[index].colors[2] = sprites[index].colors[0];
-   sprites[index].colors[3] = sprites[index].colors[0];
-
-   d3d10->overlays.vbo->lpVtbl->Unmap(d3d10->overlays.vbo);
+   sprite->colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, VIDEO_ALPHA_BYTE(mod));
+   sprite->colors[1] = sprite->colors[0];
+   sprite->colors[2] = sprite->colors[0];
+   sprite->colors[3] = sprite->colors[0];
 }
 
 static bool d3d10_overlay_load(void* data,
@@ -1420,27 +1413,31 @@ static bool d3d10_overlay_load(void* data,
       return true;
    d3d10->overlays.textures = (d3d10_texture_t*)calloc(
          num_images, sizeof(d3d10_texture_t));
-   if (!d3d10->overlays.textures)
+   d3d10->overlays.shadow   = (d3d10_sprite_t*)malloc(
+         num_images * sizeof(d3d10_sprite_t));
+   if (!d3d10->overlays.textures || !d3d10->overlays.shadow)
+   {
+      d3d10_free_overlays(d3d10);
       return false;
+   }
 
    desc.ByteWidth           = sizeof(d3d10_sprite_t) * num_images;
    desc.Usage               = D3D10_USAGE_DYNAMIC;
    desc.BindFlags           = D3D10_BIND_VERTEX_BUFFER;
    desc.CPUAccessFlags      = D3D10_CPU_ACCESS_WRITE;
    desc.MiscFlags           = 0;
-   /* A page with no buffer, or one that will not map, is no page:
-    * count stays 0, so nothing draws it and the setters refuse it. */
+   /* A page with no buffer is no page: count stays 0, so nothing
+    * draws it and the setters refuse it. */
    if (     FAILED(d3d10->device->lpVtbl->CreateBuffer(d3d10->device, &desc,
                NULL, &d3d10->overlays.vbo))
-         || !d3d10->overlays.vbo
-         || FAILED(d3d10->overlays.vbo->lpVtbl->Map(d3d10->overlays.vbo,
-               D3D10_MAP_WRITE_DISCARD, 0, (void**)&sprites))
-         || !sprites)
+         || !d3d10->overlays.vbo)
    {
       d3d10_free_overlays(d3d10);
       return false;
    }
    d3d10->overlays.count    = num_images;
+   d3d10->overlays.dirty    = true;
+   sprites                  = d3d10->overlays.shadow;
 
    for (i = 0; i < (unsigned)num_images; i++)
    {
@@ -1477,7 +1474,6 @@ static bool d3d10_overlay_load(void* data,
       sprites[i].colors[2]       = sprites[i].colors[0];
       sprites[i].colors[3]       = sprites[i].colors[0];
    }
-   d3d10->overlays.vbo->lpVtbl->Unmap(d3d10->overlays.vbo);
 
    return true;
 }
@@ -1523,6 +1519,25 @@ static void d3d10_render_overlay(d3d10_video_t *d3d10)
 {
    int i;
    UINT offset = 0, stride = 0;
+
+   /* What the setters changed since the last frame, in one map. A
+    * discard hands this frame a buffer of its own, so the last frame's
+    * draw keeps what it read. */
+   if (d3d10->overlays.dirty && d3d10->overlays.count > 0)
+   {
+      void *sprites = NULL;
+      if (SUCCEEDED(d3d10->overlays.vbo->lpVtbl->Map(
+                  d3d10->overlays.vbo, D3D10_MAP_WRITE_DISCARD, 0, &sprites)))
+      {
+         if (sprites)
+         {
+            memcpy(sprites, d3d10->overlays.shadow,
+                  d3d10->overlays.count * sizeof(d3d10_sprite_t));
+            d3d10->overlays.dirty = false;
+         }
+         d3d10->overlays.vbo->lpVtbl->Unmap(d3d10->overlays.vbo);
+      }
+   }
 
    if (d3d10->flags & D3D10_ST_FLAG_OVERLAYS_FULLSCREEN)
       d3d10->device->lpVtbl->RSSetViewports(d3d10->device, 1, &d3d10->viewport);

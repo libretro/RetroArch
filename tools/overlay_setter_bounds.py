@@ -26,6 +26,13 @@ to brighten a pressed button: "mod * 0xFF" packed as a byte wraps
 one), and cast straight to u8 it is undefined. The conversion goes
 through VIDEO_ALPHA_BYTE(), which saturates.
 
+D3D10, D3D11 and D3D12 keep a page's sprites in a copy the setters
+write and the draw uploads once, when something changed: a setter that
+maps the sprite buffer is a map per image per call - a page load is
+three of them per image - and writes a buffer the last frame may still
+be drawing from. Their setters, and the helper they go through, must
+not map.
+
 Exit status 0 when every setter passes, 1 otherwise.
 """
 
@@ -44,7 +51,7 @@ DRIVERS = [
 SETTER = r"\b(\w+_overlay_(?:set_alpha|vertex_geom|tex_geom))\s*\("
 # "index >= count", "image >= gl->overlays", "index < d3d->overlays_size"
 BOUND  = r"\b(?:index|image)\b\s*(?:>=|<)\s*[\w>.\-]+"
-HELPER = r"\b(\w+_overlay_sprite_map)\s*\("
+HELPER = r"\b(\w+_overlay_sprite(?:_map)?)\s*\("
 
 
 def strip_comments(src):
@@ -91,6 +98,10 @@ def functions(code, pattern):
     return out
 
 
+STORE_ONLY = ("d3d10.c", "d3d11.c", "d3d12.c")
+MAP        = r"\b(?:D3D12Map|Map)\s*\("
+
+
 def check_c(name, code):
     problems = []
     setters  = functions(code, SETTER)
@@ -107,6 +118,15 @@ def check_c(name, code):
             continue
         problems.append("%s() writes image [index] without comparing the "
                         "index to the page's count" % fn)
+    if name in STORE_ONLY:
+        for fn in sorted(setters):
+            body   = setters[fn]
+            called = [h for h in helpers if re.search(r"\b%s\s*\(" % h, body)]
+            if re.search(MAP, body) or any(re.search(MAP, helpers[h])
+                                           for h in called):
+                problems.append("%s() maps the sprite buffer: a setter "
+                                "writes the page's copy, the draw uploads"
+                                % fn)
     return problems
 
 
