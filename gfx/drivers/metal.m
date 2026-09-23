@@ -57,6 +57,7 @@
 #endif
 
 #include "metal.h"
+#include "../common/rgba16_pack.h"
 #include "../gfx_display.h"
 #include "../drivers_shader/slang_process.h"
 
@@ -1243,7 +1244,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    vd.attributes[1].offset = offsetof(SpriteVertex, texCoord);
    vd.attributes[1].format = MTLVertexFormatFloat2;
    vd.attributes[2].offset = offsetof(SpriteVertex, color);
-   vd.attributes[2].format = MTLVertexFormatFloat4;
+   vd.attributes[2].format = MTLVertexFormatUShort4Normalized;
    vd.layouts[0].stride    = sizeof(SpriteVertex);
    return vd;
 }
@@ -2635,12 +2636,18 @@ static float metal_hdr_pq_to_nits(float pq)
                 r:(float)r g:(float)g b:(float)b a:(float)a
 {
    SpriteVertex v[4];
+   float    rgba[4];
+   uint64_t color;
    v[0].position = simd_make_float2(x, y);
    v[1].position = simd_make_float2(x + w, y);
    v[2].position = simd_make_float2(x, y + h);
    v[3].position = simd_make_float2(x + w, y + h);
 
-   simd_float4 color = simd_make_float4(r, g, b, a);
+   rgba[0]    = r;
+   rgba[1]    = g;
+   rgba[2]    = b;
+   rgba[3]    = a;
+   color      = rgba16_pack(rgba);
    v[0].color = color;
    v[1].color = color;
    v[2].color = color;
@@ -3153,7 +3160,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
       pv->texCoord = simd_make_float2(tex_coord[0], tex_coord[1]);
       tex_coord += 2;
 
-      pv->color = simd_make_float4(color[0], color[1], color[2], color[3]);
+      pv->color = rgba16_pack(color);
       color += 4;
    }
 
@@ -3638,7 +3645,7 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
       vd.attributes[1].offset    = offsetof(SpriteVertex, texCoord);
       vd.attributes[1].format    = MTLVertexFormatFloat2;
       vd.attributes[2].offset    = offsetof(SpriteVertex, color);
-      vd.attributes[2].format    = MTLVertexFormatFloat4;
+      vd.attributes[2].format    = MTLVertexFormatUShort4Normalized;
       vd.layouts[0].stride       = sizeof(SpriteVertex);
       vd.layouts[0].stepFunction = MTLVertexStepFunctionPerVertex;
 
@@ -3778,7 +3785,7 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
 static INLINE void write_quad6(SpriteVertex *pv,
       float x, float y, float width, float height,
       float tex_x, float tex_y, float tex_width, float tex_height,
-      const vector_float4 *color)
+      uint64_t color)
 {
    int i;
    static const float strip[2 * 6] = {
@@ -3798,7 +3805,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
       pv[i].texCoord = simd_make_float2(
             tex_x + strip[2 * i + 0] * tex_width,
             tex_y + strip[2 * i + 1] * tex_height);
-      pv[i].color    = *color;
+      pv[i].color    = color;
    }
 }
 
@@ -3820,10 +3827,17 @@ static INLINE void write_quad6(SpriteVertex *pv,
    float inv_tex_size_y;
    float inv_win_width;
    float inv_win_height;
+   float rgba[4];
+   uint64_t packed;
 
    if (!_font_driver || !_font_data)
       return;
 
+   rgba[0]          = color.x;
+   rgba[1]          = color.y;
+   rgba[2]          = color.z;
+   rgba[3]          = color.w;
+   packed           = rgba16_pack(rgba);
    msg_end          = msg + length;
    x                = (int)roundf(posX * VIDEO_SCALE_W(_driver.viewport->full_dims));
    y                = (int)roundf((1.0f - posY) * VIDEO_SCALE_H(_driver.viewport->full_dims));
@@ -3885,7 +3899,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
             tex_y * inv_tex_size_y,
             width * inv_tex_size_x,
             height * inv_tex_size_y,
-            &color);
+            packed);
 
       _vertices += 6;
       v         += 6;
@@ -6178,7 +6192,7 @@ typedef struct MTLALIGN(16)
       _images[i] = tex;
       [self updateVertexX:0 y:0 w:1 h:1 index:i];
       [self updateTextureCoordsX:0 y:0 w:1 h:1 index:i];
-      [self _updateColorRed:1.0 green:1.0 blue:1.0 alpha:1.0 index:i];
+      [self _updateColor:RGBA16_WHITE index:i];
    }
 
    _vertDirty = YES;
@@ -6205,7 +6219,7 @@ typedef struct MTLALIGN(16)
       _images[i] = t.texture;
       [self updateVertexX:0 y:0 w:1 h:1 index:i];
       [self updateTextureCoordsX:0 y:0 w:1 h:1 index:i];
-      [self _updateColorRed:1.0 green:1.0 blue:1.0 alpha:1.0 index:i];
+      [self _updateColor:RGBA16_WHITE index:i];
    }
 
    _vertDirty = YES;
@@ -6247,9 +6261,8 @@ typedef struct MTLALIGN(16)
    return &pv[index * 4];
 }
 
-- (void)_updateColorRed:(float)r green:(float)g blue:(float)b alpha:(float)a index:(NSUInteger)index
+- (void)_updateColor:(uint64_t)color index:(NSUInteger)index
 {
-   simd_float4 color = simd_make_float4(r, g, b, a);
    SpriteVertex *pv  = [self _getForIndex:index];
    if (!pv)
       return;
@@ -6262,7 +6275,7 @@ typedef struct MTLALIGN(16)
 
 - (void)updateAlpha:(float)alpha index:(NSUInteger)index
 {
-   [self _updateColorRed:1.0 green:1.0 blue:1.0 alpha:alpha index:index];
+   [self _updateColor:rgba16_white(alpha) index:index];
 }
 
 - (void)updateVertexX:(float)x y:(float)y w:(float)w h:(float)h index:(NSUInteger)index

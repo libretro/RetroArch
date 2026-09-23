@@ -37,6 +37,7 @@
 #define METAL_POSITION [[position]]
 #else
 #import <Foundation/Foundation.h>
+#include <stdint.h>
 #define METAL_ATTRIBUTE(x)
 #define METAL_POSITION
 #endif
@@ -95,7 +96,13 @@ typedef struct
 {
    vector_float2 position  METAL_ATTRIBUTE(VertexAttributePosition);
    vector_float2 texCoord  METAL_ATTRIBUTE(VertexAttributeTexcoord);
+   /* Four UNORM16 channels in the buffer (UShort4Normalized, packed
+    * by rgba16_pack); the vertex function reads them as a float4. */
+#ifdef __METAL_VERSION__
    vector_float4 color     METAL_ATTRIBUTE(VertexAttributeColor);
+#else
+   uint64_t      color;
+#endif
 } SpriteVertex;
 
 typedef struct
