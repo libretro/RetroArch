@@ -1632,6 +1632,10 @@ typedef struct
     * through ACQUIRE and so back to the start of the loop. */
    bool            rt_origin;
    bool            rt_barrier;  /* writes need a barrier to be seen */
+   /* The hardware FIFO in bytes, from the pin's own latency report:
+    * how far ahead of the register the DMA has already fetched. Zero
+    * where the pin reports none. */
+   size_t          rt_fifo_bytes;
 
    /* AC-3 over IEC 61937, where the device takes it and the frontend
     * asked for it: the frontend's float frames are gathered a block
@@ -1880,8 +1884,11 @@ static void wdmks_rt_report_latency(wdmks_t *w)
          (unsigned)out.ChipsetDelay, (unsigned)out.CodecDelay);
 
    if (w->frame_bytes && out.FifoSize)
+   {
+      w->rt_fifo_bytes = (size_t)out.FifoSize;
       audio_driver_set_device_latency(
             (size_t)(out.FifoSize / w->frame_bytes));
+   }
 }
 
 /* Waits for the device to free room, for as long as one period is
@@ -2105,14 +2112,27 @@ static void wdmks_rt_scrub(wdmks_t *w, ULONG from, ULONG to)
 
 /* How far ahead of the cursor a write lands after the hardware has
  * run past the write cursor: enough that the bytes are in place before
- * the hardware fetches them. Two milliseconds of frames, kept under a
+ * the hardware fetches them. The register says where the DMA is
+ * reading; the FIFO the pin reports is how far past that it has
+ * already fetched, so a write inside it is a write into bytes that
+ * are gone. The margin is that FIFO and half a millisecond for the
+ * write itself. Where the pin reports no FIFO it is two milliseconds,
+ * a guess that covers what the reports seen so far say - and this is
+ * also the floor the reported latency can reach on the loop, so a
+ * guess is only as good as the hardware it stays above. Kept under a
  * quarter of the loop so a very short loop still has most of itself
- * to fill. */
+ * to fill, and whole frames. */
 static size_t wdmks_rt_margin(const wdmks_t *w)
 {
-   size_t bytes = (size_t)w->rate * 2 / 1000 * w->frame_bytes;
+   size_t bytes;
+
+   if (w->rt_fifo_bytes)
+      bytes = w->rt_fifo_bytes + (size_t)w->rate / 2000 * w->frame_bytes;
+   else
+      bytes = (size_t)w->rate * 2 / 1000 * w->frame_bytes;
    if (bytes > w->rt_size / 4)
-      bytes = w->rt_size / 4 - (w->rt_size / 4) % w->frame_bytes;
+      bytes = w->rt_size / 4;
+   bytes -= bytes % w->frame_bytes;
    if (bytes < w->frame_bytes)
       bytes = w->frame_bytes;
    return bytes;
@@ -3495,8 +3515,17 @@ static void *wdmks_init(const char *device, unsigned rate,
       if (wanted < w->frame_bytes * 64)
          wanted = w->frame_bytes * 64;
 
-      if (     !wdmks_rt_get_buffer(w, wanted)
-            || !wdmks_start(w, false))
+      if (!wdmks_rt_get_buffer(w, wanted))
+      {
+         RARCH_ERR("[WDM-KS] The WaveRT pin would not start.\n");
+         wdmks_free(w);
+         return NULL;
+      }
+      /* Before the pin runs: the first sample after a start resyncs
+       * the write cursor a margin ahead of the hardware, and the
+       * margin is sized from the FIFO this reports. */
+      wdmks_rt_report_latency(w);
+      if (!wdmks_start(w, false))
       {
          RARCH_ERR("[WDM-KS] The WaveRT pin would not start.\n");
          wdmks_free(w);
@@ -3505,7 +3534,6 @@ static void *wdmks_init(const char *device, unsigned rate,
       wdmks_rt_probe_presentation(w);
       wdmks_rt_get_position_register(w);
       wdmks_rt_register_event(w);
-      wdmks_rt_report_latency(w);
 
       {
          uint64_t probe = 0;

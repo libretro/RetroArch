@@ -20,9 +20,13 @@
  *   a full loop is not an overrun-> the cursor a frame behind the
  *                                   write cursor is left alone
  *   laps went by unobserved      -> the loop is cleared and resynced
+ *   the margin                   -> the pin's reported FIFO plus half a
+ *                                   millisecond where it reports one,
+ *                                   two milliseconds where it does not
  *
  * The same contract on both paths: the caller-driven one and the
- * refill thread's pump, called directly. */
+ * refill thread's pump, called directly, and with and without a FIFO
+ * report. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,9 +69,14 @@ static void hw_play(size_t n)
    fake_pos = (ULONG)((fake_pos + n) % LOOP_BYTES);
 }
 
+/* What the pin reports as its FIFO for the run, in frames; 0 for a
+ * pin that reports none. */
+static unsigned fifo_frames;
+
 static void loop_setup(wdmks_t *w)
 {
    memset(w, 0, sizeof(*w));
+   w->rt_fifo_bytes = fifo_frames * FRAME;
    w->stream.handle = (HANDLE)(uintptr_t)1;  /* not INVALID, never used */
    w->stream.looped = true;
    w->frame_bytes   = FRAME;
@@ -190,8 +199,11 @@ static void run_contract(const char *name, put_fn put, bool pump)
    printf("%s\n", name);
    loop_setup(&w);
    margin = wdmks_rt_margin(&w);
-   check(margin >= FRAME && margin < LOOP_BYTES / 2,
-         "the resync margin is a frame or more and well under a loop");
+   check(margin % FRAME == 0 && margin >= FRAME && margin < LOOP_BYTES / 4 + 1,
+         "the resync margin is whole frames, a frame or more, under a quarter loop");
+   check(margin == (fifo_frames ? fifo_frames + RATE / 2000 : RATE * 2 / 1000) * FRAME,
+         fifo_frames ? "sized from the reported FIFO plus half a millisecond"
+                     : "two milliseconds where the pin reports no FIFO");
 
    /* The hardware has started and moved a little by the time the
     * first audio arrives. Fill the loop: the audio lands a margin
@@ -294,8 +306,14 @@ static void run_contract(const char *name, put_fn put, bool pump)
 
 int main(void)
 {
-   run_contract("caller-driven loop (no refill thread)", put_direct, false);
-   run_contract("refill thread pump", put_pump, true);
+   fifo_frames = 0;
+   run_contract("caller-driven loop, no FIFO report", put_direct, false);
+   run_contract("refill thread pump, no FIFO report", put_pump, true);
+   fifo_frames = 48;      /* 1 ms at 48 kHz, as an HDA codec reports */
+   run_contract("caller-driven loop, 1 ms FIFO", put_direct, false);
+   run_contract("refill thread pump, 1 ms FIFO", put_pump, true);
+   fifo_frames = 480;     /* 10 ms: a FIFO past the fixed guess */
+   run_contract("caller-driven loop, 10 ms FIFO", put_direct, false);
    printf("%u failure%s\n", failures, failures == 1 ? "" : "s");
    return failures ? 1 : 0;
 }

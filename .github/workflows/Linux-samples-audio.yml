@@ -759,7 +759,9 @@ jobs:
           # that lands a margin ahead of the hardware rather than a
           # loop behind it; that a full loop is not taken for an
           # overrun; and that a start puts the model back at the top
-          # of the loop with the hardware.
+          # of the loop with the hardware; and that the resync margin is
+          # the FIFO the pin reports plus half a millisecond, two
+          # milliseconds where it reports none.
           if ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1 \
                 || ! command -v wine >/dev/null 2>&1; then
              sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine64 \
