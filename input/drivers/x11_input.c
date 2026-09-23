@@ -16,8 +16,10 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <X11/Xutil.h>
+#include <X11/XKBlib.h>
 #include <X11/keysym.h>
 
 #include <boolean.h>
@@ -45,6 +47,9 @@
 typedef struct x11_input
 {
    Display *display;
+   /* The driver's own connection, carrying only key and focus events
+    * for the window, or NULL when it could not be opened. */
+   Display *key_display;
    Window win;
 
 #ifdef HAVE_XI2
@@ -56,6 +61,8 @@ typedef struct x11_input
    int mouse_delta_y[MAX_MOUSE_IDX];
    bool mouse_grabbed;
    char state[32];
+   /* Keys held, kept from the events on key_display. */
+   char keys[32];
    bool mouse_l[MAX_MOUSE_IDX];
    bool mouse_r[MAX_MOUSE_IDX];
    bool mouse_m[MAX_MOUSE_IDX];
@@ -75,6 +82,80 @@ typedef struct x11_input
 extern retro_atomic_int_t g_x11_entered;
 extern retro_atomic_int_t g_x11_size;
 extern Window             g_x11_win;
+
+/* The poll reads the keyboard from events on a connection of the
+ * driver's own. Draining it is a non-blocking read, where a query on
+ * the shared connection is a round trip queued behind whatever the
+ * video thread is presenting through it. Events are drained at the
+ * poll, so a key reads as of the poll. */
+static Display *x_keys_open(x11_input_t *x11)
+{
+   Display *dpy = XOpenDisplay(DisplayString(x11->display));
+
+   if (!dpy)
+      return NULL;
+
+   /* A held key repeats as presses alone, so no read of the socket
+    * can end between a repeat's release and its press. */
+   XkbSetDetectableAutoRepeat(dpy, True, NULL);
+
+   /* KeymapNotify follows every FocusIn and EnterNotify with the
+    * whole key vector. */
+   XSelectInput(dpy, x11->win, KeyPressMask | KeyReleaseMask
+         | FocusChangeMask | KeymapStateMask);
+
+   /* Keys already down. Events selected above that the query saw
+    * are applied again in order, which leaves each key at its last
+    * event. */
+   XQueryKeymap(dpy, x11->keys);
+   return dpy;
+}
+
+static void x_keys_drain(x11_input_t *x11)
+{
+   Display *dpy = x11->key_display;
+
+   while (XPending(dpy))
+   {
+      XEvent event;
+      unsigned keycode;
+
+      XNextEvent(dpy, &event);
+
+      switch (event.type)
+      {
+         case KeyPress:
+            keycode = event.xkey.keycode & 0xFF;
+            x11->keys[keycode >> 3] |= (char)(1 << (keycode & 7));
+            break;
+
+         case KeyRelease:
+            keycode = event.xkey.keycode & 0xFF;
+            x11->keys[keycode >> 3] &= (char)~(1 << (keycode & 7));
+            break;
+
+         case KeymapNotify:
+            /* Xlib fills key_vector from index 1; keycodes 0-7 do
+             * not exist. */
+            memcpy(x11->keys, event.xkeymap.key_vector, sizeof(x11->keys));
+            x11->keys[0] = 0;
+            break;
+
+         /* Key events stop arriving; the next FocusIn brings a
+          * KeymapNotify. Under another client's grab keys stay as
+          * they were, as the window keeps focus, until the FocusIn
+          * that ends it. */
+         case FocusOut:
+            if (     event.xfocus.mode   != NotifyGrab
+                  && event.xfocus.detail != NotifyInferior)
+               memset(x11->keys, 0, sizeof(x11->keys));
+            break;
+
+         default:
+            break;
+      }
+   }
+}
 
 static void *x_input_init(const char *joypad_driver)
 {
@@ -97,6 +178,9 @@ static void *x_input_init(const char *joypad_driver)
    x11->win     = (Window)video_driver_window_get();
 
    input_keymaps_init_keyboard_lut(rarch_key_map_x11);
+
+   if (x11->win != None)
+      x11->key_display = x_keys_open(x11);
 
 #ifdef HAVE_XI2
    for (i = 0; i < MAX_MOUSE_IDX; i++)
@@ -484,6 +568,8 @@ static void x_input_free(void *data)
 #ifdef __linux__
       linux_close_illuminance_sensor(x11->illuminance_sensor);
 #endif
+      if (x11->key_display)
+         XCloseDisplay(x11->key_display);
       free(x11);
    }
 }
@@ -590,7 +676,13 @@ static void x_input_poll(void *data)
    }
 
    /* Process keyboard */
-   XQueryKeymap(x11->display, x11->state);
+   if (x11->key_display)
+   {
+      x_keys_drain(x11);
+      memcpy(x11->state, x11->keys, sizeof(x11->state));
+   }
+   else
+      XQueryKeymap(x11->display, x11->state);
 
    /* If pointer is not inside the application
     * window, ignore mouse input */
