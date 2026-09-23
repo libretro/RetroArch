@@ -3214,6 +3214,11 @@ static void video_viewport_get_scaled_integer(
             /* Use the 240p thresholds for 480p, just doubled. */
             else if (192 * 2 <= content_height && content_height <= 480)
                overscale_min_height = 192 * 2;
+            /* Allow PAL & interlaced to overscale 1080p without rotation */
+            else if (240 < content_height && content_height <= 288 && !(rotation % 2))
+               overscale_min_height = 288 - 18;
+            else if (480 < content_height && content_height <= 576 && !(rotation % 2))
+               overscale_min_height = 576 - 36;
 
             if (height / overscale_h >= overscale_min_height)
                max_scale_h = overscale_h;
@@ -3331,8 +3336,8 @@ static void video_viewport_get_scaled_integer(
                {
                   float diff_mode = content_width;
 
-                  /* Skip half scales with lo-res width */
-                  if (!hires_w && !(i % 2))
+                  /* Skip half scales with lo-res width without rotation */
+                  if (!hires_w && !(i % 2) && !(rotation % 2))
                      continue;
 
                   switch (i)
