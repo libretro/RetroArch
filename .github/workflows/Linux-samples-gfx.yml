@@ -783,9 +783,12 @@ jobs:
           # Mutter on the bus.  Without it every path must behave
           # exactly as before: no session bus, a bus without Mutter, a
           # real X server (Mutter is never asked), XWayland's own list,
-          # and no Wayland resolution list.
+          # and no Wayland resolution list.  Last, a real headless Mutter
+          # and its XWayland: Mutter names XWayland's outputs after its
+          # connectors (DP-1, Meta-0), so only the XWAYLAND extension
+          # says what the server is.
           sudo apt-get install -y -qq libdbus-1-dev dbus python3-dbus \
-             python3-gi weston xwayland > /dev/null
+             python3-gi weston xwayland mutter > /dev/null
           (cd samples/gfx/mutter_displayconfig \
              && make clean all SANITIZER=address,undefined \
              && ASAN_OPTIONS=detect_leaks=1 \

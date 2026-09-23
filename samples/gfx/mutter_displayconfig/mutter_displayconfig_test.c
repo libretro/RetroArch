@@ -49,6 +49,9 @@
  *   wl             dispserv_wl with Mutter: the list, the switch, and
  *                  the resolution list not flagged away
  *   wl-nomutter    dispserv_wl without Mutter: flagged away, as before
+ *   x11-real-mutter  dispserv_x11 on the XWayland of a real headless
+ *                  Mutter, whose outputs are named after connectors:
+ *                  Mutter's modes, not XWayland's
  */
 
 #include <stdarg.h>
@@ -64,6 +67,7 @@
 
 #ifdef TEST_X11
 #include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>
 Display *g_x11_dpy    = NULL;
 Window   g_x11_win    = 0;
 int      g_x11_screen = 0;
@@ -383,6 +387,58 @@ static int case_x11_xwayland(bool mutter)
    dispserv_x11.destroy(data);
    return 0;
 }
+
+/* The real thing: dispserv_x11 on the XWayland a real (headless)
+ * Mutter starts, with that Mutter on the bus. Mutter names its outputs,
+ * so XWayland's is Meta-0 - not XWAYLAND0 - and only the XWAYLAND
+ * extension says what the server is. run.sh starts Mutter with one
+ * 2560x1440@60 virtual monitor: Mutter lists that one mode at exactly
+ * 60.000 Hz, while XWayland's own list has several sizes, each a CVT
+ * timing at 59.9x Hz. */
+static int case_x11_real_mutter(void)
+{
+   int o;
+   bool named = true;
+   video_display_config_t *l;
+   unsigned n = 0;
+   void *data;
+   XRRScreenResources *res;
+
+   if (x11_open())
+      return 1;
+   if ((res = XRRGetScreenResourcesCurrent(g_x11_dpy, DefaultRootWindow(g_x11_dpy))))
+   {
+      for (o = 0; o < res->noutput; o++)
+      {
+         XRROutputInfo *oi = XRRGetOutputInfo(g_x11_dpy, res, res->outputs[o]);
+         if (!oi)
+            continue;
+         if (oi->connection == RR_Connected && !strncmp(oi->name, "XWAYLAND", 8))
+            named = false;
+         XRRFreeOutputInfo(oi);
+      }
+      XRRFreeScreenResources(res);
+   }
+   if (!named)
+      FAIL("Mutter's XWayland output is named XWAYLAND<n>; this case needs a named one");
+
+   data = dispserv_x11.init();
+   l    = (video_display_config_t*)dispserv_x11.get_resolution_list(data, &n);
+   if (!l || n != 1 || VIDEO_SCALE_W(l[0].dims) != 2560
+         || VIDEO_SCALE_H(l[0].dims) != 1440
+         || l[0].refreshrate_float < 59.999f || l[0].refreshrate_float > 60.001f
+         || !l[0].current)
+      FAIL("real Mutter's XWayland: %u entries, first %ux%u %.3f Hz - XWayland's list, not Mutter's",
+            n, l ? VIDEO_SCALE_W(l[0].dims) : 0, l ? VIDEO_SCALE_H(l[0].dims) : 0,
+            l ? l[0].refreshrate_float : 0.0f);
+   free(l);
+   if (!dispserv_x11.set_resolution(data, VIDEO_SCALE_PACK(2560, 1440),
+            60, 60.0f, 0, 0, 0, 0))
+      FAIL("real Mutter's XWayland: switch to the listed mode refused");
+   dispserv_x11.destroy(data);
+   printf("[pass] real Mutter's XWayland (named output): Mutter's modes, not XWayland's\n");
+   return 0;
+}
 #endif
 
 #ifdef TEST_WL
@@ -446,6 +502,8 @@ int main(int argc, char **argv)
       return case_x11_xwayland(true);
    if (!strcmp(c, "x11-xwayland-nomutter"))
       return case_x11_xwayland(false);
+   if (!strcmp(c, "x11-real-mutter"))
+      return case_x11_real_mutter();
 #endif
 #ifdef TEST_WL
    if (!strcmp(c, "wl"))

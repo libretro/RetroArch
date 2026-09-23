@@ -1444,11 +1444,19 @@ static int x11_res_list_qsort(const void *pa, const void *pb)
 #ifdef HAVE_DBUS
 /* XWayland lists every mode at the desktop's current rate and only
  * scales a fullscreen window when "switched"; the real modes belong to
- * the compositor. Under GNOME, Mutter's D-Bus interface has them. Its
- * outputs are all named XWAYLAND<n>; a real X server never is, so on
- * one nothing below talks to D-Bus at all. */
-static bool x11_res_is_xwayland(const XRROutputInfo *oi)
+ * the compositor. Under GNOME, Mutter's D-Bus interface has them.
+ *
+ * XWayland 23.1 and later advertise the XWAYLAND extension - the test
+ * xrandr makes too. Output names cannot be relied on: under a
+ * compositor that names its outputs (Mutter does) XWayland takes the
+ * connector's name, DP-1 or HDMI-1 like any X server; only older ones
+ * or unnamed outputs come out as XWAYLAND<n>, kept as the fallback. A
+ * real X server has neither, so on one nothing below talks to D-Bus. */
+static bool x11_res_is_xwayland(Display *dpy, const XRROutputInfo *oi)
 {
+   int opcode, event, error;
+   if (XQueryExtension(dpy, "XWAYLAND", &opcode, &event, &error))
+      return true;
    return oi && oi->name && !strncmp(oi->name, "XWAYLAND", 8);
 }
 
@@ -1487,7 +1495,7 @@ static void *x11_display_server_get_resolution_list(void *data,
                RootWindow(dpy, DefaultScreen(dpy)), 0, &oi, &ci))
    {
 #ifdef HAVE_DBUS
-      if (x11_res_is_xwayland(oi))
+      if (x11_res_is_xwayland(dpy, oi))
       {
          mutter_dc_target_t t;
          x11_res_mutter_target(dpy, 0, &t);
@@ -1607,7 +1615,7 @@ static bool x11_display_server_set_resolution(void *data,
       goto end;
 
 #ifdef HAVE_DBUS
-   if (x11_res_is_xwayland(oi))
+   if (x11_res_is_xwayland(dpy, oi))
    {
       mutter_dc_target_t t;
       enum mutter_dc_result r;

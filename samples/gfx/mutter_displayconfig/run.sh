@@ -1,7 +1,7 @@
 #!/bin/sh
 # Every case of mutter_displayconfig_test, each with exactly the servers
 # it needs.  Needs dbus-daemon, python3-dbus + python3-gi, Xorg with the
-# dummy driver, weston and Xwayland.  Run from this directory after
+# dummy driver, weston, Xwayland and mutter.  Run from this directory after
 # make; exits non-zero on the first failure.  XORG="sudo Xorg" where
 # Xorg cannot run as the user (the GitHub runners).
 set -eu
@@ -80,5 +80,23 @@ stop_mock
 start_mock
 WAYLAND_DISPLAY=mdc-wl "$T" wl
 stop_mock
+
+# A real headless Mutter and the XWayland it starts: the outputs carry
+# Mutter's connector names, as on a GNOME desktop
+MLOG="$WORK/mutter.log"
+mutter --headless --virtual-monitor 2560x1440@60 --wayland > "$MLOG" 2>&1 &
+PIDS="$PIDS $!"
+for i in $(seq 1 120); do
+   grep -q "Using public X11 display" "$MLOG" 2>/dev/null && break
+   sleep 0.25
+done
+MDPY=$(sed -n 's/.*Using public X11 display \(:[0-9]*\).*/\1/p' "$MLOG" | head -1)
+MAUTH=$(ls "$XDG_RUNTIME_DIR"/.mutter-Xwaylandauth.* 2>/dev/null | head -1)
+[ -n "$MDPY" ] && [ -n "$MAUTH" ] || { cat "$MLOG"; exit 1; }
+for i in $(seq 1 60); do
+   DISPLAY=$MDPY XAUTHORITY=$MAUTH xrandr > /dev/null 2>&1 && break
+   sleep 0.25
+done
+DISPLAY=$MDPY XAUTHORITY=$MAUTH "$T" x11-real-mutter
 
 echo "ALL OK"
