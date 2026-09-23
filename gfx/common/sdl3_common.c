@@ -90,8 +90,7 @@ static void sdl3_window_save_position(SDL_Window *win)
        || w <= 0 || h <= 0)
       return;
 
-   settings->uints.window_position_x = (unsigned)x;
-   settings->uints.window_position_y = (unsigned)y;
+   settings->uints.window_position_pos  = VIDEO_POS_PACK(x, y);
    settings->uints.window_position_dims = VIDEO_SCALE_PACK(w, h);
 }
 
@@ -264,8 +263,8 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
          && !string_is_equal(SDL_GetCurrentVideoDriver(), "wayland"))
    {
       SDL_SetWindowPosition(win,
-            (int)settings->uints.window_position_x,
-            (int)settings->uints.window_position_y);
+            VIDEO_POS_X(settings->uints.window_position_pos),
+            VIDEO_POS_Y(settings->uints.window_position_pos));
       SDL_SyncWindow(win);
    }
    else

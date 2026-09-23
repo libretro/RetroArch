@@ -3425,8 +3425,6 @@ static struct config_uint_setting *populate_settings_uint(
 
    SETTING_UINT_HALF("custom_viewport_width",    &settings->video_vp_custom.dims, CFG_HALF_HI, false, 0 /* TODO */, false);
    SETTING_UINT_HALF("custom_viewport_height",   &settings->video_vp_custom.dims, CFG_HALF_LO, false, 0 /* TODO */, false);
-   SETTING_UINT("video_windowed_position_x",     &settings->uints.window_position_x,    true, 0, false);
-   SETTING_UINT("video_windowed_position_y",     &settings->uints.window_position_y,    true, 0, false);
    SETTING_UINT_HALF("video_windowed_position_width",  &settings->uints.window_position_dims, CFG_HALF_HI, true, DEFAULT_WINDOW_WIDTH, false);
    SETTING_UINT_HALF("video_windowed_position_height", &settings->uints.window_position_dims, CFG_HALF_LO, true, DEFAULT_WINDOW_HEIGHT, false);
    /* The auto-resize ceiling was config-bound through the S_UINT pass,
@@ -4159,6 +4157,14 @@ static struct config_int_setting *populate_settings_int(
          CFG_HALF_HI, false, 0, false);
    SETTING_INT_HALF("custom_viewport_y", (int*)&settings->video_vp_custom.pos,
          CFG_HALF_LO, false, 0, false);
+   /* The window's origin, signed for the same reason: a display
+    * left of or above the primary one puts an axis negative. */
+   SETTING_INT_HALF("video_windowed_position_x",
+         (int*)&settings->uints.window_position_pos,
+         CFG_HALF_HI, true, 0, false);
+   SETTING_INT_HALF("video_windowed_position_y",
+         (int*)&settings->uints.window_position_pos,
+         CFG_HALF_LO, true, 0, false);
    SETTING_INT("crt_switch_center_adjust",       &settings->ints.crt_switch_center_adjust, false, DEFAULT_CRT_SWITCH_CENTER_ADJUST, false);
    SETTING_INT("crt_switch_porch_adjust",        &settings->ints.crt_switch_porch_adjust, false, DEFAULT_CRT_SWITCH_PORCH_ADJUST, false);
    SETTING_INT("crt_switch_vertical_adjust",     &settings->ints.crt_switch_vertical_adjust, false, DEFAULT_CRT_SWITCH_VERTICAL_ADJUST, false);

@@ -384,8 +384,10 @@ typedef struct settings
       unsigned midi_volume;
       unsigned streaming_mode;
 
-      unsigned window_position_x;
-      unsigned window_position_y;
+      /* Where the window sits, in VIDEO_POS_PACK's layout: a
+       * display left of or above the primary one puts an axis
+       * negative, so both halves sign-extend on the way back out. */
+      unsigned window_position_pos;
       /* The windowed-mode size, and the ceiling auto-resize honours,
        * each a pair in VIDEO_SCALE_PACK's layout. The config file
        * keeps a key per axis and the menu a row per axis; both carry

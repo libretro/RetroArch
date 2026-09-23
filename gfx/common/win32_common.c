@@ -579,8 +579,8 @@ static void win32_save_position(void)
          bool window_show_decor                     = settings->bools.video_window_show_decorations;
          unsigned win_w                             = g_win32->pos_width;
          unsigned win_h                             = g_win32->pos_height;
-         settings->uints.window_position_x          = g_win32->pos_x;
-         settings->uints.window_position_y          = g_win32->pos_y;
+         settings->uints.window_position_pos        =
+               VIDEO_POS_PACK(g_win32->pos_x, g_win32->pos_y);
          /* The frame the window reports includes whatever chrome it
           * is wearing; the setting holds the client area, so take the
           * chrome off both axes before the pair is stored. */
@@ -2259,8 +2259,10 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          /* Set position from config */
          int border_thickness             = window_show_decor ? GetSystemMetrics(SM_CXSIZEFRAME) : 0;
          int title_bar_height             = window_show_decor ? GetSystemMetrics(SM_CYCAPTION) : 0;
-         unsigned window_position_x       = settings->uints.window_position_x;
-         unsigned window_position_y       = settings->uints.window_position_y;
+         int      window_position_x       =
+               VIDEO_POS_X(settings->uints.window_position_pos);
+         int      window_position_y       =
+               VIDEO_POS_Y(settings->uints.window_position_pos);
          unsigned window_position_width   =
                VIDEO_SCALE_W(settings->uints.window_position_dims);
          unsigned window_position_height  =
