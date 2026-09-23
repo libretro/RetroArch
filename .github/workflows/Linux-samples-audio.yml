@@ -743,6 +743,32 @@ jobs:
           WINEDEBUG=-all timeout 300 make check
           echo "[pass] dsound_pump_test (wine)"
 
+      - name: Build and run wdmks_loop_test (MinGW, under wine)
+        shell: bash
+        working-directory: samples/audio/wdmks_loop
+        run: |
+          set -eu
+          # audio/drivers/wdmks.c compiled whole, its WaveRT loop driven
+          # by hand: the test owns the driver's state, points the
+          # position register at a word of its own and moves the
+          # hardware itself, so nothing reaches the kernel and wine
+          # needs no sound card. Pins that every byte the cursor passes
+          # is cleared, so the loop plays silence when the frontend
+          # stops writing - a pause, a menu, a stall - instead of the
+          # last loop of audio round and round; that a write after
+          # that lands a margin ahead of the hardware rather than a
+          # loop behind it; that a full loop is not taken for an
+          # overrun; and that a start puts the model back at the top
+          # of the loop with the hardware.
+          if ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1 \
+                || ! command -v wine >/dev/null 2>&1; then
+             sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine64 \
+                -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+          fi
+          make clean all
+          WINEDEBUG=-all timeout 120 make check
+          echo "[pass] wdmks_loop_test (wine)"
+
       - name: Build and run wasapi_exclusive_pacing_test (ASan + UBSan, then TSan)
         shell: bash
         working-directory: samples/audio/wasapi_exclusive_pacing
