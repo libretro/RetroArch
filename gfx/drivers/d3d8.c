@@ -1778,6 +1778,7 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
 
 	  if (!overlay->vert_buf)
 		  return;
+      overlay->vert_sent_ok = false;
    }
 
    for (i = 0; i < 4; i++)
@@ -1806,12 +1807,20 @@ static void d3d8_overlay_render(d3d8_video_t *d3d,
    vert[2].v      = overlay->tex_coords[1] + overlay->tex_coords[3];
    vert[3].v      = overlay->tex_coords[1] + overlay->tex_coords[3];
 
-   if (overlay->vert_buf)
+   /* A lock only when the quad changed: the page's quads are the same
+    * from one frame to the next until the layout or an alpha moves. */
+   if (     !overlay->vert_sent_ok
+         || memcmp(overlay->vert_sent, vert, sizeof(vert)))
    {
       LPDIRECT3DVERTEXBUFFER8 vbo = (LPDIRECT3DVERTEXBUFFER8)overlay->vert_buf;
       void *verts = d3d8_vertex_buffer_lock(vbo);
-      memcpy(verts, vert, sizeof(vert));
-      IDirect3DVertexBuffer8_Unlock(vbo);
+      if (verts)
+      {
+         memcpy(verts, vert, sizeof(vert));
+         IDirect3DVertexBuffer8_Unlock(vbo);
+         memcpy(overlay->vert_sent, vert, sizeof(vert));
+         overlay->vert_sent_ok = true;
+      }
    }
    IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
    IDirect3DDevice8_SetRenderState(d3d->dev, D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);

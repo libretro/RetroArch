@@ -33,6 +33,11 @@ three of them per image - and writes a buffer the last frame may still
 be drawing from. Their setters, and the helper they go through, must
 not map.
 
+D3D8 and D3D9 (HLSL) give each overlay image a vertex buffer of its
+own, filled by the image's draw: that draw locks the buffer only when
+the quad differs from the one it last wrote (overlay_t::vert_sent), or
+a page costs a lock per image per frame for quads that never change.
+
 Exit status 0 when every setter passes, 1 otherwise.
 """
 
@@ -102,6 +107,32 @@ STORE_ONLY = ("d3d10.c", "d3d11.c", "d3d12.c")
 MAP        = r"\b(?:D3D12Map|Map)\s*\("
 
 
+LOCK_ONCE = {"d3d8.c":     r"\bd3d8_overlay_render\s*\(",
+             "d3d9hlsl.c": r"\bd3d9_hlsl_overlay_render\s*\("}
+LOCK      = r"(?:_Lock|vertex_buffer_lock)\s*\("
+
+
+def check_lock_once(name, code):
+    problems = []
+    bodies   = [b for b in (body_of(code, m.end() - 1)
+                            for m in re.finditer(LOCK_ONCE[name], code))
+                if b is not None]
+    if len(bodies) != 1:
+        return ["found %d definitions of the overlay draw - the check is "
+                "not reading this driver right" % len(bodies)]
+    body  = bodies[0]
+    locks = [m.start() for m in re.finditer(LOCK, body)]
+    guard = body.find("memcmp(overlay->vert_sent")
+    if not locks:
+        problems.append("the overlay draw locks no vertex buffer - the "
+                        "check is not reading this driver right")
+    elif guard < 0 or any(l < guard for l in locks):
+        problems.append("the overlay draw locks its vertex buffer without "
+                        "first comparing the quad with the one it last "
+                        "wrote (vert_sent)")
+    return problems
+
+
 def check_c(name, code):
     problems = []
     setters  = functions(code, SETTER)
@@ -127,6 +158,8 @@ def check_c(name, code):
                 problems.append("%s() maps the sprite buffer: a setter "
                                 "writes the page's copy, the draw uploads"
                                 % fn)
+    if name in LOCK_ONCE:
+        problems += check_lock_once(name, code)
     return problems
 
 
