@@ -262,12 +262,16 @@ static void lane_line_separation(void)
          "the viewport slots and cmd_data share line %u",
          (unsigned)LINE_OF(cmd_data));
 
-   /* The per-frame published flags against the main thread's own. */
-   CHECK(LINE_OF(has_windowed) != LINE_OF(nonblock),
-         "has_windowed and nonblock share line %u",
+   /* The per-frame published flags, and worker_running after them
+    * before the pad, against the main thread's own. */
+   CHECK(LINE_OF(win_flags) != LINE_OF(nonblock),
+         "win_flags and nonblock share line %u",
          (unsigned)LINE_OF(nonblock));
-   CHECK(LINE_OF(has_windowed) != LINE_OF(deferred_head),
-         "has_windowed and deferred_head share line %u",
+   CHECK(LINE_OF(worker_running) != LINE_OF(nonblock),
+         "worker_running and nonblock share line %u",
+         (unsigned)LINE_OF(nonblock));
+   CHECK(LINE_OF(worker_running) != LINE_OF(deferred_head),
+         "worker_running and deferred_head share line %u",
          (unsigned)LINE_OF(deferred_head));
 
    /* The deferred ring's producer and consumer indices. */
@@ -1979,6 +1983,96 @@ static void lane_pacing_queue_drain(void)
 
    if (failures == had)
       fprintf(stderr, "[pass] pacing-drain lane\n");
+}
+
+/* ------------------------------------------------------------------ */
+/* The window's answers reach the main thread, each as itself          */
+/*                                                                    */
+/*   alive, focus, has_windowed and presentable are published by the  */
+/*   video thread after each frame, together. Each is driven on its   */
+/*   own here and read back through the wrapper on the main thread,   */
+/*   so one answer landing in another's place, or an answer that does */
+/*   not move, fails.                                                  */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t        winlane_driver;
+static bool                  winlane_alive;
+static bool                  winlane_focus;
+static bool                  winlane_windowed;
+
+static bool winlane_alive_cb(void *data)    { (void)data; return winlane_alive; }
+static bool winlane_focus_cb(void *data)    { (void)data; return winlane_focus; }
+static bool winlane_windowed_cb(void *data) { (void)data; return winlane_windowed; }
+
+static void lane_window_answers(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st;
+   const video_driver_t *inner, *wrap;
+   thread_video_t *thr;
+   bool presentable;
+   int saved, i;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "window answers lane");
+   video_st    = video_state_get_ptr();
+   thr         = (thread_video_t*)video_st->data;
+   wrap        = video_st->current_video;
+   video_thread_wait_idle();
+   presentable = video_context_driver_presentable();
+
+   inner                       = thr->driver;
+   winlane_driver              = *thr->driver;
+   winlane_driver.alive        = winlane_alive_cb;
+   winlane_driver.focus        = winlane_focus_cb;
+   winlane_driver.has_windowed = winlane_windowed_cb;
+   thr->driver                 = &winlane_driver;
+
+   /* Every focus/windowed pairing, the window alive. */
+   winlane_alive = true;
+   for (i = 0; i < 4; i++)
+   {
+      winlane_focus    = (i & 1) != 0;
+      winlane_windowed = (i & 2) != 0;
+      run_frames(2);
+      video_thread_wait_idle();
+      CHECK(wrap->alive(video_st->data),
+            "window answers lane: alive read false (focus %d, windowed %d)",
+            winlane_focus, winlane_windowed);
+      CHECK(wrap->focus(video_st->data) == winlane_focus,
+            "window answers lane: focus read %d, the driver said %d",
+            !winlane_focus, winlane_focus);
+      CHECK(wrap->has_windowed(video_st->data) == winlane_windowed,
+            "window answers lane: has_windowed read %d, the driver said %d",
+            !winlane_windowed, winlane_windowed);
+      CHECK(video_context_driver_presentable() == presentable,
+            "window answers lane: presentable moved with focus %d, "
+            "windowed %d", winlane_focus, winlane_windowed);
+   }
+
+   /* The window gone, the others held. One frame publishes it; the
+    * runloop would act on it at the next iterate, so the word is put
+    * back by hand while the video thread is idle. */
+   saved            = retro_atomic_load_acquire_int(&thr->win_flags);
+   winlane_alive    = false;
+   winlane_focus    = true;
+   winlane_windowed = true;
+   run_frames(1);
+   video_thread_wait_idle();
+   CHECK(!wrap->alive(video_st->data),
+         "window answers lane: alive read true after the driver said false");
+   CHECK(wrap->focus(video_st->data) && wrap->has_windowed(video_st->data),
+         "window answers lane: focus or has_windowed fell with alive");
+   CHECK(video_context_driver_presentable() == presentable,
+         "window answers lane: presentable moved with alive");
+
+   thr->driver = inner;
+   retro_atomic_store_release_int(&thr->win_flags, saved);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] window answers lane\n");
 }
 
 /* ------------------------------------------------------------------ */
@@ -4200,6 +4294,7 @@ int main(int argc, char *argv[])
       lane_resize_under_wrapper();
       lane_dupe_under_wrapper();
       lane_suppress_screensaver();
+      lane_window_answers();
       lane_size_pair_round_trip();
    }
    else

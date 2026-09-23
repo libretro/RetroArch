@@ -766,8 +766,15 @@ static bool video_thread_handle_packet(
          else
             pkt.data.b = false;
          /* Published as a frame's would be, so a caller that asked
-          * without waiting has it on its next pass. */
-         retro_atomic_store_release_int(&thr->alive, pkt.data.b);
+          * without waiting has it on its next pass. This thread is the
+          * word's only writer. */
+         {
+            int f = retro_atomic_load_acquire_int(&thr->win_flags)
+               & ~VIDEO_THREAD_WIN_ALIVE;
+            if (pkt.data.b)
+               f |= VIDEO_THREAD_WIN_ALIVE;
+            retro_atomic_store_release_int(&thr->win_flags, f);
+         }
          video_thread_reply(thr, &pkt);
          break;
 
@@ -1280,7 +1287,8 @@ bool video_thread_texture_load_async(void *img,
    GFX_INSTR_INC(GFX_INSTR_ASYNC_POST_ALLOC);
 
    slock_lock(thr->lock);
-   if (!retro_atomic_load_acquire_int(&thr->alive))
+   if (!(retro_atomic_load_acquire_int(&thr->win_flags)
+            & VIDEO_THREAD_WIN_ALIVE))
    {
       slock_unlock(thr->lock);
       free(n);
@@ -1314,7 +1322,8 @@ bool video_thread_async_post(video_thread_async_load_t *n)
    GFX_INSTR_INC(GFX_INSTR_ASYNC_POST);
 
    slock_lock(thr->lock);
-   if (!retro_atomic_load_acquire_int(&thr->alive))
+   if (!(retro_atomic_load_acquire_int(&thr->win_flags)
+            & VIDEO_THREAD_WIN_ALIVE))
    {
       slock_unlock(thr->lock);
       return false;
@@ -2035,10 +2044,11 @@ static void video_thread_loop(void *data)
          }
 
          slock_lock(thr->lock);
-         retro_atomic_store_release_int(&thr->alive,        alive);
-         retro_atomic_store_release_int(&thr->focus,        focus);
-         retro_atomic_store_release_int(&thr->presentable,  presentable);
-         retro_atomic_store_release_int(&thr->has_windowed, has_windowed);
+         retro_atomic_store_release_int(&thr->win_flags,
+                 (alive        ? VIDEO_THREAD_WIN_ALIVE        : 0)
+               | (focus        ? VIDEO_THREAD_WIN_FOCUS        : 0)
+               | (presentable  ? VIDEO_THREAD_WIN_PRESENTABLE  : 0)
+               | (has_windowed ? VIDEO_THREAD_WIN_HAS_WINDOWED : 0));
          video_thread_publish_vp(thr, &vp);
          /* Statistics. The viewport maths ran on this thread during
           * thr->driver->frame() above, so publish the result rather
@@ -2193,7 +2203,8 @@ static bool video_thread_alive(void *data)
       }
    }
 
-   return retro_atomic_load_acquire_int(&thr->alive) != 0;
+   return (retro_atomic_load_acquire_int(&thr->win_flags)
+         & VIDEO_THREAD_WIN_ALIVE) != 0;
 }
 
 static bool video_thread_focus(void *data)
@@ -2203,7 +2214,8 @@ static bool video_thread_focus(void *data)
    if (!thr)
       return false;
 
-   return retro_atomic_load_acquire_int(&thr->focus) != 0;
+   return (retro_atomic_load_acquire_int(&thr->win_flags)
+         & VIDEO_THREAD_WIN_FOCUS) != 0;
 }
 
 static bool video_thread_suppress_screensaver(void *data, bool enable)
@@ -2227,7 +2239,8 @@ static bool video_thread_has_windowed(void *data)
    if (!thr)
       return false;
 
-   return retro_atomic_load_acquire_int(&thr->has_windowed) != 0;
+   return (retro_atomic_load_acquire_int(&thr->win_flags)
+         & VIDEO_THREAD_WIN_HAS_WINDOWED) != 0;
 }
 
 /* The handoff statistics, off the push's own path: a window starts,
@@ -2862,7 +2875,12 @@ static bool video_thread_init(thread_video_t *thr,
    thr->input                = input;
    thr->input_data           = input_data;
    thr->info                 = info;
-   retro_atomic_int_init(&thr->alive, 1);
+   /* PRESENTABLE is the default the video thread applies when the
+    * context has no answer, so the runloop is not told there is nothing
+    * to present to during the frames before the first one completes. */
+   retro_atomic_int_init(&thr->win_flags, VIDEO_THREAD_WIN_ALIVE
+         | VIDEO_THREAD_WIN_FOCUS | VIDEO_THREAD_WIN_PRESENTABLE
+         | VIDEO_THREAD_WIN_HAS_WINDOWED);
    retro_atomic_int_init(&thr->worker_running, 1);
    retro_atomic_int_init(&thr->deferred_head,  0);
    retro_atomic_int_init(&thr->deferred_tail,  0);
@@ -2870,12 +2888,6 @@ static bool video_thread_init(thread_video_t *thr,
     * setter then sends the waiting way, as it did before. */
    thr->deferred = (thread_packet_t*)calloc(VIDEO_THREAD_DEFERRED_MAX,
          sizeof(*thr->deferred));
-   retro_atomic_int_init(&thr->focus, 1);
-   /* Same default the video thread applies when the context has no
-    * answer, so the runloop is not told there is nothing to present to
-    * during the frames before the first one completes. */
-   retro_atomic_int_init(&thr->presentable, 1);
-   retro_atomic_int_init(&thr->has_windowed, 1);
    retro_atomic_int_init(&thr->scale_packed, 0);
    retro_atomic_int_init(&thr->async.out_ready, 0);
    thr->last_time            = cpu_features_get_time_usec();
@@ -4042,7 +4054,8 @@ bool video_thread_presentable(void)
    if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
       return video_context_driver_presentable_direct();
 
-   return retro_atomic_load_acquire_int(&thr->presentable) != 0;
+   return (retro_atomic_load_acquire_int(&thr->win_flags)
+         & VIDEO_THREAD_WIN_PRESENTABLE) != 0;
 }
 
 /* Presenter statistics for the overlay: repeats made this session, and

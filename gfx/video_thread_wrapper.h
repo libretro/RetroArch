@@ -36,6 +36,14 @@
 
 RETRO_BEGIN_DECLS
 
+enum video_thread_win_flags
+{
+   VIDEO_THREAD_WIN_ALIVE        = (1 << 0),
+   VIDEO_THREAD_WIN_FOCUS        = (1 << 1),
+   VIDEO_THREAD_WIN_PRESENTABLE  = (1 << 2),
+   VIDEO_THREAD_WIN_HAS_WINDOWED = (1 << 3)
+};
+
 enum thread_cmd
 {
    CMD_VIDEO_NONE = 0,
@@ -696,20 +704,18 @@ typedef struct thread_video
    } waiter_call;
 
    /* Published by the video thread after each frame and read by the
-    * main thread, every frame, without 'lock': each is a flag of its
-    * own. presentable is the context's answer to "have you anything to
-    * present to"; the context data belongs to the video thread, and
+    * main thread, every frame, without 'lock': the window's four
+    * answers in one word of VIDEO_THREAD_WIN_* bits, one store for all
+    * of them. PRESENTABLE is the context's answer to "have you anything
+    * to present to"; the context data belongs to the video thread, and
     * asking it directly from the runloop would read a swapchain handle
     * while this thread rebuilds it. */
-   retro_atomic_int_t alive;
+   retro_atomic_int_t win_flags;
    /* The worker still takes commands: set before it starts, cleared as
     * it handles CMD_FREE. Not 'alive', which is the driver's answer for
     * the window and goes false - on a close or a quit signal - while the
     * worker still runs and holds the context */
    retro_atomic_int_t worker_running;
-   retro_atomic_int_t focus;
-   retro_atomic_int_t presentable;
-   retro_atomic_int_t has_windowed;
 
    /* The flags above are published by the video thread every frame;
     * the two below, and the ring's head after them, are the main
