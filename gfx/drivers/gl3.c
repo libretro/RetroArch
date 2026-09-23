@@ -30,6 +30,7 @@
 #include <math.h>
 
 #include "../common/gl3_defines.h"
+#include "../common/rgba16_pack.h"
 
 #include <encodings/utf.h>
 #include <gfx/gl_capabilities.h>
@@ -101,7 +102,7 @@ typedef struct gl3
    GLuint *overlay_tex;
    float *overlay_vertex_coord;
    float *overlay_tex_coord;
-   float *overlay_color_coord;
+   uint16_t *overlay_color_coord; /* UNORM16 r, g, b, a per vertex */
    GLsync fences[GL_CORE_NUM_FENCES];
    void *readback_buffer_screenshot;
    struct scaler_ctx pbo_readback_scaler;
@@ -1905,9 +1906,9 @@ static void gl3_render_overlay(gl3_t *gl,
    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
          2 * sizeof(float), (void *)(uintptr_t)0);
    gl3_bind_scratch_vbo(gl, gl->overlay_color_coord,
-         16 * sizeof(float) * gl->overlays);
-   glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
-         4 * sizeof(float), (void *)(uintptr_t)0);
+         16 * sizeof(uint16_t) * gl->overlays);
+   glVertexAttribPointer(2, 4, GL_UNSIGNED_SHORT, GL_TRUE,
+         4 * sizeof(uint16_t), (void *)(uintptr_t)0);
 
    for (i = 0; i < gl->overlays; i++)
    {
@@ -3596,14 +3597,14 @@ static bool gl3_overlay_alloc(gl3_t *gl, unsigned num_images,
    o_tex    = o_vertex + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
    o_color  = o_tex    + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
    gl->overlay_tex = (GLuint*)
-      calloc(1, o_color + 4 * 4 * num_images * sizeof(GLfloat));
+      calloc(1, o_color + 4 * 4 * num_images * sizeof(uint16_t));
 
    if (!gl->overlay_tex)
       return false;
 
    gl->overlay_vertex_coord = (GLfloat*)((uint8_t*)gl->overlay_tex + o_vertex);
    gl->overlay_tex_coord    = (GLfloat*)((uint8_t*)gl->overlay_tex + o_tex);
-   gl->overlay_color_coord  = (GLfloat*)((uint8_t*)gl->overlay_tex + o_color);
+   gl->overlay_color_coord  = (uint16_t*)((uint8_t*)gl->overlay_tex + o_color);
 
    gl->overlays = num_images;
    if (textures)
@@ -3618,7 +3619,7 @@ static bool gl3_overlay_alloc(gl3_t *gl, unsigned num_images,
       gl3_overlay_tex_geom   (gl, i, 0, 0, 1, 1);
       gl3_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
       for (j = 0; j < 16; j++)
-         gl->overlay_color_coord[16 * i + j] = 1.0f;
+         gl->overlay_color_coord[16 * i + j] = 0xFFFF;
    }
    return true;
 }
@@ -3685,19 +3686,21 @@ static void gl3_overlay_full_screen(void *data, bool enable)
 
 static void gl3_overlay_set_alpha(void *data, unsigned image, float mod)
 {
-   GLfloat *color = NULL;
+   uint16_t *color = NULL;
+   uint16_t a;
    gl3_t *gl = (gl3_t*)data;
    /* As the geometry setters: no page loaded is a NULL array, and an
     * index off the end of the page is the neighbouring block. */
    if (!gl || !gl->overlay_color_coord || image >= gl->overlays)
       return;
 
-   color          = (GLfloat*)&gl->overlay_color_coord[image * 16];
+   a              = (uint16_t)rgba16_unorm(mod);
+   color          = &gl->overlay_color_coord[image * 16];
 
-   color[ 0 + 3]  = mod;
-   color[ 4 + 3]  = mod;
-   color[ 8 + 3]  = mod;
-   color[12 + 3]  = mod;
+   color[ 0 + 3]  = a;
+   color[ 4 + 3]  = a;
+   color[ 8 + 3]  = a;
+   color[12 + 3]  = a;
 }
 
 static const video_overlay_interface_t gl3_overlay_interface = {
