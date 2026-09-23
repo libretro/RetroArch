@@ -539,6 +539,34 @@ static bool rcheevos_menu_has_subsets(const rc_client_achievement_list_t* list)
 
 static void rcheevos_menu_append_achievements(rcheevos_locals_t* rcheevos_locals, uint32_t subset_id)
 {
+   static const uint8_t bucket_order_locked_first[] = {
+      RC_CLIENT_ACHIEVEMENT_BUCKET_ACTIVE_CHALLENGE,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_RECENTLY_UNLOCKED,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_ALMOST_THERE,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_UNOFFICIAL,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_UNSUPPORTED,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_UNLOCKED
+   };
+   static const uint8_t bucket_order_unlocked_first[] = {
+      RC_CLIENT_ACHIEVEMENT_BUCKET_ACTIVE_CHALLENGE,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_RECENTLY_UNLOCKED,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_ALMOST_THERE,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_UNLOCKED,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_UNOFFICIAL,
+      RC_CLIENT_ACHIEVEMENT_BUCKET_UNSUPPORTED
+   };
+   const settings_t* settings = config_get_ptr();
+   unsigned highlights = settings->uints.cheevos_highlighted_achievements;
+   bool show_highlights = subset_id == 0 ?
+         (highlights == CHEEVOS_HIGHLIGHTS_BOTH ||
+          highlights == CHEEVOS_HIGHLIGHTS_SUMMARY_ONLY) :
+         (highlights == CHEEVOS_HIGHLIGHTS_BOTH ||
+          highlights == CHEEVOS_HIGHLIGHTS_SET_LISTS_ONLY);
+   const uint8_t* bucket_order = settings->uints.cheevos_achievement_list_order ==
+         CHEEVOS_ACHIEVEMENT_LIST_UNLOCKED_FIRST ?
+         bucket_order_unlocked_first : bucket_order_locked_first;
    rc_client_achievement_list_t* list = rc_client_create_achievement_list(rcheevos_locals->client,
          RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE_AND_UNOFFICIAL,
          RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_PROGRESS);
@@ -546,32 +574,36 @@ static void rcheevos_menu_append_achievements(rcheevos_locals_t* rcheevos_locals
    rcheevos_menuitem_t* menuitem = NULL;
    bool checked_subsets = false;
 
-   const rc_client_achievement_bucket_t* bucket = list->buckets;
-   const rc_client_achievement_bucket_t* bucket_stop = bucket + list->num_buckets;
+   const rc_client_achievement_bucket_t* bucket;
+   const rc_client_achievement_bucket_t* bucket_stop = list->buckets + list->num_buckets;
+   unsigned bucket_type;
+   unsigned display_type;
+   size_t i;
 
    const rc_client_achievement_t** achievement;
    const rc_client_achievement_t** achievement_stop;
 
-   for (; bucket < bucket_stop; ++bucket)
+   for (i = 0; i < ARRAY_SIZE(bucket_order_locked_first); ++i)
    {
-      enum msg_hash_enums label = MSG_UNKNOWN;
+      enum msg_hash_enums label;
+      display_type = bucket_order[i];
 
       if (subset_id == 0)
       {
-         switch (bucket->bucket_type)
+         if (!show_highlights)
+            continue;
+         switch (display_type)
          {
          case RC_CLIENT_ACHIEVEMENT_BUCKET_RECENTLY_UNLOCKED:
          case RC_CLIENT_ACHIEVEMENT_BUCKET_ACTIVE_CHALLENGE:
-            /* these can be shown at the top level */
             break;
 
          default:
-            /* the rest aren't shown at the top level */
             continue;
          }
       }
 
-      switch (bucket->bucket_type)
+      switch (display_type)
       {
       case RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED:
          label = MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY;
@@ -598,70 +630,89 @@ static void rcheevos_menu_append_achievements(rcheevos_locals_t* rcheevos_locals
          continue;
       }
 
-      achievement = bucket->achievements;
-      achievement_stop = achievement + bucket->num_achievements;
-      for (; achievement < achievement_stop; ++achievement)
+      bucket = list->buckets;
+      for (; bucket < bucket_stop; ++bucket)
       {
-         if (subset_id != 0)
+         /* Remap the menu group without changing the achievement's state. */
+         bucket_type = bucket->bucket_type;
+         if (bucket_type == RC_CLIENT_ACHIEVEMENT_BUCKET_RECENTLY_UNLOCKED &&
+               !show_highlights)
+            bucket_type = RC_CLIENT_ACHIEVEMENT_BUCKET_UNLOCKED;
+         else if (bucket_type == RC_CLIENT_ACHIEVEMENT_BUCKET_ALMOST_THERE &&
+               !show_highlights)
+            bucket_type = RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED;
+         else if (bucket_type == RC_CLIENT_ACHIEVEMENT_BUCKET_ACTIVE_CHALLENGE &&
+               !show_highlights)
+            bucket_type = RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED;
+
+         if (bucket_type != display_type)
+            continue;
+
+         achievement = bucket->achievements;
+         achievement_stop = achievement + bucket->num_achievements;
+         for (; achievement < achievement_stop; ++achievement)
          {
-            if (bucket->subset_id == 0)
+            if (subset_id != 0)
             {
-               if (!checked_subsets)
+               if (bucket->subset_id == 0)
                {
-                  if (rcheevos_menu_has_subsets(list))
+                  if (!checked_subsets)
                   {
-                     list2 = rc_client_create_achievement_list(rcheevos_locals->client,
-                        RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE_AND_UNOFFICIAL,
-                        RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_LOCK_STATE);
+                     if (rcheevos_menu_has_subsets(list))
+                     {
+                        list2 = rc_client_create_achievement_list(rcheevos_locals->client,
+                           RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE_AND_UNOFFICIAL,
+                           RC_CLIENT_ACHIEVEMENT_LIST_GROUPING_LOCK_STATE);
+                     }
+                     checked_subsets = true;
                   }
-                  checked_subsets = true;
+
+                  if (list2 && !rcheevos_menu_achievement_in_list(*achievement, list2, subset_id))
+                     continue;
                }
-
-               if (list2 && !rcheevos_menu_achievement_in_list(*achievement, list2, subset_id))
+               else if (bucket->subset_id != subset_id)
+               {
                   continue;
+               }
             }
-            else if (bucket->subset_id != subset_id)
+
+            if (label != MSG_UNKNOWN)
             {
-               continue;
+               rcheevos_menu_append_header(rcheevos_locals, label, 0);
+               label = MSG_UNKNOWN;
             }
+
+            menuitem = rcheevos_menu_allocate(rcheevos_locals, RCHEEVOS_MENU_ACHIEVEMENT);
+            if (!menuitem)
+               break;
+
+            menuitem->source.achievement.achievement = *achievement;
+
+            switch (bucket->bucket_type)
+            {
+            case RC_CLIENT_ACHIEVEMENT_BUCKET_RECENTLY_UNLOCKED:
+            case RC_CLIENT_ACHIEVEMENT_BUCKET_UNLOCKED:
+               if ((*achievement)->unlocked & RC_CLIENT_ACHIEVEMENT_UNLOCKED_HARDCORE)
+                  menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE;
+               else
+                  menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY;
+               break;
+            case RC_CLIENT_ACHIEVEMENT_BUCKET_UNSUPPORTED:
+               menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY;
+               break;
+            case RC_CLIENT_ACHIEVEMENT_BUCKET_UNOFFICIAL:
+               menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNOFFICIAL_ENTRY;
+               break;
+            default:
+               menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY;
+               break;
+            }
+
+            /* Loaded when a menu driver first draws the entry, not here:
+             * a set has far more achievements than fit on screen or in
+             * the badge cache. */
+            menuitem->menu_badge_grayscale = RCHEEVOS_MENU_BADGE_PENDING;
          }
-
-         if (label != MSG_UNKNOWN)
-         {
-            rcheevos_menu_append_header(rcheevos_locals, label, 0);
-            label = MSG_UNKNOWN;
-         }
-
-         menuitem = rcheevos_menu_allocate(rcheevos_locals, RCHEEVOS_MENU_ACHIEVEMENT);
-         if (!menuitem)
-            break;
-
-         menuitem->source.achievement.achievement = *achievement;
-
-         switch (bucket->bucket_type)
-         {
-         case RC_CLIENT_ACHIEVEMENT_BUCKET_RECENTLY_UNLOCKED:
-         case RC_CLIENT_ACHIEVEMENT_BUCKET_UNLOCKED:
-            if ((*achievement)->unlocked & RC_CLIENT_ACHIEVEMENT_UNLOCKED_HARDCORE)
-               menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE;
-            else
-               menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY;
-            break;
-         case RC_CLIENT_ACHIEVEMENT_BUCKET_UNSUPPORTED:
-            menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY;
-            break;
-         case RC_CLIENT_ACHIEVEMENT_BUCKET_UNOFFICIAL:
-            menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_UNOFFICIAL_ENTRY;
-            break;
-         default:
-            menuitem->state_label_idx = MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY;
-            break;
-         }
-
-         /* Loaded when a menu driver first draws the entry, not here:
-          * a set has far more achievements than fit on screen or in
-          * the badge cache. */
-         menuitem->menu_badge_grayscale = RCHEEVOS_MENU_BADGE_PENDING;
       }
    }
 

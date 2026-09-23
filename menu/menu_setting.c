@@ -10308,6 +10308,44 @@ static void achievement_leaderboard_trackers_enabled_write_handler(rarch_setting
    rcheevos_leaderboard_trackers_visibility_changed();
 }
 
+static size_t setting_get_string_representation_uint_cheevos_achievement_list_order(
+   rarch_setting_t* setting, char* s, size_t len)
+{
+   if (setting)
+      return strlcpy(s, msg_hash_to_str(
+            *setting->value.target.unsigned_integer ==
+            CHEEVOS_ACHIEVEMENT_LIST_UNLOCKED_FIRST ?
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_ACHIEVEMENT_LIST_ORDER_UNLOCKED_FIRST :
+            MENU_ENUM_LABEL_VALUE_CHEEVOS_ACHIEVEMENT_LIST_ORDER_LOCKED_FIRST), len);
+   return 0;
+}
+
+static size_t setting_get_string_representation_uint_cheevos_highlighted_achievements(
+   rarch_setting_t* setting, char* s, size_t len)
+{
+   if (setting)
+   {
+      enum msg_hash_enums value;
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case CHEEVOS_HIGHLIGHTS_SUMMARY_ONLY:
+            value = MENU_ENUM_LABEL_VALUE_CHEEVOS_HIGHLIGHTS_SUMMARY_ONLY;
+            break;
+         case CHEEVOS_HIGHLIGHTS_SET_LISTS_ONLY:
+            value = MENU_ENUM_LABEL_VALUE_CHEEVOS_HIGHLIGHTS_SET_LISTS_ONLY;
+            break;
+         case CHEEVOS_HIGHLIGHTS_NEITHER:
+            value = MENU_ENUM_LABEL_VALUE_CHEEVOS_HIGHLIGHTS_NEITHER;
+            break;
+         default:
+            value = MENU_ENUM_LABEL_VALUE_CHEEVOS_HIGHLIGHTS_BOTH;
+            break;
+      }
+      return strlcpy(s, msg_hash_to_str(value), len);
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_cheevos_visibility_summary(
    rarch_setting_t* setting,
    char* s, size_t len)
