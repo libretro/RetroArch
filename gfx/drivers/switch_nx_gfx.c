@@ -493,9 +493,8 @@ static void *switch_init(const video_info_t *video,
    framebufferMakeLinear(&sw->fb);
 
     sw->vp.pos          = VIDEO_POS_PACK(0, 0);
-    sw->o_width         = VIDEO_SCALE_W(video->dims);
-    sw->o_height        = VIDEO_SCALE_H(video->dims);
-    sw->vp.dims         = VIDEO_SCALE_PACK(sw->o_width, sw->o_height);
+    sw->o_dims          = video->dims;
+    sw->vp.dims         = video->dims;
     sw->overlay_enabled = false;
     sw->overlay         = NULL;
 #ifdef HAVE_MENU
@@ -538,9 +537,9 @@ static void switch_update_viewport(switch_video_t *sw)
     /* Handle o_size mode (original size) specially */
     if (sw->o_size)
     {
-        sw->vp.pos    = VIDEO_POS_PACK((int)(((float)VIDEO_SCALE_W(sw->vp.full_dims) - sw->o_width)) / 2,
-              (int)(((float)VIDEO_SCALE_H(sw->vp.full_dims) - sw->o_height)) / 2);
-        sw->vp.dims   = VIDEO_SCALE_PACK(sw->o_width, sw->o_height);
+        sw->vp.pos    = VIDEO_POS_PACK((int)(((float)VIDEO_SCALE_W(sw->vp.full_dims) - VIDEO_SCALE_W(sw->o_dims))) / 2,
+              (int)(((float)VIDEO_SCALE_H(sw->vp.full_dims) - VIDEO_SCALE_H(sw->o_dims))) / 2);
+        sw->vp.dims   = sw->o_dims;
         return;
     }
 
