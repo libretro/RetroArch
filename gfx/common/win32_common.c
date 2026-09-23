@@ -346,14 +346,20 @@ int d3dkmt_scanline_get(void)
 
 typedef struct win32_common_state
 {
-   int pos_x;
-   int pos_y;
-   unsigned pos_width;
-   unsigned pos_height;
+   /* Where the window sits and how big its frame is, in
+    * VIDEO_POS_PACK's and VIDEO_SCALE_PACK's layouts. The origin
+    * goes negative on a display left of or above the primary one,
+    * and only means anything once pos_set is up. */
+   unsigned pos;
+   unsigned pos_dims;
 #ifdef HAVE_TASKBAR
    unsigned taskbar_message;
 #endif
    unsigned monitor_count;
+   /* Up once a position has come from the config or from the window
+    * itself. Until then the window is created wherever Windows
+    * decides to put it. */
+   bool pos_set;
 } win32_common_state_t;
 
 /* Module-level state: resize dimensions, refresh rate, and main window handle.
@@ -370,14 +376,13 @@ static HMONITOR win32_monitor_all[MAX_MONITORS];
 
 static win32_common_state_t win32_st =
 {
-   CW_USEDEFAULT,       /* pos_x */
-   CW_USEDEFAULT,       /* pos_y */
-   0,                   /* pos_width */
-   0,                   /* pos_height */
+   0,                   /* pos */
+   0,                   /* pos_dims */
 #ifdef HAVE_TASKBAR
    0,                   /* taskbar_message */
 #endif
    0,                   /* monitor_count */
+   false,               /* pos_set */
 };
 
 uint8_t win32_get_flags(void)
@@ -552,14 +557,17 @@ static void win32_save_position(void)
    {
       if (GetWindowPlacement(main_window.hwnd, &placement))
       {
-         g_win32->pos_x      = placement.rcNormalPosition.left;
-         g_win32->pos_y      = placement.rcNormalPosition.top;
+         g_win32->pos        = VIDEO_POS_PACK(
+               placement.rcNormalPosition.left,
+               placement.rcNormalPosition.top);
+         g_win32->pos_set    = true;
       }
 
       if (GetWindowRect(main_window.hwnd, &rect))
       {
-         g_win32->pos_width  = rect.right  - rect.left;
-         g_win32->pos_height = rect.bottom - rect.top;
+         g_win32->pos_dims   = VIDEO_SCALE_PACK(
+               rect.right  - rect.left,
+               rect.bottom - rect.top);
       }
    }
    else
@@ -577,10 +585,11 @@ static void win32_save_position(void)
       {
          bool ui_menubar_enable                     = settings->bools.ui_menubar_enable;
          bool window_show_decor                     = settings->bools.video_window_show_decorations;
-         unsigned win_w                             = g_win32->pos_width;
-         unsigned win_h                             = g_win32->pos_height;
-         settings->uints.window_position_pos        =
-               VIDEO_POS_PACK(g_win32->pos_x, g_win32->pos_y);
+         unsigned win_w                             =
+               VIDEO_SCALE_W(g_win32->pos_dims);
+         unsigned win_h                             =
+               VIDEO_SCALE_H(g_win32->pos_dims);
+         settings->uints.window_position_pos        = g_win32->pos;
          /* The frame the window reports includes whatever chrome it
           * is wearing; the setting holds the client area, so take the
           * chrome off both axes before the pair is stored. */
@@ -1863,8 +1872,8 @@ static bool win32_window_create(void *data, unsigned style,
 
    if (window_save_positions && !fullscreen)
    {
-      user_width                 = g_win32->pos_width;
-      user_height                = g_win32->pos_height;
+      user_width                 = VIDEO_SCALE_W(g_win32->pos_dims);
+      user_height                = VIDEO_SCALE_H(g_win32->pos_dims);
    }
 #ifdef LEGACY_WIN32
    main_window.hwnd              = CreateWindowEx(0,
@@ -1874,8 +1883,12 @@ static bool win32_window_create(void *data, unsigned style,
          L"RetroArch", title_local,
 #endif
          style,
-         fullscreen ? mon_rect->left : g_win32->pos_x,
-         fullscreen ? mon_rect->top  : g_win32->pos_y,
+         fullscreen ? mon_rect->left
+            : (g_win32->pos_set ? VIDEO_POS_X(g_win32->pos)
+                                : CW_USEDEFAULT),
+         fullscreen ? mon_rect->top
+            : (g_win32->pos_set ? VIDEO_POS_Y(g_win32->pos)
+                                : CW_USEDEFAULT),
          user_width,
          user_height,
          NULL, NULL, NULL, data);
@@ -2259,30 +2272,28 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          /* Set position from config */
          int border_thickness             = window_show_decor ? GetSystemMetrics(SM_CXSIZEFRAME) : 0;
          int title_bar_height             = window_show_decor ? GetSystemMetrics(SM_CYCAPTION) : 0;
-         int      window_position_x       =
-               VIDEO_POS_X(settings->uints.window_position_pos);
-         int      window_position_y       =
-               VIDEO_POS_Y(settings->uints.window_position_pos);
          unsigned window_position_width   =
                VIDEO_SCALE_W(settings->uints.window_position_dims);
          unsigned window_position_height  =
                VIDEO_SCALE_H(settings->uints.window_position_dims);
 
-         g_win32->pos_x                   = window_position_x;
-         g_win32->pos_y                   = window_position_y;
-         g_win32->pos_width               = window_position_width
-            + border_thickness * 2;
-         g_win32->pos_height              = window_position_height
-            + border_thickness * 2 + title_bar_height;
+         g_win32->pos                     =
+               settings->uints.window_position_pos;
+         g_win32->pos_set                 = true;
+         g_win32->pos_dims                = VIDEO_SCALE_PACK(
+               window_position_width  + border_thickness * 2,
+               window_position_height + border_thickness * 2
+                  + title_bar_height);
 
-         if (g_win32->pos_width != 0 && g_win32->pos_height != 0)
+         if (     VIDEO_SCALE_W(g_win32->pos_dims) != 0
+               && VIDEO_SCALE_H(g_win32->pos_dims) != 0)
             position_set_from_config = true;
       }
 
       if (position_set_from_config)
       {
-         g_win32_resize_width  = *width   = g_win32->pos_width;
-         g_win32_resize_height = *height  = g_win32->pos_height;
+         g_win32_resize_width  = *width   = VIDEO_SCALE_W(g_win32->pos_dims);
+         g_win32_resize_height = *height  = VIDEO_SCALE_H(g_win32->pos_dims);
       }
       else
       {
