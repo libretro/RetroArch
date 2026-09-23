@@ -25,12 +25,6 @@
 #include "../../config.h"
 #endif
 
-#ifdef HAVE_X11
-#ifdef HAVE_XCB
-#include <X11/Xlib-xcb.h>
-#endif
-#endif
-
 #include "vulkan_common.h"
 #include "../include/vulkan/vulkan.h"
 #include "vksym.h"
@@ -2001,7 +1995,9 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.sType      = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
             surf_info.pNext      = NULL;
             surf_info.flags      = 0;
-            surf_info.connection = XGetXCBConnection((Display*)display);
+            /* The caller's connection, which need not be the one
+             * its window was made on. */
+            surf_info.connection = (xcb_connection_t*)display;
             surf_info.window     = *(const xcb_window_t*)surface;
 
             if (create(vk->context.instance,

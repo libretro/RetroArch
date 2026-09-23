@@ -255,8 +255,9 @@ platform_video "ctx: x11 gl" "-DHAVE_X11 -DHAVE_OPENGL -DHAVE_EGL" "" \
    gfx/drivers_context/x_ctx.c /usr/include/X11/Xlib.h
 platform_video "ctx: x11 egl" "-DHAVE_X11 -DHAVE_EGL -DHAVE_OPENGLES" "" \
    gfx/drivers_context/xegl_ctx.c /usr/include/X11/Xlib.h
-platform_video "ctx: x11 vulkan" "-DHAVE_VULKAN -DHAVE_X11" "" \
-   gfx/drivers_context/x_vk_ctx.c /usr/include/vulkan/vulkan.h
+platform_video "ctx: x11 vulkan" "-DHAVE_VULKAN -DHAVE_X11 -DHAVE_XCB" "" \
+   gfx/drivers_context/x_vk_ctx.c \
+   "/usr/include/vulkan/vulkan.h /usr/include/X11/Xlib-xcb.h"
 platform_video "ctx: khr display" "-DHAVE_VULKAN" "" \
    gfx/drivers_context/khr_display_ctx.c /usr/include/vulkan/vulkan.h
 platform_video "ctx: kms/gbm" "-DHAVE_EGL -DHAVE_OPENGL -DHAVE_KMS -DHAVE_GBM" \

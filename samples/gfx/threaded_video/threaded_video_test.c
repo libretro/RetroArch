@@ -3973,6 +3973,77 @@ end:
 #endif
 }
 
+/* ------------------------------------------------------------------ */
+/* Lane: the Vulkan swapchain has an X connection of its own          */
+/*   Every request on a connection is numbered, and a present on the  */
+/*   frontend's connection (a software WSI's image data every frame)  */
+/*   moves the frontend's numbering with it. The X input driver's     */
+/*   keymap and pointer queries are the frontend's own requests - the */
+/*   ones a shared connection makes wait behind a frame - so its poll */
+/*   is left out while counting, and what remains over a run of       */
+/*   presented frames is only what the window poll sends: nothing.    */
+/* ------------------------------------------------------------------ */
+
+#define WSILANE_FRAMES 60
+
+static void wsilane_no_poll(void *data) { (void)data; }
+
+static void lane_x11_wsi_connection(void)
+{
+#if defined(HAVE_X11) && defined(HAVE_VULKAN)
+   unsigned had            = failures;
+   unsigned long before    = 0;
+   unsigned long sent      = 0;
+   const char *drv         = getenv("HARNESS_VIDEO_DRIVER");
+   input_driver_state_t *input_st;
+   input_driver_t *polling;
+   input_driver_t quiet;
+
+   if (!drv || strcmp(drv, "vulkan"))
+   {
+      fprintf(stderr, "[skip] x11 wsi connection lane (driver %s)\n",
+            drv ? drv : "null");
+      return;
+   }
+   if (     video_driver_display_type_get() != RARCH_DISPLAY_X11
+         || !g_x11_dpy)
+   {
+      fprintf(stderr, "[skip] x11 wsi connection lane (not an X11 display)\n");
+      return;
+   }
+
+   expect_wrapper(false, "x11 wsi connection");
+   input_st = input_state_get_ptr();
+   polling  = input_st->current_driver;
+   if (polling)
+   {
+      quiet                    = *polling;
+      quiet.poll               = wsilane_no_poll;
+      input_st->current_driver = &quiet;
+   }
+
+   run_frames(2);
+   XSync(g_x11_dpy, False);
+   before = NextRequest(g_x11_dpy);
+   run_frames(WSILANE_FRAMES);
+   XSync(g_x11_dpy, False);
+   /* Less the XSync that reads the count. */
+   sent   = NextRequest(g_x11_dpy) - before - 1;
+
+   if (polling)
+      input_st->current_driver = polling;
+
+   CHECK(sent < WSILANE_FRAMES / 4,
+         "x11 wsi connection: %lu requests on the frontend's connection"
+         " over %u presented frames - the swapchain presents on it",
+         sent, (unsigned)WSILANE_FRAMES);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] x11 wsi connection lane (%lu requests over %u frames)\n",
+            sent, (unsigned)WSILANE_FRAMES);
+#endif
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -4120,6 +4191,8 @@ int main(int argc, char *argv[])
    lane_driver_reloads();
    if (real_driver())
       lane_x11_event_pump();
+   if (real_driver())
+      lane_x11_wsi_connection();
    if (!real_driver())
    {
       lane_waiter_call();

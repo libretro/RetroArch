@@ -27,6 +27,8 @@
 #include <compat/strcasestr.h>
 #include <retro_timers.h>
 #include <X11/Xatom.h>
+#include <X11/Xlib-xcb.h>
+#include <xcb/xcb.h>
 
 #include "../../configuration.h"
 #include "../../frontend/frontend_driver.h"
@@ -50,6 +52,9 @@ typedef struct gfx_ctx_x_vk_data
    int interval;
 
    gfx_ctx_vulkan_data_t vk;
+   /* The swapchain's own connection to the server, see
+    * gfx_ctx_x_vk_wsi_connection(). */
+   xcb_connection_t *wsi_conn;
 } gfx_ctx_x_vk_data_t;
 
 typedef struct Hints
@@ -85,6 +90,33 @@ static const unsigned long retroarch_icon_vk_data[] = {
 
 static int x_vk_nul_handler(Display *dpy, XErrorEvent *event) { return 0; }
 
+/* The swapchain presents through a connection of its own. A software
+ * WSI writes each frame into its connection as image data, and every
+ * request the frontend makes on a shared connection - the input
+ * driver's keymap and pointer queries, the event pump - would wait
+ * behind that frame. Nothing the frontend asks the server then queues
+ * behind a present, whichever thread presents. The window is the
+ * frontend's; the server does not care which client draws to it. The
+ * frontend's own connection is used only if a second one cannot be
+ * opened. */
+static xcb_connection_t *gfx_ctx_x_vk_wsi_connection(
+      gfx_ctx_x_vk_data_t *x)
+{
+   if (!x->wsi_conn)
+   {
+      xcb_connection_t *conn = xcb_connect(DisplayString(g_x11_dpy), NULL);
+      if (xcb_connection_has_error(conn))
+      {
+         xcb_disconnect(conn);
+         RARCH_WARN("[Vulkan] No second X connection for the swapchain,"
+               " presenting on the frontend's.\n");
+         return XGetXCBConnection(g_x11_dpy);
+      }
+      x->wsi_conn = conn;
+   }
+   return x->wsi_conn;
+}
+
 static void gfx_ctx_x_vk_destroy_resources(gfx_ctx_x_vk_data_t *x)
 {
    x11_input_ctx_destroy();
@@ -92,6 +124,14 @@ static void gfx_ctx_x_vk_destroy_resources(gfx_ctx_x_vk_data_t *x)
    if (g_x11_dpy)
    {
       vulkan_context_destroy(&x->vk, g_x11_win != 0);
+   }
+
+   /* After the swapchain and surface: the server frees what the
+    * swapchain made on this connection when it closes. */
+   if (x->wsi_conn)
+   {
+      xcb_disconnect(x->wsi_conn);
+      x->wsi_conn = NULL;
    }
 
    if (g_x11_win && g_x11_dpy)
@@ -467,10 +507,9 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
 
       /* FIXME/TODO - threading error here */
 
-      /* Use XCB surface since it's the most supported WSI.
-       * We can obtain the XCB connection directly from X11. */
+      /* Use XCB surface since it's the most supported WSI. */
       if (!vulkan_surface_create(&x->vk, VULKAN_WSI_XCB,
-               g_x11_dpy, &g_x11_win,
+               gfx_ctx_x_vk_wsi_connection(x), &g_x11_win,
                width, height, x->interval))
          goto error;
    }
