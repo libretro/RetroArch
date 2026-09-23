@@ -458,6 +458,21 @@ void XRRFreeScreenResources(XRRScreenResources *r)
    stub_free(r);
 }
 
+/* The refresh-rate cache only arms on g_x11_dpy, which is NULL here:
+ * these link the watch, which the stub display never reaches. */
+Bool XRRQueryExtension(Display *dpy, int *event_base, int *error_base)
+{
+   (void)dpy;
+   *event_base = 0;
+   *error_base = 0;
+   return False;
+}
+
+void XRRSelectInput(Display *dpy, Window w, int mask)
+{
+   (void)dpy; (void)w; (void)mask;
+}
+
 Status XRRQueryVersion(Display *dpy, int *major, int *minor)
 {
    (void)dpy;
@@ -688,6 +703,51 @@ static int test_orientation_query_failures(void)
    }
 
    printf("[pass] get_screen_orientation survives every failing query\n");
+   return 0;
+}
+
+/* The refresh rate walks the same queries. */
+static int test_refresh_rate_query_failures(void)
+{
+   int i;
+
+   for (i = 0; i < 3; i++)
+   {
+      stub_cfg_t cfg;
+      void *data;
+      float hz;
+      const char *what;
+
+      cfg_default(&cfg);
+      switch (i)
+      {
+         case 0: cfg.fail_output_info      = 1; what = "output_info";      break;
+         case 1: cfg.fail_crtc_info        = 1; what = "crtc_info";        break;
+         default: cfg.fail_screen_resources = 1; what = "screen_resources"; break;
+      }
+      stub_reset(&cfg);
+
+      data = dispserv_x11.init();
+      hz   = dispserv_x11.get_refresh_rate(data);
+      dispserv_x11.destroy(data);
+
+      if (hz != 0.0f)
+      {
+         fprintf(stderr, "FAIL: %s failure gave a refresh rate of %f\n",
+               what, hz);
+         return 1;
+      }
+      if (s_log.bad_free)
+      {
+         fprintf(stderr, "FAIL: %s failure produced %d bad free(s)\n",
+               what, s_log.bad_free);
+         return 1;
+      }
+      if (stub_leaks(what))
+         return 1;
+   }
+
+   printf("[pass] get_refresh_rate survives every failing query\n");
    return 0;
 }
 
@@ -1095,6 +1155,8 @@ int main(void)
    if (test_get_edid())
       return 1;
    if (test_orientation_query_failures())
+      return 1;
+   if (test_refresh_rate_query_failures())
       return 1;
    if (test_orientation_output_disconnected())
       return 1;

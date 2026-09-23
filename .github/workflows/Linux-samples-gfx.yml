@@ -694,6 +694,18 @@ jobs:
              && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
                 timeout 120 ./display_servers_x11_live_test)
           echo "[pass] display_servers_x11_live_test"
+          # The refresh rate a core polls every frame: answered from
+          # memory once the X event pump drains the connection, with no
+          # request to the server, and changed by the next pump after
+          # another client switches the mode - under a reader on a
+          # second thread, once under ASan+UBSan and once under TSan.
+          (cd samples/gfx/x11_refresh_rate \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+                timeout 120 ./x11_refresh_rate_test \
+             && make clean all SANITIZER=thread \
+             && TSAN_OPTIONS=halt_on_error=1 timeout 120 ./x11_refresh_rate_test)
+          echo "[pass] x11_refresh_rate_test"
           (cd samples/gfx/display_servers_sdl2_live \
              && make clean all SANITIZER=address,undefined \
              && ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \

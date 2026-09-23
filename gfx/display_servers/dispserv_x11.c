@@ -48,7 +48,6 @@
 
 enum dispserv_x11_flags
 {
-   DISPSERV_X11_FLAG_USING_GLOBAL_DPY  = (1 << 0),
    DISPSERV_X11_FLAG_DECORATIONS       = (1 << 2)
 };
 
@@ -92,17 +91,22 @@ typedef struct
 static void x11_display_server_modeline_close(void *data);
 #endif
 
+/* See x11_common.h. */
+retro_atomic_int_t g_x11_randr_state    = RETRO_ATOMIC_INT_INITIALIZER(0);
+retro_atomic_int_t g_x11_refresh_serial = RETRO_ATOMIC_INT_INITIALIZER(0);
+retro_atomic_int_t g_x11_refresh_bits   =
+   RETRO_ATOMIC_INT_INITIALIZER(X11_REFRESH_NONE);
+
 #ifdef HAVE_XRANDR
 static Display* x11_display_server_open_display(dispserv_x11_t *dispserv)
 {
+   /* Asked from the runloop and the video thread at once, so this
+    * writes nothing: g_x11_dpy is what close leaves open. */
    Display *dpy        = g_x11_dpy;
    if (!dispserv)
       return NULL;
    if (dpy)
-   {
-      dispserv->flags |= DISPSERV_X11_FLAG_USING_GLOBAL_DPY;
       return dpy;
-   }
    /* SDL might use X11 but doesn't use g_x11_dpy, so open it manually */
    return XOpenDisplay(0);
 }
@@ -112,7 +116,6 @@ static void x11_display_server_close_display(dispserv_x11_t *dispserv,
 {
    if (     !dpy
          || !dispserv
-         || (dispserv->flags & DISPSERV_X11_FLAG_USING_GLOBAL_DPY)
          || dpy == g_x11_dpy)
       return;
 
@@ -226,6 +229,7 @@ static void x11_display_server_set_screen_orientation(void *data,
    if (config)
       XRRFreeScreenConfigInfo(config);
    XCloseDisplay(dpy);
+   x11_refresh_invalidate();
 }
 
 static enum rotation x11_display_server_get_screen_orientation(void *data)
@@ -681,6 +685,9 @@ static bool x11_ml_set_timing(x11_modeline_t *ml,
    free(global_crtc);
 
    XUngrabServer(ml->dpy);
+   /* The pump sees the change too, a frame later; the next read must
+    * not answer from the mode this replaced. */
+   x11_refresh_invalidate();
 
    if (ml->xerrors & ml->xerrors_flag)
       RARCH_ERR("[XRandR] Error in XRRSetCrtcConfig\n");
@@ -1420,17 +1427,12 @@ static uint32_t x11_display_server_get_flags(void *data)
 }
 
 #ifdef HAVE_XRANDR
-static float x11_display_server_get_refresh_rate(void *data)
+/* The first connected output's current mode. */
+static float x11_display_server_read_refresh_rate(Display *dpy)
 {
-   float refresh_rate             = 0.0f;
-   dispserv_x11_t *dispserv       = (dispserv_x11_t*)data;
-   Display *dpy                   = x11_display_server_open_display(dispserv);
-   XRRScreenResources *screen     = NULL;
-
-   if (!dpy)
-      return 0.0f;
-
-   screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
+   float refresh_rate         = 0.0f;
+   XRRScreenResources *screen = XRRGetScreenResources(dpy,
+         DefaultRootWindow(dpy));
 
    if (screen)
    {
@@ -1438,6 +1440,9 @@ static float x11_display_server_get_refresh_rate(void *data)
       for (i = 0; i < screen->noutput; i++)
       {
          XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
+
+         if (!info)
+            continue;
 
          if (info->connection == RR_Connected && info->crtc)
          {
@@ -1471,8 +1476,87 @@ static float x11_display_server_get_refresh_rate(void *data)
       XRRFreeScreenResources(screen);
    }
 
-   x11_display_server_close_display(dispserv, dpy);
    return refresh_rate;
+}
+
+/* Once per process, on the connection the event pump drains: the
+ * RandR changes that drop the kept rate. RandR 1.2 is what the read
+ * above needs as well, and what the crtc and output masks need. */
+static void x11_display_server_watch_randr(Display *dpy)
+{
+   int event_base = 0;
+   int error_base = 0;
+   int major      = 0;
+   int minor      = 0;
+   int state      = X11_RANDR_UNAVAILABLE;
+
+   if (retro_atomic_load_acquire_int(&g_x11_randr_state))
+      return;
+
+   if (     XRRQueryExtension(dpy, &event_base, &error_base)
+         && XRRQueryVersion(dpy, &major, &minor)
+         && (major > 1 || (major == 1 && minor >= 2))
+         && event_base > 0
+         && event_base + RRNotify <= X11_RANDR_BASE_MASK)
+   {
+      XRRSelectInput(dpy, DefaultRootWindow(dpy),
+              RRScreenChangeNotifyMask
+            | RRCrtcChangeNotifyMask
+            | RROutputChangeNotifyMask);
+      state = event_base;
+   }
+
+   retro_atomic_cas_int(&g_x11_randr_state, 0, state);
+}
+
+/* Asked every frame by a core polling the throttle state and by the
+ * menu while it shows the rate. On g_x11_dpy, once the event pump
+ * drains it, the rate is read from the server once per display change
+ * and answered from memory in between. A reader that raced a change
+ * withdraws the rate it kept, so an old mode's rate never outlives the
+ * change that replaced it. */
+static float x11_display_server_get_refresh_rate(void *data)
+{
+   union { float f; int i; } rate;
+   int serial;
+   bool keep                = false;
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   Display *dpy             = x11_display_server_open_display(dispserv);
+
+   if (!dpy)
+      return 0.0f;
+
+#ifdef RETRO_ATOMIC_HAS_CAS
+   if (dpy == g_x11_dpy)
+   {
+      x11_display_server_watch_randr(dpy);
+      keep = (retro_atomic_load_acquire_int(&g_x11_randr_state)
+            & X11_RANDR_PUMPED) != 0;
+   }
+   if (keep)
+   {
+      rate.i = retro_atomic_load_acquire_int(&g_x11_refresh_bits);
+      if (rate.i != X11_REFRESH_NONE)
+         return rate.f;
+   }
+#endif
+
+   serial = retro_atomic_load_acquire_int(&g_x11_refresh_serial);
+   rate.f = x11_display_server_read_refresh_rate(dpy);
+   x11_display_server_close_display(dispserv, dpy);
+
+#ifdef RETRO_ATOMIC_HAS_CAS
+   if (     keep
+         && rate.i != X11_REFRESH_NONE
+         && retro_atomic_cas_int(&g_x11_refresh_bits, X11_REFRESH_NONE, rate.i)
+         && retro_atomic_load_acquire_int(&g_x11_refresh_serial) != serial)
+      retro_atomic_cas_int(&g_x11_refresh_bits, rate.i, X11_REFRESH_NONE);
+#else
+   (void)serial;
+   (void)keep;
+#endif
+
+   return rate.f;
 }
 
 static void x11_display_server_get_video_output_size(void *data,
@@ -1568,6 +1652,7 @@ static void x11_display_server_get_video_output_prev(void *data)
                               CurrentTime, crtc->x, crtc->y,
                               prev_mode, crtc->rotation,
                               crtc->outputs, crtc->noutput);
+                        x11_refresh_invalidate();
                         break;
                      }
                   }
@@ -1639,6 +1724,7 @@ static void x11_display_server_get_video_output_next(void *data)
                               CurrentTime, crtc->x, crtc->y,
                               next_mode, crtc->rotation,
                               crtc->outputs, crtc->noutput);
+                        x11_refresh_invalidate();
                         break;
                      }
                   }

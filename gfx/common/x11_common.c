@@ -36,6 +36,10 @@
 
 #include "x11_common.h"
 
+#ifdef HAVE_XRANDR
+#include <X11/extensions/randr.h>
+#endif
+
 #ifdef HAVE_XF86VM
 #include <X11/extensions/xf86vmode.h>
 #endif
@@ -681,6 +685,18 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event,
 
 bool x11_alive(void *data)
 {
+#ifdef HAVE_XRANDR
+   int randr   = retro_atomic_load_acquire_int(&g_x11_randr_state);
+   int rr_base = randr & X11_RANDR_BASE_MASK;
+   /* From here on every RandR change reaches the kept refresh rate
+    * through this pump. */
+   if (rr_base && !(randr & X11_RANDR_PUMPED))
+   {
+      retro_atomic_fetch_or_int(&g_x11_randr_state, X11_RANDR_PUMPED);
+      x11_refresh_invalidate();
+   }
+#endif
+
    while (XPending(g_x11_dpy))
    {
       XEvent event;
@@ -689,6 +705,18 @@ bool x11_alive(void *data)
 
       /* Can get events from older windows. Check this. */
       XNextEvent(g_x11_dpy, &event);
+
+#ifdef HAVE_XRANDR
+      /* Screen, crtc or output change, selected on the root window by
+       * the X display server. */
+      if (     rr_base
+            && event.type >= rr_base + RRScreenChangeNotify
+            && event.type <= rr_base + RRNotify)
+      {
+         x11_refresh_invalidate();
+         continue;
+      }
+#endif
 
       /* IMPORTANT - Get keycode before XFilterEvent
          because the event is localizated after the call */
