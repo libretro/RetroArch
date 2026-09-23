@@ -113,8 +113,8 @@ static bool gfx_ctx_wl_should_use_legacy_fullscreen_configure(
  * compositor sends xdg_surface.configure. */
 static void xdg_configure_apply(gfx_ctx_wayland_data_t *wl)
 {
-   int32_t width  = wl->cfg_pending.width;
-   int32_t height = wl->cfg_pending.height;
+   int32_t width  = VIDEO_SCALE_W(wl->cfg_pending.dims);
+   int32_t height = VIDEO_SCALE_H(wl->cfg_pending.dims);
    bool floating  = wl->cfg_pending.floating;
 
    wl->fullscreen = wl->cfg_pending.fullscreen;
@@ -127,8 +127,8 @@ static void xdg_configure_apply(gfx_ctx_wayland_data_t *wl)
 
    if (width == 0 || height == 0)
    {
-      width  = wl->floating_width;
-      height = wl->floating_height;
+      width  = VIDEO_SCALE_W(wl->floating_dims);
+      height = VIDEO_SCALE_H(wl->floating_dims);
    }
 
    if (wl->fullscreen
@@ -144,26 +144,26 @@ static void xdg_configure_apply(gfx_ctx_wayland_data_t *wl)
    if (     (width  > 0)
          && (height > 0))
    {
-      wl->width         = width;
-      wl->height        = height;
-      wl->buffer_width  = wl->fractional_scale ?
-         FRACTIONAL_SCALE_MULT(wl->width,  wl->fractional_scale_num) : wl->width  * wl->buffer_scale;
-      wl->buffer_height = wl->fractional_scale ?
-         FRACTIONAL_SCALE_MULT(wl->height, wl->fractional_scale_num) : wl->height * wl->buffer_scale;
+      wl->dims          = VIDEO_SCALE_PACK(width, height);
+      wl->buffer_dims   = VIDEO_SCALE_PACK(
+         wl->fractional_scale
+            ? FRACTIONAL_SCALE_MULT(width,  wl->fractional_scale_num)
+            : width  * wl->buffer_scale,
+         wl->fractional_scale
+            ? FRACTIONAL_SCALE_MULT(height, wl->fractional_scale_num)
+            : height * wl->buffer_scale);
       wl->resize        = true;
       if (wl->viewport)
       {
          /* Stretch old buffer to fill new size, commit/roundtrip to apply */
-         wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+         wp_viewport_set_destination(wl->viewport,
+               VIDEO_SCALE_W(wl->dims), VIDEO_SCALE_H(wl->dims));
          wl_surface_commit(wl->surface);
       }
    }
 
    if (floating)
-   {
-      wl->floating_width  = width;
-      wl->floating_height = height;
-   }
+      wl->floating_dims = VIDEO_SCALE_PACK(width, height);
 }
 
 static void xdg_toplevel_handle_close(void *data,
@@ -213,8 +213,8 @@ static void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
    if (!wl->libdecor_configuration_get_content_size(configuration, frame,
          &width, &height))
    {
-      width  = wl->floating_width;
-      height = wl->floating_height;
+      width  = VIDEO_SCALE_W(wl->floating_dims);
+      height = VIDEO_SCALE_H(wl->floating_dims);
    }
 
    if (wl->fullscreen
@@ -230,30 +230,31 @@ static void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
    if (     width  > 0
          && height > 0)
    {
-      wl->width         = width;
-      wl->height        = height;
-      wl->buffer_width  = wl->fractional_scale ?
-         FRACTIONAL_SCALE_MULT(width,  wl->fractional_scale_num) : width  * wl->buffer_scale;
-      wl->buffer_height = wl->fractional_scale ?
-         FRACTIONAL_SCALE_MULT(height, wl->fractional_scale_num) : height * wl->buffer_scale;
+      wl->dims          = VIDEO_SCALE_PACK(width, height);
+      wl->buffer_dims   = VIDEO_SCALE_PACK(
+         wl->fractional_scale
+            ? FRACTIONAL_SCALE_MULT(width,  wl->fractional_scale_num)
+            : width  * wl->buffer_scale,
+         wl->fractional_scale
+            ? FRACTIONAL_SCALE_MULT(height, wl->fractional_scale_num)
+            : height * wl->buffer_scale);
       wl->resize        = true;
       if (wl->viewport)
       {
          /* Stretch old buffer to fill new size, commit/roundtrip to apply */
-         wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+         wp_viewport_set_destination(wl->viewport,
+               VIDEO_SCALE_W(wl->dims), VIDEO_SCALE_H(wl->dims));
          wl_surface_commit(wl->surface);
       }
    }
 
-   state = wl->libdecor_state_new(wl->width, wl->height);
+   state = wl->libdecor_state_new(VIDEO_SCALE_W(wl->dims),
+         VIDEO_SCALE_H(wl->dims));
    wl->libdecor_frame_commit(frame, state, configuration);
    wl->libdecor_state_free(state);
 
    if (wl->libdecor_frame_is_floating(frame))
-   {
-      wl->floating_width  = width;
-      wl->floating_height = height;
-   }
+      wl->floating_dims = VIDEO_SCALE_PACK(width, height);
 }
 
 static void libdecor_frame_handle_close(struct libdecor_frame *frame,
@@ -303,8 +304,7 @@ static void xdg_toplevel_handle_configure(void *data,
    /* Record only; the state is pending until xdg_surface.configure.
     * A later toplevel.configure before the surface.configure
     * supersedes this one (last-wins), matching the protocol. */
-   wl->cfg_pending.width      = width;
-   wl->cfg_pending.height     = height;
+   wl->cfg_pending.dims       = VIDEO_SCALE_PACK(width, height);
    wl->cfg_pending.fullscreen = false;
    wl->cfg_pending.maximized  = false;
    wl->cfg_pending.resizing   = false;
@@ -421,13 +421,13 @@ void gfx_ctx_wl_get_video_size_common(void *data, unsigned *dims)
    else
       *dims = VIDEO_SCALE_PACK(
             wl->fractional_scale
-            ? FRACTIONAL_SCALE_MULT(wl->width,
+            ? FRACTIONAL_SCALE_MULT(VIDEO_SCALE_W(wl->dims),
                wl->pending_fractional_scale_num)
-            : wl->width  * wl->pending_buffer_scale,
+            : VIDEO_SCALE_W(wl->dims) * wl->pending_buffer_scale,
             wl->fractional_scale
-            ? FRACTIONAL_SCALE_MULT(wl->height,
+            ? FRACTIONAL_SCALE_MULT(VIDEO_SCALE_H(wl->dims),
                wl->pending_fractional_scale_num)
-            : wl->height * wl->pending_buffer_scale);
+            : VIDEO_SCALE_H(wl->dims) * wl->pending_buffer_scale);
 }
 
 static void shm_buffer_free(shm_buffer_t *buffer)
@@ -591,10 +591,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    wl->wl_pointer                = NULL;
    wl->wl_keyboard               = NULL;
 
-   wl->width                    = 0;
-   wl->height                   = 0;
-   wl->buffer_width             = 0;
-   wl->buffer_height            = 0;
+   wl->dims                     = 0;
+   wl->buffer_dims              = 0;
 }
 
 void gfx_ctx_wl_update_title_common(void *data)
@@ -921,12 +919,14 @@ static void shm_buffer_paint_icon(
 
 static bool wl_create_toplevel_icon(gfx_ctx_wayland_data_t *wl, struct xdg_toplevel *toplevel)
 {
+   const int icon_size               = wl->buffer_scale > 1 ? 128 : 64;
    struct xdg_toplevel_icon_v1 *icon = xdg_toplevel_icon_manager_v1_create_icon(
       wl->xdg_toplevel_icon_manager);
+   shm_buffer_t *icon_buffer;
+
    xdg_toplevel_icon_v1_set_name(icon, WAYLAND_APP_ID);
 
-   const int icon_size = wl->buffer_scale > 1 ? 128 : 64;
-   shm_buffer_t *icon_buffer = create_shm_buffer(wl,
+   icon_buffer = create_shm_buffer(wl,
       icon_size, icon_size, WL_SHM_FORMAT_ARGB8888);
 
    if (!icon_buffer)
@@ -995,18 +995,20 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
    else
    {
       shm_buffer_t *buffer = create_shm_buffer(wl,
-         wl->buffer_width,
-         wl->buffer_height,
+         VIDEO_SCALE_W(wl->buffer_dims),
+         VIDEO_SCALE_H(wl->buffer_dims),
          WL_SHM_FORMAT_XRGB8888);
 
       if (!buffer)
          return false;
 
-      shm_buffer_paint_checkerboard(buffer, wl->buffer_width,
-         wl->buffer_height, 1,
+      shm_buffer_paint_checkerboard(buffer,
+         VIDEO_SCALE_W(wl->buffer_dims),
+         VIDEO_SCALE_H(wl->buffer_dims), 1,
          8, 0xffbcbcbc, 0xff8e8e8e);
-      shm_buffer_paint_icon(buffer, wl->buffer_width,
-         wl->buffer_height, 1,
+      shm_buffer_paint_icon(buffer,
+         VIDEO_SCALE_W(wl->buffer_dims),
+         VIDEO_SCALE_H(wl->buffer_dims), 1,
          16);
 
       wl_surface_attach(wl->surface, buffer->wl_buffer, 0, 0);
@@ -1014,11 +1016,12 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 
    if (wl_surface_get_version(wl->surface) >= WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION)
       wl_surface_damage_buffer(wl->surface, 0, 0,
-         wl->buffer_width,
-         wl->buffer_height);
+         VIDEO_SCALE_W(wl->buffer_dims),
+         VIDEO_SCALE_H(wl->buffer_dims));
 
    if (wl->viewport)
-      wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+      wp_viewport_set_destination(wl->viewport,
+            VIDEO_SCALE_W(wl->dims), VIDEO_SCALE_H(wl->dims));
 
    wl_surface_commit(wl->surface);
 
@@ -1071,8 +1074,8 @@ bool gfx_ctx_wl_init_common(
    wl->last_fractional_scale_num    = FRACTIONAL_SCALE_V1_DEN;
    wl->fractional_scale_num         = FRACTIONAL_SCALE_V1_DEN;
    wl->pending_fractional_scale_num = FRACTIONAL_SCALE_V1_DEN;
-   wl->floating_width               = SPLASH_WINDOW_WIDTH;
-   wl->floating_height              = SPLASH_WINDOW_HEIGHT;
+   wl->floating_dims                = VIDEO_SCALE_PACK(
+         SPLASH_WINDOW_WIDTH, SPLASH_WINDOW_HEIGHT);
 
    if (!wl->input.dpy)
    {
@@ -1214,6 +1217,8 @@ bool gfx_ctx_wl_init_common(
 
    if (wl->libdecor)
    {
+      struct xdg_toplevel *xdg_toplevel;
+
       wl->libdecor_frame = wl->libdecor_decorate(wl->libdecor_context, wl->surface, &wl_libdecor_frame_interface, wl);
       if (!wl->libdecor_frame)
       {
@@ -1221,7 +1226,7 @@ bool gfx_ctx_wl_init_common(
          return false;
       }
 
-      struct xdg_toplevel *xdg_toplevel = wl->libdecor_frame_get_xdg_toplevel(wl->libdecor_frame);
+      xdg_toplevel = wl->libdecor_frame_get_xdg_toplevel(wl->libdecor_frame);
 
       if (wl->xdg_toplevel_icon_manager)
       {
@@ -1341,33 +1346,42 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
    settings_t *settings         = config_get_ptr();
    unsigned video_monitor_index = settings->uints.video_monitor_index;
 
-   wl->width         = width  ? width  : DEFAULT_WINDOWED_WIDTH;
-   wl->height        = height ? height : DEFAULT_WINDOWED_HEIGHT;
-   wl->buffer_width  = wl->width;
-   wl->buffer_height = wl->height;
+   wl->dims          = VIDEO_SCALE_PACK(
+         width  ? width  : DEFAULT_WINDOWED_WIDTH,
+         height ? height : DEFAULT_WINDOWED_HEIGHT);
+   wl->buffer_dims   = wl->dims;
 
    if (!fullscreen)
    {
+      unsigned bw              = VIDEO_SCALE_W(wl->buffer_dims);
+      unsigned bh              = VIDEO_SCALE_H(wl->buffer_dims);
       wl->buffer_scale         = wl->pending_buffer_scale;
       wl->fractional_scale_num = wl->pending_fractional_scale_num;
-      wl->buffer_width         = wl->fractional_scale ?
-         FRACTIONAL_SCALE_MULT(wl->buffer_width,  wl->fractional_scale_num) : wl->buffer_width  * wl->buffer_scale;
-      wl->buffer_height        = wl->fractional_scale ?
-         FRACTIONAL_SCALE_MULT(wl->buffer_height, wl->fractional_scale_num) : wl->buffer_height * wl->buffer_scale;
+      wl->buffer_dims          = VIDEO_SCALE_PACK(
+         wl->fractional_scale
+            ? FRACTIONAL_SCALE_MULT(bw, wl->fractional_scale_num)
+            : bw * wl->buffer_scale,
+         wl->fractional_scale
+            ? FRACTIONAL_SCALE_MULT(bh, wl->fractional_scale_num)
+            : bh * wl->buffer_scale);
    }
    if (wl->viewport)
    {
       /* Stretch old buffer to fill new size, commit/roundtrip to apply */
-      wp_viewport_set_destination(wl->viewport, wl->width, wl->height);
+      wp_viewport_set_destination(wl->viewport,
+            VIDEO_SCALE_W(wl->dims), VIDEO_SCALE_H(wl->dims));
    }
 
 #ifdef HAVE_LIBDECOR_H
    if (wl->libdecor)
    {
-     wl->libdecor_frame_set_visibility(wl->libdecor_frame, !fullscreen);
-     struct libdecor_state *state = wl->libdecor_state_new(wl->width, wl->height);
-     wl->libdecor_frame_commit(wl->libdecor_frame, state, NULL);
-     wl->libdecor_state_free(state);
+      struct libdecor_state *state;
+
+      wl->libdecor_frame_set_visibility(wl->libdecor_frame, !fullscreen);
+      state = wl->libdecor_state_new(
+            VIDEO_SCALE_W(wl->dims), VIDEO_SCALE_H(wl->dims));
+      wl->libdecor_frame_commit(wl->libdecor_frame, state, NULL);
+      wl->libdecor_state_free(state);
    }
 #endif
 
@@ -1514,8 +1528,8 @@ bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)
    {
       if (state)
       {
-         RARCH_LOG("[Wayland] Enabling idle inhibitor.\n");
          struct zwp_idle_inhibit_manager_v1 *mgr = wl->idle_inhibit_manager;
+         RARCH_LOG("[Wayland] Enabling idle inhibitor.\n");
          wl->idle_inhibitor = zwp_idle_inhibit_manager_v1_create_inhibitor(mgr, wl->surface);
       }
       else

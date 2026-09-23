@@ -81,13 +81,13 @@ static void gfx_ctx_wl_egl_configure(gfx_ctx_wayland_data_t *wl)
 {
    if (wl->win)
       wl_egl_window_resize(wl->win,
-            wl->buffer_width,
-            wl->buffer_height,
+            VIDEO_SCALE_W(wl->buffer_dims),
+            VIDEO_SCALE_H(wl->buffer_dims),
             0, 0);
    else
       wl->win = wl_egl_window_create(wl->surface,
-            wl->buffer_width,
-            wl->buffer_height);
+            VIDEO_SCALE_W(wl->buffer_dims),
+            VIDEO_SCALE_H(wl->buffer_dims));
 }
 #endif
 
@@ -392,8 +392,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
    wl->win = wl_egl_window_create(wl->surface,
-      wl->buffer_width,
-      wl->buffer_height);
+      VIDEO_SCALE_W(wl->buffer_dims),
+      VIDEO_SCALE_H(wl->buffer_dims));
 
    if (!egl_create_context(&wl->egl, (attr != egl_attribs)
             ? egl_attribs : NULL))

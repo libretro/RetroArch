@@ -253,12 +253,12 @@ typedef struct gfx_ctx_wayland_data
    uint64_t refresh_interval;
    touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
    clockid_t present_clock_id;
-   unsigned width;
-   unsigned height;
-   unsigned buffer_width;
-   unsigned buffer_height;
-   unsigned floating_width;
-   unsigned floating_height;
+   /* The surface's size, the buffer behind it, and the size to go
+    * back to when the compositor lets the window float again, each
+    * packed. */
+   unsigned dims;
+   unsigned buffer_dims;
+   unsigned floating_dims;
    unsigned last_buffer_scale;
    unsigned pending_buffer_scale;
    unsigned buffer_scale;
@@ -282,8 +282,9 @@ typedef struct gfx_ctx_wayland_data
     * xdg_surface.configure marks it current (xdg-shell latching). */
    struct
    {
-      int32_t width;
-      int32_t height;
+      /* The size asked for, packed; a zero axis leaves the choice
+       * to us. */
+      unsigned dims;
       bool fullscreen;
       bool maximized;
       bool resizing;

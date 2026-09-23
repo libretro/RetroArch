@@ -173,8 +173,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
    if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
          wl->input.dpy, wl->surface,
-         wl->buffer_width,
-         wl->buffer_height,
+         VIDEO_SCALE_W(wl->buffer_dims),
+         VIDEO_SCALE_H(wl->buffer_dims),
          wl->swap_interval))
       goto error;
 

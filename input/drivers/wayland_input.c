@@ -90,14 +90,14 @@ static void input_wl_poll(void *data)
       /* Clamp X */
       if (wl->mouse.x < 0)
          wl->mouse.x = 0;
-      if (wl->mouse.x >= (int)wl->gfx->buffer_width)
-         wl->mouse.x = ((int)wl->gfx->buffer_width - 1);
+      if (wl->mouse.x >= (int)VIDEO_SCALE_W(wl->gfx->buffer_dims))
+         wl->mouse.x = ((int)VIDEO_SCALE_W(wl->gfx->buffer_dims) - 1);
 
       /* Clamp Y */
       if (wl->mouse.y < 0)
          wl->mouse.y = 0;
-      if (wl->mouse.y >= (int)wl->gfx->buffer_height)
-         wl->mouse.y = ((int)wl->gfx->buffer_height - 1);
+      if (wl->mouse.y >= (int)VIDEO_SCALE_H(wl->gfx->buffer_dims))
+         wl->mouse.y = ((int)VIDEO_SCALE_H(wl->gfx->buffer_dims) - 1);
    }
 
    for (id = 0; id < MAX_TOUCHES; id++)

@@ -366,8 +366,9 @@ void gfx_ctx_wl_get_video_size_webos(void *data, unsigned *dims)
                DEFAULT_WINDOW_HEIGHT);
    }
    else
-      *dims = VIDEO_SCALE_PACK(wl->width  * wl->buffer_scale,
-            wl->height * wl->buffer_scale);
+      *dims = VIDEO_SCALE_PACK(
+            VIDEO_SCALE_W(wl->dims) * wl->buffer_scale,
+            VIDEO_SCALE_H(wl->dims) * wl->buffer_scale);
 }
 
 /* webOS hands the screen back to the Home dashboard the moment a native
@@ -529,8 +530,8 @@ static bool gfx_ctx_wl_webos_adopt(gfx_ctx_wayland_data_t *wl)
 
    /* What the cold path sets up once its surface exists. */
    wl->buffer_scale          = 1;
-   wl->floating_width        = DEFAULT_WINDOW_WIDTH;
-   wl->floating_height       = DEFAULT_WINDOW_HEIGHT;
+   wl->floating_dims         = VIDEO_SCALE_PACK(DEFAULT_WINDOW_WIDTH,
+         DEFAULT_WINDOW_HEIGHT);
    wl->configured            = true;
    wl->input.keyboard_focus  = true;
    wl->input.mouse.focus     = true;
@@ -679,10 +680,8 @@ clear:
    wl->wl_pointer               = NULL;
    wl->wl_keyboard              = NULL;
 
-   wl->width         = 0;
-   wl->height        = 0;
-   wl->buffer_width  = 0;
-   wl->buffer_height = 0;
+   wl->dims          = 0;
+   wl->buffer_dims   = 0;
 }
 
 void gfx_ctx_wl_update_title_webos(void *data)
@@ -731,8 +730,8 @@ bool gfx_ctx_wl_init_webos(
 
    wl->input.dpy       = wl_display_connect(NULL);
    wl->buffer_scale    = 1;
-   wl->floating_width  = DEFAULT_WINDOW_WIDTH;
-   wl->floating_height = DEFAULT_WINDOW_HEIGHT;
+   wl->floating_dims   = VIDEO_SCALE_PACK(DEFAULT_WINDOW_WIDTH,
+         DEFAULT_WINDOW_HEIGHT);
 
    if (!wl->input.dpy)
    {
@@ -859,10 +858,10 @@ bool gfx_ctx_wl_set_video_mode_common_size_webos(gfx_ctx_wayland_data_t *wl,
    if (!wl)
       return false;
 
-   wl->width         = width  ? width  : DEFAULT_WINDOW_WIDTH;
-   wl->height        = height ? height : DEFAULT_WINDOW_HEIGHT;
-   wl->buffer_width  = wl->width;
-   wl->buffer_height = wl->height;
+   wl->dims          = VIDEO_SCALE_PACK(
+         width  ? width  : DEFAULT_WINDOW_WIDTH,
+         height ? height : DEFAULT_WINDOW_HEIGHT);
+   wl->buffer_dims   = wl->dims;
 
    return true;
 }
