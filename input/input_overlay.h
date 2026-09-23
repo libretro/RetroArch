@@ -569,8 +569,7 @@ void input_overlay_alpha_forget(input_overlay_t *ol);
  * Depends upon proper naming conventions in overlay
  * config file. */
 void input_overlay_auto_rotate_(
-      unsigned video_driver_width,
-      unsigned video_driver_height,
+      unsigned output_dims,
       bool input_overlay_enable,
       input_overlay_t *ol);
 
@@ -662,14 +661,14 @@ void input_overlay_next_move_touch_masks(input_overlay_t *ol);
  * input_overlay_set_scale_factor:
  * @ol                    : Overlay handle.
  * @layout_desc           : Scale + offset factors.
+ * @output_dims           : Output size, packed with VIDEO_SCALE_PACK.
  *
  * Scales the overlay and applies any aspect ratio/
  * offset factors.
  **/
 void input_overlay_set_scale_factor(
       input_overlay_t *ol, const overlay_layout_desc_t *layout_desc,
-      unsigned video_driver_width,
-      unsigned video_driver_height);
+      unsigned output_dims);
 
 /**
  * input_overlay_set_alpha_mod:

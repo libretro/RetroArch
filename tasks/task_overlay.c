@@ -572,7 +572,7 @@ static bool task_overlay_load_desc(
       struct overlay_desc *desc,
       struct overlay *input_overlay,
       unsigned ol_idx, unsigned desc_idx,
-      unsigned width, unsigned height,
+      unsigned image_dims,
       bool normalized, float alpha_mod, float range_mod)
 {
    size_t _len;
@@ -607,7 +607,7 @@ static bool task_overlay_load_desc(
 
    by_pixel = !normalized;
 
-   if (by_pixel && (width == 0 || height == 0))
+   if (by_pixel && (!VIDEO_SCALE_W(image_dims) || !VIDEO_SCALE_H(image_dims)))
    {
       RARCH_ERR("[Overlay] Base overlay is not set and not using normalized coordinates.\n");
       return false;
@@ -728,8 +728,8 @@ static bool task_overlay_load_desc(
 
    if (by_pixel)
    {
-      width_mod  /= width;
-      height_mod /= height;
+      width_mod  /= VIDEO_SCALE_W(image_dims);
+      height_mod /= VIDEO_SCALE_H(image_dims);
    }
 
    desc->x       = (float)rstrtod(elems[1], NULL) * width_mod;
@@ -991,7 +991,8 @@ static void task_overlay_deferred_loading(retro_task_t *task, void *budget)
                if (!task_overlay_load_desc(loader,
                         &overlay->descs[overlay->pos], overlay,
                         loader->pos, (unsigned)overlay->pos,
-                        overlay->image.width, overlay->image.height,
+                        VIDEO_SCALE_PACK(overlay->image.width,
+                           overlay->image.height),
                         overlay->config.normalized,
                         overlay->config.alpha_mod, overlay->config.range_mod))
                {

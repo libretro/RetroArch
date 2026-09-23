@@ -6607,9 +6607,7 @@ static enum runloop_state_enum runloop_check_state(
 
          /* Check overlay rotation, if required */
          if (input_overlay_auto_rotate)
-            input_overlay_auto_rotate_(
-                  VIDEO_SCALE_W(output_dims),
-                  VIDEO_SCALE_H(output_dims),
+            input_overlay_auto_rotate_(output_dims,
                   settings->bools.input_overlay_enable,
                   input_st->overlay_ptr);
 

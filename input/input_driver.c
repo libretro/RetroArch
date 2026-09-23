@@ -3655,9 +3655,7 @@ static void input_overlay_set_vertex_geom(input_overlay_t *ol)
  **/
 void input_overlay_set_scale_factor(
       input_overlay_t *ol, const overlay_layout_desc_t *layout_desc,
-      unsigned video_driver_width,
-      unsigned video_driver_height
-)
+      unsigned output_dims)
 {
    size_t i;
    float display_aspect_ratio = 0.0f;
@@ -3665,9 +3663,9 @@ void input_overlay_set_scale_factor(
    if (!ol || !layout_desc)
       return;
 
-   if (video_driver_height > 0)
-      display_aspect_ratio = (float)video_driver_width /
-         (float)video_driver_height;
+   if (VIDEO_SCALE_H(output_dims) > 0)
+      display_aspect_ratio = (float)VIDEO_SCALE_W(output_dims) /
+         (float)VIDEO_SCALE_H(output_dims);
 
    for (i = 0; i < ol->size; i++)
    {
@@ -3901,8 +3899,7 @@ static void input_overlay_free(input_overlay_t *ol)
 }
 
 void input_overlay_auto_rotate_(
-      unsigned video_driver_width,
-      unsigned video_driver_height,
+      unsigned output_dims,
       bool input_overlay_enable,
       input_overlay_t *ol)
 {
@@ -3916,7 +3913,7 @@ void input_overlay_auto_rotate_(
       return;
 
    /* Get current screen orientation */
-   if (video_driver_width > video_driver_height)
+   if (VIDEO_SCALE_W(output_dims) > VIDEO_SCALE_H(output_dims))
       screen_orientation = OVERLAY_ORIENTATION_LANDSCAPE;
 
    /* Get orientation of active overlay */
@@ -6566,10 +6563,8 @@ static void input_overlay_enable_(bool enable)
 
       if (auto_rotate)
       {
-         unsigned output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
          input_overlay_auto_rotate_(
-               VIDEO_SCALE_W(output_size),
-               VIDEO_SCALE_H(output_size), true, ol);
+               VIDEO_DRIVER_OUTPUT_DIMS(video_st), true, ol);
       }
 
       /* Enable */

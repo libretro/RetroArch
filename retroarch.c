@@ -4457,9 +4457,7 @@ bool command_event(enum event_command cmd, void *data)
             if (inp_overlay_auto_rotate)
                if (check_rotation)
                   if (*check_rotation)
-                     input_overlay_auto_rotate_(
-                           VIDEO_SCALE_W(output_size),
-                           VIDEO_SCALE_H(output_size),
+                     input_overlay_auto_rotate_(output_size,
                            settings->bools.input_overlay_enable,
                            ol);
          }
@@ -4874,10 +4872,7 @@ bool command_event(enum event_command cmd, void *data)
             }
 
             output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_state_get_ptr());
-            input_overlay_set_scale_factor(ol,
-                  &layout_desc,
-                  VIDEO_SCALE_W(output_size),
-                  VIDEO_SCALE_H(output_size));
+            input_overlay_set_scale_factor(ol, &layout_desc, output_size);
          }
 #endif
          break;
