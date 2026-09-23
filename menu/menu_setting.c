@@ -96,6 +96,7 @@
 #endif
 #include "../driver.h"
 #include "../paths.h"
+#include "../file_path_special.h"
 #include "../dynamic.h"
 #include "../list_special.h"
 #include "../msg_hash_lbl_str.h"
@@ -15706,6 +15707,20 @@ static void settings_build_onscreen_notifications(
    }
 }
 
+#if defined(HAVE_OVERLAY) && defined(RARCH_MOBILE)
+/* Touch-only devices need an overlay; reset restores the default one. */
+static int setting_overlay_preset_action_start(rarch_setting_t *setting)
+{
+   settings_t *settings = config_get_ptr();
+   if (!setting)
+      return -1;
+   fill_pathname_join_special(setting->value.target.string,
+         settings->paths.directory_overlay,
+         FILE_PATH_DEFAULT_OVERLAY, setting->size);
+   return 0;
+}
+#endif
+
 static void settings_build_overlay(
       settings_t *settings, global_t *global,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
@@ -15758,6 +15773,9 @@ static void settings_build_overlay(
             ADD_DESC(ovl_desc_1);
 
             ADD_DESC(overlay2_desc_0);
+#ifdef RARCH_MOBILE
+      SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_overlay_preset_action_start)
+#endif
 
             ADD_DESC(ovl_desc_2);
 
