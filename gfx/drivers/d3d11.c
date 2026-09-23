@@ -707,16 +707,16 @@ static bool d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
 
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
    {
-      unsigned width, height;
+      /* Either axis above 1 is a bit above bit 0 in their OR, so
+       * the two halve together as one word. */
+      unsigned span;
 
       texture->desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-      width                    = texture->desc.Width;
-      height                   = texture->desc.Height;
+      span = texture->desc.Width | texture->desc.Height;
 
-      while ((width > 1) || (height > 1))
+      while (span > 1)
       {
-         width  >>= 1;
-         height >>= 1;
+         span >>= 1;
          texture->desc.MipLevels++;
       }
    }
