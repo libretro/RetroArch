@@ -939,14 +939,15 @@ bool companion_core_thumbnail_install(companion_core_t *core,
    h = img.height;
    {
       unsigned max = settings->uints.desktop_menu_thumbnail_max_size;
-      if (max && (w > max || h > max))
+      if (max && (w > max || h > max) && VIDEO_SCALE_FITS(w, h))
       {
          /* fit inside max x max, keep aspect */
          unsigned nw = w >= h ? max : (unsigned)((uint64_t)w * max / h);
          unsigned nh = h >= w ? max : (unsigned)((uint64_t)h * max / w);
          if (nw < 1) nw = 1;
          if (nh < 1) nh = 1;
-         bits = companion_thumbs_scale(img.pixels, w, h, (int)nw, (int)nh, 0);
+         bits = companion_thumbs_scale(img.pixels, VIDEO_SCALE_PACK(w, h),
+               VIDEO_SCALE_PACK(nw, nh), 0);
          w = nw;
          h = nh;
       }

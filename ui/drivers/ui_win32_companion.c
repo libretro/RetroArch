@@ -186,7 +186,7 @@ typedef struct ui_companion_win32_wimp
       HWND ctl;
       HBITMAP bmp;
       void *bits;       /* the DIB's pixels */
-      int bw, bh;       /* its size */
+      unsigned dims;    /* its size */
       long entry;       /* entry index shown, -1 = none, -2 = refresh */
    } thumb_pane[4];
    /* The docks: the shared model, its geometry for the current client
@@ -363,9 +363,9 @@ static void cw_playlists_rebuild(ui_companion_win32_wimp_t *w)
 
 /* --- Icon view thumbnails ---------------------------------------------- */
 
-/* A 32-bit BGRA DIB of @w x @h from @bits (ARGB8888 as image_texture
+/* A 32-bit BGRA DIB of @dims from @bits (ARGB8888 as image_texture
  * decodes when supports_rgba is false - the Windows byte order). */
-static HBITMAP cw_dib_from_argb(const uint32_t *bits, int w, int h)
+static HBITMAP cw_dib_from_argb(const uint32_t *bits, unsigned dims)
 {
    BITMAPINFO bmi;
    void *dst = NULL;
@@ -373,15 +373,16 @@ static HBITMAP cw_dib_from_argb(const uint32_t *bits, int w, int h)
 
    memset(&bmi, 0, sizeof(bmi));
    bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-   bmi.bmiHeader.biWidth       = w;
-   bmi.bmiHeader.biHeight      = -h; /* top-down */
+   bmi.bmiHeader.biWidth       = (LONG)VIDEO_SCALE_W(dims);
+   bmi.bmiHeader.biHeight      = -(LONG)VIDEO_SCALE_H(dims); /* top-down */
    bmi.bmiHeader.biPlanes      = 1;
    bmi.bmiHeader.biBitCount    = 32;
    bmi.bmiHeader.biCompression = BI_RGB;
 
    bmp = CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, &dst, NULL, 0);
    if (bmp && dst)
-      memcpy(dst, bits, (size_t)w * h * 4);
+      memcpy(dst, bits,
+            (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 4);
    return bmp;
 }
 
@@ -520,7 +521,7 @@ static void cw_thumbs_reset(ui_companion_win32_wimp_t *w, size_t count)
       uint32_t bg = cw_sys_color_argb(COLOR_BTNFACE);
       for (i = 0; i < T * T; i++)
          bits[i] = bg;
-      placeholder = cw_dib_from_argb(bits, T, T);
+      placeholder = cw_dib_from_argb(bits, VIDEO_SCALE_PACK(T, T));
       free(bits);
       if (placeholder)
       {
@@ -559,7 +560,8 @@ static void cw_thumb_install(ui_companion_win32_wimp_t *w, size_t row,
    int slot;
    if (!w->thumbs || row >= w->row_count)
       return;
-   bmp = cw_dib_from_argb(bits, w->thumb_px, w->thumb_px);
+   bmp = cw_dib_from_argb(bits,
+         VIDEO_SCALE_PACK(w->thumb_px, w->thumb_px));
    if (!bmp)
       return;
    if (w->slot_used < w->slot_cap)
@@ -616,9 +618,9 @@ static void cw_thumb_install(ui_companion_win32_wimp_t *w, size_t row,
 #define CW_BROWSE_ID        0x10000000L
 
 static void cw_boxart_show(ui_companion_win32_wimp_t *w, int t,
-      const uint32_t *bits, int bw, int bh);
+      const uint32_t *bits, unsigned dims);
 
-static void cw_thumb_done(void *ud, const char *path, int bw, int bh,
+static void cw_thumb_done(void *ud, const char *path, unsigned dims,
       uintptr_t tag, const uint32_t *bits)
 {
    ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
@@ -629,13 +631,14 @@ static void cw_thumb_done(void *ud, const char *path, int bw, int bh,
       /* The pane: show it if it is still the selected entry's. */
       int t = CW_TAG_PANE(tag);
       if (CW_TAG_ID(tag) == w->thumb_pane[t].entry && bits)
-         cw_boxart_show(w, t, bits, bw, bh);
+         cw_boxart_show(w, t, bits, dims);
       return;
    }
    row = CW_TAG_ROW(tag);
    if (CW_TAG_HAS_GEN && CW_TAG_GEN(tag) != w->gen)
       return;                       /* for a list since replaced */
-   if (row >= w->row_count || bw != w->thumb_px || bh != w->thumb_px)
+   if (     row >= w->row_count
+         || dims != VIDEO_SCALE_PACK(w->thumb_px, w->thumb_px))
       return;
    if (w->thumb_idx[row] != -1)
       return;                       /* row re-resolved meanwhile */
@@ -660,15 +663,16 @@ static void cw_thumb_want(ui_companion_win32_wimp_t *w, size_t row, bool urgent)
       w->thumb_idx[row] = -2;
       return;
    }
-   bits = companion_thumbs_get(w->thumbs_engine, path, w->thumb_px, w->thumb_px);
+   bits = companion_thumbs_get(w->thumbs_engine, path,
+         VIDEO_SCALE_PACK(w->thumb_px, w->thumb_px));
    if (bits)
    {
       cw_thumb_install(w, row, bits);   /* cached: no decode, shown now */
       return;
    }
    w->thumb_idx[row] = -1;
-   companion_thumbs_request(w->thumbs_engine, path, w->thumb_px, w->thumb_px,
-         CW_TAG(row, w->gen), urgent, cw_sys_color_argb(COLOR_WINDOW));
+   companion_thumbs_request(w->thumbs_engine, path,
+         VIDEO_SCALE_PACK(w->thumb_px, w->thumb_px), CW_TAG(row, w->gen), urgent, cw_sys_color_argb(COLOR_WINDOW));
 }
 
 /* Rows currently on screen: [first, last], from the grid geometry the
@@ -918,7 +922,7 @@ static HIMAGELIST cw_header_arrows(ui_companion_win32_wimp_t *w)
          break;
       for (i = 0; i < S * S; i++)
          bits[i] = bg;
-      bmp = cw_dib_from_argb(bits, S, S);
+      bmp = cw_dib_from_argb(bits, VIDEO_SCALE_PACK(S, S));
       free(bits);
       if (!bmp)
          break;
@@ -2147,29 +2151,29 @@ static HBITMAP cw_boxart_scale(const struct texture_image *img,
          }
       }
    }
-   bmp = cw_dib_from_argb(buf, dw, dh);
+   bmp = cw_dib_from_argb(buf, VIDEO_SCALE_PACK(dw, dh));
    free(buf);
    return bmp;
 }
 
-/* Put engine pixels (bw x bh) into thumbnail pane @t's static control.
+/* Put engine pixels (@dims) into thumbnail pane @t's static control.
  * Frames of an animation arrive here at up to the container's rate:
  * keep one DIB section per pane and copy each frame into its pixels,
  * rather than creating and destroying a GDI object per frame. A new
  * size (the pane was resized, a different aspect) rebuilds it. */
 static void cw_boxart_show(ui_companion_win32_wimp_t *w, int t,
-      const uint32_t *bits, int bw, int bh)
+      const uint32_t *bits, unsigned dims)
 {
    if (!w->thumb_pane[t].bmp || !w->thumb_pane[t].bits
-         || w->thumb_pane[t].bw != bw || w->thumb_pane[t].bh != bh)
+         || w->thumb_pane[t].dims != dims)
    {
       BITMAPINFO bmi;
       void *dst = NULL;
       HBITMAP bmp;
       memset(&bmi, 0, sizeof(bmi));
       bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-      bmi.bmiHeader.biWidth       = bw;
-      bmi.bmiHeader.biHeight      = -bh; /* top-down */
+      bmi.bmiHeader.biWidth       = (LONG)VIDEO_SCALE_W(dims);
+      bmi.bmiHeader.biHeight      = -(LONG)VIDEO_SCALE_H(dims); /* top-down */
       bmi.bmiHeader.biPlanes      = 1;
       bmi.bmiHeader.biBitCount    = 32;
       bmi.bmiHeader.biCompression = BI_RGB;
@@ -2185,13 +2189,13 @@ static void cw_boxart_show(ui_companion_win32_wimp_t *w, int t,
          DeleteObject(w->thumb_pane[t].bmp);
       w->thumb_pane[t].bmp  = bmp;
       w->thumb_pane[t].bits = dst;
-      w->thumb_pane[t].bw   = bw;
-      w->thumb_pane[t].bh   = bh;
+      w->thumb_pane[t].dims = dims;
    }
    /* GdiFlush: the DIB's pixels are written from this thread while GDI
     * may still be batching a draw of the previous frame from them. */
    GdiFlush();
-   memcpy(w->thumb_pane[t].bits, bits, (size_t)bw * bh * 4);
+   memcpy(w->thumb_pane[t].bits, bits,
+         (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * 4);
    InvalidateRect(w->thumb_pane[t].ctl, NULL, FALSE);
 }
 
@@ -2206,7 +2210,7 @@ static void cw_boxart_update_path(ui_companion_win32_wimp_t *w, int t,
 {
    const uint32_t *bits;
    RECT rc;
-   int bw, bh;
+   unsigned dims;
    HWND ctl = w->thumb_pane[t].ctl;
 
    if (!w || !ctl || !IsWindowVisible(ctl))
@@ -2229,26 +2233,25 @@ static void cw_boxart_update_path(ui_companion_win32_wimp_t *w, int t,
       w->thumb_pane[t].bmp = NULL;
    }
    w->thumb_pane[t].bits = NULL;
-   w->thumb_pane[t].bw   = w->thumb_pane[t].bh = 0;
+   w->thumb_pane[t].dims = 0;
    InvalidateRect(ctl, NULL, TRUE);
    if (id < 0 || !w->thumbs_engine || string_is_empty(path))
       return;
 
    GetClientRect(ctl, &rc);
-   bw = rc.right - 4;
-   bh = rc.bottom - 4;
-   if (bw < 1 || bh < 1)
+   if (rc.right < 5 || rc.bottom < 5)
       return;
-   bits = companion_thumbs_get(w->thumbs_engine, path, bw, bh);
+   dims = VIDEO_SCALE_PACK(rc.right - 4, rc.bottom - 4);
+   bits = companion_thumbs_get(w->thumbs_engine, path, dims);
    if (bits)
-      cw_boxart_show(w, t, bits, bw, bh);
+      cw_boxart_show(w, t, bits, dims);
    else
-      companion_thumbs_request(w->thumbs_engine, path, bw, bh,
+      companion_thumbs_request(w->thumbs_engine, path, dims,
             CW_TAG_MAKE(id, t), true, cw_sys_color_argb(COLOR_BTNFACE));
    /* And, like RetroArch's File Browser, an APNG / animated WEBP /
     * WEBM / MP4 plays in the pane: frames land through cw_thumb_done
     * with the same tag. A still animates nothing. */
-   companion_thumbs_animate(w->thumbs_engine, path, bw, bh,
+   companion_thumbs_animate(w->thumbs_engine, path, dims,
          CW_TAG_MAKE(id, t), cw_sys_color_argb(COLOR_BTNFACE));
 }
 
@@ -4871,7 +4874,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
                   uint32_t bg = cw_sys_color_argb(COLOR_WINDOW);
                   for (k = 0; k < T * T; k++)
                      bits[k] = bg;
-                  bmp = cw_dib_from_argb(bits, T, T);
+                  bmp = cw_dib_from_argb(bits, VIDEO_SCALE_PACK(T, T));
                   free(bits);
                   if (bmp)
                   {

@@ -183,10 +183,12 @@ struct got
 static struct got gots[4096];
 static size_t ngot;
 
-static void on_done(void *ud, const char *path, int w, int h, uintptr_t tag,
+static void on_done(void *ud, const char *path, unsigned dims, uintptr_t tag,
       const uint32_t *bits)
 {
    struct got *g;
+   int w = (int)VIDEO_SCALE_W(dims);
+   int h = (int)VIDEO_SCALE_H(dims);
    (void)ud; (void)path;
    if (ngot >= sizeof(gots) / sizeof(gots[0]))
       return;
@@ -257,7 +259,11 @@ static void test_decode_and_scale(void)
    write_tga(tall, 20, 80, 0xff00ff00u);
 
    ngot = 0;
-   CHECK(companion_thumbs_request(t, red, 32, 32, 1, true, 0xff000000u), "request accepted");
+   CHECK(!companion_thumbs_request(t, red, VIDEO_SCALE_PACK(0, 32), 1, true, 0),
+         "a size with no width is refused");
+   CHECK(!companion_thumbs_request(t, red, VIDEO_SCALE_PACK(32, 0), 1, true, 0),
+         "a size with no height is refused");
+   CHECK(companion_thumbs_request(t, red, VIDEO_SCALE_PACK(32, 32), 1, true, 0xff000000u), "request accepted");
    /* (queued() is 0 or 1 here depending on whether a worker already
     * took the job - both are correct, so it is not asserted.) */
    CHECK(drain(t, 1, 2000) == 1, "red delivered");
@@ -267,20 +273,20 @@ static void test_decode_and_scale(void)
 
    /* Tall image: letterboxed left/right with the bg colour. */
    ngot = 0;
-   companion_thumbs_request(t, tall, 40, 40, 2, true, 0xff123456u);
+   companion_thumbs_request(t, tall, VIDEO_SCALE_PACK(40, 40), 2, true, 0xff123456u);
    CHECK(drain(t, 1, 2000) == 1, "tall delivered");
    CHECK(gots[0].centre == 0xff00ff00u, "tall centre is the image");
    CHECK(gots[0].corner == 0xff123456u, "tall corner is the letterbox bg 0x%08x", gots[0].corner);
 
    /* Rectangular box (a boxart pane): fit inside, letterboxed. */
    ngot = 0;
-   companion_thumbs_request(t, tall, 60, 30, 5, true, 0xff0000ffu);
+   companion_thumbs_request(t, tall, VIDEO_SCALE_PACK(60, 30), 5, true, 0xff0000ffu);
    CHECK(drain(t, 1, 2000) == 1, "rect delivered");
    CHECK(gots[0].tag == 5 && !gots[0].null, "rect tag");
    {
       /* 20x80 into 60x30 fits by height: a 7x30 image around x = 30;
        * the corner is letterbox, the centre column is image. */
-      const uint32_t *r = companion_thumbs_get(t, tall, 60, 30);
+      const uint32_t *r = companion_thumbs_get(t, tall, VIDEO_SCALE_PACK(60, 30));
       CHECK(r != NULL, "rect cached");
       CHECK(r && r[0] == 0xff0000ffu, "rect corner is bg");
       CHECK(r && r[15 * 60 + 30] == 0xff00ff00u, "rect centre is image");
@@ -290,10 +296,10 @@ static void test_decode_and_scale(void)
     * image keeps its own alpha - what the Qt / Cocoa backends ask for so
     * the themed cell background shows through instead of a white box. */
    ngot = 0;
-   companion_thumbs_request(t, tall, 50, 50, 6, true, 0x00000000u);
+   companion_thumbs_request(t, tall, VIDEO_SCALE_PACK(50, 50), 6, true, 0x00000000u);
    CHECK(drain(t, 1, 2000) == 1, "transparent delivered");
    {
-      const uint32_t *r = companion_thumbs_get(t, tall, 50, 50);
+      const uint32_t *r = companion_thumbs_get(t, tall, VIDEO_SCALE_PACK(50, 50));
       /* 20x80 into 50x50 fits by height: a 12x50 image around x = 25. */
       CHECK(r != NULL, "transparent cached");
       CHECK(r && r[0] == 0x00000000u, "transparent corner is clear 0x%08x", r ? r[0] : 0);
@@ -301,20 +307,20 @@ static void test_decode_and_scale(void)
       /* The pure scaler agrees on a translucent source pixel. */
       {
          uint32_t px = 0x80102030u;
-         uint32_t *o = companion_thumbs_scale(&px, 1, 1, 1, 1, 0x00000000u);
+         uint32_t *o = companion_thumbs_scale(&px, VIDEO_SCALE_PACK(1, 1), VIDEO_SCALE_PACK(1, 1), 0x00000000u);
          CHECK(o && o[0] == 0x80102030u, "translucent pixel kept as-is 0x%08x", o ? o[0] : 0);
          free(o);
-         o = companion_thumbs_scale(&px, 1, 1, 1, 1, 0xffffffffu);
+         o = companion_thumbs_scale(&px, VIDEO_SCALE_PACK(1, 1), VIDEO_SCALE_PACK(1, 1), 0xffffffffu);
          CHECK(o && (o[0] >> 24) == 0xff, "opaque bg still composites");
          free(o);
       }
    }
 
    /* Cached now: get() serves it, request() declines. */
-   bits = companion_thumbs_get(t, red, 32, 32);
+   bits = companion_thumbs_get(t, red, VIDEO_SCALE_PACK(32, 32));
    CHECK(bits && bits[0] == 0xffff0000u, "cache get");
-   CHECK(!companion_thumbs_request(t, red, 32, 32, 3, true, 0), "cached key not re-queued");
-   CHECK(companion_thumbs_get(t, red, 33, 33) == NULL, "other edge is a different key");
+   CHECK(!companion_thumbs_request(t, red, VIDEO_SCALE_PACK(32, 32), 3, true, 0), "cached key not re-queued");
+   CHECK(companion_thumbs_get(t, red, VIDEO_SCALE_PACK(33, 33)) == NULL, "other edge is a different key");
    CHECK(companion_thumbs_cached_count(t) == 4, "four cached");
    CHECK(companion_thumbs_cached_bytes(t) == 32u * 32 * 4 + 40u * 40 * 4 + 60u * 30 * 4 + 50u * 50 * 4, "cached bytes");
 
@@ -335,21 +341,21 @@ static void test_lru_budget(void)
       write_tga(p[i], 8, 8, 0xff000000u | (uint32_t)(i * 40));
    }
    ngot = 0;
-   companion_thumbs_request(t, p[0], 16, 16, 0, true, 0);
+   companion_thumbs_request(t, p[0], VIDEO_SCALE_PACK(16, 16), 0, true, 0);
    drain(t, 1, 2000);
-   companion_thumbs_request(t, p[1], 16, 16, 1, true, 0);
+   companion_thumbs_request(t, p[1], VIDEO_SCALE_PACK(16, 16), 1, true, 0);
    drain(t, 1, 2000);
-   companion_thumbs_request(t, p[2], 16, 16, 2, true, 0);
+   companion_thumbs_request(t, p[2], VIDEO_SCALE_PACK(16, 16), 2, true, 0);
    drain(t, 1, 2000);
    CHECK(companion_thumbs_cached_count(t) == 3, "three fit");
    /* touch p[0] so p[1] is the least recently used */
-   CHECK(companion_thumbs_get(t, p[0], 16, 16) != NULL, "touch p0");
-   companion_thumbs_request(t, p[3], 16, 16, 3, true, 0);
+   CHECK(companion_thumbs_get(t, p[0], VIDEO_SCALE_PACK(16, 16)) != NULL, "touch p0");
+   companion_thumbs_request(t, p[3], VIDEO_SCALE_PACK(16, 16), 3, true, 0);
    drain(t, 1, 2000);
    CHECK(companion_thumbs_cached_count(t) == 3, "still three after eviction");
-   CHECK(companion_thumbs_get(t, p[1], 16, 16) == NULL, "LRU p1 evicted");
-   CHECK(companion_thumbs_get(t, p[0], 16, 16) != NULL, "touched p0 kept");
-   CHECK(companion_thumbs_get(t, p[3], 16, 16) != NULL, "new p3 kept");
+   CHECK(companion_thumbs_get(t, p[1], VIDEO_SCALE_PACK(16, 16)) == NULL, "LRU p1 evicted");
+   CHECK(companion_thumbs_get(t, p[0], VIDEO_SCALE_PACK(16, 16)) != NULL, "touched p0 kept");
+   CHECK(companion_thumbs_get(t, p[3], VIDEO_SCALE_PACK(16, 16)) != NULL, "new p3 kept");
    CHECK(companion_thumbs_cached_bytes(t) <= 3u * 16 * 16 * 4, "within budget");
    companion_thumbs_free(t);
 }
@@ -371,19 +377,19 @@ static void test_priority_and_cancel(void)
    }
    /* Cancel: queued requests vanish, cache stays. */
    ngot = 0;
-   companion_thumbs_request(t, p[0], 8, 8, 0, true, 0);
+   companion_thumbs_request(t, p[0], VIDEO_SCALE_PACK(8, 8), 0, true, 0);
    drain(t, 1, 2000);
    for (i = 1; i < 6; i++)
-      companion_thumbs_request(t, p[i], 8, 8, (uintptr_t)i, i < 3, 0);
+      companion_thumbs_request(t, p[i], VIDEO_SCALE_PACK(8, 8), (uintptr_t)i, i < 3, 0);
    companion_thumbs_cancel(t);
    CHECK(companion_thumbs_queued(t) == 0, "cancel empties queues");
-   CHECK(companion_thumbs_get(t, p[0], 8, 8) != NULL, "cancel keeps the cache");
+   CHECK(companion_thumbs_get(t, p[0], VIDEO_SCALE_PACK(8, 8)) != NULL, "cancel keeps the cache");
    /* A cancelled key can be requested again. Wait for that request's
     * own delivery (tag 1): a job popped before the cancel may land
     * first with its old epoch, and must not be mistaken for it. */
-   CHECK(companion_thumbs_request(t, p[1], 8, 8, 1, true, 0), "re-request after cancel");
+   CHECK(companion_thumbs_request(t, p[1], VIDEO_SCALE_PACK(8, 8), 1, true, 0), "re-request after cancel");
    CHECK(drain_tag(t, 1, 5000), "re-requested key delivered");
-   CHECK(companion_thumbs_get(t, p[1], 8, 8) != NULL, "re-requested decoded");
+   CHECK(companion_thumbs_get(t, p[1], VIDEO_SCALE_PACK(8, 8)) != NULL, "re-requested decoded");
    companion_thumbs_free(t);
 }
 
@@ -394,22 +400,22 @@ static void test_forget_and_budget(void)
    fixture(p, sizeof(p), "forget.tga");
    write_tga(p, 8, 8, 0xff112233u);
    ngot = 0;
-   companion_thumbs_request(t, p, 16, 16, 0, true, 0);
-   companion_thumbs_request(t, p, 24, 24, 1, true, 0);
+   companion_thumbs_request(t, p, VIDEO_SCALE_PACK(16, 16), 0, true, 0);
+   companion_thumbs_request(t, p, VIDEO_SCALE_PACK(24, 24), 1, true, 0);
    drain(t, 2, 2000);
    CHECK(companion_thumbs_cached_count(t) == 2, "two sizes cached");
    CHECK(companion_thumbs_forget(t, p) == 2, "forget drops every size");
-   CHECK(companion_thumbs_get(t, p, 16, 16) == NULL, "forgotten");
-   CHECK(companion_thumbs_request(t, p, 16, 16, 2, true, 0), "re-request after forget");
+   CHECK(companion_thumbs_get(t, p, VIDEO_SCALE_PACK(16, 16)) == NULL, "forgotten");
+   CHECK(companion_thumbs_request(t, p, VIDEO_SCALE_PACK(16, 16), 2, true, 0), "re-request after forget");
    CHECK(drain_tag(t, 2, 5000), "re-request after forget delivered");
-   CHECK(companion_thumbs_get(t, p, 16, 16) != NULL, "decoded again");
+   CHECK(companion_thumbs_get(t, p, VIDEO_SCALE_PACK(16, 16)) != NULL, "decoded again");
    /* shrinking the budget evicts at once */
-   companion_thumbs_request(t, p, 32, 32, 3, true, 0);
+   companion_thumbs_request(t, p, VIDEO_SCALE_PACK(32, 32), 3, true, 0);
    drain(t, 1, 2000);
    CHECK(companion_thumbs_cached_count(t) == 2, "two again");
    companion_thumbs_set_budget(t, 32u * 32 * 4);
    CHECK(companion_thumbs_cached_count(t) == 1, "budget cut evicts LRU (got %u)", (unsigned)companion_thumbs_cached_count(t));
-   CHECK(companion_thumbs_get(t, p, 32, 32) != NULL, "most recent kept");
+   CHECK(companion_thumbs_get(t, p, VIDEO_SCALE_PACK(32, 32)) != NULL, "most recent kept");
    companion_thumbs_free(t);
 }
 
@@ -441,16 +447,16 @@ static void test_abort(void)
     * can be requested again */
    ngot = 0;
    for (i = 0; i < 8; i++)
-      companion_thumbs_request(t, big[i], 64, 64, (uintptr_t)i, true, 0);
+      companion_thumbs_request(t, big[i], VIDEO_SCALE_PACK(64, 64), (uintptr_t)i, true, 0);
    sleep_ms(5);
    companion_thumbs_cancel(t);
    drain(t, 1, 300);
-   CHECK(companion_thumbs_request(t, big[0], 64, 64, 100, true, 0), "re-request after cancel mid-decode");
+   CHECK(companion_thumbs_request(t, big[0], VIDEO_SCALE_PACK(64, 64), 100, true, 0), "re-request after cancel mid-decode");
    CHECK(drain_tag(t, 100, 10000), "re-requested big image lands (its own delivery, tag 100)");
 
    /* free() while decoding: returns promptly */
    for (i = 0; i < 8; i++)
-      companion_thumbs_request(t, big[i], 96, 96, (uintptr_t)i, true, 0);
+      companion_thumbs_request(t, big[i], VIDEO_SCALE_PACK(96, 96), (uintptr_t)i, true, 0);
    sleep_ms(5);
    clock_gettime(CLOCK_MONOTONIC, &t0);
    companion_thumbs_free(t);
@@ -474,14 +480,14 @@ static void test_double_failure_no_uaf(void)
    ngot = 0;
    for (i = 0; i < 20; i++)
    {
-      companion_thumbs_request(t, bad, 16, 16, 1, true, 0);
+      companion_thumbs_request(t, bad, VIDEO_SCALE_PACK(16, 16), 1, true, 0);
       companion_thumbs_cancel(t);
-      companion_thumbs_request(t, bad, 16, 16, 2, true, 0);
+      companion_thumbs_request(t, bad, VIDEO_SCALE_PACK(16, 16), 2, true, 0);
       drain(t, 1, 1000);
-      companion_thumbs_get(t, bad, 16, 16); /* walks the hash chain */
+      companion_thumbs_get(t, bad, VIDEO_SCALE_PACK(16, 16)); /* walks the hash chain */
    }
    drain(t, 1, 1000);
-   companion_thumbs_get(t, bad, 16, 16);
+   companion_thumbs_get(t, bad, VIDEO_SCALE_PACK(16, 16));
    CHECK(companion_thumbs_cached_count(t) == 0, "nothing cached");
    companion_thumbs_free(t);
 }
@@ -505,13 +511,13 @@ static void test_animation(void)
 
    /* the still request works on it as on any PNG */
    ngot = 0;
-   companion_thumbs_request(t, apng, 16, 16, 1, true, 0);
+   companion_thumbs_request(t, apng, VIDEO_SCALE_PACK(16, 16), 1, true, 0);
    CHECK(drain_tag(t, 1, 3000), "APNG decodes as a still first (frame 0)");
    CHECK(!gots[0].null && gots[0].centre == 0xffff0000u, "still is frame 0 (red): 0x%08x", gots[0].centre);
 
    /* animate: frames alternate red / green at ~30 ms */
    ngot = 0;
-   companion_thumbs_animate(t, apng, 16, 16, 7, 0);
+   companion_thumbs_animate(t, apng, VIDEO_SCALE_PACK(16, 16), 7, 0);
    CHECK(drain(t, 10, 4000) >= 10, "at least 10 frames in 4 s (got %u)", (unsigned)ngot);
    for (i = 0; i < ngot; i++)
    {
@@ -533,14 +539,14 @@ static void test_animation(void)
    CHECK(ngot == 0, "stopped: no frames (got %u)", (unsigned)ngot);
 
    /* a still produces no frames */
-   companion_thumbs_animate(t, still, 16, 16, 8, 0);
+   companion_thumbs_animate(t, still, VIDEO_SCALE_PACK(16, 16), 8, 0);
    sleep_ms(200);
    ngot = 0;
    companion_thumbs_poll(t, on_done, NULL, 0, 20000);
    CHECK(ngot == 0, "a still animates nothing (got %u)", (unsigned)ngot);
 
    /* free with an animation running returns */
-   companion_thumbs_animate(t, apng, 16, 16, 9, 0);
+   companion_thumbs_animate(t, apng, VIDEO_SCALE_PACK(16, 16), 9, 0);
    sleep_ms(50);
    companion_thumbs_free(t);
 }
@@ -567,17 +573,17 @@ static void test_animation_long_frames(void)
    CHECK(write_apng(fast, 8, 8, 30),   "wrote the 30 ms APNG");
 
    ngot = 0;
-   companion_thumbs_animate(t, slow, 16, 16, 11, 0);
+   companion_thumbs_animate(t, slow, VIDEO_SCALE_PACK(16, 16), 11, 0);
    CHECK(drain_tag(t, 11, 3000), "the slow animation shows its first frame");
 
    /* now inside a 5 s hold */
    t0 = mono_ms();
-   companion_thumbs_animate(t, fast, 16, 16, 12, 0);
+   companion_thumbs_animate(t, fast, VIDEO_SCALE_PACK(16, 16), 12, 0);
    CHECK(drain_tag(t, 12, 3000), "the next animation shows");
    took = mono_ms() - t0;
    CHECK(took < 1000, "switching does not wait out the frame (%lld ms)", took);
 
-   companion_thumbs_animate(t, slow, 16, 16, 14, 0);
+   companion_thumbs_animate(t, slow, VIDEO_SCALE_PACK(16, 16), 14, 0);
    CHECK(drain_tag(t, 14, 3000), "slow again, in its hold");
    t0 = mono_ms();
    companion_thumbs_free(t);
@@ -628,9 +634,8 @@ static void test_video_hover(void)
          if (!gfx_anim_preview_feed(p)
                || !(fr = gfx_anim_preview_next(p, &dur, &na)))
             break;
-         bits = companion_thumbs_scale_ex(fr,
-               VIDEO_SCALE_W(p->dims), VIDEO_SCALE_H(p->dims),
-               16, 16, 0, !na);
+         bits = companion_thumbs_scale_ex(fr, p->dims,
+               VIDEO_SCALE_PACK(16, 16), 0, !na);
          ref[nref] = bits ? bits[8 * 16 + 8] : 0;
          free(bits);
       }
@@ -654,9 +659,9 @@ static void test_video_hover(void)
    write_tga(blocker, 1536, 1536, 0xff445566u);
    t = companion_thumbs_new(0, 1);
    ngot = 0;
-   companion_thumbs_request(t, blocker, 16, 16, 9, true, 0);
-   companion_thumbs_request(t, mp4, 16, 16, 1, false, 0);
-   companion_thumbs_animate(t, mp4, 16, 16, 2, 0);
+   companion_thumbs_request(t, blocker, VIDEO_SCALE_PACK(16, 16), 9, true, 0);
+   companion_thumbs_request(t, mp4, VIDEO_SCALE_PACK(16, 16), 1, false, 0);
+   companion_thumbs_animate(t, mp4, VIDEO_SCALE_PACK(16, 16), 2, 0);
    CHECK(drain(t, 5, 8000) >= 5, "blocker + still + 3 animation frames in 8 s (got %u)",
          (unsigned)ngot);
    {
@@ -695,7 +700,7 @@ static void test_video_hover(void)
    /* the still already cached: the animation opens its own session and
     * starts at frame 0 (nothing to continue from) */
    ngot = 0;
-   companion_thumbs_animate(t, mp4, 16, 16, 3, 0);
+   companion_thumbs_animate(t, mp4, VIDEO_SCALE_PACK(16, 16), 3, 0);
    CHECK(drain(t, 2, 4000) >= 2, "cached still: animation plays (got %u)",
          (unsigned)ngot);
    CHECK(ngot >= 1 && gots[0].tag == 3 && gots[0].centre == ref[0],
@@ -722,9 +727,9 @@ static void test_apng_hover(void)
    CHECK(write_apng(apng, 8, 8, 30), "wrote the APNG");
    write_tga(blocker, 1536, 1536, 0xff445566u);   /* see test_video_hover */
    ngot = 0;
-   companion_thumbs_request(t, blocker, 16, 16, 9, true, 0);
-   companion_thumbs_request(t, apng, 16, 16, 1, false, 0);
-   companion_thumbs_animate(t, apng, 16, 16, 2, 0);
+   companion_thumbs_request(t, blocker, VIDEO_SCALE_PACK(16, 16), 9, true, 0);
+   companion_thumbs_request(t, apng, VIDEO_SCALE_PACK(16, 16), 1, false, 0);
+   companion_thumbs_animate(t, apng, VIDEO_SCALE_PACK(16, 16), 2, 0);
    CHECK(drain(t, 4, 8000) >= 4, "blocker + still + 2 frames in 8 s (got %u)", (unsigned)ngot);
    for (i = 0; i < ngot; i++)
    {
@@ -755,18 +760,18 @@ static void test_scaler(void)
    for (y = 0; y < sh; y++)
       for (x = 0; x < sw; x++)
          src[y * sw + x] = 0xFF0000FFu;
-   out = companion_thumbs_scale_ex(src, sw, sh, 16, 16, 0, true);
+   out = companion_thumbs_scale_ex(src, VIDEO_SCALE_PACK(sw, sh), VIDEO_SCALE_PACK(16, 16), 0, true);
    CHECK(out && out[8 * 16 + 8] == 0xffff0000u, "RGBA-order red -> ARGB red (got 0x%08x)", out ? out[8 * 16 + 8] : 0);
    free(out);
    /* the same words read as ARGB are blue */
-   out = companion_thumbs_scale_ex(src, sw, sh, 16, 16, 0, false);
+   out = companion_thumbs_scale_ex(src, VIDEO_SCALE_PACK(sw, sh), VIDEO_SCALE_PACK(16, 16), 0, false);
    CHECK(out && out[8 * 16 + 8] == 0xff0000ffu, "ARGB-order 0xFF0000FF is blue (got 0x%08x)", out ? out[8 * 16 + 8] : 0);
    free(out);
    /* checkerboard of white and black, 1-px squares, 4x down: grey */
    for (y = 0; y < sh; y++)
       for (x = 0; x < sw; x++)
          src[y * sw + x] = ((x + y) & 1) ? 0xffffffffu : 0xff000000u;
-   out = companion_thumbs_scale_ex(src, sw, sh, 16, 16, 0, false);
+   out = companion_thumbs_scale_ex(src, VIDEO_SCALE_PACK(sw, sh), VIDEO_SCALE_PACK(16, 16), 0, false);
    {
       uint32_t p = out ? out[8 * 16 + 8] : 0;
       unsigned r = (p >> 16) & 0xff;
@@ -775,7 +780,7 @@ static void test_scaler(void)
    free(out);
    /* enlarging keeps nearest: a 2x2 source to 8x8 has hard edges */
    src[0] = 0xffff0000u; src[1] = 0xff00ff00u; src[sw] = 0xff0000ffu; src[sw + 1] = 0xffffffffu;
-   out = companion_thumbs_scale_ex(src, 2, 2, 8, 8, 0, false);
+   out = companion_thumbs_scale_ex(src, VIDEO_SCALE_PACK(2, 2), VIDEO_SCALE_PACK(8, 8), 0, false);
    CHECK(out && out[0] == 0xffff0000u && out[7] == 0xff00ff00u, "enlarging is nearest (corners 0x%08x 0x%08x)", out ? out[0] : 0, out ? out[7] : 0);
    free(out);
    free(src);
@@ -791,12 +796,12 @@ static void test_undecodable(void)
    fputs("not a tga", f);
    fclose(f);
    ngot = 0;
-   companion_thumbs_request(t, bad, 16, 16, 9, true, 0);
+   companion_thumbs_request(t, bad, VIDEO_SCALE_PACK(16, 16), 9, true, 0);
    CHECK(drain(t, 1, 2000) == 1, "undecodable delivered");
    CHECK(gots[0].null && gots[0].tag == 9, "delivered with NULL bits");
    CHECK(companion_thumbs_cached_count(t) == 0, "not cached");
    /* forgotten: can be requested again (e.g. after a download fixes it) */
-   CHECK(companion_thumbs_request(t, bad, 16, 16, 9, true, 0), "retry allowed");
+   CHECK(companion_thumbs_request(t, bad, VIDEO_SCALE_PACK(16, 16), 9, true, 0), "retry allowed");
    drain(t, 1, 2000);
    companion_thumbs_free(t);
 }
@@ -816,7 +821,7 @@ static void test_many_and_shutdown(void)
    }
    ngot = 0;
    for (i = 0; i < N; i++)
-      companion_thumbs_request(t, paths[i], 48, 48, (uintptr_t)i, (i & 1) != 0, 0);
+      companion_thumbs_request(t, paths[i], VIDEO_SCALE_PACK(48, 48), (uintptr_t)i, (i & 1) != 0, 0);
    CHECK(drain(t, N, 10000) == N, "all %d delivered (got %u)", N, (unsigned)ngot);
    {
       /* each tag exactly once */
@@ -840,7 +845,7 @@ static void test_many_and_shutdown(void)
 
    /* Shutdown with work in flight must return. */
    for (i = 0; i < N; i++)
-      companion_thumbs_request(t, paths[i], 64, 64, (uintptr_t)i, true, 0);
+      companion_thumbs_request(t, paths[i], VIDEO_SCALE_PACK(64, 64), (uintptr_t)i, true, 0);
    companion_thumbs_free(t);
 }
 

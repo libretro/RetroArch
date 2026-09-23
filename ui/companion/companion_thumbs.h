@@ -20,7 +20,7 @@
  * types). One instance per companion window.
  *
  * What the Qt companion does, made common and faster:
- *   - a cache of decoded thumbnails keyed by (file path, edge), already
+ *   - a cache of decoded thumbnails keyed by (file path, size), already
  *     scaled to the size the view draws, under a byte budget with LRU
  *     eviction: a thumbnail decoded once is drawn from the cache for as
  *     long as it fits, across playlist switches
@@ -36,7 +36,8 @@
  * debounce), turn a row into a file path, and poll once per frame for
  * finished thumbnails to hand to its image control.
  *
- * Pixels are ARGB8888 (0xAARRGGBB, opaque), w x h, row-major -
+ * Sizes are words in VIDEO_SCALE_PACK's layout (gfx/video_defines.h).
+ * Pixels are ARGB8888 (0xAARRGGBB, opaque), row-major -
  * Windows' 32-bit DIB order, and what Cocoa/Qt take with a byte swap.
  *
  * Thread-safe where stated; everything else is UI-thread only. Builds
@@ -47,6 +48,8 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_common_api.h>
+
+#include "../../gfx/video_defines.h"
 
 RETRO_BEGIN_DECLS
 
@@ -59,7 +62,7 @@ typedef struct companion_thumbs companion_thumbs_t;
  * when the file could not be decoded (the backend marks the row as
  * having no thumbnail). */
 typedef void (*companion_thumbs_done_cb)(void *ud, const char *path,
-      int w, int h, uintptr_t tag, const uint32_t *bits);
+      unsigned dims, uintptr_t tag, const uint32_t *bits);
 
 /* @budget_bytes: cache size in bytes of decoded pixels (0 = a default of
  * 64 MiB). @threads: decode threads to start, 0 = cores - 1 clamped to
@@ -68,14 +71,15 @@ companion_thumbs_t *companion_thumbs_new(size_t budget_bytes,
       unsigned threads);
 void companion_thumbs_free(companion_thumbs_t *t);
 
-/* Cached thumbnail for (@path, @w x @h), or NULL. The pointer is valid
+/* Cached thumbnail for (@path, @dims), or NULL. The pointer is valid
  * until the next companion_thumbs_* call on this instance. UI thread.
- * Touches the entry (LRU). Grid cells pass w == h; the boxart pane its
- * own size. */
+ * Touches the entry (LRU). Grid cells pass a square; the boxart pane
+ * its own size. */
 const uint32_t *companion_thumbs_get(companion_thumbs_t *t,
-      const char *path, int w, int h);
+      const char *path, unsigned dims);
 
-/* Ask for (@path, @edge) to be decoded. @urgent requests are served
+/* Ask for (@path, @dims) to be decoded. A size with an empty axis is
+ * refused. @urgent requests are served
  * most-recent-first ahead of every non-urgent one; non-urgent ones
  * (prefetch) are served oldest-first after them. A key already cached
  * or already queued is ignored (returns false). @bg is the ARGB colour
@@ -84,7 +88,7 @@ const uint32_t *companion_thumbs_get(companion_thumbs_t *t,
  * transparent letterbox instead, for backends that draw the thumbnail
  * over their own (themed) background. UI thread. */
 bool companion_thumbs_request(companion_thumbs_t *t, const char *path,
-      int w, int h, uintptr_t tag, bool urgent, uint32_t bg);
+      unsigned dims, uintptr_t tag, bool urgent, uint32_t bg);
 
 /* Drop every queued request (the view changed); cached thumbnails stay.
  * Decodes already in flight still land, are cached, and are delivered -
@@ -103,14 +107,14 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
  * thumbnail - an APNG, animated WEBP, WEBM or MP4 plays its frames on
  * the container's clock (no audio, as in the menu). One animation at a
  * time (the pane showing the selection). Frames arrive through
- * companion_thumbs_poll() as ordinary deliveries for (@path, @w x @h,
+ * companion_thumbs_poll() as ordinary deliveries for (@path, @dims,
  * @tag), each frame already scaled and letterboxed; the backend blits
  * them into its pane exactly as it does a still. A still image, or a
  * type without an animation decoder, produces nothing (the still that
  * was requested normally stays). Decoding runs on its own thread and
  * stops on _animate_stop(), a new _animate(), or free(). UI thread. */
 void companion_thumbs_animate(companion_thumbs_t *t, const char *path,
-      int w, int h, uintptr_t tag, uint32_t bg);
+      unsigned dims, uintptr_t tag, uint32_t bg);
 void companion_thumbs_animate_stop(companion_thumbs_t *t);
 /* True while an animation is playing (a backend may keep polling). */
 bool companion_thumbs_animating(companion_thumbs_t *t);
@@ -133,12 +137,12 @@ size_t companion_thumbs_queued(companion_thumbs_t *t);
  * backend must keep polling. */
 size_t companion_thumbs_pending(companion_thumbs_t *t);
 
-/* Letterbox @src (sw x sh ARGB) into a freshly allocated dw x dh ARGB
- * buffer filled with @bg. Pure; exposed for tests and for backends that
+/* Letterbox @src (@src_dims, ARGB) into a freshly allocated @dst_dims
+ * ARGB buffer filled with @bg. Pure; exposed for tests and for backends that
  * scale their own images (the boxart pane). Nearest-neighbour: plenty at
  * thumbnail size, and the same on every backend. */
-uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned sw,
-      unsigned sh, int dw, int dh, uint32_t bg);
+uint32_t *companion_thumbs_scale(const uint32_t *src,
+      unsigned src_dims, unsigned dst_dims, uint32_t bg);
 /* Same, with the source in R,G,B,A memory order (what an animation
  * stream emits when it will not emit ARGB words): the byte swap happens
  * on the pixels sampled, never over the whole canvas - at 4K that pass
@@ -146,8 +150,9 @@ uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned sw,
  * more in both directions the samplers average four taps per output
  * pixel instead of one (under 1 ms at 4K), which takes most of the
  * shimmer out of a downscaled video. */
-uint32_t *companion_thumbs_scale_ex(const uint32_t *src, unsigned sw,
-      unsigned sh, int dw, int dh, uint32_t bg, bool src_rgba_order);
+uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
+      unsigned src_dims, unsigned dst_dims, uint32_t bg,
+      bool src_rgba_order);
 
 RETRO_END_DECLS
 

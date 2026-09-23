@@ -172,11 +172,11 @@ public:
     * thumbnails and the file-browser preview). imageAt() gives the
     * cached pixmap; requestImage() queues a decode, after which
     * thumbnailReady(path) is emitted. */
-   bool imageAt(const QString &path, int w, int h, QPixmap *out) const;
-   void requestImage(const QString &path, int w, int h);
+   bool imageAt(const QString &path, unsigned dims, QPixmap *out) const;
+   void requestImage(const QString &path, unsigned dims);
    /* Play @path in the sidebar (APNG / animated WEBP / WEBM / MP4 - a
     * still plays nothing): frames come as frameReady(path, pixmap). */
-   void animateImage(const QString &path, int w, int h);
+   void animateImage(const QString &path, unsigned dims);
    void stopAnimation();
    /* Drop queued decodes and abandon those in flight (the view moved
     * on); cached images stay. */
@@ -207,7 +207,7 @@ private:
    int m_thumbSize = 256;
    QHash<QString, QPersistentModelIndex> m_pendingRows;
    QTimer m_pollTimer;
-   static void onEngineDone(void *ud, const char *path, int w, int h,
+   static void onEngineDone(void *ud, const char *path, unsigned dims,
          uintptr_t tag, const uint32_t *bits);
    void thumbnailArrived(const QString &path);
    QVector<PlaylistEntry> m_contents;
@@ -219,8 +219,8 @@ private:
    void appendEntriesFromCore();
    void startNextPendingPlaylist();
    mutable QCache<QString, QPixmap> m_cache; /* filled lazily from data() */
-   /* stages of imageAt()/data(): one conversion per (path, w, h) */
-   QPixmap *pixmapFor(const QString &path, int w, int h) const;
+   /* stages of imageAt()/data(): one conversion per (path, dims) */
+   QPixmap *pixmapFor(const QString &path, unsigned dims) const;
    ThumbnailType m_thumbnailType = THUMBNAIL_TYPE_BOXART;
    QString getThumbnailPath(const QModelIndex &index, QString type) const;
    QString getThumbnailPath(const PlaylistEntry &entry, QString type) const;

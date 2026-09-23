@@ -7080,7 +7080,7 @@ QVariant PlaylistModel::data(const QModelIndex &index, int role) const
                /* The engine's pixels for this row at the grid's size,
                 * converted to a QPixmap once and kept in m_cache. */
                QPixmap *pm = pixmapFor(getCurrentTypeThumbnailPath(index),
-                     m_thumbSize, m_thumbSize);
+                     VIDEO_SCALE_PACK(m_thumbSize, m_thumbSize));
                if (pm)
                   return *pm;
             }
@@ -7276,20 +7276,20 @@ void PlaylistModel::loadThumbnail(const QModelIndex &index)
    if (!m_engine || path.isEmpty())
       return;
    if (companion_thumbs_get(m_engine, path.toUtf8().constData(),
-            m_thumbSize, m_thumbSize))
+            VIDEO_SCALE_PACK(m_thumbSize, m_thumbSize)))
       return;                         /* data() serves it from the cache */
    if (m_pendingRows.contains(path))
       return;
    m_pendingRows.insert(path, QPersistentModelIndex(index));
    companion_thumbs_request(m_engine, path.toUtf8().constData(),
-         m_thumbSize, m_thumbSize, 0, true, 0x00000000u);
+         VIDEO_SCALE_PACK(m_thumbSize, m_thumbSize), 0, true, 0x00000000u);
    if (!m_pollTimer.isActive())
       m_pollTimer.start();
 }
 
 #define QT_TAG_ANIM_FRAME ((uintptr_t)1 << (sizeof(uintptr_t) * 8 - 1))
 
-void PlaylistModel::onEngineDone(void *ud, const char *path, int w, int h,
+void PlaylistModel::onEngineDone(void *ud, const char *path, unsigned dims,
       uintptr_t tag, const uint32_t *bits)
 {
    PlaylistModel *self = static_cast<PlaylistModel*>(ud);
@@ -7300,7 +7300,9 @@ void PlaylistModel::onEngineDone(void *ud, const char *path, int w, int h,
        * rather than copying it once more first. */
       if (bits)
       {
-         QImage img((const uchar*)bits, w, h, w * 4, QImage::Format_ARGB32);
+         int w = (int)VIDEO_SCALE_W(dims);
+         QImage img((const uchar*)bits, w, (int)VIDEO_SCALE_H(dims), w * 4,
+               QImage::Format_ARGB32);
          emit self->frameReady(QString::fromUtf8(path), QPixmap::fromImage(img));
       }
       return;
@@ -7308,11 +7310,12 @@ void PlaylistModel::onEngineDone(void *ud, const char *path, int w, int h,
    self->thumbnailArrived(QString::fromUtf8(path));
 }
 
-void PlaylistModel::animateImage(const QString &path, int w, int h)
+void PlaylistModel::animateImage(const QString &path, unsigned dims)
 {
-   if (!m_engine || path.isEmpty() || w < 1 || h < 1)
+   if (     !m_engine || path.isEmpty()
+         || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       return;
-   companion_thumbs_animate(m_engine, path.toUtf8().constData(), w, h,
+   companion_thumbs_animate(m_engine, path.toUtf8().constData(), dims,
          QT_TAG_ANIM_FRAME, 0x00000000u);
    if (!m_pollTimer.isActive())
       m_pollTimer.start();
@@ -7324,8 +7327,10 @@ void PlaylistModel::stopAnimation()
       companion_thumbs_animate_stop(m_engine);
 }
 
-QPixmap *PlaylistModel::pixmapFor(const QString &path, int w, int h) const
+QPixmap *PlaylistModel::pixmapFor(const QString &path, unsigned dims) const
 {
+   int w       = (int)VIDEO_SCALE_W(dims);
+   int h       = (int)VIDEO_SCALE_H(dims);
    QString key = path + QLatin1Char('@') + QString::number(w)
       + QLatin1Char('x') + QString::number(h);
    QPixmap *pm = m_cache.object(key);
@@ -7334,7 +7339,7 @@ QPixmap *PlaylistModel::pixmapFor(const QString &path, int w, int h) const
       return pm;
    if (!m_engine || path.isEmpty())
       return NULL;
-   bits = companion_thumbs_get(m_engine, path.toUtf8().constData(), w, h);
+   bits = companion_thumbs_get(m_engine, path.toUtf8().constData(), dims);
    if (!bits)
       return NULL;
    {
@@ -7350,9 +7355,9 @@ QPixmap *PlaylistModel::pixmapFor(const QString &path, int w, int h) const
    return pm;
 }
 
-bool PlaylistModel::imageAt(const QString &path, int w, int h, QPixmap *out) const
+bool PlaylistModel::imageAt(const QString &path, unsigned dims, QPixmap *out) const
 {
-   QPixmap *pm = pixmapFor(path, w, h);
+   QPixmap *pm = pixmapFor(path, dims);
    if (!pm)
       return false;
    if (out)
@@ -7367,11 +7372,12 @@ void PlaylistModel::abandonPending()
    m_pendingRows.clear();
 }
 
-void PlaylistModel::requestImage(const QString &path, int w, int h)
+void PlaylistModel::requestImage(const QString &path, unsigned dims)
 {
-   if (!m_engine || path.isEmpty() || w < 1 || h < 1)
+   if (     !m_engine || path.isEmpty()
+         || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       return;
-   companion_thumbs_request(m_engine, path.toUtf8().constData(), w, h, 0,
+   companion_thumbs_request(m_engine, path.toUtf8().constData(), dims, 0,
          true, 0x00000000u);
    if (!m_pollTimer.isActive())
       m_pollTimer.start();

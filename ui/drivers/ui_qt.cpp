@@ -3477,9 +3477,9 @@ void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
        * widget waiting on this path. */
       {
          ThumbnailWidget *tw = findChild<ThumbnailWidget*>(qt_thumbnail_widget_names[0]);
-         int w = (tw && tw->width()  > 32) ? tw->width()  : 256;
-         int h = (tw && tw->height() > 32) ? tw->height() : 256;
-         m_playlistModel->animateImage(path, w, h);
+         m_playlistModel->animateImage(path, VIDEO_SCALE_PACK(
+               (tw && tw->width()  > 32) ? tw->width()  : 256,
+               (tw && tw->height() > 32) ? tw->height() : 256));
       }
    }
    else
@@ -3512,25 +3512,25 @@ void MainWindow::showSidebarImage(int idx, const QString &path, bool acceptDrop)
 {
    ThumbnailWidget *tw = findChild<ThumbnailWidget*>(qt_thumbnail_widget_names[idx]);
    QPixmap pm;
-   int w, h;
+   unsigned dims;
    m_sidebarPending[idx] = path;
    m_sidebarAcceptDrop   = acceptDrop;
    if (!tw)
       return;
-   w = tw->width()  > 32 ? tw->width()  : 256;
-   h = tw->height() > 32 ? tw->height() : 256;
+   dims = VIDEO_SCALE_PACK(tw->width()  > 32 ? tw->width()  : 256,
+                           tw->height() > 32 ? tw->height() : 256);
    if (path.isEmpty() || !m_playlistModel)
    {
       setThumbnail(qt_thumbnail_widget_names[idx], pm, acceptDrop);
       return;
    }
-   if (m_playlistModel->imageAt(path, w, h, &pm))
+   if (m_playlistModel->imageAt(path, dims, &pm))
    {
       setThumbnail(qt_thumbnail_widget_names[idx], pm, acceptDrop);
       return;
    }
    setThumbnail(qt_thumbnail_widget_names[idx], pm, acceptDrop); /* blank */
-   m_playlistModel->requestImage(path, w, h);
+   m_playlistModel->requestImage(path, dims);
 }
 
 void MainWindow::onFrameReady(const QString &path, const QPixmap &frame)
@@ -3549,15 +3549,14 @@ void MainWindow::onThumbnailReady(const QString &path)
    {
       ThumbnailWidget *tw;
       QPixmap pm;
-      int w, h;
       if (m_sidebarPending[i] != path)
          continue;
       tw = findChild<ThumbnailWidget*>(qt_thumbnail_widget_names[i]);
       if (!tw)
          continue;
-      w = tw->width()  > 32 ? tw->width()  : 256;
-      h = tw->height() > 32 ? tw->height() : 256;
-      if (m_playlistModel->imageAt(path, w, h, &pm))
+      if (m_playlistModel->imageAt(path, VIDEO_SCALE_PACK(
+                  tw->width()  > 32 ? tw->width()  : 256,
+                  tw->height() > 32 ? tw->height() : 256), &pm))
          setThumbnail(qt_thumbnail_widget_names[i], pm, m_sidebarAcceptDrop);
    }
 }

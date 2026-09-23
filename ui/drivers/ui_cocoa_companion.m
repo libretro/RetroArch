@@ -218,7 +218,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSImageView *boxart[4];
    NSBitmapImageRep *boxartRep[4];
    NSImage *boxartImage[4];
-   int boxartW[4], boxartH[4];
+   unsigned boxartDims[4];
    NSInteger boxartEntry[4];          /* entry the pane shows / awaits, -1 none */
    /* The docks: the shared model, its geometry, the metrics it was
     * laid out with, the surface that draws and drags it, a floating
@@ -372,7 +372,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)gridRun:(NSInteger)row;
 - (void)gridSelectionChanged:(NSInteger)row;
 - (void)iconTick;
-- (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits width:(int)w height:(int)h;
+- (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits dims:(unsigned)dims;
 - (CGFloat)thumbEdge;
 - (void)thumbWant:(NSInteger)row urgent:(BOOL)urgent;
 - (BOOL)thumbPathForRow:(NSInteger)row into:(char*)path len:(size_t)len;
@@ -978,8 +978,10 @@ static const companion_callbacks_t cc_callbacks = {
 }
 
 /* ARGB pixels from the engine -> NSImage (a byte swap into an RGBA rep). */
-static NSImage *cc_image_from_argb(const uint32_t *bits, int w, int h)
+static NSImage *cc_image_from_argb(const uint32_t *bits, unsigned dims)
 {
+   int w = (int)VIDEO_SCALE_W(dims);
+   int h = (int)VIDEO_SCALE_H(dims);
    NSBitmapImageRep *rep = [[[NSBitmapImageRep alloc]
       initWithBitmapDataPlanes:NULL pixelsWide:w pixelsHigh:h
       bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO
@@ -1028,22 +1030,24 @@ static NSImage *cc_image_from_argb(const uint32_t *bits, int w, int h)
 #define CC_BROWSE_ID        0x10000000L
 
 /* Engine delivery: tag = row | gen << 32. */
-static void cc_thumb_done(void *ud, const char *path, int w, int h,
+static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       uintptr_t tag, const uint32_t *bits)
 {
    RACompanionController *self = (BRIDGE RACompanionController*)ud;
    (void)path;
-   [self thumbDone:tag bits:bits width:w height:h];
+   [self thumbDone:tag bits:bits dims:dims];
 }
 
 /* Frames arrive at up to the container's rate: keep one rep per pane
  * and copy each frame into its pixels (a byte swap into RGBA), rather
  * than allocating a rep and an image per frame. */
-- (void)boxartBlit:(int)t bits:(const uint32_t*)bits width:(int)w height:(int)h
+- (void)boxartBlit:(int)t bits:(const uint32_t*)bits dims:(unsigned)dims
 {
    unsigned char *dst;
    int i;
-   if (!boxartRep[t] || boxartW[t] != w || boxartH[t] != h)
+   int w = (int)VIDEO_SCALE_W(dims);
+   int h = (int)VIDEO_SCALE_H(dims);
+   if (!boxartRep[t] || boxartDims[t] != dims)
    {
       RELEASE(boxartRep[t]);
       RELEASE(boxartImage[t]);
@@ -1056,8 +1060,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
          return;
       boxartImage[t] = [[NSImage alloc] initWithSize:NSMakeSize(w, h)];
       [boxartImage[t] addRepresentation:boxartRep[t]];
-      boxartW[t] = w;
-      boxartH[t] = h;
+      boxartDims[t] = dims;
       [boxart[t] setImage:boxartImage[t]];
    }
    dst = [boxartRep[t] bitmapData];
@@ -1072,7 +1075,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
    [boxart[t] setNeedsDisplay:YES];
 }
 
-- (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits width:(int)w height:(int)h
+- (void)thumbDone:(uintptr_t)tag bits:(const uint32_t*)bits dims:(unsigned)dims
 {
    NSInteger row;
    if (tag & CC_TAG_BOXART)
@@ -1080,7 +1083,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       /* The pane: show it if it is still the selected entry's. */
       int t = CC_TAG_PANE(tag);
       if (CC_TAG_ID(tag) == boxartEntry[t] && bits && boxart[t])
-         [self boxartBlit:t bits:bits width:w height:h];
+         [self boxartBlit:t bits:bits dims:dims];
       return;
    }
    row = (NSInteger)(tag & 0xffffffffu);
@@ -1096,9 +1099,9 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       if (thumbNone) thumbNone[row] = 1;
       return;
    }
-   if (w != (int)[self thumbEdge])
+   if ((int)VIDEO_SCALE_W(dims) != (int)[self thumbEdge])
       return; /* zoomed since */
-   [grid setImage:cc_image_from_argb(bits, w, h) forRow:row];
+   [grid setImage:cc_image_from_argb(bits, dims) forRow:row];
 }
 
 - (CGFloat)thumbEdge
@@ -1113,6 +1116,7 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
 {
    char path[PATH_MAX_LENGTH];
    int edge = (int)[self thumbEdge];
+   unsigned dims = VIDEO_SCALE_PACK(edge, edge);
    const uint32_t *bits;
    /* iconTick prefetches a screen either side of the visible range, so
     * @row can be outside the list. hasImageForRow: answers NO for those
@@ -1130,13 +1134,13 @@ static void cc_thumb_done(void *ud, const char *path, int w, int h,
       if (thumbNone) thumbNone[row] = 1;
       return;
    }
-   bits = companion_thumbs_get(thumbs, path, edge, edge);
+   bits = companion_thumbs_get(thumbs, path, dims);
    if (bits)
    {
-      [grid setImage:cc_image_from_argb(bits, edge, edge) forRow:row];
+      [grid setImage:cc_image_from_argb(bits, dims) forRow:row];
       return;
    }
-   companion_thumbs_request(thumbs, path, edge, edge,
+   companion_thumbs_request(thumbs, path, dims,
          CC_TAG(row, thumbGen),
          urgent ? true : false, 0x00000000u);
 }
@@ -3199,13 +3203,13 @@ static const char *cc_thumb_subdir(int t)
    {
       const uint32_t *bits;
       NSSize sz;
-      int bw, bh;
+      unsigned dims;
       if (!boxart[t] || [boxart[t] isHidden] || ![boxart[t] window])
          continue;
       [boxart[t] setImage:nil];
       RELEASE(boxartRep[t]);
       RELEASE(boxartImage[t]);
-      boxartRep[t] = nil; boxartImage[t] = nil; boxartW[t] = boxartH[t] = 0;
+      boxartRep[t] = nil; boxartImage[t] = nil; boxartDims[t] = 0;
       boxartEntry[t] = ent;
       if (ent < 0 || !thumbs)
          continue;
@@ -3216,18 +3220,17 @@ static const char *cc_thumb_subdir(int t)
                e->path, path, sizeof(path)))
          continue;
       sz = [boxart[t] bounds].size;
-      bw = (int)sz.width  - 4;
-      bh = (int)sz.height - 4;
-      if (bw < 1 || bh < 1)
+      if ((int)sz.width < 5 || (int)sz.height < 5)
          continue;
-      bits = companion_thumbs_get(thumbs, path, bw, bh);
+      dims = VIDEO_SCALE_PACK((int)sz.width - 4, (int)sz.height - 4);
+      bits = companion_thumbs_get(thumbs, path, dims);
       if (bits)
-         [self boxartBlit:t bits:bits width:bw height:bh];
+         [self boxartBlit:t bits:bits dims:dims];
       else
-         companion_thumbs_request(thumbs, path, bw, bh, CC_TAG_MAKE(ent, t), true, 0x00000000u);
+         companion_thumbs_request(thumbs, path, dims, CC_TAG_MAKE(ent, t), true, 0x00000000u);
       /* Like RetroArch's File Browser: an animated file plays in the
        * pane (frames arrive in -thumbDone: with the pane's tag). */
-      companion_thumbs_animate(thumbs, path, bw, bh, CC_TAG_MAKE(ent, t), 0x00000000u);
+      companion_thumbs_animate(thumbs, path, dims, CC_TAG_MAKE(ent, t), 0x00000000u);
    }
 }
 

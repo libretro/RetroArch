@@ -43,7 +43,7 @@ struct ct_entry
 {
    char *path;
    uint32_t *bits;        /* NULL while queued / decoding */
-   int w, h;
+   unsigned dims;
    size_t bytes;
    /* LRU list of cached entries (bits != NULL); most recent at head. */
    struct ct_entry *lru_prev, *lru_next;
@@ -79,7 +79,7 @@ struct ct_done
    bool anim;
    unsigned anim_gen;
    char *anim_path;
-   int anim_w, anim_h;
+   unsigned anim_dims;
 };
 
 /* A ring with both ends usable: urgent jobs are pushed to and popped
@@ -132,7 +132,7 @@ struct companion_thumbs
    struct
    {
       char *path;
-      int w, h;
+      unsigned dims;
       uintptr_t tag;
       uint32_t bg;
       unsigned gen;           /* the animation that should be playing */
@@ -213,14 +213,19 @@ static INLINE uint32_t ct_over(uint32_t p, uint32_t bg)
    }
 }
 
-uint32_t *companion_thumbs_scale_ex(const uint32_t *src, unsigned sw,
-      unsigned sh, int dw, int dh, uint32_t bg, bool src_rgba_order)
+uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
+      unsigned src_dims, unsigned dst_dims, uint32_t bg,
+      bool src_rgba_order)
 {
    uint32_t *buf;
    int fw, fh, ox, oy, x, y;
    bool taps4;
+   unsigned sw = VIDEO_SCALE_W(src_dims);
+   unsigned sh = VIDEO_SCALE_H(src_dims);
+   int dw      = (int)VIDEO_SCALE_W(dst_dims);
+   int dh      = (int)VIDEO_SCALE_H(dst_dims);
 
-   if (!src || !sw || !sh || dw < 1 || dh < 1)
+   if (!src || !sw || !sh || !dw || !dh)
       return NULL;
    buf = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t));
    if (!buf)
@@ -313,10 +318,10 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src, unsigned sw,
    return buf;
 }
 
-uint32_t *companion_thumbs_scale(const uint32_t *src, unsigned sw,
-      unsigned sh, int dw, int dh, uint32_t bg)
+uint32_t *companion_thumbs_scale(const uint32_t *src,
+      unsigned src_dims, unsigned dst_dims, uint32_t bg)
 {
-   return companion_thumbs_scale_ex(src, sw, sh, dw, dh, bg, false);
+   return companion_thumbs_scale_ex(src, src_dims, dst_dims, bg, false);
 }
 
 /* Does @path take the anim-first route - its still being the first
@@ -337,7 +342,7 @@ static int ct_anim_first(const char *path)
  * open the menu uses: image_texture_load would read the whole file
  * (a two-hour recording) to show one frame; this reads the head. */
 static uint32_t *ct_decode_video_still(companion_thumbs_t *t,
-      const char *path, int w, int h, uint32_t bg)
+      const char *path, unsigned dims, uint32_t bg)
 {
    gfx_anim_preview_t *sess = gfx_anim_preview_open(path, -1);
    const uint32_t *frame;
@@ -353,9 +358,8 @@ static uint32_t *ct_decode_video_still(companion_thumbs_t *t,
       gfx_anim_preview_close(sess);
       return NULL;
    }
-   bits = companion_thumbs_scale_ex(frame,
-         VIDEO_SCALE_W(sess->dims), VIDEO_SCALE_H(sess->dims),
-         w, h, bg, !native_argb);
+   bits = companion_thumbs_scale_ex(frame, sess->dims, dims, bg,
+         !native_argb);
 #ifdef HAVE_THREADS
    /* The animation for this path continues from this session (its
     * next frame is the second one) instead of opening its own and
@@ -387,11 +391,11 @@ static uint32_t *ct_decode_video_still(companion_thumbs_t *t,
    return bits;
 }
 
-/* Decode @path and scale to @w x @h. Runs on a worker; @should_abort
+/* Decode @path and scale to @dims. Runs on a worker; @should_abort
  * (may be NULL) is asked between decode steps so a giant image can be
  * abandoned at shutdown or once nobody wants it. */
 static uint32_t *ct_decode(companion_thumbs_t *t, const char *path,
-      int w, int h, uint32_t bg, bool (*should_abort)(void *ud), void *ud,
+      unsigned dims, uint32_t bg, bool (*should_abort)(void *ud), void *ud,
       int anim_first)
 {
    struct texture_image img;
@@ -405,16 +409,16 @@ static uint32_t *ct_decode(companion_thumbs_t *t, const char *path,
     * so does an animated one the session would not admit. */
    if (anim_first)
    {
-      uint32_t *b = ct_decode_video_still(t, path, w, h, bg);
+      uint32_t *b = ct_decode_video_still(t, path, dims, bg);
       if (b)
          return b;
    }
    memset(&img, 0, sizeof(img));
    if (image_texture_load_ex(&img, path, should_abort, ud))
    {
-      if (img.pixels)
-         bits = companion_thumbs_scale(img.pixels, img.width, img.height,
-               w, h, bg);
+      if (img.pixels && VIDEO_SCALE_FITS(img.width, img.height))
+         bits = companion_thumbs_scale(img.pixels,
+               VIDEO_SCALE_PACK(img.width, img.height), dims, bg);
       image_texture_free(&img);
    }
    return bits;
@@ -422,24 +426,23 @@ static uint32_t *ct_decode(companion_thumbs_t *t, const char *path,
 
 /* --- hash table ---------------------------------------------------------- */
 
-static size_t ct_hash(const char *path, int w, int h)
+static size_t ct_hash(const char *path, unsigned dims)
 {
    size_t k = 2166136261u;
    while (*path)
       k = (k ^ (unsigned char)*path++) * 16777619u;
-   k = (k ^ (unsigned)w) * 16777619u;
-   k = (k ^ (unsigned)h) * 16777619u;
+   k = (k ^ dims) * 16777619u;
    return k;
 }
 
 static struct ct_entry *ct_find(companion_thumbs_t *t, const char *path,
-      int w, int h)
+      unsigned dims)
 {
    struct ct_entry *e;
    if (!t->ht)
       return NULL;
-   for (e = t->ht[ct_hash(path, w, h) & (t->ht_size - 1)]; e; e = e->chain)
-      if (e->w == w && e->h == h && string_is_equal(e->path, path))
+   for (e = t->ht[ct_hash(path, dims) & (t->ht_size - 1)]; e; e = e->chain)
+      if (e->dims == dims && string_is_equal(e->path, path))
          return e;
    return NULL;
 }
@@ -456,7 +459,7 @@ static bool ct_grow(companion_thumbs_t *t)
       while (e)
       {
          struct ct_entry *next = e->chain;
-         size_t k = ct_hash(e->path, e->w, e->h) & (ns - 1);
+         size_t k = ct_hash(e->path, e->dims) & (ns - 1);
          e->chain = nh[k];
          nh[k]    = e;
          e        = next;
@@ -469,7 +472,7 @@ static bool ct_grow(companion_thumbs_t *t)
 }
 
 static struct ct_entry *ct_insert(companion_thumbs_t *t, const char *path,
-      int w, int h)
+      unsigned dims)
 {
    struct ct_entry *e;
    size_t k;
@@ -488,9 +491,8 @@ static struct ct_entry *ct_insert(companion_thumbs_t *t, const char *path,
       free(e);
       return NULL;
    }
-   e->w     = w;
-   e->h     = h;
-   k        = ct_hash(path, w, h) & (t->ht_size - 1);
+   e->dims  = dims;
+   k        = ct_hash(path, dims) & (t->ht_size - 1);
    e->chain = t->ht[k];
    t->ht[k] = e;
    t->ht_count++;
@@ -499,7 +501,7 @@ static struct ct_entry *ct_insert(companion_thumbs_t *t, const char *path,
 
 static void ct_unlink_ht(companion_thumbs_t *t, struct ct_entry *e)
 {
-   struct ct_entry **pp = &t->ht[ct_hash(e->path, e->w, e->h) & (t->ht_size - 1)];
+   struct ct_entry **pp = &t->ht[ct_hash(e->path, e->dims) & (t->ht_size - 1)];
    while (*pp && *pp != e)
       pp = &(*pp)->chain;
    if (*pp)
@@ -556,7 +558,8 @@ static void ct_evict(companion_thumbs_t *t, size_t need)
 static void ct_cache_put(companion_thumbs_t *t, struct ct_entry *e,
       uint32_t *bits)
 {
-   size_t bytes = (size_t)e->w * e->h * sizeof(uint32_t);
+   size_t bytes = (size_t)VIDEO_SCALE_W(e->dims)
+      * VIDEO_SCALE_H(e->dims) * sizeof(uint32_t);
    ct_evict(t, bytes);
    e->bits  = bits;
    e->bytes = bytes;
@@ -673,7 +676,7 @@ static void ct_push_done(companion_thumbs_t *t, const struct ct_job *j,
    d->anim    = false;
    d->anim_gen = 0;
    d->anim_path = NULL;
-   d->anim_w  = d->anim_h = 0;
+   d->anim_dims = 0;
 }
 
 /* --- workers -------------------------------------------------------------- */
@@ -767,7 +770,7 @@ static void ct_worker(void *ud)
       actx.t     = t;
       actx.epoch = job.epoch;
       af         = ct_anim_first(job.e->path);
-      bits       = ct_decode(t, job.e->path, job.e->w, job.e->h, job.bg,
+      bits       = ct_decode(t, job.e->path, job.e->dims, job.bg,
             ct_should_abort, &actx, af);
 
       slock_lock(t->lock);
@@ -792,7 +795,7 @@ static void ct_worker(void *ud)
 /* Push one animation frame (already scaled) for the current
  * animation. Lock held. */
 static void ct_anim_push(companion_thumbs_t *t, uint32_t *bits,
-      unsigned gen, uintptr_t tag, const char *path, int w, int h)
+      unsigned gen, uintptr_t tag, const char *path, unsigned dims)
 {
    struct ct_done *d;
    if (t->done_len == t->done_cap)
@@ -814,8 +817,7 @@ static void ct_anim_push(companion_thumbs_t *t, uint32_t *bits,
    d->anim      = true;
    d->anim_gen  = gen;
    d->anim_path = strldup(path, strlen(path) + 1);
-   d->anim_w    = w;
-   d->anim_h    = h;
+   d->anim_dims = dims;
 }
 
 /* One animation at a time, played exactly the way RetroArch's File
@@ -833,7 +835,7 @@ static void ct_anim_thread(void *ud)
    for (;;)
    {
       char path[PATH_MAX_LENGTH];
-      int w, h;
+      unsigned dims;
       uintptr_t tag;
       uint32_t bg;
       unsigned gen;
@@ -850,8 +852,7 @@ static void ct_anim_thread(void *ud)
          return;
       }
       strlcpy(path, t->anim.path ? t->anim.path : "", sizeof(path));
-      w   = t->anim.w;
-      h   = t->anim.h;
+      dims = t->anim.dims;
       tag = t->anim.tag;
       bg  = t->anim.bg;
       gen = t->anim.gen;
@@ -952,9 +953,8 @@ static void ct_anim_thread(void *ud)
             break;
          /* The byte order is handled on the sampled pixels only: a
           * whole-canvas swizzle was 12 ms a frame at 4K. */
-         bits = companion_thumbs_scale_ex(frame,
-               VIDEO_SCALE_W(sess->dims), VIDEO_SCALE_H(sess->dims),
-               w, h, bg, !native_argb);
+         bits = companion_thumbs_scale_ex(frame, sess->dims, dims, bg,
+               !native_argb);
          if (!bits)
             break;
 
@@ -962,7 +962,7 @@ static void ct_anim_thread(void *ud)
          if (t->quit || t->anim.gen != gen)
             free(bits);
          else
-            ct_anim_push(t, bits, gen, tag, path, w, h);
+            ct_anim_push(t, bits, gen, tag, path, dims);
 
          /* Hold the frame for its duration, on a schedule rather than
           * a sleep after each push, so decode and scale time does not
@@ -1011,9 +1011,10 @@ static void ct_parked_drop(companion_thumbs_t *t)
 #endif
 
 void companion_thumbs_animate(companion_thumbs_t *t, const char *path,
-      int w, int h, uintptr_t tag, uint32_t bg)
+      unsigned dims, uintptr_t tag, uint32_t bg)
 {
-   if (!t || string_is_empty(path) || w < 1 || h < 1)
+   if (     !t || string_is_empty(path)
+         || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       return;
 #ifdef HAVE_THREADS
    if (!t->lock)
@@ -1026,8 +1027,7 @@ void companion_thumbs_animate(companion_thumbs_t *t, const char *path,
       ct_parked_drop(t);
    free(t->anim.path);
    t->anim.path   = strldup(path, strlen(path) + 1);
-   t->anim.w      = w;
-   t->anim.h      = h;
+   t->anim.dims   = dims;
    t->anim.tag    = tag;
    t->anim.bg     = bg;
    t->anim.gen++;
@@ -1040,7 +1040,7 @@ void companion_thumbs_animate(companion_thumbs_t *t, const char *path,
       scond_signal(t->anim_cond);
    slock_unlock(t->lock);
 #else
-   (void)path; (void)w; (void)h; (void)tag; (void)bg;
+   (void)path; (void)dims; (void)tag; (void)bg;
 #endif
 }
 
@@ -1184,12 +1184,12 @@ void companion_thumbs_free(companion_thumbs_t *t)
 }
 
 const uint32_t *companion_thumbs_get(companion_thumbs_t *t, const char *path,
-      int w, int h)
+      unsigned dims)
 {
    struct ct_entry *e;
    if (!t || string_is_empty(path))
       return NULL;
-   e = ct_find(t, path, w, h);
+   e = ct_find(t, path, dims);
    if (!e || !e->bits)
       return NULL;
    /* touch */
@@ -1199,17 +1199,18 @@ const uint32_t *companion_thumbs_get(companion_thumbs_t *t, const char *path,
 }
 
 bool companion_thumbs_request(companion_thumbs_t *t, const char *path,
-      int w, int h, uintptr_t tag, bool urgent, uint32_t bg)
+      unsigned dims, uintptr_t tag, bool urgent, uint32_t bg)
 {
    struct ct_entry *e;
    struct ct_job *j;
-   if (!t || string_is_empty(path) || w < 1 || h < 1)
+   if (     !t || string_is_empty(path)
+         || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       return false;
 
-   e = ct_find(t, path, w, h);
+   e = ct_find(t, path, dims);
    if (e && (e->bits || e->queued))
       return false;          /* cached or already on its way */
-   if (!e && !(e = ct_insert(t, path, w, h)))
+   if (!e && !(e = ct_insert(t, path, dims)))
       return false;
 
    CT_LOCK(t);
@@ -1310,8 +1311,8 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
       struct ct_job job;
       while (t->queued && cpu_features_get_time_usec() < end
             && ct_next_job(t, &job))
-         ct_push_done(t, &job, ct_decode(t, job.e->path, job.e->w,
-               job.e->h, job.bg, NULL, NULL, 0));
+         ct_push_done(t, &job, ct_decode(t, job.e->path,
+               job.e->dims, job.bg, NULL, NULL, 0));
    }
 #else
    (void)budget_us;
@@ -1342,7 +1343,7 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
             current = (batch[i].anim_gen == t->anim.gen);
             CT_UNLOCK(t);
             if (current && cb && batch[i].bits)
-               cb(ud, batch[i].anim_path, batch[i].anim_w, batch[i].anim_h,
+               cb(ud, batch[i].anim_path, batch[i].anim_dims,
                      batch[i].tag, batch[i].bits);
             free(batch[i].bits);
             free(batch[i].anim_path);
@@ -1378,7 +1379,7 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
           * cancel() still lands, and the backend checks the tag against
           * its own view state (its row generation). */
          if (cb)
-            cb(ud, e->path, e->w, e->h, batch[i].tag, batch[i].bits);
+            cb(ud, e->path, e->dims, batch[i].tag, batch[i].bits);
          delivered++;
          if (!batch[i].bits)
          {
