@@ -65,14 +65,15 @@ int main(int argc, char *argv[])
       unsigned ow = 0, oh = 0, x, y;
 
       filt = rarch_softfilter_new(filt_path, 4,
-            RETRO_PIXEL_FORMAT_XRGB8888, SRC_W, SRC_H);
+            RETRO_PIXEL_FORMAT_XRGB8888, VIDEO_SCALE_PACK(SRC_W, SRC_H));
       CHECK(filt != NULL, "cycle %u: create failed", cycle);
       if (!filt)
          break;
 
       {
          unsigned od = 0;
-         rarch_softfilter_get_output_size(filt, &od, SRC_W, SRC_H);
+         rarch_softfilter_get_output_size(filt, &od,
+            VIDEO_SCALE_PACK(SRC_W, SRC_H));
          ow = VIDEO_SCALE_W(od);
          oh = VIDEO_SCALE_H(od);
       }
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
 
       memset(dst, 0, sizeof(dst));
       rarch_softfilter_process(filt, dst, ow * sizeof(uint32_t),
-            src, SRC_W, SRC_H, SRC_W * sizeof(uint32_t));
+            src, VIDEO_SCALE_PACK(SRC_W, SRC_H), SRC_W * sizeof(uint32_t));
 
       /* Every source pixel is a 2x2 block in the output; spot the
        * corners and a scatter so all worker slices are covered. */
@@ -109,14 +110,14 @@ int main(int argc, char *argv[])
       /* A second frame through the same pool - workers are reused,
        * not one-shot. */
       rarch_softfilter_process(filt, dst, ow * sizeof(uint32_t),
-            src, SRC_W, SRC_H, SRC_W * sizeof(uint32_t));
+            src, VIDEO_SCALE_PACK(SRC_W, SRC_H), SRC_W * sizeof(uint32_t));
 
       rarch_softfilter_free(filt);
    }
 
    /* Error path: free() of a partially built filter must be clean. */
    CHECK(rarch_softfilter_new("/nonexistent/no_such.filt", 4,
-            RETRO_PIXEL_FORMAT_XRGB8888, SRC_W, SRC_H) == NULL,
+            RETRO_PIXEL_FORMAT_XRGB8888, VIDEO_SCALE_PACK(SRC_W, SRC_H)) == NULL,
          "bogus path: expected NULL");
 
    if (failures)

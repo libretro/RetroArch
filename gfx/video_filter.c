@@ -60,7 +60,7 @@ struct rarch_softfilter
    struct rarch_soft_plug *plugs;
    unsigned num_plugs;
 
-   unsigned max_width, max_height;
+   unsigned max_dims;
    enum retro_pixel_format pix_fmt, out_pix_fmt;
 
    struct softfilter_work_packet *packets;
@@ -156,7 +156,7 @@ static const struct softfilter_config softfilter_config = {
 
 static bool create_softfilter_graph(rarch_softfilter_t *filt,
       enum retro_pixel_format in_pixel_format,
-      unsigned max_width, unsigned max_height,
+      unsigned max_dims,
       softfilter_simd_mask_t cpu_features,
       unsigned threads)
 {
@@ -225,11 +225,11 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       return false;
    }
 
-   filt->max_width = max_width;
-   filt->max_height = max_height;
+   filt->max_dims  = max_dims;
 
    filt->impl_data = filt->impl->create(
-         &softfilter_config, input_fmt, input_fmt, max_width, max_height,
+         &softfilter_config, input_fmt, input_fmt,
+         VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
          threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads :
          cpu_features_get_core_amount(), cpu_features,
          &userdata);
@@ -444,7 +444,7 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
 rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       unsigned threads,
       enum retro_pixel_format in_pixel_format,
-      unsigned max_width, unsigned max_height)
+      unsigned max_dims)
 {
    softfilter_simd_mask_t cpu_features = (softfilter_simd_mask_t)cpu_features_get();
 #ifdef HAVE_DYLIB
@@ -486,7 +486,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
    plugs = NULL;
 
    if (!create_softfilter_graph(filt, in_pixel_format,
-            max_width, max_height, cpu_features, threads))
+            max_dims, cpu_features, threads))
    {
       RARCH_ERR("[SoftFilter] Failed to create softfilter graph...\n");
       goto error;
@@ -564,22 +564,21 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
 void rarch_softfilter_get_max_output_size(rarch_softfilter_t *filt,
       unsigned *out_dims)
 {
-   rarch_softfilter_get_output_size(filt, out_dims,
-         filt->max_width, filt->max_height);
+   rarch_softfilter_get_output_size(filt, out_dims, filt->max_dims);
 }
 
 /* The plugin ABI hands the axes back through two pointers and leaves
  * them alone when a filter offers no query_output_size, so *out_dims
  * seeds them and takes the answer. */
 void rarch_softfilter_get_output_size(rarch_softfilter_t *filt,
-      unsigned *out_dims, unsigned width, unsigned height)
+      unsigned *out_dims, unsigned in_dims)
 {
    unsigned out_width  = VIDEO_SCALE_W(*out_dims);
    unsigned out_height = VIDEO_SCALE_H(*out_dims);
 
    if (filt && filt->impl && filt->impl->query_output_size)
       filt->impl->query_output_size(filt->impl_data, &out_width,
-            &out_height, width, height);
+            &out_height, VIDEO_SCALE_W(in_dims), VIDEO_SCALE_H(in_dims));
 
    *out_dims = VIDEO_SCALE_PACK(out_width, out_height);
 }
@@ -592,8 +591,7 @@ enum retro_pixel_format rarch_softfilter_get_output_format(
 
 void rarch_softfilter_process(rarch_softfilter_t *filt,
       void *output, size_t output_stride,
-      const void *input, unsigned width, unsigned height,
-      size_t input_stride)
+      const void *input, unsigned in_dims, size_t input_stride)
 {
    unsigned i;
 
@@ -602,7 +600,8 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
 
    if (filt->impl && filt->impl->get_work_packets)
       filt->impl->get_work_packets(filt->impl_data, filt->packets,
-            output, output_stride, input, width, height, input_stride);
+            output, output_stride, input,
+            VIDEO_SCALE_W(in_dims), VIDEO_SCALE_H(in_dims), input_stride);
 
 #ifdef HAVE_THREADS
    if (filt->threads > 1)

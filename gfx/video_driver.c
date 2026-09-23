@@ -2286,8 +2286,7 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
 
    if (!(video_st->state_filter = rarch_softfilter_new(
          settings->paths.path_softfilter_plugin,
-         RARCH_SOFTFILTER_THREADS_AUTO, colfmt,
-         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims))))
+         RARCH_SOFTFILTER_THREADS_AUTO, colfmt, dims)))
    {
       RARCH_ERR("[Video] Failed to load filter.\n");
       return;
@@ -7027,17 +7026,18 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
       )
    {
+      unsigned in_dims                                  = VIDEO_SCALE_PACK(width, height);
       unsigned output_dims                              = 0;
       unsigned output_pitch                             = 0;
 
       rarch_softfilter_get_output_size(video_st->state_filter,
-            &output_dims, width, height);
+            &output_dims, in_dims);
 
       output_pitch = VIDEO_SCALE_W(output_dims) * video_st->state_out_bpp;
 
       rarch_softfilter_process(video_st->state_filter,
             video_st->state_buffer, output_pitch,
-            data, width, height, pitch);
+            data, in_dims, pitch);
 
       if (     video_info.post_filter_record
             && recording_st->data

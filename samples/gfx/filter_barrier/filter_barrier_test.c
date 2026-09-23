@@ -204,7 +204,7 @@ static void run_frame(rarch_softfilter_t *filt, unsigned ow,
    }
 
    rarch_softfilter_process(filt, dst, ow * sizeof(uint32_t),
-         src, SRC_W, SRC_H, SRC_W * sizeof(uint32_t));
+         src, VIDEO_SCALE_PACK(SRC_W, SRC_H), SRC_W * sizeof(uint32_t));
 
    /* Nothing may sleep, print or branch before these: the window this
     * lane exists to catch is exactly the one a delay here would hide. */
@@ -249,7 +249,7 @@ int main(void)
          src[y * SRC_W + x] = (x << 16) | y;
 
    filt = rarch_softfilter_new(filt_path, POOL_THREADS,
-         RETRO_PIXEL_FORMAT_XRGB8888, SRC_W, SRC_H);
+         RETRO_PIXEL_FORMAT_XRGB8888, VIDEO_SCALE_PACK(SRC_W, SRC_H));
    if (!filt)
    {
       fprintf(stderr, "SKIP filter_barrier: could not create the filter "
@@ -261,7 +261,8 @@ int main(void)
 
    {
       unsigned od = 0;
-      rarch_softfilter_get_output_size(filt, &od, SRC_W, SRC_H);
+      rarch_softfilter_get_output_size(filt, &od,
+            VIDEO_SCALE_PACK(SRC_W, SRC_H));
       ow = VIDEO_SCALE_W(od);
       oh = VIDEO_SCALE_H(od);
    }

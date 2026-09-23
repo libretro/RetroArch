@@ -1405,8 +1405,7 @@ void video_thread_defer_convert(enum video_thread_convert kind)
  * video_driver_init_filter() and video_driver_filter_free() wait this
  * thread idle first. */
 static void video_thread_filter(thread_video_t *thr,
-      const void **data,
-      unsigned *width, unsigned *height, unsigned *pitch)
+      const void **data, unsigned *dims, unsigned *pitch)
 {
    video_driver_state_t *video_st = thr->video_st;
    unsigned out_dims              = 0;
@@ -1416,15 +1415,14 @@ static void video_thread_filter(thread_video_t *thr,
       return;
 
    rarch_softfilter_get_output_size(video_st->state_filter,
-         &out_dims, *width, *height);
+         &out_dims, *dims);
    out_pitch = VIDEO_SCALE_W(out_dims) * video_st->state_out_bpp;
    rarch_softfilter_process(video_st->state_filter,
          video_st->state_buffer, out_pitch,
-         *data, *width, *height, *pitch);
+         *data, *dims, *pitch);
 
    *data     = video_st->state_buffer;
-   *width    = VIDEO_SCALE_W(out_dims);
-   *height   = VIDEO_SCALE_H(out_dims);
+   *dims     = out_dims;
    *pitch    = out_pitch;
 }
 
@@ -1958,18 +1956,17 @@ static void video_thread_loop(void *data)
                    * sent, exactly as it does without the wrapper. */
                   const void *fdata = thr->frame.slot[slot].dupe
                      ? NULL : thr->frame.slot[slot].buffer;
-                  unsigned fwidth   = VIDEO_SCALE_W(thr->frame.slot[slot].dims);
-                  unsigned fheight  = VIDEO_SCALE_H(thr->frame.slot[slot].dims);
+                  unsigned fdims    = thr->frame.slot[slot].dims;
                   unsigned fpitch   = thr->frame.slot[slot].pitch;
                   if (fdata && thr->frame.slot[slot].convert)
                      video_thread_convert(thr, thr->frame.slot[slot].convert,
-                           &fdata, thr->frame.slot[slot].dims, &fpitch);
+                           &fdata, fdims, &fpitch);
 #ifdef HAVE_VIDEO_FILTER
                   if (fdata && thr->frame.slot[slot].filter_bpp)
-                     video_thread_filter(thr, &fdata, &fwidth, &fheight, &fpitch);
+                     video_thread_filter(thr, &fdata, &fdims, &fpitch);
 #endif
                   ret = thr->driver->frame(thr->driver_data,
-                     fdata, fwidth, fheight,
+                     fdata, VIDEO_SCALE_W(fdims), VIDEO_SCALE_H(fdims),
                      thr->frame.slot[slot].count,
                      fpitch,
                      *thr->frame.slot[slot].msg
@@ -2445,15 +2442,16 @@ static bool video_thread_frame(void *data, const void *frame_,
 
       if (thr->driver_data && thr->driver && thr->driver->frame)
       {
+         unsigned dims = VIDEO_SCALE_PACK(width, height);
          if (convert)
-            video_thread_convert(thr, convert, &frame_,
-                  VIDEO_SCALE_PACK(width, height), &pitch);
+            video_thread_convert(thr, convert, &frame_, dims, &pitch);
 #ifdef HAVE_VIDEO_FILTER
          if (filter_bpp)
-            video_thread_filter(thr, &frame_, &width, &height, &pitch);
+            video_thread_filter(thr, &frame_, &dims, &pitch);
 #endif
          return thr->driver->frame(thr->driver_data, frame_,
-            width, height, frame_count, pitch, msg, video_info);
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+            frame_count, pitch, msg, video_info);
       }
 
       return false;
