@@ -242,7 +242,7 @@ static bool gfx_ctx_x_vk_set_resize(void *data, unsigned dims)
 
    /* FIXME/TODO - threading error here */
 
-   if (!vulkan_create_swapchain(&x->vk, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), x->interval))
+   if (!vulkan_create_swapchain(&x->vk, dims, x->interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       x->vk.swapchain              = VK_NULL_HANDLE;
@@ -510,7 +510,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
       /* Use XCB surface since it's the most supported WSI. */
       if (!vulkan_surface_create(&x->vk, VULKAN_WSI_XCB,
                gfx_ctx_x_vk_wsi_connection(x), &g_x11_win,
-               width, height, x->interval))
+               VIDEO_SCALE_PACK(width, height), x->interval))
          goto error;
    }
 

@@ -1679,7 +1679,7 @@ static LRESULT wnd_proc_wm_vk_create(HWND hwnd)
    if (!vulkan_surface_create(&win32_vk,
             VULKAN_WSI_WIN32,
             &instance, &hwnd,
-            width, height, win32_vk_interval))
+            VIDEO_SCALE_PACK(width, height), win32_vk_interval))
       g_win32_flags |= WIN32_CMN_FLAG_QUIT;
    g_win32_flags    |= WIN32_CMN_FLAG_INITED;
    if (DragAcceptFiles_func)

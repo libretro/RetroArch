@@ -320,8 +320,7 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
             VULKAN_WSI_MVK_MACOS,
             NULL,
             (BRIDGE void *)g_view.layer,
-            VIDEO_SCALE_W(args->dims),
-            VIDEO_SCALE_H(args->dims),
+            args->dims,
             cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
@@ -415,8 +414,7 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
                               VULKAN_WSI_MVK_IOS,
                               NULL,
                               (BRIDGE void *)((MetalLayerView*)g_view).metalLayer,
-                              VIDEO_SCALE_W(args->dims),
-                              VIDEO_SCALE_H(args->dims),
+                              args->dims,
                               cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
@@ -502,8 +500,7 @@ static void cocoa_vk_gfx_ctx_set_resize_mainthread(void *userdata)
    cocoa_vk_set_resize_args_t *args = (cocoa_vk_set_resize_args_t*)userdata;
    cocoa_vk_ctx_data_t *cocoa_ctx   = args->ctx;
 
-   if (!vulkan_create_swapchain(&cocoa_ctx->vk,
-            VIDEO_SCALE_W(args->dims), VIDEO_SCALE_H(args->dims),
+   if (!vulkan_create_swapchain(&cocoa_ctx->vk, args->dims,
             cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");

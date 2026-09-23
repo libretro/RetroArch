@@ -134,8 +134,7 @@ static bool android_gfx_ctx_vk_set_resize(void *data, unsigned dims)
          &android_app->content_rect.dims);
    RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
          VIDEO_SCALE_W(and->dims), VIDEO_SCALE_H(and->dims));
-   if (!vulkan_create_swapchain(&and->vk, VIDEO_SCALE_W(and->dims),
-            VIDEO_SCALE_H(and->dims), and->swap_interval))
+   if (!vulkan_create_swapchain(&and->vk, and->dims, and->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       return false;
@@ -162,8 +161,7 @@ static bool android_gfx_ctx_vk_set_video_mode(void *data,
    and->dims                       = VIDEO_SCALE_PACK(w, h);
    if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
             NULL, android_app->window,
-            VIDEO_SCALE_W(and->dims), VIDEO_SCALE_H(and->dims),
-            and->swap_interval))
+            and->dims, and->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
       return false;
@@ -198,8 +196,7 @@ static bool android_gfx_ctx_vk_create_surface(void *data)
 
    if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
             NULL, android_app->window,
-            VIDEO_SCALE_W(and->dims), VIDEO_SCALE_H(and->dims),
-            and->swap_interval))
+            and->dims, and->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to recreate Android surface.\n");
       return false;

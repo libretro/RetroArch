@@ -137,7 +137,7 @@ static void gfx_ctx_w_vk_swap_buffers(void *data)
 
 static bool gfx_ctx_w_vk_set_resize(void *data, unsigned dims)
 {
-   if (vulkan_create_swapchain(&win32_vk, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), win32_vk_interval))
+   if (vulkan_create_swapchain(&win32_vk, dims, win32_vk_interval))
    {
       if (win32_vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       {
@@ -226,18 +226,16 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
    if (fullscreen)
       win32_vk.flags |=  VK_DATA_FLAG_FULLSCREEN;
    else
       win32_vk.flags &= ~VK_DATA_FLAG_FULLSCREEN;
 
-   if (win32_set_video_mode(NULL, VIDEO_SCALE_PACK(width, height), fullscreen))
+   if (win32_set_video_mode(NULL, dims, fullscreen))
    {
       /* Create a new swapchain in order to prevent fullscreen
        * emulated mailbox crash caused by refresh rate change */
-      vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval);
+      vulkan_create_swapchain(&win32_vk, dims, win32_vk_interval);
 
       gfx_ctx_w_vk_swap_interval(data, win32_vk_interval);
       return true;

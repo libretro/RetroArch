@@ -111,8 +111,7 @@ static bool gfx_ctx_khr_display_set_resize(void *data, unsigned dims)
 
    khr->dims                   = dims;
 
-   if (!vulkan_create_swapchain(&khr->vk, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
-            khr->swap_interval))
+   if (!vulkan_create_swapchain(&khr->vk, dims, khr->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       return false;
@@ -131,27 +130,19 @@ static bool gfx_ctx_khr_display_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
    struct vulkan_display_surface_info info;
    khr_display_ctx_data_t *khr    = (khr_display_ctx_data_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned video_monitor_index   = settings->uints.video_monitor_index;
    unsigned refresh_rate_x1000    = settings->floats.video_refresh_rate * 1000;
 
-   if (!fullscreen)
-   {
-      width                       = 0;
-      height                      = 0;
-   }
-
-   info.width                     = width;
-   info.height                    = height;
+   /* Windowed asks for no particular mode: the largest one. */
+   info.dims                      = fullscreen ? dims : 0;
    info.monitor_index             = video_monitor_index;
    info.refresh_rate_x1000        = refresh_rate_x1000;
 
    if (!vulkan_surface_create(&khr->vk, VULKAN_WSI_DISPLAY, &info, NULL,
-            0, 0, khr->swap_interval))
+            0, khr->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create KHR_display surface.\n");
       gfx_ctx_khr_display_destroy(data);

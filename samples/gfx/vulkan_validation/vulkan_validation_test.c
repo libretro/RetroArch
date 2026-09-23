@@ -146,7 +146,7 @@ static int context_up(gfx_ctx_vulkan_data_t *vk)
       return 0;
 
    if (!vulkan_surface_create(vk, VULKAN_WSI_XLIB,
-            s_dpy, &s_win, 640, 480, 1))
+            s_dpy, &s_win, VIDEO_SCALE_PACK(640, 480), 1))
    {
       vulkan_context_destroy(vk, true);
       return 0;

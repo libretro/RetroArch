@@ -340,8 +340,7 @@ typedef struct gfx_ctx_vulkan_data
 
 struct vulkan_display_surface_info
 {
-   unsigned width;
-   unsigned height;
+   unsigned dims;                /* VIDEO_SCALE_PACK; 0 for the largest mode */
    unsigned monitor_index;
    unsigned refresh_rate_x1000;
 };
@@ -421,8 +420,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type,
       void *display, void *surface,
-      unsigned width, unsigned height,
-      int8_t swap_interval);
+      unsigned dims, int8_t swap_interval);
 
 bool vulkan_surface_destroy(gfx_ctx_vulkan_data_t *vk);
 
@@ -450,9 +448,10 @@ unsigned vulkan_context_take_acquire_waits(struct vulkan_context *ctx,
       unsigned frame_index, VkSemaphore *sems,
       VkPipelineStageFlags *stages, VkPipelineStageFlags stage);
 
+/* dims is the size wanted, VIDEO_SCALE_PACK'd; used where the surface
+ * leaves the extent to the swapchain. */
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
-      unsigned width, unsigned height,
-      int8_t swap_interval);
+      unsigned dims, int8_t swap_interval);
 
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);

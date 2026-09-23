@@ -185,7 +185,7 @@ static bool sdl3_vk_ctx_set_resize(void *data, unsigned dims)
    if (!sdl)
       return false;
 
-   if (!vulkan_create_swapchain(&sdl->vk, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), sdl->interval))
+   if (!vulkan_create_swapchain(&sdl->vk, dims, sdl->interval))
    {
       RARCH_ERR("[SDL3 Vulkan] Failed to update swapchain.\n");
       sdl->vk.swapchain           = VK_NULL_HANDLE;
@@ -218,9 +218,7 @@ static bool sdl3_vk_ctx_set_video_mode(void *data,
    sdl3_window_get_video_size(sdl->win, &win_dims);
 
    if (!vulkan_surface_create(&sdl->vk, VULKAN_WSI_SDL3,
-            NULL, sdl->win,
-            VIDEO_SCALE_W(win_dims), VIDEO_SCALE_H(win_dims),
-            sdl->interval))
+            NULL, sdl->win, win_dims, sdl->interval))
       goto error;
 
    return true;

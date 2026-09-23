@@ -1317,22 +1317,20 @@ end:
 }
 
 static bool vulkan_update_display_mode(
-      unsigned *width,
-      unsigned *height,
+      unsigned *dims,
       const VkDisplayModePropertiesKHR *mode,
       const struct vulkan_display_surface_info *info)
 {
    unsigned visible_width  = mode->parameters.visibleRegion.width;
    unsigned visible_height = mode->parameters.visibleRegion.height;
 
-   if (!info->width || !info->height)
+   if (!VIDEO_SCALE_W(info->dims) || !VIDEO_SCALE_H(info->dims))
    {
       /* Strategy here is to pick something which is largest resolution. */
       unsigned area = visible_width * visible_height;
-      if (area > (*width) * (*height))
+      if (area > VIDEO_SCALE_W(*dims) * VIDEO_SCALE_H(*dims))
       {
-         *width     = visible_width;
-         *height    = visible_height;
+         *dims      = VIDEO_SCALE_PACK(visible_width, visible_height);
          return true;
       }
    }
@@ -1340,10 +1338,10 @@ static bool vulkan_update_display_mode(
    {
       unsigned visible_rate = mode->parameters.refreshRate;
       /* For particular resolutions, find the closest. */
-      int delta_x           = (int)info->width  - (int)visible_width;
-      int delta_y           = (int)info->height - (int)visible_height;
-      int old_delta_x       = (int)info->width  - (int)*width;
-      int old_delta_y       = (int)info->height - (int)*height;
+      int delta_x           = (int)VIDEO_SCALE_W(info->dims) - (int)visible_width;
+      int delta_y           = (int)VIDEO_SCALE_H(info->dims) - (int)visible_height;
+      int old_delta_x       = (int)VIDEO_SCALE_W(info->dims) - (int)VIDEO_SCALE_W(*dims);
+      int old_delta_y       = (int)VIDEO_SCALE_H(info->dims) - (int)VIDEO_SCALE_H(*dims);
       int delta_rate        = abs((int)info->refresh_rate_x1000 - (int)visible_rate);
 
       int dist              = delta_x     * delta_x     + delta_y     * delta_y;
@@ -1351,8 +1349,7 @@ static bool vulkan_update_display_mode(
 
       if (dist < old_dist && delta_rate < 1000)
       {
-         *width       = visible_width;
-         *height      = visible_height;
+         *dims        = VIDEO_SCALE_PACK(visible_width, visible_height);
          return true;
       }
    }
@@ -1361,7 +1358,7 @@ static bool vulkan_update_display_mode(
 }
 
 static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
-      unsigned *width, unsigned *height,
+      unsigned *dims,
       const struct vulkan_display_surface_info *info)
 {
    unsigned dpy, i, j;
@@ -1378,8 +1375,7 @@ static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
    VkDisplayModeKHR best_mode                = VK_NULL_HANDLE;
    /* Monitor index starts on 1, 0 is auto. */
    unsigned monitor_index                    = info->monitor_index;
-   unsigned saved_width                      = *width;
-   unsigned saved_height                     = *height;
+   unsigned saved_dims                       = *dims;
 
    VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_EXTENSION_SYMBOL(vk->context.instance,
          vkGetPhysicalDeviceDisplayPropertiesKHR);
@@ -1446,7 +1442,7 @@ retry:
       for (i = 0; i < mode_count; i++)
       {
          const VkDisplayModePropertiesKHR *mode = &modes[i];
-         if (vulkan_update_display_mode(width, height, mode, info))
+         if (vulkan_update_display_mode(dims, mode, info))
             best_mode = modes[i].displayMode;
       }
 
@@ -1517,8 +1513,7 @@ out:
       RARCH_WARN("[Vulkan] Retrying first suitable monitor.\n");
       monitor_index = 0;
       best_mode = VK_NULL_HANDLE;
-      *width = saved_width;
-      *height = saved_height;
+      *dims = saved_dims;
       goto retry;
    }
 
@@ -1536,8 +1531,8 @@ out:
    create_info.transform          = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
    create_info.globalAlpha        = 1.0f;
    create_info.alphaMode          = alpha_mode;
-   create_info.imageExtent.width  = *width;
-   create_info.imageExtent.height = *height;
+   create_info.imageExtent.width  = VIDEO_SCALE_W(*dims);
+   create_info.imageExtent.height = VIDEO_SCALE_H(*dims);
 
    if (vkCreateDisplayPlaneSurfaceKHR(vk->context.instance,
             &create_info, NULL, &vk->vk_surface) != VK_SUCCESS)
@@ -1892,8 +1887,7 @@ void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory)
 bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type,
       void *display, void *surface,
-      unsigned width, unsigned height,
-      int8_t swap_interval)
+      unsigned dims, int8_t swap_interval)
 {
    switch (type)
    {
@@ -2033,7 +2027,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
          if (!vulkan_context_init_gpu(vk))
             return false;
          if (!vulkan_create_display_surface(vk,
-                  &width, &height,
+                  &dims,
                   (const struct vulkan_display_surface_info*)display))
             return false;
          break;
@@ -2099,8 +2093,7 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       }
    }
 
-   if (!vulkan_create_swapchain(
-            vk, width, height, swap_interval))
+   if (!vulkan_create_swapchain(vk, dims, swap_interval))
       goto error_swapchain;
 
    vulkan_acquire_next_image(vk);
@@ -2179,9 +2172,7 @@ retry:
    if (vk->swapchain == VK_NULL_HANDLE)
    {
       /* We don't have a swapchain, try to create one now. */
-      if (!vulkan_create_swapchain(vk,
-               VIDEO_SCALE_W(vk->context.swapchain_dims),
-               VIDEO_SCALE_H(vk->context.swapchain_dims),
+      if (!vulkan_create_swapchain(vk, vk->context.swapchain_dims,
                vk->context.swap_interval))
       {
 #ifdef VULKAN_DEBUG
@@ -2352,8 +2343,7 @@ bool vulkan_is_hdr10_format(VkFormat format)
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
-      unsigned width, unsigned height,
-      int8_t swap_interval)
+      unsigned dims, int8_t swap_interval)
 {
    unsigned i;
    uint32_t format_count;
@@ -2511,7 +2501,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    if (       (vk->swapchain != VK_NULL_HANDLE)
          && (!(vk->context.flags & VK_CTX_FLAG_INVALID_SWAPCHAIN))
-         &&   (vk->context.swapchain_dims == VIDEO_SCALE_PACK(width, height))
+         &&   (vk->context.swapchain_dims == dims)
          &&   (   (vk->context.swap_interval          == swap_interval)
                || (vk->context.swapchain_present_mode == swapchain_present_mode)))
    {
@@ -2868,8 +2858,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    if (surface_properties.currentExtent.width == UINT32_MAX)
    {
-      swapchain_size.width     = width;
-      swapchain_size.height    = height;
+      swapchain_size.width     = VIDEO_SCALE_W(dims);
+      swapchain_size.height    = VIDEO_SCALE_H(dims);
    }
    else
       swapchain_size           = surface_properties.currentExtent;
@@ -2901,7 +2891,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       if (vk->swapchain != VK_NULL_HANDLE)
          vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
       vk->swapchain                    = VK_NULL_HANDLE;
-      vk->context.swapchain_dims       = VIDEO_SCALE_PACK(width, height);
+      vk->context.swapchain_dims       = dims;
       vk->context.num_swapchain_images = 1;
 
       memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));

@@ -76,7 +76,7 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned dims)
    if (!wl->fractional_scale)
       wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
-   if (vulkan_create_swapchain(&wl->vk, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), wl->swap_interval))
+   if (vulkan_create_swapchain(&wl->vk, dims, wl->swap_interval))
    {
       wl->ignore_configuration = false;
       if (wl->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
@@ -173,9 +173,7 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
 
    if (!vulkan_surface_create(&wl->vk, VULKAN_WSI_WAYLAND,
          wl->input.dpy, wl->surface,
-         VIDEO_SCALE_W(wl->buffer_dims),
-         VIDEO_SCALE_H(wl->buffer_dims),
-         wl->swap_interval))
+         wl->buffer_dims, wl->swap_interval))
       goto error;
 
    /* Fullscreen is compositor-sized on Wayland.
