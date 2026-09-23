@@ -2093,7 +2093,7 @@ static void rsx_overlay_vertex_geom(void *data,
    rsx_t              *rsx = (rsx_t *)data;
    rsx_overlay_t *o = NULL;
 
-   if (rsx)
+   if (rsx && rsx->overlay && image < rsx->overlays)
       o = (rsx_overlay_t *)&rsx->overlay[image];
 
    if (!o)
@@ -2121,7 +2121,7 @@ static void rsx_overlay_tex_geom(void *data,
    rsx_t              *rsx = (rsx_t *)data;
    rsx_overlay_t *o = NULL;
 
-   if (rsx)
+   if (rsx && rsx->overlay && image < rsx->overlays)
       o = (rsx_overlay_t *)&rsx->overlay[image];
 
    if (!o)
@@ -2210,7 +2210,10 @@ static void rsx_overlay_set_alpha(void *data, unsigned image, float mod)
 {
    rsx_t *rsx = (rsx_t *)data;
 
-   if (rsx)
+   /* Called whenever the frontend likes, not only after a load that
+    * worked: no page is a NULL array, and an index off the end of the
+    * page is off the end of the allocation. */
+   if (rsx && rsx->overlay && image < rsx->overlays)
    {
       rsx->overlay[image].vertices[0].a = mod;
       rsx->overlay[image].vertices[1].a = mod;

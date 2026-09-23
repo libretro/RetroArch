@@ -1298,7 +1298,7 @@ static void gx_overlay_tex_geom(void *data, unsigned image,
    gx_video_t            *gx = (gx_video_t*)data;
    struct gx_overlay_data *o = NULL;
 
-   if (gx)
+   if (gx && gx->overlay && image < gx->overlays)
       o = (struct gx_overlay_data*)&gx->overlay[image];
 
    if (!o)
@@ -1330,7 +1330,7 @@ static void gx_overlay_vertex_geom(void *data, unsigned image,
    w                         = (w * 2.0f);
    h                         = (h * 2.0f);
 
-   if (gx)
+   if (gx && gx->overlay && image < gx->overlays)
       o = (struct gx_overlay_data*)&gx->overlay[image];
 
    if (!o)
@@ -1414,7 +1414,10 @@ static void gx_overlay_set_alpha(void *data, unsigned image, float mod)
 {
    gx_video_t *gx = (gx_video_t*)data;
 
-   if (gx)
+   /* Called whenever the frontend likes, not only after a load that
+    * worked: no page is a NULL array, and an index off the end of the
+    * page is off the end of the allocation. */
+   if (gx && gx->overlay && image < gx->overlays)
       gx->overlay[image].alpha_mod = mod;
 }
 

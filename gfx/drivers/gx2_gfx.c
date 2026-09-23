@@ -1388,7 +1388,7 @@ static void gx2_overlay_tex_geom(void *data, unsigned image,
    wiiu_video_t            *gx2 = (wiiu_video_t *)data;
    struct gx2_overlay_data *o = NULL;
 
-   if (gx2)
+   if (gx2 && gx2->overlay && image < gx2->overlays)
       o = (struct gx2_overlay_data *)&gx2->overlay[image];
 
    if (!o)
@@ -1407,7 +1407,7 @@ static void gx2_overlay_vertex_geom(void *data, unsigned image,
    wiiu_video_t            *gx2 = (wiiu_video_t *)data;
    struct gx2_overlay_data *o = NULL;
 
-   if (gx2)
+   if (gx2 && gx2->overlay && image < gx2->overlays)
       o = (struct gx2_overlay_data *)&gx2->overlay[image];
 
    if (!o)
@@ -1503,7 +1503,10 @@ static void gx2_overlay_set_alpha(void *data, unsigned image, float mod)
 {
    wiiu_video_t *gx2 = (wiiu_video_t *)data;
 
-   if (gx2)
+   /* Called whenever the frontend likes, not only after a load that
+    * worked: no page is a NULL array, and an index off the end of the
+    * page is off the end of the allocation. */
+   if (gx2 && gx2->overlay && image < gx2->overlays)
    {
       gx2->overlay[image].alpha_mod = mod;
       gx2->overlay[image].v.color = COLOR_RGBA(0xFF, 0xFF, 0xFF, VIDEO_ALPHA_BYTE(gx2->overlay[image].alpha_mod));

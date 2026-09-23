@@ -2744,11 +2744,13 @@ static void ctr_overlay_tex_geom(void *data,
    ctr_video_t           *ctr = (ctr_video_t *)data;
    struct ctr_overlay_data *o = NULL;
 
-   if (!ctr)
+   /* Called whenever the frontend likes, not only after a load that
+    * worked: no page is a NULL array, and an index off the end of the
+    * page is off the end of the allocation. */
+   if (!ctr || !ctr->overlay || image >= ctr->overlays)
       return;
 
-   if (!(o = (struct ctr_overlay_data *)&ctr->overlay[image]))
-      return;
+   o = (struct ctr_overlay_data *)&ctr->overlay[image];
 
    o->frame_coords->u0 = x*o->texture.width;
    o->frame_coords->v0 = y*o->texture.height;
@@ -2764,11 +2766,13 @@ static void ctr_overlay_vertex_geom(void *data,
    ctr_video_t           *ctr = (ctr_video_t *)data;
    struct ctr_overlay_data *o = NULL;
 
-   if (!ctr)
+   /* Called whenever the frontend likes, not only after a load that
+    * worked: no page is a NULL array, and an index off the end of the
+    * page is off the end of the allocation. */
+   if (!ctr || !ctr->overlay || image >= ctr->overlays)
       return;
 
-   if (!(o = (struct ctr_overlay_data *)&ctr->overlay[image]))
-      return;
+   o = (struct ctr_overlay_data *)&ctr->overlay[image];
 
    o->frame_coords->x0 = x * CTR_TOP_FRAMEBUFFER_WIDTH;
    o->frame_coords->y0 = y * CTR_TOP_FRAMEBUFFER_HEIGHT;

@@ -2914,7 +2914,7 @@ static void gxm_overlay_tex_geom(void *data, unsigned image,
    vita_video_t          *vita = (vita_video_t*)data;
    struct vita_overlay_data *o = NULL;
 
-   if (vita)
+   if (vita && vita->overlay && image < vita->overlays)
       o = (struct vita_overlay_data*)&vita->overlay[image];
 
    if (o)
@@ -2937,7 +2937,7 @@ static void gxm_overlay_vertex_geom(void *data, unsigned image,
       h = -h;
     */
 
-   if (vita)
+   if (vita && vita->overlay && image < vita->overlays)
       o = (struct vita_overlay_data*)&vita->overlay[image];
 
    if (o)
@@ -2964,7 +2964,11 @@ static void gxm_overlay_full_screen(void *data, bool enable)
 static void gxm_overlay_set_alpha(void *data, unsigned image, float mod)
 {
    vita_video_t *vita             = (vita_video_t*)data;
-   vita->overlay[image].alpha_mod = mod;
+   /* Called whenever the frontend likes, not only after a load that
+    * worked: no page is a NULL array, and an index off the end of the
+    * page is off the end of the allocation. */
+   if (vita && vita->overlay && image < vita->overlays)
+      vita->overlay[image].alpha_mod = mod;
 }
 
 static void gxm_render_overlay(void *data)

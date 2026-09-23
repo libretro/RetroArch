@@ -15,8 +15,9 @@ all. No runner can run these drivers, so this reads the source: each
 setter, or the one helper it maps its buffer through, must compare the
 index against the page's count before it writes.
 
-Covers the drivers that have been audited (DRIVERS below); add a
-driver to the table when its setters are brought into line.
+Covers every driver with an overlay interface (DRIVERS below, and
+metal.m); a driver in gfx/drivers that defines the setters and is not
+in the table fails, so a new one is read from its first commit.
 
 Every driver in gfx/drivers is also read for the alpha set_alpha hands
 it being packed into a byte unsaturated. The frontend's alpha is the
@@ -49,8 +50,10 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 DIR  = os.path.join(ROOT, "gfx", "drivers")
 
 DRIVERS = [
-    "d3d8.c", "d3d9cg.c", "d3d9hlsl.c", "d3d10.c", "d3d11.c", "d3d12.c",
-    "gl1.c", "gl2.c", "gl3.c", "vulkan.c",
+    "ctr_gfx.c", "d3d8.c", "d3d9cg.c", "d3d9hlsl.c", "d3d10.c", "d3d11.c",
+    "d3d12.c", "gdi_gfx.c", "gl1.c", "gl2.c", "gl3.c", "gx_gfx.c",
+    "gx2_gfx.c", "gxm_gfx.c", "hub75_gfx.c", "rsx_gfx.c", "sdl2_gfx.c",
+    "switch_nx_gfx.c", "vulkan.c",
 ]
 
 SETTER = r"\b(\w+_overlay_(?:set_alpha|vertex_geom|tex_geom))\s*\("
@@ -142,6 +145,9 @@ def check_c(name, code):
                         "reading this driver right" % len(setters))
     for fn in sorted(setters):
         body = setters[fn]
+        # A driver with nothing to set (a stub) writes nothing.
+        if not body.strip("{} \t\r\n"):
+            continue
         if re.search(BOUND, body):
             continue
         called = [h for h in helpers if re.search(r"\b%s\s*\(" % h, body)]
@@ -212,6 +218,15 @@ def check_alpha_bytes():
 def main():
     failed = 0
     total  = 0
+    for name in sorted(os.listdir(DIR)):
+        if not name.endswith(".c") or name in DRIVERS:
+            continue
+        with open(os.path.join(DIR, name), encoding="utf-8",
+                  errors="replace") as f:
+            if functions(strip_comments(f.read()), SETTER):
+                print("[FAIL] %s: defines overlay setters but is not in "
+                      "DRIVERS" % name)
+                failed += 1
     unsaturated = check_alpha_bytes()
     for p in unsaturated:
         print("[FAIL] " + p)
