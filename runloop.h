@@ -562,6 +562,62 @@ static INLINE unsigned runloop_video_swap_interval_for(float timing_fps,
    return (timing_skew <= max_timing_skew) ? swap_integer : 1;
 }
 
+/* How a display/content pair is synced, decided whenever the rates are
+ * set. VSYNC_HOLDS: vsync can pace the content without the loop being
+ * forced nonblocking. EXACT_RATE: the content runs at its own rate, so
+ * audio takes the core's sample rate unskewed. WITHIN_SKEW: the content
+ * rate is within @max_timing_skew of the rate the display presents it
+ * at.
+ *
+ * @multiple is how many display frames one content frame occupies -
+ * black frame insertion, swap interval and shader subframes multiplied
+ * - and applies only when the display is near a whole multiple of the
+ * content rate, as the audio skew does.
+ *
+ * With Sync to Exact Content Framerate (@vrr) the content keeps its own
+ * rate while the display can present it. Past that but within the skew
+ * tolerance - a 60.0988 Hz core at swap interval 2 on a 120 Hz panel -
+ * vsync paces it and audio is skewed as it is without VRR: dropping
+ * vsync over a fraction of a percent tears, and where a driver emulates
+ * the interval by presenting a frame again, presents unpaced. Only a
+ * content rate beyond the tolerance keeps its own rate with vsync off. */
+enum runloop_sync_plan
+{
+   RUNLOOP_SYNC_VSYNC_HOLDS = (1 << 0),
+   RUNLOOP_SYNC_EXACT_RATE  = (1 << 1),
+   RUNLOOP_SYNC_WITHIN_SKEW = (1 << 2)
+};
+
+static INLINE unsigned runloop_sync_plan_for(float display_hz,
+      float input_fps, float multiple, float max_timing_skew, bool vrr)
+{
+   float    target = display_hz;
+   float    timing_skew;
+   unsigned plan   = 0;
+
+   if ((input_fps <= 0.0f) || (display_hz <= 0.0f) || (multiple <= 0.0f))
+      return RUNLOOP_SYNC_VSYNC_HOLDS | (vrr ? RUNLOOP_SYNC_EXACT_RATE : 0);
+
+   if ((unsigned)(display_hz / input_fps + 0.5f) > 1)
+      target /= multiple;
+
+   timing_skew = 1.0f - input_fps / target;
+   if (timing_skew < 0.0f)
+      timing_skew = -timing_skew;
+   if (timing_skew <= max_timing_skew)
+      plan |= RUNLOOP_SYNC_WITHIN_SKEW;
+
+   if (input_fps <= target)
+      plan |= RUNLOOP_SYNC_VSYNC_HOLDS
+            | (vrr ? RUNLOOP_SYNC_EXACT_RATE : 0);
+   else if (plan & RUNLOOP_SYNC_WITHIN_SKEW)
+      plan |= RUNLOOP_SYNC_VSYNC_HOLDS;
+   else if (vrr)
+      plan |= RUNLOOP_SYNC_EXACT_RATE;
+
+   return plan;
+}
+
 /* Everything the pace decision reads, gathered once per iteration into
  * one word. Each bit is one fact about this iteration, named for what
  * it means rather than where it lives: fast-forward is NONBLOCKING

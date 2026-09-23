@@ -1398,42 +1398,6 @@ static float audio_driver_monitor_adjust_system_rates(
    return inp_sample_rate;
 }
 
-static bool video_driver_monitor_adjust_system_rates(
-      float timing_skew_hz,
-      float video_refresh_rate,
-      bool vrr_runloop_enable,
-      float audio_max_timing_skew,
-      unsigned video_swap_interval,
-      unsigned black_frame_insertion,
-      unsigned shader_subframes,
-      double input_fps)
-{
-   float target_video_sync_rate = timing_skew_hz;
-
-   /* Same concept as for audio driver adjust. */
-   float refresh_ratio                   = target_video_sync_rate/input_fps;
-   unsigned refresh_closest_multiple     = (unsigned)(refresh_ratio + 0.5f);
-   float timing_skew                     = 0.0f;
-
-   if (refresh_closest_multiple > 1)
-      target_video_sync_rate /= (((float)black_frame_insertion + 1.0f) * (float)video_swap_interval * (float)shader_subframes);
-
-   if (!vrr_runloop_enable)
-   {
-      timing_skew         =
-         fabs(1.0f - input_fps / target_video_sync_rate);
-      /* We don't want to adjust pitch too much. If we have extreme cases,
-       * just don't readjust at all. */
-      if (timing_skew <= audio_max_timing_skew)
-         return true;
-      RARCH_LOG("[Video] Timings deviate too much. Will not adjust."
-            " (Target = %.2f Hz, Game = %.2f Hz)\n",
-            target_video_sync_rate,
-            (float)input_fps);
-   }
-   return input_fps <= target_video_sync_rate;
-}
-
 static void driver_adjust_system_rates(
       runloop_state_t *runloop_st,
       video_driver_state_t *video_st,
@@ -1448,16 +1412,42 @@ static void driver_adjust_system_rates(
    unsigned shader_subframes              = settings->uints.video_shader_subframes;
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
    bool video_adaptive_vsync              = settings->bools.video_adaptive_vsync;
+   unsigned sync_plan                     = RUNLOOP_SYNC_VSYNC_HOLDS
+         | (vrr_runloop_enable ? RUNLOOP_SYNC_EXACT_RATE : 0);
 
    /* Update video swap interval if automatic
     * switching is enabled */
    runloop_set_video_swap_interval(settings);
    video_swap_interval = runloop_get_video_swap_interval(video_swap_interval);
 
+   if (input_fps > 0.0)
+   {
+      float timing_skew_hz          = video_refresh_rate;
+
+      if (retro_atomic_load_acquire_int(&video_st->crt_switching_active))
+         timing_skew_hz             = input_fps;
+      video_st->core_hz             = input_fps;
+
+      sync_plan = runloop_sync_plan_for(timing_skew_hz, (float)input_fps,
+            ((float)black_frame_insertion + 1.0f)
+            * (float)video_swap_interval * (float)shader_subframes,
+            audio_max_timing_skew, vrr_runloop_enable);
+
+      if (!(sync_plan & RUNLOOP_SYNC_WITHIN_SKEW) && !vrr_runloop_enable)
+         RARCH_LOG("[Video] Timings deviate too much. Will not adjust."
+               " (Display = %.2f Hz, Game = %.2f Hz)\n",
+               timing_skew_hz, (float)input_fps);
+      else if (vrr_runloop_enable
+            && (sync_plan & RUNLOOP_SYNC_VSYNC_HOLDS)
+            && !(sync_plan & RUNLOOP_SYNC_EXACT_RATE))
+         RARCH_LOG("[Video] Game FPS above what the display presents at "
+               "this interval; VSync paces it instead of the exact rate.\n");
+   }
+
    if (input_sample_rate > 0.0)
    {
       audio_driver_state_t *audio_st      = audio_state_get_ptr();
-      if (vrr_runloop_enable)
+      if (sync_plan & RUNLOOP_SYNC_EXACT_RATE)
          audio_st->input = input_sample_rate;
       else
          audio_st->input =
@@ -1476,40 +1466,23 @@ static void driver_adjust_system_rates(
 
    runloop_st->flags &= ~RUNLOOP_FLAG_FORCE_NONBLOCK;
 
-   if (input_fps > 0.0)
+   if (!(sync_plan & RUNLOOP_SYNC_VSYNC_HOLDS))
    {
-      float timing_skew_hz          = video_refresh_rate;
+      /* We won't be able to do VSync reliably
+         when game FPS > monitor FPS. */
+      runloop_st->flags |= RUNLOOP_FLAG_FORCE_NONBLOCK;
+      RARCH_LOG("[Video] Game FPS > Monitor FPS. Cannot rely on VSync.\n");
 
-      if (retro_atomic_load_acquire_int(&video_st->crt_switching_active))
-         timing_skew_hz             = input_fps;
-      video_st->core_hz             = input_fps;
-
-      if (!video_driver_monitor_adjust_system_rates(
-               timing_skew_hz,
-               video_refresh_rate,
-               vrr_runloop_enable,
-               audio_max_timing_skew,
-               video_swap_interval,
-               black_frame_insertion,
-               shader_subframes,
-               input_fps))
+      if (video_st->data)
       {
-         /* We won't be able to do VSync reliably
-            when game FPS > monitor FPS. */
-         runloop_st->flags |= RUNLOOP_FLAG_FORCE_NONBLOCK;
-         RARCH_LOG("[Video] Game FPS > Monitor FPS. Cannot rely on VSync.\n");
-
-         if (video_st->data)
-         {
-            if (video_st->current_video->set_nonblock_state)
-               video_st->current_video->set_nonblock_state(
-                     video_st->data, true,
-                     video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC)
-                     && video_adaptive_vsync,
-                     video_swap_interval);
-         }
-         return;
+         if (video_st->current_video->set_nonblock_state)
+            video_st->current_video->set_nonblock_state(
+                  video_st->data, true,
+                  video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC)
+                  && video_adaptive_vsync,
+                  video_swap_interval);
       }
+      return;
    }
 
    if (video_st->data)
