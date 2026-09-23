@@ -92,8 +92,7 @@ static void sdl3_window_save_position(SDL_Window *win)
 
    settings->uints.window_position_x = (unsigned)x;
    settings->uints.window_position_y = (unsigned)y;
-   settings->uints.window_position_width = (unsigned)w;
-   settings->uints.window_position_height = (unsigned)h;
+   settings->uints.window_position_dims = VIDEO_SCALE_PACK(w, h);
 }
 
 void sdl3_pump_window_events(bool *quit, bool *resize)
@@ -260,8 +259,8 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
     * in Wayland where windows are not manually positioned. */
    if (settings->bools.video_window_save_positions
          && !fullscreen
-         && settings->uints.window_position_width
-         && settings->uints.window_position_height
+         && VIDEO_SCALE_W(settings->uints.window_position_dims)
+         && VIDEO_SCALE_H(settings->uints.window_position_dims)
          && !string_is_equal(SDL_GetCurrentVideoDriver(), "wayland"))
    {
       SDL_SetWindowPosition(win,

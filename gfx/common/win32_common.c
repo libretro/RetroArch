@@ -577,23 +577,28 @@ static void win32_save_position(void)
       {
          bool ui_menubar_enable                     = settings->bools.ui_menubar_enable;
          bool window_show_decor                     = settings->bools.video_window_show_decorations;
+         unsigned win_w                             = g_win32->pos_width;
+         unsigned win_h                             = g_win32->pos_height;
          settings->uints.window_position_x          = g_win32->pos_x;
          settings->uints.window_position_y          = g_win32->pos_y;
-         settings->uints.window_position_width      = g_win32->pos_width;
-         settings->uints.window_position_height     = g_win32->pos_height;
+         /* The frame the window reports includes whatever chrome it
+          * is wearing; the setting holds the client area, so take the
+          * chrome off both axes before the pair is stored. */
          if (window_show_decor)
          {
             int border_thickness                    = GetSystemMetrics(SM_CXSIZEFRAME);
             int title_bar_height                    = GetSystemMetrics(SM_CYCAPTION);
-            settings->uints.window_position_width  -= border_thickness * 2;
-            settings->uints.window_position_height -= border_thickness * 2;
-            settings->uints.window_position_height -= title_bar_height;
+            win_w                                  -= border_thickness * 2;
+            win_h                                  -= border_thickness * 2;
+            win_h                                  -= title_bar_height;
          }
          if (ui_menubar_enable)
          {
             int menu_bar_height   = GetSystemMetrics(SM_CYMENU);
-            settings->uints.window_position_height -= menu_bar_height;
+            win_h                                  -= menu_bar_height;
          }
+         settings->uints.window_position_dims       =
+               VIDEO_SCALE_PACK(win_w, win_h);
       }
    }
 }
@@ -2256,8 +2261,10 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          int title_bar_height             = window_show_decor ? GetSystemMetrics(SM_CYCAPTION) : 0;
          unsigned window_position_x       = settings->uints.window_position_x;
          unsigned window_position_y       = settings->uints.window_position_y;
-         unsigned window_position_width   = settings->uints.window_position_width;
-         unsigned window_position_height  = settings->uints.window_position_height;
+         unsigned window_position_width   =
+               VIDEO_SCALE_W(settings->uints.window_position_dims);
+         unsigned window_position_height  =
+               VIDEO_SCALE_H(settings->uints.window_position_dims);
 
          g_win32->pos_x                   = window_position_x;
          g_win32->pos_y                   = window_position_y;

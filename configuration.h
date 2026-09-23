@@ -384,10 +384,12 @@ typedef struct settings
 
       unsigned window_position_x;
       unsigned window_position_y;
-      unsigned window_position_width;
-      unsigned window_position_height;
-      unsigned window_auto_width_max;
-      unsigned window_auto_height_max;
+      /* The windowed-mode size, and the ceiling auto-resize honours,
+       * each a pair in VIDEO_SCALE_PACK's layout. The config file
+       * keeps a key per axis and the menu a row per axis; both carry
+       * which half they are. */
+      unsigned window_position_dims;
+      unsigned window_auto_dims_max;
 
       unsigned video_record_threads;
 

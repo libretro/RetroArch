@@ -11,29 +11,33 @@ S_UINT_NS(video_scale, VIDEO_SCALE,
 /* config key "video_windowed_position_width" differs from the label string; the
  * configuration.c row stays literal for this setting. */
 #ifndef SETTINGS_DEF_CONFIG_PASS
-S_UINT(window_position_width, VIDEO_WINDOW_WIDTH,
+S_UINT_AT_EX(offsetof(settings_t, uints.window_position_dims)
+      | SDESC_OFF_HALF_HI, VIDEO_WINDOW_WIDTH,
       "video_window_width",
-      DEFAULT_WINDOW_WIDTH, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 7680, 8, 0, setting_action_ok_uint_special, NULL,
+      DEFAULT_WINDOW_WIDTH, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 7680, 8, 0, setting_action_ok_uint_special, NULL, NULL, NULL, NULL, NULL, 0,
       "Window Width",
       "Set the custom width for the display window.")
 #endif
 /* config key "video_windowed_position_height" differs from the label string; the
  * configuration.c row stays literal for this setting. */
 #ifndef SETTINGS_DEF_CONFIG_PASS
-S_UINT(window_position_height, VIDEO_WINDOW_HEIGHT,
+S_UINT_AT_EX(offsetof(settings_t, uints.window_position_dims)
+      | SDESC_OFF_HALF_LO, VIDEO_WINDOW_HEIGHT,
       "video_window_height",
-      DEFAULT_WINDOW_HEIGHT, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 4320, 8, 0, setting_action_ok_uint_special, NULL,
+      DEFAULT_WINDOW_HEIGHT, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 4320, 8, 0, setting_action_ok_uint_special, NULL, NULL, NULL, NULL, NULL, 0,
       "Window Height",
       "Set the custom height for the display window.")
 #endif
-S_UINT(window_auto_width_max, VIDEO_WINDOW_AUTO_WIDTH_MAX,
+S_UINT_AT_EX(offsetof(settings_t, uints.window_auto_dims_max)
+      | SDESC_OFF_HALF_HI, VIDEO_WINDOW_AUTO_WIDTH_MAX,
       "video_window_auto_width_max",
-      DEFAULT_WINDOW_AUTO_WIDTH_MAX, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 7680, 8, 0, setting_action_ok_uint_special, NULL,
+      DEFAULT_WINDOW_AUTO_WIDTH_MAX, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 7680, 8, 0, setting_action_ok_uint_special, NULL, NULL, NULL, NULL, NULL, 0,
       "Maximum Window Width",
       "Set the maximum width of the display window when automatically resizing based on 'Windowed Scale'.")
-S_UINT(window_auto_height_max, VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+S_UINT_AT_EX(offsetof(settings_t, uints.window_auto_dims_max)
+      | SDESC_OFF_HALF_LO, VIDEO_WINDOW_AUTO_HEIGHT_MAX,
       "video_window_auto_height_max",
-      DEFAULT_WINDOW_AUTO_HEIGHT_MAX, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 4320, 8, 0, setting_action_ok_uint_special, NULL,
+      DEFAULT_WINDOW_AUTO_HEIGHT_MAX, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 4320, 8, 0, setting_action_ok_uint_special, NULL, NULL, NULL, NULL, NULL, 0,
       "Maximum Window Height",
       "Set the maximum height of the display window when automatically resizing based on 'Windowed Scale'.")
 S_UINT(video_window_opacity, VIDEO_WINDOW_OPACITY,

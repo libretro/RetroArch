@@ -3427,8 +3427,13 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT_HALF("custom_viewport_height",   &settings->video_vp_custom.dims, CFG_HALF_LO, false, 0 /* TODO */, false);
    SETTING_UINT("video_windowed_position_x",     &settings->uints.window_position_x,    true, 0, false);
    SETTING_UINT("video_windowed_position_y",     &settings->uints.window_position_y,    true, 0, false);
-   SETTING_UINT("video_windowed_position_width", &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
-   SETTING_UINT("video_windowed_position_height",&settings->uints.window_position_height,    true, DEFAULT_WINDOW_HEIGHT, false);
+   SETTING_UINT_HALF("video_windowed_position_width",  &settings->uints.window_position_dims, CFG_HALF_HI, true, DEFAULT_WINDOW_WIDTH, false);
+   SETTING_UINT_HALF("video_windowed_position_height", &settings->uints.window_position_dims, CFG_HALF_LO, true, DEFAULT_WINDOW_HEIGHT, false);
+   /* The auto-resize ceiling was config-bound through the S_UINT pass,
+    * which binds &settings->uints.<field> by name; its pair is one
+    * word now, so these two rows are literal like the pair above. */
+   SETTING_UINT_HALF("video_window_auto_width_max",  &settings->uints.window_auto_dims_max, CFG_HALF_HI, true, DEFAULT_WINDOW_AUTO_WIDTH_MAX, false);
+   SETTING_UINT_HALF("video_window_auto_height_max", &settings->uints.window_auto_dims_max, CFG_HALF_LO, true, DEFAULT_WINDOW_AUTO_HEIGHT_MAX, false);
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
 #endif

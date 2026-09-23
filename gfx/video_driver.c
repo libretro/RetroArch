@@ -5564,11 +5564,11 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
          /* TODO/FIXME: remove when the new window resizing core is hooked */
          if (  window_custom_size_enable
-            && settings->uints.window_position_width
-            && settings->uints.window_position_height)
+            && VIDEO_SCALE_W(settings->uints.window_position_dims)
+            && VIDEO_SCALE_H(settings->uints.window_position_dims))
          {
-            width  = settings->uints.window_position_width;
-            height = settings->uints.window_position_height;
+            width  = VIDEO_SCALE_W(settings->uints.window_position_dims);
+            height = VIDEO_SCALE_H(settings->uints.window_position_dims);
          }
          else
          {
@@ -5579,8 +5579,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
              * has not yet been initialised... */
              /* > Try explicitly configured values */
             unsigned max_win_dims   = VIDEO_SCALE_PACK(
-                  settings->uints.window_auto_width_max,
-                  settings->uints.window_auto_height_max);
+                  VIDEO_SCALE_W(settings->uints.window_auto_dims_max),
+                  VIDEO_SCALE_H(settings->uints.window_auto_dims_max));
 
             /* > Handle invalid settings */
             if (!VIDEO_SCALE_W(max_win_dims) || !VIDEO_SCALE_H(max_win_dims))

@@ -7113,6 +7113,7 @@ enum msg_hash_enums
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
 #define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
 #define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
 #define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
@@ -7149,6 +7150,7 @@ enum msg_hash_enums
 #undef S_BOOL_H
 #undef S_BOOL_NS_H
 #undef S_UINT
+#undef S_UINT_AT_EX
 #undef S_UINT_NS
 #undef S_UINT_H
 #undef S_UINT_NS_H
