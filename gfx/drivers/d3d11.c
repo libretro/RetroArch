@@ -382,8 +382,8 @@ typedef struct
       D3D11ShaderResourceView view;
       bool                    eligible;
    } hw_direct;
-   unsigned              retained_width;
-   unsigned              retained_height;
+   /* The back buffer size the copy was made at, packed. */
+   unsigned              retained_dims;
    unsigned              retained_light;
    unsigned              retained_dark;
    DXGISwapChain         swapChain;
@@ -4429,8 +4429,8 @@ static void d3d11_retain_backbuffer(d3d11_video_t *d3d11)
    back_buffer->lpVtbl->GetDesc(back_buffer, &desc);
 
    if (     !d3d11->retained
-         || d3d11->retained_width  != desc.Width
-         || d3d11->retained_height != desc.Height)
+         || d3d11->retained_dims != VIDEO_SCALE_PACK(desc.Width,
+               desc.Height))
    {
       Release(d3d11->retained);
       d3d11->retained        = NULL;
@@ -4440,8 +4440,7 @@ static void d3d11_retain_backbuffer(d3d11_video_t *d3d11)
       desc.Usage             = D3D11_USAGE_DEFAULT;
       d3d11->device->lpVtbl->CreateTexture2D(d3d11->device, &desc, NULL,
             &d3d11->retained);
-      d3d11->retained_width  = desc.Width;
-      d3d11->retained_height = desc.Height;
+      d3d11->retained_dims   = VIDEO_SCALE_PACK(desc.Width, desc.Height);
    }
 
    if (d3d11->retained)
@@ -4637,8 +4636,8 @@ static unsigned d3d11_present_last_body(void *data)
       if (!back_buffer)
          return done;
       back_buffer->lpVtbl->GetDesc(back_buffer, &desc);
-      if (     desc.Width  != d3d11->retained_width
-            || desc.Height != d3d11->retained_height)
+      if (d3d11->retained_dims != VIDEO_SCALE_PACK(desc.Width,
+               desc.Height))
       {
          Release(back_buffer);
          return done;

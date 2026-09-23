@@ -92,8 +92,8 @@ typedef struct freetype_renderer
    freetype_atlas_slot_t atlas_slots[FT_ATLAS_SIZE]; /* ptr alignment   */
    freetype_atlas_slot_t* uc_map[FT_HASH_SIZE];      /* ptr alignment   */
    void *file_data;                                  /* ptr alignment   */
-   unsigned max_glyph_width;
-   unsigned max_glyph_height;
+   /* The cell every glyph is rendered into, packed. */
+   unsigned max_glyph_dims;
    unsigned usage_counter;
    struct font_line_metrics line_metrics;            /* float alignment */
 } ft_font_renderer_t;
@@ -180,7 +180,8 @@ static void font_renderer_ft_copy_coverage(ft_font_renderer_t *handle,
 {
    unsigned y;
    const uint8_t *src   = (const uint8_t*)slot->bitmap.buffer;
-   unsigned delta_width = handle->max_glyph_width - copy_width;
+   unsigned delta_width = VIDEO_SCALE_W(handle->max_glyph_dims)
+      - copy_width;
    size_t   esz         = (handle->atlas.format == FONT_ATLAS_FORMAT_A16)
          ? sizeof(uint16_t) : sizeof(uint8_t);
    uint8_t *dst         = (uint8_t*)handle->atlas.buffer
@@ -215,11 +216,11 @@ static void font_renderer_ft_copy_coverage(ft_font_renderer_t *handle,
       src += slot->bitmap.pitch;
    }
 
-   if (copy_height < handle->max_glyph_height)
+   if (copy_height < VIDEO_SCALE_H(handle->max_glyph_dims))
    {
-      for (y = copy_height; y < handle->max_glyph_height; y++)
+      for (y = copy_height; y < VIDEO_SCALE_H(handle->max_glyph_dims); y++)
       {
-         memset(dst, 0, (size_t)handle->max_glyph_width * esz);
+         memset(dst, 0, (size_t)VIDEO_SCALE_W(handle->max_glyph_dims) * esz);
          dst += (size_t)handle->atlas.width * esz;
       }
    }
@@ -290,10 +291,10 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
 
    copy_width                      = slot->bitmap.width;
    copy_height                     = slot->bitmap.rows;
-   if (copy_width  > handle->max_glyph_width)
-      copy_width  = handle->max_glyph_width;
-   if (copy_height > handle->max_glyph_height)
-      copy_height = handle->max_glyph_height;
+   if (copy_width  > VIDEO_SCALE_W(handle->max_glyph_dims))
+      copy_width  = VIDEO_SCALE_W(handle->max_glyph_dims);
+   if (copy_height > VIDEO_SCALE_H(handle->max_glyph_dims))
+      copy_height = VIDEO_SCALE_H(handle->max_glyph_dims);
 
    /* Some glyphs can be blank. */
    atlas_slot->glyph.width         = copy_width;
@@ -312,7 +313,8 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
       font_renderer_ft_dirty_cell(&handle->atlas,
             atlas_slot->glyph.atlas_offset_x,
             atlas_slot->glyph.atlas_offset_y,
-            handle->max_glyph_width, handle->max_glyph_height);
+            VIDEO_SCALE_W(handle->max_glyph_dims),
+            VIDEO_SCALE_H(handle->max_glyph_dims));
    }
 
    atlas_slot->last_used = handle->usage_counter++;
@@ -366,8 +368,7 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle,
    if (!atlas_buffer)
       return false;
 
-   handle->max_glyph_width     = max_width;
-   handle->max_glyph_height    = max_height;
+   handle->max_glyph_dims      = VIDEO_SCALE_PACK(max_width, max_height);
    handle->atlas.buffer        = atlas_buffer;
    handle->atlas.width         = atlas_width;
    handle->atlas.height        = atlas_height;

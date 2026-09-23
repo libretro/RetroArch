@@ -1341,8 +1341,8 @@ typedef struct
    stb_atlas_slot_t* uc_map[STB_HASH_SIZE];
    stb_atlas_slot_t atlas_slots[STB_ATLAS_SIZE];
    rtt_font_t info;                       /* ptr alignment */
-   int max_glyph_width;
-   int max_glyph_height;
+   /* The cell every glyph is rendered into, packed. */
+   unsigned max_glyph_dims;
    unsigned usage_counter;
    float scale_factor;
    struct font_line_metrics line_metrics; /* float alignment */
@@ -1565,7 +1565,8 @@ static const struct font_glyph *font_renderer_stb_get_glyph(
 
    if (rtt_glyph_box(&self->info, glyph_index, &x0, NULL, NULL, &y1))
       rtt_render_glyph(&self->info, dst,
-         self->max_glyph_width, self->max_glyph_height,
+         VIDEO_SCALE_W(self->max_glyph_dims),
+         VIDEO_SCALE_H(self->max_glyph_dims),
          self->atlas.width, self->scale_factor,
          self->scale_factor, glyph_index,
          self->atlas.format == FONT_ATLAS_FORMAT_A16);
@@ -1576,13 +1577,13 @@ static const struct font_glyph *font_renderer_stb_get_glyph(
       int row;
       size_t esz = (self->atlas.format == FONT_ATLAS_FORMAT_A16)
             ? sizeof(uint16_t) : sizeof(uint8_t);
-      for (row = 0; row < self->max_glyph_height; row++)
+      for (row = 0; row < (int)VIDEO_SCALE_H(self->max_glyph_dims); row++)
          memset(dst + (size_t)row * self->atlas.width * esz, 0,
-                (size_t)self->max_glyph_width * esz);
+                (size_t)VIDEO_SCALE_W(self->max_glyph_dims) * esz);
    }
 
-   atlas_slot->glyph.width          = self->max_glyph_width;
-   atlas_slot->glyph.height         = self->max_glyph_height;
+   atlas_slot->glyph.width          = VIDEO_SCALE_W(self->max_glyph_dims);
+   atlas_slot->glyph.height         = VIDEO_SCALE_H(self->max_glyph_dims);
 
    /* advance_x must always be rounded to the
     * *nearest* integer */
@@ -1606,7 +1607,8 @@ static const struct font_glyph *font_renderer_stb_get_glyph(
 
    font_renderer_stb_dirty_cell(&self->atlas,
          atlas_slot->glyph.atlas_offset_x, atlas_slot->glyph.atlas_offset_y,
-         self->max_glyph_width, self->max_glyph_height);
+         VIDEO_SCALE_W(self->max_glyph_dims),
+         VIDEO_SCALE_H(self->max_glyph_dims));
    atlas_slot->last_used            = self->usage_counter++;
    return &atlas_slot->glyph;
 }
@@ -1630,11 +1632,13 @@ static bool font_renderer_stb_create_atlas_fmt(
    if (max_glyph_size > 2048 / STB_ATLAS_COLS - STB_ATLAS_PADDING)
       max_glyph_size = 2048 / STB_ATLAS_COLS - STB_ATLAS_PADDING;
 
-   self->max_glyph_width          = max_glyph_size;
-   self->max_glyph_height         = max_glyph_size;
+   self->max_glyph_dims           = VIDEO_SCALE_PACK(max_glyph_size,
+         max_glyph_size);
 
-   self->atlas.width              = (self->max_glyph_width  + STB_ATLAS_PADDING) * STB_ATLAS_COLS;
-   self->atlas.height             = (self->max_glyph_height + STB_ATLAS_PADDING) * STB_ATLAS_ROWS;
+   self->atlas.width              = (VIDEO_SCALE_W(self->max_glyph_dims)
+         + STB_ATLAS_PADDING) * STB_ATLAS_COLS;
+   self->atlas.height             = (VIDEO_SCALE_H(self->max_glyph_dims)
+         + STB_ATLAS_PADDING) * STB_ATLAS_ROWS;
    /* Higher-precision coverage when the video driver asked for it
     * (HDR output); the atlas then stores uint16_t samples. */
    self->atlas.format             = fmt;
@@ -1655,8 +1659,10 @@ static bool font_renderer_stb_create_atlas_fmt(
    {
       for (x = 0; x < STB_ATLAS_COLS; x++)
       {
-         slot->glyph.atlas_offset_x = x * (self->max_glyph_width  + STB_ATLAS_PADDING);
-         slot->glyph.atlas_offset_y = y * (self->max_glyph_height + STB_ATLAS_PADDING);
+         slot->glyph.atlas_offset_x = x
+            * (VIDEO_SCALE_W(self->max_glyph_dims) + STB_ATLAS_PADDING);
+         slot->glyph.atlas_offset_y = y
+            * (VIDEO_SCALE_H(self->max_glyph_dims) + STB_ATLAS_PADDING);
          slot++;
       }
    }
