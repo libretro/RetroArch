@@ -1444,6 +1444,7 @@ ifeq ($(HAVE_DBUS), 1)
    LIBS += $(DBUS_LIBS)
    DEF_FLAGS += $(DBUS_CFLAGS)
    OBJ += gfx/common/dbus_common.o
+   OBJ += gfx/common/mutter_displayconfig.o
 endif
 
 ifeq ($(HAVE_UDEV), 1)

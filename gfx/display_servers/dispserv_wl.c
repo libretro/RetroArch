@@ -18,6 +18,7 @@
 #include <string.h>
 #include <boolean.h>
 #include <compat/strl.h>
+#include <retro_miscellaneous.h>
 
 #include <wayland-client.h>
 
@@ -26,6 +27,10 @@
 #include "../common/wayland_drm_lease.h"
 
 #include "../../verbosity.h"
+
+#ifdef HAVE_DBUS
+#include "../common/mutter_displayconfig.h"
+#endif
 
 typedef struct
 {
@@ -43,6 +48,11 @@ typedef struct
     * sysfs node the EDID lives under; Wayland itself has no
     * protocol for the EDID */
    char     name[32];
+#ifdef HAVE_DBUS
+   /* GNOME: modes listed and switched through Mutter's D-Bus
+    * interface; no Wayland protocol does this under Mutter */
+   bool     mutter;
+#endif
 } dispserv_wl_t;
 
 /* wl_output listener callbacks */
@@ -157,6 +167,10 @@ static void *wl_display_server_init(void)
    wl_display_roundtrip(serv->dpy);
    wayland_drm_lease_report(serv->dpy);
 
+#ifdef HAVE_DBUS
+   serv->mutter = mutter_displayconfig_available();
+#endif
+
    return serv;
 }
 
@@ -173,6 +187,66 @@ static void wl_display_server_destroy(void *data)
       wl_display_disconnect(serv->dpy);
    free(serv);
 }
+
+#ifdef HAVE_DBUS
+/* The head this client's wl_output names (wl_output v4), else
+ * Mutter's primary */
+static void wl_display_server_mutter_target(dispserv_wl_t *serv,
+      int monitor_index, mutter_dc_target_t *t)
+{
+   memset(t, 0, sizeof(*t));
+   t->connector     = serv->name[0] ? serv->name : NULL;
+   t->monitor_index = monitor_index;
+}
+
+static void *wl_display_server_get_resolution_list(void *data,
+      unsigned *len)
+{
+   mutter_dc_target_t t;
+   video_display_config_t *list = NULL;
+   dispserv_wl_t *serv          = (dispserv_wl_t*)data;
+
+   *len = 0;
+   if (!serv || !serv->mutter)
+      return NULL;
+   wl_display_server_mutter_target(serv, 0, &t);
+   if (mutter_displayconfig_get_resolution_list(&t, &list, len)
+         != MUTTER_DC_OK)
+      return NULL;
+   return list;
+}
+
+static bool wl_display_server_set_resolution(void *data,
+      unsigned dims, int int_hz, float hz, int center,
+      int monitor_index, int xoffset, int padjust)
+{
+   mutter_dc_target_t t;
+   dispserv_wl_t *serv = (dispserv_wl_t*)data;
+
+   if (!serv || !serv->mutter)
+      return false;
+   wl_display_server_mutter_target(serv, monitor_index, &t);
+   if (mutter_displayconfig_set_resolution(&t, dims, int_hz, hz)
+         != MUTTER_DC_OK)
+      return false;
+   /* Mutter has applied it by the time it replies; the wl_output
+    * mode events for the new mode are on the socket */
+   if (serv->dpy)
+      wl_display_roundtrip(serv->dpy);
+   return true;
+}
+
+/* Without Mutter there is nothing to list, and the menu entry and the
+ * refresh rate autoswitch stay off as they always were */
+static uint32_t wl_display_server_get_flags(void *data)
+{
+   uint32_t flags      = 0;
+   dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   if (!serv || !serv->mutter)
+      BIT32_SET(flags, DISPSERV_CTX_NO_RESOLUTION_LIST);
+   return flags;
+}
+#endif
 
 static float wl_display_server_get_refresh_rate(void *data)
 {
@@ -267,8 +341,13 @@ const video_display_server_t dispserv_wl = {
    NULL, /* set_window_opacity */
    NULL, /* set_window_progress */
    NULL, /* set_window_decorations */
+#ifdef HAVE_DBUS
+   wl_display_server_set_resolution,
+   wl_display_server_get_resolution_list,
+#else
    NULL, /* set_resolution */
    NULL, /* get_resolution_list */
+#endif
    NULL, /* get_output_options */
    NULL, /* set_screen_orientation */
    NULL, /* get_screen_orientation */
@@ -277,7 +356,11 @@ const video_display_server_t dispserv_wl = {
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    wl_display_server_get_metrics,
+#ifdef HAVE_DBUS
+   wl_display_server_get_flags,
+#else
    NULL, /* get_flags */
+#endif
    NULL, /* get_scanline */
    NULL, /* wait_vblank */
    NULL, /* modeline_list_outputs */

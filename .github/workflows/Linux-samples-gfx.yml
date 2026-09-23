@@ -766,6 +766,33 @@ jobs:
           pkill openbox || true
           sudo kill "$XORG_PID" || true
 
+      - name: Screen Resolution through Mutter's DisplayConfig (ASan + UBSan)
+        shell: bash
+        run: |
+          set -eu
+          # Under GNOME's Wayland session the X11 driver runs on
+          # XWayland, which lists every mode at the desktop's current
+          # rate and only scales the window when "switched", and the
+          # Wayland driver had no resolution list at all; Mutter's
+          # org.gnome.Mutter.DisplayConfig D-Bus interface is the only
+          # way to the monitor's real modes.  mock_mutter.py carries
+          # Mutter's signatures and its ApplyMonitorsConfig checks; the
+          # test drives gfx/common/mutter_displayconfig.c directly and
+          # through dispserv_x11 (real Xorg dummy server, and Xwayland
+          # under a headless Weston) and dispserv_wl, with and without
+          # Mutter on the bus.  Without it every path must behave
+          # exactly as before: no session bus, a bus without Mutter, a
+          # real X server (Mutter is never asked), XWayland's own list,
+          # and no Wayland resolution list.
+          sudo apt-get install -y -qq libdbus-1-dev dbus python3-dbus \
+             python3-gi weston xwayland > /dev/null
+          (cd samples/gfx/mutter_displayconfig \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 \
+                UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+                XORG="sudo Xorg" timeout 300 ./run.sh)
+          echo "[pass] mutter_displayconfig_test"
+
       - name: D3D11 hardware ring under threaded video (mingw + Wine, headless)
         shell: bash
         run: |

@@ -388,6 +388,7 @@ VIDEO CONTEXT
 
 #ifdef HAVE_DBUS
 #include "../gfx/common/dbus_common.c"
+#include "../gfx/common/mutter_displayconfig.c"
 #endif
 
 #ifndef HAVE_OPENGLES

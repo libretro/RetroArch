@@ -46,6 +46,9 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "edid_sysfs.h"
+#if defined(HAVE_XRANDR) && defined(HAVE_DBUS)
+#include "../common/mutter_displayconfig.h"
+#endif
 
 enum dispserv_x11_flags
 {
@@ -1438,6 +1441,30 @@ static int x11_res_list_qsort(const void *pa, const void *pb)
    return 0;
 }
 
+#ifdef HAVE_DBUS
+/* XWayland lists every mode at the desktop's current rate and only
+ * scales a fullscreen window when "switched"; the real modes belong to
+ * the compositor. Under GNOME, Mutter's D-Bus interface has them. Its
+ * outputs are all named XWAYLAND<n>; a real X server never is, so on
+ * one nothing below talks to D-Bus at all. */
+static bool x11_res_is_xwayland(const XRROutputInfo *oi)
+{
+   return oi && oi->name && !strncmp(oi->name, "XWAYLAND", 8);
+}
+
+/* The Mutter head to ask about: the one under the RetroArch window
+ * (XWayland's root coordinates are Mutter's logical layout), else the
+ * monitor index, else the primary */
+static void x11_res_mutter_target(Display *dpy, int monitor_index,
+      mutter_dc_target_t *t)
+{
+   memset(t, 0, sizeof(*t));
+   t->monitor_index = monitor_index;
+   t->have_point    = x11_ml_target_point(dpy,
+         monitor_index > 0 ? monitor_index - 1 : -1, &t->x, &t->y);
+}
+#endif
+
 static void *x11_display_server_get_resolution_list(void *data,
       unsigned *len)
 {
@@ -1457,10 +1484,25 @@ static void *x11_display_server_get_resolution_list(void *data,
    if (     (res = XRRGetScreenResourcesCurrent(dpy,
                RootWindow(dpy, DefaultScreen(dpy))))
          && x11_res_pick_output(dpy, res,
-               RootWindow(dpy, DefaultScreen(dpy)), 0, &oi, &ci)
-         && oi->nmode > 0
-         && (conf = (video_display_config_t*)
-               calloc(oi->nmode, sizeof(*conf))))
+               RootWindow(dpy, DefaultScreen(dpy)), 0, &oi, &ci))
+   {
+#ifdef HAVE_DBUS
+      if (x11_res_is_xwayland(oi))
+      {
+         mutter_dc_target_t t;
+         x11_res_mutter_target(dpy, 0, &t);
+         /* Mutter's answer stands, list or none; without Mutter the
+          * XWayland list below is what there is */
+         if (mutter_displayconfig_get_resolution_list(&t, &conf, &n)
+               != MUTTER_DC_UNAVAILABLE)
+            goto done;
+      }
+#endif
+      if (oi->nmode > 0)
+         conf = (video_display_config_t*)calloc(oi->nmode, sizeof(*conf));
+   }
+
+   if (conf)
    {
       for (i = 0; i < oi->nmode; i++)
       {
@@ -1504,6 +1546,9 @@ static void *x11_display_server_get_resolution_list(void *data,
          conf[j].idx = j;
    }
 
+#ifdef HAVE_DBUS
+done:
+#endif
    if (ci)
       XRRFreeCrtcInfo(ci);
    if (oi)
@@ -1560,6 +1605,24 @@ static bool x11_display_server_set_resolution(void *data,
    if (     !(res = XRRGetScreenResourcesCurrent(dpy, root))
          || !x11_res_pick_output(dpy, res, root, monitor_index, &oi, &ci))
       goto end;
+
+#ifdef HAVE_DBUS
+   if (x11_res_is_xwayland(oi))
+   {
+      mutter_dc_target_t t;
+      enum mutter_dc_result r;
+      x11_res_mutter_target(dpy, monitor_index, &t);
+      r = mutter_displayconfig_set_resolution(&t, dims, int_hz, hz);
+      if (r != MUTTER_DC_UNAVAILABLE)
+      {
+         ok = (r == MUTTER_DC_OK);
+         /* XWayland follows the compositor a moment later; the kept
+          * rate must not outlive the mode it was read from */
+         x11_refresh_invalidate();
+         goto end;
+      }
+   }
+#endif
 
    cur_mi = x11_res_find_mode(res, ci->mode);
    want_w = VIDEO_SCALE_W(dims);

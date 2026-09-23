@@ -1858,8 +1858,16 @@ int video_display_server_get_edid(uint8_t *out, size_t max)
 
 bool video_display_server_has_resolution_list(void)
 {
-   return (current_display_server
-         && current_display_server->get_resolution_list);
+   video_driver_state_t *video_st = &video_driver_st;
+   if (     !current_display_server
+         || !current_display_server->get_resolution_list)
+      return false;
+   if (     current_display_server->get_flags
+         && BIT32_GET(current_display_server->get_flags(
+               video_st->current_display_server_data),
+            DISPSERV_CTX_NO_RESOLUTION_LIST))
+      return false;
+   return true;
 }
 
 void *video_display_server_get_resolution_list(unsigned *size)

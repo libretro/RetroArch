@@ -34,7 +34,11 @@ enum display_server_flags
    DISPSERV_CTX_FLAGS_NONE = 0,
    /* The server can apply a video_modeline_t through its modeline_*
     * ops (the bit the CRT consumer and the menu look for). */
-   DISPSERV_CTX_MODELINE
+   DISPSERV_CTX_MODELINE,
+   /* The server has resolution list callbacks but nothing to list them
+    * from right now (the Wayland server away from GNOME): the menu and
+    * the refresh rate autoswitch treat it as having none. */
+   DISPSERV_CTX_NO_RESOLUTION_LIST
 };
 
 /* One-cycle alias for the bit's previous name. */
