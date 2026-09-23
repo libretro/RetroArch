@@ -178,7 +178,8 @@ enum video_driver_scanline
 struct LinkInfo
 {
    struct video_shader_pass *pass;
-   unsigned tex_w, tex_h;
+   /* The size of the texture the pass renders into, packed. */
+   unsigned tex_dims;
 };
 
 struct shader_program_info

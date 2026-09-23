@@ -576,8 +576,7 @@ static bool d3d8_setup_init(void *data,
    chain->pixel_size                      = (fmt == RETRO_PIXEL_FORMAT_RGB565)
       ? 2
       : 4;
-   chain->tex_dims                        = VIDEO_SCALE_PACK(
-         link_info->tex_w, link_info->tex_h);
+   chain->tex_dims                        = link_info->tex_dims;
 
    chain->vertex_buf                      = (LPDIRECT3DVERTEXBUFFER8)d3d8_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
          D3DUSAGE_WRITEONLY,
@@ -2250,8 +2249,9 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
 
    /* Setup information. */
    link_info.pass               = NULL;
-   link_info.tex_w              = info->input_scale * RARCH_SCALE_BASE;
-   link_info.tex_h              = info->input_scale * RARCH_SCALE_BASE;
+   link_info.tex_dims           = VIDEO_SCALE_PACK(
+         info->input_scale * RARCH_SCALE_BASE,
+         info->input_scale * RARCH_SCALE_BASE);
    link_info.pass               = &d3d->shader.pass[0];
 
    d3d->renderchain_data        = d3d8_renderchain_new();

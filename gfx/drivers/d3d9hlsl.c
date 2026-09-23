@@ -271,18 +271,17 @@ static INLINE bool d3d9_hlsl_renderchain_set_pass_size(
       LPDIRECT3DDEVICE9 dev,
       struct shader_pass *pass,
       struct shader_pass *pass2,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
-   if (width != pass->info.tex_w || height != pass->info.tex_h)
+   if (pass->info.tex_dims != dims)
    {
       IDirect3DTexture9_Release(pass->tex);
 
-      pass->info.tex_w = width;
-      pass->info.tex_h = height;
-      pass->pool       = D3DPOOL_DEFAULT;
-      pass->tex        = NULL;
+      pass->info.tex_dims = dims;
+      pass->pool          = D3DPOOL_DEFAULT;
+      pass->tex           = NULL;
       IDirect3DDevice9_CreateTexture(dev,
-            width, height, 1,
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), 1,
             D3DUSAGE_RENDERTARGET,
             (pass2->info.pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
             ? D3DFMT_A32B32G32R32F
@@ -317,14 +316,14 @@ static INLINE void d3d9_recompute_pass_sizes(
    unsigned out_height               = 0;
 
    link_info.pass                    = &d3d->shader.pass[0];
-   link_info.tex_w                   = current_width;
-   link_info.tex_h                   = current_height;
+   link_info.tex_dims                = VIDEO_SCALE_PACK(current_width,
+         current_height);
 
    if (!d3d9_hlsl_renderchain_set_pass_size(dev,
             (struct shader_pass*)&chain->passes->data[0],
             (struct shader_pass*)&chain->passes->data[
             chain->passes->count - 1],
-            current_width, current_height))
+            link_info.tex_dims))
    {
       RARCH_ERR("[D3D9] Failed to set pass size.\n");
       return;
@@ -357,14 +356,14 @@ static INLINE void d3d9_recompute_pass_sizes(
             break;
       }
 
-      link_info.tex_w = next_pow2(out_width);
-      link_info.tex_h = next_pow2(out_height);
+      link_info.tex_dims = VIDEO_SCALE_PACK(next_pow2(out_width),
+            next_pow2(out_height));
 
       if (!d3d9_hlsl_renderchain_set_pass_size(dev,
                (struct shader_pass*)&chain->passes->data[i],
                (struct shader_pass*)&chain->passes->data[
                chain->passes->count - 1],
-               link_info.tex_w, link_info.tex_h))
+               link_info.tex_dims))
       {
          RARCH_ERR("[D3D9] Failed to set pass size.\n");
          return;
@@ -2231,7 +2230,8 @@ static bool hlsl_d3d9_renderchain_create_first_pass(
 
          chain->prev.tex[i] = NULL;
          IDirect3DDevice9_CreateTexture(chain->dev,
-               info->tex_w, info->tex_h, 1, 0,
+               VIDEO_SCALE_W(info->tex_dims),
+               VIDEO_SCALE_H(info->tex_dims), 1, 0,
                (D3DFORMAT)fmt,
                D3DPOOL_MANAGED,
                (struct IDirect3DTexture9**)&chain->prev.tex[i], NULL);
@@ -2314,8 +2314,10 @@ static void d3d9_hlsl_renderchain_render_pass(
    {
       struct Vertex vert[4];
       void *verts       = NULL;
-      float _u          = (float)(width)  / pass->info.tex_w;
-      float _v          = (float)(height) / pass->info.tex_h;
+      float _u          = (float)(width)
+         / VIDEO_SCALE_W(pass->info.tex_dims);
+      float _v          = (float)(height)
+         / VIDEO_SCALE_H(pass->info.tex_dims);
 
       pass->last_width  = width;
       pass->last_height = height;
@@ -2411,8 +2413,8 @@ static void d3d9_hlsl_renderchain_render_pass(
 
          video_size[0]   = (float)pass->last_width;
          video_size[1]   = (float)pass->last_height;
-         texture_size[0] = (float)pass->info.tex_w;
-         texture_size[1] = (float)pass->info.tex_h;
+         texture_size[0] = (float)VIDEO_SCALE_W(pass->info.tex_dims);
+         texture_size[1] = (float)VIDEO_SCALE_H(pass->info.tex_dims);
          output_size[0]  = (float)vp_width;
          output_size[1]  = (float)vp_height;
 
@@ -2573,8 +2575,8 @@ static void d3d9_hlsl_renderchain_render_pass(
             vs[1] = (float)first_pass->last_height;
             vs[2] = 0.0f;
             vs[3] = 0.0f;
-            ts[0] = (float)first_pass->info.tex_w;
-            ts[1] = (float)first_pass->info.tex_h;
+            ts[0] = (float)VIDEO_SCALE_W(first_pass->info.tex_dims);
+            ts[1] = (float)VIDEO_SCALE_H(first_pass->info.tex_dims);
             ts[2] = 0.0f;
             ts[3] = 0.0f;
             d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.orig_video_size,   vs, 1);
@@ -2590,8 +2592,10 @@ static void d3d9_hlsl_renderchain_render_pass(
                chain->chain.passes->data[0].info.pass->filter);
          float ts[4];
 
-         ts[0] = (float)chain->chain.passes->data[0].info.tex_w;
-         ts[1] = (float)chain->chain.passes->data[0].info.tex_h;
+         ts[0] = (float)VIDEO_SCALE_W(
+               chain->chain.passes->data[0].info.tex_dims);
+         ts[1] = (float)VIDEO_SCALE_H(
+               chain->chain.passes->data[0].info.tex_dims);
          ts[2] = 0.0f;
          ts[3] = 0.0f;
 
@@ -2681,8 +2685,8 @@ static void d3d9_hlsl_renderchain_render_pass(
                vs[1] = (float)cp->last_height;
                vs[2] = 0.0f;
                vs[3] = 0.0f;
-               ts[0] = (float)cp->info.tex_w;
-               ts[1] = (float)cp->info.tex_h;
+               ts[0] = (float)VIDEO_SCALE_W(cp->info.tex_dims);
+               ts[1] = (float)VIDEO_SCALE_H(cp->info.tex_dims);
                ts[2] = 0.0f;
                ts[3] = 0.0f;
                d3d9_hlsl_set_vs_const(chain->chain.dev, pd->vs_map.pass_video_size[i-1],   vs, 1);
@@ -2927,7 +2931,8 @@ static void hlsl_d3d9_renderchain_render(
       IDirect3DTexture9_LockRect(first_pass->tex, 0, &d3dlr, NULL, 0);
 
       if (first_pass->last_width != width || first_pass->last_height != height)
-         memset(d3dlr.pBits, 0, first_pass->info.tex_h * d3dlr.Pitch);
+         memset(d3dlr.pBits, 0,
+               VIDEO_SCALE_H(first_pass->info.tex_dims) * d3dlr.Pitch);
 
       for (y = 0; y < height; y++)
       {
@@ -2985,8 +2990,8 @@ static void hlsl_d3d9_renderchain_render(
       }
 
       /* Clear out whole FBO. */
-      viewport.Width  = to_pass->info.tex_w;
-      viewport.Height = to_pass->info.tex_h;
+      viewport.Width  = VIDEO_SCALE_W(to_pass->info.tex_dims);
+      viewport.Height = VIDEO_SCALE_H(to_pass->info.tex_dims);
       viewport.MinZ   = 0.0f;
       viewport.MaxZ   = 1.0f;
 
@@ -3114,8 +3119,8 @@ static bool hlsl_d3d9_renderchain_add_pass(
 
    tex = NULL;
    IDirect3DDevice9_CreateTexture(chain->chain.dev,
-         info->tex_w,
-         info->tex_h,
+         VIDEO_SCALE_W(info->tex_dims),
+         VIDEO_SCALE_H(info->tex_dims),
          1,
          D3DUSAGE_RENDERTARGET,
          (chain->chain.passes->data[
@@ -6723,8 +6728,8 @@ static bool d3d9_hlsl_init_base(
 static void d3d9_hlsl_log_info(const struct LinkInfo *info)
 {
    RARCH_LOG("[D3D9] Render pass info:\n");
-   RARCH_LOG("\tTexture width: %u\n", info->tex_w);
-   RARCH_LOG("\tTexture height: %u\n", info->tex_h);
+   RARCH_LOG("\tTexture width: %u\n", VIDEO_SCALE_W(info->tex_dims));
+   RARCH_LOG("\tTexture height: %u\n", VIDEO_SCALE_H(info->tex_dims));
 
    RARCH_LOG("\tScale type (X): ");
 
@@ -6851,8 +6856,8 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
    bool video_smooth    = settings->bools.video_smooth;
 
    /* Setup information for first pass. */
-   link_info.tex_w      = input_scale * RARCH_SCALE_BASE;
-   link_info.tex_h      = input_scale * RARCH_SCALE_BASE;
+   link_info.tex_dims   = VIDEO_SCALE_PACK(input_scale * RARCH_SCALE_BASE,
+         input_scale * RARCH_SCALE_BASE);
    link_info.pass       = &d3d->shader.pass[0];
 
    {
@@ -6885,8 +6890,8 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
    d3d9_hlsl_log_info(&link_info);
 
 #ifndef _XBOX
-   current_width  = link_info.tex_w;
-   current_height = link_info.tex_h;
+   current_width  = VIDEO_SCALE_W(link_info.tex_dims);
+   current_height = VIDEO_SCALE_H(link_info.tex_dims);
    out_width      = 0;
    out_height     = 0;
 
@@ -6918,8 +6923,8 @@ static bool d3d9_hlsl_init_chain(d3d9_video_t *d3d,
       }
 
       link_info.pass  = &d3d->shader.pass[i];
-      link_info.tex_w = next_pow2(out_width);
-      link_info.tex_h = next_pow2(out_height);
+      link_info.tex_dims = VIDEO_SCALE_PACK(next_pow2(out_width),
+            next_pow2(out_height));
 
       current_width   = out_width;
       current_height  = out_height;
