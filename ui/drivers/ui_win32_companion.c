@@ -1410,10 +1410,12 @@ static void cw_dock_scale(companion_dock_layout_t *l, int num, int den)
    }
    for (i = 0; i < COMPANION_DOCK_COUNT; i++)
    {
-      l->floats[i].x = MulDiv(l->floats[i].x, num, den);
-      l->floats[i].y = MulDiv(l->floats[i].y, num, den);
-      l->floats[i].w = MulDiv(l->floats[i].w, num, den);
-      l->floats[i].h = MulDiv(l->floats[i].h, num, den);
+      companion_rect_t *fr = &l->floats[i];
+      fr->pos  = VIDEO_POS_PACK(MulDiv(VIDEO_POS_X(fr->pos), num, den),
+                                MulDiv(VIDEO_POS_Y(fr->pos), num, den));
+      fr->dims = VIDEO_SCALE_PACK(
+            MulDiv((int)VIDEO_SCALE_W(fr->dims), num, den),
+            MulDiv((int)VIDEO_SCALE_H(fr->dims), num, den));
    }
 }
 
@@ -1474,25 +1476,25 @@ static void cw_float_show(ui_companion_win32_wimp_t *w, enum companion_dock_id p
    if (!fw)
       return;
    cw_pane_reparent(w, p, fw);
-   if (fr->w > 0 && fr->h > 0)
+   if (VIDEO_SCALE_W(fr->dims) > 0 && VIDEO_SCALE_H(fr->dims) > 0)
    {
       /* A saved position on a monitor that is gone stays reachable. */
       RECT wa;
-      companion_rect_t avail, out;
+      int x = VIDEO_POS_X(fr->pos);
+      int y = VIDEO_POS_Y(fr->pos);
+      int fw_w = (int)VIDEO_SCALE_W(fr->dims);
+      int fw_h = (int)VIDEO_SCALE_H(fr->dims);
       if (!SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0))
       {
          wa.left = wa.top = 0;
          wa.right  = GetSystemMetrics(SM_CXSCREEN);
          wa.bottom = GetSystemMetrics(SM_CYSCREEN);
       }
-      avail.x = wa.left; avail.y = wa.top;
-      avail.w = wa.right - wa.left; avail.h = wa.bottom - wa.top;
-      out = *fr;
-      if (out.x + out.w > avail.x + avail.w) out.x = avail.x + avail.w - out.w;
-      if (out.y + out.h > avail.y + avail.h) out.y = avail.y + avail.h - out.h;
-      if (out.x < avail.x) out.x = avail.x;
-      if (out.y < avail.y) out.y = avail.y;
-      SetWindowPos(fw, NULL, out.x, out.y, out.w, out.h, SWP_NOZORDER | SWP_NOACTIVATE);
+      if (x + fw_w > wa.right)  x = wa.right  - fw_w;
+      if (y + fw_h > wa.bottom) y = wa.bottom - fw_h;
+      if (x < wa.left) x = wa.left;
+      if (y < wa.top)  y = wa.top;
+      SetWindowPos(fw, NULL, x, y, fw_w, fw_h, SWP_NOZORDER | SWP_NOACTIVATE);
    }
    if (!IsWindowVisible(fw))
       ShowWindow(fw, SW_SHOWNOACTIVATE);
@@ -1521,10 +1523,9 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
       GetWindowRect(w->status, &sb);
       status_h = sb.bottom - sb.top;
    }
-   client.x = 0; client.y = 0;
-   client.w = rc.right;
-   client.h = rc.bottom - status_h;
-   if (client.h < 0) client.h = 0;
+   client.pos  = VIDEO_POS_PACK(0, 0);
+   client.dims = VIDEO_SCALE_PACK(rc.right,
+         rc.bottom - status_h < 0 ? 0 : rc.bottom - status_h);
 
    w->dm.gap      = CW_S(w, COMPANION_WIN32_SPLIT_W);
    w->dm.strip_h  = w->text_h + CW_S(w, 6);
@@ -1542,10 +1543,10 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
       {
          RECT r;
          cw_pane_reparent(w, p, w->hwnd);
-         r.left   = w->geom.pane[i].x;
-         r.top    = w->geom.pane[i].y;
-         r.right  = r.left + w->geom.pane[i].w;
-         r.bottom = r.top + w->geom.pane[i].h;
+         r.left   = VIDEO_POS_X(w->geom.pane[i].pos);
+         r.top    = VIDEO_POS_Y(w->geom.pane[i].pos);
+         r.right  = r.left + (int)VIDEO_SCALE_W(w->geom.pane[i].dims);
+         r.bottom = r.top  + (int)VIDEO_SCALE_H(w->geom.pane[i].dims);
          cw_pane_layout(w, p, &r);
          cw_pane_show(w, p, true);
          if (w->floats[i] && IsWindowVisible(w->floats[i]))
@@ -1565,17 +1566,17 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
    /* Centre: the content view with Qt's footer ("N items" left, View
     * combo right). */
    {
-      int entry_x   = w->geom.content.x;
-      int entry_w   = w->geom.content.w;
+      int entry_x   = VIDEO_POS_X(w->geom.content.pos);
+      int entry_w   = (int)VIDEO_SCALE_W(w->geom.content.dims);
       int fh        = C + 2 * P;
-      int eh        = w->geom.content.h - fh;
+      int eh        = (int)VIDEO_SCALE_H(w->geom.content.dims) - fh;
       int cb_w      = CW_S(w, 110);   /* View combo */
       int lb_w      = CW_S(w, 44);    /* "View" caption */
       int list_room = C + 5 * (w->text_h + CW_S(w, 4)); /* combo drop room */
       int tb_w      = CW_S(w, 130);   /* Thumbnail type combo */
       int zs_w      = CW_S(w, 140);   /* zoom slider */
       int x         = entry_x + entry_w - P;
-      int top       = w->geom.content.y;
+      int top       = VIDEO_POS_Y(w->geom.content.pos);
       if (eh < 0)
          eh = 0;
       MoveWindow(w->entries, entry_x, top, entry_w, eh, TRUE);
@@ -1611,10 +1612,11 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
 static void cw_strip_glyphs(ui_companion_win32_wimp_t *w,
       const companion_rect_t *strip, RECT *fl, RECT *cl)
 {
-   int sz = strip->h - CW_S(w, 4);
-   cl->right  = strip->x + strip->w - CW_S(w, 2);
+   int sz = (int)VIDEO_SCALE_H(strip->dims) - CW_S(w, 4);
+   cl->right  = VIDEO_POS_X(strip->pos) + (int)VIDEO_SCALE_W(strip->dims)
+      - CW_S(w, 2);
    cl->left   = cl->right - sz;
-   cl->top    = strip->y + CW_S(w, 2);
+   cl->top    = VIDEO_POS_Y(strip->pos) + CW_S(w, 2);
    cl->bottom = cl->top + sz;
    fl->right  = cl->left - CW_S(w, 2);
    fl->left   = fl->right - sz;
@@ -1634,8 +1636,9 @@ static void cw_paint_docks(ui_companion_win32_wimp_t *w, HDC hdc)
       if (!w->geom.laid_out[i])
          continue;
       /* The strip: a light band with the title, the glyphs at the right. */
-      r.left = st->x; r.top = st->y;
-      r.right = st->x + st->w; r.bottom = st->y + st->h;
+      r.left = VIDEO_POS_X(st->pos); r.top = VIDEO_POS_Y(st->pos);
+      r.right  = r.left + (int)VIDEO_SCALE_W(st->dims);
+      r.bottom = r.top  + (int)VIDEO_SCALE_H(st->dims);
       FillRect(hdc, &r, (HBRUSH)(COLOR_BTNFACE + 1));
       SetTextColor(hdc, GetSysColor(COLOR_BTNTEXT));
       r.left += CW_S(w, 6);
@@ -1646,10 +1649,14 @@ static void cw_paint_docks(ui_companion_win32_wimp_t *w, HDC hdc)
       DrawFrameControl(hdc, &cl, DFC_CAPTION, DFCS_CAPTIONCLOSE | DFCS_FLAT);
       /* The tab bar of a group: one tab per shown member, the raised
        * one in the window colour, the rest as buttons. */
-      if (w->geom.tabbar[i].h > 0)
+      if (VIDEO_SCALE_H(w->geom.tabbar[i].dims) > 0)
       {
          enum companion_dock_area side;
          int idx, shown = 0, n = 0, x, tw;
+         int bar_x = VIDEO_POS_X(w->geom.tabbar[i].pos);
+         int bar_y = VIDEO_POS_Y(w->geom.tabbar[i].pos);
+         int bar_w = (int)VIDEO_SCALE_W(w->geom.tabbar[i].dims);
+         int bar_h = (int)VIDEO_SCALE_H(w->geom.tabbar[i].dims);
          const companion_dock_slot_t *sl;
          if (!companion_dock_find(&w->dock, (enum companion_dock_id)i, &side, &idx))
             continue;
@@ -1659,16 +1666,16 @@ static void cw_paint_docks(ui_companion_win32_wimp_t *w, HDC hdc)
                shown++;
          if (shown < 2)
             continue;
-         tw = w->geom.tabbar[i].w / shown;
-         x  = w->geom.tabbar[i].x;
+         tw = bar_w / shown;
+         x  = bar_x;
          for (k = 0; k < sl->n; k++)
          {
             int m = sl->members[k];
             if (!w->dock.shown[m])
                continue;
-            r.left = x; r.top = w->geom.tabbar[i].y;
-            r.right = (n == shown - 1) ? w->geom.tabbar[i].x + w->geom.tabbar[i].w : x + tw;
-            r.bottom = r.top + w->geom.tabbar[i].h;
+            r.left = x; r.top = bar_y;
+            r.right = (n == shown - 1) ? bar_x + bar_w : x + tw;
+            r.bottom = r.top + bar_h;
             if (m == i)
             {
                FillRect(hdc, &r, (HBRUSH)(COLOR_WINDOW + 1));
@@ -1690,8 +1697,10 @@ static void cw_paint_docks(ui_companion_win32_wimp_t *w, HDC hdc)
    {
       RECT r;
       HBRUSH hb = CreateHatchBrush(HS_DIAGCROSS, GetSysColor(COLOR_HIGHLIGHT));
-      r.left = w->drop.indicator.x; r.top = w->drop.indicator.y;
-      r.right = r.left + w->drop.indicator.w; r.bottom = r.top + w->drop.indicator.h;
+      r.left   = VIDEO_POS_X(w->drop.indicator.pos);
+      r.top    = VIDEO_POS_Y(w->drop.indicator.pos);
+      r.right  = r.left + (int)VIDEO_SCALE_W(w->drop.indicator.dims);
+      r.bottom = r.top  + (int)VIDEO_SCALE_H(w->drop.indicator.dims);
       if (hb)
       {
          RECT inner = r;
@@ -1739,17 +1748,20 @@ static void cw_dock_float_pane(ui_companion_win32_wimp_t *w, enum companion_dock
    companion_rect_t r;
    POINT pt;
    enum companion_dock_area side;
-   int idx;
+   int idx, rw, rh;
    if (!companion_dock_find(&w->dock, p, &side, &idx))
       return;
    w->last_side[p] = side;
-   pt.x = w->geom.strip[p].x; pt.y = w->geom.strip[p].y;
+   pt.x = VIDEO_POS_X(w->geom.strip[p].pos);
+   pt.y = VIDEO_POS_Y(w->geom.strip[p].pos);
    ClientToScreen(w->hwnd, &pt);
-   r.x = pt.x; r.y = pt.y;
-   r.w = w->geom.strip[p].w;
-   r.h = w->geom.pane[p].y + w->geom.pane[p].h + w->geom.tabbar[p].h - w->geom.strip[p].y;
-   if (r.w < w->dm.min_pane) r.w = w->dm.def_side;
-   if (r.h < w->dm.min_pane) r.h = w->dm.def_slot;
+   rw = (int)VIDEO_SCALE_W(w->geom.strip[p].dims);
+   rh = VIDEO_POS_Y(w->geom.pane[p].pos) + (int)VIDEO_SCALE_H(w->geom.pane[p].dims)
+      + (int)VIDEO_SCALE_H(w->geom.tabbar[p].dims) - VIDEO_POS_Y(w->geom.strip[p].pos);
+   if (rw < w->dm.min_pane) rw = w->dm.def_side;
+   if (rh < w->dm.min_pane) rh = w->dm.def_slot;
+   r.pos  = VIDEO_POS_PACK(pt.x, pt.y);
+   r.dims = VIDEO_SCALE_PACK(rw, rh);
    companion_dock_float(&w->dock, p, &r);
    cw_layout(w);
 }
@@ -1776,7 +1788,9 @@ static void cw_drag_update(ui_companion_win32_wimp_t *w, int x, int y)
       GetWindowRect(w->status, &sb);
       status_h = sb.bottom - sb.top;
    }
-   client.x = 0; client.y = 0; client.w = rc.right; client.h = rc.bottom - status_h;
+   client.pos  = VIDEO_POS_PACK(0, 0);
+   client.dims = VIDEO_SCALE_PACK(rc.right,
+         rc.bottom - status_h < 0 ? 0 : rc.bottom - status_h);
    companion_dock_drop_target(&w->dock, &w->geom, &w->dm, &client,
          (enum companion_dock_id)w->drag_pane, x, y, &w->drop);
    w->drop_valid = true;
@@ -1794,17 +1808,19 @@ static void cw_drag_end(ui_companion_win32_wimp_t *w, int x, int y, bool apply)
       companion_rect_t r;
       POINT pt;
       enum companion_dock_area side;
-      int idx;
+      int idx, rw, rh;
       pt.x = x; pt.y = y;
       ClientToScreen(w->hwnd, &pt);
       /* A float lands with its strip under the pointer, at its docked
        * size. */
-      r.w = w->geom.strip[p].w > 0 ? w->geom.strip[p].w : w->dm.def_side;
-      r.h = w->geom.laid_out[p]
-         ? w->geom.pane[p].y + w->geom.pane[p].h + w->geom.tabbar[p].h - w->geom.strip[p].y
+      rw = VIDEO_SCALE_W(w->geom.strip[p].dims) > 0
+         ? (int)VIDEO_SCALE_W(w->geom.strip[p].dims) : w->dm.def_side;
+      rh = w->geom.laid_out[p]
+         ? VIDEO_POS_Y(w->geom.pane[p].pos) + (int)VIDEO_SCALE_H(w->geom.pane[p].dims)
+           + (int)VIDEO_SCALE_H(w->geom.tabbar[p].dims) - VIDEO_POS_Y(w->geom.strip[p].pos)
          : w->dm.def_slot;
-      r.x = pt.x - r.w / 2;
-      r.y = pt.y - w->dm.strip_h / 2;
+      r.pos  = VIDEO_POS_PACK(pt.x - rw / 2, pt.y - w->dm.strip_h / 2);
+      r.dims = VIDEO_SCALE_PACK(rw, rh);
       if (companion_dock_find(&w->dock, p, &side, &idx))
          w->last_side[p] = side;
       companion_dock_apply_drop(&w->dock, p, &w->drop, &r);
@@ -1878,14 +1894,17 @@ static bool cw_dock_mouse(ui_companion_win32_wimp_t *w, UINT msg, int x, int y)
             RECT rc, sb;
             companion_rect_t client;
             int status_h = 0;
-            bool vertical = w->geom.gaps[w->drag_gap].rect.h > w->geom.gaps[w->drag_gap].rect.w;
+            bool vertical = VIDEO_SCALE_H(w->geom.gaps[w->drag_gap].rect.dims)
+                          > VIDEO_SCALE_W(w->geom.gaps[w->drag_gap].rect.dims);
             GetClientRect(w->hwnd, &rc);
             if (w->status)
             {
                GetWindowRect(w->status, &sb);
                status_h = sb.bottom - sb.top;
             }
-            client.x = 0; client.y = 0; client.w = rc.right; client.h = rc.bottom - status_h;
+            client.pos  = VIDEO_POS_PACK(0, 0);
+            client.dims = VIDEO_SCALE_PACK(rc.right,
+                  rc.bottom - status_h < 0 ? 0 : rc.bottom - status_h);
             companion_dock_drag_gap(&w->dock, &w->geom, &w->dm, &client, w->drag_gap,
                   vertical ? x : y);
             cw_layout(w);
@@ -1975,10 +1994,9 @@ static LRESULT CALLBACK cw_float_wndproc(HWND hwnd, UINT msg,
             RECT rc;
             if (!IsIconic(hwnd) && GetWindowRect(hwnd, &rc))
             {
-               w->dock.floats[p].x = rc.left;
-               w->dock.floats[p].y = rc.top;
-               w->dock.floats[p].w = rc.right - rc.left;
-               w->dock.floats[p].h = rc.bottom - rc.top;
+               w->dock.floats[p].pos  = VIDEO_POS_PACK(rc.left, rc.top);
+               w->dock.floats[p].dims = VIDEO_SCALE_PACK(rc.right - rc.left,
+                     rc.bottom - rc.top);
             }
             if (msg == WM_SIZE)
             {
@@ -3571,20 +3589,23 @@ static void cw_cores_place(ui_companion_win32_wimp_t *w, size_t rows)
    AdjustWindowRectEx(&frame, (DWORD)GetWindowLongPtrA(w->cores_hwnd, GWL_STYLE),
          FALSE, (DWORD)GetWindowLongPtrA(w->cores_hwnd, GWL_EXSTYLE));
 
-   avail.x = wa.left; avail.y = wa.top;
-   avail.w = wa.right - wa.left; avail.h = wa.bottom - wa.top;
+   avail.pos  = VIDEO_POS_PACK(wa.left, wa.top);
+   avail.dims = VIDEO_SCALE_PACK(wa.right - wa.left, wa.bottom - wa.top);
    if (w->hwnd && GetWindowRect(w->hwnd, &owner) && !IsIconic(w->hwnd))
    {
-      ownr.x = owner.left; ownr.y = owner.top;
-      ownr.w = owner.right - owner.left; ownr.h = owner.bottom - owner.top;
+      ownr.pos  = VIDEO_POS_PACK(owner.left, owner.top);
+      ownr.dims = VIDEO_SCALE_PACK(owner.right - owner.left,
+            owner.bottom - owner.top);
    }
    else
       ownr = avail;
    companion_place_window(&avail, &ownr,
-         frame.right - frame.left, frame.bottom - frame.top,
-         CW_S(w, COMPANION_WIN32_CORES_MIN_W), CW_S(w, COMPANION_WIN32_CORES_MIN_H),
+         VIDEO_SCALE_PACK(frame.right - frame.left, frame.bottom - frame.top),
+         VIDEO_SCALE_PACK(CW_S(w, COMPANION_WIN32_CORES_MIN_W),
+            CW_S(w, COMPANION_WIN32_CORES_MIN_H)),
          &out);
-   SetWindowPos(w->cores_hwnd, NULL, out.x, out.y, out.w, out.h,
+   SetWindowPos(w->cores_hwnd, NULL, VIDEO_POS_X(out.pos), VIDEO_POS_Y(out.pos),
+         (int)VIDEO_SCALE_W(out.dims), (int)VIDEO_SCALE_H(out.dims),
          SWP_NOZORDER | SWP_NOACTIVATE);
    /* The Version column takes what is left of the client width. */
    {
@@ -4153,7 +4174,9 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                /* IDC_SIZEWE for a vertical gap, IDC_SIZENS for a
                 * horizontal one. */
                const companion_rect_t *gr = &w->geom.gaps[hit.gap].rect;
-               SetCursor(LoadCursorA(NULL, MAKEINTRESOURCEA(gr->h > gr->w ? 32644 : 32645)));
+               SetCursor(LoadCursorA(NULL, MAKEINTRESOURCEA(
+                     VIDEO_SCALE_H(gr->dims) > VIDEO_SCALE_W(gr->dims)
+                     ? 32644 : 32645)));
                return TRUE;
             }
          }

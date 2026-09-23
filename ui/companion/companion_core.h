@@ -35,6 +35,8 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "../../gfx/video_defines.h"
+
 #include "../../command.h"
 #include "../../playlist.h"
 
@@ -659,10 +661,8 @@ enum companion_dock_id
 typedef struct companion_dock_state
 {
    enum companion_dock_area area;
-   int  width;
-   int  height;
-   int  x;               /* floating docks only */
-   int  y;
+   unsigned dims;        /* VIDEO_SCALE_PACK */
+   unsigned pos;         /* VIDEO_POS_PACK, floating docks only */
    int  order;           /* slot on its side, from the top / left */
    char tabbed_with[16]; /* empty when standing alone */
    bool shown;
@@ -686,11 +686,12 @@ bool companion_dock_row_parse(const char *s, companion_dock_state_t *st);
 
 /* --- Secondary window placement ------------------------------------- */
 
-/* A rectangle in screen coordinates: x,y the top-left corner, w,h the
- * size. */
+/* A rectangle in screen coordinates: the top-left corner packed with
+ * VIDEO_POS_PACK, the size with VIDEO_SCALE_PACK. */
 typedef struct companion_rect
 {
-   int x, y, w, h;
+   unsigned pos;
+   unsigned dims;
 } companion_rect_t;
 
 /* Where a secondary window (the Load Core picker) goes: as large as it
@@ -702,8 +703,8 @@ typedef struct companion_rect
  * opens at the same place and size for the same cores. Sizes and
  * positions are in the backend's own units (pixels or points). */
 void companion_place_window(const companion_rect_t *avail,
-      const companion_rect_t *owner, int need_w, int need_h,
-      int min_w, int min_h, companion_rect_t *out);
+      const companion_rect_t *owner, unsigned need_dims,
+      unsigned min_dims, companion_rect_t *out);
 
 /* --- Inbound notifications from RetroArch (called by the driver glue) */
 

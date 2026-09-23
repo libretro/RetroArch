@@ -3264,7 +3264,7 @@ char *companion_dock_row(struct settings *settings,
 size_t companion_dock_row_format(char *s, size_t len,
       const companion_dock_state_t *st)
 {
-   int w = st->width, h = st->height;
+   int w = (int)VIDEO_SCALE_W(st->dims), h = (int)VIDEO_SCALE_H(st->dims);
    size_t n;
    if (w <= 1 || w > 32767) w = 0;
    if (h <= 1 || h > 32767) h = 0;
@@ -3278,7 +3278,8 @@ size_t companion_dock_row_format(char *s, size_t len,
    /* A floating dock is a window of its own: keep where it was. */
    if (st->area == COMPANION_DOCK_FLOAT && n < len)
       n += (size_t)snprintf(s + n, len - n, ",%d,%d",
-            st->x < 0 ? 0 : st->x, st->y < 0 ? 0 : st->y);
+            VIDEO_POS_X(st->pos) < 0 ? 0 : VIDEO_POS_X(st->pos),
+            VIDEO_POS_Y(st->pos) < 0 ? 0 : VIDEO_POS_Y(st->pos));
    return n;
 }
 
@@ -3290,6 +3291,7 @@ bool companion_dock_row_parse(const char *s, companion_dock_state_t *st)
     * order field, so its x,y sit one place earlier. */
    const char *f[9];
    int n     = 0;
+   int w     = 0, h = 0, x = 0, y = 0;
    unsigned i;
 
    if (string_is_empty(s))
@@ -3317,7 +3319,7 @@ bool companion_dock_row_parse(const char *s, companion_dock_state_t *st)
    st->area  = (enum companion_dock_area)i;
    st->shown = (atoi(f[1]) != 0);
    if (n > 2)
-      st->width = atoi(f[2]);
+      w = atoi(f[2]);
    if (n > 3)
    {
       /* Four-field rows from the first shipped format carried the
@@ -3326,7 +3328,7 @@ bool companion_dock_row_parse(const char *s, companion_dock_state_t *st)
       if (n == 4)
          n = 3;
       else
-         st->height = atoi(f[3]);
+         h = atoi(f[3]);
    }
    if (n > 4 && !string_is_equal(f[4], "-"))
       strlcpy(st->tabbed_with, f[4], sizeof(st->tabbed_with));
@@ -3337,48 +3339,59 @@ bool companion_dock_row_parse(const char *s, companion_dock_state_t *st)
       st->order = atoi(f[6]);
       if (n == 9)
       {
-         st->x = atoi(f[7]);
-         st->y = atoi(f[8]);
+         x = atoi(f[7]);
+         y = atoi(f[8]);
       }
    }
    else if (n == 8)
    {
-      st->x = atoi(f[6]);
-      st->y = atoi(f[7]);
+      x = atoi(f[6]);
+      y = atoi(f[7]);
    }
-   if (st->width  <= 1 || st->width  > 32767) st->width  = 0;
-   if (st->height <= 1 || st->height > 32767) st->height = 0;
-   if (st->x < 0 || st->x > 32767) st->x = 0;
-   if (st->y < 0 || st->y > 32767) st->y = 0;
+   if (w <= 1 || w > 32767) w = 0;
+   if (h <= 1 || h > 32767) h = 0;
+   if (x < 0 || x > 32767) x = 0;
+   if (y < 0 || y > 32767) y = 0;
+   st->dims = VIDEO_SCALE_PACK(w, h);
+   st->pos  = VIDEO_POS_PACK(x, y);
    if (st->order < 0 || st->order >= COMPANION_DOCK_COUNT) st->order = 0;
    return true;
 }
 
 void companion_place_window(const companion_rect_t *avail,
-      const companion_rect_t *owner, int need_w, int need_h,
-      int min_w, int min_h, companion_rect_t *out)
+      const companion_rect_t *owner, unsigned need_dims,
+      unsigned min_dims, companion_rect_t *out)
 {
    /* Keep a little of the screen visible around the window. */
-   int margin = 16;
-   int max_w  = avail->w - 2 * margin;
-   int max_h  = avail->h - 2 * margin;
+   int margin  = 16;
+   int avail_x = VIDEO_POS_X(avail->pos);
+   int avail_y = VIDEO_POS_Y(avail->pos);
+   int avail_w = (int)VIDEO_SCALE_W(avail->dims);
+   int avail_h = (int)VIDEO_SCALE_H(avail->dims);
+   int min_w   = (int)VIDEO_SCALE_W(min_dims);
+   int min_h   = (int)VIDEO_SCALE_H(min_dims);
+   int max_w   = avail_w - 2 * margin;
+   int max_h   = avail_h - 2 * margin;
+   int w       = (int)VIDEO_SCALE_W(need_dims);
+   int h       = (int)VIDEO_SCALE_H(need_dims);
+   int x, y;
    if (max_w < min_w) max_w = min_w;
    if (max_h < min_h) max_h = min_h;
-   out->w = need_w;
-   out->h = need_h;
-   if (out->w < min_w) out->w = min_w;
-   if (out->h < min_h) out->h = min_h;
-   if (out->w > max_w) out->w = max_w;
-   if (out->h > max_h) out->h = max_h;
+   if (w < min_w) w = min_w;
+   if (h < min_h) h = min_h;
+   if (w > max_w) w = max_w;
+   if (h > max_h) h = max_h;
    /* Centred over the owner, inside the available area. */
-   out->x = owner->x + (owner->w - out->w) / 2;
-   out->y = owner->y + (owner->h - out->h) / 2;
-   if (out->x + out->w > avail->x + avail->w - margin)
-      out->x = avail->x + avail->w - margin - out->w;
-   if (out->y + out->h > avail->y + avail->h - margin)
-      out->y = avail->y + avail->h - margin - out->h;
-   if (out->x < avail->x + margin) out->x = avail->x + margin;
-   if (out->y < avail->y + margin) out->y = avail->y + margin;
+   x = VIDEO_POS_X(owner->pos) + ((int)VIDEO_SCALE_W(owner->dims) - w) / 2;
+   y = VIDEO_POS_Y(owner->pos) + ((int)VIDEO_SCALE_H(owner->dims) - h) / 2;
+   if (x + w > avail_x + avail_w - margin)
+      x = avail_x + avail_w - margin - w;
+   if (y + h > avail_y + avail_h - margin)
+      y = avail_y + avail_h - margin - h;
+   if (x < avail_x + margin) x = avail_x + margin;
+   if (y < avail_y + margin) y = avail_y + margin;
+   out->pos  = VIDEO_POS_PACK(x, y);
+   out->dims = VIDEO_SCALE_PACK(w, h);
 }
 
 void companion_core_notify_refresh(companion_core_t *core)

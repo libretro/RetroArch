@@ -30,7 +30,10 @@ static bool dock_side_vertical(int side)
 
 static bool dock_rect_has(const companion_rect_t *r, int x, int y)
 {
-   return x >= r->x && x < r->x + r->w && y >= r->y && y < r->y + r->h;
+   int rx = VIDEO_POS_X(r->pos);
+   int ry = VIDEO_POS_Y(r->pos);
+   return x >= rx && x < rx + (int)VIDEO_SCALE_W(r->dims)
+       && y >= ry && y < ry + (int)VIDEO_SCALE_H(r->dims);
 }
 
 /* Members of @s that are shown. */
@@ -331,21 +334,26 @@ bool companion_dock_from_rows(struct settings *settings,
       if (st[i].area == COMPANION_DOCK_FLOAT)
       {
          companion_rect_t r;
-         r.x = st[i].x; r.y = st[i].y; r.w = st[i].width; r.h = st[i].height;
+         r.pos  = st[i].pos;
+         r.dims = st[i].dims;
          companion_dock_float(l, (enum companion_dock_id)i, &r);
          continue;
       }
       if (!companion_dock_find(l, (enum companion_dock_id)i, &side, &idx))
          continue;
-      if (dock_side_vertical(side))
       {
-         if (st[i].width  > l->side_size[side])       l->side_size[side]       = st[i].width;
-         if (st[i].height > l->slots[side][idx].size) l->slots[side][idx].size = st[i].height;
-      }
-      else
-      {
-         if (st[i].height > l->side_size[side])       l->side_size[side]       = st[i].height;
-         if (st[i].width  > l->slots[side][idx].size) l->slots[side][idx].size = st[i].width;
+         int w = (int)VIDEO_SCALE_W(st[i].dims);
+         int h = (int)VIDEO_SCALE_H(st[i].dims);
+         if (dock_side_vertical(side))
+         {
+            if (w > l->side_size[side])       l->side_size[side]       = w;
+            if (h > l->slots[side][idx].size) l->slots[side][idx].size = h;
+         }
+         else
+         {
+            if (h > l->side_size[side])       l->side_size[side]       = h;
+            if (w > l->slots[side][idx].size) l->slots[side][idx].size = w;
+         }
       }
       if (st[i].raised)
          companion_dock_raise(l, (enum companion_dock_id)i);
@@ -371,10 +379,8 @@ void companion_dock_to_rows(struct settings *settings,
       if (!companion_dock_find(l, (enum companion_dock_id)i, &side, &idx))
       {
          st.area   = COMPANION_DOCK_FLOAT;
-         st.x      = l->floats[i].x;
-         st.y      = l->floats[i].y;
-         st.width  = l->floats[i].w;
-         st.height = l->floats[i].h;
+         st.pos    = l->floats[i].pos;
+         st.dims   = l->floats[i].dims;
       }
       else
       {
@@ -388,16 +394,9 @@ void companion_dock_to_rows(struct settings *settings,
           * partner is the earliest member of the group. */
          if (carries)
          {
-            if (dock_side_vertical(side))
-            {
-               st.width  = l->side_size[side];
-               st.height = s->size;
-            }
-            else
-            {
-               st.width  = s->size;
-               st.height = l->side_size[side];
-            }
+            st.dims = dock_side_vertical(side)
+               ? VIDEO_SCALE_PACK(l->side_size[side], s->size)
+               : VIDEO_SCALE_PACK(s->size, l->side_size[side]);
          }
          if (s->n > 1)
          {
@@ -434,6 +433,10 @@ void companion_dock_layout(companion_dock_layout_t *l,
    companion_rect_t side_rect[COMPANION_DOCK_SIDES];
    int side, i, k;
    int min_side = m->min_pane;
+   int cx       = VIDEO_POS_X(client->pos);
+   int cy       = VIDEO_POS_Y(client->pos);
+   int cw       = (int)VIDEO_SCALE_W(client->dims);
+   int ch       = (int)VIDEO_SCALE_H(client->dims);
 
    memset(g, 0, sizeof(*g));
 
@@ -452,7 +455,7 @@ void companion_dock_layout(companion_dock_layout_t *l,
    {
       int gaps = (side_ext[COMPANION_DOCK_LEFT] ? m->gap : 0)
          + (side_ext[COMPANION_DOCK_RIGHT] ? m->gap : 0);
-      int avail = client->w - m->min_pane - gaps;
+      int avail = cw - m->min_pane - gaps;
       int sum   = side_ext[COMPANION_DOCK_LEFT] + side_ext[COMPANION_DOCK_RIGHT];
       if (avail < 0) avail = 0;
       if (sum > avail && sum > 0)
@@ -462,7 +465,7 @@ void companion_dock_layout(companion_dock_layout_t *l,
       }
       gaps  = (side_ext[COMPANION_DOCK_TOP] ? m->gap : 0)
          + (side_ext[COMPANION_DOCK_BOTTOM] ? m->gap : 0);
-      avail = client->h - m->min_pane - gaps;
+      avail = ch - m->min_pane - gaps;
       sum   = side_ext[COMPANION_DOCK_TOP] + side_ext[COMPANION_DOCK_BOTTOM];
       if (avail < 0) avail = 0;
       if (sum > avail && sum > 0)
@@ -480,60 +483,52 @@ void companion_dock_layout(companion_dock_layout_t *l,
    {
       int top_h    = side_ext[COMPANION_DOCK_TOP];
       int bot_h    = side_ext[COMPANION_DOCK_BOTTOM];
-      int mid_y    = client->y + (top_h ? top_h + m->gap : 0);
-      int mid_h    = client->h - (top_h ? top_h + m->gap : 0) - (bot_h ? bot_h + m->gap : 0);
+      int mid_y    = cy + (top_h ? top_h + m->gap : 0);
+      int mid_h    = ch - (top_h ? top_h + m->gap : 0) - (bot_h ? bot_h + m->gap : 0);
       int left_w   = side_ext[COMPANION_DOCK_LEFT];
       int right_w  = side_ext[COMPANION_DOCK_RIGHT];
+      int content_w;
       if (mid_h < 0) mid_h = 0;
-      side_rect[COMPANION_DOCK_TOP].x    = client->x;
-      side_rect[COMPANION_DOCK_TOP].y    = client->y;
-      side_rect[COMPANION_DOCK_TOP].w    = client->w;
-      side_rect[COMPANION_DOCK_TOP].h    = top_h;
-      side_rect[COMPANION_DOCK_BOTTOM].x = client->x;
-      side_rect[COMPANION_DOCK_BOTTOM].y = client->y + client->h - bot_h;
-      side_rect[COMPANION_DOCK_BOTTOM].w = client->w;
-      side_rect[COMPANION_DOCK_BOTTOM].h = bot_h;
-      side_rect[COMPANION_DOCK_LEFT].x   = client->x;
-      side_rect[COMPANION_DOCK_LEFT].y   = mid_y;
-      side_rect[COMPANION_DOCK_LEFT].w   = left_w;
-      side_rect[COMPANION_DOCK_LEFT].h   = mid_h;
-      side_rect[COMPANION_DOCK_RIGHT].x  = client->x + client->w - right_w;
-      side_rect[COMPANION_DOCK_RIGHT].y  = mid_y;
-      side_rect[COMPANION_DOCK_RIGHT].w  = right_w;
-      side_rect[COMPANION_DOCK_RIGHT].h  = mid_h;
-      g->content.x = client->x + (left_w ? left_w + m->gap : 0);
-      g->content.y = mid_y;
-      g->content.w = client->w - (left_w ? left_w + m->gap : 0) - (right_w ? right_w + m->gap : 0);
-      g->content.h = mid_h;
-      if (g->content.w < 0) g->content.w = 0;
+      side_rect[COMPANION_DOCK_TOP].pos     = VIDEO_POS_PACK(cx, cy);
+      side_rect[COMPANION_DOCK_TOP].dims    = VIDEO_SCALE_PACK(cw, top_h);
+      side_rect[COMPANION_DOCK_BOTTOM].pos  = VIDEO_POS_PACK(cx, cy + ch - bot_h);
+      side_rect[COMPANION_DOCK_BOTTOM].dims = VIDEO_SCALE_PACK(cw, bot_h);
+      side_rect[COMPANION_DOCK_LEFT].pos    = VIDEO_POS_PACK(cx, mid_y);
+      side_rect[COMPANION_DOCK_LEFT].dims   = VIDEO_SCALE_PACK(left_w, mid_h);
+      side_rect[COMPANION_DOCK_RIGHT].pos   = VIDEO_POS_PACK(cx + cw - right_w, mid_y);
+      side_rect[COMPANION_DOCK_RIGHT].dims  = VIDEO_SCALE_PACK(right_w, mid_h);
+      content_w    = cw - (left_w ? left_w + m->gap : 0) - (right_w ? right_w + m->gap : 0);
+      if (content_w < 0) content_w = 0;
+      g->content.pos  = VIDEO_POS_PACK(cx + (left_w ? left_w + m->gap : 0), mid_y);
+      g->content.dims = VIDEO_SCALE_PACK(content_w, mid_h);
       /* Side-edge gaps. */
       if (left_w)
       {
          companion_dock_gap_t *gp = &g->gaps[g->ngaps++];
          gp->side = COMPANION_DOCK_LEFT; gp->index = -1;
-         gp->rect.x = client->x + left_w; gp->rect.y = mid_y;
-         gp->rect.w = m->gap; gp->rect.h = mid_h;
+         gp->rect.pos  = VIDEO_POS_PACK(cx + left_w, mid_y);
+         gp->rect.dims = VIDEO_SCALE_PACK(m->gap, mid_h);
       }
       if (right_w)
       {
          companion_dock_gap_t *gp = &g->gaps[g->ngaps++];
          gp->side = COMPANION_DOCK_RIGHT; gp->index = -1;
-         gp->rect.x = client->x + client->w - right_w - m->gap; gp->rect.y = mid_y;
-         gp->rect.w = m->gap; gp->rect.h = mid_h;
+         gp->rect.pos  = VIDEO_POS_PACK(cx + cw - right_w - m->gap, mid_y);
+         gp->rect.dims = VIDEO_SCALE_PACK(m->gap, mid_h);
       }
       if (top_h)
       {
          companion_dock_gap_t *gp = &g->gaps[g->ngaps++];
          gp->side = COMPANION_DOCK_TOP; gp->index = -1;
-         gp->rect.x = client->x; gp->rect.y = client->y + top_h;
-         gp->rect.w = client->w; gp->rect.h = m->gap;
+         gp->rect.pos  = VIDEO_POS_PACK(cx, cy + top_h);
+         gp->rect.dims = VIDEO_SCALE_PACK(cw, m->gap);
       }
       if (bot_h)
       {
          companion_dock_gap_t *gp = &g->gaps[g->ngaps++];
          gp->side = COMPANION_DOCK_BOTTOM; gp->index = -1;
-         gp->rect.x = client->x; gp->rect.y = client->y + client->h - bot_h - m->gap;
-         gp->rect.w = client->w; gp->rect.h = m->gap;
+         gp->rect.pos  = VIDEO_POS_PACK(cx, cy + ch - bot_h - m->gap);
+         gp->rect.dims = VIDEO_SCALE_PACK(cw, m->gap);
       }
    }
 
@@ -545,10 +540,12 @@ void companion_dock_layout(companion_dock_layout_t *l,
       int size[COMPANION_DOCK_COUNT];
       int minsz[COMPANION_DOCK_COUNT];
       int nvis = 0, along, avail, sum, pos;
+      int side_x, side_y, side_w, side_h;
       bool vertical = dock_side_vertical(side);
       if (!side_ext[side])
          continue;
-      along = vertical ? side_rect[side].h : side_rect[side].w;
+      along = vertical ? (int)VIDEO_SCALE_H(side_rect[side].dims)
+                       : (int)VIDEO_SCALE_W(side_rect[side].dims);
       for (i = 0; i < l->nslots[side]; i++)
       {
          const companion_dock_slot_t *s = &l->slots[side][i];
@@ -584,34 +581,30 @@ void companion_dock_layout(companion_dock_layout_t *l,
       size[nvis - 1] += avail - sum;
       if (size[nvis - 1] < minsz[nvis - 1])
          size[nvis - 1] = minsz[nvis - 1];
-      pos = vertical ? side_rect[side].y : side_rect[side].x;
+      side_x = VIDEO_POS_X(side_rect[side].pos);
+      side_y = VIDEO_POS_Y(side_rect[side].pos);
+      side_w = (int)VIDEO_SCALE_W(side_rect[side].dims);
+      side_h = (int)VIDEO_SCALE_H(side_rect[side].dims);
+      pos    = vertical ? side_y : side_x;
       for (k = 0; k < nvis; k++)
       {
          companion_dock_slot_t *s = &l->slots[side][vis[k]];
          int pane   = s->members[member[k]];
          int tab_h  = dock_slot_shown(l, s) > 1 ? m->tab_h : 0;
          int ext    = size[k];
-         companion_rect_t slot;
+         int slot_x = vertical ? side_x : pos;
+         int slot_y = vertical ? pos    : side_y;
+         int slot_w = vertical ? side_w : ext;
+         int slot_h = vertical ? ext    : side_h;
+         int pane_h = slot_h - m->strip_h - tab_h;
          s->size = ext;
-         if (vertical)
-         {
-            slot.x = side_rect[side].x; slot.y = pos;
-            slot.w = side_rect[side].w; slot.h = ext;
-         }
-         else
-         {
-            slot.x = pos; slot.y = side_rect[side].y;
-            slot.w = ext; slot.h = side_rect[side].h;
-         }
-         g->strip[pane]    = slot;
-         g->strip[pane].h  = m->strip_h;
-         g->tabbar[pane]   = slot;
-         g->tabbar[pane].y = slot.y + slot.h - tab_h;
-         g->tabbar[pane].h = tab_h;
-         g->pane[pane]     = slot;
-         g->pane[pane].y   = slot.y + m->strip_h;
-         g->pane[pane].h   = slot.h - m->strip_h - tab_h;
-         if (g->pane[pane].h < 0) g->pane[pane].h = 0;
+         if (pane_h < 0) pane_h = 0;
+         g->strip[pane].pos   = VIDEO_POS_PACK(slot_x, slot_y);
+         g->strip[pane].dims  = VIDEO_SCALE_PACK(slot_w, m->strip_h);
+         g->tabbar[pane].pos  = VIDEO_POS_PACK(slot_x, slot_y + slot_h - tab_h);
+         g->tabbar[pane].dims = VIDEO_SCALE_PACK(slot_w, tab_h);
+         g->pane[pane].pos    = VIDEO_POS_PACK(slot_x, slot_y + m->strip_h);
+         g->pane[pane].dims   = VIDEO_SCALE_PACK(slot_w, pane_h);
          g->laid_out[pane] = true;
          pos += ext;
          if (k + 1 < nvis)
@@ -621,13 +614,13 @@ void companion_dock_layout(companion_dock_layout_t *l,
             gp->index = vis[k];
             if (vertical)
             {
-               gp->rect.x = slot.x; gp->rect.y = pos;
-               gp->rect.w = slot.w; gp->rect.h = m->gap;
+               gp->rect.pos  = VIDEO_POS_PACK(slot_x, pos);
+               gp->rect.dims = VIDEO_SCALE_PACK(slot_w, m->gap);
             }
             else
             {
-               gp->rect.x = pos; gp->rect.y = slot.y;
-               gp->rect.w = m->gap; gp->rect.h = slot.h;
+               gp->rect.pos  = VIDEO_POS_PACK(pos, slot_y);
+               gp->rect.dims = VIDEO_SCALE_PACK(m->gap, slot_h);
             }
             pos += m->gap;
          }
@@ -642,7 +635,7 @@ static int dock_tab_rects(const companion_dock_layout_t *l,
       companion_rect_t *rects, int *ids)
 {
    enum companion_dock_area side;
-   int idx, i, n = 0, shown, w, x;
+   int idx, i, n = 0, shown, w, x, bar_x, bar_y, bar_w, bar_h;
    const companion_dock_slot_t *s;
    const companion_rect_t *bar;
    if (!companion_dock_find(l, pane, &side, &idx))
@@ -650,17 +643,21 @@ static int dock_tab_rects(const companion_dock_layout_t *l,
    s     = &l->slots[side][idx];
    shown = dock_slot_shown(l, s);
    bar   = &g->tabbar[pane];
-   if (shown < 2 || bar->h <= 0)
+   bar_x = VIDEO_POS_X(bar->pos);
+   bar_y = VIDEO_POS_Y(bar->pos);
+   bar_w = (int)VIDEO_SCALE_W(bar->dims);
+   bar_h = (int)VIDEO_SCALE_H(bar->dims);
+   if (shown < 2 || bar_h <= 0)
       return 0;
-   w = bar->w / shown;
-   x = bar->x;
+   w = bar_w / shown;
+   x = bar_x;
    for (i = 0; i < s->n; i++)
    {
       if (!l->shown[s->members[i]])
          continue;
-      rects[n].x = x; rects[n].y = bar->y;
-      rects[n].w = (n == shown - 1) ? bar->x + bar->w - x : w;
-      rects[n].h = bar->h;
+      rects[n].pos  = VIDEO_POS_PACK(x, bar_y);
+      rects[n].dims = VIDEO_SCALE_PACK(
+            (n == shown - 1) ? bar_x + bar_w - x : w, bar_h);
       ids[n]     = s->members[i];
       x         += w;
       n++;
@@ -719,12 +716,14 @@ void companion_dock_drag_gap(companion_dock_layout_t *l,
    {
       /* The side's edge. */
       int ext;
+      int cx = VIDEO_POS_X(client->pos);
+      int cy = VIDEO_POS_Y(client->pos);
       switch (side)
       {
-         case COMPANION_DOCK_LEFT:   ext = pos - client->x; break;
-         case COMPANION_DOCK_RIGHT:  ext = client->x + client->w - pos - m->gap; break;
-         case COMPANION_DOCK_TOP:    ext = pos - client->y; break;
-         default:                    ext = client->y + client->h - pos - m->gap; break;
+         case COMPANION_DOCK_LEFT:   ext = pos - cx; break;
+         case COMPANION_DOCK_RIGHT:  ext = cx + (int)VIDEO_SCALE_W(client->dims) - pos - m->gap; break;
+         case COMPANION_DOCK_TOP:    ext = pos - cy; break;
+         default:                    ext = cy + (int)VIDEO_SCALE_H(client->dims) - pos - m->gap; break;
       }
       if (ext < m->min_pane)
          ext = m->min_pane;
@@ -748,7 +747,8 @@ void companion_dock_drag_gap(companion_dock_layout_t *l,
       sa    = &l->slots[side][a];
       sb    = &l->slots[side][b];
       total = sa->size + sb->size;
-      start = vertical ? gp->rect.y - sa->size : gp->rect.x - sa->size;
+      start = vertical ? VIDEO_POS_Y(gp->rect.pos) - sa->size
+                       : VIDEO_POS_X(gp->rect.pos) - sa->size;
       mina  = m->min_pane + m->strip_h + (dock_slot_shown(l, sa) > 1 ? m->tab_h : 0);
       minb  = m->min_pane + m->strip_h + (dock_slot_shown(l, sb) > 1 ? m->tab_h : 0);
       na    = pos - start - m->gap / 2;
@@ -776,33 +776,46 @@ void companion_dock_drop_target(const companion_dock_layout_t *l,
    {
       companion_rect_t r;
       enum companion_dock_area side;
-      int idx;
+      int idx, rx, ry, rw, rh;
       bool vertical;
       if (!g->laid_out[i] || i == (int)pane)
          continue;
-      r   = g->strip[i];
-      r.h = g->pane[i].y + g->pane[i].h + g->tabbar[i].h - r.y;
+      /* The strip down to the bottom of the tab bar */
+      rx     = VIDEO_POS_X(g->strip[i].pos);
+      ry     = VIDEO_POS_Y(g->strip[i].pos);
+      rw     = (int)VIDEO_SCALE_W(g->strip[i].dims);
+      rh     = VIDEO_POS_Y(g->pane[i].pos) + (int)VIDEO_SCALE_H(g->pane[i].dims)
+             + (int)VIDEO_SCALE_H(g->tabbar[i].dims) - ry;
+      r.pos  = g->strip[i].pos;
+      r.dims = VIDEO_SCALE_PACK(rw, rh);
       if (!dock_rect_has(&r, x, y))
          continue;
       if (!companion_dock_find(l, (enum companion_dock_id)i, &side, &idx))
          continue;
       vertical = dock_side_vertical(side);
       drop->side = side;
-      if (vertical ? (y < r.y + r.h / 3) : (x < r.x + r.w / 3))
+      if (vertical ? (y < ry + rh / 3) : (x < rx + rw / 3))
       {
          drop->kind  = COMPANION_DOCK_DROP_SLOT;
          drop->index = idx;
-         drop->indicator = r;
-         if (vertical) drop->indicator.h = r.h / 2;
-         else          drop->indicator.w = r.w / 2;
+         drop->indicator.pos  = r.pos;
+         drop->indicator.dims = vertical ? VIDEO_SCALE_PACK(rw, rh / 2)
+                                         : VIDEO_SCALE_PACK(rw / 2, rh);
       }
-      else if (vertical ? (y >= r.y + r.h - r.h / 3) : (x >= r.x + r.w - r.w / 3))
+      else if (vertical ? (y >= ry + rh - rh / 3) : (x >= rx + rw - rw / 3))
       {
          drop->kind  = COMPANION_DOCK_DROP_SLOT;
          drop->index = idx + 1;
-         drop->indicator = r;
-         if (vertical) { drop->indicator.y += r.h / 2; drop->indicator.h = r.h - r.h / 2; }
-         else          { drop->indicator.x += r.w / 2; drop->indicator.w = r.w - r.w / 2; }
+         if (vertical)
+         {
+            drop->indicator.pos  = VIDEO_POS_PACK(rx, ry + rh / 2);
+            drop->indicator.dims = VIDEO_SCALE_PACK(rw, rh - rh / 2);
+         }
+         else
+         {
+            drop->indicator.pos  = VIDEO_POS_PACK(rx + rw / 2, ry);
+            drop->indicator.dims = VIDEO_SCALE_PACK(rw - rw / 2, rh);
+         }
       }
       else
       {
@@ -815,23 +828,38 @@ void companion_dock_drop_target(const companion_dock_layout_t *l,
    /* Along an edge of the client: the end of that side. */
    if (dock_rect_has(client, x, y))
    {
+      int cx   = VIDEO_POS_X(client->pos);
+      int cy   = VIDEO_POS_Y(client->pos);
+      int cw   = (int)VIDEO_SCALE_W(client->dims);
+      int ch   = (int)VIDEO_SCALE_H(client->dims);
       int side = -1;
-      if (x < client->x + band)                       side = COMPANION_DOCK_LEFT;
-      else if (x >= client->x + client->w - band)     side = COMPANION_DOCK_RIGHT;
-      else if (y < client->y + band)                  side = COMPANION_DOCK_TOP;
-      else if (y >= client->y + client->h - band)     side = COMPANION_DOCK_BOTTOM;
+      if (x < cx + band)                  side = COMPANION_DOCK_LEFT;
+      else if (x >= cx + cw - band)       side = COMPANION_DOCK_RIGHT;
+      else if (y < cy + band)             side = COMPANION_DOCK_TOP;
+      else if (y >= cy + ch - band)       side = COMPANION_DOCK_BOTTOM;
       if (side >= 0)
       {
          drop->kind  = COMPANION_DOCK_DROP_SLOT;
          drop->side  = (enum companion_dock_area)side;
          drop->index = COMPANION_DOCK_COUNT;
-         drop->indicator = *client;
          switch (side)
          {
-            case COMPANION_DOCK_LEFT:   drop->indicator.w = band * 3; break;
-            case COMPANION_DOCK_RIGHT:  drop->indicator.x += client->w - band * 3; drop->indicator.w = band * 3; break;
-            case COMPANION_DOCK_TOP:    drop->indicator.h = band * 3; break;
-            default:                    drop->indicator.y += client->h - band * 3; drop->indicator.h = band * 3; break;
+            case COMPANION_DOCK_LEFT:
+               drop->indicator.pos  = client->pos;
+               drop->indicator.dims = VIDEO_SCALE_PACK(band * 3, ch);
+               break;
+            case COMPANION_DOCK_RIGHT:
+               drop->indicator.pos  = VIDEO_POS_PACK(cx + cw - band * 3, cy);
+               drop->indicator.dims = VIDEO_SCALE_PACK(band * 3, ch);
+               break;
+            case COMPANION_DOCK_TOP:
+               drop->indicator.pos  = client->pos;
+               drop->indicator.dims = VIDEO_SCALE_PACK(cw, band * 3);
+               break;
+            default:
+               drop->indicator.pos  = VIDEO_POS_PACK(cx, cy + ch - band * 3);
+               drop->indicator.dims = VIDEO_SCALE_PACK(cw, band * 3);
+               break;
          }
       }
    }

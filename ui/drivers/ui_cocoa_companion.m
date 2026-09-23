@@ -1815,17 +1815,19 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
 {
    CGFloat sh = [[NSScreen mainScreen] frame].size.height;
    companion_rect_t *fr = &dock.floats[pane];
-   return NSMakeRect(fr->x, sh - fr->y - fr->h, fr->w, fr->h);
+   CGFloat fw = (CGFloat)VIDEO_SCALE_W(fr->dims);
+   CGFloat fh = (CGFloat)VIDEO_SCALE_H(fr->dims);
+   return NSMakeRect(VIDEO_POS_X(fr->pos), sh - VIDEO_POS_Y(fr->pos) - fh, fw, fh);
 }
 
 - (void)floatRectFromWindow:(NSWindow*)fw pane:(int)pane
 {
    CGFloat sh = [[NSScreen mainScreen] frame].size.height;
    NSRect f   = [fw frame];
-   dock.floats[pane].x = (int)f.origin.x;
-   dock.floats[pane].y = (int)(sh - f.origin.y - f.size.height);
-   dock.floats[pane].w = (int)f.size.width;
-   dock.floats[pane].h = (int)f.size.height;
+   dock.floats[pane].pos  = VIDEO_POS_PACK((int)f.origin.x,
+         (int)(sh - f.origin.y - f.size.height));
+   dock.floats[pane].dims = VIDEO_SCALE_PACK((int)f.size.width,
+         (int)f.size.height);
 }
 
 - (void)showFloat:(int)pane
@@ -1834,7 +1836,8 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    NSRect vis   = [[NSScreen mainScreen] visibleFrame];
    NSRect r;
    [self reparentPane:pane to:[fw contentView]];
-   if (dock.floats[pane].w > 0 && dock.floats[pane].h > 0)
+   if (VIDEO_SCALE_W(dock.floats[pane].dims) > 0
+         && VIDEO_SCALE_H(dock.floats[pane].dims) > 0)
    {
       r = [self floatFrame:pane];
       /* A saved position on a screen that is gone stays reachable. */
@@ -1862,10 +1865,9 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    b = [[window contentView] bounds];
    [status setFrame:NSMakeRect(4, 0, b.size.width - 8, CC_STATUS_H)];
    [dockView setFrame:NSMakeRect(0, CC_STATUS_H, b.size.width, b.size.height - CC_STATUS_H)];
-   client.x = 0; client.y = 0;
-   client.w = (int)b.size.width;
-   client.h = (int)(b.size.height - CC_STATUS_H);
-   if (client.h < 0) client.h = 0;
+   client.pos  = VIDEO_POS_PACK(0, 0);
+   client.dims = VIDEO_SCALE_PACK((int)b.size.width,
+         b.size.height - CC_STATUS_H < 0 ? 0 : (int)(b.size.height - CC_STATUS_H));
 
    dm.gap      = (int)CC_PAD;
    dm.strip_h  = 20;
@@ -1881,7 +1883,10 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       if (geom.laid_out[i])
       {
          [self reparentPane:i to:dockView];
-         [self layoutPane:i in:NSMakeRect(geom.pane[i].x, geom.pane[i].y, geom.pane[i].w, geom.pane[i].h)];
+         [self layoutPane:i in:NSMakeRect(VIDEO_POS_X(geom.pane[i].pos),
+               VIDEO_POS_Y(geom.pane[i].pos),
+               VIDEO_SCALE_W(geom.pane[i].dims),
+               VIDEO_SCALE_H(geom.pane[i].dims))];
          [self setPane:i hidden:NO];
          if (floats[i] && [floats[i] isVisible])
             [floats[i] orderOut:nil];
@@ -1898,8 +1903,10 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
 
    /* Centre: the content view with Qt's footer. */
    {
-      CGFloat cx = geom.content.x, cw = geom.content.w, x;
-      CGFloat top = geom.content.y, ch = geom.content.h;
+      CGFloat cx  = VIDEO_POS_X(geom.content.pos);
+      CGFloat cw  = VIDEO_SCALE_W(geom.content.dims), x;
+      CGFloat top = VIDEO_POS_Y(geom.content.pos);
+      CGFloat ch  = VIDEO_SCALE_H(geom.content.dims);
       CGFloat fy  = top + ch - CC_FOOTER_H; /* the footer row's top */
       [entriesScroll setFrame:NSMakeRect(cx + CC_PAD, top + CC_PAD, cw - 2 * CC_PAD, ch - CC_PAD - CC_FOOTER_H)];
       [itemsLabel setFrame:NSMakeRect(cx + CC_PAD, fy + (CC_FOOTER_H - CC_LABEL_H) / 2, 160.0, CC_LABEL_H)];
@@ -1962,21 +1969,23 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
 - (void)floatPane:(int)pane
 {
    enum companion_dock_area side;
-   int idx;
+   int idx, rw, rh;
    companion_rect_t r;
    NSPoint p;
    CGFloat sh = [[NSScreen mainScreen] frame].size.height;
    if (!companion_dock_find(&dock, (enum companion_dock_id)pane, &side, &idx))
       return;
    lastSide[pane] = side;
-   p   = [dockView convertPoint:NSMakePoint(geom.strip[pane].x, geom.strip[pane].y) toView:nil];
+   p   = [dockView convertPoint:NSMakePoint(VIDEO_POS_X(geom.strip[pane].pos),
+         VIDEO_POS_Y(geom.strip[pane].pos)) toView:nil];
    p   = [window convertBaseToScreen:p];
-   r.x = (int)p.x;
-   r.y = (int)(sh - p.y);
-   r.w = geom.strip[pane].w;
-   r.h = geom.pane[pane].y + geom.pane[pane].h + geom.tabbar[pane].h - geom.strip[pane].y;
-   if (r.w < dm.min_pane) r.w = dm.def_side;
-   if (r.h < dm.min_pane) r.h = dm.def_slot;
+   rw  = (int)VIDEO_SCALE_W(geom.strip[pane].dims);
+   rh  = VIDEO_POS_Y(geom.pane[pane].pos) + (int)VIDEO_SCALE_H(geom.pane[pane].dims)
+       + (int)VIDEO_SCALE_H(geom.tabbar[pane].dims) - VIDEO_POS_Y(geom.strip[pane].pos);
+   if (rw < dm.min_pane) rw = dm.def_side;
+   if (rh < dm.min_pane) rh = dm.def_slot;
+   r.pos  = VIDEO_POS_PACK((int)p.x, (int)(sh - p.y));
+   r.dims = VIDEO_SCALE_PACK(rw, rh);
    companion_dock_float(&dock, (enum companion_dock_id)pane, &r);
    [self layoutViews];
 }
@@ -2052,7 +2061,8 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
 {
    companion_rect_t c;
    NSRect b = [dockView bounds];
-   c.x = 0; c.y = 0; c.w = (int)b.size.width; c.h = (int)b.size.height;
+   c.pos  = VIDEO_POS_PACK(0, 0);
+   c.dims = VIDEO_SCALE_PACK((int)b.size.width, (int)b.size.height);
    return c;
 }
 
@@ -2060,9 +2070,11 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
 - (void)stripGlyphs:(int)pane floatRect:(NSRect*)fl closeRect:(NSRect*)cl
 {
    const companion_rect_t *st = &geom.strip[pane];
-   CGFloat sz = st->h - 6;
-   *cl = NSMakeRect(st->x + st->w - 4 - sz, st->y + 3, sz, sz);
-   *fl = NSMakeRect(cl->origin.x - 4 - sz, st->y + 3, sz, sz);
+   CGFloat sx = VIDEO_POS_X(st->pos);
+   CGFloat sy = VIDEO_POS_Y(st->pos);
+   CGFloat sz = (CGFloat)VIDEO_SCALE_H(st->dims) - 6;
+   *cl = NSMakeRect(sx + VIDEO_SCALE_W(st->dims) - 4 - sz, sy + 3, sz, sz);
+   *fl = NSMakeRect(cl->origin.x - 4 - sz, sy + 3, sz, sz);
 }
 
 - (int)stripGlyphHit:(int)pane at:(NSPoint)pt
@@ -2115,7 +2127,8 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    if (dragGap >= 0)
    {
       companion_rect_t client = [self dockClient];
-      BOOL vertical = geom.gaps[dragGap].rect.h > geom.gaps[dragGap].rect.w;
+      BOOL vertical = VIDEO_SCALE_H(geom.gaps[dragGap].rect.dims)
+                    > VIDEO_SCALE_W(geom.gaps[dragGap].rect.dims);
       companion_dock_drag_gap(&dock, &geom, &dm, &client, dragGap,
             vertical ? (int)pt.x : (int)pt.y);
       [self layoutViews];
@@ -2149,17 +2162,20 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       {
          companion_rect_t r;
          enum companion_dock_area side;
-         int idx;
+         int idx, rw, rh;
          NSPoint sp = [window convertBaseToScreen:[dockView convertPoint:pt toView:nil]];
          CGFloat sh = [[NSScreen mainScreen] frame].size.height;
          /* A float lands with its strip under the pointer, at its
           * docked size. */
-         r.w = geom.strip[p].w > 0 ? geom.strip[p].w : dm.def_side;
-         r.h = geom.laid_out[p]
-            ? geom.pane[p].y + geom.pane[p].h + geom.tabbar[p].h - geom.strip[p].y
+         rw = VIDEO_SCALE_W(geom.strip[p].dims) > 0
+            ? (int)VIDEO_SCALE_W(geom.strip[p].dims) : dm.def_side;
+         rh = geom.laid_out[p]
+            ? VIDEO_POS_Y(geom.pane[p].pos) + (int)VIDEO_SCALE_H(geom.pane[p].dims)
+              + (int)VIDEO_SCALE_H(geom.tabbar[p].dims) - VIDEO_POS_Y(geom.strip[p].pos)
             : dm.def_slot;
-         r.x = (int)sp.x - r.w / 2;
-         r.y = (int)(sh - sp.y) - dm.strip_h / 2;
+         r.pos  = VIDEO_POS_PACK((int)sp.x - rw / 2,
+               (int)(sh - sp.y) - dm.strip_h / 2);
+         r.dims = VIDEO_SCALE_PACK(rw, rh);
          if (companion_dock_find(&dock, (enum companion_dock_id)p, &side, &idx))
             lastSide[p] = side;
          companion_dock_apply_drop(&dock, (enum companion_dock_id)p, &drop, &r);
@@ -2175,8 +2191,10 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    for (i = 0; i < geom.ngaps; i++)
    {
       const companion_rect_t *gr = &geom.gaps[i].rect;
-      [v addCursorRect:NSMakeRect(gr->x, gr->y, gr->w, gr->h)
-         cursor:gr->h > gr->w ? [NSCursor resizeLeftRightCursor] : [NSCursor resizeUpDownCursor]];
+      [v addCursorRect:NSMakeRect(VIDEO_POS_X(gr->pos), VIDEO_POS_Y(gr->pos),
+            VIDEO_SCALE_W(gr->dims), VIDEO_SCALE_H(gr->dims))
+         cursor:VIDEO_SCALE_H(gr->dims) > VIDEO_SCALE_W(gr->dims)
+            ? [NSCursor resizeLeftRightCursor] : [NSCursor resizeUpDownCursor]];
    }
 }
 
@@ -2194,10 +2212,11 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       if (!geom.laid_out[i])
          continue;
       /* The strip: a light band with the title, the glyphs at the right. */
-      r = NSMakeRect(st->x, st->y, st->w, st->h);
+      r = NSMakeRect(VIDEO_POS_X(st->pos), VIDEO_POS_Y(st->pos),
+            VIDEO_SCALE_W(st->dims), VIDEO_SCALE_H(st->dims));
       [[NSColor colorWithCalibratedWhite:0.85 alpha:1.0] set];
       NSRectFill(r);
-      [BOXSTRING([self paneTitle:i]) drawAtPoint:NSMakePoint(st->x + 6, st->y + 3) withAttributes:attrs];
+      [BOXSTRING([self paneTitle:i]) drawAtPoint:NSMakePoint(r.origin.x + 6, r.origin.y + 3) withAttributes:attrs];
       [self stripGlyphs:i floatRect:&fl closeRect:&cl];
       [[NSColor colorWithCalibratedWhite:0.35 alpha:1.0] set];
       NSFrameRect(fl);
@@ -2213,11 +2232,15 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       }
       /* The tab bar of a group: one tab per shown member, the raised
        * one in the window colour. */
-      if (geom.tabbar[i].h > 0)
+      if (VIDEO_SCALE_H(geom.tabbar[i].dims) > 0)
       {
          enum companion_dock_area side;
          int idx, shown = 0, n = 0;
          CGFloat x, tw;
+         CGFloat bar_x = VIDEO_POS_X(geom.tabbar[i].pos);
+         CGFloat bar_y = VIDEO_POS_Y(geom.tabbar[i].pos);
+         CGFloat bar_w = VIDEO_SCALE_W(geom.tabbar[i].dims);
+         CGFloat bar_h = VIDEO_SCALE_H(geom.tabbar[i].dims);
          const companion_dock_slot_t *sl;
          if (!companion_dock_find(&dock, (enum companion_dock_id)i, &side, &idx))
             continue;
@@ -2227,16 +2250,15 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
                shown++;
          if (shown < 2)
             continue;
-         tw = (CGFloat)geom.tabbar[i].w / shown;
-         x  = geom.tabbar[i].x;
+         tw = bar_w / shown;
+         x  = bar_x;
          for (k = 0; k < sl->n; k++)
          {
             int m = sl->members[k];
             if (!dock.shown[m])
                continue;
-            r = NSMakeRect(x, geom.tabbar[i].y,
-                  (n == shown - 1) ? geom.tabbar[i].x + geom.tabbar[i].w - x : tw,
-                  geom.tabbar[i].h);
+            r = NSMakeRect(x, bar_y,
+                  (n == shown - 1) ? bar_x + bar_w - x : tw, bar_h);
             [(m == i ? [NSColor whiteColor] : [NSColor colorWithCalibratedWhite:0.8 alpha:1.0]) set];
             NSRectFill(r);
             [[NSColor colorWithCalibratedWhite:0.5 alpha:1.0] set];
@@ -2250,7 +2272,10 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    /* The drop marker while a strip is being dragged. */
    if (dragPane >= 0 && dropValid && drop.kind != COMPANION_DOCK_DROP_FLOAT)
    {
-      NSRect r = NSMakeRect(drop.indicator.x, drop.indicator.y, drop.indicator.w, drop.indicator.h);
+      NSRect r = NSMakeRect(VIDEO_POS_X(drop.indicator.pos),
+            VIDEO_POS_Y(drop.indicator.pos),
+            VIDEO_SCALE_W(drop.indicator.dims),
+            VIDEO_SCALE_H(drop.indicator.dims));
       [[[NSColor selectedControlColor] colorWithAlphaComponent:0.35] set];
       NSRectFillUsingOperation(r, NSCompositeSourceOver);
       [[NSColor selectedControlColor] set];
@@ -4262,19 +4287,19 @@ static const char *cc_thumb_subdir(int t)
    frame  = [NSWindow frameRectForContentRect:r styleMask:[coresWindow styleMask]];
 
    /* Top-down: y counted from the top of the screen. */
-   avail.x = (int)vis.origin.x;
-   avail.y = (int)(screen.size.height - (vis.origin.y + vis.size.height));
-   avail.w = (int)vis.size.width;
-   avail.h = (int)vis.size.height;
-   ownr.x  = (int)owner.origin.x;
-   ownr.y  = (int)(screen.size.height - (owner.origin.y + owner.size.height));
-   ownr.w  = (int)owner.size.width;
-   ownr.h  = (int)owner.size.height;
+   avail.pos  = VIDEO_POS_PACK((int)vis.origin.x,
+         (int)(screen.size.height - (vis.origin.y + vis.size.height)));
+   avail.dims = VIDEO_SCALE_PACK((int)vis.size.width, (int)vis.size.height);
+   ownr.pos   = VIDEO_POS_PACK((int)owner.origin.x,
+         (int)(screen.size.height - (owner.origin.y + owner.size.height)));
+   ownr.dims  = VIDEO_SCALE_PACK((int)owner.size.width, (int)owner.size.height);
    companion_place_window(&avail, &ownr,
-         (int)frame.size.width, (int)frame.size.height, 420, 400, &out);
-   frame = NSMakeRect((CGFloat)out.x,
-         screen.size.height - (CGFloat)(out.y + out.h),
-         (CGFloat)out.w, (CGFloat)out.h);
+         VIDEO_SCALE_PACK((int)frame.size.width, (int)frame.size.height),
+         VIDEO_SCALE_PACK(420, 400), &out);
+   frame = NSMakeRect((CGFloat)VIDEO_POS_X(out.pos),
+         screen.size.height - (CGFloat)(VIDEO_POS_Y(out.pos)
+            + (int)VIDEO_SCALE_H(out.dims)),
+         (CGFloat)VIDEO_SCALE_W(out.dims), (CGFloat)VIDEO_SCALE_H(out.dims));
    [coresWindow setFrame:frame display:NO];
    /* The Version column takes what is left of the table's width, from
     * the clip view the table sits in: the table's own frame is not

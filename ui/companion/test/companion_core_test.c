@@ -68,6 +68,11 @@ extern char stub_last_content[PATH_MAX_LENGTH];
 extern char stub_last_core[PATH_MAX_LENGTH];
 
 static int fails;
+/* A companion_rect_t, read back per axis. */
+#define RX(r) VIDEO_POS_X((r).pos)
+#define RY(r) VIDEO_POS_Y((r).pos)
+#define RW(r) ((int)VIDEO_SCALE_W((r).dims))
+#define RH(r) ((int)VIDEO_SCALE_H((r).dims))
 #define CHECK(cond, ...) do { if (!(cond)) { fails++; printf("FAIL %s:%d: ", __FILE__, __LINE__); printf(__VA_ARGS__); printf("\n"); } } while (0)
 
 static char root[512];
@@ -1022,33 +1027,33 @@ static void test_dock_rows(void)
    memset(&st, 0, sizeof(st));
    st.area   = COMPANION_DOCK_RIGHT;
    st.shown  = true;
-   st.width  = 320;
-   st.height = 400;
+   st.dims   = VIDEO_SCALE_PACK(320, 400);
    strlcpy(st.tabbed_with, "boxart", sizeof(st.tabbed_with));
    st.raised = true;
    companion_dock_row_format(row, sizeof(row), &st);
    CHECK(strcmp(row, "right,1,320,400,boxart,1,0") == 0, "format: %s", row);
    CHECK(companion_dock_row_parse(row, &back), "parse formatted row");
-   CHECK(back.area == COMPANION_DOCK_RIGHT && back.shown && back.width == 320
-         && back.height == 400 && strcmp(back.tabbed_with, "boxart") == 0
+   CHECK(back.area == COMPANION_DOCK_RIGHT && back.shown
+         && back.dims == VIDEO_SCALE_PACK(320, 400) && strcmp(back.tabbed_with, "boxart") == 0
          && back.raised && back.order == 0, "round trip keeps every field");
 
    /* Standalone hidden dock at the bottom: "-" partner, not raised. */
    memset(&st, 0, sizeof(st));
-   st.area = COMPANION_DOCK_BOTTOM; st.height = 160;
+   st.area = COMPANION_DOCK_BOTTOM; st.dims = VIDEO_SCALE_PACK(0, 160);
    companion_dock_row_format(row, sizeof(row), &st);
    CHECK(strcmp(row, "bottom,0,0,160,-,0,0") == 0, "hidden standalone: %s", row);
    CHECK(companion_dock_row_parse(row, &back) && !back.shown
-         && back.tabbed_with[0] == '\0' && back.height == 160, "hidden round trip");
+         && back.tabbed_with[0] == '\0' && VIDEO_SCALE_H(back.dims) == 160, "hidden round trip");
 
    /* Floating: the only kind of row that carries a screen position. */
    memset(&st, 0, sizeof(st));
-   st.area = COMPANION_DOCK_FLOAT; st.shown = true; st.width = 200; st.height = 300;
-   st.x = 640; st.y = 120;
+   st.area = COMPANION_DOCK_FLOAT; st.shown = true;
+   st.dims = VIDEO_SCALE_PACK(200, 300);
+   st.pos  = VIDEO_POS_PACK(640, 120);
    companion_dock_row_format(row, sizeof(row), &st);
    CHECK(strcmp(row, "float,1,200,300,-,0,0,640,120") == 0, "floating row: %s", row);
    CHECK(companion_dock_row_parse(row, &back) && back.area == COMPANION_DOCK_FLOAT
-         && back.width == 200 && back.x == 640 && back.y == 120,
+         && VIDEO_SCALE_W(back.dims) == 200 && back.pos == VIDEO_POS_PACK(640, 120),
          "floating round trip keeps x,y: %s", row);
    /* Docked rows never grow the position fields, and a floating row
     * from before positions were saved parses with x = y = 0. */
@@ -1056,19 +1061,20 @@ static void test_dock_rows(void)
    companion_dock_row_format(row, sizeof(row), &st);
    CHECK(strcmp(row, "right,1,200,300,-,0,0") == 0, "docked row has no x,y: %s", row);
    CHECK(companion_dock_row_parse("float,1,200,300,-,0", &back)
-         && back.area == COMPANION_DOCK_FLOAT && back.x == 0 && back.y == 0,
+         && back.area == COMPANION_DOCK_FLOAT && back.pos == VIDEO_POS_PACK(0, 0),
          "old floating row parses");
    CHECK(companion_dock_row_parse("float,1,200,300,-,0,-5,99999", &back)
-         && back.x == 0 && back.y == 0, "off-screen position becomes 0");
+         && back.pos == VIDEO_POS_PACK(0, 0), "off-screen position becomes 0");
 
    /* Sizes a dock reports before it is laid out (0/1) and absurd ones
     * are written and read as 0 = default. */
    memset(&st, 0, sizeof(st));
-   st.area = COMPANION_DOCK_LEFT; st.shown = true; st.width = 1; st.height = 99999;
+   st.area = COMPANION_DOCK_LEFT; st.shown = true;
+   st.dims = VIDEO_SCALE_PACK(1, 0xffff);
    companion_dock_row_format(row, sizeof(row), &st);
    CHECK(strcmp(row, "left,1,0,0,-,0,0") == 0, "bogus sizes become default: %s", row);
    CHECK(companion_dock_row_parse("left,1,1,40000,-,0", &back)
-         && back.width == 0 && back.height == 0, "bogus sizes rejected on parse");
+         && back.dims == 0, "bogus sizes rejected on parse");
 
    /* The slot order on a side: two docks stacked on the right keep
     * which is above which. Written for docked and floating rows alike,
@@ -1077,21 +1083,22 @@ static void test_dock_rows(void)
     * (order 0, and the floating row's x,y still land where they were),
     * an out-of-range order becomes 0. */
    memset(&st, 0, sizeof(st));
-   st.area = COMPANION_DOCK_RIGHT; st.shown = true; st.height = 500; st.order = 1;
+   st.area = COMPANION_DOCK_RIGHT; st.shown = true;
+   st.dims = VIDEO_SCALE_PACK(0, 500); st.order = 1;
    companion_dock_row_format(row, sizeof(row), &st);
    CHECK(strcmp(row, "right,1,0,500,-,0,1") == 0, "order written: %s", row);
    CHECK(companion_dock_row_parse(row, &back) && back.order == 1
-         && back.height == 500 && back.x == 0, "order round trip");
-   st.area = COMPANION_DOCK_FLOAT; st.x = 33; st.y = 44;
+         && VIDEO_SCALE_H(back.dims) == 500 && VIDEO_POS_X(back.pos) == 0, "order round trip");
+   st.area = COMPANION_DOCK_FLOAT; st.pos = VIDEO_POS_PACK(33, 44);
    companion_dock_row_format(row, sizeof(row), &st);
    CHECK(strcmp(row, "float,1,0,500,-,0,1,33,44") == 0, "floating row with order: %s", row);
    CHECK(companion_dock_row_parse(row, &back) && back.order == 1
-         && back.x == 33 && back.y == 44, "floating order round trip");
+         && back.pos == VIDEO_POS_PACK(33, 44), "floating order round trip");
    CHECK(companion_dock_row_parse("right,1,320,400,boxart,1", &back)
-         && back.order == 0 && back.width == 320 && back.raised,
+         && back.order == 0 && VIDEO_SCALE_W(back.dims) == 320 && back.raised,
          "six-field row from before order parses with order 0");
    CHECK(companion_dock_row_parse("float,1,300,200,-,0,100,60", &back)
-         && back.order == 0 && back.x == 100 && back.y == 60,
+         && back.order == 0 && back.pos == VIDEO_POS_PACK(100, 60),
          "eight-field floating row keeps its x,y");
    CHECK(companion_dock_row_parse("right,1,0,0,-,0,42", &back) && back.order == 0,
          "out-of-range order becomes 0");
@@ -1104,10 +1111,10 @@ static void test_dock_rows(void)
    /* The first shipped format (area,shown,size[,tab]) still parses:
     * size is the width, everything else defaults. */
    CHECK(companion_dock_row_parse("right,1,320,2", &back)
-         && back.area == COMPANION_DOCK_RIGHT && back.shown && back.width == 320
+         && back.area == COMPANION_DOCK_RIGHT && back.shown && VIDEO_SCALE_W(back.dims) == 320
          && back.tabbed_with[0] == '\0' && !back.raised, "old four-field row");
    CHECK(companion_dock_row_parse("left,0,280", &back)
-         && !back.shown && back.width == 280, "old three-field row");
+         && !back.shown && VIDEO_SCALE_W(back.dims) == 280, "old three-field row");
 
    /* Not ours: empty, a lone word, unknown area. */
    CHECK(!companion_dock_row_parse("", &back), "empty row rejected");
@@ -1124,36 +1131,39 @@ static void test_dock_rows(void)
  * screen. */
 static void test_place_window(void)
 {
-   companion_rect_t avail = { 0, 0, 1920, 1040 };
-   companion_rect_t owner = { 320, 160, 1280, 720 };
-   companion_rect_t r;
+   companion_rect_t avail, owner, r;
+   avail.pos  = VIDEO_POS_PACK(0, 0);
+   avail.dims = VIDEO_SCALE_PACK(1920, 1040);
+   owner.pos  = VIDEO_POS_PACK(320, 160);
+   owner.dims = VIDEO_SCALE_PACK(1280, 720);
 
    /* Fits: the needed size, centred over the owner. */
-   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
-   CHECK(r.w == 520 && r.h == 640 && r.x == 320 + (1280 - 520) / 2
-         && r.y == 160 + (720 - 640) / 2, "fits: needed size centred (%d,%d %dx%d)", r.x, r.y, r.w, r.h);
+   companion_place_window(&avail, &owner, VIDEO_SCALE_PACK(520, 640), VIDEO_SCALE_PACK(420, 400), &r);
+   CHECK(RW(r) == 520 && RH(r) == 640 && RX(r) == 320 + (1280 - 520) / 2
+         && RY(r) == 160 + (720 - 640) / 2, "fits: needed size centred (%d,%d %dx%d)", RX(r), RY(r), RW(r), RH(r));
    /* Taller than the screen: clamped to the work area less the margin,
     * pulled back on screen. */
-   companion_place_window(&avail, &owner, 520, 3000, 420, 400, &r);
-   CHECK(r.h == 1040 - 32 && r.y == 16, "taller than the screen: clamped and on screen (%d %d)", r.h, r.y);
+   companion_place_window(&avail, &owner, VIDEO_SCALE_PACK(520, 3000), VIDEO_SCALE_PACK(420, 400), &r);
+   CHECK(RH(r) == 1040 - 32 && RY(r) == 16, "taller than the screen: clamped and on screen (%d %d)", RH(r), RY(r));
    /* Smaller than the minimum grows to it. */
-   companion_place_window(&avail, &owner, 200, 100, 420, 400, &r);
-   CHECK(r.w == 420 && r.h == 400, "below minimum grows to it (%dx%d)", r.w, r.h);
+   companion_place_window(&avail, &owner, VIDEO_SCALE_PACK(200, 100), VIDEO_SCALE_PACK(420, 400), &r);
+   CHECK(RW(r) == 420 && RH(r) == 400, "below minimum grows to it (%dx%d)", RW(r), RH(r));
    /* Owner half off the screen: the window still lands inside it. */
-   owner.x = 1500; owner.y = 900;
-   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
-   CHECK(r.x + r.w <= 1920 - 16 && r.y + r.h <= 1040 - 16 && r.x >= 16 && r.y >= 16,
-         "owner off the edge: window kept on screen (%d,%d %dx%d)", r.x, r.y, r.w, r.h);
+   owner.pos = VIDEO_POS_PACK(1500, 900);
+   companion_place_window(&avail, &owner, VIDEO_SCALE_PACK(520, 640), VIDEO_SCALE_PACK(420, 400), &r);
+   CHECK(RX(r) + RW(r) <= 1920 - 16 && RY(r) + RH(r) <= 1040 - 16 && RX(r) >= 16 && RY(r) >= 16,
+         "owner off the edge: window kept on screen (%d,%d %dx%d)", RX(r), RY(r), RW(r), RH(r));
    /* A work area with an origin (second monitor / dock on the left). */
-   avail.x = 1920; avail.y = 40; owner.x = 2000; owner.y = 100;
-   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
-   CHECK(r.x >= 1936 && r.y >= 56 && r.x + r.w <= 1920 + 1920 - 16,
-         "offset work area respected (%d,%d)", r.x, r.y);
+   avail.pos = VIDEO_POS_PACK(1920, 40); owner.pos = VIDEO_POS_PACK(2000, 100);
+   companion_place_window(&avail, &owner, VIDEO_SCALE_PACK(520, 640), VIDEO_SCALE_PACK(420, 400), &r);
+   CHECK(RX(r) >= 1936 && RY(r) >= 56 && RX(r) + RW(r) <= 1920 + 1920 - 16,
+         "offset work area respected (%d,%d)", RX(r), RY(r));
    /* A screen smaller than the minimum: the minimum still wins so the
     * controls stay usable. */
-   avail.x = avail.y = 0; avail.w = 400; avail.h = 300; owner.x = owner.y = 0;
-   companion_place_window(&avail, &owner, 520, 640, 420, 400, &r);
-   CHECK(r.w == 420 && r.h == 400, "tiny screen: minimum kept (%dx%d)", r.w, r.h);
+   avail.pos = VIDEO_POS_PACK(0, 0); avail.dims = VIDEO_SCALE_PACK(400, 300);
+   owner.pos = VIDEO_POS_PACK(0, 0);
+   companion_place_window(&avail, &owner, VIDEO_SCALE_PACK(520, 640), VIDEO_SCALE_PACK(420, 400), &r);
+   CHECK(RW(r) == 420 && RH(r) == 400, "tiny screen: minimum kept (%dx%d)", RW(r), RH(r));
 }
 
 /* The dock layout model (ui/companion/companion_dock.c): the same
@@ -1173,7 +1183,7 @@ static void test_dock_model(void)
    companion_dock_layout_t l, back;
    companion_dock_geometry_t g;
    companion_dock_metrics_t m;
-   companion_rect_t client = { 0, 0, 1280, 720 };
+   companion_rect_t client;
    companion_dock_hit_t hit;
    companion_dock_drop_t drop;
    settings_t *settings = config_get_ptr();
@@ -1182,6 +1192,8 @@ static void test_dock_model(void)
 
    m.gap = 5; m.strip_h = 20; m.tab_h = 22; m.min_pane = 60;
    m.def_side = 280; m.def_bar = 150; m.def_slot = 200;
+   client.pos  = VIDEO_POS_PACK(0, 0);
+   client.dims = VIDEO_SCALE_PACK(1280, 720);
 
    /* The default is Qt's: three left, a four-tab group above Core Info
     * on the right, the log hidden below. */
@@ -1198,23 +1210,23 @@ static void test_dock_model(void)
    CHECK(g.laid_out[COMPANION_DOCK_SEARCH] && g.laid_out[COMPANION_DOCK_BOXART]
          && !g.laid_out[COMPANION_DOCK_TITLE] && !g.laid_out[COMPANION_DOCK_LOG]
          && g.laid_out[COMPANION_DOCK_CORE_INFO], "dock: laid-out set");
-   CHECK(g.content.x == 285 && g.content.w == 1280 - 2 * 285 && g.content.h == 720,
-         "dock: content between the sides (%d,%d %dx%d)", g.content.x, g.content.y, g.content.w, g.content.h);
-   CHECK(g.tabbar[COMPANION_DOCK_BOXART].h == 22 && g.tabbar[COMPANION_DOCK_CORE_INFO].h == 0
-         && g.strip[COMPANION_DOCK_BOXART].h == 20
-         && g.pane[COMPANION_DOCK_CORE_INFO].y > g.pane[COMPANION_DOCK_BOXART].y,
+   CHECK(RX(g.content) == 285 && RW(g.content) == 1280 - 2 * 285 && RH(g.content) == 720,
+         "dock: content between the sides (%d,%d %dx%d)", RX(g.content), RY(g.content), RW(g.content), RH(g.content));
+   CHECK(RH(g.tabbar[COMPANION_DOCK_BOXART]) == 22 && RH(g.tabbar[COMPANION_DOCK_CORE_INFO]) == 0
+         && RH(g.strip[COMPANION_DOCK_BOXART]) == 20
+         && RY(g.pane[COMPANION_DOCK_CORE_INFO]) > RY(g.pane[COMPANION_DOCK_BOXART]),
          "dock: tab bar on the group only, Core Info below the thumbnails");
-   CHECK(g.pane[COMPANION_DOCK_CORE_INFO].y + g.pane[COMPANION_DOCK_CORE_INFO].h == 720,
-         "dock: the last slot reaches the bottom (%d)", g.pane[COMPANION_DOCK_CORE_INFO].y + g.pane[COMPANION_DOCK_CORE_INFO].h);
+   CHECK(RY(g.pane[COMPANION_DOCK_CORE_INFO]) + RH(g.pane[COMPANION_DOCK_CORE_INFO]) == 720,
+         "dock: the last slot reaches the bottom (%d)", RY(g.pane[COMPANION_DOCK_CORE_INFO]) + RH(g.pane[COMPANION_DOCK_CORE_INFO]));
    CHECK(l.slots[COMPANION_DOCK_RIGHT][0].size + l.slots[COMPANION_DOCK_RIGHT][1].size + 5 == 720,
          "dock: sizes written back (%d + %d)", l.slots[COMPANION_DOCK_RIGHT][0].size, l.slots[COMPANION_DOCK_RIGHT][1].size);
    CHECK(g.ngaps == 2 + 2 + 1, "dock: two side gaps, two between the left slots, one on the right (%d)", g.ngaps);
 
    /* Hit testing: the strip, a tab, a gap. */
-   companion_dock_hit_test(&l, &g, &m, g.strip[COMPANION_DOCK_BOXART].x + 4, g.strip[COMPANION_DOCK_BOXART].y + 4, &hit);
+   companion_dock_hit_test(&l, &g, &m, RX(g.strip[COMPANION_DOCK_BOXART]) + 4, RY(g.strip[COMPANION_DOCK_BOXART]) + 4, &hit);
    CHECK(hit.kind == COMPANION_DOCK_HIT_STRIP && hit.pane == COMPANION_DOCK_BOXART, "dock: hit the thumbnail strip");
-   companion_dock_hit_test(&l, &g, &m, g.tabbar[COMPANION_DOCK_BOXART].x + g.tabbar[COMPANION_DOCK_BOXART].w * 3 / 8,
-         g.tabbar[COMPANION_DOCK_BOXART].y + 4, &hit);
+   companion_dock_hit_test(&l, &g, &m, RX(g.tabbar[COMPANION_DOCK_BOXART]) + RW(g.tabbar[COMPANION_DOCK_BOXART]) * 3 / 8,
+         RY(g.tabbar[COMPANION_DOCK_BOXART]) + 4, &hit);
    CHECK(hit.kind == COMPANION_DOCK_HIT_TAB && hit.pane == COMPANION_DOCK_TITLE, "dock: hit the second tab (%d)", (int)hit.pane);
    companion_dock_hit_test(&l, &g, &m, 282, 300, &hit);
    CHECK(hit.kind == COMPANION_DOCK_HIT_GAP && g.gaps[hit.gap].side == COMPANION_DOCK_LEFT
@@ -1223,7 +1235,7 @@ static void test_dock_model(void)
    /* Dragging that gap widens the left side; the next layout honours it. */
    companion_dock_drag_gap(&l, &g, &m, &client, hit.gap, 340);
    companion_dock_layout(&l, &m, &client, &g);
-   CHECK(l.side_size[COMPANION_DOCK_LEFT] == 340 && g.content.x == 345, "dock: left side dragged to 340 (%d)", g.content.x);
+   CHECK(l.side_size[COMPANION_DOCK_LEFT] == 340 && RX(g.content) == 345, "dock: left side dragged to 340 (%d)", RX(g.content));
    /* And the gap between the right slots moves the split. */
    for (i = 0; i < g.ngaps; i++)
       if (g.gaps[i].side == COMPANION_DOCK_RIGHT && g.gaps[i].index == 0)
@@ -1232,7 +1244,7 @@ static void test_dock_model(void)
    companion_dock_drag_gap(&l, &g, &m, &client, i, 500);
    companion_dock_layout(&l, &m, &client, &g);
    CHECK(l.slots[COMPANION_DOCK_RIGHT][0].size >= 495 && l.slots[COMPANION_DOCK_RIGHT][0].size <= 500
-         && g.pane[COMPANION_DOCK_CORE_INFO].y + g.pane[COMPANION_DOCK_CORE_INFO].h == 720,
+         && RY(g.pane[COMPANION_DOCK_CORE_INFO]) + RH(g.pane[COMPANION_DOCK_CORE_INFO]) == 720,
          "dock: right split dragged (%d / %d)", l.slots[COMPANION_DOCK_RIGHT][0].size, l.slots[COMPANION_DOCK_RIGHT][1].size);
 
    /* Tatsuya79's layout by edits: Screenshots out of the group into a
@@ -1247,7 +1259,7 @@ static void test_dock_model(void)
          "dock: split out and stacked (%d slots)", l.nslots[COMPANION_DOCK_RIGHT]);
    companion_dock_layout(&l, &m, &client, &g);
    CHECK(g.laid_out[COMPANION_DOCK_SCREENSHOT] && g.laid_out[COMPANION_DOCK_TITLE]
-         && g.pane[COMPANION_DOCK_SCREENSHOT].y < g.pane[COMPANION_DOCK_TITLE].y
+         && RY(g.pane[COMPANION_DOCK_SCREENSHOT]) < RY(g.pane[COMPANION_DOCK_TITLE])
          && !g.laid_out[COMPANION_DOCK_CORE_INFO], "dock: Screenshots above Title Screen, Core Info gone");
 
    /* Rows: what the Qt companion writes, read back identical. */
@@ -1292,11 +1304,11 @@ static void test_dock_model(void)
    companion_dock_default(&l);
    companion_dock_layout(&l, &m, &client, &g);
    companion_dock_drop_target(&l, &g, &m, &client, COMPANION_DOCK_LOG,
-         g.pane[COMPANION_DOCK_CORE_INFO].x + 10,
-         g.pane[COMPANION_DOCK_CORE_INFO].y + g.pane[COMPANION_DOCK_CORE_INFO].h / 2, &drop);
+         RX(g.pane[COMPANION_DOCK_CORE_INFO]) + 10,
+         RY(g.pane[COMPANION_DOCK_CORE_INFO]) + RH(g.pane[COMPANION_DOCK_CORE_INFO]) / 2, &drop);
    CHECK(drop.kind == COMPANION_DOCK_DROP_TAB && drop.onto == COMPANION_DOCK_CORE_INFO, "dock: drop mid-pane tabs");
    companion_dock_drop_target(&l, &g, &m, &client, COMPANION_DOCK_LOG,
-         g.strip[COMPANION_DOCK_CORE_INFO].x + 10, g.strip[COMPANION_DOCK_CORE_INFO].y + 2, &drop);
+         RX(g.strip[COMPANION_DOCK_CORE_INFO]) + 10, RY(g.strip[COMPANION_DOCK_CORE_INFO]) + 2, &drop);
    CHECK(drop.kind == COMPANION_DOCK_DROP_SLOT && drop.side == COMPANION_DOCK_RIGHT && drop.index == 1,
          "dock: drop on the top third slots before (%d)", drop.index);
    companion_dock_drop_target(&l, &g, &m, &client, COMPANION_DOCK_LOG, 640, 715, &drop);
@@ -1304,10 +1316,12 @@ static void test_dock_model(void)
    companion_dock_drop_target(&l, &g, &m, &client, COMPANION_DOCK_LOG, 640, 360, &drop);
    CHECK(drop.kind == COMPANION_DOCK_DROP_FLOAT, "dock: drop mid-content floats");
    {
-      companion_rect_t fr = { 100, 100, 300, 200 };
+      companion_rect_t fr;
+      fr.pos  = VIDEO_POS_PACK(100, 100);
+      fr.dims = VIDEO_SCALE_PACK(300, 200);
       companion_dock_apply_drop(&l, COMPANION_DOCK_LOG, &drop, &fr);
       CHECK(l.area[COMPANION_DOCK_LOG] == COMPANION_DOCK_FLOAT && l.shown[COMPANION_DOCK_LOG]
-            && l.floats[COMPANION_DOCK_LOG].w == 300 && l.nslots[COMPANION_DOCK_BOTTOM] == 0,
+            && RW(l.floats[COMPANION_DOCK_LOG]) == 300 && l.nslots[COMPANION_DOCK_BOTTOM] == 0,
             "dock: floated and shown, bottom side emptied");
       companion_dock_to_rows(settings, &l);
       CHECK(strcmp(settings->arrays.desktop_menu_dock_log, "float,1,300,200,-,0,0,100,100") == 0,
@@ -1336,12 +1350,12 @@ static void test_dock_model(void)
    for (i = COMPANION_DOCK_BOXART; i <= COMPANION_DOCK_CORE_INFO; i++)
       companion_dock_set_shown(&l, (enum companion_dock_id)i, false);
    companion_dock_layout(&l, &m, &client, &g);
-   CHECK(g.content.x + g.content.w == 1280, "dock: hidden right side takes no room (%d)", g.content.x + g.content.w);
+   CHECK(RX(g.content) + RW(g.content) == 1280, "dock: hidden right side takes no room (%d)", RX(g.content) + RW(g.content));
    /* A tiny client keeps the content's minimum. */
-   client.w = 200; client.h = 100;
+   client.dims = VIDEO_SCALE_PACK(200, 100);
    companion_dock_default(&l);
    companion_dock_layout(&l, &m, &client, &g);
-   CHECK(g.content.w >= 60 && g.content.h >= 60, "dock: tiny client keeps the content (%dx%d)", g.content.w, g.content.h);
+   CHECK(RW(g.content) >= 60 && RH(g.content) >= 60, "dock: tiny client keeps the content (%dx%d)", RW(g.content), RH(g.content));
    settings->bools.desktop_menu_save_dock_positions = false;
 }
 

@@ -357,8 +357,7 @@ static void qt_dock_state_write(QMainWindow *win, QDockWidget * const *docks,
    st.area   = dock->isFloating() ? COMPANION_DOCK_FLOAT
       : qt_dock_area_to_core(win->dockWidgetArea(dock));
    st.shown  = dock->isVisible();
-   st.width  = dock->width();
-   st.height = dock->height();
+   st.dims   = VIDEO_SCALE_PACK(dock->width(), dock->height());
    if (!dock->isFloating())
       st.order = qt_dock_slot(win, docks, self);
    if (dock->isFloating())
@@ -367,8 +366,7 @@ static void qt_dock_state_write(QMainWindow *win, QDockWidget * const *docks,
        * it (pos() is the frame corner: saving that walked the dock by
        * one frame width per launch). */
       QRect g = dock->geometry();
-      st.x    = g.x();
-      st.y    = g.y();
+      st.pos  = VIDEO_POS_PACK(g.x(), g.y());
    }
 
    if (!dock->isFloating())
@@ -394,12 +392,9 @@ static void qt_dock_state_write(QMainWindow *win, QDockWidget * const *docks,
          /* A hidden dock keeps the size its row already has, so the
           * size it was last shown at survives a spell hidden. */
          companion_dock_state_t old;
-         st.width = st.height = 0;
+         st.dims = 0;
          if (!dock->isVisible() && companion_dock_row_parse(s, &old))
-         {
-            st.width  = old.width;
-            st.height = old.height;
-         }
+            st.dims = old.dims;
       }
       else if (!tabs.isEmpty())
       {
@@ -422,7 +417,8 @@ static void qt_dock_state_write(QMainWindow *win, QDockWidget * const *docks,
             if (     (tg.top() >= dg.bottom() && tg.top() <= dg.bottom() + 4)
                   || (tg.bottom() <= dg.top() && tg.bottom() >= dg.top() - 4))
             {
-               st.height += tb->height();
+               VIDEO_SCALE_PUT_H(st.dims,
+                     VIDEO_SCALE_H(st.dims) + tb->height());
                break;
             }
          }
@@ -4061,9 +4057,10 @@ void MainWindow::restoreDockLayout()
          docks[i]->setFloating(true);
          /* Its own window: put it back where it was, clamped so a
           * position saved on a monitor that is gone stays reachable. */
-         if (st[i].width > 0 && st[i].height > 0)
+         if (VIDEO_SCALE_W(st[i].dims) > 0 && VIDEO_SCALE_H(st[i].dims) > 0)
          {
-            QRect r(st[i].x, st[i].y, st[i].width, st[i].height);
+            QRect r(VIDEO_POS_X(st[i].pos), VIDEO_POS_Y(st[i].pos),
+                  (int)VIDEO_SCALE_W(st[i].dims), (int)VIDEO_SCALE_H(st[i].dims));
             QRect avail = ui_qt_available_geometry_at(r.topLeft());
             if (avail.isValid())
             {
@@ -4109,15 +4106,15 @@ void MainWindow::restoreDockLayout()
        * carries the group's size, whichever row it is). */
       if (st[i].area == COMPANION_DOCK_FLOAT || !st[i].shown)
          continue;
-      if (st[i].width > 0)
+      if (VIDEO_SCALE_W(st[i].dims) > 0)
       {
          hdocks << docks[i];
-         hsizes << st[i].width;
+         hsizes << (int)VIDEO_SCALE_W(st[i].dims);
       }
-      if (st[i].height > 0)
+      if (VIDEO_SCALE_H(st[i].dims) > 0)
       {
          vdocks << docks[i];
-         vsizes << st[i].height;
+         vsizes << (int)VIDEO_SCALE_H(st[i].dims);
       }
    }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
@@ -5643,16 +5640,20 @@ void LoadCoreWindow::initCoreList(const QString &contentPath)
          + frame_h;
       m_table->horizontalHeader()->setStretchLastSection(true);
 
-      avail.x = avail_rect.x(); avail.y = avail_rect.y();
-      avail.w = avail_rect.width(); avail.h = avail_rect.height();
-      ownr.x  = owner->frameGeometry().x();
-      ownr.y  = owner->frameGeometry().y();
-      ownr.w  = owner->frameGeometry().width();
-      ownr.h  = owner->frameGeometry().height();
-      companion_place_window(&avail, &ownr, need_w, need_h,
-            LOAD_CORE_WINDOW_MIN_W, LOAD_CORE_WINDOW_MIN_H, &out);
+      avail.pos  = VIDEO_POS_PACK(avail_rect.x(), avail_rect.y());
+      avail.dims = VIDEO_SCALE_PACK(avail_rect.width(), avail_rect.height());
+      ownr.pos   = VIDEO_POS_PACK(owner->frameGeometry().x(),
+            owner->frameGeometry().y());
+      ownr.dims  = VIDEO_SCALE_PACK(owner->frameGeometry().width(),
+            owner->frameGeometry().height());
+      companion_place_window(&avail, &ownr,
+            VIDEO_SCALE_PACK(need_w, need_h),
+            VIDEO_SCALE_PACK(LOAD_CORE_WINDOW_MIN_W, LOAD_CORE_WINDOW_MIN_H),
+            &out);
       /* out is the frame rectangle; setGeometry() takes the client. */
-      setGeometry(out.x + frame_l, out.y + frame_t,
-            out.w - frame_w, out.h - frame_h);
+      setGeometry(VIDEO_POS_X(out.pos) + frame_l,
+            VIDEO_POS_Y(out.pos) + frame_t,
+            (int)VIDEO_SCALE_W(out.dims) - frame_w,
+            (int)VIDEO_SCALE_H(out.dims) - frame_h);
    }
 }
