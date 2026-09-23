@@ -168,6 +168,15 @@ static unsigned wrapper_frames_since(unsigned *last)
 /*   thing that stands still exactly when the publish did nothing.     */
 /* ------------------------------------------------------------------ */
 
+/* The aspect index as the flag word in slot 0 carries it: six bits
+ * above the scale_integer bit (VIDEO_VP_ASPECT_IDX_SHIFT/_BITS in
+ * video_driver.c). */
+static int published_aspect_idx(video_driver_state_t *video_st)
+{
+   return (int)(((unsigned)retro_atomic_load_relaxed_int(
+               &video_st->vp_params_bits[0]) >> 1) & 0x3fu);
+}
+
 static void lane_vp_params_publish(void)
 {
    unsigned had = failures;
@@ -186,7 +195,7 @@ static void lane_vp_params_publish(void)
          "with nothing changed", (seq1 - seq0) / 2);
 
    /* And it does still publish when something moves: the aspect index
-    * is one of the fifteen slots. */
+    * rides in the flag word, slot 0. */
    saved_idx = settings->uints.video_aspect_ratio_idx;
    settings->uints.video_aspect_ratio_idx =
       saved_idx ? saved_idx - 1 : saved_idx + 1;
@@ -201,16 +210,13 @@ static void lane_vp_params_publish(void)
       int want = (int)settings->uints.video_aspect_ratio_idx;
       for (tries = 0; tries < 60; tries++)
       {
-         if (retro_atomic_load_relaxed_int(&video_st->vp_params_bits[4])
-               == want)
+         if (published_aspect_idx(video_st) == want)
             break;
          run_frames(1);
       }
-      CHECK(retro_atomic_load_relaxed_int(&video_st->vp_params_bits[4])
-            == want,
+      CHECK(published_aspect_idx(video_st) == want,
             "the published aspect index is %d, the setting is %d",
-            retro_atomic_load_relaxed_int(&video_st->vp_params_bits[4]),
-            want);
+            published_aspect_idx(video_st), want);
    }
    settings->uints.video_aspect_ratio_idx = saved_idx;
    run_frames(4);
