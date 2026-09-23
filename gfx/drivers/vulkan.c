@@ -50,6 +50,7 @@
 #endif
 
 #include "../common/vulkan_common.h"
+#include "../common/rgba8_pack.h"
 
 #include "../../configuration.h"
 #ifdef HAVE_REWIND
@@ -67,42 +68,27 @@
  * Index pattern:  0,1,2, 2,1,3  (provided by shared quad_ibo). */
 #define VULKAN_WRITE_QUAD_VBO(pv, _x, _y, _width, _height, _tex_x, _tex_y, _tex_width, _tex_height, vulkan_color) \
 { \
-   float r        = (vulkan_color)->r; \
-   float g        = (vulkan_color)->g; \
-   float b        = (vulkan_color)->b; \
-   float a        = (vulkan_color)->a; \
+   uint32_t c     = (vulkan_color); \
    pv[0].x        = (_x); \
    pv[0].y        = (_y); \
    pv[0].tex_x    = (_tex_x); \
    pv[0].tex_y    = (_tex_y); \
-   pv[0].color.r  = r; \
-   pv[0].color.g  = g; \
-   pv[0].color.b  = b; \
-   pv[0].color.a  = a; \
+   pv[0].color    = c; \
    pv[1].x        = (_x); \
    pv[1].y        = (_y) + (_height); \
    pv[1].tex_x    = (_tex_x); \
    pv[1].tex_y    = (_tex_y) + (_tex_height); \
-   pv[1].color.r  = r; \
-   pv[1].color.g  = g; \
-   pv[1].color.b  = b; \
-   pv[1].color.a  = a; \
+   pv[1].color    = c; \
    pv[2].x        = (_x) + (_width); \
    pv[2].y        = (_y); \
    pv[2].tex_x    = (_tex_x) + (_tex_width); \
    pv[2].tex_y    = (_tex_y); \
-   pv[2].color.r  = r; \
-   pv[2].color.g  = g; \
-   pv[2].color.b  = b; \
-   pv[2].color.a  = a; \
+   pv[2].color    = c; \
    pv[3].x        = (_x) + (_width); \
    pv[3].y        = (_y) + (_height); \
    pv[3].tex_x    = (_tex_x) + (_tex_width); \
    pv[3].tex_y    = (_tex_y) + (_tex_height); \
-   pv[3].color.r  = r; \
-   pv[3].color.g  = g; \
-   pv[3].color.b  = b; \
-   pv[3].color.a  = a; \
+   pv[3].color    = c; \
 }
 
 
@@ -182,16 +168,11 @@ typedef struct VKALIGN(16)
 } vulkan_hdr_uniform_t;
 #endif
 
-struct vk_color
-{
-   float r, g, b, a;
-};
-
 struct vk_vertex
 {
    float x, y;
    float tex_x, tex_y;
-   struct vk_color color;        /* float alignment */
+   uint32_t color;               /* R8G8B8A8_UNORM, rgba8_pack */
 };
 
 struct vk_image
@@ -242,7 +223,7 @@ struct vk_draw_quad
    const math_matrix_4x4 *mvp;
    VkPipeline pipeline;          /* ptr alignment */
    VkSampler sampler;            /* ptr alignment */
-   struct vk_color color;        /* float alignment */
+   uint32_t color;               /* rgba8_pack */
 };
 
 struct vk_draw_triangles
@@ -2609,18 +2590,11 @@ static void gfx_display_vk_bake_vertices(struct vk_vertex *pv,
       }
 
       if (use_default_color && i >= 4)
-      {
-         pv->color.r = 1.0f;
-         pv->color.g = 1.0f;
-         pv->color.b = 1.0f;
-         pv->color.a = 1.0f;
-      }
+         pv->color = RGBA8_WHITE;
       else
       {
-         pv->color.r = *color++;
-         pv->color.g = *color++;
-         pv->color.b = *color++;
-         pv->color.a = *color++;
+         pv->color = rgba8_pack(color);
+         color    += 4;
       }
    }
 }
@@ -3508,15 +3482,12 @@ static void vulkan_font_render_msg(
    /* Pre-compute per-pass constants: base X in NDC (pixel-snapped),
     * shadow color, and shadow Y origin. */
    {
-      struct vk_color vk_color, vk_color_dark = {0.0f, 0.0f, 0.0f, 0.0f};
+      uint32_t vk_color, vk_color_dark = 0;
       float fg_base_x, sh_base_x, sh_y_origin;
       int line_num;
       const char *m;
 
-      vk_color.r       = color[0];
-      vk_color.g       = color[1];
-      vk_color.b       = color[2];
-      vk_color.a       = color[3];
+      vk_color         = rgba8_pack(color);
 
       fg_base_x        = roundf(x * VIDEO_SCALE_W(vk->vp.dims)) * inv_win_width;
 
@@ -3524,10 +3495,12 @@ static void vulkan_font_render_msg(
       sh_y_origin      = 0.0f;
       if (has_drop)
       {
-         vk_color_dark.r = color[0] * drop_mod;
-         vk_color_dark.g = color[1] * drop_mod;
-         vk_color_dark.b = color[2] * drop_mod;
-         vk_color_dark.a = color[3] * drop_alpha;
+         float dark[4];
+         dark[0]         = color[0] * drop_mod;
+         dark[1]         = color[1] * drop_mod;
+         dark[2]         = color[2] * drop_mod;
+         dark[3]         = color[3] * drop_alpha;
+         vk_color_dark   = rgba8_pack(dark);
          sh_base_x       = roundf((x + scale * drop_x
                               * inv_win_width) * VIDEO_SCALE_W(vk->vp.dims))
                               * inv_win_width;
@@ -3648,7 +3621,7 @@ static void vulkan_font_render_msg(
                      VULKAN_WRITE_QUAD_VBO(pv,
                            sh_x + gox, sh_y + goy,
                            fw, fh, ftx, fty, ftw, fth,
-                           &vk_color_dark);
+                           vk_color_dark);
                      font->vertices += 4;
                   }
 
@@ -3657,7 +3630,7 @@ static void vulkan_font_render_msg(
                      VULKAN_WRITE_QUAD_VBO(pv,
                            fg_x + gox, fg_y + goy,
                            fw, fh, ftx, fty, ftw, fth,
-                           &vk_color);
+                           vk_color);
                      font->vertices += 4;
                   }
                }
@@ -4414,7 +4387,7 @@ static void vulkan_init_pipelines(vk_t *vk)
    attributes[1].offset    = 2 * sizeof(float);
    attributes[2].location  = 2;
    attributes[2].binding   = 0;
-   attributes[2].format    = VK_FORMAT_R32G32B32A32_SFLOAT;
+   attributes[2].format    = VK_FORMAT_R8G8B8A8_UNORM;
    attributes[2].offset    = 4 * sizeof(float);
 
    binding.binding         = 0;
@@ -7629,10 +7602,9 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
          return;
 
       {
-         struct vk_vertex         *pv = (struct vk_vertex*)range.data;
-         const struct vk_color *color = &quad->color;
+         struct vk_vertex *pv = (struct vk_vertex*)range.data;
 
-         VULKAN_WRITE_QUAD_VBO(pv, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, color);
+         VULKAN_WRITE_QUAD_VBO(pv, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, quad->color);
       }
 
       vkCmdBindVertexBuffers(vk->cmd, 0, 1,
@@ -7948,12 +7920,7 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
          pv[3].x = 1.0f; pv[3].y = 1.0f; pv[3].tex_x = 1.0f; pv[3].tex_y = 1.0f;
 
          for (i = 0; i < 4; i++)
-         {
-            pv[i].color.r = 1.0f;
-            pv[i].color.g = 1.0f;
-            pv[i].color.b = 1.0f;
-            pv[i].color.a = 1.0f;
-         }
+            pv[i].color = RGBA8_WHITE;
 
          vkCmdBindVertexBuffers(vk->cmd, 0, 1,
                &range.buffer, &range.offset);
@@ -8588,6 +8555,7 @@ static bool vulkan_frame(void *data, const void *frame,
              vk->menu.textures[vk->menu.last_index].buffer != VK_NULL_HANDLE)
          {
             struct vk_draw_quad quad;
+            float white[4];
             struct vk_texture *optimal = &vk->menu.textures_optimal[vk->menu.last_index];
             bool menu_linear_filter    = video_info->menu_linear_filter;
 
@@ -8614,10 +8582,11 @@ static bool vulkan_frame(void *data, const void *frame,
                   ? vk->samplers.mipmap_nearest : vk->samplers.nearest;
 
             quad.mvp        = &vk->mvp_menu;
-            quad.color.r    = 1.0f;
-            quad.color.g    = 1.0f;
-            quad.color.b    = 1.0f;
-            quad.color.a    = vk->menu.alpha;
+            white[0]        = 1.0f;
+            white[1]        = 1.0f;
+            white[2]        = 1.0f;
+            white[3]        = vk->menu.alpha;
+            quad.color      = rgba8_pack(white);
             vulkan_draw_quad(vk, &quad);
          }
       }
@@ -10791,6 +10760,8 @@ static void vulkan_overlay_set_alpha(void *data,
       unsigned image, float mod)
 {
    int i;
+   uint32_t color;
+   float white[4] = {1.0f, 1.0f, 1.0f, 1.0f};
    struct vk_vertex *pv;
    vk_t *vk = (vk_t*)data;
 
@@ -10800,14 +10771,11 @@ static void vulkan_overlay_set_alpha(void *data,
    if (!vk || !vk->overlay.vertex || image >= vk->overlay.count)
       return;
 
-   pv = &vk->overlay.vertex[image * 4];
+   pv    = &vk->overlay.vertex[image * 4];
+   white[3] = mod;
+   color    = rgba8_pack(white);
    for (i = 0; i < 4; i++)
-   {
-      pv[i].color.r = 1.0f;
-      pv[i].color.g = 1.0f;
-      pv[i].color.b = 1.0f;
-      pv[i].color.a = mod;
-   }
+      pv[i].color = color;
 }
 
 static void vulkan_render_overlay(vk_t *vk, unsigned width,
@@ -11038,9 +11006,6 @@ static bool vulkan_overlay_load_textures(void *data,
    int i;
    bool old_enabled                   = false;
    vk_t *vk                           = (vk_t*)data;
-   static const struct vk_color white = {
-      1.0f, 1.0f, 1.0f, 1.0f,
-   };
 
    if (!vk)
       return false;
@@ -11067,7 +11032,7 @@ static bool vulkan_overlay_load_textures(void *data,
       vulkan_overlay_tex_geom(vk, i, 0, 0, 1, 1);
       vulkan_overlay_vertex_geom(vk, i, 0, 0, 1, 1);
       for (j = 0; j < 4; j++)
-         vk->overlay.vertex[4 * i + j].color = white;
+         vk->overlay.vertex[4 * i + j].color = RGBA8_WHITE;
    }
 
    if (old_enabled)
@@ -11090,9 +11055,6 @@ static bool vulkan_overlay_load(void *data,
    const struct texture_image *images =
       (const struct texture_image*)image_data;
    vk_t *vk                           = (vk_t*)data;
-   static const struct vk_color white = {
-      1.0f, 1.0f, 1.0f, 1.0f,
-   };
 
    if (!vk)
       return false;
@@ -11123,7 +11085,7 @@ static bool vulkan_overlay_load(void *data,
       vulkan_overlay_tex_geom(vk, i, 0, 0, 1, 1);
       vulkan_overlay_vertex_geom(vk, i, 0, 0, 1, 1);
       for (j = 0; j < 4; j++)
-         vk->overlay.vertex[4 * i + j].color = white;
+         vk->overlay.vertex[4 * i + j].color = RGBA8_WHITE;
    }
 
    if (old_enabled)
