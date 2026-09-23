@@ -1566,8 +1566,7 @@ void video_driver_gpu_record_deinit(void)
 }
 
 static void recording_dump_frame(
-      const void *data, unsigned width,
-      unsigned height, size_t pitch, bool is_idle)
+      const void *data, unsigned dims, size_t pitch, bool is_idle)
 {
    struct record_video_data ffemu_data;
    video_driver_state_t *video_st   = &video_driver_st;
@@ -1575,7 +1574,7 @@ static void recording_dump_frame(
    recording_state_t *record_st     = recording_state_get_ptr();
 
    ffemu_data.data     = data;
-   ffemu_data.dims     = VIDEO_SCALE_PACK(width, height);
+   ffemu_data.dims     = dims;
    ffemu_data.pitch    = (int)pitch;
    ffemu_data.is_dupe  = false;
 
@@ -1612,8 +1611,7 @@ static void recording_dump_frame(
             RARCH_WARN("[Recording] %s\n",
                   msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
             video_driver_gpu_record_deinit();
-            recording_dump_frame(
-                  data, width, height, pitch, is_idle);
+            recording_dump_frame(data, dims, pitch, is_idle);
             return;
          }
 
@@ -7012,7 +7010,7 @@ void video_driver_frame(const void *data, unsigned width,
            && recording_st->driver
            && recording_st->driver->push_video)
       recording_dump_frame(
-            data, width, height,
+            data, VIDEO_SCALE_PACK(width, height),
             pitch, runloop_idle);
 
 #ifdef HAVE_VIDEO_FILTER
@@ -7044,9 +7042,7 @@ void video_driver_frame(const void *data, unsigned width,
             && recording_st->driver
             && recording_st->driver->push_video)
          recording_dump_frame(
-               video_st->state_buffer,
-               VIDEO_SCALE_W(output_dims), VIDEO_SCALE_H(output_dims),
-               output_pitch,
+               video_st->state_buffer, output_dims, output_pitch,
                runloop_idle);
 
       data   = video_st->state_buffer;
