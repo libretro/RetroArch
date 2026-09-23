@@ -2652,7 +2652,10 @@ static void d3d8_overlay_tex_geom(
       float w, float h)
 {
    d3d8_video_t *d3d                   = (d3d8_video_t*)data;
-   if (!d3d)
+   /* Called whenever the frontend likes, not only after a load that
+    * worked: no page is a NULL array, and an index off the end of the
+    * page is off the end of the allocation. */
+   if (!d3d || !d3d->overlays || index >= d3d->overlays_size)
       return;
 
    d3d->overlays[index].tex_coords[0]  = x;
@@ -2674,7 +2677,7 @@ static void d3d8_overlay_vertex_geom(
       float w, float h)
 {
    d3d8_video_t *d3d = (d3d8_video_t*)data;
-   if (!d3d)
+   if (!d3d || !d3d->overlays || index >= d3d->overlays_size)
       return;
 
    y                                   = 1.0f - y;
@@ -2696,7 +2699,13 @@ static bool d3d8_overlay_load(void *data,
       return false;
 
    d3d8_free_overlays(d3d);
-   d3d->overlays      = (overlay_t*)calloc(num_images, sizeof(*d3d->overlays));
+   if (!num_images)
+      return true;
+   /* A size with no array behind it is a NULL the free, the draw and
+    * the setters would all walk. */
+   if (!(d3d->overlays = (overlay_t*)calloc(num_images,
+               sizeof(*d3d->overlays))))
+      return false;
    d3d->overlays_size = num_images;
 
    for (i = 0; i < num_images; i++)
@@ -2712,8 +2721,13 @@ static bool d3d8_overlay_load(void *data,
                   D3DPOOL_MANAGED, 0, 0, 0,
                   NULL, NULL, false);
 
+      /* A page that cannot be built is no page. */
       if (!overlay->tex)
+      {
+         RARCH_ERR("[D3D8] Failed to create overlay texture.\n");
+         d3d8_free_overlays(d3d);
          return false;
+      }
 
       if (IDirect3DTexture8_LockRect(
                (LPDIRECT3DTEXTURE8)overlay->tex, 0,
@@ -2741,14 +2755,12 @@ static bool d3d8_overlay_load(void *data,
 
 static void d3d8_overlay_enable(void *data, bool state)
 {
-   unsigned i;
    d3d8_video_t            *d3d = (d3d8_video_t*)data;
 
    if (!d3d)
       return;
 
-   for (i = 0; i < d3d->overlays_size; i++)
-      d3d->overlays_enabled = state;
+   d3d->overlays_enabled = state;
 
 #ifndef _XBOX
    win32_show_cursor(d3d, state);
@@ -2760,6 +2772,9 @@ static void d3d8_overlay_full_screen(void *data, bool enable)
    unsigned i;
    d3d8_video_t *d3d = (d3d8_video_t*)data;
 
+   if (!d3d || !d3d->overlays)
+      return;
+
    for (i = 0; i < d3d->overlays_size; i++)
       d3d->overlays[i].fullscreen = enable;
 }
@@ -2767,7 +2782,7 @@ static void d3d8_overlay_full_screen(void *data, bool enable)
 static void d3d8_overlay_set_alpha(void *data, unsigned index, float mod)
 {
    d3d8_video_t *d3d = (d3d8_video_t*)data;
-   if (d3d)
+   if (d3d && d3d->overlays && index < d3d->overlays_size)
       d3d->overlays[index].alpha_mod = mod;
 }
 
