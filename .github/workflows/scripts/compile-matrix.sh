@@ -285,6 +285,23 @@ platform_video "ctx: wayland gl" "-DHAVE_WAYLAND -DHAVE_EGL -DHAVE_OPENGL" "" \
    gfx/drivers_context/wayland_ctx.c "$WL_H"
 platform_video "ctx: wayland vulkan" "-DHAVE_WAYLAND -DHAVE_VULKAN" "" \
    gfx/drivers_context/wayland_vk_ctx.c "$WL_H /usr/include/vulkan/vulkan.h"
+# The shared Wayland code the two contexts above call into. It was the
+# only Wayland unit no lane compiled, which is how four declarations
+# after a statement sat in it. Its libdecor half is a second lane: the
+# function pointers that half calls through are declared under
+# HAVE_LIBDECOR_H *and* HAVE_DYLIB, so a lane naming only the first
+# proves nothing, and the header libdecor.h itself comes from a
+# libdecor-0 include directory the probe checks for.
+WLC89="-Wdeclaration-after-statement -Werror=declaration-after-statement"
+platform_video "wayland common" "-DHAVE_WAYLAND -DHAVE_EGL -DHAVE_OPENGL" \
+   "$WLC89" gfx/common/wayland_common.c "$WL_H"
+platform_video "wayland common: libdecor" \
+   "-DHAVE_WAYLAND -DHAVE_EGL -DHAVE_OPENGL -DHAVE_LIBDECOR_H -DHAVE_DYLIB" \
+   "-I/usr/include/libdecor-0 $WLC89" \
+   gfx/common/wayland_common.c "$WL_H /usr/include/libdecor-0/libdecor.h"
+platform_video "wayland common: backport" \
+   "-DHAVE_WAYLAND -DHAVE_EGL -DHAVE_OPENGL -DHAVE_WAYLAND_BACKPORT=1" \
+   "$WLC89" gfx/common/wayland_common.c "$WL_H"
 # webOS swaps its own shim in for half of the common Wayland functions,
 # and the Wayland context reaches it through prototypes of its own, so
 # the shim and the context each get a lane. The shim's webOS protocol
