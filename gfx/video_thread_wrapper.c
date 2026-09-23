@@ -749,6 +749,17 @@ static bool video_thread_handle_packet(
          video_thread_reply(thr, &pkt);
          break;
 
+      case CMD_SUPPRESS_SCREENSAVER:
+         /* The inhibit belongs to the window, and the window to this
+          * thread. */
+         if (thr->driver_data && thr->driver && thr->driver->suppress_screensaver)
+            pkt.data.b = thr->driver->suppress_screensaver(thr->driver_data,
+                  pkt.data.b);
+         else
+            pkt.data.b = false;
+         video_thread_reply(thr, &pkt);
+         break;
+
       case CMD_ALIVE:
          if (thr->driver_data && thr->driver && thr->driver->alive)
             pkt.data.b = thr->driver->alive(thr->driver_data);
@@ -2197,12 +2208,16 @@ static bool video_thread_focus(void *data)
 
 static bool video_thread_suppress_screensaver(void *data, bool enable)
 {
+   thread_packet_t pkt;
    thread_video_t *thr = (thread_video_t*)data;
 
    if (!thr)
       return false;
 
-   return retro_atomic_load_acquire_int(&thr->suppress_screensaver) != 0;
+   pkt.type   = CMD_SUPPRESS_SCREENSAVER;
+   pkt.data.b = enable;
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   return pkt.data.b;
 }
 
 static bool video_thread_has_windowed(void *data)
@@ -2861,7 +2876,6 @@ static bool video_thread_init(thread_video_t *thr,
     * during the frames before the first one completes. */
    retro_atomic_int_init(&thr->presentable, 1);
    retro_atomic_int_init(&thr->has_windowed, 1);
-   retro_atomic_int_init(&thr->suppress_screensaver, 1);
    retro_atomic_int_init(&thr->scale_packed, 0);
    retro_atomic_int_init(&thr->async.out_ready, 0);
    thr->last_time            = cpu_features_get_time_usec();

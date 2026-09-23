@@ -73,6 +73,7 @@ enum thread_cmd
    CMD_POKE_SET_HDR_SCANLINES,
    CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT,
    CMD_SET_NONBLOCK,
+   CMD_SUPPRESS_SCREENSAVER,
 
    CMD_DUMMY = INT_MAX
 };
@@ -708,7 +709,6 @@ typedef struct thread_video
    retro_atomic_int_t worker_running;
    retro_atomic_int_t focus;
    retro_atomic_int_t presentable;
-   retro_atomic_int_t suppress_screensaver;
    retro_atomic_int_t has_windowed;
 
    /* The flags above are published by the video thread every frame;

@@ -1982,6 +1982,73 @@ static void lane_pacing_queue_drain(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* suppress_screensaver under the wrapper reaches the driver           */
+/*                                                                    */
+/*   The screensaver inhibit is the window's, so it has to reach the  */
+/*   wrapped driver, on the thread that owns the window, with the     */
+/*   caller's enable - and the driver's answer has to come back.      */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t        sslane_driver;
+static int                   sslane_calls;
+static int                   sslane_last_enable;
+static uintptr_t             sslane_thread;
+
+static bool sslane_suppress(void *data, bool enable)
+{
+   (void)data;
+   sslane_calls++;
+   sslane_last_enable = enable ? 1 : 0;
+   sslane_thread      = sthread_get_current_thread_id();
+   /* An answer the wrapper could not make up: the opposite of what
+    * it was asked, so a constant true or an echo both fail. */
+   return !enable;
+}
+
+static void lane_suppress_screensaver(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st;
+   const video_driver_t *inner;
+   thread_video_t *thr;
+   bool ret;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "screensaver lane");
+   video_st = video_state_get_ptr();
+   thr      = (thread_video_t*)video_st->data;
+   video_thread_wait_idle();
+
+   inner                              = thr->driver;
+   sslane_driver                      = *thr->driver;
+   sslane_driver.suppress_screensaver = sslane_suppress;
+   thr->driver                        = &sslane_driver;
+   sslane_calls                       = 0;
+
+   ret = video_st->current_video->suppress_screensaver(video_st->data, true);
+   CHECK(sslane_calls == 1 && sslane_last_enable == 1,
+         "screensaver lane: suppress(true) reached the driver %d times "
+         "(enable %d)", sslane_calls, sslane_last_enable);
+   CHECK(sslane_thread == sthread_get_thread_id(thr->thread),
+         "screensaver lane: the driver was called off the video thread");
+   CHECK(!ret, "screensaver lane: the driver's answer did not come back");
+
+   ret = video_st->current_video->suppress_screensaver(video_st->data, false);
+   CHECK(sslane_calls == 2 && sslane_last_enable == 0,
+         "screensaver lane: suppress(false) reached the driver %d times "
+         "(enable %d)", sslane_calls, sslane_last_enable);
+   CHECK(ret, "screensaver lane: the driver's answer did not come back");
+
+   video_thread_wait_idle();
+   thr->driver = inner;
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] suppress-screensaver lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: zero-copy lends a slot and publishes it without a copy         */
 /*   The harness core asks for a framebuffer each frame; with the       */
 /*   setting on the wrapper should grant most asks and publish those    */
@@ -4059,6 +4126,7 @@ int main(int argc, char *argv[])
       lane_frame_path_heap();
       lane_resize_under_wrapper();
       lane_dupe_under_wrapper();
+      lane_suppress_screensaver();
       lane_size_pair_round_trip();
    }
    else
