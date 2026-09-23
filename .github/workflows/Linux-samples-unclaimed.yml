@@ -59,8 +59,12 @@ jobs:
           #
           # Samples that need a library the runner does not carry
           # (SDL, FFmpeg, libusb) are skipped: their own workflows
-          # install what they need.
+          # install what they need. A sample cross-built with mingw-w64
+          # and run under Wine gets both installed here, the first time
+          # one turns up, so it runs rather than fails for want of a
+          # compiler.
           fails=0
+          wine_ready=0
           for mk in $(find samples libretro-common/samples -name Makefile | sort); do
              dir=$(dirname "$mk")
              name=$(basename "$dir")
@@ -71,6 +75,13 @@ jobs:
              if grep -qiE 'sdl|ffmpeg|libav|libusb' "$mk"; then
                 echo "-- skip $dir (needs a library this job does not install)"
                 continue
+             fi
+             if [ $wine_ready -eq 0 ] && grep -qE 'mingw32-|wine' "$mk"; then
+                sudo apt-get update -y -qq -o Acquire::Retries=3 \
+                   -o Acquire::http::Timeout=30 >/dev/null || true
+                sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine64 \
+                   -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+                wine_ready=1
              fi
              echo "== $dir"
              if (cd "$dir" && make clean >/dev/null 2>&1 \

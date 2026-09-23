@@ -23,7 +23,7 @@ jobs:
   samples-input:
     name: Build and run samples/input
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Install dependencies
@@ -166,3 +166,22 @@ jobs:
              timeout 60 ./overlay_textures_test
           make clean
           echo "[pass] overlay_textures_test (plain, ASan, threaded ASan)"
+
+      - name: Build and run winraw_abs_pos_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/winraw_abs_pos
+        run: |
+          set -eu
+          # input/drivers/winraw_input.c, cross-built with mingw-w64 and
+          # run under Wine: an absolute pointer report's position is
+          # kept as one word, and every read must give back a position
+          # a report carried, including a report that lands during poll.
+          if ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1 \
+                || ! command -v wine >/dev/null 2>&1; then
+             sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine64 \
+                -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+          fi
+          make clean all
+          WINEDEBUG=-all timeout 300 make check
+          make clean
+          echo "[pass] winraw_abs_pos_test (wine)"
