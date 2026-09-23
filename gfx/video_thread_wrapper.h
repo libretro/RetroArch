@@ -629,7 +629,7 @@ typedef struct thread_video
           * thread's buffer will not hold by the time this thread draws:
           * video_info.stat_text points here. Only copied when there is
           * text, so a frame without the overlay carries none. */
-         char stat_text[1024];
+         char stat_text[VIDEO_STAT_TEXT_SIZE];
       } slot[2];
       /* Slot the video thread claims next. Claiming flips it. */
       unsigned tail;

@@ -189,6 +189,10 @@ enum text_alignment
 #define FONT_COLOR_GET_ALPHA(col) (((col) >>  0) & 0xff)
 #define FONT_COLOR_ARGB_TO_RGBA(col) ( (((col) >> 24) & 0xff) | (((unsigned)(col) << 8) & 0xffffff00) )
 
+/* The statistics overlay's text, the buffer it is built in and the
+ * copy the threaded wrapper draws from alike. */
+#define VIDEO_STAT_TEXT_SIZE 1664
+
 /* A size pair in one word: width in the high half, height in the low,
  * clamped so neither axis can write over the other. Anything past
  * 65535 an axis is beyond what a driver here allocates. */

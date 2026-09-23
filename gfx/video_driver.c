@@ -15,6 +15,7 @@
  */
 
 #include <memory/mem_stats.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <math.h>
 
@@ -6046,6 +6047,25 @@ static bool video_driver_convert_on_worker(video_driver_state_t *video_st,
 }
 #endif
 
+/* Appends to the statistics text, which stays terminated and within
+ * VIDEO_STAT_TEXT_SIZE whatever is asked of it: a full buffer takes
+ * nothing more, and the length never passes its last byte. */
+size_t video_driver_stat_appendf(char *s, size_t len, const char *fmt, ...)
+{
+   int _n;
+   va_list ap;
+   if (len >= VIDEO_STAT_TEXT_SIZE - 1)
+      return len;
+   va_start(ap, fmt);
+   _n = vsnprintf(s + len, VIDEO_STAT_TEXT_SIZE - len, fmt, ap);
+   va_end(ap);
+   if (_n < 0)
+      return len;
+   if ((size_t)_n >= VIDEO_STAT_TEXT_SIZE - len)
+      return VIDEO_STAT_TEXT_SIZE - 1;
+   return len + (size_t)_n;
+}
+
 /* The statistics overlay's text. Cold, so out of the frame body. */
 VIDEO_NOINLINE static void video_driver_frame_statistics(
       video_driver_state_t *video_st, runloop_state_t *runloop_st,
@@ -6100,7 +6120,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
    video_info->osd_stat_params.color_hp    = NULL;
 
    {
-      size_t __len = snprintf(video_st->stat_text, sizeof(video_st->stat_text),
+      size_t __len = video_driver_stat_appendf(video_st->stat_text, 0,
             "CORE AV_INFO\n"
             " Size:       %ux%u\n"
             " -Base:      %ux%u\n"
@@ -6157,7 +6177,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
           * on its own line. */
          video_thread_handoff_stats_t ho;
          if (video_thread_get_handoff_stats(&ho))
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+            __len = video_driver_stat_appendf(video_st->stat_text, __len,
                   " Handoff:  %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
                   " -Copy:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ") %" PRIu64 " KB/frame\n"
                   " -Wait:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
@@ -6181,7 +6201,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
           * and what ended each strip. */
          gfx_display_stats_t ui;
          gfx_display_stats_get(&ui);
-         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
                "MENU UI\n"
                " Quads:   %5u in %u strips (max %u)\n"
                " Ended by text %u tex %u blend %u sciss %u draw %u full %u end %u\n"
@@ -6215,7 +6235,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
          double      buffer_ms     = audio_driver_get_buffer_latency_ms();
          char        layout_desc[48];
          audio_driver_get_layout_desc(layout_desc, sizeof(layout_desc));
-         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
                "AUDIO: %s %s\n"
                " SampleRate: %u %s\n"
                " Speakers: %s\n"
@@ -6239,11 +6259,11 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
             else
                strlcpy(stage, "n/a", sizeof(stage));
             if (buffer_ms > 0.0 && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
-               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               __len = video_driver_stat_appendf(video_st->stat_text, __len,
                      " Buffer:  %s ms (held ~%.0f)\n",
                      stage, buffer_ms / 2.0);
             else
-               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               __len = video_driver_stat_appendf(video_st->stat_text, __len,
                      " Buffer:  %s ms\n",
                      stage);
          }
@@ -6261,13 +6281,13 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                 * reads, how far apart they are. Nothing acts on it;
                 * it says what the approximation would have cost. */
                double alt_ppm = audio_driver_get_sink_alt_ppm();
-               __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+               __len = video_driver_stat_appendf(video_st->stat_text, __len,
                      " Sink/Src: %+.0f/%+.0f ppm (bias %+.0f)\n",
                      (sink_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
                      (source_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
                      (sink_bias - 1.0) * 1e6);
                if (alt_ppm != 0.0)
-                  __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                  __len = video_driver_stat_appendf(video_st->stat_text, __len,
                         " Clock vs events: %+.0f ppm\n", alt_ppm);
                /* What the device's own clock says it is doing,
                 * where the driver can measure it - fitted from
@@ -6278,7 +6298,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                {
                   double dev_ppm = 0.0;
                   if (audio_driver_get_device_clock_ppm(&dev_ppm))
-                     __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+                     __len = video_driver_stat_appendf(video_st->stat_text, __len,
                            " Device clock: %+.0f ppm\n", dev_ppm);
                }
             }
@@ -6286,7 +6306,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
       }
 
       if (audio_st->rate_control_delta)
-         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
                " Saturation:%6.2f %%\n"
                " Deviation: %6.2f %%\n"
                " Underrun:  %6.2f %%\n"
@@ -6304,18 +6324,17 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
        * says whether a stutter was heard, against the percentages
        * above that say how near the buffer came. */
       if (audio_st->current_audio && audio_st->current_audio->underruns)
-         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
                " Dropouts: %8u\n", (unsigned)audio_driver_get_underruns());
 
-      __len += strlcpy_lit(video_st->stat_text + __len, "LATENCY\n",
-            sizeof(video_st->stat_text) - __len);
+      __len = video_driver_stat_appendf(video_st->stat_text, __len, "LATENCY\n");
 
-      __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+      __len = video_driver_stat_appendf(video_st->stat_text, __len,
             " Core:       %5.2f ms\n",
             runloop_st->core_run_time / 1000.0f);
 
       if (video_info->scanline_sync)
-         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
                " Scanline:   %5d\n"
                " -Total/Hold:%5d/%d\n",
                video_st->scanline[SCANLINE_NEXT],
@@ -6327,7 +6346,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
       {
          char pbuf[64];
          runloop_pace_string(pbuf, sizeof(pbuf));
-         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
                " Pacing:     %s\n", pbuf);
       }
 
@@ -6336,7 +6355,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
          uint64_t repeats;
          bool display_phase;
          if (video_thread_presenter_stats(&repeats, &display_phase))
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+            __len = video_driver_stat_appendf(video_st->stat_text, __len,
                   " Repeat:     %llu (%s phase)\n",
                   (unsigned long long)repeats,
                   display_phase ? "display" : "timer");
@@ -6346,7 +6365,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
          retro_time_t core_time, render_time;
          if (     video_thread_pacing_stats(&display_pacing, &core_time, &render_time)
                && display_pacing)
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+            __len = video_driver_stat_appendf(video_st->stat_text, __len,
                   " Core Start: display (core %.2f ms, render %.2f ms)\n",
                   core_time / 1000.0f, render_time / 1000.0f);
       }
@@ -6354,7 +6373,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
          retro_time_t lat_avg, lat_max;
          bool lat_display;
          if (video_thread_latency_stats(&lat_avg, &lat_max, &lat_display))
-            __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+            __len = video_driver_stat_appendf(video_st->stat_text, __len,
                   " Latency:    %.2f ms to vblank%s (worst %.2f ms, last 2 s)\n",
                   lat_avg / 1000.0f,
                   lat_display ? "" : " (est.)",
@@ -6363,7 +6382,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
 #endif
 
       if (video_st->frame_delay_target > 0)
-         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
                " Frame Delay:%2u.00 ms\n"
                " -Target:    %2u.00 ms\n"
                " -Idle:      %5.2f ms\n"
@@ -6374,15 +6393,15 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                video_st->frame_time_reserve / 1000.0f);
 
       if (video_info->runahead && !video_info->runahead_second_instance)
-         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
                " Run-Ahead: %u SinInst\n",
                video_info->runahead_frames);
       else if (video_info->runahead && video_info->runahead_second_instance)
-         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
                " Run-Ahead: %u SecInst\n",
                video_info->runahead_frames);
       else if (video_info->preemptive_frames)
-         __len += snprintf(video_st->stat_text + __len, sizeof(video_st->stat_text) - __len,
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
                " Run-Ahead: %u Preempt\n",
                video_info->runahead_frames);
 

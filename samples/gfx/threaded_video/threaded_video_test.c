@@ -554,6 +554,34 @@ static void stats_snapshot_check(const char *when)
          "fields", when);
 }
 
+/* The statistics text is appended to a line at a time; a buffer the
+ * lines do not fit in must end terminated at its last byte, with
+ * nothing written past it and nothing more taken. */
+static void lane_stat_text_bounds(void)
+{
+   unsigned had = failures;
+   static char buf[VIDEO_STAT_TEXT_SIZE + 64];
+   size_t len    = 0;
+   unsigned i;
+
+   memset(buf, 0x5a, sizeof(buf));
+   for (i = 0; i < 200; i++)
+      len = video_driver_stat_appendf(buf, len,
+            " Line %04u: %s\n", i, "a statistics line of some length");
+   CHECK(len == VIDEO_STAT_TEXT_SIZE - 1,
+         "an overfull statistics text ended at %u, not %u",
+         (unsigned)len, (unsigned)(VIDEO_STAT_TEXT_SIZE - 1));
+   CHECK(buf[VIDEO_STAT_TEXT_SIZE - 1] == '\0',
+         "an overfull statistics text is not terminated");
+   CHECK((unsigned char)buf[VIDEO_STAT_TEXT_SIZE] == 0x5a,
+         "a statistics append wrote past the buffer");
+   CHECK(video_driver_stat_appendf(buf, len, "%s", "more") == len,
+         "a full statistics buffer took more text");
+
+   if (failures == had)
+      fprintf(stderr, "[pass] stat text bounds lane\n");
+}
+
 static void lane_stats_snapshot(void)
 {
    unsigned had = failures;
@@ -3936,6 +3964,7 @@ int main(int argc, char *argv[])
    lane_toggle_in_game(cycles);
    lane_swap_count();
    lane_stats_snapshot();
+   lane_stat_text_bounds();
    lane_viewport_publish();
    lane_async_texture_load();
    if (!real_driver())

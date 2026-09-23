@@ -1268,7 +1268,7 @@ typedef struct
    retro_atomic_int_t output_dims;
    /* Where the statistics overlay's text is built, for the frame
     * descriptor to point at (video_frame_info_t::stat_text) */
-   char stat_text[1536];
+   char stat_text[VIDEO_STAT_TEXT_SIZE];
 #ifdef HAVE_OVERLAY
    /* The active overlay's viewport override, published by the main
     * thread whenever the active overlay changes
@@ -1666,6 +1666,12 @@ void video_driver_shader_deferred_tick(void);
 bool video_driver_set_rotation(unsigned rotation);
 
 bool video_driver_set_video_mode(unsigned dims, bool fullscreen);
+
+/* Appends printf-formatted text at @len to a statistics buffer of
+ * VIDEO_STAT_TEXT_SIZE, returning the new length. The buffer stays
+ * terminated; once it is full nothing more is written and the length
+ * stays at its last byte. */
+size_t video_driver_stat_appendf(char *s, size_t len, const char *fmt, ...);
 
 bool video_driver_get_video_output_size(
       unsigned *dims, char *s, size_t len);
