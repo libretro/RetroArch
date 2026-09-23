@@ -48,7 +48,9 @@ static const char *gfx_instrument_names[GFX_INSTR_COUNT] = {
    "overlay_upload",
    "overlay_pixel_kib",
    "overlay_page",
-   "overlay_page_load"
+   "overlay_page_load",
+   "overlay_draw",
+   "overlay_draw_alloc"
 };
 
 int gfx_instrument_get(enum gfx_instrument_counter c)

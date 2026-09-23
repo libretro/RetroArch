@@ -44,6 +44,7 @@
 
 #include "../font_driver.h"
 #include "../video_driver.h"
+#include "../gfx_instrument.h"
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
 #endif
@@ -383,8 +384,6 @@ typedef struct vk
        * it: the batch alone is better than four kilobytes, and a frame
        * that size is past what this tree allows. Overlays are drawn
        * from the thread that draws, one batch at a time. */
-      struct vk_buffer_range     ubo_ranges[16];
-      struct vk_buffer_range     vbo_ranges[16];
       VkDescriptorSet            sets[16];
       struct vk_descriptor_batch batch;
    } overlay;
@@ -10825,53 +10824,66 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
          ((vk->flags & VK_FLAG_OVERLAY_FULLSCREEN) > 0),
          false);
 
-   /* Pre-allocate all UBOs and descriptor sets for overlays,
-    * then batch-write all descriptors in a single vkUpdateDescriptorSets
-    * call before issuing any draw commands. This eliminates N separate
-    * vkUpdateDescriptorSets calls when rendering N overlays.
-    *
-    * Process in batches of 16 to stay within stack-allocated arrays
-    * while still rendering all overlays (neoretropad can exceed 16). */
+   /* One MVP and one vertex range for the page: every image is drawn
+    * with the same matrix, and its quad is four vertices of the page's
+    * array, drawn at its offset. Each image still gets a descriptor
+    * set of its own, for its texture; those are written in batches of
+    * 16, the size of the staging arrays. */
    {
-      int total     = (int)vk->overlay.count;
-      int base      = 0;
+      struct vk_buffer_range      ubo;
+      struct vk_buffer_range      vbo;
+      int total                   = (int)vk->overlay.count;
+      int base                    = 0;
+      VkDescriptorSet            *sets  = vk->overlay.sets;
+      struct vk_descriptor_batch *batch = &vk->overlay.batch;
+
+      if (total <= 0)
+      {
+         vk->vp = vp;
+         return;
+      }
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+                  sizeof(vk->mvp), &ubo))
+      {
+         vk->vp = vp;
+         return;
+      }
+      GFX_INSTR_INC(GFX_INSTR_OVERLAY_DRAW_ALLOC);
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+                  (size_t)total * 4 * sizeof(struct vk_vertex), &vbo))
+      {
+         vk->vp = vp;
+         return;
+      }
+      GFX_INSTR_INC(GFX_INSTR_OVERLAY_DRAW_ALLOC);
+      GFX_INSTR_INC(GFX_INSTR_OVERLAY_DRAW);
+      memcpy(ubo.data, &vk->mvp, sizeof(vk->mvp));
+      memcpy(vbo.data, vk->overlay.vertex,
+            (size_t)total * 4 * sizeof(struct vk_vertex));
+
+      vkCmdBindVertexBuffers(vk->cmd, 0, 1, &vbo.buffer, &vbo.offset);
 
       while (base < total)
       {
          int batch_count = total - base;
-         struct vk_buffer_range     *ubo_ranges = vk->overlay.ubo_ranges;
-         struct vk_buffer_range     *vbo_ranges = vk->overlay.vbo_ranges;
-         VkDescriptorSet            *sets       = vk->overlay.sets;
-         struct vk_descriptor_batch *batch      = &vk->overlay.batch;
 
-         /* Clamp this batch to stack array size */
          if (batch_count > 16)
             batch_count = 16;
 
          vulkan_descriptor_batch_init(batch);
 
-         /* Phase 1: Allocate UBOs, descriptor sets, VBOs and stage writes. */
+         /* Phase 1: allocate the batch's descriptor sets and stage
+          * their writes. */
          for (i = 0; i < batch_count; i++)
          {
             int idx = base + i;
-
-            if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
-                     sizeof(vk->mvp), &ubo_ranges[i]))
-            {
-               batch_count = i;
-               break;
-            }
-
-            memcpy(ubo_ranges[i].data, &vk->mvp, sizeof(vk->mvp));
 
             sets[i] = vulkan_descriptor_manager_alloc(
                   vk->context->device,
                   &vk->chain->descriptor_manager);
 
             if (!vulkan_descriptor_batch_add(batch, sets[i],
-                     ubo_ranges[i].buffer,
-                     ubo_ranges[i].offset,
-                     sizeof(vk->mvp),
+                     ubo.buffer, ubo.offset, sizeof(vk->mvp),
                      &vk->overlay.images[idx],
                      (vk->overlay.images[idx].flags & VK_TEX_FLAG_MIPMAP)
                         ? vk->samplers.mipmap_linear : vk->samplers.linear))
@@ -10879,29 +10891,17 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
                /* Batch full — flush what we have and add again. */
                vulkan_descriptor_batch_flush(vk->context->device, batch);
                vulkan_descriptor_batch_add(batch, sets[i],
-                     ubo_ranges[i].buffer,
-                     ubo_ranges[i].offset,
-                     sizeof(vk->mvp),
+                     ubo.buffer, ubo.offset, sizeof(vk->mvp),
                      &vk->overlay.images[idx],
                      (vk->overlay.images[idx].flags & VK_TEX_FLAG_MIPMAP)
                         ? vk->samplers.mipmap_linear : vk->samplers.linear);
             }
-
-            if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
-                     4 * sizeof(struct vk_vertex), &vbo_ranges[i]))
-            {
-               batch_count = i;
-               break;
-            }
-
-            memcpy(vbo_ranges[i].data, &vk->overlay.vertex[idx * 4],
-                  4 * sizeof(struct vk_vertex));
          }
 
          /* Single batched flush for this batch of overlay descriptors. */
          vulkan_descriptor_batch_flush(vk->context->device, batch);
 
-         /* Phase 2: Issue draw commands using pre-allocated resources. */
+         /* Phase 2: the draws. */
          for (i = 0; i < batch_count; i++)
          {
             int idx                = base + i;
@@ -10964,17 +10964,10 @@ static void vulkan_render_overlay(vk_t *vk, unsigned width,
                   vk->pipelines.layout, 0,
                   1, &sets[i], 0, NULL);
 
-            vkCmdBindVertexBuffers(vk->cmd, 0, 1,
-                  &vbo_ranges[i].buffer, &vbo_ranges[i].offset);
-
-            vkCmdDraw(vk->cmd, 4, 1, 0, 0);
+            vkCmdDraw(vk->cmd, 4, 1, (uint32_t)idx * 4, 0);
          }
 
          base += batch_count;
-
-         /* If allocation failed mid-batch, stop processing. */
-         if (batch_count == 0)
-            break;
       }
 
       vk->tracker.view    = VK_NULL_HANDLE;

@@ -88,6 +88,8 @@ enum gfx_instrument_counter
    GFX_INSTR_OVERLAY_PIXEL_KIB,
    GFX_INSTR_OVERLAY_PAGE,      /* pages shown                      */
    GFX_INSTR_OVERLAY_PAGE_LOAD, /* ..that went through load()       */
+   GFX_INSTR_OVERLAY_DRAW,      /* overlay pages drawn (Vulkan)     */
+   GFX_INSTR_OVERLAY_DRAW_ALLOC,/* ..buffer ranges they took       */
 
    GFX_INSTR_COUNT
 };

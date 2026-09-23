@@ -3621,6 +3621,22 @@ static void lane_overlay_textures(void)
       CHECK(loads <= 10, "%d texture loads for 6 overlay images: "
             "a page switch is uploading", loads);
    }
+   {
+      /* A drawn page takes one uniform and one vertex range, whatever
+       * its image count: every image has the same MVP, and its quad
+       * is drawn at its offset in the page's vertices. Counted by the
+       * drivers that report it (Vulkan). */
+      int draws  = gfx_instrument_get(GFX_INSTR_OVERLAY_DRAW);
+      int allocs = gfx_instrument_get(GFX_INSTR_OVERLAY_DRAW_ALLOC);
+      if (draws > 0)
+      {
+         fprintf(stderr, "[baseline] overlay draw: %d pages drawn, "
+               "%d buffer ranges\n", draws, allocs);
+         CHECK(allocs == 2 * draws, "%d buffer ranges for %d overlay "
+               "page draws: a page takes two, not two per image",
+               allocs, draws);
+      }
+   }
 #endif
    if (failures == had)
       fprintf(stderr, "[pass] overlay page lane\n");
