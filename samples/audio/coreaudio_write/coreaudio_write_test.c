@@ -39,7 +39,7 @@ typedef struct coreaudio
    unsigned long long ct_anchor_host;
    int      ct_have_anchor;
    double   ct_sx, ct_sy, ct_sxx, ct_sxy, ct_n;
-   retro_atomic_int_t ct_ppm, ct_valid, ct_scalar_ppm, ct_scalar_valid;
+   retro_atomic_int_t ct_ppm, ct_scalar_ppm;
    bool want_running, unit_running, is_paused, nonblock;
    struct coreaudio *dev, *sema;
 } coreaudio_t;

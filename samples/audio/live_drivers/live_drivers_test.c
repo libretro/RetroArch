@@ -8,7 +8,8 @@
  * seconds after the prebuf fills, which a real sink does not do; a
  * short write there is the bound doing its job, and is reported, not
  * failed), stop and start cork and uncork, and non-blocking writes
- * refuse at the buffer.
+ * refuse at the buffer. Before any audio neither driver reports a
+ * device clock, and one reported later is a bounded number.
  *
  * ALSA on the "null" plugin, and again told the device cannot pause
  * (the plugin can; devices that cannot are what the fallback is for):
@@ -46,6 +47,14 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
    if (!h) return;
    printf("      rate %u, buffer %u bytes, layout 0x%x\n", rate, (unsigned)drv->buffer_size(h),
          drv->layout ? drv->layout(h) : 0);
+   /* No estimate before the device has played a second: the clock
+    * word starts out saying so, not as a reading of 0 ppm. */
+   if (drv->device_clock_ppm)
+   {
+      double ppm = 12345.0;
+      CHECK(!drv->device_clock_ppm(h, &ppm) && ppm == 12345.0,
+            "%s: a device clock of %+.0f ppm before any audio", name, ppm);
+   }
    CHECK(drv->start(h, false), "%s: start", name);
    drv->set_nonblock_state(h, false);
    for (i = 0; i < 480 * 2; i += 2)
@@ -76,6 +85,18 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
    printf("      %u writes; write_avail min %u max %u, zero %u times\n",
          (unsigned)writes, (unsigned)min_avail, (unsigned)max_avail, (unsigned)zero_avail);
    CHECK(max_avail > 0, "%s: write_avail never reported room", name);
+   if (drv->device_clock_ppm)
+   {
+      double ppm = 12345.0;
+      if (drv->device_clock_ppm(h, &ppm))
+      {
+         printf("      device clock %+.0f ppm\n", ppm);
+         CHECK(ppm > -100000.0 && ppm < 100000.0,
+               "%s: device clock %+.0f ppm", name, ppm);
+      }
+      else
+         CHECK(ppm == 12345.0, "%s: no device clock, but *ppm was written", name);
+   }
    CHECK(zero_avail < writes / 2, "%s: write_avail was zero on %u of %u writes", name, (unsigned)zero_avail, (unsigned)writes);
    /* stop and start: the device pausing or dropping */
    if (drv == &audio_alsa && alsa_no_pause)

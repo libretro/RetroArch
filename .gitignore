@@ -341,3 +341,4 @@ samples/audio/embedded_alsa/ealsa_abi.h
 # Python bytecode caches, written by tools/*.py whenever they run.
 __pycache__/
 *.pyc
+samples/audio/asio_clock/asio_clock_driver.h

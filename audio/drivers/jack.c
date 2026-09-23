@@ -107,8 +107,7 @@ typedef struct jack
    int                clk_have_anchor;
    double             clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
    unsigned           clk_rate;
-   retro_atomic_int_t clk_ppm;
-   retro_atomic_int_t clk_valid;
+   retro_atomic_int_t clk_ppm; /* AUDIO_CLOCK_PPM_NONE until known */
    /* The server saying its rate or its period has changed. Both make
     * everything downstream wrong - what the resampler produces, what
     * the ring was sized for, how long a write waits - so both ask the
@@ -150,9 +149,13 @@ static size_t ja_read_deinterleaved(jack_t *jd, float *dst[JACK_MAX_PORTS], jack
 static bool ja_device_clock_ppm(void *data, double *ppm)
 {
    jack_t *jd = (jack_t*)data;
-   if (!jd || !retro_atomic_load_acquire_int(&jd->clk_valid))
+   int v;
+   if (!jd)
       return false;
-   *ppm = (double)retro_atomic_load_acquire_int(&jd->clk_ppm);
+   v = retro_atomic_load_acquire_int(&jd->clk_ppm);
+   if (v == AUDIO_CLOCK_PPM_NONE)
+      return false;
+   *ppm = (double)v;
    return true;
 }
 
@@ -226,7 +229,6 @@ static int ja_process_cb(jack_nframes_t nframes, void *data)
                   if (ppm > -100000.0 && ppm < 100000.0)
                   {
                      retro_atomic_store_release_int(&jd->clk_ppm, (int)ppm);
-                     retro_atomic_store_release_int(&jd->clk_valid, 1);
                   }
                }
             }
@@ -454,8 +456,7 @@ static void *ja_init(const char *device,
 
    *new_rate     = jack_get_sample_rate(jd->client);
    jd->clk_rate  = *new_rate;
-   retro_atomic_int_init(&jd->clk_ppm, 0);
-   retro_atomic_int_init(&jd->clk_valid, 0);
+   retro_atomic_int_init(&jd->clk_ppm, AUDIO_CLOCK_PPM_NONE);
 
    jack_set_process_callback(jd->client, ja_process_cb, jd);
    /* Registered before activation, as JACK requires of a client that
@@ -704,6 +705,7 @@ static void ja_free(void *data)
 {
    jack_t *jd = (jack_t*)data;
    size_t  x;
+   int     clk_ppm;
 
    retro_atomic_store_release_int(&jd->shutdown, 1);
 
@@ -712,10 +714,10 @@ static void ja_free(void *data)
     * are measurements, and a clock estimate that is wrong is worse
     * than one that is absent. With a device driving the graph this is
     * that device; with something else driving it, it is that. */
-   if (retro_atomic_load_acquire_int(&jd->clk_valid))
+   clk_ppm = retro_atomic_load_acquire_int(&jd->clk_ppm);
+   if (clk_ppm != AUDIO_CLOCK_PPM_NONE)
       RARCH_LOG("[JACK] Server clock, fitted from the cycle times:"
-            " %+d ppm against %u Hz.\n",
-            retro_atomic_load_acquire_int(&jd->clk_ppm), jd->clk_rate);
+            " %+d ppm against %u Hz.\n", clk_ppm, jd->clk_rate);
    else
       RARCH_LOG("[JACK] Server clock: not enough usable cycle times to"
             " fit one.\n");

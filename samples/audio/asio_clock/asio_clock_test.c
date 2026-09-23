@@ -1,6 +1,6 @@
 /* Checks the ASIO device-clock estimate off Windows.
  *
- * Two things are worth checking here without an interface plugged in.
+ * Three things are worth checking here without an interface plugged in.
  *
  * The first is the ABI. The driver hands the callback an ASIOTime, and
  * the two numbers wanted out of it - the sample position and the
@@ -17,12 +17,21 @@
  * callback arrival times is that it does not carry the OS's scheduling
  * jitter - so the test feeds it positions and timestamps for a clock
  * running at a known offset, with jitter on the timestamps, and checks
- * the answer is the clock and not the jitter. */
+ * the answer is the clock and not the jitter.
+ *
+ * The third is the word the estimate is published in, which the main
+ * thread reads while the callback publishes and a new session clears
+ * it. That is the driver's own code, pulled out of asio.c at build
+ * time, and it is read with a reset landing between its loads. */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
+
+#include <boolean.h>
+#include <retro_atomic.h>
+#include "audio/audio_driver.h"
 
 typedef double ASIOSampleRate;
 
@@ -72,6 +81,41 @@ static void fail(const char *what, const char *detail)
    printf("   FAIL %s: %s\n", what, detail);
    failures++;
 }
+
+/* The driver's device-clock word, with its own publish, reset and
+ * reader (asio_clock_driver.h, generated from asio.c). The reader runs
+ * on the main thread while the callback thread publishes and a reset
+ * clears it, so every load the reader makes is a point where the other
+ * side can run: the hook below runs a reset after the reader's first
+ * load, which is the interleaving that can pair an estimate with the
+ * word a reset left. */
+typedef struct
+{
+   double             clk_n;
+   retro_atomic_int_t clk_ppm;
+   int                clk_have_anchor;
+} ra_asio_t;
+
+static void (*load_hook)(void);
+
+static int hooked_load_acquire_int(retro_atomic_int_t *p)
+{
+   int v = retro_atomic_load_acquire_int(p);
+   if (load_hook)
+   {
+      void (*hook)(void) = load_hook;
+      load_hook = NULL;
+      hook();
+   }
+   return v;
+}
+#undef  retro_atomic_load_acquire_int
+#define retro_atomic_load_acquire_int(p) hooked_load_acquire_int(p)
+
+#include "asio_clock_driver.h"
+
+static ra_asio_t hook_dev;
+static void hook_reset(void) { asio_drv_reset(&hook_dev); }
 
 /* The recombination, as audio/drivers/asio.c has it. */
 static unsigned long long asio_int64(asio_ulong hi, asio_ulong lo)
@@ -356,6 +400,61 @@ int main(void)
          fail("absurd", "published a rate ten times nominal");
       else
          printf("   ok   ten times nominal: dropped\n");
+   }
+
+   printf("6. the driver's clock word: one estimate, or none\n");
+   {
+      ra_asio_t *ad = &hook_dev;
+      double     ppm;
+      bool       got;
+
+      memset(ad, 0, sizeof(*ad));
+      retro_atomic_int_init(&ad->clk_ppm, AUDIO_CLOCK_PPM_NONE);
+      ppm = 12345.0;
+      if (ra_asio_device_clock_ppm(ad, &ppm) || ppm != 12345.0)
+         fail("word", "reported a clock before any estimate");
+      else
+         printf("   ok   no estimate yet: nothing read\n");
+
+      asio_drv_publish(ad, 50.4);
+      ppm = 0.0;
+      got = ra_asio_device_clock_ppm(ad, &ppm);
+      if (!got || ppm != 50.0)
+         fail("word", "a published +50 ppm did not read back");
+      else
+         printf("   ok   published +50 ppm, read +50 ppm\n");
+
+      asio_drv_publish(ad, 250000.0);
+      ppm = 0.0;
+      got = ra_asio_device_clock_ppm(ad, &ppm);
+      if (!got || ppm != 50.0)
+         fail("word", "an out-of-range estimate replaced the last one");
+      else
+         printf("   ok   +250000 ppm dropped, +50 ppm kept\n");
+
+      /* A reset landing inside the read: what comes back is the
+       * estimate from before it, or nothing - never a number the
+       * device did not report. */
+      ppm       = 12345.0;
+      load_hook = hook_reset;
+      got       = ra_asio_device_clock_ppm(ad, &ppm);
+      load_hook = NULL;
+      if (got && ppm != 50.0)
+      {
+         char det[96];
+         snprintf(det, sizeof(det), "a reset during the read gave %+.0f ppm",
+               ppm);
+         fail("word", det);
+      }
+      else
+         printf("   ok   reset during the read: %s\n",
+               got ? "the estimate from before it" : "nothing");
+
+      ppm = 12345.0;
+      if (ra_asio_device_clock_ppm(ad, &ppm) || ppm != 12345.0)
+         fail("word", "an estimate survived the reset");
+      else
+         printf("   ok   after the reset: nothing read\n");
    }
 
    if (failures)

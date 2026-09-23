@@ -1594,8 +1594,7 @@ typedef struct
    sthread_t          *rt_thread;
    retro_atomic_int_t  rt_run;
    retro_atomic_64_t   rt_frames_pub;  /* absolute frames played */
-   retro_atomic_int_t  clk_ppm_pub;
-   retro_atomic_int_t  clk_valid_pub;
+   retro_atomic_int_t  clk_ppm_pub;   /* AUDIO_CLOCK_PPM_NONE until known */
 #endif
    volatile ULONG *rt_pos;      /* byte offset, updated by the device */
    bool            rt_presentation;
@@ -1648,8 +1647,7 @@ typedef struct
    uint64_t        clk_anchor_ticks;
    bool            clk_have_anchor;
    double          clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
-   int             clk_ppm;
-   bool            clk_valid;
+   int             clk_ppm;     /* AUDIO_CLOCK_PPM_NONE until known */
 } wdmks_t;
 
 /* ---- WaveRT: the mapped buffer and the position register ---------- */
@@ -1743,8 +1741,7 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
    }
    retro_atomic_int_init(&w->rt_run, 0);
    retro_atomic_64_init(&w->rt_frames_pub, 0);
-   retro_atomic_int_init(&w->clk_ppm_pub, 0);
-   retro_atomic_int_init(&w->clk_valid_pub, 0);
+   retro_atomic_int_init(&w->clk_ppm_pub, AUDIO_CLOCK_PPM_NONE);
 #endif
    return true;
 }
@@ -2301,11 +2298,7 @@ static size_t wdmks_rt_pump_once(wdmks_t *w)
                (int64_t)w->rt_played);
       }
    }
-   if (w->clk_valid)
-   {
-      retro_atomic_store_relaxed_int(&w->clk_ppm_pub, w->clk_ppm);
-      retro_atomic_store_release_int(&w->clk_valid_pub, 1);
-   }
+   retro_atomic_store_release_int(&w->clk_ppm_pub, w->clk_ppm);
 
    room = wdmks_rt_free(w);
    have = retro_spsc_read_avail(&w->rt_ring);
@@ -2710,8 +2703,7 @@ static void wdmks_clock_sample_qpc(wdmks_t *w, uint64_t frames,
       double ppm   = (slope / (double)w->rate - 1.0) * 1000000.0;
       if (ppm > -100000.0 && ppm < 100000.0)
       {
-         w->clk_ppm   = (int)ppm;
-         w->clk_valid = true;
+         w->clk_ppm = (int)ppm;
       }
    }
 }
@@ -2796,20 +2788,18 @@ static size_t wdmks_frames_consumed(void *data)
 static bool wdmks_device_clock_ppm(void *data, double *ppm)
 {
    wdmks_t *w = (wdmks_t*)data;
+   int v;
    if (!w)
       return false;
 #ifdef HAVE_THREADS
    if (w->rt_thread)
-   {
-      if (!retro_atomic_load_acquire_int(&w->clk_valid_pub))
-         return false;
-      *ppm = (double)retro_atomic_load_relaxed_int(&w->clk_ppm_pub);
-      return true;
-   }
+      v = retro_atomic_load_acquire_int(&w->clk_ppm_pub);
+   else
 #endif
-   if (!w->clk_valid)
+      v = w->clk_ppm;
+   if (v == AUDIO_CLOCK_PPM_NONE)
       return false;
-   *ppm = (double)w->clk_ppm;
+   *ppm = (double)v;
    return true;
 }
 
@@ -3048,7 +3038,7 @@ static void wdmks_free(void *data)
    }
 #endif
 
-   if (w->clk_valid)
+   if (w->clk_ppm != AUDIO_CLOCK_PPM_NONE)
       RARCH_LOG("[WDM-KS] Device clock, fitted from the pin's position:"
             " %+d ppm against %u Hz.\n", w->clk_ppm, w->rate);
 
@@ -3196,6 +3186,7 @@ static void *wdmks_init(const char *device, unsigned rate,
    }
    w->stream.handle = INVALID_HANDLE_VALUE;
    w->filter        = INVALID_HANDLE_VALUE;
+   w->clk_ppm       = AUDIO_CLOCK_PPM_NONE;
 
    for (i = chosen; i < count && !opened; i++)
    {

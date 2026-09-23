@@ -420,14 +420,12 @@ typedef struct coreaudio
    uint64_t          ct_anchor_host;
    int               ct_have_anchor;
    double            ct_sx, ct_sy, ct_sxx, ct_sxy, ct_n;
-   retro_atomic_int_t ct_ppm;
-   retro_atomic_int_t ct_valid;
+   retro_atomic_int_t ct_ppm;        /* AUDIO_CLOCK_PPM_NONE until known */
    /* What the HAL says itself, where it fills it in: mRateScalar is
     * the device clock against nominal, already computed by someone
     * with better information than this fit has. Kept beside it rather
     * than instead of it, so the two can be compared on hardware. */
-   retro_atomic_int_t ct_scalar_ppm;
-   retro_atomic_int_t ct_scalar_valid;
+   retro_atomic_int_t ct_scalar_ppm; /* AUDIO_CLOCK_PPM_NONE until known */
    unsigned output_rate;  /* Hardware output rate */
    /* The layout the output unit's input bus was set to, as the
     * frontend's mask, and its channel count: the unit routes each
@@ -580,6 +578,7 @@ static void coreaudio_free(void *data)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
    size_t       n;
+   int          clk_ppm;
 
    if (!dev)
       return;
@@ -609,17 +608,18 @@ static void coreaudio_free(void *data)
     * measurements, and a clock estimate that is wrong is worse than
     * one that is absent. Where both appear they should agree, and a
     * disagreement is the interesting result. */
-   if (retro_atomic_load_acquire_int(&dev->ct_valid))
+   clk_ppm = retro_atomic_load_acquire_int(&dev->ct_ppm);
+   if (clk_ppm != AUDIO_CLOCK_PPM_NONE)
       RARCH_LOG("[CoreAudio] Device clock, fitted from the callback's"
             " timestamps: %+d ppm against %u Hz.\n",
-            retro_atomic_load_acquire_int(&dev->ct_ppm), dev->output_rate);
+            clk_ppm, dev->output_rate);
    else
       RARCH_LOG("[CoreAudio] Device clock: not enough usable timestamps"
             " to fit one.\n");
-   if (retro_atomic_load_acquire_int(&dev->ct_scalar_valid))
+   clk_ppm = retro_atomic_load_acquire_int(&dev->ct_scalar_ppm);
+   if (clk_ppm != AUDIO_CLOCK_PPM_NONE)
       RARCH_LOG("[CoreAudio] Device clock, as the HAL reports it"
-            " (mRateScalar): %+d ppm.\n",
-            retro_atomic_load_acquire_int(&dev->ct_scalar_ppm));
+            " (mRateScalar): %+d ppm.\n", clk_ppm);
 
    /* What the device was said to be able to ask for, and what it did
     * ask for. Said whether or not anything went wrong, because the
@@ -681,7 +681,6 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
       {
          retro_atomic_store_release_int(&dev->ct_scalar_ppm,
                (int)((time_stamp->mRateScalar - 1.0) * 1000000.0));
-         retro_atomic_store_release_int(&dev->ct_scalar_valid, 1);
       }
 
       if (     (f & kAudioTimeStampSampleTimeValid)
@@ -726,7 +725,6 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
                if (ppm > -100000.0 && ppm < 100000.0)
                {
                   retro_atomic_store_release_int(&dev->ct_ppm, (int)ppm);
-                  retro_atomic_store_release_int(&dev->ct_valid, 1);
                }
             }
          }
@@ -1377,10 +1375,8 @@ static void *coreaudio_init(const char *device,
    }
    dev->ct_have_anchor = 0;
    dev->ct_n           = 0.0;
-   retro_atomic_int_init(&dev->ct_ppm, 0);
-   retro_atomic_int_init(&dev->ct_valid, 0);
-   retro_atomic_int_init(&dev->ct_scalar_ppm, 0);
-   retro_atomic_int_init(&dev->ct_scalar_valid, 0);
+   retro_atomic_int_init(&dev->ct_ppm, AUDIO_CLOCK_PPM_NONE);
+   retro_atomic_int_init(&dev->ct_scalar_ppm, AUDIO_CLOCK_PPM_NONE);
    retro_atomic_size_init(&dev->underruns, 0);
    /* Taken here, on the main thread, for the HAL's listeners. */
    dev->reinit_request = &audio_state_get_ptr()->reinit_request;
@@ -1798,19 +1794,16 @@ static void coreaudio_device_list_free(void *data, void *array_list_data)
 static bool coreaudio_device_clock_ppm(void *data, double *ppm)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
+   int v;
    if (!dev)
       return false;
-   if (retro_atomic_load_acquire_int(&dev->ct_scalar_valid))
-   {
-      *ppm = (double)retro_atomic_load_acquire_int(&dev->ct_scalar_ppm);
-      return true;
-   }
-   if (retro_atomic_load_acquire_int(&dev->ct_valid))
-   {
-      *ppm = (double)retro_atomic_load_acquire_int(&dev->ct_ppm);
-      return true;
-   }
-   return false;
+   v = retro_atomic_load_acquire_int(&dev->ct_scalar_ppm);
+   if (v == AUDIO_CLOCK_PPM_NONE)
+      v = retro_atomic_load_acquire_int(&dev->ct_ppm);
+   if (v == AUDIO_CLOCK_PPM_NONE)
+      return false;
+   *ppm = (double)v;
+   return true;
 }
 
 static size_t coreaudio_frames_consumed(void *data)

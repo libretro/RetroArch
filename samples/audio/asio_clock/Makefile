@@ -19,6 +19,12 @@ endif
 
 all: $(TARGET)
 
+# The clock word's publish, reset and reader, taken from the driver.
+asio_clock_driver.h: $(CORE_DIR)/audio/drivers/asio.c extract_clock.awk
+	awk -f extract_clock.awk $(CORE_DIR)/audio/drivers/asio.c > $@.tmp && mv $@.tmp $@
+
+asio_clock_test.o: asio_clock_driver.h
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS) -lm
 
@@ -26,6 +32,6 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -std=c99 -pedantic -Wdeclaration-after-statement -Wno-long-long -c -o $@ $<
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) asio_clock_driver.h
 
 .PHONY: all clean

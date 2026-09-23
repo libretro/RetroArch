@@ -80,8 +80,7 @@ typedef struct
    int64_t  clk_anchor_us;
    int      clk_have_anchor;
    double   clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
-   retro_atomic_int_t clk_ppm;
-   retro_atomic_int_t clk_valid;
+   retro_atomic_int_t clk_ppm; /* AUDIO_CLOCK_PPM_NONE until known */
 } pa_t;
 
 /* A note for the eventcount census: this driver stays off it, on
@@ -261,7 +260,7 @@ static void pulse_clock_sample(pa_t *pa, const pa_timing_info *ti)
       pa->clk_anchor_us   = us;
       pa->clk_have_anchor = 1;
       pa->clk_sx = pa->clk_sy = pa->clk_sxx = pa->clk_sxy = pa->clk_n = 0.0;
-      retro_atomic_store_release_int(&pa->clk_valid, 0);
+      retro_atomic_store_release_int(&pa->clk_ppm, AUDIO_CLOCK_PPM_NONE);
       return;
    }
 
@@ -291,7 +290,6 @@ static void pulse_clock_sample(pa_t *pa, const pa_timing_info *ti)
       if (ppm > -100000.0 && ppm < 100000.0)
       {
          retro_atomic_store_release_int(&pa->clk_ppm, (int)ppm);
-         retro_atomic_store_release_int(&pa->clk_valid, 1);
       }
    }
 }
@@ -381,8 +379,7 @@ static void *pulse_init(const char *device, unsigned rate,
    retro_atomic_size_init(&pa->writable_cached, 0);
    retro_atomic_size_init(&pa->sink_frames_cached, 0);
    retro_atomic_size_init(&pa->underruns, 0);
-   retro_atomic_int_init(&pa->clk_ppm, 0);
-   retro_atomic_int_init(&pa->clk_valid, 0);
+   retro_atomic_int_init(&pa->clk_ppm, AUDIO_CLOCK_PPM_NONE);
 
    memset(&spec, 0, sizeof(spec));
 
@@ -872,9 +869,13 @@ static size_t pulse_underruns(void *data)
 static bool pulse_device_clock_ppm(void *data, double *ppm)
 {
    pa_t *pa = (pa_t*)data;
-   if (!pa || !retro_atomic_load_acquire_int(&pa->clk_valid))
+   int v;
+   if (!pa)
       return false;
-   *ppm = (double)retro_atomic_load_acquire_int(&pa->clk_ppm);
+   v = retro_atomic_load_acquire_int(&pa->clk_ppm);
+   if (v == AUDIO_CLOCK_PPM_NONE)
+      return false;
+   *ppm = (double)v;
    return true;
 }
 

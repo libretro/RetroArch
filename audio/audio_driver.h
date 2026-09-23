@@ -413,6 +413,12 @@ typedef struct audio_driver
    bool (*device_clock_ppm)(void *data, double *ppm);
 } audio_driver_t;
 
+/* What a driver's device-clock word holds until it has an estimate.
+ * Every estimate is kept inside +-100000 ppm, so the estimate and
+ * whether there is one share one int: one store publishes, one load
+ * reads, and no reader can pair a flag with a stale value. */
+#define AUDIO_CLOCK_PPM_NONE (-0x7FFFFFFF - 1)
+
 /* The layout the user asked for, one of the AUDIO_LAYOUT_ masks. A
  * driver opening a device reads this; a driver without the layout
  * hook is not asked. */

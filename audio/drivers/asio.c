@@ -802,8 +802,7 @@ typedef struct ra_asio
    double              clk_sxx;
    double              clk_sxy;
    double              clk_n;
-   retro_atomic_int_t  clk_ppm;
-   retro_atomic_int_t  clk_valid;
+   retro_atomic_int_t  clk_ppm;   /* AUDIO_CLOCK_PPM_NONE until known */
    /* Frames the device has taken: a period per callback, silence
     * included. Written by the callback thread, read by the writer, so
     * atomic: an aligned word is what the machine will not tear, which
@@ -1193,7 +1192,6 @@ static ASIOTime * asio_cb_buffer_switch_time_info(
                if (ppm > -100000.0 && ppm < 100000.0)
                {
                   retro_atomic_store_release_int(&ad->clk_ppm, (int)ppm);
-                  retro_atomic_store_release_int(&ad->clk_valid, 1);
                }
             }
          }
@@ -1639,8 +1637,7 @@ static void *ra_asio_init(const char *device, unsigned rate,
        * drift. */
       ad->clk_have_anchor = 0;
       ad->clk_n           = 0.0;
-      retro_atomic_store_release_int(&ad->clk_valid, 0);
-      retro_atomic_store_release_int(&ad->clk_ppm, 0);
+      retro_atomic_store_release_int(&ad->clk_ppm, AUDIO_CLOCK_PPM_NONE);
 
       /* The rate, settled before anything is sized from it.
        *
@@ -1744,8 +1741,7 @@ static void *ra_asio_init(const char *device, unsigned rate,
    /* Taken here, on the main thread, for the driver's callbacks. */
    ad->reinit_request = &audio_state_get_ptr()->reinit_request;
    retro_atomic_size_init(&ad->underruns, 0);
-   retro_atomic_int_init(&ad->clk_ppm, 0);
-   retro_atomic_int_init(&ad->clk_valid, 0);
+   retro_atomic_int_init(&ad->clk_ppm, AUDIO_CLOCK_PPM_NONE);
    ad->clk_have_anchor = 0;
    retro_atomic_size_init(&ad->consumed, 0);
 
@@ -2064,6 +2060,7 @@ static void ra_asio_set_nonblock_state(void *data, bool state)
 
 static void ra_asio_free(void *data)
 {
+   int clk_ppm;
    ra_asio_t *ad = (ra_asio_t *)data;
    if (!ad)
       return;
@@ -2072,10 +2069,10 @@ static void ra_asio_free(void *data)
     * was doing, against the rate this driver asked for. Logged beside
     * the underrun count rather than acted on: until this has been read
     * off real interfaces it is a measurement, not an input. */
-   if (retro_atomic_load_acquire_int(&ad->clk_valid))
+   clk_ppm = retro_atomic_load_acquire_int(&ad->clk_ppm);
+   if (clk_ppm != AUDIO_CLOCK_PPM_NONE)
       RARCH_LOG("[ASIO] Device clock, from the driver's time information:"
-            " %+d ppm against %u Hz.\n",
-            retro_atomic_load_acquire_int(&ad->clk_ppm), ad->sample_rate);
+            " %+d ppm against %u Hz.\n", clk_ppm, ad->sample_rate);
    else
       RARCH_LOG("[ASIO] Device clock: the driver reported no usable time"
             " information.\n");
@@ -2203,9 +2200,13 @@ static size_t ra_asio_underruns(void *data)
 static bool ra_asio_device_clock_ppm(void *data, double *ppm)
 {
    ra_asio_t *ad = (ra_asio_t*)data;
-   if (!ad || !retro_atomic_load_acquire_int(&ad->clk_valid))
+   int v;
+   if (!ad)
       return false;
-   *ppm = (double)retro_atomic_load_acquire_int(&ad->clk_ppm);
+   v = retro_atomic_load_acquire_int(&ad->clk_ppm);
+   if (v == AUDIO_CLOCK_PPM_NONE)
+      return false;
+   *ppm = (double)v;
    return true;
 }
 

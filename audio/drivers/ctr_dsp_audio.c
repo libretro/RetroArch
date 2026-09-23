@@ -74,8 +74,7 @@ typedef struct
    uint64_t clk_anchor_tick;
    int      clk_have_anchor;
    double   clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
-   retro_atomic_int_t clk_ppm;
-   retro_atomic_int_t clk_valid;
+   retro_atomic_int_t clk_ppm; /* AUDIO_CLOCK_PPM_NONE until known */
    bool nonblock;
    bool playing;
 } ctr_dsp_audio_t;
@@ -105,7 +104,7 @@ static void ctr_dsp_audio_clock_sample(ctr_dsp_audio_t *ctr, uint32_t frames)
       ctr->clk_have_anchor = 1;
       ctr->clk_sx = ctr->clk_sy = ctr->clk_sxx = ctr->clk_sxy
                   = ctr->clk_n = 0.0;
-      retro_atomic_store_release_int(&ctr->clk_valid, 0);
+      retro_atomic_store_release_int(&ctr->clk_ppm, AUDIO_CLOCK_PPM_NONE);
       return;
    }
 
@@ -135,7 +134,6 @@ static void ctr_dsp_audio_clock_sample(ctr_dsp_audio_t *ctr, uint32_t frames)
       if (ppm > -100000.0 && ppm < 100000.0)
       {
          retro_atomic_store_release_int(&ctr->clk_ppm, (int)ppm);
-         retro_atomic_store_release_int(&ctr->clk_valid, 1);
       }
    }
 }
@@ -186,6 +184,7 @@ static void *ctr_dsp_audio_init(const char *device, unsigned rate, unsigned late
       ndspExit();
       return NULL;
    }
+   retro_atomic_int_init(&ctr->clk_ppm, AUDIO_CLOCK_PPM_NONE);
    LightEvent_Init(&ctr->frame_event, RESET_ONESHOT);
    ndspSetCallback(ctr_dsp_audio_frame_cb, ctr);
 
@@ -423,9 +422,13 @@ static size_t ctr_dsp_audio_buffer_size(void *data)
 static bool ctr_dsp_audio_device_clock_ppm(void *data, double *ppm)
 {
    ctr_dsp_audio_t *ctr = (ctr_dsp_audio_t*)data;
-   if (!ctr || !retro_atomic_load_acquire_int(&ctr->clk_valid))
+   int v;
+   if (!ctr)
       return false;
-   *ppm = (double)retro_atomic_load_acquire_int(&ctr->clk_ppm);
+   v = retro_atomic_load_acquire_int(&ctr->clk_ppm);
+   if (v == AUDIO_CLOCK_PPM_NONE)
+      return false;
+   *ppm = (double)v;
    return true;
 }
 
