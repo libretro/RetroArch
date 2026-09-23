@@ -125,10 +125,8 @@ typedef struct d3d8_video
        * stop entry lists from spilling on top of header/footer
        * regions in Ozone, which is the only place the visual
        * gap with d3d9+ was noticeable. */
-      int  scissor_x;
-      int  scissor_y;
-      int  scissor_w;
-      int  scissor_h;
+      unsigned scissor_pos;
+      unsigned scissor_dims;
       bool scissor_active;
       /* Scratch UV array for clipped quads.  Layout matches
        * d3d8_tex_coords: BL, BR, TL, TR (8 floats).  Reused
@@ -169,11 +167,9 @@ typedef struct d3d8_renderchain
    const video_info_t *video_info;
    LPDIRECT3DTEXTURE8 tex;
    LPDIRECT3DVERTEXBUFFER8 vertex_buf;
-   unsigned last_width;
-   unsigned last_height;
+   unsigned last_dims;
    void *vertex_decl;
-   unsigned tex_w;
-   unsigned tex_h;
+   unsigned tex_dims;
    uint64_t frame_count;
 } d3d8_renderchain_t;
 
@@ -406,15 +402,16 @@ static void d3d8_set_vertices(
       unsigned pass,
       unsigned vert_width, unsigned vert_height, uint64_t frame_count)
 {
-   if (chain->last_width != vert_width || chain->last_height != vert_height)
+   unsigned vert_dims    = VIDEO_SCALE_PACK(vert_width, vert_height);
+
+   if (chain->last_dims != vert_dims)
    {
       Vertex vert[4];
       void *verts        = NULL;
       float tex_w        = vert_width;
       float tex_h        = vert_height;
 
-      chain->last_width  = vert_width;
-      chain->last_height = vert_height;
+      chain->last_dims   = vert_dims;
 
       if (chain->vertex_buf)
       {
@@ -444,10 +441,10 @@ static void d3d8_set_vertices(
          vert[3].u        = tex_w;
          vert[3].v        = tex_h;
 #ifndef _XBOX
-         vert[1].u       /= chain->tex_w;
-         vert[2].v       /= chain->tex_h;
-         vert[3].u       /= chain->tex_w;
-         vert[3].v       /= chain->tex_h;
+         vert[1].u       /= VIDEO_SCALE_W(chain->tex_dims);
+         vert[2].v       /= VIDEO_SCALE_H(chain->tex_dims);
+         vert[3].u       /= VIDEO_SCALE_W(chain->tex_dims);
+         vert[3].v       /= VIDEO_SCALE_H(chain->tex_dims);
 #endif
 
          vert[0].color    = 0xFFFFFFFF;
@@ -478,12 +475,13 @@ static void d3d8_blit_to_texture(
    D3DDevice_SetSoftDisplayFilter(global->console.softfilter_enable);
 #endif
 
-   if (chain->last_width != width || chain->last_height != height)
+   if (chain->last_dims != VIDEO_SCALE_PACK(width, height))
    {
       if (IDirect3DTexture8_LockRect(tex, 0, lr,
                NULL, D3DLOCK_NOSYSLOCK) == D3D_OK)
       {
-         memset(lr->pBits, 0, chain->tex_h * lr->Pitch);
+         memset(lr->pBits, 0,
+               VIDEO_SCALE_H(chain->tex_dims) * lr->Pitch);
          IDirect3DTexture8_UnlockRect((LPDIRECT3DTEXTURE8)tex, 0);
       }
    }
@@ -578,8 +576,8 @@ static bool d3d8_setup_init(void *data,
    chain->pixel_size                      = (fmt == RETRO_PIXEL_FORMAT_RGB565)
       ? 2
       : 4;
-   chain->tex_w                           = link_info->tex_w;
-   chain->tex_h                           = link_info->tex_h;
+   chain->tex_dims                        = VIDEO_SCALE_PACK(
+         link_info->tex_w, link_info->tex_h);
 
    chain->vertex_buf                      = (LPDIRECT3DVERTEXBUFFER8)d3d8_vertex_buffer_new(d3dr, 4 * sizeof(Vertex),
          D3DUSAGE_WRITEONLY,
@@ -590,7 +588,8 @@ static bool d3d8_setup_init(void *data,
       return false;
 
    chain->tex = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3dr,
-         chain->tex_w, chain->tex_h, 1, 0,
+         VIDEO_SCALE_W(chain->tex_dims),
+         VIDEO_SCALE_H(chain->tex_dims), 1, 0,
          video_info->rgb32
          ?
          D3D8_XRGB8888_FORMAT : D3D8_RGB565_FORMAT,
@@ -737,10 +736,10 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
     * again on the way out, so callers don't notice. */
    if (d3d->menu_display.scissor_active)
    {
-      int sx  = d3d->menu_display.scissor_x;
-      int sy  = d3d->menu_display.scissor_y;
-      int sx2 = sx + d3d->menu_display.scissor_w;
-      int sy2 = sy + d3d->menu_display.scissor_h;
+      int sx  = VIDEO_POS_X(d3d->menu_display.scissor_pos);
+      int sy  = VIDEO_POS_Y(d3d->menu_display.scissor_pos);
+      int sx2 = sx + (int)VIDEO_SCALE_W(d3d->menu_display.scissor_dims);
+      int sy2 = sy + (int)VIDEO_SCALE_H(d3d->menu_display.scissor_dims);
 
       if (draw->coords->vertex)
       {
@@ -1111,17 +1110,13 @@ static void gfx_display_d3d8_draw_pipeline(
 static void gfx_display_d3d8_scissor_begin(void *data, unsigned video_dims,
       int x, int y, unsigned dims)
 {
-   unsigned width        = VIDEO_SCALE_W(dims);
-   unsigned height       = VIDEO_SCALE_H(dims);
    d3d8_video_t *d3d = (d3d8_video_t*)data;
 
    if (!d3d)
       return;
 
-   d3d->menu_display.scissor_x      = x;
-   d3d->menu_display.scissor_y      = y;
-   d3d->menu_display.scissor_w      = (int)width;
-   d3d->menu_display.scissor_h      = (int)height;
+   d3d->menu_display.scissor_pos    = VIDEO_POS_PACK(x, y);
+   d3d->menu_display.scissor_dims   = dims;
    d3d->menu_display.scissor_active = true;
 }
 
@@ -1153,8 +1148,7 @@ typedef struct
    const font_renderer_driver_t *font_driver;
    void                         *font_data;
    struct font_atlas             *atlas;
-   unsigned                      tex_width;
-   unsigned                      tex_height;
+   unsigned                      tex_dims;
    /* Scratch buffer to avoid per-line malloc/free in font rendering. */
    Vertex                       *scratch_verts;
    unsigned                      scratch_capacity; /* in Vertex count */
@@ -1224,15 +1218,16 @@ static void *d3d8_font_init(void *data,
    }
 
    font->atlas      = font->font_driver->get_atlas(font->font_data);
-   font->tex_width  = font->atlas->width;
-   font->tex_height = font->atlas->height;
+   font->tex_dims   = VIDEO_SCALE_PACK(font->atlas->width,
+         font->atlas->height);
 
    /* D3D8 doesn't universally support D3DFMT_A8 as a texture format,
     * so expand the A8 atlas into A8R8G8B8 (white RGB, alpha = atlas
     * sample).  The colour modulation against the per-vertex diffuse
     * is done by the default fixed-function texture stage state. */
    font->texture = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3d->dev,
-         font->tex_width, font->tex_height, 1,
+         VIDEO_SCALE_W(font->tex_dims),
+         VIDEO_SCALE_H(font->tex_dims), 1,
          0, D3D8_ARGB8888_FORMAT,
          D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
@@ -1382,8 +1377,10 @@ static void d3d8_font_render_line(
    unsigned i;
    float inv_viewport_w             = 1.0f / (float)width;
    float inv_viewport_h             = 1.0f / (float)height;
-   float inv_tex_w                  = 1.0f / (float)font->tex_width;
-   float inv_tex_h                  = 1.0f / (float)font->tex_height;
+   float inv_tex_w                  =
+      1.0f / (float)VIDEO_SCALE_W(font->tex_dims);
+   float inv_tex_h                  =
+      1.0f / (float)VIDEO_SCALE_H(font->tex_dims);
    const struct font_glyph *glyph_q = font->font_driver->get_glyph(
          font->font_data, '?');
    int lx                           = roundf(line_x * width);
@@ -1420,8 +1417,8 @@ static void d3d8_font_render_line(
     * Ozone's header/footer regions. */
    if (d3d->menu_display.scissor_active)
    {
-      int sy  = d3d->menu_display.scissor_y;
-      int sy2 = sy + d3d->menu_display.scissor_h;
+      int sy  = VIDEO_POS_Y(d3d->menu_display.scissor_pos);
+      int sy2 = sy + (int)VIDEO_SCALE_H(d3d->menu_display.scissor_dims);
       if (ly >= sy2 || ly < sy)
          return;
    }
@@ -1637,17 +1634,18 @@ static void d3d8_font_render_msg(
    {
       bool respecified = false;
 
-      if (   font->atlas->width  != font->tex_width
-          || font->atlas->height != font->tex_height)
+      if (font->tex_dims != VIDEO_SCALE_PACK(font->atlas->width,
+               font->atlas->height))
       {
          if (font->texture)
             IDirect3DTexture8_Release(font->texture);
 
          respecified      = true;
-         font->tex_width  = font->atlas->width;
-         font->tex_height = font->atlas->height;
+         font->tex_dims   = VIDEO_SCALE_PACK(font->atlas->width,
+               font->atlas->height);
          font->texture    = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3d->dev,
-               font->tex_width, font->tex_height, 1,
+               VIDEO_SCALE_W(font->tex_dims),
+               VIDEO_SCALE_H(font->tex_dims), 1,
                0, D3D8_ARGB8888_FORMAT,
                D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
       }
