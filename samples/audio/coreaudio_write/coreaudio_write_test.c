@@ -32,7 +32,8 @@ typedef struct coreaudio
    size_t capacity, usable, read_ptr, write_ptr, period_pull, max_pull_frames;
    unsigned channels, output_rate;
    retro_atomic_size_t filled, consumed, underruns, max_pull_observed;
-   retro_atomic_size_t oversized_pulls, format_errors, worst_short, worst_short_avail;
+   retro_atomic_size_t oversized_pulls, format_errors;
+   retro_atomic_int_t worst_short;
    retro_atomic_int_t waiters;
    double   ct_ns_per_tick;
    double   ct_anchor_sample;
@@ -127,8 +128,7 @@ static void init(coreaudio_t *dev, unsigned ms, unsigned channels)
    retro_atomic_size_init(&dev->max_pull_observed, 0);
    retro_atomic_size_init(&dev->oversized_pulls, 0);
    retro_atomic_size_init(&dev->format_errors, 0);
-   retro_atomic_size_init(&dev->worst_short, 0);
-   retro_atomic_size_init(&dev->worst_short_avail, 0);
+   retro_atomic_int_init(&dev->worst_short, 0);
    retro_atomic_int_init(&dev->waiters, 0);
 }
 
@@ -185,6 +185,37 @@ static void short_buffer(unsigned channels, bool underrun)
    coreaudio_audio_write_cb(&dev, &flags, NULL, 0, 1, &list);
    CHECK(underrun || !memcmp(next, input + channels, channels * sizeof(float)),
          "next callback retains channel alignment");
+   free(dev.buffer);
+}
+
+/* Underruns of different depths: the recorded worst is the deepest
+ * shortfall, in frames, with the ring's fill from that same callback -
+ * not a later, shallower one's. */
+static void worst_short(unsigned channels)
+{
+   static const unsigned queue[] = { 6, 1, 4, 0, 5 };  /* frames queued */
+   coreaudio_t dev;
+   float data[8 * 8];
+   AudioBufferList list;
+   AudioUnitRenderActionFlags flags;
+   unsigned i, w;
+   init(&dev, 8, channels);
+   list.mNumberBuffers = 1;
+   list.mBuffers[0].mData = data;
+   for (i = 0; i < sizeof(queue) / sizeof(queue[0]); i++)
+   {
+      if (queue[i])
+         rb_write(&dev, input, queue[i] * channels);
+      flags = 0;
+      list.mBuffers[0].mDataByteSize = 8 * channels * sizeof(float);
+      coreaudio_audio_write_cb(&dev, &flags, NULL, 0, 8, &list);
+   }
+   w = (unsigned)retro_atomic_load_acquire_int(&dev.worst_short);
+   /* The fourth callback found nothing: eight frames short, none there. */
+   CHECK((w >> 16) == 8 && (w & 0xFFFF) == 0,
+         "the worst shortfall is kept with its own ring fill");
+   CHECK(retro_atomic_load_acquire_size(&dev.underruns) == 5,
+         "every short callback counts as an underrun");
    free(dev.buffer);
 }
 
@@ -260,6 +291,7 @@ int main(int argc, char **argv)
    {
       short_buffer(j, false);
       short_buffer(j, true);
+      worst_short(j);
       partial_byte_request(j);
       fragment_buffer(j);
    }
