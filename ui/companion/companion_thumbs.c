@@ -324,10 +324,12 @@ uint32_t *companion_thumbs_scale(const uint32_t *src,
    return companion_thumbs_scale_ex(src, src_dims, dst_dims, bg, false);
 }
 
+#ifdef HAVE_THREADS
 /* Does @path take the anim-first route - its still being the first
  * frame of a preview session that the animation then continues?  A
  * video always; a WEBP or PNG when its head says it animates (32
- * bytes / 4 KiB read); anything else never. */
+ * bytes / 4 KiB read); anything else never. Only the decode threads
+ * ask: poll() decodes stills alone. */
 static int ct_anim_first(const char *path)
 {
    enum image_type_enum type = image_texture_get_type(path);
@@ -337,6 +339,7 @@ static int ct_anim_first(const char *path)
       return gfx_anim_preview_probe(path) == 1;
    return 0;
 }
+#endif
 
 /* A video's still is its first frame, taken through the same windowed
  * open the menu uses: image_texture_load would read the whole file

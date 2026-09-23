@@ -163,10 +163,13 @@ typedef modeline gold_mode;
 #else /* C89 engine */
 
 #define MODELINE_STANDALONE
-#define RARCH_LOG(...)  do { } while (0)
-#define RARCH_DBG(...)  do { } while (0)
-#define RARCH_ERR(...)  do { } while (0)
-#define RARCH_WARN(...) do { } while (0)
+/* The engine's log lines are dropped, their arguments still evaluated
+ * as a real build evaluates them. */
+static void gold_log_drop(const char *fmt, ...) { (void)fmt; }
+#define RARCH_LOG  gold_log_drop
+#define RARCH_DBG  gold_log_drop
+#define RARCH_ERR  gold_log_drop
+#define RARCH_WARN gold_log_drop
 
 #include "../gfx/modeline/modeline_core.c"
 #include "../gfx/modeline/modeline_monitor.c"
