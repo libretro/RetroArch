@@ -723,10 +723,11 @@ typedef struct materialui_handle
    /* Scrollbar parameters */
    materialui_scrollbar_t scrollbar;   /* int alignment */
    int cursor_size;
-   int osk_textbox_x;
-   int osk_textbox_y;
-   int osk_textbox_w;
-   int osk_textbox_h;
+   /* The on-screen keyboard's text box, as VIDEO_POS_PACK's origin
+    * and VIDEO_SCALE_PACK's size. Written as a unit when the box is
+    * drawn and read as a unit by the pointer hit test. */
+   unsigned osk_textbox_pos;
+   unsigned osk_textbox_dims;
    /* Cached system bar data */
    materialui_sys_bar_cache_t sys_bar_cache; /* int alignment */
    float last_scale_factor;
@@ -3009,10 +3010,8 @@ static void materialui_render_messagebox(
 
    if (draw_focus)
    {
-      mui->osk_textbox_x = slice_x;
-      mui->osk_textbox_y = slice_y;
-      mui->osk_textbox_w = slice_w;
-      mui->osk_textbox_h = slice_h;
+      mui->osk_textbox_pos  = VIDEO_POS_PACK(slice_x, slice_y);
+      mui->osk_textbox_dims = VIDEO_SCALE_PACK(slice_w, slice_h);
    }
 
    /* Draw message box background */
@@ -3225,13 +3224,17 @@ static bool materialui_osk_pointer_over_textbox(
 {
    materialui_handle_t *mui = (materialui_handle_t*)data;
 
-   if (     mui
-         && menu_input_dialog_get_display_kb()
-         && x > mui->osk_textbox_x
-         && x < mui->osk_textbox_x + mui->osk_textbox_w
-         && y > mui->osk_textbox_y
-         && y < mui->osk_textbox_y + mui->osk_textbox_h)
-      return true;
+   if (mui && menu_input_dialog_get_display_kb())
+   {
+      int box_x = VIDEO_POS_X(mui->osk_textbox_pos);
+      int box_y = VIDEO_POS_Y(mui->osk_textbox_pos);
+
+      if (     x > box_x
+            && x < box_x + (int)VIDEO_SCALE_W(mui->osk_textbox_dims)
+            && y > box_y
+            && y < box_y + (int)VIDEO_SCALE_H(mui->osk_textbox_dims))
+         return true;
+   }
 
    return false;
 }
