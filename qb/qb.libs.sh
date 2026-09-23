@@ -140,7 +140,8 @@ check_platform()
 # $4 = function in lib [checked only if non-empty]
 # $5 = extralibs [checked only if non-empty]
 # $6 = headers [checked only if non-empty]
-# $7 = include directory [checked only if non-empty]
+# $7 = include directories ['dir' or 'dir dir1 dir2', each must exist,
+#      checked only if non-empty]
 # $8 = critical error message [checked only if non-empty]
 check_lib()
 {	add_opt "$2"
@@ -175,16 +176,21 @@ check_lib()
 	printf %s\\n "$answer"
 
 	if [ "$answer" = 'yes' ] && [ "$include" ]; then
-		answer='no'
-		for dir in $(printf %s "$INCLUDES"); do
-			[ "$answer" = 'yes' ] && break
-			printf %s "Checking existence of /$dir/$include ... "
-			if [ -d "/$dir/$include" ]; then
-				eval "${2}_CFLAGS=\"-I/$dir/$include\""
-				answer='yes'
-			fi
-			printf %s\\n "$answer"
+		incflags=''
+		for inc in $(printf %s "$include"); do
+			answer='no'
+			for dir in $(printf %s "$INCLUDES"); do
+				[ "$answer" = 'yes' ] && break
+				printf %s "Checking existence of /$dir/$inc ... "
+				if [ -d "/$dir/$inc" ]; then
+					incflags="${incflags:+$incflags }-I/$dir/$inc"
+					answer='yes'
+				fi
+				printf %s\\n "$answer"
+			done
+			[ "$answer" = 'yes' ] || break
 		done
+		[ "$answer" = 'yes' ] && eval "${2}_CFLAGS=\"$incflags\""
 	fi
 
 	eval "HAVE_$2=\"$answer\""
@@ -366,7 +372,7 @@ check_switch()
 # $1 = language
 # $2 = HAVE_$2
 # $3 = lib
-# $4 = include directory [checked only if non-empty]
+# $4 = include directories [see check_lib, checked only if non-empty]
 # $5 = package
 # $6 = version [checked only if non-empty]
 # $7 = critical error message [checked only if non-empty]

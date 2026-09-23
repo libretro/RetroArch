@@ -418,8 +418,28 @@ check_pkgconf RSOUND rsound 1.1
 check_pkgconf ROAR libroar 1.0.12
 check_val '' JACK -ljack '' jack 0.120.1 '' false
 check_val '' PULSE -lpulse '' libpulse '' '' false
-check_val '' PIPEWIRE -lpipewire-0.3 '' libpipewire-0.3 '' '' false
-check_val '' PIPEWIRE_STABLE -lpipewire-0.3 '' libpipewire-0.3 1.0.0 '' false
+check_val '' PIPEWIRE -lpipewire-0.3 'pipewire-0.3 spa-0.2' libpipewire-0.3 '' '' false
+check_val '' PIPEWIRE_STABLE -lpipewire-0.3 'pipewire-0.3 spa-0.2' libpipewire-0.3 1.0.0 '' false
+
+# Without pkg-config the library check above cannot see the version, so
+# PIPEWIRE_STABLE takes it from the headers instead.
+if [ "$HAVE_PIPEWIRE_STABLE" = 'yes' ] && [ "$PKG_CONF_PATH" = 'none' ]; then
+   printf %s\\n '#include <pipewire/version.h>' \
+      '#if !PW_CHECK_VERSION(1, 0, 0)' \
+      '#error PipeWire older than 1.0.0' \
+      '#endif' \
+      'int main(void) { return 0; }' > "$TEMP_C"
+   printf %s 'Checking PipeWire headers >= 1.0.0 ... '
+   if $(printf %s "$CC") -o "$TEMP_EXE" "$TEMP_C" \
+         $(printf %s "$BUILD_DIRS $CFLAGS $PIPEWIRE_STABLE_CFLAGS $LDFLAGS") \
+         >>config.log 2>&1; then
+      printf %s\\n 'yes'
+   else
+      printf %s\\n 'no'
+      HAVE_PIPEWIRE_STABLE=no
+   fi
+   rm -f -- "$TEMP_C" "$TEMP_EXE"
+fi
 check_val '' SDL -lSDL SDL sdl 1.2.10 '' true
 check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' true
 check_val '' SDL3 -lSDL3 SDL3 sdl3 3.2.20 '' true
