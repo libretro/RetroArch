@@ -1321,40 +1321,32 @@ static bool vulkan_update_display_mode(
       const VkDisplayModePropertiesKHR *mode,
       const struct vulkan_display_surface_info *info)
 {
-   unsigned visible_width  = mode->parameters.visibleRegion.width;
-   unsigned visible_height = mode->parameters.visibleRegion.height;
+   unsigned vis_w = mode->parameters.visibleRegion.width;
+   unsigned vis_h = mode->parameters.visibleRegion.height;
+   int want_w     = (int)VIDEO_SCALE_W(info->dims);
+   int want_h     = (int)VIDEO_SCALE_H(info->dims);
 
-   if (!VIDEO_SCALE_W(info->dims) || !VIDEO_SCALE_H(info->dims))
+   if (!want_w || !want_h)
    {
       /* Strategy here is to pick something which is largest resolution. */
-      unsigned area = visible_width * visible_height;
-      if (area > VIDEO_SCALE_W(*dims) * VIDEO_SCALE_H(*dims))
-      {
-         *dims      = VIDEO_SCALE_PACK(visible_width, visible_height);
-         return true;
-      }
+      if (vis_w * vis_h <= VIDEO_SCALE_W(*dims) * VIDEO_SCALE_H(*dims))
+         return false;
    }
    else
    {
-      unsigned visible_rate = mode->parameters.refreshRate;
       /* For particular resolutions, find the closest. */
-      int delta_x           = (int)VIDEO_SCALE_W(info->dims) - (int)visible_width;
-      int delta_y           = (int)VIDEO_SCALE_H(info->dims) - (int)visible_height;
-      int old_delta_x       = (int)VIDEO_SCALE_W(info->dims) - (int)VIDEO_SCALE_W(*dims);
-      int old_delta_y       = (int)VIDEO_SCALE_H(info->dims) - (int)VIDEO_SCALE_H(*dims);
-      int delta_rate        = abs((int)info->refresh_rate_x1000 - (int)visible_rate);
-
-      int dist              = delta_x     * delta_x     + delta_y     * delta_y;
-      int old_dist          = old_delta_x * old_delta_x + old_delta_y * old_delta_y;
-
-      if (dist < old_dist && delta_rate < 1000)
-      {
-         *dims        = VIDEO_SCALE_PACK(visible_width, visible_height);
-         return true;
-      }
+      int dx     = want_w - (int)vis_w;
+      int dy     = want_h - (int)vis_h;
+      int old_dx = want_w - (int)VIDEO_SCALE_W(*dims);
+      int old_dy = want_h - (int)VIDEO_SCALE_H(*dims);
+      if (     dx * dx + dy * dy >= old_dx * old_dx + old_dy * old_dy
+            || abs((int)info->refresh_rate_x1000
+               - (int)mode->parameters.refreshRate) >= 1000)
+         return false;
    }
 
-   return false;
+   *dims = VIDEO_SCALE_PACK(vis_w, vis_h);
+   return true;
 }
 
 static bool vulkan_create_display_surface(gfx_ctx_vulkan_data_t *vk,
