@@ -6596,6 +6596,8 @@ static void d3d11_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32,
       unsigned dims, float alpha)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    d3d11_video_t* d3d11    = (d3d11_video_t*)data;
    settings_t*    settings = config_get_ptr();
    bool menu_linear_filter = settings->bools.menu_linear_filter;
@@ -6603,18 +6605,18 @@ static void d3d11_set_menu_texture_frame(
       (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (
-         d3d11->menu.texture.desc.Width  != VIDEO_SCALE_W(dims) ||
-         d3d11->menu.texture.desc.Height != VIDEO_SCALE_H(dims))
+         d3d11->menu.texture.desc.Width  != width ||
+         d3d11->menu.texture.desc.Height != height)
    {
       d3d11->menu.texture.desc.Format = format;
-      d3d11->menu.texture.desc.Width  = VIDEO_SCALE_W(dims);
-      d3d11->menu.texture.desc.Height = VIDEO_SCALE_H(dims);
+      d3d11->menu.texture.desc.Width  = width;
+      d3d11->menu.texture.desc.Height = height;
       d3d11_release_texture(&d3d11->menu.texture);
       d3d11_init_texture(d3d11->device, &d3d11->menu.texture);
    }
 
    if (d3d11->menu.texture.staging)
-      d3d11_update_texture(d3d11->context, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), 0,
+      d3d11_update_texture(d3d11->context, width, height, 0,
             format, frame, &d3d11->menu.texture);
    d3d11->menu.texture.sampler = d3d11->samplers
       [menu_linear_filter

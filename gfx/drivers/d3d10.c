@@ -3607,24 +3607,26 @@ static void d3d10_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32,
       unsigned dims, float alpha)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    d3d10_video_t* d3d10    = (d3d10_video_t*)data;
    settings_t*    settings = config_get_ptr();
    DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM :
       (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
    if (
-            (d3d10->menu.texture.desc.Width  != VIDEO_SCALE_W(dims))
-         || (d3d10->menu.texture.desc.Height != VIDEO_SCALE_H(dims)))
+            (d3d10->menu.texture.desc.Width  != width)
+         || (d3d10->menu.texture.desc.Height != height))
    {
       d3d10->menu.texture.desc.Format = format;
-      d3d10->menu.texture.desc.Width  = VIDEO_SCALE_W(dims);
-      d3d10->menu.texture.desc.Height = VIDEO_SCALE_H(dims);
+      d3d10->menu.texture.desc.Width  = width;
+      d3d10->menu.texture.desc.Height = height;
       d3d10_release_texture(&d3d10->menu.texture);
       d3d10_init_texture(d3d10->device, &d3d10->menu.texture);
    }
 
    if (d3d10->menu.texture.staging)
-      d3d10_update_texture(d3d10->device, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), 0,
+      d3d10_update_texture(d3d10->device, width, height, 0,
             format, frame, &d3d10->menu.texture);
    d3d10->menu.texture.sampler = d3d10->samplers
       [settings->bools.menu_linear_filter

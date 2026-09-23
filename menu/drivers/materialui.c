@@ -4349,6 +4349,8 @@ static void materialui_layout(
 static void materialui_render(void *data,
       unsigned dims, bool is_idle)
 {
+   unsigned dims_w = VIDEO_SCALE_W(dims);
+   unsigned dims_h = VIDEO_SCALE_H(dims);
    size_t i;
    float scroll_y_max;
    float overscroll_max;
@@ -4508,8 +4510,8 @@ static void materialui_render(void *data,
    /* Need to adjust/range-check scroll position first,
     * otherwise cannot determine correct entry index for
     * MENU_ENTRIES_CTL_SET_START */
-   scroll_y_max    = materialui_get_scroll_y_max(mui, VIDEO_SCALE_H(dims), header_height);
-   overscroll_max  = materialui_get_overscroll_max(mui, VIDEO_SCALE_H(dims), header_height);
+   scroll_y_max    = materialui_get_scroll_y_max(mui, dims_h, header_height);
+   overscroll_max  = materialui_get_overscroll_max(mui, dims_h, header_height);
    list_drag_active =
             (mui->pointer.type != MENU_POINTER_DISABLED)
          && (!(mui->flags & MUI_FLAG_SCROLLBAR_DRAGGED))
@@ -4524,7 +4526,7 @@ static void materialui_render(void *data,
        * y position */
       if (mui->flags & MUI_FLAG_SCROLLBAR_DRAGGED)
       {
-         float view_height  = (float)VIDEO_SCALE_H(dims) - (float)header_height -
+         float view_height  = (float)dims_h - (float)header_height -
                (float)VIDEO_SCALE_H(mui->nav_bar_layout_dims) - (float)mui->status_bar.height;
          float view_y       = (float)mui->pointer.y - (float)header_height;
          float y_scroll_max = mui->content_height - view_height;
@@ -4575,7 +4577,7 @@ static void materialui_render(void *data,
 
    if (   !list_drag_active
        && (!(mui->flags & MUI_FLAG_OVERSCROLL_ACTIVE))
-       && (mui->content_height < (VIDEO_SCALE_H(dims) - header_height - VIDEO_SCALE_H(mui->nav_bar_layout_dims) - mui->status_bar.height)))
+       && (mui->content_height < (dims_h - header_height - VIDEO_SCALE_H(mui->nav_bar_layout_dims) - mui->status_bar.height)))
       mui->scroll_y = 0.0f;
 
    /* Loop over all entries */
@@ -4608,7 +4610,7 @@ static void materialui_render(void *data,
       /* Check whether this is the last on screen entry */
       else if (!last_entry_found)
       {
-         if (entry_y > ((int)VIDEO_SCALE_H(dims) - (int)VIDEO_SCALE_H(mui->nav_bar_layout_dims) - (int)mui->status_bar.height))
+         if (entry_y > ((int)dims_h - (int)VIDEO_SCALE_H(mui->nav_bar_layout_dims) - (int)mui->status_bar.height))
          {
             /* Current entry is off screen - get index
              * of previous entry */
@@ -4634,9 +4636,9 @@ static void materialui_render(void *data,
           * the window (i.e. exclude header, navigation bar,
           * landscape borders) */
          if (((unsigned)pointer_x >  mui->landscape_optimization.border_width) &&
-             ((unsigned)pointer_x <  VIDEO_SCALE_W(dims) - mui->landscape_optimization.border_width - VIDEO_SCALE_W(mui->nav_bar_layout_dims)) &&
+             ((unsigned)pointer_x <  dims_w - mui->landscape_optimization.border_width - VIDEO_SCALE_W(mui->nav_bar_layout_dims)) &&
              ((unsigned)pointer_y >= header_height) &&
-             ((unsigned)pointer_y <= VIDEO_SCALE_H(dims) - VIDEO_SCALE_H(mui->nav_bar_layout_dims) - mui->status_bar.height))
+             ((unsigned)pointer_y <= dims_h - VIDEO_SCALE_H(mui->nav_bar_layout_dims) - mui->status_bar.height))
          {
             /* Check if pointer is within the bounds of the
              * current entry */

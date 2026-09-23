@@ -852,6 +852,8 @@ static void sunxi_set_texture_enable(void *data, bool state, bool full_screen)
 static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned dims, float alpha)
 {
+   unsigned dims_w = VIDEO_SCALE_W(dims);
+   unsigned dims_h = VIDEO_SCALE_H(dims);
    struct sunxi_video *_dispvars = (struct sunxi_video*)data;
    uint8_t            *dst_base;
    unsigned int        dst_pitch;
@@ -872,8 +874,8 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
    {
       unsigned int max_w = _dispvars->sunxi_disp->xres;
       unsigned int max_h = VIDEO_SCALE_H(_dispvars->src_dims);
-      if (VIDEO_SCALE_W(dims)  > max_w) VIDEO_SCALE_PUT_W(dims, max_w);
-      if (VIDEO_SCALE_H(dims) > max_h) VIDEO_SCALE_PUT_H(dims, max_h);
+      if (dims_w  > max_w) VIDEO_SCALE_PUT_W(dims, max_w);
+      if (dims_h > max_h) VIDEO_SCALE_PUT_H(dims, max_h);
    }
 
    if (rgb32)
@@ -881,10 +883,10 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
       /* Source is already XRGB8888 -- per-row memcpy handles the
        * difference between source stride (width*4) and dst stride. */
       const uint8_t *src       = (const uint8_t*)frame;
-      unsigned int   src_pitch = VIDEO_SCALE_W(dims) * 4;
+      unsigned int   src_pitch = dims_w * 4;
       unsigned int   row_bytes = (src_pitch < dst_pitch) ? src_pitch : dst_pitch;
 
-      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
+      for (i = 0; i < dims_h; i++)
          memcpy(dst_base + (dst_pitch * i), src + (src_pitch * i), row_bytes);
    }
    else
@@ -893,13 +895,13 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
        *   R = bits 15..12, G = 11..8, B = 7..4, A = 3..0
        * Expand each 4-bit channel to 8 bits via nibble replication
        * (x | (x << 4)) and pack into XRGB8888 for the display layer. */
-      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
+      for (i = 0; i < dims_h; i++)
       {
-         const uint16_t *src_row = (const uint16_t*)frame + (VIDEO_SCALE_W(dims) * i);
+         const uint16_t *src_row = (const uint16_t*)frame + (dims_w * i);
          uint32_t       *dst_row = (uint32_t*)(dst_base + (dst_pitch * i));
          unsigned int    j;
 
-         for (j = 0; j < VIDEO_SCALE_W(dims); j++)
+         for (j = 0; j < dims_w; j++)
          {
             uint16_t src_pix = src_row[j];
             uint32_t r4      = (src_pix >> 12) & 0xF;
@@ -916,7 +918,7 @@ static void sunxi_set_texture_frame(void *data, const void *frame, bool rgb32,
    /* Issue pageflip. Will flip on next vsync. */
    sunxi_layer_set_rgb_input_buffer(_dispvars->sunxi_disp,
          _dispvars->sunxi_disp->bits_per_pixel,
-         _dispvars->pages[0].offset, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), _dispvars->sunxi_disp->xres);
+         _dispvars->pages[0].offset, dims_w, dims_h, _dispvars->sunxi_disp->xres);
 }
 
 static void sunxi_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)

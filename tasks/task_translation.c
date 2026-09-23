@@ -862,6 +862,8 @@ static void translation_sw_convert_cb(void *userdata,
       const void *data,
       unsigned dims, size_t pitch)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    struct translation_sw_ctx *ctx = (struct translation_sw_ctx*)userdata;
    if (!data || !ctx || !ctx->dst)
       return;
@@ -872,11 +874,11 @@ static void translation_sw_convert_cb(void *userdata,
    video_frame_convert_to_bgr24(
          ctx->scaler,
          ctx->dst,
-         (const uint8_t*)data + ((int)VIDEO_SCALE_H(dims) - 1) * pitch,
-         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
+         (const uint8_t*)data + ((int)height - 1) * pitch,
+         width, height,
          (int)-pitch,
-         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
-         VIDEO_SCALE_W(dims) * 3);
+         width, height,
+         width * 3);
 }
 
 bool run_translation_service(settings_t *settings, bool paused)
