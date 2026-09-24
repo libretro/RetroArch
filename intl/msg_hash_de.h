@@ -1144,7 +1144,9 @@ static const struct
    char s_8d3a8b68[13];
    char s_68d27147[12];
    char s_f02f73fc[37];
+   char s_b5721b90[30];
    char s_e5b971a0[6];
+   char s_8f27c71e[14];
    char s_17615fcf[4];
    char s_3a0a3fef[13];
    char s_1b6ed818[19];
@@ -1400,6 +1402,7 @@ static const struct
    char s_d9d847b8[32];
    char s_7a6a492f[23];
    char s_cf28bcf5[26];
+   char s_d3e7cd81[17];
    char s_821edb57[27];
    char s_5f080876[25];
    char s_9358d8ba[24];
@@ -2992,6 +2995,7 @@ static const struct
    char s_6895dfd6[54];
    char s_788364f5[90];
    char s_dd9ff22a[66];
+   char s_ff7d19fe[219];
    char s_db495a9d[35];
    char s_ddc672a7[60];
    char s_ccea261d[149];
@@ -3061,6 +3065,7 @@ static const struct
    char s_5aa622cc[254];
    char s_2b908073[300];
    char s_64bea160[226];
+   char s_2826de99[430];
    char s_97c62766[167];
    char s_6f458a85[128];
    char s_41702fdc[62];
@@ -3623,6 +3628,7 @@ static const struct
    char s_eec252b5[125];
    char s_f4e4e921[255];
    char s_7968f59d[39];
+   char s_8cee3615[223];
    char s_58c80718[336];
    char s_894ecb9a[441];
    char s_67d549fd[36];
@@ -5616,7 +5622,9 @@ static const struct
    "Men\303\274treiber",
    "Kiosk-Modus",
    "Bildwiederholrate im Men\303\274 begrenzen",
+   "Anzeiger der Dateierweiterung",
    "Immer",
+   "Nur Duplikate",
    "Nie",
    "Dateibrowser",
    "Schriftfarbe: Blau",
@@ -5872,6 +5880,7 @@ static const struct
    "Keine Core-Optionen verf\303\274gbar.",
    "Keine Disc ausgew\303\244hlt",
    "Keine Eintr\303\244ge vorhanden",
+   "Ohne Erweiterung",
    "Keine Favoriten verf\303\274gbar",
    "Kein Verlauf verf\303\274gbar.",
    "Keine Bilder verf\303\274gbar",
@@ -7796,6 +7805,9 @@ static const struct
    "Zu verwendender Men\303\274treiber. (Neustart erforderlich)",
    "Sch\303\274tzt das Setup, indem alle konfigurationsbezogenen Einstellungen ausgeblendet werden.",
    "Stellt sicher, dass die Bildwiederholrate im Men\303\274 begrenzt wird.",
+   "Festlegen, wann Dateiendungen beim Durchsuchen von Inhalten angezeigt werden sollen. In den Date"
+   "iauswahlfenstern f\303\274r Shader, Overlays, Konfigurationsdateien und andere Einstellungsdatei"
+   "en werden diese immer angezeigt.",
    "Dateibrowsereinstellungen \303\244ndern.",
    "\303\204ndert die Deckkraft des Standardhintergrunds f\303\274r Men\303\274s.",
    "Helligkeit des Men\303\274s in cd/m\302\262 (Nits) bei Nutzung eines HDR-Displays. Nur sichtbar,"
@@ -7911,6 +7923,11 @@ static const struct
    "Spielt die Audiospur von animierten WebM-Thumbnails ab, w\303\244hrend sie angezeigt werden. Vor"
    "bis- und Opus-Audio werden unterst\303\274tzt. Das Audio l\303\244uft mit der Animation in Schle"
    "ife und stoppt beim Schlie\303\237en der Miniaturansicht.",
+   "Anzahl der Threads, auf denen ein animiertes Vorschaubild decodiert werden kann. Bei einem Threa"
+   "d erfolgt die gesamte Decodierung in einem eigenen Thread. Bei einer h\303\266heren Anzahl wird "
+   "der Vorgang auf mehrere Kerne verteilt, wodurch eine gro\303\237e Vorschau z\303\274gig wiederge"
+   "geben werden kann. W\303\244hrend ein Kern ausgelastet ist, l\303\244uft die Vorschau weiterhin "
+   "in einem einzigen Thread, sodass dem Spiel die Kerne zur Verf\303\274gung stehen.",
    "Skaliert automatisch Vorschaubilder mit einer Breite/H\303\266he, die kleiner als der angegebene"
    " Wert ist. Verbessert die Bildqualit\303\244t. Bringt moderate Leistungseinbu\303\237en.",
    "Eine fl\303\274ssige Bildlaufanimation verwenden, wenn langer Men\303\274text angezeigt wird. Ha"
@@ -8795,6 +8812,9 @@ static const struct
    "ich auf eine nicht ganzzahlige Skalierung zur\303\274ck, wenn die Unterskalierungsr\303\244nder "
    "zu gro\303\237 sind.",
    "Videoskalierungseinstellungen \303\244ndern.",
+   "Die Videopr\303\244sentation mit der auf der Kernzeit basierenden Vorhersage der Scanline-Positi"
+   "on sychronisieren. Voraussetzungen: VSync deaktiviert, Frame Delay deaktiviert und Bildwiederhol"
+   "frequenz nahe dem 1-fachen Kern-FPS.",
    "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
    "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
    "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
@@ -9538,7 +9558,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (209704u
+      (sizeof(msg_hash_de_blob) == (210637u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11094,7 +11114,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
@@ -11350,6 +11372,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_DISK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_EXTENSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
@@ -12933,6 +12956,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
@@ -13002,6 +13026,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -13561,6 +13586,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,

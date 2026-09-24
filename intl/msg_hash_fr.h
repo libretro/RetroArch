@@ -1184,7 +1184,9 @@ static const struct
    char s_8d3a8b68[6];
    char s_68d27147[13];
    char s_f02f73fc[34];
+   char s_b5721b90[36];
    char s_e5b971a0[9];
+   char s_8f27c71e[20];
    char s_17615fcf[7];
    char s_3a0a3fef[23];
    char s_1b6ed818[28];
@@ -1438,6 +1440,7 @@ static const struct
    char s_d9d847b8[35];
    char s_7a6a492f[27];
    char s_cf28bcf5[28];
+   char s_d3e7cd81[10];
    char s_821edb57[25];
    char s_5f080876[29];
    char s_9358d8ba[25];
@@ -3077,6 +3080,7 @@ static const struct
    char s_6895dfd6[50];
    char s_788364f5[84];
    char s_dd9ff22a[72];
+   char s_ff7d19fe[239];
    char s_db495a9d[50];
    char s_ddc672a7[59];
    char s_ccea261d[152];
@@ -3146,6 +3150,7 @@ static const struct
    char s_5aa622cc[284];
    char s_2b908073[283];
    char s_64bea160[220];
+   char s_2826de99[489];
    char s_97c62766[178];
    char s_6f458a85[120];
    char s_41702fdc[73];
@@ -3709,6 +3714,7 @@ static const struct
    char s_eec252b5[155];
    char s_f4e4e921[212];
    char s_7968f59d[53];
+   char s_8cee3615[262];
    char s_58c80718[347];
    char s_894ecb9a[400];
    char s_67d549fd[41];
@@ -5798,7 +5804,9 @@ static const struct
    "Menu ",
    "Mode kiosque",
    "Limiter les images/s dans le menu",
+   "Affichage des extensions de fichier",
    "Toujours",
+   "Doublons uniquement",
    "Jamais",
    "Navigateur de fichiers",
    "Couleur de la police : Bleu",
@@ -6055,6 +6063,7 @@ static const struct
    "Aucune option de c\305\223ur disponible.",
    "Aucun disque s\303\251lectionn\303\251",
    "Aucune entr\303\251e \303\240 afficher.",
+   "pas d'ext",
    "Aucun favori disponible.",
    "Aucun historique disponible.",
    "Aucune image disponible.",
@@ -8143,6 +8152,9 @@ static const struct
    "Prot\303\250ge la configuration en masquant tous les r\303\251glages li\303\251s \303\240 la con"
    "figuration.",
    "S'assure que le nombre d'images par seconde est plafonn\303\251 dans le menu.",
+   "D\303\251finir quand afficher les extensions de fichier lors de la navigation dans le contenu. L"
+   "es s\303\251lecteurs de fichiers pour les shaders, les surimpressions, les configurations et aut"
+   "res fichiers de r\303\251glages les affichent syst\303\251matiquement.",
    "Modifier les r\303\251glages du navigateur de fichiers.",
    "Modifie l'opacit\303\251 de l'arri\303\250re-plan du menu par d\303\251faut.",
    "Luminosit\303\251 du menu en cd/m2 (nits) lors de l'utilisation d'un affichage HDR. Uniquement v"
@@ -8268,6 +8280,13 @@ static const struct
    "Lit la piste audio des miniatures WebM anim\303\251es pendant leur affichage. Compatible avec le"
    "s formats audio Vorbis et Opus. La lecture audio est synchronis\303\251e avec l'animation et s'a"
    "rr\303\252te \303\240 la fermeture de la miniature.",
+   "D\303\251termine sur combien de fils d'ex\303\251cution une miniature anim\303\251e peut effectu"
+   "er son d\303\251codage. Un fil d'ex\303\251cution confie l'int\303\251gralit\303\251 du d\303"
+   "\251codage \303\240 un seul fil d'ex\303\251cution. Plusieurs fils d'ex\303\251cution le r\303"
+   "\251partissent sur plusieurs c\305\223urs, ce qui permet \303\240 une grande pr\303\251visualisa"
+   "tion d'\303\252tre lue \303\240 vitesse normale. Lorsqu'un c\305\223ur traite la pr\303\251visua"
+   "lisation, celle-ci se limite \303\240 un seul fil d'ex\303\251cution, permettant ainsi au jeu de"
+   " conserver la disponibilit\303\251 de ses c\305\223urs.",
    "Agrandit automatiquement les miniatures \303\240 une largeur/hauteur inf\303\251rieure \303\240 "
    "la valeur sp\303\251cifi\303\251e. Am\303\251liore la qualit\303\251 de l'image. A un impact mod"
    "\303\251r\303\251 sur les performances.",
@@ -9251,6 +9270,10 @@ static const struct
    "rsque l'image est trop recadr\303\251e, et revient finalement \303\240 l'\303\251chelle non enti"
    "\303\250re si les marges de sous-dimension sont trop grandes.",
    "Modifier les r\303\251glages de mise \303\240 l'\303\251chelle vid\303\251o.",
+   "Synchroniser l'affichage vid\303\251o avec la pr\303\251diction de la position de la ligne de ba"
+   "layage bas\303\251e sur le temps du c\305\223ur. Pr\303\251requis : V-Sync d\303\251sactiv\303"
+   "\251, Retard d'images d\303\251sactiv\303\251 et fr\303\251quence d'affichage proche de 1x le no"
+   "mbre d'images par seconde du c\305\223ur.",
    "AVERTISSEMENT : Un scintillement rapide peut causer une persistance de l'image sur certains \303"
    "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Simule une ligne de balaya"
    "ge roulante basique au cours de plusieurs sous-images en divisant l'\303\251cran verticalement e"
@@ -10050,7 +10073,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (235539u
+      (sizeof(msg_hash_fr_blob) == (236595u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11634,7 +11657,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
@@ -11888,6 +11913,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_DISK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_EXTENSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
@@ -13514,6 +13540,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
@@ -13583,6 +13610,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -14142,6 +14170,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,

@@ -1199,7 +1199,9 @@ static const struct
    char s_136eaaf4[26];
    char s_68d27147[20];
    char s_f02f73fc[48];
+   char s_b5721b90[38];
    char s_e5b971a0[12];
+   char s_8f27c71e[29];
    char s_17615fcf[17];
    char s_3a0a3fef[21];
    char s_1b6ed818[21];
@@ -1458,6 +1460,7 @@ static const struct
    char s_d9d847b8[60];
    char s_7a6a492f[19];
    char s_cf28bcf5[41];
+   char s_d3e7cd81[30];
    char s_821edb57[33];
    char s_5f080876[33];
    char s_9358d8ba[28];
@@ -3121,6 +3124,7 @@ static const struct
    char s_6895dfd6[76];
    char s_788364f5[102];
    char s_dd9ff22a[79];
+   char s_ff7d19fe[238];
    char s_db495a9d[42];
    char s_ddc672a7[61];
    char s_ccea261d[156];
@@ -3190,6 +3194,8 @@ static const struct
    char s_5aa622cc[258];
    char s_2b908073[315];
    char s_64bea160[224];
+   char s_2826de99_0[500];
+   char s_2826de99_1[23];
    char s_97c62766[205];
    char s_6f458a85[124];
    char s_41702fdc[59];
@@ -3755,6 +3761,7 @@ static const struct
    char s_eec252b5[165];
    char s_f4e4e921[280];
    char s_7968f59d[28];
+   char s_8cee3615[300];
    char s_58c80718[372];
    char s_894ecb9a_0[498];
    char s_894ecb9a_1[22];
@@ -6378,7 +6385,9 @@ static const struct
    "T\341\272\257t ch\341\272\277 \304\221\341\273\231 Ki \341\273\221t",
    "Ch\341\272\277 \304\221\341\273\231 Ki \341\273\221t",
    "Gi\341\273\233i h\341\272\241n t\341\273\221c \304\221\341\273\231 khung h\303\254nh trong Menu",
+   "Hi\341\273\203n th\341\273\213 ph\341\272\247n m\341\273\237 r\341\273\231ng t\341\273\207p",
    "Lu\303\264n lu\303\264n",
+   "Ch\341\273\211 hi\341\273\203n th\341\273\213 b\341\272\243n sao",
    "Kh\303\264ng bao gi\341\273\235",
    "Tr\303\254nh duy\341\273\207t t\341\273\207p",
    "M\303\240u ch\341\273\257: Xanh lam",
@@ -6687,6 +6696,7 @@ static const struct
    "Ch\306\260a ch\341\273\215n \304\221\304\251a",
    "Kh\303\264ng c\303\263 m\341\273\245c n\303\240o \304\221\341\273\203 hi\341\273\203n th\341\273"
    "\213",
+   "kh\303\264ng c\303\263 ph\341\272\247n m\341\273\237 r\341\273\231ng",
    "Kh\303\264ng c\303\263 m\341\273\245c \306\260a th\303\255ch n\303\240o",
    "Kh\303\264ng c\303\263 \304\221\303\243 m\341\273\237 g\341\272\247n \304\221\303\242y",
    "Kh\303\264ng c\303\263 h\303\254nh \341\272\243nh n\303\240o",
@@ -9773,6 +9783,12 @@ static const struct
    "uan \304\221\341\272\277n c\341\272\245u h\303\254nh.",
    "\304\220\341\272\243m b\341\272\243o t\341\273\221c \304\221\341\273\231 khung h\303\254nh \304"
    "\221\306\260\341\273\243c gi\341\273\233i h\341\272\241n khi \341\273\237 trong menu.",
+   "Ch\341\273\215n th\341\273\235i \304\221i\341\273\203m hi\341\273\203n th\341\273\213 ph\341\272"
+   "\247n m\341\273\237 r\341\273\231ng t\341\273\207p khi duy\341\273\207t n\341\273\231i dung. Tr"
+   "\303\254nh ch\341\273\215n t\341\273\207p cho b\341\273\231 t\341\272\241o hi\341\273\207u \341"
+   "\273\251ng, l\341\273\233p ph\341\273\247, t\341\273\207p c\341\272\245u h\303\254nh v\303\240 c"
+   "\303\241c t\341\273\207p thi\341\272\277t l\341\272\255p kh\303\241c lu\303\264n hi\341\273\203n"
+   " th\341\273\213 ph\341\272\247n m\341\273\237 r\341\273\231ng.",
    "\304\220\341\273\225i t\303\271y ch\341\273\211nh Qu\341\272\243n l\303\275 t\341\273\207p tin.",
    "Thay \304\221\341\273\225i \304\221\341\273\231 m\341\273\235 c\341\273\247a n\341\273\201n m"
    "\341\272\267c \304\221\341\273\213nh trong menu.",
@@ -9980,6 +9996,20 @@ static const struct
    "\273\213. H\341\273\227 tr\341\273\243 \303\242m thanh Vorbis v\303\240 Opus. \303\202m thanh s"
    "\341\272\275 l\341\272\267p l\341\272\241i c\303\271ng v\341\273\233i \341\272\243nh \304\221"
    "\341\273\231ng v\303\240 d\341\273\253ng khi \304\221\303\263ng h\303\254nh thu nh\341\273\217.",
+   "S\341\273\221 lu\341\273\223ng m\303\240 \341\272\243nh thu nh\341\273\217 \304\221\341\273\231n"
+   "g c\303\263 th\341\273\203 s\341\273\255 d\341\273\245ng \304\221\341\273\203 gi\341\272\243i m"
+   "\303\243. Ch\341\273\215n m\341\273\231t \304\221\341\273\203 to\303\240n b\341\273\231 qu\303"
+   "\241 tr\303\254nh gi\341\272\243i m\303\243 ch\341\273\211 ch\341\272\241y tr\303\252n m\341\273"
+   "\231t lu\341\273\223ng ri\303\252ng. Ch\341\273\215n nhi\341\273\201u h\306\241n \304\221\341"
+   "\273\203 ph\303\242n b\341\273\225 qu\303\241 tr\303\254nh gi\341\272\243i m\303\243 tr\303\252n"
+   " nhi\341\273\201u l\303\265i x\341\273\255 l\303\275, nh\341\273\235 \304\221\303\263 \341\272"
+   "\243nh xem tr\306\260\341\273\233c l\341\273\233n c\303\263 th\341\273\203 ph\303\241t \341\273"
+   "\237 t\341\273\221c \304\221\341\273\231 b\303\254nh th\306\260\341\273\235ng. Khi m\341\273\231"
+   "t l\303\265i \304\221ang ch\341\272\241y \341\272\243nh xem tr\306\260\341\273\233c, qu\303\241 "
+   "tr\303\254nh n\303\240y ch\341\273\211 s\341\273\255 d\341\273\245ng m\341\273\231t lu\341\273"
+   "\223ng \304\221\341\273\203 tr\303\262 ch\306\241i v\341\272\253n c\303\263 th\341\273\203 s\341"
+   "\273\255 d\341\273\245ng c\303\241c l\303\265i",
+   " x\341\273\255 l\303\275 c\341\273\247a m\303\254nh.",
    "T\341\273\261 \304\221\341\273\231ng ph\303\263ng to h\303\254nh thu nh\341\273\217 c\303\263 ch"
    "i\341\273\201u r\341\273\231ng/chi\341\273\201u cao nh\341\273\217 h\306\241n gi\303\241 tr\341"
    "\273\213 ch\341\273\211 \304\221\341\273\213nh. C\341\272\243i thi\341\273\207n ch\341\272\245t "
@@ -11697,6 +11727,14 @@ static const struct
    " kh\303\264ng nguy\303\252n n\341\272\277u ph\341\272\247n b\341\273\213 thu nh\341\273\217 tr"
    "\341\273\237 n\303\252n qu\303\241 l\341\273\233n.",
    "\304\220i\341\273\201u ch\341\273\211nh m\303\240n h\303\254nh.",
+   "\304\220\341\273\223ng b\341\273\231 vi\341\273\207c hi\341\273\203n th\341\273\213 h\303\254nh "
+   "\341\272\243nh v\341\273\233i v\341\273\213 tr\303\255 d\303\262ng qu\303\251t d\341\273\261 "
+   "\304\221o\303\241n d\341\273\261a tr\303\252n th\341\273\235i gian c\341\273\247a tr\303\254nh g"
+   "i\341\272\243 l\341\272\255p Y\303\252u c\341\272\247u: T\341\272\257t \304\221\341\273\223ng b"
+   "\341\273\231 d\341\273\215c, t\341\272\257t \304\220\341\273\231 tr\341\273\205 khung h\303\254n"
+   "h v\303\240 t\341\272\247n s\341\273\221 qu\303\251t m\303\240n h\303\254nh g\341\272\247n b\341"
+   "\272\261ng t\341\273\221c \304\221\341\273\231 khung h\303\254nh 1x c\341\273\247a tr\303\254nh "
+   "gi\341\272\243 l\341\272\255p.",
    "C\341\272\242NH B\303\201O: Hi\341\273\207n t\306\260\341\273\243ng nh\341\272\245p nh\303\241y "
    "nhanh c\303\263 th\341\273\203 g\303\242y ra hi\341\273\207n t\306\260\341\273\243ng l\306\260u "
    "\341\272\243nh tr\303\252n m\341\273\231t s\341\273\221 m\303\240n h\303\254nh. T\341\273\261 ch"
@@ -12928,7 +12966,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (250892u
+      (sizeof(msg_hash_vn_blob) == (252050u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14530,7 +14568,9 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
@@ -14789,6 +14829,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_DISK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_EXTENSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
@@ -16438,6 +16479,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
@@ -16507,6 +16549,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -17066,6 +17109,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
