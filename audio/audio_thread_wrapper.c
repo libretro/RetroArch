@@ -17,6 +17,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include <lists/string_list.h>
 #include <retro_atomic.h>
 #include <rthreads/rthreads.h>
@@ -25,6 +29,7 @@
 #include "audio_thread_wrapper.h"
 #include "audio_driver.h"
 #include "../verbosity.h"
+#include "../gfx/common/dbus_common.h"
 
 /* How long a handshake between the main thread and the audio thread
  * may run before it is reported. Both are sub-millisecond on a device
@@ -104,6 +109,11 @@ static void audio_thread_loop(void *data)
    {
       if (sthread_raise_current_priority())
          RARCH_LOG("[Audio] Audio thread priority raised.\n");
+#ifdef HAVE_DBUS_RTKIT
+      /* The request runs on its own thread; this one does not wait. */
+      else if (dbus_rtkit_raise_current_thread())
+         RARCH_LOG("[Audio] Audio thread priority not raised directly; asking RealtimeKit.\n");
+#endif
       else
          RARCH_LOG("[Audio] Audio thread priority not raised; the system refused or has no such class.\n");
    }
