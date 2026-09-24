@@ -180,17 +180,7 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
 #endif
 
       for (; w < width; w++)
-      {
-         uint32_t col = input[w];
-         uint32_t r   = (col >> 10) & 0x1f;
-         uint32_t g   = (col >>  5) & 0x1f;
-         uint32_t b   = (col >>  0) & 0x1f;
-         r            = (r << 3) | (r >> 2);
-         g            = (g << 3) | (g >> 2);
-         b            = (b << 3) | (b >> 2);
-
-         output[w]    = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
-      }
+         output[w] = 0xff000000u | pixconv_0rgb1555_to_xrgb8888(input[w]);
    }
 }
 
@@ -260,12 +250,14 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
 #elif defined(__MMX__)
       for (; w < max_width; w += 4)
       {
+         __m64 in, r, g, b;
          __m64 res_lo, res_hi;
          __m64 res_lo_bg, res_hi_bg, res_lo_ra, res_hi_ra;
-         const __m64 in = *((__m64*)(input + w));
-         __m64          r = _mm_and_si64(_mm_srli_pi16(in, 1), pix_mask_r);
-         __m64          g = _mm_and_si64(in, pix_mask_g);
-         __m64          b = _mm_and_si64(_mm_slli_pi16(in, 5), pix_mask_b);
+         /* __m64 needs 8-byte alignment; rows need not have it. */
+         memcpy(&in, input + w, sizeof(in));
+         r = _mm_and_si64(_mm_srli_pi16(in, 1), pix_mask_r);
+         g = _mm_and_si64(in, pix_mask_g);
+         b = _mm_and_si64(_mm_slli_pi16(in, 5), pix_mask_b);
 
          r                = _mm_mulhi_pi16(r, mul16_r);
          g                = _mm_mulhi_pi16(g, mul16_g);
@@ -281,8 +273,8 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
          res_hi           = _mm_or_si64(res_hi_bg,
                _mm_slli_si64(res_hi_ra, 16));
 
-         *((__m64*)(output + w + 0)) = res_lo;
-         *((__m64*)(output + w + 2)) = res_hi;
+         memcpy(output + w + 0, &res_lo, sizeof(res_lo));
+         memcpy(output + w + 2, &res_hi, sizeof(res_hi));
       }
 
       _mm_empty();
@@ -306,17 +298,7 @@ void conv_rgb565_argb8888(void *output_, const void *input_,
 #endif
 
       for (; w < width; w++)
-      {
-         uint32_t col = input[w];
-         uint32_t r   = (col >> 11) & 0x1f;
-         uint32_t g   = (col >>  5) & 0x3f;
-         uint32_t b   = (col >>  0) & 0x1f;
-         r            = (r << 3) | (r >> 2);
-         g            = (g << 2) | (g >> 4);
-         b            = (b << 3) | (b >> 2);
-
-         output[w]    = (0xffu << 24) | (r << 16) | (g << 8) | (b << 0);
-      }
+         output[w] = 0xff000000u | pixconv_rgb565_to_xrgb8888(input[w]);
    }
 }
 
@@ -388,17 +370,8 @@ void conv_rgb565_abgr8888(void *output_, const void *input_,
          vst4_u8((uint8_t*)(output + w), res);
       }
 #endif
-       for (; w < width; w++)
-      {
-         uint32_t col = input[w];
-         uint32_t r   = (col >> 11) & 0x1f;
-         uint32_t g   = (col >>  5) & 0x3f;
-         uint32_t b   = (col >>  0) & 0x1f;
-         r            = (r << 3) | (r >> 2);
-         g            = (g << 2) | (g >> 4);
-         b            = (b << 3) | (b >> 2);
-         output[w]    = (0xffu << 24) | (b << 16) | (g << 8) | (r << 0);
-      }
+      for (; w < width; w++)
+         output[w] = 0xff000000u | pixconv_rgb565_to_xbgr8888(input[w]);
    }
 }
 
@@ -416,16 +389,8 @@ void conv_argb8888_rgba4444(void *output_, const void *input_,
       for (w = 0; w < width; w++)
       {
          uint32_t col = input[w];
-         uint32_t r   = (col >> 16) & 0xf;
-         uint32_t g   = (col >>  8) & 0xf;
-         uint32_t b   = (col) & 0xf;
-         uint32_t a   = (col >>  24) & 0xf;
-         r            = (r >> 4) | r;
-         g            = (g >> 4) | g;
-         b            = (b >> 4) | b;
-         a            = (a >> 4) | a;
-
-         output[w]    = (r << 12) | (g << 8) | (b << 4) | a;
+         output[w]    = (uint16_t)(((col >> 8) & 0xf000)
+               | ((col >> 4) & 0x0f00) | (col & 0x00f0) | (col >> 28));
       }
    }
 }
@@ -502,16 +467,18 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
 #elif defined(__MMX__)
       for (; w < max_width; w += 4)
       {
+         __m64 in, r, g, b, a;
          __m64 res_lo, res_hi;
          __m64 res_lo_bg, res_hi_bg, res_lo_ra, res_hi_ra;
-         const __m64 in = *((__m64*)(input + w));
-         __m64          r = _mm_and_si64(_mm_srli_pi16(in, 2), pix_mask_r);
-         __m64          g = _mm_and_si64(in, pix_mask_g);
-         __m64          b = _mm_and_si64(_mm_slli_pi16(in, 4), pix_mask_b);
+         /* __m64 needs 8-byte alignment; rows need not have it. */
+         memcpy(&in, input + w, sizeof(in));
+         r = _mm_and_si64(_mm_srli_pi16(in, 2), pix_mask_r);
+         g = _mm_and_si64(in, pix_mask_g);
+         b = _mm_and_si64(_mm_slli_pi16(in, 4), pix_mask_b);
          /* Source is rgba4444 -- alpha is the low nibble of each 16-bit
           * input word.  Expand 4-bit -> 8-bit via a*0x11 (== a<<4 | a),
           * matching the scalar fallback. */
-         __m64          a = _mm_and_si64(in, pix_mask_a);
+         a = _mm_and_si64(in, pix_mask_a);
 
          r                = _mm_mulhi_pi16(r, mul16_r);
          g                = _mm_mulhi_pi16(g, mul16_g);
@@ -528,27 +495,15 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
          res_hi           = _mm_or_si64(res_hi_bg,
                _mm_slli_si64(res_hi_ra, 16));
 
-         *((__m64*)(output + w + 0)) = res_lo;
-         *((__m64*)(output + w + 2)) = res_hi;
+         memcpy(output + w + 0, &res_lo, sizeof(res_lo));
+         memcpy(output + w + 2, &res_hi, sizeof(res_hi));
       }
 
       _mm_empty();
 #endif
 
       for (; w < width; w++)
-      {
-         uint32_t col = input[w];
-         uint32_t r   = (col >> 12) & 0xf;
-         uint32_t g   = (col >>  8) & 0xf;
-         uint32_t b   = (col >>  4) & 0xf;
-         uint32_t a   = (col >>  0) & 0xf;
-         r            = (r << 4) | r;
-         g            = (g << 4) | g;
-         b            = (b << 4) | b;
-         a            = (a << 4) | a;
-
-         output[w]    = (a << 24) | (r << 16) | (g << 8) | (b << 0);
-      }
+         output[w] = pixconv_rgba4444_to_argb8888(input[w]);
    }
 }
 
@@ -566,11 +521,8 @@ void conv_rgba4444_rgb565(void *output_, const void *input_,
       for (w = 0; w < width; w++)
       {
          uint32_t col = input[w];
-         uint32_t r   = (col >> 12) & 0xf;
-         uint32_t g   = (col >>  8) & 0xf;
-         uint32_t b   = (col >>  4) & 0xf;
-
-         output[w]    = (r << 12) | (g << 7) | (b << 1);
+         output[w]    = (uint16_t)((col & 0xf000)
+               | ((col >> 1) & 0x0780) | ((col >> 3) & 0x001e));
       }
    }
 }
@@ -693,17 +645,10 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
 
       for (; w < width; w++)
       {
-         uint32_t col = input[w];
-         uint32_t b   = (col >>  0) & 0x1f;
-         uint32_t g   = (col >>  5) & 0x1f;
-         uint32_t r   = (col >> 10) & 0x1f;
-         b            = (b << 3) | (b >> 2);
-         g            = (g << 3) | (g >> 2);
-         r            = (r << 3) | (r >> 2);
-
-         *out++       = b;
-         *out++       = g;
-         *out++       = r;
+         uint32_t col = pixconv_0rgb1555_to_xrgb8888(input[w]);
+         *out++       = (uint8_t)(col);
+         *out++       = (uint8_t)(col >>  8);
+         *out++       = (uint8_t)(col >> 16);
       }
    }
 }
@@ -778,17 +723,10 @@ void conv_rgb565_bgr24(void *output_, const void *input_,
 
       for (; w < width; w++)
       {
-         uint32_t col = input[w];
-         uint32_t r   = (col >> 11) & 0x1f;
-         uint32_t g   = (col >>  5) & 0x3f;
-         uint32_t b   = (col >>  0) & 0x1f;
-         r = (r << 3) | (r >> 2);
-         g = (g << 2) | (g >> 4);
-         b = (b << 3) | (b >> 2);
-
-         *out++ = b;
-         *out++ = g;
-         *out++ = r;
+         uint32_t col = pixconv_rgb565_to_xrgb8888(input[w]);
+         *out++       = (uint8_t)(col);
+         *out++       = (uint8_t)(col >>  8);
+         *out++       = (uint8_t)(col >> 16);
       }
    }
 }
@@ -851,10 +789,8 @@ void conv_argb8888_0rgb1555(void *output_, const void *input_,
       for (w = 0; w < width; w++)
       {
          uint32_t col = input[w];
-         uint16_t r   = (col >> 19) & 0x1f;
-         uint16_t g   = (col >> 11) & 0x1f;
-         uint16_t b   = (col >>  3) & 0x1f;
-         output[w]    = (r << 10) | (g << 5) | (b << 0);
+         output[w]    = (uint16_t)(((col >> 9) & 0x7c00)
+               | ((col >> 6) & 0x03e0) | ((col >> 3) & 0x001f));
       }
    }
 }

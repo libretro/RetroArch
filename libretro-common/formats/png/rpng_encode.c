@@ -28,6 +28,7 @@
 #include <encodings/crc32.h>
 #include <streams/interface_stream.h>
 #include <streams/trans_stream.h>
+#include <gfx/scaler/pixconv.h>
 
 /* SIMD acceleration: SSE2 on x86/x86-64, NEON on ARM.  Same gating as
  * the decoder in rpng.c. */
@@ -294,13 +295,10 @@ static void copy_rgb565_line(uint8_t *dst, const uint16_t *src,
    unsigned i;
    for (i = 0; i < width; i++)
    {
-      uint16_t px = src[i];
-      uint8_t r   = (px >> 11) & 0x1f;
-      uint8_t g   = (px >>  5) & 0x3f;
-      uint8_t b   = (px >>  0) & 0x1f;
-      *dst++      = (uint8_t)((r << 3) | (r >> 2));
-      *dst++      = (uint8_t)((g << 2) | (g >> 4));
-      *dst++      = (uint8_t)((b << 3) | (b >> 2));
+      uint32_t px = pixconv_rgb565_to_xrgb8888(src[i]);
+      *dst++      = (uint8_t)(px >> 16);
+      *dst++      = (uint8_t)(px >>  8);
+      *dst++      = (uint8_t)(px);
    }
 }
 

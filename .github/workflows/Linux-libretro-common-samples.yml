@@ -139,6 +139,11 @@ jobs:
             rtga_test
             rbmp_test
             rbmp_encode_test
+            # Every 16-bit input through each pixconv converter, with
+            # SSE2, with MMX only, and with no SIMD at all.
+            pixconv_test
+            pixconv_test_nosimd
+            pixconv_test_scalar
             rpng_chunk_overflow_test
             rpng_roundtrip_test
             rpng_decode_corpus_test

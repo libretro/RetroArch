@@ -604,21 +604,12 @@ static hub75_color_t hub75_read_pixel(const void *frame, unsigned pitch,
       const uint16_t *row = (const uint16_t*)((const uint8_t*)frame +
             (size_t)y * pitch);
       uint16_t pixel = row[x];
-      if (menu)
-      {
-         color.r = (uint8_t)(((pixel >> 12) & 0xf) * 17);
-         color.g = (uint8_t)(((pixel >> 8) & 0xf) * 17);
-         color.b = (uint8_t)(((pixel >> 4) & 0xf) * 17);
-      }
-      else
-      {
-         unsigned r = (pixel >> 11) & 0x1f;
-         unsigned g = (pixel >> 5) & 0x3f;
-         unsigned b = pixel & 0x1f;
-         color.r = (uint8_t)((r << 3) | (r >> 2));
-         color.g = (uint8_t)((g << 2) | (g >> 4));
-         color.b = (uint8_t)((b << 3) | (b >> 2));
-      }
+      uint32_t rgb   = menu
+            ? pixconv_rgba4444_to_argb8888(pixel)
+            : pixconv_rgb565_to_xrgb8888(pixel);
+      color.r        = (uint8_t)(rgb >> 16);
+      color.g        = (uint8_t)(rgb >>  8);
+      color.b        = (uint8_t)(rgb);
    }
 
    return color;

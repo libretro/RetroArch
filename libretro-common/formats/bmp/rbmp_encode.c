@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include <formats/rbmp.h>
+#include <gfx/scaler/pixconv.h>
 
 /* This TU is a pure encoder: bytes in -> bytes out.  It has no stream
  * or VFS dependency of any kind - the only includes are the C library
@@ -127,13 +128,10 @@ static void dump_line_565_to_24(uint8_t *line, const uint16_t *src, unsigned wid
 
    for (i = 0; i < width; i++)
    {
-      uint16_t pixel = *src++;
-      uint8_t b = (pixel >>  0) & 0x1f;
-      uint8_t g = (pixel >>  5) & 0x3f;
-      uint8_t r = (pixel >> 11) & 0x1f;
-      *line++   = (b << 3) | (b >> 2);
-      *line++   = (g << 2) | (g >> 4);
-      *line++   = (r << 3) | (r >> 2);
+      uint32_t pixel = pixconv_rgb565_to_xrgb8888(*src++);
+      *line++        = (uint8_t)(pixel);
+      *line++        = (uint8_t)(pixel >>  8);
+      *line++        = (uint8_t)(pixel >> 16);
    }
 }
 
