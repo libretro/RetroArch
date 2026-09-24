@@ -6277,7 +6277,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                strlcpy(stage, "n/a", sizeof(stage));
             if (buffer_ms > 0.0 && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
                __len = video_driver_stat_appendf(video_st->stat_text, __len,
-                     " Buffer:  %s ms (held ~%.0f)\n",
+                     " Buffer/Held: %s/~%.0f ms\n",
                      stage, buffer_ms / 2.0);
             else
                __len = video_driver_stat_appendf(video_st->stat_text, __len,
@@ -6299,7 +6299,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                 * it says what the approximation would have cost. */
                double alt_ppm = audio_driver_get_sink_alt_ppm();
                __len = video_driver_stat_appendf(video_st->stat_text, __len,
-                     " Sink/Src: %+.0f/%+.0f ppm (bias %+.0f)\n",
+                     " Sink/Src: %+.0f/%+.0f ppm\n -Bias:    %+.0f\n",
                      (sink_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
                      (source_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
                      (sink_bias - 1.0) * 1e6);
@@ -6342,7 +6342,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
        * above that say how near the buffer came. */
       if (audio_st->current_audio && audio_st->current_audio->underruns)
          __len = video_driver_stat_appendf(video_st->stat_text, __len,
-               " Dropouts: %8u\n", (unsigned)audio_driver_get_underruns());
+               " Dropouts:%8u\n", (unsigned)audio_driver_get_underruns());
 
       __len = video_driver_stat_appendf(video_st->stat_text, __len, "LATENCY\n");
 
@@ -6364,7 +6364,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
          char pbuf[64];
          runloop_pace_string(pbuf, sizeof(pbuf));
          __len = video_driver_stat_appendf(video_st->stat_text, __len,
-               " Pacing:     %s\n", pbuf);
+               " Pacing: %s\n", pbuf);
       }
 
 #ifdef HAVE_THREADS
