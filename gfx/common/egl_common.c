@@ -862,6 +862,10 @@ struct string_list *egl_gpu_list_new(void)
       {
          const char *vendor   = qstr(found[i], EGL_VENDOR);
          const char *renderer = qstr(found[i], EGL_RENDERER_EXT);
+         /* NVIDIA's renderer string already starts with the vendor */
+         if (     vendor && renderer
+               && !strncmp(renderer, vendor, strlen(vendor)))
+            vendor = NULL;
          snprintf(label, sizeof(label), "%s%s%s",
                vendor   ? vendor   : "",
                vendor && renderer ? " " : "",

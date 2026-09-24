@@ -183,6 +183,11 @@ static gfx_api_gpu_map gpu_map[] = {
 #ifdef HAVE_METAL
    { NULL,                   GFX_CTX_METAL_API      },
 #endif
+#ifdef HAVE_EGL
+   /* The Wayland context's EGL devices, for the GL drivers */
+   { NULL,                   GFX_CTX_OPENGL_API     },
+   { NULL,                   GFX_CTX_OPENGL_ES_API  },
+#endif
 };
 
 static const video_display_server_t dispserv_null = {
