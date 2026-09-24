@@ -1679,6 +1679,9 @@ void* video_display_server_init(enum rarch_display_type type)
    {
       RARCH_LOG("[Video] Found display server: \"%s\".\n",
             dispserv_wl.ident);
+      /* The early init runs before the log is on; now it is */
+      if (verbosity_is_enabled())
+         wl_display_server_report_lease(video_st->current_display_server_data);
       return video_st->current_display_server_data;
    }
 #endif
@@ -1740,6 +1743,13 @@ void* video_display_server_init(enum rarch_display_type type)
          RARCH_LOG("[Video] Found display server: \"%s\".\n",
                current_display_server->ident);
       }
+#if defined(HAVE_WAYLAND)
+      /* Its DRM lease report is only a log line: made where the log
+       * is on, so an init before that leaves it to the next one */
+      if (     current_display_server == &dispserv_wl
+            && verbosity_is_enabled())
+         wl_display_server_report_lease(video_st->current_display_server_data);
+#endif
    }
 
    video_st->initial_screen_orientation =

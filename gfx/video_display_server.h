@@ -242,6 +242,10 @@ extern const video_display_server_t dispserv_win32;
 extern const video_display_server_t dispserv_uwp;
 extern const video_display_server_t dispserv_x11;
 extern const video_display_server_t dispserv_wl;
+/* Starts the Wayland display server's DRM lease report - a log line,
+ * worked out on a thread of its own - once per instance. Called where
+ * the log is on to show it. */
+void wl_display_server_report_lease(void *data);
 extern const video_display_server_t dispserv_kms;
 extern const video_display_server_t dispserv_videocore;
 extern const video_display_server_t dispserv_android;

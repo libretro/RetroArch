@@ -395,6 +395,8 @@ static void *start(int nconn, bool offer_global)
    }
    pthread_create(&comp_tid, NULL, comp_thread, NULL);
    serv = dispserv_wl.init();
+   /* As video_display_server_init() does once the log is on */
+   wl_display_server_report_lease(serv);
    /* The report runs on a thread and a connection of its own, which the
     * display server never waits for; the harness does. It is over once
     * it has logged and, where it bound the lease device, gone. */

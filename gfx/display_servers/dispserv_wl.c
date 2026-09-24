@@ -51,6 +51,7 @@ typedef struct
     * sysfs node the EDID lives under; Wayland itself has no
     * protocol for the EDID */
    char     name[32];
+   bool     lease_reported;
 } dispserv_wl_t;
 
 /* wl_output listener callbacks */
@@ -183,11 +184,23 @@ static void wl_display_server_lease_report(void *data)
 }
 #endif
 
-static void *wl_display_server_init(void)
+void wl_display_server_report_lease(void *data)
 {
 #ifdef HAVE_THREADS
    sthread_t *report;
 #endif
+   dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   if (!serv || serv->lease_reported)
+      return;
+   serv->lease_reported = true;
+#ifdef HAVE_THREADS
+   if ((report = sthread_create(wl_display_server_lease_report, NULL)))
+      sthread_detach(report);
+#endif
+}
+
+static void *wl_display_server_init(void)
+{
    dispserv_wl_t *serv = (dispserv_wl_t*)calloc(1, sizeof(*serv));
    if (!serv)
       return NULL;
@@ -203,10 +216,6 @@ static void *wl_display_server_init(void)
    wl_registry_add_listener(serv->registry, &registry_listener, serv);
 
    wl_display_flush(serv->dpy);
-#ifdef HAVE_THREADS
-   if ((report = sthread_create(wl_display_server_lease_report, NULL)))
-      sthread_detach(report);
-#endif
 
 #ifdef RARCH_HAVE_MUTTER_DC
    /* Starts the Mutter worker; its answer is read at each call. */
