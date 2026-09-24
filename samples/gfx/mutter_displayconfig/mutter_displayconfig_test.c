@@ -507,6 +507,19 @@ static int case_wl(bool mutter)
    if (!dispserv_wl.get_resolution_list || !dispserv_wl.set_resolution
          || !dispserv_wl.get_flags)
       FAIL("dispserv_wl has no resolution callbacks in a HAVE_DBUS build");
+   /* dispserv_wl's init makes no roundtrip: the output arrives on its
+    * own queue over the calls that follow, each taking only what the
+    * compositor has sent. */
+   {
+      int i;
+      float hz = 0.0f;
+      for (i = 0; i < 500 && (hz = dispserv_wl.get_refresh_rate(data)) <= 0.0f; i++)
+         settle();
+      if (hz <= 0.0f)
+         FAIL("Wayland: the output was never described");
+      if (!mutter)
+         printf("[pass] Wayland: output described without a roundtrip, %.3f Hz\n", hz);
+   }
    if (mutter && wait_mutter())
       FAIL("Wayland: mock Mutter not seen on the bus");
    flags = dispserv_wl.get_flags(data);

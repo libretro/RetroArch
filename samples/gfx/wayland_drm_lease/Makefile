@@ -22,10 +22,11 @@ SOURCES := wayland_drm_lease_test.c \
            drm-lease-v1-protocol.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_wl.c \
            $(REPO_ROOT)/gfx/common/wayland_drm_lease.c \
+           $(LRC)/rthreads/rthreads.c \
            $(LRC)/compat/compat_strl.c
 
 CFLAGS  += -Wall -std=gnu99 -g -O0 \
-           -DRARCH_INTERNAL -DHAVE_WAYLAND \
+           -DRARCH_INTERNAL -DHAVE_WAYLAND -DHAVE_THREADS -D_GNU_SOURCE \
            -I. \
            -I$(REPO_ROOT) \
            -I$(LRC)/include \

@@ -554,6 +554,16 @@ check "android: dispserv" "$HOSTOFF -DANDROID -Itools/platform_stubs/android $CD
 check "android: rthreads (API 21)" "-DHAVE_THREADS -D__ANDROID__ -D__ANDROID_API__=21 -include tools/platform_stubs/android/bionic_pthread_stub.h -Itools/platform_stubs/android" libretro-common/rthreads/rthreads.c
 check "android: rthreads (API 19)" "-DHAVE_THREADS -D__ANDROID__ -D__ANDROID_API__=19 -Itools/platform_stubs/android" libretro-common/rthreads/rthreads.c
 
+# The D-Bus, Mutter and RealtimeKit units, and the elevation chain,
+# are built on Linux and BSD only, but griffin and other build systems
+# may still see the files elsewhere: as a target with no POSIX headers
+# at all (MSVC, consoles), each must reduce to its gate and include
+# none of them.
+check "no-posix: D-Bus/Mutter/RealtimeKit units" "$HOSTOFF -DHAVE_DYLIB -Itools/platform_stubs/no_posix" \
+   gfx/common/dbus_runtime.c gfx/common/dbus_common.c \
+   gfx/common/mutter_displayconfig.c \
+   frontend/thread_elevation.c frontend/thread_elevation/rtkit.c
+
 check "android: opensl" "-DANDROID -DHAVE_OPENSL -Itools/platform_stubs/android -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/opensl.c
 
 check "gekko: rgui"  "-DGEKKO -DHAVE_MENU -DHAVE_RGUI -Itools/platform_stubs/gekko" menu/drivers/rgui.c

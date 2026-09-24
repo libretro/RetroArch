@@ -1080,6 +1080,11 @@ bool gfx_ctx_wl_init_common(
       return false;
    }
 
+   /* The display server for this session is Wayland's, as X11's is set
+    * by its own contexts; it keeps a connection of its own and never
+    * waits on it. */
+   video_driver_display_type_set(RARCH_DISPLAY_WAYLAND);
+
    frontend_driver_install_signal_handler();
 
    wl->registry = wl_display_get_registry(wl->input.dpy);

@@ -20,7 +20,12 @@
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 
+#include <poll.h>
 #include <wayland-client.h>
+
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
 #include "../video_display_server.h"
 #include "edid_sysfs.h"
@@ -138,8 +143,51 @@ static const struct wl_registry_listener registry_listener = {
    registry_handle_global_remove,
 };
 
+/* Takes whatever the compositor has sent on this connection, without
+ * waiting for more: the output is bound and described over the first
+ * few calls after init, which report nothing until then. The
+ * connection is this display server's own, used only on the thread
+ * that calls it, so the context's queue is never touched. */
+static void wl_display_server_pump(dispserv_wl_t *serv)
+{
+   if (!serv || !serv->dpy)
+      return;
+   wl_display_flush(serv->dpy);
+   if (wl_display_prepare_read(serv->dpy) == 0)
+   {
+      struct pollfd pfd;
+      pfd.fd      = wl_display_get_fd(serv->dpy);
+      pfd.events  = POLLIN;
+      pfd.revents = 0;
+      if (poll(&pfd, 1, 0) > 0)
+         wl_display_read_events(serv->dpy);
+      else
+         wl_display_cancel_read(serv->dpy);
+   }
+   wl_display_dispatch_pending(serv->dpy);
+   /* A bind made while dispatching goes out now, not next time */
+   wl_display_flush(serv->dpy);
+}
+
+#ifdef HAVE_THREADS
+/* The DRM lease report needs answers from the compositor; it gets them
+ * on a thread and a connection of its own, which nothing waits for. */
+static void wl_display_server_lease_report(void *data)
+{
+   struct wl_display *dpy = wl_display_connect(NULL);
+   (void)data;
+   if (!dpy)
+      return;
+   wayland_drm_lease_report(dpy);
+   wl_display_disconnect(dpy);
+}
+#endif
+
 static void *wl_display_server_init(void)
 {
+#ifdef HAVE_THREADS
+   sthread_t *report;
+#endif
    dispserv_wl_t *serv = (dispserv_wl_t*)calloc(1, sizeof(*serv));
    if (!serv)
       return NULL;
@@ -154,11 +202,11 @@ static void *wl_display_server_init(void)
    serv->registry = wl_display_get_registry(serv->dpy);
    wl_registry_add_listener(serv->registry, &registry_listener, serv);
 
-   /* First roundtrip: discover globals (binds wl_output) */
-   wl_display_roundtrip(serv->dpy);
-   /* Second roundtrip: receive wl_output events (mode, geometry) */
-   wl_display_roundtrip(serv->dpy);
-   wayland_drm_lease_report(serv->dpy);
+   wl_display_flush(serv->dpy);
+#ifdef HAVE_THREADS
+   if ((report = sthread_create(wl_display_server_lease_report, NULL)))
+      sthread_detach(report);
+#endif
 
 #ifdef RARCH_HAVE_MUTTER_DC
    /* Starts the Mutter worker; its answer is read at each call. */
@@ -199,6 +247,7 @@ static void *wl_display_server_get_resolution_list(void *data,
    mutter_dc_target_t t;
    video_display_config_t *list = NULL;
    dispserv_wl_t *serv          = (dispserv_wl_t*)data;
+   wl_display_server_pump((dispserv_wl_t*)data);
 
    *len = 0;
    if (!serv || !mutter_displayconfig_available())
@@ -216,6 +265,7 @@ static bool wl_display_server_set_resolution(void *data,
 {
    mutter_dc_target_t t;
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   wl_display_server_pump((dispserv_wl_t*)data);
 
    if (!serv || !mutter_displayconfig_available())
       return false;
@@ -236,6 +286,7 @@ static uint32_t wl_display_server_get_flags(void *data)
 {
    uint32_t flags      = 0;
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   wl_display_server_pump((dispserv_wl_t*)data);
    if (!serv || !mutter_displayconfig_available())
       BIT32_SET(flags, DISPSERV_CTX_NO_RESOLUTION_LIST);
    return flags;
@@ -245,6 +296,7 @@ static uint32_t wl_display_server_get_flags(void *data)
 static float wl_display_server_get_refresh_rate(void *data)
 {
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   wl_display_server_pump((dispserv_wl_t*)data);
    if (!serv || !serv->have_mode || serv->refresh <= 0)
       return 0.0f;
    return (float)serv->refresh / 1000.0f;
@@ -254,6 +306,7 @@ static void wl_display_server_get_video_output_size(void *data,
       unsigned *dims, char *s, size_t len)
 {
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   wl_display_server_pump((dispserv_wl_t*)data);
    if (!serv || !serv->have_mode)
       return;
    if (dims)
@@ -264,6 +317,7 @@ static bool wl_display_server_get_metrics(void *data,
       enum display_metric_types type, float *value)
 {
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   wl_display_server_pump((dispserv_wl_t*)data);
 
    if (!serv || !value)
       return false;
@@ -314,6 +368,7 @@ static int wl_display_server_get_edid(void *data, uint8_t *out, size_t max)
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
    const char *name    = (serv && serv->name[0]) ? serv->name : NULL;
    int n               = edid_sysfs_read(name, out, max);
+   wl_display_server_pump((dispserv_wl_t*)data);
    if (n < 0 && name)
       n = edid_sysfs_read(NULL, out, max);
    return n;

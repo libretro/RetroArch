@@ -44,7 +44,8 @@
  * WHAT IT PINS
  *
  * 1. Two offered connectors are both reported, the device is
- *    released, and the client is still connected afterwards.
+ *    released, and the report's own connection closed afterwards; the
+ *    display server's connection is a separate one.
  * 2. The non-master fd the compositor sends is closed. It is sent
  *    from a pipe whose write end is kept here: if the client leaks
  *    its copy, writing to that end does not raise EPIPE.
@@ -79,6 +80,8 @@
 static char log_lines[LOG_MAX][LOG_LINE];
 static int  log_count;
 static bool log_echo;
+/* The lease report logs from a thread of its own */
+static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void log_put(const char *fmt, va_list ap)
 {
@@ -86,8 +89,10 @@ static void log_put(const char *fmt, va_list ap)
    vsnprintf(line, sizeof(line), fmt, ap);
    if (log_echo)
       fputs(line, stdout);
+   pthread_mutex_lock(&log_lock);
    if (log_count < LOG_MAX)
       strlcpy(log_lines[log_count++], line, LOG_LINE);
+   pthread_mutex_unlock(&log_lock);
 }
 
 #define LOG_FN(name) \
@@ -107,10 +112,13 @@ LOG_FN(RARCH_DBG)
 static bool log_saw(const char *needle)
 {
    int i;
-   for (i = 0; i < log_count; i++)
+   bool saw = false;
+   pthread_mutex_lock(&log_lock);
+   for (i = 0; i < log_count && !saw; i++)
       if (strstr(log_lines[i], needle))
-         return true;
-   return false;
+         saw = true;
+   pthread_mutex_unlock(&log_lock);
+   return saw;
 }
 
 /* ---- the compositor ---- */
@@ -129,6 +137,7 @@ struct comp
    struct wl_event_source *revoke_timer;
    bool                 released;
    bool                 client_gone;
+   bool                 device_bound;
    bool                 grant;      /* answer a request, or refuse it */
    bool                 revoke;     /* ...then take it back again */
    char                 requested[64];
@@ -251,7 +260,7 @@ static const struct wp_drm_lease_device_v1_interface device_impl = {
 
 static void client_destroyed(struct wl_listener *listener, void *data)
 {
-   comp.client_gone = true;
+   __atomic_store_n(&comp.client_gone, true, __ATOMIC_RELEASE);
 }
 
 static void device_bind(struct wl_client *client, void *data,
@@ -268,6 +277,7 @@ static void device_bind(struct wl_client *client, void *data,
 
    comp.client_destroyed.notify = client_destroyed;
    wl_client_add_destroy_listener(client, &comp.client_destroyed);
+   __atomic_store_n(&comp.device_bound, true, __ATOMIC_RELEASE);
 
    /* A compositor sends a non-master DRM fd here. A pipe stands in:
     * it is an fd like any other, and keeping the write end lets the
@@ -385,6 +395,20 @@ static void *start(int nconn, bool offer_global)
    }
    pthread_create(&comp_tid, NULL, comp_thread, NULL);
    serv = dispserv_wl.init();
+   /* The report runs on a thread and a connection of its own, which the
+    * display server never waits for; the harness does. It is over once
+    * it has logged and, where it bound the lease device, gone. */
+   {
+      int i;
+      for (i = 0; i < 500; i++)
+      {
+         if (     log_saw("[Lease]")
+               && (   !__atomic_load_n(&comp.device_bound, __ATOMIC_ACQUIRE)
+                   ||  __atomic_load_n(&comp.client_gone, __ATOMIC_ACQUIRE)))
+            break;
+         usleep(10000);
+      }
+   }
    return serv;
 }
 
@@ -400,7 +424,7 @@ static void test_two_connectors(void)
    check("the second connector was reported", log_saw("\"VGA-1\" is offered"));
    check("the device was released", comp.released);
    check("the non-master fd was closed", client_closed_the_fd());
-   check("the client is still connected", !comp.client_gone);
+   check("the report closed its own connection after it", comp.client_gone);
    check("and the route out of here is named",
          log_saw("video_context_driver") && log_saw("\"kms\""));
 
@@ -420,7 +444,7 @@ static void test_global_without_connectors(void)
    check("and does not name a route that is not there",
          !log_saw("video_context_driver"));
    check("the device was released", comp.released);
-   check("the client is still connected", !comp.client_gone);
+   check("the report closed its own connection after it", comp.client_gone);
 
    finish(serv);
 }
