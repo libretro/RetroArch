@@ -14726,9 +14726,13 @@ static void settings_build_video(
 #endif
 
 #ifdef HAVE_EGL
-         if (     string_is_equal(video_driver_get_ident(), "gl")
-               || string_is_equal(video_driver_get_ident(), "glcore")
-               || string_is_equal(video_driver_get_ident(), "gl1"))
+         /* Only where the context publishes EGL's devices: GLX and
+          * contexts without device enumeration have none to choose */
+         if (     (   string_is_equal(video_driver_get_ident(), "gl")
+                   || string_is_equal(video_driver_get_ident(), "glcore")
+                   || string_is_equal(video_driver_get_ident(), "gl1"))
+               && video_driver_get_gpu_api_devices(
+                     video_context_driver_get_api()))
          {
             ADD_DESC(vid_desc_gl_gpu);
          }

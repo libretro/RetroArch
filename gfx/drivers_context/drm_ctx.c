@@ -36,6 +36,7 @@
 #include <gbm.h>
 
 #include <lists/dir_list.h>
+#include <lists/string_list.h>
 #include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
@@ -85,6 +86,8 @@ typedef struct gfx_ctx_drm_data
    bool waiting_for_flip;
    bool leased;
    bool lease_lost;
+   /* The GPUs the GL GPU index chooses from, as published to the menu */
+   struct string_list *gl_gpu_list;
 } gfx_ctx_drm_data_t;
 
 struct drm_fb
@@ -311,6 +314,8 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
             (EGLNativeDisplayType)drm->gbm_dev, &major,
             &minor, &n, attrib_ptr, gbm_choose_xrgb8888_cb))
       goto error;
+   if (drm->gl_gpu_list)
+      video_driver_set_gpu_api_devices(drm_api, drm->gl_gpu_list);
 
    attr            = gfx_ctx_drm_egl_fill_attribs(drm, egl_attribs);
    egl_attribs_ptr = &egl_attribs[0];
@@ -787,6 +792,13 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
 
    drm->bo             = NULL;
    drm->next_bo        = NULL;
+
+   if (drm->gl_gpu_list)
+   {
+      video_driver_set_gpu_api_devices(drm_api, NULL);
+      string_list_free(drm->gl_gpu_list);
+      drm->gl_gpu_list = NULL;
+   }
 }
 
 static void *gfx_ctx_drm_init(void *video_driver)
@@ -795,6 +807,8 @@ static void *gfx_ctx_drm_init(void *video_driver)
    unsigned monitor_index;
    unsigned gpu_index                   = 0;
    const char *gpu                      = NULL;
+   const char *preferred                = NULL;
+   bool was_preferred                   = false;
    struct string_list *gpu_descriptors  = NULL;
    settings_t *settings                 = config_get_ptr();
    gfx_ctx_drm_data_t *drm              = (gfx_ctx_drm_data_t*)
@@ -832,15 +846,47 @@ static void *gfx_ctx_drm_init(void *video_driver)
    drm->fd = -1;
 #endif
 
+#ifdef HAVE_EGL
+   /* The GL GPU index: the chosen EGL device's card is tried first and
+    * the others in their usual order after it; the display follows the
+    * card, through GBM. */
+   drm->gl_gpu_list = egl_gpu_list_new();
+   if (drm->gl_gpu_list && settings->ints.gl_gpu_index > 0)
+   {
+      if ((preferred = egl_gpu_device_file(settings->ints.gl_gpu_index)))
+         RARCH_LOG("[KMS] Using GPU #%d: \"%s\".\n",
+               settings->ints.gl_gpu_index,
+               drm->gl_gpu_list->elems[settings->ints.gl_gpu_index].data);
+      else
+         RARCH_WARN("[KMS] GPU #%d not found; using the first suitable card.\n",
+               settings->ints.gl_gpu_index);
+   }
+#endif
+
 nextgpu:
    free_drm_resources(drm);
 
-   if (!gpu_descriptors || gpu_index == gpu_descriptors->size)
+   if (was_preferred)
    {
-      RARCH_ERR("[KMS] Couldn't find a suitable DRM device.\n");
-      goto error;
+      RARCH_WARN("[KMS] The chosen GPU has no usable output; trying the others.\n");
+      was_preferred = false;
    }
-   gpu = gpu_descriptors->elems[gpu_index++].data;
+
+   if (preferred)
+   {
+      gpu           = preferred;
+      preferred     = NULL;
+      was_preferred = true;
+   }
+   else
+   {
+      if (!gpu_descriptors || gpu_index == gpu_descriptors->size)
+      {
+         RARCH_ERR("[KMS] Couldn't find a suitable DRM device.\n");
+         goto error;
+      }
+      gpu = gpu_descriptors->elems[gpu_index++].data;
+   }
 
    drm->fd    = open(gpu, O_RDWR);
    if (drm->fd < 0)

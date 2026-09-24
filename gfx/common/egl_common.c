@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include <lists/string_list.h>
+#include <compat/strl.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -844,6 +845,7 @@ bool egl_choose_scrgb_config(egl_ctx_data_t *egl, bool apply)
  * EGL_EXT_device_enumeration reports - under glvnd, every vendor's. */
 #define EGL_GPU_MAX 16
 static void    *egl_gpu_devices[EGL_GPU_MAX];
+static char     egl_gpu_files[EGL_GPU_MAX][64];
 static unsigned egl_gpu_count;
 
 struct string_list *egl_gpu_list_new(void)
@@ -875,8 +877,9 @@ struct string_list *egl_gpu_list_new(void)
          || !(list = string_list_new()))
       return NULL;
 
-   egl_gpu_devices[0] = NULL;
-   egl_gpu_count      = 1;
+   egl_gpu_devices[0]  = NULL;
+   egl_gpu_files[0][0] = '\0';
+   egl_gpu_count       = 1;
    string_list_append(list, "System default", attr);
 
    for (i = 0; i < n && egl_gpu_count < EGL_GPU_MAX; i++)
@@ -914,6 +917,11 @@ struct string_list *egl_gpu_list_new(void)
       if (!label[0])
          snprintf(label, sizeof(label), "EGL device %d", (int)i);
 
+      if (file)
+         strlcpy(egl_gpu_files[egl_gpu_count], file,
+               sizeof(egl_gpu_files[egl_gpu_count]));
+      else
+         egl_gpu_files[egl_gpu_count][0] = '\0';
       egl_gpu_devices[egl_gpu_count++] = found[i];
       string_list_append(list, label, attr);
    }
@@ -928,4 +936,12 @@ void *egl_gpu_device_at(int index)
    if (index <= 0 || (unsigned)index >= egl_gpu_count)
       return NULL;
    return egl_gpu_devices[index];
+}
+
+const char *egl_gpu_device_file(int index)
+{
+   if (     index <= 0 || (unsigned)index >= egl_gpu_count
+         || !egl_gpu_files[index][0])
+      return NULL;
+   return egl_gpu_files[index];
 }

@@ -147,6 +147,10 @@ struct string_list *egl_gpu_list_new(void);
 /* The device behind entry 'index' of the last list, NULL for entry 0. */
 void *egl_gpu_device_at(int index);
 
+/* The DRM card node of entry 'index' (EGL_EXT_device_drm), NULL for
+ * entry 0 or a device that does not report one. */
+const char *egl_gpu_device_file(int index);
+
 /* The device the next display is made on, NULL for the default; a
  * display the device cannot make falls back to the default. */
 void egl_set_display_device(void *device);
