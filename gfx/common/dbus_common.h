@@ -28,17 +28,4 @@ void dbus_screensaver_uninhibit(void);
 
 bool dbus_suspend_screensaver(bool enable);
 
-#if defined(HAVE_DBUS) && defined(HAVE_THREADS) && defined(__linux__)
-#define HAVE_DBUS_RTKIT 1
-/**
- * Hands the calling thread to RealtimeKit on the system bus: real-time
- * round-robin up to rtkit's MaxRealtimePriority, else a nice value down
- * to its MinNiceLevel. The exchange runs on a detached thread of its
- * own, so nothing here or after it waits on the bus; the outcome is
- * only logged. Returns false when no request was started - one is
- * already in flight, or the helper thread could not be created.
- */
-bool dbus_rtkit_raise_current_thread(void);
-#endif
-
 #endif

@@ -16,6 +16,7 @@ SOURCES_C := \
 	../../../audio/audio_pipeline_stretch.c \
 	../../../audio/audio_speed_lpf.c \
 	../../../audio/audio_thread_wrapper.c \
+	../../../frontend/thread_elevation.c \
 	../../../audio/audio_binaural.c \
 	stubs_retroarch.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \

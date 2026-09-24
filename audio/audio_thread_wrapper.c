@@ -17,10 +17,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
-
 #include <lists/string_list.h>
 #include <retro_atomic.h>
 #include <rthreads/rthreads.h>
@@ -29,7 +25,7 @@
 #include "audio_thread_wrapper.h"
 #include "audio_driver.h"
 #include "../verbosity.h"
-#include "../gfx/common/dbus_common.h"
+#include "../frontend/thread_elevation.h"
 
 /* How long a handshake between the main thread and the audio thread
  * may run before it is reported. Both are sub-millisecond on a device
@@ -107,15 +103,20 @@ static void audio_thread_loop(void *data)
    /* Best effort and never fatal: a refusal leaves the default. */
    if (thr->raise_priority)
    {
-      if (sthread_raise_current_priority())
-         RARCH_LOG("[Audio] Audio thread priority raised.\n");
-#ifdef HAVE_DBUS_RTKIT
-      /* The request runs on its own thread; this one does not wait. */
-      else if (dbus_rtkit_raise_current_thread())
-         RARCH_LOG("[Audio] Audio thread priority not raised directly; asking RealtimeKit.\n");
-#endif
-      else
-         RARCH_LOG("[Audio] Audio thread priority not raised; the system refused or has no such class.\n");
+      const char *via = NULL;
+      switch (thread_elevation_raise_current(&via))
+      {
+         case THREAD_ELEVATION_GRANTED:
+            RARCH_LOG("[Audio] Audio thread priority raised.\n");
+            break;
+         case THREAD_ELEVATION_PENDING:
+            /* Finishing on a thread of its own; this one does not wait. */
+            RARCH_LOG("[Audio] Audio thread priority not raised directly; asking %s.\n", via);
+            break;
+         default:
+            RARCH_LOG("[Audio] Audio thread priority not raised; the system refused or has no such class.\n");
+            break;
+      }
    }
 
    if (thr->prefer_fast_cores)
