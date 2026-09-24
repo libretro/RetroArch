@@ -469,12 +469,35 @@ check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
 if [ "$HAVE_QT" != 'no' ]; then
    _have_qt=$HAVE_QT
    if [ "$HAVE_CXX17" = 'yes' ]; then
-      check_pkgconf QT6CORE Qt6Core 6.2
-      check_pkgconf QT6GUI Qt6Gui 6.2
-      check_pkgconf QT6WIDGETS Qt6Widgets 6.2
+      check_pkgconf QT6CORE Qt6Core 6.2 '' '' nopkg
+      check_pkgconf QT6GUI Qt6Gui 6.2 '' '' nopkg
+      check_pkgconf QT6WIDGETS Qt6Widgets 6.2 '' '' nopkg
       #check_pkgconf QT6WEBENGINE Qt6WebEngine 6.2
 
-      # pkg-config is needed to reliably find Qt6 libraries.
+      # Without pkg-config, Qt's own qmake answers for its headers and
+      # libraries.
+      if [ "$PKG_CONF_PATH" = 'none' ] && _qmake="$(nopkg_qmake 6)"; then
+         _qh="$("$_qmake" -query QT_INSTALL_HEADERS)"
+         _ql="-L$("$_qmake" -query QT_INSTALL_LIBS)"
+         _qspec="$("$_qmake" -query QT_INSTALL_ARCHDATA)/mkspecs/$("$_qmake" -query QMAKE_XSPEC)"
+         [ -d "$_qspec" ] || _qspec=''
+         check_nopkg cxx QT6CORE "$_ql -lQt6Core" \
+            "$_qh/QtCore $_qh -DQT_CORE_LIB $_qspec" \
+            '#include <QtCore/QCoreApplication>
+int main(int argc, char **argv) { QCoreApplication a(argc, argv); return 0; }' \
+            "$CXX17_CFLAGS -fPIC"
+         check_nopkg cxx QT6GUI "$_ql -lQt6Gui -lQt6Core" \
+            "$_qh/QtGui $_qh $_qh/QtCore -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtGui/QGuiApplication>
+int main(int argc, char **argv) { QGuiApplication a(argc, argv); return 0; }' \
+            "$CXX17_CFLAGS -fPIC"
+         check_nopkg cxx QT6WIDGETS "$_ql -lQt6Widgets -lQt6Gui -lQt6Core" \
+            "$_qh/QtWidgets $_qh $_qh/QtCore $_qh/QtGui -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtWidgets/QApplication>
+int main(int argc, char **argv) { QApplication a(argc, argv); return 0; }' \
+            "$CXX17_CFLAGS -fPIC"
+      fi
+
 
       check_enabled QT6CORE QT Qt 'Qt6Core is' user
       check_enabled QT6GUI QT Qt 'Qt6GUI is' user
@@ -492,12 +515,35 @@ if [ "$HAVE_QT" != 'no' ]; then
    fi
    if [ "$HAVE_QT6" != 'yes' ]; then
       HAVE_QT=$_have_qt
-      check_pkgconf QT5CORE Qt5Core 5.2
-      check_pkgconf QT5GUI Qt5Gui 5.2
-      check_pkgconf QT5WIDGETS Qt5Widgets 5.2
+      check_pkgconf QT5CORE Qt5Core 5.2 '' '' nopkg
+      check_pkgconf QT5GUI Qt5Gui 5.2 '' '' nopkg
+      check_pkgconf QT5WIDGETS Qt5Widgets 5.2 '' '' nopkg
       #check_pkgconf QT5WEBENGINE Qt6WebEngine 5.2
 
-      # pkg-config is needed to reliably find Qt5 libraries.
+      # Without pkg-config, Qt's own qmake answers for its headers and
+      # libraries.
+      if [ "$PKG_CONF_PATH" = 'none' ] && _qmake="$(nopkg_qmake 5)"; then
+         _qh="$("$_qmake" -query QT_INSTALL_HEADERS)"
+         _ql="-L$("$_qmake" -query QT_INSTALL_LIBS)"
+         _qspec="$("$_qmake" -query QT_INSTALL_ARCHDATA)/mkspecs/$("$_qmake" -query QMAKE_XSPEC)"
+         [ -d "$_qspec" ] || _qspec=''
+         check_nopkg cxx QT5CORE "$_ql -lQt5Core" \
+            "$_qh/QtCore $_qh -DQT_CORE_LIB $_qspec" \
+            '#include <QtCore/QCoreApplication>
+int main(int argc, char **argv) { QCoreApplication a(argc, argv); return 0; }' \
+            "$CXX11_CFLAGS -fPIC"
+         check_nopkg cxx QT5GUI "$_ql -lQt5Gui -lQt5Core" \
+            "$_qh/QtGui $_qh $_qh/QtCore -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtGui/QGuiApplication>
+int main(int argc, char **argv) { QGuiApplication a(argc, argv); return 0; }' \
+            "$CXX11_CFLAGS -fPIC"
+         check_nopkg cxx QT5WIDGETS "$_ql -lQt5Widgets -lQt5Gui -lQt5Core" \
+            "$_qh/QtWidgets $_qh $_qh/QtCore $_qh/QtGui -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtWidgets/QApplication>
+int main(int argc, char **argv) { QApplication a(argc, argv); return 0; }' \
+            "$CXX11_CFLAGS -fPIC"
+      fi
+
 
       check_enabled QT5CORE QT Qt 'Qt5Core is' true
       check_enabled QT5GUI QT Qt 'Qt5GUI is' true
@@ -509,7 +555,10 @@ if [ "$HAVE_QT" != 'no' ]; then
       die : 'Notice: Qt support disabled, required libraries were not found.'
    fi
 
-   check_pkgconf OPENSSL openssl 1.0.0
+   check_pkgconf OPENSSL openssl 1.0.0 '' '' nopkg
+   check_nopkg '' OPENSSL '-lssl -lcrypto' '' \
+      '#include <openssl/ssl.h>
+int main(void) { return SSL_new(NULL) != NULL; }'
 fi
 
 check_val '' FLAC '-lFLAC' '' flac '' '' false
@@ -706,7 +755,10 @@ if [ "$HAVE_EGL" = "yes" ]; then
    check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS" '' "${VC_PREFIX}vg" '' '' false
 fi
 
-check_pkgconf DBUS dbus-1
+check_pkgconf DBUS dbus-1 '' '' '' nopkg
+check_nopkg '' DBUS -ldbus-1 'dbus-1.0 dbus-1.0/include' \
+   '#include <dbus/dbus.h>
+int main(void) { return dbus_bus_get(DBUS_BUS_SESSION, NULL) != NULL; }'
 check_val '' UDEV "-ludev" '' libudev '' '' false
 check_val '' V4L2 -lv4l2 '' libv4l2 '' '' false
 check_val '' FREETYPE -lfreetype freetype2 freetype2 '' '' false
@@ -749,7 +801,28 @@ check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
 check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 '' false
 check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 '' false
 check_pkgconf WAYLAND_PROTOS wayland-protocols 1.43
-check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
+check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12' '' '' nopkg
+
+# Without pkg-config the scanner still answers for its own version, and
+# the protocol generator falls back to deps/wayland-protocols.
+if [ "$PKG_CONF_PATH" = 'none' ] && [ "$TMP_WAYLAND_SCANNER" != 'no' ]; then
+   printf %s 'Checking for WAYLAND_SCANNER without pkg-config ... '
+   _wayscan="$(exists wayland-scanner || :)"
+   _wayscan_ver=''
+   [ "$_wayscan" ] && _wayscan_ver="$("$_wayscan" --version 2>&1 |
+      sed -n 's/.*wayland-scanner \([0-9][0-9.]*\).*/\1/p' | head -n 1)"
+   for _want in 1.15 1.12; do
+      if [ "$_wayscan_ver" ] && nopkg_version_ge "$_wayscan_ver" "$_want"; then
+         HAVE_WAYLAND_SCANNER='yes'
+         WAYLAND_SCANNER_VERSION="$_want"
+         break
+      fi
+   done
+   printf %s\\n "$HAVE_WAYLAND_SCANNER${_wayscan_ver:+ ($_wayscan_ver)}"
+   if [ "$HAVE_WAYLAND_SCANNER" != 'yes' ] && [ "${USER_WAYLAND_SCANNER:-}" = 'yes' ]; then
+      die 1 'Forced to build with WAYLAND_SCANNER, but it cannot be found without pkg-config. Exiting ...'
+   fi
+fi
 
 if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
    [ "$HAVE_WAYLAND_CURSOR" = yes ] &&
@@ -760,8 +833,13 @@ if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
          -s "$SHARE_DIR" ||
          die 1 'Error: Failed generating wayland protocols.'
 
-      check_pkgconf LIBDECOR libdecor-0
+      check_pkgconf LIBDECOR libdecor-0 '' '' '' nopkg
+      check_nopkg '' LIBDECOR -ldecor-0 libdecor-0 \
+         '#include <libdecor.h>
+int main(void) { return libdecor_new(NULL, NULL) != NULL; }'
 else
+    [ "${USER_WAYLAND:-}" = 'yes' ] &&
+       die 1 'Error: Forced to build with wayland, but its libraries or wayland-scanner were not found. Exiting ...'
     die : 'Notice: wayland libraries not found, disabling wayland support.'
     HAVE_WAYLAND='no'
 fi
