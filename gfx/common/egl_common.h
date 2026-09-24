@@ -137,6 +137,20 @@ bool egl_has_config(egl_ctx_data_t *egl);
  * becomes the context's config. */
 bool egl_choose_scrgb_config(egl_ctx_data_t *egl, bool apply);
 
+struct string_list;
+
+/* The GPUs a GL GPU index can choose, as menu labels: entry 0 is the
+ * implementation's own choice, the rest EGL's hardware devices.
+ * NULL where EGL cannot enumerate devices or make a display on one. */
+struct string_list *egl_gpu_list_new(void);
+
+/* The device behind entry 'index' of the last list, NULL for entry 0. */
+void *egl_gpu_device_at(int index);
+
+/* The device the next display is made on, NULL for the default; a
+ * display the device cannot make falls back to the default. */
+void egl_set_display_device(void *device);
+
 RETRO_END_DECLS
 
 #endif

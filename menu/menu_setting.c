@@ -1161,16 +1161,23 @@ static size_t setting_get_string_representation_int_gpu_index(
    size_t _len = 0;
    if (setting)
    {
-      struct string_list *list = video_driver_get_gpu_api_devices(video_context_driver_get_api());
-      _len = snprintf(s, len, "%d", *setting->value.target.integer);
+      enum gfx_ctx_api api     = video_context_driver_get_api();
+      struct string_list *list = video_driver_get_gpu_api_devices(api);
+      int index                = *setting->value.target.integer;
+#ifdef HAVE_EGL
+      /* GL keeps an index of its own; the entry is bound to Vulkan's */
+      if (api == GFX_CTX_OPENGL_API || api == GFX_CTX_OPENGL_ES_API)
+         index = config_get_ptr()->ints.gl_gpu_index;
+#endif
+      _len = snprintf(s, len, "%d", index);
       if (      list
-            && (*setting->value.target.integer >= 0)
-            && (*setting->value.target.integer < (int)list->size)
-            && list->elems[*setting->value.target.integer].data
-            && *list->elems[*setting->value.target.integer].data)
+            && (index >= 0)
+            && (index < (int)list->size)
+            && list->elems[index].data
+            && *list->elems[index].data)
       {
          _len += strlcpy_lit(s + _len, " - ", len - _len);
-         _len += strlcpy(s + _len, list->elems[*setting->value.target.integer].data, len - _len);
+         _len += strlcpy(s + _len, list->elems[index].data, len - _len);
       }
    }
    return _len;

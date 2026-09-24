@@ -2024,6 +2024,8 @@
 
 #ifdef HAVE_VULKAN
 #define DEFAULT_VULKAN_GPU_INDEX 0
+/* 0: the EGL implementation chooses, as before a GPU could be picked */
+#define DEFAULT_GL_GPU_INDEX 0
 #endif
 
 #ifdef HAVE_D3D10

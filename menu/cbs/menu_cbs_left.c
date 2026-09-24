@@ -1018,6 +1018,24 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
          break;
       }
 #endif
+#ifdef HAVE_EGL
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            settings_t *settings = config_get_ptr();
+            int gl_gpu_index     = settings->ints.gl_gpu_index;
+            configuration_set_int(settings,
+                  settings->ints.gl_gpu_index,
+                  gl_gpu_index > 0 ? gl_gpu_index - 1 : (int)list->size - 1);
+         }
+
+         break;
+      }
+#endif
 #ifdef HAVE_D3D10
       case GFX_CTX_DIRECT3D10_API:
       {

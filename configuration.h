@@ -458,6 +458,9 @@ typedef struct settings
 #ifdef HAVE_VULKAN
       int vulkan_gpu_index;
 #endif
+#ifdef HAVE_EGL
+      int gl_gpu_index;
+#endif
 #ifdef HAVE_D3D10
       int d3d10_gpu_index;
 #endif

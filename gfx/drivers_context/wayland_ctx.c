@@ -24,6 +24,7 @@
 #include <wayland-cursor.h>
 
 #include <string/stdstring.h>
+#include <lists/string_list.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -95,6 +96,14 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
    if (!wl)
       return;
+
+   /* The GPU list goes with the context, on every path out of it */
+   if (wl->gl_gpu_list)
+   {
+      video_driver_set_gpu_api_devices(wl_api, NULL);
+      string_list_free(wl->gl_gpu_list);
+      wl->gl_gpu_list = NULL;
+   }
 
 #ifdef HAVE_EGL
    egl_destroy(&wl->egl);
@@ -213,14 +222,50 @@ static bool gfx_ctx_wl_egl_init_context(gfx_ctx_wayland_data_t *wl)
          break;
    }
 
-   if (!egl_init_context(&wl->egl,
+   /* The GPU: the GL GPU index picks one of EGL's devices, 0 leaving
+    * it to the implementation as before; a device that cannot drive
+    * this display gives way to the default. */
+   {
+      bool ok              = false;
+      void *device         = NULL;
+      settings_t *settings = config_get_ptr();
+      if (wl->gl_gpu_list)
+         string_list_free(wl->gl_gpu_list);
+      wl->gl_gpu_list = egl_gpu_list_new();
+      if (wl->gl_gpu_list && settings && settings->ints.gl_gpu_index > 0)
+      {
+         if ((device = egl_gpu_device_at(settings->ints.gl_gpu_index)))
+            RARCH_LOG("[Wayland] Using GPU #%d: \"%s\".\n",
+                  settings->ints.gl_gpu_index,
+                  wl->gl_gpu_list->elems[settings->ints.gl_gpu_index].data);
+         else
+            RARCH_WARN("[Wayland] GPU #%d not found; using the default.\n",
+                  settings->ints.gl_gpu_index);
+      }
+      egl_set_display_device(device);
+      ok = egl_init_context(&wl->egl,
             EGL_PLATFORM_WAYLAND_KHR,
             (EGLNativeDisplayType)wl->input.dpy,
             &major, &minor, &n, attrib_ptr,
-            egl_default_accept_config_cb))
-   {
-      egl_report_error();
-      return false;
+            egl_default_accept_config_cb);
+      if (!ok && device)
+      {
+         RARCH_WARN("[Wayland] The chosen GPU cannot drive this display; using the default.\n");
+         egl_set_display_device(NULL);
+         ok = egl_init_context(&wl->egl,
+               EGL_PLATFORM_WAYLAND_KHR,
+               (EGLNativeDisplayType)wl->input.dpy,
+               &major, &minor, &n, attrib_ptr,
+               egl_default_accept_config_cb);
+      }
+      egl_set_display_device(NULL);
+      if (!ok)
+      {
+         egl_report_error();
+         return false;
+      }
+      if (wl->gl_gpu_list)
+         video_driver_set_gpu_api_devices(wl_api, wl->gl_gpu_list);
    }
    if (n == 0 || !wl->egl.config)
       return false;

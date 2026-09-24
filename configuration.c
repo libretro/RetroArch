@@ -5374,6 +5374,9 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_VULKAN
    SETTING_INT("vulkan_gpu_index",               &settings->ints.vulkan_gpu_index, true, DEFAULT_VULKAN_GPU_INDEX, false);
 #endif
+#ifdef HAVE_EGL
+   SETTING_INT("gl_gpu_index",                   &settings->ints.gl_gpu_index, true, DEFAULT_GL_GPU_INDEX, false);
+#endif
 #ifdef HAVE_METAL
    SETTING_INT("metal_gpu_index",                &settings->ints.metal_gpu_index, true, DEFAULT_METAL_GPU_INDEX, false);
 #endif
