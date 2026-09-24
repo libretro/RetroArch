@@ -253,10 +253,10 @@ static bool wasapi_imm_start_thread(wasapi_t *w)
    {
 #ifdef HAVE_THREADS
       w->imm_thread = sthread_create(mmdevice_thread,
-            &audio_state_get_ptr()->reinit_request);
+            (void*)&audio_state_get_ptr()->reinit_request);
 #else
       w->imm_thread = CreateThread(NULL, 0, mmdevice_thread,
-            &audio_state_get_ptr()->reinit_request, 0, NULL);
+            (void*)&audio_state_get_ptr()->reinit_request, 0, NULL);
 #endif
       if (!w->imm_thread)
          return false;

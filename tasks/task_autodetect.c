@@ -742,6 +742,7 @@ static config_file_t *input_autoconfigure_index_try(
       {
          struct config_entry_list *entry;
          const char *p;
+         const char *tab;
          char *endp;
          char config_device[NAME_MAX_LENGTH];
          unsigned config_vid, config_pid, a;
@@ -763,14 +764,14 @@ static config_file_t *input_autoconfigure_index_try(
          if (*endp != '\t')
             continue;
          p          = endp + 1;
-         if (!(endp = strchr(p, '\t')))
+         if (!(tab = strchr(p, '\t')))
             continue;
-         device_len = (size_t)(endp - p);
+         device_len = (size_t)(tab - p);
          if (device_len >= sizeof(config_device))
             device_len = sizeof(config_device) - 1;
          memcpy(config_device, p, device_len);
          config_device[device_len] = '\0';
-         config_phys = endp + 1;
+         config_phys = tab + 1;
 
          a = input_autoconfigure_tuple_affinity(autoconfig_handle,
                (uint16_t)config_vid, (uint16_t)config_pid,

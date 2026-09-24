@@ -177,7 +177,7 @@ struct ec_waiter
    DWORD              tid;
 };
 
-typedef LONG (WINAPI *ec_nt_wait_alert_t)(void*, LARGE_INTEGER*);
+typedef LONG (WINAPI *ec_nt_wait_alert_t)(volatile void*, LARGE_INTEGER*);
 typedef LONG (WINAPI *ec_nt_alert_tid_t)(HANDLE);
 typedef LONG (WINAPI *ec_nt_keyed_t)(HANDLE, void*, BOOLEAN, LARGE_INTEGER*);
 typedef LONG (WINAPI *ec_nt_create_keyed_t)(HANDLE*, ULONG, void*, ULONG);

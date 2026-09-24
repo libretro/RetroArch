@@ -588,7 +588,8 @@ enum scond_spin_kind
    SCOND_SPIN_UMWAIT
 };
 
-typedef LONG (NTAPI *scond_nt_wait_alert_t)(void *hint, LARGE_INTEGER *timeout);
+typedef LONG (NTAPI *scond_nt_wait_alert_t)(volatile void *hint,
+      LARGE_INTEGER *timeout);
 typedef LONG (NTAPI *scond_nt_alert_tid_t)(HANDLE tid);
 typedef LONG (NTAPI *scond_nt_keyed_t)(HANDLE h, void *key, BOOLEAN alertable,
       LARGE_INTEGER *timeout);
@@ -2348,7 +2349,7 @@ static INLINE void scond_pause(void)
 #if defined(SCOND_HAVE_MWAITX)
 /* AMD: park on the line holding *addr until it is written or ticks
  * TSC cycles pass (ECX bit 1 enables the timer) */
-static INLINE void scond_monitorx(const void *addr)
+static INLINE void scond_monitorx(const volatile void *addr)
 {
 #if defined(SCOND_HAVE_X86_INTRIN)
    _mm_monitorx((void*)addr, 0, 0);
@@ -2372,7 +2373,7 @@ static INLINE void scond_mwaitx(unsigned ticks)
 #if defined(SCOND_HAVE_UMWAIT)
 /* Intel WAITPKG: park on the line until written or the absolute TSC
  * deadline; control 1 asks for the lighter C0.1 state */
-static INLINE void scond_umonitor(const void *addr)
+static INLINE void scond_umonitor(const volatile void *addr)
 {
 #if defined(SCOND_HAVE_X86_INTRIN)
    _umonitor((void*)addr);

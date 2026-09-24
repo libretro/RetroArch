@@ -430,7 +430,7 @@ static bool x11_ml_set_timing(x11_modeline_t *ml,
    XRRCrtcInfo *crtc_info;
    XRRCrtcInfo *global_crtc;
    XRRCrtcInfo *original_crtc;
-   unsigned width, height, active_crtc, reordering_last_y;
+   unsigned width, height, reordering_last_y;
    bool ok;
 
    if (ml->desktop_output == -1)
@@ -505,7 +505,6 @@ static bool x11_ml_set_timing(x11_modeline_t *ml,
 
    width             = ml->min_width;
    height            = ml->min_height;
-   active_crtc       = 0;
    reordering_last_y = 0;
    ml->xerrors       = 0;
 
@@ -536,7 +535,6 @@ static bool x11_ml_set_timing(x11_modeline_t *ml,
          else
             reordering_last_y += XRANDR_REORDERING_MAXIMUM_HEIGHT;
          crtc_info1->timestamp |= XRANDR_SETMODE_UPDATE_REORDERING;
-         active_crtc++;
       }
       else if (resources->crtcs[c] == output_info->crtc)
       {
