@@ -1466,10 +1466,13 @@ THREAD
 #include "../gfx/video_thread_hw.c"
 #include "../audio/audio_thread_wrapper.c"
 #include "../frontend/thread_elevation.c"
+#if defined(__linux__) || defined(__FreeBSD__) \
+   || defined(__OpenBSD__) || defined(__NetBSD__)
 #include "../gfx/common/dbus_runtime.c"
 #include "../gfx/common/dbus_common.c"
 #include "../gfx/common/mutter_displayconfig.c"
 #include "../frontend/thread_elevation/rtkit.c"
+#endif
 #endif
 
 /* needed for playlists, netplay lobbies and achievements */

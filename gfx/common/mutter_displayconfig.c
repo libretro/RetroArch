@@ -16,14 +16,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-
 
 #include "mutter_displayconfig.h"
 
 #ifdef RARCH_HAVE_MUTTER_DC
 
 #include <stdint.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
 
