@@ -420,7 +420,19 @@ typedef struct alsa
    double   clk_a_sx, clk_a_sy, clk_a_sxx, clk_a_sxy, clk_a_n;
    int      clk_a_ppm;
    int      clk_a_valid;
+   /* Raised wherever the device stops and starts again - a pause, a
+    * resume, an xrun recovery - from whichever thread that happens on.
+    * Its position stood still meanwhile while time did not, so both
+    * fits start again from the writer's next sample; the last
+    * published estimate stands until the new window publishes one. */
+   retro_atomic_int_t clk_rebase;
 } alsa_t;
+
+static int alsa_recover(alsa_t *alsa, int err)
+{
+   retro_atomic_store_release_int(&alsa->clk_rebase, 1);
+   return snd_pcm_recover(alsa->pcm, err, 1);
+}
 
 /* The layout the device actually has, from its channel map; the
  * requested one where the map could not be read; stereo where the
@@ -503,6 +515,7 @@ static bool alsa_start(void *data, bool is_shutdown)
    }
    alsa->is_paused = false;
    alsa->held      = false;
+   retro_atomic_store_release_int(&alsa->clk_rebase, 1);
    return true;
 }
 
@@ -529,7 +542,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
          {
             if (frames == -EPIPE)
                retro_atomic_fetch_add_size(&alsa->underruns, 1);
-            if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
+            if (alsa_recover(alsa, frames) < 0)
                return -1;
 
             break;
@@ -569,7 +582,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
          {
             if (frames == -EPIPE)
                retro_atomic_fetch_add_size(&alsa->underruns, 1);
-            if (snd_pcm_recover(alsa->pcm, frames, 1) < 0)
+            if (alsa_recover(alsa, frames) < 0)
                return -1;
             break;
          }
@@ -581,7 +594,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
             rc = snd_pcm_wait(alsa->pcm, wait_ms);
             if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
             {
-               if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
+               if (alsa_recover(alsa, rc) < 0)
                   return -1;
             }
             continue;
@@ -620,6 +633,7 @@ static bool alsa_stop(void *data)
    {
       alsa->is_paused = true;
       alsa->held      = true;
+      retro_atomic_store_release_int(&alsa->clk_rebase, 1);
       return true;
    }
    ret = snd_pcm_drop(alsa->pcm);
@@ -630,6 +644,7 @@ static bool alsa_stop(void *data)
    }
    alsa->is_paused = true;
    alsa->held      = false;
+   retro_atomic_store_release_int(&alsa->clk_rebase, 1);
    return true;
 }
 
@@ -728,7 +743,7 @@ static size_t alsa_wait_writable(void *data, size_t len)
 
       if (avail == -EPIPE || avail == -ESTRPIPE || avail == -EINTR)
       {
-         if (snd_pcm_recover(alsa->pcm, (int)avail, 1) < 0)
+         if (alsa_recover(alsa, (int)avail) < 0)
             return 0;
          if (--laps < 0)
             return 0;
@@ -744,7 +759,7 @@ static size_t alsa_wait_writable(void *data, size_t len)
          rc = snd_pcm_start(alsa->pcm);
          if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
          {
-            if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
+            if (alsa_recover(alsa, rc) < 0)
                return 0;
          }
          else if (rc < 0)
@@ -756,7 +771,7 @@ static size_t alsa_wait_writable(void *data, size_t len)
          return 0;
       if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
       {
-         if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
+         if (alsa_recover(alsa, rc) < 0)
             return 0;
       }
       else if (rc < 0)
@@ -833,6 +848,16 @@ static void alsa_clock_sample(alsa_t *alsa)
 
    if (!sys_ns)
       return;
+
+   /* A load and a store rather than an exchange, which the volatile
+    * fallback of retro_atomic lacks: a raise landing between the two
+    * is one that has just been served. */
+   if (retro_atomic_load_acquire_int(&alsa->clk_rebase))
+   {
+      retro_atomic_store_relaxed_int(&alsa->clk_rebase, 0);
+      alsa->clk_have_anchor   = 0;
+      alsa->clk_a_have_anchor = 0;
+   }
 
    /* The hardware's own clock against the system's, where the driver
     * counts one. This needs no rate and no delay - it is two clocks

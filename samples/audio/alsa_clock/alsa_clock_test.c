@@ -23,6 +23,7 @@
  * fallback exists and why the wrapped calls are what supply one here. */
 
 #include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -51,6 +52,8 @@ static struct
    double   jitter_ns;      /* on the system timestamp */
    uint64_t written;        /* frames the driver has handed over */
    uint64_t calls;
+   uint64_t stalled_ns;     /* time that passed with the device idle */
+   int      xrun_next;      /* the next write reports an underrun */
 } dev;
 
 static void device_reset(void)
@@ -66,7 +69,8 @@ static void device_reset(void)
 static uint64_t system_ns(void)
 {
    double played = (double)dev.written;
-   double ns     = played * 1000000000.0 / dev.true_rate;
+   double ns     = played * 1000000000.0 / dev.true_rate
+                 + (double)dev.stalled_ns;
    if (dev.jitter_ns != 0.0)
       ns += (dev.calls & 1) ? dev.jitter_ns : -dev.jitter_ns;
    return (uint64_t)ns;
@@ -134,6 +138,11 @@ snd_pcm_sframes_t __wrap_snd_pcm_writei(snd_pcm_t *pcm, const void *buffer,
       snd_pcm_uframes_t size)
 {
    (void)pcm; (void)buffer;
+   if (dev.xrun_next)
+   {
+      dev.xrun_next = 0;
+      return -EPIPE;
+   }
    dev.written += size;
    return (snd_pcm_sframes_t)size;
 }
@@ -164,6 +173,68 @@ static void run_driver(double seconds, void **out_handle)
       audio_alsa.write(handle, buf, sizeof(buf));
 
    *out_handle = handle;
+}
+
+/* Writes for 'before' seconds, then lets the device sit idle for
+ * 'idle_ms' - paused through the driver's own stop() and start(), or
+ * starved into an underrun the next write reports - then writes for
+ * 'after' seconds more. Time passes through the idle stretch and the
+ * position does not, which is what a fit spanning it would misread. */
+static void run_driver_idle(double before, unsigned idle_ms, int pause,
+      double after, void **out_handle)
+{
+   unsigned  new_rate = dev.nominal;
+   float     buf[512 * 2];
+   unsigned  n;
+   void     *handle;
+
+   memset(buf, 0, sizeof(buf));
+   *out_handle = NULL;
+   if (!(handle = audio_alsa.init("null", dev.nominal, 64, &new_rate)))
+   {
+      fail("init", "the driver would not open the null PCM");
+      return;
+   }
+   for (n = 0; n < (unsigned)(before * dev.true_rate / 512.0); n++)
+      audio_alsa.write(handle, buf, sizeof(buf));
+   if (pause)
+      audio_alsa.stop(handle);
+   dev.stalled_ns += (uint64_t)idle_ms * 1000000ULL;
+   if (pause)
+      audio_alsa.start(handle, false);
+   else
+      dev.xrun_next = 1;
+   for (n = 0; n < (unsigned)(after * dev.true_rate / 512.0); n++)
+      audio_alsa.write(handle, buf, sizeof(buf));
+   *out_handle = handle;
+}
+
+extern char harness_log[8192];
+static int log_ppm(const char *marker, int *found);
+
+static void expect_idle(const char *name, unsigned idle_ms, int pause,
+      int want, int tol)
+{
+   void *h = NULL;
+   int   found = 0, got;
+
+   harness_log[0] = '\0';
+   run_driver_idle(5.0, idle_ms, pause, 5.0, &h);
+   if (!h)
+      return;
+   audio_alsa.free(h);
+
+   got = log_ppm("fitted from the position", &found);
+   if (!found)
+      fail(name, "the driver logged no estimate of this kind");
+   else if (got < want - tol || got > want + tol)
+   {
+      char d[128];
+      snprintf(d, sizeof(d), "read %+d ppm, expected %+d", got, want);
+      fail(name, d);
+   }
+   else
+      printf("   ok   %-22s %+d ppm\n", name, got);
 }
 
 /* The estimate is read back out of what the driver logged, so what is
@@ -255,7 +326,15 @@ int main(void)
       expect("fitted, absurd delay", FIT_MARK, 50, 2);
    }
 
-   printf("5. a device that reports nothing usable\n");
+   printf("5. the device idle mid-window: time passes, position does not\n");
+   {
+      device_reset(); dev.have_audio = 0; dev.true_rate = 48002.4;
+      expect_idle("across a 2 s pause", 2000, 1, 50, 3);
+      device_reset(); dev.have_audio = 0; dev.true_rate = 48002.4;
+      expect_idle("across a 300 ms xrun", 300, 0, 50, 3);
+   }
+
+   printf("6. a device that reports nothing usable\n");
    {
       void *h = NULL;
       device_reset();
