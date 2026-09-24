@@ -55,7 +55,8 @@ enum menu_state_flags
    /* When enabled, a configuration file load (full driver/menu
     * reinit) has been requested and will be performed on the next
     * frame, outside of menu iteration */
-   MENU_ST_FLAG_PENDING_CONFIG_REPLACE      = (1 << 15)
+   MENU_ST_FLAG_PENDING_CONFIG_REPLACE      = (1 << 15),
+   MENU_ST_FLAG_PREVENT_BOOL_SPECIAL_FILTER = (1 << 16)
 };
 
 enum menu_scroll_mode
