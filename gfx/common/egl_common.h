@@ -132,6 +132,11 @@ void egl_report_error(void);
 
 bool egl_has_config(egl_ctx_data_t *egl);
 
+/* Whether the display has an RGBA16F window config for desktop GL
+ * (EGL_EXT_pixel_format_float), as scRGB output needs; with 'apply' it
+ * becomes the context's config. */
+bool egl_choose_scrgb_config(egl_ctx_data_t *egl, bool apply);
+
 RETRO_END_DECLS
 
 #endif

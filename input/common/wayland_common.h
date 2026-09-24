@@ -49,6 +49,7 @@
 #include "../../gfx/common/wayland/presentation-time.h"
 #include "../../gfx/common/wayland/single-pixel-buffer-v1.h"
 #include "../../gfx/common/wayland/tearing-control-v1.h"
+#include "../../gfx/common/wayland_color.h"
 #include "../../gfx/common/wayland/viewporter.h"
 #include "../../gfx/common/wayland/xdg-decoration-unstable-v1.h"
 #include "../../gfx/common/wayland/xdg-shell.h"
@@ -184,6 +185,8 @@ typedef struct gfx_ctx_wayland_data
    struct xdg_toplevel_tag_manager_v1 *xdg_toplevel_tag_manager;
    struct wp_tearing_control_manager_v1 *tearing_control_manager;
    struct wp_tearing_control_v1 *tearing_control;
+   /* The compositor's colour management, for an HDR GL surface */
+   wl_color_t color;
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
    struct zwp_relative_pointer_v1 *wl_relative_pointer;

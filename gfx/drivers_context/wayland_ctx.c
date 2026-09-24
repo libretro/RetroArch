@@ -224,6 +224,26 @@ static bool gfx_ctx_wl_egl_init_context(gfx_ctx_wayland_data_t *wl)
    }
    if (n == 0 || !wl->egl.config)
       return false;
+
+   /* HDR: an FP16 framebuffer the compositor is told is scRGB, as
+    * OpenGL HDR is on Windows, and only where all of it is there. */
+   if (     wl_api == GFX_CTX_OPENGL_API
+         && wl_color_scrgb_supported(&wl->color))
+   {
+      settings_t *settings = config_get_ptr();
+      if (settings && settings->uints.video_hdr_mode > 0)
+      {
+         if (egl_choose_scrgb_config(&wl->egl, true))
+         {
+            wl->color.flags |= WL_COLOR_FP16;
+            RARCH_LOG("[Wayland] Using FP16 scRGB framebuffer for HDR.\n");
+            if (settings->uints.video_hdr_mode == 1)
+               RARCH_LOG("[Wayland] OpenGL HDR output is scRGB-only; HDR10 setting maps to scRGB.\n");
+         }
+         else
+            RARCH_LOG("[Wayland] HDR requested but EGL has no FP16 window config; using SDR.\n");
+      }
+   }
    return true;
 }
 #endif
@@ -243,6 +263,37 @@ static void *gfx_ctx_wl_init(void *data)
 #ifdef HAVE_EGL
    if (!gfx_ctx_wl_egl_init_context(wl))
       goto error;
+
+   /* The HDR settings are offered where they can work: the compositor
+    * takes scRGB and EGL has an FP16 config for it. GL HDR is scRGB
+    * only, so HDR10 support stays clear. */
+   video_driver_modify_disp_flags(0,
+           VIDEO_FLAG_HDR_SUPPORT
+         | VIDEO_FLAG_HDR10_SUPPORT
+         | VIDEO_FLAG_SCRGB_SUPPORT);
+   if (     wl_api == GFX_CTX_OPENGL_API
+         && wl_color_scrgb_supported(&wl->color)
+         && egl_choose_scrgb_config(&wl->egl, false))
+   {
+      video_driver_modify_disp_flags(
+            VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT,
+            VIDEO_FLAG_HDR10_SUPPORT);
+      RARCH_LOG("[Wayland] Compositor takes scRGB; HDR settings available.\n");
+   }
+
+   if (wl->color.flags & WL_COLOR_FP16)
+   {
+      /* An FP16 config has alpha, which the compositor would honour */
+      struct wl_region *opaque = wl_compositor_create_region(wl->compositor);
+      if (opaque)
+      {
+         wl_region_add(opaque, 0, 0, 0x7FFFFFFF, 0x7FFFFFFF);
+         wl_surface_set_opaque_region(wl->surface, opaque);
+         wl_region_destroy(opaque);
+      }
+      if (!wl_color_attach_scrgb(&wl->color, wl->surface))
+         RARCH_WARN("[Wayland] Could not tag the surface as scRGB.\n");
+   }
 #endif
    if (wl->tearing_control_manager)
    {
@@ -345,6 +396,11 @@ static void gfx_ctx_wl_destroy(void *data)
    if (!wl)
       return;
 
+   /* This context's HDR settings go with it */
+   video_driver_modify_disp_flags(0,
+           VIDEO_FLAG_HDR_SUPPORT
+         | VIDEO_FLAG_HDR10_SUPPORT
+         | VIDEO_FLAG_SCRGB_SUPPORT);
    gfx_ctx_wl_destroy_resources(wl);
 
    free(wl);
@@ -628,6 +684,8 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
 
    if (wl->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   if (wl->color.flags & WL_COLOR_FP16)
+      BIT32_SET(flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER);
 
    if (string_is_equal(video_ident, "glcore"))
    {

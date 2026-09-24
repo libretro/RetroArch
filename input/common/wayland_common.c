@@ -844,6 +844,8 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->tearing_control_manager = (struct wp_tearing_control_manager_v1*)
          wl_registry_bind(
             reg, id, &wp_tearing_control_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wl_color_interface_name()) && found++)
+      wl_color_bind(&wl->color, reg, id, version);
 
    if (found > 1)
    RARCH_LOG("[Wayland] Registered interface %s at version %u.\n",

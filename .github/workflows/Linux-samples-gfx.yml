@@ -876,6 +876,19 @@ jobs:
           timeout 60 ./display_servers_kms_test
           echo "[pass] display_servers_kms_test"
 
+      - name: Build and run wayland_color_management_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/wayland_color_management
+        run: |
+          set -eu
+          # gfx/common/wayland_color.c, which tags an HDR GL surface as
+          # Windows-scRGB, against an in-process compositor that records
+          # every fatal wp_color_manager_v1 rule the client could break.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wayland_color_management_test
+          echo "[pass] wayland_color_management_test"
+
       - name: Build and run wayland_drm_lease_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/wayland_drm_lease

@@ -734,3 +734,39 @@ bool egl_destroy_surface(egl_ctx_data_t *egl)
    egl->surf = EGL_NO_SURFACE;
    return true;
 }
+
+#ifndef EGL_COLOR_COMPONENT_TYPE_EXT
+#define EGL_COLOR_COMPONENT_TYPE_EXT       0x3339
+#endif
+#ifndef EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT
+#define EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT 0x333B
+#endif
+
+bool egl_choose_scrgb_config(egl_ctx_data_t *egl, bool apply)
+{
+   static const EGLint attribs[] = {
+      EGL_SURFACE_TYPE,             EGL_WINDOW_BIT,
+      EGL_RENDERABLE_TYPE,          EGL_OPENGL_BIT,
+      EGL_COLOR_COMPONENT_TYPE_EXT, EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT,
+      EGL_RED_SIZE,                 16,
+      EGL_GREEN_SIZE,               16,
+      EGL_BLUE_SIZE,                16,
+      EGL_ALPHA_SIZE,               16,
+      EGL_NONE
+   };
+   EGLConfig config;
+   EGLint n         = 0;
+   const char *exts = NULL;
+
+   if (!egl || !egl->dpy)
+      return false;
+   exts = _egl_query_string(egl->dpy, EGL_EXTENSIONS);
+   if (!exts || !strstr(exts, "EGL_EXT_pixel_format_float"))
+      return false;
+   if (     !_egl_choose_config(egl->dpy, attribs, &config, 1, &n)
+         || n < 1)
+      return false;
+   if (apply)
+      egl->config = config;
+   return true;
+}

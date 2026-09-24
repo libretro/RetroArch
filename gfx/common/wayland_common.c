@@ -477,6 +477,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    if (wl->libdecor)
       dylib_close(wl->libdecor);
 #endif
+   /* Colour management objects go before the surface they describe */
+   wl_color_destroy(&wl->color);
    if (wl->surface)
       wl_surface_destroy(wl->surface);
 

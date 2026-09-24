@@ -1,0 +1,76 @@
+/*  RetroArch - A frontend for libretro.
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef __RARCH_WAYLAND_COLOR_H
+#define __RARCH_WAYLAND_COLOR_H
+
+#include <stdint.h>
+#include <boolean.h>
+#include <retro_common_api.h>
+
+#include <wayland-client.h>
+
+RETRO_BEGIN_DECLS
+
+/* The compositor's colour management (wp_color_manager_v1) as a surface
+ * with an HDR frame needs it: whether the compositor takes
+ * Windows-scRGB, and tagging a surface with it. Nothing here waits: the
+ * compositor's capabilities arrive with the globals, and a surface is
+ * tagged from the image description's ready event, which the context
+ * dispatches with the rest of its queue; the tag is double-buffered
+ * surface state and lands with the frame that follows. */
+
+#define WL_COLOR_INTENT_PERCEPTUAL   (1u << 0)
+#define WL_COLOR_FEATURE_SCRGB       (1u << 1)
+#define WL_COLOR_DONE                (1u << 2)
+#define WL_COLOR_TAGGED              (1u << 3)
+#define WL_COLOR_FAILED              (1u << 4)
+/* Set by the GL context: its framebuffer is FP16 for scRGB */
+#define WL_COLOR_FP16                (1u << 5)
+
+struct wp_color_manager_v1;
+struct wp_color_management_surface_v1;
+struct wp_image_description_v1;
+
+typedef struct wl_color
+{
+   struct wp_color_manager_v1            *manager;
+   struct wp_color_management_surface_v1 *surface;
+   struct wp_image_description_v1        *scrgb;
+   uint32_t                               flags;
+} wl_color_t;
+
+/* From the registry listener: binds the colour manager and starts
+ * listening for what it supports. */
+void wl_color_bind(wl_color_t *color, struct wl_registry *registry,
+      uint32_t name, uint32_t version);
+
+/* The registry interface name to match against. */
+const char *wl_color_interface_name(void);
+
+/* Whether the compositor has said it takes Windows-scRGB with a
+ * perceptual rendering intent. */
+bool wl_color_scrgb_supported(const wl_color_t *color);
+
+/* Asks for 'surface' to be treated as Windows-scRGB. Returns false when
+ * the compositor cannot, or the surface already has a colour-management
+ * object; otherwise the tag is applied when the description is ready. */
+bool wl_color_attach_scrgb(wl_color_t *color, struct wl_surface *surface);
+
+/* Destroys every colour-management object; call before the surface. */
+void wl_color_destroy(wl_color_t *color);
+
+RETRO_END_DECLS
+
+#endif
