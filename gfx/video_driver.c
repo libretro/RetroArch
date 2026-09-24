@@ -1667,8 +1667,23 @@ void* video_display_server_init(enum rarch_display_type type)
    /* Reuse when already and still running */
    if (current_display_server && runloop_is_inited())
       return video_st->current_display_server_data;
-   else
-      video_display_server_destroy();
+
+#if defined(HAVE_WAYLAND)
+   /* dispserv_wl keeps a Wayland connection of its own, whatever window
+    * the video driver makes, so the one the early init set up serves the
+    * driver's session as it is; making it again would only reconnect
+    * and report the DRM lease a second time. */
+   if (     type == RARCH_DISPLAY_WAYLAND
+         && current_display_server == &dispserv_wl
+         && video_st->current_display_server_data)
+   {
+      RARCH_LOG("[Video] Found display server: \"%s\".\n",
+            dispserv_wl.ident);
+      return video_st->current_display_server_data;
+   }
+#endif
+
+   video_display_server_destroy();
 
    switch (type)
    {
