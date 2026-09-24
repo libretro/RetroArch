@@ -778,10 +778,12 @@ static void test_scaler(void)
       CHECK(out && r > 0x30 && r < 0xd0, "4-tap downscale averages the checkerboard to grey (got 0x%08x)", p);
    }
    free(out);
-   /* enlarging keeps nearest: a 2x2 source to 8x8 has hard edges */
+   /* enlarging is bilinear: a 2x2 source to 8x8 keeps its corners and
+    * blends between them */
    src[0] = 0xffff0000u; src[1] = 0xff00ff00u; src[sw] = 0xff0000ffu; src[sw + 1] = 0xffffffffu;
    out = companion_thumbs_scale_ex(src, VIDEO_SCALE_PACK(2, 2), VIDEO_SCALE_PACK(8, 8), 0, false);
-   CHECK(out && out[0] == 0xffff0000u && out[7] == 0xff00ff00u, "enlarging is nearest (corners 0x%08x 0x%08x)", out ? out[0] : 0, out ? out[7] : 0);
+   CHECK(out && out[0] == 0xffff0000u && out[7] == 0xff00ff00u, "enlarging keeps the corners (0x%08x 0x%08x)", out ? out[0] : 0, out ? out[7] : 0);
+   CHECK(out && out[3] == 0xff9f6000u, "enlarging blends between pixels (got 0x%08x)", out ? out[3] : 0);
    free(out);
    free(src);
 }

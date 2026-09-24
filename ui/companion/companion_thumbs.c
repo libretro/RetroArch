@@ -213,6 +213,15 @@ static INLINE uint32_t ct_over(uint32_t p, uint32_t bg)
    }
 }
 
+/* Per-channel blend of two pixels, @f/256 of @b, rounded. */
+static INLINE uint32_t ct_lerp(uint32_t a, uint32_t b, unsigned f)
+{
+   uint32_t rb = (a & 0x00ff00ffu) * (256 - f) + (b & 0x00ff00ffu) * f;
+   uint32_t ag = ((a >> 8) & 0x00ff00ffu) * (256 - f) + ((b >> 8) & 0x00ff00ffu) * f;
+   return (((rb + 0x00800080u) >> 8) & 0x00ff00ffu)
+        | ((ag + 0x00800080u) & 0xff00ff00u);
+}
+
 uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
       unsigned src_dims, unsigned dst_dims, uint32_t bg,
       bool src_rgba_order)
@@ -247,7 +256,7 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
    ox = (dw - fw) / 2;
    oy = (dh - fh) / 2;
    /* Four taps when every output pixel covers at least a 2 x 2 source
-    * cell; one tap (nearest) when enlarging or nearly 1:1. */
+    * cell; bilinear when enlarging or nearly 1:1. */
    taps4 = (sw >= 2u * (unsigned)fw) && (sh >= 2u * (unsigned)fh);
 
    for (y = 0; y < dh; y++)
@@ -263,6 +272,7 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
          int      sy   = y - oy;
          unsigned y0   = (unsigned)((uint64_t)sy * sh / fh);
          unsigned y1   = (unsigned)((uint64_t)(sy + 1) * sh / fh);
+         unsigned fy   = 0;
          const uint32_t *ra, *rb;
          if (y1 <= y0) y1 = y0 + 1;
          if (y1 > sh)  y1 = sh;
@@ -273,7 +283,15 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
          ra = src + (size_t)(y0 + (y1 - y0 - 1) / 3) * sw;
          rb = src + (size_t)(y1 - 1 - (y1 - y0 - 1) / 3) * sw;
          if (!taps4)
-            ra = rb = src + (size_t)y0 * sw;
+         {
+            /* Bilinear: this row's centre in the source, in 1/256 px. */
+            uint64_t py = (uint64_t)(2 * sy + 1) * sh * 128 / fh;
+            py = (py > 128) ? py - 128 : 0;
+            y0 = (unsigned)(py >> 8);
+            fy = (unsigned)py & 0xff;
+            ra = src + (size_t)y0 * sw;
+            rb = (y0 + 1 < sh) ? ra + sw : ra;
+         }
          for (x = 0; x < dw; x++)
          {
             if (x < ox || x >= ox + fw)
@@ -306,7 +324,15 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
                }
                else
                {
-                  uint32_t p = ra[x0];
+                  uint64_t px = (uint64_t)(2 * sx + 1) * sw * 128 / fw;
+                  unsigned xa, xb, fx;
+                  uint32_t p;
+                  px = (px > 128) ? px - 128 : 0;
+                  xa = (unsigned)(px >> 8);
+                  fx = (unsigned)px & 0xff;
+                  xb = (xa + 1 < sw) ? xa + 1 : xa;
+                  p  = ct_lerp(ct_lerp(ra[xa], ra[xb], fx),
+                        ct_lerp(rb[xa], rb[xb], fx), fy);
                   if (src_rgba_order)
                      p = CT_RGBA_TO_ARGB(p);
                   row[x] = ct_over(p, bg);
