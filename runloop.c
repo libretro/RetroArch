@@ -5117,7 +5117,7 @@ size_t runloop_pace_string(char *s, size_t len)
     * well above the content's is a source that is not blocking on
     * anything, which is the failure this exists to make visible. */
    if (runloop_st->pace_period_usec > 0 && _len < len)
-      _len += snprintf(s + _len, len - _len, "\n -FPS:       %3.2f",
+      _len += snprintf(s + _len, len - _len, " %.2f fps",
             1000000.0 / (double)runloop_st->pace_period_usec);
    return _len;
 }
