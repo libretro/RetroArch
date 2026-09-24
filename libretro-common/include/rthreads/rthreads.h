@@ -124,10 +124,12 @@ void sthread_yield(void);
  * Asks the operating system to schedule the calling thread ahead of
  * ordinary threads - a time-critical class on Windows, the audio
  * priority band on Android, real-time round-robin where the POSIX
- * scheduler and the process's limits allow it. Best effort: where the
- * request is refused or the platform has no such thing, the thread
- * keeps its default priority and this returns false. Never fails the
- * thread. Meant for a thread that feeds an audio device on a deadline.
+ * scheduler and the process's limits allow it - on Linux clamped to
+ * RLIMIT_RTPRIO, else a lower nice value within RLIMIT_NICE. Best
+ * effort: where the request is refused or the platform has no such
+ * thing, the thread keeps its default priority and this returns
+ * false. Never fails the thread. Meant for a thread that feeds an
+ * audio device on a deadline.
  *
  * @return Whether the priority was changed.
  */

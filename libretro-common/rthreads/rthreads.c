@@ -336,9 +336,12 @@ typedef sys_lwcond_attribute_t rthreads_ps3_lwcond_attr_t;
 #include <sys/prctl.h>
 #endif
 
-#if defined(__ANDROID__)
+#if defined(__linux__) && !defined(USE_WIN32_THREADS)
 #include <sys/resource.h>
 #include <unistd.h>
+#if !defined(__ANDROID__) && defined(RLIMIT_RTPRIO) && defined(RLIMIT_NICE)
+#define RTHREADS_HAVE_PRIO_RLIMITS 1
+#endif
 #endif
 
 /* Linux: scond goes straight to the futex. The case for it on Android
@@ -1569,16 +1572,59 @@ bool sthread_raise_current_priority(void)
    /* Real-time round-robin at a middling priority: above every
     * time-shared thread, below anything the system runs at the top of
     * the band. Distributions that grant the audio group an rtprio
-    * limit allow this without root; where it is refused the thread
+    * limit allow this without root. Linux then falls back to what the
+    * process's rlimits allow; where nothing is granted the thread
     * simply keeps its default, which is the caller's contract. */
-   struct sched_param sp;
-   int lo  = sched_get_priority_min(SCHED_RR);
-   int hi  = sched_get_priority_max(SCHED_RR);
-   memset(&sp, 0, sizeof(sp));
-   if (lo >= 0 && hi >= lo)
    {
-      sp.sched_priority = lo + (hi - lo) / 2;
-      return pthread_setschedparam(pthread_self(), SCHED_RR, &sp) == 0;
+      struct sched_param sp;
+      int lo  = sched_get_priority_min(SCHED_RR);
+      int hi  = sched_get_priority_max(SCHED_RR);
+#if defined(RTHREADS_HAVE_PRIO_RLIMITS)
+      struct rlimit rl;
+      int nice_floor;
+      int nice_now;
+#endif
+      memset(&sp, 0, sizeof(sp));
+      if (lo >= 0 && hi >= lo)
+      {
+         sp.sched_priority = lo + (hi - lo) / 2;
+         if (pthread_setschedparam(pthread_self(), SCHED_RR, &sp) == 0)
+            return true;
+#if defined(RTHREADS_HAVE_PRIO_RLIMITS)
+         /* Without CAP_SYS_NICE a thread may take any real-time
+          * priority up to its RLIMIT_RTPRIO, so a limit below the
+          * middle of the band is asked for as it stands. */
+         if (     getrlimit(RLIMIT_RTPRIO, &rl) == 0
+               && rl.rlim_cur != RLIM_INFINITY
+               && rl.rlim_cur >= (rlim_t)lo
+               && rl.rlim_cur <  (rlim_t)sp.sched_priority)
+         {
+            sp.sched_priority = (int)rl.rlim_cur;
+            if (pthread_setschedparam(pthread_self(), SCHED_RR, &sp) == 0)
+               return true;
+         }
+#endif
+      }
+#if defined(RTHREADS_HAVE_PRIO_RLIMITS)
+      /* With real time refused, a thread may still lower its own nice
+       * value as far as 20 - RLIMIT_NICE; on Linux the nice value
+       * belongs to the thread, named by its tid. -11 is the level a
+       * sound server takes when it cannot have real time. */
+      if (getrlimit(RLIMIT_NICE, &rl) != 0 || rl.rlim_cur == 0)
+         return false;
+      nice_floor = -11;
+      if (rl.rlim_cur != RLIM_INFINITY && rl.rlim_cur < 31)
+         nice_floor = 20 - (int)rl.rlim_cur;
+      errno    = 0;
+      nice_now = getpriority(PRIO_PROCESS,
+            (id_t)syscall(__NR_gettid));
+      if (nice_now == -1 && errno)
+         return false;
+      if (nice_floor >= nice_now)
+         return false;
+      return setpriority(PRIO_PROCESS,
+            (id_t)syscall(__NR_gettid), nice_floor) == 0;
+#endif
    }
 #endif
    return false;

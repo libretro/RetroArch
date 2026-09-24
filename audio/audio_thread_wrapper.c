@@ -94,6 +94,9 @@ static void audio_thread_loop(void *data)
    bool is_shutdown;
    audio_thread_t *thr = (audio_thread_t*)data;
 
+   if (!thr)
+      return;
+
    sthread_setname("ra-audio");
 
    /* Best effort and never fatal: a refusal leaves the default. */
@@ -110,9 +113,6 @@ static void audio_thread_loop(void *data)
       if (sthread_prefer_fast_cores())
          RARCH_LOG("[Audio] Audio thread placed on the performance cores.\n");
    }
-
-   if (!thr)
-      return;
 
    thr->driver_data   = thr->driver->init(
          thr->device, thr->out_rate, thr->latency,
