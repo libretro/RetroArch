@@ -28,9 +28,7 @@
 
 #include "../../verbosity.h"
 
-#ifdef HAVE_DBUS
 #include "../common/mutter_displayconfig.h"
-#endif
 
 typedef struct
 {
@@ -48,11 +46,6 @@ typedef struct
     * sysfs node the EDID lives under; Wayland itself has no
     * protocol for the EDID */
    char     name[32];
-#ifdef HAVE_DBUS
-   /* GNOME: modes listed and switched through Mutter's D-Bus
-    * interface; no Wayland protocol does this under Mutter */
-   bool     mutter;
-#endif
 } dispserv_wl_t;
 
 /* wl_output listener callbacks */
@@ -167,8 +160,9 @@ static void *wl_display_server_init(void)
    wl_display_roundtrip(serv->dpy);
    wayland_drm_lease_report(serv->dpy);
 
-#ifdef HAVE_DBUS
-   serv->mutter = mutter_displayconfig_available();
+#ifdef RARCH_HAVE_MUTTER_DC
+   /* Starts the Mutter worker; its answer is read at each call. */
+   mutter_displayconfig_available();
 #endif
 
    return serv;
@@ -188,7 +182,7 @@ static void wl_display_server_destroy(void *data)
    free(serv);
 }
 
-#ifdef HAVE_DBUS
+#ifdef RARCH_HAVE_MUTTER_DC
 /* The head this client's wl_output names (wl_output v4), else
  * Mutter's primary */
 static void wl_display_server_mutter_target(dispserv_wl_t *serv,
@@ -207,7 +201,7 @@ static void *wl_display_server_get_resolution_list(void *data,
    dispserv_wl_t *serv          = (dispserv_wl_t*)data;
 
    *len = 0;
-   if (!serv || !serv->mutter)
+   if (!serv || !mutter_displayconfig_available())
       return NULL;
    wl_display_server_mutter_target(serv, 0, &t);
    if (mutter_displayconfig_get_resolution_list(&t, &list, len)
@@ -223,7 +217,7 @@ static bool wl_display_server_set_resolution(void *data,
    mutter_dc_target_t t;
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
 
-   if (!serv || !serv->mutter)
+   if (!serv || !mutter_displayconfig_available())
       return false;
    wl_display_server_mutter_target(serv, monitor_index, &t);
    if (mutter_displayconfig_set_resolution(&t, dims, int_hz, hz)
@@ -242,7 +236,7 @@ static uint32_t wl_display_server_get_flags(void *data)
 {
    uint32_t flags      = 0;
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
-   if (!serv || !serv->mutter)
+   if (!serv || !mutter_displayconfig_available())
       BIT32_SET(flags, DISPSERV_CTX_NO_RESOLUTION_LIST);
    return flags;
 }
@@ -341,7 +335,7 @@ const video_display_server_t dispserv_wl = {
    NULL, /* set_window_opacity */
    NULL, /* set_window_progress */
    NULL, /* set_window_decorations */
-#ifdef HAVE_DBUS
+#ifdef RARCH_HAVE_MUTTER_DC
    wl_display_server_set_resolution,
    wl_display_server_get_resolution_list,
 #else
@@ -356,7 +350,7 @@ const video_display_server_t dispserv_wl = {
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    wl_display_server_get_metrics,
-#ifdef HAVE_DBUS
+#ifdef RARCH_HAVE_MUTTER_DC
    wl_display_server_get_flags,
 #else
    NULL, /* get_flags */

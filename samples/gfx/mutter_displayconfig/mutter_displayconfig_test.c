@@ -56,6 +56,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -159,10 +160,58 @@ static void mock_reset(void)
 
 #define FAIL(...) do { fprintf(stderr, "FAIL: " __VA_ARGS__); fputc('\n', stderr); return 1; } while (0)
 
+/* The module answers from the state its worker publishes and applies
+ * switches on that worker, so what Mutter was asked, and the state it
+ * reports back, arrive a moment after the call returns. The harness
+ * waits for them; RetroArch never does. */
+static void settle(void)
+{
+   usleep(10000);
+}
+
+static int wait_mutter(void)
+{
+   int i;
+   for (i = 0; i < 500 && !mutter_displayconfig_available(); i++)
+      settle();
+   return mutter_displayconfig_available() ? 0 : 1;
+}
+
+static void wait_current(const mutter_dc_target_t *t, unsigned w,
+      unsigned h, float hz)
+{
+   int i;
+   for (i = 0; i < 500; i++)
+   {
+      unsigned k, n = 0;
+      int done = 0;
+      video_display_config_t *l = NULL;
+      if (mutter_displayconfig_get_resolution_list(t, &l, &n) == MUTTER_DC_OK)
+         for (k = 0; k < n; k++)
+            if (     l[k].current
+                  && VIDEO_SCALE_W(l[k].dims) == w
+                  && VIDEO_SCALE_H(l[k].dims) == h
+                  && l[k].refreshrate_float - hz < 0.01f
+                  && hz - l[k].refreshrate_float < 0.01f)
+               done = 1;
+      free(l);
+      if (done)
+         return;
+      settle();
+   }
+}
+
 static int expect_last(const char *want, const char *what)
 {
+   int i;
    char got[2048];
-   mock_last(got, sizeof(got));
+   for (i = 0; i < 500; i++)
+   {
+      mock_last(got, sizeof(got));
+      if (!strcmp(got, want))
+         break;
+      settle();
+   }
    if (strcmp(got, want))
       FAIL("%s: Mutter was asked\n  %s\nwanted\n  %s", what, got, want);
    printf("[pass] %s\n", what);
@@ -230,7 +279,7 @@ static int case_mutter(void)
    video_display_config_t *l = NULL;
    unsigned n = 0, g, a;
 
-   if (!mutter_displayconfig_available())
+   if (wait_mutter())
       FAIL("mock Mutter not seen on the bus");
    if (mutter_displayconfig_get_resolution_list(NULL, &l, &n) != MUTTER_DC_OK)
       FAIL("list failed");
@@ -247,6 +296,7 @@ static int case_mutter(void)
             " 2560,0,1.00,0,-[HDMI-1=1920x1080@60.000{enable_underscanning:true}] " LAYOUT,
             "60 Hz: one mode changed, every other setting carried over"))
       return 1;
+   wait_current(NULL, 2560, 1440, 59.951f);
    if (mutter_displayconfig_get_resolution_list(NULL, &l, &n) != MUTTER_DC_OK
          || check_dp1_list(l, n, 59.951f, "list after the switch"))
       return 1;
@@ -349,6 +399,8 @@ static int case_x11_xwayland(bool mutter)
    if (x11_open())
       return 1;
    data = dispserv_x11.init();
+   if (mutter && wait_mutter())
+      FAIL("XWayland: mock Mutter not seen on the bus");
    l    = (video_display_config_t*)dispserv_x11.get_resolution_list(data, &n);
    if (mutter)
    {
@@ -423,6 +475,8 @@ static int case_x11_real_mutter(void)
       FAIL("Mutter's XWayland output is named XWAYLAND<n>; this case needs a named one");
 
    data = dispserv_x11.init();
+   /* Real Mutter, on the bus by the time this runs */
+   wait_mutter();
    l    = (video_display_config_t*)dispserv_x11.get_resolution_list(data, &n);
    if (!l || n != 1 || VIDEO_SCALE_W(l[0].dims) != 2560
          || VIDEO_SCALE_H(l[0].dims) != 1440
@@ -453,6 +507,8 @@ static int case_wl(bool mutter)
    if (!dispserv_wl.get_resolution_list || !dispserv_wl.set_resolution
          || !dispserv_wl.get_flags)
       FAIL("dispserv_wl has no resolution callbacks in a HAVE_DBUS build");
+   if (mutter && wait_mutter())
+      FAIL("Wayland: mock Mutter not seen on the bus");
    flags = dispserv_wl.get_flags(data);
    l     = (video_display_config_t*)dispserv_wl.get_resolution_list(data, &n);
    if (mutter)

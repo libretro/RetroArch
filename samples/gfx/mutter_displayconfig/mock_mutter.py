@@ -142,6 +142,12 @@ class DisplayConfig(dbus.service.Object):
                 md["current"] = (md["id"] == mid)
         self.st["logical"] = new_logical
         self.st["serial"] += 1
+        # Mutter announces every change of configuration
+        self.MonitorsChanged()
+
+    @dbus.service.signal(NAME, signature="")
+    def MonitorsChanged(self):
+        pass
 
     @dbus.service.method(NAME, in_signature="", out_signature="s")
     def LastApply(self):
@@ -157,6 +163,7 @@ class DisplayConfig(dbus.service.Object):
         self.last = ""
         self.n_get = 0
         self.n_apply = 0
+        self.MonitorsChanged()
 
 def main():
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)

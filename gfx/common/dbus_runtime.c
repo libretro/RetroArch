@@ -66,6 +66,18 @@ static rdbus_t *rdbus_load(void)
    RDBUS_SYM(message_iter_recurse,                 "dbus_message_iter_recurse");
    RDBUS_SYM(message_iter_get_basic,               "dbus_message_iter_get_basic");
    RDBUS_SYM(threads_init_default,                 "dbus_threads_init_default");
+   RDBUS_SYM(error_is_set,                         "dbus_error_is_set");
+   RDBUS_SYM(bus_name_has_owner,                   "dbus_bus_name_has_owner");
+   RDBUS_SYM(bus_add_match,                        "dbus_bus_add_match");
+   RDBUS_SYM(connection_get_unix_fd,               "dbus_connection_get_unix_fd");
+   RDBUS_SYM(connection_read_write,                "dbus_connection_read_write");
+   RDBUS_SYM(connection_pop_message,               "dbus_connection_pop_message");
+   RDBUS_SYM(message_is_signal,                    "dbus_message_is_signal");
+   RDBUS_SYM(message_iter_next,                    "dbus_message_iter_next");
+   RDBUS_SYM(message_iter_init_append,             "dbus_message_iter_init_append");
+   RDBUS_SYM(message_iter_append_basic,            "dbus_message_iter_append_basic");
+   RDBUS_SYM(message_iter_open_container,          "dbus_message_iter_open_container");
+   RDBUS_SYM(message_iter_close_container,         "dbus_message_iter_close_container");
 
    /* Other threads of the process may be using libdbus through a
     * connection of their own. */

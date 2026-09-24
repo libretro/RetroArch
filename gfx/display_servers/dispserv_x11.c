@@ -46,7 +46,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "edid_sysfs.h"
-#if defined(HAVE_XRANDR) && defined(HAVE_DBUS)
+#ifdef HAVE_XRANDR
 #include "../common/mutter_displayconfig.h"
 #endif
 
@@ -1441,7 +1441,7 @@ static int x11_res_list_qsort(const void *pa, const void *pb)
    return 0;
 }
 
-#ifdef HAVE_DBUS
+#ifdef RARCH_HAVE_MUTTER_DC
 /* XWayland lists every mode at the desktop's current rate and only
  * scales a fullscreen window when "switched"; the real modes belong to
  * the compositor. Under GNOME, Mutter's D-Bus interface has them.
@@ -1494,7 +1494,7 @@ static void *x11_display_server_get_resolution_list(void *data,
          && x11_res_pick_output(dpy, res,
                RootWindow(dpy, DefaultScreen(dpy)), 0, &oi, &ci))
    {
-#ifdef HAVE_DBUS
+#ifdef RARCH_HAVE_MUTTER_DC
       if (x11_res_is_xwayland(dpy, oi))
       {
          mutter_dc_target_t t;
@@ -1554,7 +1554,7 @@ static void *x11_display_server_get_resolution_list(void *data,
          conf[j].idx = j;
    }
 
-#ifdef HAVE_DBUS
+#ifdef RARCH_HAVE_MUTTER_DC
 done:
 #endif
    if (ci)
@@ -1614,7 +1614,7 @@ static bool x11_display_server_set_resolution(void *data,
          || !x11_res_pick_output(dpy, res, root, monitor_index, &oi, &ci))
       goto end;
 
-#ifdef HAVE_DBUS
+#ifdef RARCH_HAVE_MUTTER_DC
    if (x11_res_is_xwayland(dpy, oi))
    {
       mutter_dc_target_t t;

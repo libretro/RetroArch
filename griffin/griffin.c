@@ -386,9 +386,6 @@ VIDEO CONTEXT
 #include "../gfx/common/xinerama_common.c"
 #include "../gfx/display_servers/dispserv_x11.c"
 
-#ifdef HAVE_DBUS
-#include "../gfx/common/mutter_displayconfig.c"
-#endif
 
 #ifndef HAVE_OPENGLES
 #include "../gfx/drivers_context/x_ctx.c"
@@ -1471,6 +1468,7 @@ THREAD
 #include "../frontend/thread_elevation.c"
 #include "../gfx/common/dbus_runtime.c"
 #include "../gfx/common/dbus_common.c"
+#include "../gfx/common/mutter_displayconfig.c"
 #include "../frontend/thread_elevation/rtkit.c"
 #endif
 

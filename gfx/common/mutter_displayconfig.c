@@ -18,12 +18,22 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <dbus/dbus.h>
-
-#include <compat/strl.h>
 
 #include "mutter_displayconfig.h"
+
+#ifdef RARCH_HAVE_MUTTER_DC
+
+#include <stdint.h>
+#include <fcntl.h>
+#include <poll.h>
+
+#include <compat/strl.h>
+#include <rthreads/rthreads.h>
+
 #include "../../verbosity.h"
+
+/* libdbus, for the worker's calls only; set before its first. */
+static const rdbus_t *mdc_rd;
 
 #define MDC_BUS_NAME   "org.gnome.Mutter.DisplayConfig"
 #define MDC_PATH       "/org/gnome/Mutter/DisplayConfig"
@@ -93,10 +103,10 @@ typedef struct
 /* The session bus, never an autolaunched one: with no address in the
  * environment and no $XDG_RUNTIME_DIR/bus socket, libdbus would spawn
  * a bus of its own, which is nothing Mutter is on. */
-static DBusConnection *mdc_connect(void)
+static rdbus_connection_t *mdc_connect(void)
 {
-   DBusError err;
-   DBusConnection *conn;
+   rdbus_error_t err;
+   rdbus_connection_t *conn;
    const char *addr = getenv("DBUS_SESSION_BUS_ADDRESS");
 
    if (!addr || !*addr)
@@ -110,47 +120,37 @@ static DBusConnection *mdc_connect(void)
          return NULL;
    }
 
-   dbus_error_init(&err);
-   conn = dbus_bus_get_private(DBUS_BUS_SESSION, &err);
-   if (dbus_error_is_set(&err))
-      dbus_error_free(&err);
+   mdc_rd->error_init(&err);
+   conn = mdc_rd->bus_get_private(RDBUS_BUS_SESSION, &err);
+   if (mdc_rd->error_is_set(&err))
+      mdc_rd->error_free(&err);
    if (conn)
-      dbus_connection_set_exit_on_disconnect(conn, false);
+      mdc_rd->connection_set_exit_on_disconnect(conn, false);
    return conn;
 }
 
-static void mdc_disconnect(DBusConnection *conn)
+static void mdc_disconnect(rdbus_connection_t *conn)
 {
    if (!conn)
       return;
-   dbus_connection_close(conn);
-   dbus_connection_unref(conn);
+   mdc_rd->connection_close(conn);
+   mdc_rd->connection_unref(conn);
 }
 
-static bool mdc_has_owner(DBusConnection *conn)
+static bool mdc_has_owner(rdbus_connection_t *conn)
 {
-   DBusError err;
+   rdbus_error_t err;
    bool has;
-   dbus_error_init(&err);
-   has = dbus_bus_name_has_owner(conn, MDC_BUS_NAME, &err) ? true : false;
-   if (dbus_error_is_set(&err))
+   mdc_rd->error_init(&err);
+   has = mdc_rd->bus_name_has_owner(conn, MDC_BUS_NAME, &err) ? true : false;
+   if (mdc_rd->error_is_set(&err))
    {
-      dbus_error_free(&err);
+      mdc_rd->error_free(&err);
       return false;
    }
    return has;
 }
 
-bool mutter_displayconfig_available(void)
-{
-   bool has;
-   DBusConnection *conn = mdc_connect();
-   if (!conn)
-      return false;
-   has = mdc_has_owner(conn);
-   mdc_disconnect(conn);
-   return has;
-}
 
 /* ------------------------------------------------------------------
  * GetCurrentState
@@ -168,149 +168,149 @@ static void mdc_state_free(mdc_state_t *st)
    free(st);
 }
 
-static int mdc_count(DBusMessageIter *array)
+static int mdc_count(rdbus_iter_t *array)
 {
    int n = 0;
-   DBusMessageIter it;
-   dbus_message_iter_recurse(array, &it);
-   while (dbus_message_iter_get_arg_type(&it) != DBUS_TYPE_INVALID)
+   rdbus_iter_t it;
+   mdc_rd->message_iter_recurse(array, &it);
+   while (mdc_rd->message_iter_get_arg_type(&it) != RDBUS_TYPE_INVALID)
    {
       n++;
-      dbus_message_iter_next(&it);
+      mdc_rd->message_iter_next(&it);
    }
    return n;
 }
 
 /* One a{sv} entry's variant, if it holds a basic value of type t */
-static bool mdc_variant_basic(DBusMessageIter *variant, int t, void *out)
+static bool mdc_variant_basic(rdbus_iter_t *variant, int t, void *out)
 {
-   DBusMessageIter v;
-   dbus_message_iter_recurse(variant, &v);
-   if (dbus_message_iter_get_arg_type(&v) != t)
+   rdbus_iter_t v;
+   mdc_rd->message_iter_recurse(variant, &v);
+   if (mdc_rd->message_iter_get_arg_type(&v) != t)
       return false;
-   dbus_message_iter_get_basic(&v, out);
+   mdc_rd->message_iter_get_basic(&v, out);
    return true;
 }
 
 /* Walks an a{sv}; cb is handed each key and its variant */
 typedef void (*mdc_prop_cb)(void *ud, const char *key,
-      DBusMessageIter *variant);
+      rdbus_iter_t *variant);
 
-static bool mdc_props(DBusMessageIter *array, mdc_prop_cb cb, void *ud)
+static bool mdc_props(rdbus_iter_t *array, mdc_prop_cb cb, void *ud)
 {
-   DBusMessageIter it;
-   if (dbus_message_iter_get_arg_type(array) != DBUS_TYPE_ARRAY)
+   rdbus_iter_t it;
+   if (mdc_rd->message_iter_get_arg_type(array) != RDBUS_TYPE_ARRAY)
       return false;
-   dbus_message_iter_recurse(array, &it);
-   while (dbus_message_iter_get_arg_type(&it) == DBUS_TYPE_DICT_ENTRY)
+   mdc_rd->message_iter_recurse(array, &it);
+   while (mdc_rd->message_iter_get_arg_type(&it) == RDBUS_TYPE_DICT_ENTRY)
    {
-      DBusMessageIter e;
+      rdbus_iter_t e;
       const char *key = NULL;
-      dbus_message_iter_recurse(&it, &e);
-      if (dbus_message_iter_get_arg_type(&e) == DBUS_TYPE_STRING)
+      mdc_rd->message_iter_recurse(&it, &e);
+      if (mdc_rd->message_iter_get_arg_type(&e) == RDBUS_TYPE_STRING)
       {
-         dbus_message_iter_get_basic(&e, &key);
-         dbus_message_iter_next(&e);
-         if (dbus_message_iter_get_arg_type(&e) == DBUS_TYPE_VARIANT)
+         mdc_rd->message_iter_get_basic(&e, &key);
+         mdc_rd->message_iter_next(&e);
+         if (mdc_rd->message_iter_get_arg_type(&e) == RDBUS_TYPE_VARIANT)
             cb(ud, key, &e);
       }
-      dbus_message_iter_next(&it);
+      mdc_rd->message_iter_next(&it);
    }
    return true;
 }
 
-static void mdc_mode_prop(void *ud, const char *key, DBusMessageIter *v)
+static void mdc_mode_prop(void *ud, const char *key, rdbus_iter_t *v)
 {
    mdc_mode_t *m = (mdc_mode_t*)ud;
-   dbus_bool_t b = FALSE;
-   if (!strcmp(key, "is-current") && mdc_variant_basic(v, DBUS_TYPE_BOOLEAN, &b))
+   rdbus_bool_t b = 0;
+   if (!strcmp(key, "is-current") && mdc_variant_basic(v, RDBUS_TYPE_BOOLEAN, &b))
       m->current    = b ? true : false;
-   else if (!strcmp(key, "is-interlaced") && mdc_variant_basic(v, DBUS_TYPE_BOOLEAN, &b))
+   else if (!strcmp(key, "is-interlaced") && mdc_variant_basic(v, RDBUS_TYPE_BOOLEAN, &b))
       m->interlaced = b ? true : false;
 }
 
-static void mdc_monitor_prop(void *ud, const char *key, DBusMessageIter *v)
+static void mdc_monitor_prop(void *ud, const char *key, rdbus_iter_t *v)
 {
    mdc_monitor_t *mon = (mdc_monitor_t*)ud;
-   dbus_bool_t b      = FALSE;
-   dbus_uint32_t u    = 0;
-   if (!strcmp(key, "is-underscanning") && mdc_variant_basic(v, DBUS_TYPE_BOOLEAN, &b))
+   rdbus_bool_t b      = 0;
+   uint32_t u    = 0;
+   if (!strcmp(key, "is-underscanning") && mdc_variant_basic(v, RDBUS_TYPE_BOOLEAN, &b))
    {
       mon->underscanning     = b ? true : false;
       mon->has_underscanning = true;
    }
-   else if (!strcmp(key, "color-mode") && mdc_variant_basic(v, DBUS_TYPE_UINT32, &u))
+   else if (!strcmp(key, "color-mode") && mdc_variant_basic(v, RDBUS_TYPE_UINT32, &u))
    {
       mon->color_mode     = u;
       mon->has_color_mode = true;
    }
-   else if (!strcmp(key, "rgb-range") && mdc_variant_basic(v, DBUS_TYPE_UINT32, &u))
+   else if (!strcmp(key, "rgb-range") && mdc_variant_basic(v, RDBUS_TYPE_UINT32, &u))
    {
       mon->rgb_range     = u;
       mon->has_rgb_range = true;
    }
 }
 
-static void mdc_global_prop(void *ud, const char *key, DBusMessageIter *v)
+static void mdc_global_prop(void *ud, const char *key, rdbus_iter_t *v)
 {
    mdc_state_t *st = (mdc_state_t*)ud;
-   dbus_bool_t b   = FALSE;
-   dbus_uint32_t u = 0;
-   if (!strcmp(key, "layout-mode") && mdc_variant_basic(v, DBUS_TYPE_UINT32, &u))
+   rdbus_bool_t b   = 0;
+   uint32_t u = 0;
+   if (!strcmp(key, "layout-mode") && mdc_variant_basic(v, RDBUS_TYPE_UINT32, &u))
    {
       st->layout_mode     = u;
       st->has_layout_mode = true;
    }
    else if (!strcmp(key, "supports-changing-layout-mode")
-         && mdc_variant_basic(v, DBUS_TYPE_BOOLEAN, &b))
+         && mdc_variant_basic(v, RDBUS_TYPE_BOOLEAN, &b))
       st->supports_layout_change = b ? true : false;
 }
 
 /* (ssss): the connector is the first string */
-static bool mdc_spec_connector(DBusMessageIter *spec, char *s, size_t len)
+static bool mdc_spec_connector(rdbus_iter_t *spec, char *s, size_t len)
 {
-   DBusMessageIter f;
+   rdbus_iter_t f;
    const char *c = NULL;
-   if (dbus_message_iter_get_arg_type(spec) != DBUS_TYPE_STRUCT)
+   if (mdc_rd->message_iter_get_arg_type(spec) != RDBUS_TYPE_STRUCT)
       return false;
-   dbus_message_iter_recurse(spec, &f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_STRING)
+   mdc_rd->message_iter_recurse(spec, &f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_STRING)
       return false;
-   dbus_message_iter_get_basic(&f, &c);
+   mdc_rd->message_iter_get_basic(&f, &c);
    strlcpy(s, c ? c : "", len);
    return true;
 }
 
 /* (siiddada{sv}) */
-static bool mdc_parse_mode(DBusMessageIter *s, mdc_mode_t *m)
+static bool mdc_parse_mode(rdbus_iter_t *s, mdc_mode_t *m)
 {
-   DBusMessageIter f, sc;
+   rdbus_iter_t f, sc;
    const char *id    = NULL;
-   dbus_int32_t w    = 0, h = 0;
+   int32_t w    = 0, h = 0;
    double refresh    = 0.0, pref = 0.0;
 
-   dbus_message_iter_recurse(s, &f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_STRING)
+   mdc_rd->message_iter_recurse(s, &f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_STRING)
       return false;
-   dbus_message_iter_get_basic(&f, &id);
-   dbus_message_iter_next(&f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_INT32)
+   mdc_rd->message_iter_get_basic(&f, &id);
+   mdc_rd->message_iter_next(&f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_INT32)
       return false;
-   dbus_message_iter_get_basic(&f, &w);
-   dbus_message_iter_next(&f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_INT32)
+   mdc_rd->message_iter_get_basic(&f, &w);
+   mdc_rd->message_iter_next(&f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_INT32)
       return false;
-   dbus_message_iter_get_basic(&f, &h);
-   dbus_message_iter_next(&f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_DOUBLE)
+   mdc_rd->message_iter_get_basic(&f, &h);
+   mdc_rd->message_iter_next(&f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_DOUBLE)
       return false;
-   dbus_message_iter_get_basic(&f, &refresh);
-   dbus_message_iter_next(&f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_DOUBLE)
+   mdc_rd->message_iter_get_basic(&f, &refresh);
+   mdc_rd->message_iter_next(&f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_DOUBLE)
       return false;
-   dbus_message_iter_get_basic(&f, &pref);
-   dbus_message_iter_next(&f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_ARRAY)
+   mdc_rd->message_iter_get_basic(&f, &pref);
+   mdc_rd->message_iter_next(&f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_ARRAY)
       return false;
 
    memset(m, 0, sizeof(*m));
@@ -319,81 +319,81 @@ static bool mdc_parse_mode(DBusMessageIter *s, mdc_mode_t *m)
    m->h       = (int)h;
    m->refresh = refresh;
 
-   dbus_message_iter_recurse(&f, &sc);
-   while (dbus_message_iter_get_arg_type(&sc) == DBUS_TYPE_DOUBLE
+   mdc_rd->message_iter_recurse(&f, &sc);
+   while (mdc_rd->message_iter_get_arg_type(&sc) == RDBUS_TYPE_DOUBLE
          && m->nscales < MDC_MAX_SCALES)
    {
-      dbus_message_iter_get_basic(&sc, &m->scales[m->nscales++]);
-      dbus_message_iter_next(&sc);
+      mdc_rd->message_iter_get_basic(&sc, &m->scales[m->nscales++]);
+      mdc_rd->message_iter_next(&sc);
    }
-   dbus_message_iter_next(&f);
+   mdc_rd->message_iter_next(&f);
    mdc_props(&f, mdc_mode_prop, m);
    return m->id[0] && m->w > 0 && m->h > 0;
 }
 
 /* ((ssss)a(siiddada{sv})a{sv}) */
-static bool mdc_parse_monitor(DBusMessageIter *s, mdc_monitor_t *mon)
+static bool mdc_parse_monitor(rdbus_iter_t *s, mdc_monitor_t *mon)
 {
-   DBusMessageIter f, modes;
+   rdbus_iter_t f, modes;
    int n;
 
    memset(mon, 0, sizeof(*mon));
-   dbus_message_iter_recurse(s, &f);
+   mdc_rd->message_iter_recurse(s, &f);
    if (!mdc_spec_connector(&f, mon->connector, sizeof(mon->connector)))
       return false;
-   dbus_message_iter_next(&f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_ARRAY)
+   mdc_rd->message_iter_next(&f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_ARRAY)
       return false;
 
    if ((n = mdc_count(&f)) > 0
          && !(mon->modes = (mdc_mode_t*)calloc(n, sizeof(*mon->modes))))
       return false;
-   dbus_message_iter_recurse(&f, &modes);
-   while (dbus_message_iter_get_arg_type(&modes) == DBUS_TYPE_STRUCT
+   mdc_rd->message_iter_recurse(&f, &modes);
+   while (mdc_rd->message_iter_get_arg_type(&modes) == RDBUS_TYPE_STRUCT
          && mon->nmodes < n)
    {
       if (mdc_parse_mode(&modes, &mon->modes[mon->nmodes]))
          mon->nmodes++;
-      dbus_message_iter_next(&modes);
+      mdc_rd->message_iter_next(&modes);
    }
-   dbus_message_iter_next(&f);
+   mdc_rd->message_iter_next(&f);
    mdc_props(&f, mdc_monitor_prop, mon);
    return true;
 }
 
 /* (iiduba(ssss)a{sv}) */
-static bool mdc_parse_logical(DBusMessageIter *s, const mdc_state_t *st,
+static bool mdc_parse_logical(rdbus_iter_t *s, const mdc_state_t *st,
       mdc_logical_t *lm)
 {
-   DBusMessageIter f, specs;
-   dbus_int32_t x = 0, y = 0;
-   dbus_uint32_t transform = 0;
-   dbus_bool_t primary = FALSE;
+   rdbus_iter_t f, specs;
+   int32_t x = 0, y = 0;
+   uint32_t transform = 0;
+   rdbus_bool_t primary = 0;
    double scale = 1.0;
 
    memset(lm, 0, sizeof(*lm));
-   dbus_message_iter_recurse(s, &f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_INT32)
+   mdc_rd->message_iter_recurse(s, &f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_INT32)
       return false;
-   dbus_message_iter_get_basic(&f, &x);
-   dbus_message_iter_next(&f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_INT32)
+   mdc_rd->message_iter_get_basic(&f, &x);
+   mdc_rd->message_iter_next(&f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_INT32)
       return false;
-   dbus_message_iter_get_basic(&f, &y);
-   dbus_message_iter_next(&f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_DOUBLE)
+   mdc_rd->message_iter_get_basic(&f, &y);
+   mdc_rd->message_iter_next(&f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_DOUBLE)
       return false;
-   dbus_message_iter_get_basic(&f, &scale);
-   dbus_message_iter_next(&f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_UINT32)
+   mdc_rd->message_iter_get_basic(&f, &scale);
+   mdc_rd->message_iter_next(&f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_UINT32)
       return false;
-   dbus_message_iter_get_basic(&f, &transform);
-   dbus_message_iter_next(&f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_BOOLEAN)
+   mdc_rd->message_iter_get_basic(&f, &transform);
+   mdc_rd->message_iter_next(&f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_BOOLEAN)
       return false;
-   dbus_message_iter_get_basic(&f, &primary);
-   dbus_message_iter_next(&f);
-   if (dbus_message_iter_get_arg_type(&f) != DBUS_TYPE_ARRAY)
+   mdc_rd->message_iter_get_basic(&f, &primary);
+   mdc_rd->message_iter_next(&f);
+   if (mdc_rd->message_iter_get_arg_type(&f) != RDBUS_TYPE_ARRAY)
       return false;
 
    lm->x         = (int)x;
@@ -402,8 +402,8 @@ static bool mdc_parse_logical(DBusMessageIter *s, const mdc_state_t *st,
    lm->transform = transform;
    lm->primary   = primary ? true : false;
 
-   dbus_message_iter_recurse(&f, &specs);
-   while (dbus_message_iter_get_arg_type(&specs) == DBUS_TYPE_STRUCT)
+   mdc_rd->message_iter_recurse(&f, &specs);
+   while (mdc_rd->message_iter_get_arg_type(&specs) == RDBUS_TYPE_STRUCT)
    {
       char c[64];
       if (mdc_spec_connector(&specs, c, sizeof(c)))
@@ -416,84 +416,84 @@ static bool mdc_parse_logical(DBusMessageIter *s, const mdc_state_t *st,
                break;
             }
       }
-      dbus_message_iter_next(&specs);
+      mdc_rd->message_iter_next(&specs);
    }
    return lm->nmon > 0;
 }
 
-static mdc_state_t *mdc_get_state(DBusConnection *conn)
+static mdc_state_t *mdc_get_state(rdbus_connection_t *conn)
 {
-   DBusMessageIter it, arr;
-   DBusError err;
+   rdbus_iter_t it, arr;
+   rdbus_error_t err;
    int n;
-   dbus_uint32_t serial = 0;
-   DBusMessage *reply   = NULL;
+   uint32_t serial = 0;
+   rdbus_message_t *reply   = NULL;
    mdc_state_t *st      = NULL;
-   DBusMessage *msg     = dbus_message_new_method_call(MDC_BUS_NAME,
+   rdbus_message_t *msg     = mdc_rd->message_new_method_call(MDC_BUS_NAME,
          MDC_PATH, MDC_IFACE, "GetCurrentState");
 
    if (!msg)
       return NULL;
-   dbus_error_init(&err);
-   reply = dbus_connection_send_with_reply_and_block(conn, msg,
+   mdc_rd->error_init(&err);
+   reply = mdc_rd->connection_send_with_reply_and_block(conn, msg,
          MDC_TIMEOUT_MS, &err);
-   dbus_message_unref(msg);
-   if (dbus_error_is_set(&err))
+   mdc_rd->message_unref(msg);
+   if (mdc_rd->error_is_set(&err))
    {
       RARCH_WARN("[Mutter] GetCurrentState: %s.\n", err.message);
-      dbus_error_free(&err);
+      mdc_rd->error_free(&err);
       return NULL;
    }
    if (!reply)
       return NULL;
 
-   if (     !dbus_message_iter_init(reply, &it)
-         || dbus_message_iter_get_arg_type(&it) != DBUS_TYPE_UINT32
+   if (     !mdc_rd->message_iter_init(reply, &it)
+         || mdc_rd->message_iter_get_arg_type(&it) != RDBUS_TYPE_UINT32
          || !(st = (mdc_state_t*)calloc(1, sizeof(*st))))
       goto fail;
-   dbus_message_iter_get_basic(&it, &serial);
+   mdc_rd->message_iter_get_basic(&it, &serial);
    st->serial      = serial;
    st->layout_mode = MDC_LAYOUT_LOGICAL;
 
    /* monitors */
-   dbus_message_iter_next(&it);
-   if (dbus_message_iter_get_arg_type(&it) != DBUS_TYPE_ARRAY)
+   mdc_rd->message_iter_next(&it);
+   if (mdc_rd->message_iter_get_arg_type(&it) != RDBUS_TYPE_ARRAY)
       goto fail;
    if ((n = mdc_count(&it)) > 0
          && !(st->mon = (mdc_monitor_t*)calloc(n, sizeof(*st->mon))))
       goto fail;
-   dbus_message_iter_recurse(&it, &arr);
-   while (dbus_message_iter_get_arg_type(&arr) == DBUS_TYPE_STRUCT
+   mdc_rd->message_iter_recurse(&it, &arr);
+   while (mdc_rd->message_iter_get_arg_type(&arr) == RDBUS_TYPE_STRUCT
          && st->nmon < n)
    {
       if (mdc_parse_monitor(&arr, &st->mon[st->nmon]))
          st->nmon++;
       else
          free(st->mon[st->nmon].modes);
-      dbus_message_iter_next(&arr);
+      mdc_rd->message_iter_next(&arr);
    }
 
    /* logical monitors */
-   dbus_message_iter_next(&it);
-   if (dbus_message_iter_get_arg_type(&it) != DBUS_TYPE_ARRAY)
+   mdc_rd->message_iter_next(&it);
+   if (mdc_rd->message_iter_get_arg_type(&it) != RDBUS_TYPE_ARRAY)
       goto fail;
    if ((n = mdc_count(&it)) > 0
          && !(st->lm = (mdc_logical_t*)calloc(n, sizeof(*st->lm))))
       goto fail;
-   dbus_message_iter_recurse(&it, &arr);
-   while (dbus_message_iter_get_arg_type(&arr) == DBUS_TYPE_STRUCT
+   mdc_rd->message_iter_recurse(&it, &arr);
+   while (mdc_rd->message_iter_get_arg_type(&arr) == RDBUS_TYPE_STRUCT
          && st->nlm < n)
    {
       if (mdc_parse_logical(&arr, st, &st->lm[st->nlm]))
          st->nlm++;
-      dbus_message_iter_next(&arr);
+      mdc_rd->message_iter_next(&arr);
    }
 
    /* properties */
-   dbus_message_iter_next(&it);
+   mdc_rd->message_iter_next(&it);
    mdc_props(&it, mdc_global_prop, st);
 
-   dbus_message_unref(reply);
+   mdc_rd->message_unref(reply);
    if (!st->nlm)
    {
       mdc_state_free(st);
@@ -503,7 +503,7 @@ static mdc_state_t *mdc_get_state(DBusConnection *conn)
 
 fail:
    RARCH_WARN("[Mutter] GetCurrentState reply not understood.\n");
-   dbus_message_unref(reply);
+   mdc_rd->message_unref(reply);
    mdc_state_free(st);
    return NULL;
 }
@@ -653,7 +653,8 @@ static int mdc_list_qsort(const void *pa, const void *pb)
    return 0;
 }
 
-enum mutter_dc_result mutter_displayconfig_get_resolution_list(
+/* The target head's modes as the menu's list, from a state snapshot. */
+static enum mutter_dc_result mdc_list_from(const mdc_state_t *st,
       const mutter_dc_target_t *target,
       video_display_config_t **list, unsigned *len)
 {
@@ -661,19 +662,9 @@ enum mutter_dc_result mutter_displayconfig_get_resolution_list(
    unsigned j, n                = 0;
    const mdc_monitor_t *mon     = NULL;
    video_display_config_t *conf = NULL;
-   mdc_state_t *st              = NULL;
-   DBusConnection *conn         = mdc_connect();
 
    *list = NULL;
    *len  = 0;
-   if (!conn)
-      return MUTTER_DC_UNAVAILABLE;
-   if (!mdc_has_owner(conn) || !(st = mdc_get_state(conn)))
-   {
-      mdc_disconnect(conn);
-      return MUTTER_DC_UNAVAILABLE;
-   }
-   mdc_disconnect(conn);
 
    mon = &st->mon[st->lm[mdc_pick_logical(st, target)].mon[0]];
    if (mon->nmodes > 0
@@ -714,7 +705,6 @@ enum mutter_dc_result mutter_displayconfig_get_resolution_list(
       for (j = 0; j < n; j++)
          conf[j].idx = j;
    }
-   mdc_state_free(st);
 
    if (!n)
    {
@@ -730,44 +720,44 @@ enum mutter_dc_result mutter_displayconfig_get_resolution_list(
  * ApplyMonitorsConfig
  * ------------------------------------------------------------------ */
 
-static bool mdc_append_dict_bool(DBusMessageIter *dict, const char *key,
+static bool mdc_append_dict_bool(rdbus_iter_t *dict, const char *key,
       bool value)
 {
-   DBusMessageIter e, v;
-   dbus_bool_t b = value ? TRUE : FALSE;
-   return dbus_message_iter_open_container(dict, DBUS_TYPE_DICT_ENTRY, NULL, &e)
-      && dbus_message_iter_append_basic(&e, DBUS_TYPE_STRING, &key)
-      && dbus_message_iter_open_container(&e, DBUS_TYPE_VARIANT, "b", &v)
-      && dbus_message_iter_append_basic(&v, DBUS_TYPE_BOOLEAN, &b)
-      && dbus_message_iter_close_container(&e, &v)
-      && dbus_message_iter_close_container(dict, &e);
+   rdbus_iter_t e, v;
+   rdbus_bool_t b = value ? 1 : 0;
+   return mdc_rd->message_iter_open_container(dict, RDBUS_TYPE_DICT_ENTRY, NULL, &e)
+      && mdc_rd->message_iter_append_basic(&e, RDBUS_TYPE_STRING, &key)
+      && mdc_rd->message_iter_open_container(&e, RDBUS_TYPE_VARIANT, "b", &v)
+      && mdc_rd->message_iter_append_basic(&v, RDBUS_TYPE_BOOLEAN, &b)
+      && mdc_rd->message_iter_close_container(&e, &v)
+      && mdc_rd->message_iter_close_container(dict, &e);
 }
 
-static bool mdc_append_dict_u32(DBusMessageIter *dict, const char *key,
+static bool mdc_append_dict_u32(rdbus_iter_t *dict, const char *key,
       unsigned value)
 {
-   DBusMessageIter e, v;
-   dbus_uint32_t u = value;
-   return dbus_message_iter_open_container(dict, DBUS_TYPE_DICT_ENTRY, NULL, &e)
-      && dbus_message_iter_append_basic(&e, DBUS_TYPE_STRING, &key)
-      && dbus_message_iter_open_container(&e, DBUS_TYPE_VARIANT, "u", &v)
-      && dbus_message_iter_append_basic(&v, DBUS_TYPE_UINT32, &u)
-      && dbus_message_iter_close_container(&e, &v)
-      && dbus_message_iter_close_container(dict, &e);
+   rdbus_iter_t e, v;
+   uint32_t u = value;
+   return mdc_rd->message_iter_open_container(dict, RDBUS_TYPE_DICT_ENTRY, NULL, &e)
+      && mdc_rd->message_iter_append_basic(&e, RDBUS_TYPE_STRING, &key)
+      && mdc_rd->message_iter_open_container(&e, RDBUS_TYPE_VARIANT, "u", &v)
+      && mdc_rd->message_iter_append_basic(&v, RDBUS_TYPE_UINT32, &u)
+      && mdc_rd->message_iter_close_container(&e, &v)
+      && mdc_rd->message_iter_close_container(dict, &e);
 }
 
 /* (ssa{sv}): connector, mode id, and the monitor's own settings as it
  * reported them, so colour mode, RGB range and underscanning carry
  * over instead of falling back to their defaults */
-static bool mdc_append_monitor(DBusMessageIter *arr, const mdc_monitor_t *mon,
+static bool mdc_append_monitor(rdbus_iter_t *arr, const mdc_monitor_t *mon,
       const char *mode_id)
 {
-   DBusMessageIter s, props;
+   rdbus_iter_t s, props;
    const char *c = mon->connector;
-   if (     !dbus_message_iter_open_container(arr, DBUS_TYPE_STRUCT, NULL, &s)
-         || !dbus_message_iter_append_basic(&s, DBUS_TYPE_STRING, &c)
-         || !dbus_message_iter_append_basic(&s, DBUS_TYPE_STRING, &mode_id)
-         || !dbus_message_iter_open_container(&s, DBUS_TYPE_ARRAY, "{sv}", &props))
+   if (     !mdc_rd->message_iter_open_container(arr, RDBUS_TYPE_STRUCT, NULL, &s)
+         || !mdc_rd->message_iter_append_basic(&s, RDBUS_TYPE_STRING, &c)
+         || !mdc_rd->message_iter_append_basic(&s, RDBUS_TYPE_STRING, &mode_id)
+         || !mdc_rd->message_iter_open_container(&s, RDBUS_TYPE_ARRAY, "{sv}", &props))
       return false;
    if (mon->has_underscanning
          && !mdc_append_dict_bool(&props, "enable_underscanning", mon->underscanning))
@@ -778,11 +768,13 @@ static bool mdc_append_monitor(DBusMessageIter *arr, const mdc_monitor_t *mon,
    if (mon->has_rgb_range
          && !mdc_append_dict_u32(&props, "rgb-range", mon->rgb_range))
       return false;
-   return dbus_message_iter_close_container(&s, &props)
-      && dbus_message_iter_close_container(arr, &s);
+   return mdc_rd->message_iter_close_container(&s, &props)
+      && mdc_rd->message_iter_close_container(arr, &s);
 }
 
-enum mutter_dc_result mutter_displayconfig_set_resolution(
+/* Switches the target head as asked, against the state Mutter reports
+ * now, on the worker's connection. */
+static enum mutter_dc_result mdc_apply(rdbus_connection_t *conn,
       const mutter_dc_target_t *target,
       unsigned dims, int int_hz, float hz)
 {
@@ -791,27 +783,21 @@ enum mutter_dc_result mutter_displayconfig_set_resolution(
    int *x = NULL, *y = NULL;
    double new_scale;
    double want_hz                  = hz;
-   dbus_uint32_t serial, method    = MDC_METHOD_TEMPORARY;
+   uint32_t serial, method    = MDC_METHOD_TEMPORARY;
    enum mutter_dc_result result    = MUTTER_DC_FAILED;
    const mdc_mode_t **chosen       = NULL;
    const mdc_mode_t *cur, *best;
    const mdc_monitor_t *mon;
    mdc_logical_t *lm;
-   DBusMessageIter it, lms, props;
-   DBusMessage *msg                = NULL;
-   DBusMessage *reply              = NULL;
+   rdbus_iter_t it, lms, props;
+   rdbus_message_t *msg                = NULL;
+   rdbus_message_t *reply              = NULL;
    mdc_state_t *st                 = NULL;
-   DBusConnection *conn            = mdc_connect();
-   DBusError err;
+   rdbus_error_t err;
 
-   dbus_error_init(&err);
-   if (!conn)
+   mdc_rd->error_init(&err);
+   if (!(st = mdc_get_state(conn)))
       return MUTTER_DC_UNAVAILABLE;
-   if (!mdc_has_owner(conn) || !(st = mdc_get_state(conn)))
-   {
-      mdc_disconnect(conn);
-      return MUTTER_DC_UNAVAILABLE;
-   }
 
    t      = mdc_pick_logical(st, target);
    lm     = &st->lm[t];
@@ -894,56 +880,56 @@ enum mutter_dc_result mutter_displayconfig_set_resolution(
          y[i] += new_h - old_h;
    }
 
-   if (!(msg = dbus_message_new_method_call(MDC_BUS_NAME, MDC_PATH,
+   if (!(msg = mdc_rd->message_new_method_call(MDC_BUS_NAME, MDC_PATH,
                MDC_IFACE, "ApplyMonitorsConfig")))
       goto end;
    serial = st->serial;
-   dbus_message_iter_init_append(msg, &it);
-   if (     !dbus_message_iter_append_basic(&it, DBUS_TYPE_UINT32, &serial)
-         || !dbus_message_iter_append_basic(&it, DBUS_TYPE_UINT32, &method)
-         || !dbus_message_iter_open_container(&it, DBUS_TYPE_ARRAY,
+   mdc_rd->message_iter_init_append(msg, &it);
+   if (     !mdc_rd->message_iter_append_basic(&it, RDBUS_TYPE_UINT32, &serial)
+         || !mdc_rd->message_iter_append_basic(&it, RDBUS_TYPE_UINT32, &method)
+         || !mdc_rd->message_iter_open_container(&it, RDBUS_TYPE_ARRAY,
                "(iiduba(ssa{sv}))", &lms))
       goto end;
    for (i = 0; i < st->nlm; i++)
    {
-      DBusMessageIter s, mons;
+      rdbus_iter_t s, mons;
       const mdc_logical_t *l  = &st->lm[i];
-      dbus_int32_t lx         = x[i];
-      dbus_int32_t ly         = y[i];
+      int32_t lx         = x[i];
+      int32_t ly         = y[i];
       double sc               = (i == t) ? new_scale : l->scale;
-      dbus_uint32_t tr        = l->transform;
-      dbus_bool_t pr          = l->primary ? TRUE : FALSE;
-      if (     !dbus_message_iter_open_container(&lms, DBUS_TYPE_STRUCT, NULL, &s)
-            || !dbus_message_iter_append_basic(&s, DBUS_TYPE_INT32, &lx)
-            || !dbus_message_iter_append_basic(&s, DBUS_TYPE_INT32, &ly)
-            || !dbus_message_iter_append_basic(&s, DBUS_TYPE_DOUBLE, &sc)
-            || !dbus_message_iter_append_basic(&s, DBUS_TYPE_UINT32, &tr)
-            || !dbus_message_iter_append_basic(&s, DBUS_TYPE_BOOLEAN, &pr)
-            || !dbus_message_iter_open_container(&s, DBUS_TYPE_ARRAY,
+      uint32_t tr        = l->transform;
+      rdbus_bool_t pr          = l->primary ? 1 : 0;
+      if (     !mdc_rd->message_iter_open_container(&lms, RDBUS_TYPE_STRUCT, NULL, &s)
+            || !mdc_rd->message_iter_append_basic(&s, RDBUS_TYPE_INT32, &lx)
+            || !mdc_rd->message_iter_append_basic(&s, RDBUS_TYPE_INT32, &ly)
+            || !mdc_rd->message_iter_append_basic(&s, RDBUS_TYPE_DOUBLE, &sc)
+            || !mdc_rd->message_iter_append_basic(&s, RDBUS_TYPE_UINT32, &tr)
+            || !mdc_rd->message_iter_append_basic(&s, RDBUS_TYPE_BOOLEAN, &pr)
+            || !mdc_rd->message_iter_open_container(&s, RDBUS_TYPE_ARRAY,
                   "(ssa{sv})", &mons))
          goto end;
       for (j = 0; j < l->nmon; j++)
          if (!mdc_append_monitor(&mons, &st->mon[l->mon[j]],
                   chosen[l->mon[j]]->id))
             goto end;
-      if (     !dbus_message_iter_close_container(&s, &mons)
-            || !dbus_message_iter_close_container(&lms, &s))
+      if (     !mdc_rd->message_iter_close_container(&s, &mons)
+            || !mdc_rd->message_iter_close_container(&lms, &s))
          goto end;
    }
-   if (     !dbus_message_iter_close_container(&it, &lms)
-         || !dbus_message_iter_open_container(&it, DBUS_TYPE_ARRAY, "{sv}", &props))
+   if (     !mdc_rd->message_iter_close_container(&it, &lms)
+         || !mdc_rd->message_iter_open_container(&it, RDBUS_TYPE_ARRAY, "{sv}", &props))
       goto end;
    /* The layout mode goes along only where Mutter lets it be chosen;
     * elsewhere naming it is an error even at its current value */
    if (st->has_layout_mode && st->supports_layout_change
          && !mdc_append_dict_u32(&props, "layout-mode", st->layout_mode))
       goto end;
-   if (!dbus_message_iter_close_container(&it, &props))
+   if (!mdc_rd->message_iter_close_container(&it, &props))
       goto end;
 
-   reply = dbus_connection_send_with_reply_and_block(conn, msg,
+   reply = mdc_rd->connection_send_with_reply_and_block(conn, msg,
          MDC_TIMEOUT_MS, &err);
-   if (dbus_error_is_set(&err))
+   if (mdc_rd->error_is_set(&err))
    {
       RARCH_ERR("[Mutter] Switching %s to %dx%d %.3f Hz failed: %s.\n",
             mon->connector, best->w, best->h, best->refresh, err.message);
@@ -954,16 +940,313 @@ enum mutter_dc_result mutter_displayconfig_set_resolution(
    result = MUTTER_DC_OK;
 
 end:
-   if (dbus_error_is_set(&err))
-      dbus_error_free(&err);
+   if (mdc_rd->error_is_set(&err))
+      mdc_rd->error_free(&err);
    if (reply)
-      dbus_message_unref(reply);
+      mdc_rd->message_unref(reply);
    if (msg)
-      dbus_message_unref(msg);
+      mdc_rd->message_unref(msg);
    free(chosen);
    free(x);
    free(y);
    mdc_state_free(st);
-   mdc_disconnect(conn);
    return result;
 }
+
+/* ------------------------------------------------------------------
+ * The worker
+ *
+ * One thread for the process, started on first use, owns everything
+ * that waits: loading libdbus, the session-bus connection, following
+ * MonitorsChanged, GetCurrentState and ApplyMonitorsConfig. It waits in
+ * poll() on the bus socket and a wake pipe. Callers read the state it
+ * publishes and queue switches to it, under a lock it takes only to
+ * publish or to take the queue, never across a D-Bus call.
+ * ------------------------------------------------------------------ */
+
+#define MDC_MAX_REQUESTS 8
+
+enum mdc_status
+{
+   MDC_STATUS_PENDING = 0,
+   MDC_STATUS_ABSENT,
+   MDC_STATUS_PRESENT
+};
+
+typedef struct mdc_request
+{
+   mutter_dc_target_t target;
+   char               connector[64];
+   unsigned           dims;
+   int                int_hz;
+   float              hz;
+} mdc_request_t;
+
+typedef struct mdc_ctl
+{
+   slock_t      *lock;
+   mdc_state_t  *state;
+   int           wake[2];
+   int           status;
+   unsigned      nreq;
+   mdc_request_t req[MDC_MAX_REQUESTS];
+} mdc_ctl_t;
+
+static mdc_ctl_t *mdc_ctl;
+
+/* Whether a switch can be asked of Mutter at all, from the snapshot:
+ * the target head lists the size and rate, and every mirror of it
+ * does too. *noop is set when the head already shows that mode. */
+static enum mutter_dc_result mdc_check(const mdc_state_t *st,
+      const mutter_dc_target_t *target, unsigned dims, int int_hz,
+      float hz, bool *noop)
+{
+   int j, want_w, want_h;
+   double want_hz              = hz;
+   int t                       = mdc_pick_logical(st, target);
+   const mdc_logical_t *lm     = &st->lm[t];
+   const mdc_monitor_t *mon    = &st->mon[lm->mon[0]];
+   const mdc_mode_t *cur       = mdc_current_mode(mon);
+   const mdc_mode_t *best;
+
+   *noop  = false;
+   want_w = (int)VIDEO_SCALE_W(dims);
+   want_h = (int)VIDEO_SCALE_H(dims);
+   if (!want_w)
+      want_w = cur ? cur->w : 0;
+   if (!want_h)
+      want_h = cur ? cur->h : 0;
+   if (want_hz <= 0.0 && int_hz > 0)
+      want_hz = int_hz;
+   if (want_hz <= 0.0 && cur)
+      want_hz = cur->refresh;
+
+   if (!(best = mdc_find_mode(mon, want_w, want_h, int_hz, want_hz)))
+   {
+      RARCH_WARN("[Mutter] No listed mode %dx%d at %.3f Hz on %s.\n",
+            want_w, want_h, want_hz, mon->connector);
+      return MUTTER_DC_FAILED;
+   }
+   for (j = 1; j < lm->nmon; j++)
+      if (!mdc_find_mode(&st->mon[lm->mon[j]], best->w, best->h,
+               (int)(best->refresh + 0.001), best->refresh))
+      {
+         RARCH_WARN("[Mutter] Mirror %s has no %dx%d at %.3f Hz.\n",
+               st->mon[lm->mon[j]].connector, best->w, best->h,
+               best->refresh);
+         return MUTTER_DC_FAILED;
+      }
+   *noop = (cur && best == cur && lm->nmon == 1);
+   return MUTTER_DC_OK;
+}
+
+static void mdc_publish(mdc_ctl_t *ctl, mdc_state_t *st, int status)
+{
+   mdc_state_t *old;
+   slock_lock(ctl->lock);
+   old         = ctl->state;
+   ctl->state  = st;
+   ctl->status = status;
+   slock_unlock(ctl->lock);
+   mdc_state_free(old);
+}
+
+static void mdc_worker(void *data)
+{
+   int fd                   = -1;
+   bool refresh             = true;
+   mdc_ctl_t *ctl           = (mdc_ctl_t*)data;
+   rdbus_connection_t *conn = NULL;
+
+   sthread_setname("ra-mutter");
+
+   if (     !(mdc_rd = rdbus_get())
+         || !(conn   = mdc_connect())
+         || !mdc_has_owner(conn)
+         || !mdc_rd->connection_get_unix_fd(conn, &fd))
+   {
+      mdc_disconnect(conn);
+      mdc_publish(ctl, NULL, MDC_STATUS_ABSENT);
+      return;
+   }
+
+   {
+      rdbus_error_t err;
+      mdc_rd->error_init(&err);
+      mdc_rd->bus_add_match(conn,
+            "type='signal',interface='" MDC_IFACE "',member='MonitorsChanged'",
+            &err);
+      if (mdc_rd->error_is_set(&err))
+         mdc_rd->error_free(&err);
+   }
+
+   for (;;)
+   {
+      unsigned i, n;
+      rdbus_message_t *m;
+      mdc_request_t req[MDC_MAX_REQUESTS];
+      struct pollfd pfd[2];
+
+      /* Whatever the bus sent while this thread was in a call or
+       * asleep: only a change of monitors matters. */
+      mdc_rd->connection_read_write(conn, 0);
+      while ((m = mdc_rd->connection_pop_message(conn)))
+      {
+         if (mdc_rd->message_is_signal(m, MDC_IFACE, "MonitorsChanged"))
+            refresh = true;
+         mdc_rd->message_unref(m);
+      }
+
+      if (refresh)
+      {
+         mdc_state_t *st = mdc_get_state(conn);
+         refresh         = false;
+         if (st)
+            mdc_publish(ctl, st, MDC_STATUS_PRESENT);
+      }
+
+      slock_lock(ctl->lock);
+      n = ctl->nreq;
+      memcpy(req, ctl->req, n * sizeof(req[0]));
+      ctl->nreq = 0;
+      slock_unlock(ctl->lock);
+
+      for (i = 0; i < n; i++)
+      {
+         if (req[i].connector[0])
+            req[i].target.connector = req[i].connector;
+         mdc_apply(conn, &req[i].target, req[i].dims, req[i].int_hz,
+               req[i].hz);
+         /* Mutter announces the change too; the state is asked again
+          * either way, so the next reader sees the new mode. */
+         refresh = true;
+      }
+      if (refresh || n)
+         continue;
+
+      pfd[0].fd      = fd;
+      pfd[0].events  = POLLIN;
+      pfd[0].revents = 0;
+      pfd[1].fd      = ctl->wake[0];
+      pfd[1].events  = POLLIN;
+      pfd[1].revents = 0;
+      if (poll(pfd, 2, -1) < 0)
+         continue;
+      if (pfd[1].revents & POLLIN)
+      {
+         char buf[64];
+         while (read(ctl->wake[0], buf, sizeof(buf)) > 0) { }
+      }
+      if (pfd[0].revents & (POLLHUP | POLLERR))
+         break;
+   }
+
+   /* The bus went away: nothing to follow any more. */
+   mdc_disconnect(conn);
+   mdc_publish(ctl, NULL, MDC_STATUS_ABSENT);
+}
+
+static mdc_ctl_t *mdc_start(void)
+{
+   sthread_t *thread;
+   mdc_ctl_t *ctl = mdc_ctl;
+
+   if (ctl)
+      return ctl;
+   if (!(ctl = (mdc_ctl_t*)calloc(1, sizeof(*ctl))))
+      return NULL;
+   ctl->wake[0] = ctl->wake[1] = -1;
+   if (     !(ctl->lock = slock_new())
+         || pipe(ctl->wake) != 0
+         || fcntl(ctl->wake[0], F_SETFL, O_NONBLOCK) != 0
+         || fcntl(ctl->wake[1], F_SETFL, O_NONBLOCK) != 0
+         || !(thread = sthread_create(mdc_worker, ctl)))
+   {
+      if (ctl->wake[0] >= 0)
+         close(ctl->wake[0]);
+      if (ctl->wake[1] >= 0)
+         close(ctl->wake[1]);
+      if (ctl->lock)
+         slock_free(ctl->lock);
+      free(ctl);
+      return NULL;
+   }
+   /* Lives as long as the process; the block stays with it. */
+   sthread_detach(thread);
+   mdc_ctl = ctl;
+   return ctl;
+}
+
+bool mutter_displayconfig_available(void)
+{
+   bool ret;
+   mdc_ctl_t *ctl = mdc_start();
+   if (!ctl)
+      return false;
+   slock_lock(ctl->lock);
+   ret = ctl->status == MDC_STATUS_PRESENT && ctl->state;
+   slock_unlock(ctl->lock);
+   return ret;
+}
+
+enum mutter_dc_result mutter_displayconfig_get_resolution_list(
+      const mutter_dc_target_t *target,
+      video_display_config_t **list, unsigned *len)
+{
+   enum mutter_dc_result ret = MUTTER_DC_UNAVAILABLE;
+   mdc_ctl_t *ctl            = mdc_start();
+
+   *list = NULL;
+   *len  = 0;
+   if (!ctl)
+      return MUTTER_DC_UNAVAILABLE;
+   slock_lock(ctl->lock);
+   if (ctl->status == MDC_STATUS_PRESENT && ctl->state)
+      ret = mdc_list_from(ctl->state, target, list, len);
+   slock_unlock(ctl->lock);
+   return ret;
+}
+
+enum mutter_dc_result mutter_displayconfig_set_resolution(
+      const mutter_dc_target_t *target,
+      unsigned dims, int int_hz, float hz)
+{
+   bool noop                 = false;
+   bool wake                 = false;
+   enum mutter_dc_result ret = MUTTER_DC_UNAVAILABLE;
+   mdc_ctl_t *ctl            = mdc_start();
+
+   if (!ctl)
+      return MUTTER_DC_UNAVAILABLE;
+   slock_lock(ctl->lock);
+   if (     ctl->status == MDC_STATUS_PRESENT && ctl->state
+         && (ret = mdc_check(ctl->state, target, dims, int_hz, hz,
+               &noop)) == MUTTER_DC_OK
+         && !noop)
+   {
+      /* A full queue keeps its newest slot for the newest request. */
+      mdc_request_t *r = &ctl->req[ctl->nreq < MDC_MAX_REQUESTS
+         ? ctl->nreq++ : MDC_MAX_REQUESTS - 1];
+      memset(r, 0, sizeof(*r));
+      if (target)
+      {
+         r->target           = *target;
+         r->target.connector = NULL;
+         if (target->connector)
+            strlcpy(r->connector, target->connector, sizeof(r->connector));
+      }
+      r->dims   = dims;
+      r->int_hz = int_hz;
+      r->hz     = hz;
+      wake      = true;
+   }
+   slock_unlock(ctl->lock);
+   if (wake)
+   {
+      char c = 1;
+      if (write(ctl->wake[1], &c, 1) < 0) { }
+   }
+   return ret;
+}
+
+#endif

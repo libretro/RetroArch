@@ -1232,6 +1232,7 @@ ifeq ($(HAVE_THREADS), 1)
    ifneq ($(findstring Linux,$(OS))$(findstring BSD,$(OS)),)
       OBJ += gfx/common/dbus_runtime.o \
              gfx/common/dbus_common.o \
+             gfx/common/mutter_displayconfig.o \
              frontend/thread_elevation/rtkit.o
    endif
    DEFINES += -DHAVE_THREADS
@@ -1453,7 +1454,6 @@ endif
 ifeq ($(HAVE_DBUS), 1)
    LIBS += $(DBUS_LIBS)
    DEF_FLAGS += $(DBUS_CFLAGS)
-   OBJ += gfx/common/mutter_displayconfig.o
 endif
 
 ifeq ($(HAVE_UDEV), 1)

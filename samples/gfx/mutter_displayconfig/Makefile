@@ -12,16 +12,19 @@ SOURCES := mutter_displayconfig_test.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_x11.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_wl.c \
            $(REPO_ROOT)/gfx/common/xinerama_common.c \
+           $(REPO_ROOT)/gfx/common/dbus_runtime.c \
+           $(LRC)/rthreads/rthreads.c \
+           $(LRC)/dynamic/dylib.c \
            $(LRC)/compat/compat_strl.c
 
 CFLAGS  += -Wall -std=gnu99 -g -O0 \
-           -DHAVE_DBUS -DHAVE_XRANDR -DHAVE_XINERAMA -DHAVE_WAYLAND \
+           -D_GNU_SOURCE -DHAVE_THREADS -DHAVE_DYLIB -DHAVE_XRANDR -DHAVE_XINERAMA -DHAVE_WAYLAND \
            -DTEST_X11 -DTEST_WL \
            -I$(REPO_ROOT) -I$(LRC)/include \
            $(shell pkg-config --cflags dbus-1 wayland-client)
 
 LDLIBS  += $(shell pkg-config --libs dbus-1 wayland-client) \
-           -lXrandr -lXinerama -lX11 -lm
+           -lXrandr -lXinerama -lX11 -lm -ldl -lpthread
 
 # Objects under obj/, never next to the sources: other samples build
 # some of the same files with other flags.

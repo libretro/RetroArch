@@ -19,9 +19,11 @@
  * "switch" that only scales the window) nor any Wayland protocol can
  * list or change the monitor's real modes; this can.
  *
- * Only built with HAVE_DBUS. Every call opens its own private session
- * bus connection and closes it again, so nothing here outlives a call,
- * and each call is bounded by a D-Bus timeout. */
+ * Built on every threaded Linux and BSD build, over libdbus loaded at
+ * run time. None of these calls waits on the bus: a worker thread
+ * follows Mutter's state and applies switches, and these answer from
+ * the last state it published. Until it has answered once, or where
+ * Mutter is not there, they report MUTTER_DC_UNAVAILABLE. */
 
 #ifndef __MUTTER_DISPLAYCONFIG_H
 #define __MUTTER_DISPLAYCONFIG_H
@@ -30,6 +32,13 @@
 #include <retro_common_api.h>
 
 #include "../video_display_server.h"
+#include "dbus_runtime.h"
+
+#if defined(RARCH_HAVE_DBUS_RUNTIME) && defined(HAVE_THREADS)
+#define RARCH_HAVE_MUTTER_DC 1
+#endif
+
+#ifdef RARCH_HAVE_MUTTER_DC
 
 RETRO_BEGIN_DECLS
 
@@ -56,8 +65,8 @@ enum mutter_dc_result
    MUTTER_DC_OK          =  1
 };
 
-/* true when org.gnome.Mutter.DisplayConfig has an owner on the
- * session bus. Never autolaunches a bus. */
+/* true once the worker has found org.gnome.Mutter.DisplayConfig on the
+ * session bus and read its state. Never autolaunches a bus. */
 bool mutter_displayconfig_available(void);
 
 /* The modes of the target head, as the menu's resolution list: sorted
@@ -68,7 +77,11 @@ enum mutter_dc_result mutter_displayconfig_get_resolution_list(
       video_display_config_t **list, unsigned *len);
 
 /* Switch the target head to the listed mode of that size nearest the
- * rate; a zero width or height keeps the current one. Applied as a
+ * rate; a zero width or height keeps the current one. Checked against
+ * the published state at once - MUTTER_DC_FAILED for a mode the head
+ * does not list, without asking Mutter - then applied by the worker;
+ * MUTTER_DC_OK means asked, and the state Mutter reports afterwards
+ * carries the outcome. Applied as a
  * temporary configuration: not saved, and no "keep these settings?"
  * prompt. Every other monitor keeps its mode, position, scale,
  * transform and colour settings. */
@@ -77,5 +90,7 @@ enum mutter_dc_result mutter_displayconfig_set_resolution(
       unsigned dims, int int_hz, float hz);
 
 RETRO_END_DECLS
+
+#endif
 
 #endif
