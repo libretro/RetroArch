@@ -7572,7 +7572,7 @@ static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
          value = path_value;
    }
 
-   *setting->value.target.unsigned_integer = value;
+   setting_uint_set(setting, value);
 
    if (setting->actions->change)
       setting->actions->change(setting);
@@ -7592,12 +7592,13 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
    switch (setting->type)
    {
       case ST_INT:
-         *setting->value.target.integer = (int32_t)((idx * setting->step) + setting->offset_by);
+         setting_int_set(setting,
+               (int)((idx * setting->step) + setting->offset_by));
          break;
       case ST_UINT:
          {
             unsigned value = (unsigned)((idx * setting->step) + setting->offset_by);
-            *setting->value.target.unsigned_integer = value;
+            setting_uint_set(setting, value);
          }
          break;
       case ST_FLOAT:

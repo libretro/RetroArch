@@ -23,6 +23,9 @@ on:
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
       - 'samples/menu/resolution_reset/**'
+      - 'samples/settings/packed_rows/**'
+      - 'setting_list.h'
+      - 'gfx/video_defines.h'
       - '.github/workflows/Linux-menu-harness.yml'
   pull_request:
     paths:
@@ -32,6 +35,9 @@ on:
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
       - 'samples/menu/resolution_reset/**'
+      - 'samples/settings/packed_rows/**'
+      - 'setting_list.h'
+      - 'gfx/video_defines.h'
       - '.github/workflows/Linux-menu-harness.yml'
   workflow_dispatch:
 
@@ -159,6 +165,20 @@ jobs:
           samples/menu/resolution_reset/build.sh
           ./samples/menu/resolution_reset/resolution_reset_test
           make -C samples/menu/resolution_reset clean
+
+      - name: Build and run packed_rows_test
+        shell: bash
+        run: |
+          set -eu
+          # Settings rows that each own one half of a packed settings_t
+          # word - the custom viewport's origin and size, the window
+          # size pair - driven through their display strings, a right
+          # press and the dropdown list. Each row has to show and set
+          # its own axis and leave its partner as it stands. Shares the
+          # non-Qt build made above.
+          samples/settings/packed_rows/build.sh
+          ./samples/settings/packed_rows/packed_rows_test
+          make -C samples/settings/packed_rows clean
 
       - name: Hot function budget
         shell: bash

@@ -545,7 +545,6 @@ void StringComboBox::paintEvent(QPaintEvent *event)
 UIntComboBox::UIntComboBox(rarch_setting_t *setting, QWidget *parent) :
    QComboBox(parent)
    ,m_setting(setting)
-   ,m_value(setting->value.target.unsigned_integer)
 {
    float min = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
    float max = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : 999.00f;
@@ -560,7 +559,6 @@ UIntComboBox::UIntComboBox(rarch_setting_t *setting, QWidget *parent) :
 UIntComboBox::UIntComboBox(rarch_setting_t *setting, double min, double max, QWidget *parent) :
     QComboBox(parent)
    ,m_setting(setting)
-   ,m_value(setting->value.target.unsigned_integer)
 {
    populate(min, max);
 
@@ -572,7 +570,7 @@ UIntComboBox::UIntComboBox(rarch_setting_t *setting, double min, double max, QWi
 void UIntComboBox::populate(double min, double max)
 {
    float i;
-   unsigned orig_value = *m_setting->value.target.unsigned_integer;
+   unsigned orig_value = setting_uint_get(m_setting);
    float          step = m_setting->step;
    bool  checked_found = false;
    unsigned      count = 0;
@@ -584,7 +582,7 @@ void UIntComboBox::populate(double min, double max)
          char val_s[NAME_MAX_LENGTH];
          unsigned val = (unsigned)i;
 
-         *m_setting->value.target.unsigned_integer = val;
+         setting_uint_set(m_setting, val);
 
          m_setting->actions->repr(m_setting, val_s, sizeof(val_s));
 
@@ -600,7 +598,7 @@ void UIntComboBox::populate(double min, double max)
          count++;
       }
 
-      *m_setting->value.target.unsigned_integer = orig_value;
+      setting_uint_set(m_setting, orig_value);
    }
 }
 
@@ -616,21 +614,20 @@ void UIntComboBox::onCurrentIndexChanged(int index)
 {
    (void)(index);
 
-   *m_value = currentData().toUInt();
+   setting_uint_set(m_setting, currentData().toUInt());
 
    setting_generic_handle_change(m_setting);
 }
 
 void UIntComboBox::paintEvent(QPaintEvent *event)
 {
-   setCurrentText(m_hash.value(*m_value));
+   setCurrentText(m_hash.value(setting_uint_get(m_setting)));
    QComboBox::paintEvent(event);
 }
 
 UIntSpinBox::UIntSpinBox(rarch_setting_t *setting, QWidget *parent) :
    QSpinBox(parent)
    ,m_setting(setting)
-   ,m_value(setting->value.target.unsigned_integer)
 {
    setRange(
          qt_setting_bound(setting, SD_FLAG_ENFORCE_MINRANGE, setting->min, 0),
@@ -648,13 +645,13 @@ UIntSpinBox::UIntSpinBox(msg_hash_enums enum_idx, QWidget *parent) :
 
 void UIntSpinBox::onValueChanged(int value)
 {
-   *m_value = value;
+   setting_uint_set(m_setting, (unsigned)value);
    setting_generic_handle_change(m_setting);
 }
 
 void UIntSpinBox::paintEvent(QPaintEvent *event)
 {
-   int shown = qt_spinbox_shown(this, (double)*m_value);
+   int shown = qt_spinbox_shown(this, (double)setting_uint_get(m_setting));
 
    if (value() != shown)
    {
@@ -717,17 +714,16 @@ void SizeSpinBox::paintEvent(QPaintEvent *event)
 UIntRadioButton::UIntRadioButton(msg_hash_enums enum_idx, unsigned value, QWidget *parent) :
    QRadioButton(parent)
    ,m_setting(menu_setting_find_enum(enum_idx))
-   ,m_target(m_setting->value.target.unsigned_integer)
    ,m_value(value)
 {
    char val_s[NAME_MAX_LENGTH];
-   unsigned orig_value = *m_setting->value.target.unsigned_integer;
+   unsigned orig_value = setting_uint_get(m_setting);
 
-   *m_setting->value.target.unsigned_integer = value;
+   setting_uint_set(m_setting, value);
 
    m_setting->actions->repr(m_setting, val_s, sizeof(val_s));
 
-   *m_setting->value.target.unsigned_integer = orig_value;
+   setting_uint_set(m_setting, orig_value);
 
    setText(val_s);
 
@@ -741,7 +737,6 @@ UIntRadioButton::UIntRadioButton(const QString &text,
 	rarch_setting_t *setting, unsigned value, QWidget *parent) :
    QRadioButton(text, parent)
    ,m_setting(setting)
-   ,m_target(setting->value.target.unsigned_integer)
    ,m_value(value)
 {
    connect(this, SIGNAL(clicked(bool)), this, SLOT(onClicked(bool)));
@@ -749,13 +744,13 @@ UIntRadioButton::UIntRadioButton(const QString &text,
 
 void UIntRadioButton::onClicked(bool)
 {
-   *m_target = m_value;
+   setting_uint_set(m_setting, m_value);
    setting_generic_handle_change(m_setting);
 }
 
 void UIntRadioButton::paintEvent(QPaintEvent *event)
 {
-   if (*m_target == m_value)
+   if (setting_uint_get(m_setting) == m_value)
       setChecked(true);
    else
       setChecked(false);
@@ -766,7 +761,6 @@ void UIntRadioButton::paintEvent(QPaintEvent *event)
 UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
    QGroupBox(setting->short_description, parent)
    ,m_setting(setting)
-   ,m_value(setting->value.target.unsigned_integer)
    ,m_buttonGroup(new QButtonGroup(this))
 {
    QVBoxLayout *layout = new QVBoxLayout(this);
@@ -776,7 +770,7 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
     * is bounded to [0, INT_MAX], and at most QT_RADIO_BUTTONS_MAX
     * buttons are made, which also bounds a row with no enforced
     * maximum. */
-   unsigned orig_value = *setting->value.target.unsigned_integer;
+   unsigned orig_value = setting_uint_get(setting);
    unsigned        min = (unsigned)qt_setting_bound(setting,
          SD_FLAG_ENFORCE_MINRANGE, setting->min < 0.0f ? 0.0 : setting->min, 0);
    unsigned        max = (unsigned)qt_setting_bound(setting,
@@ -800,7 +794,7 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
          char val_s[NAME_MAX_LENGTH];
          QRadioButton *button = NULL;
 
-         *setting->value.target.unsigned_integer = i;
+         setting_uint_set(setting, i);
 
          setting->actions->repr(setting, val_s, sizeof(val_s));
 
@@ -821,7 +815,7 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
          i += step;
       }
 
-      *setting->value.target.unsigned_integer = orig_value;
+      setting_uint_set(setting, orig_value);
    }
    add_sublabel_and_whats_this(this, m_setting);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -836,7 +830,7 @@ UIntRadioButtons::UIntRadioButtons(msg_hash_enums enum_idx, QWidget *parent) :
 
 void UIntRadioButtons::onButtonClicked(int id)
 {
-   *m_value = id;
+   setting_uint_set(m_setting, (unsigned)id);
 
    setting_generic_handle_change(m_setting);
 }
@@ -844,7 +838,6 @@ void UIntRadioButtons::onButtonClicked(int id)
 IntSpinBox::IntSpinBox(rarch_setting_t *setting, QWidget *parent) :
    QSpinBox(parent)
    ,m_setting(setting)
-   ,m_value(setting->value.target.integer)
 {
    setRange(
          qt_setting_bound(setting, SD_FLAG_ENFORCE_MINRANGE, setting->min, INT_MIN),
@@ -859,13 +852,13 @@ IntSpinBox::IntSpinBox(rarch_setting_t *setting, QWidget *parent) :
 
 void IntSpinBox::onValueChanged(int value)
 {
-   *m_value = value;
+   setting_int_set(m_setting, value);
    setting_generic_handle_change(m_setting);
 }
 
 void IntSpinBox::paintEvent(QPaintEvent *event)
 {
-   int shown = qt_spinbox_shown(this, (double)*m_value);
+   int shown = qt_spinbox_shown(this, (double)setting_int_get(m_setting));
 
    if (value() != shown)
    {

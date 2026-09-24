@@ -455,51 +455,6 @@ typedef struct rarch_setting_info
 
 /* SETTINGS LIST */
 
-/* A UINT or INT row's value. Most rows own the word their target
- * addresses; a row flagged SD_FREE_FLAG_PACKED_HI or _LO shares one
- * with its partner axis and owns half of it -- the custom viewport's
- * four rows against settings_t's two words. The halves ride the same
- * layouts the rest of the tree reads them with, VIDEO_SCALE_PACK for
- * the size and VIDEO_POS_PACK for the origin, so nothing downstream
- * has to know a row was split. */
-static INLINE unsigned setting_uint_get(rarch_setting_t *setting)
-{
-   if (setting->free_flags & SD_FREE_FLAG_PACKED_HI)
-      return VIDEO_SCALE_W(*setting->value.target.unsigned_integer);
-   if (setting->free_flags & SD_FREE_FLAG_PACKED_LO)
-      return VIDEO_SCALE_H(*setting->value.target.unsigned_integer);
-   return *setting->value.target.unsigned_integer;
-}
-
-static INLINE void setting_uint_set(rarch_setting_t *setting, unsigned v)
-{
-   if (setting->free_flags & SD_FREE_FLAG_PACKED_HI)
-      VIDEO_SCALE_PUT_W(*setting->value.target.unsigned_integer, v);
-   else if (setting->free_flags & SD_FREE_FLAG_PACKED_LO)
-      VIDEO_SCALE_PUT_H(*setting->value.target.unsigned_integer, v);
-   else
-      *setting->value.target.unsigned_integer = v;
-}
-
-static INLINE int setting_int_get(rarch_setting_t *setting)
-{
-   if (setting->free_flags & SD_FREE_FLAG_PACKED_HI)
-      return VIDEO_POS_X(*setting->value.target.integer);
-   if (setting->free_flags & SD_FREE_FLAG_PACKED_LO)
-      return VIDEO_POS_Y(*setting->value.target.integer);
-   return *setting->value.target.integer;
-}
-
-static INLINE void setting_int_set(rarch_setting_t *setting, int v)
-{
-   if (setting->free_flags & SD_FREE_FLAG_PACKED_HI)
-      VIDEO_POS_PUT_X(*setting->value.target.integer, v);
-   else if (setting->free_flags & SD_FREE_FLAG_PACKED_LO)
-      VIDEO_POS_PUT_Y(*setting->value.target.integer, v);
-   else
-      *setting->value.target.integer = v;
-}
-
 /**
  * setting_set_with_string_representation:
  * @setting            : pointer to setting
@@ -925,8 +880,7 @@ static size_t setting_get_string_representation_uint(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      return snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer);
+      return snprintf(s, len, "%u", setting_uint_get(setting));
    return 0;
 }
 
@@ -1226,7 +1180,7 @@ static size_t setting_get_string_representation_int(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      return snprintf(s, len, "%d", *setting->value.target.integer);
+      return snprintf(s, len, "%d", setting_int_get(setting));
    return 0;
 }
 
@@ -5377,6 +5331,7 @@ static size_t setting_get_string_representation_uint_custom_vp_width(
       rarch_setting_t *setting, char *s, size_t len)
 {
    size_t _len;
+   unsigned v;
    struct retro_game_geometry  *geom    = NULL;
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
@@ -5384,15 +5339,16 @@ static size_t setting_get_string_representation_uint_custom_vp_width(
    if (!setting || !av_info)
       return 0;
    geom    = (struct retro_game_geometry*)&av_info->geometry;
-   _len    = snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+   v       = setting_uint_get(setting);
+   _len    = snprintf(s, len, "%u", v);
    if (!geom->base_width || !geom->base_height)
       return _len;
-   if (!(rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_width == 0))
+   if (!(rotation % 2) && (v % geom->base_width == 0))
       _len += snprintf(s + _len, len - _len, " (%ux)",
-            *setting->value.target.unsigned_integer / geom->base_width);
-   else if ((rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_height == 0))
+            v / geom->base_width);
+   else if ((rotation % 2) && (v % geom->base_height == 0))
       _len += snprintf(s + _len, len - _len, " (%ux)",
-            *setting->value.target.unsigned_integer / geom->base_height);
+            v / geom->base_height);
    return _len;
 }
 
@@ -5400,6 +5356,7 @@ static size_t setting_get_string_representation_uint_custom_vp_height(
       rarch_setting_t *setting, char *s, size_t len)
 {
    size_t _len;
+   unsigned v;
    struct retro_game_geometry  *geom    = NULL;
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
@@ -5407,15 +5364,16 @@ static size_t setting_get_string_representation_uint_custom_vp_height(
    if (!setting || !av_info)
       return 0;
    geom    = (struct retro_game_geometry*)&av_info->geometry;
-   _len    = snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+   v       = setting_uint_get(setting);
+   _len    = snprintf(s, len, "%u", v);
    if (!geom->base_width || !geom->base_height)
       return _len;
-   if (!(rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_height == 0))
+   if (!(rotation % 2) && (v % geom->base_height == 0))
       _len += snprintf(s + _len, len - _len, " (%ux)",
-            *setting->value.target.unsigned_integer / geom->base_height);
-   else  if ((rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_width == 0))
+            v / geom->base_height);
+   else  if ((rotation % 2) && (v % geom->base_width == 0))
       _len += snprintf(s + _len, len - _len, " (%ux)",
-            *setting->value.target.unsigned_integer / geom->base_width);
+            v / geom->base_width);
    return _len;
 }
 

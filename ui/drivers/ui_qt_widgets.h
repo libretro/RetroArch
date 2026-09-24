@@ -364,7 +364,6 @@ private slots:
 private:
    void populate(double min, double max);
    rarch_setting_t *m_setting;
-   unsigned *m_value;
    QHash<unsigned, QString> m_hash;
 };
 
@@ -379,7 +378,6 @@ private slots:
    void paintEvent(QPaintEvent *event);
 private:
    rarch_setting_t *m_setting;
-   unsigned *m_target;
    unsigned m_value;
 };
 
@@ -395,7 +393,6 @@ private slots:
    void onButtonClicked(int id);
 private:
    rarch_setting_t *m_setting;
-   unsigned *m_value;
    QButtonGroup *m_buttonGroup;
 };
 
@@ -410,7 +407,6 @@ private slots:
    void paintEvent(QPaintEvent *event);
 private:
    rarch_setting_t *m_setting;
-   unsigned *m_value;
 };
 
 class SizeSpinBox : public QSpinBox
@@ -438,7 +434,6 @@ private slots:
    void paintEvent(QPaintEvent *event);
 private:
    rarch_setting_t *m_setting;
-   int *m_value;
 };
 
 class FloatSpinBox : public QDoubleSpinBox

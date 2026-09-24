@@ -17546,7 +17546,7 @@ static bool menu_displaylist_ctl_internal(
                               int32_t i_max;
                               int32_t i_step;
                               char val_d[16];
-                              int32_t orig_value     = *setting->value.target.integer;
+                              int32_t orig_value     = setting_int_get(setting);
                               unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM;
                               float step             = setting->step;
                               float  min             = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
@@ -17573,7 +17573,7 @@ static bool menu_displaylist_ctl_internal(
                                  {
                                     char val_s[NAME_MAX_LENGTH];
                                     int val = i;
-                                    *setting->value.target.integer = val;
+                                    setting_int_set(setting, val);
                                     setting->actions->repr(setting,
                                           val_s, sizeof(val_s));
                                     if (menu_entries_append(info->list,
@@ -17592,7 +17592,7 @@ static bool menu_displaylist_ctl_internal(
                                     entry_index++;
                                  }
 
-                                 *setting->value.target.integer = orig_value;
+                                 setting_int_set(setting, orig_value);
                               }
                               else
                               {
@@ -17710,7 +17710,7 @@ static bool menu_displaylist_ctl_internal(
                               int32_t i_max;
                               int32_t i_step;
                               char val_d[16];
-                              unsigned orig_value    = *setting->value.target.unsigned_integer;
+                              unsigned orig_value    = setting_uint_get(setting);
                               unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM;
                               float step             = setting->step;
                               float min              = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
@@ -17737,7 +17737,7 @@ static bool menu_displaylist_ctl_internal(
                                  {
                                     char val_s[NAME_MAX_LENGTH];
                                     int val = i;
-                                    *setting->value.target.unsigned_integer = val;
+                                    setting_uint_set(setting, val);
                                     setting->actions->repr(setting,
                                           val_s, sizeof(val_s));
                                     if (menu_entries_append(info->list,
@@ -17756,7 +17756,7 @@ static bool menu_displaylist_ctl_internal(
                                     entry_index++;
                                  }
 
-                                 *setting->value.target.unsigned_integer = orig_value;
+                                 setting_uint_set(setting, orig_value);
                               }
                               else
                               {
@@ -17915,7 +17915,7 @@ static bool menu_displaylist_ctl_internal(
                            int32_t i_max;
                            int32_t i_step;
                            char val_d[16];
-                           int32_t orig_value     = *setting->value.target.integer;
+                           int32_t orig_value     = setting_int_get(setting);
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL;
                            float step             = setting->step;
                            float min              = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
@@ -17942,7 +17942,7 @@ static bool menu_displaylist_ctl_internal(
                               {
                                  char val_s[NAME_MAX_LENGTH];
                                  int val = i;
-                                 *setting->value.target.integer = val;
+                                 setting_int_set(setting, val);
                                  setting->actions->repr(setting,
                                        val_s, sizeof(val_s));
                                  if (menu_entries_append(info->list,
@@ -17961,7 +17961,7 @@ static bool menu_displaylist_ctl_internal(
                                  entry_index++;
                               }
 
-                              *setting->value.target.integer = orig_value;
+                              setting_int_set(setting, orig_value);
                            }
                            else
                            {
@@ -18077,7 +18077,7 @@ static bool menu_displaylist_ctl_internal(
                            int32_t i_max;
                            int32_t i_step;
                            char val_d[16];
-                           unsigned orig_value    = *setting->value.target.unsigned_integer;
+                           unsigned orig_value    = setting_uint_get(setting);
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL;
                            float step             = setting->step;
                            float min              = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
@@ -18104,7 +18104,7 @@ static bool menu_displaylist_ctl_internal(
                               {
                                  char val_s[NAME_MAX_LENGTH];
                                  int val = i;
-                                 *setting->value.target.unsigned_integer = val;
+                                 setting_uint_set(setting, val);
                                  setting->actions->repr(setting,
                                        val_s, sizeof(val_s));
                                  if (menu_entries_append(info->list,
@@ -18123,7 +18123,7 @@ static bool menu_displaylist_ctl_internal(
                                  entry_index++;
                               }
 
-                              *setting->value.target.unsigned_integer = orig_value;
+                              setting_uint_set(setting, orig_value);
                            }
                            else
                            {
