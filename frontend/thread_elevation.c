@@ -23,6 +23,7 @@
 #include <rthreads/rthreads.h>
 
 #include "thread_elevation.h"
+#include "../gfx/common/dbus_runtime.h"
 
 #if defined(__linux__) && !defined(_WIN32)
 #include <unistd.h>
@@ -53,13 +54,13 @@ static const thread_elevation_backend_t thread_elevation_rthreads = {
    false
 };
 
-#if defined(HAVE_DBUS) && defined(HAVE_THREADS) && defined(__linux__)
+#if defined(RARCH_HAVE_DBUS_RUNTIME) && defined(HAVE_THREADS) && defined(__linux__)
 extern const thread_elevation_backend_t thread_elevation_rtkit;
 #endif
 
 static const thread_elevation_backend_t *thread_elevation_backends[] = {
    &thread_elevation_rthreads,
-#if defined(HAVE_DBUS) && defined(HAVE_THREADS) && defined(__linux__)
+#if defined(RARCH_HAVE_DBUS_RUNTIME) && defined(HAVE_THREADS) && defined(__linux__)
    &thread_elevation_rtkit,
 #endif
    NULL

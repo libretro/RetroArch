@@ -1225,6 +1225,13 @@ ifeq ($(HAVE_THREADS), 1)
           gfx/video_thread_hw.o \
           audio/audio_thread_wrapper.o \
           frontend/thread_elevation.o
+
+   # RealtimeKit over libdbus loaded at run time: no D-Bus headers or
+   # link dependency, just the library where the desktop has it.
+   ifneq ($(findstring Linux,$(OS))$(findstring BSD,$(OS)),)
+      OBJ += gfx/common/dbus_runtime.o \
+             frontend/thread_elevation/rtkit.o
+   endif
    DEFINES += -DHAVE_THREADS
    ifeq ($(findstring Haiku,$(OS)),)
       LIBS += $(THREADS_LIBS)
@@ -1445,7 +1452,6 @@ ifeq ($(HAVE_DBUS), 1)
    LIBS += $(DBUS_LIBS)
    DEF_FLAGS += $(DBUS_CFLAGS)
    OBJ += gfx/common/dbus_common.o
-   OBJ += frontend/thread_elevation/rtkit.o
    OBJ += gfx/common/mutter_displayconfig.o
 endif
 

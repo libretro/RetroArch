@@ -388,7 +388,6 @@ VIDEO CONTEXT
 
 #ifdef HAVE_DBUS
 #include "../gfx/common/dbus_common.c"
-#include "../frontend/thread_elevation/rtkit.c"
 #include "../gfx/common/mutter_displayconfig.c"
 #endif
 
@@ -1471,6 +1470,8 @@ THREAD
 #include "../gfx/video_thread_hw.c"
 #include "../audio/audio_thread_wrapper.c"
 #include "../frontend/thread_elevation.c"
+#include "../gfx/common/dbus_runtime.c"
+#include "../frontend/thread_elevation/rtkit.c"
 #endif
 
 /* needed for playlists, netplay lobbies and achievements */

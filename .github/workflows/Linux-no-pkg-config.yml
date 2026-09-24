@@ -77,6 +77,16 @@ jobs:
           test -f obj-unix/release/gfx/common/wayland_common.o
           test -f obj-unix/release/ui/drivers/ui_qt.o
 
+      - name: The run-time libdbus mirror matches libdbus
+        shell: bash
+        run: |
+          set -eu
+          # gfx/common/dbus_runtime.h mirrors libdbus's public structs and
+          # constants so RetroArch can load it without its headers; the
+          # D-Bus CFLAGS configure found above lead to the real ones.
+          make -C samples/frontend/dbus_runtime check \
+             DBUS_CFLAGS="$(sed -n 's/^DBUS_CFLAGS = //p' config.mk)"
+
       - name: A package forced by name fails when nothing can find it
         shell: bash
         run: |
