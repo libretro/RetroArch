@@ -272,6 +272,72 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable)
 static bool xss_screensaver_inhibit(Display *dpy, bool enable) { return false; }
 #endif
 
+enum xdg_screensaver_de
+{
+   XDG_SCREENSAVER_DE_OTHER = 0,
+   XDG_SCREENSAVER_DE_KDE,
+   XDG_SCREENSAVER_DE_GNOME
+};
+
+/* The desktop xdg-screensaver will pick, read from the environment the
+ * way it reads it: the first XDG_CURRENT_DESKTOP entry it knows, then
+ * the classic session variables. Anything it would settle by asking a
+ * session bus, or an override, reads as OTHER. */
+static enum xdg_screensaver_de xdg_screensaver_desktop(void)
+{
+   static const struct
+   {
+      const char *name;
+      enum xdg_screensaver_de de;
+   } known[] =
+   {
+      { "KDE",           XDG_SCREENSAVER_DE_KDE   },
+      { "GNOME",         XDG_SCREENSAVER_DE_GNOME },
+      { "Cinnamon",      XDG_SCREENSAVER_DE_OTHER },
+      { "X-Cinnamon",    XDG_SCREENSAVER_DE_OTHER },
+      { "ENLIGHTENMENT", XDG_SCREENSAVER_DE_OTHER },
+      { "DEEPIN",        XDG_SCREENSAVER_DE_OTHER },
+      { "Deepin",        XDG_SCREENSAVER_DE_OTHER },
+      { "deepin",        XDG_SCREENSAVER_DE_OTHER },
+      { "DDE",           XDG_SCREENSAVER_DE_OTHER },
+      { "LXDE",          XDG_SCREENSAVER_DE_OTHER },
+      { "LXQt",          XDG_SCREENSAVER_DE_OTHER },
+      { "MATE",          XDG_SCREENSAVER_DE_OTHER },
+      { "XFCE",          XDG_SCREENSAVER_DE_OTHER },
+      { "Budgie",        XDG_SCREENSAVER_DE_OTHER },
+      { "X-Generic",     XDG_SCREENSAVER_DE_OTHER }
+   };
+   const char *env;
+   const char *cur;
+
+   if (     ((env = getenv("XDG_UTILS_OVERRIDE_DE")) && *env)
+         || ((env = getenv("XDG_UTILS_SCREENSAVER_OVERRIDE_DE")) && *env)
+         || access("/run/.toolboxenv", F_OK) == 0)
+      return XDG_SCREENSAVER_DE_OTHER;
+
+   if ((cur = getenv("XDG_CURRENT_DESKTOP")))
+   {
+      while (*cur)
+      {
+         size_t i;
+         size_t _len = strcspn(cur, ":");
+         for (i = 0; i < sizeof(known) / sizeof(known[0]); i++)
+            if (     strlen(known[i].name) == _len
+                  && !strncmp(cur, known[i].name, _len))
+               return known[i].de;
+         cur += _len;
+         if (*cur == ':')
+            cur++;
+      }
+   }
+
+   if ((env = getenv("KDE_FULL_SESSION")) && *env)
+      return XDG_SCREENSAVER_DE_KDE;
+   if ((env = getenv("GNOME_DESKTOP_SESSION_ID")) && *env)
+      return XDG_SCREENSAVER_DE_GNOME;
+   return XDG_SCREENSAVER_DE_OTHER;
+}
+
 /* Probe once for xdg-screensaver and its xset backend dependency.
  * xdg-screensaver's "X11" backend shells out to xset; if xset is missing
  * (common on minimal installs / containers / some WMs without
@@ -280,15 +346,45 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable) { return false; }
  * Check up front so we can silently no-op instead. */
 static bool xdg_screensaver_probe(void)
 {
+   const char *env;
+   int ret;
    /* Both are needed: xdg-screensaver itself, and xset which it execs.
     * `command -v` is a POSIX shell builtin so this works under /bin/sh
     * on every platform that has system(). Redirecting both streams
     * keeps the probe silent. */
-   int ret = system("command -v xdg-screensaver >/dev/null 2>&1 && "
+   ret = system("command -v xdg-screensaver >/dev/null 2>&1 && "
                 "command -v xset >/dev/null 2>&1");
    if (ret == -1 || WEXITSTATUS(ret) != 0)
    {
       RARCH_LOG("[X11] xdg-screensaver or xset not available; screensaver suspension disabled.\n");
+      return false;
+   }
+
+   /* On KDE 4 and later and on GNOME 3, "suspend" hands the inhibit to
+    * a Perl helper that talks D-Bus through Net::DBus and X11::Protocol.
+    * It runs detached, so a missing module fails it on stderr while
+    * xdg-screensaver itself still exits 0. */
+   switch (xdg_screensaver_desktop())
+   {
+      case XDG_SCREENSAVER_DE_KDE:
+         if (!(env = getenv("KDE_SESSION_VERSION")) || !*env)
+            return true;
+         ret = system("perl -MNet::DBus -MX11::Protocol -e 1 "
+                      ">/dev/null 2>&1");
+         break;
+      case XDG_SCREENSAVER_DE_GNOME:
+         /* GNOME 2 is told apart by this tool and has its own backend. */
+         ret = system("command -v gnome-default-applications-properties "
+                      ">/dev/null 2>&1 || "
+                      "perl -MNet::DBus -MX11::Protocol -e 1 "
+                      ">/dev/null 2>&1");
+         break;
+      default:
+         return true;
+   }
+   if (ret == -1 || WEXITSTATUS(ret) != 0)
+   {
+      RARCH_LOG("[X11] xdg-screensaver needs Perl's Net::DBus and X11::Protocol on this desktop; screensaver suspension disabled.\n");
       return false;
    }
    return true;
