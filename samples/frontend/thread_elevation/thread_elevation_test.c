@@ -11,6 +11,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <sched.h>
+#include <pthread.h>
 #include <sys/syscall.h>
 
 #include <boolean.h>
@@ -101,18 +103,32 @@ static enum thread_elevation_result grant_raise(uint64_t tid, unsigned next)
    return grant_answer;
 }
 
-static const thread_elevation_backend_t be_self =
-   { self_raise, "self", false };
-static const thread_elevation_backend_t be_slow =
-   { slow_raise, "slow", true };
-static const thread_elevation_backend_t be_misplaced =
-   { misplaced_raise, "misplaced", false };
-static const thread_elevation_backend_t be_grant =
-   { grant_raise, "grant", true };
+/* Additive: a hint that goes on top of whatever the chain grants. */
+static enum thread_elevation_result hint_answer;
+static enum thread_elevation_result hint_raise(uint64_t tid, unsigned next)
+{
+   record("hint", tid, next);
+   return hint_answer;
+}
 
+static const thread_elevation_backend_t be_self =
+   { self_raise, "self", false, false };
+static const thread_elevation_backend_t be_slow =
+   { slow_raise, "slow", true, false };
+static const thread_elevation_backend_t be_misplaced =
+   { misplaced_raise, "misplaced", false, false };
+static const thread_elevation_backend_t be_grant =
+   { grant_raise, "grant", true, false };
+static const thread_elevation_backend_t be_hint =
+   { hint_raise, "hint", false, true };
+
+/* The additive one last in the list: the runner tries it first anyway */
 const thread_elevation_backend_t *thread_elevation_backends[] = {
-   &be_self, &be_slow, &be_misplaced, &be_grant, NULL
+   &be_self, &be_slow, &be_misplaced, &be_grant, &be_hint, NULL
 };
+
+/* The real EEVDF backend, on whatever kernel this runs on */
+extern const thread_elevation_backend_t thread_elevation_eevdf;
 
 static void reset(void)
 {
@@ -152,66 +168,156 @@ static void check(const char *name, int ok)
    }
 }
 
+struct eevdf_attr
+{
+   uint32_t size, policy;
+   uint64_t flags;
+   int32_t  nice;
+   uint32_t prio;
+   uint64_t runtime, deadline, period;
+};
+
+static int eevdf_result;
+static uint64_t eevdf_runtime;
+static int eevdf_rt_set;
+static uint32_t eevdf_rt_policy;
+static int eevdf_rt_result;
+
+/* Made real time first, where this runner may: the slice must not
+ * touch it. */
+static void eevdf_rt_worker(void *data)
+{
+   struct eevdf_attr a;
+   struct sched_param sp;
+   (void)data;
+   memset(&sp, 0, sizeof(sp));
+   sp.sched_priority = 1;
+   if (pthread_setschedparam(pthread_self(), SCHED_RR, &sp) != 0)
+      return;
+   eevdf_rt_set    = 1;
+   eevdf_rt_result = thread_elevation_eevdf.raise(0, 0);
+   memset(&a, 0, sizeof(a));
+   syscall(SYS_sched_getattr, 0, &a, (unsigned)sizeof(a), 0);
+   eevdf_rt_policy = a.policy;
+}
+static void eevdf_worker(void *data)
+{
+   struct eevdf_attr a;
+   (void)data;
+   eevdf_result = thread_elevation_eevdf.raise(0, 0);
+   memset(&a, 0, sizeof(a));
+   syscall(SYS_sched_getattr, 0, &a, (unsigned)sizeof(a), 0);
+   eevdf_runtime = a.runtime;
+}
+
 int main(void)
 {
    const char *via;
+   const char *added = NULL;
    enum thread_elevation_result r;
    uint64_t me = (uint64_t)syscall(SYS_gettid);
 
    calls_lock       = slock_new();
    misplaced_answer = THREAD_ELEVATION_REFUSED;
+   hint_answer      = THREAD_ELEVATION_REFUSED;
 
    printf("1. the first grant ends the chain\n");
    {
-      static const char *const want[] = { "self" };
+      static const char *const want[] = { "hint", "self" };
       reset(); self_answer = THREAD_ELEVATION_GRANTED;
       via = NULL;
-      r   = thread_elevation_raise_current(&via);
+      r   = thread_elevation_raise_current(&via, &added);
       check("granted", r == THREAD_ELEVATION_GRANTED && !via);
-      expect_calls("nothing after it tried", want, 1);
+      expect_calls("nothing after it tried", want, 2);
    }
 
    printf("2. everything refuses synchronously\n");
    {
-      static const char *const want[] = { "self", "slow", "misplaced", "grant" };
+      static const char *const want[] = { "hint", "self", "slow", "misplaced", "grant" };
       reset(); self_answer = THREAD_ELEVATION_REFUSED;
       slow_goes_async = 0; grant_answer = THREAD_ELEVATION_REFUSED;
-      r = thread_elevation_raise_current(NULL);
+      r = thread_elevation_raise_current(NULL, NULL);
       check("refused", r == THREAD_ELEVATION_REFUSED);
-      expect_calls("every backend, in order", want, 4);
+      expect_calls("every backend, in order", want, 5);
       check("brokered backends got the caller's thread id",
-            calls.tid[1] == me && calls.tid[3] == me);
+            calls.tid[2] == me && calls.tid[4] == me);
       check("each told where the chain resumes",
-            calls.next[1] == 2 && calls.next[3] == 4);
+            calls.next[2] == 2 && calls.next[4] == 4);
    }
 
    printf("3. pending, then refused on its own thread\n");
    {
-      static const char *const want[] = { "self", "slow", "grant" };
+      static const char *const want[] = { "hint", "self", "slow", "grant" };
       reset(); self_answer = THREAD_ELEVATION_REFUSED;
       slow_goes_async = 1; grant_answer = THREAD_ELEVATION_GRANTED;
       misplaced_answer = THREAD_ELEVATION_GRANTED;
       via = NULL;
-      r   = thread_elevation_raise_current(&via);
+      r   = thread_elevation_raise_current(&via, &added);
       check("caller told pending, by name",
             r == THREAD_ELEVATION_PENDING && via && !strcmp(via, "slow"));
       if (slow_thread)
          sthread_join(slow_thread); /* the harness waits; the caller never does */
-      expect_calls("chain carried on, skipping the self-acting one", want, 3);
-      check("for the same thread", calls.tid[2] == me);
+      expect_calls("chain carried on, skipping the self-acting one", want, 4);
+      check("for the same thread", calls.tid[3] == me);
    }
 
    printf("4. pending, refused, nothing left that grants\n");
    {
-      static const char *const want[] = { "self", "slow", "grant" };
+      static const char *const want[] = { "hint", "self", "slow", "grant" };
       reset(); self_answer = THREAD_ELEVATION_REFUSED;
       slow_goes_async = 1; grant_answer = THREAD_ELEVATION_REFUSED;
       misplaced_answer = THREAD_ELEVATION_GRANTED;
-      r = thread_elevation_raise_current(NULL);
+      r = thread_elevation_raise_current(NULL, NULL);
       check("pending", r == THREAD_ELEVATION_PENDING);
       if (slow_thread)
          sthread_join(slow_thread);
-      expect_calls("ran out quietly", want, 3);
+      expect_calls("ran out quietly", want, 4);
+   }
+
+   printf("5. an additive backend goes on top of the chain\n");
+   {
+      static const char *const want[] = { "hint", "self" };
+      reset(); hint_answer = THREAD_ELEVATION_GRANTED;
+      self_answer = THREAD_ELEVATION_GRANTED;
+      added = NULL;
+      r     = thread_elevation_raise_current(&via, &added);
+      check("the chain still granted after it", r == THREAD_ELEVATION_GRANTED);
+      check("and it was reported by name", added && !strcmp(added, "hint"));
+      expect_calls("tried first, and the chain went on", want, 2);
+      reset(); self_answer = THREAD_ELEVATION_REFUSED;
+      slow_goes_async = 1; grant_answer = THREAD_ELEVATION_GRANTED;
+      misplaced_answer = THREAD_ELEVATION_REFUSED;
+      r = thread_elevation_raise_current(NULL, NULL);
+      if (slow_thread)
+         sthread_join(slow_thread);
+      {
+         unsigned k, hints = 0;
+         for (k = 0; k < calls.n; k++)
+            hints += !strcmp(calls.who[k], "hint");
+         check("never reached by a continuation", hints == 1);
+      }
+      hint_answer = THREAD_ELEVATION_REFUSED;
+   }
+
+   printf("6. the EEVDF slice on this kernel\n");
+   {
+      sthread_t *t = sthread_create(eevdf_worker, NULL);
+      sthread_join(t);
+      if (eevdf_result == THREAD_ELEVATION_GRANTED)
+         check("granted: the slice reads back as 100 us", eevdf_runtime == 100000);
+      else
+         check("refused: the thread keeps the slice it had", eevdf_runtime != 100000);
+      printf("        (%s, slice now %llu ns)\n",
+            eevdf_result == THREAD_ELEVATION_GRANTED ? "granted" : "refused",
+            (unsigned long long)eevdf_runtime);
+      t = sthread_create(eevdf_rt_worker, NULL);
+      sthread_join(t);
+      if (eevdf_rt_set)
+         check("a real-time thread is left real time",
+               eevdf_rt_result == THREAD_ELEVATION_REFUSED
+               && eevdf_rt_policy == SCHED_RR);
+      else
+         printf("   --   no real time for this runner; that case is skipped\n");
    }
 
    slock_free(calls_lock);

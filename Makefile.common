@@ -1224,7 +1224,8 @@ ifeq ($(HAVE_THREADS), 1)
           gfx/video_thread_wrapper.o \
           gfx/video_thread_hw.o \
           audio/audio_thread_wrapper.o \
-          frontend/thread_elevation.o
+          frontend/thread_elevation.o \
+          frontend/thread_elevation/eevdf.o
 
    # RealtimeKit and screensaver inhibit over libdbus loaded at run
    # time: no D-Bus headers or link dependency, just the library where

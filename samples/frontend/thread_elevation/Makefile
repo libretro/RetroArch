@@ -14,6 +14,7 @@ SANITIZER ?= $(SAN)
 SOURCES_C := \
 	thread_elevation_test.c \
 	$(CORE_DIR)/frontend/thread_elevation.c \
+	$(CORE_DIR)/frontend/thread_elevation/eevdf.c \
 	$(CORE_DIR)/libretro-common/rthreads/rthreads.c
 
 CFLAGS  += -g -O1 -Wall -Wextra -std=c89 -pedantic -Wno-long-long \

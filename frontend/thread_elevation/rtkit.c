@@ -262,7 +262,8 @@ static enum thread_elevation_result dbus_rtkit_raise(uint64_t tid,
 const thread_elevation_backend_t thread_elevation_rtkit = {
    dbus_rtkit_raise,
    "RealtimeKit",
-   true
+   true,
+   false
 };
 
 #endif

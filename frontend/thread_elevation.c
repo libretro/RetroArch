@@ -51,14 +51,21 @@ static enum thread_elevation_result thread_elevation_rthreads_raise(
 static const thread_elevation_backend_t thread_elevation_rthreads = {
    thread_elevation_rthreads_raise,
    "rthreads",
+   false,
    false
 };
 
 #if defined(RARCH_HAVE_DBUS_RUNTIME) && defined(HAVE_THREADS) && defined(__linux__)
 extern const thread_elevation_backend_t thread_elevation_rtkit;
 #endif
+#if defined(__linux__) && !defined(__ANDROID__) && !defined(_WIN32)
+extern const thread_elevation_backend_t thread_elevation_eevdf;
+#endif
 
 static const thread_elevation_backend_t *thread_elevation_backends[] = {
+#if defined(__linux__) && !defined(__ANDROID__) && !defined(_WIN32)
+   &thread_elevation_eevdf,
+#endif
    &thread_elevation_rthreads,
 #if defined(RARCH_HAVE_DBUS_RUNTIME) && defined(HAVE_THREADS) && defined(__linux__)
    &thread_elevation_rtkit,
@@ -79,17 +86,33 @@ static uint64_t thread_elevation_current_tid(void)
 }
 
 enum thread_elevation_result thread_elevation_raise_current(
-      const char **pending_via)
+      const char **pending_via, const char **added_via)
 {
    unsigned i;
    uint64_t tid   = 0;
    bool have_tid  = false;
+
+   if (added_via)
+      *added_via = NULL;
+
+   /* Additive backends first: each goes on top of whatever the chain
+    * grants, so none of them ends it. */
+   for (i = 0; thread_elevation_backends[i]; i++)
+   {
+      const thread_elevation_backend_t *b = thread_elevation_backends[i];
+      if (     b->additive && !b->brokered
+            && b->raise(0, i + 1) == THREAD_ELEVATION_GRANTED
+            && added_via)
+         *added_via = b->ident;
+   }
 
    for (i = 0; thread_elevation_backends[i]; i++)
    {
       const thread_elevation_backend_t *b = thread_elevation_backends[i];
       enum thread_elevation_result r;
 
+      if (b->additive)
+         continue;
       if (b->brokered && !have_tid)
       {
          tid      = thread_elevation_current_tid();

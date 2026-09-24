@@ -562,7 +562,8 @@ check "android: rthreads (API 19)" "-DHAVE_THREADS -D__ANDROID__ -D__ANDROID_API
 check "no-posix: D-Bus/Mutter/RealtimeKit units" "$HOSTOFF -DHAVE_DYLIB -Itools/platform_stubs/no_posix" \
    gfx/common/dbus_runtime.c gfx/common/dbus_common.c \
    gfx/common/mutter_displayconfig.c \
-   frontend/thread_elevation.c frontend/thread_elevation/rtkit.c
+   frontend/thread_elevation.c frontend/thread_elevation/rtkit.c \
+   frontend/thread_elevation/eevdf.c
 
 check "android: opensl" "-DANDROID -DHAVE_OPENSL -Itools/platform_stubs/android -Wdeclaration-after-statement -Werror=declaration-after-statement" audio/drivers/opensl.c
 

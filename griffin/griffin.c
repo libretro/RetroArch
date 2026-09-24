@@ -1472,6 +1472,7 @@ THREAD
 #include "../gfx/common/dbus_common.c"
 #include "../gfx/common/mutter_displayconfig.c"
 #include "../frontend/thread_elevation/rtkit.c"
+#include "../frontend/thread_elevation/eevdf.c"
 #endif
 #endif
 

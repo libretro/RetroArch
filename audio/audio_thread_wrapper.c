@@ -103,8 +103,9 @@ static void audio_thread_loop(void *data)
    /* Best effort and never fatal: a refusal leaves the default. */
    if (thr->raise_priority)
    {
-      const char *via = NULL;
-      switch (thread_elevation_raise_current(&via))
+      const char *via   = NULL;
+      const char *added = NULL;
+      switch (thread_elevation_raise_current(&via, &added))
       {
          case THREAD_ELEVATION_GRANTED:
             RARCH_LOG("[Audio] Audio thread priority raised.\n");
@@ -117,6 +118,8 @@ static void audio_thread_loop(void *data)
             RARCH_LOG("[Audio] Audio thread priority not raised; the system refused or has no such class.\n");
             break;
       }
+      if (added)
+         RARCH_LOG("[Audio] Audio thread runs on %s.\n", added);
    }
 
    if (thr->prefer_fast_cores)
