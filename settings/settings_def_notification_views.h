@@ -29,9 +29,9 @@ S_UINT_EX(video_time_show, TIME_SHOW,
       DEFAULT_TIME_SHOW, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, TIME_SHOW_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_time_show, NULL, NULL, setting_uint_action_left_with_refresh, setting_uint_action_right_with_refresh, ST_UI_TYPE_UINT_COMBOBOX,
       "Display Time",
       "Display the current time in the preferred format.")
-S_BOOL(video_statistics_show, STATISTICS_SHOW,
+S_BOOL_EX(video_statistics_show, STATISTICS_SHOW,
       "statistics_show",
-      DEFAULT_STATISTICS_SHOW, SD_FLAG_NONE, 0, 0,
+      DEFAULT_STATISTICS_SHOW, SD_FLAG_NONE, 0, 0, setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0,
       "Display Statistics",
       "Display on-screen technical statistics.")
 S_BOOL(video_statistics_hide_in_menu, STATISTICS_HIDE_IN_MENU,
