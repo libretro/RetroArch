@@ -6894,7 +6894,6 @@ enum msg_hash_enums
 #undef S_ACTION_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
-   MENU_LABEL(VIDEO_SCANLINE_SYNC),
    /* GENERATED REGION: video fullscreen group enum rows (see settings/settings_def_video_fullscreen.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS

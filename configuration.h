@@ -280,6 +280,7 @@ typedef struct settings
       unsigned video_swap_interval;
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;
+      unsigned video_scanline_sync_offset;
       unsigned video_viwidth;
       unsigned video_ps2_mode;
       unsigned video_gamma;

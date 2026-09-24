@@ -5751,7 +5751,7 @@ static runloop_pace_facts_t runloop_pace_gather(settings_t *settings,
          && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
          && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_WROTE))  f |= PACE_FACT_AUDIO_HOLDING;
    if (settings->bools.video_scanline_sync)                f |= PACE_FACT_SCANLINE_SYNC;
-   if (video_st->scanline[SCANLINE_NEXT])                  f |= PACE_FACT_SCANLINE_LOCKED;
+   if (video_st->scanline[SCANLINE_TARGET])                f |= PACE_FACT_SCANLINE_LOCKED;
    if (settings->bools.audio_rate_control)                 f |= PACE_FACT_RATE_CONTROL;
    if (video_context_driver_presentable())                 f |= PACE_FACT_PRESENTABLE;
    if (runloop_st->frame_limit_minimum_time)               f |= PACE_FACT_FRAME_LIMIT;

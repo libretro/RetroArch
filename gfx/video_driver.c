@@ -6849,10 +6849,12 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
 
       if (video_info->scanline_sync)
          __len = video_driver_stat_appendf(video_st->stat_text, __len,
-               " Scanline:   %5d\n"
-               " -Total/Hold:%5d/%d\n",
-               video_st->scanline[SCANLINE_NEXT],
+               " Scanline:    %4u\n"
+               " -Total:      %4u\n"
+               " -Offset/Hold:%u/%u\n",
+               video_st->scanline[SCANLINE_TARGET],
                video_st->scanline[SCANLINE_TOTAL],
+               video_st->scanline[SCANLINE_OFFSET],
                video_st->scanline[SCANLINE_HOLD]);
 
       /* Which sources held the loop on the last frame, with the
@@ -8378,8 +8380,7 @@ void video_driver_scanline_init(void)
    video_st->scanline[SCANLINE_ACTIVE] = VIDEO_SCALE_H(dims);
    video_st->scanline[SCANLINE_TOTAL]  = video_driver_scanline_get_total(
          VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
-   video_st->scanline[SCANLINE_NEXT]   = 0;
-   video_st->scanline[SCANLINE_PREV]   = 0;
+   video_st->scanline[SCANLINE_TARGET] = 0;
    video_st->scanline[SCANLINE_HOLD]   = 0;
 }
 
@@ -8394,12 +8395,11 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   int16_t scanline_next;
-   int16_t scanline_prev;
+   int16_t scanline_target;
    uint16_t scanline_hold;
-   uint16_t video_height;
+   uint16_t scanline_active;
+   uint16_t scanline_total;
    uint16_t scanline_blank;
-   uint8_t scanline_margin = 2;
 
    /* Output lines are read on first use when Scanline Sync was
     * switched on after the driver came up, so nothing is fetched
@@ -8413,68 +8413,77 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
          video_st->scanline[SCANLINE_HOLD] = 60;
    }
 
-   scanline_next  = video_st->scanline[SCANLINE_NEXT];
-   scanline_prev  = video_st->scanline[SCANLINE_PREV];
-   scanline_hold  = video_st->scanline[SCANLINE_HOLD];
-   video_height   = video_st->scanline[SCANLINE_ACTIVE];
-   scanline_blank = (video_st->scanline[SCANLINE_TOTAL] >= video_height)
-         ? video_st->scanline[SCANLINE_TOTAL] - video_height : 0;
+   scanline_target = video_st->scanline[SCANLINE_TARGET];
+   scanline_hold   = video_st->scanline[SCANLINE_HOLD];
+   scanline_active = video_st->scanline[SCANLINE_ACTIVE];
+   scanline_total  = video_st->scanline[SCANLINE_TOTAL];
+   scanline_blank  = (video_st->scanline[SCANLINE_TOTAL] >= scanline_active)
+         ? video_st->scanline[SCANLINE_TOTAL] - scanline_active : 0;
 
    /* Allow change */
-   if (!scanline_hold && video_height)
+   if (!scanline_hold && scanline_active)
    {
-      int16_t corelines = (video_height + scanline_blank) * ((double)core_run_time / (double)frame_time_target);
-      int16_t scanline_next_real = scanline_next = video_height - corelines - scanline_blank - scanline_margin;
+      int16_t corelines       = scanline_total * ((double)core_run_time / (double)frame_time_target);
+      int16_t scanline_prev   = scanline_target;
+      int16_t scanline_offset = config_get_ptr()->uints.video_scanline_sync_offset;
 
-      /* Use the longer frame from current and previous
-       * in order to balance half frame rate material */
-      if (scanline_prev > scanline_blank * 2 && scanline_prev < scanline_next)
-         scanline_next = scanline_prev;
+      if (!scanline_offset)
+      {
+         scanline_offset = (VIDEO_SCALE_W(frame_cache_dims) + VIDEO_SCALE_H(frame_cache_dims)) / ((double)frame_time_target / 1000);
 
-      /* And flip the estimated next scanline as previous if usable */
-      scanline_prev = (scanline_next_real > 0) ? scanline_next_real : 0;
+         if (scanline_offset < scanline_blank || (video_driver_is_hw_context() && scanline_offset > scanline_blank))
+            scanline_offset = scanline_blank;
+      }
+
+      video_st->scanline[SCANLINE_OFFSET] = scanline_offset;
+
+      scanline_target = scanline_active - corelines - scanline_offset;
+
+      /* Average balancing */
+      if (scanline_target > 0)
+         scanline_target = (scanline_target + scanline_prev) / 2;
 
       /* Avoid targeting blanking period by a safe margin,
        * because wait will fail and fall to the next frame */
-      if (scanline_next > video_height - scanline_margin)
-         scanline_next = video_height - scanline_margin;
+      if (scanline_target > scanline_active - 1)
+         scanline_target = scanline_active - 1;
 
       /* Negative waiting means sync must be disabled,
        * and hold it accordingly to delay reactivation */
-      if (scanline_next <= 0)
+      if (scanline_target <= 0)
       {
-         if (scanline_next < -(video_height / 10))
+         if (scanline_target < -(scanline_active / 10))
          {
             scanline_hold += 1;
-            scanline_hold += -((double)video_height / (double)scanline_next * 2);
+            scanline_hold += -((double)scanline_active / (double)scanline_target * 2);
          }
-         scanline_next = 0;
+         scanline_target = 0;
       }
    }
    else if (scanline_hold)
       scanline_hold--;
 
-   video_st->scanline[SCANLINE_NEXT] = scanline_next;
-   video_st->scanline[SCANLINE_PREV] = scanline_prev;
-   video_st->scanline[SCANLINE_HOLD] = scanline_hold;
+   video_st->scanline[SCANLINE_TARGET] = scanline_target;
+   video_st->scanline[SCANLINE_HOLD]   = scanline_hold;
 }
 
 VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_t *video_st,
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-   uint16_t scanline_next  = video_st->scanline[SCANLINE_NEXT];
-   uint16_t scanline_total = video_st->scanline[SCANLINE_TOTAL];
-   uint16_t video_height   = video_st->scanline[SCANLINE_ACTIVE];
-   int16_t scanline_count  = 0;
-   int16_t scanline        = 0;
-   bool wait               = (scanline_next) ? true : false;
+   retro_time_t deadline;
+   uint16_t scanline_target = video_st->scanline[SCANLINE_TARGET];
+   uint16_t scanline_active = video_st->scanline[SCANLINE_ACTIVE];
+   int16_t scanline_last    = -1;
+   int16_t scanline         = 0;
+   uint8_t wraps            = 0;
+   bool wait                = (scanline_target) ? true : false;
 
    /* Invalid target skips wait */
-   if (     !scanline_next
-         || scanline_next >= video_height
-         || !video_height
-         || !frame_time_target)
+   if (     !frame_time_target
+         || !scanline_target
+         || !scanline_active
+         || scanline_target >= scanline_active)
       return;
 
    /* Use CPU friendlier sleep as much as possible with a safe headroom,
@@ -8489,21 +8498,36 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
       retro_sleep(sleep);
    }
 
+   /* Lockup prevention */
+   deadline = cpu_features_get_time_usec() + frame_time_target;
+
    while (wait)
    {
       scanline = video_driver_scanline_get();
 
-      /* Disable if unsupported and prevent lockup if loop exceeds total lines */
-      scanline_count++;
-      if (scanline < 0 || scanline_count > scanline_total)
+      /* Disable if unsupported */
+      if (scanline < 0)
       {
          scanline = 0;
          break;
       }
 
-      if (scanline >= scanline_next)
+      /* Never wait for a missed target */
+      if (scanline >= scanline_target)
+      {
          wait = false;
+         break;
+      }
+
+      /* The beam wrapped: it went back above the target */
+      if (scanline < scanline_last && ++wraps > 1)
+         break;
+      scanline_last = scanline;
+
+      if (cpu_features_get_time_usec() >= deadline)
+         break;
    }
 
-   video_st->scanline[SCANLINE_NEXT]  = scanline;
+   /* Store effective scanline for averaging */
+   video_st->scanline[SCANLINE_TARGET] = scanline;
 }
