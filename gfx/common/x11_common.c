@@ -48,9 +48,7 @@
 #include <retro_atomic.h>
 #include <compat/strl.h>
 
-#ifdef HAVE_DBUS
 #include "dbus_common.h"
-#endif
 
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
@@ -251,12 +249,9 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable)
      * file-scope g_x11_dpy here stays at its initial NULL --
      * it's only assigned in the xvideo / GL / X11-direct init
      * paths.  libX11's XQueryExtension() then SEGVs at a tiny
-     * offset off the NULL display pointer.  Most desktop builds
-     * never hit this because HAVE_DBUS is on and
-     * dbus_suspend_screensaver() short-circuits before this
-     * line; surfaced by the ASan+UBSan CI workflow's headless
-     * SDL2 smoke (b9777c8 + d967813), where dbus-1 isn't
-     * apt-installed but libXss is. */
+     * offset off the NULL display pointer.  Surfaced by the
+     * ASan+UBSan CI workflow's headless SDL2 smoke (b9777c8 +
+     * d967813), where dbus-1 isn't apt-installed but libXss is. */
     if (!dpy)
        return false;
     if (       !XScreenSaverQueryExtension(dpy, &dummy, &dummy)
@@ -456,33 +451,58 @@ static void xdg_screensaver_inhibit(Window wnd)
    }
 }
 
+/* xdg-screensaver, the last resort: its suspend lasts as long as the
+ * window, so it is only started when nothing else holds the
+ * screensaver. */
+static void x11_xdg_screensaver_fallback(Window wnd)
+{
+   static bool probed = false;
+   if (!xdg_screensaver_available)
+      return;
+   if (!probed)
+   {
+      xdg_screensaver_available = xdg_screensaver_probe();
+      probed = true;
+   }
+   if (xdg_screensaver_available)
+      xdg_screensaver_inhibit(wnd);
+}
+
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+/* Set while the D-Bus worker has not yet said whether it inhibited the
+ * screensaver and nothing else holds it; x11_check_window() then starts
+ * the xdg-screensaver fallback once D-Bus is known to have failed. */
+static bool g_x11_xdg_deferred = false;
+#endif
+
 bool x11_suspend_screensaver(void *data, bool enable)
 {
    Window wnd;
+   bool dbus_asked = false;
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
    wnd = video_driver_window_get();
-#ifdef HAVE_DBUS
-    if (dbus_suspend_screensaver(enable))
-       return true;
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+   /* D-Bus answers on its own worker; XScreenSaver is a request on this
+    * thread's display, so it is asked alongside rather than after. */
+   dbus_asked         = dbus_suspend_screensaver(enable);
+   g_x11_xdg_deferred = false;
 #endif
-    if (!xss_screensaver_inhibit(g_x11_dpy, enable) && enable)
-    {
-       if (xdg_screensaver_available)
-       {
-          static bool probed = false;
-          if (!probed)
-          {
-             xdg_screensaver_available = xdg_screensaver_probe();
-             probed = true;
-          }
-          if (!xdg_screensaver_available)
-             return true;
-          xdg_screensaver_inhibit(wnd);
-          return xdg_screensaver_available;
-       }
-    }
-    return true;
+   if (!xss_screensaver_inhibit(g_x11_dpy, enable) && enable)
+   {
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+      if (dbus_asked)
+      {
+         if (dbus_screensaver_state() == DBUS_SCREENSAVER_FAILED)
+            x11_xdg_screensaver_fallback(wnd);
+         else if (dbus_screensaver_state() == DBUS_SCREENSAVER_PENDING)
+            g_x11_xdg_deferred = true;
+         return true;
+      }
+#endif
+      x11_xdg_screensaver_fallback(wnd);
+   }
+   return true;
 }
 
 #ifdef HAVE_XF86VM
@@ -939,6 +959,18 @@ void x11_check_window(void *data, bool *quit,
    bool *resize, unsigned *dims)
 {
    unsigned new_dims  = *dims;
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+   if (g_x11_xdg_deferred)
+   {
+      enum dbus_screensaver_state st = dbus_screensaver_state();
+      if (st != DBUS_SCREENSAVER_PENDING)
+      {
+         g_x11_xdg_deferred = false;
+         if (st == DBUS_SCREENSAVER_FAILED)
+            x11_xdg_screensaver_fallback(video_driver_window_get());
+      }
+   }
+#endif
    x11_get_video_size(data, &new_dims);
 
    if (new_dims != *dims)
@@ -1015,7 +1047,7 @@ bool x11_connect(void)
       if (!(g_x11_dpy = XOpenDisplay(NULL)))
          return false;
 
-#ifdef HAVE_DBUS
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
    dbus_ensure_connection();
 #endif
 
@@ -1097,9 +1129,9 @@ void x11_window_destroy(bool fullscreen)
    retro_atomic_store_relaxed_int(&g_x11_size, 0);
    retro_atomic_store_relaxed_int(&g_x11_focused, 0);
 
-#ifdef HAVE_DBUS
-    dbus_screensaver_uninhibit();
-    dbus_close_connection();
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+   g_x11_xdg_deferred = false;
+   dbus_close_connection();
 #endif
 }
 

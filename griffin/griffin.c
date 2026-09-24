@@ -387,7 +387,6 @@ VIDEO CONTEXT
 #include "../gfx/display_servers/dispserv_x11.c"
 
 #ifdef HAVE_DBUS
-#include "../gfx/common/dbus_common.c"
 #include "../gfx/common/mutter_displayconfig.c"
 #endif
 
@@ -1471,6 +1470,7 @@ THREAD
 #include "../audio/audio_thread_wrapper.c"
 #include "../frontend/thread_elevation.c"
 #include "../gfx/common/dbus_runtime.c"
+#include "../gfx/common/dbus_common.c"
 #include "../frontend/thread_elevation/rtkit.c"
 #endif
 
