@@ -728,15 +728,42 @@ bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
    return true;
 }
 
+#ifndef EGL_PRESENT_OPAQUE_EXT
+#define EGL_PRESENT_OPAQUE_EXT 0x31DF
+#endif
+
+/* Set by a context whose config has alpha it does not mean as
+ * transparency: the next window surface is presented opaque. */
+static bool egl_surface_opaque = false;
+
+void egl_set_surface_opaque(bool opaque)
+{
+   egl_surface_opaque = opaque;
+}
+
+static bool egl_display_has_extension(EGLDisplay dpy, const char *ext)
+{
+   const char *exts = _egl_query_string(dpy, EGL_EXTENSIONS);
+   return exts && strstr(exts, ext);
+}
+
 bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
 {
    EGLint window_attribs[] = {
 	   EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
+	   EGL_NONE, EGL_NONE,
 	   EGL_NONE,
    };
 
    if (!egl_destroy_surface(egl))
       return false;
+
+   if (     egl_surface_opaque
+         && egl_display_has_extension(egl->dpy, "EGL_EXT_present_opaque"))
+   {
+      window_attribs[2] = EGL_PRESENT_OPAQUE_EXT;
+      window_attribs[3] = EGL_TRUE;
+   }
 
    egl->surf = _egl_create_window_surface(egl->dpy, egl->config, (NativeWindowType)native_window, window_attribs);
 
@@ -797,7 +824,12 @@ bool egl_choose_scrgb_config(egl_ctx_data_t *egl, bool apply)
    if (!egl || !egl->dpy)
       return false;
    exts = _egl_query_string(egl->dpy, EGL_EXTENSIONS);
-   if (!exts || !strstr(exts, "EGL_EXT_pixel_format_float"))
+   /* An RGBA16F surface carries alpha a compositor blends by; without a
+    * way to present it opaque, what the frame leaves undrawn shows
+    * whatever is behind the window. */
+   if (     !exts
+         || !strstr(exts, "EGL_EXT_pixel_format_float")
+         || !strstr(exts, "EGL_EXT_present_opaque"))
       return false;
    if (     !_egl_choose_config(egl->dpy, attribs, &config, 1, &n)
          || n < 1)

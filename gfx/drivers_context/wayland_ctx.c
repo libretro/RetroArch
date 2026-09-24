@@ -503,6 +503,8 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
       goto error;
    }
 
+   /* The FP16 scRGB config has alpha the frame does not fill */
+   egl_set_surface_opaque(!!(wl->color.flags & WL_COLOR_FP16));
    if (!egl_create_surface(&wl->egl, (void*)wl->win))
       goto error;
    egl_set_swap_interval(&wl->egl, wl->egl.interval);
@@ -759,6 +761,7 @@ static bool gfx_ctx_wl_create_surface(void *data)
 {
 #ifdef HAVE_EGL
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   egl_set_surface_opaque(!!(wl->color.flags & WL_COLOR_FP16));
    return egl_create_surface(&wl->egl, (void*)wl->win);
 #else
    return false;

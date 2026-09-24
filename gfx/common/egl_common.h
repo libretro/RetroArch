@@ -151,6 +151,11 @@ void *egl_gpu_device_at(int index);
  * display the device cannot make falls back to the default. */
 void egl_set_display_device(void *device);
 
+/* The next window surface is presented opaque (EGL_EXT_present_opaque)
+ * where the display supports it: for a config with alpha the frame
+ * does not mean as transparency. */
+void egl_set_surface_opaque(bool opaque);
+
 RETRO_END_DECLS
 
 #endif
