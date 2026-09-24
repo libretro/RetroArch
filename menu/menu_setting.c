@@ -1161,14 +1161,8 @@ static size_t setting_get_string_representation_int_gpu_index(
    size_t _len = 0;
    if (setting)
    {
-      enum gfx_ctx_api api     = video_context_driver_get_api();
-      struct string_list *list = video_driver_get_gpu_api_devices(api);
+      struct string_list *list = video_driver_get_gpu_api_devices(video_context_driver_get_api());
       int index                = *setting->value.target.integer;
-#ifdef HAVE_EGL
-      /* GL keeps an index of its own; the entry is bound to Vulkan's */
-      if (api == GFX_CTX_OPENGL_API || api == GFX_CTX_OPENGL_ES_API)
-         index = config_get_ptr()->ints.gl_gpu_index;
-#endif
       _len = snprintf(s, len, "%d", index);
       if (      list
             && (index >= 0)
@@ -11880,6 +11874,13 @@ static const setting_desc_t vid_desc_7[] = {
 };
 #endif
 
+#ifdef HAVE_EGL
+static const setting_desc_t vid_desc_gl_gpu[] = {
+/* GENERATED: rows come from settings_def_gpu_index_egl_gl.h in order. */
+#include "../settings/settings_def_gpu_index_egl_gl.h"
+};
+#endif
+
 #ifdef WIIU
 static const setting_desc_t vid_desc_8[] = {
 /* GENERATED: rows come from settings_def_video_wiiu_drc.h in order. */
@@ -14721,6 +14722,15 @@ static void settings_build_video(
          if (string_is_equal(video_driver_get_ident(), "metal"))
          {
             ADD_DESC(vid_desc_7);
+         }
+#endif
+
+#ifdef HAVE_EGL
+         if (     string_is_equal(video_driver_get_ident(), "gl")
+               || string_is_equal(video_driver_get_ident(), "glcore")
+               || string_is_equal(video_driver_get_ident(), "gl1"))
+         {
+            ADD_DESC(vid_desc_gl_gpu);
          }
 #endif
 
@@ -18163,6 +18173,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
 #ifdef HAVE_METAL
    { vid_desc_7, (uint16_t)ARRAY_SIZE(vid_desc_7) },
+#endif
+#ifdef HAVE_EGL
+   { vid_desc_gl_gpu, (uint16_t)ARRAY_SIZE(vid_desc_gl_gpu) },
 #endif
 #ifdef WIIU
    { vid_desc_8, (uint16_t)ARRAY_SIZE(vid_desc_8) },
