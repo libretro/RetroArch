@@ -645,6 +645,13 @@ check_gates "gates: no networking"   "$UIDEFS $(without -DHAVE_NETWORKING)"     
 check_gates "gates: no run-ahead"    "$UIDEFS $(without -DHAVE_RUNAHEAD)"           $FETU
 check_gates "gates: no subsystems"   "$UIDEFS"                                      $FETU
 
+# Each video API owns a GPU index setting and its default, under that
+# API's own gate, and a build has any mix of APIs: a default defined
+# under another API's gate builds only where both are on. Each API that
+# a Linux build can have alone is checked alone.
+check_gates "gates: GPU index, EGL only"    "$UIDEFS -DHAVE_EGL -DHAVE_OPENGL" configuration.c
+check_gates "gates: GPU index, Vulkan only" "$UIDEFS -DHAVE_VULKAN"            configuration.c
+
 # A subsystem's own unit is built only when its gate is on, so each is
 # checked with that gate on and the user interface off: the achievement
 # and netplay widgets, and the menu entries either drives, are the edges
