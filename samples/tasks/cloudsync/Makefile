@@ -1,12 +1,16 @@
-# Regression test for the save-file ownership predicate cloud sync
-# consults before it replaces or removes a local file, and for the
-# manifest key lookup its carry-forward depends on.
+# Regression tests for cloud sync:
+#  - cloudsync_savefile_owner_test: the save-file ownership predicate
+#    cloud sync consults before it replaces or removes a local file, and
+#    the manifest key lookup its carry-forward depends on.
+#  - cloudsync_path_safety_test: the manifest-key path-traversal guard
+#    (tasks/task_cloudsync_path.c, #included by the test).
 #
 #   make check
 #   make check SANITIZER=address
 #   make check SANITIZER=undefined
 
 TARGET            := cloudsync_savefile_owner_test
+PATH_TARGET       := cloudsync_path_safety_test
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
@@ -31,6 +35,8 @@ SOURCES := \
 
 OBJS := $(SOURCES:.c=.o)
 
+PATH_OBJS := cloudsync_path_safety_test.o
+
 CFLAGS += -Wall -pedantic -std=gnu99 -g -O1 -fno-omit-frame-pointer \
           -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR)
 
@@ -39,7 +45,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGET) $(PATH_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -47,10 +53,14 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-check: $(TARGET)
+$(PATH_TARGET): $(PATH_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+check: $(TARGET) $(PATH_TARGET)
 	./$(TARGET)
+	./$(PATH_TARGET)
 
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(OBJS) $(PATH_TARGET) $(PATH_OBJS)
 
 .PHONY: all check clean

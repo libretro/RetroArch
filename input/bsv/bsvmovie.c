@@ -1410,8 +1410,25 @@ bool replay_set_serialized_data(void *buf)
       if (ident == handle->identifier) /* is compatible? */
       {
          int32_t loaded_len    = swap_if_big32(((int32_t *)buffer)[0]);
-         int64_t handle_idx    = intfstream_tell(handle->file);
-         bool same_timeline    = replay_check_same_timeline(handle, (uint8_t *)header, loaded_len);
+         int64_t handle_idx;
+         bool same_timeline;
+
+         /* loaded_len is the byte length of the entire embedded replay
+          * (header + body) as recorded by replay_get_serialized_data.
+          * A malicious save state can declare a negative length (which
+          * casts to huge size_t in the downstream intfstream_write)
+          * or a length smaller than the replay header itself. Refuse
+          * before any seek/write picks it up. */
+         if (loaded_len < (int32_t)REPLAY_HEADER_LEN_BYTES)
+         {
+            RARCH_ERR("[Replay] Refusing malformed replay state "
+                  "(loaded_len=%d, must be >= %d)\n",
+                  (int)loaded_len, (int)REPLAY_HEADER_LEN_BYTES);
+            return false;
+         }
+
+         handle_idx            = intfstream_tell(handle->file);
+         same_timeline         = replay_check_same_timeline(handle, (uint8_t *)header, loaded_len);
          /* If the state is part of this replay, go back to that state
             and fast forward/rewind the replay.
 
