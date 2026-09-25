@@ -11863,29 +11863,29 @@ static const setting_desc_t vid_desc_3[] = {
 
 #ifdef HAVE_D3D10
 static const setting_desc_t vid_desc_4[] = {
-/* GENERATED: rows come from settings_def_gpu_index_d3d11.h in order. */
-#include "../settings/settings_def_gpu_index_d3d11.h"
+/* GENERATED: rows come from settings_def_gpu_index_d3d10.h in order. */
+#include "../settings/settings_def_gpu_index_d3d10.h"
 };
 #endif
 
 #ifdef HAVE_D3D11
 static const setting_desc_t vid_desc_5[] = {
-/* GENERATED: rows come from settings_def_gpu_index_d3d12.h in order. */
-#include "../settings/settings_def_gpu_index_d3d12.h"
+/* GENERATED: rows come from settings_def_gpu_index_d3d11.h in order. */
+#include "../settings/settings_def_gpu_index_d3d11.h"
 };
 #endif
 
 #ifdef HAVE_D3D12
 static const setting_desc_t vid_desc_6[] = {
-/* GENERATED: rows come from settings_def_gpu_index_gl.h in order. */
-#include "../settings/settings_def_gpu_index_gl.h"
+/* GENERATED: rows come from settings_def_gpu_index_d3d12.h in order. */
+#include "../settings/settings_def_gpu_index_d3d12.h"
 };
 #endif
 
 #ifdef HAVE_METAL
 static const setting_desc_t vid_desc_7[] = {
-/* GENERATED: rows come from settings_def_gpu_index_vulkan.h in order. */
-#include "../settings/settings_def_gpu_index_vulkan.h"
+/* GENERATED: rows come from settings_def_gpu_index_metal.h in order. */
+#include "../settings/settings_def_gpu_index_metal.h"
 };
 #endif
 

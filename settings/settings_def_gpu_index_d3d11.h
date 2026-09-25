@@ -1,4 +1,4 @@
-/* Single-source definitions: Direct3D 11 GPU index setting.
+/* Single-source definitions: Direct3D 12 GPU index setting.
  * Grammar identical to settings_def_video_sync.h plus S_FLOAT and
  * the _NS no-sublabel variants; the descriptor argument span
  * matches SDESC_<kind>_ROW; row order is menu display order;
@@ -6,7 +6,7 @@
 
 /* Row referencing VIDEO_GPU_INDEX; strings owned by another def file. */
 #if !defined(SETTINGS_DEF_STRINGS_PASS) && !defined(SETTINGS_DEF_CONFIG_PASS) && !defined(SETTINGS_DEF_ENUM_PASS)
-SDESC_INT_ROW_EX(d3d10_gpu_index, VIDEO_GPU_INDEX,
+SDESC_INT_ROW_EX(d3d11_gpu_index, VIDEO_GPU_INDEX,
                      0,
                      SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0,
                      0, 15, 1, 0,
