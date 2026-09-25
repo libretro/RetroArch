@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <protocol name="wlr_output_management_unstable_v1">
+
+  <!-- The enum attributes qualified with another interface's name
+       (wl_output.transform, zwlr_output_head_v1.adaptive_sync_state)
+       are left out of this copy: wayland-scanner resolves such a
+       reference only against the protocol it is given, so an older
+       scanner fails on them. They annotate an argument's meaning and
+       no generated C differs without them; the arguments keep the
+       types the protocol gives them. -->
   <copyright>
     Copyright © 2019 Purism SPC
 
@@ -243,7 +251,7 @@
         This event describes the transformation currently applied to the head.
         It is only sent if the output is enabled.
       </description>
-      <arg name="transform" type="int" enum="wl_output.transform"/>
+      <arg name="transform" type="int"/>
     </event>
 
     <event name="scale">
@@ -588,7 +596,7 @@
       <description summary="set the transform">
         This request sets the head's transform.
       </description>
-      <arg name="transform" type="int" enum="wl_output.transform"/>
+      <arg name="transform" type="int"/>
     </request>
 
     <request name="set_scale">
@@ -605,7 +613,7 @@
         This request enables/disables adaptive sync. Adaptive sync is also
         known as Variable Refresh Rate or VRR.
       </description>
-      <arg name="state" type="uint" enum="zwlr_output_head_v1.adaptive_sync_state"/>
+      <arg name="state" type="uint"/>
     </request>
   </interface>
 </protocol>
