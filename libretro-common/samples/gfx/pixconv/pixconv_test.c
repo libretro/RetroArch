@@ -125,6 +125,133 @@ static void test_16_to_24(const char *name, conv_fn fn,
    }
 }
 
+static void test_16_to_16(const char *name, conv_fn fn,
+      const uint16_t *in, uint16_t *out, uint32_t (*ref)(uint32_t))
+{
+   unsigned i;
+   memset(out, 0x5a, NPIX * sizeof(*out));
+   fn(out, in, ROW_W, ROWS, ROW_W * 2, ROW_W * 2);
+   for (i = 0; i < NPIX; i++)
+      check(name, i, out[i], ref(in[i]));
+}
+
+static uint32_t ref_565_1555(uint32_t c)
+{
+   return ((c >> 1) & 0x7fe0) | (c & 0x1f);
+}
+
+static uint32_t ref_1555_565(uint32_t c)
+{
+   return ((c << 1) & 0xffc0) | (c & 0x1f) | ((c >> 4) & 0x20);
+}
+
+/* 8-bit sources: pseudo-random bytes, so every byte lane sees every
+ * value many times over. */
+static void fill_random(uint8_t *buf, size_t len, uint32_t seed)
+{
+   size_t i;
+   for (i = 0; i < len; i++)
+   {
+      seed   = seed * 1664525u + 1013904223u;
+      buf[i] = (uint8_t)(seed >> 24);
+   }
+}
+
+static void test_bgr24_sources(uint8_t *in24, uint32_t *out32,
+      uint16_t *out16)
+{
+   unsigned i;
+   fill_random(in24, NPIX * 3, 0xc0ffee11u);
+
+   memset(out32, 0x5a, NPIX * sizeof(*out32));
+   conv_bgr24_argb8888(out32, in24, ROW_W, ROWS, ROW_W * 4, ROW_W * 3);
+   for (i = 0; i < NPIX; i++)
+   {
+      const uint8_t *p = in24 + i * 3;
+      check("conv_bgr24_argb8888", i, out32[i], 0xff000000u
+            | ((uint32_t)p[2] << 16) | ((uint32_t)p[1] << 8) | p[0]);
+   }
+
+   memset(out16, 0x5a, NPIX * sizeof(*out16));
+   conv_bgr24_rgb565(out16, in24, ROW_W, ROWS, ROW_W * 2, ROW_W * 3);
+   for (i = 0; i < NPIX; i++)
+   {
+      const uint8_t *p = in24 + i * 3;
+      check("conv_bgr24_rgb565", i, out16[i],
+            ((uint32_t)(p[2] & 0xf8) << 8) | ((uint32_t)(p[1] & 0xfc) << 3)
+            | (p[0] >> 3));
+   }
+}
+
+static void test_32_sources(uint32_t *in32, uint8_t *out24,
+      uint32_t *out32)
+{
+   unsigned i;
+   fill_random((uint8_t*)in32, NPIX * 4, 0x5eed1234u);
+
+   memset(out24, 0x5a, NPIX * 3);
+   conv_argb8888_bgr24(out24, in32, ROW_W, ROWS, ROW_W * 3, ROW_W * 4);
+   for (i = 0; i < NPIX; i++)
+   {
+      const uint8_t *p = out24 + i * 3;
+      check("conv_argb8888_bgr24", i, (uint32_t)p[0]
+            | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16),
+            in32[i] & 0x00ffffffu);
+   }
+
+   memset(out24, 0x5a, NPIX * 3);
+   conv_abgr8888_bgr24(out24, in32, ROW_W, ROWS, ROW_W * 3, ROW_W * 4);
+   for (i = 0; i < NPIX; i++)
+   {
+      const uint8_t *p = out24 + i * 3;
+      uint32_t c       = in32[i];
+      check("conv_abgr8888_bgr24", i, (uint32_t)p[0]
+            | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16),
+            ((c >> 16) & 0xff) | (c & 0xff00) | ((c & 0xff) << 16));
+   }
+
+   memset(out32, 0x5a, NPIX * sizeof(*out32));
+   conv_argb8888_abgr8888(out32, in32, ROW_W, ROWS, ROW_W * 4, ROW_W * 4);
+   for (i = 0; i < NPIX; i++)
+   {
+      uint32_t c = in32[i];
+      check("conv_argb8888_abgr8888", i, out32[i],
+            (c & 0xff00ff00u) | ((c >> 16) & 0xff) | ((c & 0xff) << 16));
+   }
+}
+
+static int clamp8(int v)
+{
+   return v < 0 ? 0 : (v > 255 ? 255 : v);
+}
+
+/* YUYV pairs need an even width; the stride stays at the odd row
+ * width so rows still start at every alignment. */
+static void test_yuyv(uint8_t *in, uint32_t *out)
+{
+   unsigned x, y;
+   const unsigned w = ROW_W - 1;
+   fill_random(in, NPIX * 2, 0x0badf00du);
+   memset(out, 0x5a, NPIX * sizeof(*out));
+   conv_yuyv_argb8888(out, in, (int)w, ROWS, ROW_W * 4, ROW_W * 2);
+   for (y = 0; y < ROWS; y++)
+   {
+      for (x = 0; x < w; x++)
+      {
+         const uint8_t *s = in + y * ROW_W * 2 + (x & ~1u) * 2;
+         int yy           = s[(x & 1) ? 2 : 0];
+         int u            = s[1] - 128;
+         int v            = s[3] - 128;
+         int r            = clamp8((64 * yy + 90 * v + 32) >> 6);
+         int g            = clamp8((64 * yy - 22 * u - 46 * v + 32) >> 6);
+         int b            = clamp8((64 * yy + 113 * u + 32) >> 6);
+         check("conv_yuyv_argb8888", y * ROW_W + x, out[y * ROW_W + x],
+               0xff000000u | ((uint32_t)r << 16) | ((uint32_t)g << 8)
+               | (uint32_t)b);
+      }
+   }
+}
+
 static void test_rgba4444_rgb565(const uint16_t *in, uint16_t *out)
 {
    unsigned i;
@@ -182,8 +309,9 @@ int main(void)
    uint32_t *in32  = (uint32_t*)malloc(NPIX * sizeof(uint32_t));
    uint32_t *out32 = (uint32_t*)malloc(NPIX * sizeof(uint32_t));
    uint8_t  *out24 = (uint8_t*)malloc(NPIX * 3);
+   uint8_t  *out24_src = (uint8_t*)malloc(NPIX * 3);
 
-   if (!in16 || !out16 || !in32 || !out32 || !out24)
+   if (!in16 || !out16 || !in32 || !out32 || !out24 || !out24_src)
    {
       printf("FAIL: out of memory\n");
       return 1;
@@ -203,6 +331,8 @@ int main(void)
    test_16_to_24("conv_rgb565_bgr24", conv_rgb565_bgr24,
          in16, out24, ref_565_rgb);
    test_rgba4444_rgb565(in16, out16);
+   test_16_to_16("conv_rgb565_0rgb1555", conv_rgb565_0rgb1555,
+         in16, out16, ref_565_1555);
 
    /* The 0RGB1555 converters take the top bit as padding. */
    for (i = 0; i < NPIX; i++)
@@ -211,14 +341,20 @@ int main(void)
          in16, out32, ref_1555_rgb, 0xff000000u);
    test_16_to_24("conv_0rgb1555_bgr24", conv_0rgb1555_bgr24,
          in16, out24, ref_1555_rgb);
+   test_16_to_16("conv_0rgb1555_rgb565", conv_0rgb1555_rgb565,
+         in16, out16, ref_1555_565);
 
    test_32_to_16(in32, out16);
+   test_32_sources(in32, out24, out32);
+   test_bgr24_sources(out24_src, out32, out16);
+   test_yuyv(out24_src, out32);
 
    free(in16);
    free(out16);
    free(in32);
    free(out32);
    free(out24);
+   free(out24_src);
 
    if (failures)
    {

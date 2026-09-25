@@ -57,6 +57,8 @@ void conv_rgb565_0rgb1555(void *output_, const void *input_,
    int max_width           = width - 7;
    const __m128i hi_mask   = _mm_set1_epi16(0x7fe0);
    const __m128i lo_mask   = _mm_set1_epi16(0x1f);
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+   int max_width           = width - 7;
 #endif
 
    for (h = 0; h < height;
@@ -67,9 +69,17 @@ void conv_rgb565_0rgb1555(void *output_, const void *input_,
       for (; w < max_width; w += 8)
       {
          const __m128i in = _mm_loadu_si128((const __m128i*)(input + w));
-         __m128i hi = _mm_and_si128(_mm_slli_epi16(in, 1), hi_mask);
+         __m128i hi = _mm_and_si128(_mm_srli_epi16(in, 1), hi_mask);
          __m128i lo = _mm_and_si128(in, lo_mask);
          _mm_storeu_si128((__m128i*)(output + w), _mm_or_si128(hi, lo));
+      }
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w < max_width; w += 8)
+      {
+         uint16x8_t in = vld1q_u16(input + w);
+         /* Low five bits from the input, the rest shifted down one. */
+         vst1q_u16(output + w,
+               vbslq_u16(vdupq_n_u16(0x1f), in, vshrq_n_u16(in, 1)));
       }
 #endif
 
@@ -98,6 +108,8 @@ void conv_0rgb1555_rgb565(void *output_, const void *input_,
          (int16_t)((0x1f << 11) | (0x1f << 6)));
    const __m128i lo_mask   = _mm_set1_epi16(0x1f);
    const __m128i glow_mask = _mm_set1_epi16(1 << 5);
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+   int max_width           = width - 7;
 #endif
 
    for (h = 0; h < height;
@@ -113,6 +125,15 @@ void conv_0rgb1555_rgb565(void *output_, const void *input_,
          __m128i glow = _mm_and_si128(_mm_srli_epi16(in, 4), glow_mask);
          _mm_storeu_si128((__m128i*)(output + w),
                _mm_or_si128(rg, _mm_or_si128(b, glow)));
+      }
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w < max_width; w += 8)
+      {
+         uint16x8_t in   = vld1q_u16(input + w);
+         uint16x8_t rg   = vandq_u16(vshlq_n_u16(in, 1), vdupq_n_u16(0xffc0));
+         uint16x8_t b    = vandq_u16(in, vdupq_n_u16(0x001f));
+         uint16x8_t glow = vandq_u16(vshrq_n_u16(in, 4), vdupq_n_u16(0x0020));
+         vst1q_u16(output + w, vorrq_u16(rg, vorrq_u16(b, glow)));
       }
 #endif
 
@@ -555,7 +576,18 @@ void conv_rgba4444_rgb565(void *output_, const void *input_,
    for (h = 0; h < height;
          h++, output += out_stride >> 1, input += in_stride >> 1)
    {
-      for (w = 0; w < width; w++)
+      w = 0;
+#if (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w + 8 <= width; w += 8)
+      {
+         uint16x8_t in = vld1q_u16(input + w);
+         uint16x8_t r  = vandq_u16(in, vdupq_n_u16(0xf000));
+         uint16x8_t g  = vandq_u16(vshrq_n_u16(in, 1), vdupq_n_u16(0x0780));
+         uint16x8_t b  = vandq_u16(vshrq_n_u16(in, 3), vdupq_n_u16(0x001e));
+         vst1q_u16(output + w, vorrq_u16(r, vorrq_u16(g, b)));
+      }
+#endif
+      for (; w < width; w++)
       {
          uint32_t col = input[w];
          output[w]    = (uint16_t)((col & 0xf000)
@@ -812,7 +844,20 @@ void conv_bgr24_argb8888(void *output_, const void *input_,
          h++, output += out_stride >> 2, input += in_stride)
    {
       const uint8_t *inp = input;
-      for (w = 0; w < width; w++)
+      w = 0;
+#if (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w + 8 <= width; w += 8, inp += 24)
+      {
+         uint8x8x3_t in = vld3_u8(inp);
+         uint8x8x4_t res;
+         res.val[0] = in.val[0];
+         res.val[1] = in.val[1];
+         res.val[2] = in.val[2];
+         res.val[3] = vdup_n_u8(0xffu);
+         vst4_u8((uint8_t*)(output + w), res);
+      }
+#endif
+      for (; w < width; w++)
       {
          uint32_t b = *inp++;
          uint32_t g = *inp++;
@@ -833,7 +878,18 @@ void conv_bgr24_rgb565(void *output_, const void *input_,
          h++, output += out_stride >> 1, input += in_stride)
    {
       const uint8_t *inp = input;
-      for (w = 0; w < width; w++)
+      w = 0;
+#if (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w + 8 <= width; w += 8, inp += 24)
+      {
+         uint8x8x3_t in = vld3_u8(inp);
+         uint16x8_t  r  = vshll_n_u8(vand_u8(in.val[2], vdup_n_u8(0xf8)), 8);
+         uint16x8_t  g  = vshll_n_u8(vand_u8(in.val[1], vdup_n_u8(0xfc)), 3);
+         uint16x8_t  b  = vmovl_u8(vshr_n_u8(in.val[0], 3));
+         vst1q_u16(output + w, vorrq_u16(r, vorrq_u16(g, b)));
+      }
+#endif
+      for (; w < width; w++)
       {
          uint16_t b = *inp++;
          uint16_t g = *inp++;
@@ -855,7 +911,18 @@ void conv_argb8888_0rgb1555(void *output_, const void *input_,
    for (h = 0; h < height;
          h++, output += out_stride >> 1, input += in_stride >> 2)
    {
-      for (w = 0; w < width; w++)
+      w = 0;
+#if (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w + 8 <= width; w += 8)
+      {
+         uint8x8x4_t in = vld4_u8((const uint8_t*)(input + w));
+         uint16x8_t  r  = vshll_n_u8(vand_u8(in.val[2], vdup_n_u8(0xf8)), 7);
+         uint16x8_t  g  = vshll_n_u8(vand_u8(in.val[1], vdup_n_u8(0xf8)), 2);
+         uint16x8_t  b  = vmovl_u8(vshr_n_u8(in.val[0], 3));
+         vst1q_u16(output + w, vorrq_u16(r, vorrq_u16(g, b)));
+      }
+#endif
+      for (; w < width; w++)
       {
          uint32_t col = input[w];
          output[w]    = (uint16_t)(((col >> 9) & 0x7c00)
@@ -874,6 +941,8 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
 
 #if defined(__SSE2__)
    int max_width = width - 15;
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+   int max_width = width - 7;
 #endif
 
    for (h = 0; h < height;
@@ -889,6 +958,16 @@ void conv_argb8888_bgr24(void *output_, const void *input_,
          __m128i l2 = _mm_loadu_si128((const __m128i*)(input + w +  8));
          __m128i l3 = _mm_loadu_si128((const __m128i*)(input + w + 12));
          store_bgr24_sse2(out, l0, l1, l2, l3);
+      }
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w < max_width; w += 8, out += 24)
+      {
+         uint8x8x4_t in = vld4_u8((const uint8_t*)(input + w));
+         uint8x8x3_t res;
+         res.val[0] = in.val[0];
+         res.val[1] = in.val[1];
+         res.val[2] = in.val[2];
+         vst3_u8(out, res);
       }
 #endif
 
@@ -927,6 +1006,8 @@ void conv_abgr8888_bgr24(void *output_, const void *input_,
 
 #if defined(__SSE2__)
    int max_width = width - 15;
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+   int max_width = width - 7;
 #endif
 
    for (h = 0; h < height;
@@ -946,6 +1027,16 @@ void conv_abgr8888_bgr24(void *output_, const void *input_,
          c = conv_shuffle_rb_epi32(c);
          d = conv_shuffle_rb_epi32(d);
          store_bgr24_sse2(out, a, b, c, d);
+      }
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w < max_width; w += 8, out += 24)
+      {
+         uint8x8x4_t in = vld4_u8((const uint8_t*)(input + w));
+         uint8x8x3_t res;
+         res.val[0] = in.val[2];
+         res.val[1] = in.val[1];
+         res.val[2] = in.val[0];
+         vst3_u8(out, res);
       }
 #endif
 
@@ -1139,6 +1230,50 @@ void conv_yuyv_argb8888(void *output_, const void *input_,
          _mm_storeu_si128((__m128i*)(dst +  4), res1);
          _mm_storeu_si128((__m128i*)(dst +  8), res2);
          _mm_storeu_si128((__m128i*)(dst + 12), res3);
+      }
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      /* Same 16-bit fixed point as the scalar path: every term fits
+       * in int16, the shift is arithmetic and vqmovun_s16 does the
+       * clamp to 0..255. */
+      for (; w + 16 <= width; w += 16, src += 32, dst += 16)
+      {
+         uint8x8x4_t yuyv = vld4_u8(src); /* Y0 U Y1 V, eight pairs */
+         int16x8_t   y0   = vreinterpretq_s16_u16(
+               vshll_n_u8(yuyv.val[0], YUV_SHIFT));
+         int16x8_t   y1   = vreinterpretq_s16_u16(
+               vshll_n_u8(yuyv.val[2], YUV_SHIFT));
+         int16x8_t   u    = vsubq_s16(vreinterpretq_s16_u16(
+                  vmovl_u8(yuyv.val[1])), vdupq_n_s16(128));
+         int16x8_t   v    = vsubq_s16(vreinterpretq_s16_u16(
+                  vmovl_u8(yuyv.val[3])), vdupq_n_s16(128));
+         int16x8_t   rc   = vmlaq_n_s16(vdupq_n_s16(YUV_OFFSET),
+               v, YUV_MAT_V_R);
+         int16x8_t   gc   = vmlaq_n_s16(vmlaq_n_s16(
+                  vdupq_n_s16(YUV_OFFSET), u, YUV_MAT_U_G), v, YUV_MAT_V_G);
+         int16x8_t   bc   = vmlaq_n_s16(vdupq_n_s16(YUV_OFFSET),
+               u, YUV_MAT_U_B);
+         uint8x8x2_t r, g, b;
+         uint8x8x4_t res;
+
+         r = vzip_u8(
+               vqmovun_s16(vshrq_n_s16(vaddq_s16(y0, rc), YUV_SHIFT)),
+               vqmovun_s16(vshrq_n_s16(vaddq_s16(y1, rc), YUV_SHIFT)));
+         g = vzip_u8(
+               vqmovun_s16(vshrq_n_s16(vaddq_s16(y0, gc), YUV_SHIFT)),
+               vqmovun_s16(vshrq_n_s16(vaddq_s16(y1, gc), YUV_SHIFT)));
+         b = vzip_u8(
+               vqmovun_s16(vshrq_n_s16(vaddq_s16(y0, bc), YUV_SHIFT)),
+               vqmovun_s16(vshrq_n_s16(vaddq_s16(y1, bc), YUV_SHIFT)));
+
+         res.val[3] = vdup_n_u8(0xffu);
+         res.val[0] = b.val[0];
+         res.val[1] = g.val[0];
+         res.val[2] = r.val[0];
+         vst4_u8((uint8_t*)(dst + 0), res);
+         res.val[0] = b.val[1];
+         res.val[1] = g.val[1];
+         res.val[2] = r.val[1];
+         vst4_u8((uint8_t*)(dst + 8), res);
       }
 #endif
 
