@@ -443,9 +443,26 @@ static void vga_set_texture_frame(void *data,
             }
          }
       }
-      /* FIXME: rgb32 path does not populate vga_menu_frame - leaves
-       * stale/uninitialized content for the renderer.  Separate pre-
-       * existing bug, not fixed here. */
+      else
+      {
+         const uint32_t *video_frame = (const uint32_t*)frame;
+
+         for (y = 0; y < VGA_HEIGHT; y++)
+         {
+            for (x = 0; x < VGA_WIDTH; x++)
+            {
+               /* scale incoming frame to fit the screen */
+               unsigned scaled_x    = (VIDEO_SCALE_W(dims) * x) / VGA_WIDTH;
+               unsigned scaled_y    = (VIDEO_SCALE_H(dims) * y) / VGA_HEIGHT;
+               uint32_t pixel       = video_frame[VIDEO_SCALE_W(dims) * scaled_y + scaled_x];
+               /* ARGB8888 to BGR332, as the core frame path does */
+               unsigned r           = ((pixel & 0xFF0000) >> 21);
+               unsigned g           = ((pixel & 0x00FF00) >> 13);
+               unsigned b           = ((pixel & 0x0000FF) >> 6);
+               vga->vga_menu_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
+            }
+         }
+      }
 
       vga->vga_menu_width  = VIDEO_SCALE_W(dims);
       vga->vga_menu_height = VIDEO_SCALE_H(dims);
