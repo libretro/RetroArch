@@ -986,6 +986,13 @@ static bool video_thread_handle_packet(
          video_thread_reply(thr, &pkt);
          break;
 
+      case CMD_POKE_SET_VIEW_COUNT:
+         if (thr->driver_data && thr->poke && thr->poke->set_view_count)
+            thr->poke->set_view_count(thr->driver_data,
+                  (unsigned)pkt.data.i);
+         video_thread_reply(thr, &pkt);
+         break;
+
       case CMD_FONT_INIT:
          if (pkt.data.font_init.method)
             pkt.data.font_init.return_value = pkt.data.font_init.method(
@@ -1449,6 +1456,16 @@ bool video_thread_texture_can_update(void)
       return false;
    thr = (thread_video_t*)video_st->data;
    return thr && thr->poke && thr->poke->update_texture;
+}
+
+bool video_thread_is_video_thread(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   if (!video_st->thread_wrapper_active)
+      return false;
+   thr = (thread_video_t*)video_st->data;
+   return thr && video_thread_is_self(thr);
 }
 
 void video_thread_async_poll(void)
@@ -2870,6 +2887,21 @@ static VIDEO_NOINLINE void video_thread_ring_publish(thread_video_t *thr)
    retro_eventcount_notify(&thr->work);
 }
 
+/* The rows of a frame this wide that fit a slot, and in *stride the
+ * row size they are kept at. A frame the worker filters travels in the
+ * core's format, filter_bpp bytes a pixel. */
+static unsigned video_thread_slot_rows(const thread_video_t *thr,
+      unsigned width, unsigned filter_bpp, unsigned *stride)
+{
+   unsigned s = width *
+      (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+   if (filter_bpp)
+      s = width * filter_bpp;
+   if (stride)
+      *stride = s;
+   return s ? (unsigned)(thr->frame.buffer_size / s) : 0;
+}
+
 static bool video_thread_frame(void *data, const void *frame_,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
@@ -2885,9 +2917,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    bool spare_in       = false;
    bool waited         = false;
    size_t lent_off     = 0;
-#ifdef HAVE_VIDEO_FILTER
    unsigned filter_bpp = 0;
-#endif
    unsigned convert;
    retro_time_t now;
    /* Handoff statistics, in cycles, only while the overlay shows them */
@@ -2928,6 +2958,12 @@ static bool video_thread_frame(void *data, const void *frame_,
 
       if (thr->driver_data && thr->driver && thr->driver->frame)
       {
+         /* Cropped as a ring frame is, so a frame drawn again from
+          * here, as a screenshot's is, draws as it was shown. */
+         unsigned rows = video_thread_slot_rows(thr, width, filter_bpp,
+               NULL);
+         if (frame_ != RETRO_HW_FRAME_BUFFER_VALID && height > rows)
+            dims = VIDEO_SCALE_PACK(width, rows);
          if (convert)
             video_thread_convert(thr, convert, &frame_, dims, &pitch);
 #ifdef HAVE_VIDEO_FILTER
@@ -3111,26 +3147,18 @@ static bool video_thread_frame(void *data, const void *frame_,
    {
       const uint8_t *src   = (const uint8_t*)frame_;
       uint8_t       *dst   = thr->frame.slot[slot].buffer;
-      unsigned copy_stride = width *
-         (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+      unsigned copy_stride;
       /* The slot holds the maximum geometry the core declared at init.
        * A core is free to hand over a bigger frame than that, so publish
        * only the rows that fit: the worker renders slot height rows out
        * of this same buffer, so an unclamped height would be read past
        * the end of the allocation whether or not anything was copied
-       * into it. A stride too wide for a single row yields zero. */
-      unsigned rows;
+       * into it. A stride too wide for a single row yields zero. A
+       * hardware frame stays in the core's image and keeps its size. */
+      unsigned rows        = video_thread_slot_rows(thr, width,
+            filter_bpp, &copy_stride);
 
-#ifdef HAVE_VIDEO_FILTER
-      /* A frame the worker filters travels in the core's format */
-      if (filter_bpp)
-         copy_stride       = width * filter_bpp;
-#endif
-      rows                 = copy_stride
-         ? (unsigned)(thr->frame.buffer_size / copy_stride)
-         : 0;
-
-      if (height > rows)
+      if (hw_slot < 0 && height > rows)
       {
          if (!thr->clamp_logged)
          {
@@ -3964,6 +3992,22 @@ static void thread_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
    }
 }
 
+static void thread_set_view_count(void *data, unsigned count)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (thr)
+   {
+      thread_packet_t pkt;
+      pkt.type   = CMD_POKE_SET_VIEW_COUNT;
+      pkt.data.i = (int)count;
+
+      /* Waits: the driver parses its shader preset here, which reads
+       * settings the main thread must not be writing meanwhile. */
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   }
+}
+
 static void thread_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned dims, float alpha)
 {
@@ -4326,7 +4370,11 @@ static const video_poke_interface_t thread_poke = {
    NULL, /* hw_ring_context_new */
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
-   thread_update_texture
+   thread_update_texture,
+   NULL, /* get_swap_interval_cap */
+   NULL, /* texture_lend */
+   NULL, /* texture_lend_ready */
+   thread_set_view_count
 };
 
 /* Video thread, for video_thread_get_poke_interface(): installs the

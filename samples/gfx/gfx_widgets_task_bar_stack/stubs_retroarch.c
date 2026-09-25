@@ -302,3 +302,12 @@ bool gfx_surface_wants_rgba(void)
 {
    return false;
 }
+
+/* No frame here carries a core's views, so widgets lay out at the
+ * output size. */
+unsigned video_views_ui_dims(const video_views_layout_t *layout,
+      unsigned dims)
+{
+   (void)layout;
+   return dims;
+}

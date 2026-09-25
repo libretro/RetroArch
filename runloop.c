@@ -4224,6 +4224,17 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_SET_VIDEO_VIEWS:
+         if (!video_driver_set_views((const struct retro_video_views*)data))
+            return false;
+         break;
+
+      case RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS:
+         if (!data)
+            return false;
+         *(unsigned*)data = video_driver_views_status();
+         break;
+
       case RETRO_ENVIRONMENT_GET_JIT_CAPABLE:
          {
 #if TARGET_OS_IPHONE
@@ -5347,6 +5358,7 @@ void runloop_event_deinit_core(void)
    }
 
    video_driver_cached_frame_retire();
+   video_driver_clear_views();
 
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
@@ -7751,7 +7763,8 @@ static enum runloop_state_enum runloop_check_state(
 #endif
 
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
-   output_dims = video_driver_get_output_dims();
+   /* Per-eye UI lays out at one eye's size. */
+   output_dims = video_driver_get_ui_dims();
 
    gfx_animation_update(
          current_time,
@@ -7863,6 +7876,13 @@ static enum runloop_state_enum runloop_check_state(
       }
 
       /* Iterate the menu driver for one frame. */
+
+      /* A paused core asks for the views status only when it runs, so a
+       * change (Stereo Mode, a headset) may show or hide its options. */
+      if (     video_driver_views_status_changed()
+            && retroarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL))
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                         | MENU_ST_FLAG_PREVENT_POPULATE;
 
 #ifdef HAVE_CONFIGFILE
       /* If a configuration file load was requested on the previous

@@ -381,7 +381,12 @@ enum display_flags
    /* The window can go between windowed and borderless fullscreen where
     * it stands, through set_video_mode, with the driver seeing only a
     * resize: a fullscreen toggle need not restart the drivers. */
-   GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE
+   GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE,
+   /* Set by a video driver that presents a core's view map
+    * (RETRO_ENVIRONMENT_SET_VIDEO_VIEWS) itself. */
+   GFX_CTX_FLAGS_VIDEO_VIEWS,
+   /* Set while such a driver draws a frame that has a map whole. */
+   GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK
 };
 
 enum shader_uniform_type

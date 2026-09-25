@@ -2876,9 +2876,14 @@ void gfx_widgets_worker_step(void *data,
 {
    video_frame_info_t *video_info = (video_frame_info_t*)data;
    dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+   unsigned widget_dims;
 
    if (!p_dispwidget->worker)
       return;
+
+   /* Per-eye UI lays out at one eye's size. */
+   widget_dims = video_views_ui_dims(&video_info->views_layout,
+         video_info->dims);
 
    gfx_widgets_state_lock();
    /* The panels' text, carried with the frame */
@@ -2892,12 +2897,12 @@ void gfx_widgets_worker_step(void *data,
     * on the video thread under the threaded wrapper. */
    gfx_animation_update_widgets(cpu_features_get_time_usec(),
          video_info->menu_ticker_speed,
-         video_info->dims);
+         widget_dims);
    /* What the frame carried, not the settings the main thread writes:
     * this runs on the video thread under the threaded wrapper. */
    p_dispwidget->frame_menu_st_flags = (uint16_t)video_info->menu_st_flags;
    gfx_widgets_iterate_frame(
-         video_info->dims, video_info->fullscreen,
+         widget_dims, video_info->fullscreen,
          video_info->widget_dir_assets,
          (char*)video_info->widget_path_font,
          true);
