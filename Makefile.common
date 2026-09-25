@@ -332,6 +332,7 @@ OBJ += \
        led/led_driver.o \
        gfx/video_driver.o \
        gfx/common/video_mode_select.o \
+       gfx/video_views.o \
        gfx/gfx_display.o \
        gfx/gfx_animation.o \
        gfx/gfx_instrument.o \
