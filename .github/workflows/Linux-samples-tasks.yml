@@ -230,6 +230,32 @@ jobs:
           timeout 60 ./bsv_replay_bounds_test
           echo "[pass] bsv_replay_bounds_test"
 
+      - name: Build and run bsv_replay_init_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/bsv_replay_init
+        run: |
+          set -eu
+          # Regression oracle for replay start-up and shutdown in
+          # tasks/task_movie.c and input/bsv/bsvmovie.c (#19622).
+          # Links the shipping units against a stub core and the real
+          # task queue / intfstream / VFS, in the iOS configuration
+          # (RZSTD on, STATESTREAM off).  Pre-fix a replay truncated
+          # inside its first checkpoint, or halted before its first
+          # frame, left BSV_FLAG_MOVIE_END set with no handle: the
+          # runloop then paused after every frame, for every content,
+          # until the process was restarted.  Also covers halting a
+          # recording before its first frame leaving the session stuck
+          # "recording".  If runloop.c changes its per-frame replay
+          # protocol, frame() in the test must follow.
+          make clean all
+          test -x bsv_replay_init_test
+          timeout 120 ./bsv_replay_init_test
+          echo "[pass] bsv_replay_init_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./bsv_replay_init_test
+          echo "[pass] bsv_replay_init_test (ASan + UBSan)"
+
       - name: Build and run bps_patch_bounds_test (ASan)
         shell: bash
         working-directory: samples/tasks/bps_patch

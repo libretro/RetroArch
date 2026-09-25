@@ -332,6 +332,15 @@ bool bsv_movie_reset_playback(bsv_movie_t *handle)
       if (!bsv_movie_load_checkpoint(handle, compression, encoding, REPLAY_CPBEHAVIOR_DESERIALIZE))
          return false;
    }
+   /* A recording halted before its first frame is a header and a
+    * checkpoint with no frame after it.  That is what the recorder
+    * writes, so it is a valid replay of zero frames, not a short
+    * read: leave the checkpoint pending (the first frame restores it
+    * and then hits the end of the file, which ends playback the way
+    * every replay ends) instead of failing here with MOVIE_END raised
+    * for a handle that will never be installed. */
+   if (intfstream_tell(handle->file) >= intfstream_get_size(handle->file))
+      return true;
    return bsv_movie_read_next_events(handle, REPLAY_CPBEHAVIOR_DESERIALIZE, true);
 }
 

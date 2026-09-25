@@ -443,6 +443,16 @@ bool movie_stop_record(input_driver_state_t *input_st)
    bsv_movie_t *movie = input_st->bsv_movie_state_handle;
    uint32_t frame_count;
    const char *_msg = msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED);
+   /* The record task installs the handle as next_handle; the run loop
+    * promotes it on the next frame (bsv_movie_dequeue_next).  Halted
+    * before a frame has run - from the menu with the core paused, say
+    * - it is still pending, and stopping through the promoted handle
+    * alone returned false with the RECORDING flag and the pending
+    * handle both left in place: the session was stuck "recording" and
+    * every later Record/Play Replay refused.  A pending recording is
+    * a recording of zero frames; finish it like any other. */
+   if (!movie)
+      movie = input_st->bsv_movie_state_next_handle;
    if (!movie)
       return false;
    runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, true, NULL,
