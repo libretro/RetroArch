@@ -3628,7 +3628,6 @@ static const struct
    char s_eec252b5[125];
    char s_f4e4e921[255];
    char s_7968f59d[39];
-   char s_8cee3615[223];
    char s_58c80718[336];
    char s_894ecb9a[441];
    char s_67d549fd[36];
@@ -8812,9 +8811,6 @@ static const struct
    "ich auf eine nicht ganzzahlige Skalierung zur\303\274ck, wenn die Unterskalierungsr\303\244nder "
    "zu gro\303\237 sind.",
    "Videoskalierungseinstellungen \303\244ndern.",
-   "Die Videopr\303\244sentation mit der auf der Kernzeit basierenden Vorhersage der Scanline-Positi"
-   "on sychronisieren. Voraussetzungen: VSync deaktiviert, Frame Delay deaktiviert und Bildwiederhol"
-   "frequenz nahe dem 1-fachen Kern-FPS.",
    "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
    "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
    "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
@@ -9558,7 +9554,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (210637u
+      (sizeof(msg_hash_de_blob) == (210414u
 #ifdef ANDROID
        + 358u
 #endif
@@ -13586,7 +13582,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,

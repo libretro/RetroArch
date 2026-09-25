@@ -1172,7 +1172,9 @@ static const struct
    char s_8d3a8b68[6];
    char s_68d27147[12];
    char s_f02f73fc[43];
+   char s_b5721b90[32];
    char s_e5b971a0[7];
+   char s_8f27c71e[21];
    char s_17615fcf[4];
    char s_3a0a3fef[21];
    char s_1b6ed818[22];
@@ -5716,7 +5718,9 @@ static const struct
    "Men\303\272",
    "Mode Quiosc",
    "Limita la velocitat de fotogrames al men\303\272",
+   "Mostra les extensions de fitxer",
    "Sempre",
+   "Nom\303\251s els duplicats",
    "Mai",
    "Navegador de fitxers",
    "Color blau de la font",
@@ -9771,7 +9775,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (217744u
+      (sizeof(msg_hash_ca_blob) == (217797u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11350,7 +11354,9 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,

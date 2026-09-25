@@ -3720,7 +3720,6 @@ static const struct
    char s_eec252b5[109];
    char s_f4e4e921[243];
    char s_7968f59d[43];
-   char s_8cee3615[292];
    char s_58c80718[411];
    char s_894ecb9a[425];
    char s_67d549fd[40];
@@ -9140,10 +9139,6 @@ static const struct
    "te\302\273 reduce la escala cuando la imagen est\303\251 demasiado recortada, y en caso de que l"
    "os m\303\241rgenes sean demasiado grandes, desactiva el escalado por n\303\272meros enteros.",
    "Cambia los ajustes del escalado de v\303\255deo.",
-   "Sincroniza la presentaci\303\263n de la imagen con la predicci\303\263n de la posici\303\263n de"
-   " las l\303\255neas de barrido seg\303\272n los tiempos del n\303\272cleo. Es necesario desactiva"
-   "r la sincron\303\255a vertical y el retraso de fotogramas, as\303\255 como tener una frecuencia "
-   "de imagen cercana al 100\302\240% de los FPS del n\303\272cleo.",
    "ADVERTENCIA: los parpadeos r\303\241pidos pueden provocar persistencia de la imagen (\302\253im"
    "\303\241genes fantasma\302\273) en algunas pantallas. Utiliza esta opci\303\263n bajo tu propia "
    "responsabilidad. // Simula de forma b\303\241sica el escalonamiento de las l\303\255neas de barr"
@@ -9916,7 +9911,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (228309u
+      (sizeof(msg_hash_es_blob) == (228017u
 #ifdef ANDROID
        + 329u
 #endif
@@ -14034,7 +14029,6 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,

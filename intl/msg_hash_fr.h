@@ -3714,7 +3714,7 @@ static const struct
    char s_eec252b5[155];
    char s_f4e4e921[212];
    char s_7968f59d[53];
-   char s_8cee3615[262];
+   char s_8cee3615[310];
    char s_58c80718[347];
    char s_894ecb9a[400];
    char s_67d549fd[41];
@@ -9272,8 +9272,8 @@ static const struct
    "Modifier les r\303\251glages de mise \303\240 l'\303\251chelle vid\303\251o.",
    "Synchroniser l'affichage vid\303\251o avec la pr\303\251diction de la position de la ligne de ba"
    "layage bas\303\251e sur le temps du c\305\223ur. Pr\303\251requis : V-Sync d\303\251sactiv\303"
-   "\251, Retard d'images d\303\251sactiv\303\251 et fr\303\251quence d'affichage proche de 1x le no"
-   "mbre d'images par seconde du c\305\223ur.",
+   "\251, Retard d'images d\303\251sactiv\303\251, fr\303\251quence d'affichage proche de 1x le nomb"
+   "re d'images par seconde du c\305\223ur et processeur graphique aux fr\303\251quences maximales.",
    "AVERTISSEMENT : Un scintillement rapide peut causer une persistance de l'image sur certains \303"
    "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Simule une ligne de balaya"
    "ge roulante basique au cours de plusieurs sous-images en divisant l'\303\251cran verticalement e"
@@ -10073,7 +10073,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (236595u
+      (sizeof(msg_hash_fr_blob) == (236643u
 #ifdef ANDROID
        + 373u
 #endif
