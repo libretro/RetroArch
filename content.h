@@ -45,6 +45,11 @@ bool content_load_state_from_ram(void);
 /* Save a state to memory. */
 bool content_save_state_to_ram(void);
 
+/* Move a fully written temporary file over @path. Returns false if
+ * it could not be put in place; the temporary file is then kept if
+ * @path no longer exists, so the data is not lost. */
+bool content_replace_file(const char *tmp_path, const char *path);
+
 /* Save a ram state from memory to disk. */
 bool content_ram_state_to_file(const char *path);
 
