@@ -525,7 +525,8 @@ found_field:
 #endif
     for (i = 0; i < CRT_INPUT_SIZE; i++) {
         int nn = noise;
-        rn = (214019 * rn + 140327895);
+        /* The LCG wraps by design; in unsigned it does so defined. */
+        rn = (int)(214019u * (unsigned)rn + 140327895u);
         /* signal + noise */
         s = v->analog[i] + (((((rn >> 16) & 0xff) - 0x7f) * nn) >> 8);
         if (s >  127) { s =  127; }
@@ -705,13 +706,13 @@ vsync_found:
 
 #if (CRT_CC_SAMPLES == 4)
         for (i = L; i < R; i++) {
-            out[i].y = eqf(&eqY, sig[i] + bright) << 4;
+            out[i].y = eqf(&eqY, sig[i] + bright) * 16; /* may be negative */
             out[i].i = eqf(&eqI, sig[i] * wave[(i + 0) & 3] >> 9) >> 3;
             out[i].q = eqf(&eqQ, sig[i] * wave[(i + 3) & 3] >> 9) >> 3;
         }
 #else
         for (i = L; i < R; i++) {
-            out[i].y = eqf(&eqY, sig[i] + bright) << 4;
+            out[i].y = eqf(&eqY, sig[i] + bright) * 16; /* may be negative */
             out[i].i = eqf(&eqI, sig[i] * waveI[i % CRT_CC_SAMPLES] >> 9) >> 3;
             out[i].q = eqf(&eqQ, sig[i] * waveQ[i % CRT_CC_SAMPLES] >> 9) >> 3;
         }
@@ -1148,7 +1149,7 @@ crt_modulate(struct CRT *v, struct NTSC_SETTINGS *s)
     }
     for (n = 0; n < CRT_CC_VPER; n++) {
         for (x = 0; x < CRT_CC_SAMPLES; x++) {
-            v->ccf[n][x] = iccf[x] << 7;
+            v->ccf[n][x] = iccf[x] * 128; /* may be negative */
         }
     }
 }
@@ -1326,7 +1327,9 @@ static void *ntsc_crt_create(const struct softfilter_config *config,
     filt->in_fmt  = in_fmt;
 
     /* Allocate CRT output buffer: RGB (3 bpp) */
-    out_buf = (unsigned char*)malloc(max_width * max_height * 3);
+    /* Cleared: crt_demodulate does not write every pixel of it, and
+     * whatever it leaves is copied to the screen. */
+    out_buf = (unsigned char*)calloc(max_width * max_height, 3);
     if (!out_buf) { free(filt->workers); free(filt); return NULL; }
 
     filt->out_buf   = out_buf;
@@ -1434,6 +1437,7 @@ static void ntsc_crt_work_cb(void *data, void *thread_data)
         unsigned char *new_buf = (unsigned char*)realloc(filt->out_buf,
                                                           width * height * 3);
         if (!new_buf) return;
+        memset(new_buf, 0, width * height * 3);
         filt->out_buf   = new_buf;
         filt->out_buf_w = width;
         filt->out_buf_h = height;
