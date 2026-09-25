@@ -22,6 +22,8 @@
 #include <stdint.h>
 #include <dlfcn.h>
 #include <pthread.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "softfilter.h"
 #include <libretro_dspfilter.h>
@@ -421,17 +423,231 @@ static void test_audio(const char *path, void *lib)
             impl->process_i16 ? ", int16" : "");
 }
 
+/* --bench: per-frame time of every video filter at one worker and at
+ * N, with the workers kept alive across frames and woken once a frame,
+ * as RetroArch's dispatcher does, so the numbers include the wake and
+ * join a frame costs.  Not run by 'check'. */
+#define BENCH_W       256
+#define BENCH_H       224
+#define BENCH_WARMUP  20
+#define BENCH_FRAMES  200
+
+struct bench_pool
+{
+   pthread_mutex_t lock;
+   pthread_cond_t  go_cond, done_cond;
+   void *filt;
+   struct softfilter_work_packet *packets;
+   unsigned n, generation, pending;
+   int quit;
+   pthread_t tid[64];
+};
+
+struct bench_arg { struct bench_pool *pool; unsigned index; };
+
+static void *bench_worker(void *p)
+{
+   struct bench_arg *a     = (struct bench_arg*)p;
+   struct bench_pool *pool = a->pool;
+   unsigned seen = 0;
+   for (;;)
+   {
+      struct softfilter_work_packet *pk;
+      pthread_mutex_lock(&pool->lock);
+      while (pool->generation == seen && !pool->quit)
+         pthread_cond_wait(&pool->go_cond, &pool->lock);
+      if (pool->quit)
+      {
+         pthread_mutex_unlock(&pool->lock);
+         return NULL;
+      }
+      seen = pool->generation;
+      pk   = &pool->packets[a->index];
+      pthread_mutex_unlock(&pool->lock);
+
+      if (pk->work)
+         pk->work(pool->filt, pk->thread_data);
+
+      pthread_mutex_lock(&pool->lock);
+      if (--pool->pending == 0)
+         pthread_cond_signal(&pool->done_cond);
+      pthread_mutex_unlock(&pool->lock);
+   }
+}
+
+static double bench_now(void)
+{
+   struct timespec t;
+   clock_gettime(CLOCK_MONOTONIC, &t);
+   return t.tv_sec * 1e3 + t.tv_nsec * 1e-6;
+}
+
+static int cmp_double(const void *a, const void *b)
+{
+   double x = *(const double*)a, y = *(const double*)b;
+   return x < y ? -1 : x > y;
+}
+
+/* Median ms per frame, or a negative value when the filter did not
+ * take 'threads' workers. */
+static double bench_run(const struct softfilter_implementation *impl,
+      const struct softfilter_config *cfg, unsigned fmt, unsigned threads,
+      unsigned *used)
+{
+   static double times[BENCH_FRAMES];
+   struct softfilter_work_packet packets[64];
+   struct bench_arg args[64];
+   struct bench_pool pool;
+   size_t in_bpp  = fmt == SOFTFILTER_FMT_RGB565 ? 2 : 4;
+   unsigned outs  = impl->query_output_formats(fmt);
+   unsigned ofmt  = (outs & fmt) ? fmt : SOFTFILTER_FMT_XRGB8888;
+   size_t out_bpp = ofmt == SOFTFILTER_FMT_RGB565 ? 2 : 4;
+   unsigned ow = 0, oh = 0, f, i, n;
+   uint8_t *in, *out;
+   double median;
+   void *filt = impl->create(cfg, fmt, ofmt, BENCH_W, BENCH_H, threads, 0, NULL);
+
+   if (!filt)
+      return -1.0;
+   n     = impl->query_num_threads(filt);
+   *used = n;
+   if (n > 64 || (threads > 1 && n < 2))
+   {
+      impl->destroy(filt);
+      return -1.0;
+   }
+   impl->query_output_size(filt, &ow, &oh, BENCH_W, BENCH_H);
+   in  = (uint8_t*)malloc(BENCH_W * in_bpp * BENCH_H);
+   out = (uint8_t*)calloc((size_t)ow * out_bpp, oh);
+   for (i = 0; in && i < BENCH_W * in_bpp * BENCH_H; i++)
+      in[i] = (uint8_t)((i * 2654435761u) >> 24);
+
+   memset(&pool, 0, sizeof(pool));
+   pthread_mutex_init(&pool.lock, NULL);
+   pthread_cond_init(&pool.go_cond, NULL);
+   pthread_cond_init(&pool.done_cond, NULL);
+   pool.filt    = filt;
+   pool.packets = packets;
+   pool.n       = n;
+   if (n > 1)
+      for (i = 0; i < n; i++)
+      {
+         args[i].pool  = &pool;
+         args[i].index = i;
+         pthread_create(&pool.tid[i], NULL, bench_worker, &args[i]);
+      }
+
+   for (f = 0; f < BENCH_WARMUP + BENCH_FRAMES && in && out; f++)
+   {
+      double t0 = bench_now();
+      memset(packets, 0, sizeof(packets));
+      impl->get_work_packets(filt, packets, out, ow * out_bpp,
+            in, BENCH_W, BENCH_H, BENCH_W * in_bpp);
+      if (n > 1)
+      {
+         pthread_mutex_lock(&pool.lock);
+         pool.pending = n;
+         pool.generation++;
+         pthread_cond_broadcast(&pool.go_cond);
+         while (pool.pending)
+            pthread_cond_wait(&pool.done_cond, &pool.lock);
+         pthread_mutex_unlock(&pool.lock);
+      }
+      else if (packets[0].work)
+         packets[0].work(filt, packets[0].thread_data);
+      if (f >= BENCH_WARMUP)
+         times[f - BENCH_WARMUP] = bench_now() - t0;
+   }
+
+   if (n > 1)
+   {
+      pthread_mutex_lock(&pool.lock);
+      pool.quit = 1;
+      pthread_cond_broadcast(&pool.go_cond);
+      pthread_mutex_unlock(&pool.lock);
+      for (i = 0; i < n; i++)
+         pthread_join(pool.tid[i], NULL);
+   }
+   pthread_cond_destroy(&pool.done_cond);
+   pthread_cond_destroy(&pool.go_cond);
+   pthread_mutex_destroy(&pool.lock);
+   impl->destroy(filt);
+   free(in);
+   free(out);
+
+   qsort(times, BENCH_FRAMES, sizeof(double), cmp_double);
+   median = times[BENCH_FRAMES / 2];
+   return median;
+}
+
+static void bench_video(const char *path, void *lib, unsigned threads)
+{
+   struct softfilter_config cfg;
+   const struct softfilter_implementation *impl;
+   softfilter_get_implementation_t get = (softfilter_get_implementation_t)
+      dlsym(lib, "softfilter_get_implementation");
+   const char *name = strrchr(path, '/') ? strrchr(path, '/') + 1 : path;
+   unsigned fmt, used1 = 0, usedn = 0;
+   double t1, tn;
+
+   if (!get || !(impl = get(0)))
+      return;
+   cfg.get_float       = c_float;
+   cfg.get_int         = c_int;
+   cfg.get_hex         = c_hex;
+   cfg.get_float_array = c_float_array;
+   cfg.get_int_array   = c_int_array;
+   cfg.get_string      = c_string;
+   cfg.free            = free;
+   fmt = (impl->query_input_formats() & SOFTFILTER_FMT_XRGB8888)
+      ? SOFTFILTER_FMT_XRGB8888 : SOFTFILTER_FMT_RGB565;
+
+   t1 = bench_run(impl, &cfg, fmt, 1, &used1);
+   tn = threads > 1 ? bench_run(impl, &cfg, fmt, threads, &usedn) : -1.0;
+   if (tn >= 0.0)
+      printf("%-32s %-4s %8.3f ms   %2u workers %8.3f ms   x%.2f\n", name,
+            fmt == SOFTFILTER_FMT_RGB565 ? "565" : "8888", t1, usedn, tn,
+            tn > 0.0 ? t1 / tn : 0.0);
+   else
+      printf("%-32s %-4s %8.3f ms   (one worker only)\n", name,
+            fmt == SOFTFILTER_FMT_RGB565 ? "565" : "8888", t1);
+}
+
 int main(int argc, char **argv)
 {
-   int i;
+   int i, first = 1, bench = 0;
+   long cpus    = sysconf(_SC_NPROCESSORS_ONLN);
+   unsigned threads = cpus > 1 ? (unsigned)(cpus > 64 ? 64 : cpus) : 1;
 
-   if (argc < 2)
+   for (; first < argc && argv[first][0] == '-' && argv[first][1] == '-'; first++)
    {
-      fprintf(stderr, "usage: %s plugin.so...\n", argv[0]);
+      if (!strcmp(argv[first], "--bench"))
+         bench = 1;
+      else if (!strcmp(argv[first], "--threads") && first + 1 < argc)
+         threads = (unsigned)atoi(argv[++first]);
+   }
+   if (first >= argc)
+   {
+      fprintf(stderr, "usage: %s [--bench [--threads N]] plugin.so...\n", argv[0]);
       return 2;
    }
 
-   for (i = 1; i < argc; i++)
+   if (bench)
+   {
+      printf("%d video filter(s), %ux%u frames, median of %d; %ld CPU(s) online\n",
+            argc - first, BENCH_W, BENCH_H, BENCH_FRAMES, cpus);
+      for (i = first; i < argc; i++)
+      {
+         void *lib = dlopen(argv[i], RTLD_NOW | RTLD_LOCAL);
+         if (lib && dlsym(lib, "softfilter_get_implementation"))
+            bench_video(argv[i], lib, threads);
+         if (lib)
+            dlclose(lib);
+      }
+      return 0;
+   }
+
+   for (i = first; i < argc; i++)
    {
       void *lib = dlopen(argv[i], RTLD_NOW | RTLD_LOCAL);
       if (!lib)
@@ -448,6 +664,6 @@ int main(int argc, char **argv)
       dlclose(lib);
    }
 
-   printf("%d plugin(s), %u failure(s)\n", argc - 1, failures);
+   printf("%d plugin(s), %u failure(s)\n", argc - first, failures);
    return failures ? 1 : 0;
 }

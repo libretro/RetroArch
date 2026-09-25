@@ -27,9 +27,14 @@ plugins:
 check: all
 	./$(TARGET) $(VIDEO_DIR)/*.so $(DSP_DIR)/*.so
 
+# Per-frame time of every video filter at one worker and at as many
+# as there are CPUs online (or THREADS=N); not part of 'check'.
+bench: all
+	./$(TARGET) --bench $(if $(THREADS),--threads $(THREADS)) $(VIDEO_DIR)/*.so
+
 clean:
 	rm -f $(TARGET)
 	$(MAKE) -C $(VIDEO_DIR) clean
 	$(MAKE) -C $(DSP_DIR) clean
 
-.PHONY: all plugins check clean
+.PHONY: all plugins check bench clean
