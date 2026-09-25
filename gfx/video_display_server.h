@@ -94,20 +94,19 @@ typedef struct video_display_server
    uint32_t (*get_flags)(void *data);
    /* Display scanout timing, for Scanline Sync.
     *
-    * get_scanline returns the current beam position in scanlines, or a
-    * negative value if unavailable. wait_vblank blocks until the next
-    * vertical blank and returns false if it cannot.
+    * get_scanline returns the current beam position in scanlines,
+    * blanking included, or a negative value if unavailable.
+    * wait_vblank blocks until the next vertical blank and returns
+    * false if it cannot.
     *
     * Both are optional and a server may implement one without the
     * other, but Scanline Sync needs get_scanline: it calibrates the
     * total line count from the peak value and targets a specific line.
     * A server offering only wait_vblank cannot drive it.
     *
-    * Only win32 implements these today, through D3DKMT. The equivalents
-    * elsewhere are drmWaitVBlank on KMS and glXWaitForMscOML on X11 -
-    * both vblank waits, neither exposing a live scanout position -
-    * while Wayland's presentation-time protocol reports after the fact
-    * rather than blocking. None of them are wired up. */
+    * win32 implements both through D3DKMT; KMS implements get_scanline
+    * from DRM's vblank timestamps. X11's glXWaitForMscOML and Wayland's
+    * presentation-time are not wired up. */
    int  (*get_scanline)(void *data);
    bool (*wait_vblank)(void *data);
 
@@ -237,6 +236,8 @@ bool video_display_server_get_metrics(
 bool video_display_server_can_set_screen_orientation(void);
 
 bool video_display_server_has_resolution_list(void);
+
+bool video_display_server_has_scanline(void);
 
 void video_switch_refresh_rate_maybe(float *refresh_rate, bool *video_switch_refresh_rate);
 

@@ -63,9 +63,11 @@
  * shows up as output identical to the input.
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <xf86drm.h>
 #include <xf86drmMode.h>
@@ -73,9 +75,6 @@
 #include "../../../gfx/video_display_server.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../command.h"
-
-#include <errno.h>
-#include <time.h>
 
 extern const video_display_server_t dispserv_kms;
 
@@ -104,6 +103,53 @@ void video_monitor_set_refresh_rate(float hz) { (void)hz; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 
 int g_drm_fd = -1;
+uint32_t g_crtc_id = 0;
+
+/* Line 0 of the current frame s_seq_offset_ns before the real clock,
+ * so get_scanline's own clock read lands microseconds later - well
+ * inside one of seq_mode()'s 10 ms lines. get_scanline issues
+ * drmCrtcGetSequence()'s ioctl itself. */
+static int     s_seq_fail;
+static int     s_seq_zero;
+static int64_t s_seq_offset_ns;
+
+int drmIoctl(int fd, unsigned long request, void *arg)
+{
+   struct timespec now;
+   struct drm_crtc_get_sequence *get_seq = (struct drm_crtc_get_sequence*)arg;
+   (void)fd;
+   if (     request != DRM_IOCTL_CRTC_GET_SEQUENCE
+         || s_seq_fail || get_seq->crtc_id != g_crtc_id)
+   {
+      errno = EINVAL;
+      return -1;
+   }
+   clock_gettime(CLOCK_MONOTONIC, &now);
+   get_seq->sequence = 1000;
+   if (s_seq_zero)
+   {
+      get_seq->sequence_ns = 0;
+      return 0;
+   }
+   get_seq->sequence_ns = (int64_t)now.tv_sec * 1000000000 + (int64_t)now.tv_nsec
+      - s_seq_offset_ns;
+   return 0;
+}
+
+/* The CRTC's properties: ACTIVE, and VRR_ENABLED as s_crtc_vrr says */
+static int      s_crtc_vrr;
+static uint32_t s_crtc_props[2]     = { 21, 22 };
+static uint64_t s_crtc_prop_vals[2];
+static drmModeObjectProperties s_crtc_propset;
+static drmModePropertyRes      s_crtc_propres[2];
+static unsigned s_crtc_gets, s_crtc_frees_prop, s_crtc_frees_set;
+
+static int s_log_vrr;
+void RARCH_LOG(const char *fmt, ...)
+{
+   if (strstr(fmt, "Variable refresh"))
+      s_log_vrr++;
+}
 
 /* The connector property walk get_edid does: one fabricated
  * property list holding a non-blob, a blob that is not the EDID,
@@ -122,6 +168,18 @@ static unsigned s_edid_frees_prop, s_edid_frees_blob, s_edid_frees_set;
 drmModeObjectPropertiesPtr drmModeObjectGetProperties(int fd,
       uint32_t object_id, uint32_t object_type)
 {
+   if (object_type == DRM_MODE_OBJECT_CRTC)
+   {
+      if (object_id != g_crtc_id)
+         return NULL;
+      s_crtc_gets++;
+      s_crtc_prop_vals[0]         = 1;
+      s_crtc_prop_vals[1]         = (uint64_t)s_crtc_vrr;
+      s_crtc_propset.count_props  = 2;
+      s_crtc_propset.props        = s_crtc_props;
+      s_crtc_propset.prop_values  = s_crtc_prop_vals;
+      return &s_crtc_propset;
+   }
    if (fd < 0 || object_type != DRM_MODE_OBJECT_CONNECTOR
          || !g_drm_connector || object_id != g_drm_connector->connector_id)
       return NULL;
@@ -135,12 +193,23 @@ void drmModeFreeObjectProperties(drmModeObjectPropertiesPtr ptr)
 {
    if (ptr == &s_edid_propset)
       s_edid_frees_set++;
+   else if (ptr == &s_crtc_propset)
+      s_crtc_frees_set++;
 }
 
 drmModePropertyPtr drmModeGetProperty(int fd, uint32_t propertyId)
 {
    drmModePropertyRes *r;
    (void)fd;
+   if (propertyId == 21 || propertyId == 22)
+   {
+      r = &s_crtc_propres[propertyId - 21];
+      memset(r, 0, sizeof(*r));
+      r->prop_id = propertyId;
+      r->flags   = DRM_MODE_PROP_RANGE;
+      strcpy(r->name, propertyId == 21 ? "ACTIVE" : "VRR_ENABLED");
+      return r;
+   }
    if (propertyId < 11 || propertyId > 13)
       return NULL;
    r = &s_edid_propres[propertyId - 11];
@@ -159,6 +228,8 @@ void drmModeFreeProperty(drmModePropertyPtr ptr)
 {
    if (ptr >= s_edid_propres && ptr < s_edid_propres + 3)
       s_edid_frees_prop++;
+   else if (ptr >= s_crtc_propres && ptr < s_crtc_propres + 2)
+      s_crtc_frees_prop++;
 }
 
 drmModePropertyBlobPtr drmModeGetPropertyBlob(int fd, uint32_t blob_id)
@@ -853,9 +924,161 @@ static int test_scanline_from_time(void)
    return 0;
 }
 
+/* 1000 x 100 total at 100 kHz: 10 ms lines, 1 s frames, 90 visible,
+ * so a run stalled for milliseconds still reads the line it meant. */
+static drmModeModeInfo seq_mode(uint32_t flags)
+{
+   drmModeModeInfo m;
+   memset(&m, 0, sizeof(m));
+   m.hdisplay = 800;
+   m.vdisplay = 90;
+   m.htotal   = 1000;
+   m.vtotal   = SEQ_LINES;
+   m.clock    = 100;
+   m.flags    = flags;
+   return m;
+}
+
+static int total_lines(void)
+{
+   float v = 0.0f;
+   if (!dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_TOTAL_LINES, &v))
+      return -1;
+   return (int)v;
+}
+
+static int scanline_at(int64_t offset_ns)
+{
+   s_seq_offset_ns = offset_ns;
+   return dispserv_kms.get_scanline(NULL);
+}
+
+static int test_get_scanline(void)
+{
+   drmModeModeInfo mode  = seq_mode(0);
+   drmModeModeInfo laced = seq_mode(DRM_MODE_FLAG_INTERLACE);
+   drmModeModeInfo dbl   = seq_mode(DRM_MODE_FLAG_DBLSCAN);
+   int fails             = 0;
+
+   if (!dispserv_kms.get_scanline)
+   {
+      fputs("FAIL: dispserv_kms has no get_scanline\n", stderr);
+      return 1;
+   }
+
+   s_seq_fail = 0;
+   g_drm_mode = NULL;
+   g_crtc_id  = 7;
+   fails += expect_line("no mode", scanline_at(5000000), -1);
+
+   g_drm_mode = &mode;
+   g_crtc_id  = 0;
+   fails += expect_line("no CRTC", scanline_at(5000000), -1);
+
+   g_crtc_id  = 7;
+   fails += expect_line("half a line in", scanline_at(5000000), 0);
+   fails += expect_line("mid-frame", scanline_at(505000000), 50);
+   fails += expect_line("in blanking", scanline_at(955000000), 95);
+   fails += expect_line("timestamp in the future", scanline_at(-55000000), 94);
+   fails += expect_line("timestamp a frame old", scanline_at(1505000000), 50);
+
+   s_seq_fail = 1;
+   fails += expect_line("failed query", scanline_at(5000000), -1);
+   s_seq_fail = 0;
+
+   s_seq_zero = 1;
+   fails += expect_line("zero vblank timestamp", scanline_at(5000000), -1);
+   s_seq_zero = 0;
+
+   /* VRR_ENABLED is read with the line count, outside the wait */
+   s_crtc_vrr = 1;
+   fails += expect_line("VRR on, line count not asked yet", scanline_at(5000000), 0);
+   fails += expect_line("  line count", total_lines(), SEQ_LINES);
+   fails += expect_line("VRR on", scanline_at(5000000), -1);
+   fails += expect_line("  line count again", total_lines(), SEQ_LINES);
+   if (s_crtc_gets != 2 || s_log_vrr != 1)
+   {
+      fprintf(stderr, "FAIL: CRTC properties read %u times, VRR logged %d times, want 2 and 1\n",
+            s_crtc_gets, s_log_vrr);
+      fails++;
+   }
+   s_crtc_vrr = 0;
+   fails += expect_line("VRR off, line count not asked yet", scanline_at(5000000), -1);
+   fails += expect_line("  line count", total_lines(), SEQ_LINES);
+   fails += expect_line("VRR off", scanline_at(505000000), 50);
+   if (     s_crtc_gets != 3
+         || s_crtc_frees_set != s_crtc_gets
+         || s_crtc_frees_prop != 2 * s_crtc_gets)
+   {
+      fprintf(stderr, "FAIL: CRTC property lists %u read, %u freed; %u properties freed\n",
+            s_crtc_gets, s_crtc_frees_set, s_crtc_frees_prop);
+      fails++;
+   }
+
+   g_drm_mode = &laced;
+   fails += expect_line("interlaced mode", scanline_at(5000000), -1);
+   g_drm_mode = &dbl;
+   fails += expect_line("doublescan mode", scanline_at(5000000), -1);
+
+   g_drm_mode = NULL;
+   g_crtc_id  = 0;
+   if (fails)
+      return 1;
+   puts("[pass] get_scanline reads the beam from the vblank timestamp and the mode, and -1 without them or under VRR");
+   return 0;
+}
+
+static int test_total_lines_metric(void)
+{
+   drmModeModeInfo mode  = seq_mode(0);
+   drmModeModeInfo laced = seq_mode(DRM_MODE_FLAG_INTERLACE);
+   float value           = 0.0f;
+   int fails             = 0;
+
+   if (!dispserv_kms.get_metrics)
+   {
+      fputs("FAIL: dispserv_kms has no get_metrics\n", stderr);
+      return 1;
+   }
+
+   g_drm_mode = &mode;
+   if (     !dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_TOTAL_LINES, &value)
+         || value != (float)SEQ_LINES)
+   {
+      fprintf(stderr, "FAIL: total lines %.0f, want %d\n", value, SEQ_LINES);
+      fails++;
+   }
+   if (dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_DPI, &value))
+   {
+      fputs("FAIL: get_metrics answered DPI\n", stderr);
+      fails++;
+   }
+   g_drm_mode = &laced;
+   if (dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_TOTAL_LINES, &value))
+   {
+      fputs("FAIL: total lines answered for an interlaced mode\n", stderr);
+      fails++;
+   }
+   g_drm_mode = NULL;
+   if (dispserv_kms.get_metrics(NULL, DISPLAY_METRIC_TOTAL_LINES, &value))
+   {
+      fputs("FAIL: total lines answered without a mode\n", stderr);
+      fails++;
+   }
+
+   if (fails)
+      return 1;
+   puts("[pass] DISPLAY_METRIC_TOTAL_LINES is the mode's vtotal, and nothing else is answered");
+   return 0;
+}
+
 int main(void)
 {
    if (test_scanline_from_time())
+      return 1;
+   if (test_get_scanline())
+      return 1;
+   if (test_total_lines_metric())
       return 1;
    if (test_get_edid())
       return 1;

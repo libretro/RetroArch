@@ -2362,6 +2362,11 @@ int video_display_server_get_scanline(void)
    return -1;
 }
 
+bool video_display_server_has_scanline(void)
+{
+   return current_display_server && current_display_server->get_scanline;
+}
+
 bool video_display_server_wait_vblank(void)
 {
    video_driver_state_t *video_st = &video_driver_st;

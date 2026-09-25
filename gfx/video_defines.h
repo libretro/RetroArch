@@ -359,7 +359,9 @@ enum display_metric_types
    DISPLAY_METRIC_MM_HEIGHT,
    DISPLAY_METRIC_DPI,
    DISPLAY_METRIC_PIXEL_WIDTH,
-   DISPLAY_METRIC_PIXEL_HEIGHT
+   DISPLAY_METRIC_PIXEL_HEIGHT,
+   /* Lines per refresh, blanking included */
+   DISPLAY_METRIC_TOTAL_LINES
 };
 
 enum display_flags

@@ -3,7 +3,7 @@ TARGET := display_servers_kms_test
 # Path back to the repo root from this sample dir.  Like the
 # display_servers sample next door, this one links the real driver
 # rather than mirroring its shape: gfx/display_servers/dispserv_kms.c
-# reaches for only a handful of RetroArch-side symbols and two globals
+# reaches for only a handful of RetroArch-side symbols and the globals
 # owned by gfx/common/drm_common.c, which the test supplies.
 REPO_ROOT := ../../..
 
