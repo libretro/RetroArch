@@ -79,7 +79,7 @@ static void *supertwoxsai_generic_create(const struct softfilter_config *config,
    }
    /* Apparently the code is not thread-safe,
     * so force single threaded operation... */
-   filt->threads = 1;
+   filt->threads = threads;
    filt->in_fmt  = in_fmt;
 
    return filt;

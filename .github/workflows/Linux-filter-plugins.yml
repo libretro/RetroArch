@@ -5,9 +5,11 @@ name: CI Linux filter plugins
 # runs samples/gfx/filter_plugins over all of them: each plugin is
 # loaded with RTLD_NOW into a host that does not link libm, so a
 # symbol it cannot resolve fails the load, then fed a frame or a run
-# of audio blocks at its default settings.  The same run is repeated
+# of audio blocks at its default settings.  Every video filter that
+# takes more than one worker must give the single-worker output byte for
+# byte with 2, 3 and 4 workers running at once.  The same run is repeated
 # with the plugins and the harness built under ASan, UBSan and
-# LeakSanitizer.
+# LeakSanitizer, and under ThreadSanitizer.
 
 on:
   push:
@@ -67,3 +69,11 @@ jobs:
           set -eu
           make -C samples/gfx/filter_plugins clean
           make -C samples/gfx/filter_plugins check SANITIZER=address,undefined
+
+      - name: Load and run every plugin under ThreadSanitizer
+        env:
+          TSAN_OPTIONS: halt_on_error=1
+        run: |
+          set -eu
+          make -C samples/gfx/filter_plugins clean
+          make -C samples/gfx/filter_plugins check SANITIZER=thread

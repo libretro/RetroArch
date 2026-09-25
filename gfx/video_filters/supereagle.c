@@ -76,7 +76,7 @@ static void *supereagle_generic_create(const struct softfilter_config *config,
       free(filt);
       return NULL;
    }
-   filt->threads = 1;
+   filt->threads = threads;
    filt->in_fmt  = in_fmt;
    return filt;
 }

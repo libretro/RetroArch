@@ -9,7 +9,9 @@
  * cannot paper over one.
  *
  * Video filters (.so under video_filters) take one frame in each input
- * format they support; audio filters (under dsp_filters) take a block
+ * format they support, and those that take more than one worker must
+ * give the single-worker output byte for byte with 2, 3 and 4 workers
+ * running at once; audio filters (under dsp_filters) take a block
  * through the float path and, when the plugin has one, the int16 path.
  * Every setting is left at the default the plugin asks for.  Returns
  * 0 when every plugin loads and runs. */
@@ -19,6 +21,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <dlfcn.h>
+#include <pthread.h>
 
 #include "softfilter.h"
 #include <libretro_dspfilter.h>
@@ -65,6 +68,123 @@ static int c_string(void *u, const char *k, char **o, const char *d)
 
 #define IN_W 320
 #define IN_H 240
+
+/* Worker-count check: an odd size, so no slicing divides it evenly,
+ * and a few frames, so filters that carry state between frames are
+ * compared on it too. */
+#define SPLIT_W      317
+#define SPLIT_H      223
+#define SPLIT_FRAMES 3
+
+static void *run_packet(void *arg)
+{
+   struct softfilter_work_packet **pp = (struct softfilter_work_packet**)arg;
+   (*pp)->work(pp[1] ? (void*)pp[1] : NULL, (*pp)->thread_data);
+   return NULL;
+}
+
+/* One frame the way RetroArch's dispatcher runs it: every packet at
+ * once, each on its own thread. */
+static void run_frame_threaded(const struct softfilter_implementation *impl,
+      void *filt, struct softfilter_work_packet *packets, unsigned threads,
+      void *out, size_t out_stride, const void *in, unsigned w, unsigned h,
+      size_t in_stride)
+{
+   unsigned t;
+   pthread_t tid[16];
+   struct softfilter_work_packet *arg[16][2];
+   impl->get_work_packets(filt, packets, out, out_stride, in, w, h, in_stride);
+   for (t = 0; t < threads && t < 16; t++)
+   {
+      arg[t][0] = &packets[t];
+      arg[t][1] = (struct softfilter_work_packet*)filt;
+      if (!packets[t].work || pthread_create(&tid[t], NULL, run_packet, arg[t]))
+         tid[t] = 0;
+   }
+   for (t = 0; t < threads && t < 16; t++)
+      if (tid[t])
+         pthread_join(tid[t], NULL);
+}
+
+/* Runs SPLIT_FRAMES frames with the given worker count; returns the
+ * last frame's output, or NULL when the filter does not take that
+ * many workers (it reports fewer), which is not a failure. */
+static uint8_t *run_split(const struct softfilter_implementation *impl,
+      const struct softfilter_config *cfg, unsigned in_fmt, unsigned out_fmt,
+      unsigned threads, const uint8_t *in, size_t in_stride,
+      size_t *out_size, unsigned *used)
+{
+   unsigned ow = 0, oh = 0, f, n;
+   size_t out_bpp = out_fmt == SOFTFILTER_FMT_RGB565 ? 2 : 4, out_stride;
+   uint8_t *out;
+   struct softfilter_work_packet packets[16];
+   void *filt = impl->create(cfg, in_fmt, out_fmt, SPLIT_W, SPLIT_H,
+         threads, 0, NULL);
+   if (!filt)
+      return NULL;
+   n = impl->query_num_threads(filt);
+   *used = n;
+   if (n > 16 || (threads > 1 && n < 2))
+   {
+      impl->destroy(filt);
+      return NULL;
+   }
+   impl->query_output_size(filt, &ow, &oh, SPLIT_W, SPLIT_H);
+   out_stride = ow * out_bpp + 32;
+   *out_size  = out_stride * oh;
+   if (!(out = (uint8_t*)malloc(*out_size)))
+   {
+      impl->destroy(filt);
+      return NULL;
+   }
+   memset(out, 0xa5, *out_size);
+   memset(packets, 0, sizeof(packets));
+   for (f = 0; f < SPLIT_FRAMES; f++)
+      run_frame_threaded(impl, filt, packets, n, out, out_stride,
+            in, SPLIT_W, SPLIT_H, in_stride);
+   impl->destroy(filt);
+   return out;
+}
+
+/* Every worker count the filter takes must give the single-worker
+ * output, byte for byte. */
+static void check_split(const char *path,
+      const struct softfilter_implementation *impl,
+      const struct softfilter_config *cfg, unsigned in_fmt, unsigned out_fmt)
+{
+   size_t in_bpp    = in_fmt == SOFTFILTER_FMT_RGB565 ? 2 : 4;
+   size_t in_stride = SPLIT_W * in_bpp + 48;
+   size_t size1 = 0, sizen = 0, i;
+   unsigned threads, used = 0, used1 = 0;
+   uint8_t *in = (uint8_t*)malloc(in_stride * SPLIT_H), *ref;
+   if (!in)
+      return;
+   for (i = 0; i < in_stride * SPLIT_H; i++)
+      in[i] = (uint8_t)(((i * 2654435761u) >> 24) & ((i / in_stride) % 7 ? 0xff : 0xf0));
+   if (!(ref = run_split(impl, cfg, in_fmt, out_fmt, 1, in, in_stride, &size1, &used1)))
+   {
+      free(in);
+      return;
+   }
+   for (threads = 2; threads <= 4; threads++)
+   {
+      uint8_t *got = run_split(impl, cfg, in_fmt, out_fmt, threads, in,
+            in_stride, &sizen, &used);
+      if (!got)
+         continue;
+      if (sizen != size1 || memcmp(ref, got, size1))
+      {
+         size_t first = 0;
+         while (first < size1 && ref[first] == got[first])
+            first++;
+         FAIL("%s: format %u with %u workers differs from one worker (first at byte %lu of %lu)",
+               path, in_fmt, used, (unsigned long)first, (unsigned long)size1);
+      }
+      free(got);
+   }
+   free(ref);
+   free(in);
+}
 
 static void test_video(const char *path, void *lib)
 {
@@ -161,6 +281,7 @@ static void test_video(const char *path, void *lib)
       free(in);
       free(out);
       free(packets);
+      check_split(path, impl, &cfg, in_fmt, out_fmt);
       ran++;
    }
 

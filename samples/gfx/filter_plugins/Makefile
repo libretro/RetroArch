@@ -6,7 +6,7 @@ DSP_DIR   := $(RA)/libretro-common/audio/dsp_filters
 
 # No -lm: the harness must not load libm on the plugins' behalf.
 CFLAGS += -std=gnu99 -Wall -g -I$(VIDEO_DIR) -I$(RA)/libretro-common/include
-LDLIBS := -ldl
+LDLIBS := -ldl -lpthread
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
