@@ -34,6 +34,7 @@
 #include "../../verbosity.h"
 
 #include "../common/mutter_displayconfig.h"
+#include "../common/wayland_kwin_output.h"
 
 typedef struct
 {
@@ -52,6 +53,8 @@ typedef struct
     * protocol for the EDID */
    char     name[32];
    bool     lease_reported;
+   /* KWin's outputs and their modes, where the compositor is KWin */
+   kwin_outputs_t kwin;
 } dispserv_wl_t;
 
 /* wl_output listener callbacks */
@@ -120,6 +123,9 @@ static void registry_handle_global(void *data,
       uint32_t version)
 {
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
+
+   if (kwin_outputs_bind(&serv->kwin, registry, name, interface, version))
+      return;
 
    /* Bind to the first wl_output we find */
    if (!serv->output && strcmp(interface, "wl_output") == 0)
@@ -230,6 +236,7 @@ static void wl_display_server_destroy(void *data)
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
    if (!serv)
       return;
+   kwin_outputs_destroy(&serv->kwin);
    if (serv->output)
       wl_output_destroy(serv->output);
    if (serv->registry)
@@ -249,58 +256,88 @@ static void wl_display_server_mutter_target(dispserv_wl_t *serv,
    t->connector     = serv->name[0] ? serv->name : NULL;
    t->monitor_index = monitor_index;
 }
+#endif
 
+/* Modes are listed and switched through Mutter on GNOME, as before,
+ * and through KWin's own output protocols on KDE; elsewhere there is
+ * nothing to list, and the menu entry and the refresh rate autoswitch
+ * stay off as they always were. */
 static void *wl_display_server_get_resolution_list(void *data,
       unsigned *len)
 {
-   mutter_dc_target_t t;
-   video_display_config_t *list = NULL;
-   dispserv_wl_t *serv          = (dispserv_wl_t*)data;
+   dispserv_wl_t *serv = (dispserv_wl_t*)data;
    wl_display_server_pump((dispserv_wl_t*)data);
 
    *len = 0;
-   if (!serv || !mutter_displayconfig_available())
+   if (!serv)
       return NULL;
-   wl_display_server_mutter_target(serv, 0, &t);
-   if (mutter_displayconfig_get_resolution_list(&t, &list, len)
-         != MUTTER_DC_OK)
-      return NULL;
-   return list;
+#ifdef RARCH_HAVE_MUTTER_DC
+   if (mutter_displayconfig_available())
+   {
+      mutter_dc_target_t t;
+      video_display_config_t *list = NULL;
+      wl_display_server_mutter_target(serv, 0, &t);
+      if (mutter_displayconfig_get_resolution_list(&t, &list, len)
+            != MUTTER_DC_OK)
+         return NULL;
+      return list;
+   }
+#endif
+   if (kwin_outputs_ready(&serv->kwin))
+      return kwin_outputs_resolution_list(&serv->kwin,
+            serv->name[0] ? serv->name : NULL, len);
+   return NULL;
 }
 
 static bool wl_display_server_set_resolution(void *data,
       unsigned dims, int int_hz, float hz, int center,
       int monitor_index, int xoffset, int padjust)
 {
-   mutter_dc_target_t t;
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
    wl_display_server_pump((dispserv_wl_t*)data);
 
-   if (!serv || !mutter_displayconfig_available())
+   if (!serv)
       return false;
-   wl_display_server_mutter_target(serv, monitor_index, &t);
-   if (mutter_displayconfig_set_resolution(&t, dims, int_hz, hz)
-         != MUTTER_DC_OK)
-      return false;
-   /* Mutter has applied it by the time it replies; the wl_output
-    * mode events for the new mode are on the socket */
-   if (serv->dpy)
-      wl_display_roundtrip(serv->dpy);
-   return true;
+#ifdef RARCH_HAVE_MUTTER_DC
+   if (mutter_displayconfig_available())
+   {
+      mutter_dc_target_t t;
+      wl_display_server_mutter_target(serv, monitor_index, &t);
+      if (mutter_displayconfig_set_resolution(&t, dims, int_hz, hz)
+            != MUTTER_DC_OK)
+         return false;
+      /* Mutter has applied it by the time it replies; the wl_output
+       * mode events for the new mode are on the socket */
+      if (serv->dpy)
+         wl_display_roundtrip(serv->dpy);
+      return true;
+   }
+#endif
+   /* KWin answers applied or failed later, through this connection's
+    * events; the request is what can be known now */
+   if (kwin_outputs_ready(&serv->kwin))
+      return kwin_outputs_set_mode(&serv->kwin,
+            serv->name[0] ? serv->name : NULL,
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), int_hz, hz);
+   return false;
 }
 
-/* Without Mutter there is nothing to list, and the menu entry and the
- * refresh rate autoswitch stay off as they always were */
 static uint32_t wl_display_server_get_flags(void *data)
 {
    uint32_t flags      = 0;
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
+   bool modes          = false;
    wl_display_server_pump((dispserv_wl_t*)data);
-   if (!serv || !mutter_displayconfig_available())
+#ifdef RARCH_HAVE_MUTTER_DC
+   modes = mutter_displayconfig_available();
+#endif
+   if (!modes && serv)
+      modes = kwin_outputs_ready(&serv->kwin);
+   if (!serv || !modes)
       BIT32_SET(flags, DISPSERV_CTX_NO_RESOLUTION_LIST);
    return flags;
 }
-#endif
+
 
 static float wl_display_server_get_refresh_rate(void *data)
 {
@@ -399,13 +436,8 @@ const video_display_server_t dispserv_wl = {
    NULL, /* set_window_opacity */
    NULL, /* set_window_progress */
    NULL, /* set_window_decorations */
-#ifdef RARCH_HAVE_MUTTER_DC
    wl_display_server_set_resolution,
    wl_display_server_get_resolution_list,
-#else
-   NULL, /* set_resolution */
-   NULL, /* get_resolution_list */
-#endif
    NULL, /* get_output_options */
    NULL, /* set_screen_orientation */
    NULL, /* get_screen_orientation */
@@ -414,11 +446,7 @@ const video_display_server_t dispserv_wl = {
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    wl_display_server_get_metrics,
-#ifdef RARCH_HAVE_MUTTER_DC
    wl_display_server_get_flags,
-#else
-   NULL, /* get_flags */
-#endif
    NULL, /* get_scanline */
    NULL, /* wait_vblank */
    NULL, /* modeline_list_outputs */

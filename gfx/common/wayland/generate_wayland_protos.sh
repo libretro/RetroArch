@@ -90,6 +90,10 @@ generate_source 'staging/content-type' 'content-type-v1'
 generate_source 'staging/single-pixel-buffer' 'single-pixel-buffer-v1'
 generate_source 'staging/tearing-control' 'tearing-control-v1'
 generate_source 'staging/color-management' 'color-management-v1'
+# KWin's output protocols, from plasma-wayland-protocols (MIT-CMU); no
+# system wayland-protocols carries them, so the bundled copy is used
+generate_source 'kde' 'kde-output-device-v2'
+generate_source 'kde' 'kde-output-management-v2'
 generate_source 'staging/xdg-toplevel-icon' 'xdg-toplevel-icon-v1'
 generate_source 'staging/xdg-toplevel-tag' 'xdg-toplevel-tag-v1'
 generate_source 'staging/drm-lease' 'drm-lease-v1'

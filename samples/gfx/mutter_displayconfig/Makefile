@@ -7,6 +7,12 @@ TARGET := mutter_displayconfig_test
 REPO_ROOT := ../../..
 LRC       := $(REPO_ROOT)/libretro-common
 
+# KWin's output protocols, which dispserv_wl.c reaches through
+# gfx/common/wayland_kwin_output.c
+KDE_XML  := $(REPO_ROOT)/deps/wayland-protocols/kde
+KDE_HDRS := $(REPO_ROOT)/gfx/common/wayland/kde-output-device-v2.h \
+            $(REPO_ROOT)/gfx/common/wayland/kde-output-management-v2.h
+KDE_CODE := kde-output-device-v2-protocol.c kde-output-management-v2-protocol.c
 SOURCES := mutter_displayconfig_test.c \
            $(REPO_ROOT)/gfx/common/mutter_displayconfig.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_x11.c \
@@ -15,6 +21,9 @@ SOURCES := mutter_displayconfig_test.c \
            $(REPO_ROOT)/gfx/common/dbus_runtime.c \
            $(LRC)/rthreads/rthreads.c \
            $(LRC)/dynamic/dylib.c \
+           $(REPO_ROOT)/gfx/common/wayland_kwin_output.c \
+           kde-output-device-v2-protocol.c \
+           kde-output-management-v2-protocol.c \
            $(LRC)/compat/compat_strl.c
 
 CFLAGS  += -Wall -std=gnu99 -g -O0 \
@@ -42,10 +51,16 @@ obj/%.o: %.c
 	@mkdir -p obj
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(REPO_ROOT)/gfx/common/wayland/kde-%.h: $(KDE_XML)/kde-%.xml
+	wayland-scanner client-header $< $@
+kde-%-protocol.c: $(KDE_XML)/kde-%.xml
+	wayland-scanner private-code $< $@
+$(OBJS): $(KDE_HDRS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 clean:
-	rm -rf $(TARGET) obj
+	rm -rf $(TARGET) obj $(KDE_CODE)
 
 .PHONY: clean

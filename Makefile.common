@@ -1350,6 +1350,9 @@ ifeq ($(HAVE_WAYLAND), 1)
         gfx/common/wayland/tearing-control-v1.o \
         gfx/common/wayland/color-management-v1.o \
         gfx/common/wayland_color.o \
+        gfx/common/wayland/kde-output-device-v2.o \
+        gfx/common/wayland/kde-output-management-v2.o \
+        gfx/common/wayland_kwin_output.o \
         gfx/common/wayland/drm-lease-v1.o \
         gfx/common/wayland_drm_lease.o
 
