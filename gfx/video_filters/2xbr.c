@@ -65,6 +65,9 @@ struct filter_data
    unsigned threads;
    struct softfilter_thread_data *workers;
    unsigned in_fmt;
+   /* Rows in the whole frame, for clamping the 5x5 neighbourhood at
+    * its top and bottom whichever slice a worker has. */
+   unsigned frame_height;
    uint16_t RGBtoYUV[65536];
    uint16_t tbl_5_to_8[32];
    uint16_t tbl_6_to_8[64];
@@ -531,7 +534,6 @@ int eq8(uint32_t A, uint32_t B,
          out[1] = E[1]; \
          out[dst_stride] = E[2]; \
          out[dst_stride + 1] = E[3]; \
-         ++in; \
          out += 2
 #endif
 
@@ -539,7 +541,7 @@ static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
       int first, int last, uint32_t *src,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
-   unsigned nextline, finish;
+   unsigned x, y;
    uint32_t pg_red_mask      = RED_MASK8888;
    uint32_t pg_green_mask    = GREEN_MASK8888;
    uint32_t pg_blue_mask     = BLUE_MASK8888;
@@ -547,40 +549,53 @@ static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
    uint32_t pg_alpha_mask    = ALPHA_MASK8888;
    struct filter_data *filt = (struct filter_data*)data;
 
-   (void)filt;
+   (void)last;
 
-   nextline = (last) ? 0 : src_stride;
-
-   for (; height; height--)
+   for (y = 0; y < height; y++)
    {
-      uint32_t *in  = (uint32_t*)src;
-      uint32_t *out = (uint32_t*)dst;
+      /* The 5x5 neighbourhood, clamped to the frame: rows above and
+       * below the edge repeat the edge row, as columns do at the sides. */
+      unsigned abs_y   = (unsigned)first + y;
+      int up1          = abs_y >= 1 ? -1 : 0;
+      int up2          = abs_y >= 2 ? -2 : up1;
+      int dn1          = abs_y + 1 < filt->frame_height ? 1 : 0;
+      int dn2          = abs_y + 2 < filt->frame_height ? 2 : dn1;
+      const uint32_t *rm2 = src + up2 * (int)src_stride;
+      const uint32_t *rm1 = src + up1 * (int)src_stride;
+      const uint32_t *r0  = src;
+      const uint32_t *rp1 = src + dn1 * (int)src_stride;
+      const uint32_t *rp2 = src + dn2 * (int)src_stride;
+      uint32_t *out       = dst;
 
-      for (finish = width; finish; finish -= 1)
+      for (x = 0; x < width; x++)
       {
          uint32_t E[4];
          uint32_t ex, e, i, ke, ki, ex2, ex3, px;
-         uint32_t A1 = *(in - nextline - nextline - 1);
-         uint32_t B1 = *(in - nextline - nextline);
-         uint32_t C1 = *(in - nextline - nextline + 1);
-         uint32_t A0 = *(in - nextline - 2);
-         uint32_t PA = *(in - nextline - 1);
-         uint32_t PB = *(in - nextline);
-         uint32_t PC = *(in - nextline + 1);
-         uint32_t C4 = *(in - nextline + 2);
-         uint32_t D0 = *(in - 2);
-         uint32_t PD = *(in - 1);
-         uint32_t PE = *(in);
-         uint32_t PF = *(in + 1);
-         uint32_t F4 = *(in + 2);
-         uint32_t G0 = *(in + nextline - 2);
-         uint32_t PG = *(in + nextline - 1);
-         uint32_t PH = *(in + nextline);
-         uint32_t _PI = *(in + nextline + 1);
-         uint32_t I4 = *(in + nextline + 2);
-         uint32_t G5 = *(in + nextline + nextline - 1);
-         uint32_t H5 = *(in + nextline + nextline);
-         uint32_t I5 = *(in + nextline + nextline + 1);
+         unsigned xm1   = x ? x - 1 : 0;
+         unsigned xm2   = x > 1 ? x - 2 : xm1;
+         unsigned xp1   = x + 1 < width ? x + 1 : x;
+         unsigned xp2   = x + 2 < width ? x + 2 : xp1;
+         uint32_t A1 = rm2[xm1];
+         uint32_t B1 = rm2[x];
+         uint32_t C1 = rm2[xp1];
+         uint32_t A0 = rm1[xm2];
+         uint32_t PA = rm1[xm1];
+         uint32_t PB = rm1[x];
+         uint32_t PC = rm1[xp1];
+         uint32_t C4 = rm1[xp2];
+         uint32_t D0 = r0[xm2];
+         uint32_t PD = r0[xm1];
+         uint32_t PE = r0[x];
+         uint32_t PF = r0[xp1];
+         uint32_t F4 = r0[xp2];
+         uint32_t G0 = rp1[xm2];
+         uint32_t PG = rp1[xm1];
+         uint32_t PH = rp1[x];
+         uint32_t _PI = rp1[xp1];
+         uint32_t I4 = rp1[xp2];
+         uint32_t G5 = rp2[xm1];
+         uint32_t H5 = rp2[x];
+         uint32_t I5 = rp2[xp1];
 
          /*
           * Map of the pixels:          A1 B1 C1
@@ -602,44 +617,60 @@ static void twoxbr_generic_rgb565(void *data, unsigned width, unsigned height,
       int first, int last, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   unsigned finish;
+   unsigned x, y;
    struct filter_data *filt = (struct filter_data*)data;
    uint16_t pg_red_mask     = RED_MASK565;
    uint16_t pg_green_mask   = GREEN_MASK565;
    uint16_t pg_blue_mask    = BLUE_MASK565;
    uint16_t pg_lbmask       = PG_LBMASK565;
-   unsigned nextline        = (last) ? 0 : src_stride;
 
-   for (; height; height--)
+   (void)last;
+
+   for (y = 0; y < height; y++)
    {
-      uint16_t *in  = (uint16_t*)src;
-      uint16_t *out = (uint16_t*)dst;
+      /* The 5x5 neighbourhood, clamped to the frame: rows above and
+       * below the edge repeat the edge row, as columns do at the sides. */
+      unsigned abs_y   = (unsigned)first + y;
+      int up1          = abs_y >= 1 ? -1 : 0;
+      int up2          = abs_y >= 2 ? -2 : up1;
+      int dn1          = abs_y + 1 < filt->frame_height ? 1 : 0;
+      int dn2          = abs_y + 2 < filt->frame_height ? 2 : dn1;
+      const uint16_t *rm2 = src + up2 * (int)src_stride;
+      const uint16_t *rm1 = src + up1 * (int)src_stride;
+      const uint16_t *r0  = src;
+      const uint16_t *rp1 = src + dn1 * (int)src_stride;
+      const uint16_t *rp2 = src + dn2 * (int)src_stride;
+      uint16_t *out       = dst;
 
-      for (finish = width; finish; finish -= 1)
+      for (x = 0; x < width; x++)
       {
          uint16_t E[4];
          uint16_t ex, e, i, ke, ki, ex2, ex3, px;
-         uint16_t A1 = *(in - nextline - nextline - 1);
-         uint16_t B1 = *(in - nextline - nextline);
-         uint16_t C1 = *(in - nextline - nextline + 1);
-         uint16_t A0 = *(in - nextline - 2);
-         uint16_t PA = *(in - nextline - 1);
-         uint16_t PB = *(in - nextline);
-         uint16_t PC = *(in - nextline + 1);
-         uint16_t C4 = *(in - nextline + 2);
-         uint16_t D0 = *(in - 2);
-         uint16_t PD = *(in - 1);
-         uint16_t PE = *(in);
-         uint16_t PF = *(in + 1);
-         uint16_t F4 = *(in + 2);
-         uint16_t G0 = *(in + nextline - 2);
-         uint16_t PG = *(in + nextline - 1);
-         uint16_t PH = *(in + nextline);
-         uint16_t _PI = *(in + nextline + 1);
-         uint16_t I4 = *(in + nextline + 2);
-         uint16_t G5 = *(in + nextline + nextline - 1);
-         uint16_t H5 = *(in + nextline + nextline);
-         uint16_t I5 = *(in + nextline + nextline + 1);
+         unsigned xm1   = x ? x - 1 : 0;
+         unsigned xm2   = x > 1 ? x - 2 : xm1;
+         unsigned xp1   = x + 1 < width ? x + 1 : x;
+         unsigned xp2   = x + 2 < width ? x + 2 : xp1;
+         uint16_t A1 = rm2[xm1];
+         uint16_t B1 = rm2[x];
+         uint16_t C1 = rm2[xp1];
+         uint16_t A0 = rm1[xm2];
+         uint16_t PA = rm1[xm1];
+         uint16_t PB = rm1[x];
+         uint16_t PC = rm1[xp1];
+         uint16_t C4 = rm1[xp2];
+         uint16_t D0 = r0[xm2];
+         uint16_t PD = r0[xm1];
+         uint16_t PE = r0[x];
+         uint16_t PF = r0[xp1];
+         uint16_t F4 = r0[xp2];
+         uint16_t G0 = rp1[xm2];
+         uint16_t PG = rp1[xm1];
+         uint16_t PH = rp1[x];
+         uint16_t _PI = rp1[xp1];
+         uint16_t I4 = rp1[xp2];
+         uint16_t G5 = rp2[xm1];
+         uint16_t H5 = rp2[x];
+         uint16_t I5 = rp2[xp1];
 
          /*
           * Map of the pixels:          A1 B1 C1
@@ -697,6 +728,8 @@ static void twoxbr_generic_packets(void *data,
 {
    unsigned i;
    struct filter_data *filt = (struct filter_data*)data;
+
+   filt->frame_height = height;
 
    for (i = 0; i < filt->threads; i++)
    {
