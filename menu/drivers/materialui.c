@@ -7014,7 +7014,7 @@ MUI_NOINLINE static void materialui_render_header(
    bool menu_timedate_enable             = video_info->timedate_enable;
    unsigned menu_timedate_style          = video_info->menu.timedate_style;
    unsigned menu_timedate_date_separator = video_info->menu.timedate_date_separator;
-   bool menu_core_enable                 = video_info->menu.core_enable;
+   bool menu_core_enable                 = ((video_info->menu.flags & VIDEO_MENU_FLAG_CORE_ENABLE) ? true : false);
 
    menu_title_buf[0]  = '\0';
 
@@ -8372,7 +8372,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    unsigned header_height         = p_disp->header_height;
    enum gfx_animation_ticker_type
       menu_ticker_type            = (enum gfx_animation_ticker_type)video_info->menu.ticker_type;
-   bool menu_ticker_smooth        = video_info->menu.ticker_smooth;
+   bool menu_ticker_smooth        = ((video_info->menu.flags & VIDEO_MENU_FLAG_TICKER_SMOOTH) ? true : false);
    bool libretro_running          = video_info->libretro_running;
    float menu_wallpaper_opacity   = video_info->menu_wallpaper_opacity;
    float menu_framebuffer_opacity = video_info->menu_framebuffer_opacity;

@@ -412,6 +412,40 @@ typedef struct video_info
  * settings for a caller on the main thread, and into the frame's own
  * copies for one on the video thread - the wrapper repoints them as
  * it hands the frame over, as it does the widget paths. */
+/* Flags of video_frame_menu_settings_t.flags, one per menu bool. */
+enum video_frame_menu_flags
+{
+   VIDEO_MENU_FLAG_RGUI_SHADOWS                                 = (1u << 0),
+   VIDEO_MENU_FLAG_RGUI_EXTENDED_ASCII                          = (1u << 1),
+   VIDEO_MENU_FLAG_RGUI_TRANSPARENCY                            = (1u << 2),
+   VIDEO_MENU_FLAG_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE      = (1u << 3),
+   VIDEO_MENU_FLAG_RGUI_BORDER_FILLER_THICKNESS_ENABLE          = (1u << 4),
+   VIDEO_MENU_FLAG_RGUI_BORDER_FILLER_ENABLE                    = (1u << 5),
+   VIDEO_MENU_FLAG_RGUI_PARTICLE_EFFECT_SCREENSAVER             = (1u << 6),
+   VIDEO_MENU_FLAG_NETWORK_ON_DEMAND_THUMBNAILS                 = (1u << 7),
+   VIDEO_MENU_FLAG_MOUSE_ENABLE                                 = (1u << 8),
+   VIDEO_MENU_FLAG_POINTER_ENABLE                               = (1u << 9),
+   VIDEO_MENU_FLAG_THUMBNAIL_BACKGROUND_ENABLE                  = (1u << 10),
+   VIDEO_MENU_FLAG_CORE_ENABLE                                  = (1u << 11),
+   VIDEO_MENU_FLAG_XMB_SHOW_TITLE_HEADER                        = (1u << 12),
+   VIDEO_MENU_FLAG_XMB_VERTICAL_THUMBNAILS                      = (1u << 13),
+   VIDEO_MENU_FLAG_TICKER_SMOOTH                                = (1u << 14),
+   VIDEO_MENU_FLAG_XMB_ENTRY_ICONS                              = (1u << 15),
+   VIDEO_MENU_FLAG_XMB_SWITCH_ICONS                             = (1u << 16),
+   VIDEO_MENU_FLAG_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME      = (1u << 17),
+   VIDEO_MENU_FLAG_OZONE_SCROLL_CONTENT_METADATA                = (1u << 18),
+   VIDEO_MENU_FLAG_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY        = (1u << 19),
+   VIDEO_MENU_FLAG_DISABLE_SEARCH_BUTTON                        = (1u << 20),
+   VIDEO_MENU_FLAG_PLAYLIST_SHOW_ENTRY_IDX                      = (1u << 21),
+   VIDEO_MENU_FLAG_KIOSK_MODE_ENABLE                            = (1u << 22),
+   VIDEO_MENU_FLAG_CONTENT_RUNTIME_LOG                          = (1u << 23),
+   VIDEO_MENU_FLAG_CONTENT_RUNTIME_LOG_AGGREGATE                = (1u << 24),
+   VIDEO_MENU_FLAG_XMB_FONT_IS_DEFAULT                          = (1u << 25),
+   VIDEO_MENU_FLAG_USE_PREFERRED_SYSTEM_COLOR_THEME             = (1u << 26),
+   VIDEO_MENU_FLAG_SAVESTATE_THUMBNAIL_ENABLE                   = (1u << 27),
+   VIDEO_MENU_FLAG_SHOW_SUBLABELS                               = (1u << 28)
+};
+
 typedef struct video_frame_menu_settings
 {
    const char *rgui_theme_preset;
@@ -441,39 +475,11 @@ typedef struct video_frame_menu_settings
    unsigned startup_page;
    int      xmb_title_margin;
    int      xmb_title_margin_horizontal_offset;
-   bool     rgui_shadows;
-   bool     rgui_extended_ascii;
-   bool     rgui_transparency;
-   bool     rgui_background_filler_thickness_enable;
-   bool     rgui_border_filler_thickness_enable;
-   bool     rgui_border_filler_enable;
-   bool     rgui_particle_effect_screensaver;
-   bool     network_on_demand_thumbnails;
-   bool     mouse_enable;
-   bool     pointer_enable;
-   bool     thumbnail_background_enable;
-   bool     core_enable;
-   bool     xmb_show_title_header;
-   bool     xmb_vertical_thumbnails;
-   bool     ticker_smooth;
-   bool     xmb_entry_icons;
-   bool     xmb_switch_icons;
-   bool     ozone_sort_after_truncate_playlist_name;
-   bool     ozone_scroll_content_metadata;
-   bool     show_sublabels_current_selection_only;
-   bool     disable_search_button;
-   bool     playlist_show_entry_idx;
-   bool     kiosk_mode_enable;
-   bool     content_runtime_log;
-   bool     content_runtime_log_aggregate;
+   uint32_t flags; /* enum video_frame_menu_flags */
    /* Derived: whether path_menu_xmb_font is the FILE_PATH_UNKNOWN
     * placeholder, i.e. no custom menu font is configured. The path
     * itself stays out of the per-frame snapshot; the one frame-path
     * consumer only ever asks this predicate. */
-   bool     xmb_font_is_default;
-   bool     use_preferred_system_color_theme;
-   bool     savestate_thumbnail_enable;
-   bool     show_sublabels;
 } video_frame_menu_settings_t;
 
 typedef struct video_frame_info

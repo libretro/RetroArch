@@ -8587,8 +8587,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 {
    rgui_t *rgui                        = (rgui_t*)data;
    struct menu_state *menu_st          = menu_state_get_ptr();
-   bool bg_filler_thickness_enable     = video_info->menu.rgui_background_filler_thickness_enable;
-   bool border_filler_thickness_enable = video_info->menu.rgui_border_filler_thickness_enable;
+   bool bg_filler_thickness_enable     = ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE) ? true : false);
+   bool border_filler_thickness_enable = ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_BORDER_FILLER_THICKNESS_ENABLE) ? true : false);
 #if defined(DINGUX)
    unsigned aspect_ratio               = RGUI_DINGUX_ASPECT_RATIO;
    unsigned aspect_ratio_lock          = RGUI_ASPECT_RATIO_LOCK_NONE;
@@ -8596,7 +8596,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    unsigned aspect_ratio               = video_info->menu.rgui_aspect_ratio;
    unsigned aspect_ratio_lock          = video_info->menu.rgui_aspect_ratio_lock;
 #endif
-   bool border_filler_enable           = video_info->menu.rgui_border_filler_enable;
+   bool border_filler_enable           = ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_BORDER_FILLER_ENABLE) ? true : false);
    unsigned video_width                = VIDEO_SCALE_W(video_info->dims);
    unsigned video_height               = VIDEO_SCALE_H(video_info->dims);
    gfx_display_t *p_disp               = disp_get_ptr();
@@ -8631,16 +8631,16 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          rgui->flags        &= ~RGUI_FLAG_BORDER_ENABLE;
    }
 
-   if (video_info->menu.rgui_shadows != ((rgui->flags & RGUI_FLAG_SHADOW_ENABLE) > 0))
+   if (((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_SHADOWS) ? true : false) != ((rgui->flags & RGUI_FLAG_SHADOW_ENABLE) > 0))
    {
       rgui_set_blit_functions(
             rgui->language,
-            video_info->menu.rgui_shadows,
-            video_info->menu.rgui_extended_ascii);
+            ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_SHADOWS) ? true : false),
+            ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_EXTENDED_ASCII) ? true : false));
 
       rgui->flags           |=  RGUI_FLAG_BG_MODIFIED
                              |  RGUI_FLAG_FORCE_REDRAW;
-      if (video_info->menu.rgui_shadows)
+      if (((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_SHADOWS) ? true : false))
          rgui->flags        |=  RGUI_FLAG_SHADOW_ENABLE;
       else
          rgui->flags        &= ~RGUI_FLAG_SHADOW_ENABLE;
@@ -8658,18 +8658,18 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 
    if (    (rgui->particle_effect != RGUI_PARTICLE_EFFECT_NONE)
         && (     (!(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER))
-              || (video_info->menu.rgui_particle_effect_screensaver)))
+              || (((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_PARTICLE_EFFECT_SCREENSAVER) ? true : false))))
       rgui->flags           |= RGUI_FLAG_FORCE_REDRAW;
 
-   if (video_info->menu.rgui_extended_ascii != ((rgui->flags & RGUI_FLAG_EXTENDED_ASCII_ENABLE) > 0))
+   if (((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_EXTENDED_ASCII) ? true : false) != ((rgui->flags & RGUI_FLAG_EXTENDED_ASCII_ENABLE) > 0))
    {
       rgui_set_blit_functions(
             rgui->language,
-            video_info->menu.rgui_shadows,
-            video_info->menu.rgui_extended_ascii);
+            ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_SHADOWS) ? true : false),
+            ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_EXTENDED_ASCII) ? true : false));
 
       rgui->flags                |=  RGUI_FLAG_FORCE_REDRAW;
-      if (video_info->menu.rgui_extended_ascii)
+      if (((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_EXTENDED_ASCII) ? true : false))
          rgui->flags             |=  RGUI_FLAG_EXTENDED_ASCII_ENABLE;
       else
          rgui->flags             &= ~RGUI_FLAG_EXTENDED_ASCII_ENABLE;
@@ -8677,7 +8677,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
 
    if (     (video_info->menu.rgui_color_theme != rgui->color_theme)
          || (  (rgui->flags & RGUI_FLAG_TRANSPARENCY_SUPPORTED)
-            && (video_info->menu.rgui_transparency !=
+            && (((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_TRANSPARENCY) ? true : false) !=
                ((rgui->flags & RGUI_FLAG_TRANSPARENCY_ENABLE) > 0))))
    {
       if (video_info->menu.rgui_color_theme == RGUI_THEME_DYNAMIC)
@@ -8687,7 +8687,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
       rgui_prepare_colors(rgui,
             video_info->menu.rgui_color_theme,
             video_info->menu.rgui_theme_preset,
-            video_info->menu.rgui_transparency,
+            ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_TRANSPARENCY) ? true : false),
             video_info->menu.rgui_aspect_ratio
             );
    }
@@ -8698,7 +8698,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          rgui_prepare_colors(rgui,
                video_info->menu.rgui_color_theme,
                video_info->menu.rgui_theme_preset,
-               video_info->menu.rgui_transparency,
+               ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_TRANSPARENCY) ? true : false),
                video_info->menu.rgui_aspect_ratio
                );
    }
@@ -8709,7 +8709,7 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          rgui_prepare_colors(rgui,
                video_info->menu.rgui_color_theme,
                video_info->menu.rgui_theme_preset,
-               video_info->menu.rgui_transparency,
+               ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_TRANSPARENCY) ? true : false),
                video_info->menu.rgui_aspect_ratio
                );
    }
@@ -8848,12 +8848,12 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
                   ? 1.5f
                   : 1.0f)))
          rgui_load_current_thumbnails(rgui, menu_st,
-               video_info->menu.network_on_demand_thumbnails);
+               ((video_info->menu.flags & VIDEO_MENU_FLAG_NETWORK_ON_DEMAND_THUMBNAILS) ? true : false));
    }
 
    /* Read pointer input */
-   if (     video_info->menu.mouse_enable
-         || video_info->menu.pointer_enable)
+   if (     ((video_info->menu.flags & VIDEO_MENU_FLAG_MOUSE_ENABLE) ? true : false)
+         || ((video_info->menu.flags & VIDEO_MENU_FLAG_POINTER_ENABLE) ? true : false))
    {
       menu_input_get_pointer_state(&rgui->pointer);
 

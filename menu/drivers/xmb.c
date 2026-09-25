@@ -5895,14 +5895,14 @@ XMB_NOINLINE static int xmb_draw_item(
    unsigned ticker_limit               = ((xmb->use_ps3_layout) ? 37 : 37) * xmb->scale_mod[0];
    unsigned line_ticker_width          = ((xmb->use_ps3_layout) ? 58 : 58) * xmb->scale_mod[3];
    xmb_node_t *node                    = (xmb_node_t*)list->list[i].userdata;
-   bool use_smooth_ticker              = video_info->menu.ticker_smooth;
+   bool use_smooth_ticker              = ((video_info->menu.flags & VIDEO_MENU_FLAG_TICKER_SMOOTH) ? true : false);
    enum gfx_animation_ticker_type menu_ticker_type
                                        = (enum gfx_animation_ticker_type)video_info->menu.ticker_type;
    unsigned thumbnail_scale_factor     = video_info->menu.xmb_thumbnail_scale_factor;
-   bool vertical_thumbnails            = video_info->menu.xmb_vertical_thumbnails;
-   bool show_sublabels                 = video_info->menu.show_sublabels;
-   bool show_entry_icons               = video_info->menu.xmb_entry_icons;
-   bool show_switch_icons              = video_info->menu.xmb_switch_icons;
+   bool vertical_thumbnails            = ((video_info->menu.flags & VIDEO_MENU_FLAG_XMB_VERTICAL_THUMBNAILS) ? true : false);
+   bool show_sublabels                 = ((video_info->menu.flags & VIDEO_MENU_FLAG_SHOW_SUBLABELS) ? true : false);
+   bool show_entry_icons               = ((video_info->menu.flags & VIDEO_MENU_FLAG_XMB_ENTRY_ICONS) ? true : false);
+   bool show_switch_icons              = ((video_info->menu.flags & VIDEO_MENU_FLAG_XMB_SWITCH_ICONS) ? true : false);
    unsigned show_history_icons         = video_info->menu.playlist_show_history_icons;
    unsigned vertical_fade_factor       = video_info->menu.xmb_vertical_fade_factor;
    bool show_icon_thumbnail            = false;
@@ -6078,7 +6078,7 @@ XMB_NOINLINE static int xmb_draw_item(
          break;
    }
 
-   if (!use_smooth_ticker && video_info->menu.xmb_font_is_default)
+   if (!use_smooth_ticker && ((video_info->menu.flags & VIDEO_MENU_FLAG_XMB_FONT_IS_DEFAULT) ? true : false))
    {
       ticker_limit      *= 0.85f;
       line_ticker_width *= 0.85f;
@@ -6326,7 +6326,7 @@ XMB_NOINLINE static int xmb_draw_item(
          unsigned offset          = list->list[i].entry_idx;
 
          /* Search for sorted icon order */
-         if (video_info->menu.ozone_sort_after_truncate_playlist_name)
+         if (((video_info->menu.flags & VIDEO_MENU_FLAG_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME) ? true : false))
          {
             for (offset = 0; offset < xmb->horizontal_list.size; offset++)
             {
@@ -8823,7 +8823,7 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
             0.05f, 0.05f, 0.05f, 1.0f,
             0.05f, 0.05f, 0.05f, 1.0f,
       };
-      bool menu_ticker_smooth           = video_info->menu.ticker_smooth;
+      bool menu_ticker_smooth           = ((video_info->menu.flags & VIDEO_MENU_FLAG_TICKER_SMOOTH) ? true : false);
       enum gfx_animation_ticker_type menu_ticker_type
                                         = (enum gfx_animation_ticker_type)video_info->menu.ticker_type;
       bool show_header                  = *xmb->fullscreen_thumbnail_label;
@@ -9183,9 +9183,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    float pseudo_font_length            = 0.0f;
    xmb_handle_t *xmb                   = (xmb_handle_t*)data;
    float thumbnail_scale_factor        = (float)video_info->menu.xmb_thumbnail_scale_factor / 100.0f;
-   bool menu_core_enable               = video_info->menu.core_enable;
-   bool show_title_header              = video_info->menu.xmb_show_title_header;
-   bool vertical_thumbnails            = video_info->menu.xmb_vertical_thumbnails;
+   bool menu_core_enable               = ((video_info->menu.flags & VIDEO_MENU_FLAG_CORE_ENABLE) ? true : false);
+   bool show_title_header              = ((video_info->menu.flags & VIDEO_MENU_FLAG_XMB_SHOW_TITLE_HEADER) ? true : false);
+   bool vertical_thumbnails            = ((video_info->menu.flags & VIDEO_MENU_FLAG_XMB_VERTICAL_THUMBNAILS) ? true : false);
    unsigned vertical_fade_factor       = video_info->menu.xmb_vertical_fade_factor;
    unsigned current_menu_icon          = video_info->menu.xmb_current_menu_icon;
    void *userdata                      = video_info->userdata;
@@ -9684,7 +9684,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       if (     (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
             || (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING))
       {
-         if (video_info->menu.thumbnail_background_enable)
+         if (((video_info->menu.flags & VIDEO_MENU_FLAG_THUMBNAIL_BACKGROUND_ENABLE) ? true : false))
             gfx_display_draw_quad(
                   p_disp,
                   userdata,
@@ -9745,7 +9745,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             0.0f, 0.0f, 0.0f, 1.0f,
             0.0f, 0.0f, 0.0f, 1.0f,
       };
-      bool thumbnail_background = video_info->menu.thumbnail_background_enable;
+      bool thumbnail_background = ((video_info->menu.flags & VIDEO_MENU_FLAG_THUMBNAIL_BACKGROUND_ENABLE) ? true : false);
       bool show_right_thumbnail =
                (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
             && xmb->show_thumbnails
@@ -10159,7 +10159,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                                      - icon_len
                                      - title_header_max_width);
       unsigned ticker_x_offset       = 0;
-      bool use_smooth_ticker         = video_info->menu.ticker_smooth;
+      bool use_smooth_ticker         = ((video_info->menu.flags & VIDEO_MENU_FLAG_TICKER_SMOOTH) ? true : false);
       enum gfx_animation_ticker_type menu_ticker_type
                                      = (enum gfx_animation_ticker_type)video_info->menu.ticker_type;
 

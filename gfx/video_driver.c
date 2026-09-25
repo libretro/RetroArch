@@ -4989,36 +4989,66 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->menu.xmb_title_margin                       = settings->ints.menu_xmb_title_margin;
       video_info->menu.xmb_title_margin_horizontal_offset     = settings->ints.menu_xmb_title_margin_horizontal_offset;
 #endif
-      video_info->menu.rgui_shadows                           = settings->bools.menu_rgui_shadows;
-      video_info->menu.rgui_extended_ascii                    = settings->bools.menu_rgui_extended_ascii;
-      video_info->menu.rgui_transparency                      = settings->bools.menu_rgui_transparency;
-      video_info->menu.rgui_background_filler_thickness_enable = settings->bools.menu_rgui_background_filler_thickness_enable;
-      video_info->menu.rgui_border_filler_thickness_enable    = settings->bools.menu_rgui_border_filler_thickness_enable;
-      video_info->menu.rgui_border_filler_enable              = settings->bools.menu_rgui_border_filler_enable;
-      video_info->menu.rgui_particle_effect_screensaver       = settings->bools.menu_rgui_particle_effect_screensaver;
-      video_info->menu.network_on_demand_thumbnails           = settings->bools.network_on_demand_thumbnails;
-      video_info->menu.mouse_enable                           = settings->bools.menu_mouse_enable;
-      video_info->menu.pointer_enable                         = settings->bools.menu_pointer_enable;
-      video_info->menu.thumbnail_background_enable            = settings->bools.menu_thumbnail_background_enable;
-      video_info->menu.core_enable                            = settings->bools.menu_core_enable;
-      video_info->menu.xmb_show_title_header                  = settings->bools.menu_xmb_show_title_header;
-      video_info->menu.xmb_vertical_thumbnails                = settings->bools.menu_xmb_vertical_thumbnails;
-      video_info->menu.ticker_smooth                          = settings->bools.menu_ticker_smooth;
-      video_info->menu.xmb_entry_icons                        = settings->bools.menu_xmb_entry_icons;
-      video_info->menu.xmb_switch_icons                       = settings->bools.menu_xmb_switch_icons;
-      video_info->menu.ozone_sort_after_truncate_playlist_name = settings->bools.ozone_sort_after_truncate_playlist_name;
-      video_info->menu.ozone_scroll_content_metadata          = settings->bools.ozone_scroll_content_metadata;
-      video_info->menu.show_sublabels_current_selection_only  = settings->bools.menu_show_sublabels_current_selection_only;
-      video_info->menu.disable_search_button                  = settings->bools.menu_disable_search_button;
-      video_info->menu.playlist_show_entry_idx                = settings->bools.playlist_show_entry_idx;
-      video_info->menu.kiosk_mode_enable                      = settings->bools.kiosk_mode_enable;
-      video_info->menu.content_runtime_log                    = settings->bools.content_runtime_log;
-      video_info->menu.content_runtime_log_aggregate          = settings->bools.content_runtime_log_aggregate;
-      video_info->menu.xmb_font_is_default                    = string_is_equal(
-            settings->paths.path_menu_xmb_font, FILE_PATH_UNKNOWN);
-      video_info->menu.use_preferred_system_color_theme       = settings->bools.menu_use_preferred_system_color_theme;
-      video_info->menu.savestate_thumbnail_enable             = settings->bools.savestate_thumbnail_enable;
-      video_info->menu.show_sublabels                         = settings->bools.menu_show_sublabels;
+      video_info->menu.flags = 0;
+      if (settings->bools.menu_rgui_shadows)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_RGUI_SHADOWS;
+      if (settings->bools.menu_rgui_extended_ascii)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_RGUI_EXTENDED_ASCII;
+      if (settings->bools.menu_rgui_transparency)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_RGUI_TRANSPARENCY;
+      if (settings->bools.menu_rgui_background_filler_thickness_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE;
+      if (settings->bools.menu_rgui_border_filler_thickness_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_RGUI_BORDER_FILLER_THICKNESS_ENABLE;
+      if (settings->bools.menu_rgui_border_filler_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_RGUI_BORDER_FILLER_ENABLE;
+      if (settings->bools.menu_rgui_particle_effect_screensaver)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_RGUI_PARTICLE_EFFECT_SCREENSAVER;
+      if (settings->bools.network_on_demand_thumbnails)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_NETWORK_ON_DEMAND_THUMBNAILS;
+      if (settings->bools.menu_mouse_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_MOUSE_ENABLE;
+      if (settings->bools.menu_pointer_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_POINTER_ENABLE;
+      if (settings->bools.menu_thumbnail_background_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_THUMBNAIL_BACKGROUND_ENABLE;
+      if (settings->bools.menu_core_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_CORE_ENABLE;
+      if (settings->bools.menu_xmb_show_title_header)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_XMB_SHOW_TITLE_HEADER;
+      if (settings->bools.menu_xmb_vertical_thumbnails)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_XMB_VERTICAL_THUMBNAILS;
+      if (settings->bools.menu_ticker_smooth)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_TICKER_SMOOTH;
+      if (settings->bools.menu_xmb_entry_icons)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_XMB_ENTRY_ICONS;
+      if (settings->bools.menu_xmb_switch_icons)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_XMB_SWITCH_ICONS;
+      if (settings->bools.ozone_sort_after_truncate_playlist_name)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME;
+      if (settings->bools.ozone_scroll_content_metadata)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_OZONE_SCROLL_CONTENT_METADATA;
+      if (settings->bools.menu_show_sublabels_current_selection_only)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY;
+      if (settings->bools.menu_disable_search_button)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_DISABLE_SEARCH_BUTTON;
+      if (settings->bools.playlist_show_entry_idx)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_PLAYLIST_SHOW_ENTRY_IDX;
+      if (settings->bools.kiosk_mode_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_KIOSK_MODE_ENABLE;
+      if (settings->bools.content_runtime_log)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_CONTENT_RUNTIME_LOG;
+      if (settings->bools.content_runtime_log_aggregate)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_CONTENT_RUNTIME_LOG_AGGREGATE;
+      if (string_is_equal(settings->paths.path_menu_xmb_font,
+               FILE_PATH_UNKNOWN))
+         video_info->menu.flags |= VIDEO_MENU_FLAG_XMB_FONT_IS_DEFAULT;
+      if (settings->bools.menu_use_preferred_system_color_theme)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_USE_PREFERRED_SYSTEM_COLOR_THEME;
+      if (settings->bools.savestate_thumbnail_enable)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_SAVESTATE_THUMBNAIL_ENABLE;
+      if (settings->bools.menu_show_sublabels)
+         video_info->menu.flags |= VIDEO_MENU_FLAG_SHOW_SUBLABELS;
    }
    else
 #endif
