@@ -101,6 +101,9 @@
 #ifndef GL_UNSIGNED_INT_2_10_10_10_REV
 #define GL_UNSIGNED_INT_2_10_10_10_REV    0x8368
 #endif
+#ifndef GL_UNSIGNED_SHORT_5_6_5
+#define GL_UNSIGNED_SHORT_5_6_5           0x8363
+#endif
 
 #define RARCH_GL1_INTERNAL_FORMAT32 GL_RGBA8
 #define RARCH_GL1_TEXTURE_TYPE32    GL_BGRA_EXT
@@ -125,7 +128,19 @@ enum gl1_flags
     * implementations it is provided by GL_EXT_packed_pixels.  When
     * neither is available, the menu path falls back to expanding
     * RGUI's RGBA4444 framebuffer to BGRA8888 on the CPU. */
-   GL1_FLAG_SUPPORTS_PACKED_PIXELS  = (1 << 13)
+   GL1_FLAG_SUPPORTS_PACKED_PIXELS  = (1 << 13),
+   /* GL_UNSIGNED_SHORT_5_6_5 is GL 1.2 core only; GL_EXT_packed_pixels
+    * does not have it.  Without it RGB565 core frames are expanded to
+    * BGRA8888 on the CPU. */
+   GL1_FLAG_SUPPORTS_RGB565         = (1 << 14)
+};
+
+/* Layout of the pixels handed to gl1_draw_tex. */
+enum gl1_src_fmt
+{
+   GL1_SRC_XRGB8888 = 0,
+   GL1_SRC_RGBA4444,
+   GL1_SRC_RGB565
 };
 
 /* Self-contained GL entry-point typedefs for the scRGB encode; no
@@ -209,6 +224,13 @@ typedef struct gl1
     * rather than malloc'd and freed per upload. */
    uint8_t *swizzle_buf;
    size_t   swizzle_cap;
+   /* Size (VIDEO_SCALE_PACK) and internal format each texture's
+    * storage was last specified with.  Frames update it in place with
+    * glTexSubImage2D and only respecify when either changes. */
+   unsigned tex_store_dims;
+   unsigned tex_store_fmt;
+   unsigned menu_tex_store_dims;
+   unsigned menu_tex_store_fmt;
 #ifdef VITA
    /* Vita's GL needs 3-component vertices; this is the expansion
     * scratch for the menu quad and font draws, grown on demand and
@@ -1512,6 +1534,9 @@ static void *gl1_init(const video_info_t *video,
          || (gl1->version_major == 1 && gl1->version_minor >= 2)
          || string_list_find_elem(gl1->extensions, "GL_EXT_packed_pixels"))
       gl1->flags     |= GL1_FLAG_SUPPORTS_PACKED_PIXELS;
+   if (     gl1->version_major  >  1
+         || (gl1->version_major == 1 && gl1->version_minor >= 2))
+      gl1->flags     |= GL1_FLAG_SUPPORTS_RGB565;
 #endif
 
    glDisable(GL_BLEND);
@@ -1686,8 +1711,17 @@ static void gl1_tonemap_pq_rows(gl1_t *gl1, const void *frame,
    }
 }
 
-static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int height, GLuint tex, const void *frame_to_copy, bool fb_4444)
+/* 'frame_to_copy' holds width x height pixels of 'src_fmt' with rows
+ * 'src_row' pixels apart.  Callers pass the core or menu frame itself
+ * wherever the GL can take its layout, so no staging copy is made;
+ * the Vita build has no GL_UNPACK_ROW_LENGTH and always passes a
+ * pot_width-strided staging buffer. */
+static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height,
+      int width, int height, GLuint tex, const void *frame_to_copy,
+      unsigned src_row, enum gl1_src_fmt src_fmt)
 {
+   bool   fb_4444         = (src_fmt == GL1_SRC_RGBA4444);
+   bool   fb_565          = (src_fmt == GL1_SRC_RGB565);
    uint8_t *frame         = NULL;
    uint8_t *frame_rgba    = NULL;
    /* When fb_4444 is true the source is RGUI's 16bpp framebuffer in
@@ -1711,14 +1745,20 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
                          && gl1_source_10bit_native(gl1);
    GLenum format          = fb_4444
                               ? GL_RGBA
+                              : fb_565
+                              ? GL_RGB
                               : (supports_native ? GL_BGRA_EXT : GL_RGBA);
 #ifdef MSB_FIRST
    GLenum type            = fb_4444
                               ? GL_UNSIGNED_SHORT_4_4_4_4
+                              : fb_565
+                              ? GL_UNSIGNED_SHORT_5_6_5
                               : (supports_native ? GL_UNSIGNED_INT_8_8_8_8_REV : GL_UNSIGNED_BYTE);
 #else
    GLenum type            = fb_4444
                               ? GL_UNSIGNED_SHORT_4_4_4_4
+                              : fb_565
+                              ? GL_UNSIGNED_SHORT_5_6_5
                               : GL_UNSIGNED_BYTE;
 #endif
    float vertices[]       = {
@@ -1759,18 +1799,25 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
 
 #ifndef VITA
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, pot_width);
 #endif
    glBindTexture(GL_TEXTURE_2D, tex);
 
    frame = (uint8_t*)frame_to_copy;
 
    /* The BGRA-fallback swizzle below only applies to the 32bpp upload
-    * path; the 16bpp 4444 path's bytes already match GL_RGBA channel
-    * order. */
-   if (!fb_4444 && !supports_native && !src_10bit)
+    * path; the 16bpp paths' layouts are taken by the GL as they are.
+    * It writes the frame tightly packed, except on Vita, which uploads
+    * whole pot-sized buffers. */
+   if (!fb_4444 && !fb_565 && !supports_native && !src_10bit)
    {
-      size_t need = (size_t)pot_width * (size_t)pot_height * 4;
+#ifdef VITA
+      int    rows = pot_height;
+      int    cols = pot_width;
+#else
+      int    rows = height;
+      int    cols = width;
+#endif
+      size_t need = (size_t)cols * (size_t)rows * 4;
       if (need > gl1->swizzle_cap)
       {
          uint8_t *grown = (uint8_t*)realloc(gl1->swizzle_buf, need);
@@ -1785,25 +1832,28 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
       if (frame_rgba)
       {
          int x, y;
-         for (y = 0; y < pot_height; y++)
+         for (y = 0; y < rows; y++)
          {
-            for (x = 0; x < pot_width; x++)
+            const uint8_t *src = frame + (size_t)y * src_row * 4;
+            uint8_t       *dst = frame_rgba + (size_t)y * cols * 4;
+            for (x = 0; x < cols; x++)
             {
-               int index             = (y * pot_width + x) * 4;
+               int index      = x * 4;
 #ifdef MSB_FIRST
-               frame_rgba[index + 2] = frame[index + 3];
-               frame_rgba[index + 1] = frame[index + 2];
-               frame_rgba[index + 0] = frame[index + 1];
-               frame_rgba[index + 3] = frame[index + 0];
+               dst[index + 2] = src[index + 3];
+               dst[index + 1] = src[index + 2];
+               dst[index + 0] = src[index + 1];
+               dst[index + 3] = src[index + 0];
 #else
-               frame_rgba[index + 2] = frame[index + 0];
-               frame_rgba[index + 1] = frame[index + 1];
-               frame_rgba[index + 0] = frame[index + 2];
-               frame_rgba[index + 3] = frame[index + 3];
+               dst[index + 2] = src[index + 0];
+               dst[index + 1] = src[index + 1];
+               dst[index + 0] = src[index + 2];
+               dst[index + 3] = src[index + 3];
 #endif
             }
          }
-         frame = frame_rgba;
+         frame   = frame_rgba;
+         src_row = (unsigned)cols;
       }
    }
 
@@ -1813,13 +1863,39 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
       format         = GL_BGRA_EXT;
       type           = GL_UNSIGNED_INT_2_10_10_10_REV;
    }
+#ifdef VITA
    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame);
+#else
+   {
+      unsigned dims        = VIDEO_SCALE_PACK(pot_width, pot_height);
+      bool     is_core     = (tex == gl1->tex);
+      unsigned *store_dims = is_core
+            ? &gl1->tex_store_dims : &gl1->menu_tex_store_dims;
+      unsigned *store_fmt  = is_core
+            ? &gl1->tex_store_fmt  : &gl1->menu_tex_store_fmt;
 
-#ifndef VITA
-   /* Restore default row length so subsequent uploads (e.g. font atlas
-    * uploads, or any other glTexImage2D in the rest of the frame path)
-    * don't inherit pot_width as the source stride. */
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+      if (*store_dims != dims || *store_fmt != (unsigned)internalFormat)
+      {
+         /* Storage is (re)specified cleared: the texels past the frame
+          * are what linear filtering blends in at its right and bottom
+          * edges, and a NULL upload leaves them undefined. */
+         size_t bpp = (fb_4444 || fb_565) ? 2 : 4;
+         void *zero = calloc((size_t)pot_width * (size_t)pot_height, bpp);
+         glTexImage2D(GL_TEXTURE_2D, 0, internalFormat,
+               pot_width, pot_height, 0, format, type, zero);
+         free(zero);
+         *store_dims = dims;
+         *store_fmt  = (unsigned)internalFormat;
+      }
+
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, (GLint)src_row);
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height,
+            format, type, frame);
+      /* Restore the default so later uploads (font atlas and the
+       * rest of the frame path) don't inherit this stride. */
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+   }
 #endif
 
    if (tex == gl1->tex)
@@ -2197,6 +2273,8 @@ static bool gl1_frame(void *data, const void *frame,
    unsigned frame_width = VIDEO_SCALE_W(dims);
    unsigned frame_height = VIDEO_SCALE_H(dims);
    const void *frame_to_copy        = NULL;
+   unsigned src_row                 = 0;
+   enum gl1_src_fmt src_fmt         = GL1_SRC_XRGB8888;
    unsigned mode_dims              = 0;
    unsigned width                   = VIDEO_SCALE_W(video_info->dims);
    unsigned height                  = VIDEO_SCALE_H(video_info->dims);
@@ -2301,6 +2379,9 @@ static bool gl1_frame(void *data, const void *frame,
 
    if (draw && gl1->video_buf)
    {
+      frame_to_copy = gl1->video_buf;
+      src_row       = pot_width;
+
       if (bits == 32 && gl1->source_hdr10 && !gl1_source_10bit_native(gl1))
          /* PQ frames with no way to composite them on the GPU (no
           * scRGB backbuffer, or a context too old for the 10-bit
@@ -2312,17 +2393,37 @@ static bool gl1_frame(void *data, const void *frame,
          gl1_tonemap_pq_rows(gl1, frame, width, height, pitch, pot_width);
       else if (bits == 32)
       {
-         int y;
-         /* copy lines into top-left portion of larger (power-of-two) buffer */
-         for (y = 0; y < (int)height; y++)
-            memcpy(gl1->video_buf + ((pot_width * (bits / 8)) * y),
-                  (const unsigned char*)frame + (pitch * y),
-                  width * (bits / 8));
+#ifndef VITA
+         /* Uploaded from the core's own buffer at its pitch. */
+         if (!(pitch & 3))
+         {
+            frame_to_copy = frame;
+            src_row       = pitch >> 2;
+         }
+         else
+#endif
+         {
+            int y;
+            /* copy lines into top-left portion of larger (power-of-two) buffer */
+            for (y = 0; y < (int)height; y++)
+               memcpy(gl1->video_buf + ((pot_width * (bits / 8)) * y),
+                     (const unsigned char*)frame + (pitch * y),
+                     width * (bits / 8));
+         }
       }
       else if (bits == 16)
-         conv_rgb565_argb8888(gl1->video_buf, frame, width, height, pot_width * sizeof(unsigned), pitch);
-
-      frame_to_copy = gl1->video_buf;
+      {
+         if (     (gl1->flags & GL1_FLAG_SUPPORTS_RGB565)
+               && !(pitch & 1))
+         {
+            frame_to_copy = frame;
+            src_row       = pitch >> 1;
+            src_fmt       = GL1_SRC_RGB565;
+         }
+         else
+            conv_rgb565_argb8888(gl1->video_buf, frame, width, height,
+                  pot_width * sizeof(unsigned), pitch);
+      }
    }
 
    if (gl1->frame_dims != VIDEO_SCALE_PACK(width, height))
@@ -2343,7 +2444,7 @@ static bool gl1_frame(void *data, const void *frame,
 
       if (frame_to_copy)
          gl1_draw_tex(gl1, pot_width, pot_height,
-               width, height, gl1->tex, frame_to_copy, false);
+               width, height, gl1->tex, frame_to_copy, src_row, src_fmt);
    }
 
 #ifndef VITA
@@ -2367,7 +2468,6 @@ static bool gl1_frame(void *data, const void *frame,
    if (gl1->menu_frame && menu_is_alive)
    {
       bool fb_4444;
-      unsigned bpp;
 
       frame_to_copy = NULL;
       width         = VIDEO_SCALE_W(gl1->menu_dims);
@@ -2381,8 +2481,8 @@ static bool gl1_frame(void *data, const void *frame,
        * expands to 32bpp on the CPU and uploads as BGRA8888 (or RGBA8888
        * on implementations without GL_EXT_bgra). */
       fb_4444 = (bits == 16)
-             && (gl1->flags & GL1_FLAG_SUPPORTS_PACKED_PIXELS);
-      bpp     = fb_4444 ? 2 : 4;
+             && (gl1->flags & GL1_FLAG_SUPPORTS_PACKED_PIXELS)
+             && !(pitch & 1);
 
       pot_width     = GET_POT(width);
       pot_height    = GET_POT(height);
@@ -2398,32 +2498,20 @@ static bool gl1_frame(void *data, const void *frame,
          gl1->menu_video_buf = NULL;
       }
 
-      if (!gl1->menu_video_buf)
+      if (!fb_4444 && !gl1->menu_video_buf)
          gl1->menu_video_buf = (unsigned char*)
-            malloc((size_t)pot_width * (size_t)pot_height * bpp);
+            malloc((size_t)pot_width * (size_t)pot_height * 4);
 
-      if (bits == 16 && gl1->menu_video_buf)
+      if (bits == 16 && (fb_4444 || gl1->menu_video_buf))
       {
          if (fb_4444)
          {
-            /* Direct upload path: RGUI emits its framebuffer in
-             * RGBA4444 (host-endian uint16_t with R in bits 15..12,
-             * G 11..8, B 7..4, A 3..0).  Endianness of the upload is
-             * implicit: glTexImage2D reads each GL_UNSIGNED_SHORT_4_4_4_4
-             * unit using the host's native uint16_t interpretation, so
-             * the same source bytes work on LE and BE hosts without a
-             * byte swap.  Copy width-rows into the top-left of the
-             * pot-padded staging buffer; rows beyond `height` and
-             * pixels beyond `width` are sampled outside the
-             * (norm_width, norm_height) tex-coord rectangle in
-             * gl1_draw_tex and never reach the screen. */
-            unsigned y;
-            const uint8_t *src = (const uint8_t*)gl1->menu_frame;
-            uint8_t       *dst = (uint8_t*)gl1->menu_video_buf;
-            unsigned dst_pitch = pot_width * 2;
-            unsigned row_bytes = width * 2;
-            for (y = 0; y < height; y++)
-               memcpy(dst + dst_pitch * y, src + pitch * y, row_bytes);
+            /* RGUI's framebuffer is RGBA4444 (host-endian uint16_t with
+             * R in bits 15..12, G 11..8, B 7..4, A 3..0), which is what
+             * GL_UNSIGNED_SHORT_4_4_4_4 reads on LE and BE hosts alike,
+             * so it is uploaded from RGUI's buffer at its pitch. */
+            frame_to_copy = gl1->menu_frame;
+            src_row       = pitch >> 1;
          }
          else
          {
@@ -2433,20 +2521,22 @@ static bool gl1_frame(void *data, const void *frame,
             conv_rgba4444_argb8888(gl1->menu_video_buf,
                   gl1->menu_frame, width, height,
                   pot_width * sizeof(unsigned), pitch);
+            frame_to_copy = gl1->menu_video_buf;
+            src_row       = pot_width;
          }
-
-         frame_to_copy = gl1->menu_video_buf;
 
          if (gl1->flags & GL1_FLAG_MENU_TEXTURE_FULLSCREEN)
          {
             glViewport(0, 0, video_width, video_height);
             gl1_draw_tex(gl1, pot_width, pot_height,
-                  width, height, gl1->menu_tex, frame_to_copy, fb_4444);
+                  width, height, gl1->menu_tex, frame_to_copy, src_row,
+                  fb_4444 ? GL1_SRC_RGBA4444 : GL1_SRC_XRGB8888);
             glViewport(VIDEO_POS_X(gl1->vp.pos), VIDEO_POS_Y(gl1->vp.pos), VIDEO_SCALE_W(gl1->vp.dims), VIDEO_SCALE_H(gl1->vp.dims));
          }
          else
             gl1_draw_tex(gl1, pot_width, pot_height,
-                  width, height, gl1->menu_tex, frame_to_copy, fb_4444);
+                  width, height, gl1->menu_tex, frame_to_copy, src_row,
+                  fb_4444 ? GL1_SRC_RGBA4444 : GL1_SRC_XRGB8888);
       }
    }
 
