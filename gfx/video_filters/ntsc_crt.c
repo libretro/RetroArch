@@ -162,6 +162,26 @@ struct NTSC_SETTINGS {
 /********************** CRT struct (from crt_core.h) *************************/
 /*****************************************************************************/
 
+/* One active line's decoding parameters, from crt_demodulate_begin. */
+struct crt_line {
+    int skip;
+    int beg, end;
+    unsigned pos;
+#if (CRT_CC_SAMPLES == 4)
+    int wave[CRT_CC_SAMPLES];
+#else
+    int waveI[CRT_CC_SAMPLES];
+    int waveQ[CRT_CC_SAMPLES];
+#endif
+    int dx, scanL;
+    unsigned scanR;
+    int L, R;
+};
+
+struct crt_yiq {
+    int y, i, q;
+};
+
 struct CRT {
     signed char analog[CRT_INPUT_SIZE];
     signed char inp[CRT_INPUT_SIZE]; /* CRT input, can be noisy */
@@ -180,6 +200,11 @@ struct CRT {
     int ccf[CRT_CC_VPER][CRT_CC_SAMPLES]; /* faster color carrier convergence */
     int hsync, vsync; /* keep track of sync over frames */
     int rn; /* seed for the 'random' noise */
+
+    /* this frame's lines, from crt_demodulate_begin */
+    struct crt_line lines[CRT_LINES];
+    int bright;
+    int frame_ok;
 };
 
 /*****************************************************************************/
@@ -471,13 +496,13 @@ crt_init(struct CRT *v, int w, int h, int f, unsigned char *out)
 
 }
 
+/* The first half of demodulation, in line order: noise, vertical sync,
+ * then for each active line the horizontal sync search and colour carrier
+ * accumulation - which carry from one line to the next - and the
+ * parameters the rest of the line's decoding needs, into v->lines. */
 static void
-crt_demodulate(struct CRT *v, int noise)
+crt_demodulate_begin(struct CRT *v, int noise)
 {
-    /* made static so all this data does not go on the stack */
-    static struct {
-        int y, i, q;
-    } out[AV_LEN + 1], *yiqA, *yiqB;
     int i, j, line, rn;
     signed char *sig;
     int s = 0;
@@ -493,10 +518,13 @@ crt_demodulate(struct CRT *v, int noise)
 #endif
 
     bpp = crt_bpp4fmt(v->out_format);
+    v->frame_ok = (bpp != 0);
     if (bpp == 0) {
         return;
     }
     pitch = v->outw * bpp;
+    (void)pitch;
+    v->bright = bright;
 
     crt_sincos14(&huesn, &huecs, ((v->hue % 360) + 33) * 8192 / 180);
     huesn >>= 11; /* make 4-bit */
@@ -576,10 +604,10 @@ vsync_found:
     field = (field * (ratio / 2));
 
     for (line = CRT_TOP; line < CRT_BOT; line++) {
+        struct crt_line *cl;
         unsigned pos, ln, scanR;
         int scanL, dx;
         int L, R;
-        unsigned char *cL, *cR;
 #if (CRT_CC_SAMPLES == 4)
         int wave[CRT_CC_SAMPLES];
 #else
@@ -597,6 +625,10 @@ vsync_found:
         beg = (line - CRT_TOP + 0) * (v->outh + v->v_fac) / CRT_LINES + field;
         end = (line - CRT_TOP + 1) * (v->outh + v->v_fac) / CRT_LINES + field;
 
+        cl       = &v->lines[line - CRT_TOP];
+        cl->skip = 1;
+        cl->beg  = beg;
+        cl->end  = end;
         if (beg >= v->outh) { continue; }
         if (end > v->outh) { end = v->outh; }
 
@@ -700,21 +732,86 @@ vsync_found:
         L = 0;
         R = AV_LEN;
 #endif
-        reset_eq(&eqY);
-        reset_eq(&eqI);
-        reset_eq(&eqQ);
+        cl->skip  = 0;
+        cl->beg   = beg;
+        cl->end   = end;
+        cl->pos   = pos;
+#if (CRT_CC_SAMPLES == 4)
+        memcpy(cl->wave, wave, sizeof(cl->wave));
+#else
+        memcpy(cl->waveI, waveI, sizeof(cl->waveI));
+        memcpy(cl->waveQ, waveQ, sizeof(cl->waveQ));
+#endif
+        cl->dx    = dx;
+        cl->scanL = scanL;
+        cl->scanR = scanR;
+        cl->L     = L;
+        cl->R     = R;
+    }
+}
+
+/* The second half, for lines [first, last) of the active lines: the
+ * three equalisers and the resampling into the output rows each line
+ * owns. Lines are independent here, so bands of them can be decoded at
+ * once; 'out' is AV_LEN + 1 entries of scratch per caller. */
+static void
+crt_demodulate_lines(struct CRT *v, int first, int last, struct crt_yiq *out)
+{
+    struct crt_yiq *yiqA, *yiqB;
+    int line, s, bpp, pitch;
+    int bright = v->bright;
+    signed char *sig;
+
+    if (!v->frame_ok) {
+        return;
+    }
+    bpp   = crt_bpp4fmt(v->out_format);
+    pitch = v->outw * bpp;
+
+    for (line = CRT_TOP + first; line < CRT_TOP + last; line++) {
+        const struct crt_line *cl = &v->lines[line - CRT_TOP];
+        unsigned pos, scanR;
+        int scanL, dx;
+        int L, R, i;
+        int beg, end;
+        unsigned char *cL, *cR;
+#if (CRT_CC_SAMPLES == 4)
+        const int *wave = cl->wave;
+#else
+        const int *waveI = cl->waveI;
+        const int *waveQ = cl->waveQ;
+#endif
+        struct EQF eqY_l, eqI_l, eqQ_l;
+
+        if (cl->skip) { continue; }
+        beg   = cl->beg;
+        end   = cl->end;
+        dx    = cl->dx;
+        scanL = cl->scanL;
+        scanR = cl->scanR;
+        L     = cl->L;
+        R     = cl->R;
+        sig   = v->inp + cl->pos;
+
+        /* Each line starts its equalisers afresh from the templates. */
+        eqY_l = eqY;
+        eqI_l = eqI;
+        eqQ_l = eqQ;
+        reset_eq(&eqY_l);
+        reset_eq(&eqI_l);
+        reset_eq(&eqQ_l);
 
 #if (CRT_CC_SAMPLES == 4)
         for (i = L; i < R; i++) {
-            out[i].y = eqf(&eqY, sig[i] + bright) * 16; /* may be negative */
-            out[i].i = eqf(&eqI, sig[i] * wave[(i + 0) & 3] >> 9) >> 3;
-            out[i].q = eqf(&eqQ, sig[i] * wave[(i + 3) & 3] >> 9) >> 3;
+            out[i].y = eqf(&eqY_l, sig[i] + bright) * 16; /* may be negative */
+            out[i].i = eqf(&eqI_l, sig[i] * wave[(i + 0) & 3] >> 9) >> 3;
+            out[i].q = eqf(&eqQ_l, sig[i] * wave[(i + 3) & 3] >> 9) >> 3;
         }
 #else
         for (i = L; i < R; i++) {
-            out[i].y = eqf(&eqY, sig[i] + bright) * 16; /* may be negative */
-            out[i].i = eqf(&eqI, sig[i] * waveI[i % CRT_CC_SAMPLES] >> 9) >> 3;
-            out[i].q = eqf(&eqQ, sig[i] * waveQ[i % CRT_CC_SAMPLES] >> 9) >> 3;
+            out[i].y = eqf(&eqY_l, sig[i] + bright) * 16; /* may be negative */
+            out[i].i = eqf(&eqI_l, sig[i] * waveI[i % CRT_CC_SAMPLES] >> 9) >> 3;
+            out[i].q = eqf(&eqQ_l, sig[i] * waveQ[i % CRT_CC_SAMPLES] >> 9) >> 3;
         }
 #endif
 
@@ -1188,6 +1285,13 @@ struct softfilter_thread_data
     unsigned     height;
     int          first;
     int          last;
+    /* this worker's active lines [line_first, line_last) and the output
+     * rows [row_first, row_last) they, and nothing else, write */
+    int          line_first;
+    int          line_last;
+    unsigned     row_first;
+    unsigned     row_last;
+    struct crt_yiq *scratch;
 };
 
 /* -----------------------------------------------------------------------
@@ -1207,6 +1311,11 @@ struct filter_data
     unsigned char *in_buf;
     unsigned       in_buf_w;
     unsigned       in_buf_h;
+
+    /* AV_LEN + 1 entries of line scratch per worker */
+    struct crt_yiq *scratch;
+    /* set by the packets pass when this frame was modulated */
+    int frame_ready;
 
     /* output buffer (XRGB8888) */
     unsigned char *out_buf;
@@ -1318,19 +1427,24 @@ static void *ntsc_crt_create(const struct softfilter_config *config,
     filt = (struct filter_data*)calloc(1, sizeof(*filt));
     if (!filt) return NULL;
 
+    if (!threads) threads = 1;
     filt->workers = (struct softfilter_thread_data*)
-                    calloc(1, sizeof(struct softfilter_thread_data));
-    if (!filt->workers) { free(filt); return NULL; }
+                    calloc(threads, sizeof(struct softfilter_thread_data));
+    filt->scratch = (struct crt_yiq*)
+                    malloc((size_t)threads * (AV_LEN + 1) * sizeof(struct crt_yiq));
+    if (!filt->workers || !filt->scratch) {
+        free(filt->scratch); free(filt->workers); free(filt); return NULL;
+    }
 
     /* single-threaded — CRT state is not thread-safe */
-    filt->threads = 1;
+    filt->threads = threads;
     filt->in_fmt  = in_fmt;
 
     /* Allocate CRT output buffer: RGB (3 bpp) */
     /* Cleared: crt_demodulate does not write every pixel of it, and
      * whatever it leaves is copied to the screen. */
     out_buf = (unsigned char*)calloc(max_width * max_height, 3);
-    if (!out_buf) { free(filt->workers); free(filt); return NULL; }
+    if (!out_buf) { free(filt->scratch); free(filt->workers); free(filt); return NULL; }
 
     filt->out_buf   = out_buf;
     filt->out_buf_w = max_width;
@@ -1387,6 +1501,7 @@ static void ntsc_crt_destroy(void *data)
     if (!filt) return;
     if (filt->in_buf)  free(filt->in_buf);
     if (filt->out_buf) free(filt->out_buf);
+    free(filt->scratch);
     free(filt->workers);
     free(filt);
 }
@@ -1394,40 +1509,37 @@ static void ntsc_crt_destroy(void *data)
 /* -----------------------------------------------------------------------
  * The actual work callback — called from RetroArch's worker thread
  * ----------------------------------------------------------------------- */
-static void ntsc_crt_work_cb(void *data, void *thread_data)
+/* Once a frame, before the workers: convert the input, modulate it,
+ * and run the line-ordered first half of demodulation. Returns 0 when
+ * the frame cannot be processed, leaving the workers nothing to do. */
+static int ntsc_crt_prepare(struct filter_data *filt, const void *in_data,
+        unsigned width, unsigned height, size_t in_pitch, unsigned colfmt)
 {
-    struct filter_data             *filt = (struct filter_data*)data;
-    struct softfilter_thread_data  *thr  = (struct softfilter_thread_data*)thread_data;
-
-    unsigned  width      = thr->width;
-    unsigned  height     = thr->height;
-    size_t    in_pitch   = thr->in_pitch;
-    size_t    out_pitch  = thr->out_pitch;
 
     /* ---- Convert input to RGB byte-array for crt_modulate ---- */
     unsigned char *rgb_in;
     if (filt->in_buf_w != width || filt->in_buf_h != height) {
         unsigned char *new_buf = (unsigned char*)realloc(filt->in_buf,
                                                           width * height * 3);
-        if (!new_buf) return;
+        if (!new_buf) return 0;
         filt->in_buf   = new_buf;
         filt->in_buf_w = width;
         filt->in_buf_h = height;
     }
     rgb_in = filt->in_buf;
 
-    if (thr->colfmt == SOFTFILTER_FMT_XRGB8888) {
+    if (colfmt == SOFTFILTER_FMT_XRGB8888) {
         unsigned y;
         for (y = 0; y < height; y++) {
             const uint32_t *row = (const uint32_t*)
-                                  ((const uint8_t*)thr->in_data + y * in_pitch);
+                                  ((const uint8_t*)in_data + y * in_pitch);
             xrgb8888_to_rgb(row, rgb_in + y * width * 3, width);
         }
     } else {
         unsigned y;
         for (y = 0; y < height; y++) {
             const uint16_t *row = (const uint16_t*)
-                                  ((const uint8_t*)thr->in_data + y * in_pitch);
+                                  ((const uint8_t*)in_data + y * in_pitch);
             rgb565_to_rgb(row, rgb_in + y * width * 3, width);
         }
     }
@@ -1436,7 +1548,7 @@ static void ntsc_crt_work_cb(void *data, void *thread_data)
     if (filt->out_buf_w != width || filt->out_buf_h != height) {
         unsigned char *new_buf = (unsigned char*)realloc(filt->out_buf,
                                                           width * height * 3);
-        if (!new_buf) return;
+        if (!new_buf) return 0;
         memset(new_buf, 0, width * height * 3);
         filt->out_buf   = new_buf;
         filt->out_buf_w = width;
@@ -1457,21 +1569,34 @@ static void ntsc_crt_work_cb(void *data, void *thread_data)
 
     /* ---- Encode → signal → decode ---- */
     crt_modulate(&filt->crt, &filt->ntsc);
-    crt_demodulate(&filt->crt, filt->noise);
+    crt_demodulate_begin(&filt->crt, filt->noise);
 
     /* ---- Advance field/frame counters ---- */
     filt->field ^= 1;
     if (filt->field == 0) filt->frame++;
 
-    /* ---- Copy RGB output → XRGB8888 destination ---- */
-    {
-        unsigned y;
-        for (y = 0; y < height; y++) {
-            uint32_t *dst_row = (uint32_t*)
-                                ((uint8_t*)thr->out_data + y * out_pitch);
-            const unsigned char *src_row = filt->out_buf + y * width * 3;
-            rgb_to_xrgb8888(src_row, dst_row, width);
-        }
+    return 1;
+}
+
+/* A worker: decode its band of lines, then copy its band of output rows
+ * to the destination. */
+static void ntsc_crt_work_cb(void *data, void *thread_data)
+{
+    struct filter_data             *filt = (struct filter_data*)data;
+    struct softfilter_thread_data  *thr  = (struct softfilter_thread_data*)thread_data;
+    unsigned y;
+
+    if (!filt->frame_ready)
+        return;
+
+    crt_demodulate_lines(&filt->crt, thr->line_first, thr->line_last,
+            thr->scratch);
+
+    for (y = thr->row_first; y < thr->row_last; y++) {
+        uint32_t *dst_row = (uint32_t*)
+                            ((uint8_t*)thr->out_data + y * thr->out_pitch);
+        const unsigned char *src_row = filt->out_buf + y * thr->width * 3;
+        rgb_to_xrgb8888(src_row, dst_row, thr->width);
     }
 }
 
@@ -1484,19 +1609,44 @@ static void ntsc_crt_packets(void *data,
         const void *input, unsigned width, unsigned height,
         size_t input_stride)
 {
-    struct filter_data            *filt = (struct filter_data*)data;
-    struct softfilter_thread_data *thr  = &filt->workers[0];
+    unsigned i;
+    struct filter_data *filt = (struct filter_data*)data;
 
-    thr->out_data  = (uint8_t*)output;
-    thr->in_data   = (const uint8_t*)input;
-    thr->out_pitch = output_stride;
-    thr->in_pitch  = input_stride;
-    thr->width     = width;
-    thr->height    = height;
-    thr->colfmt    = filt->in_fmt;
+    filt->frame_ready = ntsc_crt_prepare(filt, input, width, height,
+            input_stride, filt->in_fmt);
 
-    packets[0].work        = ntsc_crt_work_cb;
-    packets[0].thread_data = thr;
+    for (i = 0; i < filt->threads; i++) {
+        struct softfilter_thread_data *thr = &filt->workers[i];
+        int lf = (int)((CRT_LINES * i) / filt->threads);
+        int ll = (int)((CRT_LINES * (i + 1)) / filt->threads);
+        int rf, rl;
+
+        /* Rows split where the lines do: a band's rows run from its first
+         * line's first row to the next band's, the first band from row 0
+         * and the last to the bottom, so every row is copied once. */
+        rf = (i == 0) ? 0 : filt->crt.lines[lf].beg;
+        rl = (i + 1 == filt->threads) ? (int)height : filt->crt.lines[ll].beg;
+        if (rf < 0)            rf = 0;
+        if (rf > (int)height)  rf = (int)height;
+        if (rl < rf)           rl = rf;
+        if (rl > (int)height)  rl = (int)height;
+
+        thr->out_data   = (uint8_t*)output;
+        thr->in_data    = (const uint8_t*)input;
+        thr->out_pitch  = output_stride;
+        thr->in_pitch   = input_stride;
+        thr->width      = width;
+        thr->height     = height;
+        thr->colfmt     = filt->in_fmt;
+        thr->line_first = lf;
+        thr->line_last  = ll;
+        thr->row_first  = (unsigned)rf;
+        thr->row_last   = (unsigned)rl;
+        thr->scratch    = filt->scratch + (size_t)i * (AV_LEN + 1);
+
+        packets[i].work        = ntsc_crt_work_cb;
+        packets[i].thread_data = thr;
+    }
 }
 
 /* -----------------------------------------------------------------------
