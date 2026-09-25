@@ -5848,6 +5848,7 @@ INPUT_NOINLINE static void input_poll_overlay(
    float touch_scale                        = (float)settings->uints.input_touch_scale;
    bool ol_ptr_enable                       = settings->bools.input_overlay_pointer_enable;
    bool osk_state_changed                   = false;
+   const video_views_layout_t *views        = video_driver_get_views_layout();
 
    static int old_ptr_count;
    static int old_blocked_touch_idx;
@@ -5880,7 +5881,10 @@ INPUT_NOINLINE static void input_poll_overlay(
          && !(ol->flags & INPUT_OVERLAY_STYLUS_HIDDEN))
    {
       rarch_joypad_info_t joypad_info;
-      unsigned device                 = (ol->active->flags & OVERLAY_FULL_SCREEN)
+      /* Views draw a non-fullscreen overlay over the whole window, and
+       * the pointer device reports packed-frame coordinates. */
+      unsigned device                 =
+            ((ol->active->flags & OVERLAY_FULL_SCREEN) || views)
          ? RARCH_DEVICE_POINTER_SCREEN
          : RETRO_DEVICE_POINTER;
       const input_device_driver_t
@@ -5959,9 +5963,11 @@ INPUT_NOINLINE static void input_poll_overlay(
          memset(&polled_data, 0, sizeof(struct input_overlay_state));
 
          /* Check hitboxes only if this touch pointer
-          * is not controlling a pointing device */
+          * is not controlling a pointing device.
+          * Drivers hide the overlay while views draw the UI per eye. */
          if (   ol->flags & INPUT_OVERLAY_ENABLE
              && !(ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN)
+             && !(views && views->ui_per_eye)
              && !BIT16_GET(ptrdev_touch_mask, i))
             hitbox_pressed = input_overlay_poll(
                   ol, &polled_data, i, old_i,
