@@ -155,6 +155,12 @@ void gl3_filter_chain_set_simulate_scanline(
       bool simulate_scanline);
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
+/* Cuts the final pass to @scissor, inside its viewport, until NULL is
+ * set: a view placed larger than the part of its target it may fill. */
+void gl3_filter_chain_set_scissor(
+      gl3_filter_chain_t *chain,
+      const struct gl3_viewport *scissor);
+
 void gl3_filter_chain_set_pass_name(
       gl3_filter_chain_t *chain,
       unsigned pass,
@@ -165,6 +171,13 @@ void gl3_filter_chain_build_offscreen_passes(
       const struct gl3_viewport *vp);
 
 void gl3_filter_chain_build_viewport_pass(
+      gl3_filter_chain_t *chain,
+      const struct gl3_viewport *vp,
+      const float *mvp);
+
+/* The final pass again, into another viewport in the same frame, for a
+ * view shown in both eyes: the feedback buffers swap once per frame. */
+void gl3_filter_chain_build_viewport_pass_again(
       gl3_filter_chain_t *chain,
       const struct gl3_viewport *vp,
       const float *mvp);
