@@ -544,6 +544,34 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
  * the EDR APIs aren't available without a runtime check, so this function
  * no-ops on older OSes and leaves the layer as BGRA8.  The caller can
  * inspect the returned format to see what actually got applied. */
+/* Tell the display what luminances the frame carries, as the D3D and
+ * Vulkan drivers do with their own metadata: the peak is the display's
+ * where Use Display Peak supplies one, else the user's Peak Brightness.
+ * opticalOutputScale is nits per 1.0 of the layer's values - 10,000 for
+ * PQ, 80 for extended-linear scRGB, the SDR reference white the
+ * extended sRGB space is defined against. CAEDRMetadata is macOS 10.15
+ * and iOS 16, at or below this file's EDR floor, so the compile-time
+ * gate covers it; a display that ignores the metadata behaves as
+ * before. */
+static void metal_apply_hdr_metadata(CAMetalLayer *layer, unsigned hdr_mode)
+{
+   float peak;
+
+   if (!layer || hdr_mode == METAL_HDR_MODE_OFF)
+      return;
+   if (!apple_runtime_available(APPLE_RUNTIME_VER(10, 15, 0),
+            APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0)))
+      return;
+   if ((peak = video_driver_get_hdr_max_nits()) <= 0.0f)
+      return;
+
+   layer.EDRMetadata = [CAEDRMetadata
+      HDR10MetadataWithMinLuminance:0.005f
+                       maxLuminance:peak
+                 opticalOutputScale:(hdr_mode == METAL_HDR_MODE_SCRGB)
+                                    ? 80.0f : 10000.0f];
+}
+
 static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
       unsigned hdr_mode)
 {
@@ -562,6 +590,8 @@ static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
             CGColorSpaceRelease(cs);
          }
          layer.wantsExtendedDynamicRangeContent = NO;
+         /* Claim no luminance range in SDR */
+         layer.EDRMetadata                      = nil;
       }
       return MTLPixelFormatBGRA8Unorm;
    }
@@ -583,6 +613,7 @@ static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
          CGColorSpaceRelease(cs);
       }
       layer.wantsExtendedDynamicRangeContent = YES;
+      metal_apply_hdr_metadata(layer, hdr_mode);
       return fmt;
    }
 
@@ -1720,6 +1751,10 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       if (newCS)
          _layer.colorspace = newCS;
       _layer.wantsExtendedDynamicRangeContent = wantEDR;
+      if (wantEDR)
+         metal_apply_hdr_metadata(_layer, mode);
+      else
+         _layer.EDRMetadata = nil;
    }
 #endif
    if (newCS)
