@@ -1,7 +1,7 @@
 compiler    := gcc
 extra_flags :=
 use_neon    := 0
-release	    := release
+build       = release
 DYLIB	    := so
 PREFIX      := /usr
 INSTALLDIR  := $(PREFIX)/lib/retroarch/filters/video

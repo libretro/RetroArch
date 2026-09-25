@@ -408,51 +408,18 @@ static void twoxbr_generic_destroy(void *data)
 #define eq(Z, A, B)\
         (df(Z, A, B) < 155)\
 
-float df8(uint32_t A, uint32_t B,
-      uint32_t pg_red_mask, uint32_t pg_green_mask, uint32_t pg_blue_mask)
-{
-   uint32_t r, g, b;
-   uint32_t y, u, v;
-
-#ifdef MSB_FIRST
-   r = abs((int)(((A & pg_red_mask  )>>24) - ((B & pg_red_mask  )>> 24)));
-   g = abs((int)(((A & pg_green_mask  )>>16) - ((B & pg_green_mask  )>> 16)));
-   b = abs((int)(((A & pg_blue_mask  )>>8 ) - ((B & pg_blue_mask  )>> 8 )));
-#else
-   b = abs((int)(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16)));
-   g = abs((int)(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8)));
-   r = abs((int)(((A & pg_red_mask        ) -  (B & pg_red_mask         ))));
-#endif
-
-   y = fabs(0.299*r + 0.587*g + 0.114*b);
-   u = fabs(-0.169*r - 0.331*g + 0.500*b);
-   v = fabs(0.500*r - 0.419*g - 0.081*b);
-
-   return 48*y + 7*u + 6*v;
-}
-
-int eq8(uint32_t A, uint32_t B,
-      uint32_t pg_red_mask, uint32_t pg_green_mask, uint32_t pg_blue_mask)
-{
-    uint32_t r, g, b;
-    uint32_t y, u, v;
-
-#ifdef MSB_FIRST
-   r = abs((int)(((A & pg_red_mask  )>>24) - ((B & pg_red_mask  )>> 24)));
-   g = abs((int)(((A & pg_green_mask  )>>16) - ((B & pg_green_mask  )>> 16)));
-   b = abs((int)(((A & pg_blue_mask  )>>8 ) - ((B & pg_blue_mask  )>> 8 )));
-#else
-   b = abs((int)(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16)));
-   g = abs((int)(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8)));
-   r = abs((int)(((A & pg_red_mask        ) -  (B & pg_red_mask         ))));
-#endif
-
-    y = fabs(0.299*r + 0.587*g + 0.114*b);
-    u = fabs(-0.169*r - 0.331*g + 0.500*b);
-    v = fabs(0.500*r - 0.419*g - 0.081*b);
-
-    return ((48 >= y) && (7 >= u) && (6 >= v)) ? 1 : 0;
-}
+/* The XRGB8888 path makes its edge decisions at RGB565 precision,
+ * through the same YUV table as the RGB565 path: two lookups per
+ * comparison instead of a floating-point YUV transform, and about forty
+ * comparisons go into every output pixel.  The blending itself stays at
+ * full 8-bit precision.  The masks are the RGB565 path's arguments and
+ * are not needed here. */
+#define XRGB8888_TO_RGB565(p) \
+   ((((p) >> 8) & 0xf800) | (((p) >> 5) & 0x07e0) | (((p) >> 3) & 0x001f))
+#define df8(A, B, rm, gm, bm) \
+   abs((int)filt->RGBtoYUV[XRGB8888_TO_RGB565(A)] \
+     - (int)filt->RGBtoYUV[XRGB8888_TO_RGB565(B)])
+#define eq8(A, B, rm, gm, bm) (df8(A, B, rm, gm, bm) < 155)
 
 #define FILTRO_RGB565(Z, PE, _PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, pg_red_mask, pg_green_mask, pg_blue_mask) \
      ex   = (PE!=PH && PE!=PF); \
@@ -781,6 +748,10 @@ const struct softfilter_implementation *softfilter_get_implementation(
    (void)simd;
    return &twoxbr_generic;
 }
+
+#undef XRGB8888_TO_RGB565
+#undef df8
+#undef eq8
 
 #ifdef RARCH_INTERNAL
 #undef softfilter_get_implementation
