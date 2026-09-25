@@ -1577,6 +1577,11 @@
 
 #define DEFAULT_NETPLAY_SHARE_DIGITAL RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING
 #define DEFAULT_NETPLAY_SHARE_ANALOG  RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING
+
+/* TLS certificate-verification policy - 0 == TLS_VERIFY_REQUIRED (the safe,
+ * fail-closed default; see network/tls_config.h). Literal here so config.def.h
+ * needn't pull in a network header. */
+#define DEFAULT_TLS_VERIFY_MODE 0
 #endif
 
 /* On save state load, block SRAM from being overwritten.

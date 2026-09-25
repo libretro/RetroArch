@@ -26040,6 +26040,18 @@ MSG_HASH(
    "Average"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_REQUIRED,
+   "Required (Recommended)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_OPTIONAL,
+   "Optional (Warn Only)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_DISABLED,
+   "Disabled (Insecure)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
    "None"
    )

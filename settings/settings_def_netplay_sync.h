@@ -41,3 +41,16 @@ S_UINT_EX_NS(netplay_share_analog, NETPLAY_SHARE_ANALOG,
       "Analog Input Sharing")
 #endif
 #endif
+/* TLS certificate-verification policy for outbound HTTPS.
+ * Values are enum tls_verify_mode (network/tls_config.h); the default
+ * DEFAULT_TLS_VERIFY_MODE is TLS_VERIFY_REQUIRED, which fails closed.
+ * general_write_handler pushes a change to the SSL backend live.
+ * Descriptor and configuration rows need HAVE_SSL as well; the string
+ * tables always carry this row via the strings pass. */
+#if (defined(HAVE_NETWORKING) && defined(HAVE_SSL)) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_UINT_EX(tls_verify_mode, TLS_VERIFY_MODE,
+      "tls_verify_mode",
+      DEFAULT_TLS_VERIFY_MODE, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, TLS_VERIFY_MODE_LAST-1, 1, 0, setting_action_ok_uint, setting_get_string_representation_tls_verify_mode, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "TLS Certificate Verification",
+      "Controls how server certificates are checked on secure (HTTPS) connections used by Cloud Sync, RetroAchievements and the Online Updater. 'Required' rejects untrusted certificates and protects against man-in-the-middle attacks. Only lower this if you connect through a corporate proxy or to a self-signed host you trust.")
+#endif

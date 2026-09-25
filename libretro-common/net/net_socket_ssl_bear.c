@@ -240,6 +240,16 @@ static void initialize(void)
    free(certs_pem);
 }
 
+/* BearSSL's br_ssl_client_init_full (below) always performs full
+ * verification and fails closed on a bad chain, which is the REQUIRED
+ * policy. The OPTIONAL/DISABLED opt-out has no native BearSSL equivalent
+ * (it would need a permissive end_chain X.509 vtable), so this backend
+ * keeps verifying whatever mode is selected. */
+void ssl_socket_set_verify_mode(unsigned mode)
+{
+   (void)mode;
+}
+
 void* ssl_socket_init(int fd, const char *domain)
 {
    struct ssl_state *state = (struct ssl_state*)calloc(1, sizeof(*state));

@@ -53,6 +53,21 @@ void ssl_socket_close(void *state_data);
 
 void ssl_socket_free(void *state_data);
 
+/* Certificate-verification policy hook. `mode` is a tls_verify_mode value
+ * (0 = required, 1 = optional, 2 = disabled, see network/tls_config.h).
+ * Called once at startup and whenever the setting changes; the active
+ * backend snapshots the value at the next ssl_socket_connect. */
+void ssl_socket_set_verify_mode(unsigned mode);
+
+/* Weak logging hooks. The active SSL backend ships no-op defaults so
+ * libretro-common still builds/links standalone; RetroArch overrides them
+ * in network/tls_log.c to route into RARCH_ERR/RARCH_WARN without dragging
+ * verbosity.h into vendored code. `mode_required` != 0 means a hard
+ * (REQUIRED) failure; == 0 means a soft (OPTIONAL) failure. */
+void ssl_socket_log_verify_fail(int mode_required, const char *domain,
+      const char *verify_info);
+void ssl_socket_log_verify_disabled(const char *domain);
+
 RETRO_END_DECLS
 
 #endif

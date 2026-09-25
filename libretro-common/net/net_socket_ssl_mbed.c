@@ -252,10 +252,54 @@ error:
    return NULL;
 }
 
+/* --- TLS certificate-verification policy --------------------------------
+ * A single module-scope mode selects the mbedtls authmode used by every
+ * ssl_socket_connect. REQUIRED (fail-closed) is the default so an unset
+ * value is safe. `volatile` is sufficient here: the value is a single
+ * aligned word, written from the settings/startup thread and read once per
+ * handshake; a mid-flight toggle simply applies to the *next* connection.
+ * We deliberately avoid C11 <stdatomic.h> to keep this vendored file
+ * C89-clean on console toolchains. */
+static volatile unsigned ssl_authmode = MBEDTLS_SSL_VERIFY_REQUIRED;
+
+void ssl_socket_set_verify_mode(unsigned mode)
+{
+   /* mode is a tls_verify_mode value (0 required / 1 optional / 2 disabled);
+    * translate to the mbedtls authmode constant. */
+   switch (mode)
+   {
+      case 1:  ssl_authmode = MBEDTLS_SSL_VERIFY_OPTIONAL; break;
+      case 2:  ssl_authmode = MBEDTLS_SSL_VERIFY_NONE;     break;
+      default: ssl_authmode = MBEDTLS_SSL_VERIFY_REQUIRED; break;
+   }
+}
+
+/* Weak no-op logging hooks; RetroArch overrides these in network/tls_log.c.
+ * Kept weak so libretro-common still builds/links standalone. Toolchains
+ * without __attribute__((weak)) (e.g. MSVC) rely on the RA strong symbol
+ * always being linked in the RetroArch build. Unity (griffin) builds compile
+ * network/tls_log.c's strong definitions into the same translation unit,
+ * where a weak twin would be a redefinition error. */
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(HAVE_GRIFFIN)
+__attribute__((weak))
+void ssl_socket_log_verify_fail(int mode_required, const char *domain,
+      const char *verify_info)
+{
+   (void)mode_required; (void)domain; (void)verify_info;
+}
+
+__attribute__((weak))
+void ssl_socket_log_verify_disabled(const char *domain)
+{
+   (void)domain;
+}
+#endif
+
 int ssl_socket_connect(void *state_data,
       void *data, bool timeout_enable, bool nonblock)
 {
    int ret, flags;
+   unsigned authmode;
    struct ssl_state *state = (struct ssl_state*)state_data;
 
    if (timeout_enable)
@@ -283,7 +327,10 @@ int ssl_socket_connect(void *state_data,
       return -1;
    }
 
-   mbedtls_ssl_conf_authmode(&state->conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
+   authmode = ssl_authmode;
+   mbedtls_ssl_conf_authmode(&state->conf, (int)authmode);
+   if (authmode == MBEDTLS_SSL_VERIFY_NONE)
+      ssl_socket_log_verify_disabled(state->domain);
 #if MBEDTLS_VERSION_MAJOR < 3
    /* The 2.x default preset floors the client at TLS 1.0 whichever
     * protocol versions are compiled in, so name the floor that matches
@@ -320,6 +367,17 @@ int ssl_socket_connect(void *state_data,
       if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE)
       {
          state->last_err = ret;
+         /* Fail-closed: under REQUIRED a bad certificate makes the
+          * handshake return here (MBEDTLS_ERR_X509_CERT_VERIFY_FAILED)
+          * before we reach the verify-result block below. Surface the
+          * reason, then bail. */
+         if (ret == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED)
+         {
+            char     vrfy_buf[512];
+            uint32_t vflags = mbedtls_ssl_get_verify_result(&state->ctx);
+            mbedtls_x509_crt_verify_info(vrfy_buf, sizeof(vrfy_buf), "  ! ", vflags);
+            ssl_socket_log_verify_fail(1, state->domain, vrfy_buf);
+         }
          return -1;
       }
    }
@@ -328,6 +386,10 @@ int ssl_socket_connect(void *state_data,
    {
       char vrfy_buf[512];
       mbedtls_x509_crt_verify_info(vrfy_buf, sizeof(vrfy_buf), "  ! ", flags);
+      /* Reached only under OPTIONAL/DISABLED: the handshake succeeded
+       * despite a verification failure. Log the soft-fail and let the
+       * connection proceed (the mode's documented behaviour). */
+      ssl_socket_log_verify_fail(0, state->domain, vrfy_buf);
    }
 
    return state->net_ctx.fd;
