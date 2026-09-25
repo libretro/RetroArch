@@ -38,9 +38,12 @@ RETRO_BEGIN_DECLS
 #define WL_COLOR_FAILED              (1u << 4)
 /* Set by the GL context: its framebuffer is FP16 for scRGB */
 #define WL_COLOR_FP16                (1u << 5)
+/* The output's peak luminance has been read */
+#define WL_COLOR_OUTPUT_PEAK         (1u << 6)
 
 struct wp_color_manager_v1;
 struct wp_color_management_surface_v1;
+struct wp_color_management_output_v1;
 struct wp_image_description_v1;
 
 typedef struct wl_color
@@ -48,6 +51,16 @@ typedef struct wl_color
    struct wp_color_manager_v1            *manager;
    struct wp_color_management_surface_v1 *surface;
    struct wp_image_description_v1        *scrgb;
+   struct wp_color_management_output_v1  *output;
+   struct wp_image_description_v1        *output_desc;
+   /* Told the output's peak once it is read; may be NULL */
+   void                                 (*peak_cb)(float nits);
+   /* The display's peak luminance as the compositor describes the
+    * output (its target luminance), in nits; 0 while unknown */
+   float                                  output_peak_nits;
+   /* What the output's description said, while it is being read */
+   float                                  info_target_max;
+   float                                  info_target_cll;
    uint32_t                               flags;
 } wl_color_t;
 
@@ -67,6 +80,11 @@ bool wl_color_scrgb_supported(const wl_color_t *color);
  * the compositor cannot, or the surface already has a colour-management
  * object; otherwise the tag is applied when the description is ready. */
 bool wl_color_attach_scrgb(wl_color_t *color, struct wl_surface *surface);
+
+/* Asks the compositor how it describes 'output', for the display's
+ * peak luminance; peak_cb, if set, is told when it is known. Returns
+ * false where the compositor has no colour management. */
+bool wl_color_query_output(wl_color_t *color, struct wl_output *output);
 
 /* Destroys every colour-management object; call before the surface. */
 void wl_color_destroy(wl_color_t *color);

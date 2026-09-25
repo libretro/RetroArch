@@ -2008,6 +2008,12 @@ void video_driver_force_fallback(const char *driver);
 /* string list stays owned by the caller and must be available at all times after the video driver is inited */
 void video_driver_set_gpu_api_devices(enum gfx_ctx_api api, struct string_list *list);
 
+/* The display's peak luminance as its context learned it (a sink's
+ * EDID, a compositor's description of the output), in whole nits;
+ * 0 while unknown. For the user's information: nothing applies it. */
+void video_driver_set_display_peak_nits(float nits);
+unsigned video_driver_get_display_peak_nits(void);
+
 struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api);
 
 const char *hw_render_context_name(

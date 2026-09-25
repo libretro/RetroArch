@@ -1157,6 +1157,22 @@ static enum retro_hw_context_type hw_render_context_type(const char *s)
 
 /* string list stays owned by the caller and must be available at
  * all times after the video driver is inited */
+/* Written by the context (the video thread when threaded), read by
+ * the menu */
+static retro_atomic_int_t video_display_peak_nits;
+
+void video_driver_set_display_peak_nits(float nits)
+{
+   retro_atomic_store_release_int(&video_display_peak_nits,
+         nits > 0.0f ? (int)(nits + 0.5f) : 0);
+}
+
+unsigned video_driver_get_display_peak_nits(void)
+{
+   int v = retro_atomic_load_acquire_int(&video_display_peak_nits);
+   return v > 0 ? (unsigned)v : 0;
+}
+
 void video_driver_set_gpu_api_devices(
       enum gfx_ctx_api api, struct string_list *list)
 {

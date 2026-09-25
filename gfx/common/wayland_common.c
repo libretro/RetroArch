@@ -479,6 +479,7 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 #endif
    /* Colour management objects go before the surface they describe */
    wl_color_destroy(&wl->color);
+   video_driver_set_display_peak_nits(0.0f);
    if (wl->surface)
       wl_surface_destroy(wl->surface);
 
@@ -1095,6 +1096,22 @@ bool gfx_ctx_wl_init_common(
    wl_display_roundtrip(wl->input.dpy);
    /* second roundtrip for listeners on bound globals (wl_output, wl_seat) */
    wl_display_roundtrip(wl->input.dpy);
+
+   /* The display's peak luminance, as the compositor describes the
+    * output the surface is on or else the first it lists; it arrives
+    * with the events dispatched from here on. */
+   {
+      struct wl_output *output = NULL;
+      if (wl->current_output)
+         output = wl->current_output->output;
+      else if (!wl_list_empty(&wl->all_outputs))
+      {
+         display_output_t *d = wl_container_of(wl->all_outputs.next, d, link);
+         output = d->output->output;
+      }
+      wl->color.peak_cb = video_driver_set_display_peak_nits;
+      wl_color_query_output(&wl->color, output);
+   }
 
    if (!wl->compositor)
    {

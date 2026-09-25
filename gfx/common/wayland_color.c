@@ -13,6 +13,7 @@
  */
 
 #include <string.h>
+#include <unistd.h>
 
 #include "wayland_color.h"
 #include "wayland/color-management-v1.h"
@@ -98,6 +99,135 @@ static const struct wp_image_description_v1_listener
    wl_color_description_ready
 };
 
+/* The output's description, read for the display's peak luminance.
+ * target_luminance describes the display; the plain luminances event
+ * describes the transfer function's range - 10,000 nits for PQ - and
+ * says nothing about the panel. */
+static void wl_color_info_done(void *data,
+      struct wp_image_description_info_v1 *info)
+{
+   wl_color_t *color = (wl_color_t*)data;
+   float peak        = color->info_target_max > 0.0f
+      ? color->info_target_max : color->info_target_cll;
+   /* A destructor event: the object is the client's to free now */
+   wp_image_description_info_v1_destroy(info);
+   if (peak <= 0.0f)
+      return;
+   color->output_peak_nits = peak;
+   color->flags           |= WL_COLOR_OUTPUT_PEAK;
+   RARCH_LOG("[Wayland] Display peak luminance: %.0f nits (from the compositor).\n",
+         peak);
+   if (color->peak_cb)
+      color->peak_cb(peak);
+}
+
+static void wl_color_info_icc_file(void *data,
+      struct wp_image_description_info_v1 *info, int32_t icc,
+      uint32_t icc_size)
+{
+   (void)data; (void)info; (void)icc_size;
+   /* A descriptor the client owns once it arrives */
+   if (icc >= 0)
+      close(icc);
+}
+
+static void wl_color_info_primaries(void *data,
+      struct wp_image_description_info_v1 *info, int32_t r_x, int32_t r_y,
+      int32_t g_x, int32_t g_y, int32_t b_x, int32_t b_y, int32_t w_x,
+      int32_t w_y)
+{
+   (void)data; (void)info; (void)r_x; (void)r_y; (void)g_x; (void)g_y;
+   (void)b_x; (void)b_y; (void)w_x; (void)w_y;
+}
+
+static void wl_color_info_uint(void *data,
+      struct wp_image_description_info_v1 *info, uint32_t v)
+{
+   (void)data; (void)info; (void)v;
+}
+
+static void wl_color_info_luminances(void *data,
+      struct wp_image_description_info_v1 *info, uint32_t min_lum,
+      uint32_t max_lum, uint32_t reference_lum)
+{
+   (void)data; (void)info; (void)min_lum; (void)max_lum; (void)reference_lum;
+}
+
+static void wl_color_info_target_luminance(void *data,
+      struct wp_image_description_info_v1 *info, uint32_t min_lum,
+      uint32_t max_lum)
+{
+   (void)info; (void)min_lum;
+   ((wl_color_t*)data)->info_target_max = (float)max_lum;
+}
+
+static void wl_color_info_target_max_cll(void *data,
+      struct wp_image_description_info_v1 *info, uint32_t max_cll)
+{
+   (void)info;
+   ((wl_color_t*)data)->info_target_cll = (float)max_cll;
+}
+
+static const struct wp_image_description_info_v1_listener
+   wl_color_info_listener =
+{
+   wl_color_info_done,
+   wl_color_info_icc_file,
+   wl_color_info_primaries,
+   wl_color_info_uint,
+   wl_color_info_uint,
+   wl_color_info_uint,
+   wl_color_info_luminances,
+   wl_color_info_primaries,
+   wl_color_info_target_luminance,
+   wl_color_info_target_max_cll,
+   wl_color_info_uint
+};
+
+static void wl_color_output_desc_failed(void *data,
+      struct wp_image_description_v1 *desc, uint32_t cause,
+      const char *msg)
+{
+   (void)data; (void)desc; (void)cause; (void)msg;
+}
+
+/* Ready: only now may its information be asked for */
+static void wl_color_output_desc_ready(void *data,
+      struct wp_image_description_v1 *desc, uint32_t identity)
+{
+   struct wp_image_description_info_v1 *info;
+   wl_color_t *color = (wl_color_t*)data;
+   (void)identity;
+   color->info_target_max = 0.0f;
+   color->info_target_cll = 0.0f;
+   if ((info = wp_image_description_v1_get_information(desc)))
+      wp_image_description_info_v1_add_listener(info,
+            &wl_color_info_listener, data);
+}
+
+static const struct wp_image_description_v1_listener
+   wl_color_output_desc_listener =
+{
+   wl_color_output_desc_failed,
+   wl_color_output_desc_ready
+};
+
+bool wl_color_query_output(wl_color_t *color, struct wl_output *output)
+{
+   if (!color || !color->manager || !output || color->output)
+      return false;
+   if (!(color->output = wp_color_manager_v1_get_output(color->manager,
+               output)))
+      return false;
+   if (!(color->output_desc =
+            wp_color_management_output_v1_get_image_description(
+               color->output)))
+      return false;
+   wp_image_description_v1_add_listener(color->output_desc,
+         &wl_color_output_desc_listener, color);
+   return true;
+}
+
 const char *wl_color_interface_name(void)
 {
    return wp_color_manager_v1_interface.name;
@@ -140,6 +270,10 @@ bool wl_color_attach_scrgb(wl_color_t *color, struct wl_surface *surface)
 
 void wl_color_destroy(wl_color_t *color)
 {
+   if (color->output_desc)
+      wp_image_description_v1_destroy(color->output_desc);
+   if (color->output)
+      wp_color_management_output_v1_destroy(color->output);
    if (color->scrgb)
       wp_image_description_v1_destroy(color->scrgb);
    if (color->surface)

@@ -899,6 +899,12 @@ static void gfx_ctx_drm_hdr_probe(gfx_ctx_drm_data_t *drm)
    }
    drm->hdr_capable = drm->hdr_prop_metadata && drm->hdr_prop_colorspace
       && bt2020;
+   if (drm->hdr_sink.max_nits > 0.0f)
+   {
+      video_driver_set_display_peak_nits(drm->hdr_sink.max_nits);
+      RARCH_LOG("[KMS] Display peak luminance: %.0f nits (from its EDID).\n",
+            drm->hdr_sink.max_nits);
+   }
 }
 
 /* Tells the sink HDR10 is coming: static metadata, Rec.2020, 10 bits.
@@ -946,6 +952,7 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
    drm->hdr10        = false;
    drm->hdr_capable  = false;
    drm_fb_depth      = 24;
+   video_driver_set_display_peak_nits(0.0f);
    video_driver_modify_disp_flags(0,
            VIDEO_FLAG_HDR_SUPPORT
          | VIDEO_FLAG_HDR10_SUPPORT

@@ -1154,6 +1154,21 @@ void setting_generic_handle_change(rarch_setting_t *setting)
       command_event(setting->cmd_trigger_idx, NULL);
 }
 
+/* The peak setting, with the display's own value beside it where its
+ * context learned one (a sink's EDID, a compositor's description). */
+static size_t setting_get_string_representation_video_hdr_max_nits(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   unsigned display;
+   size_t _len;
+   if (!setting)
+      return 0;
+   _len = snprintf(s, len, "%.0f", *setting->value.target.fraction);
+   if ((display = video_driver_get_display_peak_nits()) && _len < len)
+      _len += snprintf(s + _len, len - _len, " (display: %u)", display);
+   return _len;
+}
+
 static size_t setting_get_string_representation_int_gpu_index(
       rarch_setting_t *setting,
       char *s, size_t len)

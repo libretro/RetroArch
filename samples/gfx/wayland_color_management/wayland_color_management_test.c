@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <pthread.h>
 
 #include <wayland-client.h>
@@ -49,6 +50,10 @@ static struct
    int desc_ready;
    int surface_destroyed_before_cm;
    int cm_surface_alive;
+   /* the output's description: its target peak, 0 to send none */
+   unsigned output_peak;
+   int send_icc;
+   int info_asked;
 } comp;
 
 static void violate(const char *what)
@@ -83,6 +88,13 @@ static void compositor_create_surface(struct wl_client *c,
 }
 static const struct wl_compositor_interface compositor_impl =
    { compositor_create_surface, NULL };
+
+static void output_bind(struct wl_client *c, void *data, uint32_t v,
+      uint32_t id)
+{
+   (void)data; (void)v;
+   wl_resource_create(c, &wl_output_interface, 1, id);
+}
 
 static void compositor_bind(struct wl_client *c, void *data, uint32_t v,
       uint32_t id)
@@ -133,10 +145,54 @@ static void cms_unset(struct wl_client *c, struct wl_resource *r)
 static const struct wp_color_management_surface_v1_interface cms_impl =
    { cms_destroy, cms_set_image_description, cms_unset };
 
+/* The output's image description and its information */
+static void odesc_get_information(struct wl_client *c,
+      struct wl_resource *r, uint32_t id)
+{
+   struct wl_resource *info = wl_resource_create(c,
+         &wp_image_description_info_v1_interface, 1, id);
+   (void)r;
+   pthread_mutex_lock(&comp.lock);
+   comp.info_asked++;
+   pthread_mutex_unlock(&comp.lock);
+   if (comp.send_icc)
+   {
+      int fd = open("/dev/null", O_RDONLY);
+      wp_image_description_info_v1_send_icc_file(info, fd, 0);
+      close(fd);
+   }
+   /* the transfer function's range: PQ's 10,000 nits, not the panel's */
+   wp_image_description_info_v1_send_luminances(info, 50, 10000, 203);
+   if (comp.output_peak)
+      wp_image_description_info_v1_send_target_luminance(info, 1,
+            comp.output_peak);
+   wp_image_description_info_v1_send_done(info);
+   wl_resource_destroy(info);
+}
+static const struct wp_image_description_v1_interface odesc_impl =
+   { res_destroy, odesc_get_information };
+
+static void cmo_get_image_description(struct wl_client *c,
+      struct wl_resource *r, uint32_t id)
+{
+   struct wl_resource *d = wl_resource_create(c,
+         &wp_image_description_v1_interface, 1, id);
+   (void)r;
+   wl_resource_set_implementation(d, &odesc_impl, NULL, NULL);
+   wp_image_description_v1_send_ready(d, 2);
+}
+static const struct wp_color_management_output_v1_interface cmo_impl =
+   { res_destroy, cmo_get_image_description };
+
 /* wp_color_manager_v1 */
 static void cm_get_output(struct wl_client *c, struct wl_resource *r,
       uint32_t id, struct wl_resource *o)
-{ (void)c; (void)r; (void)id; (void)o; }
+{
+   struct wl_resource *out = wl_resource_create(c,
+         &wp_color_management_output_v1_interface, 1, id);
+   (void)r; (void)o;
+   wl_resource_set_implementation(out, &cmo_impl, NULL, NULL);
+}
 static void cm_get_surface(struct wl_client *c, struct wl_resource *r,
       uint32_t id, struct wl_resource *surface)
 {
@@ -236,6 +292,7 @@ struct client
    struct wl_display *dpy;
    struct wl_registry *reg;
    struct wl_compositor *compositor;
+   struct wl_output *output;
    wl_color_t color;
 };
 
@@ -246,6 +303,9 @@ static void reg_global(void *data, struct wl_registry *reg, uint32_t id,
    if (!strcmp(iface, wl_compositor_interface.name))
       cl->compositor = (struct wl_compositor*)wl_registry_bind(reg, id,
             &wl_compositor_interface, 1);
+   else if (!strcmp(iface, wl_output_interface.name))
+      cl->output = (struct wl_output*)wl_registry_bind(reg, id,
+            &wl_output_interface, 1);
    else if (!strcmp(iface, wl_color_interface_name()))
       wl_color_bind(&cl->color, reg, id, version);
 }
@@ -263,6 +323,9 @@ static void check(const char *what, int ok)
 
 static pthread_t tid;
 
+static float cb_peak;
+static void peak_cb(float nits) { cb_peak = nits; }
+
 static void start(int scrgb, int perceptual, enum answer answer)
 {
    memset(&comp.offer_scrgb, 0,
@@ -275,6 +338,7 @@ static void start(int scrgb, int perceptual, enum answer answer)
    comp.socket           = wl_display_add_socket_auto(comp.dpy);
    wl_global_create(comp.dpy, &wl_compositor_interface, 1, NULL, compositor_bind);
    wl_global_create(comp.dpy, &wp_color_manager_v1_interface, 1, NULL, cm_bind);
+   wl_global_create(comp.dpy, &wl_output_interface, 1, NULL, output_bind);
    pthread_create(&tid, NULL, comp_thread, NULL);
 }
 
@@ -307,6 +371,8 @@ static void disconnect_client(struct client *cl)
    wl_color_destroy(&cl->color);
    if (cl->compositor)
       wl_compositor_destroy(cl->compositor);
+   if (cl->output)
+      wl_output_destroy(cl->output);
    wl_registry_destroy(cl->reg);
    wl_display_roundtrip(cl->dpy);
    wl_display_disconnect(cl->dpy);
@@ -406,6 +472,40 @@ int main(void)
    wl_surface_destroy(surface);
    disconnect_client(&cl);
    stop();
+
+   printf("6. the display's peak, as the compositor describes the output\n");
+   {
+      static const unsigned peaks[2] = { 650, 0 };
+      int k;
+      for (k = 0; k < 2; k++)
+      {
+         start(1, 1, ANSWER_READY);
+         pthread_mutex_lock(&comp.lock);
+         comp.output_peak = peaks[k];
+         comp.send_icc    = 1;
+         pthread_mutex_unlock(&comp.lock);
+         cb_peak = 0.0f;
+         check("connected", connect_client(&cl));
+         cl.color.peak_cb = peak_cb;
+         check("the output asked about", wl_color_query_output(&cl.color, cl.output));
+         check("a second query is refused, not sent",
+               !wl_color_query_output(&cl.color, cl.output));
+         wl_display_roundtrip(cl.dpy);   /* ready: information asked */
+         wl_display_roundtrip(cl.dpy);   /* information arrives */
+         if (peaks[k])
+            check("peak from target luminance, not PQ's 10,000",
+                  cl.color.output_peak_nits == 650.0f && cb_peak == 650.0f
+                  && (cl.color.flags & WL_COLOR_OUTPUT_PEAK));
+         else
+            check("no target luminance: the peak stays unknown",
+                  cl.color.output_peak_nits == 0.0f && cb_peak == 0.0f
+                  && !(cl.color.flags & WL_COLOR_OUTPUT_PEAK));
+         snapshot(&gs, &cs, &sd, &in, &v);
+         check("no protocol rule broken", v == 0);
+         disconnect_client(&cl);
+         stop();
+      }
+   }
 
    printf("5. no colour management at all\n");
    {
