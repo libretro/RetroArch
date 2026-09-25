@@ -33,6 +33,16 @@
 #define SCALER_NO_SIMD
 #endif
 
+/* Byte order, for conv_bgr24_argb8888's word loads.  Unknown hosts get
+ * the byte-at-a-time loop, which is right on either order. */
+#if (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) \
+      || defined(_M_IX86) || defined(_M_X64) || defined(_M_ARM) \
+      || defined(_M_ARM64)
+#define PIXCONV_LITTLE_ENDIAN 1
+#else
+#define PIXCONV_LITTLE_ENDIAN 0
+#endif
+
 #ifdef SCALER_NO_SIMD
 #undef __SSE2__
 #endif
@@ -428,7 +438,41 @@ void conv_argb8888_rgba4444(void *output_, const void *input_,
    for (h = 0; h < height;
          h++, output += out_stride >> 1, input += in_stride >> 2)
    {
-      for (w = 0; w < width; w++)
+      w = 0;
+#if (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w + 8 <= width; w += 8)
+      {
+         uint8x8x4_t in = vld4_u8((const uint8_t*)(input + w));
+         uint16x8_t  r  = vshll_n_u8(vand_u8(in.val[2], vdup_n_u8(0xf0)), 8);
+         uint16x8_t  g  = vshll_n_u8(vand_u8(in.val[1], vdup_n_u8(0xf0)), 4);
+         uint16x8_t  b  = vmovl_u8(vand_u8(in.val[0], vdup_n_u8(0xf0)));
+         uint16x8_t  a  = vmovl_u8(vshr_n_u8(in.val[3], 4));
+         vst1q_u16(output + w, vorrq_u16(vorrq_u16(r, g), vorrq_u16(b, a)));
+      }
+#elif defined(__SSE2__)
+      for (; w + 8 <= width; w += 8)
+      {
+         const __m128i hi = _mm_set1_epi32(0xf000);
+         const __m128i mi = _mm_set1_epi32(0x0f00);
+         const __m128i lo = _mm_set1_epi32(0x00f0);
+         __m128i x0 = _mm_loadu_si128((const __m128i*)(input + w));
+         __m128i x1 = _mm_loadu_si128((const __m128i*)(input + w + 4));
+         x0 = _mm_or_si128(
+               _mm_or_si128(_mm_and_si128(_mm_srli_epi32(x0, 8), hi),
+                            _mm_and_si128(_mm_srli_epi32(x0, 4), mi)),
+               _mm_or_si128(_mm_and_si128(x0, lo), _mm_srli_epi32(x0, 28)));
+         x1 = _mm_or_si128(
+               _mm_or_si128(_mm_and_si128(_mm_srli_epi32(x1, 8), hi),
+                            _mm_and_si128(_mm_srli_epi32(x1, 4), mi)),
+               _mm_or_si128(_mm_and_si128(x1, lo), _mm_srli_epi32(x1, 28)));
+         /* Sign-extend each 16-bit result so the signed pack keeps it
+          * exact; a value over 0x7fff would otherwise saturate. */
+         x0 = _mm_srai_epi32(_mm_slli_epi32(x0, 16), 16);
+         x1 = _mm_srai_epi32(_mm_slli_epi32(x1, 16), 16);
+         _mm_storeu_si128((__m128i*)(output + w), _mm_packs_epi32(x0, x1));
+      }
+#endif
+      for (; w < width; w++)
       {
          uint32_t col = input[w];
          output[w]    = (uint16_t)(((col >> 8) & 0xf000)
@@ -585,6 +629,16 @@ void conv_rgba4444_rgb565(void *output_, const void *input_,
          uint16x8_t g  = vandq_u16(vshrq_n_u16(in, 1), vdupq_n_u16(0x0780));
          uint16x8_t b  = vandq_u16(vshrq_n_u16(in, 3), vdupq_n_u16(0x001e));
          vst1q_u16(output + w, vorrq_u16(r, vorrq_u16(g, b)));
+      }
+#elif defined(__SSE2__)
+      for (; w + 8 <= width; w += 8)
+      {
+         __m128i in = _mm_loadu_si128((const __m128i*)(input + w));
+         __m128i r  = _mm_and_si128(in, _mm_set1_epi16((short)0xf000));
+         __m128i g  = _mm_and_si128(_mm_srli_epi16(in, 1), _mm_set1_epi16(0x0780));
+         __m128i b  = _mm_and_si128(_mm_srli_epi16(in, 3), _mm_set1_epi16(0x001e));
+         _mm_storeu_si128((__m128i*)(output + w),
+               _mm_or_si128(r, _mm_or_si128(g, b)));
       }
 #endif
       for (; w < width; w++)
@@ -856,6 +910,20 @@ void conv_bgr24_argb8888(void *output_, const void *input_,
          res.val[3] = vdup_n_u8(0xffu);
          vst4_u8((uint8_t*)(output + w), res);
       }
+#elif PIXCONV_LITTLE_ENDIAN
+      /* Four pixels are three words on a little-endian host:
+       * b0 g0 r0 b1 | g1 r1 b2 g2 | r2 b3 g3 r3. */
+      for (; w + 4 <= width; w += 4, inp += 12)
+      {
+         uint32_t w0, w1, w2;
+         memcpy(&w0, inp + 0, sizeof(w0));
+         memcpy(&w1, inp + 4, sizeof(w1));
+         memcpy(&w2, inp + 8, sizeof(w2));
+         output[w + 0] = 0xff000000u | (w0 & 0x00ffffffu);
+         output[w + 1] = 0xff000000u | (w0 >> 24) | ((w1 & 0x0000ffffu) << 8);
+         output[w + 2] = 0xff000000u | (w1 >> 16) | ((w2 & 0x000000ffu) << 16);
+         output[w + 3] = 0xff000000u | (w2 >> 8);
+      }
 #endif
       for (; w < width; w++)
       {
@@ -920,6 +988,23 @@ void conv_argb8888_0rgb1555(void *output_, const void *input_,
          uint16x8_t  g  = vshll_n_u8(vand_u8(in.val[1], vdup_n_u8(0xf8)), 2);
          uint16x8_t  b  = vmovl_u8(vshr_n_u8(in.val[0], 3));
          vst1q_u16(output + w, vorrq_u16(r, vorrq_u16(g, b)));
+      }
+#elif defined(__SSE2__)
+      for (; w + 8 <= width; w += 8)
+      {
+         const __m128i rm = _mm_set1_epi32(0x7c00);
+         const __m128i gm = _mm_set1_epi32(0x03e0);
+         const __m128i bm = _mm_set1_epi32(0x001f);
+         __m128i x0 = _mm_loadu_si128((const __m128i*)(input + w));
+         __m128i x1 = _mm_loadu_si128((const __m128i*)(input + w + 4));
+         x0 = _mm_or_si128(_mm_and_si128(_mm_srli_epi32(x0, 9), rm),
+               _mm_or_si128(_mm_and_si128(_mm_srli_epi32(x0, 6), gm),
+                            _mm_and_si128(_mm_srli_epi32(x0, 3), bm)));
+         x1 = _mm_or_si128(_mm_and_si128(_mm_srli_epi32(x1, 9), rm),
+               _mm_or_si128(_mm_and_si128(_mm_srli_epi32(x1, 6), gm),
+                            _mm_and_si128(_mm_srli_epi32(x1, 3), bm)));
+         /* Every result is at most 0x7fff, so the signed pack is exact. */
+         _mm_storeu_si128((__m128i*)(output + w), _mm_packs_epi32(x0, x1));
       }
 #endif
       for (; w < width; w++)
