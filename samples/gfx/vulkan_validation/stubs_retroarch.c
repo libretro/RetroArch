@@ -81,3 +81,5 @@ uint32_t video_driver_get_disp_flags(void) { return 0; }
 /* The emulated mailbox derives its waits from this. */
 float video_driver_get_refresh_rate(void) { return 60.0f; }
 void video_driver_modify_disp_flags(uint32_t s, uint32_t c) { (void)s; (void)c; }
+/* No display peak known: HDR metadata keeps the driver's own value */
+float video_driver_hdr_metadata_peak(float driver_value) { return driver_value; }
