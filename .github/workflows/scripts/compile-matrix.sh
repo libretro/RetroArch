@@ -197,6 +197,13 @@ platform_video "vita gl1 video" \
 platform_video "ps2 video" \
    "-DPS2 -DRARCH_CONSOLE -DHAVE_WINDOW_OFFSET -DHAVE_RGUI $HOSTOFF" \
    "-Itools/platform_stubs/ps2" gfx/drivers/ps2_gfx.c ""
+# The DOS VGA driver, against DJGPP stubs for the DPMI and port I/O it
+# uses. Only the DJGPP job compiled it before; DJGPP defines __unix__.
+platform_video "dos vga video" \
+   "-D__DJGPP__ -DDJGPP -DRARCH_CONSOLE $HOSTOFF -D__unix__" \
+   "-Itools/platform_stubs/dos -Wdeclaration-after-statement \
+    -Werror=declaration-after-statement" \
+   gfx/drivers/vga_gfx.c ""
 # The two SDL video drivers. Nothing else here compiled them, which is
 # how a field they read through video_info_t went on being read after it
 # had been packed away. Each skips where its headers are absent, as the
