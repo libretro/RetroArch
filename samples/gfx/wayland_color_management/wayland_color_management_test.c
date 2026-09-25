@@ -41,7 +41,11 @@ static struct
    pthread_mutex_t lock;
    int stop;
    /* what this compositor offers */
-   int offer_scrgb, offer_perceptual;
+   int offer_scrgb, offer_perceptual, offer_parametric;
+   /* what the parametric creator was told, and the rules it broke */
+   int params_created, params_tf, params_primaries;
+   uint32_t params_min, params_max, params_reference;
+   int params_incomplete, params_already_set;
    enum answer answer;
    /* what the client did */
    int get_surface, create_scrgb, set_desc, set_intent;
@@ -115,6 +119,77 @@ static void desc_get_information(struct wl_client *c, struct wl_resource *r,
 }
 static const struct wp_image_description_v1_interface desc_impl =
    { res_destroy, desc_get_information };
+
+/* wp_image_description_creator_params_v1: the protocol makes it fatal
+ * to leave the transfer function or primaries unset at create, or to
+ * set either twice. */
+static void params_set_tf_named(struct wl_client *c, struct wl_resource *r, uint32_t tf)
+{
+   (void)c; (void)r;
+   pthread_mutex_lock(&comp.lock);
+   if (comp.params_tf++)
+      comp.params_already_set++;
+   if (tf != WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR)
+      violate("a transfer function that was not offered");
+   pthread_mutex_unlock(&comp.lock);
+}
+static void params_set_primaries_named(struct wl_client *c, struct wl_resource *r, uint32_t p)
+{
+   (void)c; (void)r;
+   pthread_mutex_lock(&comp.lock);
+   if (comp.params_primaries++)
+      comp.params_already_set++;
+   if (p != WP_COLOR_MANAGER_V1_PRIMARIES_SRGB)
+      violate("primaries that were not offered");
+   pthread_mutex_unlock(&comp.lock);
+}
+static void params_set_luminances(struct wl_client *c, struct wl_resource *r,
+      uint32_t min_lum, uint32_t max_lum, uint32_t reference_lum)
+{
+   (void)c; (void)r;
+   pthread_mutex_lock(&comp.lock);
+   comp.params_min       = min_lum;
+   comp.params_max       = max_lum;
+   comp.params_reference = reference_lum;
+   pthread_mutex_unlock(&comp.lock);
+}
+static void params_create(struct wl_client *c, struct wl_resource *r, uint32_t id)
+{
+   struct wl_resource *d;
+   pthread_mutex_lock(&comp.lock);
+   comp.params_created++;
+   if (!comp.params_tf || !comp.params_primaries)
+      comp.params_incomplete++;
+   pthread_mutex_unlock(&comp.lock);
+   d = wl_resource_create(c, &wp_image_description_v1_interface, 1, id);
+   wl_resource_set_implementation(d, &desc_impl, NULL, NULL);
+   /* create destroys the creator */
+   wl_resource_destroy(r);
+   if (comp.answer == ANSWER_READY)
+   {
+      pthread_mutex_lock(&comp.lock);
+      comp.desc_ready = 1;
+      pthread_mutex_unlock(&comp.lock);
+      wp_image_description_v1_send_ready(d, 3);
+   }
+   else
+      wp_image_description_v1_send_failed(d,
+            WP_IMAGE_DESCRIPTION_V1_CAUSE_UNSUPPORTED, "not today");
+}
+static void params_ignore_8int(struct wl_client *c, struct wl_resource *r,
+      int32_t a, int32_t b, int32_t d, int32_t e, int32_t f, int32_t g,
+      int32_t h, int32_t i)
+{ (void)c; (void)r; (void)a; (void)b; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
+static void params_ignore_uint(struct wl_client *c, struct wl_resource *r, uint32_t v)
+{ (void)c; (void)r; (void)v; }
+static void params_ignore_2uint(struct wl_client *c, struct wl_resource *r, uint32_t a, uint32_t b)
+{ (void)c; (void)r; (void)a; (void)b; }
+static const struct wp_image_description_creator_params_v1_interface params_impl = {
+   params_create, params_set_tf_named, params_ignore_uint,
+   params_set_primaries_named, params_ignore_8int, params_set_luminances,
+   params_ignore_8int, params_ignore_2uint, params_ignore_uint,
+   params_ignore_uint
+};
 
 /* wp_color_management_surface_v1 */
 static void cms_destroy(struct wl_client *c, struct wl_resource *r)
@@ -215,7 +290,17 @@ static void cm_create_icc(struct wl_client *c, struct wl_resource *r,
 { (void)c; (void)r; (void)id; }
 static void cm_create_params(struct wl_client *c, struct wl_resource *r,
       uint32_t id)
-{ (void)c; (void)r; (void)id; }
+{
+   struct wl_resource *p = wl_resource_create(c,
+         &wp_image_description_creator_params_v1_interface, 1, id);
+   (void)r;
+   wl_resource_set_implementation(p, &params_impl, NULL, NULL);
+   pthread_mutex_lock(&comp.lock);
+   if (!comp.offer_parametric)
+      violate("a parametric creator without the feature");
+   comp.params_tf = comp.params_primaries = 0;
+   pthread_mutex_unlock(&comp.lock);
+}
 static void cm_create_windows_scrgb(struct wl_client *c,
       struct wl_resource *r, uint32_t id)
 {
@@ -255,13 +340,21 @@ static void cm_bind(struct wl_client *c, void *data, uint32_t v, uint32_t id)
             WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL);
    wp_color_manager_v1_send_supported_intent(r,
          WP_COLOR_MANAGER_V1_RENDER_INTENT_RELATIVE);
-   wp_color_manager_v1_send_supported_feature(r,
-         WP_COLOR_MANAGER_V1_FEATURE_PARAMETRIC);
+   if (comp.offer_parametric)
+   {
+      wp_color_manager_v1_send_supported_feature(r,
+            WP_COLOR_MANAGER_V1_FEATURE_PARAMETRIC);
+      wp_color_manager_v1_send_supported_feature(r,
+            WP_COLOR_MANAGER_V1_FEATURE_SET_LUMINANCES);
+   }
    if (comp.offer_scrgb)
       wp_color_manager_v1_send_supported_feature(r,
             WP_COLOR_MANAGER_V1_FEATURE_WINDOWS_SCRGB);
    wp_color_manager_v1_send_supported_tf_named(r,
          WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_SRGB);
+   if (comp.offer_parametric)
+      wp_color_manager_v1_send_supported_tf_named(r,
+            WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR);
    wp_color_manager_v1_send_supported_primaries_named(r,
          WP_COLOR_MANAGER_V1_PRIMARIES_SRGB);
    wp_color_manager_v1_send_done(r);
@@ -326,10 +419,12 @@ static pthread_t tid;
 static float cb_peak;
 static void peak_cb(float nits) { cb_peak = nits; }
 
-static void start(int scrgb, int perceptual, enum answer answer)
+static void start_full(int scrgb, int perceptual, int parametric,
+      enum answer answer)
 {
    memset(&comp.offer_scrgb, 0,
          sizeof(comp) - offsetof(__typeof__(comp), offer_scrgb));
+   comp.offer_parametric = parametric;
    comp.offer_scrgb      = scrgb;
    comp.offer_perceptual = perceptual;
    comp.answer           = answer;
@@ -340,6 +435,11 @@ static void start(int scrgb, int perceptual, enum answer answer)
    wl_global_create(comp.dpy, &wp_color_manager_v1_interface, 1, NULL, cm_bind);
    wl_global_create(comp.dpy, &wl_output_interface, 1, NULL, output_bind);
    pthread_create(&tid, NULL, comp_thread, NULL);
+}
+
+static void start(int scrgb, int perceptual, enum answer answer)
+{
+   start_full(scrgb, perceptual, 1, answer);
 }
 
 static void stop(void)
@@ -505,6 +605,64 @@ int main(void)
          disconnect_client(&cl);
          stop();
       }
+   }
+
+   printf("7. the frame's own luminances, not scRGB\n");
+   {
+      start(1, 1, ANSWER_READY);
+      check("connected", connect_client(&cl));
+      check("parametric reported supported", wl_color_parametric_supported(&cl.color));
+      surface = wl_compositor_create_surface(cl.compositor);
+      check("attach asked for",
+            wl_color_attach_luminances(&cl.color, surface, 203.0f, 1000.0f));
+      wl_display_roundtrip(cl.dpy);
+      wl_display_roundtrip(cl.dpy);
+      snapshot(&gs, &cs, &sd, &in, &v);
+      pthread_mutex_lock(&comp.lock);
+      check("one creator, described once, created once",
+            comp.params_created == 1 && comp.params_tf == 1
+            && comp.params_primaries == 1);
+      check("extended-linear sRGB with 203 nits reference and 1000 peak",
+            comp.params_reference == 203 && comp.params_max == 1000);
+      check("no property set twice, none left unset",
+            comp.params_already_set == 0 && comp.params_incomplete == 0);
+      pthread_mutex_unlock(&comp.lock);
+      check("Windows-scRGB was never asked for", cs == 0);
+      check("the description was set on the surface once, after ready", sd == 1);
+      check("and the client knows which tag it carries",
+            (cl.color.flags & WL_COLOR_TAGGED)
+            && (cl.color.flags & WL_COLOR_TAGGED_PARAMETRIC));
+      check("no protocol rule broken", v == 0);
+      if (v)
+         printf("        (%s)\n", comp.violation);
+      wl_color_destroy(&cl.color);
+      wl_surface_destroy(surface);
+      disconnect_client(&cl);
+      stop();
+   }
+
+   printf("8. a compositor without the parametric features\n");
+   {
+      start_full(1, 1, 0, ANSWER_READY);
+      check("connected", connect_client(&cl));
+      check("parametric reported unsupported", !wl_color_parametric_supported(&cl.color));
+      surface = wl_compositor_create_surface(cl.compositor);
+      check("attach refused", !wl_color_attach_luminances(&cl.color, surface, 203.0f, 1000.0f));
+      check("scRGB is still there to fall back on",
+            wl_color_attach_scrgb(&cl.color, surface));
+      wl_display_roundtrip(cl.dpy);
+      wl_display_roundtrip(cl.dpy);
+      snapshot(&gs, &cs, &sd, &in, &v);
+      pthread_mutex_lock(&comp.lock);
+      check("no creator was made", comp.params_created == 0);
+      pthread_mutex_unlock(&comp.lock);
+      check("the surface carries the scRGB tag", cs == 1 && sd == 1
+            && !(cl.color.flags & WL_COLOR_TAGGED_PARAMETRIC));
+      check("no protocol rule broken", v == 0);
+      wl_color_destroy(&cl.color);
+      wl_surface_destroy(surface);
+      disconnect_client(&cl);
+      stop();
    }
 
    printf("5. no colour management at all\n");

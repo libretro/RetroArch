@@ -11763,6 +11763,11 @@ unsigned menu_displaylist_build_list(
                      count++;
 
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_HDR_SEND_LUMINANCE,
+                           PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT,
                            PARSE_ONLY_UINT, false) == 0)
                      count++;

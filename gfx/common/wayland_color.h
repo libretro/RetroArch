@@ -40,6 +40,14 @@ RETRO_BEGIN_DECLS
 #define WL_COLOR_FP16                (1u << 5)
 /* The output's peak luminance has been read */
 #define WL_COLOR_OUTPUT_PEAK         (1u << 6)
+/* The compositor takes a parametric description with luminances */
+#define WL_COLOR_FEATURE_PARAMETRIC  (1u << 7)
+#define WL_COLOR_FEATURE_LUMINANCES  (1u << 8)
+/* The surface was tagged with the frame's own luminances, not scRGB */
+#define WL_COLOR_TAGGED_PARAMETRIC   (1u << 9)
+/* The named transfer function and primaries the parametric path needs */
+#define WL_COLOR_TF_EXT_LINEAR       (1u << 10)
+#define WL_COLOR_PRIMARIES_SRGB      (1u << 11)
 
 struct wp_color_manager_v1;
 struct wp_color_management_surface_v1;
@@ -80,6 +88,18 @@ bool wl_color_scrgb_supported(const wl_color_t *color);
  * the compositor cannot, or the surface already has a colour-management
  * object; otherwise the tag is applied when the description is ready. */
 bool wl_color_attach_scrgb(wl_color_t *color, struct wl_surface *surface);
+
+/* Whether the compositor takes a parametric description carrying the
+ * frame's luminances, which describes the same extended-linear sRGB
+ * frame as Windows-scRGB but says how bright it is. */
+bool wl_color_parametric_supported(const wl_color_t *color);
+
+/* Asks for 'surface' to be treated as that frame: extended-linear sRGB
+ * at BT.709 primaries, reference white at 'paper_white_nits' and a
+ * peak of 'peak_nits'. Same terms as wl_color_attach_scrgb, whose
+ * place it takes. */
+bool wl_color_attach_luminances(wl_color_t *color,
+      struct wl_surface *surface, float paper_white_nits, float peak_nits);
 
 /* Asks the compositor how it describes 'output', for the display's
  * peak luminance; peak_cb, if set, is told when it is known. Returns

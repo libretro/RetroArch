@@ -36,18 +36,26 @@ static void wl_color_supported_feature(void *data,
    (void)manager;
    if (feature == WP_COLOR_MANAGER_V1_FEATURE_WINDOWS_SCRGB)
       color->flags |= WL_COLOR_FEATURE_SCRGB;
+   else if (feature == WP_COLOR_MANAGER_V1_FEATURE_PARAMETRIC)
+      color->flags |= WL_COLOR_FEATURE_PARAMETRIC;
+   else if (feature == WP_COLOR_MANAGER_V1_FEATURE_SET_LUMINANCES)
+      color->flags |= WL_COLOR_FEATURE_LUMINANCES;
 }
 
 static void wl_color_supported_tf_named(void *data,
       struct wp_color_manager_v1 *manager, uint32_t tf)
 {
-   (void)data; (void)manager; (void)tf;
+   (void)manager;
+   if (tf == WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR)
+      ((wl_color_t*)data)->flags |= WL_COLOR_TF_EXT_LINEAR;
 }
 
 static void wl_color_supported_primaries_named(void *data,
       struct wp_color_manager_v1 *manager, uint32_t primaries)
 {
-   (void)data; (void)manager; (void)primaries;
+   (void)manager;
+   if (primaries == WP_COLOR_MANAGER_V1_PRIMARIES_SRGB)
+      ((wl_color_t*)data)->flags |= WL_COLOR_PRIMARIES_SRGB;
 }
 
 static void wl_color_done(void *data, struct wp_color_manager_v1 *manager)
@@ -89,7 +97,10 @@ static void wl_color_description_ready(void *data,
    wp_color_management_surface_v1_set_image_description(color->surface,
          desc, WP_COLOR_MANAGER_V1_RENDER_INTENT_PERCEPTUAL);
    color->flags |= WL_COLOR_TAGGED;
-   RARCH_LOG("[Wayland] Surface tagged as scRGB for HDR output.\n");
+   if (color->flags & WL_COLOR_TAGGED_PARAMETRIC)
+      RARCH_LOG("[Wayland] Surface tagged with the frame's own luminances for HDR output.\n");
+   else
+      RARCH_LOG("[Wayland] Surface tagged as scRGB for HDR output.\n");
 }
 
 static const struct wp_image_description_v1_listener
@@ -251,6 +262,59 @@ bool wl_color_scrgb_supported(const wl_color_t *color)
    const uint32_t need = WL_COLOR_DONE | WL_COLOR_FEATURE_SCRGB
       | WL_COLOR_INTENT_PERCEPTUAL;
    return color && color->manager && (color->flags & need) == need;
+}
+
+bool wl_color_parametric_supported(const wl_color_t *color)
+{
+   const uint32_t need = WL_COLOR_DONE | WL_COLOR_FEATURE_PARAMETRIC
+      | WL_COLOR_FEATURE_LUMINANCES | WL_COLOR_INTENT_PERCEPTUAL;
+   return color && color->manager && (color->flags & need) == need
+      && (color->flags & WL_COLOR_TF_EXT_LINEAR)
+      && (color->flags & WL_COLOR_PRIMARIES_SRGB);
+}
+
+bool wl_color_attach_luminances(wl_color_t *color,
+      struct wl_surface *surface, float paper_white_nits, float peak_nits)
+{
+   struct wp_image_description_creator_params_v1 *params;
+   uint32_t reference, peak;
+
+   if (     !surface || color->surface
+         || !wl_color_parametric_supported(color))
+      return false;
+   if (paper_white_nits <= 0.0f || peak_nits <= 0.0f)
+      return false;
+   reference = (uint32_t)(paper_white_nits + 0.5f);
+   peak      = (uint32_t)(peak_nits + 0.5f);
+   /* The reference white is inside the range the frame can reach */
+   if (peak < reference)
+      peak = reference;
+
+   if (!(color->surface = wp_color_manager_v1_get_surface(color->manager,
+               surface)))
+      return false;
+   if (!(params = wp_color_manager_v1_create_parametric_creator(
+               color->manager)))
+      return false;
+
+   /* The same frame Windows-scRGB describes - extended-linear sRGB at
+    * BT.709 primaries, 1.0 being the reference white - said with the
+    * luminances it actually carries, so the compositor maps it to the
+    * display from what is in it rather than from an assumption. */
+   wp_image_description_creator_params_v1_set_tf_named(params,
+         WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_EXT_LINEAR);
+   wp_image_description_creator_params_v1_set_primaries_named(params,
+         WP_COLOR_MANAGER_V1_PRIMARIES_SRGB);
+   /* min: the darkest the frame asks for; 0.0001 cd/m² units */
+   wp_image_description_creator_params_v1_set_luminances(params,
+         50, peak, reference);
+   if (!(color->scrgb = wp_image_description_creator_params_v1_create(
+               params)))
+      return false;
+   color->flags |= WL_COLOR_TAGGED_PARAMETRIC;
+   wp_image_description_v1_add_listener(color->scrgb,
+         &wl_color_description_listener, color);
+   return true;
 }
 
 bool wl_color_attach_scrgb(wl_color_t *color, struct wl_surface *surface)

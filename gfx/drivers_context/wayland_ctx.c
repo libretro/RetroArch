@@ -336,8 +336,21 @@ static void *gfx_ctx_wl_init(void *data)
          wl_surface_set_opaque_region(wl->surface, opaque);
          wl_region_destroy(opaque);
       }
-      if (!wl_color_attach_scrgb(&wl->color, wl->surface))
-         RARCH_WARN("[Wayland] Could not tag the surface as scRGB.\n");
+      {
+         settings_t *settings = config_get_ptr();
+         bool tagged          = false;
+         /* The frame's own luminances where the user asked for them and
+          * the compositor takes them; otherwise Windows-scRGB, as
+          * before */
+         if (     settings
+               && settings->bools.video_hdr_send_luminance
+               && wl_color_parametric_supported(&wl->color))
+            tagged = wl_color_attach_luminances(&wl->color, wl->surface,
+                  settings->floats.video_hdr_paper_white_nits,
+                  video_driver_get_hdr_max_nits());
+         if (!tagged && !wl_color_attach_scrgb(&wl->color, wl->surface))
+            RARCH_WARN("[Wayland] Could not tag the surface for HDR output.\n");
+      }
    }
 #endif
    if (wl->tearing_control_manager)

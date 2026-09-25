@@ -24,6 +24,11 @@ S_BOOL(video_hdr_use_display_peak, VIDEO_HDR_USE_DISPLAY_PEAK,
       DEFAULT_VIDEO_HDR_USE_DISPLAY_PEAK, SD_FLAG_NONE, 0, 0,
       "Use Display Peak",
       "Use the peak brightness the display reports instead of Peak Brightness, where the display reports one: it is what cores are told and what the HDR metadata sent to the display carries. Off, Peak Brightness is used as set.")
+S_BOOL(video_hdr_send_luminance, VIDEO_HDR_SEND_LUMINANCE,
+      "video_hdr_send_luminance",
+      DEFAULT_VIDEO_HDR_SEND_LUMINANCE, SD_FLAG_NONE, 0, 0,
+      "Send Frame Luminance",
+      "Tell a Wayland compositor the brightness range the frame carries, so it maps HDR content from what is in the frame rather than from an assumption. Off, the frame is described as Windows-scRGB, as before. Takes effect when the video driver restarts.")
 S_UINT_EX(video_hdr_expand_gamut, VIDEO_HDR_EXPAND_GAMUT,
       "video_hdr_expand_gamut",
       DEFAULT_VIDEO_HDR_EXPAND_GAMUT, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_hdr_expand_gamut, NULL, NULL, NULL, NULL, 0,
