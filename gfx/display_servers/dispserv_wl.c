@@ -313,14 +313,11 @@ static bool wl_display_server_set_resolution(void *data,
    {
       mutter_dc_target_t t;
       wl_display_server_mutter_target(serv, monitor_index, &t);
-      if (mutter_displayconfig_set_resolution(&t, dims, int_hz, hz)
-            != MUTTER_DC_OK)
-         return false;
-      /* Mutter has applied it by the time it replies; the wl_output
-       * mode events for the new mode are on the socket */
-      if (serv->dpy)
-         wl_display_roundtrip(serv->dpy);
-      return true;
+      /* Asked of Mutter's worker, which applies it later; the new
+       * mode's wl_output events arrive through this connection's pump
+       * then, so there is nothing here to wait for */
+      return mutter_displayconfig_set_resolution(&t, dims, int_hz, hz)
+         == MUTTER_DC_OK;
    }
 #endif
    /* KWin answers applied or failed later, through this connection's
