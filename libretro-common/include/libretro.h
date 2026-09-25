@@ -2945,6 +2945,97 @@ enum retro_mod
 #define RETRO_AUDIO_LAYOUT_7_1    (RETRO_AUDIO_LAYOUT_5_1 | RETRO_AUDIO_SPEAKER_SIDE_LEFT | RETRO_AUDIO_SPEAKER_SIDE_RIGHT)
 
 /**
+ * Describes how the frame the core passes to \c retro_video_refresh_t
+ * divides into views: the screens of a multi-screen system and the eyes
+ * of a stereo image.
+ *
+ * The core keeps drawing every view into its one frame, packed however it
+ * likes, and this call says where each view is. A frontend that presents
+ * views lays them out, shades and composes them itself. Any other frontend
+ * shows the packed frame as it is, so the core needs no second code path.
+ *
+ * Rules:
+ *  - Call from \c retro_load_game() or \c retro_run(). The map applies from
+ *    the next \c retro_video_refresh_t call and the frontend copies it.
+ *    Cores should send it every \c retro_run(): an unchanged map costs a
+ *    comparison, and resending covers state loads and run-ahead.
+ *  - Rectangles are pixels in the frame of each refresh call (for a
+ *    hardware frame, the \c width and \c height passed to the refresh
+ *    call), measured from the top-left of the image as displayed. A GL core
+ *    rendering bottom-up still measures \c y from the top. Width and height
+ *    are non-zero. Rectangles may overlap. A frame that some rectangle does
+ *    not fit inside is shown as the packed frame; the map applies again to
+ *    the next frame they all fit.
+ *  - \c num_views is 1 to \c RETRO_VIDEO_VIEWS_MAX, or 0 to clear the map,
+ *    in which case \c views may be NULL.
+ *    Screens number from 0 with no gaps; screen 0 is the primary. Each
+ *    screen has one \c RETRO_VIDEO_VIEW_EYE_NONE view, or one
+ *    \c RETRO_VIDEO_VIEW_EYE_LEFT and one \c RETRO_VIDEO_VIEW_EYE_RIGHT view
+ *    of equal width and height.
+ *  - \c aspect_ratio is the view's display aspect ratio. At or below zero
+ *    means \c width / \c height. Above zero it must be from 0.01 to 100,
+ *    or the map is invalid.
+ *  - \c retro_game_geometry keeps describing the whole packed frame.
+ *    \c RETRO_ENVIRONMENT_SET_ROTATION rotates each view on its own.
+ *  - Touch and light gun coordinates stay in packed-frame terms. A touch
+ *    on any copy of a screen is reported inside that screen's
+ *    \c RETRO_VIDEO_VIEW_EYE_NONE or \c RETRO_VIDEO_VIEW_EYE_LEFT view, at
+ *    the same fraction of its width and height as the touch is across the
+ *    screen as displayed. Rotation is not undone: x follows the display's
+ *    horizontal axis, as it does for a frame without views, so a core that
+ *    sets a rotation turns the point itself.
+ *  - The frontend clears the map when content unloads.
+ *
+ * @param[in] data <tt>const struct retro_video_views *</tt>.
+ * @return \c true if the map was accepted. \c false for an invalid map,
+ * which leaves the previous map in effect, or from a frontend that does
+ * not know this call. Either way the core keeps sending the packed frame.
+ * @see retro_video_views
+ * @see RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS
+ */
+#define RETRO_ENVIRONMENT_SET_VIDEO_VIEWS (95 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Asks whether the frontend presents views, and whether it shows both eyes.
+ *
+ * The answer can change at any time (the user's stereo mode, HDR output,
+ * the video driver), so a core asks every \c retro_run(), before it draws.
+ *  - With \c RETRO_VIDEO_VIEWS_STATUS_PRESENTS, the core may pack its frame
+ *    for views and send the map with \c RETRO_ENVIRONMENT_SET_VIDEO_VIEWS
+ *    before the \c retro_video_refresh_t call of the frame it describes.
+ *  - Without it, a core with layouts of its own uses them, and clears any
+ *    map it sent by sending one with \c num_views 0.
+ *  - With \c RETRO_VIDEO_VIEWS_STATUS_STEREO, a core with stereo content
+ *    sends left/right pairs. A screen with no 3D content may still be one
+ *    \c RETRO_VIDEO_VIEW_EYE_NONE view, which appears the same in both eyes.
+ *  - Without it, the core sends one \c RETRO_VIDEO_VIEW_EYE_NONE view per
+ *    screen and can skip rendering the second eye. A left/right pair sent
+ *    anyway is shown as its left eye where views are presented, and within
+ *    the packed frame elsewhere.
+ *
+ * @param[out] data <tt>unsigned *</tt>. Set to a combination of the
+ * \c RETRO_VIDEO_VIEWS_STATUS_ flags.
+ * @return \c true if the call is recognised. A frontend that does not know
+ * it returns \c false, which means no flags.
+ * @see RETRO_ENVIRONMENT_SET_VIDEO_VIEWS
+ */
+#define RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS (96 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/* Flags of RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS. PRESENTS: the frontend
+ * would lay out a valid map sent now, whether or not one is set. STEREO:
+ * both eyes are shown; only set together with PRESENTS. */
+#define RETRO_VIDEO_VIEWS_STATUS_PRESENTS (1 << 0)
+#define RETRO_VIDEO_VIEWS_STATUS_STEREO   (1 << 1)
+
+/* The eye a view shows; see RETRO_ENVIRONMENT_SET_VIDEO_VIEWS. */
+#define RETRO_VIDEO_VIEW_EYE_NONE  0
+#define RETRO_VIDEO_VIEW_EYE_LEFT  1
+#define RETRO_VIDEO_VIEW_EYE_RIGHT 2
+
+/* The most views one map may hold. */
+#define RETRO_VIDEO_VIEWS_MAX      8
+
+/**
  * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
  *
  * Sizes are in bytes; a field the frontend cannot determine is left at 0.
@@ -8344,6 +8435,34 @@ struct retro_audio_sample_multi_callback
    /* Set by the frontend when float output is negotiated too, NULL
     * otherwise. */
    retro_audio_sample_batch_multi_float_t batch_float;
+};
+
+/**
+ * One view of the frame.
+ * @see RETRO_ENVIRONMENT_SET_VIDEO_VIEWS
+ */
+struct retro_video_view
+{
+   /** The view's rectangle in the frame, from the top-left as displayed. */
+   unsigned x;
+   unsigned y;
+   unsigned width;
+   unsigned height;
+   /** Screen number, from 0. */
+   unsigned screen;
+   /** One of the \c RETRO_VIDEO_VIEW_EYE_ values. */
+   unsigned eye;
+   /** Display aspect ratio; at or below zero means \c width / \c height. */
+   float aspect_ratio;
+};
+
+/**
+ * The argument of \c RETRO_ENVIRONMENT_SET_VIDEO_VIEWS.
+ */
+struct retro_video_views
+{
+   const struct retro_video_view *views;
+   unsigned num_views;
 };
 
 /**
