@@ -74,6 +74,9 @@
 #include "../../../gfx/video_driver.h"
 #include "../../../command.h"
 
+#include <errno.h>
+#include <time.h>
+
 extern const video_display_server_t dispserv_kms;
 
 /* ------------------------------------------------------------------
@@ -805,8 +808,55 @@ static int test_get_edid(void)
    return 0;
 }
 
+/* ------------------------------------------------------------------
+ * The beam estimate
+ * ------------------------------------------------------------------ */
+
+/* A 100 ms frame of 100 lines: one line per millisecond. */
+#define SEQ_FRAME_NS 100000000
+#define SEQ_LINES    100
+
+static int expect_line(const char *what, int got, int want)
+{
+   if (got == want)
+      return 0;
+   fprintf(stderr, "FAIL: %s: line %d, want %d\n", what, got, want);
+   return 1;
+}
+
+static int test_scanline_from_time(void)
+{
+   int fails = 0;
+
+   fails += expect_line("line 0 at the timestamp",
+         video_display_server_scanline_from_time(0, SEQ_FRAME_NS, SEQ_LINES), 0);
+   fails += expect_line("mid-frame",
+         video_display_server_scanline_from_time(50500000, SEQ_FRAME_NS, SEQ_LINES), 50);
+   fails += expect_line("last line",
+         video_display_server_scanline_from_time(99999999, SEQ_FRAME_NS, SEQ_LINES), 99);
+   fails += expect_line("one frame on",
+         video_display_server_scanline_from_time(100000000, SEQ_FRAME_NS, SEQ_LINES), 0);
+   fails += expect_line("two and a half frames on",
+         video_display_server_scanline_from_time(250500000, SEQ_FRAME_NS, SEQ_LINES), 50);
+   fails += expect_line("half a line before the timestamp",
+         video_display_server_scanline_from_time(-500000, SEQ_FRAME_NS, SEQ_LINES), 99);
+   fails += expect_line("5.5 lines before the timestamp",
+         video_display_server_scanline_from_time(-5500000, SEQ_FRAME_NS, SEQ_LINES), 94);
+   fails += expect_line("no frame period",
+         video_display_server_scanline_from_time(0, 0, SEQ_LINES), -1);
+   fails += expect_line("no lines",
+         video_display_server_scanline_from_time(0, SEQ_FRAME_NS, 0), -1);
+
+   if (fails)
+      return 1;
+   puts("[pass] the beam estimate maps time since line 0 onto lines, before it and across frames");
+   return 0;
+}
+
 int main(void)
 {
+   if (test_scanline_from_time())
+      return 1;
    if (test_get_edid())
       return 1;
    if (test_null_connector())

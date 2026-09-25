@@ -24,6 +24,8 @@
 #include <retro_common_api.h>
 #include <boolean.h>
 
+#include <retro_inline.h>
+
 #include "video_defines.h"
 #include "modeline/modeline_core.h"
 
@@ -176,6 +178,25 @@ bool video_display_server_get_flags(gfx_ctx_flags_t *flags);
 
 int  video_display_server_get_scanline(void);
 bool video_display_server_wait_vblank(void);
+
+/* The beam's line elapsed_ns after line 0 of a frame frame_ns long
+ * and total_lines tall, blanking included. elapsed_ns may be
+ * negative or span frames; -1 without a frame. */
+static INLINE int video_display_server_scanline_from_time(
+      int64_t elapsed_ns, uint64_t frame_ns, unsigned total_lines)
+{
+   int64_t phase;
+
+   if (!frame_ns || !total_lines)
+      return -1;
+
+   /* A negative elapsed leaves a negative remainder */
+   phase = elapsed_ns % (int64_t)frame_ns;
+   if (phase < 0)
+      phase += (int64_t)frame_ns;
+
+   return (int)(((uint64_t)phase * total_lines) / frame_ns);
+}
 
 bool video_display_server_set_window_opacity(unsigned opacity);
 
