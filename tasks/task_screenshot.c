@@ -635,7 +635,10 @@ static bool screenshot_dump(
          /* Create screenshot directory, if required */
          if (!path_is_directory(new_screenshot_dir))
             if (!path_mkdir(new_screenshot_dir))
+            {
+               free(state);
                return false;
+            }
       }
    }
 
@@ -701,7 +704,16 @@ static bool screenshot_dump(
       return false;
    }
 
-   return screenshot_dump_direct(state);
+   {
+      /* Same ownership as the task path: the caller's buffer is ours
+       * once the screenshot is written, and stays the caller's to
+       * free if it is not. */
+      bool ret = screenshot_dump_direct(state);
+      if (ret && state->userbuf)
+         free(state->userbuf);
+      free(state);
+      return ret;
+   }
 }
 
 static bool take_screenshot_viewport(

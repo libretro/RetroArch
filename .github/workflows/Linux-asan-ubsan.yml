@@ -383,3 +383,64 @@ jobs:
               | sort -u | head -20
           fi
           echo "[done] imageviewer headless smoke (soft-fail)"
+
+      - name: Screenshot on exit under LeakSanitizer (strict)
+        # The smoke above runs with detect_leaks=0, which is how a
+        # synchronous screenshot leaking its task state and the whole
+        # captured frame on every call went unnoticed: --max-frames-ss
+        # and save-state thumbnails both take that path.  This run
+        # takes one and checks for leaks with only the system libraries
+        # suppressed - Mesa, X11, SDL, D-Bus and friends keep caches
+        # alive to exit that are not RetroArch's - so anything left is
+        # ours and fails the job.
+        env:
+          ASAN_OPTIONS: abort_on_error=1:detect_leaks=1:print_stacktrace=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+          LSAN_OPTIONS: suppressions=/tmp/lsan-system.supp:print_suppressions=0
+        run: |
+          set -eu
+          cat > /tmp/lsan-system.supp <<EOF
+          leak:libGL
+          leak:libGLX
+          leak:libGLdispatch
+          leak:libgallium
+          leak:libLLVM
+          leak:_dri.so
+          leak:libEGL
+          leak:libgbm
+          leak:libX11
+          leak:libxcb
+          leak:libSDL2
+          leak:libdbus-1
+          leak:libfontconfig
+          leak:libfreetype
+          leak:libasound
+          leak:libpulse
+          EOF
+          mkdir -p /tmp/lsan-cfg /tmp/lsan-shots
+          cat > /tmp/lsan-cfg/retroarch.cfg <<EOF
+          video_driver = "sdl2"
+          audio_driver = "null"
+          video_threaded = "false"
+          video_fullscreen = "false"
+          video_windowed_fullscreen = "false"
+          screenshot_directory = "/tmp/lsan-shots"
+          EOF
+          set +e
+          timeout 120 xvfb-run -a -s "-screen 0 320x240x24" ./retroarch \
+            -c /tmp/lsan-cfg/retroarch.cfg \
+            -L cores/libretro-imageviewer/image_core.so \
+            /tmp/test.png \
+            --max-frames=60 \
+            --max-frames-ss \
+            --max-frames-ss-path=/tmp/lsan-shots/exit.png \
+            > /tmp/lsan.log 2>&1
+          rc=$?
+          set -e
+          if [ "$rc" != 0 ] || grep -qE "leak of|AddressSanitizer:|runtime error:" /tmp/lsan.log; then
+            echo "exit=${rc}"
+            grep -E -A 12 "leak of|AddressSanitizer:|runtime error:" /tmp/lsan.log | head -120
+            exit 1
+          fi
+          test -s /tmp/lsan-shots/exit.png
+          echo "[pass] screenshot on exit, no leaks outside the system libraries"
