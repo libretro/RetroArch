@@ -251,6 +251,17 @@ static bsv_movie_t *bsv_movie_init_internal(const char *path, enum rarch_movie_t
    return handle;
 
 error:
+   /* The playback init path reads the first checkpoint and the first
+    * frame's events before the handle is installed.  On a short read
+    * those readers set BSV_FLAG_MOVIE_END on the global input state,
+    * but the handle is freed here and never enqueued, so the PLAYBACK
+    * flag is never set alongside it.  Left behind, MOVIE_END makes the
+    * run loop issue CMD_EVENT_PAUSE after every frame while
+    * movie_stop() has no PLAYBACK/RECORDING flag to clear it through:
+    * a permanent pause that survives Close Content and only ends with
+    * a process restart (#19622).  A handle that failed to initialise
+    * must not leave any flag behind. */
+   input_state_get_ptr()->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_END;
    if (handle)
       bsv_movie_free(handle);
    return NULL;
@@ -295,9 +306,14 @@ static bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path)
       input_st->bsv_movie_state_handle. */
    if (!(state = bsv_movie_init_internal(path, RARCH_MOVIE_PLAYBACK)))
    {
-      RARCH_ERR("[Replay] %s: \"%s\".\n",
-            msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
-            path);
+      /* This runs from the task callback, after CMD_EVENT_PLAY_REPLAY
+       * has already returned success, so the command's own failure
+       * message never fires for an unreadable file.  Tell the user
+       * here, as the record path does. */
+      _msg = msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_ERR("[Replay] %s: \"%s\".\n", _msg, path);
       return false;
    }
 
@@ -459,6 +475,11 @@ bool movie_stop(input_driver_state_t *input_st)
       return movie_stop_playback(input_st);
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
       return movie_stop_record(input_st);
+   /* No movie is active, so nothing above cleared the flags.  Drop a
+    * stray MOVIE_END here too: the run loop pauses every frame while
+    * it is set, and this is also what Close Content calls, so it must
+    * not carry the flag into the next content. */
+   input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_END;
    if (input_st->bsv_movie_state_handle)
       RARCH_ERR("[Replay] Didn't really stop movie!\n");
    return true;
