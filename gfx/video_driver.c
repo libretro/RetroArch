@@ -8938,6 +8938,14 @@ static uint16_t video_driver_scanline_get_total(
    uint16_t scanline_total = video_height * ((double)1125 / (double)1080);
    uint8_t res_lut_size    = ARRAY_SIZE(resolution_lut);
    uint8_t i               = 0;
+   float display_total     = 0.0f;
+
+   /* The display's own count, where the server knows the mode */
+   if (     video_display_server_get_metrics(
+               DISPLAY_METRIC_TOTAL_LINES, &display_total)
+         && display_total >= video_height
+         && display_total < 65536.0f)
+      return (uint16_t)display_total;
 
    for (i = 0; i < res_lut_size; i++)
    {

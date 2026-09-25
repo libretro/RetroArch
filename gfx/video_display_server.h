@@ -100,9 +100,12 @@ typedef struct video_display_server
     * false if it cannot.
     *
     * Both are optional and a server may implement one without the
-    * other, but Scanline Sync needs get_scanline: it calibrates the
-    * total line count from the peak value and targets a specific line.
-    * A server offering only wait_vblank cannot drive it.
+    * other, but Scanline Sync needs get_scanline: it targets a specific
+    * line, and takes the line count from DISPLAY_METRIC_TOTAL_LINES
+    * where the server knows it. A server offering only wait_vblank
+    * cannot drive it. A server may refresh what its beam depends on,
+    * such as VRR, only when asked for DISPLAY_METRIC_TOTAL_LINES,
+    * outside Scanline Sync's wait, so a caller asks for that first.
     *
     * win32 implements both through D3DKMT; KMS implements get_scanline
     * from DRM's vblank timestamps. X11's glXWaitForMscOML and Wayland's
