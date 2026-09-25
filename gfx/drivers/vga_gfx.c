@@ -287,7 +287,10 @@ static bool vga_gfx_frame(void *data, const void *frame,
                   /* scale incoming frame to fit the screen */
                   unsigned    scaled_x = (width * x) / VGA_WIDTH;
                   unsigned    scaled_y = (height * y) / VGA_HEIGHT;
-                  uint32_t pixel = ((uint32_t*)frame_to_copy)[width * scaled_y + scaled_x];
+                  /* Rows are pitch bytes apart, not width pixels. */
+                  uint32_t pixel = ((const uint32_t*)
+                        ((const unsigned char*)frame_to_copy
+                         + pitch * scaled_y))[scaled_x];
 
                   /* convert RGB888 to BGR332 */
                   unsigned r = ((pixel & 0xFF0000) >> 21);
@@ -311,7 +314,10 @@ static bool vga_gfx_frame(void *data, const void *frame,
                   /* scale incoming frame to fit the screen */
                   unsigned    scaled_x = (width * x) / VGA_WIDTH;
                   unsigned    scaled_y = (height * y) / VGA_HEIGHT;
-                  unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
+                  /* Rows are pitch bytes apart, not width pixels. */
+                  unsigned short pixel = ((const unsigned short*)
+                        ((const unsigned char*)frame_to_copy
+                         + pitch * scaled_y))[scaled_x];
 
                   /* convert RGB565 to BGR332 */
                   unsigned r = ((pixel & 0xF800) >> 13);

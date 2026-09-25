@@ -233,7 +233,10 @@ static bool fpga_frame(void *data, const void *frame,
                   /* scale incoming frame to fit the screen */
                   unsigned scaled_x    = (width * x) / FB_WIDTH;
                   unsigned scaled_y    = (height * y) / FB_HEIGHT;
-                  unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
+                  /* Rows are pitch bytes apart, not width pixels. */
+                  unsigned short pixel = ((const unsigned short*)
+                        ((const unsigned char*)frame_to_copy
+                         + pitch * scaled_y))[scaled_x];
 
                   /* convert RGBX444 to XRGB8888 */
                   unsigned r = ((pixel & 0xF000) >> 12);
@@ -256,7 +259,10 @@ static bool fpga_frame(void *data, const void *frame,
                   /* scale incoming frame to fit the screen */
                   unsigned scaled_x    = (width * x) / FB_WIDTH;
                   unsigned scaled_y    = (height * y) / FB_HEIGHT;
-                  unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
+                  /* Rows are pitch bytes apart, not width pixels. */
+                  unsigned short pixel = ((const unsigned short*)
+                        ((const unsigned char*)frame_to_copy
+                         + pitch * scaled_y))[scaled_x];
 
                   /* convert RGB565 to XRBG8888 */
                   unsigned r = ((pixel & 0xF800) >> 11);
