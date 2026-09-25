@@ -274,6 +274,7 @@ CRYPTO
 
 #include "../gfx/video_driver.c"
 #include "../gfx/common/video_mode_select.c"
+#include "../gfx/video_views.c"
 /*============================================================
 UI COMMON CONTEXT
 ============================================================ */

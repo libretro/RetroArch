@@ -261,6 +261,19 @@ jobs:
           timeout 60 ./vulkan_extension_count_test
           echo "[pass] vulkan_extension_count_test"
 
+      - name: Build and run video_views_test (ASan+UBSan)
+        shell: bash
+        working-directory: samples/gfx/video_views
+        run: |
+          set -eu
+          # gfx/video_views.c decides which rectangle of the core's
+          # frame lands where, and maps touch back through that layout.
+          # Pure logic, so every mode and edge case runs here.
+          make clean all SANITIZER=address,undefined
+          test -x video_views_test
+          timeout 60 ./video_views_test
+          echo "[pass] video_views_test"
+
       - name: Build and run vulkan_swapchain_clamp_test (ASan)
         shell: bash
         working-directory: samples/gfx/vulkan_swapchain_clamp
