@@ -9750,6 +9750,7 @@ unsigned menu_displaylist_build_list(
                   { MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS, PARSE_ACTION, false },
                   { MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS, PARSE_ACTION, false },
                   { MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS, PARSE_ACTION, false },
+                  { MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS, PARSE_ACTION, false },
                };
                count += menu_displaylist_parse_settings_rows(list, settings,
                      dl_rows_6, (unsigned)ARRAY_SIZE(dl_rows_6));
@@ -12138,6 +12139,20 @@ unsigned menu_displaylist_build_list(
                }
             }
          }
+         break;
+      case DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST:
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_VIDEO_STEREO_MODE,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_VIDEO_STEREO_SWAP_EYES,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
          break;
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          {
@@ -16652,6 +16667,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST:
+         case DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          case DISPLAYLIST_OPTIONS_DISK:
