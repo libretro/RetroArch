@@ -2014,6 +2014,15 @@ void video_driver_set_gpu_api_devices(enum gfx_ctx_api api, struct string_list *
 void video_driver_set_display_peak_nits(float nits);
 unsigned video_driver_get_display_peak_nits(void);
 
+/* The peak to tell cores: the display's where Use Display Peak is on
+ * and one is known, else the Peak Brightness setting. */
+float video_driver_get_hdr_max_nits(void);
+
+/* The peak for the HDR metadata a driver sends its display: the
+ * display's where Use Display Peak is on and one is known, else the
+ * driver's own fixed value, unchanged. */
+float video_driver_hdr_metadata_peak(float driver_value);
+
 struct string_list* video_driver_get_gpu_api_devices(enum gfx_ctx_api api);
 
 const char *hw_render_context_name(

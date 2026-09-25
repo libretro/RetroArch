@@ -3191,10 +3191,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       meta.displayPrimaryBlue.y      = 0.046f;
       meta.whitePoint.x              = 0.3127f;
       meta.whitePoint.y              = 0.3290f;
-      meta.maxLuminance              = 1000.0f;
+      /* 1000 nits unless Use Display Peak supplies the display's */
+      meta.maxLuminance              = video_driver_hdr_metadata_peak(1000.0f);
       meta.minLuminance              = 0.001f;
-      meta.maxContentLightLevel      = 1000.0f;
-      meta.maxFrameAverageLightLevel = 1000.0f;
+      meta.maxContentLightLevel      = meta.maxLuminance;
+      meta.maxFrameAverageLightLevel = meta.maxLuminance;
       vk->set_hdr_metadata(vk->context.device, 1, &vk->swapchain, &meta);
    }
 #endif

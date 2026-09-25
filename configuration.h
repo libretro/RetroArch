@@ -638,6 +638,7 @@ typedef struct settings
       bool video_wiiu_prefer_drc;
       bool video_notch_write_over_enable;
       bool video_hdr_scanlines;
+      bool video_hdr_use_display_peak;
       bool video_use_metal_arg_buffers;
 
       /* Accessibility */

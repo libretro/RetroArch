@@ -19,6 +19,11 @@ S_FLOAT_EX(video_hdr_max_nits, VIDEO_HDR_MAX_NITS,
       DEFAULT_VIDEO_HDR_MAX_NITS, "%.0f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 100.0, 10000.0, 50.0, setting_action_ok_uint, setting_get_string_representation_video_hdr_max_nits, NULL, NULL, NULL, NULL, 0,
       "Peak Brightness",
       "The brightest your display can go, in nits. Sets how much room there is above Brightness for highlights, so cores that render HDR themselves know how far they can push before rolling off. Check your display's specification; if in doubt, leave it at 1000. Setting this higher than the display can actually reach makes bright detail clip instead of rolling off.")
+S_BOOL(video_hdr_use_display_peak, VIDEO_HDR_USE_DISPLAY_PEAK,
+      "video_hdr_use_display_peak",
+      DEFAULT_VIDEO_HDR_USE_DISPLAY_PEAK, SD_FLAG_NONE, 0, 0,
+      "Use Display Peak",
+      "Use the peak brightness the display reports instead of Peak Brightness, where the display reports one: it is what cores are told and what the HDR metadata sent to the display carries. Off, Peak Brightness is used as set.")
 S_UINT_EX(video_hdr_expand_gamut, VIDEO_HDR_EXPAND_GAMUT,
       "video_hdr_expand_gamut",
       DEFAULT_VIDEO_HDR_EXPAND_GAMUT, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_hdr_expand_gamut, NULL, NULL, NULL, NULL, 0,

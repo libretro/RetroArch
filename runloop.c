@@ -4016,12 +4016,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          /* How bright the display can go.  Together with paper white this
           * gives a core the headroom it has for highlights; without it a core
           * has to guess, and the guess is too dark on a bright panel and clips
-          * on a dim one.  Not queryable from any platform portably, so this is
-          * the user's setting rather than a measurement. */
-         {
-            settings_t *settings = config_get_ptr();
-            *(float*)data = settings->floats.video_hdr_max_nits;
-         }
+          * on a dim one.  The user's setting, or with Use Display Peak the
+          * display's own where its context learned one. */
+         *(float*)data = video_driver_get_hdr_max_nits();
          break;
 
       case RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE:

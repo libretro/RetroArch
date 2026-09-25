@@ -915,8 +915,9 @@ static bool gfx_ctx_drm_hdr_apply(gfx_ctx_drm_data_t *drm)
    drm_hdr_output_metadata_t meta;
    settings_t *settings = config_get_ptr();
 
+   (void)settings;
    drm_hdr_build_metadata(&meta, &drm->hdr_sink,
-         settings ? settings->floats.video_hdr_max_nits : 0.0f);
+         video_driver_get_hdr_max_nits());
    if (drmModeCreatePropertyBlob(g_drm_fd, &meta, sizeof(meta),
             &drm->hdr_blob))
    {

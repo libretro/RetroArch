@@ -2741,6 +2741,20 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
       {
          supported = (desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020);
 
+         /* The panel's peak as Windows reports it; this check runs on
+          * frame paths, so it is told only when it changes */
+         if (supported && desc1.MaxLuminance > 0.0f)
+         {
+            static unsigned dxgi_last_peak = 0;
+            unsigned peak = (unsigned)(desc1.MaxLuminance + 0.5f);
+            if (peak != dxgi_last_peak)
+            {
+               dxgi_last_peak = peak;
+               video_driver_set_display_peak_nits(desc1.MaxLuminance);
+               RARCH_LOG("[DXGI] Display peak luminance: %u nits (from Windows).\n", peak);
+            }
+         }
+
 	 /* When Windows reports HDR support (PQ/ST.2084),
 	  * scRGB (R16G16B16A16_FLOAT + G10_NONE_P709) is
 	  * always available — the Windows HDR compositor
@@ -2858,6 +2872,16 @@ void dxgi_set_hdr_metadata(
    const display_chromaticities_t* chroma           = NULL;
    DXGI_HDR_METADATA_HDR10 hdr10_meta_data          = {0};
    int selected_chroma                              = 0;
+   /* The driver's fixed values unless Use Display Peak supplies the
+    * display's */
+   float display_peak = video_driver_hdr_metadata_peak(0.0f);
+   if (display_peak > 0.0f)
+   {
+      max_output_nits = display_peak;
+      max_cll         = display_peak;
+      if (max_fall > display_peak)
+         max_fall     = display_peak;
+   }
 
    if (!handle)
       return;

@@ -1173,6 +1173,30 @@ unsigned video_driver_get_display_peak_nits(void)
    return v > 0 ? (unsigned)v : 0;
 }
 
+/* The display's peak, where the user asked for it and it is known */
+static unsigned video_driver_display_peak_in_use(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (!settings || !settings->bools.video_hdr_use_display_peak)
+      return 0;
+   return video_driver_get_display_peak_nits();
+}
+
+float video_driver_get_hdr_max_nits(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned display     = video_driver_display_peak_in_use();
+   if (display)
+      return (float)display;
+   return settings ? settings->floats.video_hdr_max_nits : 0.0f;
+}
+
+float video_driver_hdr_metadata_peak(float driver_value)
+{
+   unsigned display = video_driver_display_peak_in_use();
+   return display ? (float)display : driver_value;
+}
+
 void video_driver_set_gpu_api_devices(
       enum gfx_ctx_api api, struct string_list *list)
 {

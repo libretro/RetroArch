@@ -25,13 +25,30 @@
 
 #include "../../verbosity.h"
 #include "../video_display_server.h"
+#include "../video_driver.h"
 #include "../../frontend/drivers/platform_unix.h"
 
 /* FORWARD DECLARATIONS */
 int system_property_get(const char *cmd, const char *args,
       char *value, size_t value_size);
 
-static void* android_display_server_init(void) { return NULL; }
+/* The display's peak luminance, as Android reports it (API 24's
+ * HdrCapabilities); 0 where it reports none. */
+static void* android_display_server_init(void)
+{
+   jfloat peak = 0.0f;
+   JNIEnv *env = jni_thread_getenv();
+   if (env && g_android && g_android->getHdrMaxLuminance)
+      CALL_FLOAT_METHOD(env, peak,
+            g_android->activity->clazz, g_android->getHdrMaxLuminance);
+   if (peak > 0.0f)
+   {
+      video_driver_set_display_peak_nits((float)peak);
+      RARCH_LOG("[Android] Display peak luminance: %.0f nits (from Android).\n",
+            (float)peak);
+   }
+   return NULL;
+}
 static void android_display_server_destroy(void *data) { }
 static bool android_display_server_set_window_opacity(void *data, unsigned opacity) { return true; }
 static bool android_display_server_set_window_progress(void *data, int progress, bool finished) { return true; }

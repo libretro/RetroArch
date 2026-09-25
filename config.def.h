@@ -621,6 +621,8 @@
  * roughly what mid-range HDR panels reach, so it is a safe default for a value
  * the frontend cannot query - no platform exposes it portably. */
 #define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
+/* Off: the Peak Brightness setting is used as set, as it always was */
+#define DEFAULT_VIDEO_HDR_USE_DISPLAY_PEAK false
 
 /* Should we expand the colour gamut when using hdr */
 #define DEFAULT_VIDEO_HDR_EXPAND_GAMUT 0

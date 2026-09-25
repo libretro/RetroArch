@@ -220,6 +220,7 @@ struct android_app
    jmethodID getPendingIntentScreenshotsLocation;
    jmethodID isAndroidTV;
    jmethodID getRefreshRate;
+   jmethodID getHdrMaxLuminance;
    jmethodID getDisplayModes;
    jmethodID getCurrentDisplayModeId;
    jmethodID setDisplayModeId;
