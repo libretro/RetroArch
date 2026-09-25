@@ -1247,10 +1247,14 @@ static void rgb565_to_rgb(const uint16_t *src, unsigned char *dst,
     unsigned x;
     for (x = 0; x < w; x++) {
         uint16_t c = src[x];
-        /* expand to 8-bit */
-        dst[x * 3 + 0] = ((c >> 11) & 0x1f) << 3;
-        dst[x * 3 + 1] = ((c >>  5) & 0x3f) << 2;
-        dst[x * 3 + 2] = ((c >>  0) & 0x1f) << 3;
+        unsigned r = (c >> 11) & 0x1f;
+        unsigned g = (c >>  5) & 0x3f;
+        unsigned b = (c >>  0) & 0x1f;
+        /* Widen to 8 bits with the top bits copied down, so full
+         * scale is 255 and greys stay neutral. */
+        dst[x * 3 + 0] = (unsigned char)((r << 3) | (r >> 2));
+        dst[x * 3 + 1] = (unsigned char)((g << 2) | (g >> 4));
+        dst[x * 3 + 2] = (unsigned char)((b << 3) | (b >> 2));
     }
 }
 
