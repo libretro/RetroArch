@@ -186,6 +186,8 @@ typedef struct gl3
       GLuint   ui_tex;
       unsigned dims;
       bool     active;
+      /* The backbuffer is 10-bit Rec.2020 PQ, not FP16 scRGB */
+      bool     pq_out;
       /* The HDR settings this frame carried (video_frame_info_t), so the
        * thread that draws never reads what the menu writes */
       float    menu_nits;
@@ -3383,7 +3385,14 @@ static void *gl3_init(const video_info_t *video,
       gfx_ctx_flags_t ctx_flags;
       ctx_flags.flags = 0;
       video_context_driver_get_flags(&ctx_flags);
-      if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
+      if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_HDR10_FRAMEBUFFER))
+      {
+         /* The same offscreen and encode as scRGB, finished in PQ */
+         gl->scrgb.active = true;
+         gl->scrgb.pq_out = true;
+         RARCH_LOG("[GLCore] HDR10 backbuffer active; the frame will be encoded to Rec.2020 PQ.\n");
+      }
+      else if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
       {
          gl->scrgb.active = true;
          RARCH_LOG("[GLCore] scRGB backbuffer active; SDR content will be encoded for HDR output.\n");
@@ -4078,7 +4087,8 @@ static bool gl3_read_viewport_hdr(void *data, uint16_t *buffer,
    float    max_cll  = 0.0f;
    double   sum_fall = 0.0;
 
-   if (!gl || !(gl->scrgb.active) || !buffer)
+   /* Reads the backbuffer as FP16 scRGB; a PQ one is not */
+   if (!gl || !(gl->scrgb.active) || gl->scrgb.pq_out || !buffer)
       return false;
 
    if (!is_idle)
@@ -4716,7 +4726,7 @@ static void gl3_renderchain_render(
  * linear-light compositing applies. */
 static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
 {
-   float ubo_data[20];
+   float ubo_data[24];
    static const float quad_pos[8] = {
       0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
    };
@@ -4743,6 +4753,10 @@ static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
    ubo_data[17] = 0.0f;
    ubo_data[18] = 2.0f;   /* PQ -> SDR */
    ubo_data[19] = 0.0f;   /* no separate UI layer on this path */
+   ubo_data[20] = 0.0f;   /* an SDR output, never PQ */
+   ubo_data[21] = 0.0f;
+   ubo_data[22] = 0.0f;
+   ubo_data[23] = 0.0f;
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
    glViewport(0, 0, width, height);
@@ -4751,9 +4765,9 @@ static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
    glUseProgram(gl->pipelines.hdr_scrgb);
 
    if (gl->pipelines.hdr_scrgb_loc.flat_ubo_vertex >= 0)
-      glUniform4fv(gl->pipelines.hdr_scrgb_loc.flat_ubo_vertex, 5, ubo_data);
+      glUniform4fv(gl->pipelines.hdr_scrgb_loc.flat_ubo_vertex, 6, ubo_data);
    if (gl->pipelines.hdr_scrgb_loc.flat_ubo_fragment >= 0)
-      glUniform4fv(gl->pipelines.hdr_scrgb_loc.flat_ubo_fragment, 5, ubo_data);
+      glUniform4fv(gl->pipelines.hdr_scrgb_loc.flat_ubo_fragment, 6, ubo_data);
 
    glActiveTexture(GL_TEXTURE1);
    glBindTexture(GL_TEXTURE_2D, gl->scrgb.tex);
@@ -5259,7 +5273,7 @@ static bool gl3_frame(void *data, const void *frame,
     * the backbuffer as before. */
    if (gl->scrgb.active && gl->scrgb.fbo && gl->pipelines.hdr_scrgb)
    {
-      float ubo_data[20];
+      float ubo_data[24];
       bool ui_visible      = false;
       static const float quad_pos[8] = {
          0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
@@ -5309,6 +5323,11 @@ static bool gl3_frame(void *data, const void *frame,
           * fallback, issued from gl3_encode_pq_to_sdr instead). */
          ubo_data[18] = pq ? 1.0f : 0.0f;
          ubo_data[19] = pq ? menu_nits : 0.0f;
+         /* hdr_out: finish in Rec.2020 PQ for an HDR10 backbuffer */
+         ubo_data[20] = gl->scrgb.pq_out ? 1.0f : 0.0f;
+         ubo_data[21] = 0.0f;
+         ubo_data[22] = 0.0f;
+         ubo_data[23] = 0.0f;
       }
 
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -5319,10 +5338,10 @@ static bool gl3_frame(void *data, const void *frame,
 
       if (gl->pipelines.hdr_scrgb_loc.flat_ubo_vertex >= 0)
          glUniform4fv(gl->pipelines.hdr_scrgb_loc.flat_ubo_vertex,
-               5, ubo_data);
+               6, ubo_data);
       if (gl->pipelines.hdr_scrgb_loc.flat_ubo_fragment >= 0)
          glUniform4fv(gl->pipelines.hdr_scrgb_loc.flat_ubo_fragment,
-               5, ubo_data);
+               6, ubo_data);
 
       /* The cross-compiled pipelines sample the unit matching the
        * SPIR-V binding (shader_gl3.c forces sampler uniform N to

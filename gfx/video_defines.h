@@ -367,7 +367,11 @@ enum display_flags
    /* Set by a context driver whose default framebuffer is FP16 scRGB
     * (linear, 1.0 = 80 nits): the video driver must encode SDR content
     * for HDR output itself (paper-white scaling etc.). */
-   GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER
+   GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER,
+   /* Set by a context driver whose default framebuffer is 10-bit
+    * Rec.2020 PQ (HDR10, e.g. a KMS scanout with HDR metadata): the
+    * video driver encodes its frame to PQ instead of scRGB. */
+   GFX_CTX_FLAGS_HDR10_FRAMEBUFFER
 };
 
 enum shader_uniform_type

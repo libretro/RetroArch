@@ -3852,6 +3852,9 @@ static const char *gl2_scrgb_frag_src[] = {
    "uniform float uMode;\n"
    /* <= 0 disables the separate UI composite. */
    "uniform float uUINits;\n"
+   /* > 0.5: HDR10 output (Rec.2020 PQ, a 10-bit scanout) rather than
+    * scRGB. Unset, it reads 0 and the output stays scRGB. */
+   "uniform float uOutPQ;\n"
    "varying vec2 vTex;\n"
    "const mat3 k709to2020 = mat3(\n"
    "   0.6274040, 0.0690970, 0.0163916,\n"
@@ -3876,6 +3879,13 @@ static const char *gl2_scrgb_frag_src[] = {
    "   vec3 n = max(p - 0.8359375, vec3(0.0));\n"
    "   vec3 d = 18.8515625 - 18.6875 * p;\n"
    "   return pow(abs(n / d), vec3(1.0 / 0.1593017578));\n"
+   "}\n",
+   /* Normalized linear (1.0 = 10,000 nits) -> ST.2084 (PQ). */
+   "vec3 linearToPq(vec3 l)\n"
+   "{\n"
+   "   vec3 p = pow(max(l, vec3(0.0)), vec3(0.1593017578125));\n"
+   "   return pow((0.8359375 + 18.8515625 * p) / (1.0 + 18.6875 * p),\n"
+   "         vec3(78.84375));\n"
    "}\n",
    /* This is the old main() body verbatim: SDR gamma 2.4 -> linear
     * scRGB at the given paper white. */
@@ -3930,6 +3940,13 @@ static const char *gl2_scrgb_frag_src[] = {
    "         vec3 uil = sdrToScrgb(ui.rgb / ui.a, uUINits) * ui.a;\n"
    "         lin      = uil + lin * (1.0 - ui.a);\n"
    "      }\n"
+   "   }\n"
+   /* HDR10 output: the composited scRGB rotated to Rec.2020 and
+    * PQ-encoded at absolute luminance; scanout is opaque. */
+   "   if (uOutPQ > 0.5)\n"
+   "   {\n"
+   "      gl_FragColor = vec4(linearToPq(k709to2020 * lin * (80.0 / 10000.0)), 1.0);\n"
+   "      return;\n"
    "   }\n"
    "   gl_FragColor = vec4(lin, src.a);\n"
    "}\n"
@@ -4002,6 +4019,7 @@ static bool gl2_scrgb_init_program(gl2_t *gl)
    gl->scrgb.loc_ui_tex  = glGetUniformLocation(prog, "uUITex");
    gl->scrgb.loc_mode    = glGetUniformLocation(prog, "uMode");
    gl->scrgb.loc_ui_nits = glGetUniformLocation(prog, "uUINits");
+   gl->scrgb.loc_out_pq  = glGetUniformLocation(prog, "uOutPQ");
    return true;
 }
 
@@ -4173,6 +4191,9 @@ static void gl2_encode_pq_to_sdr(gl2_t *gl)
       glUniform1f(gl->scrgb.loc_mode, 2.0f);
    if (gl->scrgb.loc_ui_nits >= 0)
       glUniform1f(gl->scrgb.loc_ui_nits, 0.0f);
+   /* An SDR output: the program keeps its uniforms between draws */
+   if (gl->scrgb.loc_out_pq >= 0)
+      glUniform1f(gl->scrgb.loc_out_pq, 0.0f);
 
    glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, gl->scrgb.tex);
@@ -4693,6 +4714,8 @@ static bool gl2_frame(void *data, const void *frame,
       if (gl->scrgb.loc_ui_nits >= 0)
          glUniform1f(gl->scrgb.loc_ui_nits,
                pq ? gl->scrgb.menu_nits : 0.0f);
+      if (gl->scrgb.loc_out_pq >= 0)
+         glUniform1f(gl->scrgb.loc_out_pq, gl->scrgb.pq_out ? 1.0f : 0.0f);
 
       /* Unit 1 must hold something valid even when the shader will
        * not sample it (uUINits == 0): a stale binding on the unit is
@@ -5504,7 +5527,17 @@ static void *gl2_init(const video_info_t *video,
       gfx_ctx_flags_t ctx_flags;
       ctx_flags.flags = 0;
       video_context_driver_get_flags(&ctx_flags);
-      if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
+      if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_HDR10_FRAMEBUFFER))
+      {
+         /* The same offscreen and encode as scRGB, finished in PQ */
+         if (gl2_scrgb_init_program(gl))
+         {
+            gl->scrgb.active = true;
+            gl->scrgb.pq_out = true;
+            RARCH_LOG("[GL] HDR10 backbuffer active; the frame will be encoded to Rec.2020 PQ.\n");
+         }
+      }
+      else if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
       {
          if (gl2_scrgb_init_program(gl))
          {
@@ -6798,7 +6831,8 @@ static bool gl2_read_viewport_hdr(void *data, uint16_t *buffer,
    float    max_cll  = 0.0f;
    double   sum_fall = 0.0;
 
-   if (!gl || !(gl->scrgb.active) || !buffer)
+   /* Reads the backbuffer as FP16 scRGB; a PQ one is not */
+   if (!gl || !(gl->scrgb.active) || gl->scrgb.pq_out || !buffer)
       return false;
 
    if (!is_idle)

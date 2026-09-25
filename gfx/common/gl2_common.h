@@ -193,7 +193,10 @@ struct gl2
       GLint    loc_ui_tex;
       GLint    loc_mode;
       GLint    loc_ui_nits;
+      GLint    loc_out_pq;
       bool   active;
+      /* The backbuffer is 10-bit Rec.2020 PQ, not FP16 scRGB */
+      bool   pq_out;
       /* The HDR settings this frame carried (video_frame_info_t), so the
        * thread that draws never reads what the menu writes */
       float    menu_nits;

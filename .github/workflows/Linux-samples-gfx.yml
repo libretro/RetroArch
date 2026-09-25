@@ -876,6 +876,19 @@ jobs:
           timeout 60 ./display_servers_kms_test
           echo "[pass] display_servers_kms_test"
 
+      - name: Build and run drm_hdr_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/drm_hdr
+        run: |
+          set -eu
+          # gfx/common/drm_hdr.c: which EDIDs take HDR10 and what they
+          # declare, malformed ones refused without an overread, and the
+          # HDR_OUTPUT_METADATA blob, whose layout must be the kernel's.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./drm_hdr_test
+          echo "[pass] drm_hdr_test"
+
       - name: Build and run wayland_color_management_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/wayland_color_management

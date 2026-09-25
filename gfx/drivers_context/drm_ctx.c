@@ -47,6 +47,7 @@
 #include "../../verbosity.h"
 #include "../../frontend/frontend_driver.h"
 #include "../common/drm_common.h"
+#include "../common/drm_hdr.h"
 #ifdef HAVE_WAYLAND
 #include "../common/wayland_drm_lease.h"
 #endif
@@ -88,6 +89,20 @@ typedef struct gfx_ctx_drm_data
    bool lease_lost;
    /* The GPUs the GL GPU index chooses from, as published to the menu */
    struct string_list *gl_gpu_list;
+   /* HDR10: what the sink takes, and the connector properties changed
+    * for it with the values they had, put back on the way out */
+   drm_hdr_sink_t hdr_sink;
+   uint64_t hdr_orig_metadata;
+   uint64_t hdr_orig_colorspace;
+   uint64_t hdr_orig_bpc;
+   uint64_t hdr_colorspace_bt2020;
+   uint32_t hdr_prop_metadata;
+   uint32_t hdr_prop_colorspace;
+   uint32_t hdr_prop_bpc;
+   uint32_t hdr_blob;
+   bool hdr_capable;
+   bool hdr10;
+   bool hdr_props_set;
 } gfx_ctx_drm_data_t;
 
 struct drm_fb
@@ -122,6 +137,8 @@ typedef struct hdmi_timings
 } hdmi_timings_t;
 
 static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
+/* 24 for XRGB8888 scanout, 30 for the XRGB2101010 of HDR10 */
+static unsigned drm_fb_depth               = 24;
 static drmModeModeInfo gfx_ctx_crt_switch_mode;
 static bool switch_mode                   = false;
 
@@ -217,6 +234,23 @@ static EGLint *gfx_ctx_drm_egl_fill_attribs(
 }
 
 #ifdef HAVE_EGL
+/* 10-bit scanout for HDR10: the same test for XRGB2101010 */
+static bool gbm_choose_xrgb2101010_cb(void *display_data, EGLDisplay dpy, EGLConfig config)
+{
+   EGLint r, g, b, id;
+   (void)display_data;
+
+   if (     !egl_get_config_attrib(dpy, config, EGL_RED_SIZE, &r)
+         || !egl_get_config_attrib(dpy, config, EGL_GREEN_SIZE, &g)
+         || !egl_get_config_attrib(dpy, config, EGL_BLUE_SIZE, &b))
+      return false;
+   if (r != 10 || g != 10 || b != 10)
+      return false;
+   if (!egl_get_config_attrib(dpy, config, EGL_NATIVE_VISUAL_ID, &id))
+      return false;
+   return id == GBM_FORMAT_XRGB2101010;
+}
+
 static bool gbm_choose_xrgb8888_cb(void *display_data, EGLDisplay dpy, EGLConfig config)
 {
    EGLint r, g, b, id;
@@ -312,7 +346,8 @@ static bool gfx_ctx_drm_egl_set_video_mode(gfx_ctx_drm_data_t *drm)
 #ifdef HAVE_EGL
    if (!egl_init_context(&drm->egl, EGL_PLATFORM_GBM_KHR,
             (EGLNativeDisplayType)drm->gbm_dev, &major,
-            &minor, &n, attrib_ptr, gbm_choose_xrgb8888_cb))
+            &minor, &n, attrib_ptr, drm->hdr10
+            ? gbm_choose_xrgb2101010_cb : gbm_choose_xrgb8888_cb))
       goto error;
    if (drm->gl_gpu_list)
       video_driver_set_gpu_api_devices(drm_api, drm->gl_gpu_list);
@@ -502,7 +537,8 @@ static struct drm_fb *drm_fb_get_from_bo(struct gbm_bo *bo)
    RARCH_LOG("[KMS] New FB: %ux%u (stride: %u).\n",
          width, height, stride);
 
-   ret = drmModeAddFB(g_drm_fd, width, height, 24, 32,
+   /* Depth 30 is XRGB2101010, the HDR10 scanout */
+   ret = drmModeAddFB(g_drm_fd, width, height, drm_fb_depth, 32,
          stride, handle, &fb->fb_id);
    if (ret < 0)
       goto error;
@@ -674,7 +710,7 @@ static void gfx_ctx_drm_swap_buffers(void *data)
             drm->gbm_dev,
             drm->fb_width,
             drm->fb_height,
-            GBM_FORMAT_XRGB8888,
+            drm->hdr10 ? GBM_FORMAT_XRGB2101010 : GBM_FORMAT_XRGB8888,
             GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 
       if (!drm->gbm_surface)
@@ -769,6 +805,134 @@ static void free_drm_resources(gfx_ctx_drm_data_t *drm)
    g_drm_fd           = -1;
 }
 
+/* The connector property 'name': its id, 0 where it has none, with its
+ * current value and, when asked for, its description. */
+static uint32_t gfx_ctx_drm_connector_prop(const char *name,
+      uint64_t *value, drmModePropertyRes **info)
+{
+   uint32_t i, id = 0;
+   drmModeObjectProperties *props = drmModeObjectGetProperties(g_drm_fd,
+         g_connector_id, DRM_MODE_OBJECT_CONNECTOR);
+
+   if (!props)
+      return 0;
+   for (i = 0; i < props->count_props && !id; i++)
+   {
+      drmModePropertyRes *p = drmModeGetProperty(g_drm_fd, props->props[i]);
+      if (!p)
+         continue;
+      if (string_is_equal(p->name, name))
+      {
+         id = p->prop_id;
+         if (value)
+            *value = props->prop_values[i];
+         if (info)
+         {
+            *info = p;
+            p     = NULL;
+         }
+      }
+      if (p)
+         drmModeFreeProperty(p);
+   }
+   drmModeFreeObjectProperties(props);
+   return id;
+}
+
+/* Puts back what HDR10 changed on the connector */
+static void gfx_ctx_drm_hdr_restore(gfx_ctx_drm_data_t *drm)
+{
+   if (!drm->hdr_props_set)
+      return;
+   drmModeConnectorSetProperty(g_drm_fd, g_connector_id,
+         drm->hdr_prop_metadata, drm->hdr_orig_metadata);
+   drmModeConnectorSetProperty(g_drm_fd, g_connector_id,
+         drm->hdr_prop_colorspace, drm->hdr_orig_colorspace);
+   if (drm->hdr_prop_bpc)
+      drmModeConnectorSetProperty(g_drm_fd, g_connector_id,
+            drm->hdr_prop_bpc, drm->hdr_orig_bpc);
+   if (drm->hdr_blob)
+      drmModeDestroyPropertyBlob(g_drm_fd, drm->hdr_blob);
+   drm->hdr_blob      = 0;
+   drm->hdr_props_set = false;
+}
+
+/* Whether this connector's sink takes HDR10 and the connector can say
+ * so: the EDID's HDR static metadata block, HDR_OUTPUT_METADATA, and a
+ * Colorspace property with BT2020_RGB. */
+static void gfx_ctx_drm_hdr_probe(gfx_ctx_drm_data_t *drm)
+{
+   uint64_t edid_id           = 0;
+   drmModePropertyRes *cs     = NULL;
+   drmModePropertyBlobRes *eb = NULL;
+   bool bt2020                = false;
+   int i;
+
+   drm->hdr_capable = false;
+   if (     !gfx_ctx_drm_connector_prop("EDID", &edid_id, NULL)
+         || !edid_id
+         || !(eb = drmModeGetPropertyBlob(g_drm_fd, (uint32_t)edid_id)))
+      return;
+   if (!drm_hdr_parse_edid((const uint8_t*)eb->data, eb->length,
+            &drm->hdr_sink))
+   {
+      drmModeFreePropertyBlob(eb);
+      return;
+   }
+   drmModeFreePropertyBlob(eb);
+
+   drm->hdr_prop_metadata   = gfx_ctx_drm_connector_prop(
+         "HDR_OUTPUT_METADATA", &drm->hdr_orig_metadata, NULL);
+   drm->hdr_prop_colorspace = gfx_ctx_drm_connector_prop(
+         "Colorspace", &drm->hdr_orig_colorspace, &cs);
+   drm->hdr_prop_bpc        = gfx_ctx_drm_connector_prop(
+         "max bpc", &drm->hdr_orig_bpc, NULL);
+   if (cs)
+   {
+      for (i = 0; i < cs->count_enums; i++)
+         if (string_is_equal(cs->enums[i].name, "BT2020_RGB"))
+         {
+            drm->hdr_colorspace_bt2020 = cs->enums[i].value;
+            bt2020                     = true;
+         }
+      drmModeFreeProperty(cs);
+   }
+   drm->hdr_capable = drm->hdr_prop_metadata && drm->hdr_prop_colorspace
+      && bt2020;
+}
+
+/* Tells the sink HDR10 is coming: static metadata, Rec.2020, 10 bits.
+ * On any refusal what was changed is put back and the output stays
+ * SDR, so a PQ picture never reaches a sink not told to expect it. */
+static bool gfx_ctx_drm_hdr_apply(gfx_ctx_drm_data_t *drm)
+{
+   drm_hdr_output_metadata_t meta;
+   settings_t *settings = config_get_ptr();
+
+   drm_hdr_build_metadata(&meta, &drm->hdr_sink,
+         settings ? settings->floats.video_hdr_max_nits : 0.0f);
+   if (drmModeCreatePropertyBlob(g_drm_fd, &meta, sizeof(meta),
+            &drm->hdr_blob))
+   {
+      drm->hdr_blob = 0;
+      return false;
+   }
+   drm->hdr_props_set = true;
+   if (     drmModeConnectorSetProperty(g_drm_fd, g_connector_id,
+               drm->hdr_prop_metadata, drm->hdr_blob)
+         || drmModeConnectorSetProperty(g_drm_fd, g_connector_id,
+               drm->hdr_prop_colorspace, drm->hdr_colorspace_bt2020))
+   {
+      gfx_ctx_drm_hdr_restore(drm);
+      return false;
+   }
+   /* The link at 10 bits or more where the connector lets it be set */
+   if (drm->hdr_prop_bpc && drm->hdr_orig_bpc < 10)
+      drmModeConnectorSetProperty(g_drm_fd, g_connector_id,
+            drm->hdr_prop_bpc, 10);
+   return true;
+}
+
 static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
 {
    if (!drm)
@@ -776,6 +940,16 @@ static void gfx_ctx_drm_destroy_resources(gfx_ctx_drm_data_t *drm)
 
    /* Make sure we acknowledge all page-flips. */
    gfx_ctx_drm_wait_flip(drm, true);
+
+   /* The sink back to SDR, and this context's HDR settings with it */
+   gfx_ctx_drm_hdr_restore(drm);
+   drm->hdr10        = false;
+   drm->hdr_capable  = false;
+   drm_fb_depth      = 24;
+   video_driver_modify_disp_flags(0,
+           VIDEO_FLAG_HDR_SUPPORT
+         | VIDEO_FLAG_HDR10_SUPPORT
+         | VIDEO_FLAG_SCRGB_SUPPORT);
 
 #ifdef HAVE_EGL
    egl_destroy(&drm->egl);
@@ -1069,13 +1243,54 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    drm->fb_width                   = g_drm_mode->hdisplay;
    drm->fb_height                  = g_drm_mode->vdisplay;
 
+   /* HDR10: offered where the sink and the connector take it, used
+    * when it is on; GL's HDR output here is HDR10 only. */
+   gfx_ctx_drm_hdr_restore(drm);
+   drm->hdr10 = false;
+   gfx_ctx_drm_hdr_probe(drm);
+   video_driver_modify_disp_flags(0,
+           VIDEO_FLAG_HDR_SUPPORT
+         | VIDEO_FLAG_HDR10_SUPPORT
+         | VIDEO_FLAG_SCRGB_SUPPORT);
+   if (drm->hdr_capable)
+   {
+      settings_t *settings = config_get_ptr();
+      video_driver_modify_disp_flags(
+            VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT,
+            VIDEO_FLAG_SCRGB_SUPPORT);
+      if (settings && settings->uints.video_hdr_mode > 0)
+      {
+         if (gfx_ctx_drm_hdr_apply(drm))
+         {
+            drm->hdr10 = true;
+            RARCH_LOG("[KMS] HDR10 output: Rec.2020 PQ, 10-bit scanout.\n");
+            if (settings->uints.video_hdr_mode == 2)
+               RARCH_LOG("[KMS] OpenGL HDR output here is HDR10-only; the scRGB setting maps to HDR10.\n");
+         }
+         else
+            RARCH_WARN("[KMS] The connector refused the HDR10 properties; staying SDR.\n");
+      }
+   }
+   drm_fb_depth = drm->hdr10 ? 30 : 24;
+
    /* Create GBM surface. */
    drm->gbm_surface                = gbm_surface_create(
          drm->gbm_dev,
          drm->fb_width,
          drm->fb_height,
-         GBM_FORMAT_XRGB8888,
+         drm->hdr10 ? GBM_FORMAT_XRGB2101010 : GBM_FORMAT_XRGB8888,
          GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+
+   if (!drm->gbm_surface && drm->hdr10)
+   {
+      RARCH_WARN("[KMS] No 10-bit GBM surface; staying SDR.\n");
+      gfx_ctx_drm_hdr_restore(drm);
+      drm->hdr10   = false;
+      drm_fb_depth = 24;
+      drm->gbm_surface = gbm_surface_create(drm->gbm_dev,
+            drm->fb_width, drm->fb_height, GBM_FORMAT_XRGB8888,
+            GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+   }
 
    if (!drm->gbm_surface)
    {
@@ -1085,7 +1300,21 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
 
 #ifdef HAVE_EGL
    if (!gfx_ctx_drm_egl_set_video_mode(drm))
-      goto error;
+   {
+      if (!drm->hdr10)
+         goto error;
+      /* No 10-bit EGL config: SDR on an ordinary surface */
+      RARCH_WARN("[KMS] No 10-bit EGL config; staying SDR.\n");
+      gfx_ctx_drm_hdr_restore(drm);
+      drm->hdr10   = false;
+      drm_fb_depth = 24;
+      gbm_surface_destroy(drm->gbm_surface);
+      if (     !(drm->gbm_surface = gbm_surface_create(drm->gbm_dev,
+                  drm->fb_width, drm->fb_height, GBM_FORMAT_XRGB8888,
+                  GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING))
+            || !gfx_ctx_drm_egl_set_video_mode(drm))
+         goto error;
+   }
 #endif
 
    bo = gbm_surface_lock_front_buffer(drm->gbm_surface);
@@ -1231,6 +1460,8 @@ static uint32_t gfx_ctx_drm_get_flags(void *data)
 
    if (drm->core_hw_context_enable)
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+   if (drm->hdr10)
+      BIT32_SET(flags, GFX_CTX_FLAGS_HDR10_FRAMEBUFFER);
 
    if (string_is_equal(video_driver_get_ident(), "glcore"))
    {
