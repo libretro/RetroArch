@@ -277,10 +277,15 @@ command_t* command_network_new(uint16_t port)
    if (!(netcmd = (command_network_t*)calloc(1, sizeof(command_network_t))))
       goto error;
 
-   fd = socket_init((void**)&res, port, NULL,
+   /* Bind to loopback only. A NULL server binds via AI_PASSIVE to
+    * 0.0.0.0, which exposes LOAD_CORE, WRITE_CORE_RAM and
+    * WRITE_CORE_MEMORY to anyone on the network. To drive RetroArch
+    * from another host, forward the port instead, for example
+    * `ssh -L 55355:localhost:55355 host`. */
+   fd = socket_init((void**)&res, port, "127.0.0.1",
          SOCKET_TYPE_DATAGRAM, AF_INET);
 
-   RARCH_LOG("[NetCMD] %s %hu.\n",
+   RARCH_LOG("[NetCMD] %s %hu (loopback only).\n",
          msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
          (unsigned short)port);
 
@@ -1023,6 +1028,13 @@ bool command_load_savefiles(command_t *cmd, const char* arg)
    return ret;
 }
 
+/* Cap nbytes for READ_CORE_RAM / READ_CORE_MEMORY before it is used
+ * in `40 + nbytes * 3`. The multiplication is `unsigned int` and wraps
+ * for nbytes near 0x55555556, giving a tiny allocation that the reply
+ * loop then writes 3 bytes per requested byte into. 16 KiB is far
+ * below the wrap point. */
+#define COMMAND_READ_NBYTES_MAX 16384u
+
 #if defined(HAVE_CHEEVOS)
 bool command_read_ram(command_t *cmd, const char *arg)
 {
@@ -1034,7 +1046,7 @@ bool command_read_ram(command_t *cmd, const char *arg)
    if (end && *end == ' ')
       nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
 
-   if (end && *end == ' ' && nbytes > 0)
+   if (end && *end == ' ' && nbytes > 0 && nbytes <= COMMAND_READ_NBYTES_MAX)
    {
       size_t _len             = 0;
       char *reply_at          = NULL;
@@ -1072,10 +1084,17 @@ bool command_read_ram(command_t *cmd, const char *arg)
    return true;
 }
 
+/* Cap the byte count for WRITE_CORE_RAM. rcheevos_patch_address
+ * returns a pointer with no length, so the write cannot be bounded
+ * against the region from here. Legitimate writes are a few bytes;
+ * the cap limits how far past the region a request can reach. */
+#define COMMAND_WRITE_RAM_MAX_BYTES 4096u
+
 bool command_write_ram(command_t *cmd, const char *arg)
 {
    unsigned int addr    = (unsigned int)strtoul(arg, (char**)&arg, 16);
    uint8_t *data        = (uint8_t *)rcheevos_patch_address(addr);
+   unsigned int written = 0;
 
    if (!data)
       return false;
@@ -1086,11 +1105,15 @@ bool command_write_ram(command_t *cmd, const char *arg)
       rcheevos_pause_hardcore();
    }
 
-   while (*arg)
+   while (*arg && written < COMMAND_WRITE_RAM_MAX_BYTES)
    {
       *data = strtoul(arg, (char**)&arg, 16);
       data++;
+      written++;
    }
+   if (written == COMMAND_WRITE_RAM_MAX_BYTES && *arg)
+      RARCH_WARN("[Command] WRITE_CORE_RAM truncated at %u bytes; "
+            "remainder of payload ignored.\n", written);
    return true;
 }
 #endif
@@ -1446,7 +1469,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
       if (!(end && *end == ' '))
          return false;
       nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
-      if (nbytes == 0)
+      if (nbytes == 0 || nbytes > COMMAND_READ_NBYTES_MAX)
          return false;
    }
 

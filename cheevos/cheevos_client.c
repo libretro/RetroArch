@@ -169,7 +169,11 @@ static void rcheevos_filter_url_param(char* url, char* param)
       if (start[param_len] == '=' && memcmp(start, param, param_len) == 0)
       {
          if (next)
-            strcpy(start, next + 1);
+            /* `start` and `next + 1` point into the same string, so
+             * the source and destination ranges of this copy overlap.
+             * strcpy is undefined for overlapping memory; memmove is
+             * defined to handle it correctly. */
+            memmove(start, next + 1, strlen(next + 1) + 1);
          else if (start > url)
             start[-1] = '\0';
          else

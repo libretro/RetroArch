@@ -19,6 +19,16 @@
 
 #include <ctype.h>
 
+/* For chmod() / S_IRUSR / S_IWUSR after config_file_write -- gated to
+ * the same POSIX-mode platform set as the chmod call below. */
+#if !defined(_WIN32) && !defined(_3DS) && !defined(GEKKO) \
+   && !defined(VITA) && !defined(PS2) && !defined(PSP) \
+   && !defined(__SWITCH__) && !defined(__PS3__) \
+   && !defined(_XBOX1) && !defined(_XBOX360) && !defined(_XBOX) \
+   && !defined(WIIU)
+#include <sys/stat.h>
+#endif
+
 #include <libretro.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
@@ -9407,6 +9417,19 @@ bool config_save_file(const char *path)
 
    ret = config_file_write(conf, path, true);
    config_file_free(conf);
+
+   /* retroarch.cfg holds plaintext credentials (cloud sync, streaming
+    * and netplay passwords, account tokens). The default umask usually
+    * leaves it world-readable, so restrict it to the owner. Failure is
+    * not fatal (e.g. on filesystems without POSIX modes). */
+#if !defined(_WIN32) && !defined(_3DS) && !defined(GEKKO) \
+   && !defined(VITA) && !defined(PS2) && !defined(PSP) \
+   && !defined(__SWITCH__) && !defined(__PS3__) \
+   && !defined(_XBOX1) && !defined(_XBOX360) && !defined(_XBOX) \
+   && !defined(WIIU)
+   if (ret)
+      chmod(path, S_IRUSR | S_IWUSR);
+#endif
 
 #if TARGET_OS_TV
    if (ret && string_is_equal(path, path_get(RARCH_PATH_CONFIG)))
