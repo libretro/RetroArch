@@ -94,6 +94,8 @@ generate_source 'staging/color-management' 'color-management-v1'
 # system wayland-protocols carries them, so the bundled copy is used
 generate_source 'kde' 'kde-output-device-v2'
 generate_source 'kde' 'kde-output-management-v2'
+# wlroots' output management (sway, Hyprland, river), from wlr-protocols
+generate_source 'wlr' 'wlr-output-management-unstable-v1'
 generate_source 'staging/xdg-toplevel-icon' 'xdg-toplevel-icon-v1'
 generate_source 'staging/xdg-toplevel-tag' 'xdg-toplevel-tag-v1'
 generate_source 'staging/drm-lease' 'drm-lease-v1'

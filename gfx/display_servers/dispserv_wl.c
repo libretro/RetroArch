@@ -35,6 +35,7 @@
 
 #include "../common/mutter_displayconfig.h"
 #include "../common/wayland_kwin_output.h"
+#include "../common/wayland_wlr_output.h"
 
 typedef struct
 {
@@ -55,6 +56,8 @@ typedef struct
    bool     lease_reported;
    /* KWin's outputs and their modes, where the compositor is KWin */
    kwin_outputs_t kwin;
+   /* wlroots compositors' heads and modes (sway, Hyprland, river) */
+   wlr_outputs_t  wlr;
 } dispserv_wl_t;
 
 /* wl_output listener callbacks */
@@ -125,6 +128,8 @@ static void registry_handle_global(void *data,
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
 
    if (kwin_outputs_bind(&serv->kwin, registry, name, interface, version))
+      return;
+   if (wlr_outputs_bind(&serv->wlr, registry, name, interface, version))
       return;
 
    /* Bind to the first wl_output we find */
@@ -237,6 +242,7 @@ static void wl_display_server_destroy(void *data)
    if (!serv)
       return;
    kwin_outputs_destroy(&serv->kwin);
+   wlr_outputs_destroy(&serv->wlr);
    if (serv->output)
       wl_output_destroy(serv->output);
    if (serv->registry)
@@ -259,7 +265,8 @@ static void wl_display_server_mutter_target(dispserv_wl_t *serv,
 #endif
 
 /* Modes are listed and switched through Mutter on GNOME, as before,
- * and through KWin's own output protocols on KDE; elsewhere there is
+ * through KWin's own output protocols on KDE, and through wlroots'
+ * output management on sway, Hyprland and the like; elsewhere there is
  * nothing to list, and the menu entry and the refresh rate autoswitch
  * stay off as they always were. */
 static void *wl_display_server_get_resolution_list(void *data,
@@ -285,6 +292,9 @@ static void *wl_display_server_get_resolution_list(void *data,
 #endif
    if (kwin_outputs_ready(&serv->kwin))
       return kwin_outputs_resolution_list(&serv->kwin,
+            serv->name[0] ? serv->name : NULL, len);
+   if (wlr_outputs_ready(&serv->wlr))
+      return wlr_outputs_resolution_list(&serv->wlr,
             serv->name[0] ? serv->name : NULL, len);
    return NULL;
 }
@@ -319,6 +329,10 @@ static bool wl_display_server_set_resolution(void *data,
       return kwin_outputs_set_mode(&serv->kwin,
             serv->name[0] ? serv->name : NULL,
             VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), int_hz, hz);
+   if (wlr_outputs_ready(&serv->wlr))
+      return wlr_outputs_set_mode(&serv->wlr,
+            serv->name[0] ? serv->name : NULL,
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), int_hz, hz);
    return false;
 }
 
@@ -332,7 +346,8 @@ static uint32_t wl_display_server_get_flags(void *data)
    modes = mutter_displayconfig_available();
 #endif
    if (!modes && serv)
-      modes = kwin_outputs_ready(&serv->kwin);
+      modes =  kwin_outputs_ready(&serv->kwin)
+            || wlr_outputs_ready(&serv->wlr);
    if (!serv || !modes)
       BIT32_SET(flags, DISPSERV_CTX_NO_RESOLUTION_LIST);
    return flags;

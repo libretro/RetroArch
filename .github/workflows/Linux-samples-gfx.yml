@@ -889,6 +889,20 @@ jobs:
              timeout 60 ./drm_hdr_test
           echo "[pass] drm_hdr_test"
 
+      - name: Build and run wayland_wlr_output_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/wayland_wlr_output
+        run: |
+          set -eu
+          # gfx/common/wayland_wlr_output.c, the Wayland display server's
+          # resolution list and mode switch on wlroots compositors, against
+          # an in-process compositor that checks every configuration names
+          # each head exactly once, as the protocol requires.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wayland_wlr_output_test
+          echo "[pass] wayland_wlr_output_test"
+
       - name: Build and run wayland_kwin_output_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/wayland_kwin_output
