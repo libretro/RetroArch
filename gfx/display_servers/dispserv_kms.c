@@ -264,10 +264,54 @@ static unsigned kms_display_server_modeline_caps(void *data)
    return MODELINE_CAPS_ADD;
 }
 
+/* The connector's own modes, whole timing included, so the engine
+ * can score and select one of them when modeline generation is off
+ * (#19619). g_drm_connector is NULL between a context teardown and
+ * the reinit; an empty list then, not a failure, so a generated mode
+ * still goes through. */
 static int kms_display_server_modeline_enum(void *data,
       video_modeline_t *modes, int max)
 {
-   return 0;
+   int i;
+   int n = 0;
+
+   if (!g_drm_connector || g_drm_connector->count_modes <= 0)
+      return 0;
+
+   for (i = 0; i < g_drm_connector->count_modes && n < max; i++)
+   {
+      drmModeModeInfo *dm    = &g_drm_connector->modes[i];
+      video_modeline_t *mode = &modes[n];
+
+      memset(mode, 0, sizeof(*mode));
+      mode->platform_data = (uint64_t)i;
+      mode->pclock     = (uint64_t)dm->clock * 1000;
+      mode->hactive    = dm->hdisplay;
+      mode->hbegin     = dm->hsync_start;
+      mode->hend       = dm->hsync_end;
+      mode->htotal     = dm->htotal;
+      mode->vactive    = dm->vdisplay;
+      mode->vbegin     = dm->vsync_start;
+      mode->vend       = dm->vsync_end;
+      mode->vtotal     = dm->vtotal;
+      mode->interlace  = (dm->flags & DRM_MODE_FLAG_INTERLACE) ? 1 : 0;
+      mode->doublescan = (dm->flags & DRM_MODE_FLAG_DBLSCAN)   ? 1 : 0;
+      mode->hsync      = (dm->flags & DRM_MODE_FLAG_PHSYNC)    ? 1 : 0;
+      mode->vsync      = (dm->flags & DRM_MODE_FLAG_PVSYNC)    ? 1 : 0;
+      if (dm->htotal && dm->vtotal)
+      {
+         mode->hfreq   = (double)(mode->pclock / (uint64_t)dm->htotal);
+         mode->vfreq   = drm_calc_refresh_rate(dm);
+         mode->refresh = (int)mode->vfreq;
+      }
+      mode->dims       = VIDEO_SCALE_PACK(dm->hdisplay, dm->vdisplay);
+      mode->type      |= MODELINE_TIMING_DRMKMS;
+      if (g_drm_mode && memcmp(dm, g_drm_mode, sizeof(*dm)) == 0)
+         mode->type   |= MODELINE_DESKTOP;
+      n++;
+   }
+
+   return n;
 }
 
 static bool kms_display_server_modeline_add(void *data,
