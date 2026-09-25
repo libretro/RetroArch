@@ -16,8 +16,8 @@ ifneq ($(SANITIZER),)
 endif
 
 # pixconv_test_nosimd drops the SSE2 paths, which puts rows through
-# the MMX paths where x86 has them.  pixconv_test_scalar drops MMX
-# too, so every row runs the scalar path non-SIMD targets use.
+# the MMX paths where x86 has them.  pixconv_test_scalar drops MMX and
+# NEON too, so every row runs the scalar path non-SIMD targets use.
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
 
 $(TARGET): $(SOURCES)
@@ -27,7 +27,7 @@ $(TARGET_TEST): $(SOURCES)
 	$(CC) $(CFLAGS) -DSCALER_NO_SIMD -o $@ $(SOURCES) $(LDFLAGS)
 
 $(TARGET_TEST2): $(SOURCES)
-	$(CC) $(CFLAGS) -DSCALER_NO_SIMD -U__MMX__ -o $@ $(SOURCES) $(LDFLAGS)
+	$(CC) $(CFLAGS) -DSCALER_NO_SIMD -U__MMX__ -U__ARM_NEON -U__ARM_NEON__ -o $@ $(SOURCES) $(LDFLAGS)
 
 clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)

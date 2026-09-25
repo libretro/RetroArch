@@ -990,6 +990,27 @@ jobs:
           set -o pipefail
           ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./crc32_test
 
+      - name: Build and run pixconv_test under qemu-user
+        shell: bash
+        working-directory: libretro-common/samples/gfx/pixconv
+        run: |
+          set -euo pipefail
+          # The ARM legs are the only place the NEON converters run;
+          # PowerPC runs the scalar paths big-endian.  The armhf
+          # toolchain defaults to VFP without NEON, so armv7 builds a
+          # second time with NEON on.
+          make clean
+          CC="${{ matrix.cc }}" CFLAGS="${{ matrix.cflags }}" make all
+          for t in pixconv_test pixconv_test_nosimd pixconv_test_scalar; do
+             ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./$t
+          done
+          if [ "${{ matrix.name }}" = armv7 ]; then
+             make clean
+             CC="${{ matrix.cc }}" CFLAGS="-mfpu=neon" make all
+             ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./pixconv_test
+          fi
+          make clean
+
       - name: Run vfs_mapped_ptr_test without mappings (MMAP=0)
         shell: bash
         working-directory: libretro-common/samples/file/vfs

@@ -143,6 +143,8 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
    const __m128i a           = _mm_set1_epi16(0x00ff);
 
    int max_width = width - 7;
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+   int max_width = width - 7;
 #endif
 
    for (h = 0; h < height;
@@ -176,6 +178,25 @@ void conv_0rgb1555_argb8888(void *output_, const void *input_,
 
          _mm_storeu_si128((__m128i*)(output + w + 0), res_lo);
          _mm_storeu_si128((__m128i*)(output + w + 4), res_hi);
+      }
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      /* Each channel is shifted to the top of its lane with its own top
+       * bits inserted below, so narrowing yields the replicated 8-bit
+       * value; blue sits at the bottom and narrows from bit 2. */
+      for (; w < max_width; w += 8)
+      {
+         uint16x8_t in = vld1q_u16(input + w);
+         uint16x8_t rt = vshlq_n_u16(in, 1);
+         uint16x8_t gt = vshlq_n_u16(in, 6);
+         uint16x8_t r  = vsriq_n_u16(rt, rt, 5);
+         uint16x8_t g  = vsriq_n_u16(gt, gt, 5);
+         uint16x8_t b  = vsliq_n_u16(in, in, 5);
+         uint8x8x4_t res;
+         res.val[3] = vdup_n_u8(0xffu);
+         res.val[2] = vshrn_n_u16(r, 8);
+         res.val[1] = vshrn_n_u16(g, 8);
+         res.val[0] = vshrn_n_u16(b, 2);
+         vst4_u8((uint8_t*)(output + w), res);
       }
 #endif
 
@@ -425,6 +446,8 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
    const __m64 mul_a      = _mm_set1_pi16(0x0011);
 
    int max_width            = width - 3;
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+   int max_width            = width - 7;
 #endif
 
    for (h = 0; h < height;
@@ -500,6 +523,20 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
       }
 
       _mm_empty();
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      /* Nibbles are duplicated into both halves of each byte. */
+      for (; w < max_width; w += 8)
+      {
+         uint16x8_t in = vld1q_u16(input + w);
+         uint8x8_t  hi = vshrn_n_u16(in, 8);
+         uint8x8_t  lo = vmovn_u16(in);
+         uint8x8x4_t res;
+         res.val[3] = vsli_n_u8(lo, lo, 4);
+         res.val[2] = vsri_n_u8(hi, hi, 4);
+         res.val[1] = vsli_n_u8(hi, hi, 4);
+         res.val[0] = vsri_n_u8(lo, lo, 4);
+         vst4_u8((uint8_t*)(output + w), res);
+      }
 #endif
 
       for (; w < width; w++)
@@ -590,6 +627,8 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
    const __m128i a           = _mm_set1_epi16(0x00ff);
 
    int max_width             = width - 15;
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+   int max_width             = width - 7;
 #endif
 
    for (h = 0; h < height;
@@ -641,6 +680,21 @@ void conv_0rgb1555_bgr24(void *output_, const void *input_,
          /* Non-POT pixel sizes for the loss */
          store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, res_hi1);
       }
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w < max_width; w += 8, out += 24)
+      {
+         uint16x8_t in = vld1q_u16(input + w);
+         uint16x8_t rt = vshlq_n_u16(in, 1);
+         uint16x8_t gt = vshlq_n_u16(in, 6);
+         uint16x8_t r  = vsriq_n_u16(rt, rt, 5);
+         uint16x8_t g  = vsriq_n_u16(gt, gt, 5);
+         uint16x8_t b  = vsliq_n_u16(in, in, 5);
+         uint8x8x3_t res;
+         res.val[2] = vshrn_n_u16(r, 8);
+         res.val[1] = vshrn_n_u16(g, 8);
+         res.val[0] = vshrn_n_u16(b, 2);
+         vst3_u8(out, res);
+      }
 #endif
 
       for (; w < width; w++)
@@ -671,6 +725,8 @@ void conv_rgb565_bgr24(void *output_, const void *input_,
    const __m128i a          = _mm_set1_epi16(0x00ff);
 
    int max_width            = width - 15;
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+   int max_width            = width - 7;
 #endif
 
    for (h = 0; h < height; h++, output += out_stride, input += in_stride >> 1)
@@ -718,6 +774,19 @@ void conv_rgb565_bgr24(void *output_, const void *input_,
                _mm_slli_si128(res_hi_ra1, 2));
 
          store_bgr24_sse2(out, res_lo0, res_hi0, res_lo1, res_hi1);
+      }
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      for (; w < max_width; w += 8, out += 24)
+      {
+         uint16x8_t in = vld1q_u16(input + w);
+         uint16x8_t r  = vsriq_n_u16(in, in, 5);
+         uint16x8_t b  = vsliq_n_u16(in, in, 5);
+         uint16x8_t g  = vsriq_n_u16(b,  b,  6);
+         uint8x8x3_t res;
+         res.val[2] = vshrn_n_u16(r, 8);
+         res.val[1] = vshrn_n_u16(g, 8);
+         res.val[0] = vshrn_n_u16(b, 2);
+         vst3_u8(out, res);
       }
 #endif
 
