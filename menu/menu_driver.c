@@ -2095,6 +2095,49 @@ MENU_NOINLINE static void input_event_osk_iterate(void *osk_grid, enum osk_type 
 /* The mouse has not been seen to move yet. */
 #define MENU_MOUSE_POS_NONE VIDEO_POS_PACK(-0x7fff, -0x7fff)
 
+/* A window point to where the menu has it while views are presented.
+ * RGUI's is in its framebuffer: the driver fits that to the UI, while
+ * the viewport it reports is the whole window. */
+static void menu_input_views_point(
+      gfx_display_t *p_disp,
+      const video_views_layout_t *layout,
+      bool menu_has_fb,
+      int *x, int *y)
+{
+   int ui_x, ui_y;
+
+   video_views_ui_point(layout, *x, *y, &ui_x, &ui_y);
+
+   if (menu_has_fb)
+   {
+      struct video_viewport vp = {0};
+      int fb_width             = (int)VIDEO_SCALE_W(p_disp->framebuf_dims);
+      int fb_height            = (int)VIDEO_SCALE_H(p_disp->framebuf_dims);
+
+      /* Drivers keep the aspect once content has loaded. */
+      vp.full_dims             = layout->ui_dims;
+      video_driver_update_viewport(&vp, false, true, true);
+
+      if (VIDEO_SCALE_W(vp.dims) && VIDEO_SCALE_H(vp.dims))
+      {
+         ui_x = (int)(((float)(ui_x - VIDEO_POS_X(vp.pos)) / (float)VIDEO_SCALE_W(vp.dims)) * (float)fb_width);
+         if (ui_x < 0)
+            ui_x = 0;
+         else if (ui_x >= fb_width)
+            ui_x = fb_width - 1;
+
+         ui_y = (int)(((float)(ui_y - VIDEO_POS_Y(vp.pos)) / (float)VIDEO_SCALE_H(vp.dims)) * (float)fb_height);
+         if (ui_y < 0)
+            ui_y = 0;
+         else if (ui_y >= fb_height)
+            ui_y = fb_height - 1;
+      }
+   }
+
+   *x = ui_x;
+   *y = ui_y;
+}
+
 MENU_NOINLINE static void menu_input_get_mouse_hw_state(
       gfx_display_t *p_disp,
       menu_handle_t *menu,
@@ -2120,6 +2163,7 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
        menu->driver_ctx->set_texture);
    const input_pointer_view_t *view = input_driver_pointer_view();
    bool state_inited               = (view->flags & INPUT_PTR_VIEW_VALID) != 0;
+   const video_views_layout_t *layout = video_driver_get_views_layout();
 #ifdef HAVE_OVERLAY
    /* Menu pointer controls are ignored when overlays are enabled. */
    if (overlay_active)
@@ -2168,7 +2212,9 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
    last_pos                        = now_pos;
 
    /* > X/Y position adjustment */
-   if (menu_has_fb)
+   if (layout)
+      menu_input_views_point(p_disp, layout, menu_has_fb, &x, &y);
+   else if (menu_has_fb)
    {
       /* RGUI uses a framebuffer texture + custom viewports,
        * which means we have to convert from screen space to
@@ -2259,12 +2305,17 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
    int pointer_y                                = 0;
    const input_pointer_view_t *view             = input_driver_pointer_view();
    bool state_inited                            = (view->flags & INPUT_PTR_VIEW_VALID) != 0;
+   const video_views_layout_t *layout           = video_driver_get_views_layout();
    /* Is a background texture set for the current menu driver?
     * Checks if the menu framebuffer is set.
     * This would usually only return true
     * for framebuffer-based menu drivers, like RGUI. */
+   bool menu_has_fb                             =
+         (menu && menu->driver_ctx && menu->driver_ctx->set_texture);
+   /* With views the window's point is mapped here: the pointer
+    * device's is in the core's packed frame. */
    int pointer_device                           =
-         (menu && menu->driver_ctx && menu->driver_ctx->set_texture) ?
+         (menu_has_fb && !layout) ?
                RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
    static uint32_t last_pos                     = 0;
    uint32_t now_pos;
@@ -2310,6 +2361,14 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
     * NOT be dependent on this */
    fb_width             = VIDEO_SCALE_W(p_disp->framebuf_dims);
    fb_height            = VIDEO_SCALE_H(p_disp->framebuf_dims);
+   if (layout)
+   {
+      /* The window: the canvas, unless that is offscreen. */
+      unsigned dims     = layout->offscreen
+         ? layout->ui_dims : layout->canvas_dims;
+      fb_width          = VIDEO_SCALE_W(dims);
+      fb_height         = VIDEO_SCALE_H(dims);
+   }
 
    /* X pos */
    if (state_inited)
@@ -2328,6 +2387,8 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
    y            = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
    y           *= input_touch_scale;
 
+   if (layout)
+      menu_input_views_point(p_disp, layout, menu_has_fb, &x, &y);
    hw_state->pos = VIDEO_POS_PACK(x, y);
 
    /* Whether it moved, both axes in one compare.
@@ -6247,14 +6308,13 @@ MENU_NOINLINE static int menu_input_post_iterate(
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
    menu_input_t *menu_input                        = &menu_st->input_state;
    menu_handle_t *menu                             = menu_st->driver_data;
-   video_driver_state_t *video_st                  = video_state_get_ptr();
    menu_list_t *menu_list                          = menu_st->entries.list;
    file_list_t *selection_buf                      = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
    size_t selection                                = menu_st->selection_ptr;
    menu_file_list_cbs_t *cbs                       = selection_buf && selection_buf->size
       ? (menu_file_list_cbs_t*)selection_buf->list[selection].actiondata
       : NULL;
-   unsigned output_size                            = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
+   unsigned output_size                            = video_driver_get_ui_dims();
 
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
@@ -7418,8 +7478,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          break;
       case RARCH_MENU_CTL_OSK_PTR_AT_POS:
          {
-            unsigned output_size      = VIDEO_DRIVER_OUTPUT_DIMS(
-                  video_state_get_ptr());
+            unsigned output_size      = video_driver_get_ui_dims();
             menu_ctx_pointer_t *point = (menu_ctx_pointer_t*)data;
             if (!menu_st->driver_ctx || !menu_st->driver_ctx->osk_ptr_at_pos)
             {

@@ -4224,6 +4224,20 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_SET_VIDEO_VIEWS:
+         if (!video_driver_set_views((struct retro_video_views*)data))
+            return false;
+#ifdef HAVE_OPENXR
+         runloop_st->core_vr_content = video_driver_vr_content_active();
+#endif
+         break;
+
+      case RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS:
+         if (!data)
+            return false;
+         *(unsigned*)data = video_driver_views_status();
+         break;
+
       case RETRO_ENVIRONMENT_GET_JIT_CAPABLE:
          {
 #if TARGET_OS_IPHONE
@@ -4439,24 +4453,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          break;
 #ifdef HAVE_OPENXR
-      case RETRO_ENVIRONMENT_SET_VIDEO_VIEWS:
-         {
-            struct retro_video_views *views =
-               (struct retro_video_views*)data;
-            bool session_active = video_driver_set_video_views(views);
-
-            runloop_st->core_vr_content = session_active
-                  && views && views->num_views;
-            RARCH_LOG("[Environ] SET_VIDEO_VIEWS: %s.\n",
-                  session_active ? "accepted" : "unavailable");
-            return session_active;
-         }
-
-      case RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS:
-         if (!data)
-            return false;
-         return video_driver_get_video_views_status((unsigned*)data);
-
       case RETRO_ENVIRONMENT_GET_VR_HEAD_POSE:
          if (!data || !runloop_st->core_vr_content)
             return false;
@@ -5382,6 +5378,7 @@ void runloop_event_deinit_core(void)
    }
 
    video_driver_cached_frame_retire();
+   video_driver_clear_views();
 
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
@@ -7793,7 +7790,8 @@ static enum runloop_state_enum runloop_check_state(
 #endif
 
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
-   output_dims = video_driver_get_output_dims();
+   /* Per-eye UI lays out at one eye's size. */
+   output_dims = video_driver_get_ui_dims();
 
    gfx_animation_update(
          current_time,
@@ -7905,6 +7903,13 @@ static enum runloop_state_enum runloop_check_state(
       }
 
       /* Iterate the menu driver for one frame. */
+
+      /* A paused core asks for the views status only when it runs, so a
+       * change (Stereo Mode, a headset) may show or hide its options. */
+      if (     video_driver_views_status_changed()
+            && retroarch_ctl(RARCH_CTL_CORE_OPTION_UPDATE_DISPLAY, NULL))
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                         | MENU_ST_FLAG_PREVENT_POPULATE;
 
 #ifdef HAVE_CONFIGFILE
       /* If a configuration file load was requested on the previous
