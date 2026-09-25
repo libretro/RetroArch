@@ -51,7 +51,16 @@ uint32s_index_t *uint32s_index_new(size_t object_size,
 void uint32s_bucket_free(struct uint32s_bucket *bucket)
 {
    if (bucket->len > 3)
+   {
       free(bucket->contents.vec.idxs);
+      bucket->contents.vec.idxs = NULL;
+      bucket->contents.vec.cap  = 0;
+   }
+   /* RHMAP_CLEAR leaves value-array entries untouched; subsequent
+    * RHMAP_PTR (which auto-creates) on the cleared slot would re-read
+    * the stale len/vec.idxs and double-free.  Reset len to 0 so the
+    * bucket is unambiguously inline-empty after free. */
+   bucket->len = 0;
 }
 
 bool uint32s_bucket_get(uint32s_index_t *index, struct uint32s_bucket *bucket, uint32_t *object, size_t size_bytes, uint32_t *out_idx)
@@ -280,9 +289,28 @@ uint32_t *uint32s_index_get(uint32s_index_t *index, uint32_t which)
 
 void uint32s_index_pop(uint32s_index_t *index)
 {
-   uint32_t idx  = RBUF_LEN(index->objects)-1;
-   uint32_t hash = index->hashes[idx];
-   if (index->objects[idx] != NULL) {
+   uint32_t idx;
+   uint32_t hash;
+   /* Trust boundary: BSV replay file controls index state.  Bail before
+    * RBUF_LEN(...)-1 underflows to UINT32_MAX (turning the next line
+    * into a wild read of index->hashes[]). */
+   if (RBUF_LEN(index->objects) == 0)
+   {
+      RARCH_ERR("[STATESTREAM] trying to pop from empty index\n");
+      return;
+   }
+   idx  = RBUF_LEN(index->objects) - 1;
+   hash = index->hashes[idx];
+   /* RHMAP_PTR has add-on-miss semantics; gate on RHMAP_HAS so a
+    * corrupted hashes[] entry that points to a no-longer-present hash
+    * can't auto-create a stale-content bucket and fall through into
+    * uint32s_bucket_remove with garbage len.  The counts are still
+    * adjusted below, so uint32s_index_remove_after keeps making
+    * progress. */
+   if (index->objects[idx] != NULL && !RHMAP_HAS(index->index, hash))
+      RARCH_ERR("[STATESTREAM] pop: missing hash %x for idx %u\n",
+            hash, idx);
+   else if (index->objects[idx] != NULL) {
       struct uint32s_bucket *bucket = RHMAP_PTR(index->index, hash);
       uint32_t old_len = bucket->len;
       if (old_len == 0)

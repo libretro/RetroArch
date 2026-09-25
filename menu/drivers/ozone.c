@@ -5338,8 +5338,14 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
       ozone_node_t *node       = (ozone_node_t*)ozone->horizontal_list.list[i].userdata;
 
       if (!node)
+      {
          if (!(node = ozone_alloc_node()))
             continue;
+         /* Store the new node in the list, which owns and frees it.
+          * Otherwise it is only reachable from playlist_db_node_map,
+          * which does not free its values, or from nothing at all. */
+         ozone->horizontal_list.list[i].userdata = node;
+      }
 
       if (!(path = ozone->horizontal_list.list[i].path))
          continue;

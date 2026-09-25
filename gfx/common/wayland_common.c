@@ -414,6 +414,12 @@ void gfx_ctx_wl_get_video_size_common(void *data, unsigned *dims)
             break;
          };
 
+      /* all_outputs may legitimately be empty (last monitor was hot-
+       * unplugged before frame size was queried); leave the caller's
+       * dims unchanged rather than NULL-deref oi. */
+      if (!oi)
+         return;
+
       *dims = oi->dims;
    }
    else
