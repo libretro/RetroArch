@@ -589,6 +589,8 @@ static midi_event_t rarch_midi_drv_output_event; /* ptr alignment */
 static bool rarch_midi_drv_input_enabled;
 static bool rarch_midi_drv_output_enabled;
 static bool rarch_midi_drv_output_pending;
+static bool rarch_midi_drv_inited;
+static bool rarch_midi_drv_requested;
 
 static void null_midi_free(void *p) { }
 static void *null_midi_init(const char *input, const char *output) { return (void*)-1; }
@@ -651,13 +653,46 @@ static const void *midi_driver_find_handle(int index)
    return midi_drivers[index];
 }
 
+/* Not done at driver init: the first WinMM MIDI call after boot
+ * can block for seconds while Windows starts its MIDI service. */
+static bool midi_driver_enum_devices(void)
+{
+   union string_list_elem_attr attr = {0};
+
+   if (!rarch_midi_drv_inited)
+      return false;
+   if (rarch_midi_drv_inputs)
+      return true;
+
+   rarch_midi_drv_inputs  = string_list_new();
+   rarch_midi_drv_outputs = string_list_new();
+
+   if (     rarch_midi_drv_inputs
+         && rarch_midi_drv_outputs
+         && string_list_append_n(rarch_midi_drv_inputs, MIDI_DRIVER_OFF, STRLEN_CONST(MIDI_DRIVER_OFF), attr)
+         && string_list_append_n(rarch_midi_drv_outputs, MIDI_DRIVER_OFF, STRLEN_CONST(MIDI_DRIVER_OFF), attr)
+         && midi_drv->get_avail_inputs(rarch_midi_drv_inputs)
+         && midi_drv->get_avail_outputs(rarch_midi_drv_outputs))
+      return true;
+
+   if (rarch_midi_drv_inputs)
+      string_list_free(rarch_midi_drv_inputs);
+   if (rarch_midi_drv_outputs)
+      string_list_free(rarch_midi_drv_outputs);
+   rarch_midi_drv_inputs  = NULL;
+   rarch_midi_drv_outputs = NULL;
+   return false;
+}
+
 struct string_list *midi_driver_get_avail_inputs(void)
 {
+   midi_driver_enum_devices();
    return rarch_midi_drv_inputs;
 }
 
 struct string_list *midi_driver_get_avail_outputs(void)
 {
+   midi_driver_enum_devices();
    return rarch_midi_drv_outputs;
 }
 
@@ -796,89 +831,68 @@ static void midi_driver_free(void)
 
    rarch_midi_drv_input_enabled  = false;
    rarch_midi_drv_output_enabled = false;
+   rarch_midi_drv_inited         = false;
 }
 
-static bool midi_driver_init(void *data)
+static bool midi_driver_open(settings_t *settings)
 {
-   union string_list_elem_attr
-      attr                        = {0};
-   bool ret                       = true;
-   settings_t *settings           = (settings_t*)data;
+   bool ret = true;
 
-   rarch_midi_drv_inputs          = string_list_new();
-   rarch_midi_drv_outputs         = string_list_new();
+   if (rarch_midi_drv_data)
+      return true;
 
-   if (!rarch_midi_drv_inputs || !rarch_midi_drv_outputs)
-      ret = false;
-   else if (!string_list_append_n(rarch_midi_drv_inputs, MIDI_DRIVER_OFF, STRLEN_CONST(MIDI_DRIVER_OFF), attr) ||
-            !string_list_append_n(rarch_midi_drv_outputs, MIDI_DRIVER_OFF, STRLEN_CONST(MIDI_DRIVER_OFF), attr))
+   if (!midi_driver_enum_devices())
       ret = false;
    else
    {
       char * input  = NULL;
       char * output = NULL;
 
-      midi_drv      = midi_driver_find_driver(
-            settings->arrays.midi_driver);
-
-      if (strcmp(midi_drv->ident, settings->arrays.midi_driver))
+      if (string_is_not_equal(settings->arrays.midi_input, MIDI_DRIVER_OFF))
       {
-         configuration_set_string(settings,
-               settings->arrays.midi_driver, midi_drv->ident);
+         if (string_list_find_elem(rarch_midi_drv_inputs, settings->arrays.midi_input))
+            input = settings->arrays.midi_input;
+         else
+         {
+            RARCH_WARN("[MIDI] Input device \"%s\" unavailable.\n",
+                  settings->arrays.midi_input);
+            configuration_set_string(settings,
+                  settings->arrays.midi_input, MIDI_DRIVER_OFF);
+         }
       }
 
-      if (!midi_drv->get_avail_inputs(rarch_midi_drv_inputs))
-         ret = false;
-      else if (!midi_drv->get_avail_outputs(rarch_midi_drv_outputs))
+      if (string_is_not_equal(settings->arrays.midi_output, MIDI_DRIVER_OFF))
+      {
+         if (string_list_find_elem(rarch_midi_drv_outputs, settings->arrays.midi_output))
+            output = settings->arrays.midi_output;
+         else
+         {
+            RARCH_WARN("[MIDI] Output device \"%s\" unavailable.\n",
+                  settings->arrays.midi_output);
+            configuration_set_string(settings,
+                  settings->arrays.midi_output, MIDI_DRIVER_OFF);
+         }
+      }
+
+      rarch_midi_drv_data = midi_drv->init(input, output);
+      if (!rarch_midi_drv_data)
          ret = false;
       else
       {
-         if (string_is_not_equal(settings->arrays.midi_input, MIDI_DRIVER_OFF))
-         {
-            if (string_list_find_elem(rarch_midi_drv_inputs, settings->arrays.midi_input))
-               input = settings->arrays.midi_input;
-            else
-            {
-               RARCH_WARN("[MIDI] Input device \"%s\" unavailable.\n",
-                     settings->arrays.midi_input);
-               configuration_set_string(settings,
-                     settings->arrays.midi_input, MIDI_DRIVER_OFF);
-            }
-         }
+         rarch_midi_drv_input_enabled  = (input  != NULL);
+         rarch_midi_drv_output_enabled = (output != NULL);
 
-         if (string_is_not_equal(settings->arrays.midi_output, MIDI_DRIVER_OFF))
-         {
-            if (string_list_find_elem(rarch_midi_drv_outputs, settings->arrays.midi_output))
-               output = settings->arrays.midi_output;
-            else
-            {
-               RARCH_WARN("[MIDI] Output device \"%s\" unavailable.\n",
-                     settings->arrays.midi_output);
-               configuration_set_string(settings,
-                     settings->arrays.midi_output, MIDI_DRIVER_OFF);
-            }
-         }
-
-         rarch_midi_drv_data = midi_drv->init(input, output);
-         if (!rarch_midi_drv_data)
+         if (!midi_driver_init_io_buffers())
             ret = false;
          else
          {
-            rarch_midi_drv_input_enabled  = (input  != NULL);
-            rarch_midi_drv_output_enabled = (output != NULL);
+            if (input)
+               RARCH_LOG("[MIDI] Input device: \"%s\".\n", input);
 
-            if (!midi_driver_init_io_buffers())
-               ret = false;
-            else
+            if (output)
             {
-               if (input)
-                  RARCH_LOG("[MIDI] Input device: \"%s\".\n", input);
-
-               if (output)
-               {
-                  RARCH_LOG("[MIDI] Output device: \"%s\".\n", output);
-                  midi_driver_set_volume(settings->uints.midi_volume);
-               }
+               RARCH_LOG("[MIDI] Output device: \"%s\".\n", output);
+               midi_driver_set_volume(settings->uints.midi_volume);
             }
          }
       }
@@ -891,6 +905,33 @@ static bool midi_driver_init(void *data)
       return false;
    }
    return true;
+}
+
+static bool midi_driver_init(void *data)
+{
+   settings_t *settings = (settings_t*)data;
+
+   midi_drv             = midi_driver_find_driver(
+         settings->arrays.midi_driver);
+
+   if (strcmp(midi_drv->ident, settings->arrays.midi_driver))
+   {
+      configuration_set_string(settings,
+            settings->arrays.midi_driver, midi_drv->ident);
+   }
+
+   rarch_midi_drv_inited = true;
+
+   if (rarch_midi_drv_requested)
+      return midi_driver_open(settings);
+   return true;
+}
+
+void midi_driver_request(void)
+{
+   rarch_midi_drv_requested = true;
+   if (rarch_midi_drv_inited)
+      midi_driver_open(config_get_ptr());
 }
 
 bool midi_driver_set_input(const char *input)
@@ -1965,7 +2006,12 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
 #endif
 
    if (flags & DRIVER_MIDI_MASK)
+   {
       midi_driver_free();
+      /* Reopen after a reinit, not after the core is unloaded */
+      if (!(lifetime_flags & DRIVER_LIFETIME_RESET))
+         rarch_midi_drv_requested = false;
+   }
 
 #ifdef HAVE_LAKKA
    cpu_scaling_driver_free();

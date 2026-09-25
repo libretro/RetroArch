@@ -230,6 +230,9 @@ bool midi_driver_set_volume(unsigned volume);
 bool midi_driver_set_input(const char *input);
 bool midi_driver_set_output(void *data, const char *output);
 
+/* Opens the devices on behalf of a core, now or at the next driver init */
+void midi_driver_request(void);
+
 /**
  * midi_driver_get_event_size:
  * This is a convenience function for finding out the size of the event based
