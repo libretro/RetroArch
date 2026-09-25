@@ -287,6 +287,8 @@ typedef struct settings
       unsigned video_flicker_filter;
       unsigned video_aspect_ratio_idx;
       unsigned video_rotation;
+      unsigned video_stereo_mode;
+      unsigned video_screen_layout;
       unsigned video_fse_negotiation;
       unsigned screen_orientation;
       unsigned video_msg_bgcolor_red;
@@ -637,6 +639,7 @@ typedef struct settings
       bool video_soft_filter;
       bool video_pal60_enable;
       bool video_smooth;
+      bool video_stereo_swap_eyes;
       bool video_ctx_scaling;
       bool video_force_aspect;
       bool video_frame_delay_auto;

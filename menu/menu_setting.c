@@ -132,6 +132,7 @@ void android_app_set_window_settings(bool notch_write_over,
 #endif
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
+#include "../gfx/video_views.h"
 #ifdef HAVE_MODELINE
 #include "../gfx/video_crt_switch.h"
 #endif
@@ -3442,6 +3443,54 @@ static size_t setting_get_string_representation_video_hdr_subpixel_layout(
          case 2:
             return strlcpy(s, msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_BGR), len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_video_stereo_mode(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_STEREO_MODE_2D:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_2D), len);
+         case VIDEO_STEREO_MODE_SBS_HALF:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_HALF), len);
+         case VIDEO_STEREO_MODE_SBS_FULL:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_FULL), len);
+         case VIDEO_STEREO_MODE_TOP_BOTTOM:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_TOP_BOTTOM), len);
+         case VIDEO_STEREO_MODE_ANAGLYPH:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_ANAGLYPH), len);
+         case VIDEO_STEREO_MODE_INTERLACED:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_INTERLACED), len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_video_screen_layout(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_SCREEN_LAYOUT_VERTICAL:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL), len);
+         case VIDEO_SCREEN_LAYOUT_HORIZONTAL:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL), len);
       }
    }
    return 0;
@@ -12479,6 +12528,11 @@ static const setting_desc_t hdr_desc2[] = {
 #include "../settings/settings_def_video_hdr_toggles.h"
 };
 
+static const setting_desc_t stereo_desc[] = {
+/* GENERATED: rows come from settings_def_video_stereo.h in order. */
+#include "../settings/settings_def_video_stereo.h"
+};
+
 static const setting_desc_t vid_desc_20[] = {
 /* GENERATED: rows come from settings_def_screen_brightness.h in order. */
 #include "../settings/settings_def_screen_brightness.h"
@@ -15388,6 +15442,12 @@ static void settings_build_video(
 
             END_SUB_GROUP(list, list_info, parent_group);
          }
+
+         START_SUB_GROUP(list, list_info, "Stereo 3D & Screens", &group_info, &subgroup_info, parent_group);
+
+         ADD_DESC(stereo_desc);
+
+         END_SUB_GROUP(list, list_info, parent_group);
 
          START_SUB_GROUP(
                list,

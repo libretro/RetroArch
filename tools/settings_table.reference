@@ -218,6 +218,7 @@ bool	netplay_nat_traversal	1	1
 bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
+bool	video_stereo_swap_eyes	1	0
 bool	rewind_enable	1	0
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
@@ -554,6 +555,8 @@ uint	netplay_share_digital	1	RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING
 uint	netplay_share_analog	1	RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING
 uint	keyboard_gamepad_mapping_type	1	1
 uint	video_hdr_subpixel_layout	1	0
+uint	video_stereo_mode	1	0
+uint	video_screen_layout	1	0
 uint	rewind_granularity	1	1
 uint	playlist_show_history_icons	1	PLAYLIST_SHOW_HISTORY_ICONS_CONTENT
 uint	rgui_internal_upscale_level	1	RGUI_UPSCALE_NONE
@@ -900,6 +903,7 @@ bool	netplay_nat_traversal	1	1
 bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
+bool	video_stereo_swap_eyes	1	0
 bool	rewind_enable	1	0
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
@@ -1231,6 +1235,8 @@ uint	netplay_share_digital	1	RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING
 uint	netplay_share_analog	1	RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING
 uint	keyboard_gamepad_mapping_type	1	1
 uint	video_hdr_subpixel_layout	1	0
+uint	video_stereo_mode	1	0
+uint	video_screen_layout	1	0
 uint	rewind_granularity	1	1
 uint	playlist_show_history_icons	1	PLAYLIST_SHOW_HISTORY_ICONS_CONTENT
 uint	rgui_internal_upscale_level	1	RGUI_UPSCALE_NONE
@@ -1583,6 +1589,7 @@ bool	netplay_nat_traversal	1	1
 bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
+bool	video_stereo_swap_eyes	1	0
 bool	rewind_enable	1	0
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
@@ -1930,6 +1937,8 @@ uint	netplay_share_digital	1	RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING
 uint	netplay_share_analog	1	RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING
 uint	keyboard_gamepad_mapping_type	1	1
 uint	video_hdr_subpixel_layout	1	0
+uint	video_stereo_mode	1	0
+uint	video_screen_layout	1	0
 uint	rewind_granularity	1	1
 uint	playlist_show_history_icons	1	PLAYLIST_SHOW_HISTORY_ICONS_CONTENT
 uint	rgui_internal_upscale_level	1	RGUI_UPSCALE_NONE
