@@ -790,6 +790,9 @@ struct CommonResources
    float core_aspect_rot;
    uint32_t total_subframes;      /* init: 1 */
    uint32_t current_subframe;     /* init: 1 */
+   /* What the final pass is cut to, when scissor_set. */
+   VkRect2D scissor;
+   bool scissor_set;
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
    bool simulate_scanline;
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
@@ -907,7 +910,8 @@ static void slang_pass_build_commands(struct slang_pass *pass,
       const Texture *original,
       const Texture *source,
       const VkViewport *vp,
-      const float *mvp);
+      const float *mvp,
+      bool again);
 static bool slang_pass_add_parameter(struct slang_pass *pass,
       unsigned parameter_index, const char *id);
 static void slang_pass_end_frame(struct slang_pass *pass);
@@ -1012,7 +1016,8 @@ static void slang_chain_build_offscreen_passes(
       VkCommandBuffer cmd, const VkViewport vp);
 static void slang_chain_build_viewport_pass(
       struct vulkan_filter_chain *chain,
-      VkCommandBuffer cmd, const VkViewport vp, const float *mvp);
+      VkCommandBuffer cmd, const VkViewport vp, const float *mvp,
+      bool again);
 static void slang_chain_end_frame(struct vulkan_filter_chain *chain,
       VkCommandBuffer cmd);
 
@@ -1792,7 +1797,7 @@ static void slang_chain_build_offscreen_passes(struct vulkan_filter_chain *chain
    {
       const struct slang_framebuffer *fb;
       slang_pass_build_commands(chain->passes[i], disposer, cmd,
-            &original, &source, &vp, NULL);
+            &original, &source, &vp, NULL, false);
 
       fb = chain->passes[i]->framebuffer;
 
@@ -1891,7 +1896,8 @@ static void slang_chain_end_frame(struct vulkan_filter_chain *chain,
 
 static void slang_chain_build_viewport_pass(struct vulkan_filter_chain *chain,
       
-      VkCommandBuffer cmd, const VkViewport vp, const float *mvp)
+      VkCommandBuffer cmd, const VkViewport vp, const float *mvp,
+      bool again)
 {
    unsigned i;
    Texture source;
@@ -1923,11 +1929,12 @@ static void slang_chain_build_viewport_pass(struct vulkan_filter_chain *chain,
    }
 
    slang_pass_build_commands(chain->passes[chain->pass_count - 1], disposer, cmd,
-         &original, &source, &vp, mvp);
+         &original, &source, &vp, mvp, again);
 
    /* For feedback FBOs, swap current and previous. */
-   for (i = 0; i < chain->pass_count; i++)
-      slang_pass_end_frame(chain->passes[i]);
+   if (!again)
+      for (i = 0; i < chain->pass_count; i++)
+         slang_pass_end_frame(chain->passes[i]);
 }
 
 static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
@@ -4017,7 +4024,8 @@ static void slang_pass_build_commands(struct slang_pass *pass,
       const Texture *original,
       const Texture *source,
       const VkViewport *vp,
-      const float *mvp)
+      const float *mvp,
+      bool again)
 {
    uint8_t *u       = NULL;
    VkRect2D sci;
@@ -4041,20 +4049,26 @@ static void slang_pass_build_commands(struct slang_pass *pass,
 
    pass->current_framebuffer_size_dims = size_dims;
 
-   if (pass->reflection.ubo_stage_mask && pass->common->ubo_mapped)
-      u = pass->common->ubo_mapped + pass->ubo_offset +
-         pass->sync_index * pass->common->ubo_sync_index_stride;
-
-   slang_pass_build_semantics(pass, pass->sets[pass->sync_index], u, mvp, original, source);
-
-   if (pass->reflection.ubo_stage_mask)
+   /* Drawn again this frame, the pass keeps its first draw's set and
+    * uniforms: updating a set the command buffer has bound invalidates
+    * the command buffer. */
+   if (!again)
    {
-      VULKAN_SET_UNIFORM_BUFFER(pass->device,
-            pass->sets[pass->sync_index],
-            pass->reflection.ubo_binding,
-            pass->common->ubo.buffer,
-            pass->ubo_offset + pass->sync_index * pass->common->ubo_sync_index_stride,
-            pass->reflection.ubo_size);
+      if (pass->reflection.ubo_stage_mask && pass->common->ubo_mapped)
+         u = pass->common->ubo_mapped + pass->ubo_offset +
+            pass->sync_index * pass->common->ubo_sync_index_stride;
+
+      slang_pass_build_semantics(pass, pass->sets[pass->sync_index], u, mvp, original, source);
+
+      if (pass->reflection.ubo_stage_mask)
+      {
+         VULKAN_SET_UNIFORM_BUFFER(pass->device,
+               pass->sets[pass->sync_index],
+               pass->reflection.ubo_binding,
+               pass->common->ubo.buffer,
+               pass->ubo_offset + pass->sync_index * pass->common->ubo_sync_index_stride,
+               pass->reflection.ubo_size);
+      }
    }
 
    /* The final pass is always executed inside
@@ -4133,6 +4147,20 @@ static void slang_pass_build_commands(struct slang_pass *pass,
          sci.offset.y      = (int32_t)(pass->curr_vp.y);
          sci.extent.width  = (uint32_t)(pass->curr_vp.width);
          sci.extent.height = (uint32_t)(pass->curr_vp.height);
+      }
+      if (pass->common->scissor_set)
+      {
+         const VkRect2D *cut = &pass->common->scissor;
+         int32_t x0          = MAX(sci.offset.x, cut->offset.x);
+         int32_t y0          = MAX(sci.offset.y, cut->offset.y);
+         int32_t x1          = MIN(sci.offset.x + (int32_t)sci.extent.width,
+               cut->offset.x + (int32_t)cut->extent.width);
+         int32_t y1          = MIN(sci.offset.y + (int32_t)sci.extent.height,
+               cut->offset.y + (int32_t)cut->extent.height);
+         sci.offset.x        = x0;
+         sci.offset.y        = y0;
+         sci.extent.width    = (x1 > x0) ? (uint32_t)(x1 - x0) : 0;
+         sci.extent.height   = (y1 > y0) ? (uint32_t)(y1 - y0) : 0;
       }
       vkCmdSetScissor(cmd, 0, 1, &sci);
    }
@@ -5132,6 +5160,15 @@ void vulkan_filter_chain_set_frame_direction(
    slang_chain_set_frame_direction(chain, direction);
 }
 
+void vulkan_filter_chain_set_scissor(
+      vulkan_filter_chain_t *chain,
+      const VkRect2D *scissor)
+{
+   chain->common.scissor_set = scissor != NULL;
+   if (scissor)
+      chain->common.scissor  = *scissor;
+}
+
 void vulkan_filter_chain_set_frame_time_delta(
       vulkan_filter_chain_t *chain,
       uint32_t time_delta)
@@ -5238,7 +5275,14 @@ void vulkan_filter_chain_build_viewport_pass(
       vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp, const float *mvp)
 {
-   slang_chain_build_viewport_pass(chain, cmd, *vp, mvp);
+   slang_chain_build_viewport_pass(chain, cmd, *vp, mvp, false);
+}
+
+void vulkan_filter_chain_build_viewport_pass_again(
+      vulkan_filter_chain_t *chain,
+      VkCommandBuffer cmd, const VkViewport *vp, const float *mvp)
+{
+   slang_chain_build_viewport_pass(chain, cmd, *vp, mvp, true);
 }
 
 void vulkan_filter_chain_end_frame(
