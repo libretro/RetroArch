@@ -181,6 +181,14 @@ platform_video "psp1 video" "-DPSP" \
 platform_video "gxm video" "-DVITA -DRARCH_CONSOLE $HOSTOFF" \
    "-Itools/platform_stubs/vita -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast" \
    gfx/drivers/gxm_gfx.c ""
+# gl1 on Vita, against a vitaGL stub over the host GL headers. The
+# driver's Vita branches are compiled nowhere else, and one of them
+# carried a declaration after a statement that only the Vita job saw.
+platform_video "vita gl1 video" \
+   "-DVITA -DRARCH_CONSOLE -DHAVE_OPENGL1 -DHAVE_OVERLAY -DHAVE_GFX_WIDGETS $HOSTOFF" \
+   "-Itools/platform_stubs/vita -Wdeclaration-after-statement \
+    -Werror=declaration-after-statement" \
+   gfx/drivers/gl1.c /usr/include/GL/gl.h
 # The PS2 driver, against gsKit and PS2SDK stubs carrying what it
 # names in the shapes the real headers give them. Makefile.ps2 turns on
 # the window offset, which the driver reads. This lane is also the only

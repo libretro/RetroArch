@@ -2547,10 +2547,13 @@ static bool gl1_frame(void *data, const void *frame,
 
    if (gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE)
    {
+#ifdef VITA
+      GLboolean enabled;
+#endif
       do_swap = true;
 #ifdef VITA
       glUseProgram(0);
-      bool enabled = glIsEnabled(GL_DEPTH_TEST);
+      enabled = glIsEnabled(GL_DEPTH_TEST);
       if (enabled)
          glDisable(GL_DEPTH_TEST);
 #endif
