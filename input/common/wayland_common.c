@@ -1089,10 +1089,10 @@ static void wl_data_device_handle_drop(void *data,
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    data_offer_ctx *offer_data = wl->current_drag_offer;
 
-   offer_data->dropped        = true;
-
    if (!offer_data)
       return;
+
+   offer_data->dropped        = true;
 
    pipe(pipefd);
 
