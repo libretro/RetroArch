@@ -822,8 +822,12 @@ extern "C" {
       return 0;
    }
 
-   bool win32_set_video_mode(void *data, unsigned width, unsigned height, bool fullscreen)
+   /* The size arrives as one word in VIDEO_SCALE_PACK's layout, as the
+    * prototype in win32_common.h says and every caller passes. */
+   bool win32_set_video_mode(void *data, unsigned dims, bool fullscreen)
    {
+      unsigned width  = VIDEO_SCALE_W(dims);
+      unsigned height = VIDEO_SCALE_H(dims);
       if (App::GetInstance()->IsInitialized())
       {
          if (fullscreen !=
