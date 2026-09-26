@@ -76,6 +76,7 @@ static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
 static VkDevice                      cached_device_vk;
 static retro_vulkan_destroy_device_t cached_destroy_device_vk;
+static bool                          cached_instance_hdr_vk;
 
 #ifdef __APPLE__
 /* On Apple platforms the Vulkan implementation is provided by MoltenVK
@@ -3477,6 +3478,11 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    {
       vk->context.instance = cached_instance_vk;
       cached_instance_vk   = NULL;
+      /* Only the create wrapper sees the enabled extensions. */
+      if (cached_instance_hdr_vk)
+         vk->context.flags |=  VK_CTX_FLAG_HDR_SUPPORT;
+      else
+         vk->context.flags &= ~VK_CTX_FLAG_HDR_SUPPORT;
    }
    else
    {
@@ -3585,6 +3591,8 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_device_vk         = vk->context.device;
       cached_instance_vk       = vk->context.instance;
       cached_destroy_device_vk = vk->context.destroy_device;
+      cached_instance_hdr_vk   =
+         (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT) ? true : false;
    }
    else
    {
