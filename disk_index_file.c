@@ -429,7 +429,9 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
    /* NULL means the writer hit an error while serialising */
    buf = rjsonwriter_get_memory_buffer(writer, &_len);
 
-   if (!buf || !filestream_write_file(file_path, buf, _len))
+   /* Atomic write: a process killed mid-save would otherwise leave a
+    * truncated disk index, which makes multi-disc games revert to disc 1. */
+   if (!buf || !filestream_write_file_atomic(file_path, buf, _len))
    {
       RARCH_ERR("[Disk index file] Error writing disk index file: \"%s\".\n", file_path);
       rjsonwriter_free(writer);
