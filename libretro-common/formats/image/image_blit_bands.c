@@ -27,6 +27,7 @@
 #ifdef HAVE_THREADS
 #include <retro_atomic.h>
 #include <rthreads/tpool.h>
+#include <rthreads/rthreads.h>
 #include <rthreads/retro_eventcount.h>
 #endif
 
@@ -62,9 +63,41 @@ typedef struct
    retro_atomic_int_t next;    /* the next band to claim */
    retro_atomic_int_t done;    /* bands finished */
    retro_atomic_int_t refs;    /* the caller and every posted runner */
+   retro_atomic_int_t in_use;  /* pool slot taken (0 free, 1 taken) */
    unsigned bands;
+   bool heap;                  /* malloc'd: the pool was full */
    image_blit_band_t band[IMAGE_BLIT_BANDS_MAX];
 } image_blit_group_t;
+
+/* Groups come from this pool rather than the heap: a blit per decoded
+ * video frame used to malloc and free one each time. A slot is taken
+ * by CAS and given back when the last holder - the caller or a runner
+ * that started late - lets go, so a late runner is as safe as it was
+ * with the heap. Blits in flight at once are the decoders' frame
+ * threads, a handful; when every slot is taken the heap is the
+ * fallback, as before. */
+#define IMAGE_BLIT_GROUP_POOL 8
+static image_blit_group_t image_blit_pool[IMAGE_BLIT_GROUP_POOL];
+
+static image_blit_group_t *image_blit_group_acquire(void)
+{
+   unsigned i;
+   image_blit_group_t *g;
+   for (i = 0; i < IMAGE_BLIT_GROUP_POOL; i++)
+   {
+      g = &image_blit_pool[i];
+      if (   !retro_atomic_load_acquire_int(&g->in_use)
+          && retro_atomic_cas_int(&g->in_use, 0, 1))
+      {
+         g->heap = false;
+         return g;
+      }
+   }
+   g = (image_blit_group_t*)malloc(sizeof(*g));
+   if (g)
+      g->heap = true;
+   return g;
+}
 
 static retro_eventcount_t image_blit_ec;
 static retro_atomic_int_t image_blit_ec_state;   /* 0 none, 1 making, 2 ready */
@@ -103,7 +136,12 @@ static void image_blit_group_drain(image_blit_group_t *g)
 static void image_blit_group_release(image_blit_group_t *g)
 {
    if (retro_atomic_fetch_sub_int(&g->refs, 1) == 1)
-      free(g);
+   {
+      if (g->heap)
+         free(g);
+      else
+         retro_atomic_store_release_int(&g->in_use, 0);
+   }
 }
 
 static void image_blit_band_run(void *arg)
@@ -131,7 +169,7 @@ void image_blit_bands(void *pool, unsigned bands, unsigned h,
    }
    if (align < 1)
       align = 1;
-   g = (image_blit_group_t*)malloc(sizeof(*g));
+   g = image_blit_group_acquire();
    if (!g)
    {
       fn(ctx, 0, h);
@@ -171,6 +209,17 @@ void image_blit_bands(void *pool, unsigned bands, unsigned h,
          break;
       }
       retro_eventcount_commit_wait(&image_blit_ec, key);
+   }
+   /* Runners still queued behind other work would hold this group -
+    * and its pool slot - until the pool got round to them, and a
+    * caller faster than the pool would queue up thousands. Run them
+    * here instead: each finds no band left and lets go. A runner
+    * already on a worker is out of the queue and lets go on its own
+    * in a moment. */
+   while (retro_atomic_load_acquire_int(&g->refs) > 1)
+   {
+      if (!tpool_help((tpool_t*)pool))
+         sthread_yield();
    }
    image_blit_group_release(g);
 #else
