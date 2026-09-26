@@ -6465,7 +6465,8 @@ void input_driver_init_command(input_driver_state_t *input_st,
       if (input_network_cmd_enable)
       {
          unsigned network_cmd_port  = settings->uints.network_cmd_port;
-         if (!(input_st->command[1] = command_network_new(network_cmd_port)))
+         if (!(input_st->command[1] = command_network_new(network_cmd_port,
+                     settings->arrays.network_cmd_bind_address)))
             RARCH_ERR("Failed to initialize the network command interface.\n");
       }
    }

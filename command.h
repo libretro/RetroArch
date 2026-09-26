@@ -354,7 +354,9 @@ bool command_event(enum event_command action, void *data);
 
 /* Constructors for the supported drivers */
 #ifdef HAVE_NETWORK_CMD
-command_t* command_network_new(uint16_t port);
+/* bind_address may be NULL or empty to listen on every interface, or an
+ * IPv4 address such as "127.0.0.1" to restrict the interface to it. */
+command_t* command_network_new(uint16_t port, const char *bind_address);
 bool command_network_send(const char *cmd_);
 #endif
 #ifdef HAVE_STDIN_CMD

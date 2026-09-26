@@ -1222,6 +1222,10 @@ typedef struct settings
        * desktop_menu_save_geometry is on. */
       char desktop_menu_options_window[48];
       char camera_device[NAME_MAX_LENGTH];
+      /* Address the network command interface binds to. Empty means
+       * every interface (the historical behaviour); 127.0.0.1 limits
+       * it to this machine. */
+      char network_cmd_bind_address[NAME_MAX_LENGTH];
       char netplay_mitm_server[NAME_MAX_LENGTH];
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_CLOUDSYNC

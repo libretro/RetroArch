@@ -1782,6 +1782,7 @@ static struct config_array_setting *populate_settings_array(
 #endif
 
 #ifdef HAVE_NETWORKING
+   SETTING_ARRAY("network_cmd_bind_address",              settings->arrays.network_cmd_bind_address, false, NULL, true);
    SETTING_ARRAY("netplay_mitm_server",                   settings->arrays.netplay_mitm_server, false, NULL, true);
 #ifdef HAVE_CLOUDSYNC
    SETTING_ARRAY("webdav_url",                            settings->arrays.webdav_url, false, NULL, true);
@@ -5620,6 +5621,8 @@ void config_set_defaults(void *data, settings_t *target)
       configuration_set_string(settings,
             settings->arrays.netplay_mitm_server,
             def_mitm);
+   /* Empty: bind on every interface, as before the setting existed. */
+   *settings->arrays.network_cmd_bind_address = '\0';
 #ifdef HAVE_MENU
    if (def_menu)
       configuration_set_string(settings,
