@@ -203,7 +203,6 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
    additions_len = RBUF_LEN(index->additions);
    if (RHMAP_HAS(index->index, hash))
    {
-      uint32_t idx = 0;
       bucket = RHMAP_PTR(index->index, hash);
       uint32s_bucket_expand(bucket, idx);
    }
