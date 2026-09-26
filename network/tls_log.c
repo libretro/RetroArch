@@ -14,6 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
 #include <net/net_socket_ssl.h>
 
 #include "../verbosity.h"
@@ -27,9 +29,24 @@ void ssl_socket_log_verify_fail(int mode_required, const char *domain,
       const char *verify_info)
 {
    if (mode_required)
+   {
       RARCH_ERR("[TLS] Cert verification failed for %s: %s\n",
             domain      ? domain      : "(unknown)",
             verify_info ? verify_info : "");
+      /* mbedTLS reports a certificate outside its validity period as
+       * MBEDTLS_X509_BADCERT_EXPIRED / _FUTURE. On a device whose clock
+       * is unset or years off, every server looks that way. Say so,
+       * since the mbedTLS text alone reads like a server problem. */
+      if (   verify_info
+          && (   strstr(verify_info, "expired")
+              || strstr(verify_info, "future")))
+         RARCH_ERR("[TLS] The certificate's validity period does not "
+               "contain the current system time. If this happens for "
+               "every server, check the date and time on this device. "
+               "Setting 'TLS Certificate Verification' to 'Optional' "
+               "restores connectivity without a fix, at the cost of "
+               "certificate checking.\n");
+   }
    else
       RARCH_WARN("[TLS] Cert verification soft-failed for %s: %s\n",
             domain      ? domain      : "(unknown)",
