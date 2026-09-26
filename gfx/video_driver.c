@@ -2358,6 +2358,11 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
    video_thread_wait_idle();
 #endif
 
+   /* Re-init (a new filter path, a new thread count) replaces the live
+    * filter: release it and its output buffer rather than orphan them */
+   if (video_st->state_filter)
+      video_driver_filter_free();
+
    if (video_driver_is_hw_context())
    {
       RARCH_WARN("[Video] Cannot use CPU filters when hardware rendering is used.\n");
@@ -2366,7 +2371,7 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
 
    if (!(video_st->state_filter = rarch_softfilter_new(
          settings->paths.path_softfilter_plugin,
-         RARCH_SOFTFILTER_THREADS_AUTO, colfmt, dims)))
+         settings->uints.video_filter_threads, colfmt, dims)))
    {
       RARCH_ERR("[Video] Failed to load filter.\n");
       return;

@@ -1630,6 +1630,7 @@
 #define MENU_ENUM_LABEL_VIDEO_FILTER_STR "video_filter"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_DIR_STR "video_filter_dir"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE_STR "filter_enable"
+#define MENU_ENUM_LABEL_VIDEO_FILTER_THREADS_STR "video_filter_threads"
 #define MENU_ENUM_LABEL_VIDEO_FONT_ENABLE_STR "video_font_enable"
 #define MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR "video_font_path"
 #define MENU_ENUM_LABEL_VIDEO_FONT_SIZE_STR "video_font_size"

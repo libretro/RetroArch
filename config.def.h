@@ -514,6 +514,11 @@
 #define MINIMUM_SWAP_INTERVAL 1
 #define MAXIMUM_SWAP_INTERVAL 16
 
+/* Worker threads a CPU video filter runs on; 0 (Automatic) uses one
+ * per detected CPU core. */
+#define DEFAULT_VIDEO_FILTER_THREADS 0
+#define MAXIMUM_VIDEO_FILTER_THREADS 16
+
 /* Threaded video: the core runs on one thread and the video driver
  * presents on another. Off by default, as it has always been; the
  * Switch keeps its own default. When it is on, hardware-rendered cores
