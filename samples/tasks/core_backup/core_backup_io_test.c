@@ -162,6 +162,9 @@ static void io_stop(void) { g_io_recording = 0; }
 /* Mirrors CORE_BACKUP_CHUNK_SIZE in tasks/task_core_backup.c. */
 #define CORE_BACKUP_QUANTUM   (100 * 1024)
 
+/* Mirrors CORE_BACKUP_CRC_CHUNK in tasks/task_core_backup.c. */
+#define CORE_BACKUP_CRC_QUANTUM (256 * 1024)
+
 static int failures;
 static int checks;
 
@@ -331,12 +334,15 @@ struct run_stats
    int  completed;
 };
 
+static retro_task_t *g_found_task;
+
 /* Drive the task queue until the pushed task retires, counting ticks.
  * Non-threaded, so one task_queue_check() is exactly one handler
  * invocation -- which is what makes the tick count meaningful. */
 static bool backup_task_finder(retro_task_t *task, void *user_data)
 {
-   (void)task; (void)user_data;
+   (void)user_data;
+   g_found_task = task;
    return true;
 }
 
@@ -703,14 +709,16 @@ static void test_crc_is_sliced(void)
  * 4096-bytes-per-tick cap as the backup loop. */
 static void test_restore_round_trip(void)
 {
-   const size_t core_size = 1024 * 1024;
+   const size_t backup_size      = 512 * 1024;
+   const size_t current_core_size = 8 * CORE_BACKUP_CRC_QUANTUM;
    uint8_t *payload;
+   uint8_t *current_core;
    uint8_t *restored;
    size_t rlen = 0;
    struct run_stats st;
    bool core_loaded = false;
 
-   printf("  restore: round-trips byte for byte\n");
+   printf("  restore: multi-tick current-core CRC and byte-identical round trip\n");
 
    if (!*g_last_backup)
    {
@@ -721,25 +729,31 @@ static void test_restore_round_trip(void)
 
    /* Recreate the source the previous lane backed up, then clobber
     * the installed core so a successful restore is observable. */
-   if (!(payload = make_payload(512 * 1024)))
+   if (!(payload = make_payload(backup_size)))
    {
       printf("    SKIP: out of memory\n");
       return;
    }
-   (void)core_size;
+   if (!(current_core = make_payload(current_core_size)))
    {
-      uint8_t junk[4096];
-      memset(junk, 0xA5, sizeof(junk));
-      if (!write_file_bytes(g_core_path, junk, sizeof(junk)))
-      {
-         printf("    SKIP: could not clobber fixture core\n");
-         free(payload);
-         return;
-      }
+      printf("    SKIP: out of memory\n");
+      free(payload);
+      return;
    }
+   if (!write_file_bytes(g_core_path, current_core, current_core_size))
+   {
+      printf("    SKIP: could not write current-core CRC fixture\n");
+      free(current_core);
+      free(payload);
+      return;
+   }
+   free(current_core);
 
    g_clock_now  = 1000000;
-   g_clock_step = 0;
+   /* Exhaust the 2ms budget after each 256KiB CRC quantum.  The 2MiB
+    * installed core therefore requires at least eight restore ticks
+    * before the backup CRC phase can begin. */
+   g_clock_step = BACKUP_TICK_BUDGET_US * 2;
 
    task_queue_init(false, NULL);
    if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded))
@@ -760,19 +774,31 @@ static void test_restore_round_trip(void)
       free(payload);
       return;
    }
-   drive(&st, 4000000L);
+   g_found_task = NULL;
+   drive(&st, 32);
+   if (!st.completed && g_found_task)
+   {
+      /* The pre-fix handler stays in the current-core CRC phase.  Stop
+       * it through the normal cancellation path so its open stream and
+       * task state are released before the oracle exits. */
+      task_queue_cancel_task(g_found_task);
+      task_queue_check();
+   }
    task_queue_wait(NULL, NULL);
    task_queue_deinit();
 
-   CHECK(st.completed, "restore task did not retire within the tick cap");
-   printf("    %ld ticks\n", st.ticks);
+   CHECK(st.completed,
+         "restore did not retire within 32 ticks; the 2MiB current-core "
+         "CRC must span at least eight ticks and then reach the restore loop");
+   printf("    %ld ticks (current-core CRC requires at least %lu)\n",
+         st.ticks, (unsigned long)(current_core_size / CORE_BACKUP_CRC_QUANTUM));
 
    if ((restored = read_file_bytes(g_core_path, &rlen)))
    {
-      CHECK(rlen == 512 * 1024,
+      CHECK(rlen == backup_size,
             "restored core is %lu bytes, expected %lu",
-            (unsigned long)rlen, (unsigned long)(512 * 1024));
-      if (rlen == 512 * 1024)
+            (unsigned long)rlen, (unsigned long)backup_size);
+      if (rlen == backup_size)
          CHECK(memcmp(restored, payload, rlen) == 0,
                "restored core does not match the backed-up source");
       free(restored);

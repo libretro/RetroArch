@@ -858,21 +858,6 @@ static void task_core_restore_handler(retro_task_t *task)
           * CRC value */
          if (path_is_valid(backup_handle->core_path))
          {
-            /* Open core file for reading */
-            backup_handle->core_file = intfstream_open_file(
-                  backup_handle->core_path, RETRO_VFS_FILE_ACCESS_READ,
-                  RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-            if (!backup_handle->core_file)
-            {
-               RARCH_ERR("[Core Restore] Failed to open core file: \"%s\".\n",
-                     backup_handle->core_path);
-               task_free_error(task);
-               task_set_error(task, strdup("Failed to open core file."));
-               backup_handle->status = CORE_RESTORE_END;
-               break;
-            }
-
             /* Get CRC value, a bounded slice per tick; see the
              * matching comment in CORE_BACKUP_CHECK_CRC. */
             {
@@ -881,6 +866,22 @@ static void task_core_restore_handler(retro_task_t *task)
 
                if (!backup_handle->crc_active)
                {
+                  /* Keep the stream open while CRC resumes on later
+                   * task ticks. */
+                  backup_handle->core_file = intfstream_open_file(
+                        backup_handle->core_path, RETRO_VFS_FILE_ACCESS_READ,
+                        RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+                  if (!backup_handle->core_file)
+                  {
+                     RARCH_ERR("[Core Restore] Failed to open core file: \"%s\".\n",
+                           backup_handle->core_path);
+                     task_free_error(task);
+                     task_set_error(task, strdup("Failed to open core file."));
+                     backup_handle->status = CORE_RESTORE_END;
+                     break;
+                  }
+
                   backup_handle->crc_accumulator = 0;
                   backup_handle->crc_active      = true;
                   intfstream_rewind(backup_handle->core_file);
