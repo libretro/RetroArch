@@ -279,19 +279,10 @@ typedef struct global
       {
          struct
          {
-            uint32_t *list;
-            unsigned count;
             struct
             {
-               unsigned idx;
-               unsigned id;
+               unsigned id; /* current_resolution_id */
             } current;
-            struct
-            {
-               unsigned idx;
-               unsigned id;
-            } initial;
-            bool check;
          } resolutions;
          unsigned      gamma_correction;
          unsigned int  flicker_filter_index;

@@ -1774,6 +1774,8 @@ void* video_display_server_init(enum rarch_display_type type)
          current_display_server = &dispserv_apple;
 #elif defined(GEKKO)
          current_display_server = &dispserv_gx;
+#elif defined(__PS3__)
+         current_display_server = &dispserv_ps3;
 #else
          current_display_server = &dispserv_null;
 #endif

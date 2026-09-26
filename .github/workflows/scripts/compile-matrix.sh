@@ -515,6 +515,7 @@ check "gekko: mem2_manager"    "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CON
 check "gekko: dispserv_gx"     "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx.c
 check "gamecube: dispserv_gx"  "$HOSTOFF $GEKKO_INC -DGEKKO -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx.c
 check "gekko: dispserv_gx_modes" "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx_modes.c
+check "psl1ght: dispserv_ps3"  "$HOSTOFF -Itools/platform_stubs/ps3 -D__PS3__ -D__PSL1GHT__ -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_ps3.c gfx/display_servers/dispserv_ps3_modes.c
 check "3ds: ctr_input"         "$HOSTOFF -Itools/platform_stubs/ctr -D_3DS -D__3DS__ -DARM11 -DRARCH_CONSOLE $CDECL" input/drivers/ctr_input.c
 PSP_DEFS="$HOSTOFF -Itools/platform_stubs/psp -DPSP -D_POSIX_C_SOURCE=199309L -DRARCH_CONSOLE"
 check "psp: psp_input"         "$PSP_DEFS $CDECL" input/drivers/psp_input.c

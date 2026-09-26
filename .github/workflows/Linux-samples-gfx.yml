@@ -660,6 +660,28 @@ jobs:
              timeout 60 ./dispserv_gx_test
           make clean
 
+      - name: Build and run dispserv_ps3_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/dispserv_ps3
+        run: |
+          set -eu
+          # The PS3 display server (dispserv_ps3.c and the mode rules in
+          # dispserv_ps3_modes.c), linked as they ship against stubbed
+          # PSL1GHT video output queries, for displays taking different
+          # sets of modes with the system menu in each: the list holds
+          # exactly what the display takes with the mode in use marked,
+          # each entry - through the menu's label and parse - selects
+          # that mode and reinitialises the driver once, and
+          # ps3_display_server_resolution(), which the RSX driver
+          # configures the output from, follows the choice (before, the
+          # RSX driver ignored the setting and kept the system menu's
+          # mode) and falls back to the system mode when the display
+          # does not take it.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./dispserv_ps3_test
+          make clean
+
       - name: X11 window poll sends no requests (Xvfb, ASan + UBSan)
         shell: bash
         run: |

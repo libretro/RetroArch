@@ -628,7 +628,6 @@ static int action_start_video_resolution(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && !defined(__PS3__)
    unsigned dims = 0;
    char desc[64] = {0};
    global_t *global = global_get_ptr();
@@ -640,7 +639,7 @@ static int action_start_video_resolution(
    {
       size_t _len;
       char msg[128];
-#if defined(GEKKO) || defined(PS2)
+#if defined(GEKKO) || defined(PS2) || defined(__PS3__)
       bool fullscreen = true;
 #else
       /* The window state the frontend is in, as driver init reads it */
@@ -649,9 +648,8 @@ static int action_start_video_resolution(
 #endif
       msg[0] = '\0';
 
-#if defined(_WIN32) || !defined(__PSL1GHT__) && !defined(__PS3__)
+      /* PS3: the video output is configured at video init */
       generic_action_ok_command(CMD_EVENT_REINIT);
-#endif
       video_driver_set_video_mode(dims, fullscreen);
 #ifdef GEKKO
       if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
@@ -670,7 +668,6 @@ static int action_start_video_resolution(
       runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
-#endif
 
    return 0;
 }

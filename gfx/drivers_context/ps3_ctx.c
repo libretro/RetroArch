@@ -34,6 +34,7 @@
 #include <rsx/rsx.h>
 #endif
 #include "../../frontend/frontend_driver.h"
+#include "../display_servers/dispserv_ps3.h"
 #if defined(HAVE_PSGL)
 #include "../common/gl_common.h"
 #include "../common/gl2_common.h"
@@ -55,88 +56,6 @@ static enum gfx_ctx_api ps3_api = GFX_CTX_RSX_API;
 #else
 static enum gfx_ctx_api ps3_api = GFX_CTX_NONE;
 #endif
-
-static unsigned gfx_ctx_ps3_get_resolution(unsigned idx)
-{
-   CellVideoOutResolution resolution;
-   cellVideoOutGetResolution(idx, &resolution);
-   return VIDEO_SCALE_PACK(resolution.width, resolution.height);
-}
-
-static void gfx_ctx_ps3_get_available_resolutions(void)
-{
-   unsigned i;
-   uint32_t videomode[]      = {
-      CELL_VIDEO_OUT_RESOLUTION_480,
-      CELL_VIDEO_OUT_RESOLUTION_576,
-      CELL_VIDEO_OUT_RESOLUTION_960x1080,
-      CELL_VIDEO_OUT_RESOLUTION_720,
-      CELL_VIDEO_OUT_RESOLUTION_1280x1080,
-      CELL_VIDEO_OUT_RESOLUTION_1440x1080,
-      CELL_VIDEO_OUT_RESOLUTION_1600x1080,
-      CELL_VIDEO_OUT_RESOLUTION_1080
-   };
-   uint32_t resolution_count = 0;
-   bool defaultresolution    = true;
-   uint16_t num_videomodes   = sizeof(videomode) / sizeof(uint32_t);
-   global_t       *global    = global_get_ptr();
-
-   if (global->console.screen.resolutions.check)
-      return;
-
-   for (i = 0; i < num_videomodes; i++)
-   {
-      if (cellVideoOutGetResolutionAvailability(
-               CELL_VIDEO_OUT_PRIMARY, videomode[i],
-               CELL_VIDEO_OUT_ASPECT_AUTO, 0))
-         resolution_count++;
-   }
-
-   global->console.screen.resolutions.count = 0;
-   global->console.screen.resolutions.list  =
-      malloc(resolution_count * sizeof(uint32_t));
-
-   /* NULL-check: the resolutions.list[...] writes in the loop
-    * below and the '...list[...current.idx]' read at line ~138
-    * would NULL-deref on OOM.  Void-returning function; leaving
-    * resolutions.check == false means the next call will retry
-    * (which is desired - an OOM here is transient and we want
-    * to populate the list once memory is available). */
-   if (!global->console.screen.resolutions.list)
-      return;
-
-   for (i = 0; i < num_videomodes; i++)
-   {
-      if (cellVideoOutGetResolutionAvailability(
-               CELL_VIDEO_OUT_PRIMARY,
-               videomode[i],
-               CELL_VIDEO_OUT_ASPECT_AUTO, 0))
-      {
-         global->console.screen.resolutions.list[
-            global->console.screen.resolutions.count++] = videomode[i];
-         global->console.screen.resolutions.initial.id = videomode[i];
-
-         if (global->console.screen.resolutions.current.id == videomode[i])
-         {
-            defaultresolution = false;
-            global->console.screen.resolutions.current.idx =
-               global->console.screen.resolutions.count-1;
-         }
-      }
-   }
-
-   /* In case we didn't specify a resolution -
-    * make the last resolution
-      that was added to the list (the highest resolution)
-      the default resolution */
-   if (global->console.screen.resolutions.current.id > num_videomodes || defaultresolution)
-    {
-      global->console.screen.resolutions.current.idx = resolution_count - 1;
-      global->console.screen.resolutions.current.id = global->console.screen.resolutions.list[global->console.screen.resolutions.current.idx];
-    }
-
-   global->console.screen.resolutions.check = true;
-}
 
 static void gfx_ctx_ps3_set_swap_interval(void *data, int interval)
 {
@@ -199,6 +118,7 @@ static void *gfx_ctx_ps3_init(void *video_driver)
 #ifdef HAVE_PSGL
    PSGLdeviceParameters params;
    PSGLinitOptions options;
+   unsigned dims;
 #endif
    global_t        *global  = global_get_ptr();
    gfx_ctx_ps3_data_t *ps3  = (gfx_ctx_ps3_data_t*)
@@ -224,10 +144,10 @@ static void *gfx_ctx_ps3_init(void *video_driver)
    params.depthFormat       = GL_NONE;
    params.multisamplingMode = GL_MULTISAMPLING_NONE_SCE;
 
-   if (global->console.screen.resolutions.current.id)
+   /* The mode the display server has chosen, if the display takes
+    * it; without one PSGL keeps the system menu's mode */
+   if ((dims = ps3_modes_dims(ps3_display_server_resolution(0))))
    {
-      unsigned dims         = gfx_ctx_ps3_get_resolution(
-            global->console.screen.resolutions.current.id);
       params.enable        |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
       params.width          = VIDEO_SCALE_W(dims);
       params.height         = VIDEO_SCALE_H(dims);
@@ -260,8 +180,6 @@ static void *gfx_ctx_ps3_init(void *video_driver)
       cellVideoOutGetResolutionAvailability(
             CELL_VIDEO_OUT_PRIMARY, CELL_VIDEO_OUT_RESOLUTION_576,
             CELL_VIDEO_OUT_ASPECT_AUTO, 0);
-
-   gfx_ctx_ps3_get_available_resolutions();
 
    return ps3;
 }
@@ -321,62 +239,6 @@ static bool gfx_ctx_ps3_bind_api(void *data,
    return false;
 }
 
-static void gfx_ctx_ps3_get_video_output_size(void *data,
-      unsigned *dims, char *desc, size_t desc_len)
-{
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return;
-
-   *dims = gfx_ctx_ps3_get_resolution(
-         global->console.screen.resolutions.current.id);
-
-   if (*dims == VIDEO_SCALE_PACK(720, 576))
-   {
-      if (global->console.screen.pal_enable)
-         global->console.screen.pal60_enable = true;
-   }
-   else
-   {
-      global->console.screen.pal_enable      = false;
-      global->console.screen.pal60_enable    = false;
-   }
-}
-
-static void gfx_ctx_ps3_get_video_output_prev(void *data)
-{
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return;
-
-   if (global->console.screen.resolutions.current.idx)
-   {
-      global->console.screen.resolutions.current.idx--;
-      global->console.screen.resolutions.current.id =
-         global->console.screen.resolutions.list
-         [global->console.screen.resolutions.current.idx];
-   }
-}
-
-static void gfx_ctx_ps3_get_video_output_next(void *data)
-{
-   global_t *global = global_get_ptr();
-
-   if (!global)
-      return;
-
-   if (global->console.screen.resolutions.current.idx + 1 <
-         global->console.screen.resolutions.count)
-   {
-      global->console.screen.resolutions.current.idx++;
-      global->console.screen.resolutions.current.id =
-         global->console.screen.resolutions.list
-         [global->console.screen.resolutions.current.idx];
-   }
-}
-
 static uint32_t gfx_ctx_ps3_get_flags(void *data)
 {
    uint32_t flags = 0;
@@ -399,9 +261,9 @@ const gfx_ctx_driver_t gfx_ctx_ps3 = {
    gfx_ctx_ps3_set_video_mode,
    gfx_ctx_ps3_get_video_size,
    NULL, /* get_refresh_rate */
-   gfx_ctx_ps3_get_video_output_size,
-   gfx_ctx_ps3_get_video_output_prev,
-   gfx_ctx_ps3_get_video_output_next,
+   NULL, /* get_video_output_size: dispserv_ps3 */
+   NULL, /* get_video_output_prev */
+   NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL,
    NULL, /* update_title */

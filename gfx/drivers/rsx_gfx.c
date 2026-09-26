@@ -51,6 +51,7 @@
 #include "../../retroarch.h"
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
+#include "../display_servers/dispserv_ps3.h"
 #endif
 
 #define RSX_MAX_BUFFERS 2
@@ -1319,6 +1320,7 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
    videoState state;
    videoConfiguration vconfig;
    videoResolution res; /* Screen Resolution */
+   unsigned resolution;
    /* Context to keep track of the RSX buffer. */
    gcmContextData              *context = NULL;
    static gcmContextData *saved_context = NULL;
@@ -1356,13 +1358,16 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
    if (state.state != 0)
       goto error;
 
-   /* Get the current resolution */
-   if (videoGetResolution(state.displayMode.resolution, &res) != 0)
+   /* The mode chosen through the display server when the display
+    * takes it, otherwise the one the system menu has it in */
+   resolution = ps3_display_server_resolution(state.displayMode.resolution);
+
+   if (videoGetResolution(resolution, &res) != 0)
       goto error;
 
    /* Configure the buffer format to xRGB */
    memset(&vconfig, 0, sizeof(videoConfiguration));
-   vconfig.resolution = state.displayMode.resolution;
+   vconfig.resolution = resolution;
    vconfig.format     = VIDEO_BUFFER_FORMAT_XRGB;
    vconfig.pitch      = res.width * sizeof(u32);
    vconfig.aspect     = state.displayMode.aspect;

@@ -324,6 +324,8 @@ VIDEO CONTEXT
 #elif defined(__EMSCRIPTEN__)
 #include "../gfx/drivers_context/emscriptenegl_ctx.c"
 #elif defined(__PS3__)
+#include "../gfx/display_servers/dispserv_ps3_modes.c"
+#include "../gfx/display_servers/dispserv_ps3.c"
 #include "../gfx/drivers_context/ps3_ctx.c"
 #endif
 
