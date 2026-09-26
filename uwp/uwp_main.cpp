@@ -50,6 +50,7 @@
 #include "../frontend/frontend.h"
 #include "../input/input_keymaps.h"
 #include "../verbosity.h"
+#include "../gfx/video_defines.h"
 #include "uwp_func.h"
 #include "uwp_async.h"
 #include <compat/strl.h>
@@ -872,25 +873,31 @@ extern "C" {
       return true;
    }
 
+   /* The UWP side of win32_check_window(): the desktop one in
+    * win32_common.c is compiled out under __WINRT__. Its size goes
+    * back as one word in VIDEO_SCALE_PACK's layout, the same as the
+    * prototype in win32_common.h and every caller. */
    void win32_check_window(void *data,
-         bool *quit, bool *resize, unsigned *width, unsigned *height)
+         bool *quit, bool *resize, unsigned *dims)
    {
       static bool is_xbox     = is_running_on_xbox();
       *quit                   = App::GetInstance()->IsWindowClosed();
       if (is_xbox)
       {
          settings_t* settings = config_get_ptr();
-         *width               = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : uwp_get_width();
-         *height              = settings->uints.video_fullscreen_y  != 0 ? settings->uints.video_fullscreen_y : uwp_get_height();
+         unsigned width       = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : uwp_get_width();
+         unsigned height      = settings->uints.video_fullscreen_y  != 0 ? settings->uints.video_fullscreen_y : uwp_get_height();
+         *dims                = VIDEO_SCALE_PACK(width, height);
          return;
       }
 
       *resize = App::GetInstance()->CheckWindowResized();
       if (*resize)
       {
-         float dpi = DisplayInformation::GetForCurrentView().LogicalDpi();
-         *width    = ConvertDipsToPixels(CoreWindow::GetForCurrentThread().Bounds().Width, dpi);
-         *height   = ConvertDipsToPixels(CoreWindow::GetForCurrentThread().Bounds().Height, dpi);
+         float dpi       = DisplayInformation::GetForCurrentView().LogicalDpi();
+         unsigned width  = ConvertDipsToPixels(CoreWindow::GetForCurrentThread().Bounds().Width, dpi);
+         unsigned height = ConvertDipsToPixels(CoreWindow::GetForCurrentThread().Bounds().Height, dpi);
+         *dims           = VIDEO_SCALE_PACK(width, height);
       }
    }
 
