@@ -6325,7 +6325,12 @@ static bool netplay_get_cmd(netplay_t *netplay,
             state_size     = ntohl(state_size);
             state_size_raw = cmd_size - (sizeof(frame) + sizeof(state_size));
 
-            if (state_size_raw > netplay->zbuffer_size)
+            /* state_size is supplied by the peer and controls every
+             * rollback buffer below. Bound both decompressed output and
+             * compressed input to the fixed per-session buffer limit,
+             * derived from our local state size, before resizing anything. */
+            if (   (size_t)state_size > netplay->zbuffer_size
+                || state_size_raw > netplay->zbuffer_size)
             {
                RARCH_ERR("[Netplay] Netplay state load with an unexpected save state size.\n");
                return netplay_cmd_nak(netplay, connection);
