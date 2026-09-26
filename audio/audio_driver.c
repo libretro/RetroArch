@@ -4555,18 +4555,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
                ? (double)audio_driver_st.buffer_size / frame_bytes
                   * 1000.0 / out_rate
                : 0.0;
-         const char *ident     = audio_driver_st.current_audio->ident;
-#ifdef HAVE_THREADS
-         /* Name the driver the user chose, not the wrapper it runs
-          * under. */
-         if (string_is_equal(ident, "audio-thread"))
-         {
-            const audio_driver_t *inner = audio_thread_wrapped_driver(
-                  audio_driver_st.context_audio_data);
-            if (inner)
-               ident           = inner->ident;
-         }
-#endif
+         const char *ident     = audio_driver_get_ident();
          RARCH_LOG("[Audio] Driver \"%s\" reports a %u-byte buffer: "
                "%.1f ms of %u-channel %s at %u Hz against a %u ms latency setting%s; "
                "rate control %s it near %.1f ms.\n",
@@ -8304,7 +8293,7 @@ bool audio_driver_start(bool is_shutdown)
    }
 
    RARCH_DBG("[Audio] Started audio driver \"%s\" (is_shutdown=%s)\n",
-         audio->ident, is_shutdown ? "true" : "false");
+         audio_driver_get_ident(), is_shutdown ? "true" : "false");
 
    return true;
 
@@ -8738,7 +8727,8 @@ bool audio_driver_stop(void)
          audio_driver_state_unlock();
       }
       AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_STARTED);
-      RARCH_DBG("[Audio] Stopped audio driver \"%s\".\n", audio->ident);
+      RARCH_DBG("[Audio] Stopped audio driver \"%s\".\n",
+            audio_driver_get_ident());
    }
 
    return stopped;
