@@ -274,6 +274,19 @@ jobs:
           timeout 60 ./video_views_test
           echo "[pass] video_views_test"
 
+      - name: Build and run video_xr_test (ASan+UBSan)
+        shell: bash
+        working-directory: samples/gfx/video_xr
+        run: |
+          set -eu
+          # gfx/video_xr.c places a core's screens in a headset, sizes
+          # their images and maps a pointer on them back to the frame.
+          # Pure maths, so every layout and edge runs here.
+          make clean all SANITIZER=address,undefined
+          test -x video_xr_test
+          timeout 60 ./video_xr_test
+          echo "[pass] video_xr_test"
+
       - name: Build and run vulkan_swapchain_clamp_test (ASan)
         shell: bash
         working-directory: samples/gfx/vulkan_swapchain_clamp

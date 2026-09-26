@@ -38,6 +38,9 @@
 
 #include "video_driver.h"
 #include "gfx_instrument.h"
+#ifdef HAVE_OPENXR
+#include "video_xr.h"
+#endif
 
 #ifdef HAVE_OPENXR
 #if defined(ANDROID)
@@ -2684,6 +2687,17 @@ void video_driver_free_hw_context(void)
     * a core may present once more on its way out (one that runs ahead
     * of the frontend drains the frame it had queued). */
    video_driver_invalidate_hw_render_cache();
+   /* From here to its unload the core may wait on the device without
+    * the queue lock: no frame of ours may be in flight meanwhile. */
+   if (video_st->hw_render.context_type != RETRO_HW_CONTEXT_NONE)
+   {
+#ifdef HAVE_THREADS
+      video_thread_wait_idle();
+#endif
+      if (     video_st->data && video_st->poke
+            && video_st->poke->hw_context_destroying)
+         video_st->poke->hw_context_destroying(video_st->data);
+   }
    if (video_st->hw_render.context_destroy)
       video_st->hw_render.context_destroy();
    video_driver_invalidate_hw_render_cache();
@@ -2787,6 +2801,9 @@ void video_driver_free_internal(void)
     * implementation dereferences that argument on entry. */
    video_st->data               = NULL;
    video_st->views_driver_count = 0;
+   /* The next driver's headset, if any, is measured afresh. */
+   video_st->headset_hz         = 0.0f;
+   video_st->headset_interval   = 0;
 
    /* The poke interface is a pointer into the driver's static vtable, so
     * unlike video_st->data it survives free "working" - and
@@ -3050,7 +3067,9 @@ unsigned video_driver_views_status(void)
    if (!video_driver_test_all_flags(GFX_CTX_FLAGS_VIDEO_VIEWS))
       return status;
    status |= RETRO_VIDEO_VIEWS_STATUS_PRESENTS;
-   if (settings->uints.video_stereo_mode != VIDEO_STEREO_MODE_2D)
+   /* A headset shows both eyes whatever the window's mode. */
+   if (     settings->uints.video_stereo_mode != VIDEO_STEREO_MODE_2D
+         || video_driver_test_all_flags(GFX_CTX_FLAGS_VIDEO_VIEWS_HEADSET))
       status |= RETRO_VIDEO_VIEWS_STATUS_STEREO;
    return status;
 }
@@ -3077,6 +3096,114 @@ const video_views_layout_t *video_driver_get_views_layout(void)
    return (video_st->views_presented && !video_st->views_fallback)
       ? &video_st->views_layout : NULL;
 }
+
+#ifdef HAVE_OPENXR
+bool video_driver_get_views_core(const video_views_map_t **map,
+      unsigned *frame_dims)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (video_st->views_presented)
+   {
+      *map        = &video_st->views_core;
+      *frame_dims = video_st->views_frame_dims;
+      return true;
+   }
+   *map = NULL;
+   return video_driver_cached_frame_info(frame_dims, NULL, NULL);
+}
+#endif
+
+void video_driver_headset_recenter(void)
+{
+   video_driver_st.headset_recenter++;
+   RARCH_LOG("[Video] Headset recenter requested.\n");
+}
+
+void video_driver_headset_exit_request(void)
+{
+   retro_atomic_store_release_int(&video_driver_st.headset_exit, 1);
+}
+
+unsigned video_driver_headset_rate_choices(unsigned *values, unsigned cap)
+{
+   static const unsigned fixed[] = { 72, 90, 120, 144 };
+   float rates[VIDEO_HEADSET_MAX_RATES];
+   unsigned i, j;
+   unsigned count                 = 0;
+   unsigned n                     = 0;
+   video_driver_state_t *video_st = &video_driver_st;
+
+   if (cap < 2)
+      return 0;
+   if (     video_st->data && video_st->poke
+         && video_st->poke->get_headset_refresh)
+      video_st->poke->get_headset_refresh(video_st->data, rates,
+            VIDEO_HEADSET_MAX_RATES, &count);
+   if (count > VIDEO_HEADSET_MAX_RATES)
+      count = VIDEO_HEADSET_MAX_RATES;
+   values[n++] = VIDEO_OPENXR_REFRESH_AUTO;
+   values[n++] = VIDEO_OPENXR_REFRESH_HEADSET;
+   if (!count)
+   {
+      for (i = 0; i < sizeof(fixed) / sizeof(fixed[0]) && n < cap; i++)
+         values[n++] = fixed[i];
+      return n;
+   }
+   for (i = 0; i < count && n < cap; i++)
+   {
+      unsigned hz = (unsigned)(rates[i] + 0.5f);
+      bool seen   = (hz <= VIDEO_OPENXR_REFRESH_HEADSET);
+      for (j = 2; j < n && !seen; j++)
+         seen = (values[j] == hz);
+      if (seen)
+         continue;
+      for (j = n++; j > 2 && values[j - 1] > hz; j--)
+         values[j] = values[j - 1];
+      values[j] = hz;
+   }
+   return n;
+}
+
+#ifdef HAVE_OPENXR
+void video_driver_headset_poll(void)
+{
+   float rates[VIDEO_HEADSET_MAX_RATES];
+   unsigned count                 = 0;
+   float hz                       = 0.0f;
+   video_driver_state_t *video_st = &video_driver_st;
+   settings_t *settings           = config_get_ptr();
+
+   if (retro_atomic_load_acquire_int(&video_st->headset_exit))
+   {
+      retro_atomic_store_release_int(&video_st->headset_exit, 0);
+      /* Steam's Exit Game kills a game that keeps running: quit first,
+       * saving what a quit saves. */
+      if (!string_is_empty(getenv("SteamAppId")))
+      {
+         RARCH_LOG("[Video] The headset asked to exit; quitting for Steam.\n");
+         command_event(CMD_EVENT_QUIT, NULL);
+         return;
+      }
+      RARCH_LOG("[Video] The headset asked to exit; the window keeps running.\n");
+   }
+
+   if (     video_st->data && video_st->poke
+         && video_st->poke->get_headset_refresh)
+      hz = video_st->poke->get_headset_refresh(video_st->data, rates,
+            VIDEO_HEADSET_MAX_RATES, &count);
+   video_st->headset_request_hz = video_xr_request_rate(
+         settings->uints.video_openxr_refresh_rate, rates, count,
+         (float)video_st->av_info.timing.fps, MAXIMUM_SWAP_INTERVAL);
+   if (     hz == video_st->headset_hz
+         && (!hz || settings->bools.video_vsync == video_st->headset_vsync))
+      return;
+   video_st->headset_hz = hz;
+   /* The configured rate again, so nothing is saved: the rates are
+    * adjusted with the headset's standing in. */
+   driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE,
+         &settings->floats.video_refresh_rate);
+}
+#endif
 
 static void video_driver_views_layout(settings_t *settings,
       const video_views_map_t *map, unsigned dims,
@@ -4745,9 +4872,11 @@ void video_driver_cached_frame(void)
        * the tuple read here. */
       frame_cache_snapshot(&data, &dims, &pitch);
 
+      video_driver_st.frame_repeat = true;
       cbs->frame_cb(
             (data != RETRO_HW_FRAME_BUFFER_VALID) ? data : NULL,
             VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch);
+      video_driver_st.frame_repeat = false;
    }
 
    recording_st->data             = recording;
@@ -5210,6 +5339,11 @@ bool video_driver_has_focus(void)
    return VIDEO_HAS_FOCUS(video_st);
 }
 
+bool video_driver_headset_focused(void)
+{
+   return video_driver_test_all_flags(GFX_CTX_FLAGS_HEADSET_FOCUSED);
+}
+
 /* The window title crosses from the main thread, which builds it, to
  * the video thread, which applies it. Where the atomics have pointer
  * ops it crosses as an immutable heap copy through a one-slot atomic
@@ -5378,9 +5512,19 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_porch_adjust     = settings->ints.crt_switch_porch_adjust;
    video_info->crt_switch_vert_adjust      = settings->ints.crt_switch_vertical_adjust;
    video_info->crt_switch_hires_menu       = settings->bools.crt_switch_hires_menu;
-   video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
+   video_info->black_frame_insertion       = video_st->headset_interval
+      ? 0 : settings->uints.video_black_frame_insertion;
    video_info->bfi_dark_frames             = settings->uints.video_bfi_dark_frames;
-   video_info->shader_subframes            = settings->uints.video_shader_subframes;
+   video_info->shader_subframes            = video_st->headset_interval
+      ? 1 : settings->uints.video_shader_subframes;
+   video_info->headset_distance            = settings->floats.video_openxr_distance;
+   video_info->headset_width               = settings->floats.video_openxr_width;
+   video_info->headset_recenter            = video_st->headset_recenter;
+   video_info->headset_interval            = video_st->headset_interval;
+   video_info->headset_request_hz          = video_st->headset_request_hz;
+   video_info->screen_layout               = settings->uints.video_screen_layout;
+   video_info->stereo_swap_eyes            = settings->bools.video_stereo_swap_eyes;
+   video_info->frame_repeat                = video_st->frame_repeat;
    video_info->current_subframe            = 0;
 #ifdef HAVE_THREADS
    /* The video thread owns and stamps this under the wrapper. */

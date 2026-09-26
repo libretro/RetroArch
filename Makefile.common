@@ -1769,6 +1769,11 @@ ifeq ($(HAVE_VULKAN), 1)
    ifeq ($(HAVE_VULKAN_DISPLAY), 1)
       OBJ += gfx/drivers_context/khr_display_ctx.o
    endif
+   ifeq ($(HAVE_OPENXR), 1)
+      OBJ += gfx/common/vulkan_openxr.o \
+             gfx/video_xr.o \
+             input/common/input_openxr.o
+   endif
    NEED_CXX_LINKER = 1
    DEFINES += -DHAVE_VULKAN
    INCLUDE_DIRS += -Igfx/include
@@ -1934,6 +1939,13 @@ endif
 ifeq ($(HAVE_OPENXR), 1)
    NEED_CXX_LINKER = 1
    DEFINES += -DHAVE_OPENXR
+   ifneq ($(findstring Win32,$(OS)),)
+      DEFINES += -DXR_OS_WINDOWS -DXR_USE_PLATFORM_WIN32
+   else ifneq ($(findstring Darwin,$(OS)),)
+      DEFINES += -DXR_OS_APPLE
+   else
+      DEFINES += -DXR_OS_LINUX
+   endif
 
    INCLUDE_DIRS += \
       -I$(DEPS_DIR)/OpenXR-SDK/include \
@@ -1961,6 +1973,9 @@ ifeq ($(HAVE_OPENXR), 1)
 
    OBJ += $(OPENXR_SOURCES:.cpp=.o)
    OBJ += $(DEPS_DIR)/OpenXR-SDK/src/xr_generated_dispatch_table_core.o
+
+   # The vendored loader is C++17 and built without exceptions.
+   $(addprefix $(OBJDIR)/,$(OPENXR_SOURCES:.cpp=.o)): CXXFLAGS += -std=gnu++17 -fno-exceptions
 endif
 
 ifeq ($(HAVE_BUILTINGLSLANG), 1)

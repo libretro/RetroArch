@@ -1,0 +1,10 @@
+{
+    "file_format_version": "1.0.0",
+    "api_layer": {
+        "name": "XR_APILAYER_RETROARCH_test_recorder",
+        "library_path": "./libxr_test_layer.so",
+        "api_version": "1.0",
+        "implementation_version": "1",
+        "description": "Records the layers and images an application submits, for RetroArch's tests"
+    }
+}

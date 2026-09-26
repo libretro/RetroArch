@@ -356,6 +356,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_preempt_toggle,        ME
 #ifdef HAVE_VIDEO_FILTER
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_video_filter_toggle,   MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE)
 #endif
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_headset_recenter,     MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_RECENTER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_laser_pointer_toggle, MENU_ENUM_SUBLABEL_INPUT_META_LASER_POINTER_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_fps_toggle,            MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_statistics_toggle,     MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_ai_service,            MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE)
@@ -1803,6 +1805,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_video_filter_toggle);
                return 0;
 #endif
+            case RARCH_HEADSET_RECENTER:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_headset_recenter);
+               return 0;
+            case RARCH_LASER_POINTER_TOGGLE:
+               BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_laser_pointer_toggle);
+               return 0;
             case RARCH_FPS_TOGGLE:
                BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_meta_fps_toggle);
                return 0;
@@ -2597,6 +2605,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_VIDEO_STEREO_MODE, MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE },
       { MENU_ENUM_LABEL_VIDEO_STEREO_SWAP_EYES, MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES },
       { MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT, MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT },
+      { MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE },
+      { MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE },
+      { MENU_ENUM_LABEL_VIDEO_OPENXR_DISTANCE, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE },
+      { MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH },
+      { MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS },
+      { MENU_ENUM_LABEL_VIDEO_OPENXR_LASER, MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER },
       { MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS, MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS },
       { MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS, MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS },
       { MENU_ENUM_LABEL_AUDIO_SETTINGS, MENU_ENUM_SUBLABEL_AUDIO_SETTINGS },

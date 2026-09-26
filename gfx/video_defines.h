@@ -402,7 +402,12 @@ enum display_flags
     * (RETRO_ENVIRONMENT_SET_VIDEO_VIEWS) itself. */
    GFX_CTX_FLAGS_VIDEO_VIEWS,
    /* Set while such a driver draws a frame that has a map whole. */
-   GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK
+   GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK,
+   /* Set by a video driver that also shows a core's views in a headset,
+    * which shows both eyes whatever the stereo mode. */
+   GFX_CTX_FLAGS_VIDEO_VIEWS_HEADSET,
+   /* Set while that headset's session has the runtime's focus. */
+   GFX_CTX_FLAGS_HEADSET_FOCUSED
 };
 
 enum shader_uniform_type

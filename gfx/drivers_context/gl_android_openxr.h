@@ -4,6 +4,18 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <libretro.h>
+#include <retro_inline.h>
+
+#ifndef ANDROID
+/* The GLES headset context is Android's: elsewhere the shared driver's
+ * headset path folds away. */
+static INLINE bool gl_android_openxr_active(void) { return false; }
+static INLINE bool gl_android_openxr_begin_frame(void) { return false; }
+static INLINE uint32_t gl_android_openxr_get_framebuffer(void) { return 0; }
+static INLINE bool gl_android_openxr_get_eye_state(struct retro_vr_eye_state out[2]) { (void)out; return false; }
+static INLINE bool gl_android_openxr_is_session_ready(void) { return false; }
+static INLINE bool gl_android_openxr_stereo_active(void) { return false; }
+#else
 
 /* True while the OpenXR GLES context driver is the live context */
 bool gl_android_openxr_active(void);
@@ -24,5 +36,6 @@ bool gl_android_openxr_is_session_ready(void);
 
 void gl_android_openxr_set_stereo(bool on);
 bool gl_android_openxr_stereo_active(void);
+#endif /* ANDROID */
 
 #endif

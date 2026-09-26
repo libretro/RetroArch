@@ -23,11 +23,27 @@
  * option through a GL core context, with either origin, or into
  * Vulkan images of its own handed over with set_image. With
  * video_views_test_max it declares a far larger maximum than it draws.
- * e2e/run.py checks the colours on screen and the status in the log. */
+ * e2e/run.py checks the colours on screen and the status in the log.
+ *
+ * In the Vulkan modes context_destroy first waits on the device without
+ * the queue lock, as a core draining its work may, and logs when:
+ * samples/openxr/e2e/run.py checks nothing of the frontend's used the
+ * queue meanwhile. vulkan_keep keeps its context over video reinits.
+ *
+ * It also logs its pads, analog values and light gun when they change,
+ * and rumbles a port while it holds Start, for the headset input tests.
+ *
+ * With video_views_test_fps it reports another frame rate, and logs
+ * every tenth frame with the monotonic time, for the headset pacing
+ * tests. With video_views_test_pattern checker it fills each view with
+ * a one-pixel black and white checkerboard instead of its colour, in
+ * software or its own Vulkan images, for the headset's shrinking. */
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <libretro.h>
 #include <libretro_vulkan.h>
@@ -48,6 +64,7 @@
 #define COL_GREEN  0x00FF00
 #define COL_YELLOW 0xFFFF00
 #define COL_WHITE  0xFFFFFF
+#define COL_BLACK  0x000000
 
 enum map_kind
 {
@@ -65,7 +82,8 @@ enum hw_kind
    HW_OFF = 0,
    HW_GL,         /* bottom-left origin */
    HW_GL_TOPLEFT,
-   HW_VULKAN
+   HW_VULKAN,
+   HW_VULKAN_KEEP
 };
 
 /* The GL the hardware mode uses, loaded through the frontend's
@@ -86,7 +104,7 @@ typedef void (APIENTRY *gl_scissor_t)(int, int, int, int);
 typedef void (APIENTRY *gl_clear_color_t)(float, float, float, float);
 typedef void (APIENTRY *gl_clear_t)(unsigned);
 
-/* The Vulkan mode's device functions, from the frontend's
+/* The Vulkan modes' device functions, from the frontend's
  * get_device_proc_addr: the core links no Vulkan loader either. */
 struct vk_funcs
 {
@@ -111,7 +129,7 @@ struct vk_funcs
    PFN_vkCmdPipelineBarrier          vkCmdPipelineBarrier;
    PFN_vkCmdCopyBufferToImage        vkCmdCopyBufferToImage;
    PFN_vkQueueSubmit                 vkQueueSubmit;
-   PFN_vkQueueWaitIdle               vkQueueWaitIdle;
+   PFN_vkDeviceWaitIdle              vkDeviceWaitIdle;
    PFN_vkCreateFence                 vkCreateFence;
    PFN_vkDestroyFence                vkDestroyFence;
    PFN_vkWaitForFences               vkWaitForFences;
@@ -148,6 +166,9 @@ static uint32_t frame_buf[CROP_W * CROP_H];
 static enum map_kind map_kind = MAP_3DS;
 static enum hw_kind hw_kind   = HW_OFF;
 static bool large_max;
+static bool checker;
+static double core_fps = 60.0;
+static unsigned frames_run;
 static struct retro_hw_render_callback hw_render;
 static gl_bind_framebuffer_t p_glBindFramebuffer;
 static gl_enable_t           p_glEnable;
@@ -166,6 +187,12 @@ static int last_status        = -1;
 static int last_accepted      = -1;
 static int last_pressed       = -1;
 static int16_t last_px, last_py;
+static struct retro_rumble_interface rumble;
+static int last_pad[2][7];      /* buttons, lx, ly, rx, ry, l2, r2 */
+static bool pad_logged[2];
+static int last_gun[4];         /* x, y, offscreen, trigger */
+static bool gun_logged;
+static unsigned last_rumble[2];
 
 static void fallback_log(enum retro_log_level level, const char *fmt, ...)
 {
@@ -197,6 +224,16 @@ static void fill(unsigned x, unsigned y, unsigned w, unsigned h,
    for (j = y; j < y + h; j++)
       for (i = x; i < x + w; i++)
          frame_buf[j * fw + i] = c;
+}
+
+/* By frame position, so neighbouring views meet seamlessly. */
+static void fill_checker(unsigned x, unsigned y, unsigned w, unsigned h,
+      unsigned fw)
+{
+   unsigned i, j;
+   for (j = y; j < y + h; j++)
+      for (i = x; i < x + w; i++)
+         frame_buf[j * fw + i] = ((i ^ j) & 1) ? COL_WHITE : COL_BLACK;
 }
 
 /* A top-left rectangle of the frame, cleared to c through the scissor.
@@ -239,6 +276,13 @@ static void context_reset(void)
 static void context_destroy(void)
 {
    gl_ready = false;
+}
+
+static long long now_us(void)
+{
+   struct timespec ts;
+   clock_gettime(CLOCK_MONOTONIC, &ts);
+   return (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 }
 
 static bool vk_alloc(const VkMemoryRequirements *req,
@@ -401,7 +445,7 @@ static void vk_context_reset(void)
    VK_LOAD(vkCmdPipelineBarrier);
    VK_LOAD(vkCmdCopyBufferToImage);
    VK_LOAD(vkQueueSubmit);
-   VK_LOAD(vkQueueWaitIdle);
+   VK_LOAD(vkDeviceWaitIdle);
    VK_LOAD(vkCreateFence);
    VK_LOAD(vkDestroyFence);
    VK_LOAD(vkWaitForFences);
@@ -429,15 +473,22 @@ static void vk_context_reset(void)
    log_cb(RETRO_LOG_INFO, "[video_views] Vulkan context reset\n");
 }
 
+/* Half a second of waits, so a submission beside them is caught. */
 static void vk_context_destroy(void)
 {
    unsigned i;
+   long long t0 = now_us();
+   long long t1 = t0;
    if (!vk_ready)
       return;
-   /* The frontend's reads of the images come before this on the queue. */
-   vk->lock_queue(vk->handle);
-   vkf.vkQueueWaitIdle(vk->queue);
-   vk->unlock_queue(vk->handle);
+   while (t1 - t0 < 500000)
+   {
+      vkf.vkDeviceWaitIdle(vk->device);
+      t1 = now_us();
+   }
+   log_cb(RETRO_LOG_INFO,
+         "[video_views] context_destroy waited on the device from %lld to %lld us\n",
+         t0, t1);
    for (i = 0; i < VK_SLOTS; i++)
       vk_slot_free(&vk_slots[i]);
    vkf.vkDestroyCommandPool(vk->device, vk_pool, NULL);
@@ -529,6 +580,18 @@ static bool vk_send(unsigned fw, unsigned fh)
    return true;
 }
 
+static void log_status(unsigned status, int accepted, unsigned n)
+{
+   if ((int)status == last_status && accepted == last_accepted)
+      return;
+   log_cb(RETRO_LOG_INFO,
+         "[video_views] presents=%d stereo=%d accepted=%d views=%u\n",
+         (status & RETRO_VIDEO_VIEWS_STATUS_PRESENTS) ? 1 : 0,
+         (status & RETRO_VIDEO_VIEWS_STATUS_STEREO) ? 1 : 0, accepted, n);
+   last_status   = (int)status;
+   last_accepted = accepted;
+}
+
 static void frame_size(unsigned *fw, unsigned *fh)
 {
    switch (map_kind)
@@ -608,12 +671,27 @@ static void read_options(void)
          hw_kind = HW_GL_TOPLEFT;
       else if (!strcmp(var.value, "vulkan"))
          hw_kind = HW_VULKAN;
+      else if (!strcmp(var.value, "vulkan_keep"))
+         hw_kind = HW_VULKAN_KEEP;
    }
 
    var.key   = "video_views_test_max";
    var.value = NULL;
    large_max = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var)
       && var.value && !strcmp(var.value, "large");
+
+   var.key   = "video_views_test_pattern";
+   var.value = NULL;
+   checker   = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var)
+      && var.value && !strcmp(var.value, "checker");
+
+   var.key   = "video_views_test_fps";
+   var.value = NULL;
+   core_fps  = 60.0;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+      core_fps = atof(var.value);
+   if (core_fps <= 0.0)
+      core_fps = 60.0;
 
    var.key   = "video_views_test_map";
    var.value = NULL;
@@ -652,9 +730,13 @@ void retro_set_environment(retro_environment_t cb)
       { "video_views_test_map",
         "View map; 3ds|3ds_force|ds|vb|invalid|none|crop" },
       { "video_views_test_hw",
-        "Hardware rendering; off|gl|gl_topleft|vulkan" },
+        "Hardware rendering; off|gl|gl_topleft|vulkan|vulkan_keep" },
       { "video_views_test_max",
         "Declared maximum size; normal|large" },
+      { "video_views_test_fps",
+        "Frame rate; 60|10|16" },
+      { "video_views_test_pattern",
+        "View fill; solid|checker" },
       { NULL, NULL }
    };
    struct retro_log_callback logging;
@@ -702,7 +784,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.max_width    = large_max ? LARGE_MAX_W : MAX_W;
    info->geometry.max_height   = large_max ? LARGE_MAX_H : MAX_H;
    info->geometry.aspect_ratio = (float)fw / (float)fh;
-   info->timing.fps            = 60.0;
+   info->timing.fps            = core_fps;
    info->timing.sample_rate    = 48000.0;
 }
 
@@ -713,6 +795,84 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 }
 
 void retro_reset(void) { }
+
+static void log_pads(void)
+{
+   unsigned p;
+   for (p = 0; p < 2; p++)
+   {
+      int s[7];
+      s[0] = (int)(uint16_t)input_state_cb(p, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_MASK);
+      s[1] = input_state_cb(p, RETRO_DEVICE_ANALOG,
+            RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+      s[2] = input_state_cb(p, RETRO_DEVICE_ANALOG,
+            RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
+      s[3] = input_state_cb(p, RETRO_DEVICE_ANALOG,
+            RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
+      s[4] = input_state_cb(p, RETRO_DEVICE_ANALOG,
+            RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
+      s[5] = input_state_cb(p, RETRO_DEVICE_ANALOG,
+            RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_L2);
+      s[6] = input_state_cb(p, RETRO_DEVICE_ANALOG,
+            RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_R2);
+      if (pad_logged[p] && !memcmp(s, last_pad[p], sizeof(s)))
+         continue;
+      log_cb(RETRO_LOG_INFO,
+            "[video_views] pad port=%u buttons=0x%04x lx=%d ly=%d rx=%d ry=%d l2=%d r2=%d\n",
+            p, (unsigned)s[0], s[1], s[2], s[3], s[4], s[5], s[6]);
+      memcpy(last_pad[p], s, sizeof(s));
+      pad_logged[p] = true;
+   }
+}
+
+static void log_lightgun(unsigned fw, unsigned fh)
+{
+   int s[4];
+   int cx = -1;
+   int cy = -1;
+   s[0] = input_state_cb(0, RETRO_DEVICE_LIGHTGUN, 0,
+         RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X);
+   s[1] = input_state_cb(0, RETRO_DEVICE_LIGHTGUN, 0,
+         RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y);
+   s[2] = input_state_cb(0, RETRO_DEVICE_LIGHTGUN, 0,
+         RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) ? 1 : 0;
+   s[3] = input_state_cb(0, RETRO_DEVICE_LIGHTGUN, 0,
+         RETRO_DEVICE_ID_LIGHTGUN_TRIGGER) ? 1 : 0;
+   if (gun_logged && !memcmp(s, last_gun, sizeof(s)))
+      return;
+   if (!s[2])
+   {
+      cx = (int)(((long)s[0] + 0x7fff) * (long)(fw - 1) / 0xfffe);
+      cy = (int)(((long)s[1] + 0x7fff) * (long)(fh - 1) / 0xfffe);
+   }
+   log_cb(RETRO_LOG_INFO,
+         "[video_views] lightgun x=%d y=%d offscreen=%d trigger=%d packed=(%d,%d)\n",
+         s[0], s[1], s[2], s[3], cx, cy);
+   memcpy(last_gun, s, sizeof(s));
+   gun_logged = true;
+}
+
+/* A port rumbles while it holds Start; each port at its own strength. */
+static void update_rumble(void)
+{
+   static const uint16_t strong[2] = { 0xC000, 0x8000 };
+   static const uint16_t weak[2]   = { 0x4000, 0x2000 };
+   unsigned p;
+   if (!rumble.set_rumble_state)
+      return;
+   for (p = 0; p < 2; p++)
+   {
+      unsigned on = ((unsigned)last_pad[p][0] >> RETRO_DEVICE_ID_JOYPAD_START) & 1;
+      if (on == last_rumble[p])
+         continue;
+      rumble.set_rumble_state(p, RETRO_RUMBLE_STRONG, on ? strong[p] : 0);
+      rumble.set_rumble_state(p, RETRO_RUMBLE_WEAK,   on ? weak[p]   : 0);
+      log_cb(RETRO_LOG_INFO, "[video_views] rumble port=%u strong=%u weak=%u\n",
+            p, on ? (unsigned)strong[p] : 0u, on ? (unsigned)weak[p] : 0u);
+      last_rumble[p] = on;
+   }
+}
 
 void retro_run(void)
 {
@@ -725,6 +885,16 @@ void retro_run(void)
    int accepted    = 0;
    unsigned status = 0;
    bool stereo;
+
+   if (core_fps != 60.0 && !(frames_run % 10))
+   {
+      struct timespec ts;
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      log_cb(RETRO_LOG_INFO, "[video_views] frame %u at %lld us\n",
+            frames_run,
+            (long long)ts.tv_sec * 1000000LL + ts.tv_nsec / 1000);
+   }
+   frames_run++;
 
    input_poll_cb();
    if (!environ_cb(RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS, &status))
@@ -755,7 +925,11 @@ void retro_run(void)
    rect(0, 0, fw, fh, fw, fh, COL_BG);
    for (i = 0; i < n; i++)
    {
-      rect(v[i].x, v[i].y, v[i].width, v[i].height, fw, fh, c[i]);
+      /* GL clears through a scissor, so it keeps solid colours. */
+      if (checker && (hw_kind == HW_OFF || hw_kind >= HW_VULKAN))
+         fill_checker(v[i].x, v[i].y, v[i].width, v[i].height, fw);
+      else
+         rect(v[i].x, v[i].y, v[i].width, v[i].height, fw, fh, c[i]);
       rect(v[i].x, v[i].y, 8, 8, fw, fh, COL_WHITE);
    }
 
@@ -766,15 +940,7 @@ void retro_run(void)
       accepted        = environ_cb(RETRO_ENVIRONMENT_SET_VIDEO_VIEWS,
             &views) ? 1 : 0;
    }
-   if ((int)status != last_status || accepted != last_accepted)
-   {
-      log_cb(RETRO_LOG_INFO,
-            "[video_views] presents=%d stereo=%d accepted=%d views=%u\n",
-            (status & RETRO_VIDEO_VIEWS_STATUS_PRESENTS) ? 1 : 0,
-            stereo ? 1 : 0, accepted, n);
-      last_status   = (int)status;
-      last_accepted = accepted;
-   }
+   log_status(status, accepted, n);
 
    px      = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X);
    py      = input_state_cb(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y);
@@ -799,6 +965,10 @@ void retro_run(void)
    last_px      = px;
    last_py      = py;
    last_pressed = pressed;
+
+   log_pads();
+   log_lightgun(fw, fh);
+   update_rumble();
 
    if (hw_kind >= HW_VULKAN)
    {
@@ -834,11 +1004,14 @@ bool retro_load_game(const struct retro_game_info *game)
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
       return false;
    read_options();
+   if (!environ_cb(RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE, &rumble))
+      memset(&rumble, 0, sizeof(rumble));
    if (hw_kind >= HW_VULKAN)
    {
       memset(&hw_render, 0, sizeof(hw_render));
       hw_render.context_type    = RETRO_HW_CONTEXT_VULKAN;
       hw_render.version_major   = VK_API_VERSION_1_1;
+      hw_render.cache_context   = (hw_kind == HW_VULKAN_KEEP);
       hw_render.context_reset   = vk_context_reset;
       hw_render.context_destroy = vk_context_destroy;
       if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))

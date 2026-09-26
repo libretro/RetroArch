@@ -290,6 +290,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_CRT_SUPER_RESOLUTION:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_CRT_SUPER_RESOLUTION;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_HEADSET_REFRESH_RATE:
+         return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_HEADSET_REFRESH_RATE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_AUDIO_DEVICE:
          return MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_MIDI_DEVICE:
@@ -856,6 +858,14 @@ int generic_action_ok_displaylist_push(
          info_path          = path;
          info_label         = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_CRT_SUPER_RESOLUTION_STR;
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_CRT_SUPER_RESOLUTION;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_DROPDOWN_BOX_LIST_HEADSET_REFRESH_RATE:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = path;
+         info_label         = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_HEADSET_REFRESH_RATE_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_HEADSET_REFRESH_RATE;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_DROPDOWN_BOX_LIST_PLAYLIST_DEFAULT_CORE:
@@ -7911,6 +7921,27 @@ static int action_ok_push_dropdown_item_crt_super_resolution(const char *path,
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
 
+/* The values are Auto, Headset's Choice and rates in Hz, not an
+ * index, so they are rebuilt as the list was and the row picks one. */
+static int action_ok_push_dropdown_item_headset_refresh_rate(
+      const char *path, const char *label, unsigned type, size_t idx,
+      size_t entry_idx)
+{
+   unsigned values[2 + VIDEO_HEADSET_MAX_RATES];
+   unsigned n;
+   settings_t *settings = config_get_ptr();
+
+   n = video_driver_headset_rate_choices(values,
+         sizeof(values) / sizeof(values[0]));
+   if (idx >= n)
+      return -1;
+
+   configuration_set_uint(settings,
+         settings->uints.video_openxr_refresh_rate, values[idx]);
+
+   return action_cancel_pop_default(NULL, NULL, 0, 0);
+}
+
 static int action_ok_push_dropdown_item_playlist_default_core(
       const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -10124,6 +10155,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
          case MENU_SETTING_DROPDOWN_ITEM_CRT_SUPER_RESOLUTION:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_crt_super_resolution);
+            break;
+         case MENU_SETTING_DROPDOWN_ITEM_HEADSET_REFRESH_RATE:
+            BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_headset_refresh_rate);
             break;
          case MENU_SETTING_DROPDOWN_ITEM_VIDEO_SHADER_NUM_PASS:
             BIND_ACTION_OK(cbs, action_ok_push_dropdown_item_video_shader_num_pass);

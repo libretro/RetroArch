@@ -277,6 +277,10 @@ enum event_command
    CMD_EVENT_PREEMPT_RESET_BUFFER,
    /* Toggle VRR runloop. */
    CMD_EVENT_VRR_RUNLOOP_TOGGLE,
+   /* Place the headset's screens in front of where it looks now. */
+   CMD_EVENT_HEADSET_RECENTER,
+   /* Switch the headset's Laser Pointer between Off and its last mode. */
+   CMD_EVENT_LASER_POINTER_TOGGLE,
    /* AI service. */
    CMD_EVENT_AI_SERVICE_TOGGLE,
    CMD_EVENT_AI_SERVICE_CALL,
@@ -623,6 +627,8 @@ static const struct cmd_map map[] = {
    { "RUNAHEAD_TOGGLE", RARCH_RUNAHEAD_TOGGLE, "Turn run-ahead on or off.", 0 },
    { "PREEMPT_TOGGLE", RARCH_PREEMPT_TOGGLE, "Turn preemptive frames on or off.", 0 },
    { "VIDEO_FILTER_TOGGLE", RARCH_VIDEO_FILTER_TOGGLE, "Turn the video filter on or off.", 0 },
+   { "HEADSET_RECENTER", RARCH_HEADSET_RECENTER, "Recenter the headset's screens in front of where it looks.", 0 },
+   { "LASER_POINTER_TOGGLE", RARCH_LASER_POINTER_TOGGLE, "Show or hide the headset's laser pointer.", 0 },
    { "FPS_TOGGLE", RARCH_FPS_TOGGLE, "Show or hide the framerate.", 0 },
    { "STATISTICS_TOGGLE", RARCH_STATISTICS_TOGGLE, "Show or hide the technical statistics.", 0 },
    { "AI_SERVICE", RARCH_AI_SERVICE, "Run the AI service (translate or narrate the screen).", 0 },

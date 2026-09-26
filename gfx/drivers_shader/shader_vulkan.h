@@ -219,6 +219,12 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
       const struct vulkan_filter_chain_create_info *info,
       enum glslang_filter_chain_filter filter);
 
+/* The stock chain's form for drawing a source smaller than it is: the
+ * source at its own size into a mipmapped framebuffer, then trilinear
+ * into the viewport, whatever the filter setting. SDR only. */
+vulkan_filter_chain_t *vulkan_filter_chain_create_shrink(
+      const struct vulkan_filter_chain_create_info *info);
+
 vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const struct vulkan_filter_chain_create_info *info,
       const char *path, enum glslang_filter_chain_filter filter);

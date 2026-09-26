@@ -446,6 +446,8 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_META_BIND(2, runahead_toggle,       RARCH_RUNAHEAD_TOGGLE,        MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE),
    DECLARE_META_BIND(2, preempt_toggle,        RARCH_PREEMPT_TOGGLE,         MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE),
    DECLARE_META_BIND(2, video_filter_toggle,   RARCH_VIDEO_FILTER_TOGGLE,    MENU_ENUM_LABEL_VALUE_INPUT_META_VIDEO_FILTER_TOGGLE),
+   DECLARE_META_BIND(2, headset_recenter,      RARCH_HEADSET_RECENTER,       MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_RECENTER),
+   DECLARE_META_BIND(2, laser_pointer_toggle,  RARCH_LASER_POINTER_TOGGLE,   MENU_ENUM_LABEL_VALUE_INPUT_META_LASER_POINTER_TOGGLE),
    DECLARE_META_BIND(2, fps_toggle,            RARCH_FPS_TOGGLE,             MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE),
    DECLARE_META_BIND(2, toggle_statistics,     RARCH_STATISTICS_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE),
    DECLARE_META_BIND(2, ai_service,            RARCH_AI_SERVICE,             MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE),
@@ -2499,6 +2501,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_video_stereo.h"
+#include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
 #include "settings/settings_def_playlist_history.h"
 #ifdef HAVE_MENU
@@ -3222,6 +3225,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_video_stereo.h"
+#include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
 #include "settings/settings_def_playlist_history.h"
 #ifdef HAVE_MENU
@@ -3922,6 +3926,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_video_stereo.h"
+#include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
 #include "settings/settings_def_playlist_history.h"
 #ifdef HAVE_MENU
@@ -4657,6 +4662,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_video_stereo.h"
+#include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
 #include "settings/settings_def_playlist_history.h"
 #ifdef HAVE_MENU
@@ -5254,6 +5260,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_input_bind_timeouts.h"
 #include "settings/settings_def_video_hdr_toggles.h"
 #include "settings/settings_def_video_stereo.h"
+#include "settings/settings_def_video_headset.h"
 #include "settings/settings_def_rewind.h"
 #include "settings/settings_def_playlist_history.h"
 #ifdef HAVE_MENU

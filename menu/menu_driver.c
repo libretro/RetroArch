@@ -77,6 +77,9 @@
 #include "../input/input_driver.h"
 #include "../input/input_osk.h"
 #include "../input/input_remapping.h"
+#ifdef HAVE_OPENXR
+#include "../input/common/input_openxr.h"
+#endif
 #include "../performance_counters.h"
 #include "../version.h"
 #include "../misc/cpufreq/cpufreq.h"
@@ -2095,9 +2098,52 @@ MENU_NOINLINE static void input_event_osk_iterate(void *osk_grid, enum osk_type 
 /* The mouse has not been seen to move yet. */
 #define MENU_MOUSE_POS_NONE VIDEO_POS_PACK(-0x7fff, -0x7fff)
 
-/* A window point to where the menu has it while views are presented.
- * RGUI's is in its framebuffer: the driver fits that to the UI, while
- * the viewport it reports is the whole window. */
+/* A window point in a framebuffer menu's own pixels, clamped: RGUI
+ * uses a framebuffer texture + custom viewports, which means we have to
+ * convert from screen space to menu space. */
+static void menu_input_fb_point(const gfx_display_t *p_disp,
+      const struct video_viewport *vp, float wx, float wy,
+      int *x, int *y)
+{
+   unsigned fb_width  = VIDEO_SCALE_W(p_disp->framebuf_dims);
+   unsigned fb_height = VIDEO_SCALE_H(p_disp->framebuf_dims);
+
+   *x = (int16_t)(((wx - (float)VIDEO_POS_X(vp->pos))
+            / (float)VIDEO_SCALE_W(vp->dims)) * (float)fb_width);
+   if (*x < 0)
+      *x = 0;
+   else if (*x >= (int)fb_width)
+      *x = (fb_width - 1);
+
+   *y = (int16_t)(((wy - (float)VIDEO_POS_Y(vp->pos))
+            / (float)VIDEO_SCALE_H(vp->dims)) * (float)fb_height);
+   if (*y < 0)
+      *y = 0;
+   else if (*y >= (int)fb_height)
+      *y = (fb_height - 1);
+}
+
+/* A point in the UI's coordinates to RGUI's framebuffer while views are
+ * presented: the driver fits that to the UI, while the viewport it
+ * reports is the whole window. False, with nothing written, when the
+ * fit is empty. */
+static bool menu_input_views_fb_point(const gfx_display_t *p_disp,
+      const video_views_layout_t *layout, float ui_x, float ui_y,
+      int *x, int *y)
+{
+   struct video_viewport vp = {0};
+
+   /* Drivers keep the aspect once content has loaded. */
+   vp.full_dims             = layout->ui_dims;
+   video_driver_update_viewport(&vp, false, true, true);
+
+   if (!VIDEO_SCALE_W(vp.dims) || !VIDEO_SCALE_H(vp.dims))
+      return false;
+   menu_input_fb_point(p_disp, &vp, ui_x, ui_y, x, y);
+   return true;
+}
+
+/* A window point to where the menu has it while views are presented. */
 static void menu_input_views_point(
       gfx_display_t *p_disp,
       const video_views_layout_t *layout,
@@ -2108,34 +2154,13 @@ static void menu_input_views_point(
 
    video_views_ui_point(layout, *x, *y, &ui_x, &ui_y);
 
-   if (menu_has_fb)
+   if (     !menu_has_fb
+         || !menu_input_views_fb_point(p_disp, layout,
+               (float)ui_x, (float)ui_y, x, y))
    {
-      struct video_viewport vp = {0};
-      int fb_width             = (int)VIDEO_SCALE_W(p_disp->framebuf_dims);
-      int fb_height            = (int)VIDEO_SCALE_H(p_disp->framebuf_dims);
-
-      /* Drivers keep the aspect once content has loaded. */
-      vp.full_dims             = layout->ui_dims;
-      video_driver_update_viewport(&vp, false, true, true);
-
-      if (VIDEO_SCALE_W(vp.dims) && VIDEO_SCALE_H(vp.dims))
-      {
-         ui_x = (int)(((float)(ui_x - VIDEO_POS_X(vp.pos)) / (float)VIDEO_SCALE_W(vp.dims)) * (float)fb_width);
-         if (ui_x < 0)
-            ui_x = 0;
-         else if (ui_x >= fb_width)
-            ui_x = fb_width - 1;
-
-         ui_y = (int)(((float)(ui_y - VIDEO_POS_Y(vp.pos)) / (float)VIDEO_SCALE_H(vp.dims)) * (float)fb_height);
-         if (ui_y < 0)
-            ui_y = 0;
-         else if (ui_y >= fb_height)
-            ui_y = fb_height - 1;
-      }
+      *x = ui_x;
+      *y = ui_y;
    }
-
-   *x = ui_x;
-   *y = ui_y;
 }
 
 MENU_NOINLINE static void menu_input_get_mouse_hw_state(
@@ -2216,29 +2241,9 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
       menu_input_views_point(p_disp, layout, menu_has_fb, &x, &y);
    else if (menu_has_fb)
    {
-      /* RGUI uses a framebuffer texture + custom viewports,
-       * which means we have to convert from screen space to
-       * menu space... */
       struct video_viewport vp     = {0};
-      /* Read display/framebuffer info */
-      unsigned fb_width            = VIDEO_SCALE_W(p_disp->framebuf_dims);
-      unsigned fb_height           = VIDEO_SCALE_H(p_disp->framebuf_dims);
-
       video_driver_get_viewport_info(&vp);
-
-      /* Adjust X position */
-      x                  = (int16_t)(((float)(x - VIDEO_POS_X(vp.pos)) / (float)VIDEO_SCALE_W(vp.dims)) * (float)fb_width);
-      if (x < 0)
-         x               = 0;
-      else if (x >= (int)fb_width)
-         x               = (fb_width -1);
-
-      /* Adjust Y position */
-      y                  = (int16_t)(((float)(y - VIDEO_POS_Y(vp.pos)) / (float)VIDEO_SCALE_H(vp.dims)) * (float)fb_height);
-      if (y <  0)
-         y               = 0;
-      else if (y >= (int)fb_height)
-         y               = (fb_height-1);
+      menu_input_fb_point(p_disp, &vp, (float)x, (float)y, &x, &y);
    }
    hw_state->pos                   = VIDEO_POS_PACK(x, y);
 
@@ -2439,6 +2444,105 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
       last_cancel_pressed = cancel_pressed;
    }
 }
+
+#ifdef HAVE_OPENXR
+/* The laser drives the menu's pointer: since it last read on the menu
+ * quad, no mouse or touch has moved. */
+static bool menu_input_headset_drives = false;
+
+/* The headset's laser on the menu quad, read as a mouse. The quad shows
+ * the UI, where a framebuffer menu (RGUI) fills the viewport it is
+ * fitted to. A press that leaves the quad is released where it left.
+ * True while the laser is on the quad, and once more for that release. */
+MENU_NOINLINE static bool menu_input_get_headset_hw_state(
+      gfx_display_t *p_disp,
+      menu_handle_t *menu,
+      menu_input_pointer_hw_state_t *hw_state)
+{
+   float u, v;
+   bool pressed, changed;
+   static int16_t last_x        = -1;
+   static int16_t last_y        = -1;
+   static bool last_pressed     = false;
+   static size_t last_selection = (size_t)-1;
+   int x                        = 0;
+   int y                        = 0;
+   struct menu_state *menu_st   = &menu_driver_state;
+   unsigned fb_width            = VIDEO_SCALE_W(p_disp->framebuf_dims);
+   unsigned fb_height           = VIDEO_SCALE_H(p_disp->framebuf_dims);
+   bool menu_has_fb             = menu && menu->driver_ctx
+      && menu->driver_ctx->set_texture;
+
+   hw_state->pos   = 0;
+   hw_state->flags = 0;
+
+   if (!input_openxr_menu_pointer(&u, &v, &pressed))
+   {
+      bool release = last_pressed;
+      if (release)
+      {
+         hw_state->pos   = VIDEO_POS_PACK(last_x, last_y);
+         hw_state->flags = MENU_INP_PTR_FLG_ACTIVE;
+      }
+      last_x         = -1;
+      last_y         = -1;
+      last_pressed   = false;
+      last_selection = (size_t)-1;
+      return release;
+   }
+
+   if (menu_has_fb)
+   {
+      const video_views_layout_t *layout = video_driver_get_views_layout();
+      /* With views the quad is the UI, one eye's when that is drawn
+       * per eye; without, the whole window. */
+      if (layout)
+         menu_input_views_fb_point(p_disp, layout,
+               u * (float)VIDEO_SCALE_W(layout->ui_dims),
+               v * (float)VIDEO_SCALE_H(layout->ui_dims),
+               &x, &y);
+      else
+      {
+         struct video_viewport vp = {0};
+         video_driver_get_viewport_info(&vp);
+         if (VIDEO_SCALE_W(vp.dims) && VIDEO_SCALE_H(vp.dims))
+            menu_input_fb_point(p_disp, &vp,
+                  u * (float)VIDEO_SCALE_W(vp.full_dims),
+                  v * (float)VIDEO_SCALE_H(vp.full_dims),
+                  &x, &y);
+      }
+   }
+   else
+   {
+      x = (int16_t)(u * (float)fb_width);
+      y = (int16_t)(v * (float)fb_height);
+      if (fb_width && x >= (int)fb_width)
+         x = (int)fb_width - 1;
+      if (fb_height && y >= (int)fb_height)
+         y = (int)fb_height - 1;
+   }
+   hw_state->pos = VIDEO_POS_PACK(x, y);
+
+   changed = x != last_x || y != last_y
+      || pressed != last_pressed;
+   if (pressed)
+      hw_state->flags |= MENU_INP_PTR_FLG_PRESS_SELECT;
+   /* Active while pressed too, as the mouse is: menu_event() then
+    * leaves the press to the pointer, so a click acts once, at
+    * pointer-up. */
+   if (changed || pressed)
+      hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
+   if (changed || menu_st->selection_ptr != last_selection)
+      RARCH_DBG("[Menu] Headset pointer x=%d y=%d pressed=%d selection=%u.\n",
+            x, y, pressed ? 1 : 0,
+            (unsigned)menu_st->selection_ptr);
+   last_x         = x;
+   last_y         = y;
+   last_pressed   = pressed;
+   last_selection = menu_st->selection_ptr;
+   return true;
+}
+#endif
 
 static void menu_entries_settings_deinit(struct menu_state *menu_st)
 {
@@ -3932,6 +4036,24 @@ MENU_NOINLINE static void menu_input_set_pointer_visibility(
    static bool cursor_hidden         = false;
    static retro_time_t end_time      = 0;
    struct menu_state       *menu_st  = &menu_driver_state;
+
+#ifdef HAVE_OPENXR
+   /* The laser's dot is its cursor. */
+   if (menu_input_headset_drives)
+   {
+      if (!cursor_hidden)
+      {
+         if (menu_st->driver_ctx->environ_cb)
+            menu_st->driver_ctx->environ_cb(MENU_ENVIRON_DISABLE_MOUSE_CURSOR,
+                  NULL, menu_st->userdata);
+         cursor_shown  = false;
+         cursor_hidden = true;
+      }
+      /* So a mouse taking over shows it at once. */
+      end_time = 0;
+      return;
+   }
+#endif
 
    /* Ensure that mouse cursor is hidden when not in use */
    if (     (menu_input->pointer.type == MENU_POINTER_MOUSE)
@@ -5656,6 +5778,12 @@ unsigned menu_event(
    {
       menu_input_pointer_hw_state_t mouse_hw_state       = {0};
       menu_input_pointer_hw_state_t touchscreen_hw_state = {0};
+#ifdef HAVE_OPENXR
+      menu_input_pointer_hw_state_t headset_hw_state     = {0};
+      bool headset_on                                    = false;
+      bool was_pressed                                   =
+         (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT) ? true : false;
+#endif
 
       /* Read mouse */
       if (menu_mouse_enable)
@@ -5681,6 +5809,11 @@ unsigned menu_event(
                input_touch_scale,
                &touchscreen_hw_state);
 
+#ifdef HAVE_OPENXR
+      headset_on = menu_input_get_headset_hw_state(p_disp, menu,
+            &headset_hw_state);
+#endif
+
       /* Mouse takes precedence */
       if (mouse_hw_state.flags & MENU_INP_PTR_FLG_ACTIVE)
          menu_input->pointer.type = MENU_POINTER_MOUSE;
@@ -5688,6 +5821,26 @@ unsigned menu_event(
          menu_input->pointer.type = MENU_POINTER_TOUCHSCREEN;
 
       /* Copy input from the current device */
+#ifdef HAVE_OPENXR
+      /* The laser, unless the mouse or a touch moves this frame. Off
+       * the quad, the pointer stays where the laser left it until one
+       * does: the idle mouse's point would read as a move. */
+      if (     (mouse_hw_state.flags       & MENU_INP_PTR_FLG_ACTIVE)
+            || (touchscreen_hw_state.flags & MENU_INP_PTR_FLG_ACTIVE))
+         menu_input_headset_drives = false;
+      else if (headset_on)
+         menu_input_headset_drives = true;
+      if (menu_input_headset_drives)
+      {
+         menu_input->pointer.type = MENU_POINTER_MOUSE;
+         if (headset_on)
+            memcpy(pointer_hw_state, &headset_hw_state,
+                  sizeof(menu_input_pointer_hw_state_t));
+         else
+            pointer_hw_state->flags = 0;
+      }
+      else
+#endif
       if (menu_input->pointer.type == MENU_POINTER_MOUSE)
          memcpy(pointer_hw_state, &mouse_hw_state, sizeof(menu_input_pointer_hw_state_t));
       else if (menu_input->pointer.type == MENU_POINTER_TOUCHSCREEN)
@@ -5700,8 +5853,19 @@ unsigned menu_event(
           * pointer acts through the pointer path this frame, not as a
           * button too, and a button it is bound to stays held back
           * until let go */
-         pointer_active              = true;
-         input_driver_hold_held_input();
+#ifdef HAVE_OPENXR
+         /* This also keeps a press from firing OK here as well as at
+          * pointer-up. The laser skips it only while it merely points:
+          * a held hand is never still, and pad input would never
+          * pass. */
+         if (     !menu_input_headset_drives
+               || was_pressed
+               || (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT))
+#endif
+         {
+            pointer_active           = true;
+            input_driver_hold_held_input();
+         }
       }
    }
 
@@ -6993,6 +7157,18 @@ void menu_driver_toggle(
             menu_input->select_inhibit = true;
             menu_input->cancel_inhibit = true;
          }
+      }
+#endif
+#ifdef HAVE_OPENXR
+      /* A laser press the menu closed on ended there: its release in
+       * the menu opened again is no click. */
+      if (     menu_input_headset_drives
+            && (menu_st->input_pointer_hw_state.flags
+               & MENU_INP_PTR_FLG_PRESS_SELECT))
+      {
+         menu_st->input_pointer_hw_state.flags &=
+               ~MENU_INP_PTR_FLG_PRESS_SELECT;
+         menu_input->select_inhibit = true;
       }
 #endif
    }

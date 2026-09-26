@@ -176,7 +176,10 @@ enum video_driver_state_flags
     * callbacks) while the main thread read-modify-writes this word for
     * unrelated bits, and a bit in a shared word cannot be read from
     * another thread without the lock the write side takes. */
-   VIDEO_FLAG_THREAD_WRAPPER_ACTIVE_UNUSED        = (1 << 22)
+   VIDEO_FLAG_THREAD_WRAPPER_ACTIVE_UNUSED        = (1 << 22),
+   /* A driver that failed to finish something it built its device for
+    * asks the main thread to rebuild video. */
+   VIDEO_FLAG_DRIVER_REINIT                       = (1 << 23)
 };
 
 enum video_driver_scanline
@@ -697,6 +700,21 @@ typedef struct video_frame_info
     * when the frame is drawn whole. */
    video_views_map_t views;
    video_views_layout_t views_layout;
+   /* Headset output: the screens' distance and width in metres, and a
+    * count of recenter requests the driver compares with the last it
+    * saw. */
+   float headset_distance;
+   float headset_width;
+   unsigned headset_recenter;
+   /* Each core frame shows for this many headset frames and waits for
+    * them in place of the window's vsync; 0 while the window paces. */
+   unsigned headset_interval;
+   /* The rate to ask the headset for, 0 for none. */
+   float headset_request_hz;
+   unsigned screen_layout;
+   bool stereo_swap_eyes;
+   /* The last frame sent again (paused, menu), not a new core frame. */
+   bool frame_repeat;
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);
@@ -1083,6 +1101,20 @@ typedef struct video_poke_interface
     * calls it, or waits while the video thread runs it, so a driver may
     * parse its shader preset here. */
    void (*set_view_count)(void *data, unsigned count);
+
+   /* The core's hardware context goes next: from its context_destroy
+    * to its unload the core may wait on the device without the queue
+    * lock, so stop the driver's own threads that submit to the core's
+    * queue. The driver may present on until it is freed: a staged
+    * content load keeps it up until the next session's drivers. The
+    * main thread calls it, or waits while the video thread runs it. */
+   void (*hw_context_destroying)(void *data);
+
+   /* A headset's refresh, for the main thread: the rate it runs at as
+    * measured, 0 until known, and up to cap of the rates it can be
+    * asked for into rates, *count of them. */
+   float (*get_headset_refresh)(void *data, float *rates, unsigned cap,
+         unsigned *count);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -1555,6 +1587,25 @@ typedef struct
     * (GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK), so touch, overlays and the
     * UI follow the packed frame. */
    bool views_fallback;
+   /* Recenter requests for a headset, counted. */
+   unsigned headset_recenter;
+   /* The headset's runtime asked RetroArch to exit (OpenXR EXITING). */
+   retro_atomic_int_t headset_exit;
+   /* Headset pacing, main thread, never saved: the headset's measured
+    * rate, which stands in for the display's while it fits the core,
+    * and how many headset frames each core frame shows for (0: the
+    * window paces). */
+   float headset_hz;
+   unsigned headset_interval;
+   /* The rate to ask the headset for, 0 for none. */
+   float headset_request_hz;
+   /* The headset rate and core fps the misfit notice was last shown
+    * for; the rate is cleared when content unloads. */
+   double headset_notice_fps;
+   unsigned headset_notice_hz;
+   bool headset_vsync;
+   /* Set while video_driver_cached_frame() sends the last frame again. */
+   bool frame_repeat;
 } video_driver_state_t;
 
 typedef struct video_frame_delay_auto
@@ -1603,6 +1654,10 @@ bool video_thread_hw_allowed(void);
 #endif
 
 bool video_driver_has_focus(void);
+
+/* The player is in the headset: focused for pausing and controllers,
+ * never for the keyboard and mouse. */
+bool video_driver_headset_focused(void);
 
 void video_driver_set_stub_frame(void);
 
@@ -1895,6 +1950,30 @@ unsigned video_driver_get_ui_dims(void);
 /* Main thread: the layout the last frame presented a core's views
  * with, or NULL when it was drawn whole. */
 const video_views_layout_t *video_driver_get_views_layout(void);
+#ifdef HAVE_OPENXR
+/* Main thread: the core's own view map and frame size the last frame
+ * presented with views used, or NULL and the last frame's size when it
+ * was drawn whole. False without a frame. */
+bool video_driver_get_views_core(const video_views_map_t **map,
+      unsigned *frame_dims);
+#endif
+/* Main thread: ask a headset to place its screens in front of where it
+ * looks now. */
+void video_driver_headset_recenter(void);
+/* Any thread: the headset's runtime asked RetroArch to exit. */
+void video_driver_headset_exit_request(void);
+
+/* Main thread: the Headset Refresh Rate choices in menu order,
+ * VIDEO_OPENXR_REFRESH_AUTO and _HEADSET, then the headset's rates in
+ * whole hertz, rising, or 72, 90, 120 and 144 while it lists none.
+ * Returns how many were written. */
+unsigned video_driver_headset_rate_choices(unsigned *values, unsigned cap);
+
+#ifdef HAVE_OPENXR
+/* Main thread, once an iteration: a new headset rate reruns the rate
+ * adjustment. */
+void video_driver_headset_poll(void);
+#endif
 
 #ifdef HAVE_OVERLAY
 struct overlay;

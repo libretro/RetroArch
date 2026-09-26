@@ -996,6 +996,13 @@ static bool video_thread_handle_packet(
          video_thread_reply(thr, &pkt);
          break;
 
+      case CMD_POKE_HW_CONTEXT_DESTROYING:
+         if (     thr->driver_data && thr->poke
+               && thr->poke->hw_context_destroying)
+            thr->poke->hw_context_destroying(thr->driver_data);
+         video_thread_reply(thr, &pkt);
+         break;
+
       case CMD_FONT_INIT:
          if (pkt.data.font_init.method)
             pkt.data.font_init.return_value = pkt.data.font_init.method(
@@ -4273,6 +4280,20 @@ static void thread_set_view_count(void *data, unsigned count)
    }
 }
 
+static void thread_hw_context_destroying(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (thr)
+   {
+      thread_packet_t pkt;
+      pkt.type = CMD_POKE_HW_CONTEXT_DESTROYING;
+
+      /* Waits: the core's context_destroy runs when this returns. */
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   }
+}
+
 static void thread_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned dims, float alpha)
 {
@@ -4641,7 +4662,8 @@ static const video_poke_interface_t thread_poke = {
    NULL, /* get_swap_interval_cap */
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
-   thread_set_view_count
+   thread_set_view_count,
+   thread_hw_context_destroying
 };
 
 /* Video thread, for video_thread_get_poke_interface(): installs the
