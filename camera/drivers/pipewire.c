@@ -314,7 +314,7 @@ static const struct pw_stream_events stream_events = {
       .process = NULL,
 };
 
-static void pipewire_stop(void *data)
+static void pwire_camera_stop(void *data)
 {
    pipewire_camera_t *camera = (pipewire_camera_t*)data;
    const char         *error = NULL;
@@ -327,7 +327,7 @@ static void pipewire_stop(void *data)
       pipewire_stream_set_active(camera->pw->thread_loop, camera->stream, false);
 }
 
-static bool pipewire_start(void *data)
+static bool pwire_camera_start(void *data)
 {
    pipewire_camera_t *camera = (pipewire_camera_t*)data;
    const char         *error = NULL;
@@ -342,7 +342,7 @@ static bool pipewire_start(void *data)
    return pipewire_stream_set_active(camera->pw->thread_loop, camera->stream, true);
 }
 
-static void pipewire_free(void *data)
+static void pwire_camera_free(void *data)
 {
    pipewire_camera_t *camera = (pipewire_camera_t*)data;
 
@@ -366,7 +366,7 @@ static void pipewire_free(void *data)
    free(camera);
 }
 
-static void *pipewire_init(const char *device, uint64_t caps,
+static void *pwire_camera_init(const char *device, uint64_t caps,
       unsigned dims)
 {
    int               res, n_params;
@@ -432,11 +432,11 @@ static void *pipewire_init(const char *device, uint64_t caps,
 
 error:
    RARCH_ERR("[Camera] [PipeWire] Failed to initialize camera.\n");
-   pipewire_free(camera);
+   pwire_camera_free(camera);
    return NULL;
 }
 
-static bool pipewire_poll(void *data,
+static bool pwire_camera_poll(void *data,
       retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
@@ -459,10 +459,10 @@ static bool pipewire_poll(void *data,
 }
 
 camera_driver_t camera_pipewire = {
-      pipewire_init,
-      pipewire_free,
-      pipewire_start,
-      pipewire_stop,
-      pipewire_poll,
+      pwire_camera_init,
+      pwire_camera_free,
+      pwire_camera_start,
+      pwire_camera_stop,
+      pwire_camera_poll,
       "pipewire",
 };
