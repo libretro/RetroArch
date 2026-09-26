@@ -71,7 +71,11 @@
 
 #include "../input_keymaps.h"
 
+#ifdef __linux__
+/* The illuminance sensor reads sysfs IIO nodes, and linux_common.o is
+ * only built on Linux; libudev also exists on FreeBSD (libudev-devd). */
 #include "../common/linux_common.h"
+#endif
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -570,7 +574,9 @@ typedef struct udev_input
    bool xkb_handling;
 #endif
 
+#ifdef __linux__
    linux_illuminance_sensor_t *illuminance_sensor;
+#endif
 } udev_input_t;
 
 #ifdef UDEV_XKB_HANDLING
@@ -3960,7 +3966,9 @@ static void udev_input_free(void *data)
 
    udev_input_kb_free(udev);
 
+#ifdef __linux__
    linux_close_illuminance_sensor(udev->illuminance_sensor);
+#endif
 
    free(udev);
 }
@@ -3975,14 +3983,17 @@ static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_a
    switch (action)
    {
       case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+#ifdef __linux__
          /* If already disabled, then do nothing */
          linux_close_illuminance_sensor(udev->illuminance_sensor); /* noop if NULL */
          udev->illuminance_sensor = NULL;
+#endif
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
          /** Unimplemented sensor actions that probably shouldn't fail */
          return true;
 
+#ifdef __linux__
       case RETRO_SENSOR_ILLUMINANCE_ENABLE:
          if (udev->illuminance_sensor)
             /* If we already have a sensor, just set the rate */
@@ -3991,6 +4002,7 @@ static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_a
             udev->illuminance_sensor = linux_open_illuminance_sensor(rate);
 
          return udev->illuminance_sensor != NULL;
+#endif
       default:
          break;
    }
@@ -4000,6 +4012,7 @@ static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_a
 
 static float udev_get_sensor_input(void *data, unsigned port, unsigned id)
 {
+#ifdef __linux__
    udev_input_t *udev = (udev_input_t*)data;
 
    if (!udev)
@@ -4013,6 +4026,7 @@ static float udev_get_sensor_input(void *data, unsigned port, unsigned id)
       default:
          break;
    }
+#endif
 
    return 0.0f;
 }
