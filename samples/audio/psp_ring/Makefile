@@ -44,7 +44,10 @@ device_mock.o: device_mock.c
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+check: $(TARGET)
+	./$(TARGET)
+
 clean:
 	rm -f $(OBJS) $(TARGET)
 
-.PHONY: all clean
+.PHONY: all check clean

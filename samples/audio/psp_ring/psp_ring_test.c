@@ -2,11 +2,17 @@
  * it: one writer calling write() while the driver's own worker hands
  * windows to the device.
  *
- * Two orderings the ring depends on are what this pins. A period is
- * the writer's only once the device has taken it, so read_pos may not
- * be published before the output call; and a full ring and an empty
- * one must not both read as write_pos == read_pos, or the writer laps
- * over the window being played. Either one shows up here as a window
+ * Two orderings the ring depends on are what this pins. A window is
+ * the writer's only once the device has finished reading it, and the
+ * output call returns with the window it was handed still in flight -
+ * it waited for the previous one - so read_pos may not be published
+ * past a window until the call after the one that handed it over has
+ * returned (RetroArch #19624: released a call early, the writer lands
+ * in audio being played and every core with the ring kept full
+ * crackles). And a full ring and an empty one must not both read as
+ * write_pos == read_pos, or the writer laps over the window being
+ * played. The mock device reads each window across the period after
+ * the call that queued it, so either one shows up here as a window
  * whose frames do not continue the last, and under TSan as a race on
  * the ring itself. */
 #include <stdint.h>
@@ -38,7 +44,7 @@
 #define DELIVERY_60HZ   800u
 #define DELIVERY_30HZ  1600u
 #define MOCK_PERIOD_US 1000u
-/* The ring's floor plus the period the device holds. */
+/* The ring's floor, the window in flight inside it. */
 #define FLOOR_FRAMES   (512u * 6u)
 
 static const audio_driver_t *drv;
@@ -98,8 +104,7 @@ static int check_latency(const audio_driver_t *d, const char *name)
       frames = d->buffer_size(handle) / sizeof(uint32_t);
       got_ms = frames * 1000u / 48000u;
       /* Never under the asked-for latency, and never wildly over.
-       * The floor is five periods, and buffer_size counts the
-       * period the device holds on top of it. */
+       * The floor is six periods, the window in flight among them. */
       CHECK(got_ms + 1 >= ms[i] || frames <= FLOOR_FRAMES,
             "buffer_size came in under the latency asked for");
       CHECK(frames <= (size_t)ms[i] * 48u + FLOOR_FRAMES,
@@ -121,17 +126,17 @@ static int check_latency(const audio_driver_t *d, const char *name)
  * at this size is a quarter of every period.
  *
  * Some starvation here is geometry rather than a defect, so the bound
- * is set against it. A delivery needs RING_FREE >= its own size, so at
- * a 2560-frame floor a 1600-frame delivery waits until held <= 959;
- * draining a period at a time from the previous refill, the values the
- * writer is released at cycle 448, 512, ... 896, and the first of those
- * eight is below a period. One refill in eight therefore has to let the
- * ring dip under a period before it can be refilled at all - 24 of 600
- * periods, which is the 4% the floor was chosen against and is exact
- * rather than noisy. The bound is twice that, which still sits well
- * under the 14% a four-period floor gives and the quarter a reserving
- * worker gives. A six-period floor would not dip at all (the released
- * values start at 960); that is a latency decision, not this lane's. */
+ * is set against it. A delivery needs RING_FREE >= its own size, and
+ * held counts the window in flight, so at a 3072-frame floor a
+ * 1600-frame delivery waits until held <= 1471, that is until the
+ * ring has under 960 frames ahead of the one playing; draining a
+ * period at a time from the previous refill, the values the writer is
+ * released at cycle 448, 512, ... 896, and the first of those eight is
+ * below a period. One refill in eight therefore has to let the ring
+ * dip under a period before it can be refilled at all - 24 of 600
+ * periods, 4%, exact rather than noisy. The bound is twice that, which
+ * still sits well under the 14% a five-period floor gives here and
+ * the quarter a reserving worker gives. */
 static int check_starvation(const audio_driver_t *d, const char *name,
       unsigned deliver, unsigned hz)
 {

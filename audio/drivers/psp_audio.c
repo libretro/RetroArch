@@ -73,20 +73,15 @@ typedef struct psp_audio
 
 /* The ring is what the latency setting asks for, so it is a whole
  * number of periods rather than a power of two and the wrap is a
- * compare. Five periods is the floor, which is the default latency
- * setting: the ring has to hold a delivery beside the period the
- * worker is playing, and a delivery is a video frame of audio - 1600
- * frames for 30 Hz content at 48 kHz. Four starves 14% of periods on
- * that content through the threaded pipeline and 93% inline, five
- * 0.3% and 4%. Anything at or above the default is unaffected. */
-#define AUDIO_RING_MIN  (AUDIO_OUT_COUNT * 5u)
+ * compare. The window the device is playing stays inside the ring
+ * as held until the output call after it returns (see the worker),
+ * so the writer's room is the ring less that window less one frame.
+ * Six periods is the floor: five of room, which holds a delivery of
+ * a video frame of audio - 1600 frames for 30 Hz content at 48 kHz -
+ * beside the window in flight without dipping under a period each
+ * refill. Anything at or above the default is unaffected. */
+#define AUDIO_RING_MIN  (AUDIO_OUT_COUNT * 6u)
 #define AUDIO_RING_MAX  (AUDIO_OUT_COUNT * 64u)
-
-/* The period the output call holds while the device plays it. It is
- * buffering the driver controls, so buffer_size() counts it with the
- * ring, and the silence the worker hands over sits one period past
- * the ring's end. */
-#define AUDIO_DEVICE_FRAMES  AUDIO_OUT_COUNT
 
 /* Frames held, and frames the writer may still place - one short of
  * the ring, so a full ring and an empty one do not both read as
@@ -105,14 +100,13 @@ typedef struct psp_audio
 #define PSP_AUDIO_RATE_FALLBACK 48000
 
 /* The ring the latency setting asks for: that many milliseconds at
- * the rate the device opened at, less the period the device holds,
- * in whole periods so no window the worker hands over crosses the
- * ring's end. */
+ * the rate the device opened at, in whole periods so no window the
+ * worker hands over crosses the ring's end. The window the device is
+ * playing is inside it, so this is the whole of the driver's
+ * buffering and what buffer_size() reports. */
 static unsigned psp_ring_frames(unsigned rate, unsigned latency)
 {
    unsigned frames = rate * latency / 1000u;
-   frames = (frames > AUDIO_DEVICE_FRAMES)
-      ? frames - AUDIO_DEVICE_FRAMES : 0u;
    frames = ((frames + AUDIO_OUT_COUNT - 1u) / AUDIO_OUT_COUNT)
       * AUDIO_OUT_COUNT;
    if (frames < AUDIO_RING_MIN)
@@ -141,42 +135,51 @@ static int psp_configure_audio(unsigned rate, unsigned *new_rate)
 static void psp_audio_mainloop(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
+   /* The worker's own cursor: the next window to hand over. The
+    * published read_pos runs one window behind it while a ring
+    * window is in flight. The output call returns once the window
+    * handed to the previous call has been output, and with this
+    * call's window queued and still to be read by the hardware -
+    * the SDKs document passing NULL as the way to wait for that
+    * last window - so the window a call hands over is the device's
+    * until the call after it returns, and is released there. */
+   uint16_t play_pos = (uint16_t)
+         retro_atomic_load_relaxed_int(&psp->read_pos);
 
    while (retro_atomic_load_acquire_int(&psp->running))
    {
       bool cond           = false;
-      uint16_t read_pos   = (uint16_t)
-            retro_atomic_load_relaxed_int(&psp->read_pos);
-      uint16_t read_pos_2 = read_pos;
+      uint16_t next_pos   = play_pos;
       uint16_t write_pos  = (uint16_t)
             retro_atomic_load_acquire_int(&psp->write_pos);
 
       /* A period in hand is a period to play. Holding one back
        * as a reserve only hands the device silence while the
        * ring has audio in it. */
-      cond                = RING_HELD(write_pos, read_pos, psp->ring)
+      cond                = RING_HELD(write_pos, play_pos, psp->ring)
             < AUDIO_OUT_COUNT;
 
       if (!cond)
       {
-         read_pos      += AUDIO_OUT_COUNT;
-         if (read_pos  >= psp->ring)
-            read_pos    = 0;
+         next_pos      += AUDIO_OUT_COUNT;
+         if (next_pos  >= psp->ring)
+            next_pos    = 0;
       }
       else
          retro_atomic_fetch_add_size(&psp->underruns, 1);
 
       sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX,
             psp->buffer_u32
-            + (cond ? psp->ring : read_pos_2));
+            + (cond ? psp->ring : play_pos));
 
       retro_atomic_fetch_add_size(&psp->consumed, AUDIO_OUT_COUNT);
 
-      /* Release only now: the call returns once the device has
-       * taken the window, so the period is the writer's from
-       * here and not before. */
-      if (!cond)
-         retro_atomic_store_release_int(&psp->read_pos, read_pos);
+      /* The previous call's window has been output; this call's is
+       * the one in flight, so everything before play_pos is the
+       * writer's. When this call handed over silence, play_pos is
+       * where read_pos already stands. */
+      retro_atomic_store_release_int(&psp->read_pos, play_pos);
+      play_pos = next_pos;
 
       retro_eventcount_notify(&psp->park);
    }
@@ -204,7 +207,8 @@ static void *psp_audio_init(const char *device,
    psp->ring          = psp_ring_frames(psp->rate, latency);
 
    /* Cache aligned, not necessary but helpful. */
-   psp->buffer_u32    = (uint32_t*)calloc(psp->ring + AUDIO_DEVICE_FRAMES,
+   /* The ring, and one period of silence past its end. */
+   psp->buffer_u32    = (uint32_t*)calloc(psp->ring + AUDIO_OUT_COUNT,
          sizeof(uint32_t));
 
    retro_atomic_size_init(&psp->consumed, 0);
@@ -477,9 +481,9 @@ static size_t psp_buffer_size(void *data)
    psp_audio_t* psp = (psp_audio_t*)data;
    if (!psp)
       return 0;
-   /* In bytes: the ring plus the period the device holds, in
-    * uint32_t frames of int16 stereo. */
-   return (psp->ring + AUDIO_DEVICE_FRAMES) * sizeof(uint32_t);
+   /* In bytes: the ring, in uint32_t frames of int16 stereo. The
+    * window the device is playing is held inside it. */
+   return psp->ring * sizeof(uint32_t);
 }
 
 /* Frames the device has taken since init: the output call returns
