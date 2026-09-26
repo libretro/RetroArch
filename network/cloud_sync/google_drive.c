@@ -1168,6 +1168,11 @@ static void gdrive_begin_with_token(cloud_sync_complete_handler_t cb,
 {
    gdrive_begin_ctx_t *ctx =
       (gdrive_begin_ctx_t *)calloc(1, sizeof(*ctx));
+   if (!ctx)
+   {
+      cb(user_data, NULL, false, NULL);
+      return;
+   }
    ctx->cb        = cb;
    ctx->user_data = user_data;
    gdrive_find_folder(ctx);
@@ -1295,6 +1300,15 @@ static void gdrive_read_download_cb(retro_task_t *task, void *task_data,
 
    if (!success && data)
       gdrive_log_http_failure(cb_st->path, data);
+
+   /* A body delimited only by the connection closing may have been
+    * cut off; do not let it replace the local file. */
+   if (success && !cloud_sync_http_body_is_framed(data->headers))
+   {
+      RARCH_WARN(GDPFX "%s: response body has no Content-Length or "
+            "chunked framing; treating as failure.\n", cb_st->path);
+      success = false;
+   }
 
    /* As in webdav.c: a downloaded file, even an empty one, is always
     * handed back open, and one that cannot be written locally is a

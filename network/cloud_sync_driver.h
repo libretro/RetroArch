@@ -53,6 +53,14 @@ typedef struct
 
 cloud_sync_driver_state_t *cloud_sync_state_get_ptr(void);
 
+struct string_list;
+
+/* True when a response's headers frame its body with Content-Length or
+ * chunked encoding. net_http fails a transfer that ends short of either,
+ * but a body delimited only by the connection closing cannot be told
+ * apart from one cut off mid-transfer. */
+bool cloud_sync_http_body_is_framed(const struct string_list *headers);
+
 extern cloud_sync_driver_t cloud_sync_webdav;
 #ifdef HAVE_SSL
 extern cloud_sync_driver_t cloud_sync_google_drive;
