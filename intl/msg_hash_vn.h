@@ -2342,6 +2342,7 @@ static const struct
    char s_3ddc67cc[16];
    char s_bb929824[31];
    char s_f5df885e[38];
+   char s_fe2ec9bd[54];
    char s_5741c1d0[17];
    char s_a1a7717d[28];
    char s_e6ca3876[31];
@@ -3731,6 +3732,7 @@ static const struct
    char s_456fcbc9[357];
    char s_82fab47a[41];
    char s_72e21512[241];
+   char s_9f6de46b[362];
    char s_66f2b57e[54];
    char s_a776daeb[71];
    char s_88095324[71];
@@ -7733,6 +7735,8 @@ static const struct
    "Ch\341\272\277 \304\221\341\273\231 HDR",
    "B\341\273\221 c\341\273\245c \304\221i\341\273\203m \341\272\243nh ph\341\273\245",
    "T\303\255n hi\341\273\207u RGB (\304\221\341\273\217\342\200\223l\341\273\245c\342\200\223lam)",
+   "S\341\273\255 d\341\273\245ng \304\221\341\273\231 s\303\241ng c\341\273\261c \304\221\341\272"
+   "\241i c\341\273\247a m\303\240n h\303\254nh",
    "B\341\273\221 c\341\273\245c Video",
    "\304\220\341\273\231 tr\341\273\205 khung t\341\273\221i \304\221a",
    "S\341\273\221 \341\272\243nh Swapchain t\341\273\221i \304\221a",
@@ -11622,6 +11626,15 @@ static const struct
    "\341\273\221 c\341\273\245c subpixel c\341\273\247a m\303\240n h\303\254nh, h\303\243y xem tr"
    "\303\252n Rtings.com m\341\273\245c \342\200\234subpixel layout\342\200\235 c\341\273\247a m\341"
    "\272\253u m\303\240n h\303\254nh \304\221\303\263",
+   "S\341\273\255 d\341\273\245ng \304\221\341\273\231 s\303\241ng c\341\273\261c \304\221\341\272"
+   "\241i do m\303\240n h\303\254nh cung c\341\272\245p thay cho \304\221\341\273\231 s\303\241ng c"
+   "\341\273\261c \304\221\341\272\241i, n\341\272\277u m\303\240n h\303\254nh c\303\263 cung c\341"
+   "\272\245p th\303\264ng tin n\303\240y: \304\220\303\242y l\303\240 gi\303\241 tr\341\273\213 "
+   "\304\221\306\260\341\273\243c cung c\341\272\245p cho l\303\265i gi\341\272\243 l\341\272\255p v"
+   "\303\240 \304\221\306\260\341\273\243c ghi trong si\303\252u d\341\273\257 li\341\273\207u hdr g"
+   "\341\273\255i \304\221\341\272\277n m\303\240n h\303\254nh. Khi t\341\272\257t, s\341\273\255 d"
+   "\341\273\245ng \304\221\341\273\231 s\303\241ng c\341\273\261c \304\221\341\272\241i theo gi\303"
+   "\241 tr\341\273\213 \304\221\303\243 thi\341\272\277t l\341\272\255p.",
    "B\341\273\221 c\341\273\245c Video \304\221\306\260\341\273\243c l\306\260u trong th\306\260 m"
    "\341\273\245c n\303\240y.",
    "B\303\241o cho driver video s\341\273\255 d\341\273\245ng m\341\273\231t ch\341\272\277 \304\221"
@@ -12967,7 +12980,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (252102u
+      (sizeof(msg_hash_vn_blob) == (252518u
 #ifdef ANDROID
        + 373u
 #endif
@@ -15711,6 +15724,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RGB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_USE_DISPLAY_PEAK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -17080,6 +17094,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_USE_DISPLAY_PEAK,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,

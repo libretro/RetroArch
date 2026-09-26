@@ -3056,6 +3056,7 @@ static const struct
    char s_6895dfd6[58];
    char s_788364f5[65];
    char s_dd9ff22a[75];
+   char s_ff7d19fe[168];
    char s_db495a9d[50];
    char s_ddc672a7[39];
    char s_ccea261d[168];
@@ -3125,6 +3126,7 @@ static const struct
    char s_5aa622cc[217];
    char s_2b908073[217];
    char s_64bea160[173];
+   char s_2826de99[324];
    char s_97c62766[170];
    char s_6f458a85[125];
    char s_41702fdc[61];
@@ -3685,6 +3687,7 @@ static const struct
    char s_eec252b5[106];
    char s_f4e4e921[176];
    char s_7968f59d[44];
+   char s_8cee3615[249];
    char s_58c80718[313];
    char s_894ecb9a[416];
    char s_67d549fd[41];
@@ -7964,6 +7967,8 @@ static const struct
    "Controlador de men\303\272 que es far\303\240 servir (cal reiniciar).",
    "Protegeix la configuraci\303\263 amagant la configuraci\303\263 relacionada.",
    "S\342\200\231assegura que la velocitat de fotogrames dins del men\303\272 est\303\240 limitada.",
+   "Especifica si es mostren les extensions de fitxer quan es mostra el contingut. Les extensions de"
+   " fitxer per shaders, superposicions i configuraci\303\263, sempre es mostren.",
    "Canvia la configuraci\303\263 del navegador de fitxers.",
    "Modifica l'opacitat de fons del men\303\272.",
    "Brillantor del men\303\272 en cd/m2 (nits) quan es fa servir una pantalla HDR. Nom\303\251s est"
@@ -8089,6 +8094,10 @@ static const struct
    "res de continguts i mides diferents.",
    "Reprodueix un so de les miniatures animades WebM quan es mostrin. Els formats Vorbis i Opus func"
    "ionen correctament. El so i l'animaci\303\263 s'aturen quan es tanca la miniatura.",
+   "Quants fils pot descodificar una miniatura animada. Un mant\303\251 tota la descodificaci\303"
+   "\263 al seu propi fil. M\303\251s la reparteixen entre nuclis, cosa que permet que una vista pr"
+   "\303\250via gran es reprodueixi a gran velocitat. Mentre un nucli s'executa, la vista pr\303\250"
+   "via es mant\303\251 en un fil, de manera que el joc mant\303\251 els seus nuclis.",
    "Escala autom\303\240ticament les imatges amb una amplada/al\303\247ada m\303\251s petita que el "
    "valor especificat. Millora la qualitat de la imatge. T\303\251 un efecte moderat en el rendiment"
    ".",
@@ -9002,6 +9011,10 @@ static const struct
    "Arrodoneix al seg\303\274ent nombre enter. 'Smart' redeueix l'escala quan la imatge est\303\240 "
    "massa retallada, i acaba en un escalat no enter si els marges de reescalat son massa grans.",
    "Canvia les opcions de l'escalat del v\303\255deo.",
+   "Sincronitza la presentaci\303\263 de v\303\255deo amb la predicci\303\263 de posici\303\263 de l"
+   "a l\303\255nia d'escaneig basada en el temps del nucli. Requisits: VSync desactivat, Frame Delay"
+   " desactivat, Hz de visualitzaci\303\263 propers a 1x FPS del nucli i GPU al rellotge m\303\240xi"
+   "m.",
    "AV\303\215S: El parpelleig r\303\240pid pot causar errors gr\303\240fics en algunes pantalles. F"
    "es servir aquesta opci\303\263 sota la teva responsabilitat // Simula una l\303\255nia d'escanei"
    "g en moviment b\303\240sica sobre m\303\272ltiples subfotogrames dividint la pantalla en vertica"
@@ -9775,7 +9788,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (217797u
+      (sizeof(msg_hash_ca_blob) == (218538u
 #ifdef ANDROID
        + 281u
 #endif
@@ -13231,6 +13244,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
@@ -13300,6 +13314,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -13859,6 +13874,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,

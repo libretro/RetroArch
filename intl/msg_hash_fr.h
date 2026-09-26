@@ -2310,6 +2310,7 @@ static const struct
    char s_f5df445e[4];
    char s_f5df87be[4];
    char s_f5df885e[4];
+   char s_fe2ec9bd[45];
    char s_5741c1d0[26];
    char s_a1a7717d[28];
    char s_e6ca3876[40];
@@ -3684,6 +3685,7 @@ static const struct
    char s_456fcbc9[401];
    char s_82fab47a[45];
    char s_72e21512[248];
+   char s_9f6de46b[377];
    char s_66f2b57e[63];
    char s_a776daeb[97];
    char s_88095324[97];
@@ -6945,6 +6947,7 @@ static const struct
    "BVR",
    "RBV",
    "RVB",
+   "Utiliser la luminosit\303\251 maximale de l'\303\251cran",
    "Dispositions d'affichage ",
    "Latence maximale des images",
    "Nombre d'images max en m\303\251moire tampon ",
@@ -9209,6 +9212,12 @@ static const struct
    "S\303\251lectionner les dispositions sous-pixel de vos affichages, cela n'affecte que les lignes"
    " de balayage. Si vous n'avez aucune id\303\251e de votre disposition sous-pixel, elle est affich"
    "\303\251e sur Rtings.com pour la 'Disposition sous-pixel' de votre \303\251cran",
+   "Utiliser la luminosit\303\251 maximale signal\303\251e par l'\303\251cran plut\303\264t que le r"
+   "\303\251glage 'Luminosit\303\251 maximale', lorsque l'\303\251cran fournit cette information : c"
+   "'est la valeur transmise au syst\303\250me et celle contenue dans les m\303\251tadonn\303\251es "
+   "HDR envoy\303\251es \303\240 l'\303\251cran. Si cette option est d\303\251sactiv\303\251e, c'est"
+   " la valeur de 'Luminosit\303\251 maximale' d\303\251finie par l'utilisateur qui est utilis\303"
+   "\251e.",
    "Les dispositions d'affichage sont conserv\303\251es dans ce dossier.",
    "Indique au pilote vid\303\251o d'utiliser explicitement le mode de mise en m\303\251moire tampon"
    " sp\303\251cifi\303\251.",
@@ -10073,7 +10082,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (236643u
+      (sizeof(msg_hash_fr_blob) == (237065u
 #ifdef ANDROID
        + 373u
 #endif
@@ -12782,6 +12791,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_BGR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RBG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_RGB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_USE_DISPLAY_PEAK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -14140,6 +14150,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_USE_DISPLAY_PEAK,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,

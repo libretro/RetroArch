@@ -3734,6 +3734,7 @@ static const struct
    char s_eec252b5[125];
    char s_f4e4e921[257];
    char s_7968f59d[40];
+   char s_8cee3615[285];
    char s_58c80718[334];
    char s_894ecb9a[411];
    char s_67d549fd[34];
@@ -9611,6 +9612,11 @@ static const struct
    "\303\241nuimhreach m\303\241 t\303\241 na corrlaigh \303\255seal-sc\303\241la r\303\263-mh\303"
    "\263r.",
    "Athraigh socruithe sc\303\241l\303\272ch\303\241in f\303\255se.",
+   "D\303\251an an cur i l\303\241thair f\303\255se a shioncron\303\272 le tuar su\303\255mh na l"
+   "\303\255ne scanaithe bunaithe ar am an chro\303\255leac\303\241in. Riachtanais: VSync m\303\272c"
+   "hta, moill fr\303\241ma m\303\272chta, r\303\241ta athnuachana an sc\303\241ile\303\241in Hz gar"
+   " do 1x r\303\241ta fr\303\241ma\303\255 FPS an chro\303\255leac\303\241in, agus luas clog an GPU"
+   " ag an uasmh\303\251id.",
    "RABHADH: D\342\200\231fh\303\251adfadh caochadh tapa a bheith ina ch\303\272is le buanseasmhacht"
    " \303\255omh\303\241 ar roinnt taispe\303\241ntais. \303\232s\303\241id ar do phriacal f\303\251"
    "in // Insamhladh l\303\255ne scanadh rollta bhun\303\272sach thar ilfho-fhr\303\241ma\303\255 tr"
@@ -10446,7 +10452,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (222435u
+      (sizeof(msg_hash_ga_blob) == (222720u
 #ifdef ANDROID
        + 390u
 #endif
@@ -14576,6 +14582,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
