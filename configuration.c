@@ -19,6 +19,13 @@
 
 #include <ctype.h>
 
+#if !defined(_WIN32) && !defined(_XBOX) && !defined(_3DS) && !defined(GEKKO) \
+   && !defined(VITA) && !defined(PS2) && !defined(PSP) \
+   && !defined(__SWITCH__) && !defined(__PS3__) && !defined(WIIU)
+#include <sys/stat.h>
+#define CONFIG_HAVE_POSIX_MODES 1
+#endif
+
 #include <libretro.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
@@ -8785,6 +8792,7 @@ bool config_save_file(const char *path)
    struct config_path_setting     *path_defaults     = NULL;
    uint32_t flags                                    = runloop_get_flags();
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
+   bool existed                                      = conf != NULL;
    settings_t                              *settings = config_st;
    global_t *global                                  = global_get_ptr();
    int bool_settings_size                            = SETTINGS_BOOL_COUNT_MAX;
@@ -9410,6 +9418,16 @@ bool config_save_file(const char *path)
 
    ret = config_file_write(conf, path, true);
    config_file_free(conf);
+
+#ifdef CONFIG_HAVE_POSIX_MODES
+   /* The config holds plaintext passwords and account tokens (cloud
+    * sync, streaming, netplay), and the usual umask leaves a new file
+    * world-readable. Restrict a config we are creating to its owner.
+    * A config that already exists keeps whatever mode the user gave it:
+    * people share these across users and read them from scripts. */
+   if (ret && !existed)
+      chmod(path, S_IRUSR | S_IWUSR);
+#endif
 
 #if TARGET_OS_TV
    if (ret && string_is_equal(path, path_get(RARCH_PATH_CONFIG)))
