@@ -671,8 +671,8 @@ static bool content_save_ram_file(unsigned slot, bool compress)
    if (compress)
    {
       char tmp_path[PATH_MAX_LENGTH];
-      size_t _len = strlcpy(tmp_path, ram.path, sizeof(tmp_path));
-      strlcpy(tmp_path + _len, ".tmp", sizeof(tmp_path) - _len);
+      if (!content_tmp_path(tmp_path, sizeof(tmp_path), ram.path))
+         goto fail;
       if (!rzipstream_write_file(
             tmp_path, mem_info.data, mem_info.size))
       {

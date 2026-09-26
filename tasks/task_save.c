@@ -407,16 +407,30 @@ static void undo_save_state_cb(retro_task_t *task,
    free(state);
 }
 
+bool content_tmp_path(char *s, size_t len, const char *path)
+{
+   size_t _len = strlcpy(s, path, len);
+   if (_len + sizeof(".tmp") > len)
+      return false;
+   strlcpy(s + _len, ".tmp", len - _len);
+   return true;
+}
+
 bool content_replace_file(const char *tmp_path, const char *path)
 {
    if (filestream_rename(tmp_path, path) == 0)
       return true;
 
    /* POSIX rename replaces the destination; the Win32 one refuses an
-    * existing destination, so it needs the target gone first. */
-   filestream_delete(path);
-   if (filestream_rename(tmp_path, path) == 0)
-      return true;
+    * existing destination, so it needs the target gone first. Only
+    * when the temporary file is really there: a rename that failed
+    * because the source is missing must not cost the destination. */
+   if (path_is_valid(tmp_path))
+   {
+      filestream_delete(path);
+      if (filestream_rename(tmp_path, path) == 0)
+         return true;
+   }
 
    /* Keep the only complete copy if the destination is already gone. */
    if (path_is_valid(path))
@@ -443,7 +457,13 @@ static void task_save_handler_finished(retro_task_t *task,
     * (serialize failure, or the open itself). */
    if (state->file)
    {
-      intfstream_close(state->file);
+      /* rzip writes its last chunk at close, and a buffered write
+       * reports a full disk there, so a failed close is a failed save
+       * and the temporary file must not replace the old state. */
+      if (     intfstream_close(state->file) != 0
+            && !task_get_error(task))
+         task_set_error(task, strdup(
+               msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO)));
       free(state->file);
    }
 
@@ -457,10 +477,15 @@ static void task_save_handler_finished(retro_task_t *task,
     * on success, discard it otherwise. */
    {
       char tmp_path[PATH_MAX_LENGTH];
-      size_t _len = strlcpy(tmp_path, state->path, sizeof(tmp_path));
-      strlcpy(tmp_path + _len, ".tmp", sizeof(tmp_path) - _len);
 
-      if (task_get_error(task))
+      if (!content_tmp_path(tmp_path, sizeof(tmp_path), state->path))
+      {
+         /* Nothing was written: the open refused the same path. */
+         if (!task_get_error(task))
+            task_set_error(task, strdup(
+                  msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO)));
+      }
+      else if (task_get_error(task))
          filestream_delete(tmp_path);
       else if (!content_replace_file(tmp_path, state->path))
          task_set_error(task, strdup(
@@ -875,12 +900,14 @@ static void task_save_handler(retro_task_t *task)
    if (!state->file)
    {
       char tmp_path[PATH_MAX_LENGTH];
-      size_t _tmp_len = strlcpy(tmp_path, state->path, sizeof(tmp_path));
-      strlcpy(tmp_path + _tmp_len, ".tmp", sizeof(tmp_path) - _tmp_len);
 
       /* Write to "<path>.tmp"; task_save_handler_finished moves it
-       * into place on success or deletes it on failure or cancel. */
-      if (state->flags & SAVE_TASK_FLAG_COMPRESS_FILES)
+       * into place on success or deletes it on failure or cancel.
+       * A path too long to take the suffix is refused rather than
+       * written in place. */
+      if (!content_tmp_path(tmp_path, sizeof(tmp_path), state->path))
+         state->file   = NULL;
+      else if (state->flags & SAVE_TASK_FLAG_COMPRESS_FILES)
          state->file   = intfstream_open_rzip_file(
                tmp_path, RETRO_VFS_FILE_ACCESS_WRITE);
       else
@@ -1931,7 +1958,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
 bool content_auto_save_state(const char *path)
 {
    size_t _len;
-   size_t _path_len;
+   int _close_ret;
    settings_t *settings = config_get_ptr();
    void *serial_data    = NULL;
    intfstream_t *file   = NULL;
@@ -1954,8 +1981,11 @@ bool content_auto_save_state(const char *path)
 
    /* Write to "<path>.tmp" and move it into place, so a crash or power
     * loss mid-save leaves the previous state intact. */
-   _path_len = strlcpy(tmp_path, path, sizeof(tmp_path));
-   strlcpy(tmp_path + _path_len, ".tmp", sizeof(tmp_path) - _path_len);
+   if (!content_tmp_path(tmp_path, sizeof(tmp_path), path))
+   {
+      free(serial_data);
+      return false;
+   }
 
 #if defined(HAVE_COMPRESSION)
    if (settings->bools.savestate_file_compression)
@@ -1980,9 +2010,16 @@ bool content_auto_save_state(const char *path)
       return false;
    }
 
-   intfstream_close(file);
+   /* A failed close (rzip's last chunk, a full disk) is a failed save. */
+   _close_ret = intfstream_close(file);
    free(serial_data);
    free(file);
+
+   if (_close_ret != 0)
+   {
+      filestream_delete(tmp_path);
+      return false;
+   }
 
    if (!content_replace_file(tmp_path, path))
       return false;
@@ -2455,9 +2492,9 @@ bool content_ram_state_to_file(const char *path)
       if (settings->bools.save_file_compression)
       {
          char tmp_path[PATH_MAX_LENGTH];
-         size_t _len = strlcpy(tmp_path, path, sizeof(tmp_path));
-         strlcpy(tmp_path + _len, ".tmp", sizeof(tmp_path) - _len);
-         if (rzipstream_write_file(tmp_path,
+         if (!content_tmp_path(tmp_path, sizeof(tmp_path), path))
+            written = false;
+         else if (rzipstream_write_file(tmp_path,
                   ram_buf.state_buf.data, ram_buf.state_buf.size))
             written = content_replace_file(tmp_path, path);
          else
