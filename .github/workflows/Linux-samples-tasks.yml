@@ -117,6 +117,38 @@ jobs:
           timeout 60 ./archive_name_safety_test
           echo "[pass] archive_name_safety_test"
 
+      - name: Build and run cloudsync_path_safety_test
+        shell: bash
+        working-directory: samples/tasks/cloudsync
+        run: |
+          set -eu
+          # Regression test for the manifest-key check in
+          # tasks/task_cloudsync.c::task_cloud_sync_fetch_server_file.
+          # A hostile sync server's manifest key could escape the
+          # cloud-sync directory via ".." or an absolute component, or
+          # crash the fetch with a key that has no '/'.  The test
+          # #includes the real predicate (tasks/task_cloudsync_path.c).
+          make clean all
+          test -x cloudsync_path_safety_test
+          timeout 60 ./cloudsync_path_safety_test
+          echo "[pass] cloudsync_path_safety_test"
+
+      - name: Build and run natt_desc_parse_test
+        shell: bash
+        working-directory: samples/tasks/natt_desc
+        run: |
+          set -eu
+          # Regression test for the UPnP IGD description parser
+          # (network/natt_desc.c::natt_parse_desc_node).  A router's
+          # description XML is untrusted; the old parser crashed on a
+          # leaf or empty root node and never reached a nested
+          # <service>.  The test #includes the real parser and feeds it
+          # hand-built hostile trees.
+          make clean all
+          test -x natt_desc_parse_test
+          timeout 60 ./natt_desc_parse_test
+          echo "[pass] natt_desc_parse_test"
+
       - name: Build and run http_method_match_test (ASan)
         shell: bash
         working-directory: samples/tasks/http

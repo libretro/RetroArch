@@ -36,6 +36,8 @@
 #include "../verbosity.h"
 #include <compat/strl.h>
 
+#include "task_cloudsync_path.h"
+
 #define CSPFX "[CloudSync] "
 
 #define MANIFEST_FILENAME_LOCAL  "manifest.local"
@@ -986,9 +988,24 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    struct string_list            *dirlist     = sync_state->dirlist;
    struct item_file              *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
    const char                    *key         = CS_FILE_KEY(server_file);
-   /* the key from the server file is in "portable" format, use '/' */
-   const char                    *path        = strchr(key, '/') + 1;
+   /* The key from the server file is in "portable" format, use '/'.
+    * Server-supplied; treat as untrusted. cloud_sync_manifest_key_path()
+    * returns the relative path portion, or NULL for a malformed/traversal
+    * key (NULL, no '/', empty, absolute, or containing "..") that would
+    * otherwise let a hostile manifest write outside the cloud-sync base
+    * directory via fill_pathname_join_special. Regression coverage:
+    * samples/tasks/cloudsync/cloudsync_path_safety_test.c. */
+   const char                    *path        = cloud_sync_manifest_key_path(key);
    task_cloud_sync_fetch_state_t *fetch_state;
+
+   if (!path)
+   {
+      RARCH_WARN(CSPFX "Refusing malformed/traversal key from server: %s\n",
+            key ? key : "(null)");
+      task_cloud_sync_add_to_updated_manifest(sync_state, key, CS_FILE_HASH(server_file), true);
+      sync_state->failures = true;
+      return;
+   }
 
    /* there is a weird thing that can happen, where the server file changes but
     * the manifest does not have the updated hash. in that case when the file is
