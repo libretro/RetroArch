@@ -16,7 +16,10 @@
  * The test drives the real task end to end against a loopback server
  * serving an .index-extended body and asserts, for both values of
  * refresh_menu, that the corresponding flag is cleared once the task
- * has retired and that the fetched list parsed. */
+ * has retired and that the fetched list parsed.
+ *
+ * The unthreaded lanes also pin when the updater may read its HTTP
+ * task against the queue freeing that task; see run_lane. */
 
 #include <stdio.h>
 #include <string.h>
@@ -65,6 +68,10 @@ static retro_atomic_int_t srv_fd;
 static sthread_t *srv_thread  = NULL;
 static volatile int srv_port  = 0;
 
+/* An armed gate holds the next response until run_lane releases it. */
+enum { GATE_OFF = 0, GATE_ARMED, GATE_HELD, GATE_RELEASED, GATE_SENT };
+static retro_atomic_int_t srv_gate;
+
 static void server_thread(void *unused)
 {
    static const char body[] =
@@ -81,6 +88,7 @@ static void server_thread(void *unused)
       int cfd        = fd >= 0
             ? accept(fd, (struct sockaddr*)&cli, &clen) : -1;
       size_t have    = 0;
+      bool held      = false;
       if (cfd < 0)
          return;
       /* Read the whole request head before answering; answering
@@ -96,6 +104,14 @@ static void server_thread(void *unused)
          if (strstr(rbuf, "\r\n\r\n"))
             break;
       }
+      if (retro_atomic_load_acquire_int(&srv_gate) == GATE_ARMED)
+      {
+         held = true;
+         retro_atomic_store_release_int(&srv_gate, GATE_HELD);
+         while (   retro_atomic_load_acquire_int(&srv_gate) == GATE_HELD
+                && retro_atomic_load_acquire_int(&srv_fd) >= 0)
+            retro_sleep(1);
+      }
       snprintf(head, sizeof(head),
             "HTTP/1.1 200 OK\r\nContent-Length: %u\r\n"
             "Connection: close\r\n\r\n",
@@ -103,6 +119,8 @@ static void server_thread(void *unused)
       send(cfd, head, strlen(head), 0);
       send(cfd, body, sizeof(body) - 1, 0);
       socket_close(cfd);
+      if (held)
+         retro_atomic_store_release_int(&srv_gate, GATE_SENT);
    }
 }
 
@@ -150,7 +168,14 @@ static void server_stop(void)
 
 /* ---------------- one lane: push, retire, inspect flags ---------- */
 
-static void run_lane(bool refresh_menu)
+/* parity < 0 serves at once.  Otherwise (unthreaded queue) the
+ * response is held until just before a gather pass of that parity.
+ * Each unthreaded gather reverses the running list, so the updater
+ * and its HTTP task swap order every pass, and one of the two
+ * parities frees the HTTP task before an updater tick that has not
+ * seen its callback yet.  An updater that touches the task there
+ * reads freed memory, which the ASan build reports. */
+static void run_lane(bool refresh_menu, int parity)
 {
    char url[128];
    core_updater_list_t *list  = core_updater_list_init();
@@ -158,12 +183,15 @@ static void run_lane(bool refresh_menu)
    void *task;
    int i;
 
-   printf("[lane refresh_menu=%d]\n", (int)refresh_menu);
+   printf("[lane refresh_menu=%d parity=%d]\n", (int)refresh_menu, parity);
 
    /* The caller's side of the contract, as in
     * action_ok_core_updater_list. */
    menu_st->flags |= MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH
                    | MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+
+   if (parity >= 0)
+      retro_atomic_store_release_int(&srv_gate, GATE_ARMED);
 
    snprintf(url, sizeof(url), "http://127.0.0.1:%d", srv_port);
    get_list_test_set_buildbot_url(url);
@@ -184,6 +212,16 @@ static void run_lane(bool refresh_menu)
             : MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
       for (i = 0; i < 1000 && (menu_st->flags & flag); i++)
       {
+         if (   (i & 1) == parity
+             && retro_atomic_load_acquire_int(&srv_gate) == GATE_HELD)
+         {
+            retro_atomic_store_release_int(&srv_gate, GATE_RELEASED);
+            while (retro_atomic_load_acquire_int(&srv_gate) != GATE_SENT)
+               retro_sleep(1);
+            /* Let the whole response land, so the HTTP task
+             * finishes on this pass. */
+            retro_sleep(10);
+         }
          task_queue_check();
          retro_sleep(10);
       }
@@ -214,6 +252,7 @@ static void run_lane(bool refresh_menu)
             "refresh gate live again after retire");
    }
 
+   retro_atomic_store_release_int(&srv_gate, GATE_OFF);
    menu_st->flags = 0;
    core_updater_list_free(list);
 }
@@ -234,8 +273,16 @@ int main(void)
 
    task_queue_init(true, NULL); /* threaded, as in the app */
 
-   run_lane(true);
-   run_lane(false);
+   run_lane(true, -1);
+   run_lane(false, -1);
+
+   task_queue_deinit();
+
+   task_queue_unset_threaded();
+   task_queue_init(false, NULL);
+
+   run_lane(true, 0);
+   run_lane(true, 1);
 
    task_queue_deinit();
    server_stop();

@@ -86,7 +86,6 @@ typedef struct core_updater_list_handle
     * worker: a release store after the payload (http_data,
     * http_task_success) and an acquire load before reading it. */
    retro_atomic_int_t http_task_complete;
-   bool http_task_finished;
    bool http_task_success;
    /* Captured on the main thread at push: the handler runs on the
     * threaded task queue's worker and parses the core list against
@@ -131,13 +130,11 @@ typedef struct core_updater_download_handle
    retro_atomic_int_t http_task_complete;
    retro_atomic_int_t decompress_task_complete;
    bool crc_match;
-   bool http_task_finished;
    /* Written by the HTTP callback before it publishes
     * http_task_complete; the worker moves itself to the error state
     * on seeing it, so only the worker ever writes status. */
    bool http_task_error;
    bool auto_backup;
-   bool decompress_task_finished;
    bool backup_enabled;
 } core_updater_download_handle_t;
 
@@ -322,6 +319,50 @@ static bool task_core_updater_crc_step(core_crc_slice_t *slice,
    return false;
 }
 
+struct core_updater_sub_task_probe
+{
+   retro_task_t *target;
+   uint8_t flags;
+   int8_t progress;
+};
+
+static bool core_updater_sub_task_finder(retro_task_t *task, void *user_data)
+{
+   struct core_updater_sub_task_probe *probe =
+         (struct core_updater_sub_task_probe*)user_data;
+
+   if (task != probe->target)
+      return false;
+
+   probe->flags    = task_get_flags(task);
+   probe->progress = task_get_progress(task);
+   return true;
+}
+
+/* The queue frees a sub-task right after its callback, so it is only
+ * read through find(), which holds the queue locks.  Callers check
+ * the callback's complete flag first; a reused address can then cost
+ * one wrong progress value at most. */
+static bool core_updater_sub_task_running(retro_task_t *sub_task,
+      int8_t *progress)
+{
+   task_finder_data_t find_data;
+   struct core_updater_sub_task_probe probe;
+
+   probe.target       = sub_task;
+   probe.flags        = 0;
+   probe.progress     = 0;
+   find_data.func     = core_updater_sub_task_finder;
+   find_data.userdata = &probe;
+
+   if (     !task_queue_find(&find_data)
+         || (probe.flags & RETRO_TASK_FLG_FINISHED))
+      return false;
+
+   *progress = probe.progress;
+   return true;
+}
+
 /*************************/
 /* Get core updater list */
 /*************************/
@@ -447,32 +488,25 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
          break;
       case CORE_UPDATER_LIST_WAIT:
          {
+            int8_t progress;
+
             /* If HTTP task is NULL, then it either finished
              * or an error occurred - in either case,
              * just move on to the next state */
             if (!list_handle->http_task)
                retro_atomic_store_release_int(
                      &list_handle->http_task_complete, 1);
-            /* Otherwise, check if HTTP task is still running */
-            else if (!list_handle->http_task_finished)
-            {
-               uint8_t _flg = task_get_flags(list_handle->http_task);
-
-               list_handle->http_task_finished =
-                  ((_flg & RETRO_TASK_FLG_FINISHED) > 0);
-
-               /* If HTTP task is running, copy current
-                * progress value to *this* task */
-               if (!list_handle->http_task_finished)
-                  task_set_progress(
-                     task, task_get_progress(list_handle->http_task));
-            }
 
             /* Wait for task_push_http_transfer_file()
              * callback to trigger */
             if (retro_atomic_load_acquire_int(
                      &list_handle->http_task_complete))
                list_handle->status = CORE_UPDATER_LIST_END;
+            /* If HTTP task is running, copy current
+             * progress value to *this* task */
+            else if (core_updater_sub_task_running(
+                     list_handle->http_task, &progress))
+               task_set_progress(task, progress);
          }
          break;
       case CORE_UPDATER_LIST_END:
@@ -613,7 +647,6 @@ static void *task_push_get_core_updater_list_captured(
    list_handle->core_list          = core_list;
    list_handle->refresh_menu       = refresh_menu;
    list_handle->http_task          = NULL;
-   list_handle->http_task_finished = false;
    retro_atomic_store_release_int(&list_handle->http_task_complete, 0);
    list_handle->http_task_success  = false;
    list_handle->http_data          = NULL;
@@ -1105,45 +1138,39 @@ static void task_core_updater_download_handler(retro_task_t *task)
          break;
       case CORE_UPDATER_DOWNLOAD_WAIT_TRANSFER:
          {
+            int8_t progress;
+            int complete;
+
             /* If HTTP task is NULL, then it either finished
              * or an error occurred - in either case,
              * just move on to the next state */
             if (!download_handle->http_task)
                retro_atomic_store_release_int(
                      &download_handle->http_task_complete, 1);
-            /* Otherwise, check if HTTP task is still running */
-            else if (!download_handle->http_task_finished)
+
+            complete = retro_atomic_load_acquire_int(
+                  &download_handle->http_task_complete);
+
+            /* If HTTP task is running, copy current
+             * progress value to *this* task */
+            if (!complete && core_updater_sub_task_running(
+                     download_handle->http_task, &progress))
             {
-               uint8_t _flg = task_get_flags(download_handle->http_task);
-
-               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
-                  download_handle->http_task_finished = true;
+               /* > If backups are enabled, download accounts
+                *   for second third of task progress
+                * > Otherwise, download accounts for first half
+                *   of task progress */
+               if (download_handle->backup_enabled)
+                  progress = (int8_t)(((float)progress * (1.0f / 3.0f)) + (100.0f / 3.0f) + 0.5f);
                else
-                  download_handle->http_task_finished = false;
+                  progress = progress >> 1;
 
-               /* If HTTP task is running, copy current
-                * progress value to *this* task */
-               if (!download_handle->http_task_finished)
-               {
-                  /* > If backups are enabled, download accounts
-                   *   for second third of task progress
-                   * > Otherwise, download accounts for first half
-                   *   of task progress */
-                  int8_t progress = task_get_progress(download_handle->http_task);
-
-                  if (download_handle->backup_enabled)
-                     progress = (int8_t)(((float)progress * (1.0f / 3.0f)) + (100.0f / 3.0f) + 0.5f);
-                  else
-                     progress = progress >> 1;
-
-                  task_set_progress(task, progress);
-               }
+               task_set_progress(task, progress);
             }
 
             /* Wait for task_push_http_transfer_file()
              * callback to trigger */
-            if (retro_atomic_load_acquire_int(
-                     &download_handle->http_task_complete))
+            if (complete)
             {
                size_t _len;
                char task_title[128];
@@ -1171,44 +1198,35 @@ static void task_core_updater_download_handler(retro_task_t *task)
          break;
       case CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS:
          {
+            int8_t progress;
+            int complete = retro_atomic_load_acquire_int(
+                  &download_handle->decompress_task_complete);
+
             /* If decompression task is NULL, then it either
              * hasn't been queued by the download task yet,
              * or an error occurred. The latter should set
              * the decompress_task_complete flag and we'll
              * continue to the next state */
-            if (download_handle->decompress_task &&
-               !download_handle->decompress_task_finished)
+            if (    !complete
+                 && download_handle->decompress_task
+                 && core_updater_sub_task_running(
+                     download_handle->decompress_task, &progress))
             {
-               uint8_t _flg = task_get_flags(download_handle->decompress_task);
-
-               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
-                  download_handle->decompress_task_finished = true;
+               /* > If backups are enabled, decompression accounts
+                *   for last third of task progress
+                * > Otherwise, decompression accounts for second
+                *   half of task progress */
+               if (download_handle->backup_enabled)
+                  progress = (int8_t)(((float)progress * (1.0f / 3.0f)) + (200.0f / 3.0f) + 0.5f);
                else
-                  download_handle->decompress_task_finished = false;
+                  progress = 50 + (progress >> 1);
 
-               /* If decompression task is running, copy
-                * current progress value to *this* task */
-               if (!download_handle->decompress_task_finished)
-               {
-                  /* > If backups are enabled, decompression accounts
-                   *   for last third of task progress
-                   * > Otherwise, decompression accounts for second
-                   *   half of task progress */
-                  int8_t progress = task_get_progress(download_handle->decompress_task);
-
-                  if (download_handle->backup_enabled)
-                     progress = (int8_t)(((float)progress * (1.0f / 3.0f)) + (200.0f / 3.0f) + 0.5f);
-                  else
-                     progress = 50 + (progress >> 1);
-
-                  task_set_progress(task, progress);
-               }
+               task_set_progress(task, progress);
             }
 
             /* Wait for task_push_decompress()
              * callback to trigger */
-            if (retro_atomic_load_acquire_int(
-                     &download_handle->decompress_task_complete))
+            if (complete)
                download_handle->status = CORE_UPDATER_DOWNLOAD_END;
          }
          break;
@@ -1376,11 +1394,9 @@ static void *task_push_core_updater_download_internal(
    download_handle->remote_crc               = list_entry->crc;
    download_handle->crc_match                = false;
    download_handle->http_task                = NULL;
-   download_handle->http_task_finished       = false;
    download_handle->http_task_error          = false;
    retro_atomic_store_release_int(&download_handle->http_task_complete, 0);
    download_handle->decompress_task          = NULL;
-   download_handle->decompress_task_finished = false;
    retro_atomic_store_release_int(
          &download_handle->decompress_task_complete, 0);
    download_handle->backup_enabled           = false;
