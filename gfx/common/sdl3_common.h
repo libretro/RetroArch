@@ -42,6 +42,7 @@ typedef struct sdl3_tex
    bool rgb32;
 } sdl3_tex_t;
 
+#ifdef HAVE_OVERLAY
 /* On-screen input overlay entry for SDL3. Texture dimensions are
  * read from the public SDL_Texture w/h fields. */
 struct sdl3_overlay
@@ -54,6 +55,7 @@ struct sdl3_overlay
    float     alpha_mod;
    bool      fullscreen;
 };
+#endif
 
 typedef struct _sdl3_video
 {
@@ -69,9 +71,15 @@ typedef struct _sdl3_video
 
    SDL_Renderer *renderer;
 
+#ifdef HAVE_OVERLAY
    struct sdl3_overlay *overlays;
    unsigned overlays_size;
    bool overlays_enabled;
+   /* True when load() created the textures. load_textures() hands
+    * out video_driver_texture_load()'s, which the frontend owns and
+    * unloads itself. */
+   bool overlays_owned;
+#endif
 
    uint8_t flags;
 } sdl3_video_t;

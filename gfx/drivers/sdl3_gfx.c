@@ -1725,14 +1725,30 @@ static void sdl3_overlay_free(sdl3_video_t *vid)
    unsigned i;
    if (!vid || !vid->overlays)
       return;
-   for (i = 0; i < vid->overlays_size; i++)
+   if (vid->overlays_owned)
    {
-      if (vid->overlays[i].tex)
-         SDL_DestroyTexture(vid->overlays[i].tex);
+      for (i = 0; i < vid->overlays_size; i++)
+      {
+         if (vid->overlays[i].tex)
+            SDL_DestroyTexture(vid->overlays[i].tex);
+      }
    }
    free(vid->overlays);
-   vid->overlays      = NULL;
-   vid->overlays_size = 0;
+   vid->overlays       = NULL;
+   vid->overlays_size  = 0;
+   vid->overlays_owned = false;
+}
+
+/* Whole texture / whole target until tex_geom and vertex_geom
+ * provide the real values (the entry arrives calloc-zeroed). */
+static void sdl3_overlay_defaults(struct sdl3_overlay *o, SDL_Texture *tex)
+{
+   o->tex           = tex;
+   o->alpha_mod     = 1.0f;
+   o->tex_coords.w  = 1.0f;
+   o->tex_coords.h  = 1.0f;
+   o->vert_coords.w = 1.0f;
+   o->vert_coords.h = 1.0f;
 }
 
 static bool sdl3_overlay_load(void *data,
@@ -1756,14 +1772,14 @@ static bool sdl3_overlay_load(void *data,
    if (!(vid->overlays = (struct sdl3_overlay*)calloc(num_images,
          sizeof(*vid->overlays))))
       return false;
-   vid->overlays_size = num_images;
+   vid->overlays_size  = num_images;
+   vid->overlays_owned = true;
 
    for (i = 0; i < num_images; i++)
    {
       SDL_Texture *tex;
-      struct sdl3_overlay *o = &vid->overlays[i];
-      unsigned             w = imgs[i].width;
-      unsigned             h = imgs[i].height;
+      unsigned w = imgs[i].width;
+      unsigned h = imgs[i].height;
 
       if (w == 0 || h == 0 || !imgs[i].pixels)
          continue;
@@ -1784,16 +1800,44 @@ static bool sdl3_overlay_load(void *data,
       SDL_UpdateTexture(tex, NULL, imgs[i].pixels,
             (int)(w * sizeof(uint32_t)));
       SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+      /* Overlay art is scaled to the window; linear, matching what
+       * sdl3_load_texture_internal picks for TEXTURE_FILTER_LINEAR. */
+      SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_LINEAR);
 
-      o->tex            = tex;
-      o->alpha_mod      = 1.0f;
-      /* Whole texture / whole target until tex_geom and vertex_geom
-       * provide the real values (calloc zeroed x/y). */
-      o->tex_coords.w   = 1.0f;
-      o->tex_coords.h   = 1.0f;
-      o->vert_coords.w  = 1.0f;
-      o->vert_coords.h  = 1.0f;
+      sdl3_overlay_defaults(&vid->overlays[i], tex);
    }
+
+   return true;
+}
+
+/* The optional page fast path: the frontend uploaded every unique
+ * image of the pack through video_driver_texture_load() and hands
+ * over the active page's handles - blend mode and scale mode were
+ * set at upload by sdl3_load_texture_internal. Nothing is uploaded
+ * and nothing is owned here, so a page switch costs one pass over
+ * the indices. */
+static bool sdl3_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   unsigned i;
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+
+   if (!vid)
+      return false;
+
+   sdl3_overlay_free(vid);
+
+   if (num_textures == 0 || !textures)
+      return true;
+
+   if (!(vid->overlays = (struct sdl3_overlay*)calloc(num_textures,
+         sizeof(*vid->overlays))))
+      return false;
+   vid->overlays_size = num_textures;
+
+   for (i = 0; i < num_textures; i++)
+      sdl3_overlay_defaults(&vid->overlays[i],
+            (SDL_Texture*)textures[i]);
 
    return true;
 }
@@ -1892,23 +1936,25 @@ static void sdl3_overlays_render(sdl3_video_t *vid)
 
       /* tex_coords sub-rect into the source texture - touch
        * overlays pack many buttons into one atlas and slice it
-       * via tex_geom. A degenerate rect means the whole texture,
-       * which SDL_RenderTexture expresses as a NULL src. */
+       * via tex_geom. load() seeds the whole texture, so a
+       * zero-area slice only means tex_geom asked for nothing. */
       src.x = o->tex_coords.x * (float)o->tex->w;
       src.y = o->tex_coords.y * (float)o->tex->h;
       src.w = o->tex_coords.w * (float)o->tex->w;
       src.h = o->tex_coords.h * (float)o->tex->h;
 
+      if (src.w <= 0.0f || src.h <= 0.0f)
+         continue;
+
       SDL_SetTextureAlphaModFloat(o->tex, o->alpha_mod);
-      SDL_RenderTexture(vid->renderer, o->tex,
-            (src.w > 0.0f && src.h > 0.0f) ? &src : NULL, &dst);
+      SDL_RenderTexture(vid->renderer, o->tex, &src, &dst);
    }
 }
 
 static const video_overlay_interface_t sdl3_overlay_iface = {
    sdl3_overlay_enable,
    sdl3_overlay_load,
-   NULL, /* load_textures */
+   sdl3_overlay_load_textures,
    sdl3_overlay_tex_geom,
    sdl3_overlay_vertex_geom,
    sdl3_overlay_full_screen,
