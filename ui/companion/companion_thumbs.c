@@ -213,6 +213,98 @@ static INLINE uint32_t ct_over(uint32_t p, uint32_t bg)
    }
 }
 
+/* Per-channel blend of two pixels, @f/256 of @b, rounded. */
+static INLINE uint32_t ct_lerp(uint32_t a, uint32_t b, unsigned f)
+{
+   uint32_t rb = (a & 0x00ff00ffu) * (256 - f) + (b & 0x00ff00ffu) * f;
+   uint32_t ag = ((a >> 8) & 0x00ff00ffu) * (256 - f) + ((b >> 8) & 0x00ff00ffu) * f;
+   return (((rb + 0x00800080u) >> 8) & 0x00ff00ffu)
+        | ((ag + 0x00800080u) & 0xff00ff00u);
+}
+
+/* Straight -> premultiplied alpha (alpha is the top byte in both the
+ * ARGB word and the R,G,B,A memory order, so this is order-agnostic). */
+static INLINE uint32_t ct_premul(uint32_t p)
+{
+   unsigned a = p >> 24;
+   if (a == 0xff)
+      return p;
+   if (a == 0)
+      return 0;
+   {
+      unsigned c0 = (((p >> 16) & 0xff) * a + 127) / 255;
+      unsigned c1 = (((p >>  8) & 0xff) * a + 127) / 255;
+      unsigned c2 = (( p        & 0xff) * a + 127) / 255;
+      return (a << 24) | (c0 << 16) | (c1 << 8) | c2;
+   }
+}
+
+/* Premultiplied -> straight alpha. */
+static INLINE uint32_t ct_unpremul(uint32_t p)
+{
+   unsigned a = p >> 24;
+   if (a == 0xff)
+      return p;
+   if (a == 0)
+      return 0;
+   {
+      unsigned c0 = (((p >> 16) & 0xff) * 255 + a / 2) / a;
+      unsigned c1 = (((p >>  8) & 0xff) * 255 + a / 2) / a;
+      unsigned c2 = (( p        & 0xff) * 255 + a / 2) / a;
+      if (c0 > 0xff) c0 = 0xff;
+      if (c1 > 0xff) c1 = 0xff;
+      if (c2 > 0xff) c2 = 0xff;
+      return (a << 24) | (c0 << 16) | (c1 << 8) | c2;
+   }
+}
+
+/* Bilinear blend of four taps with alpha. Blending straight alpha lets
+ * the colour of a transparent pixel (often black) bleed into its opaque
+ * neighbour, a dark halo along every transparent edge; blend
+ * premultiplied instead. Rows known to be fully opaque skip this and
+ * lerp directly. */
+static uint32_t ct_bilerp_alpha(uint32_t p0, uint32_t p1,
+      uint32_t p2, uint32_t p3, unsigned fx, unsigned fy)
+{
+   return ct_unpremul(ct_lerp(
+            ct_lerp(ct_premul(p0), ct_premul(p1), fx),
+            ct_lerp(ct_premul(p2), ct_premul(p3), fx), fy));
+}
+
+/* One output row of the bilinear path: @fw pixels from rows @ra/@rb
+ * with the column taps in @col and row weight @fy. The alpha handling
+ * is picked once per row so the opaque loop stays tight. */
+static void ct_row_bilinear(uint32_t *row, const uint32_t *ra,
+      const uint32_t *rb, const unsigned *col, int fw, unsigned fy,
+      bool opaque, uint32_t bg, bool src_rgba_order)
+{
+   int x;
+   if (opaque)
+   {
+      for (x = 0; x < fw; x++)
+      {
+         const unsigned *c = col + x * 3;
+         uint32_t p = ct_lerp(ct_lerp(ra[c[0]], ra[c[1]], c[2]),
+               ct_lerp(rb[c[0]], rb[c[1]], c[2]), fy);
+         if (src_rgba_order)
+            p = CT_RGBA_TO_ARGB(p);
+         row[x] = ct_over(p, bg);
+      }
+   }
+   else
+   {
+      for (x = 0; x < fw; x++)
+      {
+         const unsigned *c = col + x * 3;
+         uint32_t p = ct_bilerp_alpha(ra[c[0]], ra[c[1]],
+               rb[c[0]], rb[c[1]], c[2], fy);
+         if (src_rgba_order)
+            p = CT_RGBA_TO_ARGB(p);
+         row[x] = ct_over(p, bg);
+      }
+   }
+}
+
 uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
       unsigned src_dims, unsigned dst_dims, uint32_t bg,
       bool src_rgba_order)
@@ -220,6 +312,11 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
    uint32_t *buf;
    int fw, fh, ox, oy, x, y;
    bool taps4;
+   bool opaque = false;
+   /* Bilinear column taps (xa, xb, fx per output column), built once:
+    * they depend only on x, and a 64-bit divide per output pixel was
+    * the bulk of the scale time. */
+   unsigned *col = NULL;
    unsigned sw = VIDEO_SCALE_W(src_dims);
    unsigned sh = VIDEO_SCALE_H(src_dims);
    int dw      = (int)VIDEO_SCALE_W(dst_dims);
@@ -247,8 +344,38 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
    ox = (dw - fw) / 2;
    oy = (dh - fh) / 2;
    /* Four taps when every output pixel covers at least a 2 x 2 source
-    * cell; one tap (nearest) when enlarging or nearly 1:1. */
+    * cell; bilinear when enlarging or nearly 1:1. */
    taps4 = (sw >= 2u * (unsigned)fw) && (sh >= 2u * (unsigned)fh);
+   if (!taps4)
+   {
+      int i;
+      col = (unsigned*)malloc((size_t)fw * 3 * sizeof(unsigned));
+      if (!col)
+      {
+         free(buf);
+         return NULL;
+      }
+      for (i = 0; i < fw; i++)
+      {
+         /* This column's centre in the source, in 1/256 px. */
+         uint64_t px = (uint64_t)(2 * i + 1) * sw * 128 / fw;
+         unsigned xa;
+         px = (px > 128) ? px - 128 : 0;
+         xa = (unsigned)(px >> 8);
+         col[i * 3 + 0] = xa;
+         col[i * 3 + 1] = (xa + 1 < sw) ? xa + 1 : xa;
+         col[i * 3 + 2] = (unsigned)px & 0xff;
+      }
+      /* Whole source opaque (the usual case): one AND-reduce over it
+       * lets the per-pixel blend skip the alpha handling entirely. */
+      {
+         uint32_t all = 0xffffffffu;
+         size_t n = (size_t)sw * sh, k;
+         for (k = 0; k < n; k++)
+            all &= src[k];
+         opaque = (all >> 24) == 0xff;
+      }
+   }
 
    for (y = 0; y < dh; y++)
    {
@@ -263,6 +390,7 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
          int      sy   = y - oy;
          unsigned y0   = (unsigned)((uint64_t)sy * sh / fh);
          unsigned y1   = (unsigned)((uint64_t)(sy + 1) * sh / fh);
+         unsigned fy   = 0;
          const uint32_t *ra, *rb;
          if (y1 <= y0) y1 = y0 + 1;
          if (y1 > sh)  y1 = sh;
@@ -273,17 +401,31 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
          ra = src + (size_t)(y0 + (y1 - y0 - 1) / 3) * sw;
          rb = src + (size_t)(y1 - 1 - (y1 - y0 - 1) / 3) * sw;
          if (!taps4)
-            ra = rb = src + (size_t)y0 * sw;
+         {
+            /* Bilinear: this row's centre in the source, in 1/256 px. */
+            uint64_t py = (uint64_t)(2 * sy + 1) * sh * 128 / fh;
+            py = (py > 128) ? py - 128 : 0;
+            y0 = (unsigned)(py >> 8);
+            fy = (unsigned)py & 0xff;
+            ra = src + (size_t)y0 * sw;
+            rb = (y0 + 1 < sh) ? ra + sw : ra;
+            for (x = 0; x < ox; x++)
+               row[x] = bg;
+            ct_row_bilinear(row + ox, ra, rb, col, fw, fy, opaque, bg,
+                  src_rgba_order);
+            for (x = ox + fw; x < dw; x++)
+               row[x] = bg;
+            continue;
+         }
          for (x = 0; x < dw; x++)
          {
             if (x < ox || x >= ox + fw)
                row[x] = bg;
             else
             {
-               int      sx = x - ox;
-               unsigned x0 = (unsigned)((uint64_t)sx * sw / fw);
-               if (taps4)
                {
+                  int      sx = x - ox;
+                  unsigned x0 = (unsigned)((uint64_t)sx * sw / fw);
                   unsigned x1 = (unsigned)((uint64_t)(sx + 1) * sw / fw);
                   unsigned xa, xb;
                   uint32_t p0, p1, p2, p3, r, g, b, al;
@@ -304,17 +446,11 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
                   al = (((p0 >> 24) & 0xff) + ((p1 >> 24) & 0xff) + ((p2 >> 24) & 0xff) + ((p3 >> 24) & 0xff)) >> 2;
                   row[x] = ct_over((al << 24) | (r << 16) | (g << 8) | b, bg);
                }
-               else
-               {
-                  uint32_t p = ra[x0];
-                  if (src_rgba_order)
-                     p = CT_RGBA_TO_ARGB(p);
-                  row[x] = ct_over(p, bg);
-               }
             }
          }
       }
    }
+   free(col);
    return buf;
 }
 
