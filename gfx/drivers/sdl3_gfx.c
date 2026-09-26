@@ -1871,15 +1871,15 @@ static void sdl3_overlays_render(sdl3_video_t *vid)
       {
          base_x = 0.0f;
          base_y = 0.0f;
-         base_w = (float)vid->vp.full_width;
-         base_h = (float)vid->vp.full_height;
+         base_w = (float)VIDEO_SCALE_W(vid->vp.full_dims);
+         base_h = (float)VIDEO_SCALE_H(vid->vp.full_dims);
       }
       else
       {
-         base_x = (float)vid->vp.x;
-         base_y = (float)vid->vp.y;
-         base_w = (float)vid->vp.width;
-         base_h = (float)vid->vp.height;
+         base_x = (float)VIDEO_POS_X(vid->vp.pos);
+         base_y = (float)VIDEO_POS_Y(vid->vp.pos);
+         base_w = (float)VIDEO_SCALE_W(vid->vp.dims);
+         base_h = (float)VIDEO_SCALE_H(vid->vp.dims);
       }
 
       dst.x = base_x + o->vert_coords.x * base_w;
@@ -1908,6 +1908,7 @@ static void sdl3_overlays_render(sdl3_video_t *vid)
 static const video_overlay_interface_t sdl3_overlay_iface = {
    sdl3_overlay_enable,
    sdl3_overlay_load,
+   NULL, /* load_textures */
    sdl3_overlay_tex_geom,
    sdl3_overlay_vertex_geom,
    sdl3_overlay_full_screen,
