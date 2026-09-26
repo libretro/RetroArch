@@ -132,30 +132,17 @@ static int action_cancel_core_content(const char *path,
    if (menu)
       menu->core_content_dir[0] = '\0';
 
+   /* The core updater list can be reached from both
+    * 'Online Updater' and 'Load Core' - flushing the stack
+    * to 'Online Updater' would pop all the way back to the
+    * Main Menu when entered via 'Load Core'. The list only
+    * ever occupies a single stack level, so a normal pop
+    * (which also handles removing search terms) returns to
+    * whichever menu it was opened from. */
    if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST_STR))
-   {
-      menu_search_terms_t *menu_search_terms =
-         menu_entries_search_get_terms();
+      return action_cancel_pop_default(path, label, type, idx);
 
-      /* Check whether search terms have been set
-       * > If so, remove the last search term */
-      if (   menu_search_terms
-          && menu_entries_search_pop())
-      {
-         struct menu_state *menu_st  = menu_state_get_ptr();
-         /* Reset navigation pointer */
-         menu_st->selection_ptr      = 0;
-         if (menu_st->driver_ctx->navigation_set)
-            menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
-         /* Refresh menu */
-         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                         | MENU_ST_FLAG_PREVENT_POPULATE;
-         return 0;
-      }
-
-      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
-   }
-   else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST_STR))
+   if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST_STR))
       menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR))
       menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
