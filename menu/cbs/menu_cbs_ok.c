@@ -7675,17 +7675,24 @@ int action_cb_push_dropdown_item_resolution(const char *path,
 {
    char *end            = NULL;
    unsigned dims        = 0;
+   unsigned width       = 0;
+   unsigned height      = 0;
    float refreshrate    = 0.0f;
 
    if (!path)
       return -1;
 
-   VIDEO_SCALE_PUT_W(dims, (unsigned)strtoul(path, &end, 0));
+   /* Each axis is parsed into a local first: VIDEO_SCALE_PACK reads
+    * its arguments twice, so a strtoul() written inside it runs twice,
+    * and the second call for the height parsed on from where the first
+    * had left 'end' - every mode picked from the list went out as Wx0 */
+   width  = (unsigned)strtoul(path, &end, 0);
    if (end == path || *end != 'x')
       return -1;
 
    ++end;
-   VIDEO_SCALE_PUT_H(dims, (unsigned)strtoul(end, &end, 0));
+   height = (unsigned)strtoul(end, &end, 0);
+   dims   = VIDEO_SCALE_PACK(width, height);
    /* Skip whitespace and opening parenthesis: "2160 (120 Hz)" → "120 Hz)" */
    while (*end == ' ' || *end == '(')
       ++end;
@@ -8596,7 +8603,7 @@ static int generic_dropdown_box_list(size_t idx, unsigned lbl)
 static int action_ok_video_resolution(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO) || defined(PS2) || defined(__PS3__)
+#if defined(PS2) || defined(__PS3__)
    unsigned dims    = 0;
    char desc[64]    = {0};
 
@@ -8610,12 +8617,6 @@ static int action_ok_video_resolution(const char *path,
       generic_action_ok_command(CMD_EVENT_REINIT);
 #endif
       video_driver_set_video_mode(dims, true);
-#ifdef GEKKO
-      if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
-         _len = snprintf(msg, sizeof(msg),
-               msg_hash_to_str(MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT));
-      else
-#endif
       {
          if (*desc)
             _len = snprintf(msg, sizeof(msg),

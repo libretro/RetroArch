@@ -633,6 +633,33 @@ jobs:
           timeout 60 ./display_servers_test
           echo "[pass] display_servers_test"
 
+      - name: Build and run dispserv_gx_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/dispserv_gx
+        run: |
+          set -eu
+          # The GameCube/Wii display server (dispserv_gx.c and the mode
+          # rules in dispserv_gx_modes.c), linked as they ship against
+          # stubbed libogc queries, on every TV standard: the list holds
+          # only modes the standard shows, one of them current, and each
+          # entry - through the label the menu prints and the parse the
+          # menu does - selects exactly that mode, stores its config id
+          # and reports the refresh rate it listed.
+          #
+          # The menu's parse used to run strtoul() inside
+          # VIDEO_SCALE_PUT_H, whose PACK evaluates its argument twice;
+          # the second call returned 0 and every pick from the list
+          # went out as Wx0. Guard the shape as well as the behaviour.
+          if grep -nE 'VIDEO_SCALE_(PUT_[WH]|PACK)\([^;]*strto' \
+                ../../../menu/cbs/menu_cbs_ok.c; then
+             echo "::error::strtoul inside a VIDEO_SCALE macro runs twice"
+             exit 1
+          fi
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./dispserv_gx_test
+          make clean
+
       - name: X11 window poll sends no requests (Xvfb, ASan + UBSan)
         shell: bash
         run: |

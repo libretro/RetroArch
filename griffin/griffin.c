@@ -688,6 +688,8 @@ VIDEO DRIVER
 #if defined(HAVE_GCM)
 #include "../gfx/drivers/rsx_gfx.c"
 #elif defined(GEKKO)
+#include "../gfx/display_servers/dispserv_gx_modes.c"
+#include "../gfx/display_servers/dispserv_gx.c"
 #include "../gfx/drivers/gx_gfx.c"
 #elif defined(PSP)
 #include "../gfx/drivers/psp1_gfx.c"

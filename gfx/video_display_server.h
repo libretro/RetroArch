@@ -252,6 +252,7 @@ extern const video_display_server_t dispserv_android;
 extern const video_display_server_t dispserv_apple;
 extern const video_display_server_t dispserv_sdl2;
 extern const video_display_server_t dispserv_sdl3;
+extern const video_display_server_t dispserv_gx;
 
 RETRO_END_DECLS
 

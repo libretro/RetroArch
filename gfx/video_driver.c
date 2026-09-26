@@ -1772,6 +1772,8 @@ void* video_display_server_init(enum rarch_display_type type)
          current_display_server = &dispserv_android;
 #elif defined(__APPLE__)
          current_display_server = &dispserv_apple;
+#elif defined(GEKKO)
+         current_display_server = &dispserv_gx;
 #else
          current_display_server = &dispserv_null;
 #endif
