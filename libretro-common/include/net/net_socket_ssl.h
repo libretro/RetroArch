@@ -26,6 +26,8 @@
 #include <stdlib.h>
 #include <boolean.h>
 #include <retro_common_api.h>
+/* ssize_t, as net_socket.h gets it. */
+#include <net/net_compat.h>
 
 RETRO_BEGIN_DECLS
 
