@@ -11147,10 +11147,10 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CHEEVOS_PASSWORD,                                      PARSE_ONLY_STRING, false  },
                {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS,                           PARSE_ACTION,      false  },
                {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS,                           PARSE_ACTION,      false  },
+               {MENU_ENUM_LABEL_CHEEVOS_ACHIEVEMENT_LIST_SETTINGS,                     PARSE_ACTION,      false  },
                {MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE,                          PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_LEADERBOARDS_ENABLE,                           PARSE_ONLY_STRING_OPTIONS,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE,                           PARSE_ONLY_BOOL,   false  },
-               {MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,                                 PARSE_ONLY_BOOL,   false  },
                {MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL,                               PARSE_ONLY_BOOL,   false  },
 #ifdef HAVE_AUDIOMIXER
                {MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,                           PARSE_ONLY_BOOL,   false  },
@@ -11183,6 +11183,21 @@ unsigned menu_displaylist_build_list(
                         false) == 0)
                   count++;
             }
+         }
+         break;
+      case DISPLAYLIST_CHEEVOS_ACHIEVEMENT_LIST_SETTINGS_LIST:
+         {
+            static const menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,             PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CHEEVOS_ACHIEVEMENT_LIST_ORDER,    PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_CHEEVOS_HIGHLIGHTED_ACHIEVEMENTS, PARSE_ONLY_UINT},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx, build_list[i].parse_type,
+                        false) == 0)
+                  count++;
          }
          break;
       case DISPLAYLIST_CHEEVOS_APPEARANCE_SETTINGS_LIST:
@@ -16244,6 +16259,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_RETRO_ACHIEVEMENTS_SETTINGS_LIST:
          case DISPLAYLIST_CHEEVOS_APPEARANCE_SETTINGS_LIST:
          case DISPLAYLIST_CHEEVOS_VISIBILITY_SETTINGS_LIST:
+         case DISPLAYLIST_CHEEVOS_ACHIEVEMENT_LIST_SETTINGS_LIST:
          case DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST:
          case DISPLAYLIST_ACCOUNTS_FACEBOOK_LIST:
          case DISPLAYLIST_ACCOUNTS_KICK_LIST:

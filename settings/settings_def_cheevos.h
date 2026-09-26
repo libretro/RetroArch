@@ -31,6 +31,30 @@ S_BOOL(cheevos_badges_enable, CHEEVOS_BADGES_ENABLE,
       "Achievement Badges",
       "Display badges in the Achievement List.")
 #endif
+/* Descriptor and configuration rows are #ifdef HAVE_CHEEVOS; the string
+ * tables always carry this row via the strings pass. */
+#if defined(HAVE_CHEEVOS) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_UINT(cheevos_achievement_list_order, CHEEVOS_ACHIEVEMENT_LIST_ORDER,
+      "cheevos_achievement_list_order",
+      CHEEVOS_ACHIEVEMENT_LIST_LOCKED_FIRST, SD_FLAG_NONE, SDESC_RANGE_MINMAX,
+      0, CHEEVOS_ACHIEVEMENT_LIST_LOCKED_FIRST,
+      CHEEVOS_ACHIEVEMENT_LIST_ORDER_LAST - 1, 1, 0,
+      setting_action_ok_uint, setting_get_string_representation_uint_cheevos_achievement_list_order,
+      "Achievement List Order",
+      "Choose whether Locked or Unlocked achievements appear first in the Achievement List.")
+#endif
+/* Descriptor and configuration rows are #ifdef HAVE_CHEEVOS; the string
+ * tables always carry this row via the strings pass. */
+#if defined(HAVE_CHEEVOS) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_UINT(cheevos_highlighted_achievements, CHEEVOS_HIGHLIGHTED_ACHIEVEMENTS,
+      "cheevos_highlighted_achievements",
+      CHEEVOS_HIGHLIGHTS_BOTH, SD_FLAG_NONE, SDESC_RANGE_MINMAX,
+      0, CHEEVOS_HIGHLIGHTS_BOTH,
+      CHEEVOS_HIGHLIGHTS_LAST - 1, 1, 0,
+      setting_action_ok_uint, setting_get_string_representation_uint_cheevos_highlighted_achievements,
+      "Highlighted Achievements",
+      "Choose where Recently Unlocked, Almost There, and Active Challenges appear as separate groups.")
+#endif
 /* Descriptor and configuration rows are #ifdef HAVE_CHEEVOS #ifdef HAVE_AUDIOMIXER; the string
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_CHEEVOS) && defined(HAVE_AUDIOMIXER) || defined(SETTINGS_DEF_STRINGS_PASS)

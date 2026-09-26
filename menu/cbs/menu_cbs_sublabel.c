@@ -231,6 +231,9 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_hardcore_mode_enable,  MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_challenge_indicators,  MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_richpresence_enable,   MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_badges_enable,         MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_achievement_list_order, MENU_ENUM_SUBLABEL_CHEEVOS_ACHIEVEMENT_LIST_ORDER)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_highlighted_achievements, MENU_ENUM_SUBLABEL_CHEEVOS_HIGHLIGHTED_ACHIEVEMENTS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_achievement_list_settings, MENU_ENUM_SUBLABEL_CHEEVOS_ACHIEVEMENT_LIST_SETTINGS)
 #if defined(HAVE_AUDIOMIXER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheevos_unlock_sound_enable,   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE)
 #endif
@@ -3403,6 +3406,15 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_badges_enable);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_ACHIEVEMENT_LIST_ORDER:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_achievement_list_order);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_HIGHLIGHTED_ACHIEVEMENTS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_highlighted_achievements);
+            break;
+         case MENU_ENUM_LABEL_CHEEVOS_ACHIEVEMENT_LIST_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_achievement_list_settings);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE:
 #ifdef HAVE_AUDIOMIXER

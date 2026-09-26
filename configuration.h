@@ -134,6 +134,22 @@ enum audio_format_negotiation_enum
    AUDIO_FORMAT_NEGOTIATION_LAST
 };
 
+enum cheevos_achievement_list_order
+{
+   CHEEVOS_ACHIEVEMENT_LIST_LOCKED_FIRST = 0,
+   CHEEVOS_ACHIEVEMENT_LIST_UNLOCKED_FIRST,
+   CHEEVOS_ACHIEVEMENT_LIST_ORDER_LAST
+};
+
+enum cheevos_highlighted_achievements
+{
+   CHEEVOS_HIGHLIGHTS_BOTH = 0,
+   CHEEVOS_HIGHLIGHTS_SUMMARY_ONLY,
+   CHEEVOS_HIGHLIGHTS_SET_LISTS_ONLY,
+   CHEEVOS_HIGHLIGHTS_NEITHER,
+   CHEEVOS_HIGHLIGHTS_LAST
+};
+
 typedef struct settings
 {
    /* sizes, video_vp_custom and the ints group live below, after
@@ -425,6 +441,8 @@ typedef struct settings
 #endif
 
       unsigned cheevos_appearance_anchor;
+      unsigned cheevos_achievement_list_order;
+      unsigned cheevos_highlighted_achievements;
       unsigned cheevos_visibility_summary;
 
 #ifdef HAVE_SMBCLIENT
