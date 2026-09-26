@@ -1264,7 +1264,7 @@ static bool accessibility_speak_windows(int speed,
          wchar_t *wc = utf8_to_utf16_string_alloc(speak_text);
          if (!wc)
             return false;
-         hr = ISpVoice_Speak(voice_ptr, wc, SPF_ASYNC /*SVSFlagsAsync*/, NULL);
+         hr = ISpVoice_Speak(voice_ptr, wc, SPF_ASYNC | SPF_IS_NOT_XML, NULL);
          free(wc);
       }
    }

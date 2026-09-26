@@ -2918,6 +2918,25 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI (94 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
+/**
+ * Submits core-provided text to the frontend's accessibility speech backend.
+ * Intended for semantic game information such as menu focus and dialogue.
+ * The frontend controls whether speech is enabled and which backend is used.
+ *
+ * Call from the same thread as retro_run(), during a frontend-to-core call.
+ * The caller retains ownership of the request and its strings; they need only
+ * remain valid until this call returns. A frontend retaining them must copy them.
+ *
+ * @param[in] data <tt>const struct retro_accessibility_speech *</tt>.
+ * @return \c true if the request was passed to an enabled speech backend
+ * that reported acceptance. This does not guarantee playback or completion.
+ * Returns \c false if unsupported, disabled, unavailable, or invalid.
+ * A \c NULL request, empty or \c NULL text, or nonzero flags is invalid.
+ * @see retro_accessibility_speech
+ * @experimental
+ */
+#define RETRO_ENVIRONMENT_ACCESSIBILITY_SPEAK (95 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
 /* Speaker positions, as bits of a layout mask; a frame's channels are
  * interleaved in ascending bit order. The bits are those of the
  * WAVEFORMATEXTENSIBLE channel mask. */
@@ -6726,6 +6745,26 @@ struct retro_message_ext
     * message types other than \c RETRO_MESSAGE_TYPE_PROGRESS.
     */
    int8_t progress;
+};
+
+/** A request for RETRO_ENVIRONMENT_ACCESSIBILITY_SPEAK. */
+struct retro_accessibility_speech
+{
+   /** NUL-terminated UTF-8 plain text. Must be non-NULL and nonempty. */
+   const char *text;
+
+   /**
+    * Best-effort priority hint. Use 0 for noninterrupting speech and 10 for
+    * speech that should interrupt. A backend may ignore this hint or discard
+    * noninterrupting speech while busy; queueing is not guaranteed.
+    */
+   int priority;
+
+   /** Optional source label, e.g. "menu". May be NULL or ignored. */
+   const char *channel;
+
+   /** Reserved; must be zero. */
+   unsigned flags;
 };
 
 /** @} */
