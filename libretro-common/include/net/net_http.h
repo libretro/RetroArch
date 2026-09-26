@@ -181,6 +181,20 @@ struct string_list *net_http_headers(struct http_t *state);
 struct string_list *net_http_headers_ex(struct http_t *state, bool accept_error);
 
 /**
+ * net_http_body_is_framed:
+ * @headers : response headers as net_http_headers() returns them
+ *
+ * True when the response frames its body with Content-Length or
+ * "Transfer-Encoding: chunked", tested exactly as the receiver picks
+ * the body type. A transfer that ends short of either framing fails,
+ * but a body delimited only by the connection closing cannot be told
+ * apart from one cut off mid-transfer, so callers that must not act
+ * on a truncated body (writing a downloaded file over a local one)
+ * check this first.
+ **/
+bool net_http_body_is_framed(const struct string_list *headers);
+
+/**
  * net_http_data:
  *
  * Leaf function.

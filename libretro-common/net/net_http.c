@@ -2642,6 +2642,25 @@ struct string_list *net_http_headers_ex(struct http_t *state, bool accept_err)
    return state->response.headers;
 }
 
+bool net_http_body_is_framed(const struct string_list *headers)
+{
+   size_t i;
+   if (!headers)
+      return false;
+   for (i = 0; i < headers->size; i++)
+   {
+      const char *h = headers->elems[i].data;
+      if (!h)
+         continue;
+      /* Same two tests as the header parser above. */
+      if (strncasecmp(h, "Content-Length:", STRLEN_CONST("Content-Length:")) == 0)
+         return true;
+      if (strcasecmp(h, "Transfer-Encoding: chunked") == 0)
+         return true;
+   }
+   return false;
+}
+
 struct string_list *net_http_headers(struct http_t *state)
 {
    return net_http_headers_ex(state, false);

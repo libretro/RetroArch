@@ -12,9 +12,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <lists/string_list.h>
-#include <string/stdstring.h>
-
 #include "cloud_sync_driver.h"
 #include "../list_special.h"
 #include "../retroarch.h"
@@ -141,24 +138,5 @@ bool cloud_sync_free(const char *path,
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
    if (driver && driver->cloud_sync_free)
       return driver->cloud_sync_free(path, cb, user_data);
-   return false;
-}
-
-bool cloud_sync_http_body_is_framed(const struct string_list *headers)
-{
-   size_t i;
-   if (!headers)
-      return false;
-   for (i = 0; i < headers->size; i++)
-   {
-      const char *h = headers->elems[i].data;
-      if (!h)
-         continue;
-      if (string_starts_with_case_insensitive(h, "Content-Length:"))
-         return true;
-      /* The same test net_http uses to select chunked decoding. */
-      if (string_is_equal_case_insensitive(h, "Transfer-Encoding: chunked"))
-         return true;
-   }
    return false;
 }

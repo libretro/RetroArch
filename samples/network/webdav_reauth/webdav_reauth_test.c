@@ -283,9 +283,14 @@ static void test_stale_nonce_recovers(http_transfer_data_t *challenge,
    static char body[] = "server-copy";
    done_t done = {0};
    http_transfer_data_t ok;
+   struct string_list *ok_headers = string_list_new();
    char got[32] = {0};
 
-   make_response(&ok, 200, NULL, body, sizeof(body) - 1);
+   /* A real 200 frames its body; the read callback refuses an unframed
+    * one as possibly truncated (net_http_body_is_framed). */
+   string_list_append(ok_headers, "Content-Length: 11",
+         (union string_list_elem_attr){0});
+   make_response(&ok, 200, ok_headers, body, sizeof(body) - 1);
 
    stub_reset();
    webdav_read_cb(NULL, challenge, new_cb_state("saves/a.srm", tmp, &done),
@@ -308,6 +313,7 @@ static void test_stale_nonce_recovers(http_transfer_data_t *challenge,
       CHECK(!strcmp(got, body), "stale nonce: got \"%s\"", got);
       filestream_close(done.file);
    }
+   string_list_free(ok_headers);
 }
 
 int main(void)

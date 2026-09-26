@@ -849,7 +849,7 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
 
    /* A body delimited only by the connection closing may have been
     * cut off; do not let it replace the local file. */
-   if (found && !cloud_sync_http_body_is_framed(data->headers))
+   if (found && !net_http_body_is_framed(data->headers))
    {
       RARCH_WARN("[webdav] %s: response body has no Content-Length or "
             "chunked framing; treating as failure.\n", webdav_cb_st->path);

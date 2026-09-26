@@ -1303,7 +1303,7 @@ static void gdrive_read_download_cb(retro_task_t *task, void *task_data,
 
    /* A body delimited only by the connection closing may have been
     * cut off; do not let it replace the local file. */
-   if (success && !cloud_sync_http_body_is_framed(data->headers))
+   if (success && !net_http_body_is_framed(data->headers))
    {
       RARCH_WARN(GDPFX "%s: response body has no Content-Length or "
             "chunked framing; treating as failure.\n", cb_st->path);
