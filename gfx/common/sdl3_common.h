@@ -43,17 +43,14 @@ typedef struct sdl3_tex
 } sdl3_tex_t;
 
 #ifdef HAVE_OVERLAY
-/* On-screen input overlay entry for SDL3. Texture dimensions are
- * read from the public SDL_Texture w/h fields. */
+/* On-screen overlay for SDL3. */
 struct sdl3_overlay
 {
    SDL_Texture *tex;
-   /* Both are normalised 0..1 rects: tex_coords slices the source
-    * texture, vert_coords places the quad within its base area. */
-   SDL_FRect tex_coords;
-   SDL_FRect vert_coords;
-   float     alpha_mod;
-   bool      fullscreen;
+   SDL_FRect tex_coords; /* Normalized 0..1 for the source. */
+   SDL_FRect vert_coords; /* Normalized 0..1 within the base area. */
+   float alpha_mod;
+   bool fullscreen;
 };
 #endif
 

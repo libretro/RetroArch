@@ -475,11 +475,6 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
       font_driver_render_msg(vid, stat_text,
             video_info->stat_text_len, osd_params, NULL);
 
-   /* Input overlay (touch / virtual gamepad images), between stats
-    * and widgets to match the sdl2/d3d9 pass order. Runs under the
-    * full-window viewport: fullscreen overlays span the letterbox
-    * bars, and non-fullscreen ones compute against vid->vp.x/y,
-    * which are window-space pixel coordinates too. */
 #ifdef HAVE_OVERLAY
    if (overlay_visible)
       sdl3_overlays_render(vid);
@@ -1714,11 +1709,9 @@ font_renderer_t sdl3_raster_font = {
 /*
  * INPUT OVERLAY
  *
- * Implements video_overlay_interface_t. The overlay subsystem
- * (input/input_driver.c) hands us BGRA32 images via load(), places
- * them in 0..1 normalised space via vertex_geom() / tex_geom(), and
- * they are drawn over the game frame each frame with per-texture
- * alpha modulation.
+ * Implements video_overlay_interface_t. The overlay subsystem hands
+ * us BGRA32 images via load(), places them in 0..1 normalized space
+ * via vertex_geom() / tex_geom(), and they are drawn over the game.
  */
 static void sdl3_overlay_free(sdl3_video_t *vid)
 {
@@ -1739,8 +1732,6 @@ static void sdl3_overlay_free(sdl3_video_t *vid)
    vid->overlays_owned = false;
 }
 
-/* Whole texture / whole target until tex_geom and vertex_geom
- * provide the real values (the entry arrives calloc-zeroed). */
 static void sdl3_overlay_defaults(struct sdl3_overlay *o, SDL_Texture *tex)
 {
    o->tex           = tex;
@@ -1761,9 +1752,7 @@ static bool sdl3_overlay_load(void *data,
    if (!vid)
       return false;
 
-   /* load() is the install point - input_overlay.c calls it once
-    * per overlay activation with the full image array, never
-    * incrementally - so drop any prior overlay set first. */
+   /* Drop any prior overlay first. */
    sdl3_overlay_free(vid);
 
    if (num_images == 0 || !imgs)
@@ -1784,9 +1773,9 @@ static bool sdl3_overlay_load(void *data,
       if (w == 0 || h == 0 || !imgs[i].pixels)
          continue;
 
-      /* Static texture, uploaded once at load time. Source pixels
-       * are BGRA in byte order - SDL_PIXELFORMAT_ARGB8888, the same
-       * convention as sdl3_load_texture_internal. */
+      /* Source pixels are BGRA in byte order, which is
+       * SDL_PIXELFORMAT_ARGB8888. This matches what is used
+       * in sdl3_load_texture_internal. */
       if (!(tex = SDL_CreateTexture(vid->renderer,
             SDL_PIXELFORMAT_ARGB8888,
             SDL_TEXTUREACCESS_STATIC,
@@ -1800,8 +1789,8 @@ static bool sdl3_overlay_load(void *data,
       SDL_UpdateTexture(tex, NULL, imgs[i].pixels,
             (int)(w * sizeof(uint32_t)));
       SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
-      /* Overlay art is scaled to the window; linear, matching what
-       * sdl3_load_texture_internal picks for TEXTURE_FILTER_LINEAR. */
+      /* Scale the overlay to the window, linear. This matches
+       * sdl3_load_texture_internal's TEXTURE_FILTER_LINEAR. */
       SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_LINEAR);
 
       sdl3_overlay_defaults(&vid->overlays[i], tex);
@@ -1810,12 +1799,6 @@ static bool sdl3_overlay_load(void *data,
    return true;
 }
 
-/* The optional page fast path: the frontend uploaded every unique
- * image of the pack through video_driver_texture_load() and hands
- * over the active page's handles - blend mode and scale mode were
- * set at upload by sdl3_load_texture_internal. Nothing is uploaded
- * and nothing is owned here, so a page switch costs one pass over
- * the indices. */
 static bool sdl3_overlay_load_textures(void *data,
       const uintptr_t *textures, unsigned num_textures)
 {
@@ -1893,8 +1876,7 @@ static void sdl3_overlay_set_alpha(void *data, unsigned index, float mod)
 }
 
 /* Render every loaded overlay image. Runs inside sdl3_render_ui's
- * full-window viewport switch - see the call site for the pass
- * ordering and viewport rationale. */
+ * full-window viewport switch. */
 static void sdl3_overlays_render(sdl3_video_t *vid)
 {
    unsigned i;
@@ -1934,10 +1916,6 @@ static void sdl3_overlays_render(sdl3_video_t *vid)
       if (dst.w <= 0.0f || dst.h <= 0.0f)
          continue;
 
-      /* tex_coords sub-rect into the source texture - touch
-       * overlays pack many buttons into one atlas and slice it
-       * via tex_geom. load() seeds the whole texture, so a
-       * zero-area slice only means tex_geom asked for nothing. */
       src.x = o->tex_coords.x * (float)o->tex->w;
       src.y = o->tex_coords.y * (float)o->tex->h;
       src.w = o->tex_coords.w * (float)o->tex->w;
