@@ -32,6 +32,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_SSL
+#include <net/net_socket_ssl.h>
+#endif
+
 #include "file_path_special.h"
 #include "command.h"
 #include "configuration.h"
@@ -7397,6 +7401,14 @@ static bool config_load_file(global_t *global,
                tmp->key, tmp->value);
       }
    }
+
+#ifdef HAVE_SSL
+   /* Every settings load comes through here: startup, a per-core or
+    * per-game override, its unload, and the reload after saving one.
+    * Hand the TLS verification mode to the SSL backend each time, so
+    * an override that changes it applies now, not after a restart. */
+   ssl_socket_set_verify_mode(settings->uints.tls_verify_mode);
+#endif
 
    if (conf)
       config_file_free(conf);
