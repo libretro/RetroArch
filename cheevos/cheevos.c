@@ -209,6 +209,18 @@ uint8_t* rcheevos_patch_address(unsigned address)
    return rc_libretro_memory_find(&rcheevos_locals.memory, address);
 }
 
+uint8_t* rcheevos_patch_address_avail(unsigned address, unsigned *avail)
+{
+   uint32_t n = 0;
+   uint8_t *p;
+   if (rcheevos_locals.memory.count == 0)
+      rcheevos_init_memory(&rcheevos_locals);
+   p = rc_libretro_memory_find_avail(&rcheevos_locals.memory, address, &n);
+   if (avail)
+      *avail = p ? (unsigned)n : 0;
+   return p;
+}
+
 static bool rcheevos_is_game_loaded(void)
 {
    return rc_client_is_game_loaded(rcheevos_locals.client);

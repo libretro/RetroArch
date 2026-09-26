@@ -1032,6 +1032,13 @@ bool command_load_savefiles(command_t *cmd, const char* arg)
    return ret;
 }
 
+/* Largest byte count READ_CORE_RAM / READ_CORE_MEMORY will serve. The
+ * reply carries 3 characters per byte and goes out as one UDP datagram,
+ * so anything much bigger could not be delivered anyway; the cap also
+ * keeps `nbytes * 3` far from wrapping in unsigned int, which a request
+ * of ~1431655766 bytes did, allocating a few bytes and writing 4 GiB. */
+#define COMMAND_READ_NBYTES_MAX 16384u
+
 #if defined(HAVE_CHEEVOS)
 bool command_read_ram(command_t *cmd, const char *arg)
 {
@@ -1043,14 +1050,22 @@ bool command_read_ram(command_t *cmd, const char *arg)
    if (end && *end == ' ')
       nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
 
-   if (end && *end == ' ' && nbytes > 0)
+   if (end && *end == ' ' && nbytes > 0 && nbytes <= COMMAND_READ_NBYTES_MAX)
    {
       size_t _len             = 0;
       char *reply_at          = NULL;
-      const uint8_t *data     = NULL;
+      unsigned int avail      = 0;
+      const uint8_t *data     = rcheevos_patch_address_avail(addr, &avail);
+      unsigned int alloc_size;
+      char *reply;
+
+      /* Never read past the end of the region the address lives in. */
+      if (data && nbytes > avail)
+         nbytes = avail;
+
       /* We allocate more than needed, saving 20 bytes is not really relevant */
-      unsigned int alloc_size = 40 + nbytes * 3;
-      char *reply             = (char*)malloc(alloc_size);
+      alloc_size = 40 + nbytes * 3;
+      reply      = (char*)malloc(alloc_size);
       
       if (!reply)
       {
@@ -1062,7 +1077,7 @@ bool command_read_ram(command_t *cmd, const char *arg)
       reply_at                = reply + snprintf(
             reply, alloc_size - 1, "READ_CORE_RAM" " %x", addr);
 
-      if ((data = rcheevos_patch_address(addr)))
+      if (data && nbytes > 0)
       {
          size_t i;
          for (i = 0; i < nbytes; i++)
@@ -1072,7 +1087,7 @@ bool command_read_ram(command_t *cmd, const char *arg)
       }
       else
       {
-         strlcpy_lit(reply_at, " -1\n", sizeof(reply) - strlen(reply));
+         strlcpy_lit(reply_at, " -1\n", alloc_size - (size_t)(reply_at - reply));
          _len = reply_at + STRLEN_CONST(" -1\n") - reply;
       }
       cmd->replier(cmd, reply, _len);
@@ -1084,7 +1099,8 @@ bool command_read_ram(command_t *cmd, const char *arg)
 bool command_write_ram(command_t *cmd, const char *arg)
 {
    unsigned int addr    = (unsigned int)strtoul(arg, (char**)&arg, 16);
-   uint8_t *data        = (uint8_t *)rcheevos_patch_address(addr);
+   unsigned int avail   = 0;
+   uint8_t *data        = (uint8_t *)rcheevos_patch_address_avail(addr, &avail);
 
    if (!data)
       return false;
@@ -1095,11 +1111,17 @@ bool command_write_ram(command_t *cmd, const char *arg)
       rcheevos_pause_hardcore();
    }
 
-   while (*arg)
+   /* Stop at the end of the region: the payload length is whatever the
+    * sender put in the datagram. */
+   while (*arg && avail)
    {
       *data = strtoul(arg, (char**)&arg, 16);
       data++;
+      avail--;
    }
+   if (*arg)
+      RARCH_WARN("[Command] WRITE_CORE_RAM at %x reached the end of the "
+            "memory region; remainder of the payload ignored.\n", addr);
    return true;
 }
 #endif
@@ -1455,7 +1477,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
       if (!(end && *end == ' '))
          return false;
       nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
-      if (nbytes == 0)
+      if (nbytes == 0 || nbytes > COMMAND_READ_NBYTES_MAX)
          return false;
    }
 
