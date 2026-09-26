@@ -971,7 +971,7 @@ CAMERA
 #ifdef HAVE_V4L2
 #include "../camera/drivers/video4linux2.c"
 #endif
-#ifdef HAVE_PIPEWIRE
+#if defined(HAVE_PIPEWIRE) && defined(HAVE_PIPEWIRE_STABLE)
 #include "../camera/drivers/pipewire.c"
 #endif
 

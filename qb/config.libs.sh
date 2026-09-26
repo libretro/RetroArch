@@ -419,7 +419,14 @@ check_pkgconf ROAR libroar 1.0.12
 check_val '' JACK -ljack '' jack 0.120.1 '' false
 check_val '' PULSE -lpulse '' libpulse '' '' false
 check_val '' PIPEWIRE -lpipewire-0.3 'pipewire-0.3 spa-0.2' libpipewire-0.3 '' '' false
-check_val '' PIPEWIRE_STABLE -lpipewire-0.3 'pipewire-0.3 spa-0.2' libpipewire-0.3 1.0.0 '' false
+# PIPEWIRE_STABLE only qualifies PIPEWIRE (it gates the camera driver), so
+# it must not be probed when PipeWire itself is off: with --disable-pipewire
+# and libpipewire installed it used to end up defined on its own.
+if [ "$HAVE_PIPEWIRE" = 'no' ]; then
+   add_opt PIPEWIRE_STABLE no
+else
+   check_val '' PIPEWIRE_STABLE -lpipewire-0.3 'pipewire-0.3 spa-0.2' libpipewire-0.3 1.0.0 '' false
+fi
 
 # Without pkg-config the library check above cannot see the version, so
 # PIPEWIRE_STABLE takes it from the headers instead.
