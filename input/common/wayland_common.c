@@ -1110,6 +1110,7 @@ static void wl_data_device_handle_drop(void *data,
    if (!(stream = fmemopen(buffer, __len, "r")))
    {
       RARCH_WARN("[Wayland] Failed to open DnD buffer.\n");
+      free(buffer);
       return;
    }
 
@@ -1127,6 +1128,8 @@ static void wl_data_device_handle_drop(void *data,
 #endif
    }
 
+   /* getline allocates line on the first call and reuses it. */
+   free(line);
    fclose(stream);
    free(buffer);
 }

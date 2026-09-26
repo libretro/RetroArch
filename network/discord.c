@@ -859,7 +859,12 @@ static void discord_json_next_strdup(rjson_t *r, char **out)
    {
       const char *s = rjson_get_string(r, NULL);
       if (s)
+      {
+         /* A payload that repeats a key would otherwise leak the
+          * previous copy. */
+         free(*out);
          *out = strdup(s);
+      }
    }
 }
 

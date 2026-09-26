@@ -300,7 +300,10 @@ static void *audioworklet_init(const char *device, unsigned rate,
       return NULL;
    audioworklet->worklet_stack = memalign(16, WORKLET_STACK_SIZE);
    if (!audioworklet->worklet_stack)
+   {
+      free(audioworklet);
       return NULL;
+   }
    audioworklet_static_data = audioworklet;
 
    audioworklet->latency = latency;
