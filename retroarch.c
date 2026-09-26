@@ -797,24 +797,15 @@ bool midi_driver_render_audio(float *out, size_t frames, unsigned rate)
    return midi_drv->render(rarch_midi_drv_data, out, frames, rate);
 }
 
-static void midi_driver_free(void)
+/* Closes the device and its I/O buffers. The driver stays selected
+ * and the device lists stay valid, so the menu can still offer
+ * another device and the next GET_MIDI_INTERFACE can retry. */
+static void midi_driver_close(void)
 {
    if (rarch_midi_drv_data)
    {
       midi_drv->free(rarch_midi_drv_data);
       rarch_midi_drv_data = NULL;
-   }
-
-   if (rarch_midi_drv_inputs)
-   {
-      string_list_free(rarch_midi_drv_inputs);
-      rarch_midi_drv_inputs = NULL;
-   }
-
-   if (rarch_midi_drv_outputs)
-   {
-      string_list_free(rarch_midi_drv_outputs);
-      rarch_midi_drv_outputs = NULL;
    }
 
    if (rarch_midi_drv_input_buffer)
@@ -831,6 +822,24 @@ static void midi_driver_free(void)
 
    rarch_midi_drv_input_enabled  = false;
    rarch_midi_drv_output_enabled = false;
+}
+
+static void midi_driver_free(void)
+{
+   midi_driver_close();
+
+   if (rarch_midi_drv_inputs)
+   {
+      string_list_free(rarch_midi_drv_inputs);
+      rarch_midi_drv_inputs = NULL;
+   }
+
+   if (rarch_midi_drv_outputs)
+   {
+      string_list_free(rarch_midi_drv_outputs);
+      rarch_midi_drv_outputs = NULL;
+   }
+
    rarch_midi_drv_inited         = false;
 }
 
@@ -900,7 +909,7 @@ static bool midi_driver_open(settings_t *settings)
 
    if (!ret)
    {
-      midi_driver_free();
+      midi_driver_close();
       RARCH_ERR("[MIDI] Initialization failed.\n");
       return false;
    }
@@ -936,13 +945,10 @@ void midi_driver_request(void)
 
 bool midi_driver_set_input(const char *input)
 {
+   /* Not open yet: the setting is read when a core requests
+    * the interface, so there is nothing to apply now. */
    if (!rarch_midi_drv_data)
-   {
-#ifdef DEBUG
-      RARCH_ERR("[MIDI] midi_driver_set_input called on uninitialized driver.\n");
-#endif
-      return false;
-   }
+      return true;
 
    if (string_is_equal(input, MIDI_DRIVER_OFF))
       input = NULL;
@@ -968,13 +974,10 @@ bool midi_driver_set_input(const char *input)
 
 bool midi_driver_set_output(void *settings_data, const char *output)
 {
+   /* Not open yet: the setting is read when a core requests
+    * the interface, so there is nothing to apply now. */
    if (!rarch_midi_drv_data)
-   {
-#ifdef DEBUG
-      RARCH_ERR("[MIDI] midi_driver_set_output called on uninitialized driver.\n");
-#endif
-      return false;
-   }
+      return true;
 
    if (string_is_equal(output, MIDI_DRIVER_OFF))
       output = NULL;
