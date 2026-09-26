@@ -2369,7 +2369,21 @@ static bool command_event_cmd_exec(
       task_push_to_history_list(p_content, true, launched_from_cli, false);
    }
 #else
-   frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
+   /* Static build: the only way to run a different core is to
+    * fork/exec its executable. On platforms without fork support
+    * (GameCube, ...) report failure so the caller keeps the menu
+    * alive instead of shutting down as if a new instance had been
+    * started; the old behaviour was a silent exit/reboot. */
+   if (!frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS))
+   {
+      const char *_msg = msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT);
+      RARCH_ERR("[Content] Core \"%s\" is not the running core and "
+            "this platform cannot switch cores at runtime.\n",
+            path_get(RARCH_PATH_CORE));
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      return false;
+   }
 #endif
 
    return true;
@@ -2445,7 +2459,7 @@ bool task_push_load_content_from_playlist_from_menu(
    /* Check whether specified core is already loaded
     * > If so, content can be launched directly with
     *   the currently loaded core */
-   if (!force_core_reload &&
+   if ((!force_core_reload || !frontend_driver_has_fork()) &&
        retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
    {
       if (!content_info->environ_get)
@@ -2646,9 +2660,13 @@ bool task_push_load_contentless_core_from_menu(
     * run automatically on launch. We will leave this
     * non-functional code here as a place-marker for
     * future devs who may wish to implement this... */
-   command_event_cmd_exec(p_content,
+   if (!(ret = command_event_cmd_exec(p_content,
          path_get(RARCH_PATH_CONTENT), &content_ctx,
-         false);
+         false)))
+   {
+      retroarch_menu_running();
+      goto end;
+   }
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
 
@@ -2661,9 +2679,7 @@ bool task_push_load_contentless_core_from_menu(
    /* Push Quick Menu onto menu stack */
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, &flush_menu);
 
-#ifdef HAVE_DYNAMIC
 end:
-#endif
    content_information_ctx_free(&content_ctx);
 
    return ret;
@@ -2931,7 +2947,9 @@ bool task_push_load_content_with_new_core_from_menu(
    /* Check whether specified core is already loaded
     * > If so, we can skip loading the core and
     *   just load the content directly */
-   if (   !force_core_reload
+   /* Forced reload needs fork support; without it the running
+    * core is all there is, so load in-process when it matches. */
+   if (   (!force_core_reload || !frontend_driver_has_fork())
        && (type == CORE_TYPE_PLAIN)
        && retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
       return task_push_load_content_with_core(fullpath, content_info,
@@ -2977,9 +2995,13 @@ bool task_push_load_content_with_new_core_from_menu(
 
    task_push_to_history_list(p_content, true, false, false);
 #else
-   command_event_cmd_exec(p_content,
+   if (!(ret = command_event_cmd_exec(p_content,
          path_get(RARCH_PATH_CONTENT), &content_ctx,
-         false);
+         false)))
+   {
+      retroarch_menu_running();
+      goto end;
+   }
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
 
@@ -2987,9 +3009,7 @@ bool task_push_load_content_with_new_core_from_menu(
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 
-#ifdef HAVE_DYNAMIC
 end:
-#endif
    content_information_ctx_free(&content_ctx);
 
    return ret;

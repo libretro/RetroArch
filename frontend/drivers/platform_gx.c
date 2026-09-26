@@ -490,8 +490,24 @@ static void frontend_gx_process_args(int *argc, char *argv[])
 #ifndef IS_SALAMANDER
    /* A big hack: sometimes Salamander doesn't save the new core
     * it loads on first boot, so we make sure
-    * active core path is set here. */
+    * active core path is set here.
+    *
+    * On GameCube there is no salamander and no exec: the core
+    * linked into the DOL the loader started is the only core
+    * this process can ever run, so argv[0] is authoritative.
+    * retroarch-salamander.cfg is still read at startup and names
+    * whichever core DOL ran last, so when the user launches a
+    * different core DOL from Swiss, RARCH_PATH_CORE points at the
+    * wrong core. Every content load then thinks a core switch is
+    * needed, goes down the fork path, which HW_DOL cannot do, and
+    * the frontend quietly exits (the console reboots). The next
+    * boot of the same DOL works because that quit rewrote the
+    * salamander config. Always overwrite the stale value here. */
+#ifdef HW_DOL
+   if (*argc >= 1 && argv && argv[0])
+#else
    if (path_is_empty(RARCH_PATH_CORE) && *argc >= 1)
+#endif
    {
       char *last_slash = strrchr(argv[0], '/');
       if (last_slash)
