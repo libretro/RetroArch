@@ -229,6 +229,10 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
    uint32_t *buf;
    int fw, fh, ox, oy, x, y;
    bool taps4;
+   /* Bilinear column taps (xa, xb, fx per output column), built once:
+    * they depend only on x, and a 64-bit divide per output pixel was
+    * the bulk of the scale time. */
+   unsigned *col = NULL;
    unsigned sw = VIDEO_SCALE_W(src_dims);
    unsigned sh = VIDEO_SCALE_H(src_dims);
    int dw      = (int)VIDEO_SCALE_W(dst_dims);
@@ -258,6 +262,27 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
    /* Four taps when every output pixel covers at least a 2 x 2 source
     * cell; bilinear when enlarging or nearly 1:1. */
    taps4 = (sw >= 2u * (unsigned)fw) && (sh >= 2u * (unsigned)fh);
+   if (!taps4)
+   {
+      int i;
+      col = (unsigned*)malloc((size_t)fw * 3 * sizeof(unsigned));
+      if (!col)
+      {
+         free(buf);
+         return NULL;
+      }
+      for (i = 0; i < fw; i++)
+      {
+         /* This column's centre in the source, in 1/256 px. */
+         uint64_t px = (uint64_t)(2 * i + 1) * sw * 128 / fw;
+         unsigned xa;
+         px = (px > 128) ? px - 128 : 0;
+         xa = (unsigned)(px >> 8);
+         col[i * 3 + 0] = xa;
+         col[i * 3 + 1] = (xa + 1 < sw) ? xa + 1 : xa;
+         col[i * 3 + 2] = (unsigned)px & 0xff;
+      }
+   }
 
    for (y = 0; y < dh; y++)
    {
@@ -299,9 +324,9 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
             else
             {
                int      sx = x - ox;
-               unsigned x0 = (unsigned)((uint64_t)sx * sw / fw);
                if (taps4)
                {
+                  unsigned x0 = (unsigned)((uint64_t)sx * sw / fw);
                   unsigned x1 = (unsigned)((uint64_t)(sx + 1) * sw / fw);
                   unsigned xa, xb;
                   uint32_t p0, p1, p2, p3, r, g, b, al;
@@ -324,13 +349,10 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
                }
                else
                {
-                  uint64_t px = (uint64_t)(2 * sx + 1) * sw * 128 / fw;
-                  unsigned xa, xb, fx;
+                  unsigned xa = col[sx * 3];
+                  unsigned xb = col[sx * 3 + 1];
+                  unsigned fx = col[sx * 3 + 2];
                   uint32_t p;
-                  px = (px > 128) ? px - 128 : 0;
-                  xa = (unsigned)(px >> 8);
-                  fx = (unsigned)px & 0xff;
-                  xb = (xa + 1 < sw) ? xa + 1 : xa;
                   p  = ct_lerp(ct_lerp(ra[xa], ra[xb], fx),
                         ct_lerp(rb[xa], rb[xb], fx), fy);
                   if (src_rgba_order)
@@ -341,6 +363,7 @@ uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
          }
       }
    }
+   free(col);
    return buf;
 }
 
