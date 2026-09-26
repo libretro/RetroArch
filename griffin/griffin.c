@@ -1813,6 +1813,7 @@ SSL
 #endif
 
 #include "../libretro-common/net/net_socket_ssl_mbed.c"
+#include "../network/tls_log.c"
 #endif
 #endif
 

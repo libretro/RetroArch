@@ -228,6 +228,7 @@ typedef struct settings
       unsigned netplay_input_latency_frames_range;
       unsigned netplay_share_digital;
       unsigned netplay_share_analog;
+      unsigned tls_verify_mode;
       unsigned bundle_assets_extract_version_current;
       unsigned bundle_assets_extract_last_version;
       unsigned content_history_size;

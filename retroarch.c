@@ -145,6 +145,9 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <net/net_http.h>
+#ifdef HAVE_SSL
+#include <net/net_socket_ssl.h>
+#endif
 #endif
 
 #include <audio/audio_resampler.h>
@@ -8549,6 +8552,12 @@ bool retroarch_main_init(int argc, char *argv[])
 
    verbosity_enabled = retroarch_parse_input_and_config(p_rarch,
          global_get_ptr(), argc, argv);
+
+#ifdef HAVE_SSL
+   /* Apply the persisted TLS certificate-verification policy to the active
+    * SSL backend before any HTTPS task (cloud sync, cheevos, updater) runs. */
+   ssl_socket_set_verify_mode(settings->uints.tls_verify_mode);
+#endif
 
 #ifdef __APPLE__
    /* This doesn't have to be apple specific but it's currently the only

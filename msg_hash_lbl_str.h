@@ -1601,6 +1601,7 @@
 #define MENU_ENUM_LABEL_TIMEDATE_ENABLE_STR "menu_timedate_enable"
 #define MENU_ENUM_LABEL_TIMEDATE_STYLE_STR "menu_timedate_style"
 #define MENU_ENUM_LABEL_TIME_SHOW_STR "time_show"
+#define MENU_ENUM_LABEL_TLS_VERIFY_MODE_STR "tls_verify_mode"
 #define MENU_ENUM_LABEL_UI_COMPANION_ENABLE_STR "ui_companion_enable"
 #define MENU_ENUM_LABEL_UI_COMPANION_START_ON_BOOT_STR "ui_companion_start_on_boot"
 #define MENU_ENUM_LABEL_UI_COMPANION_TOGGLE_STR "ui_companion_toggle"
