@@ -495,10 +495,8 @@ static void *task_push_http_transfer_generic(
    /* Own a copy of the request body.  emscripten_fetch keeps the
     * pointer rather than copying it, so a caller's stack buffer, or
     * one it frees on return, would be read after the fact.  The
-    * length travels explicitly, which is the fix for
-    * task_push_webdav_put(): the old path passed put_data as a
-    * NUL-terminated string, truncating any binary payload at its
-    * first zero byte. */
+    * length travels explicitly so a binary body is sent whole, zero
+    * bytes included. */
    if (data && data_len)
    {
       if (!(http->req_data = (char*)malloc(data_len)))
@@ -592,17 +590,6 @@ void* task_push_webdav_mkdir(const char *url, bool mute,
       retro_task_callback_t cb, void *user_data)
 {
    return task_push_http_transfer_generic(url, "MKCOL", NULL, 0, NULL,
-         headers, mute, NULL, cb, user_data);
-}
-
-void* task_push_webdav_put(const char *url,
-      const void *put_data, size_t len, bool mute,
-      const char *headers, retro_task_callback_t cb, void *user_data)
-{
-   /* No "Expect: 100-continue" here, unlike task_http.c: the browser
-    * owns the request/response dance and rejects the header as a
-    * forbidden name. */
-   return task_push_http_transfer_generic(url, "PUT", put_data, len, NULL,
          headers, mute, NULL, cb, user_data);
 }
 
