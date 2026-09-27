@@ -309,6 +309,9 @@ enum video_thread_vp_slot
  * an offset. */
 #define VIDEO_THREAD_LINE 64
 
+/* frame.lent when the loan is the spare buffer rather than a ring slot */
+#define VIDEO_THREAD_LEND_SPARE 2
+
 typedef struct thread_video
 {
    retro_time_t last_time;
@@ -582,6 +585,13 @@ typedef struct thread_video
        * no push behind them - set_texture_enable() and
        * apply_state_changes(). Not the ring: 'lock' guards that. */
       slock_t *lock;
+      /* A third buffer of buffer_size bytes, outside the ring, lent to
+       * the core when both slots are taken (one queued, one being
+       * rendered - a driver whose present blocks until vblank keeps
+       * the ring that way). The push that returns it swaps it into the
+       * slot it picks, and the buffer it displaces becomes the spare.
+       * Allocated on the first ask that needs it; main thread only. */
+      uint8_t *spare;
       /* Bytes allocated for each slot buffer at thread_init, from the
        * core's declared maximum geometry. A core that hands over a
        * larger frame than it declared is clamped to this. */
@@ -657,9 +667,10 @@ typedef struct thread_video
        * set, the slot being rendered is tail ^ 1. */
       bool busy;
       /* Zero-copy: the slot handed to the core through
-       * get_current_software_framebuffer, -1 for none. Held free until
-       * the core pushes a frame: a push whose data is that slot's
-       * buffer publishes it without a copy; any other push clears the
+       * get_current_software_framebuffer, VIDEO_THREAD_LEND_SPARE for
+       * the spare, -1 for none. A lent slot is held free until the core
+       * pushes a frame: a push whose data is inside the lent buffer
+       * publishes it without a copy; any other push clears the
        * reservation first. Guarded by 'lock'. */
       int lent;
       /* Hardware-rendered cores. The core's sync index space is this
