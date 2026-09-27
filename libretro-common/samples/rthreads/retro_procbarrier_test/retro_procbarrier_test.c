@@ -19,7 +19,12 @@
  *    early or faults. Bounded by a watchdog, so a deadlock is reported
  *    as a failure rather than a harness kill.
  *
- * 4. It fences. This is the one that matters and the one most tests of
+ * 4. It survives threads exiting mid-walk. A walk can pick a thread,
+ *    interrupt it, and have it exit before it ever answers; the barrier
+ *    must see that the thread is gone rather than wait on it. Short-lived
+ *    threads are started and joined continuously while barriers run.
+ *
+ * 5. It fences. This is the one that matters and the one most tests of
  *    this kind skip. The asymmetric protocol the barrier enables is:
  *
  *      producer:  seq = seq + 1  (release)        consumer:  parked = 1  (relaxed)
@@ -310,6 +315,59 @@ static int check_concurrent(void)
    return 1;
 }
 
+static void shortlived_thread(void *arg)
+{
+   volatile unsigned x = 0;
+   (void)arg;
+   while (x < 20000u)
+      x++;
+}
+
+static void churn_thread(void *arg)
+{
+   (void)arg;
+   while (!retro_atomic_load_relaxed_int(&g_stop))
+      sthread_join(sthread_create(shortlived_thread, NULL));
+}
+
+static int check_exiting(void)
+{
+   sthread_t *churn[2], *caller;
+   int i, waited_ms, done = 0;
+
+   if (retro_procbarrier_tier() == RETRO_PROCBARRIER_NONE)
+      return 1;
+
+   retro_atomic_store_relaxed_int(&g_stop, 0);
+   retro_atomic_store_relaxed_int(&g_conc_done, 0);
+   for (i = 0; i < 2; i++)
+      churn[i] = sthread_create(churn_thread, NULL);
+   caller = sthread_create(barrier_caller, NULL);
+
+   for (waited_ms = 0; waited_ms < CONC_LIMIT_S * 1000; waited_ms += 10)
+   {
+      done = retro_atomic_load_acquire_int(&g_conc_done);
+      if (done >= 1)
+         break;
+      sleep_ms(10);
+   }
+   if (done < 1)
+   {
+      printf("  FAIL: barriers stalled while threads were exiting "
+             "(%d barriers not done within %d s)\n",
+             CONC_ITERS, CONC_LIMIT_S);
+      printf("procbarrier: FAILED\n");
+      exit(1);
+   }
+   sthread_join(caller);
+   retro_atomic_store_relaxed_int(&g_stop, 1);
+   for (i = 0; i < 2; i++)
+      sthread_join(churn[i]);
+   printf("  exiting: %d barriers while threads were started and "
+          "exiting\n", CONC_ITERS);
+   return 1;
+}
+
 static int check_fences(void)
 {
    sthread_t *p;
@@ -373,6 +431,7 @@ int main(void)
    ok &= check_resolution();
    ok &= check_returns();
    ok &= check_concurrent();
+   ok &= check_exiting();
    ok &= check_fences();
    printf(ok ? "procbarrier: ok\n" : "procbarrier: FAILED\n");
    return ok ? 0 : 1;
