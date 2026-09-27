@@ -209,6 +209,7 @@ static size_t             s_page_size;
 typedef struct pb_ack_slot
 {
    retro_atomic_int_t *acks;
+   unsigned long       start;   /* the thread's start time, its identity */
    pid_t               tid;
    retro_atomic_int_t  closed;
 } pb_ack_slot_t;
@@ -660,14 +661,20 @@ static void pb_task_path(char *path, pid_t tid, const char *leaf)
    strcpy(q, leaf);
 }
 
-static int pb_thread_running(pid_t tid)
+/* Reads /proc/self/task/<tid>/stat. Returns 1 when the thread is on a
+ * CPU or waiting for one, or when running is 0 and it merely exists.
+ * *start gets its start time in clock ticks since boot, field 22, which
+ * with the tid identifies the thread: a tid is reused as soon as its
+ * thread is gone, and a later thread under the same number is not the
+ * one that was signalled. */
+static int pb_thread_stat(pid_t tid, int running, unsigned long *start)
 {
-   char path[64], buf[256], *p;
-   int fd;
+   char path[64], buf[512], *p;
+   int fd, field;
    ssize_t n;
-   /* /proc/self/task/<tid>/stat: field 3 is the state, after the comm
-    * in parentheses; the comm may itself contain spaces or parentheses,
-    * so scan back from the last ')' rather than forward. */
+   /* Field 3, the state, follows the comm in parentheses; the comm may
+    * itself contain spaces or parentheses, so scan back from the last
+    * ')' rather than forward, and count fields from there. */
    pb_task_path(path, tid, "/stat");
    fd = open(path, O_RDONLY);
    if (fd < 0)
@@ -678,7 +685,21 @@ static int pb_thread_running(pid_t tid)
       return 0;
    buf[n] = '\0';
    p = strrchr(buf, ')');
-   return p && p[1] == ' ' && p[2] == 'R';
+   if (!p || p[1] != ' ')
+      return 0;
+   if (running && p[2] != 'R')
+      return 0;
+   /* p[1] is the space before field 3; step to the one before field 22,
+    * the start time. */
+   p++;
+   for (field = 3; field < 22; field++)
+   {
+      p = strchr(p + 1, ' ');
+      if (!p)
+         return 0;
+   }
+   *start = strtoul(p + 1, NULL, 10);
+   return 1;
 }
 
 /* Whether bit sig-1 is set in a /proc hex signal mask: most significant
@@ -752,15 +773,20 @@ static int pb_thread_blocks_signal(pid_t tid)
 /* How long the walker sleeps before checking whether a target it is
  * still owed has exited. A thread that exits with the signal queued never
  * runs the handler, and nothing else would wake the walker; every other
- * acknowledgement wakes it at once. */
-#define PB_ACK_RECHECK_NS 10000000L
+ * acknowledgement wakes it at once. The first sleep is short and each
+ * one after it twice as long, up to the ceiling: a walk that caught a
+ * thread in its last microseconds is over in a fraction of a
+ * millisecond, and one owed by a thread that is merely slow to be
+ * scheduled costs a syscall every 10 ms rather than a spin. */
+#define PB_ACK_RECHECK_FIRST_NS 250000L
+#define PB_ACK_RECHECK_MAX_NS   10000000L
 
 /* Wait until every slot in the batch is closed. A slot whose thread no
- * longer exists is closed by the walker: an exited thread was fenced by
- * exiting. */
-static void pb_ack_wait(pb_ack_slot_t *slots, int n, retro_atomic_int_t *acks,
-      pid_t pid)
+ * longer exists -- or whose tid now belongs to a thread started later --
+ * is closed by the walker: an exited thread was fenced by exiting. */
+static void pb_ack_wait(pb_ack_slot_t *slots, int n, retro_atomic_int_t *acks)
 {
+   long wait_ns = PB_ACK_RECHECK_FIRST_NS;
    for (;;)
    {
       int got = retro_atomic_load_acquire_int(acks);
@@ -771,20 +797,26 @@ static void pb_ack_wait(pb_ack_slot_t *slots, int n, retro_atomic_int_t *acks,
       {
          struct timespec ts;
          ts.tv_sec  = 0;
-         ts.tv_nsec = PB_ACK_RECHECK_NS;
+         ts.tv_nsec = wait_ns;
          /* Returns at once if an acknowledgement landed since the load. */
          if (syscall(__NR_futex, (void*)acks, PB_FUTEX_WAIT_PRIVATE, got,
                   &ts, NULL, 0) == 0 || errno != ETIMEDOUT)
             continue;
+         if (wait_ns < PB_ACK_RECHECK_MAX_NS)
+            wait_ns *= 2;
       }
 #endif
       for (i = 0; i < n; i++)
       {
+         unsigned long start;
          if (retro_atomic_load_acquire_int(&slots[i].closed))
             continue;
-         if (       syscall(SYS_tgkill, pid, slots[i].tid, 0) != 0
-               && errno == ESRCH
-               && retro_atomic_cas_int(&slots[i].closed, 0, 1))
+         /* Gone, or a different thread now under the same tid: either
+          * way the one that was signalled has exited. */
+         if (       pb_thread_stat(slots[i].tid, 0, &start)
+               &&   start == slots[i].start)
+            continue;
+         if (retro_atomic_cas_int(&slots[i].closed, 0, 1))
             retro_atomic_fetch_add_int(acks, 1);
       }
    }
@@ -823,7 +855,7 @@ static void pb_signal_barrier(void)
           * than strictly running, so under overcommit this can also wait
           * for a preempted thread to be rescheduled -- bounded by a
           * scheduler quantum, and acceptable on a path about to sleep. */
-         if (!pb_thread_running(tid))
+         if (!pb_thread_stat(tid, 1, &slots[n].start))
             continue;
          /* A thread with the signal blocked would never acknowledge it.
           * It is one this process did not create for its own protocols
@@ -832,8 +864,8 @@ static void pb_signal_barrier(void)
           * needs drained. The header states that contract. */
          if (pb_thread_blocks_signal(tid))
             continue;
-         slots[n].acks = &acks;
-         slots[n].tid  = tid;
+         slots[n].acks  = &acks;
+         slots[n].tid   = tid;
          retro_atomic_store_release_int(&slots[n].closed, 0);
          /* EAGAIN is a full queue, which drains as its signals are
           * handled; ESRCH is a thread that has exited, which fences it. */
@@ -848,7 +880,7 @@ static void pb_signal_barrier(void)
                break;
          }
       }
-      pb_ack_wait(slots, n, &acks, pid);
+      pb_ack_wait(slots, n, &acks);
    } while (e != NULL);
    PB_TSAN_WALK_UNLOCK();
    closedir(d);
