@@ -53,6 +53,12 @@ struct ifaddrs
 
 #include <sys/cdefs.h>
 
+/* C linkage, since a C++ caller -- a core's network layer, say -- must
+ * resolve these against compat_ifaddrs.c. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Portable reimplementation of \c getifaddrs().
  * The original function will be used if it's available.
@@ -68,5 +74,9 @@ extern int getifaddrs(struct ifaddrs **ifap);
  * @see https://man7.org/linux/man-pages/man3/getifaddrs.3.html
  */
 extern void freeifaddrs(struct ifaddrs *ifa);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
