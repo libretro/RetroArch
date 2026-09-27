@@ -96,13 +96,14 @@ void *task_push_webdav_mkdir(const char *url, bool suppress,
    return NULL;
 }
 
-void *task_push_webdav_put(const char *url, const void *data, size_t len,
-      bool suppress, const char *headers, retro_task_callback_t cb,
-      void *user_data)
+void *task_push_webdav_put_stream(const char *url,
+      net_http_source_t source, net_http_source_rewind_t rewind,
+      void *source_data, size_t len, bool suppress, const char *headers,
+      retro_task_callback_t cb, void *user_data)
 {
-   (void)url; (void)data; (void)len; (void)suppress; (void)headers;
-   (void)cb; (void)user_data;
-   unreachable("task_push_webdav_put");
+   (void)url; (void)source; (void)rewind; (void)source_data; (void)len;
+   (void)suppress; (void)headers; (void)cb; (void)user_data;
+   unreachable("task_push_webdav_put_stream");
    return NULL;
 }
 

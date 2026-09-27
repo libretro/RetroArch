@@ -90,18 +90,30 @@ void *task_push_webdav_mkdir(const char *url, bool suppress,
    return stub_record("MKCOL", headers, cb, user_data);
 }
 
-void *task_push_webdav_put(const char *url, const void *data, size_t len,
-      bool suppress, const char *headers, retro_task_callback_t cb,
-      void *user_data)
+void *task_push_webdav_put_stream(const char *url,
+      net_http_source_t source, net_http_source_rewind_t rewind,
+      void *source_data, size_t len, bool suppress, const char *headers,
+      retro_task_callback_t cb, void *user_data)
 {
-   (void)url; (void)suppress;
-   /* The driver frees its buffer as soon as this returns, so keep a
-    * copy of what would have gone on the wire. */
+   size_t got = 0;
+   (void)url; (void)rewind; (void)suppress;
+   /* Pull the body the way the socket would, in send-buffer sized
+    * pieces, and keep what arrived: a source left at the end of the
+    * file gives a short body and the test sees it. */
    free(stub_req.put_data);
    stub_req.put_data = (char*)malloc(len ? len : 1);
-   if (stub_req.put_data && len)
-      memcpy(stub_req.put_data, data, len);
-   stub_req.put_len = len;
+   while (stub_req.put_data && got < len)
+   {
+      size_t  want = len - got;
+      int64_t n;
+      if (want > 512)
+         want = 512;
+      n = source(source_data, stub_req.put_data + got, want);
+      if (n <= 0)
+         break;
+      got += (size_t)n;
+   }
+   stub_req.put_len = got;
    return stub_record("PUT", headers, cb, user_data);
 }
 
