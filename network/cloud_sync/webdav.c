@@ -1100,10 +1100,21 @@ static void webdav_update_cb(retro_task_t *task, void *task_data,
    free(webdav_cb_st);
 }
 
+/* The upload body, pulled from the open save file by net_http on the
+ * task thread as the socket takes it. */
+static int64_t webdav_upload_source(void *userdata, void *buf, size_t len)
+{
+   return filestream_read((RFILE*)userdata, buf, (int64_t)len);
+}
+
+static bool webdav_upload_rewind(void *userdata)
+{
+   return filestream_seek((RFILE*)userdata, 0, SEEK_SET) == 0;
+}
+
 static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
 {
    char            url_encoded[PATH_MAX_LENGTH];
-   void           *buf;
    int64_t         len;
    char           *auth_header;
 
@@ -1125,20 +1136,15 @@ static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
       return;
    }
 
-   /* TODO: would be better to read file as it's being written to wire, this is very inefficient */
-   /* Rewind first: a retry after a Digest challenge comes back here
-    * with the file already read to its end, and without the seek it
-    * read nothing and uploaded a buffer of uninitialised memory in
-    * place of the save.  A short read fails the upload for the same
-    * reason. */
+   /* The file is streamed onto the wire from rfile as the socket takes
+    * it, one send buffer at a time, rather than read whole into memory
+    * first. Rewind first: a retry after a Digest challenge comes back
+    * here with the file already read to its end, and without the seek
+    * the upload would carry nothing. A short read fails the upload. */
    len = filestream_get_size(webdav_cb_st->rfile);
-   buf = (len >= 0) ? malloc((size_t)(len + 1)) : NULL;
-   if (   !buf
-       || filestream_seek(webdav_cb_st->rfile, 0, SEEK_SET) < 0
-       || filestream_read(webdav_cb_st->rfile, buf, len) != len)
+   if (len < 0 || filestream_seek(webdav_cb_st->rfile, 0, SEEK_SET) < 0)
    {
       RARCH_ERR("[webdav] Could not read %s for upload.\n", webdav_cb_st->path);
-      free(buf);
       webdav_cb_st->cb(webdav_cb_st->user_data, webdav_cb_st->path, false, webdav_cb_st->rfile);
       free(webdav_cb_st);
       return;
@@ -1146,10 +1152,10 @@ static void webdav_do_update(bool success, webdav_cb_state_t *webdav_cb_st)
 
    RARCH_DBG("[webdav] PUT %s\n", url_encoded);
    auth_header = webdav_get_auth_header("PUT", url_encoded);
-   task_push_webdav_put(url_encoded, buf, len, true, auth_header, webdav_update_cb, webdav_cb_st);
+   task_push_webdav_put_stream(url_encoded,
+         webdav_upload_source, webdav_upload_rewind, webdav_cb_st->rfile,
+         (size_t)len, true, auth_header, webdav_update_cb, webdav_cb_st);
    free(auth_header);
-
-   free(buf);
 }
 
 /* Where the backup of @path goes: deleted/<path>-<yymmdd-hhmmss>, the

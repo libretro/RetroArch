@@ -594,6 +594,34 @@ void* task_push_webdav_put(const char *url,
    return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
 }
 
+void* task_push_webdav_put_stream(const char *url,
+      net_http_source_t source, net_http_source_rewind_t rewind,
+      void *source_data, size_t len, bool mute,
+      const char *headers, retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
+   char                      expect[1024]; /* TODO/FIXME - check size */
+   size_t                    _len;
+
+   if (!url || !*url || !source)
+      return NULL;
+
+   if (!(conn = net_http_connection_new(url, "PUT", NULL)))
+      return NULL;
+
+   _len = strlcpy_lit(expect, "Expect: 100-continue\r\n", sizeof(expect));
+   if (headers)
+   {
+      strlcpy(expect + _len, headers, sizeof(expect) - _len);
+      net_http_connection_set_headers(conn, expect);
+   }
+
+   net_http_connection_set_content_source(conn, NULL, len,
+         source, rewind, source_data);
+
+   return task_push_http_transfer_generic(conn, url, mute, false, cb, user_data);
+}
+
 void* task_push_webdav_delete(const char *url, bool mute,
       const char *headers,
       retro_task_callback_t cb, void *user_data)

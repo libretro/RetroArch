@@ -94,6 +94,41 @@ void net_http_connection_set_sink(struct http_connection_t *conn,
 void net_http_connection_set_content(struct http_connection_t *conn, const char *content_type,
       size_t content_length, const void *content);
 
+/**
+ * net_http_source_t:
+ *
+ * Called for the next run of request-body bytes: fill up to @len bytes
+ * of @buf and return how many were filled. Return 0 at the end of the
+ * body and a negative value on error; either one short of the
+ * advertised Content-Length fails the request like a transport error.
+ * Runs on whichever thread drives net_http_update().
+ **/
+typedef int64_t (*net_http_source_t)(void *userdata, void *buf, size_t len);
+
+/**
+ * net_http_source_rewind_t:
+ *
+ * Asked to restart the body from its first byte when the request has
+ * to be replayed on a fresh connection (a pooled connection the peer
+ * closed while idle). Return false if that is not possible; the
+ * request then fails instead of being replayed.
+ **/
+typedef bool (*net_http_source_rewind_t)(void *userdata);
+
+/**
+ * net_http_connection_set_content_source:
+ *
+ * Send a request body of @content_length bytes pulled from @source as
+ * the socket takes them, so peak memory is one send buffer rather than
+ * the whole body. Replaces any body given by
+ * net_http_connection_set_content(). @rewind may be NULL, in which
+ * case the request is never replayed on a fresh connection.
+ **/
+void net_http_connection_set_content_source(struct http_connection_t *conn,
+      const char *content_type, size_t content_length,
+      net_http_source_t source, net_http_source_rewind_t rewind,
+      void *userdata);
+
 const char *net_http_connection_url(struct http_connection_t *conn);
 
 const char* net_http_connection_method(struct http_connection_t* conn);

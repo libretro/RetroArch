@@ -96,6 +96,7 @@ bool task_nbio_slice_within_budget(void *ud, size_t avail, size_t len);
 void task_window_progress_cb(retro_task_t *task);
 
 #ifdef HAVE_NETWORKING
+#include <net/net_http.h>
 typedef struct
 {
    char *data;
@@ -133,6 +134,13 @@ void *task_push_webdav_mkdir(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
 void *task_push_webdav_put(const char *url, const void *put_data, size_t len, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
+/* PUT a body of @len bytes pulled from @source as the socket takes
+ * them, holding one send buffer rather than the whole file. @rewind
+ * restarts the body for a replay on a fresh connection; NULL means the
+ * request is never replayed. */
+void *task_push_webdav_put_stream(const char *url, net_http_source_t source,
+      net_http_source_rewind_t rewind, void *source_data, size_t len, bool mute,
+      const char *headers, retro_task_callback_t cb, void *user_data);
 void *task_push_webdav_delete(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
 void *task_push_webdav_move(const char *url, const char *dest, bool mute, const char *headers,
