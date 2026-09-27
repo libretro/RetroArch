@@ -695,29 +695,36 @@ void memjit_free(void *addr, size_t len)
 /* Zeroing a range of pages                                            */
 /* ------------------------------------------------------------------ */
 
-void memzero_pages(void *addr, size_t len)
+bool memzero_pages(void *addr, size_t len)
 {
    if (!addr || !len)
-      return;
+      return true;
 #if defined(_WIN32) && !defined(_XBOX)
    /* Decommitting and recommitting hands the pages back and takes fresh
-    * zeroed ones, at page granularity within the region. */
-   if (     VirtualFree(addr, len, MEM_DECOMMIT)
-         && VirtualAlloc(addr, len, MEM_COMMIT, PAGE_READWRITE))
-      return;
+    * zeroed ones, at page granularity within the region. Once the
+    * decommit has succeeded the range is no longer backed, so a failed
+    * recommit cannot fall through to memset: that would fault. The
+    * range is reported lost instead, and the caller must not touch it. */
+   if (VirtualFree(addr, len, MEM_DECOMMIT))
+   {
+      if (VirtualAlloc(addr, len, MEM_COMMIT, PAGE_READWRITE))
+         return true;
+      return false;
+   }
 #elif defined(__linux__) && defined(MADV_DONTNEED)
    /* Linux and Android zero-fill private anonymous memory on the next
     * touch after MADV_DONTNEED; on every other system the advice may
     * leave the contents in place, so it is only taken here. */
    if (madvise(addr, len, MADV_DONTNEED) == 0)
-      return;
+      return true;
 #elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_FIXED)
    /* Fresh zero pages mapped over the range. */
    if (mmap(addr, len, PROT_READ | PROT_WRITE,
             MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0) != MAP_FAILED)
-      return;
+      return true;
 #endif
    memset(addr, 0, len);
+   return true;
 }
 
 /* ------------------------------------------------------------------ */

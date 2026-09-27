@@ -366,10 +366,16 @@ void memjit_free(void *addr, size_t len);
  * the system allows: by handing the pages back and taking fresh ones
  * where that is guaranteed to read as zeroes (Linux, Android, Windows),
  * by mapping fresh pages over the range where the advice would only be
- * advice (Darwin, the BSDs), and by memset where neither exists. The
- * range is still mapped and readable afterwards.
+ * advice (Darwin, the BSDs), and by memset where neither exists.
+ *
+ * Returns true when the range is zeroed and still mapped and readable.
+ * Returns false only on Windows, when the pages were handed back but
+ * fresh ones could not be committed in their place: the range is then
+ * decommitted and must not be read or written; the caller should treat
+ * the allocation as lost and release it. Every other path either
+ * succeeds or falls back to memset and returns true.
  */
-void memzero_pages(void *addr, size_t len);
+bool memzero_pages(void *addr, size_t len);
 
 RETRO_END_DECLS
 
