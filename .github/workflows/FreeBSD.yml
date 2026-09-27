@@ -71,6 +71,11 @@ jobs:
             gmake -j$NCPU clean
             gmake -j$NCPU info all
             ./retroarch --version
+            # udev input must multiplex with kqueue here, so the binary
+            # must not need libepoll-shim's epoll_* at all.
+            if nm -u retroarch | grep -q 'epoll_'; then
+              echo "retroarch still references epoll (libepoll-shim)"; exit 1
+            fi
 
             # With v4l_compat the V4L2 camera and video processor core
             # must still compile; only those two objects are rebuilt.
