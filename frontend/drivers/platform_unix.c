@@ -2466,6 +2466,33 @@ static void frontend_unix_set_screen_brightness(int value)
 }
 #endif
 
+#if !defined(ANDROID) && !defined(DINGUX)
+/* Distribution packages install the shared libretro data sets under
+ * <prefix>/share/libretro/<name> (FreeBSD ports: retroarch-assets,
+ * libretro-core-info; Debian and its derivatives use the same layout).
+ * Default to those when present so a locally built RetroArch finds the
+ * packaged assets, core info, shaders and joypad profiles without any
+ * retroarch.cfg edits.  Only what would otherwise fall back to an empty
+ * per-user directory is probed here; the per-user directory stays the
+ * default for anything writable. */
+static bool unix_find_packaged_dir(char *s, size_t len, const char *name)
+{
+   static const char *const prefixes[] = {
+      "/usr/local/share/libretro",
+      "/usr/share/libretro"
+   };
+   size_t i;
+   for (i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); i++)
+   {
+      fill_pathname_join(s, prefixes[i], name, len);
+      if (path_is_directory(s))
+         return true;
+   }
+   *s = '\0';
+   return false;
+}
+#endif
+
 static void frontend_unix_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
@@ -3027,6 +3054,9 @@ static void frontend_unix_get_env(int *argc,
    if (libretro_directory && *libretro_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], libretro_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   else if (unix_find_packaged_dir(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]), "info"))
+      ;
    else
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
             "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
@@ -3035,6 +3065,11 @@ static void frontend_unix_get_env(int *argc,
       strlcpy(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
 	    libretro_autoconfig_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+#if !defined(DINGUX)
+   else if (unix_find_packaged_dir(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+            sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]), "autoconfig"))
+      ;
+#endif
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
             "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
@@ -3064,6 +3099,11 @@ static void frontend_unix_get_env(int *argc,
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
             "/usr/share/games/retroarch",
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+#if !defined(DINGUX)
+   else if (unix_find_packaged_dir(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+            sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]), "assets"))
+      ;
+#endif
    else
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], base_path,
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
@@ -3155,6 +3195,11 @@ static void frontend_unix_get_env(int *argc,
        strlcpy(g_defaults.dirs[DEFAULT_DIR_SHADER],
 	       libretro_video_shader_directory,
 	       sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+#if !defined(DINGUX)
+   else if (unix_find_packaged_dir(g_defaults.dirs[DEFAULT_DIR_SHADER],
+            sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]), "shaders"))
+      ;
+#endif
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
              "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));

@@ -77,6 +77,11 @@ jobs:
               echo "retroarch still references epoll (libepoll-shim)"; exit 1
             fi
 
+            # A fresh RetroArch must pick up data sets the ports install
+            # under /usr/local/share/libretro (assets, info, shaders,
+            # autoconfig) without any retroarch.cfg edits.
+            sh samples/frontend/packaged_dirs/run.sh
+
             # With v4l_compat the V4L2 camera and video processor core
             # must still compile; only those two objects are rebuilt.
             pkg install -y v4l_compat
