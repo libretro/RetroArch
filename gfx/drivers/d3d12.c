@@ -6735,6 +6735,14 @@ static bool d3d12_gfx_frame(
        * draw the frame through this one binding alike. */
       draw_direct = d3d12->hw_direct.current
          && texture == d3d12->frame.texture;
+      /* A dupe (video_refresh(NULL)) draws the core's texture again
+       * without going through the handoff above, which is where the
+       * flag is otherwise set. wait_sync_index promises the core that
+       * the frontend is done with every use of the texture, so the
+       * done fence must be signalled behind this list too, or the core
+       * writes the texture while this draw still reads it. */
+      if (draw_direct)
+         d3d12->hw_v2.frame_took_texture = true;
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd,
             ROOT_ID_TEXTURE_T,
             draw_direct
