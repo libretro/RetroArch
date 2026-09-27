@@ -102,6 +102,7 @@
 
 #if defined(PB_LINUX)
 #include <time.h>
+#include <sched.h>
 #include <sys/syscall.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -478,7 +479,27 @@ void __tsan_acquire(void *addr);
 void __tsan_release(void *addr);
 #define PB_TSAN_ACQUIRE(p) __tsan_acquire((void*)(p))
 #define PB_TSAN_RELEASE(p) __tsan_release((void*)(p))
+/* ThreadSanitizer defers a signal into one slot per signal number per
+ * thread and drops a second of the same number that arrives before the
+ * first is handled (tsan_interceptors_posix.cpp, pending_signals), where
+ * the kernel would queue it. Two walks with a target in common would
+ * lose an acknowledgement to that, so under the tool walks run one at a
+ * time. The tool checks the slot handoff either way. */
+static pthread_mutex_t s_tsan_walk_lock = PTHREAD_MUTEX_INITIALIZER;
+/* Spun, not blocked on: the tool runs a deferred handler only once the
+ * thread is back in code it instruments, and a waiter asleep inside
+ * pthread_mutex_lock never is, so the walker holding the lock would wait
+ * on that waiter's acknowledgement forever. */
+static void pb_tsan_walk_lock(void)
+{
+   while (pthread_mutex_trylock(&s_tsan_walk_lock) != 0)
+      sched_yield();
+}
+#define PB_TSAN_WALK_LOCK()   pb_tsan_walk_lock()
+#define PB_TSAN_WALK_UNLOCK() pthread_mutex_unlock(&s_tsan_walk_lock)
 #else
+#define PB_TSAN_WALK_LOCK()   ((void)0)
+#define PB_TSAN_WALK_UNLOCK() ((void)0)
 #define PB_TSAN_ACQUIRE(p) ((void)0)
 #define PB_TSAN_RELEASE(p) ((void)0)
 #endif
@@ -600,26 +621,31 @@ static int pb_signal_try(int signum)
 }
 
 #if defined(PB_LINUX)
-static int pb_thread_running(pid_t tid)
+/* /proc/self/task/<tid><leaf>. Built by hand: snprintf is not C89, and
+ * a tid is a small decimal. path must hold 64 bytes. */
+static void pb_task_path(char *path, pid_t tid, const char *leaf)
 {
-   char path[64], buf[256], *p, *q;
-   int fd;
-   ssize_t n;
-   unsigned v;
-   /* /proc/self/task/<tid>/stat: field 3 is the state, after the comm
-    * in parentheses; the comm may itself contain spaces or parentheses,
-    * so scan back from the last ')' rather than forward. The path is
-    * built by hand: snprintf is not C89, and a tid is a small decimal. */
+   char    *q;
+   char     digits[16];
+   int      nd = 0;
+   unsigned v  = (unsigned)tid;
    strcpy(path, "/proc/self/task/");
    q = path + strlen(path);
-   {
-      char digits[16];
-      int  nd = 0;
-      v = (unsigned)tid;
-      do { digits[nd++] = (char)('0' + v % 10u); v /= 10u; } while (v);
-      while (nd) *q++ = digits[--nd];
-   }
-   strcpy(q, "/stat");
+   do { digits[nd++] = (char)('0' + v % 10u); v /= 10u; } while (v);
+   while (nd)
+      *q++ = digits[--nd];
+   strcpy(q, leaf);
+}
+
+static int pb_thread_running(pid_t tid)
+{
+   char path[64], buf[256], *p;
+   int fd;
+   ssize_t n;
+   /* /proc/self/task/<tid>/stat: field 3 is the state, after the comm
+    * in parentheses; the comm may itself contain spaces or parentheses,
+    * so scan back from the last ')' rather than forward. */
+   pb_task_path(path, tid, "/stat");
    fd = open(path, O_RDONLY);
    if (fd < 0)
       return 0;
@@ -630,6 +656,70 @@ static int pb_thread_running(pid_t tid)
    buf[n] = '\0';
    p = strrchr(buf, ')');
    return p && p[1] == ' ' && p[2] == 'R';
+}
+
+/* Whether bit sig-1 is set in a /proc hex signal mask: most significant
+ * digit first, as many digits as the kernel has signals (16 for 64, 32
+ * on MIPS's 128), so it is read from the right without assuming a
+ * width. */
+static int pb_mask_has(const char *s, int sig)
+{
+   const char *end;
+   unsigned    bit, digit;
+   int         c;
+   while (*s == ' ' || *s == '\t')
+      s++;
+   end = s;
+   while ((*end >= '0' && *end <= '9') || (*end >= 'a' && *end <= 'f')
+         || (*end >= 'A' && *end <= 'F'))
+      end++;
+   bit = (unsigned)(sig - 1);
+   if (sig < 1 || (size_t)(bit / 4u) >= (size_t)(end - s))
+      return 0;
+   c     = end[-1 - (int)(bit / 4u)];
+   digit = (c <= '9') ? (unsigned)(c - '0')
+         : (unsigned)((c | 0x20) - 'a' + 10);
+   return (int)((digit >> (bit % 4u)) & 1u);
+}
+
+/* 1 when the thread has the barrier's signal blocked, or is gone. Its
+ * status file runs past a kilobyte and only the SigBlk line matters, so
+ * it is read in small pieces and every other line is dropped unseen. A
+ * kernel without the line -- none since 2.6 -- is taken as unblocked. */
+static int pb_thread_blocks_signal(pid_t tid)
+{
+   char    path[64], buf[128], line[48];
+   int     fd, len = 0, overlong = 0;
+   ssize_t n;
+   pb_task_path(path, tid, "/status");
+   fd = open(path, O_RDONLY);
+   if (fd < 0)
+      return 1;   /* exited, and fenced by exiting */
+   while ((n = read(fd, buf, sizeof(buf))) > 0)
+   {
+      ssize_t i;
+      for (i = 0; i < n; i++)
+      {
+         if (buf[i] != '\n')
+         {
+            if (len < (int)sizeof(line) - 1)
+               line[len++] = buf[i];
+            else
+               overlong = 1;
+            continue;
+         }
+         line[len] = '\0';
+         if (!overlong && !strncmp(line, "SigBlk:", 7))
+         {
+            close(fd);
+            return pb_mask_has(line + 7, s_signum);
+         }
+         len      = 0;
+         overlong = 0;
+      }
+   }
+   close(fd);
+   return 0;
 }
 
 /* Walks queue signals in batches of this many, each target with a slot
@@ -692,6 +782,7 @@ static void pb_signal_barrier(void)
    d = opendir("/proc/self/task");
    if (!d)
       return;
+   PB_TSAN_WALK_LOCK();
    do
    {
       int n = 0;
@@ -711,6 +802,13 @@ static void pb_signal_barrier(void)
           * scheduler quantum, and acceptable on a path about to sleep. */
          if (!pb_thread_running(tid))
             continue;
+         /* A thread with the signal blocked would never acknowledge it.
+          * It is one this process did not create for its own protocols
+          * -- a GL or Vulkan driver's workers block every signal -- and
+          * it touches no eventcount, so it has nothing this barrier
+          * needs drained. The header states that contract. */
+         if (pb_thread_blocks_signal(tid))
+            continue;
          slots[n].acks = &acks;
          slots[n].tid  = tid;
          retro_atomic_store_release_int(&slots[n].closed, 0);
@@ -729,6 +827,7 @@ static void pb_signal_barrier(void)
       }
       pb_ack_wait(slots, n, &acks, pid);
    } while (e != NULL);
+   PB_TSAN_WALK_UNLOCK();
    closedir(d);
 }
 #endif

@@ -24,7 +24,12 @@
  *    must see that the thread is gone rather than wait on it. Short-lived
  *    threads are started and joined continuously while barriers run.
  *
- * 5. It fences. This is the one that matters and the one most tests of
+ * 5. It tolerates threads that block every signal, the way a GL or
+ *    Vulkan driver's workers do. The signal tier must pass them by: one
+ *    it waited on would never acknowledge, and the barrier would never
+ *    return. POSIX only; Windows threads have no signal mask.
+ *
+ * 6. It fences. This is the one that matters and the one most tests of
  *    this kind skip. The asymmetric protocol the barrier enables is:
  *
  *      producer:  seq = seq + 1  (release)        consumer:  parked = 1  (relaxed)
@@ -75,6 +80,8 @@
 static void sleep_ms(unsigned ms) { Sleep(ms); }
 #else
 #include <unistd.h>
+#include <signal.h>
+#include <pthread.h>
 static void sleep_ms(unsigned ms) { usleep(ms * 1000u); }
 #endif
 
@@ -368,6 +375,61 @@ static int check_exiting(void)
    return 1;
 }
 
+#if !defined(_WIN32)
+static retro_atomic_int_t g_masked_ready;
+
+static void masked_busy_thread(void *arg)
+{
+   sigset_t all;
+   volatile unsigned x = 0;
+   (void)arg;
+   sigfillset(&all);
+   pthread_sigmask(SIG_BLOCK, &all, NULL);
+   retro_atomic_store_release_int(&g_masked_ready, 1);
+   while (!retro_atomic_load_relaxed_int(&g_stop))
+      x++;
+}
+
+static int check_masked_thread(void)
+{
+   sthread_t *masked, *caller;
+   int waited_ms, done = 0;
+
+   if (retro_procbarrier_tier() == RETRO_PROCBARRIER_NONE)
+      return 1;
+
+   retro_atomic_store_relaxed_int(&g_stop, 0);
+   retro_atomic_store_relaxed_int(&g_conc_done, 0);
+   retro_atomic_store_relaxed_int(&g_masked_ready, 0);
+   masked = sthread_create(masked_busy_thread, NULL);
+   while (!retro_atomic_load_acquire_int(&g_masked_ready))
+      sleep_ms(1);
+   caller = sthread_create(barrier_caller, NULL);
+
+   for (waited_ms = 0; waited_ms < CONC_LIMIT_S * 1000; waited_ms += 10)
+   {
+      done = retro_atomic_load_acquire_int(&g_conc_done);
+      if (done >= 1)
+         break;
+      sleep_ms(10);
+   }
+   if (done < 1)
+   {
+      printf("  FAIL: barriers stalled on a thread with every signal "
+             "blocked (%d barriers not done within %d s)\n",
+             CONC_ITERS, CONC_LIMIT_S);
+      printf("procbarrier: FAILED\n");
+      exit(1);
+   }
+   sthread_join(caller);
+   retro_atomic_store_relaxed_int(&g_stop, 1);
+   sthread_join(masked);
+   printf("  masked: %d barriers past a busy thread with every signal "
+          "blocked\n", CONC_ITERS);
+   return 1;
+}
+#endif
+
 static int check_fences(void)
 {
    sthread_t *p;
@@ -432,6 +494,9 @@ int main(void)
    ok &= check_returns();
    ok &= check_concurrent();
    ok &= check_exiting();
+#if !defined(_WIN32)
+   ok &= check_masked_thread();
+#endif
    ok &= check_fences();
    printf(ok ? "procbarrier: ok\n" : "procbarrier: FAILED\n");
    return ok ? 0 : 1;

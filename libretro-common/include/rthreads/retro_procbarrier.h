@@ -103,6 +103,12 @@ RETRO_BEGIN_DECLS
  * those queue. The default is SIGRTMAX-1; pass another real-time signal
  * to init if the application uses that one. Darwin sends no signal.
  *
+ * On Linux that tier skips any thread with the signal blocked, which is
+ * what a GL or Vulkan driver does to every thread it creates. So a
+ * thread whose stores the barrier must drain -- one that notifies an
+ * asymmetric eventcount -- must not block it. Threads started through
+ * rthreads inherit an unblocked mask and qualify.
+ *
  * Every tier is safe for any number of concurrent callers, and no
  * caller waits for another.
  */
