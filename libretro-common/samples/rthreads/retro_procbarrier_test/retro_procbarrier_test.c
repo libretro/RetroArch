@@ -10,7 +10,16 @@
  *    other threads busy, sleeping and parked. A signal-tier bug that
  *    waited for a sleeping thread would hang here.
  *
- * 3. It fences. This is the one that matters and the one most tests of
+ * 3. It is reentrant. Several threads issue barriers at once, each
+ *    against the others. Every eventcount built on the barrier calls it
+ *    from its own waiter, so concurrent callers are the normal case in a
+ *    process with more than one of them, not an edge. A tier whose
+ *    callers can stop or signal each other into a cycle deadlocks here,
+ *    and one that shares per-call state between callers either returns
+ *    early or faults. Bounded by a watchdog, so a deadlock is reported
+ *    as a failure rather than a harness kill.
+ *
+ * 4. It fences. This is the one that matters and the one most tests of
  *    this kind skip. The asymmetric protocol the barrier enables is:
  *
  *      producer:  seq = seq + 1  (release)        consumer:  parked = 1  (relaxed)
@@ -244,6 +253,63 @@ static int check_returns(void)
    return 1;
 }
 
+#define CONC_CALLERS 4
+#define CONC_ITERS   20000
+#define CONC_LIMIT_S 30
+
+static retro_atomic_int_t g_conc_done;
+
+static void barrier_caller(void *arg)
+{
+   int i;
+   (void)arg;
+   for (i = 0; i < CONC_ITERS; i++)
+      retro_procbarrier();
+   retro_atomic_fetch_add_int(&g_conc_done, 1);
+}
+
+static int check_concurrent(void)
+{
+   sthread_t *callers[CONC_CALLERS], *busy;
+   int i, waited_ms, done = 0;
+
+   if (retro_procbarrier_tier() == RETRO_PROCBARRIER_NONE)
+      return 1;
+
+   retro_atomic_store_relaxed_int(&g_stop, 0);
+   retro_atomic_store_relaxed_int(&g_conc_done, 0);
+   /* One thread that never calls the barrier, so every walk has a
+    * running target besides the other callers. */
+   busy = sthread_create(busy_thread, NULL);
+   for (i = 0; i < CONC_CALLERS; i++)
+      callers[i] = sthread_create(barrier_caller, NULL);
+
+   for (waited_ms = 0; waited_ms < CONC_LIMIT_S * 1000; waited_ms += 10)
+   {
+      done = retro_atomic_load_acquire_int(&g_conc_done);
+      if (done >= CONC_CALLERS)
+         break;
+      sleep_ms(10);
+   }
+   if (done < CONC_CALLERS)
+   {
+      /* The stuck callers cannot be joined. Report and leave; exit
+       * takes the process, and them, down with it. */
+      printf("  FAIL: concurrent barriers stalled: %d of %d callers "
+             "finished %d barriers each within %d s\n",
+             done, CONC_CALLERS, CONC_ITERS, CONC_LIMIT_S);
+      printf("procbarrier: FAILED\n");
+      exit(1);
+   }
+   for (i = 0; i < CONC_CALLERS; i++)
+      sthread_join(callers[i]);
+   retro_atomic_store_relaxed_int(&g_stop, 1);
+   sthread_join(busy);
+   printf("  concurrent: %d callers x %d barriers, no stall\n",
+          CONC_CALLERS, CONC_ITERS);
+   return 1;
+}
+
 static int check_fences(void)
 {
    sthread_t *p;
@@ -306,6 +372,7 @@ int main(void)
 #endif
    ok &= check_resolution();
    ok &= check_returns();
+   ok &= check_concurrent();
    ok &= check_fences();
    printf(ok ? "procbarrier: ok\n" : "procbarrier: FAILED\n");
    return ok ? 0 : 1;

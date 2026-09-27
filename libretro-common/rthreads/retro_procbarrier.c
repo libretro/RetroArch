@@ -41,11 +41,20 @@
  *   Darwin page flip   osfmk/x86_64/pmap.c pmap_flush_tlbs:
  *                      i386_signal_cpu(cpu, MP_TLB_FLUSH) per active CPU,
  *                      then a cpus_to_respond wait.
- *   Darwin signal      cause_ast_check: i386_signal_cpu(MP_AST) on x86,
- *                      cpu_signal(SIGPast) on arm64 and on ppc (xnu-1228),
- *                      the ppc path bracketed by sync; isync.
+ *   Darwin signal      thread_get_state on another thread:
+ *                      thread_hold, then thread_stop, which waits until
+ *                      the target is off every CPU (cause_ast_check:
+ *                      i386_signal_cpu(MP_AST) on x86, cpu_signal(SIGPast)
+ *                      on arm64 and ppc), then thread_unstop and
+ *                      thread_release before the call returns. The same
+ *                      sequence in the current tree and in xnu-1228.
  *   Linux signal       Signal delivery to a running thread goes through
  *                      kick_process(), which is an IPI.
+ *
+ * Any number of threads may be inside retro_procbarrier() at once. Every
+ * eventcount built on it calls it from its own waiter, so concurrent
+ * callers are the normal case, and no tier keeps per-call state anywhere
+ * another caller can reach it or makes one caller wait for another.
  */
 
 #include <retro_posix_source.h>
@@ -113,6 +122,39 @@
 #include <mach/thread_info.h>
 #include <mach/thread_act.h>
 #include <mach/task.h>
+#include <mach/thread_status.h>
+
+/* The register state the Darwin tier asks for. Its contents are never
+ * read; any flavour costs the same stop, so this is the smallest one
+ * each architecture has, and each exists in every SDK that architecture
+ * was ever built with. */
+#if defined(__arm64__) || defined(__aarch64__)
+#define PB_DARWIN_FLAVOR  ARM_THREAD_STATE64
+#define PB_DARWIN_COUNT   ARM_THREAD_STATE64_COUNT
+typedef arm_thread_state64_t pb_darwin_state_t;
+#elif defined(__arm__)
+#define PB_DARWIN_FLAVOR  ARM_THREAD_STATE
+#define PB_DARWIN_COUNT   ARM_THREAD_STATE_COUNT
+typedef arm_thread_state_t pb_darwin_state_t;
+#elif defined(__x86_64__)
+#define PB_DARWIN_FLAVOR  x86_THREAD_STATE64
+#define PB_DARWIN_COUNT   x86_THREAD_STATE64_COUNT
+typedef x86_thread_state64_t pb_darwin_state_t;
+#elif defined(__i386__)
+#define PB_DARWIN_FLAVOR  i386_THREAD_STATE
+#define PB_DARWIN_COUNT   i386_THREAD_STATE_COUNT
+typedef i386_thread_state_t pb_darwin_state_t;
+#elif defined(__ppc64__)
+#define PB_DARWIN_FLAVOR  PPC_THREAD_STATE64
+#define PB_DARWIN_COUNT   PPC_THREAD_STATE64_COUNT
+typedef ppc_thread_state64_t pb_darwin_state_t;
+#elif defined(__ppc__)
+#define PB_DARWIN_FLAVOR  PPC_THREAD_STATE
+#define PB_DARWIN_COUNT   PPC_THREAD_STATE_COUNT
+typedef ppc_thread_state_t pb_darwin_state_t;
+#else
+#define PB_DARWIN_NO_STATE 1
+#endif
 #endif
 
 /* ------------------------------------------------------------------ */
@@ -139,17 +181,27 @@ static pb_fpwb_t s_fpwb;
  * with the tier; forward the condition here. */
 #if defined(PB_X86) && (defined(PB_WINDOWS) || defined(PB_LINUX) \
    || defined(PB_FREEBSD) || defined(PB_DARWIN))
+/* A flip needs a page no other caller is flipping: one caller's
+ * no-access protection landing between another's read-write protection
+ * and its store faults that store. A caller claims a free slot, and
+ * when every slot is taken flips a page of its own for that call, so
+ * no caller ever waits for another. */
+#define PB_FLIP_SLOTS 4
+static void              *s_flip_page[PB_FLIP_SLOTS];
+static retro_atomic_int_t s_flip_busy[PB_FLIP_SLOTS];
+static retro_atomic_int_t s_flip_next;
 #if defined(PB_WINDOWS)
-static void     *s_page;
-static SIZE_T    s_page_size;
+static SIZE_T             s_page_size;
 #else
-static void     *s_page;
-static size_t    s_page_size;
+static size_t             s_page_size;
 #endif
 #endif
 
 #if defined(PB_LINUX)
-static retro_atomic_int_t s_acks;
+/* Target of the probe's acknowledgement. Static, so an acknowledgement
+ * that arrives late -- the probing thread had the signal blocked -- still
+ * lands in valid memory. */
+static retro_atomic_int_t s_probe_acks;
 #endif
 
 /* ------------------------------------------------------------------ */
@@ -271,46 +323,104 @@ static int pb_fpwb_try(void)
 #endif
 
 #if defined(PB_HAVE_PAGEFLIP)
+#if !defined(PB_WINDOWS) && !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS MAP_ANON   /* SDKs before 10.11 spell it MAP_ANON */
+#endif
+
+/* A locked page: one that is paged out has no TLB entry to shoot down. */
+static void *pb_page_new(void)
+{
+#if defined(PB_WINDOWS)
+   void *p = VirtualAlloc(NULL, s_page_size, MEM_COMMIT | MEM_RESERVE,
+                          PAGE_READWRITE);
+   if (p)
+      VirtualLock(p, s_page_size);
+   return p;
+#else
+   void *p = mmap(NULL, s_page_size, PROT_READ | PROT_WRITE,
+                  MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+   if (p == MAP_FAILED)
+      return NULL;
+   mlock(p, s_page_size);
+   return p;
+#endif
+}
+
+static void pb_page_free(void *p)
+{
+#if defined(PB_WINDOWS)
+   VirtualFree(p, 0, MEM_RELEASE);
+#else
+   munmap(p, s_page_size);
+#endif
+}
+
+/* The store dirties the entry so no kernel can skip the shootdown as
+ * unnecessary; the protection drop is what sends it. */
+static void pb_page_flip(void *p)
+{
+#if defined(PB_WINDOWS)
+   DWORD old;
+   VirtualProtect(p, s_page_size, PAGE_READWRITE, &old);
+   *(volatile char*)p = 0;
+   VirtualProtect(p, s_page_size, PAGE_NOACCESS, &old);
+#else
+   mprotect(p, s_page_size, PROT_READ | PROT_WRITE);
+   *(volatile char*)p = 0;
+   mprotect(p, s_page_size, PROT_NONE);
+#endif
+}
+
 static int pb_pageflip_try(void)
 {
+   int i;
 #if defined(PB_WINDOWS)
    SYSTEM_INFO si;
    GetSystemInfo(&si);
    s_page_size = si.dwPageSize;
-   s_page      = VirtualAlloc(NULL, s_page_size, MEM_COMMIT | MEM_RESERVE,
-                              PAGE_READWRITE);
-   if (!s_page)
-      return 0;
-   /* A page that is paged out has no TLB entry to shoot down. */
-   VirtualLock(s_page, s_page_size);
-   return 1;
 #else
-   long ps = sysconf(_SC_PAGESIZE);
+   long ps     = sysconf(_SC_PAGESIZE);
    s_page_size = (ps > 0) ? (size_t)ps : 4096u;
-   s_page = mmap(NULL, s_page_size, PROT_READ | PROT_WRITE,
-                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-   if (s_page == MAP_FAILED)
-   {
-      s_page = NULL;
-      return 0;
-   }
-   mlock(s_page, s_page_size);
-   return 1;
 #endif
+   for (i = 0; i < PB_FLIP_SLOTS; i++)
+   {
+      retro_atomic_int_init(&s_flip_busy[i], 0);
+      s_flip_page[i] = pb_page_new();
+   }
+   /* A slot whose page could not be had is skipped by every caller;
+    * none at all means the tier is not there. */
+   for (i = 0; i < PB_FLIP_SLOTS; i++)
+      if (s_flip_page[i])
+         return 1;
+   return 0;
 }
 
 static void pb_pageflip(void)
 {
-#if defined(PB_WINDOWS)
-   DWORD old;
-   VirtualProtect(s_page, s_page_size, PAGE_READWRITE, &old);
-   *(volatile char*)s_page = 0;
-   VirtualProtect(s_page, s_page_size, PAGE_NOACCESS, &old);
-#else
-   mprotect(s_page, s_page_size, PROT_READ | PROT_WRITE);
-   *(volatile char*)s_page = 0;
-   mprotect(s_page, s_page_size, PROT_NONE);
-#endif
+   int i;
+   unsigned first = (unsigned)retro_atomic_fetch_add_int(&s_flip_next, 1);
+   for (i = 0; i < PB_FLIP_SLOTS; i++)
+   {
+      unsigned slot = (first + (unsigned)i) % PB_FLIP_SLOTS;
+      if (!s_flip_page[slot])
+         continue;
+      if (retro_atomic_cas_int(&s_flip_busy[slot], 0, 1))
+      {
+         pb_page_flip(s_flip_page[slot]);
+         retro_atomic_store_release_int(&s_flip_busy[slot], 0);
+         return;
+      }
+   }
+   /* Every slot is mid-flip. A page of this call's own; releasing it
+    * shoots the entry down again, which is harmless. */
+   {
+      void *p = pb_page_new();
+      if (p)
+      {
+         pb_page_flip(p);
+         pb_page_free(p);
+      }
+   }
 }
 #endif
 
@@ -321,13 +431,68 @@ static void pb_pageflip(void)
 #if defined(PB_LINUX) || defined(PB_DARWIN)
 
 #if defined(PB_LINUX)
-static void pb_ack_handler(int sig)
+/* Each barrier queues its signals carrying the address of its own
+ * acknowledgement counter, so concurrent barriers never count each
+ * other's acknowledgements, and there is no shared state to reset.
+ * Queued real-time signals are never merged, so every one sent is one
+ * handled. rt_tgsigqueueinfo is Linux 2.6.31; Android's seccomp policy
+ * has allowed it since its first release in 8.0. */
+#if defined(__NR_rt_tgsigqueueinfo)
+#define PB_HAVE_TGSIGQUEUE 1
+#endif
+
+/* The barrier sleeps on its counter instead of spinning: a spinning
+ * barrier holds the CPU a runnable target needs to run its handler, and
+ * with more threads than CPUs every acknowledgement then costs a
+ * scheduler quantum. ABI values, the same from 2.6.22 on. */
+#if defined(__NR_futex)
+#define PB_FUTEX_WAIT_PRIVATE 128
+#define PB_FUTEX_WAKE_PRIVATE 129
+#endif
+
+static void pb_ack_handler(int sig, siginfo_t *si, void *uc)
 {
+   /* Async-signal-safe: getpid, one atomic increment and a futex wake,
+    * with errno preserved for the interrupted code. Only a signal this
+    * file queued carries a counter; one of the same number from
+    * anywhere else is ignored. The release pairs with the acquire in
+    * the waiter, so the interrupted thread's earlier stores are ordered
+    * before its acknowledgement. */
+   int saved_errno = errno;
    (void)sig;
-   /* Async-signal-safe: one atomic increment. The release pairs with the
-    * acquire in the waiter, so the interrupted thread's earlier stores
-    * are ordered before its acknowledgement. */
-   retro_atomic_fetch_add_int(&s_acks, 1);
+   (void)uc;
+   if (si && si->si_code == SI_QUEUE && si->si_pid == getpid()
+         && si->si_value.sival_ptr)
+   {
+      retro_atomic_int_t *acks = (retro_atomic_int_t*)si->si_value.sival_ptr;
+      retro_atomic_fetch_add_int(acks, 1);
+#if defined(PB_FUTEX_WAKE_PRIVATE)
+      syscall(__NR_futex, (void*)acks, PB_FUTEX_WAKE_PRIVATE, 1,
+            NULL, NULL, 0);
+#endif
+   }
+   errno = saved_errno;
+}
+
+/* 0 when queued; otherwise -1 with errno set. */
+static long pb_send_ack(pid_t pid, pid_t tid, retro_atomic_int_t *acks)
+{
+#if defined(PB_HAVE_TGSIGQUEUE)
+   siginfo_t si;
+   memset(&si, 0, sizeof(si));
+   si.si_signo           = s_signum;
+   si.si_code            = SI_QUEUE;
+   si.si_pid             = pid;
+   si.si_uid             = getuid();
+   si.si_value.sival_ptr = (void*)acks;
+   return syscall(__NR_rt_tgsigqueueinfo, pid, tid, s_signum, &si);
+#else
+   (void)pid;
+   (void)tid;
+   (void)acks;
+   errno = ENOSYS;
+   return -1;
+#endif
 }
 #endif
 
@@ -335,6 +500,9 @@ static int pb_signal_try(int signum)
 {
 #if defined(PB_DARWIN)
    (void)signum;   /* no signal on Darwin; see pb_signal_barrier */
+#if defined(PB_DARWIN_NO_STATE)
+   return 0;
+#endif
    {
       /* Prove task_threads is permitted here; sandboxes can deny it. */
       thread_act_array_t list;
@@ -353,9 +521,18 @@ static int pb_signal_try(int signum)
    {
       struct sigaction sa;
       DIR *d;
+      /* Only a real-time signal queues; a standard one sent twice to the
+       * same thread is delivered once, and one barrier would wait
+       * forever for the acknowledgement the other took. */
+#if defined(SIGRTMIN) && defined(SIGRTMAX)
+      if (signum < SIGRTMIN || signum > SIGRTMAX)
+         return 0;
+#else
+      return 0;
+#endif
       memset(&sa, 0, sizeof(sa));
-      sa.sa_handler = pb_ack_handler;
-      sa.sa_flags   = SA_RESTART;
+      sa.sa_sigaction = pb_ack_handler;
+      sa.sa_flags     = SA_SIGINFO | SA_RESTART;
       sigemptyset(&sa.sa_mask);
       if (sigaction(signum, &sa, NULL) != 0)
          return 0;
@@ -365,6 +542,16 @@ static int pb_signal_try(int signum)
       if (!d)
          return 0;
       closedir(d);
+      /* And that a queued signal reaches its handler with the counter:
+       * one to this thread is delivered before the syscall returns. A
+       * refusal (ENOSYS, EPERM) or a mask that blocks the signal here
+       * shows up as no acknowledgement. */
+      retro_atomic_store_relaxed_int(&s_probe_acks, 0);
+      if (pb_send_ack(getpid(), (pid_t)syscall(SYS_gettid),
+               &s_probe_acks) != 0)
+         return 0;
+      if (retro_atomic_load_acquire_int(&s_probe_acks) != 1)
+         return 0;
    }
 #endif
    return 1;
@@ -407,11 +594,18 @@ static void pb_signal_barrier(void)
 {
    DIR *d;
    struct dirent *e;
+   /* This barrier's own: handlers reach it through the queued value, and
+    * this function does not return until every one it is owed has come
+    * in, so it outlives every signal that points at it. */
+   retro_atomic_int_t acks;
    pid_t self = (pid_t)syscall(SYS_gettid);
    pid_t pid  = getpid();
    int sent   = 0;
 
-   retro_atomic_store_relaxed_int(&s_acks, 0);
+   /* A store, not atomic_init: the handlers that increment it run on
+    * other threads, and the only edge between this and them is the
+    * syscall that queues their signal. */
+   retro_atomic_store_release_int(&acks, 0);
    d = opendir("/proc/self/task");
    if (!d)
       return;
@@ -427,34 +621,51 @@ static void pb_signal_barrier(void)
        * scheduler quantum, and acceptable on a path about to sleep. */
       if (!pb_thread_running(tid))
          continue;
-      if (syscall(SYS_tgkill, pid, tid, s_signum) == 0)
-         sent++;
+      /* EAGAIN is a full queue, which drains as its signals are
+       * handled; ESRCH is a thread that has exited, which fences it. */
+      for (;;)
+      {
+         if (pb_send_ack(pid, tid, &acks) == 0)
+         {
+            sent++;
+            break;
+         }
+         if (errno != EAGAIN)
+            break;
+      }
    }
    closedir(d);
-   while (retro_atomic_load_acquire_int(&s_acks) < sent)
-      ;
+   for (;;)
+   {
+      int got = retro_atomic_load_acquire_int(&acks);
+      if (got >= sent)
+         break;
+      /* Returns at once if an acknowledgement landed since the load. */
+#if defined(PB_FUTEX_WAIT_PRIVATE)
+      syscall(__NR_futex, (void*)&acks, PB_FUTEX_WAIT_PRIVATE, got,
+            NULL, NULL, 0);
+#endif
+   }
 }
 #endif
 
 #if defined(PB_DARWIN)
-/* Darwin does not deliver the signal here at all. thread_suspend on a
- * Mach port is already a synchronous barrier: XNU's thread_wait loops
- * while the target's state has TH_RUN, and blocks while it is the active
- * thread on any processor, so thread_suspend does not return until the
- * target has been switched off its CPU -- and a context switch drains
- * its store buffer. Checked in the current tree and in xnu-1228, the
- * last PowerPC kernel. thread_resume then puts it back.
+/* Darwin does not deliver a signal here at all. thread_get_state on
+ * another thread's Mach port is a synchronous barrier: XNU holds the
+ * target, waits in thread_stop until it is off every CPU -- and a
+ * context switch drains its store buffer -- and releases it again
+ * before the call returns. No pthread_t is needed, and every call used
+ * here is in the 10.4 libSystem.
  *
- * This is why no pthread_t is needed. The earlier version converted
- * each port with pthread_from_mach_thread_np and sent a signal, and that
- * function is 10.6 and later; RetroArch's PowerPC floor is 10.4. The
- * function itself is a walk of libpthread's private thread list under
- * its private lock, so there is nothing to reimplement against an older
- * libpthread that would not be a layout guess.
+ * The hold is released inside the kernel call. That is what makes
+ * concurrent callers safe: a thread only parks on a hold when it
+ * returns to user mode, so two callers stopping each other each find
+ * the other off its CPU, finish, and release, and neither is ever left
+ * parked waiting for the other to run.
  *
- * Nothing is called between the suspend and the resume. A suspended
- * thread may hold any lock, including malloc's, and the window has to
- * be one in which this thread needs none of them. */
+ * KERN_ABORTED means the wait in thread_stop was interrupted before the
+ * target stopped, so that thread has not been fenced; try it again. Any
+ * other failure is a thread that has already exited. */
 static void pb_signal_barrier(void)
 {
    thread_act_array_t list;
@@ -480,8 +691,16 @@ static void pb_signal_barrier(void)
        * already off was drained by the switch that took it off. */
       if (info.run_state != TH_STATE_RUNNING)
          continue;
-      if (thread_suspend(list[i]) == KERN_SUCCESS)
-         thread_resume(list[i]);
+#if !defined(PB_DARWIN_NO_STATE)
+      for (;;)
+      {
+         pb_darwin_state_t      state;
+         mach_msg_type_number_t cnt = PB_DARWIN_COUNT;
+         if (thread_get_state(list[i], PB_DARWIN_FLAVOR,
+                  (thread_state_t)&state, &cnt) != KERN_ABORTED)
+            break;
+      }
+#endif
    }
    for (i = 0; i < n; i++)
       mach_port_deallocate(mach_task_self(), list[i]);
