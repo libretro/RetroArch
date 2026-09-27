@@ -1963,6 +1963,7 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
    uint32_t local_sram_size = 0, remote_sram_size;
    size_t i, j;
    ssize_t recvd;
+   bool paused;
    char new_nick[NETPLAY_NICK_LEN];
    retro_ctx_memory_info_t mem_info;
    settings_t *settings = config_get_ptr();
@@ -2003,11 +2004,15 @@ static bool netplay_handshake_pre_sync(netplay_t *netplay,
    RECV(&client_num, sizeof(client_num))
       return false;
    client_num = ntohl(client_num);
-   if (client_num & NETPLAY_CMD_SYNC_BIT_PAUSED)
+   paused     = (client_num & NETPLAY_CMD_SYNC_BIT_PAUSED) != 0;
+   client_num &= ~NETPLAY_CMD_SYNC_BIT_PAUSED;
+   if (client_num == 0 || client_num >= MAX_CLIENTS)
    {
-      netplay->flags |= NETPLAY_FLAG_REMOTE_PAUSED;
-      client_num ^= NETPLAY_CMD_SYNC_BIT_PAUSED;
+      RARCH_ERR("[Netplay] Received invalid client number in NETPLAY_CMD_SYNC.\n");
+      return false;
    }
+   if (paused)
+      netplay->flags |= NETPLAY_FLAG_REMOTE_PAUSED;
    netplay->self_client_num = client_num;
 
    /* Set our frame counters as requested */
@@ -5941,6 +5946,13 @@ static bool netplay_get_cmd(netplay_t *netplay,
          if (client_num >= MAX_CLIENTS)
          {
             RARCH_ERR("[Netplay] Received NETPLAY_CMD_MODE for a higher player number than we support.\n");
+            return netplay_cmd_nak(netplay, connection);
+         }
+
+         if ((mode & NETPLAY_CMD_MODE_BIT_YOU)
+               && client_num != netplay->self_client_num)
+         {
+            RARCH_ERR("[Netplay] Received NETPLAY_CMD_MODE for an unexpected client number.\n");
             return netplay_cmd_nak(netplay, connection);
          }
 
