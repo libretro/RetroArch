@@ -136,6 +136,11 @@ typedef struct
    /* The core's current sync index: the slot it is rendering into.
     * Main thread only between pushes; the push moves it. */
    unsigned  index;
+   /* The slot the video thread last drew a real frame from, or -1. A
+    * dupe (video_refresh(NULL)) draws it again, so it is what a dupe
+    * fences. Written by the video thread under thr->lock when it claims
+    * a frame; read by the push under the same lock. */
+   int       last_presented;
    enum hw_api api;
    thread_video_t *thr;
 } hw_ring_t;
@@ -513,7 +518,8 @@ static bool hw_ring_setup(thread_video_t *thr, hw_ring_t **out)
    }
    if (!(ring = (hw_ring_t*)calloc(1, sizeof(*ring))))
       return false;
-   ring->thr = thr;
+   ring->thr            = thr;
+   ring->last_presented = -1;
    for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
    {
       if (!thr->poke->hw_ring_fence_new(thr->driver_data, &ring->slot[i].fence))
@@ -733,6 +739,35 @@ uintptr_t video_thread_hw_get_current_framebuffer(void *data)
    return thr->poke->hw_ring_framebuffer(thr->driver_data, ring->index);
 }
 
+#define HW_RING_DUPE_WAIT_US 32000
+
+/* thr->lock held. True while a dupe sits in the frame ring or is the
+ * frame being drawn: pending slots are tail (and tail ^ 1 when two are
+ * pending); the busy one is tail ^ 1. */
+static bool hw_dupe_queued(thread_video_t *thr)
+{
+   unsigned tail = thr->frame.tail;
+   if (thr->frame.pending >= 1 && thr->frame.slot[tail].dupe)
+      return true;
+   if ((thr->frame.pending == 2 || thr->frame.busy)
+         && thr->frame.slot[tail ^ 1].dupe)
+      return true;
+   return false;
+}
+
+void video_thread_hw_note_claim(thread_video_t *thr, int hw_slot)
+{
+   hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
+   if (ring && hw_slot >= 0 && hw_slot < VIDEO_THREAD_HW_RING)
+      ring->last_presented = hw_slot;
+}
+
+int video_thread_hw_dupe_slot(thread_video_t *thr)
+{
+   hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
+   return ring ? ring->last_presented : -1;
+}
+
 int video_thread_hw_publish(thread_video_t *thr)
 {
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
@@ -795,6 +830,14 @@ int video_thread_hw_publish(thread_video_t *thr)
    }
 #endif
    ring->index = (ring->index + 1) % VIDEO_THREAD_HW_RING;
+   /* A dupe still queued in the frame ring, or being drawn, re-reads
+    * the slot last presented. If that is the slot the core takes next,
+    * its fence does not cover the dupe's read yet (the video thread
+    * re-signals it only once the dupe is drawn), so wait for the dupe
+    * to clear the ring first. Bounded: on a stalled presenter the core
+    * proceeds as it did before this wait existed. */
+   if ((int)ring->index == ring->last_presented && hw_dupe_queued(thr))
+      scond_wait_timeout(thr->cond_ring, thr->lock, HW_RING_DUPE_WAIT_US);
    /* The slot the core fills next was last driven two frames ago;
     * normally long done, and if not this is where the core waits. */
 #ifdef HAVE_D3D12
@@ -978,6 +1021,8 @@ bool video_thread_get_hw_render_interface(void *data,
    return false;
 }
 int  video_thread_hw_publish(thread_video_t *thr) { (void)thr; return -1; }
+void video_thread_hw_note_claim(thread_video_t *thr, int hw_slot) { (void)thr; (void)hw_slot; }
+int  video_thread_hw_dupe_slot(thread_video_t *thr) { (void)thr; return -1; }
 void video_thread_hw_before_frame(thread_video_t *thr, int hw_slot) { (void)thr; (void)hw_slot; }
 void video_thread_hw_after_frame(thread_video_t *thr, int hw_slot)  { (void)thr; (void)hw_slot; }
 void video_thread_hw_free(thread_video_t *thr) { (void)thr; }

@@ -1841,6 +1841,7 @@ static void video_thread_loop(void *data)
          thr->frame.tail    = slot ^ 1;
          thr->frame.pending--;
          thr->frame.busy    = true;
+         video_thread_hw_note_claim(thr, thr->frame.slot[slot].hw_slot);
          /* The paced wait in video_thread_frame() blocks on pending
           * dropping, which just happened; tell it now rather than a
           * whole render later at completion. */
@@ -1987,6 +1988,12 @@ static void video_thread_loop(void *data)
                             + thr->frame.slot[slot].offset;
                   unsigned fdims    = thr->frame.slot[slot].dims;
                   unsigned fpitch   = thr->frame.slot[slot].pitch;
+                  /* A dupe of a hardware frame draws the last presented
+                   * HW slot again, so it is installed and fenced like
+                   * the frame that first drew it: the core's wait on
+                   * the slot then covers this read as well. */
+                  int dupe_hw_slot  = thr->frame.slot[slot].dupe
+                     ? video_thread_hw_dupe_slot(thr) : -1;
                   if (fdata && thr->frame.slot[slot].convert)
                      video_thread_convert(thr, thr->frame.slot[slot].convert,
                            &fdata, fdims, &fpitch);
@@ -1994,6 +2001,8 @@ static void video_thread_loop(void *data)
                   if (fdata && thr->frame.slot[slot].filter_bpp)
                      video_thread_filter(thr, &fdata, &fdims, &fpitch);
 #endif
+                  if (dupe_hw_slot >= 0)
+                     video_thread_hw_before_frame(thr, dupe_hw_slot);
                   ret = thr->driver->frame(thr->driver_data,
                      fdata, fdims,
                      thr->frame.slot[slot].count,
@@ -2001,6 +2010,8 @@ static void video_thread_loop(void *data)
                      *thr->frame.slot[slot].msg
                         ? thr->frame.slot[slot].msg : NULL,
                      video_info);
+                  if (dupe_hw_slot >= 0)
+                     video_thread_hw_after_frame(thr, dupe_hw_slot);
                }
 
                ret_frame  = ret;

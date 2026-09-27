@@ -73,6 +73,15 @@ int video_thread_hw_publish(struct thread_video *thr);
 void video_thread_hw_before_frame(struct thread_video *thr, int hw_slot);
 void video_thread_hw_after_frame(struct thread_video *thr, int hw_slot);
 
+/* Video thread, under thr->lock, when it claims a frame: the HW slot
+ * that frame reads, so a later dupe knows what it re-reads. */
+void video_thread_hw_note_claim(struct thread_video *thr, int hw_slot);
+
+/* Video thread, for a dupe: the HW slot it re-reads, to install and
+ * fence around the driver's NULL frame exactly as for a real frame; -1
+ * if no HW frame has been presented. */
+int video_thread_hw_dupe_slot(struct thread_video *thr);
+
 /* OpenGL: takes the core's context on the calling (main) thread and
  * sets the ring up. Must run before the core's context_reset. */
 bool video_thread_hw_bind_core_context(void *data);
