@@ -38,6 +38,7 @@
 #include <string.h>
 #include <math.h>
 #include <retro_endianness.h>
+#include <boolean.h>
 
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation twoxbr_get_implementation
@@ -662,6 +663,58 @@ static void twoxbr_generic_rgb565(void *data, unsigned width, unsigned height,
    }
 }
 
+/* Plain 2x pixel doubling, for a frame whose keys could not be
+ * allocated: the workers cannot run the edge detector without them,
+ * and the output buffer still has to be filled with something
+ * sensible for this frame rather than left as it was. */
+static void twoxbr_nearest_cb_rgb565(void *data, void *thread_data)
+{
+   struct softfilter_thread_data *thr =
+      (struct softfilter_thread_data*)thread_data;
+   const uint16_t *src = (const uint16_t*)thr->in_data;
+   uint16_t *dst       = (uint16_t*)thr->out_data;
+   unsigned src_stride = (unsigned)(thr->in_pitch  / SOFTFILTER_BPP_RGB565);
+   unsigned dst_stride = (unsigned)(thr->out_pitch / SOFTFILTER_BPP_RGB565);
+   unsigned x, y;
+   for (y = 0; y < thr->height; y++)
+   {
+      uint16_t *o0 = dst;
+      uint16_t *o1 = dst + dst_stride;
+      for (x = 0; x < thr->width; x++)
+      {
+         uint16_t p = src[x];
+         o0[2 * x] = o0[2 * x + 1] = p;
+         o1[2 * x] = o1[2 * x + 1] = p;
+      }
+      src += src_stride;
+      dst += 2 * dst_stride;
+   }
+}
+
+static void twoxbr_nearest_cb_xrgb8888(void *data, void *thread_data)
+{
+   struct softfilter_thread_data *thr =
+      (struct softfilter_thread_data*)thread_data;
+   const uint32_t *src = (const uint32_t*)thr->in_data;
+   uint32_t *dst       = (uint32_t*)thr->out_data;
+   unsigned src_stride = (unsigned)(thr->in_pitch  / SOFTFILTER_BPP_XRGB8888);
+   unsigned dst_stride = (unsigned)(thr->out_pitch / SOFTFILTER_BPP_XRGB8888);
+   unsigned x, y;
+   for (y = 0; y < thr->height; y++)
+   {
+      uint32_t *o0 = dst;
+      uint32_t *o1 = dst + dst_stride;
+      for (x = 0; x < thr->width; x++)
+      {
+         uint32_t p = src[x];
+         o0[2 * x] = o0[2 * x + 1] = p;
+         o1[2 * x] = o1[2 * x + 1] = p;
+      }
+      src += src_stride;
+      dst += 2 * dst_stride;
+   }
+}
+
 static void twoxbr_work_cb_rgb565(void *data, void *thread_data)
 {
    struct softfilter_thread_data *thr =
@@ -702,10 +755,15 @@ static void twoxbr_generic_packets(void *data,
 {
    unsigned i;
    struct filter_data *filt = (struct filter_data*)data;
+   bool have_keys           = true;
 
    filt->frame_height = height;
 
-   /* The frame's YUV keys, one table lookup per source pixel. */
+   /* The frame's YUV keys, one table lookup per source pixel. A frame
+    * bigger than the keys buffer grows it; if that fails, this frame
+    * is pixel-doubled instead, since the workers index keys by the
+    * frame's own width and height and would read past a buffer sized
+    * for a smaller one. */
    if ((size_t)width * height > filt->keys_cap)
    {
       uint16_t *keys = (uint16_t*)realloc(filt->keys,
@@ -715,8 +773,10 @@ static void twoxbr_generic_packets(void *data,
          filt->keys     = keys;
          filt->keys_cap = (size_t)width * height;
       }
+      else
+         have_keys      = false;
    }
-   if ((size_t)width * height <= filt->keys_cap)
+   if (have_keys)
    {
       unsigned x, y;
       uint16_t *k = filt->keys;
@@ -755,9 +815,11 @@ static void twoxbr_generic_packets(void *data,
       thr->last = y_end == height;
 
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
-         packets[i].work = twoxbr_work_cb_rgb565;
+         packets[i].work = have_keys
+            ? twoxbr_work_cb_rgb565  : twoxbr_nearest_cb_rgb565;
       else if (filt->in_fmt == SOFTFILTER_FMT_XRGB8888)
-         packets[i].work = twoxbr_work_cb_xrgb8888;
+         packets[i].work = have_keys
+            ? twoxbr_work_cb_xrgb8888 : twoxbr_nearest_cb_xrgb8888;
       packets[i].thread_data = thr;
    }
 }
