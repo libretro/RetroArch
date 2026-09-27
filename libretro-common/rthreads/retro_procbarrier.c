@@ -593,15 +593,17 @@ static int pb_slot_claim(retro_atomic_int_t *acks, pid_t tid,
       pb_ack_slot_t *slot = &s_slots[i];
       if (retro_atomic_load_relaxed_int(&slot->state) != 0)
          continue;
-      /* The fields go in before the state that publishes them. */
+      /* The CAS makes the slot this walk's; only then are the fields
+       * written, so a walk that lost the race for it never writes over
+       * the winner's. Nothing reads them before the signal that is sent
+       * after them, and a stale signal cannot match this generation. */
+      if (!retro_atomic_cas_int(&slot->state, 0, PB_SLOT_OPEN(gen)))
+         continue;
       slot->acks  = acks;
       slot->tid   = tid;
       slot->start = start;
-      if (retro_atomic_cas_int(&slot->state, 0, PB_SLOT_OPEN(gen)))
-      {
-         *gen_out = gen;
-         return i;
-      }
+      *gen_out    = gen;
+      return i;
    }
    return -1;
 }
