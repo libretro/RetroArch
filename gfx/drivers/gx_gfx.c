@@ -148,6 +148,8 @@ static struct
 } menu_tex ATTRIBUTE_ALIGN(32);
 
 static OSCond g_video_cond;
+/* Process-lifetime XFBs, see setup_video_mode / gx_free. */
+static void *g_framebuf[2];
 
 static volatile bool g_draw_done       = false;
 
@@ -484,13 +486,19 @@ static void setup_video_mode(gx_video_t *gx)
    unsigned id      = gx_modes_clamp_id(
          global->console.screen.resolutions.current.id);
 
-   if (!gx->framebuf[0])
+   /* The two XFBs are sized for the largest mode and live for the
+    * whole process: they are allocated once and handed to every
+    * gx_video_t after a free/init cycle (content load, mode change).
+    * See gx_free for why they must outlive the driver instance. */
+   if (!g_framebuf[0])
    {
       unsigned i;
       for (i = 0; i < 2; i++)
-         gx->framebuf[i] = MEM_K0_TO_K1(
+         g_framebuf[i] = MEM_K0_TO_K1(
                memalign(32, 640 * 576 * VI_DISPLAY_PIX_SZ));
    }
+   gx->framebuf[0] = g_framebuf[0];
+   gx->framebuf[1] = g_framebuf[1];
 
    gx->orientation = ORIENTATION_NORMAL;
    OSInitThreadQueue(&g_video_cond);
@@ -1308,7 +1316,28 @@ static void gx_free(void *data)
    GX_DrawDone();
    GX_AbortFrame();
    GX_Flush();
-   VIDEO_SetBlack(true);
+
+   /* Leave VI scanning out a black XFB instead of blanking it.
+    * The driver is freed and re-initialised around every content
+    * load, so anything that faults in between (the core's
+    * retro_load_game, driver re-init) hits libogc's exception
+    * handler while the display is blanked. That handler only swaps
+    * the framebuffer to its own console; it never clears the VI
+    * black flag, so the registers and stack trace it prints are
+    * invisible and every GameCube crash gets reported as "black
+    * screen, then reboot" (RetroArch #19637). A black framebuffer
+    * looks the same to the user and lets the exception screen show.
+    * This is also why the XFBs are process-lifetime (g_framebuf)
+    * rather than freed here: VI keeps reading framebuf[0] after
+    * this returns. */
+   if (gx && gx->framebuf[0])
+   {
+      VIDEO_ClearFrameBuffer(&gx_mode, gx->framebuf[0], COLOR_BLACK);
+      VIDEO_SetNextFramebuffer(gx->framebuf[0]);
+      VIDEO_SetBlack(false);
+   }
+   else
+      VIDEO_SetBlack(true);
    VIDEO_Flush();
    VIDEO_WaitVSync();
 
@@ -1329,21 +1358,8 @@ static void gx_free(void *data)
       g_tex.data = NULL;
    }
 
-   /* Both XFB framebuffers were allocated in setup_video_mode through
-    * memalign + MEM_K0_TO_K1. free() needs the cached alias. */
-   if (gx)
-   {
-      unsigned i;
-      for (i = 0; i < 2; i++)
-      {
-         if (gx->framebuf[i])
-         {
-            free(MEM_K1_TO_K0(gx->framebuf[i]));
-            gx->framebuf[i] = NULL;
-         }
-      }
-   }
-
+   /* The XFBs are not freed: they are g_framebuf, shared by every
+    * driver instance, and VI is still displaying framebuf[0]. */
    free(data);
 }
 
