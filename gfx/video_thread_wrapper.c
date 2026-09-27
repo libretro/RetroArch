@@ -2432,6 +2432,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    unsigned slot       = 0;
    int hw_slot         = -1;
    bool dropped        = false;
+   bool dupe_dropped   = false;
    bool zero_copy      = false;
    bool spare_in       = false;
    bool waited         = false;
@@ -2627,9 +2628,18 @@ static bool video_thread_frame(void *data, const void *frame_,
    else
    {
       slot = (thr->frame.pending == 2) ? (thr->frame.tail ^ 1) : thr->frame.tail;
-      thr->frame.pending--;
       thr->miss_count++;
       dropped = true;
+      /* A dupe carries no image. Letting it replace a real frame the
+       * worker has not claimed yet would throw away the only new image
+       * the core produced (a 30 fps game sends real, dupe, real, dupe)
+       * and show the frame before it for two periods. Without the
+       * wrapper a NULL push never loses a frame; here the dupe is what
+       * gets dropped, and the real frame stays queued. */
+      if (!frame_ && hw_slot < 0 && !thr->frame.slot[slot].dupe)
+         dupe_dropped = true;
+      else
+         thr->frame.pending--;
    }
 
    /* The picked slot is unclaimed, so the worker holds no pointer into
@@ -2648,6 +2658,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (((video_thread_private_t*)thr)->rec_retired)
       video_thread_rec_reap(thr);
 
+   if (!dupe_dropped)
    {
       const uint8_t *src   = (const uint8_t*)frame_;
       uint8_t       *dst   = thr->frame.slot[slot].buffer;
@@ -2806,7 +2817,10 @@ static bool video_thread_frame(void *data, const void *frame_,
    }
 
    slock_lock(thr->lock);
-   thr->frame.pending++;
+   /* Nothing was queued for a dropped dupe; the real frame it would
+    * have replaced is still pending. */
+   if (!dupe_dropped)
+      thr->frame.pending++;
    scond_signal(thr->cond_thread);
 
    if (timed)
