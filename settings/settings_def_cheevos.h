@@ -48,6 +48,11 @@ S_BOOL(cheevos_auto_screenshot, CHEEVOS_AUTO_SCREENSHOT,
       false, SD_FLAG_NONE, 0, 0,
       "Automatic Screenshot",
       "Automatically take a screenshot when an achievement is earned.")
+S_UINT(cheevos_screenshot_delay, CHEEVOS_SCREENSHOT_DELAY,
+      "cheevos_screenshot_delay",
+      1, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 10, 1, 0, setting_action_ok_uint, NULL,
+      "Achievement Screenshot Delay (Frames)",
+      "Wait this many emulated frames after an achievement unlocks before capturing its screenshot. Zero captures immediately.")
 #endif
 /* Descriptor and configuration rows are #ifdef HAVE_CHEEVOS; the string
  * tables always carry this row via the strings pass. */
