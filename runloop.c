@@ -8238,6 +8238,70 @@ end:
  * button input in order to wake up the loop,
  * -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
+/* Recovery from a lost GPU device, with a bound on how hard it is
+ * tried. A device lost once - a TDR, a driver update, a GPU reset -
+ * comes back on the first rebuild, and that rebuild happens at once.
+ * A device that is lost again straight after being rebuilt is a
+ * driver or hardware that is failing, and rebuilding every frame on
+ * it is a busy loop of full driver reinitialisations, each of which
+ * fails: the retries back off instead, doubling from one second, and
+ * after a run of them the rebuild is abandoned with a message rather
+ * than attempted forever. A loss well clear of the previous one (a
+ * minute or more) is a fresh incident and starts the count again. */
+#define GPU_LOST_RETRY_BASE_USEC   1000000
+#define GPU_LOST_RETRY_MAX_USEC   16000000
+#define GPU_LOST_GIVE_UP_AFTER     6
+#define GPU_LOST_FRESH_AFTER_USEC 60000000
+
+static void runloop_gpu_device_lost(runloop_state_t *runloop_st)
+{
+   retro_time_t now = cpu_features_get_time_usec();
+   int reinit_flags = DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK
+      | DRIVER_MENU_MASK;
+
+   /* Not yet due: leave the flag set and try again on a later frame */
+   if (now < runloop_st->gpu_lost_retry_at)
+      return;
+
+   video_driver_modify_disp_flags(0, VIDEO_FLAG_GPU_DEVICE_LOST);
+
+   if (     runloop_st->gpu_lost_count
+         && now - runloop_st->gpu_lost_last > GPU_LOST_FRESH_AFTER_USEC)
+      runloop_st->gpu_lost_count = 0;
+   runloop_st->gpu_lost_last = now;
+   runloop_st->gpu_lost_count++;
+
+   if (runloop_st->gpu_lost_count > GPU_LOST_GIVE_UP_AFTER)
+   {
+      const char *msg = "The GPU device keeps being lost; giving up on recovering the video driver.";
+      RARCH_ERR("[Video] %s\n", msg);
+      runloop_msg_queue_push(msg, strlen(msg), 1, 240, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      /* Look again only after a fresh incident's worth of time */
+      runloop_st->gpu_lost_retry_at = now + GPU_LOST_FRESH_AFTER_USEC;
+      return;
+   }
+
+   if (runloop_st->gpu_lost_count > 1)
+   {
+      retro_time_t delay = (retro_time_t)GPU_LOST_RETRY_BASE_USEC
+         << (runloop_st->gpu_lost_count - 2);
+      if (delay > GPU_LOST_RETRY_MAX_USEC)
+         delay = GPU_LOST_RETRY_MAX_USEC;
+      runloop_st->gpu_lost_retry_at = now + delay;
+      RARCH_ERR("[Video] The GPU device was lost again (%u in a row); "
+            "next rebuild in %u ms.\n",
+            runloop_st->gpu_lost_count, (unsigned)(delay / 1000));
+   }
+   else
+   {
+      runloop_st->gpu_lost_retry_at = 0;
+      RARCH_ERR("[Video] The GPU device was lost; reinitialising the video driver.\n");
+   }
+
+   command_event(CMD_EVENT_REINIT, &reinit_flags);
+}
+
 int runloop_iterate(void)
 {
    retro_time_t pace_limit_min;
@@ -8293,13 +8357,7 @@ int runloop_iterate(void)
     * recovered device, and a hardware core gets context_reset. */
    if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags)
          & VIDEO_FLAG_GPU_DEVICE_LOST)
-   {
-      int reinit_flags = DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK
-         | DRIVER_MENU_MASK;
-      video_driver_modify_disp_flags(0, VIDEO_FLAG_GPU_DEVICE_LOST);
-      RARCH_ERR("[Video] The GPU device was lost; reinitialising the video driver.\n");
-      command_event(CMD_EVENT_REINIT, &reinit_flags);
-   }
+      runloop_gpu_device_lost(runloop_st);
 
 #ifdef HAVE_DISCORD
    if (discord_st->inited)

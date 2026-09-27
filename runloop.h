@@ -186,6 +186,12 @@ struct runloop
    retro_time_t core_runtime_last;
    retro_time_t core_runtime_usec;
    retro_time_t core_run_time;
+   /* GPU device-loss recovery: when the driver may next be rebuilt,
+    * and how many losses have come in quick succession. A loss long
+    * after the previous one starts the count over. */
+   retro_time_t gpu_lost_retry_at;
+   retro_time_t gpu_lost_last;
+   unsigned     gpu_lost_count;
    retro_time_t frame_limit_minimum_time;
    /* The same period and anchor in nanoseconds, for the gap limiter's
     * schedule: a period rounded to whole microseconds is 21 ppm off
