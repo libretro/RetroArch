@@ -103,6 +103,9 @@
 #if defined(PB_LINUX)
 #include <time.h>
 #include <sched.h>
+#if defined(__ANDROID__)
+#include <sys/system_properties.h>
+#endif
 #include <sys/syscall.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -258,12 +261,32 @@ static unsigned pb_num_cpus(void)
 #define PB_MEMBARRIER_CMD_PRIVATE_EXPEDITED            (1 << 3)
 #define PB_MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED   (1 << 4)
 
+#if defined(__ANDROID__)
+/* Android's seccomp filter answers a syscall outside its allowlist with
+ * SIGSYS, which ends the process, and membarrier joined that allowlist
+ * in Android 10 (API 29): on 8.0 through 9 even the query would be the
+ * end. The API level decides whether the probe is made at all; an
+ * unreadable one counts as too old. */
+static int pb_android_api_level(void)
+{
+   char v[PROP_VALUE_MAX];
+   if (__system_property_get("ro.build.version.sdk", v) <= 0)
+      return 0;
+   return atoi(v);
+}
+#endif
+
 static int pb_membarrier_try(void)
 {
 #if defined(PB_NO_MEMBARRIER)
    return 0;
 #else
-   long q = syscall(__NR_membarrier, PB_MEMBARRIER_CMD_QUERY, 0, 0);
+   long q;
+#if defined(__ANDROID__)
+   if (pb_android_api_level() < 29)
+      return 0;
+#endif
+   q = syscall(__NR_membarrier, PB_MEMBARRIER_CMD_QUERY, 0, 0);
    if (q < 0)
       return 0;   /* ENOSYS before 4.3, or filtered */
    if (!(q & PB_MEMBARRIER_CMD_PRIVATE_EXPEDITED))
