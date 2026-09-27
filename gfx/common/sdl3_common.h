@@ -27,9 +27,12 @@
 
 enum sdl3_flags
 {
-   SDL3_FLAG_QUITTING       = (1 << 0),
-   SDL3_FLAG_SHOULD_RESIZE  = (1 << 1),
-   SDL3_FLAG_ADAPTIVE_VSYNC = (1 << 2)
+   SDL3_FLAG_QUITTING         = (1 << 0),
+   SDL3_FLAG_SHOULD_RESIZE    = (1 << 1),
+   SDL3_FLAG_ADAPTIVE_VSYNC   = (1 << 2),
+   /* The overlay textures are the overlay pack's (load_textures),
+    * not this driver's to destroy. */
+   SDL3_FLAG_OVERLAY_BORROWED = (1 << 3)
 };
 
 typedef struct sdl3_tex
@@ -72,10 +75,6 @@ typedef struct _sdl3_video
    struct sdl3_overlay *overlays;
    unsigned overlays_size;
    bool overlays_enabled;
-   /* True when load() created the textures. load_textures() hands
-    * out video_driver_texture_load()'s, which the frontend owns and
-    * unloads itself. */
-   bool overlays_owned;
 #endif
 
    uint8_t flags;
