@@ -2288,7 +2288,9 @@ static const struct
    char s_8fc1e4da[7];
    char s_14ed14d0[11];
    char s_5c87e95b[19];
+   char s_fad361a0[39];
    char s_bb929824[26];
+   char s_fe2ec9bd[30];
    char s_5741c1d0[23];
    char s_a1a7717d[31];
    char s_e6ca3876[50];
@@ -3564,7 +3566,6 @@ static const struct
    char s_ffd591e0[50];
    char s_a51ab538[35];
    char s_55d6cc44[34];
-   char s_5a8f7fb9[171];
    char s_f2963d2d[38];
    char s_4c592ae1[101];
    char s_52ac4fb9[120];
@@ -3655,8 +3656,10 @@ static const struct
    char s_cfa51e8c[302];
    char s_b62c2f7e[323];
    char s_456fcbc9[376];
+   char s_ba8ff8ce[354];
    char s_82fab47a[39];
    char s_72e21512[204];
+   char s_9f6de46b[322];
    char s_66f2b57e[57];
    char s_a776daeb[74];
    char s_88095324[74];
@@ -6851,7 +6854,9 @@ static const struct
    "Apagat",
    "Brillantor",
    "L\303\255nies d'escaneig",
+   "Enviar la lluminositat dels fotogrames",
    "Disposici\303\263 del subp\303\255xel",
+   "Fes servir el pic del monitor",
    "Disposicions de v\303\255deo",
    "Lat\303\250ncia de fotograma m\303\240xima",
    "Nombre m\303\240xim d'imatges en la cadena d'intercanvi",
@@ -8774,9 +8779,6 @@ static const struct
    "Mostra la informaci\303\263 espec\303\255fica del dispositiu.",
    "Captura una imatge de la pantalla.",
    "Executa tasques en un fil a part.",
-   "Mant\303\251 els fils d'\303\240udio en els nuclis r\303\240pids del processador. No t\303\251 e"
-   "fecte en els processadors que tinguin tots els nuclis iguals. Cal reiniciar perqu\303\250 tingui"
-   " efecte.",
    "Tipus de miniatures que es mostrar\303\240.",
    "Les miniatures de l\342\200\231art de les capses, captures i pantalla de t\303\255tol es desen e"
    "n aquest directori.",
@@ -8955,10 +8957,18 @@ static const struct
    "\255nies d'escombrat apagar\303\240 gran  part de la imatge i el HDR recuperar\303\240 la brilla"
    "ntor perduda. Si et cal un control m\303\251s prec\303\255s de les l\303\255nies d'escombrat, ha"
    "s de fer servir shaders personalitzats que inclou RetroArch.",
+   "Indica a un compositor Wayland el rang de brillantor que cont\303\251 el fotograma, de manera qu"
+   "e mapegi el contingut HDR a partir del que hi ha realment al fotograma en lloc de basar-se en un"
+   "a suposici\303\263. Si est\303\240 desactivat, el fotograma es descriu com a Windows-scRGB, tal "
+   "com es feia abans. Els canvis s'apliquen quan es reinicia el controlador de v\303\255deo.",
    "Canvia les opcions de v\303\255deo de l'HDR.",
    "Selecciona la disposici\303\263 dels subp\303\255xels de la teva pantalla (nom\303\251s afecta l"
    "es l\303\255nies d'escombrat). Si no saps quina \303\251s la disposici\303\263 dels subp\303\255"
    "xels de la teva pantalla, ho pots cercar a Rtings.com",
+   "Fes servir la brillantor m\303\240xima que indica el monitor en comptes del valor que s'indica a"
+   " configuraci\303\263 si el monitor envia el valor: aquest valor es transmet als nuclis i ser\303"
+   "\240 el s'inclogui en les metadades HDR enviades per la pantalla. Si es desactiva aquesta opci"
+   "\303\263, es far\303\240 servir el valor indicat a configuraci\303\263.",
    "Les disposicions de v\303\255deo es desen en aquest directori.",
    "Avisa al controlador de v\303\255deo que faci servir un mode de b\303\272fer concret.",
    "Avisa al controlador de v\303\255deo que faci servir un mode de b\303\272fer concret.",
@@ -9788,7 +9798,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (218538u
+      (sizeof(msg_hash_ca_blob) == (219112u
 #ifdef ANDROID
        + 281u
 #endif
@@ -12482,7 +12492,9 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SEND_LUMINANCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_USE_DISPLAY_PEAK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -13752,7 +13764,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13842,8 +13853,10 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SEND_LUMINANCE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_USE_DISPLAY_PEAK,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,

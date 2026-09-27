@@ -2086,6 +2086,10 @@ static const struct
    char s_60a38895[6];
    char s_db01e988[4];
    char s_e1c715da[4];
+   char s_b4d6cb93[30];
+   char s_ee1c318a[23];
+   char s_32b51618[24];
+   char s_a2906bd3[23];
    char s_e2f93e68[5];
    char s_47d26662[12];
    char s_0ca3b319[9];
@@ -3465,7 +3469,6 @@ static const struct
    char s_ffd591e0[48];
    char s_a51ab538[24];
    char s_55d6cc44[39];
-   char s_5a8f7fb9[203];
    char s_f2963d2d[31];
    char s_4c592ae1[90];
    char s_52ac4fb9[109];
@@ -3477,6 +3480,7 @@ static const struct
    char s_f77f7a41[65];
 #endif
    char s_e7cb5685[35];
+   char s_bd82a701[382];
    char s_8bb367a2[133];
    char s_2beab583[24];
    char s_a1c071eb[106];
@@ -6541,6 +6545,10 @@ static const struct
    "vecka",
    "\303\245r",
    "\303\245r",
+   "Verifiering av TLS-certifikat",
+   "Inaktiverat (Os\303\244kert)",
+   "Valfritt (Varna endast)",
+   "Kr\303\244vs (Rekommenderas)",
    "Sant",
    "Halv period",
    "Klassisk",
@@ -8601,9 +8609,6 @@ static const struct
    "Visa information som \303\244r specifik f\303\266r enheten.",
    "Ta en bild av sk\303\244rmen.",
    "Utf\303\266r uppgifter p\303\245 en separat tr\303\245d.",
-   "H\303\245ll huvud- och ljudtr\303\245darna p\303\245 de snabbaste processork\303\244rnorna i en "
-   "processor med blandade k\303\244rntyper. Har ingen effekt p\303\245 processorer d\303\244r alla "
-   "k\303\244rnor \303\244r likadana. Tr\303\244der i kraft efter omstart.",
    "Typ av miniatyr som ska visas.",
    "Omslagsbilder, sk\303\244rmbilder och miniatyrbilder f\303\266r titelsk\303\244rmar lagras i den"
    "na katalog.",
@@ -8619,6 +8624,11 @@ static const struct
    "V\303\244lj din tidszon f\303\266r att justera datum och tid till din plats.",
 #endif
    "Visa aktuell tid i \303\266nskat format.",
+   "Styr hur servercertifikat kontrolleras vid s\303\244kra anslutningar (HTTPS) som anv\303\244nds "
+   "av Cloud Sync, RetroAchievements och Online Updater. Inst\303\244llningen \342\200\235Kr\303\244"
+   "vs\342\200\235 avvisar icke-betrodda certifikat och skyddar mot man-in-the-middle-attacker. S"
+   "\303\244nk endast denna s\303\244kerhetsniv\303\245 om du ansluter via en f\303\266retagsproxy e"
+   "ller till en v\303\244rd med sj\303\244lvsignerat certifikat som du litar p\303\245.",
    "Drivrutin f\303\266r kompletterande anv\303\244ndargr\303\244nssnitt p\303\245 skrivbordet som a"
    "nv\303\244nds n\303\244r skrivbordsmenyn \303\244r aktiverad. (Omstart kr\303\244vs)",
    "Visa f\303\266nstermenyf\303\244lt.",
@@ -9606,7 +9616,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (193127u
+      (sizeof(msg_hash_sv_blob) == (193406u
 #ifdef ANDROID
        + 361u
 #endif
@@ -12097,6 +12107,10 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_REQUIRED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TRUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
@@ -13470,7 +13484,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13482,6 +13495,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_TLS_VERIFY_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,

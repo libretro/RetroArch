@@ -3537,7 +3537,6 @@ static const struct
    char s_ffd591e0[48];
    char s_a51ab538[32];
    char s_55d6cc44[35];
-   char s_5a8f7fb9[210];
    char s_f2963d2d[29];
    char s_4c592ae1[111];
    char s_52ac4fb9[123];
@@ -8679,9 +8678,6 @@ static const struct
    "Mostra informaci\303\263n espec\303\255fica do dispositivo.",
    "Captura unha imaxe da pantalla.",
    "Realiza tarefas nun f\303\255o separado.",
-   "Manter os f\303\255os principal e de son nos n\303\272cleos de CPU m\303\241is r\303\241pidos du"
-   "n procesador con n\303\272cleos de distinto tipo. Non ten efecto nos procesadores cuxos n\303"
-   "\272cleos son todos iguais. Entra en vigor ao reiniciar.",
    "Tipo de miniatura a mostrar.",
    "Neste directorio g\303\241rdanse as imaxes do cadro, as capturas de pantalla e as miniaturas da "
    "pantalla de t\303\255tulo.",
@@ -9669,7 +9665,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (213156u
+      (sizeof(msg_hash_gl_blob) == (212946u
 #ifdef ANDROID
        + 365u
 #endif
@@ -13597,7 +13593,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
