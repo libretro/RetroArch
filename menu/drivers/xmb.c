@@ -8409,6 +8409,16 @@ static void xmb_render(void *data,
          if (!(thumbnail_icon = xmb_node_icons_get(node)))
             continue;
 
+         /* Every selection change bumps the thumbnail generation and
+          * cancels the in-flight loads, so an entry that was PENDING on
+          * the previous step is now PENDING with nothing behind it: its
+          * task was cancelled and gfx_thumbnail_handle_upload will not
+          * touch it through the stale tag.  Recover it here, before the
+          * status early-out below, or it is skipped for as long as it
+          * stays on screen and the icon never appears (#19075: hold
+          * Down in a playlist and some icons stay blank). */
+         gfx_thumbnail_reset_if_orphaned(&thumbnail_icon->icon);
+
          /* Already resolved and dispatched — nothing to do. */
          if (thumbnail_icon->icon.status != GFX_THUMBNAIL_STATUS_UNKNOWN)
             continue;
