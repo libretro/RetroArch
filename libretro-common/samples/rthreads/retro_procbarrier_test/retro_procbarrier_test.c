@@ -29,7 +29,14 @@
  *    it waited on would never acknowledge, and the barrier would never
  *    return. POSIX only; Windows threads have no signal mask.
  *
- * 6. It fences. This is the one that matters and the one most tests of
+ * 6. It survives a thread that blocks the signal after being picked. A
+ *    busy thread flips its mask between all-blocked and open every few
+ *    microseconds while barriers run, so walks catch it in every state,
+ *    including with the signal queued and then blocked. Whether that
+ *    signal is later delivered or never is, no walk may wait on it and
+ *    nothing may be touched by a delivery that comes after the walk.
+ *
+ * 7. It fences. This is the one that matters and the one most tests of
  *    this kind skip. The asymmetric protocol the barrier enables is:
  *
  *      producer:  seq = seq + 1  (release)        consumer:  parked = 1  (relaxed)
@@ -390,6 +397,58 @@ static void masked_busy_thread(void *arg)
       x++;
 }
 
+static void flipping_thread(void *arg)
+{
+   sigset_t all, none;
+   volatile unsigned x = 0;
+   (void)arg;
+   sigfillset(&all);
+   sigemptyset(&none);
+   while (!retro_atomic_load_relaxed_int(&g_stop))
+   {
+      pthread_sigmask(SIG_SETMASK, &all, NULL);
+      for (x = 0; x < 2000u; x++) ;
+      pthread_sigmask(SIG_SETMASK, &none, NULL);
+      for (x = 0; x < 2000u; x++) ;
+   }
+}
+
+static int check_flipping_thread(void)
+{
+   sthread_t *flip, *caller;
+   int waited_ms, done = 0;
+
+   if (retro_procbarrier_tier() == RETRO_PROCBARRIER_NONE)
+      return 1;
+
+   retro_atomic_store_relaxed_int(&g_stop, 0);
+   retro_atomic_store_relaxed_int(&g_conc_done, 0);
+   flip   = sthread_create(flipping_thread, NULL);
+   caller = sthread_create(barrier_caller, NULL);
+
+   for (waited_ms = 0; waited_ms < CONC_LIMIT_S * 1000; waited_ms += 10)
+   {
+      done = retro_atomic_load_acquire_int(&g_conc_done);
+      if (done >= 1)
+         break;
+      sleep_ms(10);
+   }
+   if (done < 1)
+   {
+      printf("  FAIL: barriers stalled on a thread flipping its signal "
+             "mask (%d barriers not done within %d s)\n",
+             CONC_ITERS, CONC_LIMIT_S);
+      printf("procbarrier: FAILED\n");
+      exit(1);
+   }
+   sthread_join(caller);
+   retro_atomic_store_relaxed_int(&g_stop, 1);
+   sthread_join(flip);
+   printf("  flipping: %d barriers past a busy thread flipping its "
+          "signal mask\n", CONC_ITERS);
+   return 1;
+}
+
 static int check_masked_thread(void)
 {
    sthread_t *masked, *caller;
@@ -496,6 +555,7 @@ int main(void)
    ok &= check_exiting();
 #if !defined(_WIN32)
    ok &= check_masked_thread();
+   ok &= check_flipping_thread();
 #endif
    ok &= check_fences();
    printf(ok ? "procbarrier: ok\n" : "procbarrier: FAILED\n");

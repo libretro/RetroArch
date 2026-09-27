@@ -203,21 +203,39 @@ static size_t             s_page_size;
 #endif
 
 #if defined(PB_LINUX)
-/* One target of a signal-tier walk. The queued signal carries the slot's
- * address; the target's handler closes it, or the walker does on finding
- * the thread gone, and whichever closes it counts it in *acks. */
+/* One target of a signal-tier walk. Slots live in a static pool and the
+ * queued signal carries a slot's index and generation, never an
+ * address: a slot is claimed for one target of one walk, closed by the
+ * target's handler or by the walker on finding the thread gone or the
+ * signal blocked, and released once the walk is done with its batch. A
+ * signal that is delivered late -- to a thread that blocked it and later
+ * unblocks -- finds the slot released or claimed again under another
+ * generation and is ignored, so the pointer to the walker's count is
+ * only ever followed while the walker is still waiting on it.
+ *
+ * state holds the generation shifted up one bit and the closed bit
+ * below it, so one compare-and-swap checks the generation and closes.
+ * 0 is a free slot; generation 0 is never issued. */
 typedef struct pb_ack_slot
 {
    retro_atomic_int_t *acks;
    unsigned long       start;   /* the thread's start time, its identity */
    pid_t               tid;
-   retro_atomic_int_t  closed;
+   retro_atomic_int_t  state;
 } pb_ack_slot_t;
 
-/* The probe's slot and count. Static, so an acknowledgement that arrives
- * late -- the probing thread had the signal blocked -- still lands in
- * valid memory. */
-static pb_ack_slot_t      s_probe_slot;
+#define PB_SLOT_POOL      128
+#define PB_SLOT_GEN_BITS  23   /* with the closed bit and the index, an int */
+#define PB_SLOT_GEN_MASK  ((1 << PB_SLOT_GEN_BITS) - 1)
+#define PB_SLOT_OPEN(gen) ((gen) << 1)
+#define PB_SLOT_DONE(gen) (((gen) << 1) | 1)
+/* The value a queued signal carries: index low, generation above it. */
+#define PB_SLOT_TOKEN(idx, gen) (((gen) << 8) | (idx))
+
+static pb_ack_slot_t      s_slots[PB_SLOT_POOL];
+static retro_atomic_int_t s_slot_gen;
+
+/* The probe's count. */
 static retro_atomic_int_t s_probe_acks;
 #endif
 
@@ -539,15 +557,17 @@ static void pb_ack_handler(int sig, siginfo_t *si, void *uc)
    int saved_errno = errno;
    (void)sig;
    (void)uc;
-   if (si && si->si_code == SI_QUEUE && si->si_pid == getpid()
-         && si->si_value.sival_ptr)
+   if (si && si->si_code == SI_QUEUE && si->si_pid == getpid())
    {
-      pb_ack_slot_t      *slot = (pb_ack_slot_t*)si->si_value.sival_ptr;
-      retro_atomic_int_t *acks;
+      int            token = si->si_value.sival_int;
+      int            gen   = (token >> 8) & PB_SLOT_GEN_MASK;
+      pb_ack_slot_t *slot  = &s_slots[token & (PB_SLOT_POOL - 1)];
       PB_TSAN_ACQUIRE(slot);
-      acks = slot->acks;
-      if (retro_atomic_cas_int(&slot->closed, 0, 1))
+      /* One CAS: the slot is still this signal's, and now closed. */
+      if (retro_atomic_cas_int(&slot->state, PB_SLOT_OPEN(gen),
+               PB_SLOT_DONE(gen)))
       {
+         retro_atomic_int_t *acks = slot->acks;
          retro_atomic_fetch_add_int(acks, 1);
 #if defined(PB_FUTEX_WAKE_PRIVATE)
          syscall(__NR_futex, (void*)acks, PB_FUTEX_WAKE_PRIVATE, 1,
@@ -558,8 +578,36 @@ static void pb_ack_handler(int sig, siginfo_t *si, void *uc)
    errno = saved_errno;
 }
 
+/* Claims a free slot for a target, returning its index or -1 when every
+ * one is taken. Slots are held only while a walk waits on a batch, so a
+ * caller that gets -1 has other walks to wait behind. */
+static int pb_slot_claim(retro_atomic_int_t *acks, pid_t tid,
+      unsigned long start, int *gen_out)
+{
+   int i;
+   int gen = (retro_atomic_fetch_add_int(&s_slot_gen, 1) + 1) & PB_SLOT_GEN_MASK;
+   if (!gen)
+      gen = (retro_atomic_fetch_add_int(&s_slot_gen, 1) + 1) & PB_SLOT_GEN_MASK;
+   for (i = 0; i < PB_SLOT_POOL; i++)
+   {
+      pb_ack_slot_t *slot = &s_slots[i];
+      if (retro_atomic_load_relaxed_int(&slot->state) != 0)
+         continue;
+      /* The fields go in before the state that publishes them. */
+      slot->acks  = acks;
+      slot->tid   = tid;
+      slot->start = start;
+      if (retro_atomic_cas_int(&slot->state, 0, PB_SLOT_OPEN(gen)))
+      {
+         *gen_out = gen;
+         return i;
+      }
+   }
+   return -1;
+}
+
 /* 0 when queued; otherwise -1 with errno set. */
-static long pb_send_ack(pid_t pid, pid_t tid, pb_ack_slot_t *slot)
+static long pb_send_ack(pid_t pid, pid_t tid, int idx, int gen)
 {
 #if defined(PB_HAVE_TGSIGQUEUE)
    siginfo_t si;
@@ -568,13 +616,14 @@ static long pb_send_ack(pid_t pid, pid_t tid, pb_ack_slot_t *slot)
    si.si_code            = SI_QUEUE;
    si.si_pid             = pid;
    si.si_uid             = getuid();
-   si.si_value.sival_ptr = (void*)slot;
-   PB_TSAN_RELEASE(slot);
+   si.si_value.sival_int = PB_SLOT_TOKEN(idx, gen);
+   PB_TSAN_RELEASE(&s_slots[idx]);
    return syscall(__NR_rt_tgsigqueueinfo, pid, tid, s_signum, &si);
 #else
    (void)pid;
    (void)tid;
-   (void)slot;
+   (void)idx;
+   (void)gen;
    errno = ENOSYS;
    return -1;
 #endif
@@ -631,14 +680,24 @@ static int pb_signal_try(int signum)
        * one to this thread is delivered before the syscall returns. A
        * refusal (ENOSYS, EPERM) or a mask that blocks the signal here
        * shows up as no acknowledgement. */
-      retro_atomic_store_relaxed_int(&s_probe_acks, 0);
-      retro_atomic_store_relaxed_int(&s_probe_slot.closed, 0);
-      s_probe_slot.acks = &s_probe_acks;
-      s_probe_slot.tid  = (pid_t)syscall(SYS_gettid);
-      if (pb_send_ack(getpid(), s_probe_slot.tid, &s_probe_slot) != 0)
-         return 0;
-      if (retro_atomic_load_acquire_int(&s_probe_acks) != 1)
-         return 0;
+      {
+         int idx, gen;
+         pid_t tid = (pid_t)syscall(SYS_gettid);
+         retro_atomic_store_relaxed_int(&s_probe_acks, 0);
+         idx = pb_slot_claim(&s_probe_acks, tid, 0, &gen);
+         if (idx < 0)
+            return 0;
+         if (pb_send_ack(getpid(), tid, idx, gen) != 0)
+         {
+            retro_atomic_store_release_int(&s_slots[idx].state, 0);
+            return 0;
+         }
+         /* Released whether or not it answered: the signal a blocking
+          * mask holds back finds the slot free later and is ignored. */
+         retro_atomic_store_release_int(&s_slots[idx].state, 0);
+         if (retro_atomic_load_acquire_int(&s_probe_acks) != 1)
+            return 0;
+      }
    }
 #endif
    return 1;
@@ -766,25 +825,29 @@ static int pb_thread_blocks_signal(pid_t tid)
    return 0;
 }
 
-/* Walks queue signals in batches of this many, each target with a slot
- * of its own on the walker's stack. */
+/* Walks claim slots in batches of this many. */
 #define PB_ACK_BATCH 32
 
 /* How long the walker sleeps before checking whether a target it is
- * still owed has exited. A thread that exits with the signal queued never
- * runs the handler, and nothing else would wake the walker; every other
- * acknowledgement wakes it at once. The first sleep is short and each
- * one after it twice as long, up to the ceiling: a walk that caught a
- * thread in its last microseconds is over in a fraction of a
- * millisecond, and one owed by a thread that is merely slow to be
- * scheduled costs a syscall every 10 ms rather than a spin. */
+ * still owed has exited or blocked the signal. A thread that exits with
+ * the signal queued never runs the handler, and nothing else would wake
+ * the walker; every other acknowledgement wakes it at once. The first
+ * sleep is short and each one after it twice as long, up to the
+ * ceiling: a walk that caught a thread in its last microseconds is over
+ * in a fraction of a millisecond, and one owed by a thread that is
+ * merely slow to be scheduled costs a syscall every 10 ms rather than a
+ * spin. */
 #define PB_ACK_RECHECK_FIRST_NS 250000L
 #define PB_ACK_RECHECK_MAX_NS   10000000L
 
-/* Wait until every slot in the batch is closed. A slot whose thread no
- * longer exists -- or whose tid now belongs to a thread started later --
- * is closed by the walker: an exited thread was fenced by exiting. */
-static void pb_ack_wait(pb_ack_slot_t *slots, int n, retro_atomic_int_t *acks)
+/* Wait until every slot in the batch is closed. The walker closes a slot
+ * itself when its thread is gone -- or is a thread started later under
+ * the same tid -- since an exited thread was fenced by exiting, and when
+ * its thread has blocked the signal since the walk looked, since that
+ * thread is not one this barrier is for (see the header) and will not
+ * answer. */
+static void pb_ack_wait(const int *idx, const int *gen, int n,
+      retro_atomic_int_t *acks)
 {
    long wait_ns = PB_ACK_RECHECK_FIRST_NS;
    for (;;)
@@ -808,15 +871,16 @@ static void pb_ack_wait(pb_ack_slot_t *slots, int n, retro_atomic_int_t *acks)
 #endif
       for (i = 0; i < n; i++)
       {
-         unsigned long start;
-         if (retro_atomic_load_acquire_int(&slots[i].closed))
+         pb_ack_slot_t *slot = &s_slots[idx[i]];
+         unsigned long  start;
+         if (retro_atomic_load_acquire_int(&slot->state) != PB_SLOT_OPEN(gen[i]))
             continue;
-         /* Gone, or a different thread now under the same tid: either
-          * way the one that was signalled has exited. */
-         if (       pb_thread_stat(slots[i].tid, 0, &start)
-               &&   start == slots[i].start)
+         if (       pb_thread_stat(slot->tid, 0, &start)
+               &&   start == slot->start
+               &&  !pb_thread_blocks_signal(slot->tid))
             continue;
-         if (retro_atomic_cas_int(&slots[i].closed, 0, 1))
+         if (retro_atomic_cas_int(&slot->state, PB_SLOT_OPEN(gen[i]),
+                  PB_SLOT_DONE(gen[i])))
             retro_atomic_fetch_add_int(acks, 1);
       }
    }
@@ -826,10 +890,10 @@ static void pb_signal_barrier(void)
 {
    DIR *d;
    struct dirent *e;
-   /* This walk's own, on its stack: handlers reach them through the
-    * queued value, and a batch is not left until every slot in it is
-    * closed, so they outlive every signal that points at them. */
-   pb_ack_slot_t      slots[PB_ACK_BATCH];
+   int   idx[PB_ACK_BATCH], gen[PB_ACK_BATCH];
+   /* This walk's count, on its stack: a handler reaches it through a
+    * slot, and every slot pointing at it is closed before the batch is
+    * left and released before the walk returns. */
    retro_atomic_int_t acks;
    pid_t self = (pid_t)syscall(SYS_gettid);
    pid_t pid  = getpid();
@@ -840,13 +904,14 @@ static void pb_signal_barrier(void)
    PB_TSAN_WALK_LOCK();
    do
    {
-      int n = 0;
-      /* Stores, not atomic_init: the handlers that update these run on
+      int n = 0, i;
+      /* A store, not atomic_init: the handlers that update it run on
        * other threads, and the only edge between this and them is the
        * syscall that queues their signal. */
       retro_atomic_store_release_int(&acks, 0);
       while (n < PB_ACK_BATCH && (e = readdir(d)) != NULL)
       {
+         unsigned long start;
          pid_t tid = (pid_t)atoi(e->d_name);
          if (tid <= 0 || tid == self)
             continue;
@@ -855,7 +920,7 @@ static void pb_signal_barrier(void)
           * than strictly running, so under overcommit this can also wait
           * for a preempted thread to be rescheduled -- bounded by a
           * scheduler quantum, and acceptable on a path about to sleep. */
-         if (!pb_thread_stat(tid, 1, &slots[n].start))
+         if (!pb_thread_stat(tid, 1, &start))
             continue;
          /* A thread with the signal blocked would never acknowledge it.
           * It is one this process did not create for its own protocols
@@ -864,23 +929,29 @@ static void pb_signal_barrier(void)
           * needs drained. The header states that contract. */
          if (pb_thread_blocks_signal(tid))
             continue;
-         slots[n].acks  = &acks;
-         slots[n].tid   = tid;
-         retro_atomic_store_release_int(&slots[n].closed, 0);
+         /* Every slot taken means other walks are mid-batch; theirs
+          * close as their targets answer, so wait for one to free. */
+         while ((idx[n] = pb_slot_claim(&acks, tid, start, &gen[n])) < 0)
+            sched_yield();
          /* EAGAIN is a full queue, which drains as its signals are
           * handled; ESRCH is a thread that has exited, which fences it. */
          for (;;)
          {
-            if (pb_send_ack(pid, tid, &slots[n]) == 0)
+            if (pb_send_ack(pid, tid, idx[n], gen[n]) == 0)
             {
                n++;
                break;
             }
             if (errno != EAGAIN)
+            {
+               retro_atomic_store_release_int(&s_slots[idx[n]].state, 0);
                break;
+            }
          }
       }
-      pb_ack_wait(slots, n, &acks);
+      pb_ack_wait(idx, gen, n, &acks);
+      for (i = 0; i < n; i++)
+         retro_atomic_store_release_int(&s_slots[idx[i]].state, 0);
    } while (e != NULL);
    PB_TSAN_WALK_UNLOCK();
    closedir(d);
