@@ -24,6 +24,7 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <net/net_socket_ssl.h>
+#include <retro_atomic.h>
 
 #ifdef _3DS
 #include <3ds/types.h>
@@ -255,23 +256,26 @@ error:
 /* --- TLS certificate-verification policy --------------------------------
  * A single module-scope mode selects the mbedtls authmode used by every
  * ssl_socket_connect. REQUIRED (fail-closed) is the default so an unset
- * value is safe. `volatile` is sufficient here: the value is a single
- * aligned word, written from the settings/startup thread and read once per
- * handshake; a mid-flight toggle simply applies to the *next* connection.
- * We deliberately avoid C11 <stdatomic.h> to keep this vendored file
- * C89-clean on console toolchains. */
-static volatile unsigned ssl_authmode = MBEDTLS_SSL_VERIFY_REQUIRED;
+ * value is safe. It is written from the settings/startup thread and read
+ * once per handshake on whichever thread connects, so the accesses are
+ * atomic: `volatile` promises nothing about visibility between threads
+ * and is a data race under the C memory model. A mid-flight toggle
+ * simply applies to the *next* connection. retro_atomic.h keeps this
+ * C89-clean on the console toolchains that lack <stdatomic.h>. */
+static retro_atomic_int_t ssl_authmode = MBEDTLS_SSL_VERIFY_REQUIRED;
 
 void ssl_socket_set_verify_mode(unsigned mode)
 {
+   int authmode;
    /* mode is a tls_verify_mode value (0 required / 1 optional / 2 disabled);
     * translate to the mbedtls authmode constant. */
    switch (mode)
    {
-      case 1:  ssl_authmode = MBEDTLS_SSL_VERIFY_OPTIONAL; break;
-      case 2:  ssl_authmode = MBEDTLS_SSL_VERIFY_NONE;     break;
-      default: ssl_authmode = MBEDTLS_SSL_VERIFY_REQUIRED; break;
+      case 1:  authmode = MBEDTLS_SSL_VERIFY_OPTIONAL; break;
+      case 2:  authmode = MBEDTLS_SSL_VERIFY_NONE;     break;
+      default: authmode = MBEDTLS_SSL_VERIFY_REQUIRED; break;
    }
+   retro_atomic_store_release_int(&ssl_authmode, authmode);
 }
 
 /* Weak no-op logging hooks; RetroArch overrides these in network/tls_log.c.
@@ -299,7 +303,7 @@ int ssl_socket_connect(void *state_data,
       void *data, bool timeout_enable, bool nonblock)
 {
    int ret, flags;
-   unsigned authmode;
+   int authmode;
    struct ssl_state *state = (struct ssl_state*)state_data;
 
    if (timeout_enable)
@@ -327,7 +331,7 @@ int ssl_socket_connect(void *state_data,
       return -1;
    }
 
-   authmode = ssl_authmode;
+   authmode = retro_atomic_load_acquire_int(&ssl_authmode);
    mbedtls_ssl_conf_authmode(&state->conf, (int)authmode);
    if (authmode == MBEDTLS_SSL_VERIFY_NONE)
       ssl_socket_log_verify_disabled(state->domain);
