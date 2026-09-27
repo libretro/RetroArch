@@ -37,6 +37,8 @@
 #include <retro_miscellaneous.h>
 #include <retro_math.h>
 #include <retro_assert.h>
+#include <retro_atomic.h>
+#include <features/features_cpu.h>
 #include <libretro.h>
 
 #ifdef HAVE_CONFIG_H
@@ -92,6 +94,26 @@
  * called from earlier @implementations. */
 static MTLPixelFormat glslang_format_to_metal(glslang_format fmt);
 static MTLPixelFormat SelectOptimalPixelFormat(MTLPixelFormat fmt);
+
+/* When a drawable reached the display (macOS 10.15.4, iOS/tvOS 10.3).
+ * Declared here rather than taken from the SDK, so the driver builds
+ * against any SDK and decides at runtime whether to ask. */
+@protocol MetalPresentedDrawable
+- (void)addPresentedHandler:(void (^)(id<MTLDrawable> drawable))block;
+- (CFTimeInterval)presentedTime;
+@end
+
+#ifdef RETRO_ATOMIC_HAS_64
+/* When the last presented drawable reached the display, on the
+ * cpu_features_get_time_usec() clock, 0 for not known. Written by the
+ * presented handler on whatever thread Metal runs it, read on the video
+ * thread. File scope rather than on the Context, so the handler holds
+ * no reference to it: a Context torn down with a present in flight is
+ * still released on the thread that owns it. One layer presents at a
+ * time; a late report from a previous one is still a vblank of the same
+ * display. */
+static retro_atomic_64_t metal_presented_at;
+#endif
 
 #pragma mark - Pixel Formats
 
@@ -199,6 +221,10 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 /*! @brief swapBuffers acquires the next drawable, blocking if needed for vsync.
  *  This should be called after end to match Vulkan's swap_buffers timing. */
 - (void)swapBuffers;
+
+/*! @brief When the last presented drawable reached the display, on the
+ *  cpu_features_get_time_usec() clock; 0 when the OS cannot say. */
+- (retro_time_t)lastPresentTime;
 
 - (void)setRotation:(unsigned)rotation;
 - (bool)readBackBuffer:(uint8_t *)buffer;
@@ -929,6 +955,9 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 
       _device                    = RARCH_RETAIN(d);
       _layer                     = RARCH_RETAIN(layer);
+#ifdef RETRO_ATOMIC_HAS_64
+      retro_atomic_store_release_64(&metal_presented_at, 0);
+#endif
 #if TARGET_OS_OSX
       _layer.framebufferOnly     = NO;
       _layer.displaySyncEnabled  = YES;
@@ -2732,6 +2761,27 @@ static float metal_hdr_pq_to_nits(float pq)
 
    if (drawable)
    {
+#ifdef RETRO_ATOMIC_HAS_64
+      /* When it reached the display, for the threaded presenter to lay
+       * its vblank grid on: presentedTime is on the host clock, bridged
+       * to the frontend's by one paired read, since CLOCK_MONOTONIC
+       * counts sleep and the host clock does not. 0 means the drawable
+       * was never shown. */
+      if (apple_runtime_available(APPLE_RUNTIME_VER(10, 15, 4),
+               APPLE_RUNTIME_VER(10, 3, 0), APPLE_RUNTIME_VER(10, 3, 0)))
+         [(id<MetalPresentedDrawable>)drawable addPresentedHandler:
+            ^(id<MTLDrawable> _Nonnull shown) {
+               CFTimeInterval at = [(id<MetalPresentedDrawable>)shown presentedTime];
+               if (at > 0.0)
+               {
+                  retro_time_t   now = cpu_features_get_time_usec();
+                  CFTimeInterval age = CACurrentMediaTime() - at;
+                  if (age >= 0.0)
+                     retro_atomic_store_release_64(&metal_presented_at,
+                           (int64_t)(now - (retro_time_t)(age * 1000000.0)));
+               }
+            }];
+#endif
       /* Use addScheduledHandler to present, following Apple's recommendation.
        * According to Apple (and used by MoltenVK), it is more performant to call
        * [drawable present] from within a scheduled-handler than to use
@@ -2760,6 +2810,15 @@ static float metal_hdr_pq_to_nits(float pq)
     * This blocking behavior is intentional for proper frame pacing. */
    RARCH_RELEASE_NIL(_drawable);
    RARCH_ASSIGN(_drawable, _layer.nextDrawable);
+}
+
+- (retro_time_t)lastPresentTime
+{
+#ifdef RETRO_ATOMIC_HAS_64
+   return (retro_time_t)retro_atomic_load_acquire_64(&metal_presented_at);
+#else
+   return 0;
+#endif
 }
 
 - (bool)allocRange:(BufferRange *)range length:(NSUInteger)length
@@ -7112,6 +7171,12 @@ static void metal_set_hdr_subpixel_layout(void *data, unsigned subpixel_layout)
       [md.context setHDRSubpixelLayout:subpixel_layout];
 }
 
+static retro_time_t metal_get_last_present_time(void *data)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   return md ? [md.context lastPresentTime] : 0;
+}
+
 static bool metal_supports_texture_format(void *video_data,
       enum texture_gpu_format fmt)
 {
@@ -7197,7 +7262,7 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_supports_texture_format,
    metal_load_texture_compressed,
    NULL, /* present_last */
-   NULL, /* get_last_present_time */
+   metal_get_last_present_time,
    NULL, /* hw_ring_install */
    NULL, /* hw_ring_fence_new */
    NULL, /* hw_ring_fence_free */
