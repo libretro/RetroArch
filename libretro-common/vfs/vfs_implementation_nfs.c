@@ -549,7 +549,6 @@ nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
 struct nfs_dirent *retro_vfs_readdir_nfs(nfs_dir_handle *dh)
 {
    struct nfsdirent *ent;
-   static struct nfs_dirent result;
 
    if (!nfs_initialized || !dh || !dh->ctx || !dh->dir)
       return NULL;
@@ -558,12 +557,12 @@ struct nfs_dirent *retro_vfs_readdir_nfs(nfs_dir_handle *dh)
    if (!ent)
       return NULL;
 
-   memset(&result, 0, sizeof(result));
-   strlcpy(result.name, ent->name ? ent->name : "", sizeof(result.name));
-   result.type = (ent->type == RETRO_NFS_TYPE_DIR) ? 1 : 0;
-   result.size = (int64_t)ent->size;
+   memset(&dh->ent, 0, sizeof(dh->ent));
+   strlcpy(dh->ent.name, ent->name ? ent->name : "", sizeof(dh->ent.name));
+   dh->ent.type = (ent->type == RETRO_NFS_TYPE_DIR) ? 1 : 0;
+   dh->ent.size = (int64_t)ent->size;
 
-   return &result;
+   return &dh->ent;
 }
 
 int retro_vfs_closedir_nfs(nfs_dir_handle *dh)

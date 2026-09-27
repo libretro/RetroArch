@@ -28,6 +28,7 @@ struct nfs_dirent {
 typedef struct {
    struct nfs_context *ctx;
    struct nfsdir *dir;
+   struct nfs_dirent ent;
 } nfs_dir_handle;
 
 bool nfs_init_cfg(const struct nfs_settings *new_cfg);
