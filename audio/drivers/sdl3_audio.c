@@ -196,9 +196,17 @@ static struct string_list *sdl3_audio_device_list(bool recording)
    int count = 0;
    SDL_AudioDeviceID *devices = NULL;
    struct string_list *sl = string_list_new();
+   bool inited = SDL_WasInit(SDL_INIT_AUDIO) != 0;
 
    if (!sl)
       return NULL;
+
+   if (!inited && !SDL_InitSubSystem(SDL_INIT_AUDIO))
+   {
+      RARCH_WARN("[SDL3 audio] Could not start the audio subsystem to list devices: %s.\n",
+            SDL_GetError());
+      return sl;
+   }
 
    attr.i  = 0;
    devices = recording
@@ -215,6 +223,9 @@ static struct string_list *sdl3_audio_device_list(bool recording)
       }
       SDL_free(devices);
    }
+
+   if (!inited)
+      SDL_QuitSubSystem(SDL_INIT_AUDIO);
 
    return sl;
 }
