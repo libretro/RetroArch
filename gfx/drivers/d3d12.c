@@ -597,10 +597,24 @@ typedef struct
       /* Set by the capture recorded into a frame's list, consumed by
        * the signal after that list is executed. */
       bool          pending;
+      /* Rings taken out of use - recording stopped, or the swapchain
+       * changed size or format - whose buffers a command list still
+       * in flight may name. Each is released once the queue fence has
+       * passed the last capture recorded into it, never before.
+       * Generations pile up only under a storm of resizes; when the
+       * table is full the oldest is waited for, bounded. */
+#define D3D12_RECORD_RETIRED 4
+      struct
+      {
+         D3D12Resource readback[D3D12_RECORD_RING];
+         UINT64        fence;
+      } retired[D3D12_RECORD_RETIRED];
+      unsigned      retired_count;
    } record;
 } d3d12_video_t;
 
 static void d3d12_record_free(d3d12_video_t *d3d12);
+static void d3d12_record_teardown(d3d12_video_t *d3d12);
 
 #define D3D12_ROLLING_SCANLINE_SIMULATION
 
@@ -4084,7 +4098,7 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->chain.retained);
    d3d12->chain.retained = NULL;
    d3d12_hw_ring_free(d3d12);
-   d3d12_record_free(d3d12);
+   d3d12_record_teardown(d3d12);
 
 
 #ifdef HAVE_OVERLAY
@@ -5378,12 +5392,89 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12);
  * when it does not match. Left in COPY_SOURCE for present_last(). The
  * desc comes from the swapchain, not ID3D12Resource::GetDesc, which the
  * C vtable declares struct-by-value and mingw cannot call as declared. */
+/* Releases the retired rings the GPU has finished with. Called every
+ * frame; a no-op when nothing is retired. */
+static void d3d12_record_reclaim(d3d12_video_t *d3d12)
+{
+   UINT64 done;
+   unsigned n = 0, g;
+   if (!d3d12->record.retired_count)
+      return;
+   done = d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence);
+   for (g = 0; g < d3d12->record.retired_count; g++)
+   {
+      if (d3d12->record.retired[g].fence <= done)
+      {
+         unsigned i;
+         for (i = 0; i < D3D12_RECORD_RING; i++)
+            Release(d3d12->record.retired[g].readback[i]);
+      }
+      else
+         d3d12->record.retired[n++] = d3d12->record.retired[g];
+   }
+   d3d12->record.retired_count = n;
+}
+
+/* Takes the ring out of use. Its buffers are not released here: the
+ * copies into them were recorded into command lists the queue may not
+ * have executed yet, and D3D12 requires a resource to outlive every
+ * list that names it. They go onto the retired table behind the
+ * highest fence a capture into this ring was signalled with, and
+ * d3d12_record_reclaim() releases them once the GPU has passed it. A
+ * ring no capture was ever signalled into has nothing in flight and is
+ * released at once. */
 static void d3d12_record_free(d3d12_video_t *d3d12)
 {
    unsigned i;
+   UINT64 last = 0;
+   bool any    = false;
+
    for (i = 0; i < D3D12_RECORD_RING; i++)
    {
-      Release(d3d12->record.readback[i]);
+      if (d3d12->record.readback[i])
+         any = true;
+      if (d3d12->record.fence[i] > last)
+         last = d3d12->record.fence[i];
+   }
+
+   if (any && last)
+   {
+      if (d3d12->record.retired_count == D3D12_RECORD_RETIRED)
+      {
+         /* Table full: wait for the oldest generation, bounded as the
+          * queue drain is, then release it to make room. */
+         D3D12Fence fence = d3d12->queue.fence;
+         UINT64     value = d3d12->record.retired[0].fence;
+         if (fence->lpVtbl->GetCompletedValue(fence) < value)
+         {
+            fence->lpVtbl->SetEventOnCompletion(fence, value,
+                  d3d12->queue.fenceEvent);
+            if (WaitForSingleObject(d3d12->queue.fenceEvent,
+                     D3D12_FENCE_WAIT_MS) != WAIT_OBJECT_0)
+               RARCH_ERR("[D3D12] The GPU did not signal its fence within "
+                     "%u ms; the device is most likely lost.\n",
+                     (unsigned)D3D12_FENCE_WAIT_MS);
+         }
+         for (i = 0; i < D3D12_RECORD_RING; i++)
+            Release(d3d12->record.retired[0].readback[i]);
+         memmove(&d3d12->record.retired[0], &d3d12->record.retired[1],
+               (D3D12_RECORD_RETIRED - 1) * sizeof(d3d12->record.retired[0]));
+         d3d12->record.retired_count--;
+      }
+      for (i = 0; i < D3D12_RECORD_RING; i++)
+         d3d12->record.retired[d3d12->record.retired_count].readback[i]
+            = d3d12->record.readback[i];
+      d3d12->record.retired[d3d12->record.retired_count].fence = last;
+      d3d12->record.retired_count++;
+   }
+   else
+   {
+      for (i = 0; i < D3D12_RECORD_RING; i++)
+         Release(d3d12->record.readback[i]);
+   }
+
+   for (i = 0; i < D3D12_RECORD_RING; i++)
+   {
       d3d12->record.readback[i] = NULL;
       d3d12->record.valid[i]    = false;
       d3d12->record.fence[i]    = 0;
@@ -5392,6 +5483,19 @@ static void d3d12_record_free(d3d12_video_t *d3d12)
    d3d12->record.dims    = 0;
    d3d12->record.enable  = false;
    d3d12->record.pending = false;
+}
+
+/* Final teardown, after d3d12_queue_drain() has waited (bounded) for
+ * the queue: nothing is in flight any more, so the ring and every
+ * retired generation are released outright. */
+static void d3d12_record_teardown(d3d12_video_t *d3d12)
+{
+   unsigned g, i;
+   d3d12_record_free(d3d12);
+   for (g = 0; g < d3d12->record.retired_count; g++)
+      for (i = 0; i < D3D12_RECORD_RING; i++)
+         Release(d3d12->record.retired[g].readback[i]);
+   d3d12->record.retired_count = 0;
 }
 
 /* Record a copy of this frame's back buffer into the ring, into the
@@ -7168,6 +7272,7 @@ static bool d3d12_gfx_frame(
    /* The recorder's copy of this frame, in this frame's list; the
     * fence behind the list tells read_viewport when it can be read.
     * Torn down when recording stops. */
+   d3d12_record_reclaim(d3d12);
    if (video_info->gpu_recording
          && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))
       d3d12_record_capture(d3d12, cmd);
