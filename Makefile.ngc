@@ -122,20 +122,29 @@ LIBS += -logc
 
 CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
-HAVE_RUNAHEAD            := 1
+# 24 MB of MEM1 makes resident code weight count, so features that cannot
+# do their job on this hardware are compiled out: runahead (the second
+# savestate never fits beside a running core), the webp/dds thumbnail
+# decoders, the mod/s3m/xm tracker, 7z (LZMA dictionaries alone outsize
+# the console's free RAM, so 7z archives could never extract anyway) and
+# libretrodb (defaulted on by Makefile.common; database scanning is
+# impractical here, and the explore menu goes with it).  Together these
+# return about 640 KB of MEM1 to content.
+HAVE_LIBRETRODB          := 0
+HAVE_RUNAHEAD            := 0
 HAVE_DSP_FILTER          := 1
 HAVE_VIDEO_FILTER        := 1
 HAVE_FILTERS_BUILTIN     := 1
 HAVE_THREADS             := 1
 HAVE_RPNG                := 1
-HAVE_RWEBP               := 1
-HAVE_RDDS                := 1
+HAVE_RWEBP               := 0
+HAVE_RDDS                := 0
 HAVE_RJPEG               := 1
 HAVE_RBMP                := 1
 HAVE_RTGA                := 1
-HAVE_RMODTRACKER                := 1
+HAVE_RMODTRACKER         := 0
 HAVE_OVERLAY             := 1
-HAVE_7ZIP                := 1
+HAVE_7ZIP                := 0
 HAVE_RZSTD               := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
