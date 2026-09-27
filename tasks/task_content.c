@@ -1338,7 +1338,7 @@ static bool content_path_needs_stage(
  * leaves evidence, and Settings → Cache is the place to look. */
 static bool content_file_copy_vfs_url_to_cache(
       content_information_ctx_t *content_ctx,
-      content_state_t *p_content,
+      char *staged_out, size_t staged_len,
       const char **content_path,
       char **err_string)
 {
@@ -1347,17 +1347,12 @@ static bool content_file_copy_vfs_url_to_cache(
    char new_path[PATH_MAX_LENGTH];
    char new_basedir[DIR_MAX_LENGTH];
    char archive_path[PATH_MAX_LENGTH];
-   char staged_with_entry[PATH_MAX_LENGTH];
-   char buf[64 * 1024];
+   char *buf;
    const char *basename_ptr;
    const char *open_path;
    const char *archive_delim;
-   const char *result_path;
    int64_t n;
    int64_t total = 0;
-   static char *staged_path = NULL;
-
-   (void)p_content;
 
    if (!content_path || !*content_path || !**content_path)
       return false;
@@ -1494,11 +1489,19 @@ static bool content_file_copy_vfs_url_to_cache(
       return false;
    }
 
-   while ((n = filestream_read(fp_src, buf, sizeof(buf))) > 0)
+   if (!(buf = (char*)malloc(64 * 1024)))
+   {
+      filestream_close(fp_src);
+      filestream_close(fp_dst);
+      return false;
+   }
+
+   while ((n = filestream_read(fp_src, buf, 64 * 1024)) > 0)
    {
       if (filestream_write(fp_dst, buf, n) != n)
       {
          char msg[PATH_MAX_LENGTH];
+         free(buf);
          filestream_close(fp_src);
          filestream_close(fp_dst);
          snprintf(msg, sizeof(msg),
@@ -1511,6 +1514,7 @@ static bool content_file_copy_vfs_url_to_cache(
       total += n;
    }
 
+   free(buf);
    filestream_close(fp_src);
    filestream_close(fp_dst);
 
@@ -1525,22 +1529,13 @@ static bool content_file_copy_vfs_url_to_cache(
       return false;
    }
 
-   result_path = new_path;
+   strlcpy(staged_out, new_path, staged_len);
    if (archive_delim)
-   {
-      strlcpy(staged_with_entry, new_path, sizeof(staged_with_entry));
-      strlcat(staged_with_entry, archive_delim, sizeof(staged_with_entry));
-      result_path = staged_with_entry;
-   }
+      strlcat(staged_out, archive_delim, staged_len);
 
-   free(staged_path);
-   staged_path = strdup(result_path);
-   if (!staged_path)
-      return false;
-
-   *content_path = staged_path;
+   *content_path = staged_out;
    RARCH_LOG("[Content] Staged %lld bytes at \"%s\".\n",
-         (long long)total, result_path);
+         (long long)total, staged_out);
    return true;
 }
 
@@ -1705,6 +1700,7 @@ static bool content_file_load(
             ? special->roms[i].valid_extensions
             : content_ctx->valid_extensions;
       bool content_compressed  = false;
+      char staged_path[PATH_MAX_LENGTH];
 
       /* Get content path */
       content_file_get_path(content, i, valid_exts,
@@ -1744,7 +1740,8 @@ static bool content_file_load(
             if (content_path_needs_stage(content_path,
                      need_fullpath, supports_vfs))
             {
-               if (!content_file_copy_vfs_url_to_cache(content_ctx, p_content,
+               if (!content_file_copy_vfs_url_to_cache(content_ctx,
+                        staged_path, sizeof(staged_path),
                         &content_path, err_string))
                   return false;
                /* Match prior fallback-copy error reporting: only when
