@@ -768,6 +768,11 @@ check_nopkg '' DBUS -ldbus-1 'dbus-1.0 dbus-1.0/include' \
 int main(void) { return dbus_bus_get(DBUS_BUS_SESSION, NULL) != NULL; }'
 check_val '' UDEV "-ludev" '' libudev '' '' false
 check_val '' V4L2 -lv4l2 '' libv4l2 '' '' false
+# libv4l2.pc can be installed without the kernel headers the sources
+# include (FreeBSD: libv4l is a package, linux/videodev2.h is v4l_compat).
+if [ "$HAVE_V4L2" = 'yes' ]; then
+   check_header '' V4L2 linux/videodev2.h
+fi
 check_val '' FREETYPE -lfreetype freetype2 freetype2 '' '' false
 check_val '' FONTCONFIG -lfontconfig fontconfig fontconfig '' '' false
 check_val '' X11 -lX11 '' x11 '' '' false

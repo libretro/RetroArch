@@ -20,7 +20,13 @@
 #include <time.h>
 #include <boolean.h>
 
+/* Button and key codes (BTN_LEFT, KEY_ENTER, ...).  FreeBSD ships them in
+ * base under dev/evdev/ - do not require the evdev-proto port for them. */
+#if defined(__FreeBSD__)
+#include <dev/evdev/input.h>
+#else
 #include <linux/input.h>
+#endif
 
 #ifdef HAVE_WAYLAND_BACKPORT
 #include "../../gfx/common/wayland_common_backport.h"

@@ -25,10 +25,14 @@
 #include <sys/stat.h>
 #include <poll.h>
 #include <libudev.h>
-#ifdef __linux__
+#if defined(__linux__)
 #include <linux/types.h>
-#endif
 #include <linux/input.h>
+#elif defined(__FreeBSD__)
+#include <dev/evdev/input.h>
+#else
+#include <linux/input.h>
+#endif
 
 #include <retro_inline.h>
 #include <compat/strl.h>
