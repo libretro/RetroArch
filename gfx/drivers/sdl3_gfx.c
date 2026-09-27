@@ -1718,7 +1718,9 @@ static void sdl3_overlay_free(sdl3_video_t *vid)
    unsigned i;
    if (!vid || !vid->overlays)
       return;
-   if (vid->overlays_owned)
+   /* Textures from load_textures() stay the overlay pack's; only
+    * load()'s own uploads are this driver's to destroy. */
+   if (!(vid->flags & SDL3_FLAG_OVERLAY_BORROWED))
    {
       for (i = 0; i < vid->overlays_size; i++)
       {
@@ -1727,9 +1729,9 @@ static void sdl3_overlay_free(sdl3_video_t *vid)
       }
    }
    free(vid->overlays);
-   vid->overlays       = NULL;
-   vid->overlays_size  = 0;
-   vid->overlays_owned = false;
+   vid->overlays      = NULL;
+   vid->overlays_size = 0;
+   vid->flags        &= ~SDL3_FLAG_OVERLAY_BORROWED;
 }
 
 static void sdl3_overlay_defaults(struct sdl3_overlay *o, SDL_Texture *tex)
@@ -1761,8 +1763,7 @@ static bool sdl3_overlay_load(void *data,
    if (!(vid->overlays = (struct sdl3_overlay*)calloc(num_images,
          sizeof(*vid->overlays))))
       return false;
-   vid->overlays_size  = num_images;
-   vid->overlays_owned = true;
+   vid->overlays_size = num_images;
 
    for (i = 0; i < num_images; i++)
    {
@@ -1817,6 +1818,7 @@ static bool sdl3_overlay_load_textures(void *data,
          sizeof(*vid->overlays))))
       return false;
    vid->overlays_size = num_textures;
+   vid->flags        |= SDL3_FLAG_OVERLAY_BORROWED;
 
    for (i = 0; i < num_textures; i++)
       sdl3_overlay_defaults(&vid->overlays[i],
