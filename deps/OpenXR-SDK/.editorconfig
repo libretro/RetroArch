@@ -1,0 +1,33 @@
+# Copyright (c) 2017-2026 The Khronos Group Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# http://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+trim_trailing_whitespace = false
+insert_final_newline = true
+
+[*.xml,*.rnc]
+trim_trailing_whitespace = true
+
+[*.xml]
+indent_style = space
+trim_trailing_whitespace = true
+indent_size = 4
+
+[*.cmake,CMakeLists.txt]
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.sh]
+trim_trailing_whitespace = true
+end_of_line = lf
+
+[*.adoc]
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2

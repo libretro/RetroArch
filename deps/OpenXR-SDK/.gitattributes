@@ -1,0 +1,36 @@
+# Copyright (c) 2017-2026 The Khronos Group Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+*         text=auto
+*.txt     text
+*.c       text
+*.cpp     text
+*.h       text
+*.hpp     text
+*.inl     text
+*.adoc    text
+*.in      text
+*.json    text
+*.bat     eol=crlf
+*.cmd     eol=crlf
+*.vcproj  eol=crlf
+*.vcxproj eol=crlf
+*.sln     eol=crlf
+*.sh      eol=lf
+*.png     binary
+# git-lfs big files
+*.pdf                    filter=lfs diff=lfs merge=lfs -text
+*.glb                    filter=lfs diff=lfs merge=lfs -text
+src/conformance/**/*.png filter=lfs diff=lfs merge=lfs -text
+specification/sources/images/XR_ANDROID_mouse_interaction_aim_drag.png filter=lfs diff=lfs merge=lfs -text
+specification/sources/images/XR_ANDROID_mouse_interaction_aim_pose.png filter=lfs diff=lfs merge=lfs -text
+src/conformance/conformance_test/composition_examples/irm_interactive.jpeg filter=lfs diff=lfs merge=lfs -text
+# Shell/python scripts that don't end in .sh
+specification/makeAllExts           eol=lf
+specification/makeExt               eol=lf
+specification/makeKHR               eol=lf
+specification/makeKHRAndKHX         eol=lf
+specification/makeReleaseArtifacts  eol=lf
+specification/makeSpec              eol=lf
+specification/checkMarkup           eol=lf
+specification/checkSpecLinks        eol=lf

@@ -1,0 +1,82 @@
+//
+// Copyright (c) 2017-2026 The Khronos Group Inc.
+// Copyright (c) 2017 Valve Corporation
+// Copyright (c) 2017 LunarG, Inc.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+//
+// Initial Author: Mark Young <marky@LunarG.com>
+//
+
+// The years here should always match the Khronos line above!
+#define COPYRIGHT_NOTICE "2017-2026 The Khronos Group Inc. and others"
+
+// REUSE-IgnoreStart
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// Start customize section
+// Edit this section for your build
+// The normal OpenXR CMake build will define the XR_CURRENT_API_*_VERSION
+// symbols automatically so no manual changes are needed in that case.
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+#define VERSION_MAJOR               XR_CURRENT_API_MAJOR_VERSION
+#define VERSION_MINOR               XR_CURRENT_API_MINOR_VERSION
+#define VERSION_PATCH               XR_CURRENT_API_PATCH_VERSION
+#define VERSION_BUILDNO             0
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// End of customize section
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+#ifdef __MINGW32__
+#include "winresrc.h"
+#else
+#include "winres.h"
+#endif
+
+#define VER_FILE_VERSION            VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH, VERSION_BUILDNO
+
+#define STRINGIZE2(s) #s
+#define STRINGIZE(s) STRINGIZE2(s)
+
+#define VER_FILE_VERSION_STR        STRINGIZE(VERSION_MAJOR)      \
+                                   "." STRINGIZE(VERSION_MINOR)   \
+                                   "." STRINGIZE(VERSION_PATCH)   \
+                                   "." STRINGIZE(VERSION_BUILDNO)
+
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION VER_FILE_VERSION
+ PRODUCTVERSION VER_FILE_VERSION
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS VS_FF_DEBUG
+#else
+ FILEFLAGS 0x0L
+#endif
+
+ FILEOS 0x00000L
+ FILETYPE VFT_DLL
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "04090000"
+        BEGIN
+            VALUE "FileDescription", "OpenXR Loader"
+            VALUE "FileVersion", VER_FILE_VERSION_STR
+            VALUE "LegalCopyright", "Copyright (C) " COPYRIGHT_NOTICE
+            VALUE "ProductName", "OpenXR Loader"
+            VALUE "ProductVersion", VER_FILE_VERSION_STR
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 0000
+    END
+END

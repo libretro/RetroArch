@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <!--
+  Copyright (c) 2020-2026 The Khronos Group Inc.
+  SPDX-License-Identifier: Apache-2.0 OR MIT
+  -->
+  <groupId>org.khronos.openxr</groupId>
+  <artifactId>openxr_loader_for_android</artifactId>
+  <version>@MAJOR@.@MINOR@.@PATCH@@OPENXR_SDK_HOTFIX_VERSION_SUFFIX@@OPENXR_ANDROID_VERSION_SUFFIX@</version>
+  <packaging>aar</packaging>
+  <name>OpenXR Loader for Android</name>
+  <description>The AAR for the OpenXR Loader as used on Android.</description>
+  <url>https://github.com/KhronosGroup/OpenXR-SDK-Source</url>
+  <developers>
+    <developer>
+      <name>The Khronos Group Inc.</name>
+      <email>openxr-speceditor AT khronos DOT org</email>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/KhronosGroup/OpenXR-SDK-Source.git</connection>
+    <url>https://github.com/KhronosGroup/OpenXR-SDK-Source.git</url>
+  </scm>
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+</project>

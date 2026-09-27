@@ -1,0 +1,15 @@
+# Copyright (c) 2017-2026 The Khronos Group Inc.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/include
+
+Name: @CMAKE_PROJECT_NAME@
+Description: OpenXR Loader
+Version: @XR_API_VERSION@
+Libs: -L${libdir} -lopenxr_loader @EXTRA_LIBS@
+Cflags: -I${includedir}
+

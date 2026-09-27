@@ -1,0 +1,35 @@
+# Copyright 2017-2026 The Khronos Group Inc.
+#
+# SPDX-License-Identifier: CC-BY-4.0
+#
+# See mailmap docs: https://git-scm.com/docs/gitmailmap
+# Please keep in sorted order.
+# Generally, only add lines, unless you want to change the spelling
+# of your name.
+# Test by running git shortlog -s -e
+#
+# This mailmap is for **public repos** and should only be tested there.
+
+Blake Taylor <rotaylor@magicleap.com>
+Bradley Austin Davis <bdavis@saintandreas.org>
+Bryce Hutchings <bryceh@microsoft.com>
+Bryce Hutchings <bryceh@microsoft.com> <5100250+brycehutchings@users.noreply.github.com>
+Bryce Hutchings <bryceh@microsoft.com> <me@bryce.ws>
+Daniel Willmott <39023874+danwillm@users.noreply.github.com>
+Ivan Chupakhin <ivan.chupakhin@almalence.com>
+Ivan Chupakhin <ivan.chupakhin@almalence.com> <Gurinchi@gmail.com>
+Kevin Qin <zheng.qin@microsoft.com>
+Kevin Qin <zheng.qin@microsoft.com> <zheqi@microsoft.com>
+Khronos Group Web Services <webservices@khronos.org>
+Khronos Group Web Services <webservices@khronos.org> <webmaster@khronos.org>
+Liu Knox <dengkail@qti.qualcomm.com> <dengkail@qti.qualcom.com>
+OC Lin <oc.lin@acer.com>
+Rachel Huang <rachel.huang@huawei.com>
+Rylie Pavlik <rylie.pavlik@collabora.com>
+Rylie Pavlik <rylie.pavlik@collabora.com> <ryan.pavlik@collabora.com>
+Rylie Pavlik <rylie.pavlik@collabora.com> <ryan.pavlik@gmail.com>
+Rylie Pavlik <rylie@ryliepavlik.com> <ryan@ryanpavlik.com>
+Yin Li <yl@microsoft.com>
+samuel degrande <samuel.degrande@univ-lille.fr>
+utzcoz <utzcoz@outlook.com>
+utzcoz <utzcoz@outlook.com> <43091780+utzcoz@users.noreply.github.com>

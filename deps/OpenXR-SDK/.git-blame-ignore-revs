@@ -1,0 +1,75 @@
+# Copyright 2021-2026 The Khronos Group Inc.
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+# This file contains the commit IDs (on all OpenXR repos!)
+# of "bulk" commits that should be excluded from blame, etc. to
+# make it more useful.
+# When adding new bulk changes, please follow the existing style,
+# and do try to make sure that the bulk change is made
+# **separate from a release commit** on all repos.
+# See <https://git-scm.com/docs/git-blame#Documentation/git-blame.txt---ignore-revs-fileltfilegt>
+# for how to use this, probably something like:
+# git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+## Old changes
+0c93c42891ad6b95aee81709398ded7416c9f397
+767537d9523253de1615b01450a8b22c8e2cc6a2
+
+## 1.0.17 - Fix XML indentation
+
+# Khronos GitLab
+ae6fe8a4f2cfc3e5e0bb7da3de4d9067e861b5a3
+
+# OpenXR-Docs
+e8ddebd3c7ff6978e84c73e49c41c36ce4a01464
+
+# OpenXR-SDK-Source
+cc8e70f69de3ec536d5bd7cdebcd6e30d36dfcae
+
+# OpenXR-CTS
+e28085d027d0e3b215858906b1ad7d98fb0483ff
+
+
+## 1.0.17 - Sort return codes
+
+# Khronos GitLab
+755ac4d86eb33340289fc0765391c31ce17959fc
+
+# OpenXR-Docs
+bd1f05a6f5da8662c6969996177063a5a98bf0ea
+
+# OpenXR-SDK-Source
+114c3a2829f51eb0e2508a99f98b2e14760ba2c2
+
+# OpenXR-CTS
+1224c0ba88b6f000a5f00f56c0dbb8265a6c6350
+
+
+## 1.0.27 - Bulk-apply PrettyRegistryXML
+
+# Khronos GitLab (commit also includes adding an extension)
+ff2037bc6aa951610f4e21d133056d3f547d2374
+
+# Khronos GitLab (finishing formatting)
+4bb0766ec6d7101b17b0bc02ba04c86c4159bd16
+
+# OpenXR-Docs
+09b6b4bae7d691e1406ee6951e5ab8ed4e620ff3
+
+# OpenXR-SDK-Source
+2c1b77dcdc6ace701e4b08477e5fae5312a866b4
+
+# OpenXR-CTS
+e774b36cfc7bfc721e97de6c8435fcb14866e6fa
+
+# OpenXR-SDK
+db11d03216666f2b574da46a39c4b565dbe90124
+
+## 1.1.40 - Update to clang-format-14
+
+# Khronos GitLab
+22ba5c7abe1f43122d1eedebc093008d03aaad03
+
+# OpenXR-CTS
+e3ab3214c1307d60642ee939739740f5111bbb54

@@ -1,0 +1,29 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="org.khronos.openxr.openxr_loader_for_android"
+  android:versionCode="1"
+  android:versionName="${OPENXR_FULL_VERSION}${OPENXR_ANDROID_VERSION_SUFFIX}">
+  <!--
+  Copyright (c) 2020-2026 The Khronos Group Inc.
+  SPDX-License-Identifier: Apache-2.0 OR MIT
+  -->
+
+  <!-- If this is not included as a minimum, the manifest merger assumes we target an ancient SDK and adds permissions. -->
+  <uses-sdk android:minSdkVersion="${ANDROID_PLATFORM}" android:targetSdkVersion="${ANDROID_PLATFORM}" />
+
+  <uses-permission android:name="org.khronos.openxr.permission.OPENXR" />
+  <uses-permission android:name="org.khronos.openxr.permission.OPENXR_SYSTEM" />
+
+  <queries>
+    <!-- to talk to the broker -->
+    <provider android:authorities="org.khronos.openxr.runtime_broker;org.khronos.openxr.system_runtime_broker" />
+
+    <!-- so client-side code of runtime/layers can talk to their service sides -->
+    <intent>
+      <action android:name="org.khronos.openxr.OpenXRRuntimeService" />
+    </intent>
+    <intent>
+      <action android:name="org.khronos.openxr.OpenXRApiLayerService" />
+    </intent>
+  </queries>
+
+</manifest>

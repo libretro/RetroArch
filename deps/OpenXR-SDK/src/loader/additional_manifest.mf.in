@@ -1,0 +1,7 @@
+Name: org/khronos/openxr/openxr_loader_for_android
+Specification-Title: OpenXR Loader for Android
+Specification-Version: ${OPENXR_FULL_VERSION}
+Specification-Vendor: The Khronos Group Inc.
+Implementation-Title: OpenXR standard cross-vendor loader for Android
+Implementation-Version: ${OPENXR_FULL_VERSION}
+Implementation-Vendor: The Khronos Group Inc.

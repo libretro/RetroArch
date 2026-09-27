@@ -1,0 +1,63 @@
+; Copyright (c) 2019-2026 The Khronos Group Inc.
+;
+; SPDX-License-Identifier: Apache-2.0 OR MIT
+
+LIBRARY
+EXPORTS
+    xrCreateInstance
+    xrDestroyInstance
+    xrEnumerateApiLayerProperties
+    xrEnumerateInstanceExtensionProperties
+    xrGetInstanceProcAddr
+    xrGetInstanceProperties
+    xrPollEvent
+    xrResultToString
+    xrStructureTypeToString
+    xrGetSystem
+    xrGetSystemProperties
+    xrEnumerateEnvironmentBlendModes
+    xrCreateSession
+    xrDestroySession
+    xrEnumerateReferenceSpaces
+    xrCreateReferenceSpace
+    xrGetReferenceSpaceBoundsRect
+    xrCreateActionSpace
+    xrLocateSpace
+    xrDestroySpace
+    xrEnumerateViewConfigurations
+    xrGetViewConfigurationProperties
+    xrEnumerateViewConfigurationViews
+    xrEnumerateSwapchainFormats
+    xrCreateSwapchain
+    xrDestroySwapchain
+    xrEnumerateSwapchainImages
+    xrAcquireSwapchainImage
+    xrWaitSwapchainImage
+    xrReleaseSwapchainImage
+    xrBeginSession
+    xrEndSession
+    xrRequestExitSession
+    xrWaitFrame
+    xrBeginFrame
+    xrEndFrame
+    xrLocateViews
+    xrStringToPath
+    xrPathToString
+    xrCreateActionSet
+    xrDestroyActionSet
+    xrCreateAction
+    xrDestroyAction
+    xrSuggestInteractionProfileBindings
+    xrAttachSessionActionSets
+    xrGetCurrentInteractionProfile
+    xrGetActionStateBoolean
+    xrGetActionStateFloat
+    xrGetActionStateVector2f
+    xrGetActionStatePose
+    xrSyncActions
+    xrEnumerateBoundSourcesForAction
+    xrGetInputSourceLocalizedName
+    xrApplyHapticFeedback
+    xrStopHapticFeedback
+    ; entry points added in 1.1
+    xrLocateSpaces
