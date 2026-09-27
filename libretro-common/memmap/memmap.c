@@ -656,7 +656,7 @@ void *memjit_alloc(size_t len)
 #if defined(_WIN32) && !defined(_XBOX)
    return VirtualAlloc(NULL, len, MEM_COMMIT | MEM_RESERVE,
          PAGE_EXECUTE_READWRITE);
-#else
+#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_ANONYMOUS)
    int flags = MAP_PRIVATE | MAP_ANONYMOUS;
    void *p;
    /* On macOS on Apple Silicon a plain executable mapping is refused;
@@ -670,6 +670,10 @@ void *memjit_alloc(size_t len)
 #endif
    p = mmap(NULL, len, PROT_READ | PROT_WRITE | PROT_EXEC, flags, -1, 0);
    return (p == MAP_FAILED) ? NULL : p;
+#else
+   /* No mmap: DOS, the consoles, Emscripten. */
+   (void)len;
+   return NULL;
 #endif
 }
 
@@ -680,8 +684,10 @@ void memjit_free(void *addr, size_t len)
 #if defined(_WIN32) && !defined(_XBOX)
    (void)len;
    VirtualFree(addr, 0, MEM_RELEASE);
-#else
+#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MAP_ANONYMOUS)
    munmap(addr, len);
+#else
+   (void)len;
 #endif
 }
 
