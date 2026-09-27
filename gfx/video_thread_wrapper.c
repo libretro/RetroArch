@@ -2587,10 +2587,15 @@ static bool video_thread_frame(void *data, const void *frame_,
    if (thr->frame.lent >= 0)
    {
       unsigned l = (unsigned)thr->frame.lent;
-      const uint8_t *f = (const uint8_t*)frame_;
-      const uint8_t *b = thr->frame.slot[l].buffer;
+      /* Compared as integers: a core that rendered elsewhere pushes a
+       * pointer into some other object, and ordering two pointers into
+       * different objects with < is undefined in C. The subtraction
+       * cannot wrap once the address is known to be at or past the
+       * slot's start. */
+      uintptr_t f = (uintptr_t)frame_;
+      uintptr_t b = (uintptr_t)thr->frame.slot[l].buffer;
       thr->frame.lent = -1;
-      if (f && f >= b && f < b + thr->frame.buffer_size)
+      if (f && f >= b && f - b < thr->frame.buffer_size)
       {
          zero_copy = true;
          slot      = l;
@@ -2666,8 +2671,16 @@ static bool video_thread_frame(void *data, const void *frame_,
          thr->frame.zero_copy_count++;
          if (pitch)
             copy_stride = (unsigned)pitch;
-         if (lent_off + (size_t)height * copy_stride > thr->frame.buffer_size)
-            height = (unsigned)((thr->frame.buffer_size - lent_off) / copy_stride);
+         /* Rows that fit between the offset and the end of the slot,
+          * without forming height * stride, which can wrap. */
+         if (copy_stride)
+         {
+            size_t room = (thr->frame.buffer_size - lent_off) / copy_stride;
+            if ((size_t)height > room)
+               height = (unsigned)room;
+         }
+         else
+            height = 0;
       }
       else if (src)
       {
