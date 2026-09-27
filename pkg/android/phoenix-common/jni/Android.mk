@@ -25,6 +25,7 @@ HAVE_RETRONFS := 1
 # MODELINE, so the CRT SwitchRes menu stays hidden); this is for the
 # EDID reader behind Information > Display Information > EDID.
 HAVE_MODELINE := 1
+HAVE_OPENXR ?= 0
 
 INCFLAGS    :=
 DEFINES     :=
@@ -51,6 +52,36 @@ endif
 
 ifneq ($(GIT_VERSION),)
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
+endif
+
+ifeq ($(HAVE_OPENXR),1)
+
+OPENXR_DIR := $(RA_ROOT)/deps/OpenXR-SDK
+OPENXR_BUILD_DIR := $(OPENXR_DIR)/build/android-arm64
+OPENXR_LOADER := $(OPENXR_BUILD_DIR)/src/loader/libopenxr_loader.so
+
+ifeq ($(wildcard $(OPENXR_LOADER)),)
+
+OPENXR_BUILD := $(shell \
+    cd "$(OPENXR_DIR)" && \
+    cmake -S . -B "$(OPENXR_BUILD_DIR)" \
+        -DCMAKE_TOOLCHAIN_FILE="$(ANDROID_SDK_ROOT)/ndk/29.0.14206865/build/cmake/android.toolchain.cmake" \
+        -DANDROID_ABI=arm64-v8a \
+        -DANDROID_PLATFORM=android-29 \
+        -DDYNAMIC_LOADER=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build "$(OPENXR_BUILD_DIR)" --target openxr_loader -j$$(nproc) \
+)
+
+endif
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := openxr_loader
+LOCAL_SRC_FILES := $(OPENXR_LOADER)
+
+include $(PREBUILT_SHARED_LIBRARY)
+
 endif
 
 include $(CLEAR_VARS)
@@ -208,6 +239,7 @@ DEFINES += -DHAVE_VULKAN \
 	   -DWANT_GLSLANG \
 	   -D__STDC_LIMIT_MACROS
 endif
+
 DEFINES += -DHAVE_7ZIP \
 	   \
 	   -DHAVE_SL
@@ -225,6 +257,10 @@ ifeq ($(HAVE_RETRONFS),1)
    DEFINES += -DHAVE_NFSCLIENT -DHAVE_RETRONFS
 endif
 
+ifeq ($(HAVE_OPENXR),1)
+DEFINES += -DHAVE_OPENXR
+endif
+
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
 LOCAL_CPPFLAGS := -fexceptions -fpermissive -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
 
@@ -240,6 +276,11 @@ LOCAL_C_INCLUDES := \
 INCLUDE_DIRS     := \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
+
+ifeq ($(HAVE_OPENXR),1)
+OPENXR_DIR := $(RARCH_DIR)/deps/OpenXR-SDK
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/$(OPENXR_DIR)/include
+endif
 
 ifeq ($(HAVE_CHEEVOS),1)
 INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
@@ -269,6 +310,10 @@ LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_glslang.cpp
 endif
 
 LOCAL_LDLIBS += -lOpenSLES
+
+ifeq ($(HAVE_OPENXR),1)
+LOCAL_SHARED_LIBRARIES += openxr_loader
+endif
 
 ifneq ($(SANITIZER),)
    LOCAL_CFLAGS   += -g -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

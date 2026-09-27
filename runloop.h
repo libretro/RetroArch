@@ -130,7 +130,8 @@ enum runloop_flags
    RUNLOOP_FLAG_PAUSED                            = (1 << 27),
    RUNLOOP_FLAG_IDLE                              = (1 << 28),
    RUNLOOP_FLAG_FOCUSED                           = (1 << 29),
-   RUNLOOP_FLAG_FORCE_NONBLOCK                    = (1 << 30)
+   RUNLOOP_FLAG_FORCE_NONBLOCK                    = (1 << 30),
+   RUNLOOP_FLAG_CORE_VR_CONTENT                   = (1 << 31)
    /* (1 << 31) was RUNLOOP_FLAG_IS_INITED.  Moved out of this word into
     * an atomic behind the runloop_is_inited_* accessors: it is the only
     * bit here read off the main thread (the AppIntents entity query runs
@@ -392,6 +393,11 @@ struct runloop
     * iteration (see menu_core_due_ns), so nothing that counts the
     * core's frames - achievements - steps either. Main thread only. */
    bool menu_core_skipped;
+   /* Set/cleared by RETRO_ENVIRONMENT_SET_VR_CONTENT_INFO, read by
+    * RETRO_ENVIRONMENT_GET_VR_EYE_STATE. */
+#ifdef HAVE_OPENXR
+   bool core_vr_content;
+#endif
 };
 
 /* Frame pacing sources.

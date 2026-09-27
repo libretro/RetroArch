@@ -311,6 +311,11 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/android_ctx.c"
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/android_vk_ctx.c"
+#if defined(HAVE_OPENXR)
+#include "../input/drivers/openxr_input.c"
+#include "../gfx/drivers_context/gl_android_openxr_ctx.c"
+#include "../gfx/drivers_context/android_vk_openxr_ctx.c"
+#endif
 #endif
 #include "../gfx/display_servers/dispserv_android.c"
 #elif defined(__QNX__)

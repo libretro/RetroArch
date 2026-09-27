@@ -324,7 +324,7 @@ struct retro_hw_render_interface_vulkan
     *
     * Images passed to set_image should be created with TILING_OPTIMAL.
     * The image layout should be transitioned to either
-    * VK_IMAGE_LAYOUT_GENERIC or VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+    * VK_IMAGE_LAYOUT_GENERAL or VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
     * The actual image layout used must be set in image_layout.
     *
     * The image must be a 2D texture which may or not be layered

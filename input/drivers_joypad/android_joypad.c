@@ -21,6 +21,10 @@
 #include "../input_driver.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 
+#ifdef HAVE_OPENXR
+#include "../../gfx/drivers_context/android_vk_openxr.h"
+#endif
+
 static const char *android_joypad_name(unsigned pad)
 {
    return input_config_get_device_name(pad);
@@ -68,6 +72,10 @@ static int32_t android_joypad_button(unsigned port, uint16_t joykey)
 
    if (port >= DEFAULT_MAX_PADS)
       return 0;
+#ifdef HAVE_OPENXR
+   if (port == 0 && android_vk_openxr_button(joykey))
+      return 1;
+#endif
    buf = android_keyboard_state_get(port);
 
    return android_joypad_button_state(android_app, buf, port, joykey);
@@ -99,6 +107,23 @@ static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
    if (port >= DEFAULT_MAX_PADS)
       return 0;
 
+#ifdef HAVE_OPENXR
+   if (port == 0)
+   {
+      unsigned neg = AXIS_NEG_GET(joyaxis);
+      unsigned pos = AXIS_POS_GET(joyaxis);
+
+      int16_t neg_val = android_vk_openxr_axis(neg);
+      int16_t pos_val = android_vk_openxr_axis(pos);
+
+      if (neg_val < 0)
+         return neg_val;
+
+      if (pos_val > 0)
+         return pos_val;
+   }
+#endif
+
    return android_joypad_axis_state(android_app, port, joyaxis);
 }
 
@@ -117,25 +142,42 @@ static int16_t android_joypad_state(
     * both must be in range before anything is dereferenced. */
    if (port >= DEFAULT_MAX_PADS || port_idx >= DEFAULT_MAX_PADS)
       return 0;
+
    buf = android_keyboard_state_get(port);
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
       /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint64_t joykey = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey : joypad_info->auto_binds[i].joykey;
+
       const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+
+#ifdef HAVE_OPENXR
+      if ((uint16_t)joykey != NO_BTN && port_idx == 0
+            && android_vk_openxr_button((unsigned)joykey))
+         ret |= (1 << i);
+      else
+#endif
       if ((uint16_t)joykey != NO_BTN
             && android_joypad_button_state(
                android_app,
                buf,
                port_idx, (uint16_t)joykey))
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(android_joypad_axis_state(
-                  android_app, port_idx, joyaxis))
-             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+      else if (joyaxis != AXIS_NONE
+#ifdef HAVE_OPENXR
+            && port_idx == 0
+            && ((float)abs(android_joypad_axis(
+               port_idx, joyaxis))
+               / 0x8000) > joypad_info->axis_threshold
+#else
+            && ((float)abs(android_joypad_axis_state(
+               android_app, port_idx, joyaxis))
+               / 0x8000) > joypad_info->axis_threshold
+#endif
+            )
          ret |= (1 << i);
    }
 

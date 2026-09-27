@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-feature android:name="android.hardware.vr.headtracking" android:required="true" android:version="1" />
+    <uses-feature android:name="com.oculus.feature.PASSTHROUGH" android:required="false" />
+    <uses-feature android:name="oculus.software.handtracking" android:required="false" />
+    <uses-permission android:name="com.oculus.permission.HAND_TRACKING" />
+    <application>
+        <activity android:name="com.retroarch.browser.retroactivity.RetroActivityFuture">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.oculus.intent.category.VR" />
+            </intent-filter>
+        </activity>
+        <activity-alias android:name="com.retroarch.browser.mainmenu.MainMenuActivity"
+            android:targetActivity="com.retroarch.browser.retroactivity.RetroActivityFuture">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="com.oculus.intent.category.VR" />
+            </intent-filter>
+        </activity-alias>
+    </application>
+</manifest>
